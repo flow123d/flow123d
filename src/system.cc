@@ -197,9 +197,18 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 	}
 
 #ifdef USE_PARALLEL
-    //allow console output only for MPI master
+
+#ifdef MPI_PRINTALL
+	//print msg header with mpi_id to distinguish the message origin
+    if (screen)
+        fprintf(screen,"[mpi_id=%d] ", sys_info.my_proc );
+    if (mf.log && sys_info.log)
+        fprintf(sys_info.log,"[mpi_id=%d] ", sys_info.my_proc );
+#else
+    //if not PRINTALL, allow console output only for MPI master, no need to print mpi_id
 	if ( (screen) && ( sys_info.my_proc != 0 ) )
         screen = NULL;
+#endif
 
     //generate barrier and unique ID for MPI messages
     if (mf.mpi) {

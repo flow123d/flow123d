@@ -54,6 +54,9 @@ CFLAGS=-g -O0
 # (this is PETSC choice by default)
 USE_PARALLEL= -DUSE_PARALLEL
 
+# Uncomment to print all messages from all parallel MPI processes.
+# This only has effect with USE_PARALLEL 
+# USE_PRINTALL = -DMPI_PRINTALL
 
 ### Parallel stuff ########################################################
 ## manual ParMetis setup (if it is not part of PETSC)
@@ -69,10 +72,5 @@ THIRD_LIBS=-L../third_party/metis-4.0/  -lmetis
 INCLUDE= ${PETSC_INCLUDE} ${PARMETIS_INCLUDE} ${THIRD_INCLUDE}
 LIBS=${THIRD_LIBS} ${PARMETIS_LIB} ${PETSC_LIB} 
 CPP_LINKER=${CPP}
-CDEFS=${USE_NODEBUG} ${USE_PARALLEL}
-
-
-
-
-
+CDEFS=${USE_NODEBUG} ${USE_PARALLEL} ${USE_PRINTALL}
 
