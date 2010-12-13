@@ -26,12 +26,7 @@ extern "C" {
  SPARSE GRAPH
  *****************************************************************************************/
 
-/**
- * @brief Construct by distribution.
- * @param[in] distr - distribution of vertexes
- * @param[in] degree_est - estimated average degree of local vertexes
- *
- */
+
 SparseGraph::SparseGraph(const Distribution &distr)
     : vtx_distr(distr),
       adj_of_proc( vtx_distr.np() ),
@@ -47,13 +42,7 @@ SparseGraph::SparseGraph(const Distribution &distr)
     for(int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;    
 }
 
-/**
- * @brief Construct by local size and communicator.
- * @param[in] loc_size - local number of vertexes
- * @param[in] MPI communicator, could be PETSC_COMM_SELF to get local graph, localy partitioned
- * @param[in] degree_est - estimated average degree of local vertexes
- *
- */
+
 
 SparseGraph::SparseGraph(int loc_size)
     : vtx_distr(loc_size),
@@ -70,17 +59,6 @@ SparseGraph::SparseGraph(int loc_size)
     for(int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;    
 }
 
-/**
- * @brief Store an edge, increase degree of the starting vertex
- * @param[in] a - starting vertex of the edge
- * @param[in] b - terminal vertex of the edge
- *
- * We just store all inserted edges and count support arrays to
- * communicate edges to right processors
- *
- * 1) degree - global size array of vetx degrees
- * 2) num_edges_of_proc - count inserted edges belonging to individual processors
- */
 void SparseGraph::set_edge(const int a, const int b,int weight)
 {
     F_ENTRY;
@@ -92,13 +70,7 @@ void SparseGraph::set_edge(const int a, const int b,int weight)
 
 
 
-/**
- * @brief Set position of a local vertex.
- * @param[in] vtx - global vertex index (from zero)
- * @param[in] xyz - coordinates of vetrex position
- *
- * Assume that vtx is an index of local vertex.
- */
+
 void SparseGraph::set_vtx_position(const int vtx, const float xyz[3],int weight)
 {
     ASSERT(vtx_distr.is_local(vtx),"Can not set vertex position for nonlocal vertex %d.\n",vtx);
@@ -112,23 +84,13 @@ void SparseGraph::set_vtx_position(const int vtx, const float xyz[3],int weight)
  *   Edge comparison. For lexical sorting of local edges.
  */
 
-bool operator <(const SparseGraphEdge &a,const SparseGraphEdge  &b)
+bool operator <(const SparseGraph::Edge &a,const SparseGraph::Edge  &b)
 {
     return (a.from < b.from ||
             ( a.from == b.from && a.to < b.to));
 }
 
-/**
- * @brief  Make sparse graph structures: rows, adj
- *
- * 1) send edges to the owner of .from vertex
- * 2) sort local edges
- * 3) fill rows, adj;   remove duplicities
- * @param[in] vtx - global vertex index (from zero)
- * @param[in] xyz - coordinates of vetrex position
- *
- * Assume that vtx is an index of local vertex.
- */
+
 // TODO: split into smaller functions
 // check trivial case : Localized distribution
 void SparseGraph::finalize()
@@ -296,9 +258,7 @@ void SparseGraph::DFS(int vtx)
 }
 
 
-/**
- * Simple graph output.
- */
+
 void SparseGraph::view()
 {
     ASSERT(NONULL(adj),"Can not view non finalized graph.\n");
@@ -312,9 +272,7 @@ void SparseGraph::view()
     }
 }
 
-/**
- * Check symmetry of the local part of the graph.
- */
+
 bool SparseGraph::is_symmetric()
 {
     ASSERT( NONULL(rows) && NONULL(adj), "Graph is not yet finalized.");

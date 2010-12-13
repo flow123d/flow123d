@@ -909,19 +909,11 @@ void calculate_bc_mpi(struct Transport *transport)
 void transport_step_mpi(Mat *tm,Vec *conc,Vec *pconc,Vec *bc)
 {
 
-	//VecView(*bc,PETSC_VIEWER_STDOUT_WORLD);
+
 
    MatMultAdd(*tm,*pconc,*bc,*conc);  // conc=tm*pconc + bc
-   // MatMult(*tm,*pconc,*conc); // conc = tm*pconc
-   VecCopy(*conc,*pconc); // pconc = conc
+   VecSwap(*conc,*pconc); // pconc = conc
 
- //  VecView(*conc,PETSC_VIEWER_STDOUT_WORLD);
-
-
-
-	//  VecView(*conc,PETSC_VIEWER_STDOUT_SELF);
-	//  VecView(*pconc,PETSC_VIEWER_STDOUT_SELF);
-	//  getchar();
 
 }
 //=============================================================================
