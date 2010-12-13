@@ -1,0 +1,141 @@
+
+
+\parindent = 0pt
+
+\section*{Mesh file format version 2.0}
+The mesh file format comes from the GMSH system. 
+Following text is copied from the GMSH documentation.\\[0.5em]
+
+{\tt =============== BEGIN OF INSERTED TEXT ===============}\\[0.3em]
+
+Version 2.0 of the {\tt .MSH} file format is Gmsh's new native mesh file
+format. It is very similar to the old one (Version 1.0), but is more
+general: it contains information about itself and allows to associate an
+arbitrary number of integer tags with each element.
+
+The {\tt .MSH} file format, version 2.0, is divided in three sections,
+defining the file format ({\tt \$MeshFormat}-{\tt \$EndMeshFormat}), the
+nodes ({\tt \$Nodes}-{\tt \$EndNodes}) and the elements
+({\tt \$Elements}-{\tt \$EndElements}) in the mesh:
+
+\begin{fileformat}
+\$MeshFormat\\
+2.0 \vari{file-type} \vari{data-size}\\
+\$EndMeshFormat\\
+\$Nodes\\
+\vari{number-of-nodes}\\
+\vari{node-number} \vari{x-coord} \vari{y-coord} \vari{z-coord}\\
+\dots\\
+\$EndNodes\\
+\$Elements\\
+\vari{number-of-elements}\\
+\vari{elm-number} \vari{elm-type} \vari{number-of-tags} \vari{$<$tags$>$} \vari{node-number-list}\\
+\dots\\
+\$EndElements
+\end{fileformat}
+
+where:
+\begin{description}
+\item[\vari{file-type}]
+is an integer equal to 0 in the ASCII file format.
+
+\item[\vari{data-size}]
+is an integer equal to the size of the floating point numbers used in the
+file (usually, \vari{data-size} = sizeof(double)).
+
+\item[\vari{number-of-nodes}]
+is the number of nodes in the mesh.
+
+\item[\vari{node-number}]
+is the number (index) of the \vari{n}-th node in the mesh. Note that the
+\vari{node-number}s do not have to be given in a consecutive (or even an
+ordered) way.
+
+\item[\vari{x-coord} \vari{y-coord} \vari{z-coord}]
+are the floating point values giving the X, Y and Z coordinates of the
+\vari{n}-th node.
+
+\item[\vari{number-of-elements}]
+is the number of elements in the mesh.
+
+\item[\vari{elm-number}]
+is the number (index) of the \vari{n}-th element in the mesh. Note that the
+\vari{elm-number}s do not have to be given in a consecutive (or even an
+ordered) way.
+
+\item[\vari{elm-type}]
+defines the geometrical type of the \vari{n}-th element:
+
+\begin{tabular}{ll}
+1 & Line (2 nodes) \\
+2 & Triangle (3 nodes) \\
+3 & Quadrangle (4 nodes) \\
+4 & Tetrahedron (4 nodes) \\
+5 & Hexahedron (8 nodes) \\
+6 & Prism (6 nodes) \\
+7 & Pyramid (5 nodes) \\
+8 & Second order line (3 nodes) \\
+9 & Second order triangle (6 nodes) \\
+11 & Second order tetrahedron (10 nodes) \\
+15 & Point (1 node) \\
+\end{tabular}
+
+\item[\vari{number-of-tags}]
+gives the number of tags for the \vari{n}-th element. By default, Gmsh
+generates meshes with two tags and reads files with an arbitrary number of
+tags: see below.
+
+\item[\vari{tag}]
+is an integer tag associated with the \vari{n}-th element. By default, the
+first tag is the number of the physical entity to which the element belongs;
+the second is the number of the elementary geometrical entity to which the
+element belongs; the third is the number of a mesh partition to which the
+element belongs.
+
+\item[\vari{node-number-list}]
+is the list of the node numbers of the \vari{n}-th element (separated by
+white space, without commas). The ordering of the nodes is given in
+Gmsh node ordering; for second order elements, the first order nodes
+are given first, followed by the nodes associated with the edges, followed
+by the nodes associated with the faces (if any). The ordering of these
+additional nodes follows the ordering of the edges/faces given in Gmsh
+node ordering. 
+\end{description}
+ 
+{\tt =============== END OF INSERTED TEXT ===============}\\[0.5em]
+
+More information about GMSH can be found at its homepage:\\
+\leftline{\tt http://www.geuz.org/gmsh/}\\
+
+\subsection*{Comments concerning {\tt 1-2-3-FLOW}:}
+\begin{itemize}
+  \item Every inconsistency of the file stops the calculation.
+    These are:
+      \begin{itemize}
+        \item Existence of nodes with the same \vari{node-number}.
+        \item Existence of elements with the same \vari{elm-number}.
+        \item Reference to non-existing node.
+        \item Reference to non-existing material (see below).
+        \item Difference between \vari{number-of-nodes} and actual number of
+          lines in nodes' section.
+        \item Difference between \vari{number-of-elements} and actual number of
+          lines in elements' section.
+      \end{itemize}
+  \item By default {\tt 1-2-3-FLOW} uses meshes with \vari{number-of-tags} = 2.
+    \begin{description}
+    \item[\vari{tag1}] is number of region in which the element lies. 
+    \item[\vari{tag2}] is number of material (reference to {\tt
+    .MTR} file) in the element.
+    \end{description}
+  \item Currently, line (\vari{type} = 1), triangle (\vari{type} = 2) and
+    tetrahedron (\vari{type} = 4) are the only supported types
+    of elements. Existence of an element of different type stops the calculation.
+  \item Wherever possible, we use the file extension {\tt .MSH}. It is not
+    required, but highly recomended.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% vim: set tw=78 ts=2 sw=2 expandtab nocindent smartindent:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+

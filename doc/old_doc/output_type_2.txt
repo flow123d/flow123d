@@ -1,0 +1,27 @@
+Output type 2 file format, version 1.0
+
+The file is divided in two sections, header and data.
+
+$DataFormat
+1.0 0 8
+$EndDataFormat
+$FlowField
+T = time 
+n_rows
+output_number element_number scalar n_sides sides_scalar sides_flux n_neighs_vv neighs_vv_id
+$EndFlowField
+
+Where
+time		double	- time in which are following values
+n_rows		int	- number of the records. Should be the same as the number of the elements
+output_number	int	- id number of the record
+element_number	int	- id number of the element
+scalar		double	- scalar value in the element (usualy press)
+n_sides		int	- number of sides of the element
+sides_scalar    double  - scalar values on the sides of the element
+sides_flux	double  - flux throught the sides of the element
+n_neighs_vv	int 	- number of the VV neighbours
+neighs_vv_id	int	- id numbers of the neighbours
+
+Note: There can be more than only one section $FlowField - $EndFlowField. 
+In this case they are following one by one...

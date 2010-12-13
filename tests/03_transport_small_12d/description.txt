@@ -1,0 +1,6 @@
+Test problem 3 (variant of problem 2 with simpler geometry)
+---------------------
+verification of:
+-flow
+-transport (convection, dual porosity, sorption)
+-multidimenzional connection (1D-2D)

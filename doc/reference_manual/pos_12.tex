@@ -1,0 +1,178 @@
+
+\parindent = 0pt
+
+\section*{ASCII post-processing file format version 1.2}
+File format of this file comes from the GMSH system. 
+Following text is copied from the GMSH documentation.\\[0.5em]
+
+{\tt =============== BEGIN OF INSERTED TEXT ===============}\\[0.3em] 
+
+The ASCII post-processing file is divided in several sections: one format
+section, enclosed between {\tt \$PostFormat}-{\tt \$EndPostFormat} tags, and
+one or more post-processing views, enclosed between
+{\tt \$View}-{\tt \$EndView} tags:
+
+\begin{fileformat}
+\$PostFormat\\
+1.2 \vari{file-type} \vari{data-size}\\
+\$EndPostFormat\\
+\$View\\
+\vari{view-name} \vari{nb-time-steps}\\
+\vari{nb-scalar-points} \vari{nb-vector-points} \vari{nb-tensor-points}\\
+\vari{nb-scalar-lines} \vari{nb-vector-lines} \vari{nb-tensor-lines}\\
+\vari{nb-scalar-triangles} \vari{nb-vector-triangles} \vari{nb-tensor-triangles}\\
+\vari{nb-scalar-quadrangles} \vari{nb-vector-quadrangles} \vari{nb-tensor-quadrangles} \\
+\vari{nb-scalar-tetrahedra} \vari{nb-vector-tetrahedra} \vari{nb-tensor-tetrahedra} \\
+\vari{nb-scalar-hexahedra} \vari{nb-vector-hexahedra} \vari{nb-tensor-hexahedra}\\
+\vari{nb-scalar-prisms} \vari{nb-vector-prisms} \vari{nb-tensor-prisms}\\
+\vari{nb-scalar-pyramids} \vari{nb-vector-pyramids} \vari{nb-tensor-pyramids}\\
+\vari{nb-text2d} \vari{nb-text2d-chars} \vari{nb-text3d} \vari{nb-text3d-chars}\\
+$<$\vari{time-step-values}$>$\\
+$<$\vari{scalar-point-values}$>$\\
+$<$\vari{vector-point-values}$>$\\
+$<$\vari{tensor-point-values}$>$\\
+$<$\vari{scalar-line-values}$>$\\
+$<$\vari{vector-line-values}$>$\\
+$<$\vari{tensor-line-values}$>$\\
+$<$\vari{scalar-triangle-values}$>$\\
+$<$\vari{vector-triangle-values}$>$\\
+$<$\vari{tensor-triangle-values}$>$\\
+$<$\vari{scalar-quadrangle-values}$>$\\
+$<$\vari{vector-quadrangle-values}$>$\\
+$<$\vari{tensor-quadrangle-values}$>$\\
+$<$\vari{scalar-tetrahedron-values}$>$\\
+$<$\vari{vector-tetrahedron-values}$>$\\
+$<$\vari{tensor-tetrahedron-values}$>$\\
+$<$\vari{scalar-hexahedron-values}$>$\\
+$<$\vari{vector-hexahedron-values}$>$\\
+$<$\vari{tensor-hexahedron-values}$>$\\
+$<$\vari{scalar-prism-values}$>$\\
+$<$\vari{vector-prism-values}$>$\\
+$<$\vari{tensor-prism-values}$>$\\
+$<$\vari{scalar-pyramid-values}$>$\\
+$<$\vari{vector-pyramid-values}$>$\\
+$<$\vari{tensor-pyramid-values}$>$\\
+$<$\vari{text2d}$>$ $<$\vari{text2d-chars}$>$\\
+$<$\vari{text3d}$>$ $<$\vari{text3d-chars}$>$\\
+\$EndView
+\end{fileformat}
+
+where:
+\begin{description}
+\item[\vari{file-type}]
+is an integer equal to 0 in the ASCII file format.
+
+\item[\vari{data-size}]
+is an integer equal to the size of the floating point numbers used in the
+file (usually, \vari{data-size} = sizeof(double)).
+
+\item[\vari{view-name}]
+is a string containing the name of the view (max. 256 characters).
+
+\item[\vari{nb-time-steps}]
+is an integer giving the number of time steps in the view.
+
+\item[\vari{nb-scalar-points}, \vari{nb-vector-points}, \vari{\dots}]
+are integers giving the number of scalar points, vector points,\dots
+in the view.
+
+\item[\vari{nb-text2d}, \vari{nb-text3d}]
+are integers giving the number of 2D and 3D text strings in the
+view. 
+
+\item[\vari{nb-text2d-chars}, \vari{nb-text3d-chars}]
+are integers giving the total number of characters in the 2D and 3D strings.
+
+\item[\vari{time-step-values}]
+is a list of \vari{nb-time-steps} double precision numbers giving the value
+of the time (or any other variable) for which an evolution was saved.
+
+\item[\vari{scalar-point-value}, \vari{vector-point-value}, \vari{\dots}]
+are lists of double precision numbers giving the node coordinates and the
+values associated with the nodes of the \vari{nb-scalar-points} scalar
+points, \vari{nb-vector-points} vector points,\dots, for each of the
+\vari{time-step-values}.
+
+For example, \vari{vector-triangle-value} is defined as:
+\begin{fileformat}
+\vari{coord1-node1} \vari{coord1-node2} \vari{coord1-node3}\\
+\vari{coord2-node1} \vari{coord2-node2} \vari{coord2-node3}\\
+\vari{coord3-node1} \vari{coord3-node2} \vari{coord3-node3}\\
+\vari{comp1-node1-time1} \vari{comp2-node1-time1} \vari{comp3-node1-time1}\\
+\vari{comp1-node2-time1} \vari{comp2-node2-time1} \vari{comp3-node2-time1}\\
+\vari{comp1-node3-time1} \vari{comp2-node3-time1} \vari{comp3-node3-time1}\\
+\vari{comp1-node1-time2} \vari{comp2-node1-time2} \vari{comp3-node1-time2}\\
+\vari{comp1-node2-time2} \vari{comp2-node2-time2} \vari{comp3-node2-time2}\\
+\vari{comp1-node3-time2} \vari{comp2-node3-time2} \vari{comp3-node3-time2}\\
+\dots
+\end{fileformat}
+
+\item[\vari{text2d}]
+is a list of 4 double precision numbers:
+\begin{fileformat}
+\vari{coord1} \vari{coord2} \vari{style} \vari{index}
+\end{fileformat}
+where \vari{coord1} and \vari{coord2} give the coordinates of the leftmost
+element of the 2D string in screen coordinates, \vari{index} gives the
+starting index of the string in \vari{text2d-chars} and \vari{style} is
+currently unused.
+
+\item[\vari{text2d-chars}]
+is a list of \vari{nb-text2d-chars} characters. Substrings are separated with
+the `$^\wedge$' character (which is a forbidden character in regular strings).
+
+\item[\vari{text3d}]
+is a list of 5 double precision numbers
+\begin{fileformat}
+\vari{coord1} \vari{coord2} \vari{coord3} \vari{style} \vari{index}
+\end{fileformat}
+where \vari{coord1}, \vari{coord2} and \vari{coord3} give the coordinates of
+the leftmost element of the 3D string in model (real world) coordinates,
+\vari{index} gives the starting index of the string in \vari{text3d-chars} and
+\vari{style} is currently unused.
+
+\item[\vari{text3d-chars}]
+is a list of \vari{nb-text3d-chars} chars. Substrings are separated with the
+`$^\wedge$' character.
+\end{description}
+ 
+{\tt =============== END OF INSERTED TEXT ===============}\\[0.5em]
+
+More information about GMSH can be found at its homepage:\\
+\leftline{\tt http://www.geuz.org/gmsh/}\\
+
+\subsection*{Comments concerning {\tt FFLOW20}:}
+\begin{itemize}
+  \item {\tt FFLOW20} generates {\tt .POS} file with four views: Elements'
+     pressure, edges' pressure, interelement fluxes and complex view. First
+     three views shows "raw data", results obtained by the solver without any
+     interpolations, smoothing etc. The fourth view contains data processed in
+     this way.
+     \begin{description}
+       \item[Elements' pressure:] Contains only \vari{scalar-triangle-values}.
+         Triangles are the same as the elements of the original mesh. We
+         prescribe constant value of the pressure on the element, as it was
+         calculated by the solver as the unknown $p$. Therefore, the three
+         values on every triangle are the same.
+       \item[Edge pressure:]  Contains only \vari{scalar-line-values}. The
+         lines are the same as the edges of the elements of the original
+         mesh. We prescribe constant value of the pressure on the edge, as it
+         was calculated by the solver as the unknown $\lambda$. Therefore, the
+         two values on every edge are the same.
+       \item[Interelement flux:] Contains \vari{vector-point-values} and
+         \vari{scalar-triangle-values}. The \vari{scalar-triangle-values}
+         carry no information, all values are set to 0, these are in the file
+         only to define a shape of the elements. The points for the
+         \vari{vector-point-values} are midpoints of the sides of the
+         elements. The vectors are calculated as $u{\bf n}$, where $u$ is
+         value of the flux calculated by the solver and ${\bf n}$ is
+         normalized vector of outer normal of the element's side.
+       \item[Complex view:] Contains \vari{scalar-triangle-values} and
+         \vari{vector-point-values}. The \vari{scalar-triangle-values} shows the
+         shape of the pressure field. The triangles are the the same as the
+         elements of the original mesh. Values of pressure in nodes are
+         interpolated from $p$s and $\lambda$s. The \vari{vector-point-values}
+         shows the velocity of the flow in the centres of the elements.
+     \end{description}
+\end{itemize}
+

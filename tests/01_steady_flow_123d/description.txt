@@ -1,0 +1,6 @@
+Test problem 1
+---------------------
+verification of:
+-flow
+-multidimenzional connection (1D-2D,2D-3D,1D-3D)
+-solver convergence

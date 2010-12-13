@@ -1,0 +1,522 @@
+/*!
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
+ *
+ * @brief	Unified interface to various linear solvers
+ * @author	Jan Brezina
+ *
+ * The only internal (linked) solver is PETSC KPS which is already interface to the number of direct
+ * and iterative solvers. Further several external solvers are supported: MATLAB, ISOL (due to Pavel Jiranek)
+ */
+
+#include <ctype.h>
+#include <strings.h>
+#include <petscksp.h>
+#include <petscviewer.h>
+
+#include <system.hh>
+#include <xio.h>
+#include <par_distribution.hh>
+#include <solve.h>
+#include <la_linsys.hh>
+
+static void solver_set_type( struct Solver *solver );
+static void RunExtern( struct Solver *solver,char *cmdline,void (*write_sys)(struct Solver *), void (*read_sol)(struct Solver *) );
+static void clean_directory(void);
+
+// internal solvers
+static void solver_petsc(struct Solver *solver);
+
+// drivers for external solvers
+// MATLAB
+static void write_sys_matlab( struct Solver *solver );
+static void write_matlab_linsys(LinSys *mtx,int nz);
+static void read_sol_matlab( struct Solver *solver );
+// ISOL
+static void isol_params_init(ISOL_params *par);
+static void write_sys_isol( struct Solver *solver );
+
+
+
+//==============================================================================
+/*!	@brief	Initialize a solver structure
+ *
+ * 	Initialize all members form the users options.
+ *  Possibly initialize specific solver parameters.
+ *
+ *  @param[in] solver already allocated structure to be initialized
+ */
+void solver_init( struct Solver *solver) {
+    double solver_accurancy;
+
+    F_ENTRY;
+	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
+
+	solver->name    = OptGetStr( "Solver", "Solver_name", "matlab" );
+   	solver_set_type(solver);
+   	solver->executable = OptGetStr( "Solver", "Solver_executable",solver->name);
+    solver->params  = OptGetStr( "Solver", "Solver_params", "" );
+    solver->keep_files    = OptGetBool( "Solver", "Keep_solver_files", "no" );
+    solver->manual_run     = OptGetBool( "Solver", "Manual_solver_run", "no" );
+    solver->use_ctrl_file  = OptGetBool( "Solver", "Use_control_file", "no" );
+    if (solver->use_ctrl_file)
+    	solver->ctrl_file      = OptGetStr( "Solver", "Control_file", NULL );
+    solver->use_last_sol    =OptGetBool( "Solver", "Use_last_solution", "no" );
+    /// Last solution reuse is possible only for external solvers
+    if (solver->use_last_sol && (solver->type == PETSC_SOLVER)) {
+        xprintf(UsrErr,"Can not reuse last solution, when using an internal solver.");
+    }
+
+    //! generic solver parameters
+    solver_accurancy=   OptGetDbl("Solver","Solver_accurancy","1.0e-7");
+    solver->max_it=     OptGetInt("Solver", "max_it", "200" );
+    solver->r_tol=      OptGetDbl("Solver", "r_tol", "-1" );
+    if (solver->r_tol < 0) solver->r_tol=solver_accurancy;
+    solver->a_tol=      OptGetDbl("Solver", "a_tol", "1.0e-9" );
+
+	if (solver->type == ISOL) {
+    	solver->isol_params=(ISOL_params *)malloc(sizeof(ISOL_params));
+    	isol_params_init(solver->isol_params);
+    }
+}
+
+//=============================================================================
+/*! @brief  Set solver type from its name.
+ *
+ *  The name comparison is case insensitive.
+ */
+/// one test macro
+#define TEST_TYPE(name_str,id) if ( strcmpi( solver->name, name_str ) == 0 ) solver->type = (id);
+
+void solver_set_type( Solver *solver )
+{
+    F_ENTRY;
+    solver->type=UNKNOWN;
+    TEST_TYPE("petsc",PETSC_SOLVER);
+    TEST_TYPE("petsc_matis",PETSC_MATIS_SOLVER);
+    TEST_TYPE("si2",SI2);
+    TEST_TYPE("gi8",GI8);
+    TEST_TYPE("isol",ISOL);
+    TEST_TYPE("matlab",MATLAB);
+    INPUT_CHECK(!(solver->type == UNKNOWN),"Unsupported solver: %s\n");
+}
+
+//=============================================================================
+/*! @brief Solves a given linear system.
+ *
+ * Call user selected internal or external solver.
+ * @param[in] solver solver structure to use
+ * @param[in,out] system linear system to solve, conatains also result
+ *
+ * @pre Initialized solver. Assembled system.
+ * @post Valid solution.
+ */
+
+void solve_system( struct Solver *solver, struct LinSys *system )
+{
+/// set command line for external solvers
+#define SET_GENERIC_CALL sprintf( cmdline, "%s %s",solver->executable,solver->params)
+#define SET_MATLAB_CALL sprintf( cmdline, "matlab -r solve" )
+
+	char cmdline[ 1024 ];
+	char *LogFile;
+
+	ASSERT( NONULL( solver ),"NULL 'solver' argument.\n");
+    ASSERT( NONULL( system ),"NULL 'system' argument.\n");
+	xprintf(Msg, "Solve system ...\n");
+
+	LogFile=get_log_fname();
+	solver->LinSys=system;
+	switch (solver->type) {
+			// internal solvers
+	        case PETSC_SOLVER:
+	        case PETSC_MATIS_SOLVER:
+	        	solver_petsc( solver );
+	            break;
+	        // external solvers
+	      	case ISOL:
+	      		SET_GENERIC_CALL;
+	      		RunExtern(solver,cmdline,&write_sys_isol, &read_sol_matlab);
+	      	case MATLAB:
+	      		SET_MATLAB_CALL;
+	      		RunExtern(solver,cmdline,&write_sys_matlab,&read_sol_matlab);
+	        	break;
+	      	case GI8:
+	        case SI2:
+	            xprintf(UsrErr,"Solver %s is not supported.\n",solver->name);
+	        case UNKNOWN:
+	            xprintf(UsrErr,"UNKNOWN solver is not supported.\n");
+	}
+
+	xprintf( Msg, "Solver O.K.\n")/*orig verb 2*/;
+}
+
+//=============================================================================
+/*! @brief Call an external solver.
+ *
+ *  Make temporary directory, write down matrix and RHS vector. Then
+ *  perform system call of given program and read solution form given file.
+ *
+ *  @param[in,out] solver solver structure to use (solution in linear system)
+ *  @param[in] cmdline calling command line
+ *  @param[in] write_sys function to write down linear system
+ *  @param[in] read_sol function to read the solution
+ */
+
+
+void RunExtern( Solver *solver,char *cmdline,
+		void (*write_sys)(Solver *), void (*read_sol)(Solver *) )
+{
+	char cmd[ LINE_SIZE ];
+
+	xmkdir( "tmp" );
+	xchdir( "tmp" );
+	// TODO: use_last_sol by melo mit parametr s odkazem kde jsou data
+	// a jakeho typu, malo by jit ulozit i z vnitrniho solveru
+	if (! solver->use_last_sol) {
+	    /// prepare data
+	    clean_directory();
+	    xprintf( Msg, "Writing files for solver... ")/*orig verb 2*/;
+	    (*write_sys)(solver); // prepare solver specific input files
+	    xprintf(Msg, "run extr. solver\n");
+	    /// if user provides an explicit control file, use that one instead
+	    if( solver->use_ctrl_file == true ) {
+			sprintf( cmd, "copy /Y ../%s ", solver->ctrl_file );
+			xsystem( cmd );
+	    }
+
+	    /// run the solver
+	    if( solver->manual_run == true ) {
+	        xprintf( Msg, "\nPROGRAM PAUSED.\n"
+				"Start solver of linear equations manually:\n\n%s\n\n"
+				"Press ENTER when calculation finished.\n" );
+	        getchar();
+	    } else {
+	        xprintf( Msg, "\nCalling solver... \n"
+					 "BEGIN OF SOLVER'S MESSAGES\n");
+	        strcpy(cmd,cmdline);
+	        // pipe stdout and stderr through tee to get it to both, the screen and the logfile
+	        strcat(cmd," 2>&1 | tee -a ..");
+	        strcat(cmd,PATH_SEP);
+	        strcat(cmd,get_log_file());
+	        DBGMSG(cmd);
+	        xsystem( cmd );
+	    }
+	}
+	/// read the solution
+	(*read_sol)( solver );
+
+	if( solver->keep_files == false ) {
+		clean_directory();
+		xchdir( ".." );
+		xremove( "tmp" );
+	} else {
+		xchdir( ".." );
+	}
+
+    resume_log_file();
+    xprintf( Msg, "END OF MESSAGES OF THE SOLVER\n\n");
+	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
+}
+//=============================================================================
+/*! @brief Clean temporary directory of external solver.
+ */
+
+void clean_directory( void )
+{
+	xremove( "rid.ghp" );
+	xremove( "vector.sro" );
+	xremove( "vector.sri" );
+	xremove( "vector.log" );
+	xremove( "solve.m" );
+	xremove( "matrix.dat" );
+	xremove( "rhs.dat" );
+	xremove( "solution.dat" );
+}
+
+//=========================================================================
+/*! @brief  solve given system by internal PETSC KSP solver.
+ *
+ * - insert given or default option string into the PETSc options db
+ * - create KSP
+ * - set tolerances
+ * - solve, report number of iterations and convergency reason
+ *
+ * default choice of PETSC solver options:
+ *
+ *  - for SPD system (using NSchurs=1,2):\n
+ *          "-ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix"\n
+ *          (CG solver and ILU preconditioner with 5 levels and diagonal scaling)
+ *  - for other system (NSchurs=0):\n
+ *          "-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale fix"\n
+ *          (BiCGStab solver and ILU preconditioner with 5 levels and diagonal scaling)\n
+ *
+ * For bad systems you can try:
+ *          - remove diagonal scaling
+ *          - use additional option: "-pc_factor_shift_nonzero"
+ *
+ * To this end you can use either the command line or <b> [Solver] petsc_options </b> parameter.
+ *
+ *
+ * @}
+ */
+
+void solver_petsc(Solver *solver)
+{
+	LinSys *sys=solver->LinSys;
+	KSP System;
+	KSPConvergedReason Reason;
+        //PetscViewer mat_view;
+	const char *petsc_dflt_opt;
+	char *petsc_str;
+	int nits;
+
+	F_ENTRY;
+
+	//LSView(sys);
+
+	if (solver->type == PETSC_MATIS_SOLVER) {
+           if (sys->ds().np() > 1) {
+
+	       // parallel setting
+              if (sys->is_positive_definite())
+                  petsc_dflt_opt="-ksp_type cg -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+              else
+                  if (sys->is_symmetric())
+                     petsc_dflt_opt="-ksp_type minres -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+	          else
+                     petsc_dflt_opt="-ksp_type bcgs -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+
+	   } else {
+	       // serial setting
+              if (sys->is_positive_definite())
+                  petsc_dflt_opt="-ksp_type cg -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+              else
+                  if (sys->is_symmetric())
+                     petsc_dflt_opt="-ksp_type minres -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+	          else
+                     petsc_dflt_opt="-ksp_type bcgs -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+	   }
+	}
+	else
+	{
+	   // -mat_no_inode ... inodes are usefull only for
+           //  vector problems e.g. MH without Schur complement reduction	
+           if (sys->ds().np() > 1) {
+	       // parallel setting
+              if (sys->is_positive_definite())
+                  petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite";
+	          // Jakub Sistek
+                  //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
+                  // -ksp_type preonly -pc_type lu 
+              else
+                  petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3";
+
+	   } else {
+	       // serial setting
+              if (sys->is_positive_definite())
+                  petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite";
+              else
+                  petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
+	   }
+	}
+	petsc_str=OptGetStr("Solver","Solver_params",petsc_dflt_opt);
+	xprintf(Msg,"inserting petsc options: %s\n",petsc_str);
+	
+/**
+ *
+ *  \input{Solver,petsc_options}
+ *          PETSC options string, user can overwrite default choice of solver and preconditioner\n
+ *          (see doc/petsc_help or flow123 -s ... -help)
+ */
+ 	 
+	 
+	PetscOptionsInsertString(petsc_str); // overwrites previous options values
+	xfree(petsc_str);
+    
+    MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
+
+    //    xprintf(Msg,"View KSP system\n");
+        //PetscViewerCreate(PETSC_COMM_WORLD,&mat_view);
+    //PetscViewerSetFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB);
+	//MatView(sys->get_matrix(),	PETSC_VIEWER_STDOUT_WORLD);
+	//VecView(sys->b,	PETSC_VIEWER_STDOUT_WORLD);
+        //PetscViewerDestroy(mat_view);
+    //MatConvert(locMtx,MATDENSE,MAT_INITIAL_MATRIX,&denseMtx);
+    //MatView(denseMtx, PETSC_VIEWER_STDOUT_SELF );
+	KSPCreate(PETSC_COMM_WORLD,&System);
+	KSPSetOperators(System, sys->get_matrix(), sys->get_matrix(), DIFFERENT_NONZERO_PATTERN);
+	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
+	KSPSetFromOptions(System);
+	KSPSolve(System, sys->get_rhs(), sys->get_solution());
+	KSPGetConvergedReason(System,&Reason);
+	KSPGetIterationNumber(System,&nits);
+	xprintf(Msg,"Lin Solver: its: %d conv. reason: %i\n",nits,Reason);
+	KSPDestroy(System);
+}
+
+//=============================================================================
+//=============================================================================
+/// @brief ISOL calling functions
+//!@{
+
+//=============================================================================
+/* @brief Read ISOL specific parameters.
+ *
+ */
+void isol_params_init(ISOL_params *par) {
+
+        F_ENTRY;
+        par->method           = OptGetStr( "Solver parameters", "method", "fgmres" );
+        par->restart          = OptGetInt( "Solver parameters", "restart", "20");
+        par->stop_crit        = OptGetStr( "Solver parameters", "stop_crit", "backerr" );
+        par->be_tol           = OptGetDbl( "Solver parameters", "be_tol", "1e-10" );
+        par->stop_check       = OptGetInt( "Solver parameters", "stop_check", "1" );
+        par->scaling          = OptGetStr( "Solver parameters", "scaling", "mc29_30" );
+        par->precond          = OptGetStr( "Solver parameters", "precond", "ilu" );
+        par->sor_omega        = OptGetDbl( "Solver parameters", "sor_omega", "1.0" );
+        par->ilu_cpiv         = OptGetInt( "Solver parameters", "ilu_cpiv", "0" );
+        par->ilu_droptol      = OptGetDbl( "Solver parameters", "ilu_droptol", "1e-3" );
+        par->ilu_dskip        = OptGetInt( "Solver parameters", "ilu_dskip", "-1" );
+        par->ilu_lfil         = OptGetInt( "Solver parameters", "ilu_lfil", "-1" );
+        par->ilu_milu         = OptGetInt( "Solver parameters", "ilu_milu", "0" );
+}
+
+//=============================================================================
+/*! @brief  Write down input for ISOL
+ *
+ */
+void write_sys_isol( struct Solver *solver )
+{
+	FILE *         fconf;
+    ISOL_params *   par=solver->isol_params;
+
+    F_ENTRY;
+    /// write the control file
+    fconf = xfopen( "isol.conf", "wt" );
+    xfprintf( fconf, "mat_file  = matrix.dat\n" );
+    xfprintf( fconf, "mat_fmt   = coo\n" );
+    xfprintf( fconf, "rhs_file  = rhs.dat\n" );
+    xfprintf( fconf, "mat_sym   = 1\n" );
+    xfprintf( fconf, "mat_id_off    = 0\n" );
+    xfprintf( fconf, "mat_symmetrize  = 1\n" );
+    xfprintf( fconf, "sol0_file  = 0\n" );
+    xfprintf( fconf, "sol_file   = solution.dat\n" );
+    DBGMSG("first\n");
+    xfprintf( fconf, "method = %s\n", par->method);
+    DBGMSG("second\n");
+    xfprintf( fconf, "max_it   = %d\n",solver->max_it );
+    xfprintf( fconf, "max_dim  = %d\n",par->restart );
+    xfprintf( fconf, "stop_crit = %s\n",par->stop_crit );
+    xfprintf( fconf, "rel_tol = %e\n",solver->r_tol );
+    xfprintf( fconf, "abs_tol = %e\n", solver->a_tol);
+    xfprintf( fconf, "be_tol  = %e\n",par->be_tol );
+    xfprintf( fconf, "stop_check = %d\n",par->stop_check );
+    xfprintf( fconf, "scaling = %s\n",par->scaling );
+    xfprintf( fconf, "precond = %s\n",par->precond );
+    xfprintf( fconf, "sor_omega = %e\n",par->sor_omega );
+    xfprintf( fconf, "ilu_droptol = %e\n",par->ilu_droptol );
+    xfprintf( fconf, "ilu_milu    = %d\n",par->ilu_milu );
+    xfprintf( fconf, "ilu_cpiv    = %d ! do not use at the moment, needs some fixing!\n",
+            par->ilu_cpiv );
+    if(par->ilu_dskip == -1)
+              xprintf(PrgErr,"Sorry, ilu_dskip parameter is not supported.\n");
+//            par->ilu_dskip = solver->LinSys->sizeA;
+    xfprintf( fconf, "ilu_dskip   = %d\n",par->ilu_dskip );
+    xfprintf( fconf, "ilu_lfil    = %d\n",par->ilu_lfil);
+    xfclose( fconf );
+
+    /// write the linear system - using MATLAB format
+    write_matlab_linsys(solver->LinSys,1);
+}
+//!@}
+// ISOL block
+
+//void write_sys_gm6( Solver *solver )
+//void write_vector_sro( LinSystem *mtx )
+//void read_sol_gm6( Solver *solver )
+//============================================================================
+//============================================================================
+/// @brief MATLAB call functions
+//!@{
+
+//=============================================================================
+/*! @brief Write input for MATLAB
+ *
+ *  written files:  matrix.dat, rhs.dat, solve.m
+ */
+void write_sys_matlab( struct Solver *solver )
+{
+	FILE *out;
+
+	//solve.m
+	out = xfopen( "solve.m", "wt" );
+	xfprintf( out, "load matrix.dat\n" );
+	xfprintf( out, "a = spconvert( matrix )\n" );
+//	xfprintf( out, "a = a + tril( transpose( a ), -1 )\n" ); // be sure about symmetry
+	xfprintf( out, "load rhs.dat\n" );
+	xfprintf( out, "sol = a \\ rhs\n" );
+	xfprintf( out, "save solution.dat sol -ascii -double\n" );
+	xfprintf( out, "exit\n" );
+	xfclose( out );
+
+	write_matlab_linsys(solver->LinSys,0);
+}
+
+//==========================================================================
+/*! @brief Write MATLAB system
+ *
+ *  Write matrix in MATLAB format to matrix.dat and RHS into rhs.dat.
+ *  @param[in] mtx Linear system to write out.
+ *  @param[in] write_nz (1 - write number of non-zeroes (ISOL); 0 - don't write (MATLAB))
+ */
+void write_matlab_linsys(LinSys *mtx,int write_nz) {
+    FILE *out;
+    int mi, ji,nnz;
+
+    F_ENTRY;
+
+    // use LinSys view to write down system in MATLAB format
+/*
+    LSSetCSR( mtx );
+    if (write_nz) nnz=mtx->i[mtx->size];
+    else nnz=0;
+    /// matrix.dat
+    out = xfopen( "matrix.dat", "wt" );
+    xfprintf( out, "%d %d %d\n", mtx->size, mtx->size, nnz);
+    ji = 0;
+    for( mi = 1; mi <= mtx->size; mi++ )
+        for( ; ji < mtx->i[mi] ; ji++ )
+            xfprintf( out, "%d %d %.16lg\n",mi,mtx->j[ji] + 1, mtx->a[ ji ] );
+    xfclose( out );
+    /// rhs.dat
+    out = xfopen( "rhs.dat", "wt" );
+    for( mi = 0; mi < mtx->size; mi++ ) xfprintf( out, "%.16lg\n", mtx->vb[ mi ] );
+    xfclose( out );
+    */
+}
+
+//=============================================================================
+/*! @brief Read MATLAB solution into solver->LinSys->vx
+ */
+void read_sol_matlab( struct Solver *solver )
+{
+	LinSys *sys=solver->LinSys;
+	FILE *in;
+	double value;
+	int mi;
+
+	in = xfopen( "solution.dat", "rt" );
+	int loc_row=0;
+	for( mi = 0; mi < sys->size(); mi++ )
+	{
+        xfscanf( in, "%lf", value );
+        if (sys->ds().is_local(mi)) *(sys->get_solution_array() + loc_row)=value;
+	}
+	xfclose( in );
+}
+
+//-----------------------------------------------------------------------------
+// vim: set cindent:

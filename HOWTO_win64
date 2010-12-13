@@ -1,0 +1,77 @@
+Platforma: Win64, Cygwin, Eclipse
+
+*****************************************
+* Instalace:
+*****************************************
+Eclipse:
+	stahnout eclipse-cpp-galileo-SR1-win32.zip, rozbalit, spustit. Hotovo.
+
+SVN pro Eclipse:
+	Help->Install new software-> Add: Subversive - http://subclipse.tigris.org/update_1.6.x, zaskrtnout a nainstalovat vsechno. Hotovo.
+
+Cygwin:
+	Vsecko mozny, klasika. Hlavne gcc(C,C++,fortran), perl, python, make, lapack...
+
+DoxyGen:
+	Samotny DoxyGen v CygWinu nestaci. Je nutne nainstalovat externi balik GraphViz (v CygWinu neni).
+	http://www.graphviz.org/Download_windows.php
+	Z baliku GraphViz nainstalovat do windows pismo FreeSans.ttf 
+		 
+Petsc:
+	stahnout petsc-3.0.0-p10.tar.gz, rozbalit v terminalu Cygwinu (jinak se nevytvori symlinky)
+	moznosti nastaveni popsany v dokumentaci, vybrany jen uzitecne
+	pouzita optimalizace pro Core2, GCC 4.3.4  	  
+	pouzita konfigurace: pro jednodussi opakovani kompilace vytvoren shell skript config_JJ.sh,
+	ten umistit do petsc adresare a spustit 
+		#!/bin/sh
+
+		PETSC_DIR=$PWD; export PETSC_DIR
+		
+		./config/configure.py \
+		--with-debugging=yes \
+		--with-precision=double \
+		--with-scalar-type=real \
+		--with-timer=nt \
+		--CFLAGS="-O3 -mtune=core2 -march=core2" \
+		--CXXFLAGS="-O3 -mtune=core2 -march=core2" \
+		--FFLAGS_O="-O3 -mtune=core2 -march=core2" \
+		--download-mpich=ifneeded \
+		--download-c-blas-lapack=ifneeded \
+		--download-parmetis=ifneeded
+	pak "make all test"
+
+*****************************************
+* Eclipse projekt
+*****************************************
+New project
+SVN checkout
+https://dev.nti.tul.cz/repos/flow123d
+Branches -> JB-JK-merge
+Checkout as: New Project Wizard
+C project
+Name: "moje_jmeno", Makefile project->Empty->Cygwin GCC toolchain
+Project->Properties->C/C++ build->Behaviour->Use parallel build, use optimal jobs number
+
+*****************************************
+* Nutne upravy v projektu
+*****************************************
+Vytvorit svuj vlastni makefile.in podle sablony
+doplnit: PETSC_DIR, PETSC_ARCH, CC, CPP
+zvolit: CFLAGS
+	
+pokud chci pouzit vlastni ParMetis, tak prenastavit PARMETIS_INCLUDE, PARMETIS_LIB 
+
+*****************************************
+* Kompilace
+*****************************************
+"make all" vytvori binarku v ./bin
+
+*****************************************
+* Spousteni na pocitace bez cygwinu
+*****************************************
+Nutne prenest i cygwin DLL knihovny (cygwin1.dll, cygblas-0.dll, cyglapack-0.dll...).
+Mozna jeste neco, vyzkousim casem na cistych Windowsech.
+
+*****************************************
+* THE END
+*****************************************

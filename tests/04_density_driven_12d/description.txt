@@ -1,0 +1,6 @@
+Test problem 4
+---------------------
+verification of:
+-variable density flow
+-transport (convection)
+-multidimenzional connection (1D-2D)

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# protopyte of script that pass through revisions 
+
+for(( rev=778 ; rev<=787; rev++)) 
+do
+    echo $rev
+    svn update -r $rev
+    make all
+    cd tests
+    make testbase
+    cd ..
+    mkdir out_$rev
+    cp -R tests/01_steady_flow_123d/Results/* out_$rev
+done

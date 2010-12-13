@@ -1,0 +1,47 @@
+This is 1-2-3-FLOW, version 1.3.2
+Build #1; Built on Feb  3 2010 at 12:17:55.
+Entry function: problem_init
+O.K.
+Entry function: solver_init
+Entry function: solver_set_type
+Leave function: solver_set_type
+Leave function: solver_init
+Leave function: problem_init
+Creating mesh...
+Reading nodes...O.K.
+Reading elements...O.K.
+Reading materials... O.K.
+Reading boundary conditions...O.K.
+Reading neighbours...O.K.
+Creating sides...O.K.
+Creating edges... O.K.
+Solving topology of the mesh... 
+
+Calculating properties of elements... O.K.
+Preprocessing...
+O.K.
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Computing nonzero values ...
+Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 3
+Lin Solver: its: 9 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 9.70216e-08
+Calculating sources of water by material types...
+Material #62:	 0
+Material #63:	 0
+Material #64:	 0
+Material #65:	 0
+Postprocessing phase O.K.
+Writing flow output files... O.K.

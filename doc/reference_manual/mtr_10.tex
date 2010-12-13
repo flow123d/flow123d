@@ -1,0 +1,207 @@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Material properties file format, version 1.0}
+The file is divided in two sections, header and data.
+The extension {\tt .MTR} is highly recomended for files of this type.
+\begin{fileformat}
+\$MaterialFormat\\
+  1.0 \vari{file-type} \vari{data-size}\\
+\$EndMaterialFormat\\
+\$Materials\\
+  \vari{number-of-materials}\\
+  \vari{material-number} \vari{material-type} \vari{$<$material-type-specific-data$>$}
+  \vari{[text]}\\
+  \dots\\
+\$EndMaterials \\
+\$Storativity \\
+  \vari{material-number} \vari{$<$storativity-coefficient$>$}
+  \vari{[text]}\\
+  \dots\\
+\$EndStorativity \\
+\$Geometry\\
+  \vari{material-number} \vari{geometry-type} \vari{$<$geometry-type-specific-coefficient$>$}
+  \vari{[text]}\\
+  \dots\\
+\$EndGeometry \\
+\$Sorption\\
+  \vari{material-number} \vari{substance-id} \vari{sorption-type} \vari{$<$sorption-type-specific-data$>$}
+  \vari{[text]}\\
+  \dots\\
+\$EndSorption \\
+\$SorptionFraction\\
+  \vari{material-number} \vari{$<$sorption-fraction-coefficient$>$}
+  \vari{[text]}\\
+  \dots\\
+\$EndSorptionFraction \\
+\$DualPorosity\\
+  \vari{material-number} \vari{$<$mobile-porosity-coefficient$>$} \vari{$<$immobile-porosity-coefficient$>$}
+  \vari{$<$nonequillibrium-coefficient-substance(0)$>$} \dots \vari{$<$nonequilibrium-coefficient-substance(n-1)$>$} 
+  \vari{[text]}\\
+  \dots\\
+\$EndDualPorosity \\
+
+\$Reactions\\
+  \vari{reaction-type} \vari{$<$reaction-type-specific-coefficient$>$} 
+  \vari{[text]}\\
+  \dots\\
+\$EndReactions \\
+
+\end{fileformat}
+where:
+\begin{description}
+ \ditem{file-type}{int} --- is equal 0 for the ASCII file format.
+ \ditem{data-size}{int} --- the size of the floating point numbers used in
+  the file. Usually \vari{data-size} = sizeof(double).
+ \ditem{number-of-materials}{int} --- Number of materials defined in the
+  file.
+ \ditem{material-number}{int} --- is the number (index) of the n-th
+  material. These numbers do not have to be given in a consecutive (or even an
+  ordered) way. Each number has to be given only onece, multiple definition
+  are treated as inconsistency of the file and cause stopping the
+  calculation (exception \$Sorption section).
+ \ditem{material-type}{int} --- is type of the material, see table.
+ \ditem{$<$material-type-specific-data $>$}{} --- format of this list depends on the
+  \vari{material~-~type}.
+ \ditem{$<$storativity-coefficient$>$}{double} --- coefficient of storativity  
+ \ditem{geometry-type}{int} --- type of complement dimension parameter (only for 1D and 2D material), 
+ for 1D element is supported type 1 - cross-section area, for 2D element is supported type 2
+ - thickness.  
+ \ditem{$<$geometry-type-specific-coefficient$>$}{double} --- cross-section for 1D
+ element or thickness for 2D element. 
+ 
+ \ditem{substance-id}{int} --- refers to number of transported substance, numbering starts on \vari{0}.
+ \ditem{sorption-type}{int} --- type 1 - linear sorption isotherm,
+                             type 2 - Freundlich sorption isotherm,
+                             type 3 - Langmuir sorption isotherm.
+ \ditem{$<$sorption-type-specific-data $>$}{} --- format of this list depends on the
+  \vari{sorption~-~type}, see table. 
+  
+ Note: Section \$Sorption is needed for calculation only if \vari{Sorption} is
+   turned on in the \vari{ini} file.
+ 
+ \ditem{$<$sorption-fraction-coefficient$>$}{double} --- ratio of the "mobile" solid surface in the contact with "mobile" water to the total solid
+ surface (this parameter (section) is needed for calculation only if \vari{Dual\_porosity} and \vari{Sorption} is 
+ together turned on in the ini file).                        
+  
+ \ditem{$<$mobile-porosity-coefficient$>$}{double} --- ratio of the mobile pore volume to the
+ total volume (this parameter is needed only if \vari{Transport\_on} is turned on in the ini file).  
+                       
+ \ditem{$<$immobile-porosity-coefficient$>$}{double} --- ratio of the immobile pore volu-me to the
+ total pore volume (this parameter is needed only if \vari{Dual\_porosity} is turned on in the ini file).                      
+ 
+ \ditem{$<$nonequilibrium-coefficient-substance(i)$>$}{double} --- nonequilibrium
+ coefficient for substance i, $ \forall i \in \langle 0, n-1 \rangle $ where $n$ is
+ number of transported substances (this parameter is needed only if \vari{Dual\_porosity} is turned on in the ini file).
+ 
+ \ditem{reaction-type}{int} --- type 0 - zero order reaction
+                                             
+ \ditem{$<$reaction-type-specific-data $>$}{} --- format of this list depends on the
+  \vari{reaction~-~type}, see table. 
+
+    \begin{tabular}{|c|l|l|}
+      \hline
+      \vari{material-type} & \vari{material-type-specific-data} & Description \\
+      \hline
+      \hline
+      11 & $k$ & 
+        $\mathbf{K}=(k)$ \\
+      \hline 
+      -11 & $a$ &
+        $\mathbf{A}=\mathbf{K}^{-1}=(a)$ \\
+      \hline 
+      21 & $k$ &
+       $\mathbf{K}=\left(\begin{array}{cc} k & 0 \\ 0 & k\end{array}\right)$ \\
+      \hline
+      22 & $k_{x}\quad k_{y}$ &
+       $\mathbf{K}=\left(\begin{array}{cc} k_x & 0 \\ 0 & k_y\end{array}\right)$ \\
+      \hline
+       23 & $k_{x}\quad k_{y}\quad k_{xy} $ & 
+        $\mathbf{K}=\left(\begin{array}{cc} k_x & k_{xy} \\ k_{xy} & k_y\end{array}\right)$ \\
+      \hline
+       -21 & $a$  & 
+        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{cc} a & 0 \\ 0 & a\end{array}\right)$ \\
+      \hline
+       -22 & $a_{x}\quad a_{y}$ & 
+        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{cc} a_x & 0 \\ 0 & a_y\end{array}\right)$ \\
+      \hline 
+       -23 & $a_{x}\quad a_{y}\quad a_{xy} $ &
+        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{cc} a_x & a_{xy} \\ a_{xy} & a_y\end{array}\right)$ \\
+      \hline
+      31 & $k$ &
+       $\mathbf{K}=\left(\begin{array}{ccc} k & 0 & 0 \\ 0 & k & 0 \\ 0 & 0 & k \end{array}\right)$ \\
+      \hline
+      33 & $k_{x}\quad k_{y}$\quad $k_{z}$ &
+       $\mathbf{K}=\left(\begin{array}{ccc} k_x & 0 & 0 \\ 0 & k_y & 0 \\ 0 & 0
+       & k_z \end{array}\right)$ \\
+      \hline
+       36 & $k_{x}\quad k_{y}\quad k_{z}\quad k_{xy}\quad k_{xz}\quad k_{yz}$ & 
+        $\mathbf{K}=\left(\begin{array}{ccc} k_x    & k_{xy} & k_{xz} \\ 
+                                            k_{xy} & k_y    & k_{yz} \\
+                                            k_{xz} & k_{yz} & k_z \end{array}\right)$ \\
+      \hline
+      -31 & $a$ &
+       $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{ccc} a & 0 & 0 \\ 0 & a & 0 \\ 0 & 0 & a \end{array}\right)$ \\
+      \hline
+      -33 & $a_{x}\quad a_{y}$\quad $a_{z}$ &
+       $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{ccc} a_x & 0 & 0 \\ 0 & a_y & 0 \\ 0 & 0
+       & a_z \end{array}\right)$ \\
+      \hline
+      -36 & $a_{x}\quad a_{y}\quad a_{z}\quad a_{xy}\quad a_{xz}\quad a_{yz}$ & 
+        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{ccc} a_x    & a_{xy} & a_{xz} \\ 
+                                            a_{xy} & a_y    & a_{yz} \\
+                                            a_{xz} & a_{yz} & a_z \end{array}\right)$ \\
+      \hline
+    \end{tabular}
+
+    Note: all variables ( $k$, $k_{x}$, $k_{y}$, $k_{z}$, $k_{xy}$, $k_{xz}$,
+    $k_{yz}$, $a$, $a_{x}$, $a_{y}$, $a_{z}$, $a_{xy}$, $a_{xz}$, $a_{yz}$ ) are of the {\tt double} type.
+    
+    
+ \begin{tabular}{|c|l|l|}
+      \hline
+      \vari{sorption-type} & \vari{sorption-type-specific-data} & Description \\
+      \hline
+      \hline
+      1 & $k_D [1]$ & 
+        $s = k_D c$ \\
+      \hline 
+      2 & $k_F [(L^{-3} \cdot M^{1})^{(1-\alpha)}] \quad \alpha [1]$  &
+        $s = k_F c^{\alpha}$ \\
+      \hline 
+      3 & $K_L [L^{3} \cdot M^{-1}] \quad s^{max} [L^{-3} \cdot M^{1}]$ &
+       $s=\frac{K_{L} s^{max}_{} \ c}{1+K^{}_{L} c} $ \\
+      \hline
+\end{tabular}
+
+Note: all variables ( $k_D$, $k_F$, $\alpha$, $K_L$, $s^{max}$ ) are of the {\tt double} type.   
+
+ \begin{tabular}{|c|l|l|}
+      \hline
+      \vari{reaction-type} & \vari{reaction-type-specific-data} & Description \\
+      \hline
+      \hline
+      0 & $\textrm{\it{substance-id}}[1] \qquad k [M \cdot L^{-3} \cdot T^{-1}] $ & 
+        $\frac{\partial c_m^{[\textrm{\it{substance-id}}]}}{\partial t} =  k $ \\
+      \hline 
+%      2 & $k_F [(L^{-3} \cdot M^{1})^{(1-\alpha)}] \quad \alpha [1]$  &
+%        $s = k_F c^{\alpha}$ \\
+%      \hline 
+%      3 & $K_L [L^{3} \cdot M^{-1}] \quad s^{max} [L^{-3} \cdot M^{1}]$ &
+%       $s=\frac{K_{L} s^{max}_{} \ c}{1+K^{}_{L} c} $ \\
+%      \hline
+\end{tabular}
+
+Where $c_m^{[\textrm{\it{substance-id}}]}$ is mobile concentration of substance with id $\textrm{\it{substance-id}}$ and $\Delta t $ is the internal transport time step defined by CFL condition.
+
+ \ditem{text}{char[]} --- is a text description of the material, up to 256
+   chars. This parameter is optional.
+\end{description}
+\subsection*{Comments concerning {\tt 1-2-3-FLOW}:}
+\begin{itemize}
+  \item If \vari{number-of-materials} differs from actual number of material
+    lines in the file, it stops the calculation.
+\end{itemize}
+
+
+

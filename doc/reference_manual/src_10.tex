@@ -1,0 +1,42 @@
+
+\section*{Sources file format, version 1.0}
+The file is divided in two sections, header and data.
+The extension {\tt .SRC} is highly recomended for files of this type.
+\begin{fileformat}
+\$SourceFormat\\
+  1.0 \vari{file-type} \vari{data-size}\\
+\$EndSourceFormat\\
+\$Sources\\
+  \vari{number-of-sources}\\
+  \vari{source-number} \vari{type} \vari{eid} \vari{density}\\
+  \dots\\
+\$EndSources\\
+\end{fileformat}
+where
+\begin{description}
+ \ditem{file-type}{int} --- is equal 0 for the ASCII file format.
+ \ditem{data-size}{int} --- the size of the floating point numbers used in
+  the file. Usually \vari{data-size} = sizeof(double).
+ \ditem{number-of-sources}{int} --- Number of sources defined in the
+  file.
+ \ditem{source-number}{int} --- is the number (index) of the n-th
+  source. These numbers do not have to be given in a consecutive (or even an
+  ordered) way. Each number has to be given only onece, multiple definition
+  are treated as inconsistency of the file and cause stopping the
+  calculation.
+ \ditem{type}{int} --- is type of the source. This variable is still unused. 
+ \ditem{eid}{int} --- is id-number of the element, where the source lies.
+ \ditem{density}{double} --- is the density of the source, in volume of fluid
+   per time unit. Possitive values are sources, negative are sinks.
+\end{description}
+\subsection*{Comments concerning {\tt 1-2-3-FLOW}:}
+\begin{itemize}
+  \item Every inconsistency or error in the {\tt .SRC} file causes stopping
+    the calculation. These are especially:
+    \begin{itemize}
+      \item Multiple usage of the same \vari{source-number}.
+      \item Difference between \vari{number-of-sources} and actual number
+        of data lines.
+      \item Reference to nonexisting element.
+    \end{itemize}
+\end{itemize}

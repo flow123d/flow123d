@@ -1,0 +1,477 @@
+QUESTIONS
+---------
+
+FLOW vs. DALIBOROVO
+	+ FLOW,- DALIBOR:
+	- flow je hotovy
+	- flow je pouzivany
+	- daliborovo je nezname
+	- flow je v C ktere je asi lehci (znamejsi) nez C++ nebo java
+	- C je rychlejsi
+	- pro C je vic knihoven
+	- portovani samotneho kodu nemusi byt problem, spis problem knihoven
+	  ktery u javy asi bude taky, jakmile budeme chtit pouzivat efektivni resice...
+
+	-FLOW,+DALIBOROVO:
+	-flow je spatne napsany/navrzeny a potrebuje skoro kompletne prepsat
+	-dalibor ma k dispozici pomerne obecnou koncepci
+	- objektovy pristup muze byt variabilnejsi (ale je mozny i v C)
+	- moznost ucit studenty rovnou moderni nastroje java/C++
+	- java je snaze portovatelna
+
+C vs. C++ vs. JAVA
+	+C   : well known, usualy fast also on the bad code
+	-C   : no objects ..., still one can use object design
+	+C++ : object language, templates, high-level with low level facilities
+	-C++ : more complicated, can by slow on the bad code
+	+JAVA: objects, garbage colector, portability, simpler then C++
+	-JAVA: slower for complicated programs and computing, buger memory footprint
+
+Ucme C a objektove programovani at uz v Jave nebo v C++ !!
+	
+sjednoceni ngh & flow?
+	+sjednoceni:
+	- odstranena duplicita kodu, rozdilnost jazyku
+
+	-sjednoceni:
+	- problematictejsi moznost pracovat se souborem sousednosti (na co je to potreba?)
+
+integrovat PETSC:
+	+ prostredi pro praci s maticema vektorama (i paralelne)
+	+ kdyz nepouziju PETSC, musim si implementovat vlastni rutiny pro praci s maticema,
+ 	  jelikoz GM6 ani Matlab to neumoznuje
+	- PETSC je velky moloch byvaji obtize s jeho zprovoznenim (resi instalacni CD
+	  ktere by instalovalo cygwin a PETSC na win, a samotne PETSC na linux) 
+          kdo to udela?
+
+User Interface
+--------------
+
+- nedosatecna dokumentace 
+- chybi priklady pouziti, vzorove vypocty ...
+- BC nutno zadavat vyctem elementu (zavisle na konkretni siti !) 
+  podobne materialove vlastnosti ...
+
+
+Developer Face
+--------------
+
+- dokumentace v PDF, ktery nelze editovat, rozsirovat
+- uplne chybi dokumentace vnitrku porgramu, chybi i komentare,
+  identifikatory maji malou vypovidaci schopnost
+- ve strukturach mesh jsou ulozena i vypocetni data
+
+-------------------------------------------------------------------------
+
+PORTABILITY
+-----------
+
+win users needs: executable, documentation, examples
+? Existuji taci ?
+win developers:  sources, taht can be complied and modified in "Visual C" 
+
+linux users needs: run on parallel machine, use optimalized libreries, possibly more
+	advanced instalation and configuration, automatic compilation 
+linux developers: make like compilation system
+
+? pro reseni je potreba windows vyvojare a kouknout, jak snadno lze nainstalovat PETSC
+  do win a jestli tam jde pouzivat make ?
+------------------------------------------------------------------------------
+
+concept
+-------
+
+INPUT modul:
+po definici inputu chci, aby sly snadno pridavat dalsi polozky a pritom nove vstupni
+soubory byly stale zpracovatelne starsi verzi programu. take chci aby vstupy 
+byly prenositelne. Z tohoto duvodu budou vsechny identifikatory 
+(nikoliv retezcove hodnoty !!)
+zpracovavany jako case insensitive, ale doporucuje se psat vsechny malymi pismeny,
+jmena souboru MUSI byt malymi !!
+
+podpora 3 druhu inputu:
+
+1) INI/OPT input file (keyword=value pripadne sekce), pokud budem pouzivat PETSC,
+   tak bych v C napsal konversi INI->OPT, jinak by sle pouzit simpleini, ale ta je 
+   v C++
+
+2) GMSH - povinne obsahujici sekci $PhysicalNames a v ni pro kazdou Physical entitu 
+   retezec "Interior|Boundary" pricemz vlastni mesh je reprezentovana pomoci
+   Interior casti (ty se nesmi prekryvat a kazde je prirazen nejaky material) 
+   Bounadry mesh se pouzije jen na identifikaci "sides" kde se uplatnuje ktera okrajova
+   podminka.
+
+3) tabulky - idealni stav by byl asi nasledujici:
+
+   Soubor muze obsahovat komentare (napr. za # ), pomoci zpetneho lomitka lze spojovat
+   radky
+
+   soubor muze obshovat nekolik tabulek tvaru:
+
+   $<name> <format>
+   <size>
+   <data>
+   $End<name>
+   
+   kde <format> ma tvar:
+
+   /: <name>[:<type>] :/ 
+  
+   <name> je identifikator
+   <type> muze byt Int, Real, String, Enum(...), Array(<type>). Typy Int,Real,String
+   jsou nepovinne, ale umoznuji lepsi kontrolu
+    
+   Enum ma tvar:
+  
+   Enum( /: <int> <format>; :/ )
+   kde <int> je celociselna konstanta (aby v C sel pouzit switch, proto to 
+   nemuze byt retezec) doporucuje se na konec radky pridat komentar co ten 
+   konkretni pripad znamena. 
+
+   Takto by se tabulka materialovych vodivostnich tenzoru dala napsat:
+
+   $Hydraulic tensors \
+   ID TYPE:Enum( \
+	11 K;-11 A;\
+	21 K; -21 A;\
+	22 KX KY; -22 AX AY;\
+	23 KX KY KXY; -23 AX AY AXY; )
+   # pocet tensoru
+   3
+   # ted vlastni data
+   1  11 5.0
+   2  22 1.0 1.0
+   3  -23 1.0 2.0  0.3
+   $EndHydraulic tensors
+
+   Implementace:
+   cteni zajistuji rutiny:
+   TableNew(FILE *file,char *TableName,char *DefaultFormat,int *size, TableContext *)
+   - najde zacatek tabulky, precte format, pokud tam neni pouzije defaultni hlasi
+     warning, pokud tam neni a defualtni je NULL hlasi error
+     vraci velikost tabulky a TableContext
+   
+   TableReadLine(TableContext*, LineItem **)
+   - precte dalsi radek tabulky a rozparsuje ho do formatu ktery vrati v LineItem
+
+   TableGetInt(LineItem **,const char *name,int *value);
+   TableGetReal(LineItem **,const char *name,double *value);
+   TableGetString(LineItem **,const char *name, char **value); retezec je alokovan
+   TableGetIntArray(LineItem **,const char *name,int *size,int **values); pole je alokovano
+   TableGetRealArray(LineItem **,const char *name,int *size,double **values); pole je alokovano
+   TableGetStringsArray (zatim neimplmentovat)
+   TableGetEnum(LineItem **,const char *name,int *value,LineItem **InsideEnum);
+
+   TableDestroy(TableContext *) odalokovani vseho      
+
+   struktury:
+   struct TableCtx {
+	FILE *file;
+	char *name;
+ 	char *format;
+	char *line_str; /* je to potreba ?*/
+	LineItem *first_read;
+	LineItem *zero_get;
+   }
+   
+/*   struct LineCtx {
+	LineItem *first_read;
+	LineItem *first_get;
+	LineItem *actual;
+   }*/
+	
+   struct LineItem {
+	LineItem *read_origin; /* need if next_get fails */
+   	LineItem *next_read; /* order in format */
+	LineItem *next_get;  /* ordr of calling of Get rutines */
+	char *key;
+	int type; /* type in format 0=unknown, 1=int, 2=real, 3=string, 4=enum, 5=array */
+	char *value; /* for types 0-3 (one token) */
+	int array_size;
+	char *array_tokens;
+	int actual_tag;
+	EnumItem *first_enum;
+   }
+
+   struct EnumItem {
+	EnumItem *next;
+	int tag;
+	LineItem *first_read;
+     	LineItem *zero_get;
+   }
+   
+   TableNew - parsuje format a vytvari jeho strukturu, propojenou ukazately
+   first_read, next_read, v LineItem plni: read_origin,next_read,key,type
+   konce LineItem seznamu v Enum ukazuji na dalsi LineItem po Enum
+
+   TableReadLine - podle "read" ukazatelu plni pole "value", prip. 
+   array_size, array_tokens, actual_tag
+
+   *Get* - ukazatel na LineItem iteruje po ukazatelech next_get, poku je 
+   next_get nenulovy, tak se iterator posune a vrati se hodnota z noveho LineItem
+   (pripadne se provedou testy na key a typ, pro Array a Enum se vzdy porvede test na typ)
+   pokud je next_get NULL tak se projde sely seznam na read_origin a hleda se shoda klice,
+   kdyz se najde tak se nastavi next_get a pokracuje se stejne
+
+   Vynuceny test klicu by se provadel jen pri zapnutem ladeni, jinak by se neprovadel
+   jelikoz se predpoklada cteni v cyklu, kde je poradi Get rutin stale stejne.
+
+  
+=============================================================================
+
+modul math_fce     
+- typy pro male vektory a matice + operace s nimi + vypisy
+- ? nejake skalarni funkce ? : signum
+- asi prejmenovat
+   
+==========================================================
+
+debugging a profiling
+
+1) Jedna varianta printf, ktera ma navic argument TYPE:
+   MSG     - zprava co se vypisuje na obrazovku i do logu
+   MSGDBG  - zprava co se vypisuje jen do logu
+   WARN    - warning (screen i log)
+   FATAL   - fatal error (screen i log + terminate)
+
+   ... rozmyslet vic
+   log psat vzdy ! s defaultnim jmenem flow123.log 
+
+2) terminate - nic nevypisuje, vola dealokovaci rutiny a 
+   skonci s chybovym kodem
+    
+3) sysemove rutiny s osetrenim bych nechal, ale zrusil bych 
+   centralni definice zprav !!!
+
+4) zrusit checkpointy: pro uzivatele jsou na nic, pro vyvojare
+   taky, protoze poskytujou prilis dat
+   
+   nicmene pro jednotlive struktury by mely existovat vypisovaci rutiny
+   ale ne shromazdene v debug. 
+
+5) pokud funguje profiler, tak neni treba do kodu vkladat dalsi 
+   profilovaci rutiny. 
+
+----------------------------------------------------------------
+
+modul MESH
+
+!!! oddelit mesh od fyzikalnich hodnot !!!
+
+TODO: pozor, kompatibilni propojeni muze byt dvou typu:
+1) puklina neoddeluje - jedna edge
+2) puklina oddeluje - dve edge
+( to ma ostatne i fyzikalni analogii v nediskretizovane slabe formulaci ) 
+.. takze je potreba podle toho predelat navrh struktur,
+nicmene tyhle druhy komunikace stejne jako vodivosti, ktere v druhem pripade
+mohou byt na kazde strane pukliny jine ... to vse by se zadavalo pomoci fyzikalnich segmantu puklin (z GMSH to leze zorientovane )
+
+!! reasons to avoid lists:
+1) memory consumed by the Nx pointer (neglectable)
+2) allocation of individual members have lot of overhead ( can be avoided by 
+   allocating several members together
+3) sparse arrays leads to cache drop out (not so bad if allocate only elements and then remove
+   only BOUNDARY elements - which should be in a continuous block )
+
+note: Stejne musim alokovat vnitrni pole - jak to udelat efektivne ??
+
+So I use list only for elements at the input stage, but primary access is the main ordering array.
+
+struct Node {
+	int input_id; /* input GMSH Id */
+	int id;       /* index in mesh list  ??need */
+	SmallVec3  x;
+	
+ 	int n_elements;
+	TElement **elements; /* necht je tenhle setrideny podle internal id */
+	
+        int n_sides;		// ?? need
+	TSide **sides;
+} TNode;
+
+struct Element {
+	TElement *next;   /* we need it since we read INTERIOR and BOUNDARY elements together */
+	int input_id; /* input GMSH id */
+	int id;       /* index in the mesh list ??need */
+	int type;     /* GMSH type of el. (only some are supported) ?? enum */
+
+	int interior; /* GMSH physical part num. (only Interior parts) */
+	int dim;
+	int n_nodes;
+	TNode **nodes;
+	int n_sides; 
+	TSide **sides;
+	TEdge *neigh_vb; /* compatible */
+	int n_neigh_vv;
+	TElement **neigh_vv; /* non compatible */
+	
+	double volume;
+}
+
+struct Side {
+	/* internal id */
+	TElement *element; /* to which belongs */
+	TEdge *edge;       /* to which belongs */
+        /* side is external if edge == NULL */
+	int bc_id;
+ 	
+        int n_nodes;
+	TNode **nodes;
+
+	double area;
+        SmallVec3 normal; /* outer normal */
+	SmallVec3 centre; /* ? why */
+}
+
+struct Edge {
+	/* internal id */
+	TSide *sides[2];
+        TElement *neigh_vb; /* compatible */
+}
+
+struct Neigh_VB { /* Complatible neighbouring */
+	/* internal id */
+	TEdge *edge;
+	TElement *el;
+}
+
+struct Neigh_VV { /* Non-compatible neigbouring */
+	/* internal id */
+	TElement *els[2];
+	double overlap;
+}
+
+struct Interior {
+	TInterior *next;
+	int id;          /* internal id, dense counting form 0 */
+	int input_id;	 / GMSH physical part number */
+	int n_elements;
+	TElement **els;  /* initialized only on demand */
+}
+
+struct BCPart {
+	BCPart *next;
+	int id;          /* internal id, dense counting form 0 */
+	int input_id;    /* GMSH physical part number */
+	int n_sides;
+	TSide **sides;  /* on demand */
+}
+
+struct Mesh {
+	/* big arrays - avoid list structure if possible*/
+	int n_nodes;
+	TNode **nodes;  /* main nodes ordering */
+	int n_elements;
+	TElement **elements; /* main element ordering */
+	int n_bc_sides;
+	TSide **bc_sides; /* main bc ordering */
+		
+	int n_edges; 
+	TEdge **edges;    /* BB neigbouring */
+	int n_neigh_vb;
+	TNeigh_VB **neigh_vb; 	  /* Compatible neigbouring list */
+	int n_neigh_vv;
+	TNeigh_VV **neigh_vv;     /* non-compatible neghbouring list */
+
+	/* small arrays - with list structure */
+	TInterior *interior_list;
+	int n_interiors;
+	TInterior **interiors;
+
+	TBCPart *bc_part_list;
+	int n_bc_parts;
+	TBCPart **bc_parts;
+}
+
+Sestaveni meshe:
+
+1) read nodes
+2) read elements - create the lists of interior elements 
+   and the list of boundary elements, allocate element and space for its nodes each time 
+   ( this is not optimal, but simple )
+   - tridi seznamy nodu
+   - use some macros to perform some basic list operations ADD, DELETE )
+   - malloc in GNU C library behaves well if size of one allocation is less then 128kB 
+
+   - pocita elementy jednotlivych nodu a celkovy pocet techto odkazu
+   - pocita celkovy pocet sides a pocet jejich nodu
+3) alokace odkazu nodes->elements a jejich plneni (setrideno)
+4) alokace sides a jejich plneni, alokace prostoru pro jejich nody
+   make_sides_to_nodes 
+
+--- nasledujici 3 body by sly vyhodne spojit, jelikoz jsou dost podobne --
+
+5) set boundary sides:
+Jak zjistit, ke ktere side patri boundary element?
+
+ - prunik elementovych seznamu vsech nodu bc_elementu
+     senzamy jsou setridene, takze to pujde rychle
+ - pokudje prunikem jeden element, tak tetuju node seznamy jeho sides oproti
+   node seznamu bc_elementu (seznamy jsou tridene )
+
+6) make edges - pro kazdou side, ktera nema prirazenou edge udelam prunik elementovych seznamu jejich nodu,
+   podobne jako v bode 5, dostanu sousedni element a najdu jeho side stejnou s moji
+
+7) make BV neigbouring (oba body se delaji pres element seznamy v nodech)
+
+---
+
+8) make vv neigbouring 
+   - rozdelim nody do oktanoveho stromu (vzdy bounding box a deleni podle nejdelsi, behem deleni se 
+   upravuji nove bounding boxy) vhodne zvolim pocet nodu v jednom oktanu
+   - slevanim elementovych seznamunodu v jednom oktanu dostanu pro kazdy oktan elementy ktere ho pokryvaji
+
+   - pro kazdy element XEl (2D a 1D) vezmu jeden jeho node, najdu oktan do ktereho patri a testuju vsechny jeho elementy,
+     abych nasel ten, ktery obsahuje dany node ( k tomu je treba otestovat, ze bod - node lezi na vnitrni strane vsech side )
+
+   - pak pocitam plochu pruseciku a behem toho najdu sides se kterymi se XEl protina, dal pokracuju s elementy sousedicimi 
+     s temito sides 
+   
+   ( to je hruby nacrt, ale v praxi to bude jeste dost prace predevsim posledni krok vyzaduje spousta geometrickych rutin)
+
+Gometricke rutiny:
+
+typedef double Point[3];
+typedef Point Line[2];
+typedef Point Triangle[3]; // counter clock-wise
+typedef Point Simplex[4];  // origin and ccw triangle viewed from origin
+			   // how it is in GMSH, should be compatible
+
+Intersection1d1d(Point A,Point B, Line L, Point intersect, int i_type) {
+	...
+        i_type = "no intersection"
+	i_type = "point"
+}
+
+Intersection2d1d(Triangle T,Line L,Line intersect,int i_type) {
+Point IAB,IBC,ICD;
+int	typeAB,typeBC,typeCD;
+ 	Intersection1d1d(T[1],T[2],L,IAB,typeAB);
+	Intersection1d ...
+
+	i_type = "no intersection"
+	i_type = "line begining inside trinagle"
+	i_type = "line across triangle"
+	
+	" I need also which sides of triangle are crossed ... "
+	" and I need measure of the intersection "
+	" in fact I do not need coordinates of the intersection"
+        " but .. maybe I need count with 2d1d intersection in 3D space
+	  which can be useful for other calculations ...
+}
+
+
+   	 
+
+
+
+
+
+
+
+
+
+
+
+
+

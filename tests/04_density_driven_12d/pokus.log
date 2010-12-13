@@ -1,0 +1,3407 @@
+This is 1-2-3-FLOW, version 1.3.2
+Build #1; Built on Feb  3 2010 at 12:17:55.
+Entry function: problem_init
+O.K.
+Entry function: solver_init
+Entry function: solver_set_type
+Leave function: solver_set_type
+Leave function: solver_init
+Leave function: problem_init
+Transport substances.
+Creating mesh...
+Reading nodes...O.K.
+Reading elements...O.K.
+Reading materials... O.K.
+Reading boundary conditions...O.K.
+Reading concentrations...O.K.
+Reading transport boundary conditions...O.K.
+Reading neighbours...O.K.
+Creating sides...O.K.
+Creating edges... O.K.
+Solving topology of the mesh... 
+
+Calculating properties of elements... O.K.
+Preprocessing...
+O.K.
+dens step 0 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Computing nonzero values ...
+Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05148e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 8.67398610.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04956e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00132510.8
+dens iter 2 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0488e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00093410.8
+dens iter 3 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04852e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00069610.8
+dens iter 4 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04846e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00051410.8
+dens iter 5 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04853e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00037510.8
+dens iter 6 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04869e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00032210.8
+dens iter 7 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04888e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00029510.8
+dens iter 8 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0491e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00026710.8
+dens iter 9 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04933e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00024110.8
+dens iter 10 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.04957e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00021610.8
+dens iter 11 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0498e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00019310.8
+dens iter 12 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05003e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00017210.8
+dens iter 13 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05026e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00015210.8
+dens iter 14 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05049e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00014610.8
+dens iter 15 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05072e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00014010.8
+dens iter 16 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05095e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00013310.8
+dens iter 17 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05117e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00012510.8
+dens iter 18 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05138e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00011710.8
+dens iter 19 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05158e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00010910.8
+dens iter 20 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05178e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00010110.8
+step 0 finished at 21 density iterations
+dens step 1 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05196e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00009310.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05215e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00008610.8
+dens iter 2 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05232e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00007910.8
+dens iter 3 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05249e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00007410.8
+dens iter 4 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05266e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00006810.8
+dens iter 5 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05283e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00006310.8
+dens iter 6 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.053e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00005810.8
+dens iter 7 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05316e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00005510.8
+dens iter 8 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05333e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00005110.8
+dens iter 9 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05349e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00004810.8
+dens iter 10 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05365e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00004410.8
+dens iter 11 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0538e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00004110.8
+dens iter 12 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05395e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003810.8
+dens iter 13 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05411e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003410.8
+dens iter 14 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05425e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 15 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05439e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003010.8
+dens iter 16 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05453e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003010.8
+dens iter 17 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05466e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 18 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05478e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 19 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0549e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 20 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05501e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+step 1 finished at 21 density iterations
+dens step 2 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05512e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05522e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 2 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05531e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 3 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05539e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003110.8
+dens iter 4 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05547e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003010.8
+dens iter 5 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05554e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00003010.8
+dens iter 6 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0556e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002910.8
+dens iter 7 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05565e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002810.8
+dens iter 8 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0557e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002810.8
+dens iter 9 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05575e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002710.8
+dens iter 10 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05578e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002610.8
+dens iter 11 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05581e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002510.8
+dens iter 12 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05584e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002510.8
+dens iter 13 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05586e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002510.8
+dens iter 14 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05587e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002410.8
+dens iter 15 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05588e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002410.8
+dens iter 16 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05589e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002310.8
+dens iter 17 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05589e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002310.8
+dens iter 18 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05589e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002310.8
+dens iter 19 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05589e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002210.8
+dens iter 20 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05589e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002210.8
+step 2 finished at 21 density iterations
+dens step 3 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05588e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002210.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05587e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002210.8
+dens iter 2 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05585e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002210.8
+dens iter 3 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05584e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002210.8
+dens iter 4 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05583e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002110.8
+dens iter 5 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05581e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002110.8
+dens iter 6 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05579e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002110.8
+dens iter 7 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05578e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002110.8
+dens iter 8 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05576e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002110.8
+dens iter 9 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05574e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002010.8
+dens iter 10 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05572e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002010.8
+dens iter 11 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0557e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002010.8
+dens iter 12 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05568e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00002010.8
+dens iter 13 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05566e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001910.8
+dens iter 14 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05564e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001910.8
+dens iter 15 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05562e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001910.8
+dens iter 16 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0556e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001910.8
+dens iter 17 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05558e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001910.8
+dens iter 18 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05556e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001910.8
+dens iter 19 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05554e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001810.8
+dens iter 20 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05552e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001810.8
+step 3 finished at 21 density iterations
+dens step 4 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0555e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001810.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05548e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001810.8
+dens iter 2 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05547e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001810.8
+dens iter 3 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05545e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001710.8
+dens iter 4 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05544e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001710.8
+dens iter 5 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05542e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001710.8
+dens iter 6 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0554e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001710.8
+dens iter 7 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05539e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001710.8
+dens iter 8 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05538e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001710.8
+dens iter 9 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05536e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001610.8
+dens iter 10 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05535e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001610.8
+dens iter 11 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05534e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001610.8
+dens iter 12 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05533e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001610.8
+dens iter 13 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05532e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001610.8
+dens iter 14 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05531e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001610.8
+dens iter 15 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0553e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001510.8
+dens iter 16 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05529e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001510.8
+dens iter 17 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05529e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001510.8
+dens iter 18 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05528e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001510.8
+dens iter 19 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05527e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001510.8
+dens iter 20 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05527e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001410.8
+step 4 finished at 21 density iterations
+dens step 5 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05526e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001410.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05526e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001410.8
+dens iter 2 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05525e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001410.8
+dens iter 3 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05525e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001410.8
+dens iter 4 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05525e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001410.8
+dens iter 5 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001310.8
+dens iter 6 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001310.8
+dens iter 7 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001310.8
+dens iter 8 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001310.8
+dens iter 9 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001310.8
+dens iter 10 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001310.8
+dens iter 11 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001210.8
+dens iter 12 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001210.8
+dens iter 13 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001210.8
+dens iter 14 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001210.8
+dens iter 15 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001210.8
+dens iter 16 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001210.8
+dens iter 17 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001210.8
+dens iter 18 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05524e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001110.8
+dens iter 19 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05525e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001110.8
+dens iter 20 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05525e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001110.8
+step 5 finished at 21 density iterations
+dens step 6 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05525e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001110.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05525e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001110.8
+dens iter 2 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05526e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001110.8
+dens iter 3 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05526e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+dens iter 4 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05526e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+dens iter 5 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05527e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+dens iter 6 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05527e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+dens iter 7 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05528e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+step 6 finished at 7 density iterations
+dens step 7 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05528e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05528e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+step 7 finished at 1 density iterations
+dens step 8 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05528e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00001010.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05529e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00000910.8
+step 8 finished at 1 density iterations
+dens step 9 
+dens iter 0 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.05529e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00000910.8
+dens iter 1 
+Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Creating whole MH matrix for water model ... 
+ Setting up the MH system ...
+O.K.
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix
+Lin Solver: its: 12 conv. reason: 2
+END OF MESSAGES OF THE SOLVER
+Solver O.K.
+OKConverting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	 3.0553e-07
+Calculating sources of water by material types...
+Material #1:	 0
+Material #2:	 0
+Postprocessing phase O.K.
+Calculating transport...O.K.
+Maximum pressure difference in iteration: 0.00000910.8
+step 9 finished at 1 density iterations
+Writing flow output files... O.K.

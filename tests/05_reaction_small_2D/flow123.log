@@ -1,0 +1,57 @@
+[0] Opening file: 'flow.ini'
+[0] This is FLOW-1-2-3, version 1.6.0 rev: $Revision: 418 $
+[0] Built on May 31 2010 at 11:17:09.
+[0] O.K.
+[0] Creating mesh...
+[0] Reading nodes...[0] Opening file: 'bar.msh'
+[0] O.K.
+[0] Reading elements...[0] Opening file: 'bar.msh'
+[0] O.K.
+[0] Reading materials... [0] Opening file: 'bar.mtr'
+[0] O.K.
+[0] Reading boundary conditions...[0] Opening file: 'bar.fbc'
+[0] O.K.
+[0] Reading concentrations...[0] Opening file: 'bar.tic'
+[0] O.K.
+[0] Reading transport boundary conditions...[0] Opening file: 'bar.tbc'
+[0] O.K.
+[0] Reading neighbours...[0] Opening file: 'bar.ngh'
+[0] O.K.
+[0] Creating sides...[0] O.K.
+[0] Creating edges... [0] O.K.
+[0] Solving topology of the mesh... 
+[0] 
+[0] Calculating properties of elements... [0] O.K.
+[0] Preprocessing...
+[0] O.K.
+[0] Calculating properties of edges... [0] O.K.
+[0] Calculating properties of elements... [0] O.K.
+[0] Calculating properties of sides... [0] O.K.
+[0] Calculating properties of boundaries... [0] O.K.
+[0] Calculating local matrices... [0] O.K.
+[0] Compute optimal partitioning of edges.
+[0] Allocating MH matrix for water model ... 
+ [0] Global. PREALLOCATION; period: 0.000000 sec; total:  0.000000 sec.
+[0] Assembling MH matrix for water model ... 
+ [0] Last. ASSEMBLY; period: 0.000000 sec; total:  0.000000 sec.
+[0] Last. Schur 1; period: 0.000000 sec; total:  0.000000 sec.
+[0] Last. Schur 2; period: 0.000000 sec; total:  0.000000 sec.
+[0] Solve system ...
+[0] inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite
+[0] Lin Solver: its: 13 conv. reason: 2
+[0] Solver O.K.
+[0] Last. SOLVING MH SYSTEM; period: 0.000000 sec; total:  0.000000 sec.
+[0] Converting solution... [0] O.K.
+[0] Calculating balances... [0] O.K.
+[0] Calculating balance of water by types...
+[0] Water #1:	-3.85425e-08
+[0] Calculating sources of water by material types...
+[0] Material #7:	 0
+[0] Postprocessing phase O.K.
+[0] Writing flow output files: bar.pos ... [0] Opening file: 'bar.pos'
+[0] O.K.
+[0] Reading reactions... [0] Opening file: 'bar.mtr'
+[0] Opening file: 'bar.mtr'
+[0] O.K.
+[0] Calculating transport...[0] O.K.
+[0] Last. WHOLE PROGRAM; period: 0.010000 sec; total:  0.010000 sec.

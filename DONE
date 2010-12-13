@@ -1,0 +1,159 @@
+5. 12. ------------------------------------
+- vypocty podminenosti Schurovych doplnku pomoci matlabu,
+  na maticich pro 1D puklinu v 10x10 2D:
+	eigen vals. 	cond.n.		after d. scale		cond.n.
+schur0	-300 .. 2.3		
+schur1	0.004 .. 381	  95e3		0.0002 .. 2.38		12e3
+schur2	-104 .. -0.0064	  16e3		0.0007 .. 1.0 		1.4e3
+
+zaver je predevsim, ze druhy schurdoplnek je negativne definitni a je treba mu zmenit znamenko
+bylo by dobre to dokazat, a zjistit jake jsou podminky na komunikace aby to platilo
+
+- tvorba paralelni verze
+
+- drobne upravy seriove verze, konfigurace, vypisy, opravy Schurova doplnku
+
+27. 8. ------------------------------------
+- tvorba navrhu restrukturalizace Flow123
+- testy schurovych doplnku(debug):
+			total    solver		flow	
+GM6 no schur : 		4.5	 2.6		1.9
+GM6 1 schur  :		3	 0.9            2.1
+GM6 2 schur  :          3        0.76           2.2
+(ilut + bicg, cg ? )
+
+PETSC   0    : 3.2 (bcgs +ilu 5)
+	1    : 2.3 (cg +icc 3)
+	2    : 2.9 (cg +ilu 3) (icc - zero pivot)
+
+(optimalized):
+GM6	0:	3.41	1.73	1.68
+	1:	2.3	0.49	1.81
+	2:	2.26	0.43	1.83
+
+PETSC	0:	1.96
+	1:	1.92
+	2:	2.15
+	
+
+20.8. -------------------------------------
+- implementace 1. a 2. Schurova doplnku pro MH matice
+- odladeno na malych datech
+- reorganizace matrix.* -> water_linsys.*
+- zacleneni ngh, portace na linux, pridani simpleini knihovny pro cteni INI souboru
+9.7. ---------------------------------------
+- predelani solver.c, obecna rutina pro volani externich solveru
+- konverzni rutina do CSR frmatu z PETSc
+- predelavka aplikace okrajovych podminek - hodnoty pro MH matici se ukladaji
+  do edge struktury - nedeoresena mozna kolize s komunikaci mezi dimenzemi
+  a nulovani radku pro diricheltovu podminku
+- odladeni toho vseho, program dava stejne vysledky jako referencni verze 1.0.0
+- v matlabu rucni provedeni obou Schur complementu:
+  puvodni matice: size: 1171, vl.c. -300,-100,-2 .. +2, cond~10^5
+  1.shur:         size: 551, vl.c.  -381 .. -0.004, cond~10^5
+  2.shur:         size: 341, vl.c.  -90 .. -1, cond~10^4
+12. 6. ----------------------------
+- implementace inverze matic 4x4
+- osetreni casti programu zavyslych na CSR formatu
+- prepsano compose_matrix_mh - matice se sestavuje do PETSc formatu
+- testoval jsem PETSc s ruznym level of ilu, podava vysledky srovnatelne s gm6,
+  nefunguje "ILUT" (ilu dana thresholdema ne levelem) i kdyz by mel
+
+30. 5. -----------------------------
+- PETSC driver funguje, bylo treba plnit celou matici
+- porovnal jsem gm6 a petsc v ladici verzi - PETSc vyrazne pomalejsi
+  ale nehral jsem si s parametry a optimalizace s tim muze dost hybnout:
+  nodes 2000, mtx size~12000
+  gm6    464 iter 2.3 sec
+  petsc 3535 iter 16 sec   
+
+- optimalizovane gm6 i petsc:
+  gm6         464 it 1.7 sec
+  petsc(bsgs,ilu) 3710 it  5 sec
+  petsc(bcgs,ilu, level 5) 201 it 0.6 sec 
+  petsc(bcgs,ilu, level 10) 201 it 0.6 sec 
+  petsc(gmres, restart=30, ilu, level 10) 656 it 1.7 sec
+  petsc(gmres, restart=60, ilu, level 10) 417 it 1.4 sec
+  petsc(gmres, restart=60, ilu, level 20) 333 it 1.28 sec
+
+- v PETSC nefunguje ILUT - neprodukuje vetsi fill nez 1.25 i pri male
+  drop tol. nicmene metody nekonverguji
+
+- matlab skrz PETSc jsem netestoval kvuli jinemu formatu ...
+
+8.4. -------------------------------
+- nasel jsem soubor pro instalaci na Hydre -> parlibs_install
+- napsal jsem driver pro volani PETSC
+- bohuzel to nefunguje, jelikoz matice co leze z flow je singularni (na nekterych radcich
+jsou same nuly) 
+
+2.4. -------------------------------
+- oprava ini2opt aby umel uvozovkovat
+
+28. 3. -----------------------
+- nemuzu najit soubor kam jsem psal predchozi vysledky
+- dnes:
+  - uprava PETSc aby umely cist z option db. souboru retezce obsahujici mezeru,
+  jednoducha podpore quoting
+  - uspesna kompilace celeho programu, ktery ted bezi a dobehne, otazka co a jak spocita
+
+- driv:
+
+Instalace na hydre:
+- pokus instalovat Intel prekladace verze 10.x, ukalzalo se ze obsahuji chybu, ktera
+  zpusobila, ze neslo pouzivat MPICH, projevilo se az pri testovani ParMETISu
+
+- instalace prekladacu rady 9.x
+- instalace ACML - implementace BLAS a LAPACK optimalizovana pro AMD procesory
+- instalace MPICH2 - klasicke configure/make/make install
+  jen se pri konfiguraci zadaly prekladace a prefix
+  dale je treba postupovat podle navodu ...
+  pridani binarek do PATH, vytvoreni mpd.hosts a .mpd.conf
+- instalace ParMETISu - je treba nastavit prekladac a mpicc linker v Makefile.in 
+- instalace PETSc: 
+  - ted uz staci spustit konfiguracni skripty config-*, je tam konfigurace take pro ruzne
+    typy procesoru, to b se mohlo ozkouset co vubec na Opteronech beha a co ne, je tu jiste
+     podezreni, ze tahle rada kompilatoru (9.0) beha na Opteronech pomalejc, takze az se 
+     pohne par verzi z rady 10.x stalo by to za pokus.
+  - pro kompilaci PETSc je potreba v ParMETISu vytvorit adresar include a do nej 
+    nakopirovat metis.h a parmetis.h, take je treba vytvorit adresar lib a do nej 
+    nakopirovat prelozene knihovny libmetis.a a libparmetis.a
+
+Instalace na Snehulakovi: 
+podobne jako na hydre, ale byly jiste problemy s prekladacema a MKL, ktere je ve verzi 10.x 
+jine nez drive sklada se z jinych knihoven a PETSc je neumi rozpoznat a spravne pouzivat, bylo treba procist dokumentaci pro MKL a nastavit BLAS a LAPACK rucne, viz. konfiguracni skripty: config -*
+
+navic jsem na snehulakovi rozchodil Eclipse a to i Photren - pluginy pro fortran, 
+photran se vselijak zasekava pri zapnute funkci annalysis/refactoring, ktera je zrovna asi nejuzitecnejsi, ale v cecku to funguje.
+
+------------
+Upravy flow123 pro linux:
+
+bylo treba resit 3 problemy:
+1) systemove funkce pro pristup k FS
+2) nahradit win-API pro pristup k ".ini" souborum
+3) prilinkovat gm6 misto pouzivani DLL
+
+add 3) PAvel Jiranek dodal zdrojaky, ty sly bez problemu prelozit, v flow123 bylo treba 
+     zmenit jmeno prislusne rutiny, neni jeste otestovano, jestli se zrovna tahle rutina 
+     pouziva a jestli se tedy dobre predavaji parametry
+
+add 2) vzhledem k planovanemu pouziti PETSc jsem se rozhodl nahradit Win ".ini" API 
+     option database soubory. K tomu jsem napsal skript v PERLu, ktery umi zkonvertovat
+     ".ini" na OpDb soubory
+     Dal jsem predelal cteci rutiny. ( je tam podmineny preklad, takze by to mohlo
+     chodit i pod win.)
+     byl problem s PETSc ze neumely cist ze souboru retezce s mezerami ... opraveno
+
+add 1) bylo treba prostudovat knihovnu glibc, ktera obsahuje obsahle linuxove systemove API,
+     pak jsem prosel vsechna varovani kompilatoru o implicitne deklarovanych funkcich a
+     snazil se najit prislusny linuxovy ekvivalent, vetsinu potrebnych "include" a 
+     dodatecnych definic jsem shrnul v headru porting.h jsou tam v alternative i include
+     pro windows. porting.h se pak includuje tam kde se neco z tech rutin pouziva.
+   
+     krom toho bylo opraveno par nepodstatnych chyb v kodu
+
+
+
+ 
+ 

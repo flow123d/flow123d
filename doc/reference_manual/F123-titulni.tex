@@ -1,0 +1,117 @@
+%
+% use PDFLatex to compile this
+%
+
+\documentclass[12pt,a4paper]{report}
+
+%%% remove comment delimiter ('%') and specify encoding parameter if required,
+%%% see TeX documentation for additional info (cp1252-Western,cp1251-Cyrillic)
+%\usepackage[cp1252]{inputenc}
+
+%%% remove comment delimiter ('%') and select language if required
+%\usepackage[english,spanish]{babel}
+%\usepackage{czech}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{graphicx} %[dvips]
+
+\newcommand{\vari}[1]{{\it #1}}
+\newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
+\newenvironment{fileformat}{\tt\begin{flushleft}}{\end{flushleft}}
+%
+%% ini table environment
+\newcommand{\key}[1]{{\tt #1 }}
+\newcommand{\type}[1]{{\bf #1}}
+%
+\newenvironment{initable}[1]{%
+        \vspace{4ex}
+        \noindent
+        Section: \textbf{[#1]}\\
+        \begingroup
+        %%
+        %% internal commands of initable environment
+        %%
+       \newcommand{\br}{\hfill\break}
+        %%
+        \renewcommand{\arraystretch}{1.4}
+        \renewcommand{\tabcolsep}{2mm}
+        \small
+        \baselineskip 3ex
+        %\begin{longtable}{@{}lp{5cm}p{5cm}p{9cm}}%
+        \tabularx{\textwidth}{l>{\centering}p{2cm}>{\raggedright}p{2cm}>{\raggedright\arraybackslash}X}%
+        %\renewcommand{\\}{\\[3ex]}%
+        \hline\hline
+        KEY & TYPE & DEFAULT & DESCRIPTION \\%\endhead
+        \hline\hline
+}{%
+        %\end{longtable}
+        \endtabularx
+        \endgroup
+}
+
+%% ini_table members
+
+%%% remove comment delimiter ('%') and specify parameters if required
+%\usepackage[dvips]{graphics}
+
+%% set specific page layout
+\addtolength{\textwidth}{3cm}
+\addtolength{\hoffset}{-1.5cm}
+\addtolength{\textheight}{4cm}
+\addtolength{\voffset}{-2.5cm}
+\begin{document}
+
+%%% remove comment delimiter ('%') and select language if required
+%\selectlanguage{spanish} 
+\thispagestyle{empty}
+\begin{center}
+\noindent \textbf{\LARGE{Technical university of Liberec}}
+\noindent \textbf{\LARGE{Faculty of mechatronics, informatics}}
+
+\noindent \textbf{\LARGE{and interdisciplinary studies}}
+
+\vspace{160pt}
+
+ \textbf{\huge{Flow123D}}
+
+\textbf{\large{Numerical simulation software}}
+
+\textbf{\large{for flow and solute transport problems}}
+
+\textbf{\large{in combination of fracture network and continuum}}
+
+\vspace{20pt}
+
+ \textbf{\large{Documentation of file formats and brief user manual}}
+
+\vspace{20pt}
+
+ \textbf{\Large{O. Sever\'yn, M. Hokr, J. Kr\'alovcov\'a,}}
+
+ \textbf{\Large{ J. B\v rezina, J. Kopal, M. Tauchman }}
+
+\vspace{210pt}
+
+\noindent \textbf{\Large{Liberec, 20.11.2008}}
+\end{center}
+\noindent 
+
+\noindent
+
+\include{flow123d} 
+\include{flow_ini}
+\include{msh_20} 
+\include{mtr_10}
+\include{bcd_10}
+\include{ngh_10} 
+\include{src_10}  
+\include{pos_12}   
+
+
+\end{document}
+
+% == UNREGISTERED! == GrindEQ Word-to-LaTeX 2008 ==
+

@@ -1,0 +1,148 @@
+--------------------------------------------------------------------------
+Options for all PETSc programs:
+ -on_error_abort: cause an abort when an error is detected. Useful 
+       only when run in the debugger
+ -on_error_attach_debugger [gdb,dbx,xxgdb,ups,noxterm]
+       start the debugger in new xterm
+       unless noxterm is given
+ -start_in_debugger [gdb,dbx,xxgdb,ups,noxterm]
+       start all processes in the debugger
+ -on_error_emacs <machinename>
+    emacs jumps to error file
+ -debugger_nodes [n1,n2,..] Nodes to start in debugger
+ -debugger_pause [m] : delay (in seconds) to attach debugger
+ -stop_for_debugger : prints message on how to attach debugger manually
+                      waits the delay for you to attach
+ -display display: Location where graphics and debuggers are displayed
+ -no_signal_handler: do not trap error signals
+ -mpi_return_on_error: MPI returns error code, rather than abort on internal error
+ -fp_trap: stop on floating point exceptions
+           note on IBM RS6000 this slows run greatly
+ -malloc_dump <optional filename>: dump list of unfreed memory at conclusion
+ -malloc: use our error checking malloc
+ -malloc no: don't use error checking malloc
+ -mallocinfo: prints total memory usage
+ -malloc_debug: enables extended checking for memory corruption
+ -options_table: dump list of options inputted
+ -options_left: dump list of unused options
+ -options_left no: don't dump list of unused options
+ -tmp tmpdir: alternative /tmp directory
+ -shared_tmp: tmp directory is shared by all processors
+ -not_shared_tmp: each processor has separate tmp directory
+ -memory_info: print memory usage at end of run
+ -get_total_flops: total flops over all processors
+ -log[_all _summary]: logging objects and events
+ -log_trace [filename]: prints trace of all PETSc calls
+ -info <optional filename>: print informative messages about the calculations
+ -v: prints PETSc version number and release date
+ -options_file <file>: reads options from file
+ -petsc_sleep n: sleeps n seconds before running program
+-----------------------------------------------
+------Additional PETSc component options--------
+ -log_summary_exclude: <vec,mat,pc.ksp,snes>
+ -info_exclude: <null,vec,mat,pc,ksp,snes,ts>
+-----------------------------------------------
+Options database options -------------------------------------------------
+  -options_monitor <stdout>: Monitor options database (PetscOptionsSetMonitor)
+  -options_cancelmonitors: Cancel all options database monitors (PetscOptionsClearMonitor)
+Vector Options -------------------------------------------------
+  -vec_view: Print vector to stdout (VecView)
+  -vec_view_matlab: Print vector to stdout in a format Matlab can read (VecView)
+  -vec_view_socket: Send vector to socket (can be read from matlab) (VecView)
+  -vec_view_binary: Save vector to file in binary format (VecView)
+Vector Options -------------------------------------------------
+  -vec_view: Print vector to stdout (VecView)
+  -vec_view_matlab: Print vector to stdout in a format Matlab can read (VecView)
+  -vec_view_socket: Send vector to socket (can be read from matlab) (VecView)
+  -vec_view_binary: Save vector to file in binary format (VecView)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) ((null))
+  -mat_no_inode: <FALSE> Do not optimize for inodes (slower) ((null))
+  -mat_inode_limit <5>: Do not use inodes larger then this value ((null))
+Matrix Options -------------------------------------------------
+  -mat_view_info: Information on matrix size (MatView)
+  -mat_view_info_detailed: Nonzeros in the matrix (MatView)
+  -mat_view: Print matrix to stdout (MatView)
+  -mat_view_matlab: Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: Save matrix to file in binary format (MatView)
+  -mat_view_draw: Draw the matrix nonzero structure (MatView)
+Matrix Options -------------------------------------------------
+  -mat_view_info: Information on matrix size (MatView)
+  -mat_view_info_detailed: Nonzeros in the matrix (MatView)
+  -mat_view: Print matrix to stdout (MatView)
+  -mat_view_matlab: Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: Save matrix to file in binary format (MatView)
+  -mat_view_draw: Draw the matrix nonzero structure (MatView)
+Preconditioner (PC) Options -------------------------------------------------
+  -pc_type Preconditioner:(one of) none jacobi pbjacobi bjacobi sor lu shell mg
+      eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit tfs (PCSetType)
+  ILU Options
+  -pc_factor_levels <0>: levels of fill (PCFactorSetLevels)
+  -pc_factor_in_place: do factorization in place (PCFactorSetUseInPlace)
+  -pc_factor_diagonal_fill: Allow fill into empty diagonal entry (PCFactorSetAllowDiagonalFill)
+  -pc_factor_reuse_fill: Reuse fill ratio from previous factorization (PCFactorSetReuseFill)
+  -pc_factor_reuse_ordering: Reuse previous reordering (PCFactorSetReuseOrdering)
+  -pc_factor_shift_nonzero: Shift added to diagonal (PCFactorSetShiftNonzero)
+  -pc_factor_shift_nonzero <0>: Shift added to diagonal (PCFactorSetShiftNonzero)
+  -pc_factor_shift_positive_definite: Manteuffel shift applied to diagonal (PCFactorSetShiftPd)
+  -pc_factor_zeropivot <1e-12>: Pivot is considered zero if less than (PCFactorSetZeroPivot)
+  -pc_factor_use_drop_tolerance <-2>: <dt,dtcol,maxrowcount> (PCFactorSetUseDropTolerance)
+  -pc_factor_fill <1>: Expected fill in factorization (PCFactorSetFill)
+  -pc_factor_nonzeros_along_diagonal: Reorder to remove zeros from diagonal (PCFactorReorderForNonzeroDiagonal)
+  -pc_factor_mat_ordering_type Reorder to reduce nonzeros in ILU:(one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrdering)
+  -pc_factor_pivot_in_blocks: <TRUE> Pivot inside matrix blocks for BAIJ and SBAIJ (PCFactorSetPivotInBlocks)
+Krylov Method (KSP) Options -------------------------------------------------
+  -ksp_type Krylov method:(one of) cg cgne stcg richardson chebychev gmres tcqmr bcgs
+      bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd (KSPSetType)
+  -ksp_max_it <10000>: Maximum number of iterations (KSPSetTolerances)
+  -ksp_rtol <1e-06>: Relative decrease in residual norm (KSPSetTolerances)
+  -ksp_atol <1e-11>: Absolute value of residual norm (KSPSetTolerances)
+  -ksp_divtol <10000>: Residual norm increase cause divergence (KSPSetTolerances)
+  -ksp_converged_use_initial_residual_norm: Use initial residual residual norm for computing relative convergence (KSPDefaultConvergedSetUIRNorm)
+  -ksp_converged_use_min_initial_residual_norm: Use minimum of initial residual norm and b for computing relative convergence (KSPDefaultConvergedSetUMIRNorm)
+  -ksp_knoll: <FALSE> Use preconditioner applied to b for initial guess (KSPSetInitialGuessKnoll)
+  -ksp_norm_type <preconditioned> (choose one of) none preconditioned unpreconditioned natural
+  -ksp_diagonal_scale: Diagonal scale matrix before building preconditioner (KSPSetDiagonalScale)
+  -ksp_diagonal_scale_fix: Fix diagonaled scaled matrix after solve (KSPSetDiagonalScaleFix)
+  -ksp_constant_null_space: Add constant null space to Krylov solver (KSPSetNullSpace)
+  -ksp_converged_reason: Print reason for converged or diverged (KSPSolve)
+  -ksp_cancelmonitors: Remove any hardwired monitor routines (KSPClearMonitor)
+  -ksp_monitor <stdout>: Monitor preconditioned residual norm (KSPSetMonitor)
+  -ksp_vecmonitor: Monitor solution graphically (KSPSetMonitor)
+  -ksp_truemonitor <stdout>: Monitor preconditioned residual norm (KSPSetMonitor)
+  -ksp_singmonitor <stdout>: Monitor singular values (KSPSetMonitor)
+  -ksp_smonitor <stdout>: Monitor preconditioned residual norm with fewer digits (KSPSetMonitor)
+  -ksp_xmonitor: Monitor graphically preconditioned residual norm (KSPSetMonitor)
+  -ksp_xtruemonitor: Monitor graphically true residual norm (KSPSetMonitor)
+  Pick at most one of -------------
+    -ksp_left_pc: Use left preconditioning (KSPSetPreconditionerSide)
+    -ksp_right_pc: Use right preconditioning (KSPSetPreconditionerSide)
+    -ksp_symmetric_pc: Use symmetric (factorized) preconditioning (KSPSetPreconditionerSide)
+  -ksp_compute_singularvalues: Compute singular values of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_compute_eigenvalues: Compute eigenvalues of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_plot_eigenvalues: Scatter plot extreme eigenvalues (KSPSetComputeSingularValues)
+  KSP GMRES Options
+  -ksp_gmres_restart <30>: Number of Krylov search directions (KSPGMRESSetRestart)
+  -ksp_gmres_haptol <1e-30>: Tolerance for exact convergence (happy ending) (KSPGMRESSetHapTol)
+  -ksp_gmres_preallocate: Preallocate Krylov vectors (KSPGMRESSetPreAllocateVectors)
+  Pick at most one of -------------
+    -ksp_gmres_classicalgramschmidt: Classical (unmodified) Gram-Schmidt (fast) (KSPGMRESSetOrthogonalization)
+    -ksp_gmres_modifiedgramschmidt: Modified Gram-Schmidt (slow,more stable) (KSPGMRESSetOrthogonalization)
+  -ksp_gmres_cgs_refinement_type <REFINE_NEVER> (choose one of) REFINE_NEVER REFINE_IFNEEDED REFINE_ALWAYS
+  -ksp_gmres_krylov_monitor: Plot the Krylov directions (KSPSetMonitor)
+  -ksp_view: View linear solver parameters (KSPView)
+  -ksp_view: View linear solver parameters (KSPView)
+Options for SEQAIJ matrix -------------------------------------------------
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) ((null))
+  -mat_no_inode: <FALSE> Do not optimize for inodes (slower) ((null))
+  -mat_inode_limit <5>: Do not use inodes larger then this value ((null))
+Matrix Options -------------------------------------------------
+  -mat_view_info: Information on matrix size (MatView)
+  -mat_view_info_detailed: Nonzeros in the matrix (MatView)
+  -mat_view: Print matrix to stdout (MatView)
+  -mat_view_matlab: Print matrix to stdout in a format Matlab can read (MatView)
+  -mat_view_socket: Send matrix to socket (can be read from matlab) (MatView)
+  -mat_view_binary: Save matrix to file in binary format (MatView)
+  -mat_view_draw: Draw the matrix nonzero structure (MatView)

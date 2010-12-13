@@ -1,0 +1,133 @@
+
+How to install and run Flow123 - Linux version
+==============================================
+
+==============
+Prerequisities
+==============
+
+If you are running Windows, you have to install 'cygwin' software with
+packages: GCC, GFortran, Python, Perl
+(I need somebody who really tried whole Flow123 compilation with Cygwin)
+
+==============================
+Step 1 - Install PETSc Library
+==============================
+
+Current version (rev. ?) of Flow123 depends on the PETSC library 3.0.0-xx 
+Download this version from:
+
+http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
+
+Assume that you unpack the installation tree to the directory:
+
+/home/jb/local/petsc
+
+Change to this directory and set this as your PETSC directory:
+> export PETSC_DIR=`pwd`
+
+Set a name for the configuration you are going to install:
+> export PETSC_ARCH=linux-gcc-dbg
+
+Run the configuration script:
+> ./config/configure.py --with-cc=gcc --with-fc=gfortran --with-shared --download-f-blas-lapack=1 --download-mpich=1 --CFLAGS="-O3" --FFLAGS="-O3"
+
+As this also automagically install BLAS and MPICH it can take about 15 min. If everything is OK, you can get something like this:
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+Compilers:
+  C Compiler:         /home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/bin/mpicc -O3 -g3
+  Fortran Compiler:   /home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/bin/mpif90 -O3  -g
+Linkers:
+  Static linker:   /usr/bin/ar cr
+  Dynamic linker:   /home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/bin/mpicc  -shared -O3 -g3
+PETSc:
+  PETSC_ARCH: linux-gcc-dbg
+  PETSC_DIR: /home/jb/local/petsc-3.0.0-p2
+  **
+  ** Now build the libraries with "make all"
+  **
+  Clanguage: C
+  Scalar type:real
+MPI:
+  Includes: -I/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/include
+  Library:  -lnsl -lrt
+X11:
+  Includes: ['']
+  Library: ['-lX11']
+  PETSc shared libraries: disabled
+  PETSc dynamic libraries: disabled
+BLAS/LAPACK: -Wl,-rpath,/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -L/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -lflapack -Wl,-rpath,/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -L/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -lfblas
+==========================================
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Finally compile PETSC with this configuration:
+> make all
+
+To test the compilation run:
+> make test
+
+Alternatives
+============
+
+1) If you want only serial version of PETSc (and Flow123d)
+add --with-mpi=0 to the configure command line.
+You can have several PATSC configuration using different PETSC_ARCH.
+
+2) To use parallel verion of Flow123d you need Parmetis. 
+Add configure option: --download-parmetis=yes 
+
+3) PETSC provides interface to many usefull packages. You can install them 
+adding further configure options:
+--download-superlu=yes         # parallel direct solver
+--download-hypre=yes           # Boomer algebraic multigrid preconditioner, many preconditioners
+--download-spools=yes          # parallel direc solver
+--download-blacs=ifneeded      # needed by MUMPS
+--download-scalapack=ifneeded  # needed by MUMPS
+--download-mumps=yes           # parallel direct solver
+--download-umfpack=yes         # MATLAB solver
+
+For further information about use of these packages see:
+
+http://www.mcs.anl.gov/petsc/petsc-2/documentation/linearsolvertable.html
+
+http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/PC/PCFactorSetMatSolverPackage.html#PCFactorSetMatSolverPackage
+http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/Mat/MAT_SOLVER_SPOOLES.html#MAT_SOLVER_SPOOLES
+http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/Mat/MAT_SOLVER_MUMPS.html#MAT_SOLVER_MUMPS
+http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/Mat/MAT_SOLVER_SUPERLU_DIST.html
+http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/Mat/MAT_SOLVER_UMFPACK.html
+
+http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-dev/docs/manualpages/PC/PCHYPRE.html
+
+
+=========================
+ Step 2 - Compile Flow123
+=========================
+
+Get appropriate branch from repository. "trunk_serial" should be stable, "branches/1.6.0_modular" 
+is actual development branch.
+
+Copy file  makefile.in.template to makefile.in:
+> cp makefile.in.template makefile.in
+
+Edit file makefile.in, set your PETSC_DIR and PETSC_ARCH.
+
+Uncomment setting for "USE_PARALLEL" if you want a parallel version.
+To this end you need PETSC with treu MPI (not --with-mpi=0) and with ParMETIS library.
+Alternatively you can install ParMETIS yourself and provide its location in variables:
+PARMETIS_INCLUDE, PARMETIS_LIB (as indicated in makefile.in.template)
+
+Finally you can specify the C++ compiler and its options. Otherwise we use PETSC setting.
+e.g. for GCC:
+CPP=g++
+CFLAGS= -O3
+
+Then run the compilation by:
+> make all
+
+For further information about program usage see documentation in "doc/" in particular 
+reference manual "doc/flow_doc". 
+
+
+
+

@@ -1,0 +1,27 @@
+Pridana sekce
+
+
+$ElementProperties
+ n_rows
+ id_ele n_tags tag_spec
+$EndElementProperties$ElementProperties
+
+kde id_ele je cislo elementu
+n_tags je pocet tagu
+tag_spec je dvojice hodnot type a value pro kazdy tag
+
+Typy tagu jsou 
+1 - prurez 1D elementu
+2 - vyska 2D elementu
+
+Napr.
+
+$ElementProperties
+ 1
+ 0	1	2	0.5
+$EndElementProperties
+
+Nastavuje tloustku elementu cislo 0 na hodnotu 0.5
+
+=================================================================================
+Pridan typ materialu 4, ktery urcuje storativitu elementu.
