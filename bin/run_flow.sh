@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -x 
+
+NPROC=1
 # passing arguments
 while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]
 do
@@ -10,11 +13,6 @@ do
   elif [ "$1" == "-ini" ]; then
     shift
     INI_FILE=$1
-	export INI=${INI_FILE##*/}
-	SOURCE_DIR=${INI_FILE%/*}
-  elif [ "$1" == "--flow_params" ]; then
-    shift
-    FLOW_PARAMS=$1
   elif [ "$1" == "-h" ]; then
     echo " This is Flow123d help page:
 	args:
@@ -28,26 +26,48 @@ do
   fi
 done 
 
+FLOW_PARAMS="$@"
+
+if [ -z $INI_FILE ] 
+then
+  echo "Error ..."
+  exit 1
+fi
+
+export INI=${INI_FILE##*/}
+if [ "${INI_FILE%%[^/]*}" == "" ]
+then 
+  # relative path
+  INI_FILE="/$INI_FILE"
+  echo ${INI_FILE%/*}
+  SOURCE_DIR="`pwd`/${INI_FILE%/*}"
+else
+  #absolute path
+  SOURCE_DIR=${INI_FILE%/*}
+fi
+
+
 # set path to script dir
-export SCRIPT_PATH_DIR=$PWD
+# TODO: co kdyz bude skript volan s absolutini cestou !!
+export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
 
 # set path to test dir
 #FILE_PATH_DIR=$SOURCE_DIR
 
 # path to MPIEXEC
-MPI_RUN=$SCRIPT_PATH_DIR/../bin/mpiexec
+MPI_RUN=$SCRIPT_PATH_DIR/mpiexec
 
 #paths to dirs, relative to tests/$WRK
-if [ -e $SCRIPT_PATH_DIR/../bin/flow123d.exe ]; then
-	export EXECUTABLE=$SCRIPT_PATH_DIR/../bin/flow123d.exe;
-elif [ -e $SCRIPT_PATH_DIR/../bin/flow123d ]; then
-	export EXECUTABLE=$SCRIPT_PATH_DIR/../bin/flow123d;
+if [ -e $SCRIPT_PATH_DIR/flow123d.exe ]; then
+	export EXECUTABLE=$SCRIPT_PATH_DIR/flow123d.exe;
+elif [ -e $SCRIPT_PATH_DIR/flow123d ]; then
+	export EXECUTABLE=$SCRIPT_PATH_DIR/flow123d;
 else
 	echo "Error: missing executable file!"
 	exit 1
 fi
  
- cd $SOURCE_DIR
+cd $SOURCE_DIR
 
 #run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
 if [ -n "$MACHINE_NAME" ]; then

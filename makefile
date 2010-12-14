@@ -34,8 +34,9 @@ bin/mpiexec: makefile.in
 	chmod u+x bin/mpiexec
 
 revnumber:
-	if test -x `which svnversion` ;\
+	if which "svnversion" ;\
 	then echo "#define REVISION \"`svnversion`\"" >include/rev_num.h;\
+	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >include/rev_num.h;\
 	fi
 
 

@@ -24,7 +24,7 @@ for n in $NPROC
 do
 #runs script which copies flow input files and ini files from given folders
 export FILE_PATH_DIR=$SOURCE_DIR
-$SCRIPT_PATH_DIR/run_flow.sh -ini $INI_FILE -np $n --flow_params $FLOW_PARAMS
+$SCRIPT_PATH_DIR/run_flow.sh -ini $INI_FILE -np $n -- $FLOW_PARAMS
 
 #while [ ! -f $FILE_PATH_DIR/out ]
 #do	

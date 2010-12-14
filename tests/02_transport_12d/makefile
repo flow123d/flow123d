@@ -1,4 +1,4 @@
-INI_FILES="/cygdrive/c/cygwin_drive/new/tests/02_transport_12d/flow_nowait.ini"
+INI_FILES="flow_nowait.ini"
 NPROC="1"
 
 test:
