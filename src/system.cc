@@ -440,7 +440,7 @@ void timing_meantime(Timing * t)
 	MPI_Barrier(t->comm);
 	double time=clock();
 	if (t->logging_proc == sys_info.my_proc)
-		DBGMSG("%s %s; period: %f sec; total:  %f sec.\n",
+		xprintf(Msg,"%s %s; period: %f sec; total:  %f sec.\n",
             t->msg_info,t->tag, (time-t->last)/CLOCKS_PER_SEC, (time-t->start)/CLOCKS_PER_SEC);
     t->last=time;
 }

@@ -53,18 +53,10 @@ void problem_init(struct Problem *problem)
     // [Input] - Filenames
     ConstantDB::getInstance()->setInt("File_type", OptGetInt("Input", "File_type", NULL));
 
-    // TODO: nutna jmena souboru mit s default=NULL. Problem je, ze
-    // nektera jmena nejsou potrebna a na jejich cteni to pak spadne.
-    if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) {
-    } else if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH_NEW){
-    }
-
     // [Output]
     ConstantDB::getInstance()->setInt("Out_digit", OptGetInt("Output", "Output_digits", "6"));
 
     if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) {
-        problem->out_fname_2 = OptGetStr( "Output", "Output_file_2", NULL );
-    } else if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH_NEW) {
         problem->out_fname_2 = OptGetFileName("Output", "Output_file_2", NULL);
     }
 
@@ -101,9 +93,6 @@ void problem_init(struct Problem *problem)
 
     // [Transport]
     if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) {
-        ConstantDB::getInstance()->setChar("Concentration_fname", OptGetStr( "Transport", "Concentration", "\\" ));
-        ConstantDB::getInstance()->setChar("Transport_bcd_fname", OptGetStr( "Transport", "Transport_BCD", "\\" ));
-    } else if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH_NEW) {
         ConstantDB::getInstance()->setChar("Concentration_fname", OptGetFileName("Transport", "Concentration", "\\"));
         ConstantDB::getInstance()->setChar("Transport_bcd_fname", OptGetFileName("Transport", "Transport_BCD", "\\"));
     }

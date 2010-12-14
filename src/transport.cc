@@ -170,21 +170,12 @@ void transport_init(struct Problem *problem)
     transport -> sorption       = OptGetBool( "Transport", "Sorption", "no" );
     transport -> dual_porosity  = OptGetBool( "Transport", "Dual_porosity", "no" );
     transport -> reaction_on    = OptGetBool( "Transport", "Reactions", "no");
-    if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) {
-        transport -> concentration_fname  = OptGetStr( "Transport", "Concentration", "\\" );
-        transport -> transport_bcd_fname  = OptGetStr( "Transport", "Transport_BCD", "\\" );
-        transport -> transport_out_fname  = OptGetStr( "Transport", "Transport_out", "\\" );
-        transport -> transport_out_im_fname       = OptGetStr( "Transport", "Transport_out_im", "\\" );
-        transport -> transport_out_sorp_fname     = OptGetStr( "Transport", "Transport_out_sorp", "\\" );
-        transport -> transport_out_im_sorp_fname  = OptGetStr( "Transport", "Transport_out_im_sorp", "\\" );
-    } else if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH_NEW) {
-        transport -> concentration_fname  = OptGetFileName( "Transport", "Concentration", "\\" );
-        transport -> transport_bcd_fname  = OptGetFileName( "Transport", "Transport_BCD", "\\" );
-        transport -> transport_out_fname  = OptGetFileName( "Transport", "Transport_out", "\\" );
-        transport -> transport_out_im_fname       = OptGetFileName( "Transport", "Transport_out_im", "\\" );
-        transport -> transport_out_sorp_fname     = OptGetFileName( "Transport", "Transport_out_sorp", "\\" );
-        transport -> transport_out_im_sorp_fname  = OptGetFileName( "Transport", "Transport_out_im_sorp", "\\" );
-    }
+    transport -> concentration_fname  = OptGetFileName( "Transport", "Concentration", "\\" );
+    transport -> transport_bcd_fname  = OptGetFileName( "Transport", "Transport_BCD", "\\" );
+    transport -> transport_out_fname  = OptGetFileName( "Transport", "Transport_out", "\\" );
+    transport -> transport_out_im_fname       = OptGetFileName( "Transport", "Transport_out_im", "\\" );
+    transport -> transport_out_sorp_fname     = OptGetFileName( "Transport", "Transport_out_sorp", "\\" );
+    transport -> transport_out_im_sorp_fname  = OptGetFileName( "Transport", "Transport_out_im_sorp", "\\" );
 
     transport -> pepa   = OptGetBool( "Transport", "Decay", "no" ); //PEPA
     transport -> type   = OptGetInt( "Transport", "Decay_type", "-1" ); //PEPA

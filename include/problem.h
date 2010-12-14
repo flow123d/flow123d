@@ -4,7 +4,7 @@
 // types of goals
 #define COMPUTE_MH         1
 #define CONVERT_TO_POS     2
-#define COMPUTE_MH_NEW     3
+//#define COMPUTE_MH_NEW     3
 
 // problem types
 #define STEADY_SATURATED   1

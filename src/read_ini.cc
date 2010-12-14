@@ -60,21 +60,6 @@ void make_ini_item_list(const char *fname)
 	ini=xfopen(fname,"rt");
 	ASSERT(NONULL(ini),"Failed to open the ini file: %s",fname);
 
-	// Try to find absolute or relative path in fname
-	for(i=strlen(fname)-1; i>=0; i--) {
-	    if(fname[i]==DIR_DELIMITER) {
-	        break;
-	    }
-	}
-	if(i>0) {
-	    // It seems, that there is some path in fname ... use it!
-	    read_ini->ini_dir = (char*)xmalloc(sizeof(char)*(i+2));
-	    strncpy(read_ini->ini_dir, fname, i+1);
-	    read_ini->ini_dir[i+1] = '\0';
-	} else {
-	    // No path in fname
-	    read_ini->ini_dir = NULL;
-	}
 
 	while( xfgets( line, LINE_SIZE - 2, ini ) != NULL ) {
 	    sscanf( line, "%s", string );      // store first substring in the string
@@ -221,41 +206,9 @@ char *OptGetStr(const char *section,const char *key,const char *defval)
 //=============================================================================
 char *OptGetFileName(const char *section,const char *key,const char *defval)
 {
-    const char *rc = NULL;
-    struct Ini_item *ini_item;
-    char fname[PATH_MAX];
 
-    FOR_INI_ITEMS(ini_item)
-        if( (!strcmp(ini_item->section,section)) && (!strcmp(ini_item->key,key)) ){
-            rc = ini_item->value;
-            break;
-        }
 
-    if(rc == NULL) {
-        if (defval == NULL)
-            xprintf(UsrErr,"Required parameter: [%s] %s is not given.\n",section,key);
-        else
-            rc = defval;
-    } else if(read_ini->ini_dir != NULL) {
-        /* Is it absolute path? */
-        if(rc[0]=='/')
-        {
-            return xstrcpy(rc);
-        } else {
-            /* Use relative path to the ini file for relative paths */
-            int l2, l1 = strlen(read_ini->ini_dir);
-            // Copy directory name to the fname
-            strncpy(fname, read_ini->ini_dir, l1);
-            fname[l1] = '\0';
-            l2 = strlen(rc);
-            // Add file name to the fname
-            strncat(fname, rc, l2);
-            fname[l1+l2] = '\0';
-            rc = fname;
-        }
-    }
-
-    return xstrcpy(rc);
+    return OptGetStr(section,key,defval);
 }
 
 //=============================================================================

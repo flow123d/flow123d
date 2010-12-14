@@ -72,7 +72,7 @@ static void main_compute_mh_density(struct Problem*);
  * TODO: this parsing function should be in main.cc
  *
  */
-void parse_cmd_line(int argc, char * argv[], int &goal, char * &ini_fname) {
+void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname) {
     const char USAGE_MSG[] = "\
     Wrong program parameters.\n\
     Usage: flow123d [options] ini_file\n\
@@ -89,15 +89,31 @@ void parse_cmd_line(int argc, char * argv[], int &goal, char * &ini_fname) {
 
     // Check command line arguments
     if ((argc >= 3) && (strlen(argv[1]) == 2) && (argv[1][0] == '-')) {
+        std::string ini_argument ( argv[2] );
+        std::string ini_dir;
+
+        // Try to find absolute or relative path in fname
+        int delim_pos=ini_argument.find_last_of(DIR_DELIMITER);
+        if (delim_pos < ini_argument.npos) {
+            // It seems, that there is some path in fname ... separate it
+            ini_dir=ini_argument.substr(0,delim_pos);
+            ini_fname=ini_argument.substr(delim_pos+1); // till the end
+        } else {
+            ini_dir=".";
+            ini_fname=ini_argument;
+        }
+
         switch (argv[ 1 ][ 1 ]) {
             case 's': goal = COMPUTE_MH;
+                ini_fname=ini_argument;
                 break;
-            case 'S': goal = COMPUTE_MH_NEW;
+            case 'S': goal = COMPUTE_MH;
+                xchdir(ini_dir.c_str());
                 break;
             case 'c': goal = CONVERT_TO_POS;
                 break;
         }
-        ini_fname = argv[2];
+
     }
 
     if (goal < 0) {
@@ -113,7 +129,7 @@ void parse_cmd_line(int argc, char * argv[], int &goal, char * &ini_fname) {
  */
 int main(int argc, char **argv) {
     int goal;
-    char *ini_fname;
+    std::string ini_fname;
 
     F_ENTRY;
 
@@ -125,7 +141,7 @@ int main(int argc, char **argv) {
     }
 
     system_init(argc, argv); // Petsc, open log, read ini file
-    OptionsInit(ini_fname); // Read options/ini file into database
+    OptionsInit(ini_fname.c_str()); // Read options/ini file into database
     system_set_from_options();
 
     // Say Hello
@@ -154,7 +170,6 @@ int main(int argc, char **argv) {
             main_convert_to_pos(&G_problem);
             break;
         case COMPUTE_MH:
-        case COMPUTE_MH_NEW:
             main_compute_mh(&G_problem);
             break;
     }

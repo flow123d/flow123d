@@ -55,7 +55,7 @@ void output( struct Problem *problem )
         MPI_Comm_rank(PETSC_COMM_WORLD,&my_proc);
         if (my_proc != 0) return;
 
-        if ((ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH || ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH_NEW) &&
+        if ((ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) &&
                 (ConstantDB::getInstance()->getInt("Problem_type") == STEADY_SATURATED || ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY)){
                 switch (ConstantDB::getInstance()->getInt("Out_file_type"))
                 {
