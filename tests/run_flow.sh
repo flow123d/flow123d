@@ -1,34 +1,41 @@
 #!/bin/bash
 
-#names of ini files
-export INI_FILE=$1
-
-#number of processors
-NPROC=$2
-
-#names of tests
-SOURCE_DIR=$3
-
-#additional flow parameters
-FLOW_PARAMS=$4
-
-#input dir
-INPUT=input
-
-#result dir
-RES=Results
-
-#input dir
-OUTPUT=output
+# passing arguments
+while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]
+do
+  if [ "$1" == "-np" ]; then
+    shift
+	NPROC=$1				
+	shift
+  elif [ "$1" == "-ini" ]; then
+    shift
+    INI_FILE=$1
+	export INI=${INI_FILE##*/}
+	SOURCE_DIR=${INI_FILE%/*}
+  elif [ "$1" == "--flow_params" ]; then
+    shift
+    FLOW_PARAMS=$1
+  elif [ "$1" == "-h" ]; then
+    echo " This is Flow123d help page:
+	args:
+	-np 		set number of procs
+	-ini 		set absolut or relative path to ini file
+	-wtime 		set maximal time to wait to finish job"
+	break
+    shift
+  else
+    shift
+  fi
+done 
 
 # set path to script dir
-#export SCRIPT_PATH_DIR=$PWD
+export SCRIPT_PATH_DIR=$PWD
 
 # set path to test dir
-#export FILE_PATH_DIR=./../tests/01_steady_flow_123d/
+#FILE_PATH_DIR=$SOURCE_DIR
 
 # path to MPIEXEC
-export MPI_RUN=$SCRIPT_PATH_DIR/../bin/mpiexec
+MPI_RUN=$SCRIPT_PATH_DIR/../bin/mpiexec
 
 #paths to dirs, relative to tests/$WRK
 if [ -e $SCRIPT_PATH_DIR/../bin/flow123d.exe ]; then
@@ -40,58 +47,19 @@ else
 	exit 1
 fi
  
- #SUFF=.ini
- #INI=$1
- 
- cd $FILE_PATH_DIR
-	
-	#mkdir -p ./$INPUT
-	#mkdir ./$WRK/$OUTPUT
+ cd $SOURCE_DIR
 
-	#copy input and ini file
-	#cp ./$3/$INPUT/* ./$WRK/$INPUT
-	#cp ./$3/$1 ./$WRK/
-
-	#run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC
-	#cd $WRK
-	if [ -n "$MACHINE_NAME" ]; then
-		../${MACHINE_NAME}_make_pbs.sh
-		qsub -pe mpi $NPROC ${MACHINE_NAME}_run_pbs.qsub
-	else
-		if [ $2 -eq 1 ]; then
-			$EXECUTABLE -S $INI_FILE $FLOW_PARAMS 2>err 1>out
-		elif [ -e $MPI_RUN ]; then
-			$MPI_RUN -np $2 $EXECUTABLE -S $INI_FILE $FLOW_PARAMS 2>err 1>out
-		else 
-			echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
-			#cd ..
-			#rm -rf $WRK
-			exit 1
-		fi
+#run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
+if [ -n "$MACHINE_NAME" ]; then
+	../${MACHINE_NAME}_make_pbs.sh
+	qsub -pe mpi $NPROC ${MACHINE_NAME}_run_pbs.qsub
+else
+	if [ -e $MPI_RUN ]; then
+		$MPI_RUN -np $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
+	else 
+		echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
+		exit 1
 	fi
+fi
 	
-	#makes dir for results, copy output files and logs
-	#if [ -d ../$RES/${INI%$SUFF}.$2/ ]; then
-	#	rm -rf ../$RES/${INI%$SUFF}.$2/
-	#	mkdir -p ../$RES/${INI%$SUFF}.$2/
-	#else 
-	#	mkdir -p ../$RES/${INI%$SUFF}.$2/
-	#fi
 	
-	#cp ./err ../$RES/${INI%$SUFF}.$2/
-	#cp ./out ../$RES/${INI%$SUFF}.$2/
-	
-	#VAR=`ls $FILE_PATH_DIR/output/`
-	
-	#if [ -z "$VAR" ]; then
-	#	echo "Error: Missing output files"
-		#cd ..
-		#rm -rf $WRK
-	#	exit 1
-	#else
-	#	cp ./output/* ../$RES/${INI%$SUFF}.$2/
-	#fi
-	
-	#remove tmp dir
-	#cd ..
-	#rm -rf $WRK
