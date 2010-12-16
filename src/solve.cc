@@ -121,13 +121,11 @@ void solve_system( struct Solver *solver, struct LinSys *system )
 #define SET_MATLAB_CALL sprintf( cmdline, "matlab -r solve" )
 
 	char cmdline[ 1024 ];
-	char *LogFile;
 
 	ASSERT( NONULL( solver ),"NULL 'solver' argument.\n");
     ASSERT( NONULL( system ),"NULL 'system' argument.\n");
 	xprintf(Msg, "Solve system ...\n");
 
-	LogFile=get_log_fname();
 	solver->LinSys=system;
 	switch (solver->type) {
 			// internal solvers
@@ -198,10 +196,7 @@ void RunExtern( Solver *solver,char *cmdline,
 					 "BEGIN OF SOLVER'S MESSAGES\n");
 	        strcpy(cmd,cmdline);
 	        // pipe stdout and stderr through tee to get it to both, the screen and the logfile
-	        strcat(cmd," 2>&1 | tee -a ..");
-	        strcat(cmd,PATH_SEP);
-	        strcat(cmd,get_log_file());
-	        DBGMSG(cmd);
+	        strcat(cmd," 2>&1 | tee ../flow_extern_solver.log");
 	        xsystem( cmd );
 	    }
 	}
@@ -216,7 +211,6 @@ void RunExtern( Solver *solver,char *cmdline,
 		xchdir( ".." );
 	}
 
-    resume_log_file();
     xprintf( Msg, "END OF MESSAGES OF THE SOLVER\n\n");
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }

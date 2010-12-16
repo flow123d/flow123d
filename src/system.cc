@@ -51,85 +51,28 @@ void system_init( int &argc, char ** &argv )
     // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
     // inicializaci systemu
 
-    snprintf( logname, FILENAME_MAX, "flow123.log" );
+    ierr=MPI_Comm_rank(PETSC_COMM_WORLD,&(sys_info.my_proc));
+    ierr+=MPI_Comm_size(PETSC_COMM_WORLD,&(sys_info.n_proc));
+    ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
+
+    DBGMSG("MPI size: %d rank: %d\n",sys_info.n_proc,sys_info.my_proc);
+
+    snprintf( logname, FILENAME_MAX, "flow123.%d.log",sys_info.my_proc );
     sys_info.log_fname=strdup(logname);
-    sys_info.log=xfopen(get_log_fname(),"wt");
+    sys_info.log=xfopen(sys_info.log_fname,"wt");
     sys_info.verbosity=0;
     sys_info.pause_after_run=0;
-
-#ifdef USE_PARALLEL
-    ierr=MPI_Comm_rank(PETSC_COMM_WORLD,&(sys_info.my_proc));
-	ierr+=MPI_Comm_size(PETSC_COMM_WORLD,&(sys_info.n_proc));
-
-	if (ierr != MPI_SUCCESS ) xprintf(Err , "MPI not initialized.\n");
-
-    if ( sys_info.my_proc != 0 )
-    {
-        xfree(sys_info.log_fname);
-        snprintf( logname, FILENAME_MAX, "flow123.w[%d].log", sys_info.my_proc );
-        sys_info.log_fname=strdup(logname);
-        sys_info.log=xfreopen(get_log_fname(),"wt", sys_info.log);
-    }
-
-	DBGMSG("MPI size: %d rank: %d\n",sys_info.n_proc,sys_info.my_proc);
-#endif
 
 	sys_info.timing=timing_create("WHOLE PROGRAM",PETSC_COMM_WORLD);
 }
 
 void system_set_from_options()
 {
-    char *new_name=OptGetStr("Run","Log_file",get_log_fname());
-    if ( ! strcmp(new_name,get_log_fname()) ) {
-        xrename(get_log_fname(),new_name);
-        xfree(sys_info.log_fname);
-        sys_info.log_fname = new_name;
-    }
-
     sys_info.verbosity=OptGetInt( "Run", "Screen_verbosity", "0" );
     sys_info.pause_after_run=OptGetBool( "Run", "Pause_after_run", "no" );
 }
 
-/*!
- * @brief Returns log filename or NULL.
- * @return current file name
- */
-char * get_log_fname( void )
-{
-    //TODO: mechanizmus predavani logu je potreba pri volani externiho solveru
-    //mela by se uchovavat absolutni cesta, jinak se pri znovu otevreni logu musi cekat az se
-    //vratime do puvodniho adresare.
 
-    F_ENTRY;
-
-    return(sys_info.log_fname);
-}
-
-/*!
- * @brief If other program want append to the log - we close it and return the file name.
- * @return current file name
- */
-char * get_log_file( void )
-{
-    F_ENTRY;
-
-	if (sys_info.log)
-        xfclose(sys_info.log);
-	sys_info.log=NULL;
-
-	return(get_log_fname());
-}
-
-/*!
- * @brief This should be called after get_log_file to resume access to the log.
- */
-void resume_log_file( void )
-{
-	F_ENTRY;
-
-	if (sys_info.log_fname)
-        sys_info.log = xfopen(sys_info.log_fname, "at");
-}
 /// @brief INTERNAL DEFINITIONS FOR XPRINTF
 /// @{
 
@@ -176,10 +119,9 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 	struct MsgFmt	mf;
 	int rc;
 	FILE *screen=NULL;
-#ifdef USE_PARALLEL
+
 	static int mpi_msg_id = 0;
 	int ierr;
-#endif
 
 	if ((type == MsgVerb) && (sys_info.verbosity > 0))
 		return 0;
@@ -196,7 +138,6 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 		default: screen=NULL;
 	}
 
-#ifdef USE_PARALLEL
 
 #ifdef MPI_PRINTALL
 	//print msg header with mpi_id to distinguish the message origin
@@ -225,7 +166,6 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
             fprintf(sys_info.log,"[msg_id=%d] ", mpi_msg_id );
         mpi_msg_id++;
     }
-#endif
 
 	// print head
 	if (mf.head) {

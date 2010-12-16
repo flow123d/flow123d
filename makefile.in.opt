@@ -49,11 +49,9 @@ CFLAGS=-O3
 # 
 # USE_NODEBUG= -DNODEBUG
 
-# uncomment to compile parallel version, for execution requires mpirun 
-# to this end  you need mpi version of PETSC and use mpicc to link 
-# (this is PETSC choice by default)
-USE_PARALLEL= -DUSE_PARALLEL
-
+# Uncomment to print all messages from all parallel MPI processes.
+# This only has effect with USE_PARALLEL 
+# USE_PRINTALL = -DMPI_PRINTALL
 
 ### Parallel stuff ########################################################
 ## manual ParMetis setup (if it is not part of PETSC)
