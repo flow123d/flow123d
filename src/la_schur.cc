@@ -180,12 +180,12 @@ void SchurComplement::form_schur()
     MatGetSubMatrix(Orig->get_matrix(), IsA, fullIsB, locSizeB, mat_reuse, &B);
     DBGMSG(" B:\n");
     //MatView(Schur->B,PETSC_VIEWER_STDOUT_WORLD);
-    MatMatMult(IA, B, mat_reuse, 1.1 ,&(IAB)); // 6/7 - fill estimate
+    MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
     DBGMSG(" IAB:\n");
     //MatView(Schur->IAB,PETSC_VIEWER_STDOUT_WORLD);
     // compute xA=Bt* IAB = Bt * IA * B
     MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsA, locSizeA, mat_reuse, &(Bt));
-    MatMatMult(Bt, IAB, mat_reuse, 1.5 ,&(xA)); // 1.1 - fill estimate
+    MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
     DBGMSG("xA:\n");
     //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
 
