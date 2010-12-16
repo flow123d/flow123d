@@ -217,8 +217,8 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
 
     for (t = 0, i = 0; t * problem->time_step < problem->stop_time; t++, i++) {
         calculation_unsteady(problem);
-        create_water_linsys(mesh, &(problem->water));
-        solve_water_linsys(problem->water);
+        problem->water=new DarcyFlowMH(*mesh);
+        problem->water->solve();
         postprocess(problem);
 
         if ((i * problem->time_step >= problem->save_step) || (t == 0)) {
@@ -248,8 +248,8 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
     calculation_mh(problem);
-    create_water_linsys(mesh, &(problem->water));
-    solve_water_linsys(problem->water);
+    problem->water=new DarcyFlowMH(*mesh);
+    problem->water->solve();
 
     if (OptGetBool("Transport", "Transport_on", "no") == true)
             {
@@ -426,8 +426,8 @@ void main_compute_mh_density(struct Problem *problem) {
             save_restart_iteration_H(problem);
             //restart_iteration(problem);
             calculation_mh(problem);
-            create_water_linsys(mesh, &(problem->water));
-            solve_water_linsys(problem->water);
+            problem->water=new DarcyFlowMH(*mesh);
+            problem->water->solve();
             restart_iteration_C(problem);
             postprocess(problem);
             convection(trans);

@@ -80,7 +80,7 @@ void make_side_flux(struct Problem *problem, Mesh* mesh) {
     struct Side *sde;
 
     soi = 0;
-    sol = problem->water->solution;
+    sol = problem->water->solution_vector();
     FOR_ELEMENTS(ele)
     for (li = 0; li < ele->n_sides; li++) {
         sde = ele->side[ li ];
@@ -99,7 +99,7 @@ void make_element_scalar(struct Problem *problem, Mesh* mesh) {
     ElementIter ele;
 
     soi = mesh->n_sides;
-    sol = problem->water->solution;
+    sol = problem->water->solution_vector();
     FOR_ELEMENTS(ele)
     ele->scalar = sol[ soi++ ];
 }
@@ -269,7 +269,7 @@ void make_sides_scalar(struct Problem *problem, Mesh* mesh) {
     struct Side *sde;
 
     soi = mesh->n_sides + mesh->n_elements();
-    sol = problem->water->solution;
+    sol = problem->water->solution_vector();
 
     FOR_EDGES(edg) {
         for (si = 0; si < edg->n_sides; si++) {

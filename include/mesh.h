@@ -57,11 +57,11 @@ private:
 public:
     Mesh();
 
-    inline unsigned int n_elements() {
+    inline unsigned int n_elements() const {
         return element.size();
     }
 
-    inline unsigned int n_boundaries() {
+    inline unsigned int n_boundaries() const {
         return boundary.size();
     }
 

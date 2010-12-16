@@ -1,0 +1,47 @@
+$MaterialFormat
+1.0	0	8
+$EndMaterialFormat
+$Materials
+	4
+	62	11	10
+	63	21	1
+	64	21	1
+	65	31	0.1
+$EndMaterials
+$Storativity
+	62	s
+	63	s
+	64	s
+	65	s
+$EndStorativity
+$Sorption
+	62	0
+	63	0
+	64	0
+	65	0
+$EndSorption
+$DualPorosity
+	62	1	n_i	a_0
+	63	1	n_i	a_0
+	64	1	n_i	a_0
+	65	1	n_i	a_0
+$EndDualPorosity
+$SorptionFraction
+	62	r
+	63	r
+	64	r
+	65	r
+$EndSorptionFraction
+$Geometry
+	62	1	1
+	63	2	1
+	64	2	1
+$EndGeometry
+$Reaction
+$EndReaction
+$Density		-UNUSED
+	62	d
+	63	d
+	64	d
+	65	d
+$EndDensity

@@ -1,0 +1,79 @@
+DBG (system.cc, system_init(), 74):MPI size: 1 rank: 0
+This is FLOW-1-2-3, version 1.6.0 rev: 810:812M
+Built on Dec 16 2010 at 05:48:43.
+problem.cc  (struct Pos_view_params *pos_view_par_read( char *view_char )): O.K.
+Reading materials... O.K.
+ - Mesh()     - version with node_vector
+ - GmshMeshReader()
+ - GmshMeshReader->read(const char* fileName, Mesh* mesh)
+ - Reading nodes... 322 nodes readed. O.K.
+ - Reading elements... 1444 elements readed. O.K.
+Reading neighbours...O.K.
+Creating sides...O.K.
+Creating edges... O.K.
+Reading boundary conditions...O.K.
+ - Number of nodes in the mesh is: 322
+Calculating properties of elements... O.K.
+Preprocessing...Calculating properties of edges... O.K.
+Calculating properties of elements... O.K.
+Calculating properties of sides... O.K.
+Calculating properties of boundaries... O.K.
+Calculating local matrices... O.K.
+Compute optimal partitioning of edges.
+DBG (darcy_flow_mh.cc, id_maps(), 637):Creating global new->old mapping ...
+DBG (darcy_flow_mh.cc, id_maps(), 645):Creating loc.number -> id mapping ...
+DBG (darcy_flow_mh.cc, id_maps(), 655):Creating id -> stiffness mtx. row mapping ...
+DBG (darcy_flow_mh.cc, prepare_parallel(), 854):Compute appropriate element partitioning ...
+DBG (darcy_flow_mh.cc, id_maps(), 637):Creating global new->old mapping ...
+DBG (darcy_flow_mh.cc, id_maps(), 645):Creating loc.number -> id mapping ...
+DBG (darcy_flow_mh.cc, id_maps(), 655):Creating id -> stiffness mtx. row mapping ...
+DBG (darcy_flow_mh.cc, prepare_parallel(), 884):Compute side partitioning ...
+DBG (darcy_flow_mh.cc, id_maps(), 637):Creating global new->old mapping ...
+DBG (darcy_flow_mh.cc, id_maps(), 645):Creating loc.number -> id mapping ...
+DBG (darcy_flow_mh.cc, id_maps(), 655):Creating id -> stiffness mtx. row mapping ...
+Allocating MH matrix for water model ... 
+ DBG (la_linsys.cc, start_allocation(), 277):allocation started
+Global. PREALLOCATION; period: 0.030000 sec; total:  0.030000 sec.
+Assembling MH matrix for water model ... 
+ Printing of local matrix is not supported yet for MPIAIJ matrix. 
+Last. ASSEMBLY; period: 0.010000 sec; total:  0.010000 sec.
+DBG (la_schur.cc, SchurComplement(), 79):ISs :
+DBG (la_schur.cc, form_schur(), 166):Compute Schur complement of
+DBG (la_schur.cc, form_schur(), 168):inverse IA:
+DBG (la_schur.cc, form_schur(), 181): B:
+DBG (la_schur.cc, form_schur(), 184): IAB:
+DBG (la_schur.cc, form_schur(), 189):xA:
+DBG (la_schur.cc, form_schur(), 196):C block:
+DBG (la_schur.cc, form_schur(), 200):C block:
+Last. Schur 1; period: 0.020000 sec; total:  0.020000 sec.
+DBG (la_schur.cc, SchurComplement(), 79):ISs :
+DBG (la_schur.cc, form_schur(), 166):Compute Schur complement of
+DBG (la_schur.cc, form_schur(), 168):inverse IA:
+DBG (la_schur.cc, form_schur(), 181): B:
+DBG (la_schur.cc, form_schur(), 184): IAB:
+DBG (la_schur.cc, form_schur(), 189):xA:
+DBG (la_schur.cc, form_schur(), 196):C block:
+DBG (la_schur.cc, form_schur(), 200):C block:
+Last. Schur 2; period: 0.010000 sec; total:  0.010000 sec.
+[0] rows: 3218 off_rows: 0 on: 21996 off: 0
+Solve system ...
+inserting petsc options: -ksp_type cg -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite
+Lin Solver: its: 6 conv. reason: 2
+Solver O.K.
+Last. SOLVING MH SYSTEM; period: 0.140000 sec; total:  0.140000 sec.
+O.K.
+Converting solution... O.K.
+Calculating balances... O.K.
+Calculating balance of water by types...
+Water #1:	1.5944
+Calculating sources of water by material types...
+Material #62:	 0
+Material #63:	 0
+Material #64:	 0
+Material #65:	 0
+Postprocessing phase O.K.
+Writing flow output files: ./output/test1.pos ... O.K.
+Last. WHOLE PROGRAM; period: 0.850000 sec; total:  0.850000 sec.
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+Option left: name:-s value: flow.ini

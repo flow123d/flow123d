@@ -41,7 +41,7 @@ class Mesh;
 class SchurComplement;
 class Distribution;
 class SparseGraph;
-
+class FieldP0;
 
 
 /**
@@ -50,20 +50,34 @@ class SparseGraph;
  *
  */
 
-typedef struct DarcyFlowMH {
-	class Mesh *mesh;   // structured water equation ( so far pointer to  the mesh struture )
+class DarcyFlowMH {
+public:
+    DarcyFlowMH(Mesh &mesh);
+    void solve();
+    double * solution_vector();
+    ~DarcyFlowMH();
+
+private:
+    void prepare_parallel();
+    void make_row_numberings();
+    void mh_abstract_assembly();
+    void make_schur0();
+    void make_schur1();
+    void make_schur2();
+
+	Mesh *mesh;   // structured water equation ( so far pointer to  the mesh struture )
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// solution vector
-
-	flow::Vector<double> sources;    // vector of water sources on elements
 
 	struct Solver *solver;
 
 	LinSys *schur0;  		// whole MH Linear System
 	SchurComplement *schur1;  	// first schur compl.
 	SchurComplement *schur2;	// second ..
+
+	FieldP0 *sources;
 
 	// parallel
 	int np;  // number of procs
@@ -89,13 +103,14 @@ typedef struct DarcyFlowMH {
 	// gather of the solution
 	Vec sol_vec;			// vector over solution array
 	VecScatter par_to_all;
-} WaterLinSys;
+};
 
 
 void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
 void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
         int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 void mat_count_off_proc_values(Mat m, Vec v);
+
 void create_water_linsys(Mesh*, DarcyFlowMH**);
 void solve_water_linsys(DarcyFlowMH*);
 

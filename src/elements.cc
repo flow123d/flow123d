@@ -173,7 +173,6 @@ void element_calculation_mh(Mesh* mesh) {
 
         calc_rhs(ele);
         dirichlet_elm(ele);
-        calc_rhs_b(ele);
         make_block_d(mesh, ele);
         make_block_e(ele);
     }
@@ -356,16 +355,6 @@ void dirichlet_elm(ElementFullIter ele) {
     }
 }
 
-/**
- * SET THE "RHS_B" FIELD IN STRUCT ELEMENT
- */
-void calc_rhs_b(ElementFullIter ele) {
-    ele->rhs_b = ele->source == NULL ? 0.0 : -1.0 * ele->source->density * ele->volume;
-    // TODO:
-    //UNSTEADY flow - this should be solved during matrix composition ??
-    //if (problem->type == UNSTEADY_SATURATED)
-    //        ele->rhs_b_stat = ele->rhs_b;
-}
 
 /**
  * make_block_d(ElementFullIter ele)

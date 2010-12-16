@@ -61,7 +61,7 @@ typedef struct Element
     double *loc;        // Local matrix
     double *loc_inv;    // Inverse of the local matrix
     double  *rhs;       // Rhs - vector q1, gradients
-    double   rhs_b;     // Rhs - vector q2, sources
+    //double   rhs_b;     // Rhs - vector q2, sources
     // int      rhs_b_stat_index;   // Index of the item in the matrix where value is stored (Matrix->rhs)
     // double   rhs_b_stat;    // Value of rhs_b before unsteady flow changes
     int  a_row;     // # of first row in the block A

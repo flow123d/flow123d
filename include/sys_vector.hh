@@ -247,7 +247,7 @@ public:
          { return FullIter( *this, storage.end() ); }
 
      /// Returns size of the container. This is independent of the allocated space.
-     inline unsigned int size()
+     inline unsigned int size() const
          { return storage.size(); }
 
      /// Gets reference to the element specified by index.
@@ -368,7 +368,7 @@ public:
          { return FullIter( *this, storage.end() ); }
 
      /// Returns size of the container. This is independent of the allocated space.
-     inline unsigned int size()
+     inline unsigned int size() const
          { return storage.size(); }
 
      /// Gets reference to the element specified by index.
