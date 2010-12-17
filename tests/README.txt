@@ -1,11 +1,11 @@
 ***************************************************
-** System of automatical tests in flow123d*********
+** System of automatic tests in flow123d*********
 ***************************************************
 
 
 
 ********************
-How tu run tests?***
+How to run tests?***
 ********************
 
 To run tests, there is makefile system. Rules to run tests are: 
