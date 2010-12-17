@@ -53,7 +53,7 @@ static void edge_to_side_both(Mesh*);
 static void neigh_vb_to_edge_both(Mesh*);
 static void side_types(Mesh*);
 static void count_side_types(Mesh*);
-static void boundary_to_side_both(Mesh*);
+//static void boundary_to_side_both(Mesh*);
 static void side_to_node_line(ElementFullIter );
 static void side_to_node_triangle(ElementFullIter );
 static void side_to_node_tetrahedron(ElementFullIter );
