@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/perl
 # 
 # Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
 #
@@ -22,23 +22,49 @@
 # $LastChangedDate$
 #
 
-FILE=${1:-*.c *.cpp *.h *.hpp *.cc *.hh}
-ASO=
-# K/R style
-ASO="$ASO --style=kr"
-# convert tabs to spaces
-ASO="$ASO --convert-tabs"	
-# do not break one line blocks
-ASO="$ASO -- one-line=keep-blocks"
-# Insert empty lines around unrelated blocks, labels, classes, ...
-#ASO=$ASO --break-blocks
+#
+# A script for conversion from ".ini" files fo PETSc option database files
+#
+#
+# ini2opt file1.ini [file2]
+# 
+# default file2=file1.opt
+#
 
-ARTISTIC_STYLE_OPTIONS=$ASO
+$InFName=shift;
+if ($InFName eq '') {die "usage: ini2opt file1.ini [file2]\n";}
+$OutFName=shift;
+if ($OutFName eq '') {
+  $OutFName=$InFName;
+  $OutFName=~s/\.ini$/.opt/;
+}
 
-for f in $FILE;
-do 
-	if test -f $f 
-	then
-		astyle $f
-	fi
-done
+open(IN,"<$InFName") || die "Can't find input file $InFName.\n";
+open(OUT,">$OutFName") || die "Can't open output file $OutFName.\n";
+
+while ($line=<IN>) {
+  chop $line;
+  $line=~s/^\r//;
+  if ($line=~ /\s*\[([a-zA-Z_ ]*)\]\s*(\;.*)?/) {
+    # new section
+    $section=$1;
+    $section=~tr/ /_/;
+    print OUT "#$line\n";
+  }
+  elsif ($line=~ /\s*(\w*)\s*=\s*([^;\r]*)(\;.*)?(\r?)/) {
+    # value line
+    if ($section eq '') {print "warning: parameter out of section\n";}
+    else {
+      $lineend=$3;
+      $lineend=~s/\;/#/;
+      print OUT "-".$section."_".$1." \"$2\"".$endline.$4."\n";}
+  }
+  else {
+    print OUT "#$line\n";
+  }
+}
+
+close IN;
+close OUT;
+
+
