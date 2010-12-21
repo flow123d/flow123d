@@ -94,6 +94,11 @@ DarcyFlowMH::DarcyFlowMH(Mesh &mesh_in)
 
     prepare_parallel();
 
+    // debug
+    //fflush(stdout);
+    //MPI_Barrier(PETSC_COMM_WORLD);
+    //exit(0);
+
     //side_ds->view();
     //el_ds->view();
     //edge_ds->view();
@@ -358,9 +363,10 @@ void DarcyFlowMH::make_schur0() {
     if (schur0 == NULL) { // create Linear System for MH matrix
         xprintf( Msg, "Allocating MH matrix for water model ... \n " );
 
-        if (solver->type == PETSC_MATIS_SOLVER)
+        if (solver->type == PETSC_MATIS_SOLVER) 
             schur0 = new LinSys_MATIS(lsize, ndof_loc,
                     global_row_4_sub_row);
+	
         else
             schur0 = new LinSys_MPIAIJ(lsize);
         schur0->set_symmetric();
@@ -374,7 +380,7 @@ void DarcyFlowMH::make_schur0() {
     schur0->start_add_assembly(); // finish allocation and create matrix
     mh_abstract_assembly(); // fill matrix
     schur0->finalize();
-    schur0->view_local_matrix();
+    //schur0->view_local_matrix();
     timing_destroy(asm_time);
 
     // add time term
@@ -752,7 +758,6 @@ void DarcyFlowMH::prepare_parallel() {
     int ind_row;
     int i_loc, el_row, side_row, edge_row, nsides;
 
-    int ndof_loc;
     PetscErrorCode err;
     Mat sub_matrix;
     F_ENTRY;
@@ -764,15 +769,17 @@ void DarcyFlowMH::prepare_parallel() {
         // prepare dual graph
         Distribution init_el_ds(Distribution::Block, mesh->n_elements());  // initial distr.
         SparseGraph *element_graph= new SparseGraphPETSC(init_el_ds);
-        int *loc_part = new int[(init_el_ds.size() + 1)];                                     // partitionig in initial distribution
+        int *loc_part = new int[init_el_ds.lsize()];                                     // partitionig in initial distribution
 
         make_element_connection_graph(mesh, element_graph);
+
+	//element_graph->view();
+
         WARN_ASSERT(element_graph->is_symmetric(),"Attention graph for partitioning is not symmetric!\n");
 
         element_graph->partition(loc_part);
 
-        MPI_Bcast(loc_part, init_el_ds.size(), MPI_INT, 0, MPI_COMM_WORLD);
-        DBGPRINT_INT("loc_part",init_el_ds.size(),loc_part);
+        //DBGPRINT_INT("loc_part",init_el_ds.lsize(),loc_part);
 
         // prepare parallel distribution of dofs linked to elements
         id_4_old = (int *) xmalloc(mesh->n_elements() * sizeof(int));
@@ -784,6 +791,8 @@ void DarcyFlowMH::prepare_parallel() {
         free(loc_part);
         free(id_4_old);
 
+	//el_ds->view();
+	//
         DBGMSG("Compute appropriate edge partitioning ...\n");
         //optimal element part; loc. els. id-> new el. numbering
         Distribution init_edge_ds(Distribution::Localized, mesh->n_edges);
@@ -816,6 +825,7 @@ void DarcyFlowMH::prepare_parallel() {
                 edge_id_4_loc, edge_row_4_id);
         free(loc_part);
         free(id_4_old);
+
 
     } else {
         xprintf(Msg,"Compute optimal partitioning of edges.\n");
@@ -964,7 +974,7 @@ void DarcyFlowMH::prepare_parallel() {
         n_sides = mesh->n_sides;
 
         ndof = n_edg + n_e + n_sides;
-        xprintf(Msg,"n_edg = %d n_e = %d n_sides = %d ndof = %d \n ",n_edg,n_e,n_sides,ndof);
+        //xprintf(Msg,"n_edg = %d n_e = %d n_sides = %d ndof = %d \n ",n_edg,n_e,n_sides,ndof);
         // TODO: use quick sort and short arrays
         // initialize array
         lmap_aux = ndof;
@@ -995,7 +1005,7 @@ void DarcyFlowMH::prepare_parallel() {
 
                 map_aux[side_row] = map_aux[side_row] + 1;
                 map_aux[edge_row] = map_aux[edge_row] + 1;
-                xprintf(Msg,"el_row %d side_row = %d edge_row = %d \n ",el_row,side_row,edge_row);
+                //xprintf(Msg,"el_row %d side_row = %d edge_row = %d \n ",el_row,side_row,edge_row);
             }
 
             for (i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
@@ -1003,10 +1013,12 @@ void DarcyFlowMH::prepare_parallel() {
                 // mark this edge at map_aux
                 edge_row = edge_row_4_id[edgid];
                 map_aux[edge_row] = map_aux[edge_row] + 1;
-                xprintf(Msg,"el_row %d edge_row = %d \n ",el_row,edge_row);
+                //xprintf(Msg,"el_row %d edge_row = %d \n ",el_row,edge_row);
             }
         }
+	// debug
         //DBGPRINT_INT("map_aux",lmap_aux,map_aux);
+
 
         // count nonzeros in map_aux
         ndof_loc = 0;
@@ -1015,10 +1027,9 @@ void DarcyFlowMH::prepare_parallel() {
                 ndof_loc = ndof_loc + 1;
             }
         }
-        xprintf(Msg,"ndof_loc = %d \n",ndof_loc);
+        //xprintf(Msg,"ndof_loc = %d \n",ndof_loc);
 
         // initialize mapping arrays in MATIS matrix
-        ndof_loc = ndof_loc;
         global_row_4_sub_row = (int *) xmalloc((ndof_loc + 1) * sizeof(int));
 
         ig4s = 0;
@@ -1035,7 +1046,7 @@ void DarcyFlowMH::prepare_parallel() {
 
         free(map_aux);
 
-        DBGPRINT_INT("global_row_4_sub_row",ndof_loc,global_row_4_sub_row);
+        //DBGPRINT_INT("global_row_4_sub_row",ndof_loc,global_row_4_sub_row);
 
     }
 }

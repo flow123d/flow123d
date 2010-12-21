@@ -380,7 +380,6 @@ LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int subdomain_size, int *glo
     // vytvorit mapping v PETSc z global_row_4_sub_row
     err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, global_row_4_sub_row, &map_local_to_global);
     ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
-    xprintf(Msg,"Error code in ISLocalToGlobalMappingCreate %d \n",err);
 
     // initialize loc_rows array
     loc_rows_size=100;
@@ -399,11 +398,9 @@ void LinSys_MATIS::start_allocation()
      }
      err = MatCreateIS(PETSC_COMM_WORLD,  vec_ds.lsize(), vec_ds.lsize(), vec_ds.size(), vec_ds.size(), map_local_to_global, &matrix);
      ASSERT(err == 0,"Error in MatCreateIS.");
-     xprintf(Msg,"Error code MatCreateIS %d \n",err);
 
      err = MatISGetLocalMat(matrix, &local_matrix);
      ASSERT(err == 0,"Error in MatISGetLocalMat.");
-     xprintf(Msg,"Error code MatISGetLocalMat %d \n",err);
 
      subdomain_nz= new int[subdomain_size];      // count local nozero for every row of subdomain matrix
      SET_ARRAY_ZERO(subdomain_nz,subdomain_size); // set zeros to the array
@@ -418,7 +415,7 @@ void LinSys_MATIS::preallocate_matrix()
      ASSERT(status == ALLOCATE, "Linear system has to be in ALLOCATE status.");
 
      // printing subdomain_nz
-     DBGPRINT_INT("subdomain_nz",subdomain_size,subdomain_nz);
+     //DBGPRINT_INT("subdomain_nz",subdomain_size,subdomain_nz);
       
 
      // preallocation of local subdomain matrix
@@ -447,7 +444,6 @@ void LinSys_MATIS::preallocate_values(int nrow,int *rows,int ncol,int *cols)
      err = ISGlobalToLocalMappingApply(map_local_to_global, IS_GTOLM_DROP, nrow, rows, &n_loc_rows, loc_rows);
      ASSERT(err == 0,"Error in ISGlobalToLocalMappingApply.");
      ASSERT(nrow == n_loc_rows,"Not all global indices translated to local indices.");
-     //xprintf(Msg,"Error code ISGlobalToLocalMappingApply %d \n",err);
      // printing subdomain_embedding
      //DBGPRINT_INT("embed_element_to",nrow,loc_rows);
 

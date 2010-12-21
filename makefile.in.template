@@ -75,7 +75,7 @@ CFLAGS=-g -O0
 
 # Uncomment to print all messages from all parallel MPI processes.
 # This only has effect with USE_PARALLEL 
-# USE_PRINTALL = -DMPI_PRINTALL
+USE_PRINTALL = -DMPI_PRINTALL
 
 ### Parallel stuff ########################################################
 ## manual ParMetis setup (if it is not part of PETSC)
