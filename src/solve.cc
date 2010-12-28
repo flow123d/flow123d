@@ -321,7 +321,6 @@ void solver_petsc(Solver *solver)
 	       // parallel setting
               if (sys->is_positive_definite())
                   petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite -sub_pc_factor_fill 6.0";
-	          // Jakub Sistek
                   //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
                   // -ksp_type preonly -pc_type lu 
               else
