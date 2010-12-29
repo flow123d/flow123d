@@ -788,6 +788,8 @@ void DarcyFlowMH::prepare_parallel() {
             id_4_old[i++] = el.index();
         id_maps(mesh->element.size(), id_4_old, init_el_ds, loc_part, el_ds,
                 el_4_loc, row_4_el);
+        //DBGPRINT_INT("el_4_loc",el_ds->lsize(),el_4_loc);
+        //xprintf(Msg,"Number of elements in subdomain %d \n",el_ds->lsize());
         free(loc_part);
         free(id_4_old);
 
@@ -975,7 +977,7 @@ void DarcyFlowMH::prepare_parallel() {
 
         ndof = n_edg + n_e + n_sides;
         //xprintf(Msg,"n_edg = %d n_e = %d n_sides = %d ndof = %d \n ",n_edg,n_e,n_sides,ndof);
-        // TODO: use quick sort and short arrays
+        // TODO for Jakub: use quick sort and short arrays
         // initialize array
         lmap_aux = ndof;
         map_aux = (int *) xmalloc(lmap_aux * sizeof(int) + 1);
