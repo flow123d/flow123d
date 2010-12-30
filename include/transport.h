@@ -59,9 +59,14 @@ struct Transport
 		double			 max_step;		// bounded by CFL
 
         struct TMatrix* tmatrix;
+
+        // only local part
         double ***conc;
         double ***pconc;
-        double ****node_conc;	// zatim nepouzite
+
+        // global
+        double ***out_conc;
+        //double ****node_conc;	// zatim nepouzite
 
 
     	//Density
@@ -124,9 +129,10 @@ struct Transport
 
         Vec *vconc; // concentration vector
         Vec *vpconc; // previous concentration vector
-        Vec *vconc_im; // immobile concentration vector
-        Vec *vconc_so; // sorbed concentration vector
-        Vec *vconc_im_so; // immobile sorbed concentration vector
+
+        //Vec *vconc_im; // immobile concentration vector
+        //Vec *vconc_so; // sorbed concentration vector
+        //Vec *vconc_im_so; // immobile sorbed concentration vector
 
         Vec *vconc_out; // concentration vector output (gathered)
 

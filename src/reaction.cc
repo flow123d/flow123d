@@ -53,7 +53,7 @@ void parse_reaction_line( struct Transport *transport, int i, char *line);
  *
  */
 //=============================================================================
-void transport_reaction(struct Transport *transport, int elm_pos, int sbi)
+void transport_reaction(struct Transport *transport, int elm_pos, MaterialDatabase::Iter material, int sbi)
 {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
@@ -75,7 +75,7 @@ void transport_reaction(struct Transport *transport, int elm_pos, int sbi)
                       //  	 getchar();
                          }
                          else{
-                        	 conc[rct->sbi][MOBILE][elm_pos] += 1/(mesh->element.find_id(mesh->epos_id[elm_pos])->material->size);
+                        	 conc[rct->sbi][MOBILE][elm_pos] += 1/(material->size);
                         	 pconc[rct->sbi][MOBILE][elm_pos] = conc[rct->sbi][MOBILE][elm_pos];
                          }
                          break;

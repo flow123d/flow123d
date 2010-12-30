@@ -41,6 +41,7 @@ clean:
 	rm -rf ./test2
 	rm -rf ./test3
 	rm -rf ./test4
+
 	
 %.tst:
 	@BASE=$*;\

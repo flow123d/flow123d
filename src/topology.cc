@@ -811,12 +811,13 @@ void transport_bcd_to_boundary(Mesh* mesh)
 //=============================================================================
 //
 //=============================================================================
+/*
 void initial_to_element(Mesh* mesh)
 {
 	struct Initial *icd;
 	ElementFullIter ele=ELEMENT_FULL_ITER_NULL;
 
-	xprintf( MsgVerb, "   Initial conditions to element... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Initial conditions to element... ")
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
     INPUT_CHECK(!(mesh->n_initials != mesh->n_elements()),"Different number of initial conditions and elements\n");
 
@@ -832,7 +833,7 @@ void initial_to_element(Mesh* mesh)
                 "Element %d has more than one initial conditions\n", ele.id());
         ele->initial = icd;
     }
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
+	xprintf( MsgVerb, "O.K.\n")
+}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

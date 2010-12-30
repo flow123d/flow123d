@@ -105,12 +105,6 @@ public:
     BoundaryVector boundary; //
 
     int n_materials; // # of materials
-    //int n_boundaries; // # of boundary conditions
-    //struct Boundary *boundary; // First boundary condition
-    //struct Boundary *l_boundary; // Last boundary condition
-    int n_initials; // # of initial conditions
-    struct Initial *initial; // First initial condition
-    struct Initial *l_initial; // Last initial condition
     int n_concentrations; // # of concentrations
     int n_substances; // # of substances transported by water
     struct Concentration *concentration; // First concentration
@@ -118,9 +112,6 @@ public:
     int n_transport_bcd; // # of transport boundary conditions
     struct Transport_bcd *transport_bcd; // First transport boundary condition
     struct Transport_bcd *l_transport_bcd; // Last transport boundary condition
-    //   int        n_sources;       // # of sources
-    //  struct Source     *source;          // First source
-    //  struct Source     *l_source;        // Last source
     int n_sides; // # of sides
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
@@ -133,21 +124,20 @@ public:
     struct Neighbour *neighbour; // First neighbour
     struct Neighbour *l_neighbour; // Last neighbour
     // Hashes
-    int max_nod_id; // Highest id number of node
-    //   int max_elm_id; // Highest id number of element
     int max_edg_id;
     int max_side_id;
     int max_bou_id; // Highest id number of boundary
     int max_con_id; // Highest id number of concentration
     int max_tbc_id; // Highest id number of transport boundary
     int max_ngh_id; // Highest id number of neighbouring
-    int max_src_id; // Highest id number of source
+
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements
     int n_tetrahedras; // Number of tetrahedra elements
-    int *epos_id; // Element position -> ID list
-    int *spos_id; // Side position -> ID list
-    int *npos_id; // Node position -> ID list
+
+//    int *epos_id; // Element position -> ID list
+//    int *spos_id; // Side position -> ID list
+//   int *npos_id; // Node position -> ID list
 
     struct Edge **edge_hash;
     struct Side **side_hash;
@@ -155,7 +145,6 @@ public:
     struct Concentration **concentration_hash;
     struct Transport_bcd **transport_bcd_hash;
     struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index
-    struct Source **source_hash; // Source  id # -> source index
 };
 
 /**
@@ -200,9 +189,8 @@ for( BoundaryFullIter i( mesh->boundary.begin() ); \
 
 
 void make_mesh(struct Problem*);
-int id2pos(Mesh*, int id, int*, int);
 int *max_entry();
-void make_id2pos_list();
+
 
 #endif
 //-----------------------------------------------------------------------------

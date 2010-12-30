@@ -1,6 +1,5 @@
-INI_FILES="flow_nowait.ini"
-NPROC="1"
+INI_FILES="flow.ini"
+NPROC="1 2"
 
 test:
-	@cd ..;\
-	./run_test.sh ${INI_FILES} ${NPROC}
+	../run_test.sh ${INI_FILES} ${NPROC}

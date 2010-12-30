@@ -1257,6 +1257,7 @@ void output_transport_time_bin(struct Transport *transport,
 
     FILE *out;
     int sbi,el,itags,rtags,stags,comp,i,vcomp;
+    int i_out;
     double vector[3];
     itags = 3;
     rtags = 1;
@@ -1279,9 +1280,10 @@ void output_transport_time_bin(struct Transport *transport,
         xfprintf(out,"%d\n",step);                              // step number (start = 0)
         xfprintf(out,"%d\n",comp);                                   // one component - scalar field
         xfprintf(out,"%d\n",mesh->n_elements());                    // n follows elements
-        for(el=0;el < mesh->n_elements();el++) {
-            xfwrite(&mesh->epos_id[el],sizeof(int),1,out);
-            xfwrite(&transport->conc[sbi][MOBILE][el],sizeof(double),1,out);
+        FOR_ELEMENTS(ele) {
+            i_out=ele.id();
+            xfwrite(&i_out,sizeof(int),1,out);
+            xfwrite(&transport->out_conc[sbi][MOBILE][ele.index()],sizeof(double),1,out);
         }
         xfprintf(out,"\n$EndElementData\n");
     }
@@ -1298,19 +1300,19 @@ void output_transport_time_bin(struct Transport *transport,
         xfprintf(out,"%d\n",step);                              // step number (start = 0)
         xfprintf(out,"%d\n",vcomp);                                   // one component - scalar field
         xfprintf(out,"%d\n",mesh->n_elements());                    // n follows elements
-        for(el=0;el < mesh->n_elements();el++) {
-            if(vector_length(mesh->element[el].vector) > ZERO){
+        FOR_ELEMENTS(ele) {
+            if(vector_length(ele->vector) > ZERO){
                 for(i = 0; i < 3; i++)
                     vector[i] = mesh->element[el].vector[i];
                 normalize_vector(vector);
-                scale_vector(vector,transport->conc[sbi][MOBILE][el]);
+                scale_vector(vector,transport->out_conc[sbi][MOBILE][el]);
             }
-            else{
-                for(i = 0; i < 3; i++)
-                    vector[i] = 0.0;
+            else {
+                for(i = 0; i < 3; i++) vector[i] = 0.0;
             }
 
-            xfwrite(&mesh->epos_id[el],sizeof(int),1,out);
+            i_out=ele.id();
+            xfwrite(&i_out,sizeof(int),1,out);
             xfwrite(&vector,3*sizeof(double),1,out);
         }
     }
@@ -1359,9 +1361,8 @@ void output_transport_time_ascii(struct Transport *transport,
         xfprintf(out,"%d\n",step);   // step number (start = 0)
         xfprintf(out,"%d\n",comp);   // one component - scalar field
         xfprintf(out,"%d\n",mesh->n_elements());   // n follows elements
-        for(el=0; el<mesh->n_elements(); el++) {
-        		xfprintf(out,"%d %f\n", mesh->epos_id[el], transport->conc[sbi][MOBILE][el]);
-        }
+        FOR_ELEMENTS(ele)
+        		xfprintf(out,"%d %f\n", ele.id(), transport->out_conc[sbi][MOBILE][ele.index()]);
         xfprintf(out,"$EndElementData\n");
     }
 
@@ -1495,7 +1496,7 @@ void output_transport_time_vtk_serial_ascii(struct Transport *transport,
 
         for(int el=0; el<mesh->n_elements(); el++) {
             /* Add scalar data to vector of scalars */
-            p_element_out_scalar[subst_id].scalars->push_back(transport->conc[subst_id][MOBILE][el]);
+            p_element_out_scalar[subst_id].scalars->push_back(transport->out_conc[subst_id][MOBILE][el]);
         }
 
         element_scalar_arrays->push_back(p_element_out_scalar[subst_id]);

@@ -21,54 +21,53 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
+set -x 
+# This script assumes that it is running in particular subdir of the "tests"
+# dir. 
+TEST_DIR=`pwd`
 
-#names of ini files
+
+#name of ini file
 INI_FILE=$1
 
-#number of processors
+#numbers of processors to run on
 NPROC=$2
 
 #adition flow params
 FLOW_PARAMS=$3
 
-# set path to script dir
-SCRIPT_PATH_DIR=$PWD
-
-# set path to test dir
-#PATH_DIR=/c/cyg_drive/tests/bla.txt
-
-INI=${INI_FILE##*/}
-SOURCE_DIR=${INI_FILE%/*}
-
-SUFF=.ini
+# how to run flow
+RUN_FLOW=../../bin/run_flow.sh
 
 for n in $NPROC
 do
-#runs script which copies flow input files and ini files from given folders
-export FILE_PATH_DIR=$SOURCE_DIR
-$SCRIPT_PATH_DIR/run_flow.sh -ini $INI_FILE -np $n -- $FLOW_PARAMS
+  #runs script which copies flow input files and ini files from given folders
+  $RUN_FLOW -ini $INI_FILE -np $n -- $FLOW_PARAMS
 
-#while [ ! -f $FILE_PATH_DIR/out ]
-#do	
-#	while [ -e $FILE_PATH_DIR/lock ]
-#	do
-#		sleep 20
-#	done
-#done
+  #while [ ! -f $FILE_PATH_DIR/out ]
+  #do		
+  #	while [ -e $FILE_PATH_DIR/lock ]
+  #	do
+  #		sleep 20
+  #	done
+  #	done
 
-if [ -d $FILE_PATH_DIR/Results/${INI%$SUFF}.$2/ ]; then
-		rm -rf $FILE_PATH_DIR/Results/${INI%$SUFF}.$2/
-		mkdir -p $FILE_PATH_DIR/Results/${INI%$SUFF}.$2/
-	else 
-		mkdir -p $FILE_PATH_DIR/Results/${INI%$SUFF}.$2/
-	fi
+  SAVE_OUTPUT="$TEST_DIR/Results/${INI_FILE%.ini}.$n"
+  if [ -d "$SAVE_OUTPUT" ]; then
+		rm -rf "$SAVE_OUTPUT"
+		mkdir -p "$SAVE_OUTPUT"
+  else 
+		mkdir -p "$SAVE_OUTPUT"
+  fi
 
-mv $FILE_PATH_DIR/err $FILE_PATH_DIR/Results/${INI%$SUFF}.$2/
-mv $FILE_PATH_DIR/out $FILE_PATH_DIR/Results/${INI%$SUFF}.$2/
+  mv ./err $SAVE_OUTPUT
+  mv ./out $SAVE_OUTPUT
+  mv ./*.log $SAVE_OUTPUT
+  mv ./output/* $SAVE_OUTPUT
 
-#runs ndiff.pl skript with ref and computed output files
-echo "******************************************"
-$SCRIPT_PATH_DIR/run_check.sh $INI_FILE $n
-echo "******************************************"
+  #runs ndiff.pl skript with ref and computed output files
+  echo "******************************************"
+  ../run_check.sh $SAVE_OUTPUT "$TEST_DIR/ref_output"
+  echo "******************************************"
 
 done

@@ -83,7 +83,6 @@ Mesh::Mesh() {
     n_lines = 0;
     n_triangles = 0;
     n_tetrahedras = 0;
-    max_nod_id = NDEF;
     max_bou_id = NDEF;
     max_con_id = NDEF;
     max_tbc_id = NDEF;
@@ -179,16 +178,12 @@ void make_mesh(struct Problem *problem) {
 
     read_boundary(mesh);
 
-    if (ConstantDB::getInstance()->getInt("Problem_type") == UNSTEADY_SATURATED)
-        read_initial_list(mesh);
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
         mesh->n_substances = problem->transport->n_substances;
         read_concentration_list(mesh);
         read_transport_bcd_list(mesh);
     }
     source_to_element_both(mesh);
-    if (ConstantDB::getInstance()->getInt("Problem_type") == UNSTEADY_SATURATED)
-        initial_to_element(mesh);
     if (mesh->concentration != NULL) {
         concentration_to_element(mesh);
         transport_bcd_to_boundary(mesh);
@@ -273,7 +268,7 @@ int *max_entry() {
 // ID-POS TRANSLATOR
 //=============================================================================
 // TODO: should be method of water_linsys
-
+/*
 int id2pos(Mesh* mesh, int id, int* list, int type) {
     int i, limit;
 
@@ -297,7 +292,7 @@ int id2pos(Mesh* mesh, int id, int* list, int type) {
         return i;
     else
         return i + mesh->n_elements();
-}
+}*/
 /*
   for(i=0;i< ((type == ELM) ? mesh->n_elements() : mesh->n_boundaries );i++)
         if(list[i] == id)
@@ -307,7 +302,7 @@ int id2pos(Mesh* mesh, int id, int* list, int type) {
 // MAKE ID-POS ELEMENT & BOUNDARY LIST
 //=============================================================================
 // TODO: should be private method of water_linsys
-
+/*
 void make_id2pos_list() {
     F_ENTRY;
 
@@ -335,6 +330,6 @@ void make_id2pos_list() {
         mesh->npos_id[i++] = node->id;
     }
 }
-
+*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

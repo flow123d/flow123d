@@ -22,7 +22,7 @@
 # $LastChangedDate$
 #
 
-set -x 
+#set -x 
 
 NPROC=1
 # passing arguments

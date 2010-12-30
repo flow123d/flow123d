@@ -46,6 +46,6 @@ struct Reaction
 };
 
 void read_reaction_list( struct Transport *transport );
-void transport_reaction(struct Transport *transport, int elm_pos, int sbi);
+void transport_reaction(struct Transport *transport, int elm_pos, MaterialDatabase::Iter mtr, int sbi);
 
 #endif /* REACTION_H_ */

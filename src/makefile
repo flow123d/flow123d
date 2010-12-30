@@ -38,7 +38,6 @@ TARGETS = $(BIN)/flow123d
 FLOW123D_OBJS = \
 $(OBJS)/mesh/ini_constants_mesh.o\
 $(OBJS)/transport_bcd.o\
-$(OBJS)/transport.o\
 $(OBJS)/system.o\
 $(OBJS)/read_ini.o\
 $(OBJS)/constantdb.o\
@@ -52,7 +51,6 @@ $(OBJS)/hashes.o\
 $(OBJS)/boundaries.o\
 $(OBJS)/neighbours.o\
 $(OBJS)/mesh.o\
-$(OBJS)/initials.o\
 $(OBJS)/materials.o\
 $(OBJS)/local_matrix.o\
 $(OBJS)/calculation.o\
@@ -64,16 +62,18 @@ $(OBJS)/preprocess.o\
 $(OBJS)/solve.o\
 $(OBJS)/problem.o\
 $(OBJS)/main.o\
-$(OBJS)/ppfcs.o\
 $(OBJS)/btc.o\
-$(OBJS)/reaction.o\
 $(OBJS)/par_distribution.o\
 $(OBJS)/la_schur.o\
 $(OBJS)/xio.o\
 $(OBJS)/sparse_graph.o\
 $(OBJS)/convert.o\
 $(OBJS)/sys_function_stack.o\
+$(OBJS)/transport.o\
+$(OBJS)/reaction.o\
 $(OBJS)/la_linsys.o
+
+# $(OBJS)/ppfcs.o\
 
 FLOW123D_DEPS = $(addprefix $(DEPS)/, $(notdir $(FLOW123D_OBJS:.o=.d)))
 

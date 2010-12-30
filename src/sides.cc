@@ -379,24 +379,19 @@ void calc_side_rhs(struct Side *sde) {
 //=============================================================================
 
 void calc_side_rhs_dens(struct Side* sde, struct Problem* problem, Mesh* mesh) {
-    ElementFullIter ele = ELEMENT_FULL_ITER_NULL;
-    struct Transport *transport;
-    int sbi, n_subst, epos;
-    double sss = 0.0, *scales, ***conc;
 
     ASSERT(!((sde == NULL) || (problem == NULL) || (mesh == NULL)), "NULL argument to calc_side_rhs_dens()");
 
-    transport = problem->transport;
-    n_subst = mesh->n_substances;
-    ele = ELEMENT_FULL_ITER(sde->element);
+    Transport *transport = problem->transport;
+    int n_subst = mesh->n_substances;
+    ElementFullIter ele = ELEMENT_FULL_ITER(sde->element);
 
     ASSERT(!(ele == NULL), "Element of the side %d not defined\n", sde->id);
 
-    epos = id2pos(mesh, ele.id(), mesh->epos_id, ELM);
-    scales = transport->substance_density_scale;
-    conc = transport->conc;
-    for (sbi = 0; sbi < n_subst; sbi++)
-        sss += scales[sbi] * conc[sbi][MOBILE][epos];
+    // compute total density of dissolved matter
+    double sss = 0.0;
+    for (int sbi = 0; sbi < n_subst; sbi++)
+        sss += transport->substance_density_scale[sbi] * transport->out_conc[sbi][MOBILE][ele.index()];
 
     //xprintf( MsgVerb, " %f ", ele->start_conc->conc[0] );
     ele->rhs[sde->lnum] += (ele->centre[2] - sde->centre[2]) * (1 + sss

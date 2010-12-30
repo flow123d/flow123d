@@ -56,6 +56,8 @@ void btc_init(struct BTC *btc){
 	btc->BTC_elm		= BTC_elm_list( btc->n_BTC_elms, Btc );
 
 }
+
+/*
 //=============================================================================
 
 //=============================================================================
@@ -84,7 +86,7 @@ void btc_check(struct Transport *transport) {
             transport->btc = NULL;
         }
     }
-}
+}*/
 //=============================================================================
 
 //=============================================================================
@@ -139,6 +141,8 @@ void output_transport_init_BTC(struct Transport *transport)
 				}
         xfree(out);
         }
+
+/*
 //==============================================================================
 // TRANSPORT OUTPUT IN TIME (breakthrough curve in single element in all zones)
 //==============================================================================
@@ -190,3 +194,4 @@ void output_transport_time_BTC(struct Transport *transport, double time)
         }
         xfree(out);
 }
+*/

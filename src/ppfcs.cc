@@ -394,7 +394,7 @@ void output_FCS(struct Transport *transport)
 // DECOVALEX
 
 //==============================================================================
-
+/*
 //==============================================================================
 //      OUTPUT AGE
 //==============================================================================
@@ -436,10 +436,11 @@ void output_AGE(struct Transport *transport,double time)
 
         xfclose( out );
        // getchar();
-}
+} */
 //==============================================================================
 //      PARTICLE TEST
 //==============================================================================
+/*
 double particle_test(struct Transport *transport)
 {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
@@ -451,7 +452,7 @@ double particle_test(struct Transport *transport)
 		pc += transport->conc[MOBILE][0][i] * mesh->element.find_id(mesh->epos_id[i])->volume;
 	}
 	return pc;
-}
+} */
 //==============================================================================
 //      CLEAR TRANSPORT BC
 //==============================================================================
