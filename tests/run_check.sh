@@ -21,8 +21,8 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
-set -x
-# This script compares two given dirctories
+#set -x
+# This script compares two given diretories
 
 # Get actual output dir as the first argument
 OUT=$1
@@ -42,7 +42,6 @@ INI=${INI_FILE##*/}
 SOURCE_DIR=${INI_FILE%/*}
 
 #number of processors
-NPROC=$2
 
 SCRIPT_PATH_DIR=$PWD
 
@@ -70,7 +69,7 @@ suff=.ini
 	else 
 		if [ -a $OUT/$x ]; then			
 			echo "" | tee stdout_diff.log
-			echo "Test:$3, ini file: $1, n proc: $2, output file: $x" | tee -a stdout_diff.log
+			echo "File: $x" | tee -a stdout_diff.log
 			$NDIFF -o diff.log $OUT/$x $REF_OUT/$x | tee -a stdout_diff.log
 		else
 			echo "Error: Missing output file: $x" | tee -a stdout_diff.log

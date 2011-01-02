@@ -21,11 +21,10 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
-set -x 
+
 # This script assumes that it is running in particular subdir of the "tests"
 # dir. 
 TEST_DIR=`pwd`
-
 
 #name of ini file
 INI_FILE=$1
@@ -41,7 +40,6 @@ RUN_FLOW=../../bin/run_flow.sh
 
 for n in $NPROC
 do
-  #runs script which copies flow input files and ini files from given folders
   $RUN_FLOW -ini $INI_FILE -np $n -- $FLOW_PARAMS
 
   #while [ ! -f $FILE_PATH_DIR/out ]

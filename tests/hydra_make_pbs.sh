@@ -34,10 +34,9 @@ echo "
 #$ -S /bin/bash
 #
  
-cd $FILE_PATH_DIR
 touch lock
 export OMPI_MCA_plm_rsh_disable_qrsh=1
-$SCRIPT_DIR_PATH/$MPI_RUN $NSLOTS $SCRIPT_DIR_PATH/$EXECUTABLE -s $INI 2>err 1>out
+$MPI_RUN $NSLOTS $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
 rm lock" >hydra_run_pbs.qsub
 
 chmod u+x hydra_run_pbs.qsub
