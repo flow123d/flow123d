@@ -22,7 +22,7 @@
 # $LastChangedDate$
 #
 
-#set -x 
+set -x 
 
 NPROC=1
 # passing arguments
@@ -35,12 +35,15 @@ do
   elif [ "$1" == "-ini" ]; then
     shift
     INI_FILE=$1
+  elif [ "$1" == "-q" ]; then
+    shift
+    QueueTime=$1
   elif [ "$1" == "-h" ]; then
     echo " This is Flow123d help page:
 	args:
 	-np 		set number of procs
 	-ini 		set absolut or relative path to ini file
-	-wtime 		set maximal time to wait to finish job"
+	-q 		set maximal time to wait to finish job"
 	break
     shift
   else
@@ -69,32 +72,34 @@ else
 fi
 
 
-# set path to script dir
+# set path to script dir + exports for make_pbs scripts
 # TODO: co kdyz bude skript volan s absolutini cestou !!
 export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
-
-# set path to test dir
-#FILE_PATH_DIR=$SOURCE_DIR
 
 # path to MPIEXEC
 MPI_RUN=$SCRIPT_PATH_DIR/mpiexec
 
 #paths to dirs, relative to tests/$WRK
 if [ -e $SCRIPT_PATH_DIR/flow123d.exe ]; then
-	export EXECUTABLE=$SCRIPT_PATH_DIR/flow123d.exe;
+	EXECUTABLE=$SCRIPT_PATH_DIR/flow123d.exe;
 elif [ -e $SCRIPT_PATH_DIR/flow123d ]; then
-	export EXECUTABLE=$SCRIPT_PATH_DIR/flow123d;
+	EXECUTABLE=$SCRIPT_PATH_DIR/flow123d;
 else
 	echo "Error: missing executable file!"
 	exit 1
 fi
  
+#exports for make_pbs scripts
+export MPI_RUN
+export EXECUTABLE
+
+
 cd $SOURCE_DIR
 
 #run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
 if [ -n "$MACHINE_NAME" ]; then
 	../${MACHINE_NAME}_make_pbs.sh
-	qsub -pe mpi $NPROC ${MACHINE_NAME}_run_pbs.qsub
+	qsub -pe orte $NPROC ${MACHINE_NAME}_run_pbs.qsub
 else
 	if [ -e $MPI_RUN ]; then
 		$MPI_RUN -np $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
