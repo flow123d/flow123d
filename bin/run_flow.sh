@@ -32,7 +32,7 @@ do
     shift
 	NPROC=$1				
 	shift
-  elif [ "$1" == "-ini" ]; then
+  elif [ "$1" == "-s" ]; then
     shift
     INI_FILE=$1
   elif [ "$1" == "-q" ]; then
@@ -42,7 +42,7 @@ do
     echo " This is Flow123d help page:
 	args:
 	-np 		set number of procs
-	-ini 		set absolut or relative path to ini file
+	-s 		set absolut or relative path to ini file
 	-q 		set maximal time to wait to finish job"
 	break
     shift
@@ -73,7 +73,15 @@ fi
 
 
 # set path to script dir + exports for make_pbs scripts
+
+
+# POZOR POZOR POZOR
 # TODO: co kdyz bude skript volan s absolutini cestou !!
+#  v nasledujici prom pak bude napr: /home/jan.brezina//home/jan.brezina/flow/bin
+# je potreba otestovat, ze $0 nema na zacatku '/'
+# podobny problem muze byt se SOURCE_DIR
+#
+# TODO: presunout do bin skripty pro spouseni pod PBS
 export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
 
 # path to MPIEXEC
