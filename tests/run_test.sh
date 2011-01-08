@@ -40,7 +40,7 @@ RUN_FLOW=../../bin/run_flow.sh
 
 for n in $NPROC
 do
-  $RUN_FLOW -ini $INI_FILE -np $n -- $FLOW_PARAMS
+  $RUN_FLOW -s $INI_FILE -np $n -- $FLOW_PARAMS
 
   #while [ ! -f $FILE_PATH_DIR/out ]
   #do		
