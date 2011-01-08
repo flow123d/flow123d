@@ -23,7 +23,8 @@
 #
 
 set -x 
-
+export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
+MACHINE_SCRIPT=$SCRIPT_PATH_DIR/current_make_pbs.qsub
 NPROC=1
 # passing arguments
 while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]
@@ -38,12 +39,20 @@ do
   elif [ "$1" == "-q" ]; then
     shift
     QueueTime=$1
+  elif [ "$1" == "-m" ]; then
+    shift
+	if [ -e $SCRIPT_PATH_DIR/${1}_make_pbs.qsub ]; then
+		MACHINE_SCRIPT=$SCRIPT_PATH_DIR/${1}_make_pbs.qsub
+	else
+		echo "Skript pro daný MACHINE nenalezen, bude použit defaultní."
+	fi
   elif [ "$1" == "-h" ]; then
     echo " This is Flow123d help page:
 	args:
 	-np 		set number of procs
 	-s 		set absolut or relative path to ini file
-	-q 		set maximal time to wait to finish job"
+	-q 		set maximal time to wait to finish job
+	-m 		name of the machine, if running by pbs"
 	break
     shift
   else
@@ -100,21 +109,21 @@ fi
 #exports for make_pbs scripts
 export MPI_RUN
 export EXECUTABLE
+export MACHINE_SCRIPT
+export NPROC
+export INI
+export FLOW_PARAMS
 
 
 cd $SOURCE_DIR
 
 #run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
-if [ -n "$MACHINE_NAME" ]; then
-	../${MACHINE_NAME}_make_pbs.sh
-	qsub -pe orte $NPROC ${MACHINE_NAME}_run_pbs.qsub
-else
-	if [ -e $MPI_RUN ]; then
-		$MPI_RUN -np $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
-	else 
-		echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
-		exit 1
-	fi
+
+if [ -e $MPI_RUN ]; then
+	$MPI_RUN -np $NPROC $EXECUTABLE -s $INI $FLOW_PARAMS 2>err 1>out
+else 
+	echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
+	exit 1
 fi
 	
 	
