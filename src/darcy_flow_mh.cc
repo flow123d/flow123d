@@ -44,7 +44,7 @@
 #include "la_schur.hh"
 #include "sparse_graph.hh"
 #include "field_p0.hh"
-
+#include "profiler.h"
 
 
 //=============================================================================
@@ -107,8 +107,8 @@ DarcyFlowMH::DarcyFlowMH(Mesh &mesh_in)
 void DarcyFlowMH::solve() {
 
 
-
-    Timing *solver_time = timing_create("SOLVING MH SYSTEM", PETSC_COMM_WORLD);
+    START_TIMER("SOLVING MH SYSTEM");
+    //Timing *solver_time = timing_create("SOLVING MH SYSTEM", PETSC_COMM_WORLD);
     F_ENTRY;
 
     switch (n_schur_compls) {
@@ -171,7 +171,7 @@ void DarcyFlowMH::solve() {
     VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
             INSERT_VALUES, SCATTER_FORWARD);
 
-    timing_destroy(solver_time);
+    //timing_destroy(solver_time);
 }
 
 double * DarcyFlowMH::solution_vector()
@@ -354,7 +354,9 @@ void DarcyFlowMH::make_schur0() {
     Element *ele;
     Vec aux;
 
-    Timing *asm_time = timing_create("PREALLOCATION", PETSC_COMM_WORLD);
+    START_TIMER("PREALLOCATION");
+
+    //Timing *asm_time = timing_create("PREALLOCATION", PETSC_COMM_WORLD);
     if (schur0 == NULL) { // create Linear System for MH matrix
         xprintf( Msg, "Allocating MH matrix for water model ... \n " );
 
@@ -368,14 +370,19 @@ void DarcyFlowMH::make_schur0() {
         mh_abstract_assembly(); // preallocation
 
     }
-    timing_reuse(asm_time, "ASSEMBLY");
+
+    END_TIMER("PREALLOCATION");
+
+    START_TIMER("ASSEMBLY");
+
+    //timing_reuse(asm_time, "ASSEMBLY");
     xprintf( Msg, "Assembling MH matrix for water model ... \n " );
 
     schur0->start_add_assembly(); // finish allocation and create matrix
     mh_abstract_assembly(); // fill matrix
     schur0->finalize();
     schur0->view_local_matrix();
-    timing_destroy(asm_time);
+    //timing_destroy(asm_time);
 
     // add time term
 
@@ -423,7 +430,8 @@ void DarcyFlowMH::make_schur1() {
     int i_loc, nsides, i, side_rows[4], ierr, el_row;
     double det;
     F_ENTRY;
-    Timing *schur1_time = timing_create("Schur 1", PETSC_COMM_WORLD);
+    START_TIMER("Schur 1");
+    //Timing *schur1_time = timing_create("Schur 1", PETSC_COMM_WORLD);
 
     // create Inverse of the A block
     ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(),
@@ -459,7 +467,7 @@ void DarcyFlowMH::make_schur1() {
     schur1->form_schur();
     schur1->set_spd();
 
-    timing_destroy(schur1_time);
+    //timing_destroy(schur1_time);
 }
 
 /*******************************************************************************
@@ -471,7 +479,8 @@ void DarcyFlowMH::make_schur2() {
     PetscScalar *vDiag;
     int ierr, loc_el_size;
     F_ENTRY;
-    Timing *schur2_time = timing_create("Schur 2", PETSC_COMM_WORLD);
+    START_TIMER("Schur 2");
+    //Timing *schur2_time = timing_create("Schur 2", PETSC_COMM_WORLD);
     // create Inverse of the B block ( of the first complement )
 
 
@@ -499,7 +508,7 @@ void DarcyFlowMH::make_schur2() {
     schur2->scale(-1.0);
     schur2->set_spd();
 
-    timing_destroy(schur2_time);
+    //timing_destroy(schur2_time);
 }
 
 

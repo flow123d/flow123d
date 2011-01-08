@@ -73,7 +73,8 @@ $(OBJS)/xio.o\
 $(OBJS)/sparse_graph.o\
 $(OBJS)/convert.o\
 $(OBJS)/sys_function_stack.o\
-$(OBJS)/la_linsys.o
+$(OBJS)/la_linsys.o\
+$(OBJS)/profiler.o
 
 FLOW123D_DEPS = $(addprefix $(DEPS)/, $(notdir $(FLOW123D_OBJS:.o=.d)))
 

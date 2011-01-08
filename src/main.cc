@@ -62,6 +62,8 @@
 
 #include "solve.h"
 
+#include "profiler.h"
+
 /*
 #include "solve.h"
 #include "elements.h"
@@ -162,6 +164,8 @@ int main(int argc, char **argv) {
     } else {
         ConstantDB::getInstance()->setInt("Goal", goal);
     }
+    
+    START_TIMER("WHOLE PROGRAM");
 
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
