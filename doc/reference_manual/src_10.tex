@@ -23,7 +23,7 @@ The extension {\tt .SRC} is highly recomended for files of this type.
 \$EndSourceFormat\\
 \$Sources\\
   \vari{number-of-sources}\\
-  \vari{source-number} \vari{type} \vari{eid} \vari{density}\\
+  \vari{eid} \vari{density}\\
   \dots\\
 \$EndSources\\
 \end{fileformat}
@@ -34,12 +34,12 @@ where
   the file. Usually \vari{data-size} = sizeof(double).
  \ditem{number-of-sources}{int} --- Number of sources defined in the
   file.
- \ditem{source-number}{int} --- is the number (index) of the n-th
-  source. These numbers do not have to be given in a consecutive (or even an
-  ordered) way. Each number has to be given only onece, multiple definition
-  are treated as inconsistency of the file and cause stopping the
-  calculation.
- \ditem{type}{int} --- is type of the source. This variable is still unused. 
+% \ditem{source-number}{int} --- is the number (index) of the n-th
+%  source. These numbers do not have to be given in a consecutive (or even an
+%  ordered) way. Each number has to be given only once, multiple definition
+%  are treated as inconsistency of the file and cause stopping the
+%  calculation.
+% \ditem{type}{int} --- is type of the source. This variable is still unused. 
  \ditem{eid}{int} --- is id-number of the element, where the source lies.
  \ditem{density}{double} --- is the density of the source, in volume of fluid
    per time unit. Possitive values are sources, negative are sinks.

@@ -16,19 +16,12 @@
 
 \normalsize
  \section*{Flow123D ini file format}
- \begin{flushleft}
- Flow123D version: 03.10.08
- \vspace{20pt}
- 
- Note: All string values have maximal length MAXBUFF - 1 (=1023).
- \vspace{20pt}
- \end{flushleft}
  
 \begin{initable}{Global}
  \key{Problem\_type} & \type{int} & NULL &
  Type of solved problem. Currently supported:\break %\br 
  1 = steady saturated flow\break %\br
- 3 = variable-density saturated flow
+% 3 = variable-density saturated flow
  \\
  \hline
  \key{Description} & \type{string} & {\it undefined} &
@@ -44,11 +37,11 @@
  The output with transport is written every
  {\tt Save\_step}. [time units]
  \\
- \hline
- \key{Density\_step} & \type{double} & 1.0 &
- Time interval of one density iteration
- in the varible-density calculation (type=3)
- [time units]
+% \hline
+% \key{Density\_step} & \type{double} & 1.0 &
+% Time interval of one density iteration
+% in the varible-density calculation (type=3)
+% [time units]
  \\
  \hline
 \end{initable}
@@ -65,11 +58,11 @@
 %\end{initable}
 
 \begin{initable}{Input}
- \key{File\_type} & \type{int} & -1 &
- Type of the input files. Now only the value 1 
- (GMSH-like files) is accepted.
-\\
-\hline
+% \key{File\_type} & \type{int} & -1 &
+% Type of the input files. Now only the value 1 
+% (GMSH-like files) is accepted.
+%\\
+%\hline
 \key{Mesh} & \type{string} & NULL & 
 Name of file containig definition of the mesh
 for the problem.
@@ -145,7 +138,7 @@ Name of transport sorbed immobile output file.
 Number of substances.
 \\
 \hline
-\key{Subst\_names} & \type{string} & {\it undefined} &
+\key{Substances} & \type{string} & {\it undefined} &
 Names of the substances separated by commas.
 \\ 
 \hline
@@ -168,18 +161,18 @@ Density of fluid.
  \normalsize
  
 \begin{initable}{Run}
-\key{Log\_file} & \type{string} & mixhyb.log &
-Name of log file.
-\\ 
-\hline
+%\key{Log\_file} & \type{string} & mixhyb.log &
+%Name of log file.
+%\\ 
+%\hline
 \key{Screen\_verbosity} & \type{int} & 8 &
 Amount of messages printed on the screen. (0 = no messages, ..., 7 = all messages)
 \\
 \hline
-\key{Log\_verbosity} & int & 8 &
-Amount of messages printed to the log file. (0 = no messages, ..., 7 = all messages)
-\\
-\hline
+%\key{Log\_verbosity} & int & 8 &
+%Amount of messages printed to the log file. (0 = no messages, ..., 7 = all messages)
+%\\
+%\hline
 \key{Pause\_after\_run} & \type{YES/NO} & NO &
 If set to "YES", the program waits for a key press before it finishes.
 \\ 
@@ -192,14 +185,22 @@ If set to "YES", uses last known solution for chosen solver.
 \\
 \hline
 \\
-\key{Solver\_name} & \type{string} & matlab &
-Command for calling external solver.\br
-Supported solvers are: {\tt petsc}, {\tt isol}, and {\tt matlab}.
+\key{Solver\_name} & \type{string} & petsc &
+Type of linear solver.\br
+Supported solvers are: {\tt petsc}, {\tt petsc\_matis} (experimental)
 \\
 \hline
 \key{Solver\_params} & \type{string} & NULL & 
-Optional parameters for the external solver passed on the command line or
-PETSc options if the PETSC solver is chosen (see doc/petsc\_help). 
+%Optional parameters for the external solver passed on the command line or
+%PETSc options if the PETSc solver is chosen (see doc/petsc\_help). 
+PETSc options to override default choice of iterative solver and preconditioner (use with care).
+In particular to use UMFPACK sequantial direct solver set:
+
+{\tt Solve\_params = "-ksp preonly -pc\_type lu -pc\_factor\_mat\_solver\_package umfpack" }
+
+To use parallel direct solver MUMPS use:
+
+{\tt Solve\_params = "-ksp preonly -pc\_type lu -pc\_factor\_mat\_solver\_package mumps -mat\_mumps\_icntl\_14 5"}
 \\
 \hline
 \key{Keep\_solver\_files} & \type{YES/NO} & NO &
@@ -222,15 +223,19 @@ Name of control file for situation, when {\tt Use\_control\_file} \= YES.
 Number of Schur complements to use. Valid values are 0,1,2. The last one should be the fastest.
 \\
 \hline
-\end{initable}
- 
-\begin{initable}{Solver parameters}
 \key{Solver\_accuracy} & \type{double} & 1e-6 &
 When to stop solver run - value of residum of matrix. 
 Useful values from 1e-4 to 1e-10.\br
 Bigger number = faster run, less accuracy.
 \\
-\hline\\
+\hline
+\key{max\_it} & \type{int} & 200 &
+Maximum number of iteration of linear solver.
+\\
+\hline
+\end{initable}
+ 
+%\begin{initable}{Solver parameters}
 %%
 %%
 %%  particular parameters for ISOL - reduce them
@@ -259,8 +264,8 @@ Bigger number = faster run, less accuracy.
 %%  \hline\\
 %% ilu\_milu & int & 0 &(i)\\
 %%  \hline\\
-\end{initable}
- Note: For aditional documentation see manual of the solver, (i) - isol manual
+%\end{initable}
+% Note: For aditional documentation see manual of the solver, (i) - isol manual
 \pagebreak
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5 
 
@@ -288,10 +293,6 @@ Type of output file\br
  3 - both files (two separate names)
 \\
 \hline
-\key{POS\_set\_view} & \type{YES/NO} & NO &
-Write a header setting the view in GMSH to POS.
-\\
-\hline
 \key{POS\_view\_params} & \type{double[8]}& 
         0 0 0\br
         1 1 1\br
@@ -301,70 +302,70 @@ Write a header setting the view in GMSH to POS.
  [x y] screen position shift "TranslationX"
 \\
 \hline
-\key{Write\_ftrans\_out} & \type{YES/NO} & NO &
-If set to "YES", writes output file for ftrans.
-\\
-\hline
-\key{Cross\_section} & \type{YES/NO} & NO &
-If set to "YES", uses cross section output.
-\\
-\hline
-\key{Cs\_params} & \type{double[7]} & {\it zero} &
-Params for cross section,\br
-[x0 y0 z0] initial point\br
-[xe ye ze] end point\br
-[delta] cylinder radius.
-\\
-\hline\\
-\key{Specify\_elm\_type} & \type{YES/NO} & NO &
-If set to "YES", next param. specify type of prefered elements. If set to
-"NO", each element is included.
-\\ 
-\hline
-\key{Output\_elm\_type} & \type{int} & -1 &
-Spefify type of element dimension\br
-1 - 1D (line), 2 - 2D (triangle), \br
-3 - 3D (tetrahedron).
-\\
-\hline
-\key{BTC\_elms} & \type{list of ints} & {\it undefined} &
-List of the breakthrough curve elements, ints this concentrations are written to
-seperate file with extension *.btc.
-\\
-\hline\\
-\key{FCs\_params}& double[4] & {\it zero} &
-Params of flow cross section\br
-[x y z 1] plane of cut (general equation),\br
- output values are written by coordinate\br
- of axis: x - [0], y - [1], z - [2]
-\\
-\hline
+%\key{Write\_ftrans\_out} & \type{YES/NO} & NO &
+%If set to "YES", writes output file for ftrans.
+%\\
+%\hline
+%\key{Cross\_section} & \type{YES/NO} & NO &
+%If set to "YES", uses cross section output.
+%\\
+%\hline
+%\key{Cs\_params} & \type{double[7]} & {\it zero} &
+%Params for cross section,\br
+%[x0 y0 z0] initial point\br
+%[xe ye ze] end point\br
+%[delta] cylinder radius.
+%\\
+%\hline\\
+%\key{Specify\_elm\_type} & \type{YES/NO} & NO &
+%If set to "YES", next param. specify type of prefered elements. If set to
+%"NO", each element is included.
+%\\ 
+%\hline
+%\key{Output\_elm\_type} & \type{int} & -1 &
+%Spefify type of element dimension\br
+%1 - 1D (line), 2 - 2D (triangle), \br
+%3 - 3D (tetrahedron).
+%\\
+%\hline
+%\key{BTC\_elms} & \type{list of ints} & {\it undefined} &
+%List of the breakthrough curve elements, ints this concentrations are written to
+%seperate file with extension *.btc.
+%\\
+%\hline\\
+%\key{FCs\_params}& double[4] & {\it zero} &
+%Params of flow cross section\br
+%[x y z 1] plane of cut (general equation),\br
+% output values are written by coordinate\br
+% of axis: x - [0], y - [1], z - [2]
+%\\
+%\hline
 \key{Pos\_format} & \type{string} & ASCII &
-Format of the POS output file [ASCII / BIN] (opening a binary file in the GMSH is much faster).
+Output file format. One can use: ASCII, BIN, or VTK\_SERIAL\_ASCII
 \\
 \hline\\
 \end{initable}
 Description: Options controling output file of the programm
 
- \begin{initable}{Density}
- \key{Density\_implicit} & \type{YES/NO} & NO &
- NO = explicit iteration (simple flow update)\br
- YES = implicit iteration (more accurate flow update)
-\\
-\hline
-\key{Density\_max\_iter} & int & 20 &
-Maximum number of iterations for implicit density calcultation.
-\\
-\hline\\
-\key{Eps\_iter} & \type{double} & 1e-5&
-Stopping criterium for iterations (maximum norm of pressure difference).
-\\
-\hline
-\key{Write\_iterations} & \type{YES/NO} & NO &
-Write conc values during iterations to POS file.
-\\
-\hline
-\end{initable}
+% \begin{initable}{Density}
+% \key{Density\_implicit} & \type{YES/NO} & NO &
+% NO = explicit iteration (simple flow update)\br
+% YES = implicit iteration (more accurate flow update)
+%\\
+%\hline
+%\key{Density\_max\_iter} & int & 20 &
+%Maximum number of iterations for implicit density calcultation.
+%\\
+%\hline\\
+%\key{Eps\_iter} & \type{double} & 1e-5&
+%Stopping criterium for iterations (maximum norm of pressure difference).
+%\\
+%\hline
+%\key{Write\_iterations} & \type{YES/NO} & NO &
+%Write conc values during iterations to POS file.
+%\\
+%\hline
+%\end{initable}
 
  
  

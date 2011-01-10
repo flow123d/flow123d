@@ -73,7 +73,7 @@ void solver_init( struct Solver *solver) {
     F_ENTRY;
 	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
 
-	solver->name    = OptGetStr( "Solver", "Solver_name", "matlab" );
+	solver->name    = OptGetStr( "Solver", "Solver_name", "petsc" );
    	solver_set_type(solver);
    	solver->executable = OptGetStr( "Solver", "Solver_executable",solver->name);
     solver->params  = OptGetStr( "Solver", "Solver_params", "" );

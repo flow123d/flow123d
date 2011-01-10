@@ -67,8 +67,6 @@ void problem_init(struct Problem *problem)
     problem -> time_step = OptGetDbl("Global", "Time_step", "1.0"); // non sense for non evol
 //    problem -> dens         = OptGetBool( "Global", "Density_on", "no" );
 
-    // [Input] - Filenames
-    ConstantDB::getInstance()->setInt("File_type", OptGetInt("Input", "File_type", NULL));
 
     // [Output]
     ConstantDB::getInstance()->setInt("Out_digit", OptGetInt("Output", "Output_digits", "6"));
