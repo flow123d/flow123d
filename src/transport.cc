@@ -70,14 +70,9 @@ static void transport_partioning(struct Transport *transport, int np);
 static void output_vector_gather(struct Transport *transport);
 static void transport_matrix_step_mpi(struct Transport *transport, double time_step);
 static void make_transport_partitioning(struct Transport *transport);
-
-//static void alloc_transport_matrix(struct Transport *transport);
 static void alloc_transport_vectors(struct Transport *transport);
 static void alloc_density_vectors(struct Transport *transport);
 static void transport_vectors_init(struct Transport *transport);
-//static void create_transport_matrix(struct Problem *problem);
-//static void transport_matrix_step(struct TMatrix *tmatrix,double time_step);
-//static void matvecs(struct TMatrix *tmatrix,double *pconc,double *conc);
 static double *transport_aloc_pi(Mesh*);
 static void transport_dual_porosity(struct Transport *transport, int elm_pos, int sbi);
 static void transport_sorption(struct Transport *transport, int elm_pos, int sbi);
@@ -100,19 +95,13 @@ void make_transport(struct Transport *transport) {
     transport->problem->material_database->read_transport_materials(transport->dual_porosity, transport->sorption,
             transport->n_substances);
 
-    if (transport->mpi != 1) {
-        /*alloc_transport_matrix(transport);
-         alloc_transport_vectors(transport);
-         transport_vectors_init(transport);
-         if(ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY)
-         alloc_density_vectors(transport);*/
-    } else {
+
         make_transport_partitioning(transport);
         alloc_transport_vectors(transport);
         transport_vectors_init(transport);
         alloc_transport_structs_mpi(transport);
         fill_transport_vectors_mpi(transport);
-    }
+
 
     /*
      FOR_ELEMENTS_IT(i){
@@ -161,7 +150,6 @@ void alloc_transport(struct Problem *problem) {
     problem->transport = (struct Transport*) xmalloc(sizeof(struct Transport));
     transport = problem->transport;
     transport->problem = problem;
-    transport->mpi = 1;
 }
 //=============================================================================
 // MAKE TRANSPORT
@@ -270,22 +258,6 @@ void transport_vectors_init(struct Transport *transport) {
          = elm->side[s]->cond->transport_bcd->conc[sbi];
          }*/
     }
-}
-//=============================================================================
-// ALLOCATE TRANSPORT STRUCTURES
-//=============================================================================
-void alloc_transport_matrix(struct Transport *transport) {
-    int *n;
-    n = max_entry();
-
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    transport->tmatrix = (struct TMatrix*) xmalloc(sizeof(struct TMatrix));
-    transport->tmatrix->lenrow = (int*) xmalloc(mesh->n_elements() * sizeof(int));
-    transport->tmatrix->irowst = (int*) xmalloc(mesh->n_elements() * sizeof(int));
-    transport->tmatrix->jcn = (int*) xmalloc(n[0] * sizeof(int));
-    transport->tmatrix->val = (double*) xmalloc(n[0] * sizeof(double));
-    xfree(n);
 }
 //=============================================================================
 //	ALLOCATE OF TRANSPORT VARIABLES (ELEMENT & NODES)
@@ -963,7 +935,7 @@ void convection(struct Transport *trans) {
 
     int steps, step, save_step, frame = 0;
     register int t;
-    int n_subst, sbi, elm_pos, rank;
+    int n_subst, sbi, elm_pos, rank,size;
     struct Problem *problem = trans->problem;
     struct TMatrix *tmatrix = problem->transport->tmatrix;
     double ***pconc;
@@ -973,17 +945,15 @@ void convection(struct Transport *trans) {
     // int tst = 1; // DECOVALEX
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_size(PETSC_COMM_WORLD, &size);
 
     xprintf( Msg, "Calculating transport...")/*orig verb 2*/;
     n_subst = mesh->n_substances;
 
     //  flow_cs(trans); //DECOVALEX
 
-    /*
-     if(trans->mpi != 1){
-     create_transport_matrix(problem);
-     }
-     else */
+
+
     create_transport_matrix_mpi(trans);
 
     // MatView(trans->tm,PETSC_VIEWER_STDOUT_WORLD);
@@ -1053,12 +1023,12 @@ void convection(struct Transport *trans) {
         }
         xprintf( Msg, "Time : %f\n",trans->time_step*t);
 
-        save_step == step;
+     //   save_step == step;
                 //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
         if ((save_step == step) || (trans-> write_iterations)) {
             xprintf( Msg, "Output\n");
-            if (trans->mpi == 1) output_vector_gather(trans);
-
+            //if (size != 1)
+            output_vector_gather(trans);
             if (rank == 0) transport_output(trans, t * trans->time_step, ++frame);
             if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
                 output_time(problem, t * trans->time_step); // time variable flow field
@@ -1372,237 +1342,4 @@ void decay(struct Transport *transport, int elm_pos, int type) {
     default:
         break;
     }
-}
-
-//=============================================================================
-// CREATE TRANSPORT MATRIX
-//=============================================================================
-void create_transport_matrix(struct Problem *problem) {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    ElementIter elm;
-    struct Edge *edg;
-    struct Transport *transport;
-    struct SVector *svector;
-    struct TMatrix *tmatrix;
-    int i, j, k, l, n, s, itemp, ec, *max_ent;
-    double ftemp, max_sum, sum, flux;
-
-    max_sum = 0.0;
-
-    transport = problem->transport;
-    tmatrix = problem->transport->tmatrix;
-
-    FOR_EDGES(edg) { // calculate edge Qv
-        edg->faux = 0;
-        FOR_EDGE_SIDES(edg,s)
-            if (edg->side[s]->flux > 0)
-                edg->faux += edg->side[s]->flux;
-    }
-
-    max_ent = max_entry();
-
-    svector = (struct SVector*) xmalloc(sizeof(struct SVector)); //uvolnit
-    svector->pos = (int*) xmalloc(max_ent[1] * sizeof(int));
-    svector->val = (double*) xmalloc(max_ent[1] * sizeof(double));
-
-    transport->tmatrix->rows = mesh->n_elements();
-
-    i = -1;
-    ec = 0;
-    FOR_ELEMENTS(elm) {
-        i++; // pos
-        for (k = 0; k < max_ent[1]; k++) {
-            svector->pos[k] = 0;
-            svector->val[k] = 0.0;
-        }
-        svector->pos[0] = i;
-        j = 1;
-        // prislusne porozity!!!!!!!
-
-        FOR_ELEMENT_SIDES(elm,si) // same dim
-            if (elm->side[si]->cond == NULL) {
-                if (elm->side[si]->flux < 0.0) {
-
-                    if (elm->side[si]->neigh_bv != NULL) { //comp model
-                        svector->val[j] = -(elm->side[si]->flux / (elm->volume * elm->material->por_m));
-                        //svector->pos[j++] = id2pos(mesh,ELEMENT_FULL_ITER(elm->side[si]->neigh_bv->element[0]).id(),mesh->epos_id,ELM);
-                        svector->pos[j++] = ELEMENT_FULL_ITER(elm->side[si]->neigh_bv->element[0]) - mesh->element.begin();
-                        //        printf("side in elm:%d value:%f pos:%d\n ",elm->id,svector->val[j-1],svector->pos[j-1]);
-                        //        getchar();
-                    }
-                    // end comp model
-                    else {
-                        edg = elm->side[si]->edge;
-                        if (edg->faux > ZERO)
-                            FOR_EDGE_SIDES(edg,s)
-                                if ((edg->side[s]->id != elm->side[si]->id) && (edg->side[s]->flux > 0.0)) {
-                                    svector->val[j] = -(elm->side[si]->flux * edg->side[s]->flux / (edg->faux * elm->volume
-                                            * elm->material->por_m));
-                                    //svector->pos[j++] = id2pos(mesh,ELEMENT_FULL_ITER().id(),mesh->epos_id,ELM);
-                                    svector->pos[j++] = ELEMENT_FULL_ITER(edg->side[s]->element) - mesh->element.begin();
-                                    //    printf("side in elm:%d value:%f\n ",elm->id,svector->val[j-1]);
-                                }
-                    }
-                }
-                if (elm->side[si]->flux > 0.0) {
-                    svector->val[0] -= (elm->side[si]->flux / (elm->volume * elm->material->por_m));
-                    //    printf("side in elm:%d value:%f\n ",elm->id,svector->val[0]);
-                }
-            } else {
-                if (elm->side[si]->flux < 0.0) {
-                    svector->val[j] = -(elm->side[si]->flux / (elm->volume * elm->material->por_m));
-                    // svector->pos[j++] = id2pos(mesh,elm->side[si]->id,mesh->spos_id,BC);
-                    svector->pos[j++] = BOUNDARY_FULL_ITER(elm->side[si]->cond) - mesh->boundary.begin() + mesh->n_elements();
-                    //   printf("side in elm:%d value:%f\n ",elm->id,svector->val[j-1]);
-                    //   printf("%d\t%d\n",elm->id,id2pos(problem,elm->side[si]->id,problem->spos_id,BC));
-
-                }
-                if (elm->side[si]->flux > 0.0) {
-                    svector->val[0] -= (elm->side[si]->flux / (elm->volume * elm->material->por_m));
-                    //    printf("side in elm:%d value:%f\n ",elm->id,svector->val[0]);
-                }
-            } // end same dim     //ELEMENT_SIDES
-
-
-        FOR_ELM_NEIGHS_VB(elm,n) // comp model
-            FOR_NEIGH_ELEMENTS(elm->neigh_vb[n],s)
-                if (elm.id() != ELEMENT_FULL_ITER(elm->neigh_vb[n]->element[s]).id()) {
-                    if (elm->neigh_vb[n]->side[s]->flux > 0.0) {
-                        svector->val[j] = elm->neigh_vb[n]->side[s]->flux / (elm->volume * elm->material->por_m);
-                        //  svector->pos[j++] = id2pos(mesh,ELEMENT_FULL_ITER(elm->neigh_vb[n]->element[s]).id(),mesh->epos_id,ELM);
-                        svector->pos[j++] = ELEMENT_FULL_ITER(elm->neigh_vb[n]->element[s]) - mesh->element.begin();
-                    }
-                    if (elm->neigh_vb[n]->side[s]->flux < 0.0) {
-                        svector->val[0] += elm->neigh_vb[n]->side[s]->flux / (elm->volume * elm->material->por_m);
-                    }
-                } // end comp model
-
-
-        Neighbour *ngh;
-        ElementFullIter el2 = ELEMENT_FULL_ITER_NULL;
-        FOR_ELM_NEIGHS_VV(elm,n) { //non-comp model
-            ngh = elm->neigh_vv[n];
-            FOR_NEIGH_ELEMENTS(ngh,s) {
-
-                el2 = ELEMENT_FULL_ITER(ngh->element[s]);
-                if (elm.id() != el2.id()) {
-                    flux = ngh->sigma * ngh->geom_factor * (el2->scalar - elm->scalar);
-                    if (flux > 0.0) {
-                        svector->val[j] = flux / (elm->volume * elm->material->por_m); // -=
-                        svector->pos[j++] = ELEMENT_FULL_ITER(el2) - mesh->element.begin(); //id2pos(mesh,el2.id(),mesh->epos_id,ELM);
-                    }
-                    if (flux < 0.0) {
-                        svector->val[0] += flux / (elm->volume * elm->material->por_m);
-                    }
-                }
-            }
-        } // end non-comp model
-
-
-        if (fabs(svector->val[0]) > max_sum)
-            max_sum = fabs(svector->val[0]);
-
-        transport->tmatrix->lenrow[i] = j;
-
-        for (k = 0; k < tmatrix->lenrow[i] - 1; k++)
-            for (l = 0; l < transport->tmatrix->lenrow[i] - 1; l++)
-                if (svector->pos[l] > svector->pos[l + 1]) {
-                    itemp = svector->pos[l + 1];
-                    ftemp = svector->val[l + 1];
-                    svector->pos[l + 1] = svector->pos[l];
-                    svector->val[l + 1] = svector->val[l];
-                    svector->pos[l] = itemp;
-                    svector->val[l] = ftemp;
-                }
-
-        tmatrix->irowst[i] = ec;
-
-        sum = 0.0;
-        for (k = ec; k < ec + transport->tmatrix->lenrow[i]; k++) {
-            transport->tmatrix->jcn[k] = svector->pos[k - ec];
-            transport->tmatrix->val[k] = svector->val[k - ec];
-        }
-
-        ec += j; // entry count
-
-
-    } // ELEMENTS
-
-    xfree(max_ent);
-
-    transport->max_step = 1 / max_sum;
-    transport->time_step = 0.9 / max_sum;
-
-    xfree(svector->pos);
-    xfree(svector->val);
-    xfree(svector);
-    /*
-     printf("\n");
-     k = 0;
-     for(i=0;i<problem->mesh->n_elements();i++){
-     for(j=0;j<tmatrix->lenrow[i] ;j++){
-     printf("%d\t%d\t%f\n",i,tmatrix->jcn[k],tmatrix->val[k]);
-     k++;
-     }
-     }
-
-
-     printf("\nEntry count: %d\n",ec);
-     */
-}
-//=============================================================================
-// CREATE TRANSPORT MATRIX STEP
-//=============================================================================
-void transport_matrix_step(struct TMatrix *tmatrix, double time_step) {
-    int i, j, k;
-
-    k = 0;
-    for (i = 0; i < tmatrix->rows; i++)
-        for (j = 0; j < tmatrix->lenrow[i]; j++) {
-            tmatrix->val[k++] *= time_step;
-            if (tmatrix->jcn[k - 1] == i)
-                tmatrix->val[k - 1] += 1;
-        }
-    /*
-     printf("\n");
-     k = 0;
-     for(i=0;i<problem->mesh->n_elements();i++){
-     for(j=0;j<tmatrix->lenrow[i] ;j++){
-     printf("%d\t%d\t%f\n",i,tmatrix->jcn[k],tmatrix->val[k]);
-     k++;
-     }
-     }
-     getchar();
-     */
-
-}
-//=============================================================================
-// MATRIX VECTOR PRODUCT
-//=============================================================================
-void matvecs(struct TMatrix *tmatrix, double *pconc, double *conc) {
-    double temp;
-    int i, j, k;
-
-    // for(k=0;k<tmatrix->rows;k++)
-    //    printf("%f\n",conc[k]);
-
-    //for(m = 0; m < n; m++){
-    k = 0;
-    //printf("%d\n",m);
-    for (i = 0; i < tmatrix->rows; i++) { // row
-        temp = 0;
-        for (j = k; j < (tmatrix->lenrow[i] + k); j++) {
-            //        getchar();
-            //         printf("%d\t%d\t%f\t%f\t%d\t%f\n",i,j,transport->conc[i],transport->pconc[i],tmatrix->jcn[j], transport->pconc[tmatrix->jcn[j]]);
-            temp += tmatrix->val[j] * pconc[tmatrix->jcn[j]];
-            //          printf("\n%d\t%f",i,transport->conc[i]);
-        }
-        conc[i] = temp;
-        k += tmatrix->lenrow[i];
-        //getchar();
-    }
-    memcpy(pconc, conc, tmatrix->rows * sizeof(double)); //!!!
-    //}
-    // getchar();
 }

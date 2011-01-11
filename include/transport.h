@@ -119,7 +119,6 @@ struct Transport
 
 
 // NEW TRANSPORT
-        bool mpi; // only for debug
 
         VecScatter vconc_out_scatter;
         Mat tm; // PETSc transport matrix
