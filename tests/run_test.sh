@@ -38,6 +38,10 @@ FLOW_PARAMS=$3
 # how to run flow
 RUN_FLOW=../../bin/run_flow.sh
 
+ERROR=0
+
+for i in $INI_FILE
+do
 for n in $NPROC
 do
   $RUN_FLOW -s $INI_FILE -np $n -- $FLOW_PARAMS
@@ -65,7 +69,14 @@ do
 
   #runs ndiff.pl skript with ref and computed output files
   echo "******************************************"
-  ../run_check.sh $SAVE_OUTPUT "$TEST_DIR/ref_output"
+  if ! ../run_check.sh $SAVE_OUTPUT "$TEST_DIR/ref_output"; then
+	ERROR=1
+  fi
   echo "******************************************"
 
 done
+done
+
+if [ $ERROR == 1 ]; then
+	exit 1
+fi

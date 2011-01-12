@@ -120,8 +120,10 @@ print "L-inf norm of abs. diff. : $abs_norm\n";
 print "L-inf norm of rel. diff. : $rel_norm\n";
 close(OUT_LOG);
 
-exit $num_of_diffs;
-    
+if ($num_of_diffs > 0) 
+{
+	exit(1)
+}
 # ------------------------------------------------------------ SUBROUTINES    
     
 #####################    

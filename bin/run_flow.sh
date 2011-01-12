@@ -22,7 +22,8 @@
 # $LastChangedDate$
 #
 
-set -x 
+#set -x
+ 
 export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
 MACHINE_SCRIPT=$SCRIPT_PATH_DIR/current_make_pbs.qsub
 NPROC=1

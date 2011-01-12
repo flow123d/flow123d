@@ -45,37 +45,48 @@ SOURCE_DIR=${INI_FILE%/*}
 
 SCRIPT_PATH_DIR=$PWD
 
+ERROR=0
 
 suff=.ini
 	
-	cd $REF_OUT
+cd $REF_OUT
 	
-	#VAR which contains names of files
-	VAR=`ls|sort`
+#VAR which contains names of files
+VAR=`ls|sort`
 	
-	#cycle for checking output files
-	for x in $VAR
-	do
-	#if its err file, compare with empty file
-	if [ "$x" == "err" ]; then
-		echo "" | tee stdout_diff.log
-		echo "Err log:" | tee stdout_diff.log
-		touch empty
-		$NDIFF -o diff.log $OUT/$x empty | tee -a stdout_diff.log
-		rm empty
-	#else compare rest of files
-	elif [ "$x" == "out" ]; then
-		echo ""
-	else 
-		if [ -a $OUT/$x ]; then			
-			echo "" | tee stdout_diff.log
-			echo "File: $x" | tee -a stdout_diff.log
-			$NDIFF -o diff.log $OUT/$x $REF_OUT/$x | tee -a stdout_diff.log
-		else
-			echo "Error: Missing output file: $x" | tee -a stdout_diff.log
-		fi
+#cycle for checking output files
+for x in $VAR
+do
+#if its err file, compare with empty file
+if [ "$x" == "err" ]; then
+	echo "" | tee stdout_diff.log
+	echo "Err log:" | tee stdout_diff.log
+	touch empty
+	if ! $NDIFF -o diff.log $OUT/$x empty; then
+		ERROR=1
 	fi
-	done
-	mv diff.log $OUT
-	mv stdout_diff.log $OUT
+	rm empty
+#else compare rest of files
+elif [ "$x" == "out" ]; then
+	echo ""
+else 
+	if [ -a $OUT/$x ]; then			
+		echo "" | tee stdout_diff.log
+		echo "File: $x" | tee -a stdout_diff.log
+		if ! $NDIFF -o diff.log $OUT/$x $REF_OUT/$x; then
+			ERROR=1
+		fi
+	else
+		echo "Error: Missing output file: $x" | tee -a stdout_diff.log
+		ERROR=1
+	fi
+fi
+done
+
+mv diff.log $OUT
+mv stdout_diff.log $OUT
+
+if [ $ERROR == 1 ]; then
+	exit 1
+fi
 
