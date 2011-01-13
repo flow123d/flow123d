@@ -56,6 +56,11 @@ revnumber:
 	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >include/rev_num.h;\
 	fi
 
+# make package Windows:
+# 1) build flow, bcd, ngh, mpiexec
+# 2) copy doc, only PDF, wihtout .svn subdirs
+# 3) copty tests, only input and output files, no scripts
+
 
 clean:
 	make -C third_party clean

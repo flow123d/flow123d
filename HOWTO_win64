@@ -75,3 +75,27 @@ Mozna jeste neco, vyzkousim casem na cistych Windowsech.
 *****************************************
 * THE END
 *****************************************
+
+
+zkusenosti z buildu leden 2011 (Jiri Kopal) -------PETSc jsou kompilovane s parametry:
+
+./config/configure.py \
+--with-fc=gfortran \
+--with-cc=gcc \
+--with-cxx=g++ \
+--download-f-blas-lapack=1 \
+--download-mpich=1 \
+--with-debugging=0 \
+--COPTFLAGS='-O3' \
+--FOPTFLAGS='-O3'
+
+Prekompilovani s dohodnutymi upravami udelam, jen co je testnu pod linuxem - pocitam behem patku otestuju. Do repozitare jsem nahral verzi, ze ktere jsem odstranil vetsinu veci tykajicich se stareho transportu - nemazal jsem veci, ve kterych jeste vidim potencial, ze by se mohly hodit. A rad bych se i s tebou sesel - slo by to v patek? Mel jsem trosku predstavu, co delat ve flow dale, ale nevim co je prioritni - myslim, ze by bylo dobre zprovoznit proudeni s promennou hustotou, pripadne transport dale ucesat. To jak jsi udelal sorpci a dvoji porozitu je podle me ok. Dvoji porozitu bych dokazal o trosku zrychlit - otazka zda koncepcne ci nekoncepcne...  to bych rad probral v patek.
+
+Jinak poznamky ke kompilaci pod cygwinem:
+
+-zdrojove kody je nutne mit v domovskem adresari
+-cygwin mam nainstalovany v defaultu + make, gcc, gfortran, python (instalace cca 2GB) - priste zkusim jeste minimalistictejsi instalaci
+-makefile z linuxu neni vubec nutne nijak menit (samozrejme vyjma PETSC_DIR a PETSC_ARCH)
+-"vim" pod cygwinem funguje podivne
+
+------------------------------------
