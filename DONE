@@ -1,0 +1,219 @@
+TODO:
+
+
+
+- dat saturaci do reseni !!! problem neni moznost pracovat jen s podproblemem, dof_handler 
+  umi vytvorit jen celou svoji sparsity pattern, dale chybi prostredek na 
+  praci s blokovym podvektorem popr. s blokovou podmatici 
+
+- implementovat jednoduchou adaptivitu, mezi casovymi kroky, podle residua
+   nebo podle kellyho
+  moznosti jak adaptovat:
+  1) menit sit jen mezi kroky - zjemneni se zpozuje za solverem
+  2) menit i behem Newtona - zjemneni by rekneme jen rozsirovalo
+     nevede k multigridnimu predpodmineni Newtona
+  3) pro casove kroky preskakujici vice elementu - otazka jestli to chceme
+     snad by bylo dobre predpodmineni Newtona na hrubsi siti
+
+- prozkoumat zavislost solveru na delce casoveho kroku, proc pro kratke cas. krky
+  nekonverguje? (aspon pri pocatku inflitrace)
+  RT diskretizace extremne citliva na kratke casove kroky, pri velkem prosotrovem kroku
+  dochazi k oscilacim (postupne se nasycuji uzly), 
+  coz se projevuje i v oscilacich rychlosti a tim v oscilacich pritoku
+
+  dx=1/500 dt= 1e-5 OK ale to samozrejmne bude zaviset na parametrach pudy)
+
+  "numericka difuze" rychlosti vynucuje neprirozene difenece tlaku
+  More precisely:
+  for 1D the discere version of Darcy law is:
+
+  (6K_{i-1})^{-1} v_{i-1} + 2/3 * (K_i^{-1} + K_{i-1}^{-1}) v_{i} +(6K_i^{-1}) v_{i+1}
+  = p_{i-1} - p_{i}
+
+  When p_{i-1} is dry and p_{i} is wet so that difference is very big and coef of v_{i-1} is 
+  very big which make v_{i-} quite big which makes p_{i-1} decreasing since water goes out of there.
+  
+Natural resolution should be using only v_i in this equation which leads to finite volume scheme with 
+simple numerical flux. 
+
+Another question: Mixed scheme should be more accurate after suitable postprocessing. Is this true 
+for this nonlinear problem? Maybe $K$ should be computed from better approximation if the pressure
+then piece wise constant. 
+
+
+  
+
+- zpusob orezavani VELMI ovlivnuje rychlost propagace, tj. celkove reseni
+  konzultovat s Voglem jak to volit
+  zkusit jak to ovlivnuje stabilitu solveru
+  k tomu je treba udelat poradek v Soil Modelu
+
+- podrobneji zkoumat Newtona, mel by vest k rychlejsi konvergenci, ale
+  zatim to vypada, ze reseni rozzsirene matice nema vliv na konvergenci
+
+- zkoumat C-N, theta v zavislosti na kapacite, je vubec mozne
+  mit theta prostorove zavisle? 
+
+
+- heuristika pro rizeni konvergence a
+ 
+
+DONE ---------------------------------------------------------------   
+
+
+-------
+prodpodmineni inverzi aprox schur, vnitrni bez predpodmineni (opt): 60s
+
+bloky: tlak, rychlost; eliminujeme tlak
+prodpodmineni inverzi aprox schur, vnitrni bez predpodmineni (opt): 25s
+
+bloky: rychlost, tlak; eliminujeme rychlost
+prodpodmineni inverzi aprox schur, vnitrni bez predpodmineni (opt): 33s
+
+
+
+order=1, 7856 DOFs
+40 timesteps:
+
+eliminace tlaku: 46s
+eliminace rychlosti: 79s
+
+eliminace tlaku+ ILU: 46s
+
+
+--------------
+
+Pri pomerne dlouhem poc. kroku:
+- nejprve se zmensuje residuum, pekne se formuje tlak a saturace, po par iteracich (zde 15)
+  dojde ke stagnaci - residuum jen strida znamenka, ani se tvarove nemeni, oscilace jsou redevsim v nasycene zone
+  a jsou maleho radu 1E-3
+
+interpretace:
+1) nelinearni uloha nema reseni, reseni osciluje
+2) iteracni metoda stagnuje, ale reseni existuje
+
+mozna reseni:
+1) pridat casove mezistupne
+2) nechat globalni cas. krok, ale zavest adaptivitu 
+   pri  iteracich se tolik neztraci cas mimo celo vlny
+3) ? pouzit plnou Newtonovu (vix. exmaple 33)
+   
+--------
+Dalsi poznatek je, ze za ten maly casovy krok (0.05)
+se celo vlny pohnulo asi do ctvrtiny oblasti, prostorova adaptivita by se mela uplatnit
+hlavne pro velmi velke oblasti, kde celo je jen na malem kousku. A i tak bych mel byt schopen ho zachytit hrubsi siti nez mam ted.
+
+TODO:
+- zkusit vypocet na vetsi oblasti a hrubsi siti (potrebuje to kratsi nebo delsi casovy krok? )
+
+------------------
+Pri pouziti radu = 0 : podobne problemy, pri extremne kratkych casovych krocich oscilace solveru
+
+interporetace: 
+pri kratkych krocich, se ztraci zhlazovaci funkce Laplace,  mozna by fakt pomohl Newton
+
+
+--------------------
+Pouziti Newtona s plnym krokem nevede ke zlepseni, prakticky stejna stagnace.
+Oscilace v y-souradnici nepotvrzeny, ale dole je nesymetrie, u 0 residuum osciluje vpravo
+u 1 je male !! Mozna se tam blbe zadavaji okrajove podminky.
+
+-------------------------------
+Uspech !!
+
+pouziti jednoducheho linesearch vede ke konvergenci a to i bez plneho Newtona.
+Defaultne jsem nastavil lambda=0.6 => 18 iteraci pro prvni krok
+
+-----------------------------------
+dalsi doladovani neinearniho resice:
+1) s kratsim casovym krokem -> divergence, opraveno "theta * div_u" se musi brat z posledniho casoveho kroku
+a ne z posledniho reseni
+2) v nasycene casti reseni je nutno pouzit ciste implicitni resic, jinak dochazi k oscilacim
+
+theta=0 (implicitni)
+250 iteraci, cas: 131s
+
+theta=1/2 
+213 iteraci, cas 118s 
+
+adaptivne volena theta =0 pro soat_old >= Qs:
+401 iteraci, cas 235s
+rychlosti byly min zasumnene nez pro NC, ale evidentne je tu nejaky problem.
+
+-----------------------------
+
+pri vytope a hodne kratkem casovem kroku (0.001) nevede reseni linearniho problemu k nalezeni smeru s
+poklesem - selze linesearch !! Konkretne i pro lambda 6e-5 je decrease 1.00002
+
+pritom pokud se nechaji iterace bezet, tak nakonec to vede k uspesne konvergenci
+ve 26 krocich
+
+konvergence je problematicka asi kvuli prekmitum tlaku, tam kde se deje nasyceni tak tlak 
+ma tendenci na pravem konci (nasycovanem) prekmitnout nad tlak na sousednim elementu
+Mozna to soubisi s otazkou stability RT aproximaci
+
+moznosti obejiti:
+1 RT0	- jeste horsi konvergence, vyzadalo si kratsi casovy krok !!!
+2 kratsi prostorovy krok - RT0, zjemneni 2^5, 30 000DOFs, konvergence 21it
+3 naopakvyssi rad - dobra konvergence 23it
+--------------------------------------------------
+
+prestoze obe FK (richards a s1d) jsou prakticky stejne, stale je velky rozdil ve stacionarnim reseni:
+richrds, hranice nasyceni: 8.2, tj -1.8
+s1d: -6.5
+
+=============================
+prubeh pri adaptivite:
+
+
+time loop ----------------------
+   
+     save tria
+     save dof handler
+     save last solution and saturation
+     create new tria and DH 
+
+   iteration loop -------------------------
+     refine new tria
+     distribute dof
+     reinit vectors and matrix
+     interpolate solution
+     
+     compute saturation
+     assembly with constrains
+
+     update velocities
+     compute residuum
+     
+     conv test
+     solve system
+------------------------------
+
+Predelat system na hledani diference, pocitat jacobian z derivovani prispevkovych matic,
+presne rozmyslet jak se to musi delat, aby to cele bylo ekvivalentni reseni rovnice s pouze neznamimi tlaky
+tj. residuum je pouze v rovnici kontinuity a rychlosti mam presne (vzhledem k solveru)
+
+------------------
+degree 0: 1321 its. (no lambda, spatne konvergujici kroky)
+degree 1: 1276 its. ( asi 3 iterace nejsou optimalni, vedouna prilis kratky casovy krok)
+--
+stouajici hladina, degree 1: 75 its
+------
+ suseni dole, rychla konvergence tlaku ke stacionarnimu,
+    stejne jako u predhcozich artefakty v rychlosti, zde jeste silnejsi
+ suseni nahore, opet v pohode, stejne jako u predchozizch u stacionarniho reseni to obcas obces chce 
+udelat nejaky netrivialni krok
+?? kde se bere zmena reseni - asi pricitani residua
+?? proc i kdyz je tak blizko spravnemu reseni, tak stejne dlouho konverguje 
+====================================
+
+bez eliminace rychlosti cutoff 0.999, celkovy cas do nasyceni srovnatelny, dt_init 0.0001 na zacatku problemy s konvergenci
+nedodrzena okrajova podminka, prekmity v tlaku .. 
+kratke casove kroky: 1) asi by bylo spravne neprenasobovat casovym krokem, jelikoz pak je prave velmi velmi velke residuum a skoky v tlaku
+                     2) pokud by se neprenasobovalo krokem, tak by kriterium melo byt min prisne
+                     3) i tak bude mit na pocatku problem zkonvergovat ? konverguje solver ke stabilnimu reseni pro libovlone priblizeni?
+                        zkusit zacinat s nasycenym tlakem, nebo zvetsenym
+                        ? je problem v male pritomnosti eliptickeho clenu? 
+it cum: 1289
+-----
+s eliminaci rychlosti, cutoff 0.999, lepsi konvegence na pocatku, nejsou prekmity v tlaku, ale opet nedodrzeni okrajove podminky
