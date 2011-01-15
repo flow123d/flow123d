@@ -95,13 +95,11 @@ void make_transport(struct Transport *transport) {
     transport->problem->material_database->read_transport_materials(transport->dual_porosity, transport->sorption,
             transport->n_substances);
 
-
         make_transport_partitioning(transport);
         alloc_transport_vectors(transport);
         transport_vectors_init(transport);
         alloc_transport_structs_mpi(transport);
         fill_transport_vectors_mpi(transport);
-
 
     /*
      FOR_ELEMENTS_IT(i){
@@ -227,7 +225,7 @@ double *subst_scales(int n_subst, char *line) {
     return ss;
 }
 //=============================================================================
-// ALLOCATE TRANSPORT STRUCTURES
+// INITIALIZE TRANSPORT STRUCTURES
 //=============================================================================
 void transport_vectors_init(struct Transport *transport) {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
@@ -240,8 +238,8 @@ void transport_vectors_init(struct Transport *transport) {
         i = 0;
         for (int loc_el = 0; loc_el < transport->el_ds->lsize(); loc_el++) {
             ele = mesh->element(transport->el_4_loc[loc_el]);
-            transport->conc[sbi][MOBILE][i] = ele->start_conc->conc[sbi]; // = 0;
-            transport->pconc[sbi][MOBILE][i] = ele->start_conc->conc[sbi];
+            transport->conc[MOBILE][sbi][i] = ele->start_conc->conc[sbi]; // = 0;
+            transport->pconc[MOBILE][sbi][i] = ele->start_conc->conc[sbi];
             i++;
         }
 
@@ -252,9 +250,9 @@ void transport_vectors_init(struct Transport *transport) {
          FOR_ELEMENTS(elm)
          FOR_ELEMENT_SIDES(elm,s)
          if (elm->side[s]->cond != NULL) {
-         transport->conc[sbi][MOBILE][i]
+         transport->conc[MOBILE][sbi][i]
          = elm->side[s]->cond->transport_bcd->conc[sbi];
-         transport->pconc[sbi][MOBILE][i++]
+         transport->pconc[MOBILE][sbi][i++]
          = elm->side[s]->cond->transport_bcd->conc[sbi];
          }*/
     }
@@ -268,49 +266,48 @@ void alloc_transport_vectors(struct Transport *transport) {
     int i, j, sbi, n_subst, ph;
     ElementIter elm;
     n_subst = transport->n_substances;
-
-    transport->conc = (double***) xmalloc(n_subst * sizeof(double**));
-    transport->pconc = (double***) xmalloc(n_subst * sizeof(double**));
-    transport->out_conc = (double***) xmalloc(n_subst * sizeof(double**));
+    
     //transport->node_conc = (double****) xmalloc(n_subst * sizeof(double***));
 
-    for (sbi = 0; sbi < n_subst; sbi++) {
-
-        transport->conc[sbi] = (double**) xmalloc(MAX_PHASES * sizeof(double*));
-        transport->pconc[sbi] = (double**) xmalloc(MAX_PHASES * sizeof(double*));
-        transport->out_conc[sbi] = (double**) xmalloc(MAX_PHASES * sizeof(double*));
+    transport->conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
+    transport->pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
+    transport->out_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
+    //transport->node_conc = (double****) xmalloc(MAX_PHASES * sizeof(double***));
+    for (ph = 0; ph < MAX_PHASES; ph++) {
+      if ((transport->sub_problem & ph) == ph) {          
+        transport->conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //(MAX_PHASES * sizeof(double*));
+        transport->pconc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
+        transport->out_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
         //  transport->node_conc[sbi] = (double***) xmalloc(MAX_PHASES * sizeof(double**));
-
-        for (ph = 0; ph < 4; ph++)
-            if ((transport->sub_problem & ph) == ph) {
-                transport->conc[sbi][ph] = (double*) xmalloc(transport->el_ds->lsize() * sizeof(double));
-                transport->pconc[sbi][ph] = (double*) xmalloc(transport->el_ds->lsize() * sizeof(double));
-                transport->out_conc[sbi][ph] = (double*) xmalloc(transport->el_ds->size() * sizeof(double));
-                // transport->node_conc[sbi][ph] = (double**)xmalloc((mesh->n_elements() ) * sizeof(double*));
-
-
-                for (i = 0; i < transport->el_ds->lsize(); i++) {
-                    transport->conc[sbi][ph][i] = 0.0;
-                    transport->pconc[sbi][ph][i] = 0.0;
-                }
-                /*
-                 i = 0;
-                 FOR_ELEMENTS(elm){
-                 transport->node_conc[sbi][ph][i++]=(double*)xmalloc((elm->n_nodes) * sizeof(double));
-                 for(j = 0 ;j < elm->n_nodes ; j++)
-                 transport->node_conc[sbi][ph][i-1][j] = 0.0;
-                 }*/
-
-            } else {
-                transport->conc[sbi][ph] = NULL;
-                transport->pconc[sbi][ph] = NULL;
-                transport->out_conc[sbi][ph] = NULL;
+    //}
+	for(sbi = 0; sbi < n_subst; sbi++){
+           transport->conc[ph][sbi] = (double*) xmalloc(transport->el_ds->lsize() * sizeof(double));
+           transport->pconc[ph][sbi] = (double*) xmalloc(transport->el_ds->lsize() * sizeof(double));
+           transport->out_conc[ph][sbi] = (double*) xmalloc(transport->el_ds->size() * sizeof(double));
+           // transport->node_conc[sbi][ph] = (double**)xmalloc((mesh->n_elements() ) * sizeof(double*));
+           for (i = 0; i < transport->el_ds->lsize(); i++) {
+             transport->conc[ph][sbi][i] = 0.0;
+             transport->pconc[ph][sbi][i] = 0.0;
+           }
+                  /*
+                   i = 0;
+                   FOR_ELEMENTS(elm){
+                   transport->node_conc[sbi][ph][i++]=(double*)xmalloc((elm->n_nodes) * sizeof(double));
+                   for(j = 0 ;j < elm->n_nodes ; j++)
+                   transport->node_conc[sbi][ph][i-1][j] = 0.0;
+                   }*/
+	}
+      }else {
+                  transport->conc[ph] = NULL;
+                  transport->pconc[ph] = NULL;
+                  transport->out_conc[ph] = NULL;
+                  //transport->node_conc[sbi][ph] = NULL;
                 //transport->node_conc[sbi][ph] = NULL;
-            }
+       }
     }
 }
 //=============================================================================
-//	ALLOCATE OF TRANSPORT VARIABLES (ELEMENT & NODES)
+//	ALLOCATE OF TRANSPORT (DENSITY VECTORS)
 //=============================================================================
 void alloc_density_vectors(struct Transport *transport) {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
@@ -322,22 +319,18 @@ void alloc_density_vectors(struct Transport *transport) {
     sub = transport->sub_problem;
 
     transport->scalar_it = (double*) xmalloc(n_elements * sizeof(double)); // Zatim nevyuzito
-    transport->prev_conc = (double***) xmalloc(n_subst * sizeof(double**));
+    transport->prev_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**)); //transport->prev_conc = (double***) xmalloc(n_subst * sizeof(double**));
 
-    for (sbi = 0; sbi < n_subst; sbi++) {
+    for (ph = 0; ph < MAX_PHASES; ph++) {
+     if ((sub & ph) == ph) {        
+      transport->prev_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //transport->prev_conc[sbi] = (double**) xmalloc(MAX_PHASES * sizeof(double*));
 
-        transport->prev_conc[sbi] = (double**) xmalloc(MAX_PHASES * sizeof(double*));
-
-        for (ph = 0; ph < 4; ph++)
-            if ((sub & ph) == ph) {
-                transport->prev_conc[sbi][ph] = (double*) xmalloc(n_elements * sizeof(double));
+        for (sbi = 0; sbi < n_elements; sbi++)
+                transport->prev_conc[ph][sbi] = (double*) xmalloc(n_elements * sizeof(double));
 
                 for (i = 0; i < n_elements; i++)
-                    transport->prev_conc[sbi][ph][i] = 0.0;
-
-            } else
-                transport->prev_conc[sbi][ph] = NULL;
-
+                    transport->prev_conc[ph][sbi][i] = 0.0;
+    } else  transport->prev_conc[ph] = NULL;
     }
 }
 //=============================================================================
@@ -392,13 +385,13 @@ void alloc_transport_structs_mpi(struct Transport *transport) {
         //ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh->n_elements(),&transport->vpconc[sbi]);
         ierr = VecCreateMPI(PETSC_COMM_WORLD, transport->lb_col[rank], mesh->n_boundaries(), &(transport->bcv[sbi]));
         ierr = VecCreateMPI(PETSC_COMM_WORLD, transport->el_ds->lsize(), mesh->n_elements(), &transport->bcvcorr[sbi]);
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, transport->el_ds->lsize(), mesh->n_elements(), transport->conc[sbi][MOBILE],
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, transport->el_ds->lsize(), mesh->n_elements(), transport->conc[MOBILE][sbi],
                 &transport->vconc[sbi]);
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, transport->el_ds->lsize(), mesh->n_elements(),
-                transport->pconc[sbi][MOBILE], &transport->vpconc[sbi]);
+                transport->pconc[MOBILE][sbi], &transport->vpconc[sbi]);
 
         //  if(rank == 0)
-        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF, mesh->n_elements(), transport->out_conc[sbi][MOBILE], &transport->vconc_out[sbi]);
+        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF, mesh->n_elements(), transport->out_conc[MOBILE][sbi], &transport->vconc_out[sbi]);
 
         //ierr = VecCreateMPI(PETSC_COMM_SELF ,transport->mesh->n_elements(),transport->mesh->n_elements(),&transport->vconc_out[sbi]); /*xx*/
         /*
@@ -755,8 +748,8 @@ void transport_dual_porosity(struct Transport *transport, int elm_pos, MaterialD
     por_m = material->por_m;
     por_imm = material->por_imm;
     alpha = material->alpha[sbi];
-    pcm = pconc[sbi][MOBILE][elm_pos];
-    pci = pconc[sbi][IMMOBILE][elm_pos];
+    pcm = pconc[MOBILE][sbi][elm_pos];
+    pci = pconc[IMMOBILE][sbi][elm_pos];
 
     // ---compute average concentration------------------------------------------
     conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
@@ -771,10 +764,10 @@ void transport_dual_porosity(struct Transport *transport, int elm_pos, MaterialD
         //printf("\n%f\t%f\t%f",conc_avg,cm,ci);
         //getchar();
 
-        conc[sbi][MOBILE][elm_pos] = cm;
-        pconc[sbi][MOBILE][elm_pos] = cm;
-        conc[sbi][IMMOBILE][elm_pos] = ci;
-        pconc[sbi][IMMOBILE][elm_pos] = ci;
+        conc[MOBILE][sbi][elm_pos] = cm;
+        pconc[MOBILE][sbi][elm_pos] = cm;
+        conc[IMMOBILE][sbi][elm_pos] = ci;
+        pconc[IMMOBILE][sbi][elm_pos] = ci;
     }
 
     /*
@@ -827,29 +820,29 @@ void transport_sorption(struct Transport *transport, int elm_pos, MaterialDataba
     Nm = mtr->por_m;
     Nimm = mtr->por_imm;
 
-    conc_avg = pconc[sbi][MOBILE][elm_pos] + pconc[sbi][MOBILE_SORB][elm_pos] * n / Nm; // cela hmota do poru
+    conc_avg = pconc[MOBILE][sbi][elm_pos] + pconc[MOBILE_SORB][sbi][elm_pos] * n / Nm; // cela hmota do poru
 
 
     if (conc_avg != 0) {
-        compute_sorption(conc_avg, mtr->sorp_coef[sbi], mtr->sorp_type[sbi], &conc[sbi][MOBILE][elm_pos],
-                &conc[sbi][MOBILE_SORB][elm_pos], Nm / n, n * phi / Nm);
+        compute_sorption(conc_avg, mtr->sorp_coef[sbi], mtr->sorp_type[sbi], &conc[MOBILE][sbi][elm_pos],
+                &conc[MOBILE_SORB][sbi][elm_pos], Nm / n, n * phi / Nm);
 
-        pconc[sbi][MOBILE][elm_pos] = conc[sbi][MOBILE][elm_pos];
-        pconc[sbi][MOBILE_SORB][elm_pos] = conc[sbi][MOBILE_SORB][elm_pos];
+        pconc[MOBILE][sbi][elm_pos] = conc[MOBILE][sbi][elm_pos];
+        pconc[MOBILE_SORB][sbi][elm_pos] = conc[MOBILE_SORB][sbi][elm_pos];
     }
     //printf("\n%f\t%f\t",n * phi / Nm,n * phi / Nm);
     //printf("\n%f\t%f\t",n * phi / Nimm,n * (1 - phi) / Nimm);
     // getchar();
 
     if ((transport->dual_porosity == true) && (mtr->por_imm != 0)) {
-        conc_avg_imm = pconc[sbi][IMMOBILE][elm_pos] + pconc[sbi][IMMOBILE_SORB][elm_pos] * n / Nimm; // cela hmota do poru
+        conc_avg_imm = pconc[IMMOBILE][sbi][elm_pos] + pconc[IMMOBILE_SORB][sbi][elm_pos] * n / Nimm; // cela hmota do poru
 
         if (conc_avg_imm != 0) {
-            compute_sorption(conc_avg_imm, mtr->sorp_coef[sbi], mtr->sorp_type[sbi], &conc[sbi][IMMOBILE][elm_pos],
-                    &conc[sbi][IMMOBILE_SORB][elm_pos], Nimm / n, n * (1 - phi) / Nimm);
+            compute_sorption(conc_avg_imm, mtr->sorp_coef[sbi], mtr->sorp_type[sbi], &conc[IMMOBILE][sbi][elm_pos],
+                    &conc[IMMOBILE_SORB][sbi][elm_pos], Nimm / n, n * (1 - phi) / Nimm);
 
-            pconc[sbi][IMMOBILE][elm_pos] = conc[sbi][IMMOBILE][elm_pos];
-            pconc[sbi][IMMOBILE_SORB][elm_pos] = conc[sbi][IMMOBILE_SORB][elm_pos];
+            pconc[IMMOBILE][sbi][elm_pos] = conc[IMMOBILE][sbi][elm_pos];
+            pconc[IMMOBILE_SORB][sbi][elm_pos] = conc[IMMOBILE_SORB][sbi][elm_pos];
         }
     }
 
@@ -952,8 +945,6 @@ void convection(struct Transport *trans) {
 
     //  flow_cs(trans); //DECOVALEX
 
-
-
     create_transport_matrix_mpi(trans);
 
     // MatView(trans->tm,PETSC_VIEWER_STDOUT_WORLD);
@@ -968,10 +959,7 @@ void convection(struct Transport *trans) {
      steps = (int)floor(problem->transport->update_dens_time / problem->transport->time_step);
      save_step = steps + 1;
      }*/
-    /*
-     if(trans->mpi != 1)
-     transport_matrix_step(tmatrix,trans->time_step);
-     else{ */
+
     transport_matrix_step_mpi(trans, trans->time_step);
     calculate_bc_mpi(trans);
 
@@ -998,7 +986,7 @@ void convection(struct Transport *trans) {
              */
 
             /*if(trans->mpi != 1)
-             matvecs(trans->tmatrix,trans->pconc[sbi][MOBILE],trans->conc[sbi][MOBILE]);
+             matvecs(trans->tmatrix,trans->pconc[MOBILE][sbi],trans->conc[MOBILE][sbi]);
              else*/
 
             transport_step_mpi(&trans->tm, &trans->vconc[sbi], &trans->vpconc[sbi], &trans->bcvcorr[sbi]);
@@ -1013,8 +1001,8 @@ void convection(struct Transport *trans) {
                         transport_dual_porosity(trans, loc_el, material, sbi);
                     if (trans->sorption)
                         transport_sorption(trans, loc_el, material, sbi);
-                    if (trans->pepa)
-                        decay(trans, loc_el, trans->type); // pepa chudoba
+                    //if (trans->pepa)
+                    //    decay(trans, loc_el, trans->type); // pepa chudoba
                     if (trans->reaction_on)
                         transport_reaction(trans, loc_el, material, sbi);
 
@@ -1210,12 +1198,14 @@ void save_time_step_C(struct Problem *problem) {
     conc = transport->conc;
     prev_conc = transport->prev_conc;
 
-    for (sbi = 0; sbi < n_subst; sbi++)
-        for (ph = 0; ph < 4; ph++)
-            if (conc[sbi][ph] != NULL)
-                memcpy(prev_conc[sbi][ph], conc[sbi][ph], mesh->n_elements() * sizeof(double));
+    for (ph = 0; ph < 4; ph++)
+        for (sbi = 0; sbi < n_subst; sbi++)
+            if (conc[ph][sbi] != NULL)
+                memcpy(prev_conc[ph][sbi], conc[ph][sbi], mesh->n_elements() * sizeof(double));
 
 }
+
+/*
 //
 //=============================================================================
 //      PEPA CHUDOBA
@@ -1335,7 +1325,7 @@ void decay(struct Transport *transport, int elm_pos, int type) {
          printf("\nC: %f\t C+: %f",pconc[2][ph][elm_pos],conc[2][ph][elm_pos]);
          getchar();
          } */
-        for (i = 0; i < 11; i++) {
+/*        for (i = 0; i < 11; i++) {
             pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
         }
         break;
@@ -1343,3 +1333,4 @@ void decay(struct Transport *transport, int elm_pos, int type) {
         break;
     }
 }
+*/

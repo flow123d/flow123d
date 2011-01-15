@@ -69,14 +69,14 @@ void transport_reaction(struct Transport *transport, int elm_pos, MaterialDataba
                          if(rct->sbi != sbi)
                                 break;
                          if(rct->coef[0] != -1.0){
-                        	 conc[rct->sbi][MOBILE][elm_pos] += rct->coef[0] * transport->time_step;
-                        	 pconc[rct->sbi][MOBILE][elm_pos] = conc[rct->sbi][MOBILE][elm_pos];
+                        	 conc[MOBILE][rct->sbi][elm_pos] += rct->coef[0] * transport->time_step;
+                        	 pconc[MOBILE][rct->sbi][elm_pos] = conc[MOBILE][rct->sbi][elm_pos];
                       //  	 printf("%f\t%f\n",rct->coef[0],transport->time_step);
                       //  	 getchar();
                          }
                          else{
-                        	 conc[rct->sbi][MOBILE][elm_pos] += 1/(material->size);
-                        	 pconc[rct->sbi][MOBILE][elm_pos] = conc[rct->sbi][MOBILE][elm_pos];
+                        	 conc[MOBILE][rct->sbi][elm_pos] += 1/(material->size);
+                        	 pconc[MOBILE][rct->sbi][elm_pos] = conc[MOBILE][rct->sbi][elm_pos];
                          }
                          break;
                 }

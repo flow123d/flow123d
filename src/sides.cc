@@ -391,7 +391,7 @@ void calc_side_rhs_dens(struct Side* sde, struct Problem* problem, Mesh* mesh) {
     // compute total density of dissolved matter
     double sss = 0.0;
     for (int sbi = 0; sbi < n_subst; sbi++)
-        sss += transport->substance_density_scale[sbi] * transport->out_conc[sbi][MOBILE][ele.index()];
+        sss += transport->substance_density_scale[sbi] * transport->out_conc[MOBILE][sbi][ele.index()];
 
     //xprintf( MsgVerb, " %f ", ele->start_conc->conc[0] );
     ele->rhs[sde->lnum] += (ele->centre[2] - sde->centre[2]) * (1 + sss

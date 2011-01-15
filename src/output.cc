@@ -1283,7 +1283,7 @@ void output_transport_time_bin(struct Transport *transport,
         FOR_ELEMENTS(ele) {
             i_out=ele.id();
             xfwrite(&i_out,sizeof(int),1,out);
-            xfwrite(&transport->out_conc[sbi][MOBILE][ele.index()],sizeof(double),1,out);
+            xfwrite(&transport->out_conc[MOBILE][sbi][ele.index()],sizeof(double),1,out);
         }
         xfprintf(out,"\n$EndElementData\n");
     }
@@ -1305,7 +1305,7 @@ void output_transport_time_bin(struct Transport *transport,
                 for(i = 0; i < 3; i++)
                     vector[i] = mesh->element[el].vector[i];
                 normalize_vector(vector);
-                scale_vector(vector,transport->out_conc[sbi][MOBILE][el]);
+                scale_vector(vector,transport->out_conc[MOBILE][sbi][el]);
             }
             else {
                 for(i = 0; i < 3; i++) vector[i] = 0.0;
@@ -1362,7 +1362,7 @@ void output_transport_time_ascii(struct Transport *transport,
         xfprintf(out,"%d\n",comp);   // one component - scalar field
         xfprintf(out,"%d\n",mesh->n_elements());   // n follows elements
         FOR_ELEMENTS(ele)
-        		xfprintf(out,"%d %f\n", ele.id(), transport->out_conc[sbi][MOBILE][ele.index()]);
+        		xfprintf(out,"%d %f\n", ele.id(), transport->out_conc[MOBILE][sbi][ele.index()]);
         xfprintf(out,"$EndElementData\n");
     }
 
@@ -1383,7 +1383,7 @@ void output_transport_time_ascii(struct Transport *transport,
                 for(i = 0; i < 3; i++)
                     vector[i] = mesh->element_hash[mesh->epos_id[el]]->vector[i];
                 normalize_vector(vector);
-                scale_vector(vector,transport->conc[sbi][MOBILE][el]);
+                scale_vector(vector,transport->conc[MOBILE][sbi][el]);
             } else {
                 for(i = 0; i < 3; i++)
                     vector[i] = 0.0;
@@ -1496,7 +1496,7 @@ void output_transport_time_vtk_serial_ascii(struct Transport *transport,
 
         for(int el=0; el<mesh->n_elements(); el++) {
             /* Add scalar data to vector of scalars */
-            p_element_out_scalar[subst_id].scalars->push_back(transport->out_conc[subst_id][MOBILE][el]);
+            p_element_out_scalar[subst_id].scalars->push_back(transport->out_conc[MOBILE][subst_id][el]);
         }
 
         element_scalar_arrays->push_back(p_element_out_scalar[subst_id]);
@@ -1838,7 +1838,7 @@ void output_transport_time_matrix(struct Problem *problem, double time)
                         switch(i)
                         {
                         case 0:
-                    xfprintf(out[i],dbl_fmt,problem->transport->conc[sbi][MOBILE][el]);
+                    xfprintf(out[i],dbl_fmt,problem->transport->conc[MOBILE][sbi][el]);
                         break;
                         case 1:
                     xfprintf(out[i],dbl_fmt,ele->conc_immobile[sbi]);

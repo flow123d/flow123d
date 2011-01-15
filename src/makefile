@@ -38,6 +38,7 @@ TARGETS = $(BIN)/flow123d
 FLOW123D_OBJS = \
 $(OBJS)/mesh/ini_constants_mesh.o\
 $(OBJS)/transport_bcd.o\
+$(OBJS)/reaction.o\
 $(OBJS)/system.o\
 $(OBJS)/read_ini.o\
 $(OBJS)/constantdb.o\
