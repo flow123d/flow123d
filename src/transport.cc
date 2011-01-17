@@ -58,7 +58,7 @@
 #include "par_distribution.hh"
 #include "mesh/ini_constants_mesh.hh"
 #include "sparse_graph.hh"
-#include "profiler.h"
+#include "profiler.hh"
 
 //void init_transport_vectors_mpi(struct Transport *transport);
 
@@ -1300,7 +1300,6 @@ void convection(struct Transport *trans)
   double ***conc;
 
   START_TIMER("TRANSPORT");
-  //Timing *asm_time = timing_create("TRANSPORT",PETSC_COMM_WORLD);
   // int tst = 1; // DECOVALEX
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -1399,8 +1398,6 @@ void convection(struct Transport *trans)
     }
   }
   xprintf( Msg, "O.K.\n");
-
-  //timing_destroy(asm_time);
 
 }
 

@@ -44,7 +44,7 @@
 #include "la_schur.hh"
 #include "sparse_graph.hh"
 #include "field_p0.hh"
-#include "profiler.h"
+#include "profiler.hh"
 
 
 //=============================================================================
@@ -108,7 +108,6 @@ void DarcyFlowMH::solve() {
 
 
     START_TIMER("SOLVING MH SYSTEM");
-    //Timing *solver_time = timing_create("SOLVING MH SYSTEM", PETSC_COMM_WORLD);
     F_ENTRY;
 
     switch (n_schur_compls) {
@@ -170,8 +169,6 @@ void DarcyFlowMH::solve() {
             INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
             INSERT_VALUES, SCATTER_FORWARD);
-
-    //timing_destroy(solver_time);
 }
 
 double * DarcyFlowMH::solution_vector()
@@ -356,7 +353,6 @@ void DarcyFlowMH::make_schur0() {
 
     START_TIMER("PREALLOCATION");
 
-    //Timing *asm_time = timing_create("PREALLOCATION", PETSC_COMM_WORLD);
     if (schur0 == NULL) { // create Linear System for MH matrix
         xprintf( Msg, "Allocating MH matrix for water model ... \n " );
 
@@ -375,14 +371,13 @@ void DarcyFlowMH::make_schur0() {
 
     START_TIMER("ASSEMBLY");
 
-    //timing_reuse(asm_time, "ASSEMBLY");
     xprintf( Msg, "Assembling MH matrix for water model ... \n " );
 
     schur0->start_add_assembly(); // finish allocation and create matrix
     mh_abstract_assembly(); // fill matrix
     schur0->finalize();
     schur0->view_local_matrix();
-    //timing_destroy(asm_time);
+
 
     // add time term
 
@@ -402,7 +397,6 @@ void DarcyFlowMH::make_schur0() {
      MatGetDiagonal(schur0->A,aux);
      MyVecView(aux,old_4_new,"A.dat");
      */
-
 }
 
 //=============================================================================
@@ -431,7 +425,6 @@ void DarcyFlowMH::make_schur1() {
     double det;
     F_ENTRY;
     START_TIMER("Schur 1");
-    //Timing *schur1_time = timing_create("Schur 1", PETSC_COMM_WORLD);
 
     // create Inverse of the A block
     ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(),
@@ -466,8 +459,6 @@ void DarcyFlowMH::make_schur1() {
     schur1 = new SchurComplement(schur0, IA);
     schur1->form_schur();
     schur1->set_spd();
-
-    //timing_destroy(schur1_time);
 }
 
 /*******************************************************************************
@@ -480,7 +471,6 @@ void DarcyFlowMH::make_schur2() {
     int ierr, loc_el_size;
     F_ENTRY;
     START_TIMER("Schur 2");
-    //Timing *schur2_time = timing_create("Schur 2", PETSC_COMM_WORLD);
     // create Inverse of the B block ( of the first complement )
 
 
@@ -507,8 +497,6 @@ void DarcyFlowMH::make_schur2() {
     schur2->form_schur();
     schur2->scale(-1.0);
     schur2->set_spd();
-
-    //timing_destroy(schur2_time);
 }
 
 

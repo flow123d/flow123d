@@ -62,7 +62,7 @@
 
 #include "solve.h"
 
-#include "profiler.h"
+#include "profiler.hh"
 
 /*
 #include "solve.h"
