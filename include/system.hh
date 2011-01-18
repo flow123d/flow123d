@@ -55,7 +55,7 @@ using namespace std;
 // **************************************************************
 /*!  @brief  Identifiers for various output messages.
  */
-typedef enum {
+typedef enum MessageType {
     Msg = 0, MsgDbg, MsgLog, MsgVerb, Warn, UsrErr, Err, PrgErr
 } MessageType;
 

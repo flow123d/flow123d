@@ -72,7 +72,7 @@
 
 #include "rev_num.h"
 /// named version of the program
-#define _VERSION_   "1.6.0"
+#define _VERSION_   "1.6.5"
 
 
 static struct Problem G_problem;
