@@ -121,7 +121,8 @@ cd $SOURCE_DIR
 #run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
 
 if [ -e $MPI_RUN ]; then
-	$MPI_RUN -np $NPROC $EXECUTABLE -s $INI $FLOW_PARAMS 2>err 1>out
+	#$MPI_RUN -np $NPROC $EXECUTABLE -s $INI $FLOW_PARAMS 2>err 1>out
+	$MACHINE_SCRIPT
 else 
 	echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
 	exit 1
