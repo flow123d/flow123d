@@ -25,7 +25,7 @@
 #set -x
  
 export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
-MACHINE_SCRIPT=$SCRIPT_PATH_DIR/current_make_pbs.qsub
+MACHINE_SCRIPT=$SCRIPT_PATH_DIR/make_pbs_link
 NPROC=1
 # passing arguments
 while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]

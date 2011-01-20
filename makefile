@@ -26,7 +26,7 @@
 
 include makefile.in
 
-all: bin/mpiexec revnumber
+all: bin/mpiexec revnumber bin/make_pbs_link
 #	make -C src clean
 	make -C third_party all
 	make -C src all
@@ -49,7 +49,24 @@ bin/mpiexec: makefile.in
 	    echo "Can not guess mpiexec of PETSC configuration"; \
 	fi        
 	chmod u+x bin/mpiexec
-
+	
+bin/make_pbs_link:
+	if [ -z ${MACHINE} ]; then \
+		echo "Using default make_pbs"; \
+		echo '#!/bin/bash' > bin/make_pbs_link; \
+		echo '${PWD}/bin/current_make_pbs.qsub' >> bin/make_pbs_link; \
+	else \
+		if [ -e bin/${MACHINE}_make_pbs.sh ]; then \
+			echo '#!/bin/bash' > bin/make_pbs_link; \
+			echo '${PWD}/bin/${MACHINE}_make_pbs.sh' >> bin/make_pbs_link; \
+		else \
+			echo "make_pbs script for given MACHINE not found, using default"; \
+			echo '#!/bin/bash' > bin/make_pbs_link; \
+			echo '${PWD}/bin/current_make_pbs.qsub' >> bin/make_pbs_link; \
+		fi \
+	fi
+	chmod u+x bin/make_pbs_link
+	
 revnumber:
 	if which "svnversion" ;\
 	then echo "#define REVISION \"`svnversion`\"" >include/rev_num.h;\
@@ -67,6 +84,7 @@ clean:
 	make -C src clean
 	make -C doc/doxy clean
 	rm -f bin/mpiexec
+	rm -f bin/make_pbs_link
 
 test: all 
 	make -C tests testbase

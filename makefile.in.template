@@ -38,6 +38,11 @@
 PETSC_DIR=
 PETSC_ARCH=
 
+#MACHINE specifies what pbs script will be used when rrunnin on paralel system( clusters, etc.)
+#if is not specified or is not existing, uses default ( bin/current_make_pbs.qsub)
+
+MACHINE=
+
 ##################################################################################
 ## user should not change this
 include ${PETSC_DIR}/conf/variables
