@@ -53,18 +53,12 @@ class MaterialDatabase;
 
 struct Problem {
     // Global
-    double stop_time; // Number of time steps
-    double save_step; // Step for outputing results
-    double time_step; // Time step for computation
+    //double stop_time; // Number of time steps
+    //double save_step; // Step for outputing results
+    //double time_step; // Time step for computation
     //	int              dens;            // Density Yes/NO
     //	bool              dens_step;            //
 
-    // DF - why are next variables there ?
-    // Run
-    // char log_init; // Is log file initialized?
-    // int scr_verb; // Verbosity of outputs on screen
-    // int log_verb; // Verbosity of outputs to logfile
-    // int pause_after_run; // Wait for user response at the end?
 
     // Output
     char *out_fname_2; // Name of output file of type 2

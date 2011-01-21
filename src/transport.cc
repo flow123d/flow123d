@@ -951,9 +951,11 @@ void convection(struct Transport *trans) {
 
 
     //  if(problem->type != PROBLEM_DENSITY){
-    save_step = (int) ceil(problem->save_step / trans->time_step); // transport  rev
-    trans->time_step = problem->save_step / save_step;
-    steps = save_step * (int) floor(problem->stop_time / problem->save_step);
+    double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
+    double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
+    save_step = (int) ceil(problem_save_step / trans->time_step); // transport  rev
+    trans->time_step = problem_save_step / save_step;
+    steps = save_step * (int) floor(problem_stop_time / problem_save_step);
     /*  }
      else{
      steps = (int)floor(problem->transport->update_dens_time / problem->transport->time_step);
@@ -1099,7 +1101,7 @@ void transport_output_init(struct Transport *transport) {
         output_msh_init_ascii(mesh, transport->transport_out_fname);
         break;
     case VTK_SERIAL_ASCII:
-        output_msh_init_vtk_serial_ascii(transport->problem, transport->transport_out_fname);
+        output_msh_init_vtk_serial_ascii( transport->transport_out_fname);
         break;
     case VTK_PARALLEL_ASCII:
         xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
@@ -1119,7 +1121,7 @@ void transport_output_finish(struct Transport *transport) {
         /* There is no need to do anything for this file format */
         break;
     case VTK_SERIAL_ASCII:
-        output_msh_finish_vtk_serial_ascii(transport->problem, transport->transport_out_fname);
+        output_msh_finish_vtk_serial_ascii(transport->transport_out_fname);
         break;
     case VTK_PARALLEL_ASCII:
         xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");

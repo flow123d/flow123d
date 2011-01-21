@@ -54,12 +54,10 @@ $(OBJS)/neighbours.o\
 $(OBJS)/mesh.o\
 $(OBJS)/materials.o\
 $(OBJS)/local_matrix.o\
-$(OBJS)/calculation.o\
 $(OBJS)/darcy_flow_mh.o\
 $(OBJS)/output.o\
 $(OBJS)/concentrations.o\
 $(OBJS)/postprocess.o\
-$(OBJS)/preprocess.o\
 $(OBJS)/solve.o\
 $(OBJS)/problem.o\
 $(OBJS)/main.o\

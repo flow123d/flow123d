@@ -1,0 +1,6 @@
+Test problem 10
+---------------------
+verification of:
+-unsteady flow
+- demonstration of MH instability
+

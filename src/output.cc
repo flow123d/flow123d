@@ -448,7 +448,7 @@ static void write_flow_vtk_scalar_ascii(FILE *out, const char *name, const int d
     sprintf(dbl_fmt, "%%.%dg ", digit);
 
     /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"Float32\" Name=\"%s\" format=\"ascii\">\n", name);
+    xfprintf(out, "<DataArray type=\"Float64\" Name=\"%s\" format=\"ascii\">\n", name);
     /* Write own data */
     for(ScalarFloatVector::iterator val=vector->begin(); val != vector->end(); val++) {
         xfprintf(out, dbl_fmt, *val);
@@ -472,7 +472,7 @@ static void write_flow_vtk_vector_ascii(FILE *out, const char *name, const int d
     sprintf(dbl_fmt, "%%.%dg ", digit);
 
     /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"3\" format=\"ascii\">\n", name);
+    xfprintf(out, "<DataArray type=\"Float64\" Name=\"%s\" NumberOfComponents=\"3\" format=\"ascii\">\n", name);
     /* Write own data */
     for(VectorFloatVector::iterator val=vector->begin(); val != vector->end(); val++) {
         xfprintf(out, dbl_fmt, val->d[0]);
@@ -1212,7 +1212,7 @@ void output_msh_init_ascii(Mesh* mesh, char* file)
     xprintf( Msg, "O.K.\n");
 }
 
-void output_msh_init_vtk_serial_ascii(struct Problem *problem, char *file)
+void output_msh_init_vtk_serial_ascii( char *file)
 {
     FILE *out;
 
@@ -1229,7 +1229,7 @@ void output_msh_init_vtk_serial_ascii(struct Problem *problem, char *file)
     xprintf( Msg, "O.K.\n");
 }
 
-void output_msh_finish_vtk_serial_ascii(struct Problem *problem, char *file)
+void output_msh_finish_vtk_serial_ascii(char *file)
 {
     FILE *out;
 
@@ -1322,6 +1322,7 @@ void output_transport_time_bin(struct Transport *transport,
 
     xprintf( Msg, "O.K.\n");
 }
+
 
 /**
  * \brief This function writes only scalar data of the transport to the ascii
@@ -1542,6 +1543,142 @@ void output_transport_time_vtk_serial_ascii(struct Transport *transport,
     delete element_vector_arrays;
 }
 
+
+/**
+ * THIS IS ONLY UGLY HACK basically copy of output_transport_vtk_...
+ */
+void output_flow_time_vtk_serial_ascii(Mesh *mesh,
+        double time,
+        int step,
+        char *file)
+{
+
+    //struct Problem *problem = transport->problem;
+    OutScalarsVector *element_scalar_arrays = new OutScalarsVector;
+    OutVectorsVector *element_vector_arrays = new OutVectorsVector;
+    struct OutScalar *p_element_out_scalar;
+    struct OutVector element_out_vector;
+    FILE *p_out, *s_out;
+    char frame_file[PATH_MAX];
+    int  subst_id, i;
+    tripple t;
+
+    sprintf(frame_file, "%s-%d.vtu", file, step);
+
+    /* Try to open file for frame "step" */
+    s_out = xfopen(frame_file, "wt");
+
+    if(s_out!=NULL) {
+
+        /* Try to open .pvd file */
+        p_out = xfopen(file, "at");
+
+        /* If it is not possible to open pvd file, then close frame file */
+        if(p_out==NULL) {
+            xfclose(s_out);
+            return;
+        }
+
+        xprintf(Msg, "%s: Writing output file %s ... ", __func__, file);
+
+        /* Find first directory delimiter */
+        for(i=strlen(file); i>=0; i--) {
+            if(file[i]==DIR_DELIMITER) {
+                break;
+            }
+        }
+        /* Write reference to .vtu file of current frame to pvd file */
+        if(i>0) {
+            /* Strip out relative path, because vtu file is in the same directory as pvd file*/
+            xfprintf(p_out, "<DataSet timestep=\"%d\" group=\"\" part=\"0\" file=\"%s-%d.vtu\"/>\n", step, &file[i+1], step);
+        } else {
+            /* No path was found in string "file" */
+            xfprintf(p_out, "<DataSet timestep=\"%d\" group=\"\" part=\"0\" file=\"%s-%d.vtu\"/>\n", step, file, step);
+        }
+
+        xfclose(p_out);
+        xprintf(Msg, "O.K.\n");
+    } else {
+        return;
+    }
+
+    xprintf(Msg, "%s: Writing output (frame %d) file %s ... ", __func__, step, frame_file);
+
+    /* Write header */
+    write_flow_vtk_header(s_out);
+
+    /* Write Piece begin */
+    xfprintf(s_out,
+            "<Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n",
+            mesh->node_vector.size(),
+            mesh->n_elements());
+
+    /* Write VTK geometry */
+    write_flow_vtk_geometry(s_out);
+
+    /* Write VTK topology */
+    write_flow_vtk_topology(s_out);
+
+    /* Allocate memory for array of element scalars */
+    p_element_out_scalar = (OutScalar*)xmalloc(sizeof(struct OutScalar)*1);
+
+    /* Go through all substances and add them to vector of scalars */
+    for(subst_id=0; subst_id<1; subst_id++) {
+        p_element_out_scalar[subst_id].scalars = new ScalarFloatVector;
+
+        /* Reserve memory for vectors */
+        p_element_out_scalar[subst_id].scalars->reserve(mesh->n_elements());
+
+        /* Set up names */
+        strcpy(p_element_out_scalar[subst_id].name, "pressure");
+
+        FOR_ELEMENTS(ele) {
+            /* Add scalar data to vector of scalars */
+            p_element_out_scalar[subst_id].scalars->push_back(ele->scalar);
+        }
+
+        element_scalar_arrays->push_back(p_element_out_scalar[subst_id]);
+    }
+
+    /* Add vectors to vector */
+    element_out_vector.vectors = new VectorFloatVector;
+    /* Reserve memory for vector */
+    element_out_vector.vectors->reserve(mesh->n_elements());
+    /* Set up name */
+    strcpy(element_out_vector.name, "transport_vector");
+    /* Copy data */
+    FOR_ELEMENTS(ele) {
+        /* Add vector data do vector of vectors */
+        t.d[0] = ele->vector[0];
+        t.d[1] = ele->vector[1];
+        t.d[2] = ele->vector[2];
+        element_out_vector.vectors->push_back(t);
+    }
+    element_vector_arrays->push_back(element_out_vector);
+
+    /* Write VTK data on elements */
+    write_flow_vtk_element_data(s_out, element_scalar_arrays, element_vector_arrays);
+
+    /* Write Piece end */
+    xfprintf(s_out, "</Piece>\n");
+
+    /* Write tail */
+    write_flow_vtk_tail(s_out);
+
+    xfclose(s_out);
+    xprintf( Msg, "O.K.\n");
+
+    /* Delete unused object */
+    for(subst_id=0; subst_id<1; subst_id++) {
+        delete p_element_out_scalar[subst_id].scalars;
+    }
+
+    xfree(p_element_out_scalar);
+    delete element_out_vector.vectors;
+
+    delete element_scalar_arrays;
+    delete element_vector_arrays;
+}
 /* =============================================================================
  * IMPORTANT NOTE: This is unused code. When following functions will not be
  * used, then it will be deleted in the future!

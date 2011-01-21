@@ -48,7 +48,7 @@ static void calc_side_c_row(struct Side*);
 static void calc_side_c_col(Mesh*);
 static void calc_side_c_val(struct Side*);
 static void calc_side_rhs(struct Side*);
-static void calc_side_rhs_dens(struct Side*, struct Problem*, Mesh*);
+//static void calc_side_rhs_dens(struct Side*, struct Problem*, Mesh*);
 static double side_length_line(struct Side*);
 static double side_area_triangle(struct Side*);
 static void calc_side_normal(struct Side*);
@@ -169,7 +169,7 @@ void add_to_side_list(Mesh* mesh, struct Side* sde) {
 // CALCULATE PROPERTIES OF ALL SIDES OF THE MESH
 //=============================================================================
 
-void side_calculation_mh(Mesh* mesh, struct Problem* problem) {
+void side_calculation_mh(Mesh* mesh) {
     struct Side *sde;
 
     xprintf(Msg, "Calculating properties of sides... ")/*orig verb 2*/;
@@ -183,9 +183,10 @@ void side_calculation_mh(Mesh* mesh, struct Problem* problem) {
         calc_side_metrics(sde);
         calc_side_normal(sde);
         calc_side_centre(sde);
+/*
         if (ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY)
             calc_side_rhs_dens(sde, problem, mesh);
-        else
+        else */
             calc_side_rhs(sde);
     }
     xprintf(Msg, "O.K.\n")/*orig verb 2*/;

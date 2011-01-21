@@ -50,9 +50,7 @@
 #include "topology.h"
 #include "postprocess.h"
 #include "output.h"
-#include "preprocess.h"
 #include "problem.h"
-#include "calculation.h"
 #include "darcy_flow_mh.hh"
 #include "main.h"
 #include "read_ini.h"
@@ -187,7 +185,6 @@ int main(int argc, char **argv) {
 
     // Calculate
     make_element_geometry();
-    preprocess(&G_problem);
     switch (ConstantDB::getInstance()->getInt("Goal")) {
         case CONVERT_TO_POS:
             main_convert_to_pos(&G_problem);
@@ -233,22 +230,35 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int t, i;
-    output_flow_field_init(problem);
+
+    char * output_file=OptGetFileName("Output", "Output_file", "\\");
+
+    //output_flow_field_init(problem);
     //        output_flow_field_in_time(problem,0);
-    calculation_mh(problem);
+    //output_init(problem);
+    output_msh_init_vtk_serial_ascii(output_file);
+    DarcyFlowMH *water=new DarcyFlowMH_Unsteady(*mesh);
+    problem->water=water;
 
+    double save_step=OptGetDbl("Global", "Save_step", "1.0");
+    double save_time=0.0;
 
-    for (t = 0, i = 0; t * problem->time_step < problem->stop_time; t++, i++) {
-        calculation_unsteady(problem);
-        problem->water=new DarcyFlowMH(*mesh);
-        problem->water->solve();
+    int out_step=0;
+
+    while (! water->is_end()) {
+        water->compute_one_step();
         postprocess(problem);
 
-        if ((i * problem->time_step >= problem->save_step) || (t == 0)) {
-            output_flow_field_in_time(problem, t * problem->time_step);
-            i = 0;
+        if ( water->get_time() >= save_time )  {
+
+            //output_flow_field_in_time(problem, problem->water->get_time());
+            //output_time(problem, problem->water->get_time());
+            output_flow_time_vtk_serial_ascii(mesh,water->get_time(),out_step,output_file);
+            out_step++;
+            save_time+=save_step;
         }
     }
+    output_msh_finish_vtk_serial_ascii(output_file);
 }
 
 /**
@@ -270,9 +280,8 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-    calculation_mh(problem);
-    problem->water=new DarcyFlowMH(*mesh);
-    problem->water->solve();
+    problem->water=new DarcyFlowMH_Steady(*mesh);
+    problem->water->compute_one_step();
 
     if (OptGetBool("Transport", "Transport_on", "no") == true)
             {
@@ -417,14 +426,14 @@ void main_compute_mh_density(struct Problem *problem) {
             output_transport_time_CS(problem,0);
             }
      */
-    save_step = problem->save_step;
-    stop_time = problem->stop_time;
-    trans->update_dens_time = problem->save_step / (ceil(problem->save_step / trans->dens_step));
-    dens_step = (int) ceil(problem->stop_time / trans->update_dens_time);
-    n_step = (int) (problem->save_step / trans->update_dens_time);
+    //save_step = problem->save_step;
+    //stop_time = problem->stop_time;
+    //trans->update_dens_time = problem->save_step / (ceil(problem->save_step / trans->dens_step));
+    //dens_step = (int) ceil(problem->stop_time / trans->update_dens_time);
+    //n_step = (int) (problem->save_step / trans->update_dens_time);
 
     // DF problem - I don't understend to this construction !!!
-    problem->save_step = problem->stop_time = trans->update_dens_time;
+    //problem->save_step = problem->stop_time = trans->update_dens_time;
     /*  printf("\n%d\t%d\t%f\n",dens_step,n_step,update_dens_time );
       getchar(); */
 
@@ -448,9 +457,9 @@ void main_compute_mh_density(struct Problem *problem) {
             xprintf(Msg, "dens iter %d \n", j);
             save_restart_iteration_H(problem);
             //restart_iteration(problem);
-            calculation_mh(problem);
-            problem->water=new DarcyFlowMH(*mesh);
-            problem->water->solve();
+            //calculation_mh(problem);
+            //problem->water=new DarcyFlowMH(*mesh);
+            //problem->water->solve();
             restart_iteration_C(problem);
             postprocess(problem);
             convection(trans);
@@ -466,12 +475,12 @@ void main_compute_mh_density(struct Problem *problem) {
             //xprintf( Msg, "repeat dens iter %d \n", j );
         }
         if (trans -> write_iterations == 0) {
-            transport_output(problem->transport, i * problem->time_step, ++frame);
+        //    transport_output(problem->transport, i * problem->time_step, ++frame);
         }
 
         if ((trans -> write_iterations == 0) && (((i + 1) % n_step == 0) || (i == (dens_step - 1)))) {
-            transport_output(problem->transport, (i + 1) * problem->stop_time, ++frame);
-            output_time(problem, (i + 1) * problem->stop_time);
+        //    transport_output(problem->transport, (i + 1) * problem->stop_time, ++frame);
+        //    output_time(problem, (i + 1) * problem->stop_time);
 
             //                      output_transport_time_BTC(trans, (i+1) * trans->time_step);
 

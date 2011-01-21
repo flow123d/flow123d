@@ -61,11 +61,7 @@ void problem_init(struct Problem *problem)
     // [Global]
     ConstantDB::getInstance()->setInt("Problem_type", OptGetInt("Global", "Problem_type", NULL));
 
-    // "non sense" is not the same like "nonsense"
-    problem -> stop_time = OptGetDbl("Global", "Stop_time", "1.0"); // non sense for non evol
-    problem -> save_step = OptGetDbl("Global", "Save_step", "1.0"); // non sense for non evol
-    problem -> time_step = OptGetDbl("Global", "Time_step", "1.0"); // non sense for non evol
-//    problem -> dens         = OptGetBool( "Global", "Density_on", "no" );
+    // problem -> dens         = OptGetBool( "Global", "Density_on", "no" );
 
 
     // [Output]
@@ -143,8 +139,6 @@ void check_ini_values( struct Problem *problem )
 		xprintf(UsrErr,"Name of material properties file must be defined\n");
 	if( strcmpi( OptGetStr( "Input", "Boundary", "\\" ), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of boundary condition file must be defined\n");
-	if( strcmpi( OptGetStr( "Input", "Initial", "\\" ), "\\"  ) == 0  && type == UNSTEADY_SATURATED)
-		xprintf(UsrErr,"Name of initial condition file must be defined\n");
 	if( strcmpi( OptGetStr( "Input", "Neighbouring", "\\" ), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of file describing neighbouring must be defined\n");
 	// if( OptGetStr( "Input", "Sources", "\\" ), "\\"  ) == 0 )
@@ -155,7 +149,7 @@ void check_ini_values( struct Problem *problem )
                 || (ConstantDB::getInstance()->getInt("Out_digit") > 16) ), "Number of digits of output must be between %d and %d\n", 1, 16);
 	INPUT_CHECK( DBL_GT(ConstantDB::getInstance()->getDouble("G"), 0.0), "Gravitotional acceleration has to be greater than ZERO\n");
 	INPUT_CHECK( DBL_GT(ConstantDB::getInstance()->getDouble("Rho"), 0.0), "Density of fluid has to be greater than ZERO\n");
-    	INPUT_CHECK( DBL_GT(problem->time_step, 0.0),"Time step has to be greater than ZERO\n");
+
 
     //TODO: proc je tohle zakomentovane? vypada to smysluplne...
     //INPUT_CHECK(!( problem->transport_on == true && problem->n_substances < 1 ),"Number of substances must be positive\n");

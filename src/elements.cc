@@ -515,20 +515,5 @@ void diag_A_stats(Mesh* mesh) {
     xprintf(MsgVerb, "Minimal absolute value: %g\tMaximal absolute value: %g\n", a_abs_min, a_abs_max)/*orig verb 6*/;
 }
 
-/**
- * CALCULATE UNSTEADY FLOW PROPERTIES OF ALL ELEMENTS OF THE MESH
- */
-void element_calculation_unsteady(struct Problem *problem) {
-    ASSERT(NONULL(problem), "NULL argument: problem\n");
-
-    Mesh* mesh = (Mesh*)ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    FOR_ELEMENTS(ele) {
-        double StorRate = ele->material->stor * ele->volume / problem->time_step;
-        ele->tAddRHS = -StorRate * ele->pscalar;
-        ele->tAddDiag = -StorRate;
-    }
-    return;
-}
 //-----------------------------------------------------------------------------
 // vim: set cindent:

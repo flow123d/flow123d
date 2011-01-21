@@ -53,9 +53,9 @@ struct TElement{
     double **vector;
 };
 struct tripple {
-    double d[3];
+    float d[3];
 };
-typedef std::vector<double> ScalarFloatVector;
+typedef std::vector<float> ScalarFloatVector;
 typedef std::vector<tripple> VectorFloatVector;
 
 /* TODO: convert to class */
@@ -121,14 +121,19 @@ FILE **open_temp_files(struct Transport *transport,const char *fileext,const cha
 void output_msh_init_bin(Mesh*, char*);
 void output_msh_init_ascii(Mesh*, char*);
 
-void output_msh_init_vtk_serial_ascii(struct Problem *problem, char *file);
-void output_msh_finish_vtk_serial_ascii(struct Problem *problem, char *file);
+void output_msh_init_vtk_serial_ascii( char *file);
+void output_msh_finish_vtk_serial_ascii( char *file);
 void output_transport_time_bin(struct Transport *transport, double time,int step,char *file);
 void output_transport_time_ascii(struct Transport *transport, double time,int step,char *file);
 void output_transport_time_vtk_serial_ascii(struct Transport *transport, double time, int step, char *file);
 void write_ascii_header(struct Problem *problem, FILE *out);
 void write_transport_ascii_data(FILE *out,struct Problem *problem,struct TTNode **nodes,struct TElement **elements,int time_steps,int ph);
 void write_transport_binary_data(FILE *out,struct Problem *problem,struct TTNode **nodes,struct TElement **elements,int time_steps,int ph);
+
+void output_flow_time_vtk_serial_ascii(Mesh *mesh,
+        double time,
+        int step,
+        char *file);
 
 #endif
 //-----------------------------------------------------------------------------

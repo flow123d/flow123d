@@ -84,7 +84,7 @@ typedef struct Side {
 #define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 
 void make_side_list(Mesh*);
-void side_calculation_mh(Mesh*, struct Problem*);
+void side_calculation_mh(Mesh *mesh);
 void calc_side_metrics(struct Side*);
 void side_shape_specific(Mesh*);
 
