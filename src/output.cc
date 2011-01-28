@@ -492,11 +492,13 @@ static void write_flow_vtk_vector_ascii(FILE *out, const char *name, const int d
  */
 static void write_flow_vtk_data(FILE *out, OutScalarsVector *scalars, OutVectorsVector *vectors)
 {
+    int digit = ConstantDB::getInstance()->getInt("Out_digit");
+
     /* Write to the file all scalar arrays if any */
     if(scalars != NULL) {
         for(OutScalarsVector::iterator sca = scalars->begin();
                 sca != scalars->end(); sca++) {
-            write_flow_vtk_scalar_ascii(out, sca->name, ConstantDB::getInstance()->getInt("Out_digit"), sca->scalars);
+            write_flow_vtk_scalar_ascii(out, sca->name, digit , sca->scalars);
         }
     }
 
@@ -504,7 +506,7 @@ static void write_flow_vtk_data(FILE *out, OutScalarsVector *scalars, OutVectors
     if(vectors != NULL) {
        for(OutVectorsVector::iterator vec = vectors->begin();
                 vec != vectors->end(); vec++) {
-            write_flow_vtk_vector_ascii(out, vec->name, ConstantDB::getInstance()->getInt("Out_digit"), vec->vectors);
+            write_flow_vtk_vector_ascii(out, vec->name, digit, vec->vectors);
         }
 
     }
@@ -1212,7 +1214,7 @@ void output_msh_init_ascii(Mesh* mesh, char* file)
     xprintf( Msg, "O.K.\n");
 }
 
-void output_msh_init_vtk_serial_ascii(struct Problem *problem, char *file)
+void output_msh_init_vtk_serial_ascii(char *file)
 {
     FILE *out;
 
@@ -1229,7 +1231,7 @@ void output_msh_init_vtk_serial_ascii(struct Problem *problem, char *file)
     xprintf( Msg, "O.K.\n");
 }
 
-void output_msh_finish_vtk_serial_ascii(struct Problem *problem, char *file)
+void output_msh_finish_vtk_serial_ascii(char *file)
 {
     FILE *out;
 
@@ -1540,6 +1542,54 @@ void output_transport_time_vtk_serial_ascii(struct Transport *transport,
 
     delete element_scalar_arrays;
     delete element_vector_arrays;
+}
+
+/**
+ * \brief Write data on elements to the file
+ */
+template <typename OutputData>
+int Output::write_elem_data(char *name, char *unit, vector<OutputData> *data)
+{
+    return 1;
+}
+
+/**
+ * \brief Write data on nodes to the file
+ */
+template <typename OutputData>
+int Output::write_node_data(char *name, char *unit, vector<OutputData> *data)
+{
+    return 1;
+}
+
+/**
+ * \brief Write mesh to the output file
+ */
+int Output::write_mesh(void)
+{
+    return 1;
+}
+
+/**
+ * \brief Constructor of Output object
+ */
+Output::Output(char *fname)
+{
+    filename = (char *)xmalloc(strlen(fname)+1);
+    strcpy(filename, fname);
+
+    out = xfopen(filename, "wt");
+}
+
+/**
+ * \brief Destructor of Output object
+ */
+Output::~Output()
+{
+    /* TODO: write tail of the file */
+
+    xfclose(out);
+    xfree(filename);
 }
 
 /* =============================================================================

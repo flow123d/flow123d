@@ -1111,7 +1111,7 @@ void transport_output_init(struct Transport *transport) {
         output_msh_init_ascii(mesh, transport->transport_out_fname);
         break;
     case VTK_SERIAL_ASCII:
-        output_msh_init_vtk_serial_ascii(transport->problem, transport->transport_out_fname);
+        output_msh_init_vtk_serial_ascii(transport->transport_out_fname);
         break;
     case VTK_PARALLEL_ASCII:
         xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
@@ -1131,7 +1131,7 @@ void transport_output_finish(struct Transport *transport) {
         /* There is no need to do anything for this file format */
         break;
     case VTK_SERIAL_ASCII:
-        output_msh_finish_vtk_serial_ascii(transport->problem, transport->transport_out_fname);
+        output_msh_finish_vtk_serial_ascii(transport->transport_out_fname);
         break;
     case VTK_PARALLEL_ASCII:
         xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");

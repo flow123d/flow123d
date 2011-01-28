@@ -43,15 +43,21 @@ class Mesh;
 //=============================================================================
 // TEMPORARY STRUCTURES
 //=============================================================================
+
+/* TODO: remove */
 struct TTNode{
     double **conc;
     double *scalar;
 };
+
+/* TODO: remove */
 struct TElement{
     double **conc;
     double *scalar;
     double **vector;
 };
+
+/* TODO: replace with something better */
 struct tripple {
     double d[3];
 };
@@ -69,6 +75,27 @@ typedef struct OutVector {
     VectorFloatVector *vectors;
     char name[32];
 } OutVector;
+
+/**
+ * Class of output
+ */
+class Output {
+private:
+    FILE    *out;
+    char    *filename;
+public:
+    Output(char *filename);
+    ~Output();
+
+    // Methods
+    int write_mesh(void);
+
+    template <typename OutputData>
+    int write_node_data(char *name, char *unit, vector<OutputData> *data);
+
+    template <typename OutputData>
+    int write_elem_data(char *name, char *unit, vector<OutputData> *data);
+};
 
 typedef std::vector<OutScalar> OutScalarsVector;
 typedef std::vector<OutVector> OutVectorsVector;
@@ -121,8 +148,9 @@ FILE **open_temp_files(struct Transport *transport,const char *fileext,const cha
 void output_msh_init_bin(Mesh*, char*);
 void output_msh_init_ascii(Mesh*, char*);
 
-void output_msh_init_vtk_serial_ascii(struct Problem *problem, char *file);
-void output_msh_finish_vtk_serial_ascii(struct Problem *problem, char *file);
+void output_msh_init_vtk_serial_ascii(char *file);
+void output_msh_finish_vtk_serial_ascii(char *file);
+
 void output_transport_time_bin(struct Transport *transport, double time,int step,char *file);
 void output_transport_time_ascii(struct Transport *transport, double time,int step,char *file);
 void output_transport_time_vtk_serial_ascii(struct Transport *transport, double time, int step, char *file);
