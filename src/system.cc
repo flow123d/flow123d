@@ -227,6 +227,9 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
  */
 int xterminate( bool on_error )
 {
+    //close the Profiler
+    Profiler::uninitialize();
+
     PetscErrorCode ierr=0;
 
     if (on_error) { F_STACK_SHOW( stderr ); }
@@ -249,9 +252,6 @@ int xterminate( bool on_error )
     //fflush and fclose all files (including stdout, stderr, stdio)
     //this function is GNU extension
     fcloseall();
-
-    //close the Profiler
-    Profiler::uninitialize();
 
     //select proper Return Code
     if ( on_error || ierr ) //error in program or during PetscFinalize()

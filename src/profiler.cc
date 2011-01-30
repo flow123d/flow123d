@@ -32,14 +32,25 @@
 
 #include "profiler.hh"
 #include "system.hh"
+#include <petsc.h>
+#include <boost/format.hpp>
 
 
 Profiler* Profiler::_instance = NULL;
 map<string, TimerFrame*> TimerFrame::_frames;
 
-Profiler::Profiler() {
+void pad_string(string *str, int length) {
+    if (length > str->size())
+        str->insert(str->size(), length - str->size(), ' ');
+}
+
+Profiler::Profiler(MPI_Comm comm) {
     F_ENTRY;
-    xprintf(Msg, "Profiler created  \n");
+    id = 0;
+    communicator = comm;
+    if (comm) {
+        MPI_Comm_rank(PETSC_COMM_WORLD, &(id));
+    }
 
     actual_node = root = new Timer("", NULL);
     root->start(0);
@@ -48,11 +59,95 @@ Profiler::Profiler() {
 }
 
 Profiler::~Profiler() {
+
     if (root) {
+
         root->forced_end(get_time()); //stop all running timers
+
+        int timersCount = this->tag_map.size();
+        vector < vector<string>* >* timersInfo = new vector < vector<string>*>();
+        add_timer_info(timersInfo, root);
+
+        int maxTagLength = 0;
+        int maxCallCountLength = 0;
+        int maxTimeLength = 0;
+
+        for (int i = 0; i < timersInfo->size(); i++) {
+            for (int j = 0; j < timersInfo->at(i)->size(); j++) {
+                string str = timersInfo->at(i)->at(j);
+                int size = str.size();
+
+                switch (j) {
+                    case 0:
+                        maxTagLength = max(maxTagLength, size);
+                        break;
+                    case 1:
+                        maxCallCountLength = max(5, max(maxCallCountLength, size));
+                        break;
+                    case 2:
+                        maxTimeLength = max(4, max(maxTimeLength, size));
+                        break;
+                }
+            }
+        }
+
         xprintf(Msg, "-------------Profiler information-------------\n");
-        root->print(0);
+
+        string spaces = " ";
+        pad_string(&spaces, maxTagLength);
+        string calls = "calls";
+        pad_string(&calls, maxCallCountLength);
+        string time = "time";
+        pad_string(&time, maxTimeLength);
+
+        xprintf(Msg, "%s %s %s min/max\n", spaces.c_str(), calls.c_str(), time.c_str());
+
+
+        for (int i = 0; i < timersInfo->size(); i++) {
+            vector<string>* info = timersInfo->at(i);
+
+            string tag = info->at(0);
+            string calls = info->at(1);
+            string time = info->at(2);
+            string minMax = info->at(3);
+
+            pad_string(&tag, maxTagLength);
+            pad_string(&calls, maxCallCountLength);
+            pad_string(&time, maxTimeLength);
+
+            xprintf(Msg, "%s %s %s %s\n", tag.c_str(), calls.c_str(), time.c_str(), minMax.c_str());
+        }
+
         xprintf(Msg, "----------------------------------------------\n");
+    }
+}
+
+void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer) {
+
+    if (timer->tag().size() > 0) {
+        int numproc;
+        MPI_Comm_size(communicator, &numproc);
+
+        int callCount = timer->call_count();
+        int callCountMin = MPI_Functions::min(&callCount, communicator);
+        int callCountMax = MPI_Functions::max(&callCount, communicator);
+
+        double cumulTime = timer->cumulative_time();
+        double cumulTimeMin = MPI_Functions::min(&cumulTime, communicator);
+        double cumulTimeMax = MPI_Functions::max(&cumulTime, communicator);
+        double cumulTimeSum = MPI_Functions::sum(&cumulTime, communicator);
+
+        vector<string>* info = new vector<string > ();
+        info->push_back(timer->tag());
+        info->push_back(boost::str(boost::format("%i%s") % callCount % (callCountMin != callCountMax ? "*" : "")));
+        info->push_back(boost::str(boost::format("%.2e") % (cumulTimeSum / numproc)));
+        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeMin / cumulTimeMax)));
+
+        timersInfo->push_back(info);
+    }
+
+    for (int i = 0; i < timer->child_timers_list()->size(); i++) {
+        add_timer_info(timersInfo, timer->child_timers_list()->at(i));
     }
 }
 
@@ -152,8 +247,6 @@ void Timer::start(double time) {
     start_count++;
     if (!running) {
 
-        xprintf(Msg, "Starting timer %s \n", this->tag().c_str());
-
         start_time = time;
         running = true;
     }
@@ -164,8 +257,6 @@ bool Timer::end(double time) {
 
     start_count = MAX(start_count - 1, 0);
     if (start_count == 0) {
-        if (running)
-            xprintf(Msg, "Stopping timer %s \n", this->tag().c_str());
         this->stop(time);
         return true;
     }
@@ -174,8 +265,6 @@ bool Timer::end(double time) {
 }
 
 void Timer::forced_end(double time) {
-    if (running)
-        xprintf(Msg, "Forced stopping timer %s \n", this->tag().c_str());
     start_count = 0;
     this->stop(time);
 }
@@ -194,22 +283,6 @@ void Timer::stop(double time) {
 
 void Timer::insert_child(Timer* child) {
     child_timers.push_back(child);
-}
-
-void Timer::print(int indent_level) {
-    //dont print if the timer has an empty tag (= root node)
-    if (this->tag().length() > 0) {
-        xprintf(Msg, "%s :    %i    %.2f \n", this->tag().c_str(), this->call_count(), this->cumulative_time());
-        for (int i = 0; i < child_timers.size(); i++) {
-            child_timers.at(i)->print(indent_level + 1);
-        }
-    }
-    else {
-        for (int i = 0; i < child_timers.size(); i++) {
-            child_timers.at(i)->print(0);
-        }
-    }
-
 }
 
 TimerFrame::TimerFrame(string tag) {

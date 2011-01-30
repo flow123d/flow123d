@@ -165,11 +165,13 @@ int main(int argc, char **argv) {
         ConstantDB::getInstance()->setInt("Goal", goal);
     }
     
-    START_TIMER("WHOLE PROGRAM");
-
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
     system_set_from_options();
+
+    Profiler::initialize(MPI_COMM_WORLD);
+
+    START_TIMER("WHOLE PROGRAM");
 
     // Say Hello
     xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", _VERSION_,REVISION);

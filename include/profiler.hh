@@ -35,8 +35,49 @@
 #include <iostream>
 #include <time.h>
 #include <vector>
+#include <petsc.h>
 
 #include "system.hh"
+
+class MPI_Functions {
+public:
+
+    static int sum(int* val, MPI_Comm comm) {
+        int total = 0;
+        MPI_Reduce(val, &total, 1, MPI_INT, MPI_SUM, 0, comm);
+        return total;
+    }
+
+    static double sum(double* val, MPI_Comm comm) {
+        double total = 0;
+        MPI_Reduce(val, &total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+        return total;
+    }
+
+    static int min(int* val, MPI_Comm comm) {
+        int min = 0;
+        MPI_Reduce(val, &min, 1, MPI_INT, MPI_MIN, 0, comm);
+        return min;
+    }
+
+    static double min(double* val, MPI_Comm comm) {
+        double min = 0;
+        MPI_Reduce(val, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+        return min;
+    }
+
+    static int max(int* val, MPI_Comm comm) {
+        int max = 0;
+        MPI_Reduce(val, &max, 1, MPI_INT, MPI_MAX, 0, comm);
+        return max;
+    }
+
+    static double max(double* val, MPI_Comm comm) {
+        double max = 0;
+        MPI_Reduce(val, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+        return max;
+    }
+};
 
 /*
  * Class for profiling tree nodes.
@@ -88,11 +129,14 @@ public:
     Timer* parent() {
         return parent_timer;
     }
-
-    void print(int indent_level);
     
+    vector<Timer*>* child_timers_list(){
+        return &child_timers;
+    }
+
     ~Timer();
 };
+
 
 /**
  *
@@ -111,6 +155,8 @@ private:
     Timer *root;
     Timer *actual_node;
     clock_t start_clock;
+    MPI_Comm communicator;
+    int id;
 
     map<string, Timer*> tag_map;
 
@@ -120,7 +166,9 @@ private:
      */
     double inline get_time();
 
-    Profiler(); // default private constructor
+    void add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer);
+
+    Profiler(MPI_Comm comm); // private constructor
 
     Profiler(Profiler const&); // copy constructor is private
 
@@ -141,7 +189,7 @@ public:
     static Profiler* instance() {
         //singleton pattern implementation
         if (!_instance)
-            _instance = new Profiler;
+            _instance = new Profiler(NULL);
 
         return _instance;
     }
@@ -149,13 +197,19 @@ public:
     /**
      * Destroys the Profiler object and causes that the statistics will be written to output
      */
-    static void uninitialize()
-    {
-        if (_instance)
-        {
+    static void uninitialize() {
+        if (_instance) {
             delete _instance;
             _instance = NULL;
         }
+    }
+
+    /**
+     * Initializes the Profiler with specific MPI communicator object
+     */
+    static void initialize(MPI_Comm communicator) {
+        if (!_instance)
+            _instance = new Profiler(communicator);
     }
 
     /**
