@@ -25,7 +25,7 @@
 #set -x
  
 export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
-MACHINE_SCRIPT=$SCRIPT_PATH_DIR/make_pbs_link
+MACHINE_SCRIPT=$SCRIPT_PATH_DIR/generic_flow
 NPROC=1
 # passing arguments
 while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]
@@ -42,8 +42,8 @@ do
     QueueTime=$1
   elif [ "$1" == "-m" ]; then
     shift
-	if [ -e $SCRIPT_PATH_DIR/${1}_make_pbs.qsub ]; then
-		MACHINE_SCRIPT=$SCRIPT_PATH_DIR/${1}_make_pbs.qsub
+	if [ -e $SCRIPT_PATH_DIR/${1}_flow.sh ]; then
+		MACHINE_SCRIPT=$SCRIPT_PATH_DIR/${1}_flow.sh
 	else
 		echo "Skript pro daný MACHINE nenalezen, bude použit defaultní."
 	fi

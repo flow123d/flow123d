@@ -35,8 +35,8 @@
 #PETSC_DIR=$HOME/local/petsc
 #PETSC_ARCH=linux-gcc-dbg
 
-PETSC_DIR=
-PETSC_ARCH=
+#PETSC_DIR=
+#PETSC_ARCH=
 
 #MACHINE specifies what pbs script will be used when rrunnin on paralel system( clusters, etc.)
 #if is not specified or is not existing, uses default ( bin/current_make_pbs.qsub)
