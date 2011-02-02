@@ -217,12 +217,16 @@ void SchurComplement::form_schur()
     DBGMSG("C block:\n");
     //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
 
+    form_rhs();
+    state=formed;
+
+}
+
+void SchurComplement::form_rhs()
+{
     // compute the SchurRHS
     MatMultTranspose(IAB,RHS1,Compl->get_rhs());
     VecAXPY(Compl->get_rhs(),-1,RHS2);
-
-    state=formed;
-
 }
 
 /**

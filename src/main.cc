@@ -237,23 +237,25 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
     //        output_flow_field_in_time(problem,0);
     //output_init(problem);
     output_msh_init_vtk_serial_ascii(output_file);
-    DarcyFlowMH *water=new DarcyFlowMH_Unsteady(*mesh);
+    DarcyFlowMH *water=new DarcyFlowMH_UnsteadyLumped(*mesh);
     problem->water=water;
+
+    const TimeGovernor &water_time=water->get_time();
 
     double save_step=OptGetDbl("Global", "Save_step", "1.0");
     double save_time=0.0;
 
     int out_step=0;
 
-    while (! water->is_end()) {
+    while (! water_time.is_end()) {
         water->compute_one_step();
         postprocess(problem);
 
-        if ( water->get_time() >= save_time )  {
+        if ( water_time.ge( save_time ) )  {
 
             //output_flow_field_in_time(problem, problem->water->get_time());
             //output_time(problem, problem->water->get_time());
-            output_flow_time_vtk_serial_ascii(mesh,water->get_time(),out_step,output_file);
+            output_flow_time_vtk_serial_ascii(mesh,water_time.t(),out_step,output_file);
             out_step++;
             save_time+=save_step;
         }

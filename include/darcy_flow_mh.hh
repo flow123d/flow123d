@@ -50,7 +50,7 @@
 
 #include <petscmat.h>
 #include <sys_vector.hh>
-#include <time.hh>
+#include <time_governor.hh>
 
 /// external types:
 class LinSys;
@@ -82,17 +82,15 @@ class FieldP0;
 
 class DarcyFlowMH {
 public:
-    DarcyFlowMH() : time() {}
     virtual void compute_one_step() =0;
     virtual void compute_until( double time);
-    inline bool is_end()
-        { return time.is_end(); }
-    inline double get_time()
-        {return time.t();}
+    inline const TimeGovernor& get_time()
+        {return *time;}
     virtual double * solution_vector() =0;
+    virtual void postprocess() =0;
 
 protected:
-    TimeGovernor time;
+    TimeGovernor *time;
 
 };
 
@@ -102,6 +100,7 @@ public:
     DarcyFlowMH_Steady(Mesh &mesh);
     virtual void compute_one_step();
     virtual double * solution_vector();
+    virtual void postprocess() {};
     ~DarcyFlowMH_Steady();
 
 protected:
@@ -175,6 +174,24 @@ private:
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
+
+
+};
+
+class DarcyFlowMH_UnsteadyLumped : public DarcyFlowMH_Steady
+{
+public:
+    DarcyFlowMH_UnsteadyLumped(Mesh &mesh);
+    DarcyFlowMH_UnsteadyLumped();
+protected:
+    virtual void modify_system();
+    virtual void postprocess();
+private:
+    Vec steady_diagonal;
+    Vec steady_rhs;
+    Vec new_diagonal;
+    Vec previous_solution;
+    Vec time_term;
 
 
 };

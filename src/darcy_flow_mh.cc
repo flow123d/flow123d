@@ -51,7 +51,8 @@
 
 void DarcyFlowMH::compute_until(double end_time)
 {
-    while (time.t() + time.dt() < end_time) compute_one_step();
+    ASSERT(NONULL(time),"Time governor was not created.\n");
+    while ( ! time->is_end() ) compute_one_step();
 }
 
 
@@ -95,7 +96,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in)
     }
 
     // time governor
-    time.setup(0, 1.0, 1.0);
+    time=new TimeGovernor(0, 1.0, 1.0);
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -142,10 +143,9 @@ void DarcyFlowMH_Steady::compute_one_step() {
     Timing *solver_time = timing_create("SOLVING MH SYSTEM", PETSC_COMM_WORLD);
     F_ENTRY;
 
-    time.view();
-    if (time.is_end()) return;
+    if (time->is_end()) return;
     DBGMSG("compute one step.\n");
-    time.next_time();
+    time->next_time();
 
 
     modify_system(); // hack for unsteady model
@@ -169,6 +169,9 @@ void DarcyFlowMH_Steady::compute_one_step() {
         schur1->resolve();
         break;
     }
+    postprocess();
+
+
     // TODO PARALLEL
     xprintf(MsgVerb,"Scattering solution vector to all processors ...\n");
     // scatter solution to all procs
@@ -211,6 +214,8 @@ void DarcyFlowMH_Steady::compute_one_step() {
             INSERT_VALUES, SCATTER_FORWARD);
 
     timing_destroy(solver_time);
+
+
 }
 
 double * DarcyFlowMH_Steady::solution_vector()
@@ -1103,7 +1108,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in)
     : DarcyFlowMH_Steady(mesh_in)
 {
     // time governor
-    time.setup(
+    time=new TimeGovernor(
             0.0,
             OptGetDbl("Global", "Time_step", "1.0"),
             OptGetDbl("Global", "Stop_time", "1.0")
@@ -1124,6 +1129,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in)
 
     PetscScalar *local_diagonal;
     VecDuplicate(steady_diagonal,& new_diagonal);
+    VecZeroEntries(new_diagonal);
     VecGetArray(new_diagonal,& local_diagonal);
 
     // apply initial condition and modify matrix diagonal
@@ -1138,7 +1144,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in)
         // set initial condition
         local_sol[i_loc_row]=initial_pressure->element_value(ele.index());
         // set new diagonal
-        local_diagonal[i_loc_row]=-ele->material->stor*ele->volume /time.dt();
+        local_diagonal[i_loc_row]=-ele->material->stor*ele->volume /time->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     delete initial_pressure;
@@ -1167,6 +1173,121 @@ void DarcyFlowMH_Unsteady::modify_system()
   VecSwap(previous_solution, schur0->get_solution());
 }
 
+
+// ========================
+// unsteady
+
+DarcyFlowMH_UnsteadyLumped::DarcyFlowMH_UnsteadyLumped(Mesh &mesh_in)
+    : DarcyFlowMH_Steady(mesh_in)
+{
+    // time governor
+    time=new TimeGovernor(
+            0.0,
+            OptGetDbl("Global", "Time_step", "1.0"),
+            OptGetDbl("Global", "Stop_time", "1.0")
+            );
+
+    // have created full steady linear system
+    // save diagonal of steady matrix
+    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
+
+    // read inital condition
+
+    string file_name=OptGetStr( "Input", "Initial", "\\" );
+    INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
+    VecZeroEntries(schur0->get_solution());
+    FieldP0 *initial_pressure = new FieldP0("input/pressure_initial.in",string("$Sources"),mesh->element);
+
+    VecDuplicate(steady_diagonal,& new_diagonal);
+
+    // apply initial condition and modify matrix diagonal
+    // cycle over local element rows
+    int i_loc_row, i_loc_el, edge_row;
+    ElementFullIter ele = ELEMENT_FULL_ITER(NULL);
+    double init_value;
+
+    for (i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
+        ele = mesh->element(el_4_loc[i_loc_el]);
+        i_loc_row=i_loc_el+side_ds->lsize();
+
+        init_value=initial_pressure->element_value(ele.index());
+
+        FOR_ELEMENT_SIDES(ele,i) {
+            edge_row = edge_row_4_id[ele->side[i]->edge->id];
+            // set new diagonal
+            VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume /time->dt()/ele->n_sides,ADD_VALUES);
+            // set initial condition
+            VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides,ADD_VALUES);
+        }
+    }
+    VecAssemblyBegin(new_diagonal);
+    VecAssemblyBegin(schur0->get_solution());
+    VecAssemblyEnd(new_diagonal);
+    VecAssemblyEnd(schur0->get_solution());
+
+    delete initial_pressure;
+    MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+
+    // set previous solution as copy of initial condition
+    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecCopy(schur0->get_solution(), previous_solution);
+
+    // save RHS
+    VecDuplicate(schur0->get_rhs(), &steady_rhs);
+    VecCopy(schur0->get_rhs(),steady_rhs);
+
+    // auxiliary vector for time term
+    VecDuplicate(schur0->get_rhs(), &time_term);
+
+}
+
+void DarcyFlowMH_UnsteadyLumped::modify_system()
+{
+
+
+  // modify RHS - add previous solution
+  VecPointwiseMult(schur0->get_rhs(),new_diagonal,schur0->get_solution());
+  VecAXPY(schur0->get_rhs(),1.0,steady_rhs);
+
+  // swap solutions
+  VecSwap(previous_solution, schur0->get_solution());
+}
+
+// TODO: make this operating on parallel solution
+// i.e. access from elements to edge values (possibly by constructing specific matrix)
+
+// is it really necessary what is natural value of element pressures ?
+// Since
+void DarcyFlowMH_UnsteadyLumped::postprocess()
+{
+  int i_loc,side_row,loc_row,i;
+  Edge* edg;
+  ElementIter ele;
+  double new_pressure, old_pressure,time_coef;
+
+  PetscScalar *loc_prev_sol;
+  VecGetArray(previous_solution, &loc_prev_sol);
+
+  // modify side fluxes in parallel
+  // for every local edge take time term on digonal and add it to the corresponding flux
+  for (i_loc =0 ; i_loc < edge_ds->lsize(); i_loc++) {
+      edg = mesh->edge_hash[edge_id_4_loc[i_loc]];
+      loc_row=side_ds->lsize()+el_ds->lsize()+i_loc;
+      new_pressure=(schur0->get_solution_array())[loc_row];
+      old_pressure=loc_prev_sol[loc_row];
+      FOR_EDGE_SIDES(edg,i) {
+          ele=edg->side[i]->element;
+          side_row=side_row_4_id[edg->side[i]->id];
+          time_coef=-ele->material->stor*ele->volume /time->dt()/ele->n_sides;
+          VecSetValue(schur0->get_solution(),side_row,time_coef*(new_pressure-old_pressure),ADD_VALUES);
+      }
+  }
+  VecGetArray(previous_solution, &loc_prev_sol);
+
+  VecAssemblyBegin(schur0->get_solution());
+  VecAssemblyEnd(schur0->get_solution());
+}
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -61,6 +61,11 @@ public:
 
     // TODO: should be at least protected
     void form_schur();
+    /** Compute only right hand side.
+     *  This is useful when you change only rhs of the original system.
+     */
+
+    void form_rhs();
     void resolve();
 
 private:
