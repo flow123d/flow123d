@@ -32,7 +32,8 @@
 
 #include "profiler.hh"
 #include "system.hh"
-#include <petsc.h>
+#include "system.hh"
+#include <xio.h>
 #include <boost/format.hpp>
 
 
@@ -46,6 +47,8 @@ void pad_string(string *str, int length) {
 
 Profiler::Profiler(MPI_Comm comm) {
     F_ENTRY;
+
+    task_size = 0;
     id = 0;
     communicator = comm;
     if (comm) {
@@ -56,17 +59,24 @@ Profiler::Profiler(MPI_Comm comm) {
     root->start(0);
 
     start_clock = clock();
+    start_time = time(NULL);
 }
 
 Profiler::~Profiler() {
 
     if (root) {
-
         root->forced_end(get_time()); //stop all running timers
+    }
 
-        int timersCount = this->tag_map.size();
-        vector < vector<string>* >* timersInfo = new vector < vector<string>*>();
-        add_timer_info(timersInfo, root);
+    //wait until profiling on all processors is finished
+    MPI_Barrier(this->communicator);
+
+    vector < vector<string>* >* timersInfo = new vector < vector<string>*>();
+    add_timer_info(timersInfo, root, 0);
+
+    //create profiler output only once (on the first processor)
+    if (this->id == 0)
+    {
 
         int maxTagLength = 0;
         int maxCallCountLength = 0;
@@ -91,7 +101,33 @@ Profiler::~Profiler() {
             }
         }
 
-        xprintf(Msg, "-------------Profiler information-------------\n");
+        int size;
+        MPI_Comm_size(this->communicator, &size);
+
+        time_t end_time = time(NULL);
+
+        const char format[] = "%x %X";
+        char startdest[BUFSIZ] = {0};
+        strftime(startdest, sizeof (startdest) - 1, format, localtime(&start_time));
+
+        char enddest[BUFSIZ] = {0};
+        strftime(enddest, sizeof (enddest) - 1, format, localtime(&end_time));
+
+        //create a file where the output will be written to
+        FILE *out;
+        const char fileformat[] = "profiler_%d-%m-%y_%H:%M:%S.out";
+        char filename[PATH_MAX];
+        strftime(filename, sizeof (filename) - 1, fileformat, localtime(&end_time));
+
+        out = xfopen( filename, "w+" );
+
+        //print some information about the task at the beginning
+        xfprintf(out, "No. of processors: %i\n", size);
+        xfprintf(out, "Task size: %i\n", task_size);
+        xfprintf(out, "Start time: %s\n", startdest);
+        xfprintf(out, "End time: %s\n", enddest);
+
+        xfprintf(out, "----------------------------------------------------\n");
 
         string spaces = " ";
         pad_string(&spaces, maxTagLength);
@@ -100,8 +136,7 @@ Profiler::~Profiler() {
         string time = "time";
         pad_string(&time, maxTimeLength);
 
-        xprintf(Msg, "%s %s %s min/max\n", spaces.c_str(), calls.c_str(), time.c_str());
-
+        xfprintf(out, "%s %s %s min/max\n", spaces.c_str(), calls.c_str(), time.c_str());
 
         for (int i = 0; i < timersInfo->size(); i++) {
             vector<string>* info = timersInfo->at(i);
@@ -115,14 +150,15 @@ Profiler::~Profiler() {
             pad_string(&calls, maxCallCountLength);
             pad_string(&time, maxTimeLength);
 
-            xprintf(Msg, "%s %s %s %s\n", tag.c_str(), calls.c_str(), time.c_str(), minMax.c_str());
+            xfprintf(out, "%s %s %s %s\n", tag.c_str(), calls.c_str(), time.c_str(), minMax.c_str());
         }
 
-        xprintf(Msg, "----------------------------------------------\n");
+        xfclose( out );
+
     }
 }
 
-void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer) {
+void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer, int indent) {
 
     if (timer->tag().size() > 0) {
         int numproc;
@@ -132,23 +168,30 @@ void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer)
         int callCountMin = MPI_Functions::min(&callCount, communicator);
         int callCountMax = MPI_Functions::max(&callCount, communicator);
 
-        double cumulTime = timer->cumulative_time();
+        double cumulTime = timer->cumulative_time() / 1000;
         double cumulTimeMin = MPI_Functions::min(&cumulTime, communicator);
         double cumulTimeMax = MPI_Functions::max(&cumulTime, communicator);
         double cumulTimeSum = MPI_Functions::sum(&cumulTime, communicator);
 
+        string spaces = "";
+        pad_string(&spaces, indent);
+
         vector<string>* info = new vector<string > ();
-        info->push_back(timer->tag());
+        info->push_back(spaces + timer->tag());
         info->push_back(boost::str(boost::format("%i%s") % callCount % (callCountMin != callCountMax ? "*" : "")));
-        info->push_back(boost::str(boost::format("%.2e") % (cumulTimeSum / numproc)));
-        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeMin / cumulTimeMax)));
+        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeSum / numproc)));
+        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeMax > 0.01 ? cumulTimeMin / cumulTimeMax : 0)));
 
         timersInfo->push_back(info);
     }
 
     for (int i = 0; i < timer->child_timers_list()->size(); i++) {
-        add_timer_info(timersInfo, timer->child_timers_list()->at(i));
+        add_timer_info(timersInfo, timer->child_timers_list()->at(i), timer->tag().size() == 0 ? 0 : indent + 1);
     }
+}
+
+void Profiler::set_task_size(int size) {
+    this->task_size = size;
 }
 
 void Profiler::start(string tag) {

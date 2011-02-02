@@ -191,6 +191,8 @@ int main(int argc, char **argv) {
     int numNodes = mesh->node_vector.size();
     xprintf(Msg, " - Number of nodes in the mesh is: %d\n", numNodes);
 
+    Profiler::instance()->set_task_size(mesh->n_elements());
+
     // Calculate
     make_element_geometry();
     preprocess(&G_problem);

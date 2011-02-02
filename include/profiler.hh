@@ -155,8 +155,10 @@ private:
     Timer *root;
     Timer *actual_node;
     clock_t start_clock;
+    time_t start_time;
     MPI_Comm communicator;
     int id;
+    int task_size;
 
     map<string, Timer*> tag_map;
 
@@ -166,7 +168,7 @@ private:
      */
     double inline get_time();
 
-    void add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer);
+    void add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer, int indent);
 
     Profiler(MPI_Comm comm); // private constructor
 
@@ -226,6 +228,7 @@ public:
      */
     void end(string tag = "");
 
+    void set_task_size(int size);
 };
 
 #define _PASTE(a,b) a ## b
