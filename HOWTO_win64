@@ -51,6 +51,8 @@ Checkout as: New Project Wizard
 C project
 Name: "moje_jmeno", Makefile project->Empty->Cygwin GCC toolchain
 Project->Properties->C/C++ build->Behaviour->Use parallel build, use optimal jobs number
+Window->Preferences->General->Workspace->Text file encoding = UTF8
+Window->Preferences->C/C++->Editor->Documentation tool = Doxygen
 
 *****************************************
 * Nutne upravy v projektu

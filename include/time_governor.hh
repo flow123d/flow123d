@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: sparse_graph.hh 822 2010-12-17 15:18:04Z jiri.jenicek $
- * $Revision: 822 $
- * $LastChangedBy: jiri.jenicek $
- * $LastChangedDate: 2010-12-17 16:18:04 +0100 (Fri, 17 Dec 2010) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Basic time management class.
