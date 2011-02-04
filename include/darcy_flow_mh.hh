@@ -147,6 +147,8 @@ protected:
 	// MATIS related arrays
 	int ndof_loc;                   // size of local block of MATIS matrix 
 	int *global_row_4_sub_row;      // global dof index for subdomain index
+    
+	ISLocalToGlobalMapping map_side_local_to_global; ///< PETSC mapping form local SIDE indices of subdomain to global indices
 
 	// gather of the solution
 	Vec sol_vec;			// vector over solution array

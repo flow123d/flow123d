@@ -64,15 +64,19 @@ public:
     /** Compute only right hand side.
      *  This is useful when you change only rhs of the original system.
      */
-
     void form_rhs();
     void resolve();
 
 private:
     Mat IA;                     // Inverse of block A
+    Mat IA_sub;                 // Local inverse of block A in MATIS matrix
+
     Mat B, Bt;                   // B and B' block (could be different from real B transpose)
+    Mat B_sub, Bt_sub;           // Local blocks B and B' in MATIS matrix
     Mat xA;                     // Bt*IA*B
+    Mat xA_sub;                 // Bt*IA*B for MATIS matrix
     Mat IAB;                    // reconstruction matrix IA * B
+    Mat IAB_sub;                 // Local block IAB in MATIS matrix
     int locSizeA, locSizeB;     // loc size of the A and B block
     IS IsA, IsB;                // parallel index sets of the A and B block
     IS fullIsA,fullIsB;         // whole IsA  and IsB on each proc

@@ -156,10 +156,11 @@ void DarcyFlowMH_Steady::compute_one_step() {
         break;
     case 1: /* first schur complement of A block */
         make_schur1();
-        solve_system(solver, schur1->get_system());
-        schur1->resolve();
+        //solve_system(solver, schur1->get_system());
+        //schur1->resolve();
+        schur1->solve(solver);
         break;
-    case 2: /* second shur complement of the max. dimension elements in B block */
+    case 2: /* second schur complement of the max. dimension elements in B block */
         make_schur1();
         make_schur2();
 
@@ -413,6 +414,7 @@ void DarcyFlowMH_Steady::make_schur0() {
         mh_abstract_assembly(); // preallocation
 
     }
+
     timing_reuse(asm_time, "ASSEMBLY");
     xprintf( Msg, "Assembling MH matrix for water model ... \n " );
 
@@ -451,13 +453,30 @@ void DarcyFlowMH_Steady::make_schur1() {
     ElementFullIter ele = ELEMENT_FULL_ITER(NULL);
     int i_loc, nsides, i, side_rows[4], ierr, el_row;
     double det;
+    PetscErrorCode err;
+
     F_ENTRY;
     Timing *schur1_time = timing_create("Schur 1", PETSC_COMM_WORLD);
 
-    // create Inverse of the A block
-    ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(),
-            side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
-            PETSC_NULL, 0, PETSC_NULL, &(IA));
+
+    // check type of LinSys
+    if      (schur0->type == LinSys::MAT_IS)
+    {
+       // vytvorit mapping v PETSc z global_row_4_sub_row
+       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, side_ds->lsize(), side_id_4_loc, &map_side_local_to_global);
+       ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
+
+       err = MatCreateIS(PETSC_COMM_WORLD,  side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA);
+       ASSERT(err == 0,"Error in MatCreateIS.");
+    }
+    else if (schur0->type == LinSys::MAT_MPIAIJ)
+    {
+       // create Inverse of the A block
+       ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(),
+               side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
+               PETSC_NULL, 0, PETSC_NULL, &(IA));
+    }
+
     MatSetOption(IA, MAT_SYMMETRIC, PETSC_TRUE);
 
     for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {

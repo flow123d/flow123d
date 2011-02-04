@@ -42,7 +42,7 @@
  */
 
 LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
-:vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE)
+:vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE),type(MAT_MPIAIJ)
 {
     // create PETSC vectors
     v_rhs=(double *) xmalloc(sizeof(double) * (this->vec_lsize() + 1) );
@@ -377,14 +377,24 @@ LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int subdomain_size, int *glo
 {
     PetscErrorCode err;
 
+    int i;
+
+    // ulozit global_row_4_sub_row
+    subdomain_indices = new int[subdomain_size];
+    for (i = 0;i < subdomain_size; i++) 
+    {
+       subdomain_indices[i] = global_row_4_sub_row[i];
+    }
+
     // vytvorit mapping v PETSc z global_row_4_sub_row
-    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, global_row_4_sub_row, &map_local_to_global);
+    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, subdomain_indices, &map_local_to_global);
     ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
     // initialize loc_rows array
     loc_rows_size=100;
     loc_rows = new int[loc_rows_size];
 
+    type = MAT_IS;
 };
 
 
@@ -515,6 +525,7 @@ LinSys_MATIS:: ~LinSys_MATIS()
 
 
      delete[] loc_rows;
+     delete[] subdomain_indices;
      if (status == ALLOCATE) {
          delete subdomain_nz;
      }

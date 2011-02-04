@@ -67,8 +67,15 @@ public:
         NONE
     } SetValuesMode;
 
+    typedef enum {
+        MAT_MPIAIJ,
+        MAT_IS
+    } SetType;
+
     /// Construct a parallel system with given local size.
     LinSys(unsigned int lsize, double *sol_array = NULL);
+
+    SetType  type;   ///< MAT_IS or MAT_MPIAIJ anyone can inquire my type
 
     /// @name access members @{
     /// Get global system size.
@@ -77,12 +84,30 @@ public:
     /// Get local system size.
     inline unsigned int vec_lsize()
     { return vec_ds.lsize(); }
+    /// Get local subdomain size.
+    inline unsigned int get_subdomain_size()
+    { return subdomain_size; }
     /// Get distribution of rows.
     inline const Distribution &ds()
     { return vec_ds; }
     /// Get matrix.
     inline const Mat &get_matrix()
     { return matrix; }
+
+    /// Get subdomain matrix.
+    inline const Mat &get_matrix_sub()
+    { 
+       if      (type == MAT_IS)
+       {
+	  return local_matrix;
+       }
+       else if (type == MAT_MPIAIJ)
+       {
+	  local_matrix == NULL;
+          return local_matrix; 
+       }
+    }
+
     /// Get RHS.
     inline const Vec &get_rhs()
     { return rhs; }
@@ -182,7 +207,13 @@ protected:
     double  *v_rhs;                ///< RHS vector.
     double  *v_solution;                ///< Vector of solution.
 
+    // for MATIS
+    int *subdomain_indices;                     ///< Remember indices which created mapping
+    int subdomain_size;                         ///< size of subdomain
+    Mat local_matrix;                           ///< local matrix of subdomain (used in LinSys_MATIS)
+
     friend void SchurComplement::form_schur();
+    friend class SchurComplement;
 };
 
 
@@ -200,6 +231,7 @@ public:
 private:
 
     Vec     on_vec,off_vec; ///< Vectors for counting non-zero entries.
+    unsigned int subdomain_size; // < not used for MPIAIJ
 
 };
 
@@ -212,6 +244,7 @@ public:
     virtual void preallocate_matrix();
     virtual void preallocate_values(int nrow,int *rows,int ncol,int *cols);
     virtual void view_local_matrix();
+  
     virtual ~LinSys_MATIS();
 
 private:
@@ -220,8 +253,7 @@ private:
     int loc_rows_size;                          ///<
     int *loc_rows;                              ///< Small auxiliary array for translation of global indexes to local
                                                 ///< during preallocate_set_values. However for MatSetValues
-    Mat local_matrix;
-    int subdomain_size;
+    unsigned int subdomain_size ;               ///< size of subdomain in MATIS matrix
     int *subdomain_nz;                          ///< For counting non-zero enteries of local subdomain.
 
 };
