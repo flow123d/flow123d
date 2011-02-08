@@ -111,6 +111,9 @@ void problem_init(struct Problem *problem)
     // Material Database
     problem->material_database = new MaterialDatabase(OptGetStr( "Input", "Material", "\\" ));
 
+    //Chemie, here should be initialization of chemical reactions simulation, problem (Flow) + global variables (Semchem), in future
+    problem->semchemie_on = OptGetBool("Semchem_module","Compute_reactions","no");
+    //problem->chem_steps = OptGetInt("SEMCHEM_MODULE","Substeps_nr","1");
 
 
     // Initialize sub structures by NULL

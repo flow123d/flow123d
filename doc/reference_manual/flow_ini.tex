@@ -364,8 +364,125 @@ Description: Options controling output file of the programm
 %\key{Write\_iterations} & \type{YES/NO} & NO &
 %Write conc values during iterations to POS file.
 %\\
-%\hline
+%\hline\\
 %\end{initable}
 
+\newpage
+\begin{initable}{Semchem\_module}
+\key{Compute\_reactions} & \type{Yes/No} & "No" &
+NO = transport without chemical reactions\br
+YES = transport influenced by chemical reactions
+\\
+\hline
+\key{Output\_precission} & \type{int} & 1 &
+Number of decimal places written to output file created by Semchem\_module.
+\\
+\hline
+\key{Number\_of\_further\_species} & \type{int} & 0 &
+Concentrations of these species are not computed, because they are ment to be unexghaustible.
+\\
+\hline
+\key{Temperature} & \type{double} & 0.0 &
+Temperature, one of state variables of the system.
+\\
+\hline
+\key{Temperature\_Gf} & \type{double} & 0.0 &
+Temperature at which Free Gibbs Energy is specified.
+\\
+\hline
+\key{Param\_Afi} & \type{double} & 0.0 &
+Parameter of the Debuy-H\"{u}ckel equation for activity coeficients computation.
+\\
+\hline
+\key{Param\_b} & \type{double} & 0.0 &
+Parameter of the Debuy-H\"{u}ckel equation for activity coeficients computation.
+\\
+\hline
+\key{Epsilon} & \type{double} & 0.0 &
+Epsilon specifies relative norm of residuum estimate to stop numerical algorithms used by Semchem\_module.
+\\
+\hline
+\key{Time\_steps} & \type{int} & 1 &
+Number of transport step subdivisions for Semchem\_module.
+\\
+\hline
+\key{Slow\_kinetics\_substeps} & \type{int} & 0 &
+Number of substeps performed by Runge-Kutta method used for slow kinetics simulation.
+\\
+\hline\\
+\key{Error\_norm\_type} & \type{string} & "Absolute" &
+Through wich kind of norm the error is measured.
+\\
+\hline\\
+\key{Scalling} & \type{boolean} & "No" &
+Type of the problem preconditioning for better convergence of numerical method.
+\\
+\hline\\
+\end{initable}
+\newpage
+\begin{initable}{Aqueous\_species}
+\key{El\_charge} & \type{int} & 0 &
+Electric charge of an Aqueous\_specie particleunder consideration.
+\\
+\hline
+\key{dGf} & \type{double} & 0.0 &
+Free Gibbs Energy valid for TemperatureGf.
+\\
+\hline
+\key{dHf} & \type{double} & 0.0 &
+Enthalpy
+\\
+\hline
+\key{Molar\_mass} & \type{double} & 0.0 &
+Molar mass of Aqueous\_species.
+\\
+\hline
+\end{initable}
+
+\begin{initable}{Further\_species}
+\key{Specie\_name} & \type{string} & "" &
+Name belonging to Further\_specie under consideration.
+\\
+\hline
+\key{dGf} & \type{double} & 0.0 &
+Free Gibbs Energy valid for TemperatureGf.
+\\
+\hline
+\key{dHf} & \type{double} & 0.0 &
+Enthalpy
+\\
+\hline
+\key{Molar\_mass} & \type{double} & 0.0 &
+Molar mass of Further\_species.
+\\
+\hline
+\key{Activity} & \type{double} & 0.0 &
+Activity of Further\_species.
+\\
+\hline
+\end{initable}
+
+\begin{initable}{Reaction\_i}
+\key{Reaction\_type} & \type{string} & "unknown" &
+Type of considered reaction (Equilibrium, Kinetics, Slow\_kinetics).
+\\
+\hline
+\key{Stoichiometry} & \type{int} & 0 &
+Stoichiometric coeficients of species taking part in i-th reaction.
+\\
+\hline
+\key{Kinetic\_constant} & \type{double} & 0.0 &
+Kinetic constant for determination of reaction rate.
+\\
+\hline
+\key{Order\_of\_reaction} & \type{int} & 0 &
+Order of kinetic reaction for participating species.
+\\
+\hline
+\key{Equilibrium\_constant} & \type{double} & 0.0 &
+Equilibrium constant defining i-th reaction.
+\\
+\hline
+\end{initable}
  
  

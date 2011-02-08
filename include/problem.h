@@ -63,6 +63,10 @@ struct Problem {
     // Output
     char *out_fname_2; // Name of output file of type 2
 
+    // Chemistry
+    bool semchemie_on; //Enable to compute chemistry, YES/NO, NO defalut
+    int chem_steps; //How many times chemistry should be computed, during one save_step
+
     struct Pos_view_params *pos_view_params;
 
     /* tohle se musi okomentovat !!!

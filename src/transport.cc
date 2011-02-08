@@ -57,6 +57,7 @@
 #include "darcy_flow_mh.hh"
 #include "par_distribution.hh"
 #include "mesh/ini_constants_mesh.hh"
+#include "interfaceN.h"
 #include "sparse_graph.hh"
 
 //void init_transport_vectors_mpi(struct Transport *transport);
@@ -82,7 +83,7 @@ static char **subst_names(int n_subst, char *line);
 static double *subst_scales(int n_subst, char *line);
 
 //PEPA CHUDOBA
-static void decay(struct Transport *transport, int elm_pos, int type);
+// static void decay(struct Transport *transport, int elm_pos, int type);
 
 //=============================================================================
 // MAKE TRANSPORT
@@ -155,6 +156,7 @@ void alloc_transport(struct Problem *problem) {
 void transport_init(struct Problem *problem) {
     struct Transport *transport = problem->transport;
     char *snames, *sscales;
+    int i;
     F_ENTRY;
 
     // [Density]
@@ -263,7 +265,7 @@ void transport_vectors_init(struct Transport *transport) {
 void alloc_transport_vectors(struct Transport *transport) {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
-    int i, j, sbi, n_subst, ph;
+    int i, j, sbi, n_subst, ph, mob;
     ElementIter elm;
     n_subst = transport->n_substances;
     
@@ -928,7 +930,8 @@ void convection(struct Transport *trans) {
 
     int steps, step, save_step, frame = 0;
     register int t;
-    int n_subst, sbi, elm_pos, rank,size;
+  int n_subst,sbi,elm_pos,rank,i, size;
+  FILE *fw_chem; //clean the output file for chemistry
     struct Problem *problem = trans->problem;
     struct TMatrix *tmatrix = problem->transport->tmatrix;
     double ***pconc;
@@ -976,6 +979,7 @@ void convection(struct Transport *trans) {
 
 
     step=0;
+  fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
     for (t = 1; t <= steps; t++) {
         step++;
         for (sbi = 0; sbi < n_subst; sbi++) {
@@ -1012,8 +1016,45 @@ void convection(struct Transport *trans) {
             // transport_node_conc(mesh,sbi,problem->transport_sub_problem);  // vyresit prepocet
         }
         xprintf( Msg, "Time : %f\n",trans->time_step*t);
-
-     //   save_step == step;
+//======================================
+//              CHEMISTRY
+//======================================
+    if(problem->semchemie_on == true)
+    {
+      /*/get data from PETSc-vectors
+      for(sbi = 0;sbi < n_subst;sbi++) VecGetArray(trans->vpconc[sbi],&conc_mob_arr[sbi]);
+      if(problem->transport->sorption == true)
+      {
+	for(sbi = 0;sbi < n_subst;sbi++) VecGetArray(trans->vconc_so[sbi],&sorb_mob_arr[sbi]);
+      }
+      if(problem->transport->dual_porosity == true)
+      {
+	for(sbi = 0;sbi < n_subst;sbi++) VecGetArray(trans->vconc_im[sbi],&conc_immob_arr[sbi]);
+	if(problem->transport->sorption == true)
+	{
+	  for(sbi = 0;sbi < n_subst;sbi++) VecGetArray(trans->vconc_im_so[sbi],&sorb_immob_arr[sbi]);
+	}
+      }*/
+      che_vypocetchemie(problem, conc[MOBILE], conc[IMMOBILE], conc[MOBILE_SORB], conc[IMMOBILE_SORB]);
+      printf("\nCHEMISTRY HAS BEEN CALLED\n");
+      //restore PETSc-vectors
+      /*for(sbi = 0;sbi < n_subst;sbi++) VecRestoreArray(trans->vpconc[sbi],&conc_mob_arr[sbi]);
+      if(problem->transport->sorption == true)
+      {
+	for(sbi = 0;sbi < n_subst;sbi++) VecRestoreArray(trans->vconc_so[sbi],&sorb_mob_arr[sbi]);
+      }
+      if(problem->transport->dual_porosity == true)
+      {
+	for(sbi = 0;sbi < n_subst;sbi++) VecRestoreArray(trans->vconc_im[sbi],&conc_immob_arr[sbi]);
+	if(problem->transport->sorption == true)
+	{
+	  for(sbi = 0;sbi < n_subst;sbi++) VecRestoreArray(trans->vconc_im_so[sbi],&sorb_immob_arr[sbi]);
+	}
+      }*/
+    }
+//======================================    
+    //pom = save_step/chem_step;
+    //save_step == step;
                 //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
         if ((save_step == step) || (trans-> write_iterations)) {
             xprintf( Msg, "Output\n");
