@@ -4,6 +4,17 @@ import os
 import sys
 import re
 
+class TagInfo:
+    def __init__(self, tag, time, taskSize):
+        self.taskSize = taskSize
+        self.tag = tag
+        self.time = time
+
+
+
+#process the output of timers with following tags
+tagsToProcess = ["WHOLE PROGRAM","SOLVING MH SYSTEM"]
+
 def main():
     #check whether the user entered an existing directory
     try:
@@ -15,106 +26,110 @@ def main():
     if os.path.exists(dir) == 0 or os.path.isdir(dir) == 0:
     	sys.exit("Specified directory doesn't exist")
 
-    patternPath = re.compile("Path: .+")
-    patternNumproc = re.compile("n\. proc: (?P<num>[0-9]+)")
-    patternNumits = re.compile("Lin Solver: its: (?P<num>[0-9]+)")
-    patternSolving = re.compile("Last. SOLVING MH SYSTEM; period: [0-9]+\.[0-9]+ sec; total:  (?P<total>[0-9]+\.[0-9]+) sec\.")
-    patternTotal = re.compile("Last. WHOLE PROGRAM; period: [0-9]+\.[0-9]+ sec; total:  (?P<total>[0-9]+\.[0-9]+) sec\.")
-    patternMatmult = re.compile("^MatMult.+ (?P<num>[0-9]+)", re.MULTILINE)
-    patternKSPSolve = re.compile("^KSPSolve.+ (?P<num>[0-9]+)", re.MULTILINE)
 
-    #dictionary containing number of processors as the key and information gained from the output file as a tuple in value
-    #value has the form (numits, solvingtime, totaltime, matMultMFLOPS, KSPSolveMFLOPS)
+    includeSubdirs = 1
+
+    #dictionary containing the information gained from the profiler output files,
+    #the key of the dictionary is the number of processors, the value is another dictionary
+    #containing timer tags as keys and TagInfo objects as values
     fileInfo = {}
-    fileNames = os.listdir(dir)
-    path = ""
+
+    processDir(dir, includeSubdirs, fileInfo)
+
+    #find the lowest processor count (we will need it when computing effectivities)
     minProcCount = -1
-    for fileName in fileNames:
-        filePath = os.path.join(dir, fileName)
+    for proc in fileInfo.keys():
+        if minProcCount < proc:
+            minProcCount = proc
 
-        if os.path.isfile(filePath):
-            #read content of the file
-            f = file(filePath, "r")
-            fileContent = f.read()
-            f.close()
-
-            #find the info about number of processors and solving time
-            solvingmatch = patternSolving.search(fileContent)
-            totalmatch = patternTotal.search(fileContent)
-            numprocmatch = patternNumproc.search(fileContent)
-            numitsmatch = patternNumits.search(fileContent)
-            matmultmatch = patternMatmult.search(fileContent)
-            kspsolvematch = patternKSPSolve.search(fileContent)
-            if len(path) == 0:
-                m = patternPath.search(fileContent)
-                if m:
-                    path = m.group()
-
-            if solvingmatch and totalmatch and numprocmatch and numitsmatch and matmultmatch and kspsolvematch:
-                solvingtime = float(solvingmatch.group("total"))   #get time
-                proc = int(numprocmatch.group("num"))
-                if minProcCount < 0:
-                    minProcCount = proc
-                else:
-                    minProcCount = min(minProcCount, proc)
-
-                found = 0
-                if fileInfo.has_key(proc):
-                    #any file for this number of processors has been olready found. Choose the file with lower SolvingTime
-                    if fileInfo[proc][1] < solvingtime:
-                        found = 1
-                if found == 0:
-                    numits = int(numitsmatch.group("num"))
-                    totaltime = float(totalmatch.group("total"))
-                    matMult = int(matmultmatch.group("num"))
-                    kspSolve = int(kspsolvematch.group("num"))
-                    fileInfo[proc] = (numits, solvingtime, totaltime, matMult, kspSolve)
-                    pass
-
-    #compute effectivities
-    # (effectivity for 1 iteration, total eff, matMult eff, KSPsolve eff)
-    effectivity = {}
-    if minProcCount > 0:
-        minProcInfo = fileInfo[minProcCount]
-        for proc in fileInfo.keys():
-            info = fileInfo[proc]
-            eff1iter = float(minProcInfo[0]*minProcInfo[1])/(info[0]*info[1])
-            totalEff = float(minProcInfo[1])/info[1]/proc
-            matMultEff = (float(minProcInfo[0])/minProcInfo[3])*(info[3]/info[0])
-            kspSolveEff = float(info[4])/(proc*minProcInfo[4])
-            effectivity[proc] = (eff1iter, totalEff, matMultEff, kspSolveEff)
-
+    #find the longest tag name (for formatting the output)
+    longestTag = -1
+    for timerTag in tagsToProcess:
+        length = len(timerTag)
+        if longestTag < length:
+            longestTag = length
 
     #generate report
-    #probably slightly unoptimal, but we want to write the values into columns, not into rows
+    #create the output file
     outFile = file(os.path.join(dir, "result"), "w")
-    outFile.write("Directory " + path + "\n")
-    outFile.write("---------------------------------------------------\n")
-    outFile.write("n. proc".ljust(16))
+
+    #the first line
+    outFile.write("n. proc".ljust(longestTag + 2))
     for proc in sorted(fileInfo.keys()):
         outFile.write(str(proc).rjust(7))
 
     outFile.write("\n")
 
-    captions = ("numits", "solvingtime", "totaltime", "matMultMFLOPS", "KSPSolveMFLOPS", "1 iter.", "total", "MatMult", "KSPsolve")
-    for i in range(5):
-        outFile.write(captions[i].ljust(16))
-        for proc in sorted(fileInfo.keys()):
-            if type(fileInfo[proc][i]) == float:
-                outFile.write(str("%.2f" % fileInfo[proc][i]).rjust(7))
-            else:
-                outFile.write(str(fileInfo[proc][i]).rjust(7))
-        outFile.write("\n")
+    if minProcCount > 0:
+        for timerTag in tagsToProcess:
+            #write info for each tag we wanted to process
+            outFile.write(timerTag.ljust(longestTag + 2))
+            if fileInfo[minProcCount].has_key(timerTag):
+                minProcInfo = fileInfo[minProcCount][timerTag]
 
-    outFile.write("----------------effectivity------------------------\n")
+                #write times on the first line
+                for proc in fileInfo.keys():
+                    info = fileInfo[proc][timerTag]
+                    outFile.write(str(info.time).rjust(7))
 
-    for i in range(5, 9):
-        outFile.write(captions[i].ljust(16))
-        for proc in sorted(effectivity.keys()):
-            outFile.write(str("%.3f" % effectivity[proc][i-5]).rjust(7))
-        outFile.write("\n")
+                outFile.write("\n")
+                outFile.write("".ljust(longestTag + 2))
+
+                #compute and write effectivities on the second line
+                for proc in fileInfo.keys():
+                    info = fileInfo[proc][timerTag]
+                    effectivity = (minProcInfo.time / (info.time * proc)) * (info.taskSize / minProcInfo.taskSize)
+                    outFile.write(str("%.2f" % effectivity).rjust(7))
+
+                outFile.write("\n")
 
     outFile.close()
+
+def processDir(dir, includeSubdirs, fileInfo):
+
+    patternNumproc = re.compile("No\. of processors: (?P<num>[0-9]+)")
+    patternTaskSize = re.compile("Task size: (?P<num>[0-9]+)")
+
+
+    fileNames = os.listdir(dir)
+    path = ""
+    for fileName in fileNames:
+        filePath = os.path.join(dir, fileName)
+
+        if os.path.isdir(filePath) and includeSubdirs:
+            processDir(filePath, includeSubdirs, fileInfo)
+        elif os.path.isfile(filePath) and filePath.endswith("out"):
+            #read content of the file
+            f = file(filePath, "r")
+            fileContent = f.read()
+            f.close()
+
+            #find the number of processors and task size using the regular expressions
+            numprocmatch = patternNumproc.search(fileContent)
+            tagsizematch = patternTaskSize.search(fileContent)
+
+            if tagsizematch:
+                size = int(tagsizematch.group("num"))
+                for timerTag in tagsToProcess:
+                    #for each tag we want to process, create the regular expression
+                    patternTag = re.compile("\s*"+timerTag+"\s+[0-9]+\s+(?P<num>[0-9]+(\.[0-9]+)?)")
+                    tagmatch = patternTag.search(fileContent)
+
+                    if numprocmatch and tagmatch:
+                        time = float(tagmatch.group("num"))
+                        proc = int(numprocmatch.group("num"))
+
+                        #insert the parsed time, taskSize and no. of processors into the fileInfo dictionar
+                        if fileInfo.has_key(proc):
+                            if fileInfo[proc].has_key(timerTag):
+                                #choose the minimial time
+                                if fileInfo[proc][timerTag].time > time:
+                                    fileInfo[proc][timerTag].time = time
+                            else:
+                                fileInfo[proc][timerTag] = TagInfo(timerTag, time, size)
+                        else:
+                            fileInfo[proc] = {}
+                            fileInfo[proc][timerTag] = TagInfo(timerTag, time, size)
 
 if __name__ == '__main__':
     main()
