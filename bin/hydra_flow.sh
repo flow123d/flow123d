@@ -22,9 +22,10 @@
 # $LastChangedDate: 2011-01-02 16:54:35 +0100 (ne, 02 I 2011) $
 #
 
-#SCRIPT_DIR_PATH is defined in run_flow.sh and it's absolut path to dir wehere is flow_run.sh
+#SCRIPT_DIR_PATH is defined in run_flow.sh and it's absolut path to dir where is flow_run.sh
 #MPI_RUN is defined in run_flow.sh and its relative path to bin/mpiexec
 #EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
+#NPROC is defined in run_flow.sh and its number of procs
 
 echo "
 #!/bin/bash
@@ -33,11 +34,16 @@ echo "
 #$ -j y
 #$ -S /bin/bash
 #
+
+#SCRIPT_DIR_PATH is defined in run_flow.sh and it's absolut path to dir where is flow_run.sh
+#MPI_RUN is defined in run_flow.sh and its relative path to bin/mpiexec
+#EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
+#NSLOTS is qsub variable and depends on NPROC
  
 touch lock
 export OMPI_MCA_plm_rsh_disable_qrsh=1
 $MPI_RUN $NSLOTS $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
-rm lock" >hydra_run_pbs.qsub
+rm lock" >hydra_flow.qsub
 
-chmod u+x hydra_run_pbs.qsub
-qsub -pe orte $NPROC $MACHINE_SCRIPT
+chmod u+x hydra_flow.qsub
+qsub -pe orte $NPROC hydra_flow.qsub

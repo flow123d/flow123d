@@ -46,13 +46,13 @@ for n in $NPROC
 do
   $RUN_FLOW -s $INI_FILE -np $n -- $FLOW_PARAMS
 
-  #while [ ! -f $FILE_PATH_DIR/out ]
-  #do		
-  #	while [ -e $FILE_PATH_DIR/lock ]
-  #	do
-  #		sleep 20
-  #	done
-  #	done
+  while [ ! -f ./out ]
+  do		
+  	while [ -e ./lock ]
+  	do
+  		sleep 20
+  	done
+  	done
 
   SAVE_OUTPUT="$TEST_DIR/Results/${INI_FILE%.ini}.$n"
   if [ -d "$SAVE_OUTPUT" ]; then
