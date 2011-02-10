@@ -45,7 +45,7 @@ do
 	if [ -e $SCRIPT_PATH_DIR/${1}_flow.sh ]; then
 		MACHINE_SCRIPT=$SCRIPT_PATH_DIR/${1}_flow.sh
 	else
-		echo "Skript pro daný MACHINE nenalezen, bude použit defaultní."
+		echo "ERROR: Missing MACHINE script, using default."
 	fi
   elif [ "$1" == "-h" ]; then
     echo " This is Flow123d help page:
