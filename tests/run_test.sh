@@ -46,7 +46,7 @@ for n in $NPROC
 do
   $RUN_FLOW -s $INI_FILE -np $n -- $FLOW_PARAMS
 
-  while [ ! -f ./out ]
+  while [ ! -e ./out ]
   do		
   	while [ -e ./lock ]
   	do
