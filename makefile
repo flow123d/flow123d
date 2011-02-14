@@ -50,7 +50,7 @@ bin/mpiexec: makefile.in
 	fi        
 	chmod u+x bin/mpiexec
 
-#${BUILD_DIR} default value is "", must be set when running bitten(e.g in running script)	
+#${BUILD_DIR} default value is "", must be set in makefile.in when running by bitten
 bin/generic_flow:
 	if [ -z ${MACHINE} ]; then \
 		echo "Using default generic_flow"; \

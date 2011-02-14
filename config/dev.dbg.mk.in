@@ -34,11 +34,14 @@
 #PETSC_DIR=$HOME/local/petsc
 #PETSC_ARCH=linux-gcc-dbg
 
-#PETSC_DIR=
-#PETSC_ARCH=
+PETSC_DIR=/home/nekvasil/petsc-3.0.0-p12
+PETSC_ARCH=flow
 
 #set name of machine
-#MACHINE_NAME = dev
+#MACHINE=
+
+#set build dir, used when running on bitten
+BUILD_DIR=bitten_tmp
 
 ##################################################################################
 ## user should not change this
