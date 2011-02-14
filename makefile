@@ -49,12 +49,13 @@ bin/mpiexec: makefile.in
 	    echo "Can not guess mpiexec of PETSC configuration"; \
 	fi        
 	chmod u+x bin/mpiexec
-	
+
+#${BUILD_DIR} default value is "", must be set in makefile.in when running by bitten
 bin/generic_flow:
 	if [ -z ${MACHINE} ]; then \
 		echo "Using default generic_flow"; \
 		echo '#!/bin/bash' > bin/generic_flow; \
-		echo '${PWD}/bin/current_flow.qsub' >> bin/generic_flow; \
+		echo '${PWD}/${BUILD_DIR}/bin/current_flow.qsub' >> bin/generic_flow; \
 	else \
 		if [ -e bin/${MACHINE}_flow.sh ]; then \
 			echo '#!/bin/bash' > bin/generic_flow; \
