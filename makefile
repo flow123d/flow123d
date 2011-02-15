@@ -26,7 +26,7 @@
 
 include makefile.in
 
-all: bin/mpiexec revnumber bin/generic_flow
+all: bin/mpiexec revnumber bin/current_flow
 #	make -C src clean
 	make -C third_party all
 	make -C src all
@@ -50,7 +50,7 @@ bin/mpiexec: makefile.in
 	fi        
 	chmod u+x bin/mpiexec
 
-#${BUILD_DIR} default value is "", must be set in makefile.in when running by bitten
+#${BUILD_DIR} default value is "", must be set in makefile.in when running on bitten
 bin/current_flow:
 	if [ -z ${MACHINE} ]; then \
 		echo "Using default generic_flow"; \

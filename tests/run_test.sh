@@ -44,7 +44,10 @@ for i in $INI_FILE
 do
 for n in $NPROC
 do
-  $RUN_FLOW -s $INI_FILE -np $n -- $FLOW_PARAMS
+  if ! $RUN_FLOW -s $INI_FILE -np $n -- $FLOW_PARAMS; then
+	echo " Error occured during computation, leaving."
+	exit 1
+  fi
 
   while [ ! -e ./out ]
   do		
@@ -52,7 +55,7 @@ do
   	do
   		sleep 20
   	done
-  	done
+  done
 
   SAVE_OUTPUT="$TEST_DIR/Results/${INI_FILE%.ini}.$n"
   if [ -d "$SAVE_OUTPUT" ]; then
