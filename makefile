@@ -51,22 +51,22 @@ bin/mpiexec: makefile.in
 	chmod u+x bin/mpiexec
 
 #${BUILD_DIR} default value is "", must be set in makefile.in when running by bitten
-bin/generic_flow:
+bin/current_flow:
 	if [ -z ${MACHINE} ]; then \
 		echo "Using default generic_flow"; \
-		echo '#!/bin/bash' > bin/generic_flow; \
-		echo '${PWD}/${BUILD_DIR}/bin/current_flow.qsub' >> bin/generic_flow; \
+		echo '#!/bin/bash' > bin/current_flow; \
+		echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
 	else \
 		if [ -e bin/${MACHINE}_flow.sh ]; then \
-			echo '#!/bin/bash' > bin/generic_flow; \
-			echo '${PWD}/bin/${MACHINE}_flow.sh' >> bin/generic_flow; \
+			echo '#!/bin/bash' > bin/current_flow; \
+			echo '${PWD}/bin/${MACHINE}_flow.sh' >> bin/current_flow; \
 		else \
 			echo "make_pbs script for given MACHINE not found, using default"; \
-			echo '#!/bin/bash' > bin/generic_flow; \
-			echo '${PWD}/bin/current_flow.qsub' >> bin/generic_flow; \
+			echo '#!/bin/bash' > bin/current_flow; \
+			echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
 		fi \
 	fi
-	chmod u+x bin/generic_flow
+	chmod u+x bin/current_flow
 	
 revnumber:
 	if which "svnversion" ;\

@@ -42,7 +42,7 @@ echo "
  
 touch lock
 export OMPI_MCA_plm_rsh_disable_qrsh=1
-$MPI_RUN $NSLOTS $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
+$MPI_RUN $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
 rm lock" >hydra_flow.qsub
 
 chmod u+x hydra_flow.qsub
