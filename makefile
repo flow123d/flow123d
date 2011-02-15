@@ -26,7 +26,7 @@
 
 include makefile.in
 
-all: bin/mpiexec revnumber bin/generic_flow
+all: bin/mpiexec revnumber bin/current_flow
 #	make -C src clean
 	make -C third_party all
 	make -C src all
@@ -50,23 +50,23 @@ bin/mpiexec: makefile.in
 	fi        
 	chmod u+x bin/mpiexec
 
-#${BUILD_DIR} default value is "", must be set in makefile.in when running by bitten
-bin/generic_flow:
+#${BUILD_DIR} default value is "", must be set in makefile.in when running on bitten
+bin/current_flow:
 	if [ -z ${MACHINE} ]; then \
 		echo "Using default generic_flow"; \
-		echo '#!/bin/bash' > bin/generic_flow; \
-		echo '${PWD}/${BUILD_DIR}/bin/current_flow.qsub' >> bin/generic_flow; \
+		echo '#!/bin/bash' > bin/current_flow; \
+		echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
 	else \
 		if [ -e bin/${MACHINE}_flow.sh ]; then \
-			echo '#!/bin/bash' > bin/generic_flow; \
-			echo '${PWD}/bin/${MACHINE}_flow.sh' >> bin/generic_flow; \
+			echo '#!/bin/bash' > bin/current_flow; \
+			echo '${PWD}/bin/${MACHINE}_flow.sh' >> bin/current_flow; \
 		else \
 			echo "make_pbs script for given MACHINE not found, using default"; \
-			echo '#!/bin/bash' > bin/generic_flow; \
-			echo '${PWD}/bin/current_flow.qsub' >> bin/generic_flow; \
+			echo '#!/bin/bash' > bin/current_flow; \
+			echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
 		fi \
 	fi
-	chmod u+x bin/generic_flow
+	chmod u+x bin/current_flow
 	
 revnumber:
 	if which "svnversion" ;\
