@@ -59,18 +59,6 @@ typedef enum MessageType {
     Msg = 0, MsgDbg, MsgLog, MsgVerb, Warn, UsrErr, Err, PrgErr
 } MessageType;
 
-// **************************************************************
-/*!  @brief  Timing structure for simple timing messages in log file.
- */
-#define TIMING_TAG_SIZE 100
-
-typedef struct Timing {
-	char tag[TIMING_TAG_SIZE];			// identification signature used in timing log messages
-	const char *msg_info;			// "global"/"local"
-	double start, last;		// time of call timing_create, last time of call timing_meantime
-	MPI_Comm comm;			// PETSC_COMM_WORLD or PETSC_COMM_SELF
-	int logging_proc; 		// which proc writes message
-} Timing;
 
 // **************************************************************
 /*!  @brief  System structure for various global variables.
@@ -80,7 +68,6 @@ typedef struct SystemInfo {
     int pause_after_run;        // to keep terminal open on Windows
     char * log_fname;           // name of the master log file
     FILE *log;                  // log file handle
-    Timing *timing;             // whole program timing
 
     int n_proc;                 // number of processors
     int my_proc;                // self processor number
@@ -95,10 +82,6 @@ char * 	get_log_fname( void );
 char * 	get_log_file( void );
 void	resume_log_file( void );
 
-Timing * timing_create(const char * tag,MPI_Comm comm);
-void     timing_meantime(Timing * t);
-void     timing_destroy(Timing *t);
-void     timing_reuse(Timing *t, const char * tag);
 
 #define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
 

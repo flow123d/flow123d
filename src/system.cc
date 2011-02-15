@@ -44,6 +44,7 @@
 #include "read_ini.h"
 #include "problem.h"
 #include "xio.h"
+#include "profiler.hh"
 
 SystemInfo sys_info;
 
@@ -79,8 +80,6 @@ void system_init( int &argc, char ** &argv )
     sys_info.log=xfopen(sys_info.log_fname,"wt");
     sys_info.verbosity=0;
     sys_info.pause_after_run=0;
-
-	sys_info.timing=timing_create("WHOLE PROGRAM",PETSC_COMM_WORLD);
 }
 
 void system_set_from_options()
@@ -228,11 +227,13 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
  */
 int xterminate( bool on_error )
 {
+    //close the Profiler
+    Profiler::uninitialize();
+
     PetscErrorCode ierr=0;
 
     if (on_error) { F_STACK_SHOW( stderr ); }
 
-	timing_destroy(sys_info.timing);
 	//TODO: Free memory, close files
 
 	if ( petsc_initialized )
@@ -353,65 +354,6 @@ void operator delete[]( void *p) throw()
 }
 
 
-/*!
- * @brief Creates a timing structure with a particular tag. Start a timer.
- */
-Timing * timing_create(const char * tag, MPI_Comm comm)
-{
-    Timing * t;
-    F_ENTRY;
-
-    t = (Timing *)xmalloc(sizeof(Timing));
-	t->comm=comm;
-	if (comm == PETSC_COMM_WORLD) {
-		t->logging_proc=0;
-		t->msg_info="Global.";
-	} else if (comm == PETSC_COMM_SELF) {
-		t->logging_proc=sys_info.my_proc;
-		t->msg_info="Local.";
-	}
-	strncpy(t->tag,tag,TIMING_TAG_SIZE-1);
-	t->start=t->last=clock();
-
-	return(t);
-}
-
-
-/*!
- *  @brief Creates a timing structure with a particular tag. Start a timer.
- */
-void timing_reuse(Timing *t, const char * tag)
-{
-    F_ENTRY;
-    timing_meantime(t);
-    strncpy(t->tag,tag,TIMING_TAG_SIZE-1);
-    t->start=t->last=clock();
-}
-
-/*!
- * @brief Log actual meantime and total time.
- */
-void timing_meantime(Timing * t)
-{
-    F_ENTRY;
-	MPI_Barrier(t->comm);
-	double time=clock();
-	if (t->logging_proc == sys_info.my_proc)
-		xprintf(Msg,"%s %s; period: %f sec; total:  %f sec.\n",
-            t->msg_info,t->tag, (time-t->last)/CLOCKS_PER_SEC, (time-t->start)/CLOCKS_PER_SEC);
-    t->last=time;
-}
-
-/*!
- * @brief Logs timing and destroy it.
- */
-void timing_destroy(Timing *t)
-{
-    F_ENTRY;
-	t->msg_info="Last.";
-	timing_meantime(t);
-	xfree(t);
-}
 
 /*!
  * @brief SYSTEM with err handling

@@ -70,6 +70,7 @@ $(OBJS)/convert.o\
 $(OBJS)/sys_function_stack.o\
 $(OBJS)/transport.o\
 $(OBJS)/reaction.o\
+$(OBJS)/profiler.o\
 $(OBJS)/la_linsys.o\
 $(OBJS)/time_governor.o
 

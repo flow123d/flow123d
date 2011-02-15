@@ -60,6 +60,8 @@
 
 #include "solve.h"
 
+#include "profiler.hh"
+
 /*
 #include "solve.h"
 #include "elements.h"
@@ -160,10 +162,14 @@ int main(int argc, char **argv) {
     } else {
         ConstantDB::getInstance()->setInt("Goal", goal);
     }
-
+    
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
     system_set_from_options();
+
+    Profiler::initialize(MPI_COMM_WORLD);
+
+    START_TIMER("WHOLE PROGRAM");
 
     // Say Hello
     xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", _VERSION_,REVISION);
@@ -182,6 +188,8 @@ int main(int argc, char **argv) {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
     int numNodes = mesh->node_vector.size();
     xprintf(Msg, " - Number of nodes in the mesh is: %d\n", numNodes);
+
+    Profiler::instance()->set_task_size(mesh->n_elements());
 
     // Calculate
     make_element_geometry();
