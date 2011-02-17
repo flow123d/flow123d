@@ -59,9 +59,10 @@ struct Problem {
     //	int              dens;            // Density Yes/NO
     //	bool              dens_step;            //
 
-
     // Output
     char *out_fname_2; // Name of output file of type 2
+    // Chemistry
+    bool semchemie_on; //Enable to compute chemistry, YES/NO, NO defalut
 
     struct Pos_view_params *pos_view_params;
 

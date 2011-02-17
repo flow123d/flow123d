@@ -59,6 +59,7 @@
 #include "mesh/ini_constants_mesh.hh"
 #include "sparse_graph.hh"
 #include "profiler.hh"
+#include "interfaceN.h"
 
 //void init_transport_vectors_mpi(struct Transport *transport);
 
@@ -83,7 +84,7 @@ static char **subst_names(int n_subst, char *line);
 static double *subst_scales(int n_subst, char *line);
 
 //PEPA CHUDOBA
-static void decay(struct Transport *transport, int elm_pos, int type);
+// static void decay(struct Transport *transport, int elm_pos, int type);
 
 //=============================================================================
 // MAKE TRANSPORT
@@ -268,7 +269,6 @@ void alloc_transport_vectors(struct Transport *transport) {
     ElementIter elm;
     n_subst = transport->n_substances;
     
-    //transport->node_conc = (double****) xmalloc(n_subst * sizeof(double***));
 
     transport->conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     transport->pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
@@ -281,6 +281,7 @@ void alloc_transport_vectors(struct Transport *transport) {
         transport->out_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
         //  transport->node_conc[sbi] = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     //}
+    //}
 	for(sbi = 0; sbi < n_subst; sbi++){
            transport->conc[ph][sbi] = (double*) xmalloc(transport->el_ds->lsize() * sizeof(double));
            transport->pconc[ph][sbi] = (double*) xmalloc(transport->el_ds->lsize() * sizeof(double));
@@ -289,6 +290,7 @@ void alloc_transport_vectors(struct Transport *transport) {
            for (i = 0; i < transport->el_ds->lsize(); i++) {
              transport->conc[ph][sbi][i] = 0.0;
              transport->pconc[ph][sbi][i] = 0.0;
+              transport->out_conc[ph][sbi][i] = 0.0;
            }
                   /*
                    i = 0;
@@ -303,7 +305,6 @@ void alloc_transport_vectors(struct Transport *transport) {
                   transport->pconc[ph] = NULL;
                   transport->out_conc[ph] = NULL;
                   //transport->node_conc[sbi][ph] = NULL;
-                //transport->node_conc[sbi][ph] = NULL;
        }
     }
 }
@@ -929,27 +930,26 @@ void convection(struct Transport *trans) {
 
     int steps, step, save_step, frame = 0;
     register int t;
-    int n_subst, sbi, elm_pos, rank,size;
+  int n_subst,sbi,elm_pos,rank,i,size;
+  FILE *fw_chem; //clean the output file for chemistry
     struct Problem *problem = trans->problem;
     struct TMatrix *tmatrix = problem->transport->tmatrix;
     double ***pconc;
     double ***conc;
 
-  START_TIMER("TRANSPORT");
-    // int tst = 1; // DECOVALEX
+    START_TIMER("TRANSPORT");
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     MPI_Comm_size(PETSC_COMM_WORLD, &size);
 
     xprintf( Msg, "Calculating transport...")/*orig verb 2*/;
-    n_subst = mesh->n_substances;
+    n_subst = trans->n_substances;
 
     //  flow_cs(trans); //DECOVALEX
+    // int tst = 1; // DECOVALEX
 
     create_transport_matrix_mpi(trans);
-
     // MatView(trans->tm,PETSC_VIEWER_STDOUT_WORLD);
-
 
     //  if(problem->type != PROBLEM_DENSITY){
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
@@ -966,7 +966,7 @@ void convection(struct Transport *trans) {
     transport_matrix_step_mpi(trans, trans->time_step);
     calculate_bc_mpi(trans);
 
-    if (rank == 0) {
+     if (rank == 0) {
         printf("  %d computing cycles, %d writing steps\n", steps, ((int) (steps / save_step) + 1))/*orig verb 6*/;
         xprintf( MsgVerb, "  %d computing cycles, %d writing steps\n",steps ,((int)(steps / save_step) + 1) )/*orig verb 6*/;
     }
@@ -977,6 +977,7 @@ void convection(struct Transport *trans) {
 
 
     step=0;
+  fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
     for (t = 1; t <= steps; t++) {
         step++;
         for (sbi = 0; sbi < n_subst; sbi++) {
@@ -988,11 +989,7 @@ void convection(struct Transport *trans) {
              output_AGE(trans,(t-1) * trans->time_step); // DECOVALEX
              */
 
-            /*if(trans->mpi != 1)
-             matvecs(trans->tmatrix,trans->pconc[MOBILE][sbi],trans->conc[MOBILE][sbi]);
-             else*/
-
-            transport_step_mpi(&trans->tm, &trans->vconc[sbi], &trans->vpconc[sbi], &trans->bcvcorr[sbi]);
+             transport_step_mpi(&trans->tm, &trans->vconc[sbi], &trans->vpconc[sbi], &trans->bcvcorr[sbi]);
 
             if ((trans->dual_porosity == true) || (trans->sorption == true) || (trans->pepa == true)
                     || (trans->reaction_on == true))
@@ -1000,20 +997,28 @@ void convection(struct Transport *trans) {
                 for (int loc_el = 0; loc_el < trans->el_ds->lsize(); loc_el++) {
                     material = (mesh->element(trans->el_4_loc[loc_el])) -> material;
 
+
                     if (trans->dual_porosity)
                         transport_dual_porosity(trans, loc_el, material, sbi);
                     if (trans->sorption)
                         transport_sorption(trans, loc_el, material, sbi);
-                    //if (trans->pepa)
-                    //    decay(trans, loc_el, trans->type); // pepa chudoba
+//                     if (trans->pepa)
+//                         decay(trans, loc_el, trans->type); // pepa chudoba
                     if (trans->reaction_on)
                         transport_reaction(trans, loc_el, material, sbi);
-
                 }
             // transport_node_conc(mesh,sbi,problem->transport_sub_problem);  // vyresit prepocet
         }
         xprintf( Msg, "Time : %f\n",trans->time_step*t);
+//======================================
+//              CHEMISTRY
+//======================================
+    if(problem->semchemie_on == true){
 
+      che_vypocetchemie(problem, conc[MOBILE], conc[IMMOBILE], conc[MOBILE_SORB], conc[IMMOBILE_SORB]);
+      //printf("\nCHEMISTRY HAS BEEN CALLED\n");
+    }
+//======================================    
      //   save_step == step;
                 //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
         if ((save_step == step) || (trans-> write_iterations)) {
@@ -1026,6 +1031,7 @@ void convection(struct Transport *trans) {
             //	output_transport_time_BTC(trans, t * trans->time_step); // BTC test - spatne vypisuje casy
             //output_transport_time_CS(problem, t * problem->time_step);
             step = 0;
+     //sorb_mob_arr = NULL;
         }
     }
     xprintf( Msg, "O.K.\n");
@@ -1046,7 +1052,7 @@ void output_vector_gather(struct Transport *transport) {
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
-    //if(np >1){
+
     //ISCreateStride(PETSC_COMM_SELF,mesh->n_elements(),0,1,&is);
     ISCreateGeneral(PETSC_COMM_SELF, mesh->n_elements(), transport->row_4_el, &is); //WithArray
     VecScatterCreate(transport->vconc[0], is, transport->vconc_out[0], PETSC_NULL, &transport->vconc_out_scatter);
@@ -1060,12 +1066,6 @@ void output_vector_gather(struct Transport *transport) {
     //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
     VecScatterDestroy(transport->vconc_out_scatter);
     ISDestroy(is);
-    /*
-     }
-     else{
-     for(sbi = 0; sbi < transport->n_substances; sbi++)
-     VecCopy(transport->vconc[sbi],transport->vconc_out[sbi]);
-     }*/
 }
 //=============================================================================
 //      TRANSPORT OUTPUT
@@ -1211,127 +1211,127 @@ void save_time_step_C(struct Problem *problem) {
 //=============================================================================
 //      PEPA CHUDOBA
 //=============================================================================
-void decay(struct Transport *transport, int elm_pos, int type) {
-    int ph = 0;
-    double delta_t = transport->time_step;
-    double ***conc, ***pconc;
-    int i;
-    conc = transport->conc;
-    pconc = transport->pconc;
+// void decay(struct Transport *transport, int elm_pos, int type) {
+//     int ph = 0;
+//     double delta_t = transport->time_step;
+//     double ***conc, ***pconc;
+//     int i;
+//     conc = transport->conc;
+//     pconc = transport->pconc;
+// 
+//     switch (type) {
+//     case 1:
+//         conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.000000459 * delta_t)); //Be 10
+//         conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.000122 * delta_t)); //C 14
+//         conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.0000023 * delta_t)); //Cl 36
+//         conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.0000068 * delta_t)); //Ca 41
+//         conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.00000912 * delta_t)); //Ni 59
+//         conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00702 * delta_t)); //Ni 63
+//         conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.00000195 * delta_t)); //Se 79
+//         conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.0241 * delta_t)); //Sr 90
+//         conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.000173 * delta_t)); //Mo 93
+//         conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.000000453 * delta_t)); //Zr 93
+//         conc[11][ph][elm_pos] = pconc[11][ph][elm_pos] * (exp(-0.0000347 * delta_t)); //Nb 94
+//         conc[12][ph][elm_pos] = pconc[12][ph][elm_pos] * (exp(-0.00000324 * delta_t)); //Tc 99
+//         conc[13][ph][elm_pos] = pconc[13][ph][elm_pos] * (exp(-0.000000107 * delta_t)); //Pd 107
+//         conc[14][ph][elm_pos] = pconc[14][ph][elm_pos] * (exp(-0.00158 * delta_t)); //Ag 108m
+//         conc[15][ph][elm_pos] = pconc[15][ph][elm_pos] * (exp(-0.00000299 * delta_t)); //Sn 126
+//         conc[16][ph][elm_pos] = pconc[16][ph][elm_pos] * (exp(-0.0000000431 * delta_t)); //I 129
+//         conc[17][ph][elm_pos] = pconc[17][ph][elm_pos] * (exp(-0.000000301 * delta_t)); //Cs 135
+//         conc[18][ph][elm_pos] = pconc[18][ph][elm_pos] * (exp(-0.0231 * delta_t)); //Cs 137
+//         conc[19][ph][elm_pos] = pconc[19][ph][elm_pos] * (exp(-0.0077 * delta_t)); //Sm 151
+//         conc[20][ph][elm_pos] = pconc[20][ph][elm_pos] * (exp(-0.000578 * delta_t)); //Ho 166m
+//         conc[21][ph][elm_pos] = pconc[21][ph][elm_pos] * (exp(-0.000433 * delta_t)); //Ra 226
+//         conc[22][ph][elm_pos] = pconc[22][ph][elm_pos] * (exp(-0.0000944 * delta_t)); //Th 229
+//         conc[23][ph][elm_pos] = pconc[23][ph][elm_pos] * (exp(-0.0000092 * delta_t)); //Th 230
+//         conc[24][ph][elm_pos] = pconc[24][ph][elm_pos] * (exp(-0.0000212 * delta_t)); //Pa 231
+//         conc[25][ph][elm_pos] = pconc[25][ph][elm_pos] * (exp(-0.0000000000493 * delta_t)); //Th 232
+//         conc[26][ph][elm_pos] = pconc[26][ph][elm_pos] * (exp(-0.00000435 * delta_t)); //U 233
+//         conc[27][ph][elm_pos] = pconc[27][ph][elm_pos] * (exp(-0.00000282 * delta_t)); //U 234
+//         conc[28][ph][elm_pos] = pconc[28][ph][elm_pos] * (exp(-0.000000000985 * delta_t)); //U 235
+//         conc[29][ph][elm_pos] = pconc[29][ph][elm_pos] * (exp(-0.0000000296 * delta_t)); //U 236
+//         conc[30][ph][elm_pos] = pconc[30][ph][elm_pos] * (exp(-0.000000324 * delta_t)); //Np 237
+//         conc[31][ph][elm_pos] = pconc[31][ph][elm_pos] * (exp(-0.0079 * delta_t)); //Pu 238
+//         conc[32][ph][elm_pos] = pconc[32][ph][elm_pos] * (exp(-0.000000000155 * delta_t)); //U 238
+//         conc[33][ph][elm_pos] = pconc[33][ph][elm_pos] * (exp(-0.0000288 * delta_t)); //Pu 239
+//         conc[34][ph][elm_pos] = pconc[34][ph][elm_pos] * (exp(-0.000106 * delta_t)); //Pu 240
+//         conc[35][ph][elm_pos] = pconc[35][ph][elm_pos] * (exp(-0.0016 * delta_t)); //Am 241
+//         conc[36][ph][elm_pos] = pconc[36][ph][elm_pos] * (exp(-0.00492 * delta_t)); //Am 242m
+//         conc[37][ph][elm_pos] = pconc[37][ph][elm_pos] * (exp(-0.00000186 * delta_t)); //Pu 242
+//         conc[38][ph][elm_pos] = pconc[38][ph][elm_pos] * (exp(-0.000094 * delta_t)); //Am 243
+//         conc[39][ph][elm_pos] = pconc[39][ph][elm_pos] * (exp(-0.0383 * delta_t)); //Cm 244
+//         conc[40][ph][elm_pos] = pconc[40][ph][elm_pos] * (exp(-0.0000817 * delta_t)); //Cm 245
+//         conc[41][ph][elm_pos] = pconc[41][ph][elm_pos] * (exp(-0.000146 * delta_t)); //Cm 246
+//         for (i = 0; i < 42; i++) {
+//             pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
+//         }
+//         break;
+//     case 2:
+//         conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.000433 * delta_t)); //Ra 226
+//         conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.0000944 * delta_t)); //Th 229
+//         conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.0000092 * delta_t)); //Th 230
+//         conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.0000212 * delta_t)); //Pa 231
+//         conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.0000000000493 * delta_t)); //Th 232
+//         conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00000435 * delta_t)); //U 233
+//         conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.00000282 * delta_t)); //U 234
+//         conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.000000000985 * delta_t)); //U 235
+//         conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.0000000296 * delta_t)); //U 236
+//         conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.000000324 * delta_t)); //Np 237
+//         conc[11][ph][elm_pos] = pconc[11][ph][elm_pos] * (exp(-0.0079 * delta_t)); //Pu 238
+//         conc[12][ph][elm_pos] = pconc[12][ph][elm_pos] * (exp(-0.000000000155 * delta_t)); //U 238
+//         conc[13][ph][elm_pos] = pconc[13][ph][elm_pos] * (exp(-0.0000288 * delta_t)); //Pu 239
+//         conc[14][ph][elm_pos] = pconc[14][ph][elm_pos] * (exp(-0.000106 * delta_t)); //Pu 240
+//         conc[15][ph][elm_pos] = pconc[15][ph][elm_pos] * (exp(-0.0016 * delta_t)); //Am 241
+//         conc[16][ph][elm_pos] = pconc[16][ph][elm_pos] * (exp(-0.00492 * delta_t)); //Am 242m
+//         conc[17][ph][elm_pos] = pconc[17][ph][elm_pos] * (exp(-0.00000186 * delta_t)); //Pu 242
+//         conc[18][ph][elm_pos] = pconc[18][ph][elm_pos] * (exp(-0.000094 * delta_t)); //Am 243
+//         conc[19][ph][elm_pos] = pconc[19][ph][elm_pos] * (exp(-0.0383 * delta_t)); //Cm 244
+//         conc[20][ph][elm_pos] = pconc[20][ph][elm_pos] * (exp(-0.0000817 * delta_t)); //Cm 245
+//         conc[21][ph][elm_pos] = pconc[21][ph][elm_pos] * (exp(-0.000146 * delta_t)); //Cm 246
+//         for (i = 0; i < 22; i++) {
+//             pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
+//         }
+//         break;
+//     case 3:
+//         //conc[0][ph][elm_pos]= pconc[0][ph][elm_pos]*(exp(-0*delta_t));//
+//         conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.000000459 * delta_t)); //Be 10
+//         conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.000122 * delta_t)); //C 14
+//         conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.0000023 * delta_t)); //Cl 36
+//         conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.0000068 * delta_t)); //Ca 41
+//         conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.00000912 * delta_t)); //Ni 59
+//         conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00702 * delta_t)); //Ni 63
+//         conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.000173 * delta_t)); //Mo 93
+//         conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.000000453 * delta_t)); //Zr 93
+//         conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.0000347 * delta_t)); //Nb 94
+//         conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.00158 * delta_t)); //Ag 108m
+//         conc[11][ph][elm_pos] = pconc[11][ph][elm_pos] * (exp(-0.000578 * delta_t)); //Ho 166m
+//         for (i = 0; i < 12; i++) {
+//             pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
+//         }
+//         break;
+//     case 4:
+//         //conc[0][ph][elm_pos]= pconc[0][ph][elm_pos]*(exp(-0*delta_t));//
+//         conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.00000195 * delta_t)); //Se 79
+//         conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.0241 * delta_t)); //Sr 90
+//         conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.000000453 * delta_t)); //Zr 93
+//         conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.00000324 * delta_t)); //Tc 99
+//         conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.000000107 * delta_t)); //Pd 107
+//         conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00000299 * delta_t)); //Sn 126
+//         conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.0000000431 * delta_t)); //I 129
+//         conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.000000301 * delta_t)); //Cs 135
+//         conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.0231 * delta_t)); //Cs 137
+//         conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.0077 * delta_t)); //Sm 151
+//         /*	if(pconc[2][ph][elm_pos] != 0){
+//          printf("\nA: %f\t A+: %f",pconc[0][ph][elm_pos],conc[0][ph][elm_pos]);
+//          printf("\nC: %f\t C+: %f",pconc[2][ph][elm_pos],conc[2][ph][elm_pos]);
+//          getchar();
+//          } */
+//         for (i = 0; i < 11; i++) {
+//             pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
+//         }
+//         break;
+//     default:
+//         break;
+//     }
+// }
 
-    switch (type) {
-    case 1:
-        conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.000000459 * delta_t)); //Be 10
-        conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.000122 * delta_t)); //C 14
-        conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.0000023 * delta_t)); //Cl 36
-        conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.0000068 * delta_t)); //Ca 41
-        conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.00000912 * delta_t)); //Ni 59
-        conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00702 * delta_t)); //Ni 63
-        conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.00000195 * delta_t)); //Se 79
-        conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.0241 * delta_t)); //Sr 90
-        conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.000173 * delta_t)); //Mo 93
-        conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.000000453 * delta_t)); //Zr 93
-        conc[11][ph][elm_pos] = pconc[11][ph][elm_pos] * (exp(-0.0000347 * delta_t)); //Nb 94
-        conc[12][ph][elm_pos] = pconc[12][ph][elm_pos] * (exp(-0.00000324 * delta_t)); //Tc 99
-        conc[13][ph][elm_pos] = pconc[13][ph][elm_pos] * (exp(-0.000000107 * delta_t)); //Pd 107
-        conc[14][ph][elm_pos] = pconc[14][ph][elm_pos] * (exp(-0.00158 * delta_t)); //Ag 108m
-        conc[15][ph][elm_pos] = pconc[15][ph][elm_pos] * (exp(-0.00000299 * delta_t)); //Sn 126
-        conc[16][ph][elm_pos] = pconc[16][ph][elm_pos] * (exp(-0.0000000431 * delta_t)); //I 129
-        conc[17][ph][elm_pos] = pconc[17][ph][elm_pos] * (exp(-0.000000301 * delta_t)); //Cs 135
-        conc[18][ph][elm_pos] = pconc[18][ph][elm_pos] * (exp(-0.0231 * delta_t)); //Cs 137
-        conc[19][ph][elm_pos] = pconc[19][ph][elm_pos] * (exp(-0.0077 * delta_t)); //Sm 151
-        conc[20][ph][elm_pos] = pconc[20][ph][elm_pos] * (exp(-0.000578 * delta_t)); //Ho 166m
-        conc[21][ph][elm_pos] = pconc[21][ph][elm_pos] * (exp(-0.000433 * delta_t)); //Ra 226
-        conc[22][ph][elm_pos] = pconc[22][ph][elm_pos] * (exp(-0.0000944 * delta_t)); //Th 229
-        conc[23][ph][elm_pos] = pconc[23][ph][elm_pos] * (exp(-0.0000092 * delta_t)); //Th 230
-        conc[24][ph][elm_pos] = pconc[24][ph][elm_pos] * (exp(-0.0000212 * delta_t)); //Pa 231
-        conc[25][ph][elm_pos] = pconc[25][ph][elm_pos] * (exp(-0.0000000000493 * delta_t)); //Th 232
-        conc[26][ph][elm_pos] = pconc[26][ph][elm_pos] * (exp(-0.00000435 * delta_t)); //U 233
-        conc[27][ph][elm_pos] = pconc[27][ph][elm_pos] * (exp(-0.00000282 * delta_t)); //U 234
-        conc[28][ph][elm_pos] = pconc[28][ph][elm_pos] * (exp(-0.000000000985 * delta_t)); //U 235
-        conc[29][ph][elm_pos] = pconc[29][ph][elm_pos] * (exp(-0.0000000296 * delta_t)); //U 236
-        conc[30][ph][elm_pos] = pconc[30][ph][elm_pos] * (exp(-0.000000324 * delta_t)); //Np 237
-        conc[31][ph][elm_pos] = pconc[31][ph][elm_pos] * (exp(-0.0079 * delta_t)); //Pu 238
-        conc[32][ph][elm_pos] = pconc[32][ph][elm_pos] * (exp(-0.000000000155 * delta_t)); //U 238
-        conc[33][ph][elm_pos] = pconc[33][ph][elm_pos] * (exp(-0.0000288 * delta_t)); //Pu 239
-        conc[34][ph][elm_pos] = pconc[34][ph][elm_pos] * (exp(-0.000106 * delta_t)); //Pu 240
-        conc[35][ph][elm_pos] = pconc[35][ph][elm_pos] * (exp(-0.0016 * delta_t)); //Am 241
-        conc[36][ph][elm_pos] = pconc[36][ph][elm_pos] * (exp(-0.00492 * delta_t)); //Am 242m
-        conc[37][ph][elm_pos] = pconc[37][ph][elm_pos] * (exp(-0.00000186 * delta_t)); //Pu 242
-        conc[38][ph][elm_pos] = pconc[38][ph][elm_pos] * (exp(-0.000094 * delta_t)); //Am 243
-        conc[39][ph][elm_pos] = pconc[39][ph][elm_pos] * (exp(-0.0383 * delta_t)); //Cm 244
-        conc[40][ph][elm_pos] = pconc[40][ph][elm_pos] * (exp(-0.0000817 * delta_t)); //Cm 245
-        conc[41][ph][elm_pos] = pconc[41][ph][elm_pos] * (exp(-0.000146 * delta_t)); //Cm 246
-        for (i = 0; i < 42; i++) {
-            pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
-        }
-        break;
-    case 2:
-        conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.000433 * delta_t)); //Ra 226
-        conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.0000944 * delta_t)); //Th 229
-        conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.0000092 * delta_t)); //Th 230
-        conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.0000212 * delta_t)); //Pa 231
-        conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.0000000000493 * delta_t)); //Th 232
-        conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00000435 * delta_t)); //U 233
-        conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.00000282 * delta_t)); //U 234
-        conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.000000000985 * delta_t)); //U 235
-        conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.0000000296 * delta_t)); //U 236
-        conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.000000324 * delta_t)); //Np 237
-        conc[11][ph][elm_pos] = pconc[11][ph][elm_pos] * (exp(-0.0079 * delta_t)); //Pu 238
-        conc[12][ph][elm_pos] = pconc[12][ph][elm_pos] * (exp(-0.000000000155 * delta_t)); //U 238
-        conc[13][ph][elm_pos] = pconc[13][ph][elm_pos] * (exp(-0.0000288 * delta_t)); //Pu 239
-        conc[14][ph][elm_pos] = pconc[14][ph][elm_pos] * (exp(-0.000106 * delta_t)); //Pu 240
-        conc[15][ph][elm_pos] = pconc[15][ph][elm_pos] * (exp(-0.0016 * delta_t)); //Am 241
-        conc[16][ph][elm_pos] = pconc[16][ph][elm_pos] * (exp(-0.00492 * delta_t)); //Am 242m
-        conc[17][ph][elm_pos] = pconc[17][ph][elm_pos] * (exp(-0.00000186 * delta_t)); //Pu 242
-        conc[18][ph][elm_pos] = pconc[18][ph][elm_pos] * (exp(-0.000094 * delta_t)); //Am 243
-        conc[19][ph][elm_pos] = pconc[19][ph][elm_pos] * (exp(-0.0383 * delta_t)); //Cm 244
-        conc[20][ph][elm_pos] = pconc[20][ph][elm_pos] * (exp(-0.0000817 * delta_t)); //Cm 245
-        conc[21][ph][elm_pos] = pconc[21][ph][elm_pos] * (exp(-0.000146 * delta_t)); //Cm 246
-        for (i = 0; i < 22; i++) {
-            pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
-        }
-        break;
-    case 3:
-        //conc[0][ph][elm_pos]= pconc[0][ph][elm_pos]*(exp(-0*delta_t));//
-        conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.000000459 * delta_t)); //Be 10
-        conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.000122 * delta_t)); //C 14
-        conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.0000023 * delta_t)); //Cl 36
-        conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.0000068 * delta_t)); //Ca 41
-        conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.00000912 * delta_t)); //Ni 59
-        conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00702 * delta_t)); //Ni 63
-        conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.000173 * delta_t)); //Mo 93
-        conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.000000453 * delta_t)); //Zr 93
-        conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.0000347 * delta_t)); //Nb 94
-        conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.00158 * delta_t)); //Ag 108m
-        conc[11][ph][elm_pos] = pconc[11][ph][elm_pos] * (exp(-0.000578 * delta_t)); //Ho 166m
-        for (i = 0; i < 12; i++) {
-            pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
-        }
-        break;
-    case 4:
-        //conc[0][ph][elm_pos]= pconc[0][ph][elm_pos]*(exp(-0*delta_t));//
-        conc[1][ph][elm_pos] = pconc[1][ph][elm_pos] * (exp(-0.00000195 * delta_t)); //Se 79
-        conc[2][ph][elm_pos] = pconc[2][ph][elm_pos] * (exp(-0.0241 * delta_t)); //Sr 90
-        conc[3][ph][elm_pos] = pconc[3][ph][elm_pos] * (exp(-0.000000453 * delta_t)); //Zr 93
-        conc[4][ph][elm_pos] = pconc[4][ph][elm_pos] * (exp(-0.00000324 * delta_t)); //Tc 99
-        conc[5][ph][elm_pos] = pconc[5][ph][elm_pos] * (exp(-0.000000107 * delta_t)); //Pd 107
-        conc[6][ph][elm_pos] = pconc[6][ph][elm_pos] * (exp(-0.00000299 * delta_t)); //Sn 126
-        conc[7][ph][elm_pos] = pconc[7][ph][elm_pos] * (exp(-0.0000000431 * delta_t)); //I 129
-        conc[8][ph][elm_pos] = pconc[8][ph][elm_pos] * (exp(-0.000000301 * delta_t)); //Cs 135
-        conc[9][ph][elm_pos] = pconc[9][ph][elm_pos] * (exp(-0.0231 * delta_t)); //Cs 137
-        conc[10][ph][elm_pos] = pconc[10][ph][elm_pos] * (exp(-0.0077 * delta_t)); //Sm 151
-        /*	if(pconc[2][ph][elm_pos] != 0){
-         printf("\nA: %f\t A+: %f",pconc[0][ph][elm_pos],conc[0][ph][elm_pos]);
-         printf("\nC: %f\t C+: %f",pconc[2][ph][elm_pos],conc[2][ph][elm_pos]);
-         getchar();
-         } */
-/*        for (i = 0; i < 11; i++) {
-            pconc[i][ph][elm_pos] = conc[i][ph][elm_pos];
-        }
-        break;
-    default:
-        break;
-    }
-}
-*/

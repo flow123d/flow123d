@@ -319,3 +319,87 @@ void OptionsInit(const char *fname )
 	make_ini_item_list(fname);
 	
 }
+
+//=============================================================================
+// GET DOUBLE ARRAY VARIABLE FROM INI FILE
+//=============================================================================
+void OptGetDblArray( const char *section,const  char *key,const  char *defval, int ArrSize, double *Array)// ArrSize contain number of Array members (length), *Array is the adress of array which should be filled up
+{
+	char *str;
+	double res;
+	int i;
+
+	str=OptGetStr(section,key,defval);
+	for(i = 1; i < ArrSize; i++){
+		if (sscanf(str,"%lg",&res) == 0) {
+		if (defval == NULL) xprintf(UsrErr,"Can not convert %d. ini-file entry to double parameter: [%s] %s.\n",i,section,key);
+		if (sscanf(defval,"%lg",&res) == 0)
+			xprintf(PrgErr,"Default value \"%s\" of parameter: [%s] %s is not an double.\n",defval,section,key);
+		}else{
+		  *(Array + (i-1)*sizeof(double)) = res;
+		}
+	}
+
+	free( str );
+	//return res;
+	return;
+}
+
+//=============================================================================
+// GET Int ARRAY VARIABLE FROM INI FILE
+//=============================================================================
+void OptGetIntArray( const char *section,const  char *key,const  char *defval, int ArrSize, int *Array)// ArrSize contain number of Array members (length), *Array is the adress of array which should be filled up
+{
+	char *str;
+	int res;
+	int i;
+
+	str=OptGetStr(section,key,defval);
+	for(i = 1; i < ArrSize; i++){
+		if (sscanf(str,"%d",&res) == 0) {
+		if (defval == NULL) xprintf(UsrErr,"Can not convert %d. ini-file entry to integer parameter: [%s] %s.\n",i,section,key);
+		if (sscanf(defval,"%d",&res) == 0)
+			xprintf(PrgErr,"Default value \"%s\" of parameter: [%s] %s is not an integer.\n",defval,section,key);
+		}else{
+		  *(Array + (i-1)*sizeof(double)) = res;
+		}
+	}
+
+	free( str );
+	return;
+}
+
+//=============================================================================
+// GET string ARRAY VARIABLE FROM INI FILE
+//=============================================================================
+/*char *OptGetStrArray(const char *section,const char *key, int sb_count, struct TS_lat *dest)
+{
+	const char **rc = NULL;
+	struct Ini_item *ini_item;
+	int i;
+
+	FOR_INI_ITEMS(ini_item)
+		if( (!strcmp(ini_item->section,section)) && (!strcmp(ini_item->key,key)) ){
+			for(i=0; i < sb_count; i++)
+			{
+			  if(sscanf(ini_item->value,"%s",dest[i].nazev) == NULL) 
+			  {
+				printf("\nerror during required %d-th parameter initialization occured\n",i);
+			  }else{
+			  	printf("\nthe name of %d-th substance is %s\n",i,dest[i].nazev);
+			  }
+			}
+			//
+			*rc = ini_item->value;
+			break;
+		}
+
+	if (rc == NULL) {
+		if (defval == NULL)
+			xprintf(UsrErr,"Required parameter: [%s] %s is not given.\n",section,key);
+		else
+			*rc = defval;
+	}
+	return xstrcpy(*rc);
+}*/
+

@@ -1,0 +1,148 @@
+#!/bin/bash
+# 
+# Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+#
+# Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+# especially for academic research:
+# Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+#
+# This program is free software; you can redistribute it and/or modify it under the terms
+# of the GNU General Public License version 3 as published by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program; if not,
+# write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
+#
+# $Id$
+# $Revision$
+# $LastChangedBy$
+# $LastChangedDate$
+#
+#
+# Common part of starting scripts. Should be sourced at the begining of architecture dependent scripts,
+#
+# This do not perform any action, only provides:
+# default setting for common variables. Parsing function of common parameters.
+# And common functions.
+
+# default values
+MAINHELP="Starting script for s3dpar.
+
+Syntax: start [-np N] [-r] [-wo wrkdir] [-i indir] [-o outdir]
+              [arch spec. opts.] [-- PETSc opts.]
+
+  -np N         run on N processors
+  -r            restart an intrupted job you  have to give the same dirs and start it on the same host
+  --help,-h     print possible options
+  -o outdir     select output dir; its contents will be saved in output.save subdir
+  -i indir      select inputdir
+  --            all what follows after '--' will be passed to s3dpar
+   "
+   
+NPROC=1
+# RESTART indicates restart of an interupted job
+RESTART=
+# Working directory where to start s3d - should conatin s3d.opt file
+# default: actual system directory
+WRK_DIR=`pwd`
+
+# input/output dirs - default relative to working
+START_OUTDIR="./output/"
+START_INDIR="./input/"
+# name for dir  to save last output
+SAVE_DIR="last.output"
+
+# s3d options for seqential and parallel run
+BOTHOPT="-options_left"
+SEQOPT="-ksp_type cg -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_type ilu"
+# optimal configuration for parellel solve of heterogenous problem
+# crucial is also setting of time management:
+# MultUp = 1.2, MultDown= 0.8, ExplicitReduce=0.6
+PAROPT="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -pc_asm_type interpolate"
+PAROPT="$PAROPT -sub_pc_type ilu  -sub_pc_factor_shift_positive_definite"
+PAROPT="$PAROPT -snes_ksp_ew -snes_ksp_ew_version 3 -snes_ksp_ew_rtolmax 0.01"
+
+# Write help
+WriteHelp () {
+   echo "$MAINHELP"
+   echo "$ARCHHELP"
+   exit
+}
+
+# parse common arguments
+# possibly set: NPROC, RESTART, START_OUTDIR, START_INDIR
+# set SOLVEROPT according to NPROCS
+# unprocesed arguments are stored in ARGREST
+# all after '--' goes to PETSCOPT
+ParseCommonArgs() {
+ARGREST=""
+while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]
+do
+  if [ "$1" == "-np" ]; then
+    shift 
+    # nonzero $1 and not starting with '-'
+    if [ \( -n "$1" \) -a \( "${1#-}" == "${1}" \) ]
+    then 
+      NPROC=$1
+      shift
+    else
+      echo "Unspecified number of procs. ... ignore"
+    fi
+  elif [ "$1" == "-r" ]; then
+    RESTART="yes"; shift
+  elif [ "$1" == "-i" ]; then
+    shift
+    if [ ! -d $1 ]; then
+      echo "Input directory $1 does not exist."; exit 1;
+    fi  
+    START_INDIR="$1"; shift
+  elif [ "$1" == "-o" ]; then
+    shift
+    if [ ! -d $1 ]; then
+      echo "Output directory $1 does not exist."; exit 1;
+    fi  
+    START_OUTDIR="$1"; shift
+  elif [ \( "$1" == "--help" \) -o \( "$1" == "-h" \) ]; then
+    WriteHelp
+  else
+    ARGREST="$ARGREST $1"
+    shift
+  fi
+done  
+# pass all after '--' to solver
+PETSC_OPT="$@"
+
+if [ $NPROC -gt 1 ] 
+then
+  SOLVEROPT="$PAROPT $BOTHOPT $PETSC_OPT"
+else
+  SOLVEROPT="$SEQOPT $BOTHOPT $PETSC_OPT"
+fi
+
+}
+
+#if [ -z $WRK_OUTDIR ]; then
+#  if [ -z $DFLT_WRK_OUTDIR ]
+#  then WRK_OUTDIR=$START_OUTDIR
+#  else WRK_OUTDIR=$DFLT_WRK_OUTDIR;fi
+#fi  
+
+# prepare restarted input if asked for
+# TODO: if s3d output is on local disks, then restart
+# has to gather data to the master node
+PrepareIO() {
+if [ "$RESTART" == "yes" ]; then
+  if ! ./bin/restart $START_INDIR $START_OUTDIR; then exit 1;fi
+else
+  # save previous output
+  if [ ! -e ${START_OUTDIR}/$SAVE_DIR ]; then mkdir ${START_OUTDIR}/$SAVE_DIR; fi
+  rm -f ${START_OUTDIR}/$SAVE_DIR/*
+  cp ${START_OUTDIR}/* ${START_OUTDIR}/$SAVE_DIR 2>/dev/null
+  rm -f ${START_OUTDIR}/* 2>/dev/null
+fi
+}
+
+

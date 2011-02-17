@@ -57,6 +57,9 @@ struct Ini_item
 	bool     OptGetBool(const char *section,const char *key,const char *defval);
 	double   OptGetDbl(const char *section,const char *key,const char *defval);
 	void     OptionsInit(const char *fname );
+	void	OptGetDblArray(const char *section, const char *key, const char *defval, int ArrSize, double *Array);
+	void	OptGetIntArray(const char *section, const char *key, const char *defval, int Arrsize, int *Array);
+	//char * OptGetStrArray();
 
 #endif
 
