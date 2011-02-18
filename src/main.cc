@@ -48,10 +48,11 @@
 #include "xio.h"
 #include "mesh.h"
 #include "topology.h"
-#include "postprocess.h"
 #include "output.h"
 #include "problem.h"
 #include "darcy_flow_mh.hh"
+#include "darcy_flow_mh_output.hh"
+
 #include "main.h"
 #include "read_ini.h"
 #include "global_defs.h"
@@ -266,7 +267,9 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
     //        output_flow_field_in_time(problem,0);
     //output_init(problem);
     output_msh_init_vtk_serial_ascii(output_file);
-    DarcyFlowMH *water=new DarcyFlowMH_UnsteadyLumped(*mesh);
+    DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(mesh, problem->material_database);
+    DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
+
     problem->water=water;
 
     const TimeGovernor &water_time=water->get_time();
@@ -278,7 +281,7 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
 
     while (! water_time.is_end()) {
         water->compute_one_step();
-        postprocess(problem);
+        water_output->postprocess();
 
         if ( water_time.ge( save_time ) )  {
 
@@ -312,7 +315,9 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-    problem->water=new DarcyFlowMH_Steady(*mesh);
+    problem->water=new DarcyFlowMH_Steady(mesh, problem->material_database);
+    DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(problem->water);
+
     problem->water->compute_one_step();
 
     if (OptGetBool("Transport", "Transport_on", "no") == true)
@@ -323,7 +328,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 
 
-    postprocess(problem);
+    water_output->postprocess();
     output(problem);
 
     // pracovni vystup nekompatibilniho propojeni
@@ -493,7 +498,7 @@ void main_compute_mh_density(struct Problem *problem) {
             //problem->water=new DarcyFlowMH(*mesh);
             //problem->water->solve();
             restart_iteration_C(problem);
-            postprocess(problem);
+            //postprocess(problem);
             convection(trans);
             // 	      	output( problem );
 

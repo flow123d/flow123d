@@ -43,11 +43,11 @@
 #include "convert.h"
 
 #include "problem.h"
-#include "sources.h"
+
 //#include "materials.hh"
 #include "concentrations.h"
 #include "boundaries.h"
-#include "postprocess.h"
+
 #include "neighbours.h"
 
 static void output_convert_to_pos_source(struct Problem *problem);
@@ -130,9 +130,6 @@ void output_convert_to_pos_source(struct Problem *problem)
         xfprintf( out, ", " );
     }
     for( li = 0; li < elm->n_nodes; li++ ) {
-      if (elm->source != NULL)
-        xfprintf( out, dbl_fmt, elm->source->density);
-      else
         xfprintf( out, dbl_fmt, 0.0);
       if( li == elm->n_nodes - 1 )
         xfprintf( out, "};\n" );

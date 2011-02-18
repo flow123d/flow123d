@@ -23,7 +23,7 @@
  * $LastChangedDate$
  *
  * @file
- * @brief  Simple mathematical field piecewise constant on the elements of the mesh.
+ * @brief  Classes that model discrete mathematical fields.
  */
 
 #ifndef FIELD_P0_HH_
@@ -39,27 +39,50 @@
 /**
  * Class can read scalar field - piecewise constant on elements.
  * Since we want to template it by dimension of returned vector or tensor, we keep implementation in the header file.
+ *
+ * TODO:
+ * - use PETSC vectors for storing data (paralelization), field as accessor to a PETSC vector
+ * - templated by field value type (vector, tensor)
+ * - P0 fields given by values for materials
+ * - need output through streams - need something like xopen for streams distinguish output and input
+ *   until that we can introduce type cast to string for : double, vector, tensor - for output
+ *   - and vice versa for input
+ * - fields for RT0 and Edge P0
  */
 
+template <class Value>
 class FieldP0 {
 public:
-    FieldP0(const string f_name, const string section, ElementVector &el_vec);
-    inline double element_value(const unsigned int el_idx) { return data[el_idx]; }
+
+    FieldP0(Mesh *mesh);
+    void read_field(const string f_name, const string section);
+    inline Value element_value(const unsigned int el_idx) const
+        { return data[el_idx]; }
+    void integrate_material_subdomains(vector<Value> &integrals);
 
     ~FieldP0() {};
 
 private:
-    std::vector<double> data;
+    std::vector<Value> data;
+    Mesh *mesh;
 
 };
 
+// template implementation --------------------------------------------------
 
-FieldP0::FieldP0(const string f_name,const string section, ElementVector &el_vec)
-: data(el_vec.size(),0)
+template <class Value>
+FieldP0<Value>::FieldP0(Mesh *mesh)
+: mesh(mesh), data(0)
+{}
+
+
+template <class Value>
+void FieldP0<Value>::read_field(const string f_name,const string section)
 {
     FILE    *in;   // input file
     char     line[ LINE_SIZE ];   // line of data file
-    ElementFullIter elm(el_vec);
+    std::istringstream line_stream;
+    ElementFullIter elm(mesh->element);
     int eid,n_sources;
     double value;
 
@@ -69,17 +92,22 @@ FieldP0::FieldP0(const string f_name,const string section, ElementVector &el_vec
     INPUT_CHECK( skip_to( in, section.c_str() ) , "Can not find $Sources section in the file %s.\n", f_name.c_str());
 
     xfgets( line, LINE_SIZE - 2, in );
-    n_sources = atoi( xstrtok( line) );
+    line_stream.str(string(line));
+    line_stream >> n_sources;
+    INPUT_CHECK( line_stream.good(), "Can not convert input to int.\n");
+
+    data.resize(n_sources);
 
     for(int i_line=0; i_line<n_sources; i_line++) {
         xfgets( line, LINE_SIZE - 2, in );
-        eid = atoi( xstrtok( line) );
-        value = atof( xstrtok(NULL) );
-
-        elm=el_vec.find_id(eid);
-        INPUT_CHECK( elm != el_vec.end(), "Wrong element id on line: %d file: %s\n", i_line, f_name.c_str());
-
-        data[elm.index()] = value;
+        line_stream.str(string(line));
+        line_stream >> eid;
+        INPUT_CHECK( line_stream.good(), "Can not convert input to int.\n");
+        // get index from ID
+        elm=mesh->element.find_id(eid);
+        INPUT_CHECK( elm != mesh->element.end(), "Wrong element id on line: %d file: %s\n", i_line, f_name.c_str());
+        // make value from rest of line
+        line_stream >> data[elm.index()];
     }
     xfclose( in );
 }

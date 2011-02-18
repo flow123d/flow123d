@@ -104,6 +104,8 @@ public:
     ElementVector element;   //
     BoundaryVector boundary; //
 
+    flow::VectorId<int> bcd_group_id; // gives a index of group for an id
+
     int n_materials; // # of materials
     int n_concentrations; // # of concentrations
     int n_substances; // # of substances transported by water

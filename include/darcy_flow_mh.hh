@@ -51,6 +51,8 @@
 #include <petscmat.h>
 #include <sys_vector.hh>
 #include <time_governor.hh>
+#include <field_p0.hh>
+#include <materials.hh>
 
 /// external types:
 class LinSys;
@@ -59,20 +61,15 @@ class Mesh;
 class SchurComplement;
 class Distribution;
 class SparseGraph;
-class FieldP0;
 
 
 /**
- * @brief mixed-hybrid model of linear Darcy flow, possibly unsteady.
+ * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *
+ * Abstract class for various implementations of Darcy flow. In future there should be
+ * one further level of abstraction for general time dependent problem.
  *
- */
-
-/**
- * TODO: TimeGovernor should distinct const  methods and here get_tim should return reference to const time object.
- * then caller can ask TimeGovernor about time, compare time (with relative precision given by actual dt), nut still
- * can not modify TimeGovernor object. TimeGovernor should allow recasting to double.
- *
+ * maybe TODO:
  * split compute_one_step to :
  * 1) prepare_next_timestep
  * 2) actualize_solution - this is for iterative nonlinear solvers
@@ -86,18 +83,54 @@ public:
     virtual void compute_until( double time);
     inline const TimeGovernor& get_time()
         {return *time;}
+    inline  Mesh *get_mesh()
+        {return mesh;}
+    inline const FieldP0<double> *get_sources()
+        {return sources;}
+    inline  MaterialDatabase *get_mat_base()
+        {return mat_base;}
+
     virtual double * solution_vector() =0;
-    virtual void postprocess() =0;
 
 protected:
-    TimeGovernor *time;
+    virtual void postprocess() =0;
+    //virtual void balance();
+    //virtual void integrate_sources();
 
+protected:
+    Mesh *mesh;
+    MaterialDatabase *mat_base;
+    FieldP0<double> *sources;
+    TimeGovernor *time;
 };
 
+
+/**
+ * @brief Mixed-hybrid of steady Darcy flow with sources and variable density.
+ *
+ * solve equations:
+ * @f[
+ *      q= -{\mathbf{K}} \nabla h -{\mathbf{K}} R \nabla z
+ * @f]
+ * @f[
+ *      \mathrm{div} q = f
+ * @f]
+ *
+ * where
+ * - @f$ q @f$ is flux @f$[ms^{-1}]@f$ for 3d, @f$[m^2s^{-1}]@f$ for 2d and @f$[m^3s^{-1}]@f$ for 1d.
+ * - @f$ \mathbf{K} @f$ is hydraulic tensor ( its orientation for 2d, 1d case is questionable )
+ * - @f$ h = \frac{\pi}{\rho_0 g}+z @f$ is pressures head, @f$ \pi, \rho_0, g @f$ are the pressure, water density, and acceleration of gravity , respectively.
+ *   Assumes gravity force acts counter to the direction of the @f$ z @f$ axis.
+ * - @f$ R @f$ is destity or gravity variability coefficient. For density driven flow it should be
+ * @f[
+ *    R = \frac{\rho}{\rho_0} -1 = \rho_0^{-1}\sum_{i=1}^s c_i
+ * @f]
+ *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
+ */
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(Mesh &mesh);
+    DarcyFlowMH_Steady(Mesh *mesh, MaterialDatabase *mat_base_in);
     virtual void compute_one_step();
     virtual double * solution_vector();
     virtual void postprocess() {};
@@ -105,6 +138,7 @@ public:
 
 protected:
     virtual void modify_system() {};
+    void set_R() {};
     void prepare_parallel();
     void make_row_numberings();
     void mh_abstract_assembly();
@@ -112,8 +146,6 @@ protected:
     void make_schur1();
     void make_schur2();
 
-
-	Mesh *mesh;   // structured water equation ( so far pointer to  the mesh struture )
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
@@ -125,7 +157,7 @@ protected:
 	SchurComplement *schur1;  	// first schur compl.
 	SchurComplement *schur2;	// second ..
 
-	FieldP0 *sources;
+
 
 	// parallel
 	int np;  // number of procs
@@ -164,10 +196,19 @@ void mat_count_off_proc_values(Mat m, Vec v);
 void create_water_linsys(Mesh*, DarcyFlowMH**);
 void solve_water_linsys(DarcyFlowMH*);
 
+
+/**
+ * @brief Mixed-hybrid solution of unsteady Darcy flow.
+ *
+ * Standard discretization with time term and sources picewise constant
+ * on the element. This leads to violation of the discrete maximum principle for
+ * non-acute meshes or to too small timesteps. For simplicial meshes this can be solved by lumping to the edges. See DarcyFlowLMH_Unsteady.
+ */
+
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(Mesh &mesh);
+    DarcyFlowMH_Unsteady(Mesh *mesh, MaterialDatabase *mat_base_in);
     DarcyFlowMH_Unsteady();
 protected:
     virtual void modify_system();
@@ -177,14 +218,26 @@ private:
     Vec new_diagonal;
     Vec previous_solution;
 
-
 };
 
-class DarcyFlowMH_UnsteadyLumped : public DarcyFlowMH_Steady
+/**
+ * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
+ *
+ * The time term and sources are evenly distributed form an element to its edges.
+ * This applies directly to the second Schur complement. After this system for pressure traces is solved we reconstruct pressures and side flows as follows:
+ *
+ * -# Element pressure is  average of edge pressure. This is in fact same as the MH for steady case so we let SchurComplement class do its job.
+ *
+ * -# We let SchurComplement to reconstruct fluxes and then account time term and sources which are evenly distributed from an element to its sides.
+ *    It can be proved, that this keeps continuity of the fluxes over the edges.
+ *
+ * This lumping technique preserves discrete maximum principle for any time step provided one use acute mesh. But in practice even worse meshes are tractable.
+ */
+class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_UnsteadyLumped(Mesh &mesh);
-    DarcyFlowMH_UnsteadyLumped();
+    DarcyFlowLMH_Unsteady(Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowLMH_Unsteady();
 protected:
     virtual void modify_system();
     virtual void postprocess();
@@ -194,8 +247,6 @@ private:
     Vec new_diagonal;
     Vec previous_solution;
     Vec time_term;
-
-
 };
 
 #endif  //DARCY_FLOW_MH_HH

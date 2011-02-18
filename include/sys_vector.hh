@@ -59,20 +59,20 @@ public:
     /// Constructor to make uninitialized FullIterator for a container.
     FullIterator(Cont &cont_par)
             : cont(cont_par),
-              iter(cont.storage.end()) {}
+              iter(cont_par.storage.end()) {}
 
     /// Constructor to make FullIterator from container and its std::vector iterator.
     /// Mainly for internal use.
-    FullIterator(Cont &cont_par, typename  Cont::iterator it)
+    FullIterator(const Cont &cont_par,const  typename  Cont::iterator it)
         : cont(cont_par),
           iter(it) {}
 
     /// Constructor to make FullIterator from container and Iter i.e. T*
-    FullIterator(Cont &cont_par, const typename Cont::Iter it)
+    FullIterator(Cont &cont_par,const typename Cont::Iter it)
         : cont(cont_par)
     {
-        if (it == NULL) iter = cont.storage.end();
-        else iter = cont.storage.begin() + cont.index(it);
+        if (it == NULL) iter = cont_par.storage.end();
+        else iter = cont_par.storage.begin() + cont.index(it);
     }
 
     /// Check validity of FullIterator.
@@ -154,7 +154,7 @@ public:
     // + - opeartors is better to define outside if we ever allow them.
 protected:
     /// We have here reference to the container of the iterator. So, an instance of this class can not change the container.
-    Cont &cont;
+    const Cont &cont;
     // Conatainer iterator.
     typename Cont :: iterator iter;
 };
@@ -173,7 +173,7 @@ public:
         FullIteratorId(VectorId<T> &cont)
                 : FullIterator<VectorId<T> >(cont) {}
         /// Constructor. Just call base class.
-        FullIteratorId(VectorId<T> &cont, typename  VectorId<T>::iterator it)
+        FullIteratorId(const VectorId<T> &cont, typename std::vector<T>::iterator it)
             : FullIterator< VectorId<T> >(cont, it) {}
         /// Constructor. Just call base class.
         FullIteratorId(VectorId<T> &cont, const typename VectorId<T>::Iter it)
@@ -369,7 +369,7 @@ public:
     /**
      * For given pointer returns the index of the element in the Vector. The first element has zero index.
      */
-    inline unsigned int index(Iter pointer)
+    inline unsigned int index(Iter pointer) const
         {
           ASSERT( pointer >= &(storage.front()) && pointer <= &(storage.back()),
                 "Wrong pointer %p to obtain its index (%p, %p).\n",pointer, &(storage.front()), &(storage.back()));
@@ -377,6 +377,8 @@ public:
         }
 
      /// Returns FullFullIterer of the first element.
+     /// Do not try to set these as const methods. Such has to produce const iterators
+     /// which requires const anlaogy of FullIter - really ugly
      inline FullIter begin()
          { return FullIter( *this, storage.begin() ); }
 

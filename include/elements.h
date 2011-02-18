@@ -63,7 +63,6 @@ typedef struct Element
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
-    struct Source    *source;   // Internal source/sink in the element
     struct Initial  *initial;       // Initial condition
     struct Concentration  *start_conc;    // Start concentration  - if prescribed
     int n_subst;        // Number of substances

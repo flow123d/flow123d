@@ -46,12 +46,11 @@
 // following deps. should probably be removed
 #include "boundaries.h"
 #include "problem.h"
-#include "sources.h"
+
 #include "concentrations.h"
 #include "boundaries.h"
 #include "transport_bcd.h"
 #include "transport.h"
-#include "postprocess.h"
 #include "neighbours.h"
 
 static void output_compute_mh(struct Problem *problem);

@@ -68,9 +68,14 @@ void DarcyFlowMH::compute_until(double end_time)
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in)
-: DarcyFlowMH(), mesh(&mesh_in)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh *mesh_in, MaterialDatabase *mat_base_in)
+: DarcyFlowMH()
+
 {
+    // can not be in initializer list since are not proper class members
+    mesh=mesh_in;
+    mat_base=mat_base_in;
+
 
     int ierr;
 
@@ -92,7 +97,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in)
 
     string sources_fname=OptGetFileName("Input","Sources","//");
     if (sources_fname!= "//") {
-        sources= new FieldP0(sources_fname,string("$Sources"),mesh->element);
+        sources= new FieldP0<double>(mesh);
+        sources->read_field(sources_fname,string("$Sources"));
     }
 
     // time governor
@@ -1119,8 +1125,8 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in)
-    : DarcyFlowMH_Steady(mesh_in)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh *mesh_in, MaterialDatabase *mat_base_in)
+    : DarcyFlowMH_Steady(mesh_in, mat_base_in)
 {
     // time governor
     time=new TimeGovernor(
@@ -1139,7 +1145,9 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in)
     string file_name=OptGetStr( "Input", "Initial", "\\" );
     INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
     VecZeroEntries(schur0->get_solution());
-    FieldP0 *initial_pressure = new FieldP0("input/pressure_initial.in",string("$Sources"),mesh->element);
+
+    FieldP0<double> *initial_pressure = new FieldP0<double>(mesh);
+    initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
     double *local_sol=schur0->get_solution_array();
 
     PetscScalar *local_diagonal;
@@ -1192,8 +1200,8 @@ void DarcyFlowMH_Unsteady::modify_system()
 // ========================
 // unsteady
 
-DarcyFlowMH_UnsteadyLumped::DarcyFlowMH_UnsteadyLumped(Mesh &mesh_in)
-    : DarcyFlowMH_Steady(mesh_in)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh *mesh_in, MaterialDatabase *mat_base_in)
+    : DarcyFlowMH_Steady(mesh_in, mat_base_in)
 {
     // time governor
     time=new TimeGovernor(
@@ -1212,7 +1220,8 @@ DarcyFlowMH_UnsteadyLumped::DarcyFlowMH_UnsteadyLumped(Mesh &mesh_in)
     string file_name=OptGetStr( "Input", "Initial", "\\" );
     INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
     VecZeroEntries(schur0->get_solution());
-    FieldP0 *initial_pressure = new FieldP0("input/pressure_initial.in",string("$Sources"),mesh->element);
+    FieldP0<double> *initial_pressure = new FieldP0<double>(mesh);
+    initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
 
     VecDuplicate(steady_diagonal,& new_diagonal);
 
@@ -1257,7 +1266,7 @@ DarcyFlowMH_UnsteadyLumped::DarcyFlowMH_UnsteadyLumped(Mesh &mesh_in)
 
 }
 
-void DarcyFlowMH_UnsteadyLumped::modify_system()
+void DarcyFlowLMH_Unsteady::modify_system()
 {
 
 
@@ -1274,7 +1283,7 @@ void DarcyFlowMH_UnsteadyLumped::modify_system()
 
 // is it really necessary what is natural value of element pressures ?
 // Since
-void DarcyFlowMH_UnsteadyLumped::postprocess()
+void DarcyFlowLMH_Unsteady::postprocess()
 {
   int i_loc,side_row,loc_row,i;
   Edge* edg;

@@ -78,7 +78,6 @@ public:
 class MaterialDatabase : public flow::VectorId< Material > {
 
 public:
-    typedef flow::VectorId< Material >::Iter MaterialIter;
 
     /// Constructor. Reads a given file and fill the database with non-transport data.
     MaterialDatabase(const string &file_name);
@@ -95,7 +94,7 @@ public:
     inline void lock_base(bool new_lock)
     {lock=new_lock;}
 
-    MaterialIter new_material(int id);
+    FullIter new_material(int id);
 
     /// Returns true if the given section was read and have values for all materials.
     inline bool valid_section(const string &sec) {
@@ -131,9 +130,9 @@ private:
 
 /// Iterates through materials.
 #define FOR_MATERIALS_IT(base,i) \
-    for( MaterialDatabase::Iter i = (base).begin(); \
+    for( MaterialDatabase::FullIter i = (base).begin(); \
         i != (base).end(); \
-        i++)
+        ++i)
 
 
 #endif

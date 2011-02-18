@@ -32,9 +32,8 @@
 // remove dependency on following:
 #include "materials.hh"
 #include "boundaries.h"
-#include "sources.h"
+
 #include "concentrations.h"
-#include "initials.h"
 #include "transport_bcd.h"
 
 
@@ -60,7 +59,7 @@ static void side_to_node_tetrahedron(ElementFullIter );
 static void neigh_bb_to_element(struct Neighbour*,Mesh*);
 static void neigh_bb_el_to_side(struct Neighbour*);
 static void neigh_bb_e_to_side(Mesh *mesh, struct Neighbour*);
-static void source_to_element_both(Mesh*);
+//static void source_to_element_both(Mesh*);
 static void concentration_to_element(Mesh*);
 static void transport_bcd_to_boundary(Mesh*);
 static void initial_to_element(Mesh*);

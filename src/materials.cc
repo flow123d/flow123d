@@ -230,7 +230,7 @@ void MaterialDatabase::read_transport_materials(bool dual_porosity, bool sorptio
  * @brief  CREATE NEW MATERIAL
  * @return material structure
  */
-MaterialDatabase::Iter MaterialDatabase::new_material( int id )
+MaterialDatabase::FullIter MaterialDatabase::new_material( int id )
 {
 
 	F_ENTRY;
@@ -264,7 +264,7 @@ MaterialDatabase::Iter MaterialDatabase::new_material( int id )
  * @brief SET THE "a[][]" AND "k[][]" FIELDS IN STRUCT ELEMENT
  * @param[in,out] ele element
  */
-void MaterialDatabase::calc_material_resistance( int type, double coef[6], MaterialIter mat)
+void MaterialDatabase::calc_material_resistance( int type, double coef[6], MaterialDatabase::Iter mat)
 {
     F_ENTRY;
 

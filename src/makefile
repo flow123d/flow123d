@@ -57,7 +57,7 @@ $(OBJS)/local_matrix.o\
 $(OBJS)/darcy_flow_mh.o\
 $(OBJS)/output.o\
 $(OBJS)/concentrations.o\
-$(OBJS)/postprocess.o\
+$(OBJS)/darcy_flow_mh_output.o\
 $(OBJS)/solve.o\
 $(OBJS)/problem.o\
 $(OBJS)/main.o\

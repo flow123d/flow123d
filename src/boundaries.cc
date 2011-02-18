@@ -64,6 +64,8 @@ void read_boundary( struct Mesh *mesh )
 	INPUT_CHECK( n_boundaries >= 1 ,"Number of bounaries < 1 in function read_boundary_list()\n");
 	mesh->boundary.reserve(n_boundaries);
 
+	int group_number=0;
+
 	for(int i_bcd=0; i_bcd < n_boundaries; i_bcd++) {
 	    // Read one line
         xfgets( line, LINE_SIZE - 2, in );
@@ -135,8 +137,17 @@ void read_boundary( struct Mesh *mesh )
         }
         //TODO: if group is necessary set it for all bcd in case where == SIDE_E
         n_tags  = atoi( xstrtok( NULL) );
-        if( n_tags > 0 )
-          bcd->group = atoi( xstrtok( NULL) );
+        if( n_tags > 0 ) {
+            int group_id = atoi( xstrtok( NULL) );
+            flow::VectorId<int>::FullIter group_iter( mesh->bcd_group_id.find_id(group_id) );
+
+            if ( group_iter == mesh->bcd_group_id.end() ) {
+                // not found -> create new group
+                group_iter = mesh->bcd_group_id.add_item(group_id);
+            }
+            bcd->group = group_iter.index();   // in fact we do not use integres stored in the vector, but we use index
+        }
+
 
 	}
 
