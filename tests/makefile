@@ -28,7 +28,7 @@ copy:
 	cp -r ../../../tests/test4 ./
 
 testbase:
-	make -C 01_steady_flow_123d test	
+	make -C 11_reactional_transport_semchem test #make -C 01_steady_flow_123d test	
 
 testall: 
 	make -C 01_steady_flow_123d test

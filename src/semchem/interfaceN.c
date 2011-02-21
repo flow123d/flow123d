@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 
 #pragma hdrstop
-#include "interfaceN.h"
+#include "semchem/interfaceN.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +13,7 @@
 #include "system.hh"
 #include "mesh/ini_constants_mesh.hh"
 #include "constantdb.h"
+//#include "mesh_types.hh"
 
 //--------------pro semchem--------------------------------------------------
 // void che_nadpis__soubor(char *soubor);
@@ -277,12 +278,6 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
 	  xprintf(Msg,"\n chemie pro imobilni: po:ry se nepocita\n");
     }
    } //closing bracket for the loop FOR_ELEMENTS
-   //==================================================================
-   // ----------- ALOKACE POLE PRO KONCENTRACE Z FLOWA ----------------
-   //==================================================================   
-   // NEEEEEEE, free(concentracion); BY UVOLNILO PAMĚŤ S PETSc-ÍMI VEKTORY A TO MY NECHCEM
-   //concentration = NULL; //pro jistotu
-   //==================================================================
    xprintf(Msg,"\n skoncila chemie\n");
 }
 

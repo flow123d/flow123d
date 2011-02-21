@@ -64,7 +64,7 @@
 #include "profiler.hh"
 
 //for Chemistry computation
-#include "interfaceN.h"
+#include "semchem/interfaceN.h"
 /*
 #include "solve.h"
 #include "elements.h"

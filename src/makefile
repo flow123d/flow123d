@@ -73,9 +73,9 @@ $(OBJS)/reaction.o\
 $(OBJS)/profiler.o\
 $(OBJS)/la_linsys.o\
 $(OBJS)/time_governor.o\
-$(OBJS)/che_semchem.o\
-$(OBJS)/interfaceN.o\
-$(OBJS)/Cti_ichNew.o
+$(OBJS)/semchem/che_semchem.o\
+$(OBJS)/semchem/interfaceN.o\
+$(OBJS)/semchem/Cti_ichNew.o
 
 # $(OBJS)/ppfcs.o\
 

@@ -1,5 +1,5 @@
 // #include "interface.h"
-#include "interfaceN.h"
+#include "semchem/interfaceN.h"
 #include "read_ini.h"
 #include "system.hh"
 #include <math.h>

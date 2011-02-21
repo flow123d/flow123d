@@ -59,7 +59,7 @@
 #include "mesh/ini_constants_mesh.hh"
 #include "sparse_graph.hh"
 #include "profiler.hh"
-#include "interfaceN.h"
+#include "semchem/interfaceN.h"
 
 //void init_transport_vectors_mpi(struct Transport *transport);
 
