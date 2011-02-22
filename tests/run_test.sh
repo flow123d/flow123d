@@ -36,7 +36,8 @@ NPROC=$2
 FLOW_PARAMS=$3
 
 # how to run flow
-RUN_FLOW=../../bin/run_flow.sh
+#RUN_FLOW=../../bin/run_flow.sh
+RUN_FLOW=../bin/run_flow.sh
 
 ERROR=0
 
@@ -72,7 +73,7 @@ do
 
   #runs ndiff.pl skript with ref and computed output files
   echo "******************************************"
-  if ! ../run_check.sh $SAVE_OUTPUT "$TEST_DIR/ref_output"; then
+  if ! ./run_check.sh $SAVE_OUTPUT "$TEST_DIR/ref_output"; then
 	ERROR=1
   fi
   echo "******************************************"

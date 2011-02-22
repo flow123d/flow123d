@@ -30,6 +30,7 @@ OUT=$1
 REF_OUT=$2
 
 # file comparison script
+#NDIFF=`pwd`/../ndiff.pl
 NDIFF=`pwd`/../ndiff.pl
 if [ ! -x $NDIFF ]
 then echo "can not find or run ndiff.pl"
