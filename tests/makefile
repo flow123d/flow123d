@@ -52,7 +52,7 @@ clean:
 %.tst:
 	@BASE=$*;\
 	dir="$${BASE}*";\
-	if [ -d $${dir} ];\
-	then make -C $${dir} test;\
+	if [ -d "$${dir}" ];\
+	then make -C "$${dir}" test;\
 	else echo "missing test directory $${dir}";\
 	fi

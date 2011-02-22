@@ -39,12 +39,12 @@ bin/mpiexec: makefile.in
 	# last chance is to use system wide mpiexec
 	# or die
 	 
-	if which ${MPIEXEC}; then \
+	if which "${MPIEXEC}"; then \
 	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '${MPIEXEC} $$@' >> bin/mpiexec; \
-	elif [ -x ${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec ]; then \
+	    echo '${MPIEXEC} "$$@"' >> bin/mpiexec; \
+	elif [ -x "${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" ]; then \
 	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec $$@' >> bin/mpiexec; \
+	    echo '${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec "$$@"' >> bin/mpiexec; \
 	else \
 	    echo "Can not guess mpiexec of PETSC configuration"; \
 	fi        
@@ -52,12 +52,12 @@ bin/mpiexec: makefile.in
 
 #${BUILD_DIR} default value is "", must be set in makefile.in when running on bitten
 bin/current_flow:
-	if [ -z ${MACHINE} ]; then \
+	if [ -z "${MACHINE}" ]; then \
 		echo "Using default generic_flow"; \
 		echo '#!/bin/bash' > bin/current_flow; \
 		echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
 	else \
-		if [ -e bin/${MACHINE}_flow.sh ]; then \
+		if [ -e "bin/${MACHINE}_flow.sh" ]; then \
 			echo '#!/bin/bash' > bin/current_flow; \
 			echo '${PWD}/bin/${MACHINE}_flow.sh' >> bin/current_flow; \
 		else \
@@ -86,6 +86,7 @@ clean:
 	make -C doc/doxy clean
 	rm -f bin/mpiexec
 	rm -f bin/generic_flow
+	rm -f bin/current_flow
 
 test: all 
 	make -C tests testbase
@@ -100,7 +101,7 @@ online-doc:
 	@cd tests;\
 	BASE=$*;\
 	dir="$${BASE}*";\
-	if [ -d $${dir} ];\
-	then make -C $${dir} test;\
+	if [ -d "$${dir}" ];\
+	then make -C "$${dir}" test;\
 	else echo "missing test directory $${dir}";\
 	fi 

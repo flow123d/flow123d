@@ -30,9 +30,8 @@ OUT=$1
 REF_OUT=$2
 
 # file comparison script
-#NDIFF=`pwd`/../ndiff.pl
-NDIFF=`pwd`/../ndiff.pl
-if [ ! -x $NDIFF ]
+NDIFF="`pwd`/../ndiff.pl"
+if [ ! -x "$NDIFF" ]
 then echo "can not find or run ndiff.pl"
 fi
 
@@ -50,7 +49,7 @@ ERROR=0
 
 suff=.ini
 	
-cd $REF_OUT
+cd "$REF_OUT"
 	
 #VAR which contains names of files
 VAR=`ls|sort`
@@ -63,7 +62,7 @@ if [ "$x" == "err" ]; then
 	echo "" | tee stdout_diff.log
 	echo "Err log:" | tee stdout_diff.log
 	touch empty
-	if ! $NDIFF -o diff.log $OUT/$x empty; then
+	if ! "$NDIFF" -o diff.log "$OUT/$x" empty; then
 		ERROR=1
 	fi
 	rm empty
@@ -71,10 +70,10 @@ if [ "$x" == "err" ]; then
 elif [ "$x" == "out" ]; then
 	echo ""
 else 
-	if [ -a $OUT/$x ]; then			
+	if [ -a "$OUT/$x" ]; then			
 		echo "" | tee stdout_diff.log
 		echo "File: $x" | tee -a stdout_diff.log
-		if ! $NDIFF -o diff.log $OUT/$x $REF_OUT/$x; then
+		if ! "$NDIFF" -o diff.log "$OUT/$x" "$REF_OUT/$x"; then
 			ERROR=1
 		fi
 	else
@@ -84,8 +83,8 @@ else
 fi
 done
 
-mv diff.log $OUT
-mv stdout_diff.log $OUT
+mv diff.log "$OUT"
+mv stdout_diff.log "$OUT"
 
 if [ $ERROR == 1 ]; then
 	exit 1
