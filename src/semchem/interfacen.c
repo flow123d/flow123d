@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 
 #pragma hdrstop
-#include "semchem/interfaceN.h"
+#include "semchem/interfacen.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
