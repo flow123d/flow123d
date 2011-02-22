@@ -41,10 +41,10 @@ bin/mpiexec: makefile.in
 	 
 	if which "${MPIEXEC}"; then \
 	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '${MPIEXEC} "$$@"' >> bin/mpiexec; \
+	    echo '"${MPIEXEC}" "$$@"' >> bin/mpiexec; \
 	elif [ -x "${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" ]; then \
 	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec "$$@"' >> bin/mpiexec; \
+	    echo '"${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" "$$@"' >> bin/mpiexec; \
 	else \
 	    echo "Can not guess mpiexec of PETSC configuration"; \
 	fi        
@@ -55,15 +55,15 @@ bin/current_flow:
 	if [ -z "${MACHINE}" ]; then \
 		echo "Using default generic_flow"; \
 		echo '#!/bin/bash' > bin/current_flow; \
-		echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
+		echo '"${PWD}/${BUILD_DIR}/bin/generic_flow.sh"' >> bin/current_flow; \
 	else \
 		if [ -e "bin/${MACHINE}_flow.sh" ]; then \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '${PWD}/bin/${MACHINE}_flow.sh' >> bin/current_flow; \
+			echo '"${PWD}/bin/${MACHINE}_flow.sh"' >> bin/current_flow; \
 		else \
 			echo "make_pbs script for given MACHINE not found, using default"; \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
+			echo '"${PWD}/${BUILD_DIR}/bin/generic_flow.sh"' >> bin/current_flow; \
 		fi \
 	fi
 	chmod u+x bin/current_flow
