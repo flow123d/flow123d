@@ -80,9 +80,6 @@ struct TS_che //typedef struct
 //---------------------------------------------------------------------------
 void che_nactenichemie( void );	     /* funkce nacteni chemie */
 void ctiich (void); /*pomocna funkce nacteni chemie*/
-//void che_vypocetchemie(struct Problem *problem, Vec *conc_mob_arr, Vec *conc_immob_arr, Vec *sorb_mob_arr, Vec *sorb_immob_arr);
-// void che_vypocetchemie(struct Problem *problem, PetscScalar **conc_mob_arr, PetscScalar **conc_immob_arr, PetscScalar **sorb_mob_arr, PetscScalar **sorb_immob_arr);
 void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **conc_immob_arr, double **sorb_mob_arr, double **sorb_immob_arr);
-//void che_vypocetchemie( Problem *problem); //, Mesh *mesh);
 void che_uvolneni_P( void ); /* funkce na uvolneni pameti */
 
