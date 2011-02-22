@@ -75,12 +75,12 @@ Profiler::~Profiler() {
     add_timer_info(timersInfo, root, 0);
 
     //create profiler output only once (on the first processor)
-    if (this->id == 0)
-    {
+    if (this->id == 0) {
 
         int maxTagLength = 0;
         int maxCallCountLength = 0;
         int maxTimeLength = 0;
+        int maxMinMaxLength = 0;
 
         for (int i = 0; i < timersInfo->size(); i++) {
             for (int j = 0; j < timersInfo->at(i)->size(); j++) {
@@ -96,6 +96,9 @@ Profiler::~Profiler() {
                         break;
                     case 2:
                         maxTimeLength = max(4, max(maxTimeLength, size));
+                        break;
+                    case 3:
+                        maxMinMaxLength = max(7, max(maxMinMaxLength, size));
                         break;
                 }
             }
@@ -117,9 +120,9 @@ Profiler::~Profiler() {
         FILE *out;
         const char fileformat[] = "profiler_%d-%m-%y_%H:%M:%S.out";
         char filename[PATH_MAX];
-        strftime(filename, sizeof (filename) - 1, fileformat, localtime(&end_time));
+        strftime(filename, sizeof (filename) - 1, fileformat, localtime(&start_time));
 
-        out = xfopen( filename, "w+" );
+        out = xfopen(filename, "w+");
 
         //print some information about the task at the beginning
         xfprintf(out, "No. of processors: %i\n", size);
@@ -135,8 +138,10 @@ Profiler::~Profiler() {
         pad_string(&calls, maxCallCountLength);
         string time = "time";
         pad_string(&time, maxTimeLength);
+        string minmax = "min/max";
+        pad_string(&minmax, maxMinMaxLength);
 
-        xfprintf(out, "%s %s %s min/max\n", spaces.c_str(), calls.c_str(), time.c_str());
+        xfprintf(out, "%s %s %s %s subframes\n", spaces.c_str(), calls.c_str(), time.c_str(), minmax.c_str());
 
         for (int i = 0; i < timersInfo->size(); i++) {
             vector<string>* info = timersInfo->at(i);
@@ -145,16 +150,33 @@ Profiler::~Profiler() {
             string calls = info->at(1);
             string time = info->at(2);
             string minMax = info->at(3);
+            string subframes = "";
+            if (info->size() > 4)
+                subframes = info->at(4);
 
             pad_string(&tag, maxTagLength);
             pad_string(&calls, maxCallCountLength);
             pad_string(&time, maxTimeLength);
+            pad_string(&minMax, maxMinMaxLength);
 
-            xfprintf(out, "%s %s %s %s\n", tag.c_str(), calls.c_str(), time.c_str(), minMax.c_str());
+            xfprintf(out, "%s %s %s %s %s\n", tag.c_str(), calls.c_str(), time.c_str(), minMax.c_str(), subframes.c_str());
         }
 
-        xfclose( out );
+        xfclose(out);
 
+    }
+}
+
+void Profiler::setTimerSubframes(string tag, int n_subframes) {
+
+    map<string, Timer*>::const_iterator i = tag_map.find(tag);
+
+    if (i != tag_map.end() && i->second->tag() == tag) {
+        i->second->subframes(n_subframes);
+    }
+    else
+    {
+        ASSERT(false, "Wrong timer tag while setting timer subframes");
     }
 }
 
@@ -180,7 +202,9 @@ void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer,
         info->push_back(spaces + timer->tag());
         info->push_back(boost::str(boost::format("%i%s") % callCount % (callCountMin != callCountMax ? "*" : "")));
         info->push_back(boost::str(boost::format("%.2d") % (cumulTimeSum / numproc)));
-        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeMax > 0.01 ? cumulTimeMin / cumulTimeMax : 0)));
+        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeMax > 0.000001 ? cumulTimeMin / cumulTimeMax : 1)));
+        if (timer->subframes() >= 0)
+            info->push_back(boost::str(boost::format("%i") % timer->subframes()));
 
         timersInfo->push_back(info);
     }
@@ -281,6 +305,7 @@ Timer::Timer(string tag, Timer* parent) {
     start_time = 0;
     cumul_time = 0;
     count = 0;
+    sub_frames = -1;
 }
 
 void Timer::start(double time) {

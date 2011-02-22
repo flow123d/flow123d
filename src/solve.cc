@@ -41,6 +41,8 @@
 #include <solve.h>
 #include <la_linsys.hh>
 
+#include "profiler.hh"
+
 static void solver_set_type( struct Solver *solver );
 static void RunExtern( struct Solver *solver,char *cmdline,void (*write_sys)(struct Solver *), void (*read_sol)(struct Solver *) );
 static void clean_directory(void);
@@ -365,7 +367,7 @@ void solver_petsc(Solver *solver)
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);
-	xprintf(Msg,"Lin Solver: its: %d conv. reason: %i\n",nits,Reason);
+        Profiler::instance()->setTimerSubframes("SOLVING MH SYSTEM", nits);
 	KSPDestroy(System);
 }
 

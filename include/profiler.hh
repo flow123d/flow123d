@@ -88,6 +88,7 @@ private:
     double cumul_time;
     int count;
     int start_count;
+    int sub_frames;
     bool running;
     string timer_tag;
     Timer* parent_timer;
@@ -107,6 +108,14 @@ public:
      */
     int call_count() const {
         return count;
+    }
+
+    int subframes() const {
+        return sub_frames;
+    }
+
+    void subframes(int info) {
+        sub_frames = info;
     }
 
     /**
@@ -129,27 +138,29 @@ public:
     Timer* parent() {
         return parent_timer;
     }
-    
-    vector<Timer*>* child_timers_list(){
+
+    vector<Timer*>* child_timers_list() {
         return &child_timers;
     }
 
     ~Timer();
 };
 
-
 /**
  *
  * @brief Main class for profiling by measuring time intervals.
  *
- * These time intervals
- * form a tree structure. The root node of the tree is automatically created and started
- * after creating the Profiler object and cannot be stopped manually.
+ * These time intervals form a tree structure where each interval is represented 
+ * by a Timer object. The root node of the tree is automatically created and
+ * started after creating the Profiler object and cannot be stopped manually.
  *
- * The class implements a singleton pattern all all the functions are accessible trough
- * Profiler::instance().
- *
- *
+ * The class implements a singleton pattern and all the functions are accessible trough
+ * Profiler::instance(), but in most cases the programmer will access the profiler
+ * functions via the START_TIMER and END_TIMER macros. The START_TIMER macro
+ * is responsible for the fact that we don't have to call END_TIMER macro to stop the timer and
+ * the timer will be stopped at the end of the block in which START_TIMER was used.
+ * These macros internally use the TimerFrame objects and the programmer should
+ * not use the TimerFrame objects directly.
  */
 class Profiler {
 private:
@@ -179,8 +190,8 @@ private:
     Profiler & operator=(Profiler const&); // assignment operator is private
 
     /**
-     *  Pass thorugh the profiling tree (colective over processors)
-     *  Print cumulative times average, balace (max/min), count (denote diferences)
+     *  Pass through the profiling tree (collective over processors)
+     *  Print cumulative times average, balance (max/min), count (denote differences)
      *  Destroy all structures.
      */
     ~Profiler();
@@ -230,7 +241,21 @@ public:
      */
     void end(string tag = "");
 
+    /**
+     * Sets the size of the task. Will be written into output
+     *
+     * @param size - size of the task
+     */
     void set_task_size(int size);
+
+    /**
+     * Sets the number of subframes (eg. iterations) in which the current Timer is divided.
+     *
+     * @param tag - the tag of the currently running timer. If the tag doesn't match the currently
+     * running one, no subframes are set.
+     * @param n_subframes - the number of subframes
+     */
+    void setTimerSubframes(string tag, int n_subframes);
 };
 
 #define _PASTE(a,b) a ## b
@@ -245,6 +270,7 @@ public:
  */
 #define START_TIMER(tag) TimerFrame PASTE(timer_,__LINE__) = TimerFrame(tag)
 #define END_TIMER(tag) TimerFrame::endTimer(tag)          // only if you want end on diferent place then end of function
+#define SET_TIMER_SUBFRAMES(tag, subframes) Profiler::instance->setTimerSubframes(tag, info)
 
 /**
  *
@@ -280,7 +306,7 @@ public:
 
     /**
      * If not already closed, closes the TimerFrame object.
-     * Asks Prifler to end a timer with specified tag and changes the frames
+     * Asks Profler to end a timer with specified tag and changes the frames
      * map appropriately (if the TimerFrame object has a parent, associate hits parent
      * with the tag or if not, delete the tag from the map)
      */
