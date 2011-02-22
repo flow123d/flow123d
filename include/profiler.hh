@@ -140,8 +140,10 @@ public:
 
 /**
  *
- * @brief Main class for profiling by measuring time intervals. These time intervals
- * form a tree sturcture. The root node of the tree is automatically created and started
+ * @brief Main class for profiling by measuring time intervals.
+ *
+ * These time intervals
+ * form a tree structure. The root node of the tree is automatically created and started
  * after creating the Profiler object and cannot be stopped manually.
  *
  * The class implements a singleton pattern all all the functions are accessible trough
