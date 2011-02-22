@@ -27,5 +27,5 @@
 #EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
 
 touch lock
-$MPI_RUN -np $NPROC $EXECUTABLE -s $INI $FLOW_PARAMS 2>err 1>out
+"$MPI_RUN" -np "$NPROC" "$EXECUTABLE" -s "$INI" "$FLOW_PARAMS" 2>err 1>out
 rm lock
