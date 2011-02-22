@@ -96,8 +96,6 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
    char vystupni_soubor[] = "vystup.txt";
    double pomoc, n;
    bool porTyp; 
-   //double ***concentracion = problem->transport->pconc;
-   //double **concentracion;
    //==================================================================
    // ----------- ALOKACE POLE PRO KONCENTRACE Z FLOWA ----------------
    //==================================================================   
@@ -109,11 +107,10 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
 
    porTyp = problem->transport->dual_porosity;  
 
-   //for(poradi = 0; poradi < (n_elements); poradi++){ //bezi pres celou funkci
    FOR_ELEMENTS(ppelm){
    poradi = ELEMENT_FULL_ITER(ppelm) - mesh->element.begin();
-   //elm_id = mesh->epos_id[poradi]; 
-   //ppelm = &mesh->element[elm_id];
+   //	elm_id = mesh->epos_id[poradi];
+   //	ppelm = &mesh->element[elm_id];
    xprintf(Msg,"\n!!!! TRANSPORT %d!!!!\n",problem->transport);
    xprintf(Msg,"\nmolarni hmotnost: %f, latka %d, poradi %d\n",P_lat[0].M,0,poradi);
 
