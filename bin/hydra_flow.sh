@@ -40,10 +40,16 @@ echo "
 #EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
 #NSLOTS is qsub variable and depends on NPROC
  
-touch lock
 export OMPI_MCA_plm_rsh_disable_qrsh=1
-$MPI_RUN $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
+$MPI_RUN -np $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
 rm lock" >hydra_flow.qsub
 
+if test -e ./lock 
+then
+  echo "Error: the working directory is locked by onother PBS job!"
+  exit 1
+else
+  touch lock
+fi
 chmod u+x hydra_flow.qsub
 qsub -pe orte $NPROC hydra_flow.qsub
