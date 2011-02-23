@@ -11,13 +11,13 @@
 #define immobile 1
 #endif
 //---------------------------------------------------------------------------
-#ifndef mobile_sorb
-#define mobile_sorb 2
-#endif
+//#ifndef mobile_sorb
+//#define mobile_sorb 2
+//#endif
 //---------------------------------------------------------------------------
-#ifndef immobile_sorb
-#define immobile_sorb 3
-#endif
+//#ifndef immobile_sorb
+//#define immobile_sorb 3
+//#endif
 //---------------------------------------------------------------------------
 
 #include <stdio.h>

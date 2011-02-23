@@ -26,7 +26,7 @@ void che_vypis_soubor(char *soubor)
  	   fprintf (fw, "\nmolalita rozpustene %d. latky: %f", i, P_lat[i].m);
     for (i=0; i<G_prm.pocet_latekvefazi; i++)
 //  	   fprintf (fw, "\nmolalita sorbovane  %s : %f", P_lat[i].nazev, P_lat[i].m_sorb);
- 	   fprintf (fw, "\nmolalita sorbovane  %d. latky: %f", i, P_lat[i].m_sorb);
+// 	   fprintf (fw, "\nmolalita sorbovane  %d. latky: %f", i, P_lat[i].m_sorb);
    fclose(fw);
 }
 
@@ -39,7 +39,7 @@ void che_vypis__soubor(char *soubor)
    for (i=0; i<G_prm.pocet_latekvefazi; i++)
 	   fprintf (fw,"\t%f", P_lat[i].m);
    for (i=0; i<G_prm.pocet_latekvefazi; i++)
-	   fprintf (fw,"\t%f", P_lat[i].m_sorb);
+//	   fprintf (fw,"\t%f", P_lat[i].m_sorb);
    fprintf(fw,"\t%f",G_prm.objem);
    fclose(fw);
 }
@@ -52,8 +52,8 @@ void che_outpocp_soubor(FILE *fw)
     for (i=0; i<G_prm.pocet_latekvefazi; i++)
 //  	   fprintf (fw, "\npocatecni molalita rozpustene %s : %f", P_lat[i].nazev, P_lat[i].m0);
  	   fprintf (fw, "\npocatecni molalita rozpustene %d. latky: %f", i, P_lat[i].m0);
-    for (i=0; i<G_prm.pocet_latekvefazi; i++)
- 	   fprintf (fw, "\npocatecni molalita sorbovane  %d. latky: %f", i, P_lat[i].m0_sorb);
+    /*for (i=0; i<G_prm.pocet_latekvefazi; i++)
+ 	   fprintf (fw, "\npocatecni molalita sorbovane  %d. latky: %f", i, P_lat[i].m0_sorb);*/
 }
 
 void che_outpocp__soubor(FILE *fw)
@@ -63,7 +63,7 @@ void che_outpocp__soubor(FILE *fw)
    for (i=0; i<G_prm.pocet_latekvefazi; i++)
 	   fprintf (fw,"\t%f", P_lat[i].m0);
    for (i=0; i<G_prm.pocet_latekvefazi; i++)
-	   fprintf (fw,"\t%f", P_lat[i].m0_sorb);
+//	   fprintf (fw,"\t%f", P_lat[i].m0_sorb);
    fprintf(fw,"\t%f",G_prm.objem);
 }
 
@@ -1413,7 +1413,7 @@ void che_presun_poc_p_(void)
    for (i=0; i<G_prm.pocet_latekvefazi; i++)
    {
 	   P_lat[i].m0=P_lat[i].m;
-	   P_lat[i].m0_sorb=P_lat[i].m_sorb;
+//	   P_lat[i].m0_sorb=P_lat[i].m_sorb;
    }
 }
 
@@ -2206,10 +2206,10 @@ void che_rovnovazne_sorpce (char *soubor)
    if (G_prm.vypisy>4) xprintf(Msg,"\nche_sorpce: ");
    for (j=0; j<G_prm.pocet_latekvefazi; j++)
    {
-      P_lat[j].m_sorb = P_lat[j].m0_sorb;
+//      P_lat[j].m_sorb = P_lat[j].m0_sorb;
 //printf("\nTyp sorpce je %ld",P_lat[j].typ_sorpce);
       if (P_lat[j].typ_sorpce == 0) continue;
-      celk_lat_mnoz=P_lat[j].m0_sorb*G_prm.splocha+P_lat[j].m*G_prm.objem;
+      celk_lat_mnoz= P_lat[j].m*G_prm.objem; //P_lat[j].m0_sorb*G_prm.splocha+
       if (celk_lat_mnoz > 1e-16)
       {
          switch (P_lat[j].typ_sorpce)
@@ -2274,8 +2274,8 @@ void che_rovnovazne_sorpce (char *soubor)
       {
 	      P_lat[j].m = 0.0;
       }
-      P_lat[j].m_sorb = (celk_lat_mnoz-P_lat[j].m*G_prm.objem)/G_prm.splocha;
-      P_lat[j].m0_sorb = P_lat[j].m_sorb;
+//      P_lat[j].m_sorb = (celk_lat_mnoz-P_lat[j].m*G_prm.objem)/G_prm.splocha;
+//      P_lat[j].m0_sorb = P_lat[j].m_sorb;
       P_lat[j].m0 = P_lat[j].m;
    }
    fclose (fw);
@@ -2401,10 +2401,10 @@ void che_nadpis__soubor(char *soubor)
    {
  		fprintf (fw,"\t%d. latka(rozp.)", i);
    }
-   for (i=0; i<G_prm.pocet_latekvefazi; i++)
+   /*for (i=0; i<G_prm.pocet_latekvefazi; i++)
    {
  		fprintf (fw,"\t%d. latka(sorb.)", i);
-   }
+   }*/
    fprintf(fw,"\tobjem");
 	fprintf (fw,"\n0\t0.0");
    che_outpocp__soubor(fw);

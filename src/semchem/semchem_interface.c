@@ -8,10 +8,10 @@
 #include <petscvec.h>
 #include "materials.hh"
 #include "transport.h"
-#include "mesh.h"
+//#include "mesh.h"
 #include "problem.h"
 #include "system.hh"
-#include "mesh/ini_constants_mesh.hh"
+//#include "mesh/ini_constants_mesh.hh"
 #include "constantdb.h"
 //#include "mesh_types.hh"
 
@@ -36,8 +36,6 @@ void priprav(void){
   FILE *fw_chem;
 
   fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
-  //strcpy(G_prm.jmeno_ich, jmeno);
-  //xprintf(Msg,"input file name %s",G_prm.jmeno_ich);
   ctiich();
   return;
 }
@@ -47,34 +45,28 @@ void priprav(void){
 //---------------------------------------------------------------------------
 //void che_vypocetchemie(struct Problem *problem, Vec *conc_mob_arr, Vec *conc_immob_arr, Vec *sorb_mob_arr, Vec *sorb_immob_arr)
 //void che_vypocetchemie(struct Problem *problem, PetscScalar **conc_mob_arr, PetscScalar **conc_immob_arr, PetscScalar **sorb_mob_arr, PetscScalar **sorb_immob_arr)
-void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **conc_immob_arr, double **sorb_mob_arr, double **sorb_immob_arr)
+void che_vypocetchemie(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
 {
-   Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+   //Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
   
-   ElementIter ppelm;
+   //ElementIter ppelm;
    FILE *fw, *stream, *fr;
-   int i, j, poradi; //, elm_id;
+   int i, j; //, poradi;
    int krok;
    int poc_krok;
-   int n_elements = mesh->n_elements();
    double celkova_molalita;
    char vystupni_soubor[] = "vystup.txt";
    double pomoc, n;
-   bool porTyp; 
    //==================================================================
    // ----------- ALOKACE POLE PRO KONCENTRACE Z FLOWA ----------------
    //==================================================================
 
    ASSERT(P_lat != NULL,"\nP_lat NENI ALOKOVANE\n");
 
-   porTyp = problem->transport->dual_porosity;  
-
-   FOR_ELEMENTS(ppelm){
-   poradi = ELEMENT_FULL_ITER(ppelm) - mesh->element.begin();
-   //	elm_id = mesh->epos_id[poradi];
-   //	ppelm = &mesh->element[elm_id];
-   xprintf(Msg,"\n!!!! TRANSPORT %d!!!!\n",problem->transport);
-   xprintf(Msg,"\nmolarni hmotnost: %f, latka %d, poradi %d\n",P_lat[0].M,0,poradi);
+   //FOR_ELEMENTS(ppelm){
+   //poradi = ELEMENT_FULL_ITER(ppelm) - mesh->element.begin();
+   //xprintf(Msg,"\n!!!! TRANSPORT %d!!!!\n",problem->transport);
+   //xprintf(Msg,"\nmolarni hmotnost: %f, latka %d, poradi %d\n",P_lat[0].M,0,poradi);
 
    //==================================================================
    // ----------------- NEJPRVE PRO MOBILNI PORY ----------------------
@@ -97,25 +89,25 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
     //------------PREDANI VSECH INFORMACI Z FLOWA DO SEMCHEMU----------
    for ( i=0 ; i<(G_prm.pocet_latekvefazi); i++)
    {
-	 xprintf(Msg,"\nmolarni hmotnost: %f, latka %d, poradi %d, koncentrace z flowa %f,\n",P_lat[i].M,i,poradi,problem->transport->pconc[mobile][i][poradi]);
+	 //xprintf(Msg,"\nmolarni hmotnost: %f, latka %d, poradi %d, koncentrace z flowa %f,\n",P_lat[i].M,i,poradi,problem->transport->pconc[mobile][i][poradi]);
 	 P_lat[i].m0 = (double)((conc_mob_arr[i][poradi])) / (P_lat[i].M);
-	 if ((problem->transport->sorption == true))
+	 /*if ((problem->transport->sorption == true))
 	 {
 		 P_lat[i].m0_sorb = (double)((sorb_mob_arr[i][poradi]) / (P_lat[i].M));
 	 }
 	 else
 	 {
 		 P_lat[i].m0_sorb = 0.0;
-	 }
-	 xprintf(Msg,"\n %d POCATECNI KONCENTRACE transport->pconc[mobile][%d][%d]: %f, %f, sorbovane %f \n nejen G_prm.objem: %f, %f, %f\n",poradi,i,poradi,conc_mob_arr[i][poradi],P_lat[i].m0,P_lat[i].m0_sorb,ppelm->volume,pomoc,G_prm.objem);
+	 }*/
+	 //xprintf(Msg,"\n %d POCATECNI KONCENTRACE transport->pconc[mobile][%d][%d]: %f, %f, sorbovane %f \n nejen G_prm.objem: %f, %f, %f\n",poradi,i,poradi,conc_mob_arr[i][poradi],P_lat[i].m0,P_lat[i].m0_sorb,ppelm->volume,pomoc,G_prm.objem);
 	 if (G_prm.vypisy>1)
 	 {
-	  xprintf(Msg,"\n slozka %d, mol. hmotnost %f, jednotka g/l, z transportu rslo %f, v chemii molalita %f\n", i, P_lat[i].M, problem->transport->pconc[mobile][i][poradi], P_lat[i].m0);
+	  //xprintf(Msg,"\n slozka %d, mol. hmotnost %f, jednotka g/l, z transportu rslo %f, v chemii molalita %f\n", i, P_lat[i].M, problem->transport->pconc[mobile][i][poradi], P_lat[i].m0);
 	 }
 	 celkova_molalita += (P_lat[i].m0);
    }
    xprintf(Msg,"\nCelkova molalita: %f\n",celkova_molalita);   
-   G_prm.deltaT = problem->transport->time_step / G_prm.cas_kroku; // dosazeni "spravneho" casoveho kroku
+   G_prm.deltaT = time_step; // dosazeni "spravneho" casoveho kroku
 
     //-----------------------VYPOCET CHEMIE----------------------------
    if (celkova_molalita > 1e-16)
@@ -123,7 +115,7 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
 	  if (G_prm.vypisy==1)
 	  {
 		fw = fopen(vystupni_soubor, "a");
-		fprintf(fw,"\nie = %d, dt = %lf\n", poradi, problem->transport->time_step);
+		fprintf(fw,"\nie = %d, dt = %lf\n", poradi, time_step);
 		fclose(fw);
 		che_nadpis__soubor(vystupni_soubor);
 	  }
@@ -148,7 +140,7 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
 		 che_pocitej_soubor(vystupni_soubor, &poc_krok);
 		 for (i = 0; i < G_prm.pocet_latekvefazi; i++) {
 		   P_lat[i].m0 = P_lat[i].m;
-		   if(problem->transport->sorption == true) P_lat[i].m0_sorb = P_lat[i].m_sorb;
+		   //if(problem->transport->sorption == true) P_lat[i].m0_sorb = P_lat[i].m_sorb;
 		 }
 		 if (G_prm.vypisy>1)
 		 {
@@ -165,10 +157,10 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
 	  for ( i=0 ; i<G_prm.pocet_latekvefazi; i++)
 	  {
 			conc_mob_arr[i][poradi] = (double)(P_lat[i].m0 * P_lat[i].M);
-			if (problem->transport->sorption == true)
+			/*if (problem->transport->sorption == true)
 			{
 			   sorb_mob_arr[i][poradi] = (double)(P_lat[i].m0_sorb * (P_lat[i].M ));
-			}
+			}*/
 	  }
 	}
    xprintf(Msg,"\n chemie je v pulce\n");
@@ -194,10 +186,10 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
    {
 		 P_lat[i].m0 = (double)(conc_immob_arr[i][poradi] / P_lat[i].M);
 
-		 if(problem->transport->sorption == true)
+		 /*if(problem->transport->sorption == true)
 		 {
 			 P_lat[i].m0_sorb = (sorb_immob_arr[i][poradi] / P_lat[i].M);
-		 }
+		 }*/
 	  celkova_molalita += P_lat[i].m0;
    }
 
@@ -226,17 +218,17 @@ void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **
 	  for ( i=0 ; i<G_prm.pocet_latekvefazi ; i++)
 	  {
 			conc_immob_arr[i][poradi] = (P_lat[i].m0 * P_lat[i].M); //m nebo m0, co?
-			if(problem->transport->sorption == true)
+			/*if(problem->transport->sorption == true)
 			{
 			  sorb_immob_arr[i][poradi] == P_lat[i].m0 * P_lat[i].M;
-			}
-	  xprintf(Msg,"\n transport->conc[immobile][i][%d]: %f \n",i,problem->transport->conc[immobile][i][poradi]);
+			}*/
+	  //xprintf(Msg,"\n transport->conc[immobile][i][%d]: %f \n",i,problem->transport->conc[immobile][i][poradi]);
 	  }
       }
     }else{
 	  xprintf(Msg,"\n chemie pro imobilni: po:ry se nepocita\n");
     }
-   } //closing bracket for the loop FOR_ELEMENTS
+   //} //closing bracket for the loop FOR_ELEMENTS
    xprintf(Msg,"\n skoncila chemie\n");
 }
 

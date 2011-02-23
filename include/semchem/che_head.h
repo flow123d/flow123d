@@ -53,9 +53,9 @@ struct TS_lat //typedef struct
 {
 	  char nazev[ 80 ];      /* Jmeno latky */
 	  double m0;        /* pocatecni molalita *///long double
-	  double m0_sorb;   /* pocatecni obsah sorbovany *///long double
+//	  double m0_sorb;   /* pocatecni obsah sorbovany *///long double
 	   double m;         /* konecna molalita *///long double
-	   double m_sorb;    /* konecny obsah sorbovany *///long double
+//	   double m_sorb;    /* konecny obsah sorbovany *///long double
 	   double M;	        /* molarni hmotnost *///long double
 	   double dGf;       /* prispevek ke Gibbsove energii *///long double
 	   double dHf;       /* prispevek k entalpii *///long double
@@ -80,6 +80,7 @@ struct TS_che //typedef struct
 //---------------------------------------------------------------------------
 void che_nactenichemie( void );	     /* funkce nacteni chemie */
 void ctiich (void); /*pomocna funkce nacteni chemie*/
-void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **conc_immob_arr, double **sorb_mob_arr, double **sorb_immob_arr);
+//void che_vypocetchemie(struct Problem *problem, double **conc_mob_arr, double **conc_immob_arr, double **sorb_mob_arr, double **sorb_immob_arr);
+void che_vypocetchemie(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr);
 void che_uvolneni_P( void ); /* funkce na uvolneni pameti */
 

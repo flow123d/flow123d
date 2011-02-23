@@ -1016,19 +1016,12 @@ void convection(struct Transport *trans) {
 //======================================
     if(problem->semchemie_on == true){
       if(t == 1){ //initial value of t == 1 & it is incremented at the beginning of the cycle
-//    	  xprintf(Msg,"\nTRALALALA %s\n",problem->ini->ini_file);
     	  priprav();
-
-    	  /*char *jmeno = new char[sizeof(*problem->ini->ini_file)/sizeof(char) + 1];
-    	  strcpy(jmeno,problem->ini->ini_file); //ini_fname.c_str());
-    	  xprintf(Msg, "\ninput filename is: %s\n",jmeno);
-    	  priprav(jmeno); //priprav(ini_fname);
-    	  free(jmeno);
-    	  jmeno = NULL;*/
       }
-      //for (int loc_el = 0; loc_el < trans->el_ds->lsize(); loc_el++) {
-    	  che_vypocetchemie(problem, conc[MOBILE], conc[IMMOBILE], conc[MOBILE_SORB], conc[IMMOBILE_SORB]);
-      //}// for cycle running over elements
+      for (int loc_el = 0; loc_el < trans->el_ds->lsize(); loc_el++) {
+    	  //xprintf(Msg,"\nKrok %f\n",trans->time_step);
+    	  che_vypocetchemie(trans->dual_porosity, trans->time_step, mesh->element(trans->el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
+      }// for cycle running over elements
     }
 //======================================    
      //   save_step == step;

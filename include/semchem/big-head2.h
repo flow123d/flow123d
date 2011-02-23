@@ -224,7 +224,7 @@ struct S_glp
    BOOL     sw_kapalna;             /* Pocita se s KAPALNOU fazi    */
    BOOL     sw_pevna;               /* Pocita se s PEVNOU fazi      */
    BOOL     sw_plyn;                /* Pocita se s PLYNNOU fazi     */
-   BOOL     sw_sorpce;              /* Pocita se s SORBOVANOU fazi  */
+//   BOOL     sw_sorpce;              /* Pocita se s SORBOVANOU fazi  */
    BOOL     sw_redox;               /* Pocita se s REDOX fazi       */
    BOOL     sw_radio;               /* Pocita se s RADIO fazi       */
    BOOL     sw_vlastnosti;          /* Pocita se s VLASTNOSTMI      */
@@ -295,13 +295,13 @@ struct S_elm                       // element
     TChemieElementuD    *Chem;
     double      *vslo;             /* slozky vlastnost              */
     double      *hslo;             /* koncentrace slozek horniny    */
-    double      *sslo;             /* koncentrace slozek sorbovano  */
+//    double      *sslo;             /* koncentrace slozek sorbovano  */
     double      *pslo;             /* koncentrace slozek plynny     */
  #ifdef SKUPINA_DUALPOROSITY
     TChemieElementuD    *Chem_por;
     double      *vslo_por;    /* slozky porove vlastnost  */
     double      *hslo_por;    /* koncentrace slozek porove horniny   */
-    double      *sslo_por;    /* koncentrace slozek porove sorbovano */
+//    double      *sslo_por;    /* koncentrace slozek porove sorbovano */
     double      *pslo_por;    /* koncentrace slozek porove plynny    */
  #endif // SKUPINA_DUALPOROSITY
 #endif // SKUPINA_CHEMIE
@@ -309,12 +309,12 @@ struct S_elm                       // element
 #ifdef SKUPINA_REAKCE
     double      sorpcni_plocha;    /* sorpcni plocha ELM poru       */
     double      *hslo;             /* koncentrace slozek horniny    */
-    double      *sslo;             /* koncentrace slozek sorbovano  */
+//    double      *sslo;             /* koncentrace slozek sorbovano  */
     double      *pslo;             /* koncentrace slozek plynny     */
  #ifdef SKUPINA_DUALPOROSITY
     double      sorpcni_plocha_por; /* sorpcni plocha ELM porove horniny*/
     double      *hslo_por;    /* koncentrace slozek porove horniny   */
-    double      *sslo_por;    /* koncentrace slozek porove sorbovano */
+//    double      *sslo_por;    /* koncentrace slozek porove sorbovano */
     double      *pslo_por;    /* koncentrace slozek porove plynny    */
  #endif // SKUPINA_DUALPOROSITY
 #endif // SKUPINA_REAKCE
