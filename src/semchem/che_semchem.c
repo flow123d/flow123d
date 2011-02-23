@@ -2423,7 +2423,7 @@ void che_vypis_prm_lat_che ( void )
    int i = 0;
    int j = 0;
    xprintf(Msg,"\nPRM: ");
-   xprintf(Msg,"%s %d %d %d %d ", G_prm.jmeno_ich, G_prm.pocet_latek,G_prm.pocet_latekvefazi,G_prm.celkovy_pocet_reakci,G_prm.pocet_reakci_pro_matici);
+   xprintf(Msg,"%d %d %d %d ", G_prm.pocet_latek,G_prm.pocet_latekvefazi,G_prm.celkovy_pocet_reakci,G_prm.pocet_reakci_pro_matici);
    xprintf(Msg,"%f %f %f %f %f %f ",G_prm.T,G_prm.Afi,G_prm.b,G_prm.epsilon,G_prm.omega,G_prm.deltaT);
    xprintf(Msg,"%d %d",G_prm.cas_kroku,G_prm.vypisy);
 

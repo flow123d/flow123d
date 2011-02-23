@@ -31,6 +31,12 @@ void ctiich_obecne( void )
 	char  buffer[ 1024 ];
 	char *pString;
 
+	G_prm.pocet_latekvefazi = OptGetInt("Transport", "N_substances", NULL );
+	if (G_prm.pocet_latekvefazi < 1){
+	  xprintf(Msg,"\nNumber of aqueous species must be higher then 1.");
+	  exit(133);
+	}
+/*------------------------------------------------------------------*/
 	G_prm.T = OptGetDbl(section,"Temperature","0.0");
 	//GetPrivateProfileString( (jmeno_sekce), "Teplota", "0.0", buffer, 1024, G_prm.jmeno_ich );
 	//G_prm.T = atol( buffer );

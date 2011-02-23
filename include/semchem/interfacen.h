@@ -26,7 +26,7 @@
 #include "che_head.h"
 void print_usage(void);
 void kontrola(void);
-void priprav(char *jmeno);
+void priprav(void);
 
 //--------------pro semchem--------------------------------------------------
 void che_nadpis__soubor(char *soubor);

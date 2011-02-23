@@ -60,6 +60,7 @@
 #include "sparse_graph.hh"
 #include "profiler.hh"
 #include "semchem/interfacen.h"
+#include <string.h>
 
 //void init_transport_vectors_mpi(struct Transport *transport);
 
@@ -931,7 +932,7 @@ void convection(struct Transport *trans) {
     int steps, step, save_step, frame = 0;
     register int t;
   int n_subst,sbi,elm_pos,rank,i,size;
-  FILE *fw_chem; //clean the output file for chemistry
+  //FILE *fw_chem; //clean the output file for chemistry
     struct Problem *problem = trans->problem;
     struct TMatrix *tmatrix = problem->transport->tmatrix;
     double ***pconc;
@@ -977,7 +978,7 @@ void convection(struct Transport *trans) {
 
 
     step=0;
-  fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
+  //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
     for (t = 1; t <= steps; t++) {
         step++;
         for (sbi = 0; sbi < n_subst; sbi++) {
@@ -1014,9 +1015,20 @@ void convection(struct Transport *trans) {
 //              CHEMISTRY
 //======================================
     if(problem->semchemie_on == true){
+      if(t == 1){ //initial value of t == 1 & it is incremented at the beginning of the cycle
+//    	  xprintf(Msg,"\nTRALALALA %s\n",problem->ini->ini_file);
+    	  priprav();
 
-      che_vypocetchemie(problem, conc[MOBILE], conc[IMMOBILE], conc[MOBILE_SORB], conc[IMMOBILE_SORB]);
-      //printf("\nCHEMISTRY HAS BEEN CALLED\n");
+    	  /*char *jmeno = new char[sizeof(*problem->ini->ini_file)/sizeof(char) + 1];
+    	  strcpy(jmeno,problem->ini->ini_file); //ini_fname.c_str());
+    	  xprintf(Msg, "\ninput filename is: %s\n",jmeno);
+    	  priprav(jmeno); //priprav(ini_fname);
+    	  free(jmeno);
+    	  jmeno = NULL;*/
+      }
+      //for (int loc_el = 0; loc_el < trans->el_ds->lsize(); loc_el++) {
+    	  che_vypocetchemie(problem, conc[MOBILE], conc[IMMOBILE], conc[MOBILE_SORB], conc[IMMOBILE_SORB]);
+      //}// for cycle running over elements
     }
 //======================================    
      //   save_step == step;
