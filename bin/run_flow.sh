@@ -22,10 +22,13 @@
 # $LastChangedDate$
 #
 
-#set -x
- 
-export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
-MACHINE_SCRIPT="$SCRIPT_PATH_DIR/current_flow"
+#check if script is called with relative or absolute path
+if [ ! "${0%%[^/]*}" == "" ]; then
+	SCRIPT_PATH_DIR="${0%/*}"
+else	
+	SCRIPT_PATH_DIR="`pwd`/${0%/*}"
+fi	
+MACHINE_SCRIPT=$SCRIPT_PATH_DIR/current_flow
 NPROC=1
 # passing arguments
 while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]
@@ -42,8 +45,8 @@ do
     QueueTime=$1
   elif [ "$1" == "-m" ]; then
     shift
-	if [ -e "$SCRIPT_PATH_DIR/${1}_flow.sh" ]; then
-		MACHINE_SCRIPT="$SCRIPT_PATH_DIR/${1}_flow.sh"
+	if [ -e $SCRIPT_PATH_DIR/${1}_flow.sh ]; then
+		MACHINE_SCRIPT=$SCRIPT_PATH_DIR/${1}_flow.sh
 	else
 		echo "ERROR: Missing MACHINE script, using default."
 	fi
@@ -63,9 +66,9 @@ done
 
 FLOW_PARAMS="$@"
 
-if [ -z "$INI_FILE" ] 
+if [ -z $INI_FILE ] 
 then
-  echo "Error ..."
+  echo "Error: No ini file!"
   exit 1
 fi
 
@@ -74,7 +77,6 @@ if [ "${INI_FILE%%[^/]*}" == "" ]
 then 
   # relative path
   INI_FILE="/$INI_FILE"
-  echo "${INI_FILE%/*}"
   SOURCE_DIR="`pwd`/${INI_FILE%/*}"
 else
   #absolute path
@@ -92,16 +94,16 @@ fi
 # podobny problem muze byt se SOURCE_DIR
 #
 # TODO: presunout do bin skripty pro spouseni pod PBS
-export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
+#export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
 
 # path to MPIEXEC
-MPI_RUN="$SCRIPT_PATH_DIR/mpiexec"
+MPI_RUN=$SCRIPT_PATH_DIR/mpiexec
 
 #paths to dirs, relative to tests/$WRK
-if [ -e "$SCRIPT_PATH_DIR/flow123d.exe" ]; then
-	EXECUTABLE="$SCRIPT_PATH_DIR/flow123d.exe";
-elif [ -e "$SCRIPT_PATH_DIR/flow123d" ]; then
-	EXECUTABLE="$SCRIPT_PATH_DIR/flow123d";
+if [ -e $SCRIPT_PATH_DIR/flow123d.exe ]; then
+	EXECUTABLE=$SCRIPT_PATH_DIR/flow123d.exe;
+elif [ -e $SCRIPT_PATH_DIR/flow123d ]; then
+	EXECUTABLE=$SCRIPT_PATH_DIR/flow123d;
 else
 	echo "Error: missing executable file!"
 	exit 1
@@ -116,13 +118,13 @@ export INI
 export FLOW_PARAMS
 
 
-cd "$SOURCE_DIR"
+cd $SOURCE_DIR
 
 #run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
 
-if [ -e "$MPI_RUN" ]; then
+if [ -e $MPI_RUN ]; then
 	#$MPI_RUN -np $NPROC $EXECUTABLE -s $INI $FLOW_PARAMS 2>err 1>out
-	"$MACHINE_SCRIPT"
+	$MACHINE_SCRIPT
 else 
 	echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
 	exit 1
