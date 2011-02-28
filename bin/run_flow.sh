@@ -22,9 +22,12 @@
 # $LastChangedDate$
 #
 
-#set -x
- 
-export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
+#check if script is called with relative or absolute path
+if [ ! "${0%%[^/]*}" == "" ]; then
+	SCRIPT_PATH_DIR="${0%/*}"
+else	
+	SCRIPT_PATH_DIR="`pwd`/${0%/*}"
+fi	
 MACHINE_SCRIPT=$SCRIPT_PATH_DIR/current_flow
 NPROC=1
 # passing arguments
@@ -65,7 +68,7 @@ FLOW_PARAMS="$@"
 
 if [ -z $INI_FILE ] 
 then
-  echo "Error ..."
+  echo "Error: No ini file!"
   exit 1
 fi
 
@@ -74,7 +77,6 @@ if [ "${INI_FILE%%[^/]*}" == "" ]
 then 
   # relative path
   INI_FILE="/$INI_FILE"
-  echo ${INI_FILE%/*}
   SOURCE_DIR="`pwd`/${INI_FILE%/*}"
 else
   #absolute path
@@ -92,7 +94,7 @@ fi
 # podobny problem muze byt se SOURCE_DIR
 #
 # TODO: presunout do bin skripty pro spouseni pod PBS
-export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
+#export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
 
 # path to MPIEXEC
 MPI_RUN=$SCRIPT_PATH_DIR/mpiexec
