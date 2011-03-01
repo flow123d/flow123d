@@ -201,8 +201,8 @@ void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer,
         vector<string>* info = new vector<string > ();
         info->push_back(spaces + timer->tag());
         info->push_back(boost::str(boost::format("%i%s") % callCount % (callCountMin != callCountMax ? "*" : "")));
-        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeSum / numproc)));
-        info->push_back(boost::str(boost::format("%.2d") % (cumulTimeMax > 0.000001 ? cumulTimeMin / cumulTimeMax : 1)));
+        info->push_back(boost::str(boost::format("%.2f") % (cumulTimeSum / numproc)));
+        info->push_back(boost::str(boost::format("%.2f") % (cumulTimeMax > 0.000001 ? cumulTimeMin / cumulTimeMax : 1)));
         if (timer->subframes() >= 0)
             info->push_back(boost::str(boost::format("%i") % timer->subframes()));
 

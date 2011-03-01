@@ -14,13 +14,14 @@ import shutil
 import time
 import commands
 import re
+import fcntl
+import signal
 
 def main():
 
     #check if the argument were passed correctly
     try:
     	dir = sys.argv[1]
-        flowrun = sys.argv[2]
     except IndexError:
         sys.exit()
         pass
@@ -35,108 +36,57 @@ def main():
 
     measurements = 3
     proc = [1, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32]
-    qsubs = {}  #dictionary of created .qsub files and corresponding processor counts
-    qsubJobs = []  #list of job-IDs assigned by PBS
+    iniFiles = {}
 
     #create directory for each number of processors the task is about to run on
     for nproc in proc:
-        targetDir = os.path.join(newDir, str(nproc))
-        if os.path.exists(targetDir) == 0:
-            os.mkdir(targetDir)
+        measurement = 0
 
-        #copy files from the source directory to the newly created one
-        #also try to find either flow.ini or trans.ini file
-        iniFile = ""
-        fileNames = os.listdir(dir)
-        for fileName in fileNames:
-            filePath = os.path.join(dir, fileName)
+        while measurement < measurements:
+            measurement += 1
 
-            #copy everything except the .pos files
-            if os.path.isfile(filePath) and os.path.splitext(fileName)[1] != ".pos":
-                shutil.copy(filePath, targetDir)
+            targetDir = os.path.join(newDir, str(nproc)+"_"+str(measurement))
+            if os.path.exists(targetDir) == 0:
+                os.mkdir(targetDir)
 
-            if fileName == "flow.ini" or fileName == "trans.ini":
-                iniFile = os.path.join(targetDir, fileName)
+            #copy files from the source directory to the newly created one
+            #also try to find either flow.ini or trans.ini file
 
-        #create .qsub file
-        qsub = str(createQsub(newDir, flowrun, iniFile, nproc))
-        if len(qsub) > 0:
-            qsubs[qsub] = nproc
+            fileNames = os.listdir(dir)
+            for fileName in fileNames:
+                filePath = os.path.join(dir, fileName)
 
-    for i in range (measurements):
-        #submit all the .qsub files
-        for qsub in qsubs.iterkeys():
-            #for Hydra:
-            out = commands.getstatusoutput("qsub -e " + newDir + " -o " + newDir + " -pe orte " + str(qsubs[qsub]) + " " + qsub)
-            if out[0] == 0:   #no error
-                #for Hydra, we need to filter out the response got in the form 'Your job _number_ (_file_) has been submitted'
-                pattern = re.compile("Your job [0-9]+", re.IGNORECASE)
-                match = pattern.match(out[1])
-                if match:
-                    qsubJobs.append(match.group()[9:])
+                #copy everything except the .pos files
+                if os.path.isfile(filePath) and os.path.splitext(fileName)[1] != ".pos":
+                    shutil.copy(filePath, targetDir)
 
-            #for Rex:
-##            out = commands.getstatusoutput("qsub -e " + newDir + " -o " + newDir + " " + qsub)
-##            if out[0] == 0:   #no error
-##                qsubJobs.append(out[1])
+                if fileName == "flow.ini" or fileName == "trans.ini":
+                    iniFileFullPath = os.path.join(targetDir, fileName)
+                    iniFiles[iniFileFullPath] = nproc
 
+    #submit tasks
+    for iniFile in iniFiles.iterkeys():
+        os.system("./run_flow.sh -np " + str(iniFiles[iniFile]) + " -s " + iniFile + " -m hydra >> benchmark.log")
 
-    origList = list(qsubJobs)
+    completed = 0
 
-    while len(qsubJobs) > 0:
-        #every 5 minutes, ask the qstat for information about the jobs
-        time.sleep(300)
+    #wait until all the tasks are finished
+    while completed == 0:
+        time.sleep(60)
+        completed = 1
 
-        for jobId in origList:
-            out = commands.getstatusoutput("qstat -j " + str(jobId))
-            #determine if the job is running/waiting or it has already finished
-            if out[0] == 0:
-                if len(out[1]) < 100: #FIXME
-                    qsubJobs.remove(jobId)
+        for nproc in proc:
+            measurement = 0
+            while measurement < measurements:
+                measurement += 1
 
-    # all the jobs have been processed
-    if len(qsubJobs) == 0:
-        os.system("./make_report.py \"" + str(dir) + "\"")
+                targetDir = os.path.join(newDir, str(nproc)+"_"+str(measurement))
+                lockFile = os.path.join(targetDir, "lock")
+                if os.path.exists(lockFile) == 1:
+                    completed =0
 
-
-
-def createQsub(dir, flowrun, iniFile, nproc):
-    fileName = os.path.join(dir, "qsub" + str(nproc) + ".qsub")
-    try:
-        qsubFile = file(fileName, 'w')
-        targetDir = os.path.join(dir, str(nproc))
-
-        #for Hydra:
-        qsubFile.write("#!/bin/bash\n")
-        qsubFile.write("#$ -S /bin/bash\n")
-        qsubFile.write("export OMPI_MCA_plm_rsh_disable_qrsh=1\n")
-        qsubFile.write("\n")
-        qsubFile.write(flowrun + " $NSLOTS " + targetDir + " " + iniFile)
-
-        #for Rex:
-##        qsubFile.write("#PBS -S /bin/bash\n")
-##        qsubFile.write("#PBS -j oe\n")
-##        qsubFile.write("#PBS -N flow_" + str(nproc) + "\n")
-##        qsubFile.write("#PBS -m bae\n")
-##        qsubFile.write("#PBS -l walltime=10000\n")
-##        qsubFile.write("#PBS -l select=1:ncpus=" + str(nproc) + ":host=rex\n")
-##        qsubFile.write("#PBS -l place=free:shared\n")
-##        qsubFile.write("\n")
-##        qsubFile.write(". /opt/intel/Compiler/11.1/046/bin/iccvars.sh ia64\n")
-##        qsubFile.write(". /usr/share/modules/init/bash\n")
-##        qsubFile.write("module add mpt\n")
-##        qsubFile.write("export KMP_MONITOR_STACKSIZE=64K\n")
-##        qsubFile.write("\n")
-##        qsubFile.write(flowrun " " + str(nproc) + " " targetDir + " " + iniFile)
-
-        qsubFile.close()
-
-        return fileName
-    except IOError:
-        #do nothing
-        pass
-
-    return ""
+    os.system("./make_report.py \"" + str(newDir) + "\"")
+    sys.exit()
 
 if __name__ == '__main__':
     main()

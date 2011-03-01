@@ -24,26 +24,9 @@ def main():
     if os.path.exists(dir) == 0 or os.path.isdir(dir) == 0:
     	sys.exit("Specified directory doesn't exist")
 
-
-    #find the flow_run.sh script
-    flowrun = findFlowRun(dir)
-    if os.path.exists(flowrun) == 0 or os.path.isfile(flowrun) == 0:
-    	sys.exit("Cannot find the flow_run.sh file")
-
     print "Starting background process..."
 
-    subprocess.Popen([os.path.join(os.getcwd(), "run_back.py"), dir, flowrun])
-
-def findFlowRun(dir):
-    flowrun = os.path.join(dir, "flow_run.sh")
-    if os.path.exists(flowrun) and os.path.isfile(flowrun):
-        return flowrun
-    else:
-        parentDir = os.path.dirname(dir)
-        if os.path.exists(parentDir) and os.path.isdir(parentDir):
-            return findFlowRun(parentDir)
-        else:
-            return ""
+    subprocess.Popen([os.path.join(os.getcwd(), "run_back.py"), dir])
 
 
 if __name__ == '__main__':
