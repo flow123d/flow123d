@@ -50,9 +50,11 @@ clean:
 
 	
 %.tst:
-	@BASE=$*;\
-	dir="$${BASE}*";\
-	if [ -d "$${dir}" ];\
+	BASE=$*;\
+	echo "$(BASE)";\
+	dir=`echo $${BASE}*`;\
+	echo "$${dir}";\
+	echo if test -d "$${dir}" ;\
 	then make -C "$${dir}" test;\
 	else echo "missing test directory $${dir}";\
 	fi

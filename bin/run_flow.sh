@@ -84,17 +84,6 @@ else
 fi
 
 
-# set path to script dir + exports for make_pbs scripts
-
-
-# POZOR POZOR POZOR
-# TODO: co kdyz bude skript volan s absolutini cestou !!
-#  v nasledujici prom pak bude napr: /home/jan.brezina//home/jan.brezina/flow/bin
-# je potreba otestovat, ze $0 nema na zacatku '/'
-# podobny problem muze byt se SOURCE_DIR
-#
-# TODO: presunout do bin skripty pro spouseni pod PBS
-#export SCRIPT_PATH_DIR="`pwd`/${0%/*}" 
 
 # path to MPIEXEC
 MPI_RUN=$SCRIPT_PATH_DIR/mpiexec
