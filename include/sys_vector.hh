@@ -418,7 +418,6 @@ public:
      {
          map<int,unsigned int>::iterator iter = id_map.find(id);
          if ( iter == id_map.end() ) {
-             xprintf(Warn, "Can not find id number: %d\n",id);
              return FullIter(*this, this->storage.end());
          } else
              return FullIter(*this, this->storage.begin() + iter->second);

@@ -1,7 +1,6 @@
 //---------------------------------------------------------------------------
 #ifndef interfaceH
 #define interfaceH
-#endif
 //---------------------------------------------------------------------------
 #ifndef mobile
 #define mobile 0
@@ -42,3 +41,5 @@ void che_vypis__soubor(char *soubor);
 extern struct TS_prm	G_prm;
 extern struct TS_lat 	*P_lat;
 extern struct TS_che	*P_che;
+
+#endif
