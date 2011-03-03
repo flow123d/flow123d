@@ -44,7 +44,6 @@
 #include "la_schur.hh"
 #include "sparse_graph.hh"
 #include "field_p0.hh"
-#include "profiler.hh"
 #include "sides.h"
 #include "local_matrix.h"
 

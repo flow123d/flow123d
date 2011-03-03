@@ -89,13 +89,13 @@ MaterialDatabase::MaterialDatabase(const string &file_name)
 
     // read section with hydraulic conductivity tensor
     // create all new materials in the database
-    found=skip_to( fin, "$Materials");
-    INPUT_CHECK( found , "Can not find section: Materials.\n" );
+    found=skip_to( fin, "$ConductivityTensor");
+    INPUT_CHECK( found , "Can not find section: ConductivityTensor.\n" );
 
     xfgets( line, LINE_SIZE - 2, fin );
 
     int n_materials = atoi( xstrtok(line) );
-    INPUT_CHECK( n_materials >= 1 ,"Number of materials < 1 in section Materials\n");
+    INPUT_CHECK( n_materials >= 1 ,"Number of materials < 1 in section ConductivityTensor\n");
     this->reserve(n_materials);
 
     while( n_materials-- > 0 ) {
@@ -103,7 +103,7 @@ MaterialDatabase::MaterialDatabase(const string &file_name)
         parse_and_add_material_line( line );
     }
 
-    valid_sections["$Materials"]=this->size();
+    valid_sections["$ConductivityTensor"]=this->size();
     xprintf( MsgVerb, " %d materials readed. ", this->size() )/*orig verb 4*/;
     xprintf(Msg, "O.K.\n");
 

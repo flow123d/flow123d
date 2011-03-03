@@ -24,6 +24,9 @@
 
 # This script assumes that it is running in particular subdir of the "tests"
 # dir. 
+
+set -x
+
 TEST_DIR=`pwd`
 
 #name of ini file

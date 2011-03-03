@@ -22,12 +22,12 @@ The extension {\tt .MTR} is highly recomended for files of this type.
 \$MaterialFormat\\
   1.0 \vari{file-type} \vari{data-size}\\
 \$EndMaterialFormat\\
-\$Materials\\
+\$ConductivityTensor\\
   \vari{number-of-materials}\\
-  \vari{material-number} \vari{material-type} \vari{$<$material-type-specific-data$>$}
+  \vari{material-number} \vari{tensor-type} \vari{$<$tensor-type-specific-data$>$}
   \vari{[text]}\\
   \dots\\
-\$EndMaterials \\
+\$EndConductivityTensor \\
 \$Storativity \\
   \vari{material-number} \vari{$<$storativity-coefficient$>$}
   \vari{[text]}\\
@@ -74,9 +74,9 @@ where:
   ordered) way. Each number has to be given only onece, multiple definition
   are treated as inconsistency of the file and cause stopping the
   calculation (exception \$Sorption section).
- \ditem{material-type}{int} --- is type of the material, see table.
- \ditem{$<$material-type-specific-data $>$}{} --- format of this list depends on the
-  \vari{material~-~type}.
+ \ditem{tensor-type}{int} --- is type of the material, see table.
+ \ditem{$<$tensor-type-specific-data $>$}{} --- format of this list depends on the
+  \vari{tensor-type}.
  \ditem{$<$storativity-coefficient$>$}{double} --- coefficient of storativity  
  \ditem{geometry-type}{int} --- type of complement dimension parameter (only for 1D and 2D material), 
  for 1D element is supported type 1 - cross-section area, for 2D element is supported type 2
@@ -115,7 +115,7 @@ where:
 
     \begin{tabular}{|c|l|l|}
       \hline
-      \vari{material-type} & \vari{material-type-specific-data} & Description \\
+      \vari{tensor-type} & \vari{tensor-type-specific-data} & Description \\
       \hline
       \hline
       11 & $k$ & 

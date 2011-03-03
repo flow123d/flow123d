@@ -1,6 +1,13 @@
 Test problem 1
 ---------------------
+setting:
+- cube cutted by two diagonal 2d fractures which are furter separated by a 1D chanel in their crossection
+- boundary conditions: simple pressure gradient in direction form one corner of cube to the oposite corner
+  this is applied on all boundary faces of all dimensions
+
 verification of:
--flow
--multidimenzional connection (1D-2D,2D-3D,1D-3D)
--solver convergence
+- steady darcy flow solved by MH
+- flow multidimenzional connection (1D-2D,2D-3D)
+- calculation of schur complements
+- PETSC cg solver
+- parallel sover using PCASM - overlaping domain decomposition

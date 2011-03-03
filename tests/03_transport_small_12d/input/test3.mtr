@@ -1,11 +1,11 @@
 $MaterialFormat
 1.0	0	8
 $EndMaterialFormat
-$Materials
+$ConductivityTensor
 	2
 	17	11	10
 	18	21	1
-$EndMaterials
+$EndConductivityTensor
 $Storativity
 	17	s
 	18	s
