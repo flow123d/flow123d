@@ -36,8 +36,10 @@
 #include <time.h>
 #include <vector>
 #include <petsc.h>
+#include <string>
 
-#include "system.hh"
+using namespace std;
+
 
 class MPI_Functions {
 public:

@@ -44,7 +44,6 @@
 #include "read_ini.h"
 #include "problem.h"
 #include "xio.h"
-#include "profiler.hh"
 
 SystemInfo sys_info;
 

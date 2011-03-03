@@ -30,7 +30,7 @@
 
 #include <sys/param.h>
 
-#include "profiler.hh"
+#include "sys_profiler.hh"
 #include "system.hh"
 #include "system.hh"
 #include <xio.h>

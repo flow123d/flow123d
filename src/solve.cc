@@ -41,7 +41,7 @@
 #include <solve.h>
 #include <la_linsys.hh>
 
-#include "profiler.hh"
+//#include "profiler.hh"
 
 static void solver_set_type( struct Solver *solver );
 static void RunExtern( struct Solver *solver,char *cmdline,void (*write_sys)(struct Solver *), void (*read_sol)(struct Solver *) );
