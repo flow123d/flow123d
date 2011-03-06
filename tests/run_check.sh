@@ -43,7 +43,7 @@ SOURCE_DIR=${INI_FILE%/*}
 
 #number of processors
 
-SCRIPT_PATH_DIR=$PWD
+SCRIPT_PATH_DIR="$PWD"
 
 ERROR=0
 

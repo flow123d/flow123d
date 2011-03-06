@@ -1,5 +1,5 @@
 ***************************************************
-** System of automatic tests in flow123d*********
+** System of automatic tests in flow123d *********
 ***************************************************
 
 
@@ -27,12 +27,11 @@ To add new test, add dir with test into tests/ . You have to add makefile, if yo
 
 
 INI_FILES="flow.ini"	// name of ini file
-NPROC="1"	// number of procs
-TEST_DIR="01_steady_flow_123d"	// name of test dir
+NPROC="1"	// number(s) of procs
+FLOW_PARAMS=" -ksp_atol 1.0e-10 -ksp_rtol 1.0e-10 -ksp_monitor"	// aditional flow params
 
 test:
-	cd ..;\
-	./make_tests.sh ${INI_FILES} ${NPROC} ${TEST_DIR} 
+	../run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS} 
 
 
 You should also modify tests/makefile and add your tests to rule makeall.
@@ -44,25 +43,21 @@ You should also modify tests/makefile and add your tests to rule makeall.
 Where can I find outputs?***
 ****************************
 
-All outputs are located in tests/Results/{name_of_test}.{name_of_inifile}.{nprocs} directory. All flow123d outputs, logs are here. And also log from comparison ref output and computed output from ndiff.pl script.
+All outputs are located in tests/Results/{inifile_name}.{nprocs} directory. All flow123d outputs, logs are here. And also log from comparison ref output and computed output from ndiff.pl script.
 
 
 
 
 ***********************************
-How to use make_tests.sh script?***
+How to use run_test.sh script?***
 ***********************************
 
 You can also run tests without using makefile rules. Just run make_tests.sh script in tests/. Usage: 
 
-./make_tests.sh {name_of_inifile} {nprocs} {test_dir_name}
+./make_tests.sh {name_of_inifile} {nprocs} {flow_params}
 
 
 Outputs are located in same dir as if you run it through makefiles.
-
-To run script with comparison, you have to have ndiff.pl and Diff.pm files in same dir as script.
-
-
 
 
 If you have any other questions, email to: michal.nekvasil@tul.cz
