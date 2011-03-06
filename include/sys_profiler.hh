@@ -23,7 +23,6 @@
  * $LastChangedDate: 2011-01-08 18:58:15 +0100 (So, 08 led 2011) $
  *
  * @file
- * @brief ???
  *
  */
 
@@ -81,8 +80,8 @@ public:
     }
 };
 
-/*
- * Class for profiling tree nodes.
+/**
+ * @brief Class for profiling tree nodes.
  */
 class Timer {
 private:
@@ -158,11 +157,15 @@ public:
  *
  * The class implements a singleton pattern and all the functions are accessible trough
  * Profiler::instance(), but in most cases the programmer will access the profiler
- * functions via the START_TIMER and END_TIMER macros. The START_TIMER macro
- * is responsible for the fact that we don't have to call END_TIMER macro to stop the timer and
- * the timer will be stopped at the end of the block in which START_TIMER was used.
+ * functions via the #START_TIMER and #END_TIMER macros. The #START_TIMER macro
+ * is responsible for the fact that we don't have to call #END_TIMER macro to stop the timer and
+ * the timer will be stopped at the end of the block in which #START_TIMER was used.
  * These macros internally use the TimerFrame objects and the programmer should
  * not use the TimerFrame objects directly.
+ *
+ * By using #SET_TIMER_SUBFRAMES macro, the programmer can specify the number of subframes (eg. iterations)
+ * for the currently active timer.
+ *
  */
 class Profiler {
 private:
@@ -264,25 +267,40 @@ public:
 #define PASTE(a,b) _PASTE(a, b)
 
 /**
- * Starts a timer witch specified tag.
+ * \def START_TIMER(tag)
+ *
+ * Starts a timer with specified tag.
  *
  * In fact it creates an object named 'timer_' followed by the number of the line
  * where it has been used. This is done to avoid variable name conflicts when
  * using the macro more than once in one block of code.
  */
 #define START_TIMER(tag) TimerFrame PASTE(timer_,__LINE__) = TimerFrame(tag)
+
+/**
+ * \def END_TIMER(tag)
+ *
+ * Ends a timer with specified tag.
+ */
 #define END_TIMER(tag) TimerFrame::endTimer(tag)          // only if you want end on diferent place then end of function
+
+/**
+ * \def SET_TIMER_SUBFRAMES(tag, subframes)
+ *
+ * Sets specified amount of subframes (eg. iterations) for the given tag.
+ * The specified timer tag must represent the currently active timer.
+ */
 #define SET_TIMER_SUBFRAMES(tag, subframes) Profiler::instance->setTimerSubframes(tag, info)
 
 /**
  *
- * @brief Class for automatic timer closing. This class is used by START_TIMER macro
- * and is responsible for the fact that we don't have to call END_TIMER macro to stop the timer,
- * the timer will be stopped at the end of the block in which START_TIMER was used.
+ * @brief Class for automatic timer closing. This class is used by #START_TIMER macro
+ * and is responsible for the fact that we don't have to call #END_TIMER macro to stop the timer,
+ * the timer will be stopped at the end of the block in which #START_TIMER was used.
  * 
  * The main idea of the approach described is that the TimerFrame variable will be destroyed
- * at the end of the block where START_TIMER macro was used. In order to work properly
- * in situations where END_TIMER was used to stop the timer manually before (but there is still the
+ * at the end of the block where #START_TIMER macro was used. In order to work properly
+ * in situations where #END_TIMER was used to stop the timer manually before (but there is still the
  * variable which will be later destroyed), we have to store references to these variables and
  * destroy them on-demand.
  */
