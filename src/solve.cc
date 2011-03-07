@@ -350,7 +350,8 @@ void solver_petsc(Solver *solver)
 	PetscOptionsInsertString(petsc_str); // overwrites previous options values
 	xfree(petsc_str);
     
-    MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
+        MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
+
 
     //    xprintf(Msg,"View KSP system\n");
         //PetscViewerCreate(PETSC_COMM_WORLD,&mat_view);
@@ -367,8 +368,10 @@ void solver_petsc(Solver *solver)
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);
+	DBGMSG ("convergence reason %d, number of iterations is %d", Reason, nits);
         Profiler::instance()->setTimerSubframes("SOLVING MH SYSTEM", nits);
 	KSPDestroy(System);
+
 }
 
 //=============================================================================

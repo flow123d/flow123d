@@ -372,12 +372,14 @@ LinSys_MPIAIJ:: ~LinSys_MPIAIJ()
 
 //**********************************************************************************************
 
-LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int subdomain_size, int *global_row_4_sub_row, double *sol_array)
-: LinSys(vec_lsize, sol_array), subdomain_size(subdomain_size)
+LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int sz, int *global_row_4_sub_row, double *sol_array)
+: LinSys(vec_lsize, sol_array), subdomain_size(sz)
 {
     PetscErrorCode err;
 
     int i;
+
+    xprintf(Msg,"sub size %d \n",subdomain_size);
 
     // ulozit global_row_4_sub_row
     subdomain_indices = new int[subdomain_size];
@@ -411,6 +413,10 @@ void LinSys_MATIS::start_allocation()
 
      err = MatISGetLocalMat(matrix, &local_matrix);
      ASSERT(err == 0,"Error in MatISGetLocalMat.");
+
+     // extract scatter
+     Mat_IS *mis = (Mat_IS*) matrix->data;
+     sub_scatter = mis->ctx;
 
      subdomain_nz= new int[subdomain_size];      // count local nozero for every row of subdomain matrix
      SET_ARRAY_ZERO(subdomain_nz,subdomain_size); // set zeros to the array

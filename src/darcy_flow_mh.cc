@@ -126,11 +126,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh *mesh_in, MaterialDatabase *mat_base
 
     prepare_parallel();
 
-    // debug
-    //fflush(stdout);
-    //MPI_Barrier(PETSC_COMM_WORLD);
-    //exit(0);
-
     //side_ds->view();
     //el_ds->view();
     //edge_ds->view();
@@ -170,6 +165,11 @@ void DarcyFlowMH_Steady::compute_one_step() {
 
         mat_count_off_proc_values(schur2->get_system()->get_matrix(),schur2->get_system()->get_solution());
         solve_system(solver, schur2->get_system());
+
+
+	cout << "Stopped intentionally" << endl;
+	abort();
+
         schur2->resolve();
         schur1->resolve();
         break;
@@ -253,7 +253,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly() {
     int i, i_loc, nsides, li, si;
     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
     double f_val;
-    double zeros[1000]; // to make space for second schur complement, max. 10 neigbour edges of one el.
+    double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     F_ENTRY;
 
@@ -427,7 +427,14 @@ void DarcyFlowMH_Steady::make_schur0() {
     schur0->start_add_assembly(); // finish allocation and create matrix
     mh_abstract_assembly(); // fill matrix
     schur0->finalize();
+
     //schur0->view_local_matrix();
+    PetscViewer myViewer;
+    PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matis.m",&myViewer);
+    PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+    MatView( schur0->get_matrix( ), myViewer );
+    PetscViewerDestroy(myViewer);
+
 
 
     // add time term
@@ -467,12 +474,44 @@ void DarcyFlowMH_Steady::make_schur1() {
     // check type of LinSys
     if      (schur0->type == LinSys::MAT_IS)
     {
-       // vytvorit mapping v PETSc z global_row_4_sub_row
+       // create mapping for PETSc
        err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, side_ds->lsize(), side_id_4_loc, &map_side_local_to_global);
        ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
        err = MatCreateIS(PETSC_COMM_WORLD,  side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA);
        ASSERT(err == 0,"Error in MatCreateIS.");
+
+       MatSetOption(IA, MAT_SYMMETRIC, PETSC_TRUE);
+
+       for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+           ele = mesh->element(el_4_loc[i_loc]);
+           el_row = row_4_el[el_4_loc[i_loc]];
+           nsides = ele->n_sides;
+           if (ele->loc_inv == NULL) {
+               ele->loc_inv = (double *) malloc(nsides * nsides * sizeof(double));
+               det = MatrixInverse(ele->loc, ele->loc_inv, nsides);
+               if (fabs(det) < NUM_ZERO) {
+                   xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
+                   PrintSmallMatrix(ele->loc, nsides);
+                   xprintf(Err,"det: %30.18e \n",det);
+               }
+           }
+	   /* print the matrix */
+	   //int j;
+	   //xprintf(Msg,"Local element inverse: \n ");
+           //for (i = 0; i < nsides; i++) {
+           //   for (j = 0; j < nsides; j++) 
+	   //      xprintf(Msg, " %14.6f ", ele->loc_inv[i*nsides + j]);
+	   //   xprintf(Msg, " \n ");
+	   //}
+
+           for (i = 0; i < nsides; i++)
+               side_rows[i] = ele->side[i]->id; // side ID
+                           // - rows_ds->begin(); // local side number
+                           // + side_ds->begin(); // side row in IA matrix
+           MatSetValues(IA, nsides, side_rows, nsides, side_rows, ele->loc_inv,
+                   INSERT_VALUES);
+       }
     }
     else if (schur0->type == LinSys::MAT_MPIAIJ)
     {
@@ -480,36 +519,39 @@ void DarcyFlowMH_Steady::make_schur1() {
        ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(),
                side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
                PETSC_NULL, 0, PETSC_NULL, &(IA));
-    }
 
-    MatSetOption(IA, MAT_SYMMETRIC, PETSC_TRUE);
+       MatSetOption(IA, MAT_SYMMETRIC, PETSC_TRUE);
 
-    for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        ele = mesh->element(el_4_loc[i_loc]);
-        el_row = row_4_el[el_4_loc[i_loc]];
-        nsides = ele->n_sides;
-        if (ele->loc_inv == NULL) {
-            ele->loc_inv = (double *) malloc(nsides * nsides * sizeof(double));
-            det = MatrixInverse(ele->loc, ele->loc_inv, nsides);
-            if (fabs(det) < NUM_ZERO) {
-                xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
-                PrintSmallMatrix(ele->loc, nsides);
-                xprintf(Err,"det: %30.18e \n",det);
-            }
-        }
-        for (i = 0; i < nsides; i++)
-            side_rows[i] = side_row_4_id[ele->side[i]->id] // side row in MH matrix
-                    - rows_ds->begin() // local side number
-                    + side_ds->begin(); // side row in IA matrix
-        MatSetValues(IA, nsides, side_rows, nsides, side_rows, ele->loc_inv,
-                INSERT_VALUES);
+       for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+           ele = mesh->element(el_4_loc[i_loc]);
+           el_row = row_4_el[el_4_loc[i_loc]];
+           nsides = ele->n_sides;
+           if (ele->loc_inv == NULL) {
+               ele->loc_inv = (double *) malloc(nsides * nsides * sizeof(double));
+               det = MatrixInverse(ele->loc, ele->loc_inv, nsides);
+               if (fabs(det) < NUM_ZERO) {
+                   xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
+                   PrintSmallMatrix(ele->loc, nsides);
+                   xprintf(Err,"det: %30.18e \n",det);
+               }
+           }
+           for (i = 0; i < nsides; i++)
+               side_rows[i] = side_row_4_id[ele->side[i]->id] // side row in MH matrix
+                       - rows_ds->begin() // local side number
+                       + side_ds->begin(); // side row in IA matrix
+           MatSetValues(IA, nsides, side_rows, nsides, side_rows, ele->loc_inv,
+                   INSERT_VALUES);
+       }
     }
 
     MatAssemblyBegin(IA, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(IA, MAT_FINAL_ASSEMBLY);
 
+
     schur1 = new SchurComplement(schur0, IA);
+
     schur1->form_schur();
+
     schur1->set_spd();
 }
 
@@ -614,7 +656,6 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
 
 /**
  * Make connectivity graph of elements of mesh - dual graph: elements vertices of graph.
- * Jakub S.
  */
 void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on) {
 
@@ -647,8 +688,6 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_o
             }
         }
 
-        // TODO: Suitable way to represent connections between dimensions in graph.
-        //
         // include connections from lower dim. edge
         // to the higher dimension
         if ( neigh_on ) {
@@ -1011,7 +1050,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
     // prepare global_row_4_sub_row
     if (solver->type == PETSC_MATIS_SOLVER) {
-        xprintf(Msg,"Compute mapping of local subdomain rows to global rows.\n");
+        //xprintf(Msg,"Compute mapping of local subdomain rows to global rows.\n");
 
         // prepare arrays of velocities, pressures and Lagrange multipliers
         n_edg = mesh->n_edges;
@@ -1046,11 +1085,18 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             nsides = el->n_sides;
             for (i = 0; i < nsides; i++) {
                 side_row = side_row_4_id[el->side[i]->id];
-                edge_row = edge_row_4_id[el->side[i]->edge->id];
+                Edge *edg=el->side[i]->edge; 
+		edge_row = edge_row_4_id[edg->id];
 
                 map_aux[side_row] = map_aux[side_row] + 1;
                 map_aux[edge_row] = map_aux[edge_row] + 1;
                 //xprintf(Msg,"el_row %d side_row = %d edge_row = %d \n ",el_row,side_row,edge_row);
+		
+		// edge neighbouring overlap
+		//if (edg->neigh_vb != NULL) {
+		//	int neigh_el_row=row_4_el[mesh->element.index(edg->neigh_vb->element[0])];
+		//	map_aux[neigh_el_row] ++;
+		//}	
             }
 
             for (i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
@@ -1091,8 +1137,6 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
         free(map_aux);
 
-        //DBGPRINT_INT("global_row_4_sub_row",ndof_loc,global_row_4_sub_row);
-
     }
 }
 
@@ -1114,7 +1158,7 @@ void mat_count_off_proc_values(Mat m, Vec v) {
         if (exists_off) n_off_rows++;
         MatRestoreRow(m,row,&n,&cols,PETSC_NULL);
     }
-    printf("[%d] rows: %d off_rows: %d on: %d off: %d\n",distr.myp(),last-first,n_off_rows,n_on,n_off);
+    //printf("[%d] rows: %d off_rows: %d on: %d off: %d\n",distr.myp(),last-first,n_off_rows,n_on,n_off);
 }
 
 
