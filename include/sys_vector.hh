@@ -35,7 +35,8 @@
 #include <map>
 #include <system.hh>
 
-___OPEN_FLOW_NAMESPACE
+// OPEN NAME SPACE "flow"
+namespace flow {
 
 /**
  * @brief Iterator that keeps also reference to its container. Safer and provides indexes.
@@ -456,7 +457,8 @@ private:
 
 
 
-___CLOSE_FLOW_NAMESPACE
+// CLOSE NAME SPACE "flow"
+}
 
 
 #endif /* SYS_VECTOR_HH_ */

@@ -461,6 +461,7 @@ void SchurComplement::form_schur()
 
     }
 
+    /*
     PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matAinv.output",&myViewer);
     PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
     MatView( IA, myViewer );
@@ -470,7 +471,7 @@ void SchurComplement::form_schur()
     PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
     MatView( Compl->get_matrix( ), myViewer );
     PetscViewerDestroy(myViewer);
-
+*/
 
     form_rhs();
 

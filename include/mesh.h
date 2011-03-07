@@ -143,7 +143,6 @@ public:
 
     struct Edge **edge_hash;
     struct Side **side_hash;
-    //struct Boundary **boundary_hash; // Boundary id # -> ptr to boundary
     struct Concentration **concentration_hash;
     struct Transport_bcd **transport_bcd_hash;
     struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index

@@ -425,11 +425,11 @@ void DarcyFlowMH_Steady::make_schur0() {
     schur0->finalize();
 
     //schur0->view_local_matrix();
-    PetscViewer myViewer;
-    PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matis.m",&myViewer);
-    PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
-    MatView( schur0->get_matrix( ), myViewer );
-    PetscViewerDestroy(myViewer);
+    //PetscViewer myViewer;
+    //PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matis.m",&myViewer);
+    //PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+    //MatView( schur0->get_matrix( ), myViewer );
+    //PetscViewerDestroy(myViewer);
 
 
 

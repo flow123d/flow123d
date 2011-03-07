@@ -112,43 +112,15 @@ void make_mesh(struct Problem *problem) {
     /* Test of object storage */
     ConstantDB::getInstance()->setObject(MESH::MAIN_INSTANCE, mesh);
 
-    // get all file names
-    // DF  - problem, it is not sure, why this is happening
-    // ConstantDB::getInstance()->setChar("Mesh_geometry_fname", xstrcpy(meshFileName));
-
-    // DF - Move to ConstantDB
-    // mesh->material_fname = xstrcpy(problem->material_fname);
-    // mesh->boundary_fname = xstrcpy(problem->boundary_fname);
-
-    // if (ConstantDB::getInstance()->getInt("Problem_type") == UNSTEADY_SATURATED)
-    // mesh->initial_fname = xstrcpy(problem->initial_fname);
-
-    //if (OptGetBool("Transport", "Transport_on", "no") == true) {
-    // mesh->concentration_fname = xstrcpy(problem->concentration_fname);
-    // mesh->transport_bcd_fname = xstrcpy(problem->transport_bcd_fname);
-    //}
-    // mesh->neighbours_fname = xstrcpy(problem->neighbours_fname);
-    // if (problem->sources_fname != NULL)
-    //    mesh->sources_fname = xstrcpy(problem->sources_fname);
-    //else
-    //    mesh->sources_fname = NULL;
-
 
     // read all mesh files - this is work for MeshReader
-    // read_node_list(mesh);
     // DF - elements are read by MeshReader
-    // read_element_list(mesh);
     // --------------------- MeshReader testing - Begin
     MeshReader* meshReader = new GmshMeshReader();
     meshReader->read(OptGetStr("Input", "Mesh", NULL), mesh);
     // --------------------- MeshReader testing - End
 
     read_neighbour_list(mesh);
-    //  if( mesh->sources_fname != NULL ) {
-    //      read_source_list( mesh );
-    //  }
-    //  read_element_properties( mesh );
-    //  make_element_geometry( mesh );
 
     make_side_list(mesh);
     make_edge_list(mesh);
@@ -177,12 +149,11 @@ void make_mesh(struct Problem *problem) {
 
     read_boundary(mesh);
 
-    if (OptGetBool("Transport", "Transport_on", "no") == true) {
+/*    if (OptGetBool("Transport", "Transport_on", "no") == true) {
         mesh->n_substances = problem->transport->n_substances;
         read_concentration_list(mesh);
         read_transport_bcd_list(mesh);
-    }
-    source_to_element_both(mesh);
+    }*/
     if (mesh->concentration != NULL) {
         concentration_to_element(mesh);
         transport_bcd_to_boundary(mesh);

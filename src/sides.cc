@@ -378,8 +378,8 @@ void calc_side_rhs(struct Side *sde) {
 //======BP F.��r===============================================================
 // CALCULATE VALUE ON THE RHS (Density)
 //=============================================================================
-
 void calc_side_rhs_dens(struct Side* sde, struct Problem* problem, Mesh* mesh) {
+    /*
 
     ASSERT(!((sde == NULL) || (problem == NULL) || (mesh == NULL)), "NULL argument to calc_side_rhs_dens()");
 

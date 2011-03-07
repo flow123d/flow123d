@@ -750,29 +750,7 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
-//=============================================================================
-//
-//=============================================================================
-void source_to_element_both(Mesh* mesh)
-{/*
-	struct Source *src;
-	ElementIter ele;
 
-	xprintf( MsgVerb, "   Source to element and back... ");
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-	FOR_SOURCES( src ) {
-		INPUT_CHECK(!( src->eid > mesh->max_elm_id ),
-		        "Reference to undefined element in source %d\n", src->id );
-		INPUT_CHECK(!( mesh->element_hash[ src->eid ] == NULL ),
-		        "Reference to undefined element in source %d\n", src->id );
-		ele = mesh->element_hash[ src->eid ];
-		src->element = ele;
-		ele->source = src;
-	}
-	xprintf( MsgVerb, "O.K.\n");
-	*/
-}
 //=============================================================================
 //
 //=============================================================================
