@@ -79,11 +79,16 @@ private:
     Mat IAB_sub;                 // Local block IAB in MATIS matrix
     int locSizeA, locSizeB;     // loc size of the A and B block
     IS IsA, IsB;                // parallel index sets of the A and B block
+    IS IsA_sub, IsB_sub;        // parallel index sets of the A and B block local to subdomains
     IS fullIsA,fullIsB;         // whole IsA  and IsB on each proc
     Vec RHS1, RHS2;             // A and B - part of the RHS
     Vec Sol1, Sol2;             // A and B part of solution
+    Vec sub_vec_block2;         // second block of subdomain vector (with overlaps)
     MatReuse mat_reuse;        // reuse structures after first computation of schur
     SchurState state;           // object internal state
+    PetscInt *IsALocalIndices;  ///< Array of local indices in Indexset IsA_sub
+    int orig_sub_size;          ///< Size of subdomain problem of original system
+    int orig_lsize;             ///< Size of local vector part of original system
 
                                 //                A  B     Sol1      RHS1
     LinSys *Orig;     // Original Linear System:  B' C  *  Sol2  =   RHS2

@@ -48,6 +48,9 @@
 #include "la_schur.hh"
 #include "par_distribution.hh"
 
+// used to access private PETSc data
+#include "../src/mat/impls/is/matis.h"
+
 // **************************************************************
 /*!  @brief  Linear System structure accepted by Solver module
  *
@@ -84,9 +87,6 @@ public:
     /// Get local system size.
     inline unsigned int vec_lsize()
     { return vec_ds.lsize(); }
-    /// Get local subdomain size.
-    inline unsigned int get_subdomain_size()
-    { return subdomain_size; }
     /// Get distribution of rows.
     inline const Distribution &ds()
     { return vec_ds; }
@@ -209,7 +209,6 @@ protected:
 
     // for MATIS
     int *subdomain_indices;                     ///< Remember indices which created mapping
-    int subdomain_size;                         ///< size of subdomain
     Mat local_matrix;                           ///< local matrix of subdomain (used in LinSys_MATIS)
 
     friend void SchurComplement::form_schur();
@@ -231,7 +230,6 @@ public:
 private:
 
     Vec     on_vec,off_vec; ///< Vectors for counting non-zero entries.
-    unsigned int subdomain_size; // < not used for MPIAIJ
 
 };
 
@@ -239,11 +237,17 @@ private:
 class LinSys_MATIS : public LinSys
 {
 public:
-    LinSys_MATIS(unsigned int lsize, int subdomain_size, int *global_row_4_sub_row, double *sol_array=NULL);
+    LinSys_MATIS(unsigned int lsize, int sz, int *global_row_4_sub_row, double *sol_array=NULL);
     virtual void start_allocation();
     virtual void preallocate_matrix();
     virtual void preallocate_values(int nrow,int *rows,int ncol,int *cols);
     virtual void view_local_matrix();
+
+    inline VecScatter get_scatter()
+    { return sub_scatter; }
+    /// Get local subdomain size.
+    inline int get_subdomain_size()
+    { return subdomain_size; }
   
     virtual ~LinSys_MATIS();
 
@@ -253,7 +257,11 @@ private:
     int loc_rows_size;                          ///<
     int *loc_rows;                              ///< Small auxiliary array for translation of global indexes to local
                                                 ///< during preallocate_set_values. However for MatSetValues
-    unsigned int subdomain_size ;               ///< size of subdomain in MATIS matrix
+    VecScatter sub_scatter;                     ///< from global vector with no overlaps constructs local (subdomain)
+                                                ///< vectors with overlaps
+                                                ///< copy of scatter created and used in PETSc in Mat_IS
+
+    int subdomain_size;                         ///< size of subdomain in MATIS matrix
     int *subdomain_nz;                          ///< For counting non-zero enteries of local subdomain.
 
 };
