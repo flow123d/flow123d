@@ -166,10 +166,6 @@ void DarcyFlowMH_Steady::compute_one_step() {
         mat_count_off_proc_values(schur2->get_system()->get_matrix(),schur2->get_system()->get_solution());
         solve_system(solver, schur2->get_system());
 
-
-	cout << "Stopped intentionally" << endl;
-	abort();
-
         schur2->resolve();
         schur1->resolve();
         break;
