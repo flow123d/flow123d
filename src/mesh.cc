@@ -149,11 +149,11 @@ void make_mesh(struct Problem *problem) {
 
     read_boundary(mesh);
 
-/*    if (OptGetBool("Transport", "Transport_on", "no") == true) {
+    if (OptGetBool("Transport", "Transport_on", "no") == true) {
         mesh->n_substances = problem->transport->n_substances;
         read_concentration_list(mesh);
         read_transport_bcd_list(mesh);
-    }*/
+    }
     if (mesh->concentration != NULL) {
         concentration_to_element(mesh);
         transport_bcd_to_boundary(mesh);

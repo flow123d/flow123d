@@ -63,12 +63,8 @@ typedef struct Element
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
-    struct Initial  *initial;       // Initial condition
     struct Concentration  *start_conc;    // Start concentration  - if prescribed
     int n_subst;        // Number of substances
-    // List
-    //struct Element *prev;   // Previous element in the list
-    //struct Element *next;   // Next element in the list
     // Material properties
     double   *k;    // Tensor of hydraulic conductivity
     double   *a;    // Tensor of hydraulic resistance (k^(-1))
