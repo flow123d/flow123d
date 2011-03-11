@@ -22,10 +22,14 @@
 # $LastChangedDate: 2011-01-02 16:54:35 +0100 (ne, 02 I 2011) $
 #
 
-#SCRIPT_DIR_PATH is defined in run_flow.sh and it's absolut path to dir where is flow_run.sh
+#NPROC is defined in run_flow.sh and its number of procs used to compute
 #MPI_RUN is defined in run_flow.sh and its relative path to bin/mpiexec
 #EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
-#NPROC is defined in run_flow.sh and its number of procs
+#FLOW_PARAMS is defined in run_flow.sh
+# INI is name of inifile and its defined in run_flow.sh
+# SOURCE_DIR is path to test dir and is defined in run_flow.sh
+
+cd "$SOURCE_DIR"
 
 echo "
 #!/bin/bash
@@ -35,15 +39,25 @@ echo "
 #$ -S /bin/bash
 #
 
-#SCRIPT_DIR_PATH is defined in run_flow.sh and it's absolut path to dir where is flow_run.sh
+#NPROC is defined in run_flow.sh and its number of procs used to compute
 #MPI_RUN is defined in run_flow.sh and its relative path to bin/mpiexec
 #EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
-#NSLOTS is qsub variable and depends on NPROC
+#FLOW_PARAMS is defined in run_flow.sh
+# INI is name of inifile and its defined in run_flow.sh
+# SOURCE_DIR is path to test dir and is defined in run_flow.sh
+
+cd "$SOURCE_DIR"
  
-touch lock
 export OMPI_MCA_plm_rsh_disable_qrsh=1
-$MPI_RUN $NSLOTS $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
+$MPI_RUN -np $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
 rm lock" >hydra_flow.qsub
 
+if test -e ./lock 
+then
+  echo "Error: the working directory is locked by onother PBS job!"
+  exit 1
+else
+  touch lock
+fi
 chmod u+x hydra_flow.qsub
 qsub -pe orte $NPROC hydra_flow.qsub

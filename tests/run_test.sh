@@ -27,15 +27,16 @@
 TEST_DIR=`pwd`
 
 #name of ini file
-INI_FILE=$1
+INI_FILE="$1"
 
 #numbers of processors to run on
-NPROC=$2
+NPROC="$2"
 
 #adition flow params
-FLOW_PARAMS=$3
+FLOW_PARAMS="$3"
 
 # how to run flow
+#RUN_FLOW=../bin/run_flow.sh
 RUN_FLOW=../../bin/run_flow.sh
 
 ERROR=0
@@ -44,7 +45,7 @@ for i in $INI_FILE
 do
 for n in $NPROC
 do
-  if ! $RUN_FLOW -s $INI_FILE -np $n -- $FLOW_PARAMS; then
+  if ! $RUN_FLOW -s "$i" -np "$n" -- "$FLOW_PARAMS"; then
 	echo " Error occured during computation, leaving."
 	exit 1
   fi
@@ -57,7 +58,7 @@ do
   	done
   done
 
-  SAVE_OUTPUT="$TEST_DIR/Results/${INI_FILE%.ini}.$n"
+  SAVE_OUTPUT="$TEST_DIR/Results/${i%.ini}.$n"
   if [ -d "$SAVE_OUTPUT" ]; then
 		rm -rf "$SAVE_OUTPUT"
 		mkdir -p "$SAVE_OUTPUT"
@@ -65,14 +66,14 @@ do
 		mkdir -p "$SAVE_OUTPUT"
   fi
 
-  mv ./err $SAVE_OUTPUT
-  mv ./out $SAVE_OUTPUT
-  mv ./*.log $SAVE_OUTPUT
-  mv ./output/* $SAVE_OUTPUT
+  mv ./err "$SAVE_OUTPUT"
+  mv ./out "$SAVE_OUTPUT"
+  mv ./*.log "$SAVE_OUTPUT"
+  mv ./output/* "$SAVE_OUTPUT"
 
   #runs ndiff.pl skript with ref and computed output files
   echo "******************************************"
-  if ! ../run_check.sh $SAVE_OUTPUT "$TEST_DIR/ref_output"; then
+  if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output"; then
 	ERROR=1
   fi
   echo "******************************************"

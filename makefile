@@ -39,12 +39,12 @@ bin/mpiexec: makefile.in
 	# last chance is to use system wide mpiexec
 	# or die
 	 
-	if which ${MPIEXEC}; then \
+	if which "${MPIEXEC}"; then \
 	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '${MPIEXEC} $$@' >> bin/mpiexec; \
-	elif [ -x ${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec ]; then \
+	    echo '"${MPIEXEC}" "$$@"' >> bin/mpiexec; \
+	elif [ -x "${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" ]; then \
 	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec $$@' >> bin/mpiexec; \
+	    echo '"${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" "$$@"' >> bin/mpiexec; \
 	else \
 	    echo "Can not guess mpiexec of PETSC configuration"; \
 	fi        
@@ -52,18 +52,18 @@ bin/mpiexec: makefile.in
 
 #${BUILD_DIR} default value is "", must be set in makefile.in when running on bitten
 bin/current_flow:
-	if [ -z ${MACHINE} ]; then \
-		echo "Using default generic_flow"; \
+	if [ -z "${MACHINE}" ]; then \
+		echo "Using default: current_flow"; \
 		echo '#!/bin/bash' > bin/current_flow; \
-		echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
+		echo '"${PWD}/${BUILD_DIR}/bin/generic_flow.sh"' >> bin/current_flow; \
 	else \
-		if [ -e bin/${MACHINE}_flow.sh ]; then \
+		if [ -e "bin/${MACHINE}_flow.sh" ]; then \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '${PWD}/bin/${MACHINE}_flow.sh' >> bin/current_flow; \
+			echo '"${PWD}/bin/${MACHINE}_flow.sh"' >> bin/current_flow; \
 		else \
-			echo "make_pbs script for given MACHINE not found, using default"; \
+			echo "script for given MACHINE not found, using default"; \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '${PWD}/${BUILD_DIR}/bin/generic_flow.sh' >> bin/current_flow; \
+			echo '"${PWD}/${BUILD_DIR}/bin/generic_flow.sh"' >> bin/current_flow; \
 		fi \
 	fi
 	chmod u+x bin/current_flow
@@ -85,7 +85,7 @@ clean:
 	make -C src clean
 	make -C doc/doxy clean
 	rm -f bin/mpiexec
-	rm -f bin/generic_flow
+	rm -f bin/current_flow
 
 test: all 
 	make -C tests testbase
@@ -97,10 +97,4 @@ online-doc:
 	make -C doc/doxy doc
 	
 %.tst :
-	@cd tests;\
-	BASE=$*;\
-	dir="$${BASE}*";\
-	if [ -d $${dir} ];\
-	then make -C $${dir} test;\
-	else echo "missing test directory $${dir}";\
-	fi 
+	make -C tests $*.tst
