@@ -55,4 +55,5 @@ clean:
 	if test -d "$${dir}" ;\
 	then make -C "$${dir}" test;\
 	else echo "missing test directory $${dir}";\
+	exit 1;\
 	fi
