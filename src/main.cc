@@ -61,7 +61,7 @@
 
 #include "solve.h"
 
-
+//#include "profiler.hh"
 
 /*
 #include "solve.h"
@@ -180,7 +180,8 @@ int main(int argc, char **argv) {
     problem_init(&G_problem);
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
         alloc_transport(&G_problem);
-        transport_init(&G_problem);
+        G_problem.otransport->transport_init();
+        //transport_init(&G_problem);
     }
     
     make_mesh(&G_problem);
@@ -280,7 +281,6 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
 void main_compute_mh_steady_saturated(struct Problem *problem) {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
-    struct Transport *transport;
     int rank;
     /*
        Mesh* mesh;
@@ -301,7 +301,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 
     if (OptGetBool("Transport", "Transport_on", "no") == true)
             {
-            make_transport(problem->transport);
+            problem->otransport->make_transport();
             }
 
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
@@ -350,10 +350,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
                 }
             }
        }
-     */
-    transport = problem->transport;
 
-    /*
         out = xfopen("pepa.txt","wt");
 
         FOR_ELEMENTS(elm)
@@ -377,13 +374,14 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
 
-        if (transport->reaction_on == true) { /* tohle presunu na rozumnejsi misto, jen co takove bude */
+    /*
+        if (OptGetBool("Transport",  "Reactions", "no") == true) {
             read_reaction_list(transport);
         }
-
+*/
         if (rank == 0) {
-            transport_output_init(transport);
-            transport_output(transport, 0.0, 0);
+            transport_output_init(problem->otransport->transport_out_fname);
+            transport_output(problem->otransport->out_conc,problem->otransport->substance_name ,problem->otransport->n_substances, 0.0, 0,problem->otransport->transport_out_fname);
         }
 	
         
@@ -398,7 +396,8 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
         // not strictly dependent on Transport.
         //btc_check(transport);
 
-        convection(transport);
+        problem->otransport->convection();
+
         /*
                 if(problem->cross_section == true)
                 {
@@ -407,7 +406,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
                     output_transport_time_CS(problem, 0 * problem->time_step);
                 }
          */
-        transport_output_finish(transport);
+        transport_output_finish(problem->otransport->transport_out_fname);
     }
 }
 
@@ -424,11 +423,11 @@ void main_compute_mh_density(struct Problem *problem) {
     int i, j, dens_step, n_step, frame = 0;
     double save_step, stop_time; // update_dens_time
     char statuslog[255];
-    struct Transport *trans = problem->transport;
+ //   struct Transport *trans = problem->transport;
     FILE *log;
 
-    transport_output_init(problem->transport);
-    transport_output(problem->transport, 0.0, ++frame);
+    transport_output_init(problem->otransport->transport_out_fname);
+    transport_output(problem->otransport->out_conc,problem->otransport->substance_name ,problem->otransport->n_substances, 0.0, ++frame,problem->otransport->transport_out_fname);
 
     output_init(problem); // time variable flow field
 
@@ -453,12 +452,18 @@ void main_compute_mh_density(struct Problem *problem) {
     /*  printf("\n%d\t%d\t%f\n",dens_step,n_step,update_dens_time );
       getchar(); */
 
+
+    /*
+
+
+
     //------------------------------------------------------------------------------
     //      Status LOG head
     //------------------------------------------------------------------------------
     //sprintf( statuslog,"%s.txt",problem->log_fname);
     sprintf(statuslog, "density_log.txt");
     log = xfopen(statuslog, "wt");
+
     xfprintf(log, "Stop time = %f (%f) \n", trans->update_dens_time * dens_step, stop_time);
     xfprintf(log, "Save step = %f \n", save_step);
     xfprintf(log, "Density  step = %f (%d) \n\n", trans->update_dens_time, trans->dens_step);
@@ -500,16 +505,16 @@ void main_compute_mh_density(struct Problem *problem) {
 
             //                      output_transport_time_BTC(trans, (i+1) * trans->time_step);
 
-            /*
-                                    if(problem->cross_section == true)
-                                    output_transport_time_CS(problem, (i+1) * problem->stop_time);
-             */
+
+             //                       if(problem->cross_section == true)
+             //                       output_transport_time_CS(problem, (i+1) * problem->stop_time);
+
         }
         xprintf(Msg, "step %d finished at %d density iterations\n", i, j);
         xfprintf(log, "%f \t %d\n", (i + 1) * trans->update_dens_time, j); // Status LOG
     }
 
-    transport_output_finish(problem->transport);
+    transport_output_finish(problem->otransport->transport_out_fname);
     output(problem);
-    xfclose(log);
+    xfclose(log); */
 }

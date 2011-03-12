@@ -116,16 +116,18 @@ void output_flow_field_init(struct Problem *problem);
 void output_flow_field_in_time(struct Problem *problem,double time);
 void output_init(struct Problem *problem);
 void output_time(struct Problem *problem, double time);
-FILE **open_temp_files(struct Transport *transport,const char *fileext,const char *open_param);
+//FILE **open_temp_files(struct Transport *transport,const char *fileext,const char *open_param);
 
 void output_msh_init_bin(Mesh*, char*);
 void output_msh_init_ascii(Mesh*, char*);
 
 void output_msh_init_vtk_serial_ascii( char *file);
 void output_msh_finish_vtk_serial_ascii( char *file);
-void output_transport_time_bin(struct Transport *transport, double time,int step,char *file);
-void output_transport_time_ascii(struct Transport *transport, double time,int step,char *file);
-void output_transport_time_vtk_serial_ascii(struct Transport *transport, double time, int step, char *file);
+
+void output_transport_time_bin(double ***out_conc,char **subst_name,int n_subst, double time,int step,char *file);
+void output_transport_time_ascii(double ***out_conc,char **subst_name,int n_subst, double time,int step,char *file);
+void output_transport_time_vtk_serial_ascii(double ***out_conc,char **subst_name,int n_subst, double time, int step, char *file);
+
 void write_ascii_header(struct Problem *problem, FILE *out);
 void write_transport_ascii_data(FILE *out,struct Problem *problem,struct TTNode **nodes,struct TElement **elements,int time_steps,int ph);
 void write_transport_binary_data(FILE *out,struct Problem *problem,struct TTNode **nodes,struct TElement **elements,int time_steps,int ph);

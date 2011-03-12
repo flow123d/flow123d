@@ -118,7 +118,7 @@ void problem_init(struct Problem *problem)
 
     // Initialize sub structures by NULL
     problem->water = NULL;
-    problem->transport = NULL;
+   // problem->transport = NULL;
 
     check_ini_values(problem);
 }

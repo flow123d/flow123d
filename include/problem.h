@@ -43,9 +43,10 @@
 struct Solver;
 struct DarcyFlowMH;
 class Mesh;
-struct Reaction;
+//struct Reaction;
 struct Transport;
 class MaterialDatabase;
+class ConvectionTransport;
 
 //=============================================================================
 // STRUCTURE OF THE SOLVED TASK
@@ -85,11 +86,12 @@ struct Problem {
      */
 
     //Transport
-    struct Transport *transport;
+   // struct Transport *transport;
+    ConvectionTransport *otransport;
 
     // Reaction
-    struct Reaction *react;
-    struct Reaction **reaction_hash;
+    //struct Reaction *react;
+    //struct Reaction **reaction_hash;
 
     struct DarcyFlowMH *water; // Global MHsystem of the system
 

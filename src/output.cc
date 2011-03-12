@@ -1031,6 +1031,7 @@ void output_time(struct Problem *problem, double time)
 //==============================================================================
 //      OPEN TEMP FILES
 //==============================================================================
+/*
 FILE **open_temp_files(struct Transport *transport,const char *fileext,const char *open_param)
 {
     FILE **out=NULL;
@@ -1065,7 +1066,7 @@ FILE **open_temp_files(struct Transport *transport,const char *fileext,const cha
 
     return out;
 }
-
+*/
 //==============================================================================
 //	INITIALIZE OUTPUT MSH-like FILES (BINARY)
 //==============================================================================
@@ -1247,7 +1248,7 @@ void output_msh_finish_vtk_serial_ascii(char *file)
 //==============================================================================
 //	OUTPUT TRANSPORT SCALAR FIELD (BINARY)
 //==============================================================================
-void output_transport_time_bin(struct Transport *transport,
+void output_transport_time_bin(double ***out_conc,char **subst_name,int n_subst,
 		double time,
 		int step,
 		char *file)
@@ -1269,10 +1270,10 @@ void output_transport_time_bin(struct Transport *transport,
     out = xfopen(file,"ab");
 
     /* Scalar view */
-    for(sbi=0;sbi<transport->n_substances;sbi++) {
+    for(sbi=0;sbi<n_subst;sbi++) {
         xfprintf(out,"$ElementData\n");
         xfprintf(out,"%d\n",stags);                     // one string tag
-        xfprintf(out,"\"Concentration of %s\"\n",transport->substance_name[sbi]);          // string tag
+        xfprintf(out,"\"Concentration of %s\"\n",subst_name[sbi]);          // string tag
         xfprintf(out,"%d\n",rtags);                                   // one raal tag
         xfprintf(out,"%f\n",time);                                // first real tag = time
         xfprintf(out,"%d\n",itags);                                   // 3 int tags
@@ -1282,17 +1283,17 @@ void output_transport_time_bin(struct Transport *transport,
         FOR_ELEMENTS(ele) {
             i_out=ele.id();
             xfwrite(&i_out,sizeof(int),1,out);
-            xfwrite(&transport->out_conc[MOBILE][sbi][ele.index()],sizeof(double),1,out);
+            xfwrite(&out_conc[MOBILE][sbi][ele.index()],sizeof(double),1,out);
         }
         xfprintf(out,"\n$EndElementData\n");
     }
 
     /* Vector view */
-    for(sbi=0;sbi<transport->n_substances;sbi++){
+    for(sbi=0;sbi<n_subst;sbi++){
 
         xfprintf(out,"$ElementData\n");
         xfprintf(out,"%d\n",stags);                     // one string tag
-        xfprintf(out,"\"Concentration of %s\"\n",transport->substance_name[sbi]);          // string tag
+        xfprintf(out,"\"Concentration of %s\"\n",subst_name[sbi]);          // string tag
         xfprintf(out,"%d\n",rtags);                                   // one raal tag
         xfprintf(out,"%f\n",time);                                // first real tag = time
         xfprintf(out,"%d\n",itags);                                   // 3 int tags
@@ -1304,7 +1305,7 @@ void output_transport_time_bin(struct Transport *transport,
                 for(i = 0; i < 3; i++)
                     vector[i] = mesh->element[el].vector[i];
                 normalize_vector(vector);
-                scale_vector(vector,transport->out_conc[MOBILE][sbi][el]);
+                scale_vector(vector,out_conc[MOBILE][sbi][el]);
             }
             else {
                 for(i = 0; i < 3; i++) vector[i] = 0.0;
@@ -1331,7 +1332,7 @@ void output_transport_time_bin(struct Transport *transport,
  * \param[in]	step		The current time frame
  * \param[in]	*file		The name of base name of the file
  */
-void output_transport_time_ascii(struct Transport *transport,
+void output_transport_time_ascii(double ***out_conc,char **subst_name,int n_subst,
 		double time,
 		int step,
 		char *file)
@@ -1351,10 +1352,10 @@ void output_transport_time_ascii(struct Transport *transport,
 
     out = xfopen(file,"at");
     /* Scalar view */
-    for(sbi=0; sbi<transport->n_substances; sbi++){
+    for(sbi=0; sbi<n_subst; sbi++){
         xfprintf(out,"$ElementData\n");
         xfprintf(out,"%d\n",stags);  // one string tag
-        xfprintf(out,"\"Concentration of %s\"\n",transport->substance_name[sbi]);    // string tag
+        xfprintf(out,"\"Concentration of %s\"\n",subst_name[sbi]);    // string tag
         xfprintf(out,"%d\n",rtags);  // one raal tag
         xfprintf(out,"%f\n",time);   // first real tag = time
         xfprintf(out,"%d\n",itags);  // 3 int tags
@@ -1362,7 +1363,7 @@ void output_transport_time_ascii(struct Transport *transport,
         xfprintf(out,"%d\n",comp);   // one component - scalar field
         xfprintf(out,"%d\n",mesh->n_elements());   // n follows elements
         FOR_ELEMENTS(ele)
-        		xfprintf(out,"%d %f\n", ele.id(), transport->out_conc[MOBILE][sbi][ele.index()]);
+        		xfprintf(out,"%d %f\n", ele.id(), out_conc[MOBILE][sbi][ele.index()]);
         xfprintf(out,"$EndElementData\n");
     }
 
@@ -1408,14 +1409,14 @@ void output_transport_time_ascii(struct Transport *transport,
  * \param[in]	step		The current time frame
  * \param[in]	*file		The name of base name of the file
  */
-void output_transport_time_vtk_serial_ascii(struct Transport *transport,
+void output_transport_time_vtk_serial_ascii(double ***out_conc,char **subst_name,int n_subst,
         double time,
         int step,
         char *file)
 {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
-    struct Problem *problem = transport->problem;
+    //struct Problem *problem = transport->problem;
     OutScalarsVector *element_scalar_arrays = new OutScalarsVector;
     OutVectorsVector *element_vector_arrays = new OutVectorsVector;
     struct OutScalar *p_element_out_scalar;
@@ -1482,21 +1483,21 @@ void output_transport_time_vtk_serial_ascii(struct Transport *transport,
     write_flow_vtk_topology(s_out);
 
     /* Allocate memory for array of element scalars */
-    p_element_out_scalar = (OutScalar*)xmalloc(sizeof(struct OutScalar)*transport->n_substances);
+    p_element_out_scalar = (OutScalar*)xmalloc(sizeof(struct OutScalar)*n_subst);
 
     /* Go through all substances and add them to vector of scalars */
-    for(subst_id=0; subst_id<transport->n_substances; subst_id++) {
+    for(subst_id=0; subst_id<n_subst; subst_id++) {
         p_element_out_scalar[subst_id].scalars = new ScalarFloatVector;
 
         /* Reserve memory for vectors */
         p_element_out_scalar[subst_id].scalars->reserve(mesh->n_elements());
 
         /* Set up names */
-        strcpy(p_element_out_scalar[subst_id].name, transport->substance_name[subst_id]);
+        strcpy(p_element_out_scalar[subst_id].name, subst_name[subst_id]);
 
         for(int el=0; el<mesh->n_elements(); el++) {
             /* Add scalar data to vector of scalars */
-            p_element_out_scalar[subst_id].scalars->push_back(transport->out_conc[MOBILE][subst_id][el]);
+            p_element_out_scalar[subst_id].scalars->push_back(out_conc[MOBILE][subst_id][el]);
         }
 
         element_scalar_arrays->push_back(p_element_out_scalar[subst_id]);
@@ -1531,7 +1532,7 @@ void output_transport_time_vtk_serial_ascii(struct Transport *transport,
     xprintf( Msg, "O.K.\n");
 
     /* Delete unused object */
-    for(subst_id=0; subst_id<transport->n_substances; subst_id++) {
+    for(subst_id=0; subst_id<n_subst; subst_id++) {
         delete p_element_out_scalar[subst_id].scalars;
     }
 
