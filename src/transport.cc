@@ -60,6 +60,7 @@
 #include "sparse_graph.hh"
 //#include "profiler.hh"
 #include "semchem/semchem_interface.h"
+#include "decay/Linear_reaction.h"
 #include <string.h>
 
 static double *transport_aloc_pi(Mesh*);
@@ -1003,9 +1004,9 @@ void ConvectionTransport::convection() {
             // transport_node_conc(mesh,sbi,problem->transport_sub_problem);  // vyresit prepocet
         }
         xprintf( Msg, "Time : %f\n",time_step*t);
-//======================================
-//              CHEMISTRY
-//======================================
+    //======================================
+    //              CHEMISTRY
+    //======================================
     if(problem->semchemie_on == true){
       if(t == 1){ //initial value of t == 1 & it is incremented at the beginning of the cycle
     	  priprav();
@@ -1015,8 +1016,21 @@ void ConvectionTransport::convection() {
     	  che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
       }// for cycle running over elements
     }
-//======================================    
-     //   save_step == step;
+    //======================================
+    //          RADIOACTIVE DECAY
+    //======================================
+    if(problem->decay_on == true){
+    	if(t == 1){
+    		//Linear_reaction *decayRad;
+    		//decayRad = new Linear_reaction(decay, 0, 6);
+    	}
+    	for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
+    		;
+    	}
+    }
+    //======================================
+
+    //   save_step == step;
                 //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
         if ((save_step == step) || (write_iterations)) {
             xprintf( Msg, "Output\n");

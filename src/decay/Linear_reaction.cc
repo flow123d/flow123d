@@ -1,4 +1,4 @@
-#include "decay.h"
+#include "Linear_reaction.h"
 #include "system.hh"
 #include <iostream>
 #include <cstring>
@@ -14,10 +14,12 @@ Linear_reaction::Linear_reaction()
 	substance_ids = NULL;
 }
 
-Linear_reaction::Linear_reaction(REACTION_TYPE type, double *half_lives, int n_subst)
+Linear_reaction::Linear_reaction(REACTION_TYPE type, double *order, int n_subst, char* section)
 {
 	react_type = type;
-	reaction_matrix = Create_reaction_matrix(half_lives, n_subst);
+	this->half_lives = this->Set_half_lives(section);
+	this->substance_ids = this->Set_indeces(section);
+	this->reaction_matrix = this->Create_reaction_matrix(half_lives, n_subst, substance_ids);
 }
 
 Linear_reaction::~Linear_reaction()
@@ -35,7 +37,7 @@ Linear_reaction::~Linear_reaction()
 	reaction_matrix = NULL;
 }
 
-double **Linear_reaction::Create_reaction_matrix(double *half_lives, int n_subst) //prepare the matrix, which describes reactions
+double **Linear_reaction::Create_reaction_matrix(double *half_lives, int n_subst, int *substance_ids) //prepare the matrix, which describes reactions
 {
 	int i,j;
 	double **reaction_matrix = (double**)xmalloc(n_subst*sizeof(double*));
