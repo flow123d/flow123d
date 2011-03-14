@@ -99,7 +99,7 @@
 #endif // SKUPINA_CHEMIE
 #ifdef SKUPINA_REAKCE
 //#include "che_head.h"
-#include "interfacen.h"
+#include "semchem_interface.h"
 #endif // SKUPINA_REAKCE
 /********************************************************************/
 /*                      Definice globalnich promennych              */

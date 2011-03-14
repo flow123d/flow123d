@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 
 #pragma hdrstop
-#include "semchem/interfacen.h"
+#include "semchem_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,7 +107,7 @@ void che_vypocetchemie(bool porTyp, double time_step, ElementIter ppelm, int por
 	 celkova_molalita += (P_lat[i].m0);
    }
    xprintf(Msg,"\nCelkova molalita: %f\n",celkova_molalita);   
-   G_prm.deltaT = time_step; // dosazeni "spravneho" casoveho kroku
+   G_prm.deltaT = time_step/G_prm.cas_kroku; // dosazeni "spravneho" casoveho kroku
 
     //-----------------------VYPOCET CHEMIE----------------------------
    if (celkova_molalita > 1e-16)

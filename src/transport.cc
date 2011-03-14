@@ -59,7 +59,7 @@
 #include "mesh/ini_constants_mesh.hh"
 #include "sparse_graph.hh"
 //#include "profiler.hh"
-#include "semchem/interfacen.h"
+#include "semchem/semchem_interface.h"
 #include <string.h>
 
 static double *transport_aloc_pi(Mesh*);

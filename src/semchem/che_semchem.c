@@ -1,5 +1,5 @@
 //#define MAIN
-#include "semchem/big-head2.h"
+#include "big-head2.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -2188,7 +2188,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
   	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_pomala_kinetika)");
 }
 
-void che_rovnovazne_sorpce (char *soubor)
+/*void che_rovnovazne_sorpce (char *soubor)
 {
    FILE *fw = NULL;
    int j = 0;
@@ -2280,9 +2280,9 @@ void che_rovnovazne_sorpce (char *soubor)
    }
    fclose (fw);
   	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_sorpce)");
-}
+}*/
 
-void che_rozpad (char *soubor)
+/*void che_rozpad (char *soubor)
 {
    FILE *fw = NULL;
    int i = 0;
@@ -2333,9 +2333,9 @@ void che_rozpad (char *soubor)
    }
    fclose (fw);
   	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_rozpad)");
-}
+}*/
 
-void che_kineticke_sorpce (char *soubor)
+/*void che_kineticke_sorpce (char *soubor)
 {
 ////////////////////// SEM VRAZIT KINETICKE SORPCE ///////////////////////
 //                                                                      //
@@ -2346,7 +2346,7 @@ void che_kineticke_sorpce (char *soubor)
 //                                                                      //
 //                                                                      //
 ////////////////////// SEM VRAZIT KINETICKE SORPCE ///////////////////////
-}
+}*/
 
 void che_vypocet_rovnovah (char *soubor)
 {
@@ -2359,7 +2359,7 @@ void che_rovnovahy_se_sorpci(char *soubor)
 {
 // sem muzu vrazit cyklus
    che_vypocet_rovnovah(soubor);
-   che_rovnovazne_sorpce(soubor);
+   //che_rovnovazne_sorpce(soubor);
    che_presun_poc_p_();
 }
 
@@ -2367,7 +2367,7 @@ void che_matice_se_sorpci(char *soubor)
 {
 // sem nesmim vrazit cyklus - jsou tam i kineticke reakce
    che_maticovy_vypocet(soubor);
-   che_rovnovazne_sorpce(soubor);
+   //che_rovnovazne_sorpce(soubor);
    che_presun_poc_p_();
 }
 
@@ -2384,7 +2384,7 @@ void che_pocitej_soubor(char *soubor, int *poc_krok)
 //      che_vypis_soubor(soubor);
    }
 	che_pomala_kinetika(soubor,G_prm.deleni_RK);
-	che_rozpad(soubor);
+	//he_rozpad(soubor);
    //che_kineticke_sorpce(soubor);
 // sem muzu pridat che_rovnovahy_se_sorpci(soubor);
 	che_matice_se_sorpci(soubor);
