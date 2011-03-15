@@ -14,12 +14,12 @@ Linear_reaction::Linear_reaction()
 	substance_ids = NULL;
 }
 
-Linear_reaction::Linear_reaction(REACTION_TYPE type, double *order, int n_subst, char* section)
+Linear_reaction::Linear_reaction(REACTION_TYPE type, int n_subst, char *section, double **reaction_matrix)
 {
-	react_type = type;
+	this->react_type = type;
+	this->reaction_matrix = reaction_matrix;
 	this->half_lives = this->Set_half_lives(section);
 	this->substance_ids = this->Set_indeces(section);
-	this->reaction_matrix = this->Create_reaction_matrix(half_lives, n_subst, substance_ids);
 }
 
 Linear_reaction::~Linear_reaction()
@@ -31,51 +31,82 @@ Linear_reaction::~Linear_reaction()
 	half_lives = NULL;
 
 	free(substance_ids);
-	substance_ids = NULL;
+	this->substance_ids = NULL;
 
 	free(reaction_matrix);
 	reaction_matrix = NULL;
 }
 
-double **Linear_reaction::Create_reaction_matrix(double *half_lives, int n_subst, int *substance_ids) //prepare the matrix, which describes reactions
+double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n_subst, double time_step) //prepare the matrix, which describes reactions
 {
-	int i,j;
-	double **reaction_matrix = (double**)xmalloc(n_subst*sizeof(double*));
-	for(i=0; i<n_subst;i++){
-		reaction_matrix[i] = (double*)xmalloc(n_subst*sizeof(double));
-		for(j=0; j<n_subst; j++){
-			reaction_matrix[i][j] = 0.0; // = half_lives[..]
-		}
+	int rows,cols, index, prev_index;
+	double rel_step, prev_rel_step;
+
+	if(reaction_matrix == NULL){
+		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
+		return NULL;
 	}
+		for(cols = 0; cols < this->nr_of_isotopes; cols++){
+			rel_step = this->half_lives[cols]/time_step;
+			index = this->substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
+			if(index == 0){
+				reaction_matrix[index][cols] = 1.0 - pow(0.5,rel_step); //
+			}else{
+				reaction_matrix[index][cols] = 1.0 - pow(0.5,rel_step);
+				reaction_matrix[prev_index][cols] = pow(0.5,prev_rel_step);
+			}
+			prev_rel_step = rel_step;
+			prev_index = index;
+		}
 	return reaction_matrix;
 }
 
-double **Linear_reaction::Compute_reaction(double **concentrations) //multiplication of concentrations array by reaction matrix
+double **Linear_reaction::Compute_reaction(double **concentrations, double ** reaction_matrix, int n_subst, int loc_el) //multiplication of concentrations array by reaction matrix
 {
+	int cols, rows, both;
+	double *prev_conc = (double *)xmalloc(n_subst * sizeof(double));
+
+	if(reaction_matrix == NULL){
+		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
+		return NULL;
+	}
+
+	for(cols = 0; cols < n_subst; cols++){
+		prev_conc[cols] = concentrations[cols][loc_el];
+		concentrations[cols][loc_el] = 0.0;
+	}
+	for(rows = 0; rows < n_subst; rows++){
+		for(cols = 0; cols < n_subst; cols++){
+			concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
+		}
+	}
+	free(prev_conc);
+	prev_conc = NULL;
 	return concentrations;
 }
 
 REACTION_TYPE Linear_reaction::Set_reaction_type(REACTION_TYPE type) //change of reaction type should be conditionated by generation of new reaction matrix
 {
-	return type;
+	this->react_type = decay;
+	return this->react_type;
 }
 
 REACTION_TYPE Linear_reaction::Get_reaction_type()
 {
 	//std::cout << "\nType of reaction is: " << react_type <<"\n";
-	xprintf(Msg,"Type of reaction is: %s.\n",react_type);
-	return react_type;
+	xprintf(Msg,"Type of reaction is: %s.\n",this->react_type);
+	return this->react_type;
 }
 
 int Linear_reaction::Set_nr_of_isotopes(char *section)
 {
-	nr_of_isotopes = OptGetInt(section,"nr_of_isotopes","0");
-	return nr_of_isotopes;
+	nr_of_isotopes = OptGetInt(section,"Nr_of_isotopes","0");
+	return this->nr_of_isotopes;
 }
 
 int Linear_reaction::Get_nr_of_isotopes()
 {
-	return nr_of_isotopes;
+	return this->nr_of_isotopes;
 }
 
 double *Linear_reaction::Set_half_lives(char *section)
@@ -85,11 +116,11 @@ double *Linear_reaction::Set_half_lives(char *section)
 	int i,j;
 	const char *separators = " ,\t";
 
-	if(half_lives == NULL) half_lives = (double *)xmalloc(nr_of_isotopes*sizeof(int));
+	if(half_lives == NULL) half_lives = (double *)xmalloc(this->nr_of_isotopes*sizeof(int));
 
 	strcpy(buffer,OptGetStr(section,"Half_lives",NULL));
 	pom_buf = strtok( buffer, separators );
-	for (j=0; j< nr_of_isotopes; j++)
+	for (j=0; j< this->nr_of_isotopes; j++)
 	{
 	  if ( pom_buf == NULL )
 	  {
@@ -103,26 +134,26 @@ double *Linear_reaction::Set_half_lives(char *section)
 	 {
 	    xprintf(Msg,"\nMore parameters then isotopes has been given. %d", 0);
 	 }
-	return half_lives;
+	return this->half_lives;
 }
 
 double *Linear_reaction::Get_half_lives()
 {
 	int i;
 
-	if(half_lives == NULL)
+	if(this->half_lives == NULL)
 	{
 		//std::cout << "\nHalf lives are not defined.\n";
 		xprintf(Msg,"\nHalf-lives are not defined.");
 	}else{
 		//cout << "\nHalf lives are defined as:";
 		xprintf(Msg,"\nHalf-lives are defined as:");
-		for(i=0; i<nr_of_isotopes ; i++)
+		for(i=0; i < this->nr_of_isotopes ; i++)
 		{
-			if(i<(nr_of_isotopes  - 1)) //cout << " " << half_lives[i] <<",";
+			if(i < (this->nr_of_isotopes  - 1)) //cout << " " << half_lives[i] <<",";
 				xprintf(Msg," %f", half_lives[i]);
-			if(i == (nr_of_isotopes  - 1)) //cout << " " << half_lives[i] <<"\n";
-				xprintf(Msg," %f\n", half_lives[i]);
+			if(i == (this->nr_of_isotopes  - 1)) //cout << " " << half_lives[i] <<"\n";
+				xprintf(Msg," %f\n", this->half_lives[i]);
 		}
 	}
 	return half_lives;
@@ -135,17 +166,17 @@ int *Linear_reaction::Set_indeces(char *section)
 	int i,j;
 	const char *separators = " ,\t";
 
-	if(substance_ids == NULL) substance_ids = (int *)xmalloc(nr_of_isotopes*sizeof(int));
+	if(this->substance_ids == NULL) this->substance_ids = (int *)xmalloc(this->nr_of_isotopes*sizeof(int));
 
 	strcpy(buffer,OptGetStr(section,"Substance_ids",NULL));
 	pom_buf = strtok( buffer, separators );
-	for (j=0; j< nr_of_isotopes; j++)
+	for (j=0; j< this->nr_of_isotopes; j++)
 	{
 	  if ( pom_buf == NULL )
 	  {
 	    xprintf(Msg,"\nIndex for %d-th isotope is missing.", j+1);
 	  }
-	    substance_ids[j] = atoi(pom_buf);
+	    this->substance_ids[j] = atoi(pom_buf);
 	    //xprintf(Msg,"\n P_lat[%d].dGf %Lf\n",j,P_lat[j].dGf);
 	    pom_buf = strtok( NULL, separators );
 	 }
@@ -154,7 +185,7 @@ int *Linear_reaction::Set_indeces(char *section)
 	    xprintf(Msg,"\nMore parameters then isotopes has been given.");
 	 }
 
-	 return substance_ids;
+	 return this->substance_ids;
 }
 
 int *Linear_reaction::Get_indeces()
@@ -167,13 +198,13 @@ int *Linear_reaction::Get_indeces()
 		xprintf(Msg,"\nDecay chain substances order is not defined.");
 	}else{
 		//std::cout << "\nDecay chain substences order is defined by " << nr_of_isotopes << ", " << sizeof(substance_ids) <<", "<< sizeof(*substance_ids) << " indeces:";
-		xprintf(Msg,"\nDecay chain substences order is defined by %d indeces:", nr_of_isotopes);
-		for(i=0; i<nr_of_isotopes ; i++)
+		xprintf(Msg,"\nDecay chain substences order is defined by %d indeces:", this->nr_of_isotopes);
+		for(i = 0; i < this->nr_of_isotopes ; i++)
 		{
-			if(i<(nr_of_isotopes  - 1)) xprintf(Msg," %d,",substance_ids[i]); //std::cout << " " << substance_ids[i] <<",";
-			if(i == (nr_of_isotopes  - 1)) xprintf(Msg," %d\n",substance_ids[i]); //std::cout << " " << substance_ids[i] <<"\n";
+			if(i < (this->nr_of_isotopes  - 1)) xprintf(Msg," %d,",this->substance_ids[i]); //std::cout << " " << substance_ids[i] <<",";
+			if(i == (this->nr_of_isotopes  - 1)) xprintf(Msg," %d\n",this->substance_ids[i]); //std::cout << " " << substance_ids[i] <<"\n";
 		}
 	}
-	return substance_ids;
+	return this->substance_ids;
 }
 
