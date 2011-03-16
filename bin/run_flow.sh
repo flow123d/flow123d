@@ -25,12 +25,16 @@
 #check if script is called with relative or absolute path
 
 ShowHelp() {
-echo " This is Flow123d help page:
+echo " This is Flow123d help page. Syntax:
+ 
+  run_flow.sh -np N -s INI_FILE [-q TIME] [-m MACHINE]
+
 	args:
-	-np 		set number of procs
-	-s 		set absolut or relative path to ini file
-	-q 		set maximal time to wait to finish job
-	-m 		name of the machine, if running by pbs"
+	-np N		set number of procs N
+	-s INI_FILE	set absolut or relative path to ini file
+	-q TIME		set maximal TIME to wait to finish job
+	-m MACHINE	name of the machine, to determine particular start script for PBS, 
+			default can be specified in makefile.in"
 }
 
 if [ ! "${0%%[^/]*}" == "" ]; then
