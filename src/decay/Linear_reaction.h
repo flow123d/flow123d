@@ -7,6 +7,7 @@ class Linear_reaction
 		Linear_reaction(REACTION_TYPE type, int n_subst, char* section, double **reaction_matrix);
 		~Linear_reaction();
 		double **Modify_reaction_matrix(double **reaction_matrix, int n_subst, double time_step); //prepare the matrix, which describes reactions
+		//double **Prepare_reaction_matrix(int n_subst); //reaction matrix initialization
 		int Waste_reaction_matrix(double **matrix, int n_subst); //is here to dealocate memory and to prevent memory leaks
 		int *Get_indeces();
 		int Get_nr_of_isotopes();

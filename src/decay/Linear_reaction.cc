@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace std;
 
@@ -15,9 +16,11 @@ Linear_reaction::Linear_reaction()
 }
 
 Linear_reaction::Linear_reaction(REACTION_TYPE type, int n_subst, char *section, double **reaction_matrix)
+	: half_lives(NULL), substance_ids(NULL)
 {
 	this->react_type = type;
 	this->reaction_matrix = reaction_matrix;
+	this->nr_of_isotopes = this->Set_nr_of_isotopes(section);
 	this->half_lives = this->Set_half_lives(section);
 	this->substance_ids = this->Set_indeces(section);
 }
@@ -37,6 +40,11 @@ Linear_reaction::~Linear_reaction()
 	reaction_matrix = NULL;
 }
 
+/*double **Prepare_reaction_matrix(int n_subst) //reaction matrix initialization
+{
+	;
+}*/
+
 double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n_subst, double time_step) //prepare the matrix, which describes reactions
 {
 	int rows,cols, index, prev_index;
@@ -47,13 +55,13 @@ double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n
 		return NULL;
 	}
 		for(cols = 0; cols < this->nr_of_isotopes; cols++){
-			rel_step = this->half_lives[cols]/time_step;
+			rel_step = time_step/this->half_lives[cols];
 			index = this->substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
-			if(index == 0){
-				reaction_matrix[index][cols] = 1.0 - pow(0.5,rel_step); //
+			if(cols == 0){
+				reaction_matrix[index][index] = 1.0 - pow(0.5,rel_step); // this is not correct, 1.0 should appear in initialization
 			}else{
-				reaction_matrix[index][cols] = 1.0 - pow(0.5,rel_step);
-				reaction_matrix[prev_index][cols] = pow(0.5,prev_rel_step);
+				reaction_matrix[index][index] -= pow(0.5,rel_step);// this is not correct, 1.0 should appear in initialization
+				reaction_matrix[prev_index][index] += pow(0.5,prev_rel_step);
 			}
 			prev_rel_step = rel_step;
 			prev_index = index;
@@ -61,7 +69,7 @@ double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n
 	return reaction_matrix;
 }
 
-double **Linear_reaction::Compute_reaction(double **concentrations, double ** reaction_matrix, int n_subst, int loc_el) //multiplication of concentrations array by reaction matrix
+double **Linear_reaction::Compute_reaction(double **concentrations, double **reaction_matrix, int n_subst, int loc_el) //multiplication of concentrations array by reaction matrix
 {
 	int cols, rows, both;
 	double *prev_conc = (double *)xmalloc(n_subst * sizeof(double));
@@ -72,7 +80,9 @@ double **Linear_reaction::Compute_reaction(double **concentrations, double ** re
 	}
 
 	for(cols = 0; cols < n_subst; cols++){
+		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols, n_subst, concentrations[cols][loc_el]);
 		prev_conc[cols] = concentrations[cols][loc_el];
+		xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols, n_subst, prev_conc[cols]);
 		concentrations[cols][loc_el] = 0.0;
 	}
 	for(rows = 0; rows < n_subst; rows++){
@@ -116,18 +126,22 @@ double *Linear_reaction::Set_half_lives(char *section)
 	int i,j;
 	const char *separators = " ,\t";
 
-	if(half_lives == NULL) half_lives = (double *)xmalloc(this->nr_of_isotopes*sizeof(int));
+	if(this->half_lives == NULL){
+		xprintf(Msg,"\nAllocation is permited, nr of isotopes %d", this->nr_of_isotopes);
+		this->half_lives = (double *)xmalloc(this->nr_of_isotopes*sizeof(double));
+		//this->half_lives = new double[this->nr_of_isotopes];
+	}
 
 	strcpy(buffer,OptGetStr(section,"Half_lives",NULL));
 	pom_buf = strtok( buffer, separators );
 	for (j=0; j< this->nr_of_isotopes; j++)
 	{
-	  if ( pom_buf == NULL )
-	  {
-	    xprintf(Msg,"\nHalf-life of %d-th isotope is missing.", j+1);
-	  }
-	    half_lives[j] = atof(pom_buf);
-	    //xprintf(Msg,"\n P_lat[%d].dGf %Lf\n",j,P_lat[j].dGf);
+		if ( pom_buf == NULL )
+		{
+			xprintf(Msg,"\nHalf-life of %d-th isotope is missing.", j+1);
+		}
+	    this->half_lives[j] = atof(pom_buf);
+	    xprintf(Msg,"\n %d-th isotopes half-live is %f",j,this->half_lives[j]);
 	    pom_buf = strtok( NULL, separators );
 	 }
 	 if ( pom_buf != NULL )

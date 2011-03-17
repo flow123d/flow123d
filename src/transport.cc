@@ -1032,11 +1032,12 @@ void ConvectionTransport::convection() {
     			reaction_matrix[rows] = (double *)xmalloc(n_subst * sizeof(double));
     			for(cols = 0; cols < n_subst; cols++) reaction_matrix[rows][cols] = 0.0;
     		}
-    		nr_of_decays = OptGetInt("Decay","nr_of_decays","1");
+    		nr_of_decays = OptGetInt("Decay","Nr_of_decays","1");
     		decayRad = (Linear_reaction **)xmalloc(nr_of_decays * sizeof(Linear_reaction *));
     		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
     			//here should be generated string insted of "Decay_1", used bellow
     			sprintf(dec_name,"Decay_%d", dec_name_nr);
+    			xprintf(Msg,"\n%s\n",dec_name);
     			decayRad[dec_nr] = new Linear_reaction(decay, 6, dec_name, reaction_matrix); //probably needs cstring.h inclusion
     			decayRad[dec_nr]->Modify_reaction_matrix(reaction_matrix, n_subst, time_step);
     			dec_name_nr++;
@@ -1057,6 +1058,8 @@ void ConvectionTransport::convection() {
     		}
     		free(reaction_matrix);
     	}
+    }else{
+    	xprintf(Msg,"\nDecay is not computed.\n");
     }
     //======================================
 
