@@ -30,7 +30,7 @@ OUT=$1
 REF_OUT=$2
 
 # file comparison script
-NDIFF="`pwd`/../ndiff.pl"
+NDIFF="${TEST_DIR}/../ndiff.pl"
 if [ ! -x "$NDIFF" ]
 then echo "can not find or run ndiff.pl"
 fi
@@ -52,39 +52,49 @@ suff=.ini
 cd "$REF_OUT"
 	
 #VAR which contains names of files
-VAR=`ls|sort`
+VAR=`ls`
 	
 #cycle for checking output files
 for x in $VAR
 do
 #if its err file, compare with empty file
-if [ "$x" == "err" ]; then
-	echo "" | tee stdout_diff.log
-	echo "Err log:" | tee stdout_diff.log
-	touch empty
-	if ! "$NDIFF" -o diff.log "$OUT/$x" empty; then
+if [ -d "$x" ]; then
+	if [ ! -e "OUT/$x" ]; then
 		ERROR=1
 	fi
-	rm empty
-#else compare rest of files
-elif [ "$x" == "out" ]; then
-	echo ""
-else 
-	if [ -a "$OUT/$x" ]; then			
-		echo "" | tee stdout_diff.log
-		echo "File: $x" | tee -a stdout_diff.log
-		if ! "$NDIFF" -o diff.log "$OUT/$x" "$REF_OUT/$x"; then
+	if ! ${TEST_DIR}/../run_check.sh "OUT/$x" "$REF_OUT/$x"; then
+		ERROR = 1
+		echo "ERROR:Missing dir to compare($x)"
+	fi
+else
+	if [ "$x" == "err" ]; then
+		echo "" | tee -a ${TEST_DIR}/stdout_diff.log
+		echo "Err log:" | tee -a ${TEST_DIR}/stdout_diff.log
+		touch empty
+		if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" empty; then
 			ERROR=1
 		fi
-	else
-		echo "Error: Missing output file: $x" | tee -a stdout_diff.log
-		ERROR=1
+		rm empty
+	#else compare rest of files
+	elif [ "$x" == "out" ]; then
+		echo ""
+	else 
+		if [ -a "$OUT/$x" ]; then			
+			echo "" | tee -a ${TEST_DIR}/stdout_diff.log
+			echo "File: $x" | tee -a ${TEST_DIR}/stdout_diff.log
+			if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" "$REF_OUT/$x"; then
+				ERROR=1
+			fi
+		else
+			echo "Error: Missing output file: $x" | tee -a ${TEST_DIR}/stdout_diff.log
+			ERROR=1
+		fi
 	fi
 fi
 done
 
-mv diff.log "$OUT"
-mv stdout_diff.log "$OUT"
+#mv ${TEST_DIR}/diff.log "$OUT"
+#mv ${TEST_DIR}/stdout_diff.log "$OUT"
 
 if [ $ERROR == 1 ]; then
 	exit 1

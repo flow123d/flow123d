@@ -24,7 +24,7 @@
 
 # This script assumes that it is running in particular subdir of the "tests"
 # dir. 
-TEST_DIR=`pwd`
+export TEST_DIR=`pwd`
 
 #name of ini file
 INI_FILE="$1"
@@ -77,7 +77,10 @@ do
 	ERROR=1
   fi
   echo "******************************************"
-
+	
+   mv ${TEST_DIR}/diff.log "$SAVE_OUTPUT"
+   mv ${TEST_DIR}/stdout_diff.log "$SAVE_OUTPUT"
+  
 done
 done
 
