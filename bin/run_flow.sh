@@ -25,12 +25,16 @@
 #check if script is called with relative or absolute path
 
 ShowHelp() {
-echo " This is Flow123d help page:
+echo " This is Flow123d help page. Syntax:
+ 
+  run_flow.sh -np N -s INI_FILE [-q TIME] [-m MACHINE]
+
 	args:
-	-np 		set number of procs
-	-s 		set absolut or relative path to ini file
-	-q 		set maximal time to wait to finish job
-	-m 		name of the machine, if running by pbs"
+	-np N		set number of procs N
+	-s INI_FILE	set absolut or relative path to ini file
+	-q TIME		set maximal TIME to wait to finish job
+	-m MACHINE	name of the machine, to determine particular start script for PBS, 
+			default can be specified in makefile.in"
 }
 
 if [ ! "${0%%[^/]*}" == "" ]; then
@@ -124,5 +128,34 @@ else
 	echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
 	exit 1
 fi
+
+
+if [ -e ./lock ]; then
+	for i in $(seq 1 10)
+	do
+		if [! -e ./out ]; then
+			sleep 10
+		else
+			break
+		fi
+	done
+	if [! -e ./out ]; then
+		echo "ERROR: Directory locked, no output file created, aborting"
+		exit 1
+	fi
+fi
+
+for i in $(seq 1 10)
+do	
+	if [ -e ./lock ]; then
+		sleep 10
+	else 
+		break
+	fi
+	if [ $i == 10 ]; then
+		echo "Error, directory locked too long, exit 1"
+		exit 1
+	fi
+done
 	
 	
