@@ -1,11 +1,11 @@
 // #include "interface.h"
-#include "semchem_interface.h"
+#include "semchem_interface.hh"
 #include "read_ini.h"
 #include "system.hh"
 #include <math.h>
 #include <stdio.h>
-#include <cstdlib>
-#include <cstring>
+//#include <cstdlib>
+//#include <cstring>
 
 char *OptGetStr(const char *section, const char *key, const char *def);
 double OptGetDbl(const char *section, const char *key, const char *def); //def as default value

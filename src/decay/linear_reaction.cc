@@ -1,4 +1,4 @@
-#include "Linear_reaction.h"
+#include "linear_reaction.hh"
 #include "system.hh"
 #include <iostream>
 #include <cstring>

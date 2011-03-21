@@ -59,8 +59,8 @@
 #include "mesh/ini_constants_mesh.hh"
 #include "sparse_graph.hh"
 //#include "profiler.hh"
-#include "semchem/semchem_interface.h"
-#include "decay/Linear_reaction.h"
+#include "semchem/semchem_interface.hh"
+#include "decay/linear_reaction.hh"
 #include <string.h>
 
 static double *transport_aloc_pi(Mesh*);

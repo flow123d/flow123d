@@ -106,6 +106,7 @@ public:
 	  local_matrix == NULL;
           return local_matrix; 
        }
+       return NULL;
     }
 
     /// Get RHS.

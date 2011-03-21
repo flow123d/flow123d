@@ -70,7 +70,7 @@ $(OBJS)/transport.o\
 $(OBJS)/sys_profiler.o\
 $(OBJS)/la_linsys.o\
 $(OBJS)/time_governor.o\
-$(OBJS)/decay/Linear_reaction.o\
+$(OBJS)/decay/linear_reaction.o\
 $(OBJS)/semchem/che_semchem.o\
 $(OBJS)/semchem/semchem_interface.o\
 $(OBJS)/semchem/cti_ichnew.o

@@ -31,9 +31,9 @@
 #define NODE_H
 
 #include <mesh_types.hh>
-#include <point.h>
 
-using namespace dealii;
+
+
 
 /**
  * Class of node.
@@ -43,7 +43,6 @@ class Node {
 private:
     /** Coordinates of node */
     double* coordinates;
-    Point<3>    point;
 
 public:
     Node();
