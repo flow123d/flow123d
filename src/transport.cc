@@ -1048,7 +1048,9 @@ void ConvectionTransport::convection() {
     	//if(()){ //compute decay just in selected times
     		for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
     			(*decayRad[0]).Compute_reaction(conc[MOBILE], reaction_matrix, n_subst, loc_el);
-    			(*decayRad[0]).Compute_reaction(conc[IMMOBILE], reaction_matrix, n_subst, loc_el);
+    			if(dual_porosity == true){
+    				(*decayRad[0]).Compute_reaction(conc[IMMOBILE], reaction_matrix, n_subst, loc_el);
+    			}
     		}
     	//}
     	if(t == steps){
