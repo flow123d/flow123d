@@ -45,6 +45,14 @@
 #include "problem.h"
 #include "xio.h"
 
+#ifdef WINDOWS
+  #include <direct.h>
+  #define GetCurrentDir _getcwd
+#else
+  #include <unistd.h>
+  #define GetCurrentDir getcwd
+#endif
+
 SystemInfo sys_info;
 
 static bool petsc_initialized = false;
@@ -583,4 +591,100 @@ bool skip_to( FILE *const in, const char *section )
     }
 
     return(false);
+}
+
+IONameHandler* IONameHandler::instance = NULL;
+/*!
+ * @brief Returns instance of IONameHandler.
+ */
+IONameHandler* IONameHandler::getInstance() {
+	if (!instance) {
+		instance = new IONameHandler();
+		instance->initializeRootDir();
+		instance->initializePlaceHolder();
+	}
+	return instance;
+}
+/**
+ * TODO: Treat condition - error message?
+ */
+void IONameHandler::initializeRootDir() {
+	char cCurrentPath[FILENAME_MAX];
+
+	if (!GetCurrentDir(cCurrentPath, sizeof(cCurrentPath)))
+	{
+	    //return errno;
+	}
+	cCurrentPath[sizeof(cCurrentPath) - 1] = '/0'; /* not really required */
+	//std::cout << "The current working directory is " << cCurrentPath << std::endl;
+	this->rootDir = cCurrentPath;
+}
+
+std::string IONameHandler::getRootDir() {
+	return this->rootDir;
+}
+/*!
+ * @brief Returns absolute path to given file.
+ * @param[in] fileName Filename relatively to root directory.
+ */
+std::string IONameHandler::getFileName(std::string fileName) {
+	std::string file = this->getRootDir() + "/" + fileName;
+	for (std::map<std::string,std::string>::const_iterator it = this->placeHolder.begin(); it != this->placeHolder.end(); it++) {
+		size_t i = file.find((*it).first,0);
+		if(i != std::string::npos) {
+			file.replace(i, (*it).first.size(), (*it).second);
+		}
+	}
+	return file;
+}
+/*!
+ * @brief Returns absolute path to given file.
+ * @param[in] fileName Filename relatively to root directory.
+ */
+const char * IONameHandler::getFileName(char * fileName) {
+	std::string tmpFileName(fileName);
+	return (this->getFileName(tmpFileName)).c_str();
+}
+/*!
+ * @brief Add new item to place holder.
+ * @param[in] key Key of new item.
+ * @param[in] val Value of new item.
+ */
+bool IONameHandler::addPlaceHolderItem(std::string key, std::string val) {
+	this->placeHolder.insert( pair<std::string,std::string>(key,val));
+	return true;
+}
+/*!
+ * @brief Removes the key (and its corresponding value) from place holder.
+ * @param[in] key The key that needs to be removed.
+ * @return The value to which the key had been mapped in place holder, or empty string if the key did not have a mapping.
+ */
+std::string IONameHandler::removePlaceHolderItem(std::string key) {
+	std::string ret = "";
+	for (std::map<std::string,std::string>::iterator it = this->placeHolder.begin(); it != this->placeHolder.end(); it++) {
+		if ((*it).first.compare(key) == 0) {
+			ret += (*it).second;
+			this->placeHolder.erase(it);
+			break;
+		}
+	}
+	return ret;
+}
+
+void IONameHandler::initializePlaceHolder() {
+	PetscTruth flg;
+	char dir[PETSC_MAX_PATH_LEN];     /* directory name */
+
+	/* Initialize input directory name */
+	PetscOptionsHasName(PETSC_NULL,"-i",&flg);
+	if (flg) {
+		PetscOptionsGetString(PETSC_NULL,"-i",dir,PETSC_MAX_PATH_LEN,&flg);
+	    this->addPlaceHolderItem("${INPUT}",dir);
+	}
+	/* Initialize output directory name */
+	PetscOptionsHasName(PETSC_NULL,"-o",&flg);
+	if (flg) {
+		PetscOptionsGetString(PETSC_NULL,"-o",dir,PETSC_MAX_PATH_LEN,&flg);
+	    this->addPlaceHolderItem("${OUTPUT}",dir);
+	}
 }

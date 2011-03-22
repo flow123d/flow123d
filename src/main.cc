@@ -105,7 +105,9 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
              Source files have to be in the current directory.\n\
     -S       Compute MH problem\n\
              Source files have to be in the same directory as ini file.\n\
-    -c       Convert flow data files into Gmsh parsed post-processing file format\n";
+    -c       Convert flow data files into Gmsh parsed post-processing file format\n\
+    -i       String used to change the 'variable' ${INPUT} in the file path.\n\
+    -o       String used to change the 'variable' ${OUTPUT} in the file path.\n";
 
     xprintf(MsgLog, "Parsing program parameters ...\n");
 
@@ -163,7 +165,7 @@ int main(int argc, char **argv) {
     } else {
         ConstantDB::getInstance()->setInt("Goal", goal);
     }
-    
+
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
     system_set_from_options();

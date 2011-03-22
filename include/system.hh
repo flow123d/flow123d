@@ -136,6 +136,38 @@ char * xstrtok(char *s, int position = -1);
 char * xstrtok(char*,const char* delim, int position = -1);
 int    xchomp( char * s );
 
+/**
+ * @brief Singleton class used to change given 'variables' in the file path.
+ *
+ * Example usage:
+ * @code
+ *   IONameHandler::getInstance()->getFileName("relative/path/with/${VAR}/flow.ini");
+ * @endcode
+ */
+class IONameHandler {
+public:
+  static IONameHandler* getInstance();
+  const char * getFileName(char * fileName);
+  string getFileName(string fileName);
+  bool addPlaceHolderItem(string key,string val);
+  string removePlaceHolderItem(string key);
+private:
+  static IONameHandler* instance;
+  string rootDir;
+  std::map<string,string> placeHolder;
+
+  // Private constructor prevents instantiation from other classes
+  IONameHandler() {};
+  // Private copy constructor
+  IONameHandler(IONameHandler const&) {};
+  // Private assignment operator
+  IONameHandler& operator=(IONameHandler const&) {};
+
+  void initializeRootDir();
+  void initializePlaceHolder();
+  string getRootDir();
+};
+
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:
