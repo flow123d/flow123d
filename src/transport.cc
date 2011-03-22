@@ -36,6 +36,8 @@
  *
  */
 //#include <cmath>
+//#include "system.hh"
+//#include "xio.h"
 
 #include "constantdb.h"
 #include "system.hh"
@@ -81,9 +83,10 @@ void ConvectionTransport::make_transport() {
 
         make_transport_partitioning();
         alloc_transport_vectors();
-        transport_vectors_init();
+        read_initial_condition();
         alloc_transport_structs_mpi();
         fill_transport_vectors_mpi();
+     //   read_initial_condition();
 
        // read_reaction_list();
 
@@ -150,6 +153,7 @@ void ConvectionTransport::get_reaction(int i,oReaction *reaction) {
 //=============================================================================
 void ConvectionTransport::transport_init() {
     //struct Transport *transport = problem->transport;
+//	mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
     char *snames, *sscales;
     F_ENTRY;
 
@@ -182,6 +186,9 @@ void ConvectionTransport::transport_init() {
         sscales = OptGetStr("Transport", "Substances_density_scales", "1.0");
         subst_scales(sscales);
     }
+
+   // n_elements = mesh->n_elements();
+
 /*
     reaction = NULL;
     n_reaction = 0;
@@ -218,23 +225,41 @@ void ConvectionTransport::subst_scales(char *line) {
     	substance_density_scale[sbi] = atof(strtok(sbi == 0 ? line : NULL, " \t,;"));
 }
 //=============================================================================
-// INITIALIZE TRANSPORT STRUCTURES
+// READ INITIAL CONDITION
 //=============================================================================
-void ConvectionTransport::transport_vectors_init() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+void ConvectionTransport::read_initial_condition() {
+		Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+		FILE	*in;		  // input file
+		char     line[ LINE_SIZE ]; // line of data file
+		int sbi,index, id, eid, i,n_concentrations;
 
-    ElementFullIter ele = ELEMENT_FULL_ITER_NULL;
-    //    int s;
-    int i, sbi, n_subst = n_substances;
+		xprintf( Msg, "Reading concentrations...")/*orig verb 2*/;
+		in = xfopen( concentration_fname, "rt" );
+		skip_to( in, "$Concentrations" );
+		xfgets( line, LINE_SIZE - 2, in );
+		n_concentrations = atoi( xstrtok( line) );
+		INPUT_CHECK(!( n_concentrations < 1 ),"Number of concentrations < 1 in function read_concentration_list()\n");
+	    INPUT_CHECK(!( mesh->n_elements() != n_concentrations),"Different number of elements and concentrations\n");
 
-    for (sbi = 0; sbi < n_subst; sbi++) {
-        i = 0;
-        for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-            ele = mesh->element(el_4_loc[loc_el]);
-            conc[MOBILE][sbi][i] = ele->start_conc->conc[sbi]; // = 0;
-            pconc[MOBILE][sbi][i] = ele->start_conc->conc[sbi];
-            i++;
-        }
+	    for (i = 0; i < n_concentrations; i++) {
+	    	xfgets( line, LINE_SIZE - 2, in );
+	    	ASSERT(!(line == NULL),"NULL as argument of function parse_concentration_line()\n");
+	    	id    = atoi( xstrtok( line) );	// TODO: id musi byt >0 nebo >=0 ???
+	    	INPUT_CHECK(!( id < 0 ),"Id number of concentration must be > 0\n");
+	    	eid    = atoi( xstrtok( NULL) );
+	    	if(el_ds->is_local(mesh->element.find_id(eid).index())){
+	    		index = mesh->element.find_id(eid).index() - el_ds->begin();
+	    		for( sbi = 0; sbi < n_substances; sbi++ ){
+	    			conc[MOBILE][ sbi ][index] = atof( xstrtok( NULL) );
+	    			pconc[MOBILE][ sbi ][index] = conc[MOBILE][ sbi ][index];
+	    		}
+	    	}
+	    }
+
+		xfclose( in );
+		xprintf( MsgVerb, " %d concentrations readed. ", n_concentrations )/*orig verb 4*/;
+		xprintf( Msg, "O.K.\n")/*orig verb 2*/;
+
 
         // TODO:
         // Why explicit application of boundary condition ?
@@ -248,7 +273,8 @@ void ConvectionTransport::transport_vectors_init() {
          transport->pconc[MOBILE][sbi][i++]
          = elm->side[s]->cond->transport_bcd->conc[sbi];
          }*/
-    }
+
+
 }
 //=============================================================================
 //	ALLOCATE OF TRANSPORT VARIABLES (ELEMENT & NODES)
@@ -466,7 +492,14 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     struct Neighbour *ngh;
     //struct Transport *transport;
     int n, s, i, j, np, rank, new_j, new_i;
-    double max_sum, flux, aij, aii;
+    double max_sum, flux, aij, aii, *solution;
+    /*
+    DarcyFlow *water;
+
+    water = problem->water;
+    solution = water.solution();
+    id = water
+*/
 
     /*
      FOR_ELEMENTS(elm)
@@ -477,6 +510,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
      getchar();
      */
+
+
+
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     MPI_Comm_size(PETSC_COMM_WORLD, &np);

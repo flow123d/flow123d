@@ -61,7 +61,7 @@ public:
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
 	void transport_init(); //
-	void transport_vectors_init(); //
+	void read_initial_condition(); //
 	void alloc_transport_vectors(); //
 	void alloc_density_vectors(); //
 	void alloc_transport_structs_mpi(); //
@@ -93,13 +93,11 @@ public:
 	char            *transport_out_fname;// Name of file of trans. output
 	int              dens_step;            //
 	double 			update_dens_time;
+
 protected:
     Mesh *mesh;
     MaterialDatabase *mat_base;
 
-
-
-//    TimeGovernor *time;
 
 private:
 	void subst_names(char *line); //
@@ -134,6 +132,7 @@ private:
 
         	// Transport
         	bool             transport_on;    // Compute transport YES/NO
+        	//unsigned int 			n_elements; 		// number of elements
 
         	char            *concentration_fname;// Name of file of concentration
             bool              sorption;     // Include sorption  YES/NO
