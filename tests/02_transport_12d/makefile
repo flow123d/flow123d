@@ -1,4 +1,4 @@
-INI_FILES="flow.ini"
+INI_FILES="flow.ini flow_vtk.ini"
 NPROC="1 2"
 
 test:
