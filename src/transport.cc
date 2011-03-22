@@ -921,8 +921,8 @@ void ConvectionTransport::convection() {
     int steps, step, save_step, frame = 0;
     register int t;
     int n_subst,sbi,elm_pos,rank,i,size;
-  	double **reaction_matrix;
-  	Linear_reaction **decayRad;
+//  	double **reaction_matrix;
+  	Linear_reaction *decayRad;
   //FILE *fw_chem; //clean the output file for chemistry
     //struct Problem *problem = trans->problem;
     //struct TMatrix *tmatrix = problem->transport->tmatrix;
@@ -1027,38 +1027,36 @@ void ConvectionTransport::convection() {
 
     	if(t == 1){
     		int nr_of_decays;
-    		reaction_matrix = (double **)xmalloc(n_subst * sizeof(double*));
-    		for(rows = 0; rows < n_subst;rows++){
+    		//reaction_matrix = (double **)xmalloc(n_subst * sizeof(double*));
+    		/*for(rows = 0; rows < n_subst;rows++){
     			reaction_matrix[rows] = (double *)xmalloc(n_subst * sizeof(double));
     			for(cols = 0; cols < n_subst; cols++) reaction_matrix[rows][cols] = 0.0;
-    		}
+    		}*/
     		nr_of_decays = OptGetInt("Decay","Nr_of_decays","1");
-    		decayRad = (Linear_reaction **)xmalloc(nr_of_decays * sizeof(Linear_reaction *));
-    		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
-    			//here should be generated string insted of "Decay_1", used bellow
-    			sprintf(dec_name,"Decay_%d", dec_name_nr);
-    			xprintf(Msg,"\n%s\n",dec_name);
-    			decayRad[dec_nr] = new Linear_reaction(decay, 6, dec_name, reaction_matrix); //probably needs cstring.h inclusion
-    			decayRad[dec_nr]->Modify_reaction_matrix(reaction_matrix, n_subst, time_step);
-    			dec_name_nr++;
-    		}
-    		decayRad[0]->Get_indeces(); //just a control
-    		decayRad[0]->Get_half_lives();
+    		//here should be generated string insted of "Decay_1", used bellow
+    		sprintf(dec_name,"Decay_%d", dec_name_nr);
+    		decayRad = new Linear_reaction(decay, n_subst, dec_name); //probably needs cstring.h inclusion
+        	for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
+    			decayRad->Modify_reaction_matrix(n_subst, time_step);
+        	}
+    		dec_name_nr++;
+    		decayRad->Get_indeces(); //just a control
+    		decayRad->Get_half_lives();
     	}// reaction itself folows
     	//if(()){ //compute decay just in selected times
     		for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
-    			(*decayRad[0]).Compute_reaction(conc[MOBILE], reaction_matrix, n_subst, loc_el);
+    			(*decayRad).Compute_reaction(conc[MOBILE], n_subst, loc_el);
     			if(dual_porosity == true){
-    				(*decayRad[0]).Compute_reaction(conc[IMMOBILE], reaction_matrix, n_subst, loc_el);
+    				(*decayRad).Compute_reaction(conc[IMMOBILE], n_subst, loc_el);
     			}
     		}
     	//}
     	if(t == steps){
-    		for(rows = 0; rows < n_subst;rows++){
+    		/*for(rows = 0; rows < n_subst;rows++){
     			free(reaction_matrix[rows]);
     			reaction_matrix[rows] = NULL;
     		}
-    		free(reaction_matrix);
+    		free(reaction_matrix)*/;
     	}
     }else{
     	xprintf(Msg,"\nDecay is not computed.\n");
