@@ -15,14 +15,15 @@ Linear_reaction::Linear_reaction()
 	substance_ids = NULL;
 }
 
-Linear_reaction::Linear_reaction(REACTION_TYPE type, int n_subst, char *section, double **reaction_matrix)
-	: half_lives(NULL), substance_ids(NULL)
+Linear_reaction::Linear_reaction(REACTION_TYPE type, int n_subst, char *section)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL)
 {
-	this->react_type = type;
-	this->reaction_matrix = reaction_matrix;
-	this->nr_of_isotopes = this->Set_nr_of_isotopes(section);
-	this->half_lives = this->Set_half_lives(section);
-	this->substance_ids = this->Set_indeces(section);
+	react_type = type;
+	reaction_matrix = reaction_matrix;
+	nr_of_isotopes = Set_nr_of_isotopes(section);
+	half_lives = Set_half_lives(section);
+	substance_ids = Set_indeces(section);
+	reaction_matrix = Prepare_reaction_matrix(n_subst);
 }
 
 Linear_reaction::~Linear_reaction()
@@ -40,12 +41,28 @@ Linear_reaction::~Linear_reaction()
 	reaction_matrix = NULL;
 }
 
-/*double **Prepare_reaction_matrix(int n_subst) //reaction matrix initialization
+double **Linear_reaction::Prepare_reaction_matrix(int n_subst) //reaction matrix initialization
 {
-	;
-}*/
+	int index, rows, cols;
 
-double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n_subst, double time_step) //prepare the matrix, which describes reactions
+	this->reaction_matrix = (double **)xmalloc(n_subst * sizeof(double*));//allocation section
+	for(rows = 0; rows < n_subst; rows++){
+		reaction_matrix[rows] = (double *)xmalloc(n_subst * sizeof(double));
+	}
+
+	for(rows = 0; rows < n_subst;rows++){
+		for(cols = 0; cols < n_subst; cols++) reaction_matrix[rows][cols] = 0.0;
+	}
+
+	for(rows = 0; rows < nr_of_isotopes;rows++){
+		index = substance_ids[rows] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
+		reaction_matrix[index][index] = 1.0;
+	}
+	return reaction_matrix;
+}
+
+//double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n_subst, double time_step) //prepare the matrix, which describes reactions
+double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) //prepare the matrix, which describes reactions
 {
 	int rows,cols, index, prev_index;
 	double rel_step, prev_rel_step;
@@ -54,13 +71,13 @@ double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n
 		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
 		return NULL;
 	}
-		for(cols = 0; cols < this->nr_of_isotopes; cols++){
-			rel_step = time_step/this->half_lives[cols];
-			index = this->substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
+		for(cols = 0; cols < nr_of_isotopes; cols++){
+			rel_step = time_step/half_lives[cols];
+			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 			if(cols == 0){
-				reaction_matrix[index][index] = 1.0 - pow(0.5,rel_step); // this is not correct, 1.0 should appear in initialization
+				reaction_matrix[index][index] -= pow(0.5,rel_step);
 			}else{
-				reaction_matrix[index][index] -= pow(0.5,rel_step);// this is not correct, 1.0 should appear in initialization
+				reaction_matrix[index][index] -= pow(0.5,rel_step);
 				reaction_matrix[prev_index][index] += pow(0.5,prev_rel_step);
 			}
 			prev_rel_step = rel_step;
@@ -69,7 +86,7 @@ double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n
 	return reaction_matrix;
 }
 
-double **Linear_reaction::Compute_reaction(double **concentrations, double **reaction_matrix, int n_subst, int loc_el) //multiplication of concentrations array by reaction matrix
+double **Linear_reaction::Compute_reaction(double **concentrations, int n_subst, int loc_el) //multiplication of concentrations array by reaction matrix
 {
 	int cols, rows, both;
 	double *prev_conc = (double *)xmalloc(n_subst * sizeof(double));
@@ -111,12 +128,12 @@ REACTION_TYPE Linear_reaction::Get_reaction_type()
 int Linear_reaction::Set_nr_of_isotopes(char *section)
 {
 	nr_of_isotopes = OptGetInt(section,"Nr_of_isotopes","0");
-	return this->nr_of_isotopes;
+	return nr_of_isotopes;
 }
 
 int Linear_reaction::Get_nr_of_isotopes()
 {
-	return this->nr_of_isotopes;
+	return nr_of_isotopes;
 }
 
 double *Linear_reaction::Set_half_lives(char *section)
