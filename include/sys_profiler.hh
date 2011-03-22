@@ -209,7 +209,7 @@ public:
     static Profiler* instance() {
         //singleton pattern implementation
         if (!_instance)
-            _instance = new Profiler(NULL);
+            _instance = new Profiler(PETSC_COMM_WORLD);
 
         return _instance;
     }

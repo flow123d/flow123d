@@ -110,7 +110,7 @@ namespace flow
         /**
          * Prints the stack into a given file.
          */
-        void static stack_print( FILE * fw )
+        static void  stack_print( FILE * fw )
         {
             fprintf( fw, "Stack trace, depth: %u\n", (unsigned int) program_stack.size());
             for( std::list<std::string>::reverse_iterator psi=program_stack.rbegin(); psi!=program_stack.rend(); psi++ )
@@ -120,7 +120,7 @@ namespace flow
         /**
          * As previous, but output into C++ output stream.
          */
-        void static stack_print( std::ostream * os )
+        static void  stack_print( std::ostream * os )
         {
             *os << "Stack trace, depth: " << program_stack.size() << std::endl;
             for( std::list<std::string>::iterator psi=program_stack.begin(); psi!=program_stack.end(); psi++ )
