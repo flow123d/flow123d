@@ -38,7 +38,7 @@ PETSC_ARCH=gcc_mpich
 #PETSC_ARCH=
 
 #set name of machine
-export MACHINE_NAME=hydra
+MACHINE=hydra
 
 
 ##################################################################################

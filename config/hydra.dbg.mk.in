@@ -38,7 +38,7 @@ PETSC_DIR=/export/home/jan.brezina/local/petsc-3.0.0-p11
 PETSC_ARCH=gcc_mpich
 
 #set name of machine
-export MACHINE_NAME=hydra
+MACHINE=hydra
 
 ##################################################################################
 ## user should not change this
