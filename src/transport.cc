@@ -1059,41 +1059,35 @@ void ConvectionTransport::convection() {
     //======================================
     if(problem->decay_on == true){
 		int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
-		char dec_name[30];
+		//char dec_name[30];
 
     	if(t == 1){
-    		int nr_of_decays;
-    		//reaction_matrix = (double **)xmalloc(n_subst * sizeof(double*));
-    		/*for(rows = 0; rows < n_subst;rows++){
-    			reaction_matrix[rows] = (double *)xmalloc(n_subst * sizeof(double));
-    			for(cols = 0; cols < n_subst; cols++) reaction_matrix[rows][cols] = 0.0;
-    		}*/
-    		nr_of_decays = OptGetInt("Decay","Nr_of_decays","1");
+    		decayRad = new Linear_reaction(decay, n_subst, "Decay_1", time_step);
+    		//int nr_of_decays;
+    		//nr_of_decays = OptGetInt("Decay","Nr_of_decays","1");
     		//here should be generated string insted of "Decay_1", used bellow
-    		sprintf(dec_name,"Decay_%d", dec_name_nr);
+    		/*sprintf(dec_name,"Decay_%d", dec_name_nr);
     		decayRad = new Linear_reaction(decay, n_subst, dec_name); //probably needs cstring.h inclusion
         	for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
     			decayRad->Modify_reaction_matrix(n_subst, time_step);
         	}
-    		dec_name_nr++;
-    		decayRad->Get_indeces(); //just a control
-    		decayRad->Get_half_lives();
-    	}// reaction itself folows
+    		dec_name_nr++;*/
+    	}// reaction itself follows
     	//if(()){ //compute decay just in selected times
-    		for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
-    			(*decayRad).Compute_reaction(conc[MOBILE], n_subst, loc_el);
-    			if(dual_porosity == true){
-    				(*decayRad).Compute_reaction(conc[IMMOBILE], n_subst, loc_el);
-    			}
+    	for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
+    		(*decayRad).Compute_reaction(pconc[MOBILE], n_subst, loc_el);
+    		if(dual_porosity == true){
+    			(*decayRad).Compute_reaction(pconc[IMMOBILE], n_subst, loc_el);
     		}
+    	}
     	//}
-    	if(t == steps){
-    		/*for(rows = 0; rows < n_subst;rows++){
+    	/*if(t == steps){
+    		for(rows = 0; rows < n_subst;rows++){
     			free(reaction_matrix[rows]);
     			reaction_matrix[rows] = NULL;
     		}
-    		free(reaction_matrix)*/;
-    	}
+    		free(reaction_matrix);
+    	}*/
     }else{
     	xprintf(Msg,"\nDecay is not computed.\n");
     }
