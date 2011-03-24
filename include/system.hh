@@ -141,20 +141,27 @@ int    xchomp( char * s );
  *
  * Example usage:
  * @code
- *   IONameHandler::getInstance()->getFileName("relative/path/with/${VAR}/flow.ini");
+ *   IONameHandler::get_instance()->get_input_file_name("relative/path/with/${VAR}/flow.ini");
+ * @endcode
+ *
+ * Another example usage:
+ * @code
+ *   IONameHandler &io_name_handler = *(IONameHandler::get_instance());
+ *   io_name_handler.get_input_file_name("relative/path/with/${INPUT}/var/mesh.msh");
  * @endcode
  */
 class IONameHandler {
 public:
-  static IONameHandler* getInstance();
-  const char * getFileName(char * fileName);
-  string getFileName(string fileName);
-  bool addPlaceHolderItem(string key,string val);
-  string removePlaceHolderItem(string key);
+  static IONameHandler* get_instance();
+  string get_input_file_name(string file_name);
+  string get_output_file_name(string file_name);
+  bool add_placeholder_item(string key,string value);
+//  string remove_placeholder_item(string key);
 private:
   static IONameHandler* instance;
-  string rootDir;
-  std::map<string,string> placeHolder;
+  string root_dir;
+  string output_dir;
+  std::map<string,string> placeholder;
 
   // Private constructor prevents instantiation from other classes
   IONameHandler() {};
@@ -163,9 +170,12 @@ private:
   // Private assignment operator
   IONameHandler& operator=(IONameHandler const&) {};
 
-  void initializeRootDir();
-  void initializePlaceHolder();
-  string getRootDir();
+  void initialize_root_dir();
+  void initialize_output_dir();
+  void initialize_placeholder();
+  string get_output_dir();
+  string get_root_dir();
+  string substitute_value(string file);
 };
 
 #endif

@@ -107,7 +107,7 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
              Source files have to be in the same directory as ini file.\n\
     -c       Convert flow data files into Gmsh parsed post-processing file format\n\
     -i       String used to change the 'variable' ${INPUT} in the file path.\n\
-    -o       String used to change the 'variable' ${OUTPUT} in the file path.\n";
+    -o       Absolute path to output directory.\n";
 
     xprintf(MsgLog, "Parsing program parameters ...\n");
 
