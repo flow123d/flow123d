@@ -8,7 +8,7 @@
 using namespace std;
 
 Linear_reaction::Linear_reaction()
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation(NULL)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation(NULL), bifurcation_on(false)
 {
 	/*react_type = decay;
 	reaction_matrix = NULL;
@@ -17,15 +17,10 @@ Linear_reaction::Linear_reaction()
 }
 
 Linear_reaction::Linear_reaction(REACTION_TYPE type, int n_subst, char *section, double time_step)
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation(NULL)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation(NULL), bifurcation_on(false)
 {
 	//react_type = type;
 	Set_nr_of_decays(section);
-	//for the first decay under simulation
-	//Set_nr_of_isotopes(section);
-	//Set_half_lives(section);
-	//Set_indeces(section);
-	//Prepare_decaying_isotopes_ids(n_subst);
 	Prepare_reaction_matrix(n_subst);
 	Modify_reaction_matrix_repeatedly(n_subst, section, time_step);
 }
@@ -108,6 +103,31 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) 
 	return reaction_matrix;
 }
 
+double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, int meaningless) //prepare the matrix, which describes reactions, takes bifurcation in acount
+{
+	int rows,cols, index, prev_index;
+	double rel_step, decrease; //, prev_rel_step
+
+	if(reaction_matrix == NULL){
+		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
+		return NULL;
+	}
+
+		for(cols = 0; cols < nr_of_isotopes; cols++){
+			rel_step = time_step/half_lives[cols];
+			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
+			decrease = pow(0.5,rel_step);
+			if(cols > 0){
+				reaction_matrix[prev_index][prev_index] -= bifurcation[prev_index] * pow(0.5,rel_step);
+				reaction_matrix[prev_index][index] += bifurcation[prev_index] * pow(0.5,rel_step);
+			}
+			//prev_rel_step = rel_step;
+			prev_index = index;
+		}
+	Print_reaction_matrix(n_subst);//just for control print
+	return reaction_matrix;
+}
+
 double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, char *section, double time_step)
 {
 	char dec_name[30];
@@ -123,8 +143,14 @@ double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, char *s
 			Get_indeces(); //just a control
 			Get_half_lives(); //just a control
 			Modify_decaying_isotopes_ids();//first place appearence of an isotope in [Decay_i]
-			Set_bifurcation(dec_name);
-			Modify_reaction_matrix(n_subst, time_step);
+			Set_bifurcation_on(dec_name);
+			if(bifurcation_on == true){
+				Set_bifurcation(dec_name);
+				//place for a different implementation of Modify_reaction_matrix
+				Modify_reaction_matrix(n_subst, time_step, 1);
+			}else{
+				Modify_reaction_matrix(n_subst, time_step);
+			}
 			//free(dec_name);
 			dec_name_nr++;
 		}
@@ -281,15 +307,13 @@ int *Linear_reaction::Get_indeces()
 
 	if(substance_ids == NULL)
 	{
-		//std::cout << "\nDecay chain substances order is not defined.\n";
 		xprintf(Msg,"\nDecay chain substances order is not defined.");
 	}else{
-		//std::cout << "\nDecay chain substences order is defined by " << nr_of_isotopes << ", " << sizeof(substance_ids) <<", "<< sizeof(*substance_ids) << " indeces:";
 		xprintf(Msg,"\nDecay chain substences order is defined by %d indeces:", nr_of_isotopes);
 		for(i = 0; i < nr_of_isotopes ; i++)
 		{
-			if(i < (nr_of_isotopes  - 1)) xprintf(Msg," %d,",substance_ids[i]); //std::cout << " " << substance_ids[i] <<",";
-			if(i == (nr_of_isotopes  - 1)) xprintf(Msg," %d\n",substance_ids[i]); //std::cout << " " << substance_ids[i] <<"\n";
+			if(i < (nr_of_isotopes  - 1)) xprintf(Msg," %d,",substance_ids[i]);
+			if(i == (nr_of_isotopes  - 1)) xprintf(Msg," %d\n",substance_ids[i]);
 		}
 	}
 	return substance_ids;
@@ -374,11 +398,16 @@ void Linear_reaction::Set_bifurcation(char *section)
 	    bifurcation[j] = atof(pom_buf);
 	    xprintf(Msg,"\n %d-th isotopes bifurcation percentage is %f",j,bifurcation[j]);
 	    pom_buf = strtok( NULL, separators );
-	    control_sum += bifurcation[j];
+	    if(j > 0)control_sum += bifurcation[j];
 	 }
-	if(control_sum != 1.0) xprintf(Msg,"\nSum of bifurcation parameters should be 1.0, because of mass conservation law.\n");
+	if(control_sum != 1.0) xprintf(Msg,"\nSum of bifurcation parameters should be 1.0 but it is %f, because of mass conservation law.\n", control_sum);
 	if( pom_buf != NULL )
 	 {
 	    xprintf(Msg,"\nMore parameters then isotopes has been given. %d", 0);
 	 }
+}
+
+void Linear_reaction::Set_bifurcation_on(char *section)
+{
+	bifurcation_on = OptGetBool(section,"Bifurcation_on","no");
 }
