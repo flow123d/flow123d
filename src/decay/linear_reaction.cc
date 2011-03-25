@@ -105,7 +105,7 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) 
 
 double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, int meaningless) //prepare the matrix, which describes reactions, takes bifurcation in acount
 {
-	int rows,cols, index, prev_index;
+	int rows,cols, index, first_index;
 	double rel_step, decrease; //, prev_rel_step
 
 	if(reaction_matrix == NULL){
@@ -113,17 +113,18 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, 
 		return NULL;
 	}
 
-		for(cols = 0; cols < nr_of_isotopes; cols++){
-			rel_step = time_step/half_lives[cols];
-			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
-			decrease = pow(0.5,rel_step);
-			if(cols > 0){
-				reaction_matrix[prev_index][prev_index] -= bifurcation[prev_index] * pow(0.5,rel_step);
-				reaction_matrix[prev_index][index] += bifurcation[prev_index] * pow(0.5,rel_step);
-			}
-			//prev_rel_step = rel_step;
-			prev_index = index;
+	first_index = substance_ids[0]-1;
+	for(cols = 0; cols < nr_of_isotopes; cols++){
+		rel_step = time_step/half_lives[cols];
+		index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
+		decrease = pow(0.5,rel_step);
+		if(cols > 0){
+			reaction_matrix[first_index][first_index] -= bifurcation[cols] * pow(0.5,rel_step);
+			reaction_matrix[first_index][index] += bifurcation[cols] * pow(0.5,rel_step);
 		}
+		//prev_rel_step = rel_step;
+		//prev_index = index;
+	}
 	Print_reaction_matrix(n_subst);//just for control print
 	return reaction_matrix;
 }
