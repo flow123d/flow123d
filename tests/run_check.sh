@@ -24,31 +24,28 @@
 #set -x
 # This script compares two given diretories
 
+#set if nor running as part of run_test.sh script
+#TEST_DIR=/cygdrive/c/cygwin_drive/flow/branches/1.6.5/tests/
+
 # Get actual output dir as the first argument
 OUT=$1
 
 REF_OUT=$2
 
-# file comparison script
+
+# file comparison script, if not running as part of run_test.sh, set absolute path to ndiff
+# ex. NDIFF="/cygdrive/c/cygwin_drive/flow/branches/1.6.5/tests/ndiff.pl"
 NDIFF="${TEST_DIR}/../ndiff.pl"
+
 if [ ! -x "$NDIFF" ]
 then echo "can not find or run ndiff.pl"
+exit 1
 fi
 
-#names of ini files
-INI_FILE=$1
 
-INI=${INI_FILE##*/}
-SOURCE_DIR=${INI_FILE%/*}
-
-#number of processors
-
-SCRIPT_PATH_DIR="$PWD"
-
+#SCRIPT_PATH_DIR="$PWD"
 ERROR=0
 
-suff=.ini
-	
 cd "$REF_OUT"
 	
 #VAR which contains names of files
@@ -57,21 +54,17 @@ VAR=`ls`
 #cycle for checking output files
 for x in $VAR
 do
-#if its err file, compare with empty file
 if [ -d "$x" ]; then
-	if [ ! -e "OUT/$x" ]; then
+	if ! /cygdrive/c/cygwin_drive/flow/branches/1.6.5/tests/run_check.sh "$OUT/$x/" "$REF_OUT/$x/"; then
 		ERROR=1
-	fi
-	if ! ${TEST_DIR}/../run_check.sh "OUT/$x" "$REF_OUT/$x"; then
-		ERROR = 1
-		echo "ERROR:Missing dir to compare($x)"
-	fi
+		echo "ERROR"
+	fi	
 else
 	if [ "$x" == "err" ]; then
 		echo "" | tee -a ${TEST_DIR}/stdout_diff.log
 		echo "Err log:" | tee -a ${TEST_DIR}/stdout_diff.log
 		touch empty
-		if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" empty; then
+		if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" empty | tee -a ${TEST_DIR}/stdout_diff.log; then
 			ERROR=1
 		fi
 		rm empty
@@ -82,7 +75,7 @@ else
 		if [ -a "$OUT/$x" ]; then			
 			echo "" | tee -a ${TEST_DIR}/stdout_diff.log
 			echo "File: $x" | tee -a ${TEST_DIR}/stdout_diff.log
-			if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" "$REF_OUT/$x"; then
+			if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" "$REF_OUT/$x" | tee -a ${TEST_DIR}/stdout_diff.log; then
 				ERROR=1
 			fi
 		else
