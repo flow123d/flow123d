@@ -31,8 +31,8 @@
 # the location of PETSC and used PETSC architecture unless you
 # would to use system wide settings.
 # eg.
-PETSC_DIR=/export/home/jan.brezina/local/petsc-3.0.0-p11
-PETSC_ARCH=gcc_mpich
+PETSC_DIR=/export/apps/petsc-3.0.0-p11
+PETSC_ARCH=gcc_openmpi
 
 #PETSC_DIR=
 #PETSC_ARCH=

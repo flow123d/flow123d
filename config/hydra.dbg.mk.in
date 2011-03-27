@@ -34,8 +34,8 @@
 #PETSC_DIR=$HOME/local/petsc
 #PETSC_ARCH=linux-gcc-dbg
 
-PETSC_DIR=/export/home/jan.brezina/local/petsc-3.0.0-p11
-PETSC_ARCH=gcc_mpich
+PETSC_DIR=/export/apps/petsc-3.0.0-p11
+PETSC_ARCH=gcc_openmpi
 
 #set name of machine
 MACHINE=hydra
