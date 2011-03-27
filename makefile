@@ -50,7 +50,6 @@ bin/mpiexec: makefile.in
 	fi        
 	chmod u+x bin/mpiexec
 
-#${BUILD_DIR} default value is "", must be set in makefile.in when running on bitten
 bin/current_flow:
 	if [ -z "${MACHINE}" ]; then \
 		echo "Using default: current_flow"; \
@@ -59,11 +58,11 @@ bin/current_flow:
 	else \
 		if [ -e "bin/${MACHINE}_flow.sh" ]; then \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"${PWD}/bin/${MACHINE}_flow.sh"' >> bin/current_flow; \
+			echo '"`pwd`/bin/${MACHINE}_flow.sh"' >> bin/current_flow; \
 		else \
 			echo "script for given MACHINE not found, using default"; \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"${PWD}/${BUILD_DIR}/bin/generic_flow.sh"' >> bin/current_flow; \
+			echo '"`pwd`/bin/generic_flow.sh"' >> bin/current_flow; \
 		fi \
 	fi
 	chmod u+x bin/current_flow

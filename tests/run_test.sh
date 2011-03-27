@@ -50,13 +50,33 @@ do
 	exit 1
   fi
 
-  while [ ! -e ./out ]
-  do		
-  	while [ -e ./lock ]
-  	do
-  		sleep 20
-  	done
-  done
+ if [ -e ./lock ]; then
+	for i in $(seq 1 10)
+	do
+		if [! -e ./out ]; then
+			sleep 30
+		else
+			break
+		fi
+	done
+	if [! -e ./out ]; then
+		echo "ERROR: Directory locked, no output file created, aborting"
+		exit 1
+	fi
+fi
+
+for i in $(seq 1 20)
+do	
+	if [ -e ./lock ]; then
+		sleep 30
+	else 
+		break
+	fi
+	if [ $i == 20 ]; then
+		echo "Error, time run out, exit 1"
+		exit 1
+	fi
+done
 
   SAVE_OUTPUT="$TEST_DIR/Results/${i%.ini}.$n"
   if [ -d "$SAVE_OUTPUT" ]; then
