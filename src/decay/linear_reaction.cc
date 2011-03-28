@@ -77,11 +77,10 @@ double **Linear_reaction::Prepare_reaction_matrix(int n_subst) //reaction matrix
 	return reaction_matrix;
 }
 
-//double **Linear_reaction::Modify_reaction_matrix(double **reaction_matrix, int n_subst, double time_step) //prepare the matrix, which describes reactions
 double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) //prepare the matrix, which describes reactions
 {
 	int rows,cols, index, prev_index;
-	double rel_step, prev_rel_step, decrease;
+	double rel_step, prev_rel_step;
 
 	if(reaction_matrix == NULL){
 		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
@@ -89,9 +88,10 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) 
 	}
 
 		for(cols = 0; cols < nr_of_isotopes; cols++){
-			rel_step = time_step/half_lives[cols];
 			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
-			decrease = pow(0.5,rel_step);
+			if(cols < (nr_of_isotopes - 1)){
+				rel_step = time_step/half_lives[cols];
+			}
 			if(cols > 0){
 				reaction_matrix[prev_index][prev_index] -= pow(0.5,prev_rel_step);
 				reaction_matrix[prev_index][index] += pow(0.5,prev_rel_step);
@@ -105,8 +105,8 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) 
 
 double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, int meaningless) //prepare the matrix, which describes reactions, takes bifurcation in acount
 {
-	int rows,cols, index, first_index;
-	double rel_step, decrease; //, prev_rel_step
+	int rows,cols, index, first_index, bif_id;
+	double rel_step, prev_rel_step;
 
 	if(reaction_matrix == NULL){
 		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
@@ -115,15 +115,16 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, 
 
 	first_index = substance_ids[0]-1;
 	for(cols = 0; cols < nr_of_isotopes; cols++){
-		rel_step = time_step/half_lives[cols];
 		index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
-		decrease = pow(0.5,rel_step);
-		if(cols > 0){
-			reaction_matrix[first_index][first_index] -= bifurcation[cols] * pow(0.5,rel_step);
-			reaction_matrix[first_index][index] += bifurcation[cols] * pow(0.5,rel_step);
+		if(cols < (nr_of_isotopes -1)){
+			rel_step = time_step/half_lives[cols];
 		}
-		//prev_rel_step = rel_step;
-		//prev_index = index;
+		if(cols > 0){
+			bif_id = cols -1;
+			reaction_matrix[first_index][first_index] -= bifurcation[bif_id] * pow(0.5,prev_rel_step);
+			reaction_matrix[first_index][index] += bifurcation[bif_id] * pow(0.5,prev_rel_step);
+		}
+		prev_rel_step = rel_step;
 	}
 	Print_reaction_matrix(n_subst);//just for control print
 	return reaction_matrix;
@@ -221,46 +222,46 @@ double *Linear_reaction::Set_half_lives(char *section)
 			half_lives = NULL;
 	}
 	if(half_lives == NULL){
-		xprintf(Msg,"\nAllocation is permited, nr of isotopes %d", this->nr_of_isotopes);
-		this->half_lives = (double *)xmalloc(this->nr_of_isotopes*sizeof(double));
+		xprintf(Msg,"\nAllocation is permited, nr of isotopes %d", nr_of_isotopes);
+		half_lives = (double *)xmalloc((nr_of_isotopes - 1)*sizeof(double));
 		//this->half_lives = new double[this->nr_of_isotopes];
 	}
 
 	strcpy(buffer,OptGetStr(section,"Half_lives",NULL));
 	pom_buf = strtok( buffer, separators );
-	for (j=0; j< this->nr_of_isotopes; j++)
+	for (j=0; j< (nr_of_isotopes-1); j++)
 	{
 		if ( pom_buf == NULL )
 		{
 			xprintf(Msg,"\nHalf-life of %d-th isotope is missing.", j+1);
 		}
-	    this->half_lives[j] = atof(pom_buf);
-	    xprintf(Msg,"\n %d-th isotopes half-live is %f",j,this->half_lives[j]);
+	    half_lives[j] = atof(pom_buf);
+	    xprintf(Msg,"\n %d-th isotopes half-live is %f",j,half_lives[j]);
 	    pom_buf = strtok( NULL, separators );
 	 }
 	 if ( pom_buf != NULL )
 	 {
-	    xprintf(Msg,"\nMore parameters then isotopes has been given. %d", 0);
+	    xprintf(Msg,"\nMore parameters then (isotopes -1) has been given. %d", 0);
 	 }
-	return this->half_lives;
+	return half_lives;
 }
 
 double *Linear_reaction::Get_half_lives()
 {
 	int i;
 
-	if(this->half_lives == NULL)
+	if(half_lives == NULL)
 	{
 		//std::cout << "\nHalf lives are not defined.\n";
 		xprintf(Msg,"\nHalf-lives are not defined.");
 	}else{
 		//cout << "\nHalf lives are defined as:";
 		xprintf(Msg,"\nHalf-lives are defined as:");
-		for(i=0; i < this->nr_of_isotopes ; i++)
+		for(i=0; i < (nr_of_isotopes - 1) ; i++)
 		{
-			if(i < (this->nr_of_isotopes  - 1)) //cout << " " << half_lives[i] <<",";
+			if(i < (nr_of_isotopes  - 2)) //cout << " " << half_lives[i] <<",";
 				xprintf(Msg," %f", half_lives[i]);
-			if(i == (this->nr_of_isotopes  - 1)) //cout << " " << half_lives[i] <<"\n";
+			if(i == (nr_of_isotopes  - 2)) //cout << " " << half_lives[i] <<"\n";
 				xprintf(Msg," %f\n", this->half_lives[i]);
 		}
 	}
@@ -384,13 +385,13 @@ void Linear_reaction::Set_bifurcation(char *section)
 			bifurcation = NULL;
 	}
 	if(bifurcation == NULL){
-		bifurcation = (double *)xmalloc(nr_of_isotopes*sizeof(double));
+		bifurcation = (double *)xmalloc((nr_of_isotopes - 1)*sizeof(double));
 	}
 
 	strcpy(buffer,OptGetStr(section,"Bifurcation",NULL));
 	if(buffer == NULL) return;
 	pom_buf = strtok( buffer, separators );
-	for (j=0; j< nr_of_isotopes; j++)
+	for (j=0; j< (nr_of_isotopes - 1); j++)
 	{
 		if ( pom_buf == NULL )
 		{
@@ -404,7 +405,7 @@ void Linear_reaction::Set_bifurcation(char *section)
 	if(control_sum != 1.0) xprintf(Msg,"\nSum of bifurcation parameters should be 1.0 but it is %f, because of mass conservation law.\n", control_sum);
 	if( pom_buf != NULL )
 	 {
-	    xprintf(Msg,"\nMore parameters then isotopes has been given. %d", 0);
+	    xprintf(Msg,"\nMore parameters then (isotopes -1) has been given. %d", 0);
 	 }
 }
 
