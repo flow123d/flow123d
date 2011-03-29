@@ -109,7 +109,7 @@ void problem_init(struct Problem *problem)
     }
 
     // Material Database
-    problem->material_database = new MaterialDatabase(OptGetStr( "Input", "Material", "\\" ));
+    problem->material_database = new MaterialDatabase(IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" )).c_str());
 
     //Chemie, here should be initialization of chemical reactions simulation, problem (Flow) + global variables (Semchem), in future
     problem->semchemie_on = OptGetBool("Semchem_module","Compute_reactions","no");
@@ -137,13 +137,13 @@ void check_ini_values( struct Problem *problem )
                  ( type == UNSTEADY_SATURATED ) ||
                  ( type == PROBLEM_DENSITY),
                  "Unsupported type of problem: %d\n", type );
-	if( strcmpi( OptGetStr("Input", "Mesh", "\\"), "\\"  ) == 0 )
+	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", "\\")).c_str(), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of mesh file must be defined\n");
-	if( strcmpi( OptGetStr( "Input", "Material", "\\" ), "\\"  ) == 0 )
+	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" )).c_str(), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of material properties file must be defined\n");
-	if( strcmpi( OptGetStr( "Input", "Boundary", "\\" ), "\\"  ) == 0 )
+	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Boundary", "\\" )).c_str(), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of boundary condition file must be defined\n");
-	if( strcmpi( OptGetStr( "Input", "Neighbouring", "\\" ), "\\"  ) == 0 )
+	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" )).c_str(), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of file describing neighbouring must be defined\n");
 	// if( OptGetStr( "Input", "Sources", "\\" ), "\\"  ) == 0 )
 	//	problem->sources_fname = NULL;

@@ -51,7 +51,7 @@ void btc_init(struct BTC *btc){
 
 	char *Btc;
 
-	Btc					= OptGetStr( "Output", "BTC_elms", "-9999" );
+	Btc					= IONameHandler::get_instance()->get_output_file_name(OptGetStr( "Output", "BTC_elms", "-9999" )).c_str();
 	btc->n_BTC_elms		= count_BTC_elms( Btc );
 	btc->BTC_elm		= BTC_elm_list( btc->n_BTC_elms, Btc );
 

@@ -1181,7 +1181,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh *mesh_in, MaterialDatabase *mat_
 
     // read inital condition
 
-    string file_name=OptGetStr( "Input", "Initial", "\\" );
+    string file_name=IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Initial", "\\" ));
     INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
     VecZeroEntries(schur0->get_solution());
 
@@ -1256,7 +1256,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh *mesh_in, MaterialDatabase *ma
 
     // read inital condition
 
-    string file_name=OptGetStr( "Input", "Initial", "\\" );
+    string file_name=IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Initial", "\\" ));
     INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
     VecZeroEntries(schur0->get_solution());
     FieldP0<double> *initial_pressure = new FieldP0<double>(mesh);

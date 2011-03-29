@@ -102,8 +102,7 @@ void make_mesh(struct Problem *problem) {
     F_ENTRY;
 
     ASSERT(!(problem == NULL), "NULL pointer as argument of function make_mesh()\n");
-
-    const char* meshFileName = OptGetStr("Input", "Mesh", NULL);
+    const char* meshFileName = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL)).c_str();
     if (access(meshFileName, R_OK) != 0)
         xprintf(UsrErr, "Cannot read from file %s\n", meshFileName);
 
@@ -117,7 +116,7 @@ void make_mesh(struct Problem *problem) {
     // DF - elements are read by MeshReader
     // --------------------- MeshReader testing - Begin
     MeshReader* meshReader = new GmshMeshReader();
-    meshReader->read(OptGetStr("Input", "Mesh", NULL), mesh);
+    meshReader->read(meshFileName, mesh);
     // --------------------- MeshReader testing - End
 
     read_neighbour_list(mesh);

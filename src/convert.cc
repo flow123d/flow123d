@@ -151,7 +151,8 @@ void output_convert_to_pos_bcd(struct Problem *problem)
   const char *bcd_names[] = {"Dirichlet","Neumann","Newton P","Newton Sigma"};
   FILE *out;
   int li,j,test;
-  char *filename = OptGetStr( "Input", "Boundary", "\\" );
+  // Opravdu je to output - meni se na .pos
+  std::string filename = IONameHandler::get_instance()->get_output_file_name(OptGetStr( "Input", "Boundary", "\\" )).c_str();
   char dbl_fmt[ 16 ];
   ElementIter elm;
   Node* nod;
@@ -161,8 +162,8 @@ void output_convert_to_pos_bcd(struct Problem *problem)
 
   ASSERT(!( problem == NULL ),"NULL as argument of function output_convert_to_pos_bcd()\n");
   sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-  strcat(filename,".pos");
-  out = xfopen( filename, "wt" );
+  filename += ".pos";
+  out = xfopen( filename.c_str(), "wt" );
   xfprintf( out, "View \"%s - mesh\" {\n", OptGetStr("Global", "Description", "No description.") );
   FOR_ELEMENTS(elm)
   {

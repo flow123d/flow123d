@@ -83,7 +83,7 @@ void solver_init( struct Solver *solver) {
     solver->manual_run     = OptGetBool( "Solver", "Manual_solver_run", "no" );
     solver->use_ctrl_file  = OptGetBool( "Solver", "Use_control_file", "no" );
     if (solver->use_ctrl_file)
-    	solver->ctrl_file      = OptGetStr( "Solver", "Control_file", NULL );
+    	solver->ctrl_file      = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Solver", "Control_file", NULL )).c_str();
     solver->use_last_sol    =OptGetBool( "Solver", "Use_last_solution", "no" );
     /// Last solution reuse is possible only for external solvers
     if (solver->use_last_sol && (solver->type == PETSC_SOLVER)) {
