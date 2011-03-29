@@ -28,9 +28,9 @@
 #TEST_DIR=/cygdrive/c/cygwin_drive/flow/branches/1.6.5/tests/
 
 # Get actual output dir as the first argument
-OUT=$1
+OUT="$1"
 
-REF_OUT=$2
+REF_OUT="$2"
 
 
 # file comparison script, if not running as part of run_test.sh, set absolute path to ndiff
@@ -43,7 +43,7 @@ exit 1
 fi
 
 
-#SCRIPT_PATH_DIR="$PWD"
+SCRIPT_PATH_DIR="`pwd`"
 ERROR=0
 
 cd "$REF_OUT"
@@ -55,16 +55,16 @@ VAR=`ls`
 for x in $VAR
 do
 if [ -d "$x" ]; then
-	if ! /cygdrive/c/cygwin_drive/flow/branches/1.6.5/tests/run_check.sh "$OUT/$x/" "$REF_OUT/$x/"; then
+	if ! "$SCRIPT_PATH_DIR/../run_check.sh" "$OUT/$x/" "$REF_OUT/$x/"; then
 		ERROR=1
 		echo "ERROR"
 	fi	
 else
 	if [ "$x" == "err" ]; then
-		echo "" | tee -a ${TEST_DIR}/stdout_diff.log
-		echo "Err log:" | tee -a ${TEST_DIR}/stdout_diff.log
+		echo "" | tee -a "${TEST_DIR}/stdout_diff.log"
+		echo "Err log:" | tee -a "${TEST_DIR}/stdout_diff.log"
 		touch empty
-		if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" empty | tee -a ${TEST_DIR}/stdout_diff.log; then
+		if ! "$NDIFF" -o "${TEST_DIR}/diff.log" "$OUT/$x" empty | tee -a "${TEST_DIR}/stdout_diff.log"; then
 			ERROR=1
 		fi
 		rm empty
@@ -73,13 +73,13 @@ else
 		echo ""
 	else 
 		if [ -a "$OUT/$x" ]; then			
-			echo "" | tee -a ${TEST_DIR}/stdout_diff.log
-			echo "File: $x" | tee -a ${TEST_DIR}/stdout_diff.log
-			if ! "$NDIFF" -o ${TEST_DIR}/diff.log "$OUT/$x" "$REF_OUT/$x" | tee -a ${TEST_DIR}/stdout_diff.log; then
+			echo "" | tee -a "${TEST_DIR}/stdout_diff.log"
+			echo "File: $x" | tee -a "${TEST_DIR}/stdout_diff.log"
+			if ! "$NDIFF" -o "${TEST_DIR}/diff.log" "$OUT/$x" "$REF_OUT/$x" | tee -a "${TEST_DIR}/stdout_diff.log"; then
 				ERROR=1
 			fi
 		else
-			echo "Error: Missing output file: $x" | tee -a ${TEST_DIR}/stdout_diff.log
+			echo "Error: Missing output file: $x" | tee -a "${TEST_DIR}/stdout_diff.log"
 			ERROR=1
 		fi
 	fi

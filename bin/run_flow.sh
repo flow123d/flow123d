@@ -53,7 +53,7 @@ do
 	shift
   elif [ "$1" == "-s" ]; then
     shift
-    INI_FILE=$1
+    INI_FILE="$1"
   elif [ "$1" == "-q" ]; then
     shift
     QueueTime=$1
@@ -83,7 +83,7 @@ then
 fi
 
 
-export INI=${INI_FILE##*/}
+export INI="${INI_FILE##*/}"
 if [ "${INI_FILE%%[^/]*}" == "" ]
 then 
   # relative path
