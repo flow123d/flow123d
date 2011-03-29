@@ -468,7 +468,7 @@ Type of considered reaction (Equilibrium, Kinetics, Slow\_kinetics).
 \\
 \hline
 \key{Stoichiometry} & \type{int} & 0 &
-Stoichiometric coeficients of species taking part in i-th reaction.
+Stoichiometric coeficients of species taking part in $i$-th reaction.
 \\
 \hline
 \key{Kinetic\_constant} & \type{double} & 0.0 &
@@ -484,5 +484,44 @@ Equilibrium constant defining i-th reaction.
 \\
 \hline
 \end{initable}
- 
+
+\newpage
+\begin{initable}{Decay\_module}
+\key{Compute\_decay} & \type{Yes/No} & "No" &
+Enables to switch on simulation of radioactive decay.
+\\
+\hline
+\key{Nr\_of\_decay\_chain} & \type{int} & 0 &
+How many steps is defined decay chain consisting of?
+\\
+\hline
+\end{initable}
+
+\begin{initable}{Decay\_i}
+\key{Reaction\_type} & \type{enumerate} & "decay" &
+In this time just decay type is possible.
+\\
+\hline
+\key{Nr\_of\_isotopes} & \type{int} & 0 &
+How many isotopes does the section work with.
+\\
+\hline
+\key{Substance\_ids} & \type{array of int} & NULL &
+Sequence of ids describing the order of isotopes in decay chain.
+\\
+\hline
+\key{Half\_lives} & \type{array of double} & NULL &
+Contain half-lives belonging to isotopes defined by ids.
+\\
+\hline
+\key{Bifurcation\_on} & \type{Yes/No} & "No" &
+Make it possible to switch of bifurcation in current [Decay\_i].
+\\
+\hline
+\key{Bifurcation} & \type{array of double} & NULL &
+Gives a percentage, which is the first isotope in current [Decay\_i] decaying to products.
+\\
+\hline
+\end{initable}
+
  
