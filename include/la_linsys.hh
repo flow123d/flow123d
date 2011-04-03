@@ -45,11 +45,10 @@
 #define LA_LINSYS_HH_
 
 #include "petscmat.h"
+#include "private/matimpl.h"
 #include "la_schur.hh"
 #include "par_distribution.hh"
 
-// used to access private PETSc data
-#include "../src/mat/impls/is/matis.h"
 
 // **************************************************************
 /*!  @brief  Linear System structure accepted by Solver module
@@ -101,12 +100,6 @@ public:
        {
 	  return local_matrix;
        }
-       else if (type == MAT_MPIAIJ)
-       {
-	  local_matrix == NULL;
-          return local_matrix; 
-       }
-       return NULL;
     }
 
     /// Get RHS.
@@ -265,6 +258,16 @@ private:
     int subdomain_size;                         ///< size of subdomain in MATIS matrix
     int *subdomain_nz;                          ///< For counting non-zero enteries of local subdomain.
 
+    // mimic PETSc struct for IS matrices - included from matis.h
+    // used to access private PETSc data
+    typedef struct {
+       Mat                    A;             /* the local Neumann matrix */
+       VecScatter             ctx;           /* update ghost points for matrix vector product */
+       Vec                    x,y;           /* work space for ghost values for matrix vector product */
+       ISLocalToGlobalMapping mapping;
+       int                    rstart,rend;   /* local row ownership */
+       PetscTruth             pure_neumann;
+    } MatMyIS ;
 };
 
 

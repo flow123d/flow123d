@@ -415,7 +415,7 @@ void LinSys_MATIS::start_allocation()
      ASSERT(err == 0,"Error in MatISGetLocalMat.");
 
      // extract scatter
-     Mat_IS *mis = (Mat_IS*) matrix->data;
+     MatMyIS *mis = (MatMyIS*) matrix->data;
      sub_scatter = mis->ctx;
 
      subdomain_nz= new int[subdomain_size];      // count local nozero for every row of subdomain matrix
