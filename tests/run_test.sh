@@ -24,6 +24,7 @@
 set -x
 # This script assumes that it is running in particular subdir of the "tests"
 # dir. 
+pwd
 export TEST_DIR="`pwd`"
 
 #name of ini file
