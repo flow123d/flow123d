@@ -68,6 +68,7 @@ private:
     void make_element_vector_tetrahedron(ElementFullIter);
 
     void make_sides_scalar();
+    double* make_node_scalar_param(double* scalars);
     void make_node_scalar();
     void make_neighbour_flux();
     //void make_previous_scalar();

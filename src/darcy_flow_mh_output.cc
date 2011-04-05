@@ -50,7 +50,15 @@ void DarcyFlowMHOutput::postprocess() {
     make_element_scalar();
     make_element_vector();
     make_sides_scalar();
+
     make_node_scalar();
+
+    /** new version of make_node_scalar */
+    /* double* scalars = new double[mesh->node_vector.size()];
+     * make_node_scalar_param(scalars);
+     * delete [] scalars;*/
+
+
     //make_node_vector( mesh );
     make_neighbour_flux();
     //make_previous_scalar();
@@ -72,12 +80,12 @@ void DarcyFlowMHOutput::make_side_flux() {
     soi = 0;
     sol = darcy_flow->solution_vector();
     FOR_ELEMENTS(ele)
-        for (li = 0; li < ele->n_sides; li++) {
-            sde = ele->side[ li ];
-            sde->flux = sol[ soi++ ];
-            //if( fabs( sde->flux ) < ZERO )
-            //  sde->flux = 0.0;
-        }
+    for (li = 0; li < ele->n_sides; li++) {
+        sde = ele->side[ li ];
+        sde->flux = sol[ soi++ ];
+        //if( fabs( sde->flux ) < ZERO )
+        //  sde->flux = 0.0;
+    }
 }
 //=============================================================================
 // FILL TH "SCALAR" FIELD FOR ALL ELEMENTS IN THE MESH
@@ -105,30 +113,30 @@ void DarcyFlowMHOutput::make_element_vector() {
 
     FOR_ELEMENTS(ele) {
         switch (ele->type) {
-            case LINE:
-                make_element_vector_line(ele);
-                break;
-            case TRIANGLE:
-                make_element_vector_triangle(ele);
-                //xfprintf( out, "%d \n", ele->id);
-                //xfprintf( out, "Plocha %12.8f\n", ele->metrics);
-                //xfprintf( out, "Teziste\n");
-                //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->centre[0], ele->centre[1], ele->centre[2]);
-                //xfprintf( out, "Bazove funkce\n");
-                //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[0], ele->bas_beta[0], ele->bas_gama[0] );
-                //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[1], ele->bas_beta[1], ele->bas_gama[1] );
-                //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[2], ele->bas_beta[2], ele->bas_gama[2] );
-                //xfprintf( out, " \n");
-                //xfprintf( out, "Pretoky\n");
-                //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->side[0]->flux, ele->side[1]->flux, ele->side[2]->flux);
-                //xfprintf( out, "Vektor v tezisti\n");
-                //xfprintf( out, "%12.8f %12.8f %12.8f \n",  ele->vector[0], ele->vector[1], ele->vector[2]);
-                //xfprintf( out, " \n");
-                //xfprintf( out, " \n\n");
-                break;
-            case TETRAHEDRON:
-                make_element_vector_tetrahedron(ele);
-                break;
+        case LINE:
+            make_element_vector_line(ele);
+            break;
+        case TRIANGLE:
+            make_element_vector_triangle(ele);
+            //xfprintf( out, "%d \n", ele->id);
+            //xfprintf( out, "Plocha %12.8f\n", ele->metrics);
+            //xfprintf( out, "Teziste\n");
+            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->centre[0], ele->centre[1], ele->centre[2]);
+            //xfprintf( out, "Bazove funkce\n");
+            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[0], ele->bas_beta[0], ele->bas_gama[0] );
+            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[1], ele->bas_beta[1], ele->bas_gama[1] );
+            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[2], ele->bas_beta[2], ele->bas_gama[2] );
+            //xfprintf( out, " \n");
+            //xfprintf( out, "Pretoky\n");
+            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->side[0]->flux, ele->side[1]->flux, ele->side[2]->flux);
+            //xfprintf( out, "Vektor v tezisti\n");
+            //xfprintf( out, "%12.8f %12.8f %12.8f \n",  ele->vector[0], ele->vector[1], ele->vector[2]);
+            //xfprintf( out, " \n");
+            //xfprintf( out, " \n\n");
+            break;
+        case TETRAHEDRON:
+            make_element_vector_tetrahedron(ele);
+            break;
         }
         ele->v_length = vector_length(ele->vector);
     }
@@ -280,6 +288,121 @@ void DarcyFlowMHOutput::make_sides_scalar() {
 //
 //=============================================================================
 
+double* DarcyFlowMHOutput::make_node_scalar_param(double* scalars) {
+    F_ENTRY_P("nodes"+mesh->node_vector.size());
+
+    double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
+
+    /** Iterators */
+    NodeIter node;
+    ElementIter ele;
+    struct Side* side;
+
+    int n_nodes = mesh->node_vector.size(); //!< number of nodes in the mesh */
+    int node_index = 0; //!< index of each node */
+
+    int* sum_elements = new int [n_nodes]; //!< sum elements joined to node */
+    int* sum_sides = new int [n_nodes]; //!< sum sides joined to node */
+    double* sum_ele_dist = new double [n_nodes]; //!< sum distances to all joined elements */
+    double* sum_side_dist = new double [n_nodes]; //!<  Sum distances to all joined sides */
+
+    /** tmp variables, will be replaced by ini keys
+     * TODO include them into ini file*/
+    bool count_elements = true; //!< scalar is counted via elements*/
+    bool count_sides = true; //!< scalar is counted via sides */
+
+
+    /** init arrays */
+    for (int i = 0; i < n_nodes; i++){
+        sum_elements[i] = 0;
+        sum_sides[i] = 0;
+        sum_ele_dist[i] = 0.0;
+        sum_side_dist[i] = 0.0;
+        scalars[i] = 0.0;
+    };
+
+    /**first pass - calculate sums (weights)*/
+    if (count_elements){
+        FOR_ELEMENTS(ele)
+            for (int li = 0; li < ele->n_nodes; li++) {
+                node = ele->node[li]; //!< get Node pointer from element */
+                node_index = mesh->node_vector.index(node); //!< get nod index from mesh */
+
+                dist = sqrt(
+                        ((node->getX() - ele->centre[ 0 ])*(node->getX() - ele->centre[ 0 ])) +
+                        ((node->getY() - ele->centre[ 1 ])*(node->getY() - ele->centre[ 1 ])) +
+                        ((node->getZ() - ele->centre[ 2 ])*(node->getZ() - ele->centre[ 2 ]))
+                );
+                sum_ele_dist[node_index] += dist;
+                sum_elements[node_index]++;
+            }
+    }
+    if (count_sides){
+        FOR_SIDES(side) {
+            for (int li = 0; li < side->n_nodes; li++) {
+                node = side->node[li];//!< get Node pointer from element */
+                node_index = mesh->node_vector.index(node); //!< get nod index from mesh */
+                dist = sqrt(
+                        ((node->getX() - side->centre[ 0 ])*(node->getX() - side->centre[ 0 ])) +
+                        ((node->getY() - side->centre[ 1 ])*(node->getY() - side->centre[ 1 ])) +
+                        ((node->getZ() - side->centre[ 2 ])*(node->getZ() - side->centre[ 2 ]))
+                );
+
+                sum_side_dist[node_index] += dist;
+                sum_sides[node_index]++;
+            }
+        }
+    }
+
+    /**second pass - calculate scalar  */
+    if (count_elements){
+        FOR_ELEMENTS(ele)
+            for (int li = 0; li < ele->n_nodes; li++) {
+                node = ele->node[li];//!< get Node pointer from element */
+                node_index = mesh->node_vector.index(node); //!< get nod index from mesh */
+
+                /**TODO - calculate it again or store it in prior pass*/
+                dist = sqrt(
+                        ((node->getX() - ele->centre[ 0 ])*(node->getX() - ele->centre[ 0 ])) +
+                        ((node->getY() - ele->centre[ 1 ])*(node->getY() - ele->centre[ 1 ])) +
+                        ((node->getZ() - ele->centre[ 2 ])*(node->getZ() - ele->centre[ 2 ]))
+                );
+                scalars[node_index] += ele->scalar *
+                        (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
+                        (sum_elements[node_index] + sum_sides[node_index] - 1);
+            }
+    }
+    if (count_sides){
+        FOR_SIDES(side) {
+            for (int li = 0; li < side->n_nodes; li++) {
+                node = side->node[li];//!< get Node pointer from element */
+                node_index = mesh->node_vector.index(node); //!< get nod index from mesh */
+
+                /**TODO - calculate it again or store it in prior pass*/
+                dist = sqrt(
+                        ((node->getX() - side->centre[ 0 ])*(node->getX() - side->centre[ 0 ])) +
+                        ((node->getY() - side->centre[ 1 ])*(node->getY() - side->centre[ 1 ])) +
+                        ((node->getZ() - side->centre[ 2 ])*(node->getZ() - side->centre[ 2 ]))
+                );
+
+
+                scalars[node_index] += side->scalar *
+                        (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
+                        (sum_sides[node_index] + sum_elements[node_index] - 1);
+            }
+        }
+    }
+
+    /** free memory */
+    delete [] sum_elements;
+    delete [] sum_sides;
+    delete [] sum_ele_dist;
+    delete [] sum_side_dist;
+
+    return scalars;
+}
+
+
 void DarcyFlowMHOutput::make_node_scalar() {
     int li;
     NodeIter nod;
@@ -317,7 +440,7 @@ void DarcyFlowMHOutput::make_node_scalar() {
                 ((nod->getX() - ele->centre[ 0 ])*(nod->getX() - ele->centre[ 0 ])) +
                 ((nod->getY() - ele->centre[ 1 ])*(nod->getY() - ele->centre[ 1 ])) +
                 ((nod->getZ() - ele->centre[ 2 ])*(nod->getZ() - ele->centre[ 2 ]))
-                );
+        );
 
         TED[ele.index()][li] = dist;
         nod->faux += dist; //       nod->faux += 1 / dist;
@@ -328,11 +451,11 @@ void DarcyFlowMHOutput::make_node_scalar() {
         for (li = 0; li < sde->n_nodes; li++) {
             nod = sde->node[li];
 
-        dist = sqrt(
-                ((nod->getX() - sde->centre[ 0 ])*(nod->getX() - sde->centre[ 0 ])) +
-                ((nod->getY() - sde->centre[ 1 ])*(nod->getY() - sde->centre[ 1 ])) +
-                ((nod->getZ() - sde->centre[ 2 ])*(nod->getZ() - sde->centre[ 2 ]))
-                );
+            dist = sqrt(
+                    ((nod->getX() - sde->centre[ 0 ])*(nod->getX() - sde->centre[ 0 ])) +
+                    ((nod->getY() - sde->centre[ 1 ])*(nod->getY() - sde->centre[ 1 ])) +
+                    ((nod->getZ() - sde->centre[ 2 ])*(nod->getZ() - sde->centre[ 2 ]))
+            );
 
             TSD[sde->id][li] = dist;
             nod->faux += dist; //      nod->faux += 1 / dist;
@@ -453,5 +576,5 @@ double calc_water_balance(Mesh* mesh, int c_water) {
 
     rc = 0.0;
 
-     return rc;
+    return rc;
 }
