@@ -50,9 +50,7 @@ public:
     /**
      *  Read mesh from file
      */
-    virtual void read(const char*, Mesh*) {
-        ASSERT(false, "MeshRedaer->read(const char*, Mesh*) is ONLY virtual method.\n");
-    }
+    virtual void read(const std::string &file_name, Mesh*) =0;
 
 };
 

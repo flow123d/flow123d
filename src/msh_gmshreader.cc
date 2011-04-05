@@ -43,13 +43,12 @@ GmshMeshReader::~GmshMeshReader() {
 /**
  *  Read mesh from file
  */
-void GmshMeshReader::read(const char* fileName, Mesh* mesh) {
+void GmshMeshReader::read(const std::string &fileName, Mesh* mesh) {
     xprintf(Msg, " - GmshMeshReader->read(const char* fileName, Mesh* mesh)\n");
 
-    ASSERT(!(fileName == NULL), "Argument fileName is NULL in method GmshMeshRedaer->read(const char*, Mesh*)\n");
     ASSERT(!(mesh == NULL), "Argument mesh is NULL in method GmshMeshRedaer->read(const char*, Mesh*)\n");
 
-    FILE* file = xfopen(fileName, "rt");
+    FILE* file = xfopen(fileName.c_str(), "rt");
 
     read_nodes(file, mesh);
     read_elements(file, mesh);

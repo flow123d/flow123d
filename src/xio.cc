@@ -253,7 +253,7 @@ FILE *xfopen( const char *fname, const char *mode )
     ASSERT(!( (fname == NULL) || (mode == NULL) ),"NULL pointer as argument of function xfopen()\n");
     xprintf(MsgLog,"Opening file: '%s'\n", fname);
     rc = fopen( fname, mode );
-    ASSERT(!( rc == NULL ),"Cannot open file %s with permissions %s\n", fname, mode );
+    ASSERT(!( rc == NULL ),"Cannot open file '%s' with permissions %s\n", fname, mode );
 
     //store file name and file opening mode
     xf = (XFILE *)xmalloc(sizeof(XFILE));

@@ -52,7 +52,7 @@ public:
     /**
      *  Read mesh from file
      */
-    void read(const char*, Mesh*);
+    void read(const std::string &file_name, Mesh* mesh);
 
 };
 

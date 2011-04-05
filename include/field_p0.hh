@@ -42,7 +42,12 @@
  *
  * TODO:
  * - use PETSC vectors for storing data (paralelization), field as accessor to a PETSC vector
- * - templated by field value type (vector, tensor)
+ *   problem jak to pouzit v transportu: potrebuju mit pristup po jednotlivych letkach i po jednotlivych elementech
+ *
+ * - parallelization by given partitioning of mesh
+ *   should provide: distribution, iterator over local elements, access to mesh elements,
+ *   access through old mesh element indexes
+ *
  * - P0 fields given by values for materials
  * - need output through streams - need something like xopen for streams distinguish output and input
  *   until that we can introduce type cast to string for : double, vector, tensor - for output
@@ -96,7 +101,7 @@ void FieldP0<Value>::read_field(const string f_name,const string section)
     line_stream >> n_sources;
     INPUT_CHECK( line_stream.good(), "Can not convert input to int.\n");
 
-    data.resize(n_sources);
+    data.resize(mesh->element.size());
 
     for(int i_line=0; i_line<n_sources; i_line++) {
         xfgets( line, LINE_SIZE - 2, in );

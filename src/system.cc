@@ -82,9 +82,10 @@ void system_init( int &argc, char ** &argv )
 
     DBGMSG("MPI size: %d rank: %d\n",sys_info.n_proc,sys_info.my_proc);
 
-    snprintf( logname, FILENAME_MAX, "flow123.%d.log",sys_info.my_proc );
-    sys_info.log_fname=strdup(logname);
-    sys_info.log=xfopen(sys_info.log_fname,"wt");
+    stringstream log_name;
+    log_name << "flow123."<< sys_info.my_proc << ".log";
+    sys_info.log_fname = IONameHandler::get_instance()->get_output_file_name(log_name.str());
+    sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
     sys_info.verbosity=0;
     sys_info.pause_after_run=0;
 }

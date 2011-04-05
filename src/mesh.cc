@@ -102,9 +102,7 @@ void make_mesh(struct Problem *problem) {
     F_ENTRY;
 
     ASSERT(!(problem == NULL), "NULL pointer as argument of function make_mesh()\n");
-    const char* meshFileName = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL)).c_str();
-    if (access(meshFileName, R_OK) != 0)
-        xprintf(UsrErr, "Cannot read from file %s\n", meshFileName);
+    string meshFileName = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL)).c_str();
 
     Mesh* mesh = new Mesh();
 

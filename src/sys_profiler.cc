@@ -122,7 +122,8 @@ Profiler::~Profiler() {
         char filename[PATH_MAX];
         strftime(filename, sizeof (filename) - 1, fileformat, localtime(&start_time));
 
-        out = xfopen(filename, "w+");
+        string full_fname=IONameHandler::get_instance()->get_output_file_name(filename);
+        out = xfopen(full_fname.c_str(), "w+");
 
         //print some information about the task at the beginning
         xfprintf(out, "No. of processors: %i\n", size);
