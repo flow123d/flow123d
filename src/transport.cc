@@ -104,6 +104,8 @@ void ConvectionTransport::make_transport() {
 //=============================================================================
 void ConvectionTransport::make_transport_partitioning() {
 
+    F_ENTRY;
+
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
     int rank, np, i, j, k, row_MH, a;
     //struct DarcyFlowMH *water=transport->problem->water;
@@ -119,7 +121,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
     delete ele_graph;
 
-    int *id_4_old = (int *) xmalloc(mesh->n_edges * sizeof(int));
+    int *id_4_old = (int *) xmalloc(mesh->n_elements() * sizeof(int));
     i = 0;
     FOR_ELEMENTS(ele)
         id_4_old[i] = i, i++;
