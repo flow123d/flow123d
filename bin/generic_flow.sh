@@ -32,5 +32,5 @@
 cd "$SOURCE_DIR"
 
 touch lock
-"$MPI_RUN" -np "$NPROC" "$EXECUTABLE" -s "$INI" "$FLOW_PARAMS" 2>err 1>out
+"$MPI_RUN" -np "$NPROC" "$EXECUTABLE" -s "$INI" $FLOW_PARAMS 2>err 1>out
 rm lock
