@@ -23,9 +23,9 @@
  * $LastChangedDate$
  *
  * @file
- * @brief Vector classes to support both Iterator, index and Id access and creating colocated vectors.
+ * @brief Vector classes to support both Iterator, index and Id access and creating co-located vectors.
  *
- * @todo Implement colocated vector class that takes reference of the original Vector and
+ * @todo Implement co-located vector class that takes reference of the original Vector and
  *       is of the same size. FullIterator should have method for accessing elements in the original vector.
  */
 #ifndef SYS_VECTOR_HH_
@@ -80,9 +80,14 @@ public:
     inline bool is_valid()
         { return this->iter != this->cont.storage.end(); }
 
-    /// Get index of FullIterator in its container.
-    inline unsigned int index()
-    { return this->iter - cont.storage.begin(); }
+    /**
+     *  Get index of FullIterator in its container.
+     *  Return invalid index -1 for undefined iterator.
+     */
+    inline int index()
+    { if (this->iter != this->cont.storage.end()) return this->iter - cont.storage.begin();
+      else  return (-1);
+    }
 
     /// Get reference to the container of the FullIterator.
     inline Cont &container()

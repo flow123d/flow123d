@@ -55,7 +55,7 @@ struct BTC;
 
 class ConvectionTransport {
 public:
-	ConvectionTransport(struct Problem *problem);
+	ConvectionTransport(struct Problem *problem, Mesh *init_mesh);
 	~ConvectionTransport();
 	void make_transport(); //
 	void make_transport_partitioning(); //

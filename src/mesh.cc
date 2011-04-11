@@ -39,8 +39,6 @@
 // think about following dependencies
 #include "boundaries.h"
 
-#include "concentrations.h"
-#include "transport_bcd.h"
 #include "transport.h"
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -59,10 +57,10 @@ Mesh::Mesh() {
     xprintf(Msg, " - Mesh()     - version with node_vector\n");
 
     n_materials = NDEF;
-    concentration = NULL;
-    l_concentration = NULL;
-    transport_bcd = NULL;
-    l_transport_bcd = NULL;
+//    concentration = NULL;
+//    l_concentration = NULL;
+//    transport_bcd = NULL;
+//    l_transport_bcd = NULL;
     //	n_sources        = NDEF;
     //	source           = NULL;
     //	l_source         = NULL;
@@ -83,12 +81,12 @@ Mesh::Mesh() {
     n_triangles = 0;
     n_tetrahedras = 0;
     max_bou_id = NDEF;
-    max_con_id = NDEF;
-    max_tbc_id = NDEF;
+//    max_con_id = NDEF;
+ //   max_tbc_id = NDEF;
     max_ngh_id = NDEF;
 
-    concentration_hash = NULL;
-    transport_bcd_hash = NULL;
+//    concentration_hash = NULL;
+//    transport_bcd_hash = NULL;
     neighbour_hash = NULL;
 }
 
@@ -145,18 +143,6 @@ void make_mesh(struct Problem *problem) {
 
 
     read_boundary(mesh);
-
-    if (OptGetBool("Transport", "Transport_on", "no") == true) {
-        mesh->n_substances = problem->otransport->n_substances;
-        read_concentration_list(mesh);
-        read_transport_bcd_list(mesh);
-    }
-    if (mesh->concentration != NULL) {
-        concentration_to_element(mesh);
-        transport_bcd_to_boundary(mesh);
-    }
-
-
 
 }
 

@@ -34,8 +34,7 @@
 #include "boundaries.h"
 #include "neighbours.h"
 
-#include "concentrations.h"
-#include "transport_bcd.h"
+
 #include "edges.h"
 #include "sides.h"
 
@@ -75,10 +74,10 @@ void make_hashes( struct Problem *problem )
     create_neighbour_hash( mesh );
 //	if( mesh->source != NULL )
 //		create_source_hash( mesh );
-    if( mesh->concentration != NULL) {
+/*    if( mesh->concentration != NULL) {
         create_concentration_hash( mesh );
         create_transport_bcd_hash( mesh );
-    }
+    }*/
 	xprintf( MsgVerb, "Hashes generated O.K.\n")/*orig verb 5*/;
 }
 #if 0
@@ -168,12 +167,13 @@ void create_source_hash(Mesh* mesh)
 //=============================================================================
 //
 //=============================================================================
+/*
 void create_concentration_hash(Mesh* mesh)
 {
 	int hi;
 	struct Concentration *con;
 
-	xprintf( MsgVerb, "   Concentration hash... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Concentration hash... ");
 	// Get maximal id
 	mesh->max_con_id = NDEF;
 	FOR_CONCENTRATIONS( con )
@@ -190,17 +190,18 @@ void create_concentration_hash(Mesh* mesh)
 		INPUT_CHECK(!( mesh->concentration_hash[ con->id ] != NULL ),"Multiple definition of concentration %d\n", con->id );
 		mesh->concentration_hash[ con->id ] = con;
 	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
+	xprintf( MsgVerb, "O.K.\n");
+}*/
 //=============================================================================
 //
 //=============================================================================
+/*
 void create_transport_bcd_hash(Mesh* mesh)
 {
 	int hi;
 	struct Transport_bcd *tbc;
 
-	xprintf( MsgVerb, "   Concentration hash... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Concentration hash... ");
 	// Get maximal id
 	mesh->max_tbc_id = NDEF;
 	FOR_TRANSPORT_BCDS( tbc )
@@ -217,7 +218,7 @@ void create_transport_bcd_hash(Mesh* mesh)
 		INPUT_CHECK((mesh->transport_bcd_hash[ tbc->id ]==NULL),"Multiple definition of transport_bcd %d\n", tbc->id );
 		mesh->transport_bcd_hash[ tbc->id ] = tbc;
 	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
+	xprintf( MsgVerb, "O.K.\n");
+}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -47,9 +47,7 @@
 #include "boundaries.h"
 #include "problem.h"
 
-#include "concentrations.h"
 #include "boundaries.h"
-#include "transport_bcd.h"
 #include "transport.h"
 #include "neighbours.h"
 

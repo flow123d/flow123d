@@ -24,6 +24,7 @@
  *
  * @file
  * @brief Boundary conditions
+ * @ingroup mesh
  *
  */
 
@@ -35,7 +36,6 @@
 #include "xio.h"
 #include "boundaries.h"
 #include "mesh.h"
-#include "transport_bcd.h"
 
 static struct Boundary *new_boundary(void);
 static void add_to_boundary_list(struct Mesh*,struct Boundary*);
@@ -72,6 +72,7 @@ void read_boundary( struct Mesh *mesh )
         // Parse the line
         bcd_id    = atoi( xstrtok( line) );
         bcd = mesh->boundary.add_item(bcd_id);
+        // DBGMSG("boundary id: %d \n",bcd_id);
 
         bcd->type  = atoi( xstrtok( NULL) );
 

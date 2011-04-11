@@ -49,7 +49,7 @@ echo "
 cd "$SOURCE_DIR"
  
 export OMPI_MCA_plm_rsh_disable_qrsh=1
-$MPI_RUN -np $NPROC $EXECUTABLE -S $INI $FLOW_PARAMS 2>err 1>out
+"$MPI_RUN" -np $NPROC "$EXECUTABLE" -S "$INI" $FLOW_PARAMS 2>err 1>out
 rm lock" >hydra_flow.qsub
 
 if test -e ./lock 

@@ -30,7 +30,6 @@
 
 #include "constantdb.h"
 #include "mesh/ini_constants_mesh.hh"
-#include "transport_bcd.h"
 #include "transport.h"
 
 #include "system.hh"
@@ -44,8 +43,6 @@
 
 #include "problem.h"
 
-//#include "materials.hh"
-#include "concentrations.h"
 #include "boundaries.h"
 
 #include "neighbours.h"
@@ -75,13 +72,14 @@ void output_convert_to_pos(struct Problem *problem)
             output_convert_to_pos_source(problem);
     output_convert_to_pos_bcd(problem);
     output_convert_to_pos_material(problem);
+    /*
     if (OptGetBool("Transport", "Transport_on", "no") == true)
     {
             if (ConstantDB::getInstance()->getChar("Concentration_fname") != NULL)
                     output_convert_to_pos_concentration(problem);
             if (ConstantDB::getInstance()->getChar("Transport_bcd_fname") != NULL)
                     output_convert_to_pos_transport_bcd(problem);
-    }
+    }*/
 }
 //=============================================================================
 // OUTPUT ROUTINE FOR CONVERTING SOURCES TO POS
@@ -324,6 +322,7 @@ void output_convert_to_pos_material(struct Problem *problem)
 //=============================================================================
 // OUTPUT ROUTINE FOR CONVERTING CONCENTRATIONS TO POS
 //=============================================================================
+/*
 void output_convert_to_pos_concentration(struct Problem *problem)
 {
   Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
@@ -471,7 +470,7 @@ void output_convert_to_pos_transport_bcd(struct Problem *problem)
   }
   xfprintf( out, "};\n" );
   xfclose(out);
-}
+}*/
 
 // folowing function seems to be completly WRONG by desing and implementation
 // - no need to recreate whole Element and Node structures HERE

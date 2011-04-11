@@ -45,9 +45,7 @@
 #include "problem.h"
 #include "mesh.h"
 #include "transport.h"
-#include "transport_bcd.h"
 #include "boundaries.h"
-#include "concentrations.h"
 #include "neighbours.h"
 #include "elements.h"
 #include "output.h"
@@ -60,9 +58,8 @@
 #include "par_distribution.hh"
 #include "mesh/ini_constants_mesh.hh"
 #include "sparse_graph.hh"
-//#include "profiler.hh"
 #include "semchem/semchem_interface.hh"
-#include "decay/linear_reaction.hh"
+#include "reaction/linear_reaction.hh"
 #include <string.h>
 
 static double *transport_aloc_pi(Mesh*);
@@ -132,16 +129,12 @@ void ConvectionTransport::make_transport_partitioning() {
 
 }
 
-ConvectionTransport::ConvectionTransport(struct Problem *problem) : problem(problem) { }
-
-//=============================================================================
-// ALLOCATE TRANSPORT
-//=============================================================================
-void alloc_transport(struct Problem *problem) {
-
-    problem->otransport = new ConvectionTransport(problem);
-
+ConvectionTransport::ConvectionTransport(struct Problem *problem, Mesh *init_mesh)
+: problem(problem), mesh(init_mesh)
+{
+    transport_init();
 }
+
 /*
 //=============================================================================
 // GET REACTION
@@ -233,7 +226,7 @@ void ConvectionTransport::read_initial_condition() {
 		Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 		FILE	*in;		  // input file
 		char     line[ LINE_SIZE ]; // line of data file
-		int sbi,index, id, eid, i,n_concentrations;
+		int sbi,index, id, eid, i,n_concentrations, global_idx;
 
 		xprintf( Msg, "Reading concentrations...")/*orig verb 2*/;
 		in = xfopen( concentration_fname, "rt" );
@@ -251,9 +244,9 @@ void ConvectionTransport::read_initial_condition() {
 	    	id    = atoi( xstrtok( line) );	// TODO: id musi byt >0 nebo >=0 ???
 	    	INPUT_CHECK(!( id < 0 ),"Id number of concentration must be > 0\n");
 	    	eid    = atoi( xstrtok( NULL) );
-	    	if(el_ds->is_local(mesh->element.find_id(eid).index())){
-	    		//index = mesh->element.find_id(eid).index() - el_ds->begin();
-	    		index = row_4_el[mesh->element.find_id(eid).index()] - el_ds->begin();
+	    	int global_idx =row_4_el[mesh->element.find_id(eid).index()];
+	    	if ( el_ds->is_local(global_idx) ) {
+	    		index = global_idx - el_ds->begin();
 	    		for( sbi = 0; sbi < n_substances; sbi++ ){
 	    			conc[MOBILE][ sbi ][index] = atof( xstrtok( NULL) );
 	    			pconc[MOBILE][ sbi ][index] = conc[MOBILE][ sbi ][index];
@@ -455,28 +448,44 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 //	FILL TRANSPORT VECTORS (MPI)
 //=============================================================================
 void ConvectionTransport::fill_transport_vectors_mpi() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
-    int i, new_i, sbi, ph, id, n_subst, s, k, rank;
-    ElementFullIter elm = ELEMENT_FULL_ITER(NULL);
-    BoundaryIter bc;
-    double start_conc;
-    n_subst = n_substances;
+    int rank, sbi;
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank == 0) {
 
-    for (sbi = 0; sbi < n_subst; sbi++) {
-        k = 0;
-        FOR_BOUNDARIES(bc)
-            VecSetValue(bcv[sbi], k++, bc->transport_bcd->conc[sbi], INSERT_VALUES);
+    xprintf( Msg, "Reading transport boundary conditions...");
 
-        // VecDuplicate(transport->vconc[sbi][ph],&transport->vpconc[sbi][ph]);
+    int bcd_id, boundary_id, boundary_index;
+    double bcd_conc;
+    char     line[ LINE_SIZE ]; // line of data file
+    FILE *in = xfopen( IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\")).c_str(), "rt" );
 
-        VecZeroEntries(bcvcorr[sbi]);
-        VecAssemblyBegin(bcv[sbi]);
-        VecAssemblyEnd(bcv[sbi]);
-
+    skip_to( in, "$Transport_BCD" );
+    xfgets( line, LINE_SIZE - 2, in );
+    int n_bcd = atoi( xstrtok( line) );
+    for(int i_bcd=0; i_bcd<n_bcd; i_bcd++) {
+        xfgets( line, LINE_SIZE - 2, in );
+        bcd_id    = atoi( xstrtok( line) ); // scratch transport bcd id
+        boundary_id    = atoi( xstrtok( NULL) );
+//        DBGMSG("transp b. id: %d\n",boundary_id);
+        boundary_index = mesh->boundary.find_id(boundary_id).index();
+        INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
+        for( sbi = 0; sbi < n_substances; sbi++ ) {
+            bcd_conc = atof( xstrtok( NULL) );
+            VecSetValue(bcv[sbi], boundary_index, bcd_conc, INSERT_VALUES);
+        }
     }
+    xfclose( in );
+    xprintf( MsgVerb, " %d transport conditions readed. ", n_bcd );
+    xprintf( Msg, "O.K.\n");
+    }
+
+    for(sbi=0;sbi < n_substances;sbi++) VecAssemblyBegin(bcv[sbi]);
+    for(sbi=0;sbi < n_substances;sbi++) VecZeroEntries(bcvcorr[sbi]);
+    for(sbi=0;sbi < n_substances;sbi++) VecAssemblyEnd(bcv[sbi]);
+
+
     /*
      VecView(transport->bcv[0],PETSC_VIEWER_STDOUT_SELF);
      getchar();

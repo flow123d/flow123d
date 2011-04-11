@@ -33,9 +33,6 @@
 #include "materials.hh"
 #include "boundaries.h"
 
-#include "concentrations.h"
-#include "transport_bcd.h"
-
 
 static void element_to_material(Mesh*, MaterialDatabase &);
 static void node_to_element(Mesh*);
@@ -750,7 +747,7 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
-
+/*
 //=============================================================================
 //
 //=============================================================================
@@ -759,7 +756,7 @@ void concentration_to_element(Mesh* mesh)
 	struct Concentration *con;
 	ElementFullIter ele = ELEMENT_FULL_ITER_NULL;
 
-	xprintf( MsgVerb, "   Concentration to element... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Concentration to element... ");
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     FOR_CONCENTRATIONS( con ) {
@@ -775,7 +772,7 @@ void transport_bcd_to_boundary(Mesh* mesh)
 	struct Transport_bcd *tbc;
 	BoundaryFullIter bcd = BOUNDARY_NULL;
 
-	xprintf( MsgVerb, "   Transport boundary condition to boundary condition... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Transport boundary condition to boundary condition... ");
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     FOR_TRANSPORT_BCDS( tbc ) {
@@ -783,8 +780,8 @@ void transport_bcd_to_boundary(Mesh* mesh)
         INPUT_CHECK( bcd.is_valid(), "Reference to undefined boundary condition in transport BCDs %d\n", tbc->id );
 		bcd->transport_bcd = tbc;
 	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
+	xprintf( MsgVerb, "O.K.\n");
+}*/
 //=============================================================================
 //
 //=============================================================================

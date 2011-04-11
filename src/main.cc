@@ -35,6 +35,14 @@
  * This version links against some external software:
  * - PETSC : http://www.mcs.anl.gov/petsc/petsc-2/documentation/index.html
  *
+ * @defgroup system System module
+ * Sys description.
+ * @defgroup io Input, Output module
+ * @defgroup transport Advection module
+ * @defgroup mesh Mesh module
+ * This should implement classes for mesh over multiple dimension domains and all related geometrical info.
+ * @def
+ *
  */
 
 #include "constantdb.h"
@@ -178,14 +186,9 @@ int main(int argc, char **argv) {
     xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", _VERSION_,REVISION);
     xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
 
-    // Read inputs
+
     problem_init(&G_problem);
-    if (OptGetBool("Transport", "Transport_on", "no") == true) {
-        alloc_transport(&G_problem);
-        G_problem.otransport->transport_init();
-        //transport_init(&G_problem);
-    }
-    
+    // Read mesh
     make_mesh(&G_problem);
 
     /* Test of object storage */
@@ -194,6 +197,10 @@ int main(int argc, char **argv) {
     xprintf(Msg, " - Number of nodes in the mesh is: %d\n", numNodes);
 
     Profiler::instance()->set_task_size(mesh->n_elements());
+
+    if (OptGetBool("Transport", "Transport_on", "no") == true) {
+        G_problem.otransport = new ConvectionTransport(&G_problem, mesh);
+    }
 
     // Calculate
     make_element_geometry();

@@ -23,8 +23,11 @@
  * $LastChangedDate$
  *
  * @file
- * @brief
- * @todo documentation!!!
+ * @ingroup io
+ *
+ * @brief Break through curve.
+ * @todo Rewrite to be applyable to general fields and produce specified output. documentation!!!
+ *
  *
  */
 
