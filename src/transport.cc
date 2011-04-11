@@ -243,14 +243,17 @@ void ConvectionTransport::read_initial_condition() {
 		INPUT_CHECK(!( n_concentrations < 1 ),"Number of concentrations < 1 in function read_concentration_list()\n");
 	    INPUT_CHECK(!( mesh->n_elements() != n_concentrations),"Different number of elements and concentrations\n");
 
+
 	    for (i = 0; i < n_concentrations; i++) {
+	    	//printf("%s\n",line);
 	    	xfgets( line, LINE_SIZE - 2, in );
 	    	ASSERT(!(line == NULL),"NULL as argument of function parse_concentration_line()\n");
 	    	id    = atoi( xstrtok( line) );	// TODO: id musi byt >0 nebo >=0 ???
 	    	INPUT_CHECK(!( id < 0 ),"Id number of concentration must be > 0\n");
 	    	eid    = atoi( xstrtok( NULL) );
 	    	if(el_ds->is_local(mesh->element.find_id(eid).index())){
-	    		index = mesh->element.find_id(eid).index() - el_ds->begin();
+	    		//index = mesh->element.find_id(eid).index() - el_ds->begin();
+	    		index = row_4_el[mesh->element.find_id(eid).index()] - el_ds->begin();
 	    		for( sbi = 0; sbi < n_substances; sbi++ ){
 	    			conc[MOBILE][ sbi ][index] = atof( xstrtok( NULL) );
 	    			pconc[MOBILE][ sbi ][index] = conc[MOBILE][ sbi ][index];

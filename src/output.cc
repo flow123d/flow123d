@@ -1253,6 +1253,8 @@ void output_transport_time_bin(double ***out_conc,char **subst_name,int n_subst,
 		int step,
 		char *file)
 {
+	F_ENTRY;
+
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     FILE *out;
