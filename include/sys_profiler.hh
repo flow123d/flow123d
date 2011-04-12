@@ -260,7 +260,7 @@ public:
      * running one, no subframes are set.
      * @param n_subframes - the number of subframes
      */
-    void setTimerSubframes(string tag, int n_subframes);
+    void set_timer_subframes(string tag, int n_subframes);
 };
 
 #define _PASTE(a,b) a ## b
@@ -282,7 +282,7 @@ public:
  *
  * Ends a timer with specified tag.
  */
-#define END_TIMER(tag) TimerFrame::endTimer(tag)          // only if you want end on diferent place then end of function
+#define END_TIMER(tag) TimerFrame::endTimer(tag)          // only if you want end on different place then end of function
 
 /**
  * \def SET_TIMER_SUBFRAMES(tag, subframes)
@@ -326,7 +326,7 @@ public:
 
     /**
      * If not already closed, closes the TimerFrame object.
-     * Asks Profler to end a timer with specified tag and changes the frames
+     * Asks Profiler to end a timer with specified tag and changes the frames
      * map appropriately (if the TimerFrame object has a parent, associate hits parent
      * with the tag or if not, delete the tag from the map)
      */

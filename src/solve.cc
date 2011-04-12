@@ -369,7 +369,7 @@ void solver_petsc(Solver *solver)
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);
 	DBGMSG ("convergence reason %d, number of iterations is %d", Reason, nits);
-        Profiler::instance()->setTimerSubframes("SOLVING MH SYSTEM", nits);
+        Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 	KSPDestroy(System);
 
 }

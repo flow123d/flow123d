@@ -168,7 +168,7 @@ Profiler::~Profiler() {
     }
 }
 
-void Profiler::setTimerSubframes(string tag, int n_subframes) {
+void Profiler::set_timer_subframes(string tag, int n_subframes) {
 
     map<string, Timer*>::const_iterator i = tag_map.find(tag);
 

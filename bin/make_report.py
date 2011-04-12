@@ -15,7 +15,7 @@ class TimerInfo:
 
 
 #process the output of timers with following tags
-tagsToProcess = ["WHOLE PROGRAM","SOLVING MH SYSTEM"]
+tagsToProcess = ["WHOLE PROGRAM","SOLVING MH SYSTEM","TRANSPORT"]
 includeSubdirs = 1
 
 def main():

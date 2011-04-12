@@ -59,14 +59,17 @@ def main():
                 #copy everything except the .pos files
                 if os.path.isfile(filePath) and os.path.splitext(fileName)[1] != ".pos":
                     shutil.copy(filePath, targetDir)
+                elif os.path.isdir(filePath):
+                    shutil.copytree(filePath, os.path.join(targetDir, fileName))                    
 
-                if fileName == "flow.ini" or fileName == "trans.ini":
+                if fileName == "flow.ini" or fileName == "trans.ini" or fileName == "flow-petsc.ini":
                     iniFileFullPath = os.path.join(targetDir, fileName)
                     iniFiles[iniFileFullPath] = nproc
 
     #submit tasks
     for iniFile in iniFiles.iterkeys():
-        os.system("./run_flow.sh -np " + str(iniFiles[iniFile]) + " -s " + iniFile + " -m hydra >> benchmark.log")
+        os.system("./run_flow.sh -np " + str(iniFiles[iniFile]) + " -s " + iniFile + " -m hydra >> benchmark.log") #for Hydra
+        #os.system("./run_flow.sh -np " + str(iniFiles[iniFile]) + " -s " + iniFile + " -m rex >> benchmark.log") #for Rex
 
     completed = 0
 
