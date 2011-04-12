@@ -124,7 +124,7 @@ void ConvectionTransport::make_transport_partitioning() {
         id_4_old[i] = i, i++;
     id_maps(mesh->n_elements(), id_4_old, init_ele_ds, (int *) loc_part, el_ds, el_4_loc, row_4_el);
 
-    delete loc_part;
+    delete[] loc_part;
     xfree(id_4_old);
 
 }
@@ -459,7 +459,8 @@ void ConvectionTransport::fill_transport_vectors_mpi() {
     int bcd_id, boundary_id, boundary_index;
     double bcd_conc;
     char     line[ LINE_SIZE ]; // line of data file
-    FILE *in = xfopen( IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\")).c_str(), "rt" );
+    const std::string& transport_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\"));
+    FILE *in = xfopen( transport_file_name, "rt" );
 
     skip_to( in, "$Transport_BCD" );
     xfgets( line, LINE_SIZE - 2, in );

@@ -237,6 +237,12 @@ int xio_getverbose( void )
     return xio_verbosity;
 }
 
+FILE *xfopen( const std::string& fname, const char *mode )
+{
+	const char *fnamec = fname.c_str();
+	return xfopen(fnamec,mode);
+}
+
 /*!
   * @brief fopen() with error handling and filename store
   * @param[in] fname filename to open

@@ -100,7 +100,7 @@ void make_mesh(struct Problem *problem) {
     F_ENTRY;
 
     ASSERT(!(problem == NULL), "NULL pointer as argument of function make_mesh()\n");
-    string meshFileName = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL)).c_str();
+    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
 
     Mesh* mesh = new Mesh();
 
@@ -112,7 +112,7 @@ void make_mesh(struct Problem *problem) {
     // DF - elements are read by MeshReader
     // --------------------- MeshReader testing - Begin
     MeshReader* meshReader = new GmshMeshReader();
-    meshReader->read(meshFileName, mesh);
+    meshReader->read(mesh_file_name, mesh);
     // --------------------- MeshReader testing - End
 
     read_neighbour_list(mesh);

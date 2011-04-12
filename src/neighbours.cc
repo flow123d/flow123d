@@ -60,7 +60,8 @@ void read_neighbour_list(Mesh* mesh)
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_neighbour_list()\n");
 	xprintf( Msg, "Reading neighbours...")/*orig verb 2*/;
-	in = xfopen( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" )).c_str(), "rt" );
+	const std::string& file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" ));
+	in = xfopen( file_name, "rt" );
 	skip_to( in, "$Neighbours" );
 	xfgets( line, LINE_SIZE - 2, in );
 	mesh->n_neighs = atoi( xstrtok( line) );

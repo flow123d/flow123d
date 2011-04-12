@@ -109,7 +109,8 @@ void problem_init(struct Problem *problem)
     }
 
     // Material Database
-    problem->material_database = new MaterialDatabase(IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" )).c_str());
+    const std::string& material_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" ));
+    problem->material_database = new MaterialDatabase(material_file_name);
 
     //Chemie, here should be initialization of chemical reactions simulation, problem (Flow) + global variables (Semchem), in future
     problem->semchemie_on = OptGetBool("Semchem_module","Compute_reactions","no");

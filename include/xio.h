@@ -59,6 +59,7 @@ int    xio_getverbose( void );       ///< Get current XIO debug verbosity level
 //! @brief File access
 /// @{
 FILE * xfopen( const char * fname, const char * mode );   ///< Open file (function)
+FILE * xfopen( const std::string &fname, const char * mode );
 int    xfclose( FILE * stream );                          ///< Close file (function)
 int    xfflush( FILE * f );                               ///< Flush stream (function)
 FILE * xfreopen( const char * filename, const char * mode, FILE * stream );

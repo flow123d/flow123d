@@ -868,7 +868,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
                 el_4_loc, row_4_el);
         //DBGPRINT_INT("el_4_loc",el_ds->lsize(),el_4_loc);
         //xprintf(Msg,"Number of elements in subdomain %d \n",el_ds->lsize());
-        free(loc_part);
+        delete[] loc_part;
         free(id_4_old);
 
 	//el_ds->view();
@@ -953,7 +953,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
                 edge_ds, edge_id_4_loc, edge_row_4_id);
 
 
-        delete loc_part;
+        delete[] loc_part;
         xfree(id_4_old);
 
         DBGMSG("Compute appropriate element partitioning ...\n");

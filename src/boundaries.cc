@@ -56,7 +56,8 @@ void read_boundary( struct Mesh *mesh )
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_boundary_list()\n");
 	xprintf( Msg, "Reading boundary conditions...")/*orig verb 2*/;
-	in = xfopen( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Boundary", "\\" )).c_str(), "rt" );
+	const std::string& fname = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Boundary", "\\" ));
+	in = xfopen( fname, "rt" );
 	skip_to( in, "$BoundaryConditions" );
 	xfgets( line, LINE_SIZE - 2, in );
 
