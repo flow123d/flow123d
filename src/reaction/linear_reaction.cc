@@ -7,21 +7,21 @@
 
 using namespace std;
 
-Linear_reaction::Linear_reaction()
+/*Linear_reaction::Linear_reaction()
 	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation(NULL), bifurcation_on(false)
 {
 	/*react_type = decay;
 	reaction_matrix = NULL;
 	half_lives = NULL;
-	substance_ids = NULL;*/
-}
+	substance_ids = NULL;
+}*/
 
-Linear_reaction::Linear_reaction(REACTION_TYPE type, int n_subst, char *section, double time_step)
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation(NULL), bifurcation_on(false)
+Linear_reaction::Linear_reaction(int n_subst, char *section, double time_step)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation_on(false)
 {
 	//react_type = type;
 	Set_nr_of_decays(section);
-	Prepare_reaction_matrix(n_subst);
+	Allocate_reaction_matrix(n_subst);
 	Modify_reaction_matrix_repeatedly(n_subst, section, time_step);
 }
 
@@ -49,12 +49,9 @@ Linear_reaction::~Linear_reaction()
 
 	free(decaying_isotopes);
 	decaying_isotopes = NULL;
-
-	free(bifurcation);
-	bifurcation = NULL;
 }
 
-double **Linear_reaction::Prepare_reaction_matrix(int n_subst) //reaction matrix initialization
+double **Linear_reaction::Allocate_reaction_matrix(int n_subst) //reaction matrix initialization
 {
 	int index, rows, cols, dec_nr, dec_name_nr;
 	char dec_name[30];
@@ -103,7 +100,7 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) 
 	return reaction_matrix;
 }
 
-double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, int meaningless) //prepare the matrix, which describes reactions, takes bifurcation in acount
+double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, int dec_nr) //prepare the matrix, which describes reactions, takes bifurcation in acount
 {
 	int rows,cols, index, first_index, bif_id;
 	double rel_step, prev_rel_step;
@@ -121,8 +118,8 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, 
 		}
 		if(cols > 0){
 			bif_id = cols -1;
-			reaction_matrix[first_index][first_index] -= bifurcation[bif_id] * pow(0.5,prev_rel_step);
-			reaction_matrix[first_index][index] += bifurcation[bif_id] * pow(0.5,prev_rel_step);
+			reaction_matrix[first_index][first_index] -= bifurcation[dec_nr][bif_id] * pow(0.5,prev_rel_step);
+			reaction_matrix[first_index][index] += bifurcation[dec_nr][bif_id] * pow(0.5,prev_rel_step);
 		}
 		prev_rel_step = rel_step;
 	}
@@ -137,6 +134,7 @@ double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, char *s
 
 	if(decaying_isotopes == NULL) Prepare_decaying_isotopes_ids(n_subst);
 	xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
+	bifurcation.resize(nr_of_decays);
 		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
 			sprintf(dec_name,"Decay_%d", dec_name_nr);
 			Set_nr_of_isotopes(dec_name); //(section);
@@ -147,9 +145,9 @@ double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, char *s
 			Modify_decaying_isotopes_ids();//first place appearence of an isotope in [Decay_i]
 			Set_bifurcation_on(dec_name);
 			if(bifurcation_on == true){
-				Set_bifurcation(dec_name);
+				Set_bifurcation(dec_name, dec_nr);
 				//place for a different implementation of Modify_reaction_matrix
-				Modify_reaction_matrix(n_subst, time_step, 1);
+				Modify_reaction_matrix(n_subst, time_step, dec_nr);
 			}else{
 				Modify_reaction_matrix(n_subst, time_step);
 			}
@@ -187,7 +185,7 @@ double **Linear_reaction::Compute_reaction(double **concentrations, int n_subst,
 	return concentrations;
 }
 
-REACTION_TYPE Linear_reaction::Set_reaction_type(REACTION_TYPE type) //change of reaction type should be conditionated by generation of new reaction matrix
+/*REACTION_TYPE Linear_reaction::Set_reaction_type(REACTION_TYPE type) //change of reaction type should be conditionated by generation of new reaction matrix
 {
 	react_type = decay;
 	return react_type;
@@ -197,7 +195,7 @@ REACTION_TYPE Linear_reaction::Get_reaction_type()
 {
 	xprintf(Msg,"Type of reaction is: %s.\n",react_type);
 	return react_type;
-}
+}*/
 
 int Linear_reaction::Set_nr_of_isotopes(char *section)
 {
@@ -372,7 +370,7 @@ void Linear_reaction::Modify_decaying_isotopes_ids(void)
 	//}
 }
 
-void Linear_reaction::Set_bifurcation(char *section)
+void Linear_reaction::Set_bifurcation(char *section, int dec_nr)
 {
 	char  buffer[1024];
 	char *pom_buf;
@@ -380,28 +378,27 @@ void Linear_reaction::Set_bifurcation(char *section)
 	const char *separators = " ,\t";
 	double control_sum = 0.0;
 
-	if(bifurcation != NULL){
-			free(bifurcation);
-			bifurcation = NULL;
-	}
-	if(bifurcation == NULL){
-		bifurcation = (double *)xmalloc((nr_of_isotopes - 1)*sizeof(double));
-	}
-
-	strcpy(buffer,OptGetStr(section,"Bifurcation",NULL));
-	if(buffer == NULL) return;
-	pom_buf = strtok( buffer, separators );
-	for (j=0; j< (nr_of_isotopes - 1); j++)
+	if(bifurcation_on == true)
 	{
-		if ( pom_buf == NULL )
+		bifurcation[dec_nr].resize(nr_of_isotopes - 1);
+		strcpy(buffer,OptGetStr(section,"Bifurcation",NULL));
+		if(buffer == NULL) return;
+		pom_buf = strtok( buffer, separators );
+		for (j=0; j< (nr_of_isotopes - 1); j++)
 		{
-			xprintf(Msg,"\nBifurcation parameter of %d-th isotope is missing.", j+1);
-		}
-	    bifurcation[j] = atof(pom_buf);
-	    xprintf(Msg,"\n %d-th isotopes bifurcation percentage is %f",j,bifurcation[j]);
-	    pom_buf = strtok( NULL, separators );
-	    if(j > 0)control_sum += bifurcation[j];
-	 }
+			if ( pom_buf == NULL )
+			{
+				xprintf(Msg,"\nBifurcation parameter of %d-th isotope is missing.", j+1);
+			}
+	    	bifurcation[dec_nr][j] = atof(pom_buf);
+	    	xprintf(Msg,"\n %d-th isotopes bifurcation percentage is %f",j,bifurcation[dec_nr][j]);
+	    	pom_buf = strtok( NULL, separators );
+	    	if(j > 0)control_sum += bifurcation[dec_nr][j];
+	 	 }
+	}else{
+		bifurcation[dec_nr].resize(1);
+		bifurcation[dec_nr][0]= 1.0;
+	}
 	if(control_sum != 1.0) xprintf(Msg,"\nSum of bifurcation parameters should be 1.0 but it is %f, because of mass conservation law.\n", control_sum);
 	if( pom_buf != NULL )
 	 {
