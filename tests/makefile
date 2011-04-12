@@ -51,8 +51,9 @@ clean:
 	
 %.tst:
 	BASE=$*;\
-	dir=`echo $${BASE}*`;\
-	if test -d "$${dir}" ;\
+	dir="`pwd`/`echo $${BASE}*`";\
+	echo $${dir};\
+	if test -d "$${dir}";\
 	then make -C "$${dir}" test;\
 	else echo "missing test directory $${dir}";\
 	exit 1;\
