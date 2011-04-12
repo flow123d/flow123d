@@ -21,87 +21,92 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
-
+set -x
 # This script assumes that it is running in particular subdir of the "tests"
 # dir. 
-export TEST_DIR=`pwd`
+pwd
+export TEST_DIR="`pwd`"
 
 #name of ini file
-INI_FILE="$1"
+INI_FILES="$1"
 
 #numbers of processors to run on
-NPROC="$2"
+export NPROC="$2"
 
 #adition flow params
 FLOW_PARAMS="$3"
 
 # how to run flow
-#RUN_FLOW=../bin/run_flow.sh
 RUN_FLOW=../../bin/run_flow.sh
 
 ERROR=0
 
-for i in $INI_FILE
+for INI_FILE in $INI_FILES
 do
-for n in $NPROC
-do
-  if ! $RUN_FLOW -s "$i" -np "$n" -- "$FLOW_PARAMS"; then
-	echo " Error occured during computation, leaving."
-	exit 1
-  fi
-
- if [ -e ./lock ]; then
-	for i in $(seq 1 10)
+	for n in $NPROC
 	do
-		if [! -e ./out ]; then
-			sleep 30
-		else
-			break
+		if ! $RUN_FLOW -s "$INI_FILE" -np "$n" -- "$FLOW_PARAMS"; then
+			if [ ! -e ./out ]; then
+				break 2
+			else
+				break
+			fi
 		fi
-	done
-	if [! -e ./out ]; then
-		echo "ERROR: Directory locked, no output file created, aborting"
-		exit 1
-	fi
-fi
 
-for i in $(seq 1 20)
-do	
-	if [ -e ./lock ]; then
-		sleep 30
-	else 
-		break
-	fi
-	if [ $i == 20 ]; then
-		echo "Error, time run out, exit 1"
-		exit 1
-	fi
-done
+		if [ -e ./lock ]; then
+			for i in $(seq 1 10)
+			do
+				if [! -e ./out ]; then
+					sleep 30
+				else
+					break
+				fi
+			done
+		
+			if [! -e ./out ]; then
+				echo "ERROR: Directory locked, no output file created, aborting"
+				exit 1
+			fi
+		fi
 
-  SAVE_OUTPUT="$TEST_DIR/Results/${i%.ini}.$n"
-  if [ -d "$SAVE_OUTPUT" ]; then
-		rm -rf "$SAVE_OUTPUT"
-		mkdir -p "$SAVE_OUTPUT"
-  else 
-		mkdir -p "$SAVE_OUTPUT"
-  fi
+		for i in $(seq 1 40)
+		do	
+			if [ -e ./lock ]; then
+				sleep 30
+			else 
+				break
+			fi
+			if [ $i == 40 ]; then
+				echo "Error, time run out, exit 1"
+				exit 1
+			fi
+		done
+			
+		SAVE_OUTPUT="$TEST_DIR/Results/${INI_FILE%.ini}.$n"
+		if [ -d "$SAVE_OUTPUT" ]; then
+			rm -rf "$SAVE_OUTPUT"
+			mkdir -p "$SAVE_OUTPUT"
+		else 
+			mkdir -p "$SAVE_OUTPUT"
+		fi
 
-  mv ./err "$SAVE_OUTPUT"
-  mv ./out "$SAVE_OUTPUT"
-  mv ./*.log "$SAVE_OUTPUT"
-  mv ./output/* "$SAVE_OUTPUT"
-
-  #runs ndiff.pl skript with ref and computed output files
-  echo "******************************************"
-  if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output"; then
-	ERROR=1
-  fi
-  echo "******************************************"
+		mv ./err "$SAVE_OUTPUT"
+		mv ./out "$SAVE_OUTPUT"
+		mv ./*.log "$SAVE_OUTPUT"
+		mv ./output/* "$SAVE_OUTPUT"
+		
+		
+		#runs ndiff.pl skript with ref and computed output files
+		echo "******************************************"
+		if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output" "$INI_FILE" "$n"; then
+			ERROR=1
+		fi
+		echo "******************************************"
 	
-   mv ${TEST_DIR}/diff.log "$SAVE_OUTPUT"
-   mv ${TEST_DIR}/stdout_diff.log "$SAVE_OUTPUT"
+		mv "${TEST_DIR}/diff.log" "$SAVE_OUTPUT"
+		mv "${TEST_DIR}/stdout_diff.log" "$SAVE_OUTPUT"
   
-done
+	done
 done
 
 if [ $ERROR == 1 ]; then
