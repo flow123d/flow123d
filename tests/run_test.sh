@@ -31,7 +31,7 @@ export TEST_DIR="`pwd`"
 INI_FILES="$1"
 
 #numbers of processors to run on
-NPROC="$2"
+export NPROC="$2"
 
 #adition flow params
 FLOW_PARAMS="$3"
@@ -81,7 +81,7 @@ do
 				exit 1
 			fi
 		done
-
+			
 		SAVE_OUTPUT="$TEST_DIR/Results/${INI_FILE%.ini}.$n"
 		if [ -d "$SAVE_OUTPUT" ]; then
 			rm -rf "$SAVE_OUTPUT"
@@ -94,10 +94,11 @@ do
 		mv ./out "$SAVE_OUTPUT"
 		mv ./*.log "$SAVE_OUTPUT"
 		mv ./output/* "$SAVE_OUTPUT"
-
+		
+		
 		#runs ndiff.pl skript with ref and computed output files
 		echo "******************************************"
-		if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output"; then
+		if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output" "$INI_FILE" "$n"; then
 			ERROR=1
 		fi
 		echo "******************************************"
