@@ -37,9 +37,11 @@ testall:
 	make -C 03_transport_small_12d test
 	make -C 04_density_driven_12d test
 	make -C 11_reactional_transport_semchem test
+	make -C 12_radioactive_decay test
 
 testchem:
 	make -C 11_reactional_transport_semchem test
+	make -C 12_radioactive_decay test
 
 clean:
 	rm -rf ./test1
