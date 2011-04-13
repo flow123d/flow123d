@@ -7,22 +7,12 @@
 
 using namespace std;
 
-/*Linear_reaction::Linear_reaction()
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation(NULL), bifurcation_on(false)
+Linear_reaction::Linear_reaction(int n_subst, double time_step)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false)
 {
-	/*react_type = decay;
-	reaction_matrix = NULL;
-	half_lives = NULL;
-	substance_ids = NULL;
-}*/
-
-Linear_reaction::Linear_reaction(int n_subst, char *section, double time_step)
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), decaying_isotopes(NULL), bifurcation_on(false)
-{
-	//react_type = type;
-	Set_nr_of_decays(section);
+	Set_nr_of_decays();
 	Allocate_reaction_matrix(n_subst);
-	Modify_reaction_matrix_repeatedly(n_subst, section, time_step);
+	Modify_reaction_matrix_repeatedly(n_subst, time_step);
 }
 
 Linear_reaction::~Linear_reaction()
@@ -46,9 +36,6 @@ Linear_reaction::~Linear_reaction()
 	}
 	free(reaction_matrix);
 	reaction_matrix = NULL;
-
-	free(decaying_isotopes);
-	decaying_isotopes = NULL;
 }
 
 double **Linear_reaction::Allocate_reaction_matrix(int n_subst) //reaction matrix initialization
@@ -127,34 +114,29 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step, 
 	return reaction_matrix;
 }
 
-double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, char *section, double time_step)
+double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, double time_step)
 {
 	char dec_name[30];
 	int rows, cols, dec_nr, dec_name_nr = 1;
 
-	if(decaying_isotopes == NULL) Prepare_decaying_isotopes_ids(n_subst);
 	xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
 	bifurcation.resize(nr_of_decays);
 		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
 			sprintf(dec_name,"Decay_%d", dec_name_nr);
-			Set_nr_of_isotopes(dec_name); //(section);
-			Set_half_lives(dec_name); //(section);
-			Set_indeces(dec_name); //(section);
+			Set_nr_of_isotopes(dec_name);
+			Set_half_lives(dec_name);
+			Set_indeces(dec_name);
 			Get_indeces(); //just a control
 			Get_half_lives(); //just a control
-			Modify_decaying_isotopes_ids();//first place appearence of an isotope in [Decay_i]
 			Set_bifurcation_on(dec_name);
 			if(bifurcation_on == true){
 				Set_bifurcation(dec_name, dec_nr);
-				//place for a different implementation of Modify_reaction_matrix
 				Modify_reaction_matrix(n_subst, time_step, dec_nr);
 			}else{
 				Modify_reaction_matrix(n_subst, time_step);
 			}
-			//free(dec_name);
 			dec_name_nr++;
 		}
-	//}
 	return reaction_matrix;
 }
 
@@ -169,7 +151,6 @@ double **Linear_reaction::Compute_reaction(double **concentrations, int n_subst,
 	}
 
 	for(cols = 0; cols < n_subst; cols++){
-		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols, n_subst, concentrations[cols][loc_el]);
 		prev_conc[cols] = concentrations[cols][loc_el];
 		xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols, n_subst, concentrations[cols][loc_el]); //prev_conc[cols]);
 		concentrations[cols][loc_el] = 0.0;
@@ -184,18 +165,6 @@ double **Linear_reaction::Compute_reaction(double **concentrations, int n_subst,
 	prev_conc = NULL;
 	return concentrations;
 }
-
-/*REACTION_TYPE Linear_reaction::Set_reaction_type(REACTION_TYPE type) //change of reaction type should be conditionated by generation of new reaction matrix
-{
-	react_type = decay;
-	return react_type;
-}
-
-REACTION_TYPE Linear_reaction::Get_reaction_type()
-{
-	xprintf(Msg,"Type of reaction is: %s.\n",react_type);
-	return react_type;
-}*/
 
 int Linear_reaction::Set_nr_of_isotopes(char *section)
 {
@@ -222,7 +191,6 @@ double *Linear_reaction::Set_half_lives(char *section)
 	if(half_lives == NULL){
 		xprintf(Msg,"\nAllocation is permited, nr of isotopes %d", nr_of_isotopes);
 		half_lives = (double *)xmalloc((nr_of_isotopes - 1)*sizeof(double));
-		//this->half_lives = new double[this->nr_of_isotopes];
 	}
 
 	strcpy(buffer,OptGetStr(section,"Half_lives",NULL));
@@ -250,10 +218,8 @@ double *Linear_reaction::Get_half_lives()
 
 	if(half_lives == NULL)
 	{
-		//std::cout << "\nHalf lives are not defined.\n";
 		xprintf(Msg,"\nHalf-lives are not defined.");
 	}else{
-		//cout << "\nHalf lives are defined as:";
 		xprintf(Msg,"\nHalf-lives are defined as:");
 		for(i=0; i < (nr_of_isotopes - 1) ; i++)
 		{
@@ -290,7 +256,6 @@ int *Linear_reaction::Set_indeces(char *section)
 	    xprintf(Msg,"\nIndex for %d-th isotope is missing.", j+1);
 	  }
 	    substance_ids[j] = atoi(pom_buf);
-	    //xprintf(Msg,"\n P_lat[%d].dGf %Lf\n",j,P_lat[j].dGf);
 	    pom_buf = strtok( NULL, separators );
 	 }
 	 if ( pom_buf != NULL )
@@ -333,41 +298,12 @@ void Linear_reaction::Print_reaction_matrix(int n_subst)
 			}
 		}
 	}
-	//return;
 }
 
-int Linear_reaction::Set_nr_of_decays(char *section)
+int Linear_reaction::Set_nr_of_decays(void)
 {
 	nr_of_decays = OptGetInt("Decay_module","Nr_of_decay_chains","1");
 	return nr_of_decays;
-}
-
-void Linear_reaction::Prepare_decaying_isotopes_ids(int n_subst)
-{
-	int cols;
-	decaying_isotopes = (int *)xmalloc(n_subst * sizeof(int));
-	for(cols = 0; cols < n_subst; cols++){
-		decaying_isotopes[cols] = 0;
-	}
-}
-
-void Linear_reaction::Modify_decaying_isotopes_ids(void)
-{
-	int rows, cols, index, n_subst;
-
-	//for(cols = 0; cols < (n_subst - 1); cols++){//upper limit depends on, if the last one substance in decay chain is stable or not, we think it is
-		index = substance_ids[0] - 1;
-		decaying_isotopes[index] += 1; //substance appears in some section [Decay_i] at the first position
-		n_subst = sizeof(*decaying_isotopes)/sizeof(int);
-		xprintf(Msg,"\nThese isotopes are members of decay chains: ");
-		for(cols = 1; cols < n_subst; cols++){
-			if(cols < (n_subst -1)){
-				xprintf(Msg,"%d\t", decaying_isotopes[cols]);
-			}else{
-				xprintf(Msg,"%d\n", decaying_isotopes[cols]);
-			}
-		}
-	//}
 }
 
 void Linear_reaction::Set_bifurcation(char *section, int dec_nr)
