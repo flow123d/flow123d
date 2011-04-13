@@ -1077,7 +1077,7 @@ void ConvectionTransport::convection() {
 		//char dec_name[30];
 
     	if(t == 1){
-    		decayRad = new Linear_reaction(n_subst, "Decay_1", time_step);
+    		decayRad = new Linear_reaction(n_subst, time_step);
     		//int nr_of_decays;
     		//nr_of_decays = OptGetInt("Decay","Nr_of_decays","1");
     		//here should be generated string insted of "Decay_1", used bellow
