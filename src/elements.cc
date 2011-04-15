@@ -24,6 +24,7 @@
  *
  * @file
  * @brief    Various element oriented stuff, should be restricted to purely geometric functions
+ * @ingroup mesh
  *
  */
 
@@ -51,7 +52,7 @@ static void calc_a_row(Mesh*);
 static void calc_b_row(Mesh*);
 //static ElementIter new_element(void);
 //static void add_to_element_list(Mesh*, ElementIter);
-static void make_block_e(ElementFullIter );
+static void make_block_e(ElementFullIter, Mesh *mesh );
 //static void alloc_and_init_block_e(ElementIter );
 static char supported_element_type(int);
 static void element_type_specific(ElementFullIter );
@@ -192,7 +193,7 @@ void element_calculation_mh(Mesh* mesh) {
         calc_rhs(ele);
         dirichlet_elm(ele);
         make_block_d(mesh, ele);
-        make_block_e(ele);
+        make_block_e(ele, mesh);
     }
     //block_A_stats( mesh );
     //diag_A_stats( mesh );
@@ -270,10 +271,6 @@ void calc_metrics(ElementFullIter ele) {
             break;
     }
 
-    //TODO: to je nejaka kravina ne???
-    INPUT_CHECK(ele->measure > MESH_CRITICAL_VOLUME,
-            "Metrics of element %d is almost equal to zero (metrics= %g)\n",
-            ele.id(), ele->measure);
 }
 
 /**
@@ -430,7 +427,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
 /**
  * make_block_e(ElementFullIter ele)
  */
-void make_block_e(ElementFullIter ele) {
+void make_block_e(ElementFullIter ele, Mesh *mesh) {
     int ngi, ci;
     struct Neighbour *ngh;
 
@@ -438,7 +435,7 @@ void make_block_e(ElementFullIter ele) {
     if (ele->e_row_count == 0) return;
     // alloc
     ele->e_col = (int*) xmalloc(ele->e_row_count * sizeof ( int));
-    ele->e_edge_id = (int*) xmalloc(ele->e_row_count * sizeof ( int));
+    ele->e_edge_idx = (int*) xmalloc(ele->e_row_count * sizeof ( int));
     ele->e_val = (double*) xmalloc(ele->e_row_count * sizeof ( double));
 
     ci = 0;
@@ -447,7 +444,7 @@ void make_block_e(ElementFullIter ele) {
         ngh = ele->neigh_vb[ ngi ];
         ele->e_col[ ci ] = ngh->edge->c_row;
         ele->e_val[ ci ] = ngh->sigma * ngh->side[1]->metrics; //DOPLNENO   * ngh->side[1]->metrics
-        ele->e_edge_id[ci] = ngh->edge->id;
+        ele->e_edge_idx[ci] = mesh->edge.index(ngh->edge);
         ci++;
     }
 }

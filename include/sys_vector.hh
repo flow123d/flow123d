@@ -254,7 +254,7 @@ public:
     /**
      * For given pointer returns the index of the element in the Vector. The first element has zero index.
      */
-    inline unsigned int index(Iter pointer)
+    inline unsigned int index(Iter pointer) const
         {
           ASSERT( pointer >= &(storage.front()) && pointer <= &(storage.back()),
                   "Wrong pointer %d to obtain its index (%d, %d).\n",pointer, &(storage.front()), &(storage.back()));
@@ -272,6 +272,11 @@ public:
      /// Returns size of the container. This is independent of the allocated space.
      inline unsigned int size() const
          { return storage.size(); }
+
+     /// Returns size of the container. This is independent of the allocated space.
+     inline void resize(const unsigned int size)
+         { storage.resize(size); }
+
 
      /// Gets reference to the element specified by index.
      inline T & operator[](unsigned int idx)

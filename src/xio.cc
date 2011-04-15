@@ -24,6 +24,7 @@
  *
  *
  * @file xio.cc
+ * @ingroup system
  * @brief  I/O functions with filename storing, able to track current line in opened file. All standard
  *         stdio functions working with files (not stdin, stdout, stderr) should be replaced
  *         by their equivalents from XIO library.

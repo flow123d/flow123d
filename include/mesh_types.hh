@@ -36,6 +36,7 @@
 class Node;
 class Element;
 class Boundary;
+class Edge;
 
 // Preparation for next development
 typedef flow::VectorId<Node> NodeVector;
@@ -52,5 +53,9 @@ typedef ElementVector::FullIter ElementFullIter;
 typedef flow::VectorId<Boundary> BoundaryVector;
 typedef BoundaryVector::Iter BoundaryIter;
 typedef BoundaryVector::FullIter BoundaryFullIter;
+
+typedef flow::Vector<Edge> EdgeVector;
+typedef EdgeVector::Iter EdgeIter;
+typedef EdgeVector::FullIter EdgeFullIter;
 
 #endif /* MESH_TYPES_HH_ */

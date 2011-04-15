@@ -46,7 +46,6 @@ $(OBJS)/nodes.o\
 $(OBJS)/elements.o\
 $(OBJS)/sides.o\
 $(OBJS)/edges.o\
-$(OBJS)/hashes.o\
 $(OBJS)/boundaries.o\
 $(OBJS)/neighbours.o\
 $(OBJS)/mesh.o\
@@ -73,6 +72,7 @@ $(OBJS)/semchem/che_semchem.o\
 $(OBJS)/semchem/semchem_interface.o\
 $(OBJS)/semchem/cti_ichnew.o
 
+#$(OBJS)/hashes.o\
 #$(OBJS)/transport_bcd.o\
 #$(OBJS)/concentrations.o\
 # $(OBJS)/ppfcs.o\

@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup application
  * @brief Basic time management class.
  */
 

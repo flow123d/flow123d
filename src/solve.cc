@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup la
  * @brief	Unified interface to various linear solvers
  * @author	Jan Brezina
  *

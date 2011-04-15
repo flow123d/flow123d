@@ -1,20 +1,36 @@
-
-How to install and run Flow123 - Linux version
-==============================================
+==============================
+How to install and run Flow123
+==============================
 
 ==============
 Prerequisities
 ==============
 
-If you are running Windows, you have to install 'cygwin' software with
-packages: GCC, GFortran, Python, Perl
-(I need somebody who really tried whole Flow123 compilation with Cygwin)
+If you are running Windows, you have to install 'cygwin' for emulation of POSIX unix environment.
+
+For build you will need some developement software packages. On Windows use cygwin to install them. On Linux use package manager
+of your distribution ('apt-get' for Ubuntu and Debian, 'yum' for RedHat and Centos)
+
+requested packages are: 
+
+* gcc, g++, gfortran    C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
+* python, perl, cmake   Scripting languages and building tool
+* boost                 C++ library
+
+optionaly you may want also:
+
+* doxygen, graphviz     source generated documentation and its supprot tool for diagrams.
+* eclipse + CDT (C/C++ developement toolkit)   
+
+You can find complete set of usefull libraries compatible with Flow123d on address:
+
+http://dev.nti.tul.cz/jan.brezina/flow_libs (check)
 
 ==============================
 Step 1 - Install PETSc Library
 ==============================
 
-Current version (rev. ?) of Flow123 depends on the PETSC library 3.0.0-xx 
+Flow branches up to 1.6.5 depends on the PETSC library 3.0.0-xx.
 Download this version from:
 
 http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
@@ -26,58 +42,63 @@ Assume that you unpack the installation tree to the directory:
 Change to this directory and set this as your PETSC directory:
 > export PETSC_DIR=`pwd`
 
-Set a name for the configuration you are going to install:
+For developelemt you will need at least debuging and production build of the library. 
+First set a name for the debugging configuration:
 > export PETSC_ARCH=linux-gcc-dbg
 
-Run the configuration script:
-> ./config/configure.py --with-cc=gcc --with-fc=gfortran --with-shared --download-f-blas-lapack=1 --download-mpich=1 --CFLAGS="-O3" --FFLAGS="-O3"
+And run the configuration script, for example with following options:
+>./config/configure.py --with-debugging=1 --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --CFLAGS_O=-g --FFLAGS_O=-g --download-mpich=yes --download-parmetis=yes --download-f-blas-lapack=1 --with-x=1
 
-As this also automagically install BLAS and MPICH it can take about 15 min. If everything is OK, you can get something like this:
-
-----------------------------------------------------------------------------------------------------------------------------------------------------
-Compilers:
-  C Compiler:         /home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/bin/mpicc -O3 -g3
-  Fortran Compiler:   /home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/bin/mpif90 -O3  -g
-Linkers:
-  Static linker:   /usr/bin/ar cr
-  Dynamic linker:   /home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/bin/mpicc  -shared -O3 -g3
-PETSc:
-  PETSC_ARCH: linux-gcc-dbg
-  PETSC_DIR: /home/jb/local/petsc-3.0.0-p2
-  **
-  ** Now build the libraries with "make all"
-  **
-  Clanguage: C
-  Scalar type:real
-MPI:
-  Includes: -I/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/include
-  Library:  -lnsl -lrt
-X11:
-  Includes: ['']
-  Library: ['-lX11']
-  PETSc shared libraries: disabled
-  PETSc dynamic libraries: disabled
-BLAS/LAPACK: -Wl,-rpath,/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -L/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -lflapack -Wl,-rpath,/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -L/home/jb/local/petsc-3.0.0-p2/linux-gcc-dbg/lib -lfblas
-==========================================
----------------------------------------------------------------------------------------------------------------------------------------------
-
-Finally compile PETSC with this configuration:
+This also automagically install BLAS, Lapack, MPICH, and ParMetis so it takes a while, it can be about 15 min. 
+If everything is OK, you obtain table with used compilers and libraries. Finally compile PETSC with this configuration:
 > make all
 
 To test the compilation run:
 > make test
 
-Alternatives
-============
+To obtain PETSC configuration for the production version you can use e.g.
+> export PETSC_ARCH=linux-gcc-dbg
+>./config/configure.py --with-debugging=0 --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --CFLAGS_O=-O3 --FFLAGS_O=-O3 --download-mpich=yes --download-parmetis=yes --download-f-blas-lapack=1 --with-x=1
+> make all
+> make test
+
+Configurations mentioned abouve are minimalistic. Next we describe several additional cofigure options whic can be usefull.
+
+
+Alternatives and Troubleshooting
+================================
+
+
 
 1) If you want only serial version of PETSc (and Flow123d)
 add --with-mpi=0 to the configure command line.
-You can have several PATSC configuration using different PETSC_ARCH.
+You can have several PETSC configuration using different PETSC_ARCH.
 
-2) To use parallel verion of Flow123d you need Parmetis. 
-Add configure option: --download-parmetis=yes 
+2) By default PETSC will create dynamicaly linked libraries, which can be shared be more applications. But on some systems 
+(in particular we have problems under Windows) this doesn't work, so one is forced to turn off dynamic linking by:
 
-3) PETSC provides interface to many usefull packages. You can install them 
+--with-shared=0
+
+3) PETSC use BLAS and few LAPCAK functions for its local vector and matrix operations. The speed of BLAS and LAPACK have dramatic impact 
+   on the overall performance. There is a sophisicated implementation of BLAS called ATLAS. ATLAS performs extensive set of performance tests on
+   your hardware then make an optimized imlementation of  BLAS code for you. Accoring to our measurements the Flow123d is about two times faster
+   with ATLAS compared to usual --download-f-blas-lapack (on x86 architecture and usin GCC).
+   
+   In order to use ATLAS, download it from ... and follow their instructions. The key point is that you have to turn off the CPU throttling.
+   To this end install 'cpufreq-set' or `cpu-freq-selector` and use it to set your processor to maximal performance:
+   >cpufreq-set -c 0 -g performance
+   >cpufreq-set -c 1 -g performance
+
+   ... this way I have set performance mode for both cores of my Core2Duo.
+
+   Then you need not to specify any special options, just run default configuration and make. 
+   
+   Unfortunately, there is one experimental preconditioner in PETSC (PCASA) which use a QR decomposition Lapack function, that is not
+   part of ATLAS. Although it is possible to combine ATLAS with full LAPACK from Netlib, we rather provide an empty QR decomposition function
+   as a part of Flow123d sources.
+   See. HAVE_ATTLAS_ONLY_LAPACK in ./makefile.in
+
+4) PETSC provides interface to many usefull packages. You can install them 
 adding further configure options:
 --download-superlu=yes         # parallel direct solver
 --download-hypre=yes           # Boomer algebraic multigrid preconditioner, many preconditioners
@@ -99,9 +120,20 @@ http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/M
 
 http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-dev/docs/manualpages/PC/PCHYPRE.html
 
+=========================
+ Step 2 - Armadillo
+=========================
+
+.. under construction.
 
 =========================
- Step 2 - Compile Flow123
+ Step 3 - DUNE
+=========================
+
+... under construction
+
+=========================
+ Step 4 - Compile Flow123
 =========================
 
 Get appropriate branch from repository. "trunk_serial" should be stable, "branches/1.6.0_modular" 
@@ -129,5 +161,13 @@ For further information about program usage see documentation in "doc/" in parti
 reference manual "doc/flow_doc". 
 
 
+
+
+TODO:
+- potreba doxygen, graphviz
+- pozadavky na PETSC: parmetis, (mumps)
+- armadillo
+- boost
+- cmake
 
 

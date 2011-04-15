@@ -24,6 +24,7 @@
  *
  *
  * @file
+ * @ingroup mesh
  * @brief Some side related functions - should be made strictly geometric.
  *
  */

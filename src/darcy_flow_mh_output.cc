@@ -24,6 +24,7 @@
  *
  * @file
  * @brief Output class for darcy_flow_mh model.
+ * @ingroup flow
  *
  *  @author Jan Brezina
  *

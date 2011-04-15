@@ -102,7 +102,7 @@ typedef struct Element
     // int      d_diag;            // Index of value in the array d_val where entry on the diagonal is stored
     int  e_row_count;   // # of nonzeros in row of the block E
     int *e_col;     // columns with nonzeros in E
-    int *e_edge_id;   // ids of compatible conected edeges
+    int *e_edge_idx;   // ids of compatible conected edeges
     double  *e_val;     // values of entries in E
     // Time terms - diagonal in D block and additional RHS
     double tAddRHS, tAddDiag;

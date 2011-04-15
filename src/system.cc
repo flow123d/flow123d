@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup system
  * @brief  Various system-wide functions
  *
  */

@@ -77,6 +77,10 @@ CFLAGS=-g -O0
 # This only has effect with USE_PARALLEL 
 USE_PRINTALL = -DMPI_PRINTALL
 
+# This activates a workaround for build sucessfuly with ATLAS.
+# It is safe to use this until one would use "asa" PETSC preconditioner.
+ATLAS= -DHAVE_ATLAS_ONLY_BLAS
+
 ### Parallel stuff ########################################################
 ## manual ParMetis setup (if it is not part of PETSC)
 #PARMETIS_INCLUDE=-I ${HOME}/local/ParMetis-3.1.1

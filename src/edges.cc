@@ -24,6 +24,7 @@
  *
  * @file
  * @brief ???
+ * @ingroup mesh
  *
  */
 
@@ -38,6 +39,20 @@ static int count_edges(Mesh*);
 static int number_of_common_nodes_ss(struct Side*,struct Side*);
 static int number_of_common_nodes_se(struct Side*,ElementIter );
 
+
+Edge::Edge()
+: n_sides(NDEF),
+  side(NULL),
+  neigh_vb(NULL),
+  neigh_bb(NULL),
+  c_row(0),
+  f_val(0),
+  f_rhs(0)
+{
+
+}
+
+
 //=============================================================================
 // CREATE AND PREFILL LIST OF EDGES
 //=============================================================================
@@ -48,17 +63,12 @@ void make_edge_list(Mesh* mesh)
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function make_edge_list()\n");
 	xprintf( Msg, "Creating edges... ")/*orig verb 2*/;
-	mesh->n_edges = count_edges( mesh );
-	for( edi = 0; edi < mesh->n_edges; edi++ ) {
-		edg = new_edge();
-		ASSERT(!( edg == NULL ),"Cannot create edge %d\n", edi );
-		add_to_edge_list( mesh, edg );
-		edg->id = edi;
-	}
-	xprintf( MsgVerb, " O.K. %d edges created.", mesh->n_edges )/*orig verb 4*/;
+	mesh->edge.resize(count_edges( mesh ));
+
+	xprintf( MsgVerb, " O.K. %d edges created.", mesh->n_edges() )/*orig verb 4*/;
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }
-
+/*
 //=============================================================================
 //
 //=============================================================================
@@ -90,7 +100,7 @@ int number_of_common_nodes_se( struct Side *sde, ElementIter ele )
 			if( sde->node[ i ] == ele->node[ j ] )
 				ncn++;
 	return ncn;
-}
+}*/
 //=============================================================================
 //
 //=============================================================================
@@ -106,57 +116,8 @@ int count_edges(Mesh* mesh)
 	}
 	return rc;
 }
-//=============================================================================
-// CREATE NEW EDGE
-//=============================================================================
-struct Edge *new_edge( void )
-{
-	struct Edge *edg;
 
-	edg = (struct Edge*) xmalloc( sizeof( struct Edge ) );
-	init_edge( edg );
-	return edg;
-}
-//=============================================================================
-// INIT DATA OF PARTICULAR EDGE
-//=============================================================================
-void init_edge( struct Edge *edg )
-{
-	ASSERT(!( edg == NULL ),"NULL as argument of function init_edge()\n");
-	edg->id          = NDEF;
-	edg->n_sides     = NDEF;
-	edg->side        = NULL;
-	edg->neigh_vb    = NULL;
-	edg->neigh_bb    = NULL;
-	edg->prev        = NULL;
-	edg->next        = NULL;
-	edg->c_row       = NDEF;
-	edg->f_val	  = 0.0;
-	edg->aux         = NDEF;
-	edg->faux        = 0.0;
-}
-//=============================================================================
-//
-//=============================================================================
-void add_to_edge_list(Mesh* mesh, struct Edge* edg)
-{
-	ASSERT(!( (mesh == NULL) || (edg == NULL) ),"NULL as an argument of function add_to_edge_list()\n");
-	// First edge in the list
-	if( mesh->edge == NULL && mesh->l_edge == NULL ) {
-		mesh->edge = edg;
-		mesh->l_edge = edg;
-		edg->prev = NULL;
-		edg->next = NULL;
-		return;
-	}
-	// If something is wrong with the list
-	ASSERT(!( (mesh->edge == NULL) || (mesh->l_edge == NULL) ),"Inconsistency in the edge list\n");
-	// Add after last edge
-	edg->next = NULL;
-	edg->prev = mesh->l_edge;
-	mesh->l_edge->next = edg;
-	mesh->l_edge = edg;
-}
+
 //=============================================================================
 // CALCULATE PROPERTIES OF ALL EDGES OF THE MESH
 //=============================================================================

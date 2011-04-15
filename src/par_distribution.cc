@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup system
  * @brief  Objects and functions for mesh partitioning.
  *
  */

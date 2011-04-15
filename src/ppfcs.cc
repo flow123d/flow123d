@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup io
  * @brief  Cross-sections computation
  *
  */

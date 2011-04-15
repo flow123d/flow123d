@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup io
  * @brief   The functions for all outputs. This file should be split according to the
  *          quantities to output. In this general file, there should remain only general output functions.
  *

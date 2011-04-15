@@ -168,13 +168,13 @@ protected:
 	Distribution *side_ds; // optimal distribution of elements
 	Distribution *rows_ds; // final distribution of rows of MH matrix
 
-	int *el_4_loc;		// array of ids of local elements (in ordering matching the optimal global)
-	int *row_4_el;		// element id to matrix row
+	int *el_4_loc;		// array of idexes of local elements (in ordering matching the optimal global)
+	int *row_4_el;		// element index to matrix row
 	int *side_id_4_loc;		// array of ids of local sides
 	int	*side_row_4_id;		// side id to matrix row
-	int *edge_id_4_loc;		// array of ids of local edges
-	int	*edge_row_4_id;		// edge id to matrix row
-	int *old_4_new;        // aux. array should be only part of parallel LinSys
+	int *edge_4_loc;		// array of indexes of local edges
+	int	*row_4_edge;		// edge index to matrix row
+	//int *old_4_new;        // aux. array should be only part of parallel LinSys
 
 	// MATIS related arrays
 	int ndof_loc;                   // size of local block of MATIS matrix 

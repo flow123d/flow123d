@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup system
  * @brief  Implementation of function call stack.
  * @author Jiri Jenicek
  *

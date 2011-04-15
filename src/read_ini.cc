@@ -24,6 +24,7 @@
  *
  *
  * @file
+ * @ingroup io
  * @brief   OPTIONS RUTINES - get program parameters, reading from options/ini file
  * @section DESCRIPTION
  *

@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup mesh
  * @brief  Class nodes
  *
  */

@@ -23,6 +23,7 @@
  * $LastChangedDate: 2011-01-08 18:58:15 +0100 (So, 08 led 2011) $
  *
  * @file
+ * @ingroup system
  * @brief  Profiler
  *
  */

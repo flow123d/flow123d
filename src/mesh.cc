@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup mesh
  * @brief  Mesh construction
  *
  */
@@ -35,7 +36,7 @@
 #include "system.hh"
 #include "problem.h"
 #include "mesh.h"
-#include "hashes.h"
+
 // think about following dependencies
 #include "boundaries.h"
 
@@ -69,9 +70,6 @@ Mesh::Mesh() {
     l_side = NULL;
     n_insides = NDEF;
     n_exsides = NDEF;
-    n_edges = NDEF;
-    edge = NULL;
-    l_edge = NULL;
     n_neighs = NDEF;
     neighbour = NULL;
     l_neighbour = NULL;
@@ -80,14 +78,10 @@ Mesh::Mesh() {
     n_lines = 0;
     n_triangles = 0;
     n_tetrahedras = 0;
-    max_bou_id = NDEF;
-//    max_con_id = NDEF;
- //   max_tbc_id = NDEF;
-    max_ngh_id = NDEF;
 
 //    concentration_hash = NULL;
 //    transport_bcd_hash = NULL;
-    neighbour_hash = NULL;
+//    neighbour_hash = NULL;
 }
 
 //=============================================================================
@@ -119,7 +113,8 @@ void make_mesh(struct Problem *problem) {
 
     make_side_list(mesh);
     make_edge_list(mesh);
-    make_hashes(problem);
+
+//    make_hashes(problem);
     count_element_types(mesh);
 
     // topology

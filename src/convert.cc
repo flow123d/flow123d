@@ -23,9 +23,11 @@
  * $LastChangedDate$
  *
  * @file
- * @brief ???
+ * @brief Functions for exporting some input files into output formats.
+ * @ingroup io
  *
- * @author jiri
+ * Should be replaced by unified output classes
+ *
  */
 
 #include "constantdb.h"

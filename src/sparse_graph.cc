@@ -24,6 +24,7 @@
  *
  *
  * @file
+ * @ingroup la
  * @brief  Construction and partitioning of a sparse graph
  *
  */

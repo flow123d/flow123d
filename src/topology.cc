@@ -24,6 +24,7 @@
  *
  *
  * @file
+ * @ingroup mesh
  * @brief Functions for construction of all pointers in the Mesh.
  *
  */
@@ -664,19 +665,18 @@ int elements_common_sides_3D( ElementFullIter e0, ElementFullIter e1, int s[] )
 void neigh_bb_to_edge_both(Mesh* mesh)
 {
 	struct Neighbour *ngh;
-	struct Edge *edg;
 
 	xprintf( MsgVerb, "   Neighbour BB to edge and back... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-    edg = mesh->edge;
+    EdgeFullIter edg = mesh->edge.begin();
 	FOR_NEIGHBOURS( ngh ) {
 		if( ngh->type != BB_E && ngh->type != BB_EL )
 			continue;
 		ngh->edge = edg;
 		edg->neigh_bb = ngh;
-		edg = edg->next;
-		ASSERT(!( edg == NULL ),"Inconsistency between number of neighbours and number of edges\n");
+		++edg;
+		ASSERT( edg != mesh->edge.end() ,"Inconsistency between number of neighbours and number of edges\n");
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
@@ -717,7 +717,7 @@ void edge_to_side_both(Mesh* mesh)
 					sizeof( struct Side* ) );
 		while( sde->edge != NULL ) {
 			sde = sde->next;
-			INPUT_CHECK(!( sde == NULL ),"Boundary %d has incorrect reference to side %d\n", edg->id );
+			INPUT_CHECK(!( sde == NULL ),"No next side during external edge initialization!");
 		}
 		sde->edge = edg;
 		edg->side[ 0 ] = sde;

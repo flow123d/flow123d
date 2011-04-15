@@ -13,7 +13,7 @@ set(libFlow123d_SRCS
     darcy_flow_mh.cc
     edges.cc
     elements.cc
-    hashes.cc
+  #  hashes.cc
     la_linsys.cc
     la_schur.cc
     local_matrix.cc

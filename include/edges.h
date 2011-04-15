@@ -35,18 +35,19 @@
 //=============================================================================
 // STRUCTURE OF THE EDGE OF THE MESH
 //=============================================================================
-typedef struct Edge
+class Edge
 {
+public:
+    /// Minimalistic default constructor.
+    Edge();
+
     // Basic
-    int  id;        // Id # of the edge
+    //int  id;        // Id # of the edge
     // Topology of the mesh
     int  n_sides;   // # of sides of edge
     struct Side **side; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
     struct Neighbour *neigh_vb; // "Compatible" neighbouring
     struct Neighbour *neigh_bb; // ??? this is what
-    // List
-    struct Edge *prev;  // Previous edge in the list
-    struct Edge *next;  // Next edge in the list
     // Matrix
     int  c_row;     // # of row in block C (and E and F) (MH)
     double  f_val;      // diagonal value  in block F
@@ -54,9 +55,8 @@ typedef struct Edge
     // Misc
     int      aux;       // Auxiliary flag
     double   faux;      // Auxiliary number
-} Edge;
+};
 
-#define FOR_EDGES(i)        for((i)=mesh->edge;(i)!=NULL;(i)=(i)->next)
 #define FOR_EDGE_SIDES(i,j) for((j)=0;(j)<(i)->n_sides;(j)++)
 
 void make_edge_list(Mesh*);

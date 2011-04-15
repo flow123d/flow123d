@@ -24,6 +24,7 @@
  *
  *
  * @file
+ * @ingroup mesh
  * @brief  Initialize neighbouring
  *
  */

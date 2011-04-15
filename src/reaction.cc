@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup transport
  * @brief Reactions
  * Read input data and perform reaction computation
  *

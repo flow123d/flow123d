@@ -23,25 +23,7 @@
  * $LastChangedDate$
  *
  * @file main.cc
- * @mainpage
- * @author Otto Severýn, Milan Hokr, Jiří Kopal, Jan Březina, Jiří Hnídek, Jiří Jeníček
- * @date April, 2009
- *
- * @brief Flow123d is simulator of underground water flow and transport. Main features are:
- * - simulation of fully saturated water flow in 1D,2D,3D domains and their combination
- * - simulation of transport with linear sorption
- * - simulation of density driven flow
- *
- * This version links against some external software:
- * - PETSC : http://www.mcs.anl.gov/petsc/petsc-2/documentation/index.html
- *
- * @defgroup system System module
- * Sys description.
- * @defgroup io Input, Output module
- * @defgroup transport Advection module
- * @defgroup mesh Mesh module
- * This should implement classes for mesh over multiple dimension domains and all related geometrical info.
- * @def
+ * @brief This file should contain only creation of Application object.
  *
  */
 

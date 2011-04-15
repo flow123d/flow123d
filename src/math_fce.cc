@@ -23,7 +23,10 @@
  * $LastChangedDate$
  *
  * @file
- * @brief Auxiliary math functions
+ * @ingroup la
+ * @brief Auxiliary math functions.
+ *
+ * Small matrix and vectors should be implemented by armadillo library.
  *
  */
 

@@ -94,6 +94,10 @@ public:
         return boundary.size();
     }
 
+    inline unsigned int n_edges() const {
+        return edge.size();
+    }
+
     // Files
     // DF - Move to ConstantDB
     // char *geometry_fname; // Name of file of nodes and elems
@@ -107,6 +111,8 @@ public:
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
     BoundaryVector boundary;
+    /// Vector of MH edges, this should not be part of the geometrical mesh
+    EdgeVector edge;
 
     flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
@@ -116,26 +122,26 @@ public:
     int n_exsides; // # of external sides
     struct Side *side; // First side
     struct Side *l_side; // Last side
-    int n_edges; // # of edges
-    struct Edge *edge; // First edge
-    struct Edge *l_edge; // Last edge
+    //int n_edges; // # of edges
+    //struct Edge *edge; // First edge
+    //struct Edge *l_edge; // Last edge
     int n_neighs; // # of neighbours
     struct Neighbour *neighbour; // First neighbour
     struct Neighbour *l_neighbour; // Last neighbour
     // Hashes
-    int max_edg_id;
-    int max_side_id;
-    int max_bou_id; // Highest id number of boundary
-    int max_ngh_id; // Highest id number of neighbouring
+    //int max_edg_id;
+    //int max_side_id;
+    //int max_bou_id; // Highest id number of boundary
+    //int max_ngh_id; // Highest id number of neighbouring
 
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements
     int n_tetrahedras; // Number of tetrahedra elements
 
 
-    struct Edge **edge_hash;
-    struct Side **side_hash;
-    struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index
+//    struct Edge **edge_hash;
+//    struct Side **side_hash;
+//    struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index
 };
 
 /**
@@ -178,6 +184,14 @@ for( BoundaryFullIter i( mesh->boundary.begin() ); \
 #define BOUNDARY_NULL \
     BoundaryFullIter(mesh->boundary)
 
+
+/**
+ * Provides for statement to iterate over the Edges of the Mesh. see FOR_ELEMENTS
+ */
+#define FOR_EDGES(__i) \
+    for( EdgeFullIter __i( mesh->edge.begin() ); \
+        __i != mesh->edge.end(); \
+        ++__i)
 
 void make_mesh(struct Problem*);
 int *max_entry();

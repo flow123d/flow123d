@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup transport
  * @brief  Transport
  *
  * @todo
