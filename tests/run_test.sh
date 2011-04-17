@@ -47,8 +47,10 @@ do
 	do
 		if ! $RUN_FLOW -s "$INI_FILE" -np "$n" -- "$FLOW_PARAMS"; then
 			if [ ! -e ./out ]; then
+				ERROR=1
 				break 2
 			else
+				ERROR=1
 				break
 			fi
 		fi
