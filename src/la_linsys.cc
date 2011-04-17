@@ -545,8 +545,11 @@ LinSys_MATIS:: ~LinSys_MATIS()
  * needs this Lapack function, which is not implemented in ATLAS.
  */
 extern "C" {
+
 void dgeqrf_(int m, int n, double **A, double *TAU, double *work, int lwork, int info)
 {
 }
-#endif
+
 }
+#endif
+
