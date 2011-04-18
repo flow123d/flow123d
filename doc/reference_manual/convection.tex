@@ -1,0 +1,107 @@
+% Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+%
+% Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+% especially for academic research:
+% Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+%
+% This program is free software; you can redistribute it and/or modify it under the terms
+% of the GNU General Public License version 3 as published by the Free Software Foundation.
+%
+% This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+% without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% See the GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License along with this program; if not,
+% write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
+
+\normalsize
+ \section*{Advection-Diffusion equation}
+ 
+Solute transport is governed by Advection equation which can be written in the form
+\begin{equation}
+ \frac{\partial c}{\partial t} + \boldsymbol{v} \frac{\partial c}{\partial x}  = 0, \label{Aeq}
+\end{equation}
+%currently we assume $\mathbf{D} = \boldsymbol{0}$. 
+%\newline
+Assuming solution which is constant on every element (cell centered finite volume method) and integrating equation (\ref{Aeq}) we get
+    \begin{equation}
+    \int\limits_{e_i} \frac{\partial c}{\partial t} dV + \int\limits_{e_i} \boldsymbol{v} \frac{\partial c}{\partial x} \, dV = 0. \notag 
+    \end{equation}
+    After some rearrangements we obtain on $i$-th element ($e_i$)
+    \begin{equation}
+    \frac{\partial c_i}{\partial t}  V_{i} + c \int\limits_{\partial e_i }  \boldsymbol{v} \, \mathbf{dS} = 0, \label{Aeqint} 
+    \end{equation}
+  where $c_i$ is average concentration in $e_i$ and $V_{i}$ its volume, $c$ will be specified later.
+    Time derivative we substitute by explicit Euler difference
+    \begin{equation}
+     \frac{\partial c}{\partial \textrm{t}} \approx \frac{c_{i}^{n+1} - c_{i}^n}{\Delta t}. \label{expliciteuler}
+    \end{equation}
+    Where $\Delta t$ is a time step and upper index at $c_i$ means values in the discrete time steps ($n+1$ and $n$).
+    With respect to $e_i$ we define internal flow intake $U_{ij}^{-}$ (from $e_j$), external flow intake $U_{ij}^{e-}$ (from $\Omega$),
+    internal flow drain $U_{ij}^{+}$ (to $e_j$), and external flow drain $U_{ij}^{e+}$ (to $\Omega$) as follows
+    \begin{eqnarray}     
+      U_{ij}^{-} = \text{min}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0), \quad
+      U_{ik}^{e-} = \text{min}(\int\limits_{\partial e_i \cap \partial \Omega } \boldsymbol{v} \, \mathbf{dS},0), \notag \\
+      U_{ij}^{+} = \text{max}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0), \quad
+      U_{ik}^{e+} = \text{max}(\int\limits_{\partial e_i \cap \partial \Omega } \boldsymbol{v} \, \mathbf{dS},0). \label{flux}  
+    \end{eqnarray}
+    Direction of the velocity $\boldsymbol{v}$, which affects sign of the $U$-terms is significant for the construction solution. For the solution
+    stability it is suitable to use an upwind scheme, which can by written for finite difference on simple 1D geometry in the form
+    \begin{eqnarray} 
+      v>0 : \frac{\partial c}{\partial \textrm{x}} \approx \frac{c_{i}^n - c_{i-1}^n}{\Delta x},   \notag \\
+      v<0 : \frac{\partial c}{\partial \textrm{x}} \approx \frac{c_{i+1}^n - c_i^n}{\Delta x}.   \label{upwind} 
+    \end{eqnarray}
+    This scheme can be interpreted as well as in finite volume method - in convection term one can get $c$ value opposite the flow of the quantity $\boldsymbol{v}$ direction.
+      For every $e_i$ we introduce itemsets $\mathcal{N}_{i}, \mathcal{B}_{i}$ which contains indexes of neighbourging elements, local boundary conditions respectivelly.  
+     Assuming upwind scheme, using (\ref{flux}) and (\ref{expliciteuler}) we can write solution of the equation (\ref{Aeqint}) 
+    (relation between two consecutive time steps) on $e_i$ in the form 
+    \begin{equation}
+      c_i^{n+1} = c_i^n - \frac{\Delta t}{V_{i}} \left[ \sum_{j \in \mathcal{N}_{i}} \left[ U_{ij}^{+} c_i +  U_{ij}^{-} c_{j} \right] +
+      \sum_{k \in \mathcal{B}_{i}}  \left[  U_{ik}^{e+} c_i +  U_{ik}^{e-} c_{B_{ik}} \right] \right]. \label{Aeqsol}
+    \end{equation}
+    Where $c_{B_{ik}}$ are values of Dirichlet boundary conditions which belong to $e_i$. Formula (\ref{Aeqsol}) can be rewritten into the matrix notation
+    \begin{equation}
+     \mathbf{c}^{n+1} = (\mathbf{I} + \Delta t \mathbf{A}) \cdot \mathbf{c}^{n} + \Delta t \mathbf{B} \cdot \mathbf{c_{B}}^{n} \label{AeqsolM}
+    \end{equation}
+  Where $\mathbf{c}$ is vector of $c_i^{n+1}$, $\mathbf{A}$ is a square matrix composed from $\frac{U_{ij}^{+}}{V_i}$, $\frac{U_{ij}^{-}}{V_i}$, and
+  $\frac{U_{ij}^{e+}}{V_i}$. $\mathbf{B}$ is in general rectangular matrix composed from $\frac{U_{ij}^{e-}}{V_i}$ and $\mathbf{c_{B}}^{n}$ is  vector of Dirichlet
+  boundary conditions.matrix definition. There is the only one stability condition for time step which is called Courant-Friedrich-Levy condition. 
+  For the problem without sources/sinks it can be written as
+  \begin{equation}
+  \Delta t_{max} = \min_i \left( \frac{V_i}{ \sum\limits_{j}  U_{ij}^{+} + \sum\limits_{k}  U_{ik}^{e+} } \right) =
+  \min_i \left( \frac{V_i}{ \sum\limits_{j} | U_{ij}^{-} | + \sum\limits_{k} | U_{ik}^{e-} | } \right). \label{cfl} 
+  \end{equation}
+  This condition has a physical interpretation, which can be understood as conservation law. From algebraical point of view this condition can be seen
+  as a condition which bounds norm of the evolution operator as follows 
+  \begin{equation}
+  \| \mathbf{I} + \Delta t \mathbf{A} \quad \Delta t \mathbf{B} \| \le 1.
+  \end{equation}
+  This approach can be used as well as for more general element connections -- for compatible/non-compatible element interconnection, if we know the flow integral
+  values ($U_{ij}^{+}$ or $U_{ij}^{-}$). %Situation for more general case is in the picture (\ref{compmodel}).
+      \begin{figure}[h]
+        \begin{center}
+        \includegraphics[scale=0.7]{obr7.pdf} 
+	\caption{Edge with 3 elements}
+	\label{edgemodel}
+        \end{center}
+      \end{figure}  
+  The most general case of connection is relation among $n$ elements like in figure (\ref{edgemodel}). For the case in figure (\ref{edgemodel}) we define
+indexset $\mathcal{G}_{l}$ which contains all the indexes of elements which sides make $l$-th edge ($g_l$), so that $\mathcal{G}_{l} = \{i,j,k\}$.
+For $\mathcal{G}_{l}$ we introduce its subsets $\mathcal{G}_{ij}$, $\mathcal{G}_{ji}$, $\mathcal{G}_{ik}$, $\mathcal{G}_{ki}$, $\mathcal{G}_{kj}$, and $\mathcal{G}_{jk}$,
+  where $\mathcal{G}_{ij} = \mathcal{G}_{ik} = \{j,k\}$, $ \mathcal{G}_{ji} = \mathcal{G}_{jk} = \{i,k\}$, and $\mathcal{G}_{ki} = \mathcal{G}_{kj} = \{i,j\}$ (if edge
+indexset $\mathcal{G}$ is defined using two lower indexes (by two elements), first element index is not included in the indexset).
+For $l$-th edge ($g_l$) we can define total edge flow $U_{g_{l}}$ eg. as
+  \begin{eqnarray}
+   U_{g_{l}} &=& \sum\limits_{m \in \mathcal{G}_{ji}}  \left[ U_{jm}^{+} + | U_{mj}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{jk}}  \left[ U_{jm}^{+} + | U_{mj}^{-}| \right] \notag \\
+	      &=& \sum\limits_{m \in \mathcal{G}_{ij}}  \left[ U_{im}^{+} + | U_{mi}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{ik}}  \left[ U_{im}^{+} + | U_{mi}^{-}| \right] \notag \\ 
+	      &=& \sum\limits_{m \in \mathcal{G}_{ki}}  \left[ U_{km}^{+} + | U_{mk}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{kj}}  \left[ U_{km}^{+} + | U_{mk}^{-}| \right], \label{edgeflow} 
+  \end{eqnarray}
+$U_{g_{l}}$ with respect to any $e_m$, $m \in \mathcal{G}_{l}$ has to have the same value because continuity equation, for assumed incompresible flow, has to
+ be fulfilled in every edge. Edges with more than 2 elements realize an ideal mixing. This fact modifies equation (\ref{Aeqsol})
+on the general mesh into the form
+    \begin{equation}
+      c_i^{n+1} = c_i^n - \frac{\Delta t}{V_{i}} \left[ \sum_{j \in \mathcal{N}_{i}} \left[ U_{ij}^{+} c_i +  \frac{U_{ij}^{-}}{\sum\limits_{k \in \mathcal{G}_{ij}}
+      \left[ U_{ki}^{+} + |U_{ik}^{-}| \right] } \sum\limits_{k \in \mathcal{G}_{ij}} U_{ki}^{+} c_{k} \right] + 
+      \sum_{k \in \mathcal{B}_{i}}  \left[  U_{ik}^{e+} c_i +  U_{ik}^{e-} c_{B_{ik}} \right] \right], \label{Aeqsol}
+    \end{equation}
+matrix notation is the same as in (\ref{AeqsolM}). Finally ...
