@@ -260,7 +260,7 @@ FILE *xfopen( const char *fname, const char *mode )
     ASSERT(!( (fname == NULL) || (mode == NULL) ),"NULL pointer as argument of function xfopen()\n");
     xprintf(MsgLog,"Opening file: '%s'\n", fname);
     rc = fopen( fname, mode );
-    ASSERT(!( rc == NULL ),"Cannot open file '%s' with permissions %s\n", fname, mode );
+    INPUT_CHECK( rc != NULL ,"Cannot open file '%s' with permissions %s\n", fname, mode );
 
     //store file name and file opening mode
     xf = (XFILE *)xmalloc(sizeof(XFILE));
@@ -354,7 +354,7 @@ FILE * xfreopen( const char * filename, const char * mode, FILE * stream )
 
     rc = freopen( filename, mode, stream );
 
-    ASSERT(!( rc == NULL ),"Cannot reopen file %s with permissions %s\n", filename, mode );
+    INPUT_CHECK(  rc != NULL ,"Cannot reopen file %s with permissions %s\n", filename, mode );
 
     //store file name and file opening mode
     xf = xio_getfptr(rc);
@@ -528,7 +528,7 @@ int xrename ( const char * oldname, const char * newname )
 
     rc = rename( oldname, newname );
 
-    ASSERT(!(rc == 0),"Failed when renaming '%s' to '%s'\n", oldname, newname );
+    INPUT_CHECK( rc != 0,"Failed when renaming '%s' to '%s'\n", oldname, newname );
     return( rc );
 }
 
