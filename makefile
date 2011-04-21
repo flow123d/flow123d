@@ -54,7 +54,7 @@ bin/current_flow:
 	if [ -z "${MACHINE}" ]; then \
 		echo "Using default: current_flow"; \
 		echo '#!/bin/bash' > bin/current_flow; \
-		echo "`pwd`/bin/generic_flow.sh" >> bin/current_flow; \
+		echo "\"`pwd`/bin/generic_flow.sh\"" >> bin/current_flow; \
 	else \
 		if [ -e "bin/${MACHINE}_flow.sh" ]; then \
 			echo '#!/bin/bash' > bin/current_flow; \
