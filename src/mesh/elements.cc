@@ -32,15 +32,15 @@
 
 #include <strings.h>
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "math_fce.h"
-#include "mesh.h"
+#include "system/math_fce.h"
+#include "mesh/mesh.h"
 #include "elements.h"
 
 // following deps. should be removed
 #include "problem.h"
-#include "boundaries.h"
+#include "mesh/boundaries.h"
 #include "materials.hh"
 
 #include "constantdb.h"

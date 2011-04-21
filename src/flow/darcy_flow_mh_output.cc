@@ -30,9 +30,9 @@
  *
  */
 
-#include <darcy_flow_mh.hh>
-#include <darcy_flow_mh_output.hh>
-#include <field_p0.hh>
+#include "flow/darcy_flow_mh.hh"
+#include "flow/darcy_flow_mh_output.hh"
+#include "field_p0.hh"
 
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)

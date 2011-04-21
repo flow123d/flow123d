@@ -46,8 +46,9 @@
 
 #include "petscmat.h"
 #include "private/matimpl.h"
+
 #include "la_schur.hh"
-#include "par_distribution.hh"
+#include "system/par_distribution.hh"
 
 
 // **************************************************************

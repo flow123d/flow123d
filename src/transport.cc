@@ -37,26 +37,23 @@
  *
  */
 //#include <cmath>
-//#include "system.hh"
+//#include "system/system.hh"
 //#include "xio.h"
 
 #include "constantdb.h"
-#include "system.hh"
-#include "math_fce.h"
+#include "system/system.hh"
+#include "system/math_fce.h"
 #include "problem.h"
-#include "mesh.h"
+#include "mesh/mesh.h"
 #include "transport.h"
-#include "boundaries.h"
-#include "neighbours.h"
-#include "elements.h"
 #include "output.h"
 #include "materials.hh"
 #include "read_ini.h"
 #include "ppfcs.h"
 //#include "btc.h" XX
 //#include "reaction.h" XX
-#include "darcy_flow_mh.hh"
-#include "par_distribution.hh"
+#include "flow/darcy_flow_mh.hh"
+#include "system/par_distribution.hh"
 #include "mesh/ini_constants_mesh.hh"
 #include "sparse_graph.hh"
 #include "semchem/semchem_interface.hh"

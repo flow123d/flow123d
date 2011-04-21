@@ -30,7 +30,7 @@
 #ifndef BOUNDARIES_H
 #define BOUNDARIES_H
 
-#include "mesh.h"
+#include "mesh/mesh.h"
 
 struct Boundary;
 struct Transport_bcd;

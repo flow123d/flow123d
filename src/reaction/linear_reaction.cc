@@ -1,5 +1,5 @@
 #include "linear_reaction.hh"
-#include "system.hh"
+#include "system/system.hh"
 #include <iostream>
 #include <cstring>
 #include <stdlib.h>

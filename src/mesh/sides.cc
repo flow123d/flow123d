@@ -29,14 +29,14 @@
  *
  */
 
-#include "system.hh"
-#include "math_fce.h"
-#include "mesh.h"
+#include "system/system.hh"
+#include "system/math_fce.h"
+#include "mesh/mesh.h"
 #include "sides.h"
 
 // following deps. should be removed
 #include "problem.h"
-#include "boundaries.h"
+#include "mesh/boundaries.h"
 #include "materials.hh"
 #include "transport.h"
 #include "constantdb.h"

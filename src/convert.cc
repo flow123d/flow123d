@@ -34,20 +34,17 @@
 #include "mesh/ini_constants_mesh.hh"
 #include "transport.h"
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
 #include "output.h"
-#include "math_fce.h"
-#include "mesh.h"
-#include "boundaries.h"
+#include "system/math_fce.h"
+#include "mesh/mesh.h"
+#include "mesh/boundaries.h"
 #include "output.h"
 #include "convert.h"
 
 #include "problem.h"
-
-#include "boundaries.h"
-
-#include "neighbours.h"
+#include "mesh/neighbours.h"
 
 static void output_convert_to_pos_source(struct Problem *problem);
 static void output_convert_to_pos_bcd(struct Problem *problem);

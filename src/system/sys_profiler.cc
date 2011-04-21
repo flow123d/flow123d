@@ -32,8 +32,8 @@
 #include <sys/param.h>
 
 #include "sys_profiler.hh"
-#include "system.hh"
-#include "system.hh"
+#include "system/system.hh"
+#include "system/system.hh"
 #include <xio.h>
 #include <boost/format.hpp>
 

@@ -31,14 +31,14 @@
 #define MAKE_MESH_H
 
 #include <vector>
-#include <mesh_types.hh>
+#include "mesh/mesh_types.hh"
 
-#include "nodes.h"
-#include "elements.h"
-#include "sides.h"
-#include "edges.h"
-#include "neighbours.h"
-#include "boundaries.h"
+#include "mesh/nodes.h"
+#include "mesh/elements.h"
+#include "mesh/sides.h"
+#include "mesh/edges.h"
+#include "mesh/neighbours.h"
+#include "mesh/boundaries.h"
 
 
 #define ELM  0

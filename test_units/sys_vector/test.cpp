@@ -26,7 +26,7 @@
  *
  */
 
-#include "system.hh"
+#include "system/system.hh"
 #include <sys_vector.hh>
 
 using namespace flow;

@@ -30,7 +30,7 @@
 #ifndef ELEMENTS_H
 #define ELEMENTS_H
 
-#include "nodes.h"
+#include "mesh/nodes.h"
 #include <materials.hh>
 
 struct Problem;

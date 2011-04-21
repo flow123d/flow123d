@@ -32,11 +32,11 @@
 #include "constantdb.h"
 #include "mesh/ini_constants_mesh.hh"
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
 #include "output.h"
-#include "math_fce.h"
-#include "mesh.h"
+#include "system/math_fce.h"
+#include "mesh/mesh.h"
 #include "convert.h"
 
 #include <mpi.h>
@@ -45,12 +45,11 @@
 #include "ppfcs.h"  //FCS - DOPLNIT
 
 // following deps. should probably be removed
-#include "boundaries.h"
+#include "mesh/boundaries.h"
 #include "problem.h"
 
-#include "boundaries.h"
 #include "transport.h"
-#include "neighbours.h"
+#include "mesh/neighbours.h"
 
 static void output_compute_mh(struct Problem *problem);
 static void output_flow_field_in_time_2(struct Problem *problem,double time);

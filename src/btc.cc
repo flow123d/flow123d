@@ -39,8 +39,8 @@
 #include "xio.h"
 #include "output.h"
 #include "btc.h"
-#include "system.hh"
-#include "mesh.h"
+#include "system/system.hh"
+#include "mesh/mesh.h"
 #include "problem.h"
 
 static int *BTC_elm_list( int n_btc, char *line );

@@ -34,18 +34,17 @@
 
 #include <petsc.h>
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "mesh.h"
-#include "topology.h"
+#include "mesh/mesh.h"
+#include "mesh/topology.h"
 #include "output.h"
 #include "problem.h"
-#include "darcy_flow_mh.hh"
-#include "darcy_flow_mh_output.hh"
+#include "flow/darcy_flow_mh.hh"
+#include "flow/darcy_flow_mh_output.hh"
 
 #include "main.h"
 #include "read_ini.h"
-#include "global_defs.h"
 #include "btc.h"
 #include "reaction.h"
 
@@ -57,7 +56,7 @@
 #include "solve.h"
 #include "elements.h"
 #include "sides.h"
-#include "math_fce.h"
+#include "system/math_fce.h"
 #include "materials.h"
  */
 

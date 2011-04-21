@@ -27,40 +27,54 @@
  *
  */
 
-#ifndef MAKE_EDGES_H
-#define MAKE_EDGES_H
+#ifndef NODE_H
+#define NODE_H
 
-#include "mesh.h"
+#include "mesh/mesh_types.hh"
 
-//=============================================================================
-// STRUCTURE OF THE EDGE OF THE MESH
-//=============================================================================
-class Edge
-{
+
+
+
+/**
+ * Class of node.
+ * First approach in turning to class.
+ */
+class Node {
+private:
+    /** Coordinates of node */
+    double* coordinates;
+
 public:
-    /// Minimalistic default constructor.
-    Edge();
+    Node();
 
-    // Basic
-    //int  id;        // Id # of the edge
-    // Topology of the mesh
-    int  n_sides;   // # of sides of edge
-    struct Side **side; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
-    struct Neighbour *neigh_vb; // "Compatible" neighbouring
-    struct Neighbour *neigh_bb; // ??? this is what
-    // Matrix
-    int  c_row;     // # of row in block C (and E and F) (MH)
-    double  f_val;      // diagonal value  in block F
-    double  f_rhs;      // rhs value
+    void set(double, double, double);
+
+    double getX();
+    double getY();
+    double getZ();
+
+    double distance(Node*);
+
+    int id;
+
+    //--------------------------------------------------------------------------
+    // Old data - adepts to reduce ...
+    //--------------------------------------------------------------------------
+
+    // Topology
+    int n_elements; // # of elms connected by the node ( used only in transport )
+    ElementIter *element; // List of elements
+
+    // following  is used only by interpolation function
+    // postprocess.c void make_node_scalar(Mesh* mesh)
+    // which should be rewrittento be able interpolate arbitrary data
+    // Results
+    double scalar; // Scalar quantity (pressure/piez. head)
+
     // Misc
-    int      aux;       // Auxiliary flag
-    double   faux;      // Auxiliary number
+    int aux; // Auxiliary flag
+    double faux; // Auxiliary number
 };
-
-#define FOR_EDGE_SIDES(i,j) for((j)=0;(j)<(i)->n_sides;(j)++)
-
-void make_edge_list(Mesh*);
-void edge_calculation_mh(Mesh*);
 
 #endif
 //-----------------------------------------------------------------------------

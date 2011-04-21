@@ -28,7 +28,7 @@
  *
  */
 
-#include "system.hh"
+#include "system/system.hh"
 #include "par_distribution.hh"
 
 /**

@@ -33,12 +33,12 @@
 #include "mesh/ini_constants_mesh.hh"
 #include "constantdb.h"
 
-#include "system.hh"
+#include "system/system.hh"
 #include "problem.h"
-#include "mesh.h"
+#include "mesh/mesh.h"
 
 // think about following dependencies
-#include "boundaries.h"
+#include "mesh/boundaries.h"
 
 #include "transport.h"
 

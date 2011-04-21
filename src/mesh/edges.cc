@@ -28,8 +28,8 @@
  *
  */
 
-#include "system.hh"
-#include "mesh.h"
+#include "system/system.hh"
+#include "mesh/mesh.h"
 
 static struct Edge *new_edge(void);
 static void add_to_edge_list(Mesh*,struct Edge*);

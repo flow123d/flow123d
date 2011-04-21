@@ -29,11 +29,11 @@
 #ifndef FIELD_P0_HH_
 #define FIELD_P0_HH_
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
 #include <string>
-#include "mesh_types.hh"
-#include "mesh.h"
+#include "mesh/mesh_types.hh"
+#include "mesh/mesh.h"
 
 
 /**

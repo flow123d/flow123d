@@ -32,10 +32,10 @@
 
 #include "constantdb.h"
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "boundaries.h"
-#include "mesh.h"
+#include "mesh/boundaries.h"
+#include "mesh/mesh.h"
 
 static struct Boundary *new_boundary(void);
 static void add_to_boundary_list(struct Mesh*,struct Boundary*);

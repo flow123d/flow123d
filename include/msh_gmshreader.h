@@ -33,7 +33,7 @@
 #define	_GMSHMESHREADER_H
 
 #include "msh_reader.h"
-#include "mesh.h"
+#include "mesh/mesh.h"
 
 class GmshMeshReader : public MeshReader {
 private:

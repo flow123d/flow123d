@@ -26,7 +26,7 @@
  *
  */
 
-#include "system.hh"
+#include "system/system.hh"
 
 int main(int argc, char * argv[]) {
   

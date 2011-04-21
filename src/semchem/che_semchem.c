@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "system.hh"
+#include "system/system.hh"
 #define _R 0.008314
 #define VERZE "30-09-2005"
 #define vystupni_soubor "che_out.txt"

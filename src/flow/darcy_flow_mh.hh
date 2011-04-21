@@ -49,7 +49,7 @@
 #define DARCY_FLOW_MH_HH
 
 #include <petscmat.h>
-#include <sys_vector.hh>
+#include "system/sys_vector.hh"
 #include <time_governor.hh>
 #include <field_p0.hh>
 #include <materials.hh>

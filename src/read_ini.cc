@@ -42,7 +42,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
 #include "read_ini.h"
 

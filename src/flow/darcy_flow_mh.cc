@@ -35,18 +35,17 @@
 #include "petscao.h"
 #include "petscerror.h"
 
-#include "system.hh"
-#include "math_fce.h"
-#include "mesh.h"
-#include "par_distribution.hh"
-#include "darcy_flow_mh.hh"
+#include "system/system.hh"
+#include "system/math_fce.h"
+#include "mesh/mesh.h"
+#include "system/par_distribution.hh"
+#include "flow/darcy_flow_mh.hh"
 #include "la_linsys.hh"
 #include "solve.h"
 #include "la_schur.hh"
 #include "sparse_graph.hh"
 #include "field_p0.hh"
-#include "sides.h"
-#include "local_matrix.h"
+#include "flow/local_matrix.h"
 
 
 void DarcyFlowMH::compute_until(double end_time)

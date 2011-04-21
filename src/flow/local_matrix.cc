@@ -27,10 +27,10 @@
  *
  */
 
-#include "system.hh"
-#include "math_fce.h"
-#include "mesh.h"
-#include "local_matrix.h"
+#include "system/system.hh"
+#include "system/math_fce.h"
+#include "mesh/mesh.h"
+#include "flow/local_matrix.h"
 #include "materials.hh"
 
 static void local_matrix(ElementIter  ele);

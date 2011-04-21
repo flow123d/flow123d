@@ -23,58 +23,39 @@
  * $LastChangedDate$
  *
  * @file
- * @ingroup mesh
- * @brief  Class nodes
- *
+ * @brief ???
+ * @date Aug 6, 2010
+ * @author jb
  */
 
-#include "nodes.h"
+#ifndef MESH_TYPES_HH_
+#define MESH_TYPES_HH_
 
-Node::Node() {
-    coordinates = new double[3];
+#include "system/sys_vector.hh"
 
-    n_elements = NDEF;
+class Node;
+class Element;
+class Boundary;
+class Edge;
 
-    scalar = 0.0;
-    //conc = NULL;
-    aux = NDEF;
-    faux = 0.0;
-}
+// Preparation for next development
+typedef flow::VectorId<Node> NodeVector;
+typedef NodeVector::Iter NodeIter;
+typedef NodeVector::FullIter NodeFullIter;
 
-void Node::set(double x, double y, double z) {
-    coordinates[0] = x;
-    coordinates[1] = y;
-    coordinates[2] = z;
-}
+// iterator over elements
+// should be mesh member, but then we have problem how to have ElementIter as memeber of
+// Node or other classes without cyclic inclusion
+typedef flow::VectorId<Element> ElementVector;
+typedef ElementVector::Iter ElementIter;
+typedef ElementVector::FullIter ElementFullIter;
 
-double Node::getX() {
-    return coordinates[0];
-}
+typedef flow::VectorId<Boundary> BoundaryVector;
+typedef BoundaryVector::Iter BoundaryIter;
+typedef BoundaryVector::FullIter BoundaryFullIter;
 
-double Node::getY() {
-    return coordinates[1];
-}
+typedef flow::Vector<Edge> EdgeVector;
+typedef EdgeVector::Iter EdgeIter;
+typedef EdgeVector::FullIter EdgeFullIter;
 
-double Node::getZ() {
-    return coordinates[2];
-}
-
-/**
- * Calculation of distance between nodes (given node and this node).
- *
- */
-double Node::distance(Node* node) {
-    ASSERT(!(node == NULL), "NULL as argument of method distance(TNode*)\n");
-
-    double distance;
-
-    distance = sqrt(
-            (node->getX() - getX()) * (node->getX() - getX())
-            + (node->getY() - getY()) * (node->getY() - getY())
-            + (node->getZ() - getZ()) * (node->getZ() - getZ())
-            );
-
-    return distance;
-}
-//-----------------------------------------------------------------------------
-// vim: set cindent:
+#endif /* MESH_TYPES_HH_ */

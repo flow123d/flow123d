@@ -36,9 +36,9 @@
 #include <petscksp.h>
 #include <petscviewer.h>
 
-#include <system.hh>
+#include "system/system.hh"
 #include <xio.h>
-#include <par_distribution.hh>
+#include "system/par_distribution.hh"
 #include <solve.h>
 #include <la_linsys.hh>
 

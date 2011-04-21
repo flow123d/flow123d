@@ -8,12 +8,12 @@
 #include <petscvec.h>
 #include "materials.hh"
 #include "transport.h"
-//#include "mesh.h"
+//#include "mesh/mesh.h"
 #include "problem.h"
-#include "system.hh"
+#include "system/system.hh"
 //#include "mesh/ini_constants_mesh.hh"
 #include "constantdb.h"
-//#include "mesh_types.hh"
+//#include "mesh/mesh_types.hh"
 
 //--------------pro semchem--------------------------------------------------
 // void che_nadpis__soubor(char *soubor);

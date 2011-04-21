@@ -33,7 +33,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <sys_vector.hh>
+#include "system/sys_vector.hh"
 
 
 #ifndef MAKE_MATERIALS_H

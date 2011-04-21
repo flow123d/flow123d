@@ -1,7 +1,7 @@
 // #include "interface.h"
 #include "semchem_interface.hh"
 #include "read_ini.h"
-#include "system.hh"
+#include "system/system.hh"
 #include <math.h>
 #include <stdio.h>
 //#include <cstdlib>

@@ -27,16 +27,16 @@
  *
  */
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
 #include <boost/algorithm/string/trim.hpp> // trim string leading and ending spaces
 #include <boost/algorithm/string/classification.hpp>
 
-//#include "mesh.h"
+//#include "mesh/mesh.h"
 //#include "problem.h"
 #include "materials.hh"
 //#include "transport.h"
-#include "math_fce.h"
+#include "system/math_fce.h"
 
 flow::VectorId<int> xx;
 

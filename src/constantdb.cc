@@ -40,8 +40,7 @@
  */
 
 #include "constantdb.h"
-#include "global_defs.h"
-#include "system.hh"
+#include "system/system.hh"
 
 ConstantDB* ConstantDB::instance = new ConstantDB();
 

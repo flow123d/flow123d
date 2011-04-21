@@ -30,7 +30,7 @@
 #ifndef _MESHREADER_H
 #define	_MESHREADER_H
 
-#include "mesh.h"
+#include "mesh/mesh.h"
 
 /**
  * MeshReader is ONLY basic for family of mesh readers.

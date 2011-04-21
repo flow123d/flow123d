@@ -43,7 +43,7 @@
 #define XIO_H_
 
 #include <stdio.h>
-#include "system.hh"
+#include "system/system.hh"
 
 //! @brief XIO library extensions
 /// @{

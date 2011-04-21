@@ -32,7 +32,7 @@
 
 #include <vector>
 
-#include "system.hh"
+#include "system/system.hh"
 
 /// external types
 struct Problem;

@@ -32,10 +32,10 @@
 #include <strings.h>
 
 #include "constantdb.h"
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
 #include "neighbours.h"
-#include "mesh.h"
+#include "mesh/mesh.h"
 
 static struct Neighbour *new_neighbour(void);
 static void add_to_neighbour_list(Mesh*, struct Neighbour*);

@@ -34,11 +34,11 @@
 #include <strings.h>
 #include <string.h>    // strcmpi()
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "mesh.h"
+#include "mesh/mesh.h"
 #include "materials.hh"
-#include "darcy_flow_mh.hh"
+#include "flow/darcy_flow_mh.hh"
 #include "solve.h"
 #include "output.h"
 #include "problem.h"

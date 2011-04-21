@@ -32,7 +32,7 @@
 
 // remove dependency on following:
 #include "materials.hh"
-#include "boundaries.h"
+#include "mesh/boundaries.h"
 
 
 static void element_to_material(Mesh*, MaterialDatabase &);

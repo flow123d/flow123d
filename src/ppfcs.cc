@@ -33,11 +33,11 @@
 
 #include "transport.h"
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "math_fce.h"
+#include "system/math_fce.h"
 #include "problem.h"
-#include "mesh.h"
+#include "mesh/mesh.h"
 #include "ppfcs.h"
 #include "read_ini.h"
 #include "materials.hh"

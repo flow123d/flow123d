@@ -32,8 +32,8 @@
 
 #include <petscmat.h>
 
-#include "par_distribution.hh"
-#include "mesh.h"
+#include "system/par_distribution.hh"
+#include "mesh/mesh.h"
 #include "problem.h"
 //#include "reaction.h"
 

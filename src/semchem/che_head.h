@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <petscvec.h>
-#include "elements.h"
+#include "mesh/elements.h"
 
 #ifdef MAIN
 #define EX

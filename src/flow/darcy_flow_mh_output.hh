@@ -32,7 +32,7 @@
 #ifndef DARCY_FLOW_MH_OUTPUT_HH_
 #define DARCY_FLOW_MH_OUTPUT_HH_
 
-#include <mesh.h>
+#include "mesh/mesh.h"
 
 class DarcyFlowMH;
 

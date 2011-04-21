@@ -30,12 +30,13 @@
 #ifndef SPARSE_GRAPH_HH_
 #define SPARSE_GRAPH_HH_
 
-#include <par_distribution.hh>
+
 #include <vector>
 #include <stack>
 #include <ostream>
 #include <petscmat.h>
 
+#include "system/par_distribution.hh"
 using namespace std;
 
 

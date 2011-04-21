@@ -31,7 +31,7 @@
 
 #include <algorithm>
 #include <petscmat.h>
-#include <system.hh>
+#include "system/system.hh"
 #include <la_linsys.hh>
 
 /**

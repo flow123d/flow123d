@@ -41,7 +41,7 @@
 #include <petscsys.h>
 
 #include "global_defs.h"
-#include "system.hh"
+#include "system/system.hh"
 #include "read_ini.h"
 #include "problem.h"
 #include "xio.h"

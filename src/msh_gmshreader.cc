@@ -31,7 +31,7 @@
  */
 
 #include "msh_gmshreader.h"
-#include "nodes.h"
+#include "mesh/nodes.h"
 #include "xio.h"
 
 GmshMeshReader::GmshMeshReader() {

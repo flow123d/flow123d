@@ -30,7 +30,7 @@
 #ifndef MAKE_NEIGHBOURS_H
 #define MAKE_NEIGHBOURS_H
 
-#include <mesh_types.hh>
+#include "mesh/mesh_types.hh"
 
 struct Problem;
 class Mesh;
