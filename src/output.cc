@@ -121,7 +121,8 @@ static void output_compute_mh(struct Problem *problem)
     if( OptGetBool("Output", "Write_output_file", "no") == false )
         return;
 
-    const char* out_fname = OptGetFileName("Output", "Output_file", NULL);
+    std::string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
+    const char* out_fname = output_file.c_str();
     xprintf( Msg, "Writing flow output files: %s ... ", out_fname);
 
 /*
@@ -951,7 +952,8 @@ void output_init(struct Problem *problem)
     char dbl_fmt[ 16 ];
     char filename[255];
 
-    const char* out_fname = OptGetFileName("Output", "Output_file", NULL);
+    std::string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
+    const char* out_fname = output_file.c_str();
     xprintf( Msg, "%s: Writing output file %s ... ", __func__, out_fname);
 
     sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
@@ -993,7 +995,8 @@ void output_time(struct Problem *problem, double time)
     char dbl_fmt[16];
     char filename[PATH_MAX];
 
-    const char* out_fname = OptGetFileName("Output", "Output_file", NULL);
+    std::string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
+    const char* out_fname = output_file.c_str();
     xprintf( Msg, "%s: Writing output file %s ... ", __func__, out_fname);
 
     sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));

@@ -353,7 +353,7 @@ void output_FCS(struct Transport *transport)
 	char dbl_fmt[ 16 ],file[LINE_SIZE];
 
  	sprintf( dbl_fmt, "%%.%dg", ConstantDB::getInstance()->getInt("Out_digit"));
-        sprintf(file,"%s.fcs", OptGetFileName("Output", "Output_file", NULL) );
+        sprintf(file,"%s.fcs", IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL)) );
         out = xfopen(file,"wt");
 
         FOR_ELEMENTCUT(ec){

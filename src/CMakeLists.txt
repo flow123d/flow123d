@@ -3,47 +3,45 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 message(STATUS "Include directories: ${Flow123d_SOURCE_DIR}")
 
 set(libFlow123d_SRCS
-    boundaries.cc
-#    btc.cc
-#    calculation.cc
-#    concentrations.cc
+    flow/darcy_flow_mh_output.cc
+    flow/darcy_flow_mh.cc
+    flow/local_matrix.cc
+    mesh/boundaries.cc
+    mesh/edges.cc
+    mesh/elements.cc
+    mesh/ini_constants_mesh.cc
+    mesh/mesh.cc
+    mesh/neighbours.cc
+    mesh/nodes.cc
+    mesh/sides.cc
+    mesh/topology.cc
+    reaction/linear_reaction.cc
+    semchem/semchem_interface.cc
+    system/math_fce.cc
+    system/par_distribution.cc
+    system/sys_function_stack.cpp
+    system/sys_profiler.cc
+    system/system.cc
     constantdb.cc
     convert.cc
-    darcy_flow_mh_output.cc
-    darcy_flow_mh.cc
-    edges.cc
-    elements.cc
-  #  hashes.cc
     la_linsys.cc
     la_schur.cc
-    local_matrix.cc
     main.cc
     materials.cc
-    math_fce.cc
-    mesh.cc
     msh_gmshreader.cc
-    neighbours.cc
-    nodes.cc
     output.cc
-    par_distribution.cc
+#    par_distribution.cc
 #    ppfcs.cc
     problem.cc
 #    reaction.cc
-    read_ini.cc
-    sides.cc
+    read_ini.cc    
     solve.cc
     sparse_graph.cc
-    sys_function_stack.cpp
-    sys_profiler.cc
-    system.cc
     time_governor.cc
-    topology.cc
-#    transport_bcd.cc
     transport.cc
     xio.cc
-    reaction/linear_reaction.cc
-    mesh/ini_constants_mesh.cc
-    semchem/semchem_interface.cc
+    
+    
 )
 
 set(libFlow123d_C_SRCS

@@ -161,12 +161,12 @@ void ConvectionTransport::transport_init() {
     sorption = OptGetBool("Transport", "Sorption", "no");
     dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
     reaction_on = OptGetBool("Transport", "Reactions", "no");
-    concentration_fname = OptGetFileName("Transport", "Concentration", "\\");
-    transport_bcd_fname = OptGetFileName("Transport", "Transport_BCD", "\\");
-    transport_out_fname = OptGetFileName("Transport", "Transport_out", "\\");
-    transport_out_im_fname = OptGetFileName("Transport", "Transport_out_im", "\\");
-    transport_out_sorp_fname = OptGetFileName("Transport", "Transport_out_sorp", "\\");
-    transport_out_im_sorp_fname = OptGetFileName("Transport", "Transport_out_im_sorp", "\\");
+    concentration_fname = (char *)IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\")).c_str();
+    transport_bcd_fname = (char *)IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\")).c_str();
+    transport_out_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\")).c_str();
+    transport_out_im_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im", "\\")).c_str();
+    transport_out_sorp_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_sorp", "\\")).c_str();
+    transport_out_im_sorp_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im_sorp", "\\")).c_str();
 
     pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
     type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA

@@ -97,7 +97,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh *mesh_in, MaterialDatabase *mat_base
     string sources_fname=OptGetFileName("Input","Sources","//");
     if (sources_fname!= "//") {
         sources= new FieldP0<double>(mesh);
-        sources->read_field(sources_fname,string("$Sources"));
+        sources->read_field(IONameHandler::get_instance()->get_input_file_name(sources_fname),string("$Sources"));
     }
 
     // time governor

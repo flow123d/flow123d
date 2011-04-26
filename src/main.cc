@@ -232,11 +232,11 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
     int t, i;
 
     char * output_file=OptGetFileName("Output", "Output_file", "\\");
-
+    char * str_output_file = (char *)IONameHandler::get_instance()->get_output_file_name(output_file).c_str();
     //output_flow_field_init(problem);
     //        output_flow_field_in_time(problem,0);
     //output_init(problem);
-    output_msh_init_vtk_serial_ascii(output_file);
+    output_msh_init_vtk_serial_ascii(str_output_file);
     DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(mesh, problem->material_database);
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
 
@@ -257,12 +257,12 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
 
             //output_flow_field_in_time(problem, problem->water->get_time());
             //output_time(problem, problem->water->get_time());
-            output_flow_time_vtk_serial_ascii(mesh,water_time.t(),out_step,output_file);
+            output_flow_time_vtk_serial_ascii(mesh,water_time.t(),out_step,str_output_file);
             out_step++;
             save_time+=save_step;
         }
     }
-    output_msh_finish_vtk_serial_ascii(output_file);
+    output_msh_finish_vtk_serial_ascii(str_output_file);
 }
 
 /**
