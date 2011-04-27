@@ -10,7 +10,10 @@ using namespace std;
 Linear_reaction::Linear_reaction(int n_subst, double time_step)
 	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false)
 {
+	decay_on = OptGetBool("Reactions_module","Compute_decay","no");
+	FoR_on = OptGetBool("Reactions_module","Compute_reactions","no");
 	Set_nr_of_decays();
+	Set_nr_of_FoR();
 	Allocate_reaction_matrix(n_subst);
 	Modify_reaction_matrix_repeatedly(n_subst, time_step);
 }
@@ -70,7 +73,7 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) 
 		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
 		return NULL;
 	}
-
+	if(decay_on == true){
 		for(cols = 0; cols < nr_of_isotopes; cols++){
 			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 			if(cols < (nr_of_isotopes - 1)){
@@ -83,6 +86,7 @@ double **Linear_reaction::Modify_reaction_matrix(int n_subst, double time_step) 
 			prev_rel_step = rel_step;
 			prev_index = index;
 		}
+	}
 	Print_reaction_matrix(n_subst);//just for control print
 	return reaction_matrix;
 }
@@ -119,16 +123,17 @@ double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, double 
 	char dec_name[30];
 	int rows, cols, dec_nr, dec_name_nr = 1;
 
-	xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
-	bifurcation.resize(nr_of_decays);
+	if(decay_on == true){
+		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
+		bifurcation.resize(nr_of_decays);
 		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
 			sprintf(dec_name,"Decay_%d", dec_name_nr);
-			Set_nr_of_isotopes(dec_name);
-			Set_half_lives(dec_name);
-			Set_indeces(dec_name);
+			nr_of_isotopes = OptGetInt(dec_name,"Nr_of_isotopes","0");
+			Set_half_lives(dec_name, nr_of_isotopes);
+			Set_indeces(dec_name, nr_of_isotopes);
 			Get_indeces(); //just a control
 			Get_half_lives(); //just a control
-			Set_bifurcation_on(dec_name);
+			bifurcation_on = OptGetBool(dec_name,"Compute_decay","no");
 			if(bifurcation_on == true){
 				Set_bifurcation(dec_name, dec_nr);
 				Modify_reaction_matrix(n_subst, time_step, dec_nr);
@@ -137,6 +142,19 @@ double **Linear_reaction::Modify_reaction_matrix_repeatedly(int n_subst, double 
 			}
 			dec_name_nr++;
 		}
+	}
+	if(FoR_on == true){
+		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
+		for(dec_nr = 0; dec_nr < nr_of_FoR; dec_nr++){
+			sprintf(dec_name,"FoReact_%d", dec_name_nr);
+			Set_kinetic_constants(dec_name);//instead of this line, here should be palced computation of halflives using kinetic constants
+			Set_indeces(dec_name, 2);
+			//Get_indeces(); //just a control
+			//Get_half_lives(); //just a control
+			Modify_reaction_matrix(n_subst, time_step);
+			dec_name_nr++;
+		}
+	}
 	return reaction_matrix;
 }
 
@@ -166,18 +184,12 @@ double **Linear_reaction::Compute_reaction(double **concentrations, int n_subst,
 	return concentrations;
 }
 
-int Linear_reaction::Set_nr_of_isotopes(char *section)
-{
-	nr_of_isotopes = OptGetInt(section,"Nr_of_isotopes","0");
-	return nr_of_isotopes;
-}
-
 int Linear_reaction::Get_nr_of_isotopes()
 {
 	return nr_of_isotopes;
 }
 
-double *Linear_reaction::Set_half_lives(char *section)
+double *Linear_reaction::Set_half_lives(char *section, int nr_of_substances)
 {
 	char  buffer[1024];
 	char *pom_buf;
@@ -189,14 +201,12 @@ double *Linear_reaction::Set_half_lives(char *section)
 			half_lives = NULL;
 	}
 	if(half_lives == NULL){
-		xprintf(Msg,"\nAllocation is permited, nr of isotopes %d", nr_of_isotopes);
-		half_lives = (double *)xmalloc((nr_of_isotopes - 1)*sizeof(double));
+		//xprintf(Msg,"\nAllocation is permited, nr of isotopes %d", nr_of_isotopes);
+		half_lives = (double *)xmalloc((nr_of_substances - 1) * sizeof(double));
 	}
-
-	strcpy(buffer,OptGetStr(section,"Half_lives",NULL));
-	pom_buf = strtok( buffer, separators );
-	for (j=0; j< (nr_of_isotopes-1); j++)
-	{
+	 strcpy(buffer,OptGetStr(section,"Half_lives",NULL));
+	 pom_buf = strtok( buffer, separators );
+	 for (j=0; j< (nr_of_isotopes-1); j++){
 		if ( pom_buf == NULL )
 		{
 			xprintf(Msg,"\nHalf-life of %d-th isotope is missing.", j+1);
@@ -232,7 +242,7 @@ double *Linear_reaction::Get_half_lives()
 	return half_lives;
 }
 
-int *Linear_reaction::Set_indeces(char *section)
+int *Linear_reaction::Set_indeces(char *section, int nr_of_substances)
 {
 	char  buffer[1024];
 	char *pom_buf;
@@ -244,23 +254,23 @@ int *Linear_reaction::Set_indeces(char *section)
 		substance_ids = NULL;
 	}
 	if(substance_ids == NULL){
-		substance_ids = (int *)xmalloc(nr_of_isotopes*sizeof(int));
+		substance_ids = (int *)xmalloc(nr_of_substances*sizeof(int));
 	}
 
 	strcpy(buffer,OptGetStr(section,"Substance_ids",NULL));
 	pom_buf = strtok( buffer, separators );
-	for (j=0; j< nr_of_isotopes; j++)
+	for (j=0; j< nr_of_substances; j++)
 	{
 	  if ( pom_buf == NULL )
 	  {
-	    xprintf(Msg,"\nIndex for %d-th isotope is missing.", j+1);
+	    xprintf(Msg,"\nIndex for %d-th substance in %s is missing.", j+1, section);
 	  }
 	    substance_ids[j] = atoi(pom_buf);
 	    pom_buf = strtok( NULL, separators );
 	 }
 	 if ( pom_buf != NULL )
 	 {
-	    xprintf(Msg,"\nMore parameters then isotopes has been given.");
+	    xprintf(Msg,"\nMore parameters then substances has been given in %s.", section);
 	 }
 
 	 return substance_ids;
@@ -300,10 +310,14 @@ void Linear_reaction::Print_reaction_matrix(int n_subst)
 	}
 }
 
-int Linear_reaction::Set_nr_of_decays(void)
+void Linear_reaction::Set_nr_of_decays(void)
 {
-	nr_of_decays = OptGetInt("Decay_module","Nr_of_decay_chains","1");
-	return nr_of_decays;
+	nr_of_decays = OptGetInt("Reactions_module","Nr_of_decay_chains","1");
+}
+
+void Linear_reaction::Set_nr_of_FoR(void)
+{
+	nr_of_FoR = OptGetInt("Reactions_module","Nr_of_FoR","1");
 }
 
 void Linear_reaction::Set_bifurcation(char *section, int dec_nr)
@@ -342,7 +356,26 @@ void Linear_reaction::Set_bifurcation(char *section, int dec_nr)
 	 }
 }
 
-void Linear_reaction::Set_bifurcation_on(char *section)
+void Linear_reaction::Set_kinetic_constants(char *section)
 {
-	bifurcation_on = OptGetBool(section,"Bifurcation_on","no");
+	char  buffer[1024];
+	char *pom_buf;
+	int j;
+	const char *separators = " ,\t";
+
+	kinetic_constant.resize(nr_of_FoR);
+	strcpy(buffer,OptGetStr(section,"Kinetic_constant",NULL));
+	if(buffer == NULL) return;
+	pom_buf = strtok( buffer, separators );
+	for (j=0; j< (nr_of_FoR); j++)
+	{
+		if ( pom_buf == NULL )
+		{
+			xprintf(Msg,"\nKinetic constant belonging to %d-th reactions is missing.", j+1);
+		}
+    	kinetic_constant[j] = atof(pom_buf);
+    	xprintf(Msg,"\nKinetic constant for %d-th reaction is %f",j,kinetic_constant[j]);
+    	pom_buf = strtok( NULL, separators );
+    	half_lives[j] = log(2) / kinetic_constant[j];
+ 	 }
 }

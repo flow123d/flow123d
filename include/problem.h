@@ -64,8 +64,9 @@ struct Problem {
     char *out_fname_2; // Name of output file of type 2
     // Chemistry
     bool semchemie_on; //Enable to compute chemistry, YES/NO, NO defalut
-    // Radioactive decay, simulation
-    bool decay_on; //to compute or not to compute,
+    // First order reactions, simulation
+    bool reactions_on; ///< to compute or not to compute, first order reactions simulation
+    bool decay_on; ///< to compute or not to compute, radioactive decay
 
     struct Pos_view_params *pos_view_params;
 

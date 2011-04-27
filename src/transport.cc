@@ -1105,6 +1105,24 @@ void ConvectionTransport::convection() {
     	xprintf(Msg,"\nDecay is not computed.\n");
     }
     //======================================
+    //          FIRST ORDER REACTIONS
+    //======================================
+    if(problem->reactions_on == true){
+		int rows, cols, dec_nr, nr_of_reactions, react_name_nr = 1;
+
+    	if(t == 1){
+    		decayRad = new Linear_reaction(n_subst, time_step);
+    	}
+    	for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
+    		(*decayRad).Compute_reaction(pconc[MOBILE], n_subst, loc_el);
+    		if(dual_porosity == true){
+    			(*decayRad).Compute_reaction(pconc[IMMOBILE], n_subst, loc_el);
+    		}
+    	}
+    }else{
+    	xprintf(Msg,"\nFirst order reactions are not computed.\n");
+    }
+    //======================================
 
     //   save_step == step;
                 //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
