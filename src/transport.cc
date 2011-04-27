@@ -1067,60 +1067,24 @@ void ConvectionTransport::convection() {
     	  che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
       }// for cycle running over elements
     }
-    //======================================
-    //          RADIOACTIVE DECAY
-    //======================================
+    //===================================================
+    //     RADIOACTIVE DECAY + FIRST ORDER REACTIONS
+    //===================================================
     if(problem->decay_on == true){
 		int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
 		//char dec_name[30];
 
     	if(t == 1){
     		decayRad = new Linear_reaction(n_subst, time_step);
-    		//int nr_of_decays;
-    		//nr_of_decays = OptGetInt("Decay","Nr_of_decays","1");
-    		//here should be generated string insted of "Decay_1", used bellow
-    		/*sprintf(dec_name,"Decay_%d", dec_name_nr);
-    		decayRad = new Linear_reaction(decay, n_subst, dec_name); //probably needs cstring.h inclusion
-        	for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
-    			decayRad->Modify_reaction_matrix(n_subst, time_step);
-        	}
-    		dec_name_nr++;*/
-    	}// reaction itself follows
-    	//if(()){ //compute decay just in selected times
-    	for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
-    		(*decayRad).Compute_reaction(pconc[MOBILE], n_subst, loc_el);
-    		if(dual_porosity == true){
-    			(*decayRad).Compute_reaction(pconc[IMMOBILE], n_subst, loc_el);
-    		}
-    	}
-    	//}
-    	/*if(t == steps){
-    		for(rows = 0; rows < n_subst;rows++){
-    			free(reaction_matrix[rows]);
-    			reaction_matrix[rows] = NULL;
-    		}
-    		free(reaction_matrix);
-    	}*/
-    }else{
-    	xprintf(Msg,"\nDecay is not computed.\n");
-    }
-    //======================================
-    //          FIRST ORDER REACTIONS
-    //======================================
-    if(problem->reactions_on == true){
-		int rows, cols, dec_nr, nr_of_reactions, react_name_nr = 1;
-
-    	if(t == 1){
-    		decayRad = new Linear_reaction(n_subst, time_step);
     	}
     	for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
-    		(*decayRad).Compute_reaction(pconc[MOBILE], n_subst, loc_el);
+    		(*decayRad).compute_reaction(pconc[MOBILE], n_subst, loc_el);
     		if(dual_porosity == true){
-    			(*decayRad).Compute_reaction(pconc[IMMOBILE], n_subst, loc_el);
+    			(*decayRad).compute_reaction(pconc[IMMOBILE], n_subst, loc_el);
     		}
     	}
     }else{
-    	xprintf(Msg,"\nFirst order reactions are not computed.\n");
+    	xprintf(Msg,"\nDecay is not computed.\n");
     }
     //======================================
 
