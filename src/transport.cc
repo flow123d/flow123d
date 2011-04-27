@@ -133,6 +133,12 @@ ConvectionTransport::ConvectionTransport(struct Problem *problem, Mesh *init_mes
     transport_init();
 }
 
+ConvectionTransport::~ConvectionTransport()
+{
+
+}
+
+
 /*
 //=============================================================================
 // GET REACTION
@@ -1017,9 +1023,10 @@ void ConvectionTransport::convection() {
     //output_FCS(trans); //DECOVALEX
 
 
-    step=0;
-  //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
+    step = 0;
+    //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
     for (t = 1; t <= steps; t++) {
+        SET_TIMER_SUBFRAMES("TRANSPORT",t);  // should be in destructor as soon as we have class iteration counter
         step++;
         for (sbi = 0; sbi < n_subst; sbi++) {
             /*
@@ -1030,79 +1037,77 @@ void ConvectionTransport::convection() {
              output_AGE(trans,(t-1) * trans->time_step); // DECOVALEX
              */
 
-             transport_step_mpi(&tm, &vconc[sbi], &vpconc[sbi], &bcvcorr[sbi]);
+            transport_step_mpi(&tm, &vconc[sbi], &vpconc[sbi], &bcvcorr[sbi]);
 
-            if ((dual_porosity == true) || (sorption == true) || (pepa == true)
-                    || (reaction_on == true))
+            if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
                 // cycle over local elements only in any order
                 for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
                     material = (mesh->element(el_4_loc[loc_el])) -> material;
 
-
                     if (dual_porosity == true)
-                        transport_dual_porosity( loc_el, material, sbi);
+                        transport_dual_porosity(loc_el, material, sbi);
                     if (sorption == true)
-                        transport_sorption( loc_el, material, sbi);
-//                     if (trans->pepa)
-//                         decay(trans, loc_el, trans->type); // pepa chudoba
+                        transport_sorption(loc_el, material, sbi);
+                    //                     if (trans->pepa)
+                    //                         decay(trans, loc_el, trans->type); // pepa chudoba
 
                     /*
-                    if (reaction_on == true)
-                        transport_reaction(trans, loc_el, material, sbi);
+                     if (reaction_on == true)
+                     transport_reaction(trans, loc_el, material, sbi);
 
-                        */
+                     */
                 }
             // transport_node_conc(mesh,sbi,problem->transport_sub_problem);  // vyresit prepocet
         }
         xprintf( Msg, "Time : %f\n",time_step*t);
-    //======================================
-    //              CHEMISTRY
-    //======================================
-    if(problem->semchemie_on == true){
-      if(t == 1){ //initial value of t == 1 & it is incremented at the beginning of the cycle
-    	  priprav();
-      }
-      for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-    	  //xprintf(Msg,"\nKrok %f\n",trans->time_step);
-    	  che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
-      }// for cycle running over elements
-    }
+        //======================================
+        //              CHEMISTRY
+        //======================================
+        if (problem->semchemie_on == true) {
+            if (t == 1) { //initial value of t == 1 & it is incremented at the beginning of the cycle
+                priprav();
+            }
+            for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+                //xprintf(Msg,"\nKrok %f\n",trans->time_step);
+                che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
+            }// for cycle running over elements
+        }
     //===================================================
     //     RADIOACTIVE DECAY + FIRST ORDER REACTIONS
     //===================================================
-    if(problem->decay_on == true){
-		int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
-		//char dec_name[30];
+        if (problem->decay_on == true) {
+            int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
+            //char dec_name[30];
 
-    	if(t == 1){
-    		decayRad = new Linear_reaction(n_subst, time_step);
+            if (t == 1) {
+                decayRad = new Linear_reaction(n_subst, time_step);
     	}
-    	for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++){
+            for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
     		(*decayRad).compute_reaction(pconc[MOBILE], n_subst, loc_el);
-    		if(dual_porosity == true){
+                if (dual_porosity == true) {
     			(*decayRad).compute_reaction(pconc[IMMOBILE], n_subst, loc_el);
-    		}
-    	}
-    }else{
-    	xprintf(Msg,"\nDecay is not computed.\n");
-    }
-    //======================================
+                }
+            }
+        } else {
+            xprintf(Msg,"\nDecay is not computed.\n");
+        }
+        //======================================
 
-    //   save_step == step;
-                //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
+        //   save_step == step;
+        //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
         if ((save_step == step) || (write_iterations)) {
             xprintf( Msg, "Output\n");
             //if (size != 1)
             output_vector_gather();
             if (rank == 0)
-            	transport_output(out_conc,substance_name ,n_substances, t * time_step, ++frame,transport_out_fname);
-            	//transport_output(trans, t * time_step, ++frame);
+                transport_output(out_conc, substance_name, n_substances, t * time_step, ++frame, transport_out_fname);
+            //transport_output(trans, t * time_step, ++frame);
             if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
                 output_time(problem, t * time_step); // time variable flow field
             //	output_transport_time_BTC(trans, t * trans->time_step); // BTC test - spatne vypisuje casy
             //output_transport_time_CS(problem, t * problem->time_step);
             step = 0;
-     //sorb_mob_arr = NULL;
+            //sorb_mob_arr = NULL;
         }
     }
     xprintf( Msg, "O.K.\n");
