@@ -55,18 +55,21 @@ struct BTC;
 
 class ConvectionTransport {
 public:
-	ConvectionTransport(struct Problem *problem, Mesh *init_mesh);
+	ConvectionTransport(MaterialDatabase *material_database, Mesh *init_mesh);
 	~ConvectionTransport();
-	void make_transport(); //
+	void create_transport_matrix_mpi(); //
+	void convection(); // upravit
+	void output(); // vytvorit
+
+private:
+	void transport_output(); //
+	void transport_output_init(); //
+	void transport_output_finish(); //
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
 	void transport_init(); //
 	void read_initial_condition(); //
-	void alloc_transport_vectors(); //
-	void alloc_density_vectors(); //
-	void alloc_transport_structs_mpi(); //
 	void fill_transport_vectors_mpi(); //
-	void create_transport_matrix_mpi(); //
 	void transport_matrix_step_mpi(double time_step); //
 	void calculate_bc_mpi(); //
 	void transport_step_mpi(Mat *tm, Vec *conc, Vec *pconc, Vec *bc);
@@ -74,7 +77,7 @@ public:
 	void transport_sorption(int elm_pos, MaterialDatabase::Iter mtr, int sbi); //
 	void compute_sorption(double conc_avg, vector<double> &sorp_coef, int sorp_type, double *concx, double *concx_sorb, double Nv,
 	        double N); //
-	void convection(); //
+	void compute_time_step();
 	void output_vector_gather(); //
 //	void get_reaction(int i,oReaction *reaction); //
 	//void transport_output(struct Transport *transport, double time, int frame);
@@ -85,21 +88,9 @@ public:
 	void restart_iteration_C(); //
 	void save_restart_iteration_H(); //
 	void save_time_step_C(); //
-
-    // global
-    double ***out_conc;
-	int		 		 n_substances;    // # substances transported by water
-	char			**substance_name;	// Names of substances
-	char            *transport_out_fname;// Name of file of trans. output
-	int              dens_step;            //
-	double 			update_dens_time;
-
-protected:
-    Mesh *mesh;
-    MaterialDatabase *mat_base;
-
-
-private:
+	void alloc_transport_vectors(); //
+	void alloc_density_vectors(); //
+	void alloc_transport_structs_mpi(); //
 	void subst_names(char *line); //
 	void subst_scales(char *line); //
 
@@ -107,14 +98,21 @@ private:
     //		double           save_step;       // Step for outputing results
     		double           time_step;       // Time step for computation
     		double			 max_step;		// bounded by CFL
-
+    		Mesh *mesh;
+    		MaterialDatabase *mat_base;
           //  struct TMatrix* tmatrix;
 
             // only local part
             double ***conc;
             double ***pconc;
 
-
+            // global
+            double ***out_conc;
+        	int		 		 n_substances;    // # substances transported by water
+        	char			**substance_name;	// Names of substances
+        	char            *transport_out_fname;// Name of file of trans. output
+        	int              dens_step;            //
+        	double 			update_dens_time;
 
             //double ****node_conc;	// zatim nepouzite
 
@@ -148,7 +146,7 @@ private:
             int             transport_sub_problem;
 
             // Other
-            struct Problem* problem;
+           // struct Problem* problem;
             int sub_problem;	// 0-only transport,1-transport+dual porosity,
     							// 2-transport+sorption
     							// 3-transport+dual porosity+sorption
@@ -185,7 +183,6 @@ private:
 
             Vec *vconc_out; // concentration vector output (gathered)
 
-
             int **d_row;  // diagonal row entries number in tm
             int **od_row; // off-diagonal row entries number in tm
             int **db_row; // diagonal column entries number in bcm
@@ -196,15 +193,18 @@ private:
             int *row_4_el;
             int *el_4_loc;
             Distribution *el_ds;
+      // NEW OUTPUT
+            int frame;
+            double time;
+            int save_step;
+            int steps;
 
 };
 
 
 void alloc_transport(struct Problem *problem);
-void transport_output(double ***out_conc,char **subst_names ,int n_subst,double time,int frame); //NO
-void transport_output_init(char *transport_out_fname); // NO
-void transport_output_finish(char *transport_out_fname); // NO
-void transport_output(double ***out_conc,char **subst_names ,int n_subst,double time, int frame, char *transport_out_fname); //NO
+
+
 
 
 

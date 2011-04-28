@@ -179,9 +179,6 @@ int main(int argc, char **argv) {
 
     Profiler::instance()->set_task_size(mesh->n_elements());
 
-    if (OptGetBool("Transport", "Transport_on", "no") == true) {
-        G_problem.otransport = new ConvectionTransport(&G_problem, mesh);
-    }
 
     // Calculate
     make_element_geometry();
@@ -218,7 +215,7 @@ void main_compute_mh(struct Problem *problem) {
             main_compute_mh_unsteady_saturated(problem);
             break;
         case PROBLEM_DENSITY:
-            main_compute_mh_density(problem);
+           // main_compute_mh_density(problem);
             break;
     }
 }
@@ -289,10 +286,11 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 
     problem->water->compute_one_step();
 
-    if (OptGetBool("Transport", "Transport_on", "no") == true)
-            {
-            problem->otransport->make_transport();
-            }
+
+    if (OptGetBool("Transport", "Transport_on", "no") == true) {
+        problem->otransport = new ConvectionTransport(problem->material_database, mesh);
+    }
+
 
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 
@@ -363,16 +361,17 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
      */
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
-
+    	getchar();
+    	problem->otransport->convection();
+    }
     /*
         if (OptGetBool("Transport",  "Reactions", "no") == true) {
             read_reaction_list(transport);
         }
 */
-        if (rank == 0) {
-            transport_output_init(problem->otransport->transport_out_fname);
-            transport_output(problem->otransport->out_conc,problem->otransport->substance_name ,problem->otransport->n_substances, 0.0, 0,problem->otransport->transport_out_fname);
-        }
+        //if (rank == 0) {
+
+        //}
 	
         
        // if (problem->transport->mpi != 1) {
@@ -386,7 +385,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
         // not strictly dependent on Transport.
         //btc_check(transport);
 
-        problem->otransport->convection();
+
 
         /*
                 if(problem->cross_section == true)
@@ -396,10 +395,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
                     output_transport_time_CS(problem, 0 * problem->time_step);
                 }
          */
-        transport_output_finish(problem->otransport->transport_out_fname);
-    }
 }
-
 //-----------------------------------------------------------------------------
 // vim: set cindent:
 //-----------------------------------------------------------------------------
@@ -407,6 +403,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
+/*
 void main_compute_mh_density(struct Problem *problem) {
   Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
@@ -507,4 +504,4 @@ void main_compute_mh_density(struct Problem *problem) {
     transport_output_finish(problem->otransport->transport_out_fname);
     output(problem);
     xfclose(log); */
-}
+//}
