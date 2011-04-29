@@ -991,7 +991,7 @@ void ConvectionTransport::convection() {
 
     transport_output_init();
     transport_output();
-    getchar();
+    //getchar();
 
     xprintf( Msg, "Calculating transport...")/*orig verb 2*/;
     n_subst = n_substances;
