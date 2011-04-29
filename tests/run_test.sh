@@ -21,7 +21,7 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
-set -x
+#set -x
 # This script assumes that it is running in particular subdir of the "tests"
 # dir. 
 pwd
@@ -100,7 +100,7 @@ do
 		
 		#runs ndiff.pl skript with ref and computed output files
 		echo "******************************************"
-		if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output" "$INI_FILE" "$n"; then
+		if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output/${INI_FILE%.ini}" "$INI_FILE" "$n"; then
 			ERROR=1
 		fi
 		echo "******************************************"

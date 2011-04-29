@@ -78,7 +78,7 @@ else
 	else 
 		if [ -a "$OUT/$x" ]; then			
 			echo "" | tee --append "${TEST_DIR}/stdout_diff.log"
-			echo "File: $x, ini file: ${INI}, procs: ${n}, test: ${TEST}" | tee --append "${TEST_DIR}/stdout_diff.log"
+			echo "Test: ${TEST}, ini file: ${INI}, procs: ${n}, file: $x " | tee --append "${TEST_DIR}/stdout_diff.log"
 			if ! "$NDIFF" -o "${TEST_DIR}/diff.log" "$OUT/$x" "$REF_OUT/$x" | tee --append "${TEST_DIR}/stdout_diff.log"; then
 				ERROR=1
 			fi
