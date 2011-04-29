@@ -110,7 +110,7 @@ private:
             double ***out_conc;
         	int		 		 n_substances;    // # substances transported by water
         	char			**substance_name;	// Names of substances
-        	char            *transport_out_fname;// Name of file of trans. output
+        	std::string		transport_out_fname;// Name of file of trans. output
         	int              dens_step;            //
         	double 			update_dens_time;
 
@@ -132,15 +132,15 @@ private:
         	bool             transport_on;    // Compute transport YES/NO
         	//unsigned int 			n_elements; 		// number of elements
 
-        	char            *concentration_fname;// Name of file of concentration
+        	std::string 	concentration_fname;// Name of file of concentration
             bool              sorption;     // Include sorption  YES/NO
             bool              dual_porosity;   // Include dual porosity YES/NO
             bool              reaction_on;     // Include reaction  YES/NO
-        	char            *transport_bcd_fname;// Name of file of transport bcd
+        	std::string		transport_bcd_fname;// Name of file of transport bcd
 
-            char            *transport_out_im_fname;// Name of file of trans. immobile output
-            char            *transport_out_sorp_fname;// Name of file of trans. output
-            char            *transport_out_im_sorp_fname;// Name of file of trans. immobile output
+            std::string		transport_out_im_fname;// Name of file of trans. immobile output
+            std::string		transport_out_sorp_fname;// Name of file of trans. output
+            std::string		transport_out_im_sorp_fname;// Name of file of trans. immobile output
 
 
             int             transport_sub_problem;

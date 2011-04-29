@@ -138,12 +138,12 @@ void ConvectionTransport::transport_init() {
     sorption = OptGetBool("Transport", "Sorption", "no");
     dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
     reaction_on = OptGetBool("Transport", "Reactions", "no");
-    concentration_fname = (char *)IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\")).c_str();
-    transport_bcd_fname = (char *)IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\")).c_str();
-    transport_out_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\")).c_str();
-    transport_out_im_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im", "\\")).c_str();
-    transport_out_sorp_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_sorp", "\\")).c_str();
-    transport_out_im_sorp_fname = (char *)IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im_sorp", "\\")).c_str();
+    concentration_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\"));
+    transport_bcd_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\"));
+    transport_out_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
+    transport_out_im_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im", "\\"));
+    transport_out_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_sorp", "\\"));
+    transport_out_im_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im_sorp", "\\"));
 
     pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
     type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
@@ -1162,13 +1162,13 @@ void ConvectionTransport::transport_output() {
 	if (rank == 0){
 		switch (ConstantDB::getInstance()->getInt("Pos_format_id")) {
 		case POS_BIN:
-			output_transport_time_bin( out_conc, substance_name ,n_substances, time, frame, transport_out_fname);
+			output_transport_time_bin( out_conc, substance_name ,n_substances, time, frame, (char*)transport_out_fname.c_str());
 			break;
 		case POS_ASCII:
-			output_transport_time_ascii(out_conc, substance_name ,n_substances, time, frame, transport_out_fname);
+			output_transport_time_ascii(out_conc, substance_name ,n_substances, time, frame, (char*)transport_out_fname.c_str());
 			break;
 		case VTK_SERIAL_ASCII:
-			output_transport_time_vtk_serial_ascii(out_conc, substance_name ,n_substances, time, frame, transport_out_fname);
+			output_transport_time_vtk_serial_ascii(out_conc, substance_name ,n_substances, time, frame, (char*)transport_out_fname.c_str());
 			break;
 		case VTK_PARALLEL_ASCII:
 			xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
@@ -1188,13 +1188,13 @@ void ConvectionTransport::transport_output_init() {
 	if (rank == 0){
 		switch (ConstantDB::getInstance()->getInt("Pos_format_id")) {
 		case POS_BIN:
-			output_msh_init_bin(mesh, transport_out_fname);
+			output_msh_init_bin(mesh, (char*)transport_out_fname.c_str());
 			break;
 		case POS_ASCII:
-			output_msh_init_ascii(mesh, transport_out_fname);
+			output_msh_init_ascii(mesh, (char*)transport_out_fname.c_str());
 			break;
     	case VTK_SERIAL_ASCII:
-    		output_msh_init_vtk_serial_ascii( transport_out_fname);
+    		output_msh_init_vtk_serial_ascii( (char*)transport_out_fname.c_str());
     		break;
     	case VTK_PARALLEL_ASCII:
     		xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
@@ -1217,7 +1217,7 @@ void ConvectionTransport::transport_output_finish() {
 			/* There is no need to do anything for this file format */
 			break;
 		case VTK_SERIAL_ASCII:
-			output_msh_finish_vtk_serial_ascii(transport_out_fname);
+			output_msh_finish_vtk_serial_ascii((char*)transport_out_fname.c_str());
 			break;
 		case VTK_PARALLEL_ASCII:
 			xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
