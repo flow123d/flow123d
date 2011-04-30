@@ -236,7 +236,7 @@ double che_poww_ld (double A, double b, int *error)
    }
    else
    {
-   	error = 0;
+   	*error = 0;
       if (A<0.0)
       {
 		   printf ("chyba pri mocneni %f**%f !\n", A, b);
