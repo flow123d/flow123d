@@ -74,7 +74,6 @@
 
 namespace flow
 {
-
     /**
      *  @brief This class provides function call stack.
      *
@@ -113,7 +112,7 @@ namespace flow
         static void  stack_print( FILE * fw )
         {
             fprintf( fw, "Stack trace, depth: %u\n", (unsigned int) program_stack.size());
-            for( std::list<std::string>::reverse_iterator psi=program_stack.rbegin(); psi!=program_stack.rend(); psi++ )
+            for( std::list<std::string>::reverse_iterator psi=program_stack.rbegin(); psi!=program_stack.rend(); ++psi )
                 fprintf( fw, " %s\n", (*psi).c_str() );
         }
 
@@ -123,7 +122,7 @@ namespace flow
         static void  stack_print( std::ostream * os )
         {
             *os << "Stack trace, depth: " << program_stack.size() << std::endl;
-            for( std::list<std::string>::iterator psi=program_stack.begin(); psi!=program_stack.end(); psi++ )
+            for( std::list<std::string>::iterator psi=program_stack.begin(); psi!=program_stack.end(); ++psi )
                 *os << *psi << std::endl;
         }
     private:

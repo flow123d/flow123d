@@ -64,7 +64,6 @@ static bool petsc_initialized = false;
 void system_init( int &argc, char ** &argv )
 {
     int ierr;
-    char logname[FILENAME_MAX] = {0,};
 
     //for(int i=0;i<argc;i++) xprintf(Msg,"%s,",argv[i]);
     ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
@@ -617,7 +616,7 @@ void IONameHandler::initialize_root_dir() {
 	{
 	    //return errno;
 	}
-	cCurrentPath[sizeof(cCurrentPath) - 1] = '/0'; /* not really required */
+	cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
 	this->root_dir = cCurrentPath;
 	this->initialize_output_dir();
 }
@@ -664,7 +663,7 @@ std::string IONameHandler::get_output_file_name(std::string file_name) {
 }
 
 std::string IONameHandler::substitute_value(std::string file) {
-	for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); it++) {
+	for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); ++it) {
 		size_t i = file.find((*it).first,0);
 		if(i != std::string::npos) {
 			file.replace(i, (*it).first.size(), (*it).second);
@@ -672,6 +671,7 @@ std::string IONameHandler::substitute_value(std::string file) {
 	}
 	return file;
 }
+
 /*!
  * @brief Add new item to place holder.
  * @param[in] key Key of new item.
