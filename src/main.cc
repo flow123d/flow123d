@@ -71,7 +71,7 @@ static void main_compute_mh(struct Problem*);
 static void main_compute_mh_unsteady_saturated(struct Problem*);
 static void main_compute_mh_steady_saturated(struct Problem*);
 static void main_convert_to_pos(struct Problem*);
-static void main_compute_mh_density(struct Problem*);
+//static void main_compute_mh_density(struct Problem*);
 //void output_transport_init_BTC(struct Problem *problem);
 //void output_transport_time_BTC(struct Problem *problem, double time);
 
@@ -225,8 +225,6 @@ void main_compute_mh(struct Problem *problem) {
  */
 void main_compute_mh_unsteady_saturated(struct Problem *problem) {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    int t, i;
 
     char * output_file=OptGetFileName("Output", "Output_file", "\\");
     char * str_output_file = (char *)IONameHandler::get_instance()->get_output_file_name(output_file).c_str();
