@@ -23,7 +23,7 @@
  * $LastChangedDate$
  *
  * @file
- * @brief ???
+ * @brief Nodes of a mesh.
  *
  */
 
@@ -31,6 +31,7 @@
 #define NODE_H
 
 #include "mesh/mesh_types.hh"
+#include <armadillo>
 
 
 
@@ -41,25 +42,68 @@
  */
 class Node {
 private:
-    /** Coordinates of node */
-    double* coordinates;
+    /// Node point in 3D space.
+    arma::vec3 coordinates;
 
 public:
-    Node();
+    /**
+     * Default constructor.
+     */
+    Node()
+    : element(NULL)
+        {coordinates.zeros();}
 
-    void set(double, double, double);
+    /**
+     * Construct form given coordinates.
+     *
+     * Possibly there could be also constructor from a vector.
+     */
+    Node(double x, double y, double z)
+    : element(NULL)
+        {coordinates(0)=x; coordinates(1)=y; coordinates(3)=z;}
 
-    double getX();
-    double getY();
-    double getZ();
+    /**
+     * Old getter methods. OBSOLETE.
+     */
+    inline double getX()
+        {return coordinates[0];}
+    inline double getY()
+        {return coordinates[1];}
+    inline double getZ()
+        {return coordinates[2];}
 
-    double distance(Node*);
 
-    int id;
+    /**
+     * Getter method for nodal point. Can be used also for modification.
+     */
+    inline arma::vec3 &point()
+    { return coordinates; }
+
+    inline const arma::vec3 &point() const
+        { return coordinates; }
+
+    /**
+     * Difference of two nodes is a vector.
+     */
+    inline arma::vec3 operator-(const Node &n2) const
+    {
+        return ( this->point() - n2.point() );
+    }
+
+
+    /**
+     * Distance of two nodes.
+     */
+    inline double distance(const Node &n2) const
+    {
+        return norm(*this - n2, 2);
+    }
 
     //--------------------------------------------------------------------------
-    // Old data - adepts to reduce ...
+    // Old data - adepts to remove ...
     //--------------------------------------------------------------------------
+
+    int id; // this is used in old output TODO: remove after application new output
 
     // Topology
     int n_elements; // # of elms connected by the node ( used only in transport )
@@ -75,6 +119,10 @@ public:
     int aux; // Auxiliary flag
     double faux; // Auxiliary number
 };
+
+/**
+ * Binary operators (and functions) operating on nodes.
+ */
 
 #endif
 //-----------------------------------------------------------------------------

@@ -28,7 +28,8 @@
  *
  */
 
-#include "mesh/nodes.h"
+#if 0
+#include "mesh/nodes.hh"
 
 Node::Node() {
     coordinates = new double[3];
@@ -76,5 +77,6 @@ double Node::distance(Node* node) {
 
     return distance;
 }
+#endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

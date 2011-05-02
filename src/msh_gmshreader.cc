@@ -31,7 +31,7 @@
  */
 
 #include "msh_gmshreader.h"
-#include "mesh/nodes.h"
+#include "mesh/nodes.hh"
 #include "xio.h"
 
 GmshMeshReader::GmshMeshReader() {
@@ -79,13 +79,16 @@ void GmshMeshReader::read_nodes(FILE* in, Mesh* mesh) {
         //TODO: co kdyz id <= 0 ???
         INPUT_CHECK(!(id < 0), "Id of node must be > 0\n");
 
+
         double x = atof(xstrtok(NULL));
         double y = atof(xstrtok(NULL));
         double z = atof(xstrtok(NULL));
 
         NodeFullIter node = mesh->node_vector.add_item(id);
         node->id = id;
-        node->set(x,y,z);
+        node->point()[0]=x;
+        node->point()[1]=y;
+        node->point()[2]=z;
     }
 
     //xprintf(MsgVerb, " %d nodes readed. ", nodeList->size());

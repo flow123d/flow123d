@@ -276,53 +276,33 @@ void calc_metrics(ElementFullIter ele) {
 /**
  * CALCULATE LENGTH OF LINEAR ELEMENT
  */
-double element_length_line(ElementFullIter ele) {
-    double u[ 3 ];
-    double rc;
 
-    u[ 0 ] = ele->node[ 1 ]->getX() - ele->node[ 0 ]->getX();
-    u[ 1 ] = ele->node[ 1 ]->getY() - ele->node[ 0 ]->getY();
-    u[ 2 ] = ele->node[ 1 ]->getZ() - ele->node[ 0 ]->getZ();
-    rc = sqrt(u[ 0 ] * u[ 0 ] + u[ 1 ] * u[ 1 ] + u[ 2 ] * u[ 2 ]);
-    return rc;
+double element_length_line(ElementFullIter ele) {
+
+    return arma::norm(*ele->node[ 1 ] - *ele->node[ 0 ] , 2);
 }
 
 /**
  * CALCULATE AREA OF TRIANGULAR ELEMENT
  */
 double element_area_triangle(ElementFullIter ele) {
-    double u[ 3 ], v[ 3 ], n[ 3 ];
-    double rc;
 
-    u[ 0 ] = ele->node[ 1 ]->getX() - ele->node[ 0 ]->getX();
-    u[ 1 ] = ele->node[ 1 ]->getY() - ele->node[ 0 ]->getY();
-    u[ 2 ] = ele->node[ 1 ]->getZ() - ele->node[ 0 ]->getZ();
-    v[ 0 ] = ele->node[ 2 ]->getX() - ele->node[ 0 ]->getX();
-    v[ 1 ] = ele->node[ 2 ]->getY() - ele->node[ 0 ]->getY();
-    v[ 2 ] = ele->node[ 2 ]->getZ() - ele->node[ 0 ]->getZ();
-    vector_product(u, v, n);
-    rc = fabs(0.5 * sqrt(n[ 0 ] * n[ 0 ] + n[ 1 ] * n[ 1 ] + n[ 2 ] * n[ 2 ]));
-    return rc;
+    return
+        arma::norm(
+            arma::cross(*ele->node[1] - *ele->node[0], *ele->node[2] - *ele->node[0]),
+            2
+        ) / 2.0 ;
 }
 
 /**
  * CALCULATE VOLUME OF TETRAHEDRA ELEMENT
  */
 double element_volume_tetrahedron(ElementFullIter ele) {
-    double a[3][3];
-    double rc;
-
-    a[ 0 ][ 0 ] = ele->node[ 1 ]->getX() - ele->node[ 0 ]->getX();
-    a[ 0 ][ 1 ] = ele->node[ 1 ]->getY() - ele->node[ 0 ]->getY();
-    a[ 0 ][ 2 ] = ele->node[ 1 ]->getZ() - ele->node[ 0 ]->getZ();
-    a[ 1 ][ 0 ] = ele->node[ 2 ]->getX() - ele->node[ 0 ]->getX();
-    a[ 1 ][ 1 ] = ele->node[ 2 ]->getY() - ele->node[ 0 ]->getY();
-    a[ 1 ][ 2 ] = ele->node[ 2 ]->getZ() - ele->node[ 0 ]->getZ();
-    a[ 2 ][ 0 ] = ele->node[ 3 ]->getX() - ele->node[ 0 ]->getX();
-    a[ 2 ][ 1 ] = ele->node[ 3 ]->getY() - ele->node[ 0 ]->getY();
-    a[ 2 ][ 2 ] = ele->node[ 3 ]->getZ() - ele->node[ 0 ]->getZ();
-    rc = fabs(Det3(a)) / 6.0;
-    return rc;
+    return fabs(
+        arma::dot(
+            arma::cross(*ele->node[1] - *ele->node[0], *ele->node[2] - *ele->node[0]),
+            *ele->node[3] - *ele->node[0] )
+        ) / 6.0;
 }
 
 /**
@@ -331,18 +311,12 @@ double element_volume_tetrahedron(ElementFullIter ele) {
 void calc_centre(ElementFullIter ele) {
     int li;
 
-    ele->centre[ 0 ] = 0.0;
-    ele->centre[ 1 ] = 0.0;
-    ele->centre[ 2 ] = 0.0;
+    ele->centre.zeros();
 
     FOR_ELEMENT_NODES(ele, li) {
-        ele->centre[ 0 ] += ele->node[ li ]->getX();
-        ele->centre[ 1 ] += ele->node[ li ]->getY();
-        ele->centre[ 2 ] += ele->node[ li ]->getZ();
+        ele->centre += ele->node[ li ]->point();
     }
-    ele->centre[ 0 ] /= (double) ele->n_nodes;
-    ele->centre[ 1 ] /= (double) ele->n_nodes;
-    ele->centre[ 2 ] /= (double) ele->n_nodes;
+    ele->centre /= (double) ele->n_nodes;
 }
 
 /**

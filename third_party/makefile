@@ -23,8 +23,26 @@
 
 include ../makefile.in
 
-all:
+all: metis armadillo
+
+
+metis:
 	make -C metis-4.0
 
-clean:	
+# use CMAKE_PREFIX_PETH to use our copy of boost
+#
+# unfortunately I didn't succeed with blas and lapack form PETSC ...
+# how to setup armadillo's cmake to use them
+armadillo:
+	cd armadillo-1.1.92; \
+	export PETSC_DIR=${PETSC_DIR}; \
+	export PETSC_ARCH=${PETSC_ARCH}; \
+	cmake . -DCMAKE_PREFIX_PATH=../boost-1.42;\
+	make
+
+clean:
+	rm -f all
 	make -C metis-4.0 realclean
+	cd armadillo-1.1.92; \
+	make clean
+	

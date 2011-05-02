@@ -30,7 +30,7 @@
 #ifndef ELEMENTS_H
 #define ELEMENTS_H
 
-#include "mesh/nodes.h"
+#include "mesh/nodes.hh"
 #include <materials.hh>
 
 struct Problem;
@@ -75,7 +75,7 @@ typedef struct Element
     // Geometrical properties
     double   measure;   // Metrics of the element (length, area, volume)
     double   volume;        // Volume of the element
-    double   centre[ 3 ];   // Centre of mass of element
+    arma::vec3 centre;      // Centre of mass of element
     // Parameters of the basis functions
     double   *bas_alfa;      // Parameters alfa
     double   *bas_beta;      // Parameters beta

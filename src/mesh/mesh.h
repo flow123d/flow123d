@@ -33,7 +33,7 @@
 #include <vector>
 #include "mesh/mesh_types.hh"
 
-#include "mesh/nodes.h"
+#include "mesh/nodes.hh"
 #include "mesh/elements.h"
 #include "mesh/sides.h"
 #include "mesh/edges.h"

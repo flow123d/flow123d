@@ -81,7 +81,6 @@ revnumber:
 
 
 clean:
-	make -C third_party clean
 	make -C src clean
 	make -C doc/doxy clean
 	rm -f bin/mpiexec
