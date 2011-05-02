@@ -60,6 +60,8 @@ public:
 	void create_transport_matrix_mpi(); //
 	void convection(); // upravit
 	void output(); // vytvorit
+	void transport_one_step();
+	void transport_one_step(double time_interval);
 
 private:
 	void transport_output(); //
