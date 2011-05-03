@@ -11,12 +11,12 @@ message(STATUS "CMake module path: ${CMAKE_MODULE_PATH}")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Doxygen REQUIRED)
 find_package(PETSc REQUIRED)
 find_package(PARMETIS REQUIRED)
 find_package(Boost REQUIRED)
-find_package(Subversion)
-find_package(GTest REQUIRED)
+find_package(Subversion REQUIRED)
+find_package(GTest)
+find_package(Armadillo REQUIRED)
 
 if(Subversion_FOUND)
   Subversion_WC_INFO(${CMAKE_CURRENT_SOURCE_DIR} Flow123d)
@@ -58,5 +58,6 @@ endif(CMAKE_BUILD_TYPE STREQUAL "debug")
 ##############
 
 add_subdirectory(src)
+#add_subdirectory(doc)
 
 enable_testing()
