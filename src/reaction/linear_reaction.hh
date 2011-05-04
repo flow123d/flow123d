@@ -28,15 +28,16 @@ class Linear_reaction
 		void set_bifurcation_on(char *section); ///< reads an information if the bifurcation for a current decay chain is switched on, from ini-file, initialy it is switched off,
 		void set_For_on(void); ///< reads an information if first order reactions simulation is switched on, duplicit to the function in problem.cc
 		void set_decay_on(void); ///< reads an information if a decay simulation is switched on, duplicit to the function in problem.cc
-		void set_kinetic_constants(char *section); ///< reads an information for construction of a vector containing kinetic constants of every single first order reactions, from those constants half-lives belonging to first order reactions are computed, from ini-file
+		void set_kinetic_constants(char *section, int reaction_nr); ///< reads an information for construction of a vector containing kinetic constants of every single first order reactions, from those constants half-lives belonging to first order reactions are computed, from ini-file
 		double **allocate_reaction_matrix(int n_subst); ///< allocates memory for nxn square reaction matrix
-		double **modify_reaction_matrix(int n_subst, double time_step); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched off
+		double **modify_reaction_matrix(int n_subst,  int nr_of_participants, double time_step); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched off
 		double **modify_reaction_matrix(int n_subst, double time_step, int bifurcation); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched on
 		double **modify_reaction_matrix_repeatedly(int n_subst, double time_step); ///< calls Modify_reaction_matrix(..) so many times as many nr_of_decays are defined
 		void print_reaction_matrix(int n_subst); ///< it is just control of reaction matrix modifications
 		void print_indeces(int n_subst); ///< prints a sequence of indeces of chemical species contained in decay chain and returns a pointer to an array
 		void print_half_lives(int n_subst); ///< prints a sequence of half-lives belonging to every single step of a current decay chain and returns a pointer to an array
 		double **reaction_matrix; ///<two-dimensional array describing together all radioactive decay chains under consideration
+		//std::vector<double> half_lives; ///< alternative to following row
 		double *half_lives; ///< one-dimensional array containing half-lives belonging to every single step of a current decay chain
 		int *substance_ids; ///< one-dimensional array with indeces of transported substances which are taking patr in a current decay chain or in a first order reaction
 		int nr_of_isotopes; ///< number of isotopes in a current decay chain
