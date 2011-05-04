@@ -23,7 +23,7 @@
 
 include ../makefile.in
 
-all: metis armadillo
+all: armadillo
 
 
 metis:
