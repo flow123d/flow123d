@@ -359,7 +359,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
      */
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
-    	//getchar();
     	problem->otransport->convection();
     }
     /*

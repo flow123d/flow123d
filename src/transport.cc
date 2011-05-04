@@ -640,6 +640,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(bcm, MAT_FINAL_ASSEMBLY);
 
+
     // MPI_Barrier(PETSC_COMM_WORLD);
     /*
      MatView(transport->tm,PETSC_VIEWER_STDOUT_SELF);
@@ -1047,7 +1048,6 @@ void ConvectionTransport::transport_one_step() {
 void ConvectionTransport::transport_until_time(double time_interval) {
     	int step = 0;
     	register int t;
-
 	    //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
 	    for (t = 1; t <= steps; t++) {
 	    	time += time_step;
@@ -1063,7 +1063,6 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	            step = 0;
 	        }
 	    }
-
 }
 //=============================================================================
 //      CONVECTION
