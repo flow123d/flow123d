@@ -40,14 +40,16 @@ struct MaterialDatabase;
 //=============================================================================
 // STRUCTURE OF THE ELEMENT OF THE MESH
 //=============================================================================
-typedef struct Element
+class Element
 {
+public:
+    Element();
+
     // Data readed from mesh file
     int      type;      //
     int      mid;       // Id # of material
     int      rid;       // Id # of region
     int      pid;       // Id # of mesh partition
-   // double   size;      // Area of 1D elm or height of 2D elm
 
     // Type specific data
     int dim;        // 1 or 2 or 3
@@ -63,19 +65,20 @@ typedef struct Element
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
-    struct Concentration  *start_conc;    // Start concentration  - if prescribed
-    int n_subst;        // Number of substances
+    //struct Concentration  *start_conc;    // Start concentration  - if prescribed
+    //int n_subst;        // Number of substances
     // Material properties
     double   *k;    // Tensor of hydraulic conductivity
     double   *a;    // Tensor of hydraulic resistance (k^(-1))
                     // --------------------------
                     // matrices a,k,loc are stored as vectors, and should be retyped
                     // if one needs double index access, see SmallMtxN types in math_fce.h
-    double   stor;          // Storativity
+    //double   stor;          // Storativity
     // Geometrical properties
     double   measure;   // Metrics of the element (length, area, volume)
     double   volume;        // Volume of the element
     arma::vec3 centre;      // Centre of mass of element
+    //double centre[3];
     // Parameters of the basis functions
     double   *bas_alfa;      // Parameters alfa
     double   *bas_beta;      // Parameters beta
@@ -85,27 +88,22 @@ typedef struct Element
     double *loc;        // Local matrix
     double *loc_inv;    // Inverse of the local matrix
     double  *rhs;       // Rhs - vector q1, gradients
-    //double   rhs_b;     // Rhs - vector q2, sources
-    // int      rhs_b_stat_index;   // Index of the item in the matrix where value is stored (Matrix->rhs)
-    // double   rhs_b_stat;    // Value of rhs_b before unsteady flow changes
+
     int  a_row;     // # of first row in the block A
     int      b_row;     // # of row in the block B
-    // int      b_col;     // # of first column in the block B
-    // double  *b_val;     // Values in block B
+
     int  d_row_count;   // # of nonzeros in row of the block D
     int *d_col;     // columns with nonzeros in D
     double  *d_val; // values of entries in D
     int *d_el;      // ids of noncompatible conected elements (itself reference included)
 
-    // int      d_val_stat_index;  // Index of the item in the matrix where value is stored (Matrix->a)
-    // double   d_val_stat;        // value of diag. entry in D; computed as steady flow value
-    // int      d_diag;            // Index of value in the array d_val where entry on the diagonal is stored
+
     int  e_row_count;   // # of nonzeros in row of the block E
     int *e_col;     // columns with nonzeros in E
     int *e_edge_idx;   // ids of compatible conected edeges
     double  *e_val;     // values of entries in E
     // Time terms - diagonal in D block and additional RHS
-    double tAddRHS, tAddDiag;
+    //double tAddRHS, tAddDiag;
     
     // Results
     double   vector[ 3 ];   // Vector quantity - velocity of flow
@@ -115,15 +113,15 @@ typedef struct Element
     double   balance;   // Balance of flux
 
     double   scalar_it; // for density iteration
-    double   *conc_prev;         // for density iteration
-    double   *conc_prev_immobile;         // for density iteration
-    double   *conc_prev_sorb;         // for density iteration
-    double   *conc_prev_immobile_sorb;         // for density iteration
+    //double   *conc_prev;         // for density iteration
+    //double   *conc_prev_immobile;         // for density iteration
+    //double   *conc_prev_sorb;         // for density iteration
+    //double   *conc_prev_immobile_sorb;         // for density iteration
 
     // Misc
     int     aux;       // Auxiliary flag
     double  faux;      // Auxiliary number
-} Element;
+};
 
 
 #define D_DIAG 0        // in D block diagonal is always at zero position in d_val,d_col

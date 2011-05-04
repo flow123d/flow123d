@@ -281,14 +281,14 @@ public:
      /// Gets reference to the element specified by index.
      inline T & operator[](unsigned int idx)
      {
-         ASSERT( idx>=0 && idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return storage[idx];
      }
 
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
-         ASSERT( idx>=0 && idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return FullIter( *this, begin()+idx );
      }
 
@@ -404,14 +404,14 @@ public:
      /// Gets reference to the element specified by index.
      inline T & operator[](unsigned int idx)
      {
-         ASSERT( idx>=0 && idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return storage[idx];
      }
 
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
-         ASSERT( idx>=0 && idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return FullIter( *this, begin()+idx );
      }
 

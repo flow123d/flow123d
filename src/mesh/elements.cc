@@ -46,8 +46,7 @@
 #include "constantdb.h"
 #include "mesh/ini_constants_mesh.hh"
 
-static void init_element(ElementFullIter );
-static void parse_element_line(ElementVector &ele_vec, char*);
+
 static void calc_a_row(Mesh*);
 static void calc_b_row(Mesh*);
 //static ElementIter new_element(void);
@@ -72,101 +71,72 @@ static void parse_element_properties_line(char*);
 static void block_A_stats(Mesh*);
 static void diag_A_stats(Mesh*);
 
-//static void set_element_property(Mesh*, int, int, double);
+Element::Element()
+: type(0),
+  mid(0),
+  rid(0),
+  pid(0),
 
-/**
- * READ ELEMENT'S PROPERTIES
- */
-/*
-void read_element_properties(Mesh* mesh)
+  dim(0),
+  n_sides(0),
+
+  n_nodes(0),
+  node(NULL),
+
+  material(NULL),
+  side(NULL),
+  n_neighs_vv(0),
+  neigh_vv(NULL),
+  n_neighs_vb(0),
+  neigh_vb(NULL),
+ //*start_conc,
+ //n_subst,
+            // Material properties
+  k(NULL),
+  a(NULL),
+  //stor(0),
+            // Geometrical properties
+  measure(0),
+  volume(0),
+            // Parameters of the basis functions
+ bas_alfa(NULL),
+ bas_beta(NULL),
+ bas_gama(NULL),
+ bas_delta(NULL),
+            // Matrix
+ loc(NULL),
+ loc_inv(NULL),
+ rhs(NULL),
+
+ a_row(0),
+ b_row(0),
+ d_row_count(0),
+ d_col(NULL),
+ d_val(NULL),
+ d_el(NULL),
+
+ e_row_count(0),
+ e_col(NULL),
+ e_edge_idx(NULL),
+ e_val(NULL),
+
+ v_length(0),
+ scalar(0),
+ pscalar(0),
+ balance(0),
+
+ scalar_it(0),
+// *conc_prev,
+// *conc_prev_immobile,
+// *conc_prev_sorb,
+// *conc_prev_immobile_sorb,
+
+ aux(0),
+ faux(0)
+
 {
-FILE	*in;   // input file
-char     line[ LINE_SIZE ];   // line of data file
-int i,count;
-count = 0;
-ASSERT(!( mesh == NULL ),"NULL as argument of function read_element_properties()\n");
-xprintf( Msg, "Reading element's properties...");// orig verb 2
-in = xfopen( mesh->material_fname, "rt" );
-if (skip_to( in, "$ElementProperties" ) == true) {
-        xfgets( line, LINE_SIZE - 2, in );
-        count = atoi( xstrtok( line) );
-        for (i = 0; i < count; i++) {
-                xfgets( line, LINE_SIZE - 2, in );
-                parse_element_properties_line( line );
-        }
+ centre.zeros();
 }
-xfclose( in );
-xprintf( MsgVerb, " %d element's properties readed. ", count );// orig verb 4
-xprintf( Msg, "O.K.\n");// orig verb 2
-}
- */
-
-
-/**
- * add_to_element_list(Mesh* mesh, ElementIter ele)
- */
-/*
-void add_to_element_list(Mesh* mesh, ElementIter ele)
-{
-        ASSERT(!( (mesh == NULL) || (ele == NULL) ),"NULL as an argument of function add_to_element_list()\n");
-        // First element in the list
-        if( (mesh->element == NULL) && (mesh->l_element == NULL) ) {
-                mesh->element = ele;
-                mesh->l_element = ele;
-                ele->prev = NULL;
-                ele->next = NULL;
-                return;
-        }
-        // If something is wrong with the list
-        ASSERT(!( (mesh->element == NULL) || (mesh->l_element == NULL) ),"Inconsistency in the element list\n");
-        // Add after last node
-        ele->next = NULL;
-        ele->prev = mesh->l_element;
-        mesh->l_element->next = ele;
-        mesh->l_element = ele;
-}
- */
-
-/**
- * PARSE ELEMENT PROPERTIES LINE
- */
-void parse_element_properties_line(char *line) {
-    int id, i, type;
-    double value;
-    int n_tags;
-
-    F_ENTRY;
-    n_tags = NDEF;
-    ASSERT(!(line == NULL), "NULL as argument of function parse_element_properties_line()\n");
-    id = atoi(xstrtok(line));
-    //TODO: id musi byt >0 nebo >= 0 ??
-    INPUT_CHECK(!(id < 0), "Id number of element must be > 0\n");
-    n_tags = atoi(xstrtok(NULL));
-    INPUT_CHECK(!(n_tags < 1), "At least one element tag have to be defined. Elm %d\n", id);
-    for (i = 1; i <= n_tags; i++) {
-        type = atoi(xstrtok(NULL));
-        value = atof(xstrtok(NULL));
-        //  set_element_property(mesh, id, type, value);
-    }
-}
-/**
- * SET ELEMENT PROPERTY WHICH IS GET FROM THE FILE
- */
-/*
-void set_element_property(Mesh* mesh, int id, int type, double value)
-{
-switch ( type ) {
-        case PROP_S:
-        case PROP_H:
-        case PROP_V:
-                mesh->element_hash[ id ]->size = value;
-        break;
-        default:
-                xprintf(UsrErr,"Unknown type of element's property. Type %d\n", type );
-        break;
-}
-}
- */
 
 /**
  * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
@@ -208,10 +178,16 @@ void make_element_geometry() {
 
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
+    DBGMSG("el geom 1444: %d\n",mesh->element[1443].n_sides);
     ASSERT(NONULL(mesh), "No mesh for problem\n");
     ASSERT(mesh->element.size() > 0, "Empty mesh.\n");
 
     FOR_ELEMENTS(ele) {
+        //DBGMSG("\n ele: %d \n",ele.id());
+        //FOR_ELEMENTS(ele1) {
+        //    printf("%d(%d) ",ele1.id(),ele1->type);
+        //    ele1->bas_alfa[0]=1.0;
+       // }
         calc_metrics(ele);
         calc_volume(ele);
         calc_centre(ele);
@@ -270,7 +246,6 @@ void calc_metrics(ElementFullIter ele) {
             ele->measure = element_volume_tetrahedron(ele);
             break;
     }
-
 }
 
 /**
@@ -308,6 +283,7 @@ double element_volume_tetrahedron(ElementFullIter ele) {
 /**
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
  */
+
 void calc_centre(ElementFullIter ele) {
     int li;
 
@@ -317,7 +293,24 @@ void calc_centre(ElementFullIter ele) {
         ele->centre += ele->node[ li ]->point();
     }
     ele->centre /= (double) ele->n_nodes;
+    //DBGMSG("%d: %f %f %f\n",ele.id(),ele->centre[0],ele->centre[1],ele->centre[2]);
+
+/*
+    ele->centre[ 0 ] = 0.0;
+    ele->centre[ 1 ] = 0.0;
+    ele->centre[ 2 ] = 0.0;
+
+    FOR_ELEMENT_NODES(ele, li) {
+        ele->centre[ 0 ] += ele->node[ li ]->getX();
+        ele->centre[ 1 ] += ele->node[ li ]->getY();
+        ele->centre[ 2 ] += ele->node[ li ]->getZ();
+    }
+    ele->centre[ 0 ] /= (double) ele->n_nodes;
+    ele->centre[ 1 ] /= (double) ele->n_nodes;
+    ele->centre[ 2 ] /= (double) ele->n_nodes;
+*/
 }
+
 
 /**
  * SET THE "RHS[]" FIELD IN STRUCT ELEMENT

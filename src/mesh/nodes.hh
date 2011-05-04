@@ -30,6 +30,7 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include "system/global_defs.h"
 #include "mesh/mesh_types.hh"
 #include <armadillo>
 
@@ -66,7 +67,7 @@ public:
      * Old getter methods. OBSOLETE.
      */
     inline double getX()
-        {return coordinates[0];}
+        { return coordinates[0];}
     inline double getY()
         {return coordinates[1];}
     inline double getZ()
