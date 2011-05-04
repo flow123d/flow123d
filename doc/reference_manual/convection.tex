@@ -17,12 +17,11 @@
 \normalsize
  \section*{Advection-Diffusion equation}
  
-Solute transport is governed by Advection equation which can be written in the form
+Solute transport is governed by advection equation which can be written in the form
 \begin{equation}
  \frac{\partial c}{\partial t} + \boldsymbol{v} \frac{\partial c}{\partial x}  = 0, \label{Aeq}
 \end{equation}
-%currently we assume $\mathbf{D} = \boldsymbol{0}$. 
-%\newline
+where $c$ is concentration $[M^3 \cdot L^{-3}]$, $t$ is time $[T]$, $v$ is velocity $[L \cdot T^{-1}]$, and $x$ is coordinate in cartesian system $[L]$.
 Assuming solution which is constant on every element (cell centered finite volume method) and integrating equation (\ref{Aeq}) we get
     \begin{equation}
     \int\limits_{e_i} \frac{\partial c}{\partial t} dV + \int\limits_{e_i} \boldsymbol{v} \frac{\partial c}{\partial x} \, dV = 0. \notag 
@@ -31,19 +30,25 @@ Assuming solution which is constant on every element (cell centered finite volum
     \begin{equation}
     \frac{\partial c_i}{\partial t}  V_{i} + c \int\limits_{\partial e_i }  \boldsymbol{v} \, \mathbf{dS} = 0, \label{Aeqint} 
     \end{equation}
-  where $c_i$ is average concentration in $e_i$ and $V_{i}$ its volume, $c$ will be specified later.
-    Time derivative we substitute by explicit Euler difference
+  where $c_i$ is average concentration in $e_i$ and $V_{i}$ its volume, $c$ will be specified later (there are two main possibilities - $c_i$ or concentration from neighbouring element).
+    Term $\frac{\partial c}{\partial t}$ we approximate by explicit Euler difference
     \begin{equation}
      \frac{\partial c}{\partial \textrm{t}} \approx \frac{c_{i}^{n+1} - c_{i}^n}{\Delta t}. \label{expliciteuler}
     \end{equation}
-    Where $\Delta t$ is a time step and upper index at $c_i$ means values in the discrete time steps ($n+1$ and $n$).
-    With respect to $e_i$ we define internal flow intake $U_{ij}^{-}$ (from $e_j$), external flow intake $U_{ij}^{e-}$ (from $\Omega$),
-    internal flow drain $U_{ij}^{+}$ (to $e_j$), and external flow drain $U_{ij}^{e+}$ (to $\Omega$) as follows
+    Where $\Delta t$ is a time step and upper index at $c_i$ means values in the discrete time steps $n+1$ and $n$.
+    We assume that all elements have piecewise smooth element boudary $\partial e$ with outwards directed normal. Inside the area $\Omega$ we introduce internal flows.
+    With respect to $e_i$, we define internal flow intake $U_{ij}^{-}$ (from element $e_j$) and
+    internal flow drain $U_{ij}^{+}$ (to element $e_j$) as follows
     \begin{eqnarray}     
-      U_{ij}^{-} = \text{min}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0), \quad
+      U_{ij}^{-} = \text{min}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0), \notag \\
+      U_{ij}^{+} = \text{max}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0). \label{iflux}  
+    \end{eqnarray}
+  Those flows realizes solute transport in the area $\Omega$. On the $\partial\Omega$ we define external flows which will be important for transport Dirichlet boundary  
+  conditions. In the same way as for internal flows we assume
+  (with respect to element $e_i$) external flow intake $U_{ij}^{e-}$ (from $\partial\Omega$) and external flow drain $U_{ij}^{e+}$ (to $\partial\Omega$).
+    \begin{eqnarray}     
       U_{ik}^{e-} = \text{min}(\int\limits_{\partial e_i \cap \partial \Omega } \boldsymbol{v} \, \mathbf{dS},0), \notag \\
-      U_{ij}^{+} = \text{max}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0), \quad
-      U_{ik}^{e+} = \text{max}(\int\limits_{\partial e_i \cap \partial \Omega } \boldsymbol{v} \, \mathbf{dS},0). \label{flux}  
+      U_{ik}^{e+} = \text{max}(\int\limits_{\partial e_i \cap \partial \Omega } \boldsymbol{v} \, \mathbf{dS},0). \label{eflux}  
     \end{eqnarray}
     Direction of the velocity $\boldsymbol{v}$, which affects sign of the $U$-terms is significant for the construction solution. For the solution
     stability it is suitable to use an upwind scheme, which can by written for finite difference on simple 1D geometry in the form
@@ -53,7 +58,7 @@ Assuming solution which is constant on every element (cell centered finite volum
     \end{eqnarray}
     This scheme can be interpreted as well as in finite volume method - in convection term one can get $c$ value opposite the flow of the quantity $\boldsymbol{v}$ direction.
       For every $e_i$ we introduce itemsets $\mathcal{N}_{i}, \mathcal{B}_{i}$ which contains indexes of neighbourging elements, local boundary conditions respectivelly.  
-     Assuming upwind scheme, using (\ref{flux}) and (\ref{expliciteuler}) we can write solution of the equation (\ref{Aeqint}) 
+     Assuming upwind scheme, using (\ref{iflux}), (\ref{eflux}), and  (\ref{expliciteuler}) we can write solution of the equation (\ref{Aeqint}) 
     (relation between two consecutive time steps) on $e_i$ in the form 
     \begin{equation}
       c_i^{n+1} = c_i^n - \frac{\Delta t}{V_{i}} \left[ \sum_{j \in \mathcal{N}_{i}} \left[ U_{ij}^{+} c_i +  U_{ij}^{-} c_{j} \right] +
@@ -65,17 +70,18 @@ Assuming solution which is constant on every element (cell centered finite volum
     \end{equation}
   Where $\mathbf{c}$ is vector of $c_i^{n+1}$, $\mathbf{A}$ is a square matrix composed from $\frac{U_{ij}^{+}}{V_i}$, $\frac{U_{ij}^{-}}{V_i}$, and
   $\frac{U_{ij}^{e+}}{V_i}$. $\mathbf{B}$ is in general rectangular matrix composed from $\frac{U_{ij}^{e-}}{V_i}$ and $\mathbf{c_{B}}^{n}$ is  vector of Dirichlet
-  boundary conditions.matrix definition. There is the only one stability condition for time step which is called Courant-Friedrich-Levy condition. 
+  boundary conditions.matrix definition. There is one stability condition for time step which is called Courant-Friedrich-Levy condition. 
   For the problem without sources/sinks it can be written as
   \begin{equation}
   \Delta t_{max} = \min_i \left( \frac{V_i}{ \sum\limits_{j}  U_{ij}^{+} + \sum\limits_{k}  U_{ik}^{e+} } \right) =
   \min_i \left( \frac{V_i}{ \sum\limits_{j} | U_{ij}^{-} | + \sum\limits_{k} | U_{ik}^{e-} | } \right). \label{cfl} 
   \end{equation}
-  This condition has a physical interpretation, which can be understood as conservation law. From algebraical point of view this condition can be seen
-  as a condition which bounds norm of the evolution operator as follows 
+  This condition has a physical interpretation, which can be understood as conservation law - volume that intakes/drains to/from element $e_i$ 
+can not be higher then element volume $V_i$. From algebraical point of view this condition can be seen as a condition which bounds norm of the evolution operator as follows 
   \begin{equation}
   \| \mathbf{I} + \Delta t \mathbf{A} \quad \Delta t \mathbf{B} \| \le 1.
   \end{equation}
+ \section*{Generalization}
   This approach can be used as well as for more general element connections -- for compatible/non-compatible element interconnection, if we know the flow integral
   values ($U_{ij}^{+}$ or $U_{ij}^{-}$). %Situation for more general case is in the picture (\ref{compmodel}).
       \begin{figure}[h]
@@ -85,23 +91,32 @@ Assuming solution which is constant on every element (cell centered finite volum
 	\label{edgemodel}
         \end{center}
       \end{figure}  
-  The most general case of connection is relation among $n$ elements like in figure (\ref{edgemodel}). For the case in figure (\ref{edgemodel}) we define
-indexset $\mathcal{G}_{l}$ which contains all the indexes of elements which sides make $l$-th edge ($g_l$), so that $\mathcal{G}_{l} = \{i,j,k\}$.
+  The most general case of connection is relation among $n$ elements like in figure (\ref{edgemodel}). For this case we define
+edge element indexset $\mathcal{G}_{l}$ that contains all the indexes of elements which sides make $l$-th edge ($g_l$), so that $\mathcal{G}_{l} = \{i,j,k\}$.
 For $\mathcal{G}_{l}$ we introduce its subsets $\mathcal{G}_{ij}$, $\mathcal{G}_{ji}$, $\mathcal{G}_{ik}$, $\mathcal{G}_{ki}$, $\mathcal{G}_{kj}$, and $\mathcal{G}_{jk}$,
-  where $\mathcal{G}_{ij} = \mathcal{G}_{ik} = \{j,k\}$, $ \mathcal{G}_{ji} = \mathcal{G}_{jk} = \{i,k\}$, and $\mathcal{G}_{ki} = \mathcal{G}_{kj} = \{i,j\}$ (if edge
-indexset $\mathcal{G}$ is defined using two lower indexes (by two elements), first element index is not included in the indexset).
+  where $\mathcal{G}_{ij} = \mathcal{G}_{ik} =  \mathcal{G}_{l} \backslash {i} = \{j,k\}$, $ \mathcal{G}_{ji} = \mathcal{G}_{jk} = \mathcal{G}_{l} \backslash {j} =\{i,k\}$, and
+ $\mathcal{G}_{ki} = \mathcal{G}_{kj} = \mathcal{G}_{l} \backslash {k} =\{i,j\}$. It can be written in the same way for any edge $g$ with more than 3 elements, 
+it is hold  $|\mathcal{G}_{g}| - 1 = |\mathcal{G}_{ab}|; \forall a,b \in \mathcal{G}_{g}$.
 For $l$-th edge ($g_l$) we can define total edge flow $U_{g_{l}}$ eg. as
   \begin{eqnarray}
    U_{g_{l}} &=& \sum\limits_{m \in \mathcal{G}_{ji}}  \left[ U_{jm}^{+} + | U_{mj}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{jk}}  \left[ U_{jm}^{+} + | U_{mj}^{-}| \right] \notag \\
 	      &=& \sum\limits_{m \in \mathcal{G}_{ij}}  \left[ U_{im}^{+} + | U_{mi}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{ik}}  \left[ U_{im}^{+} + | U_{mi}^{-}| \right] \notag \\ 
 	      &=& \sum\limits_{m \in \mathcal{G}_{ki}}  \left[ U_{km}^{+} + | U_{mk}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{kj}}  \left[ U_{km}^{+} + | U_{mk}^{-}| \right], \label{edgeflow} 
   \end{eqnarray}
-$U_{g_{l}}$ with respect to any $e_m$, $m \in \mathcal{G}_{l}$ has to have the same value because continuity equation, for assumed incompresible flow, has to
- be fulfilled in every edge. Edges with more than 2 elements realize an ideal mixing. This fact modifies equation (\ref{Aeqsol})
-on the general mesh into the form
+$U_{g_{l}}$ with respect to any $e_m$; $m \in \mathcal{G}_{l}$ has to have the same value because continuity equation, for assumed incompresible flow, has to
+ be fulfilled in every edge. Edges with more than two elements and two and more nonzero intakes to edge realize an ideal mixing (to an average concentration) 
+with weights which will be specified later. This fact modifies equation (\ref{Aeqsol}) on the general mesh into the form
     \begin{equation}
       c_i^{n+1} = c_i^n - \frac{\Delta t}{V_{i}} \left[ \sum_{j \in \mathcal{N}_{i}} \left[ U_{ij}^{+} c_i +  \frac{U_{ij}^{-}}{\sum\limits_{k \in \mathcal{G}_{ij}}
       \left[ U_{ki}^{+} + |U_{ik}^{-}| \right] } \sum\limits_{k \in \mathcal{G}_{ij}} U_{ki}^{+} c_{k} \right] + 
-      \sum_{k \in \mathcal{B}_{i}}  \left[  U_{ik}^{e+} c_i +  U_{ik}^{e-} c_{B_{ik}} \right] \right], \label{Aeqsol}
+      \sum_{k \in \mathcal{B}_{i}}  \left[  U_{ik}^{e+} c_i +  U_{ik}^{e-} c_{B_{ik}} \right] \right]. \label{Aeqsol}
     \end{equation}
-matrix notation is the same as in (\ref{AeqsolM}). Finally ...
+Concentrations $c_k$, $k \in \mathcal{G}_{ij}$ that may intakes into element $e_i$ are weighted with weights 
+\begin{equation}
+ \alpha_k = \frac{U_{ki}^{+}}{\sum\limits_{k \in \mathcal{G}_{ij}} \left[ U_{ki}^{+} + |U_{ik}^{-}| \right] }, \label{weights}
+\end{equation}
+so that the ideal mixing in this edge leads to the average concentration 
+\begin{equation}
+ c_{av} = \frac{\sum\limits_{k \in \mathcal{G}_{ij}} U_{ki}^{+} c_{k}}{\sum\limits_{k \in \mathcal{G}_{ij}} \left[ U_{ki}^{+} + |U_{ik}^{-}| \right] }. \label{cav}
+\end{equation}
+Matrix notation is the same as in (\ref{AeqsolM}). Finally ...
