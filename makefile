@@ -25,6 +25,10 @@
 #
 
 include makefile.in
+include makefile.include
+
+
+
 
 all: bin/mpiexec revnumber bin/current_flow
 #	make -C src clean

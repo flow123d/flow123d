@@ -94,6 +94,10 @@ void ConvectionTransport::make_transport_partitioning() {
     delete[] loc_part;
     xfree(id_4_old);
 
+    FOR_ELEMENTS(ele) {
+        ele->pid=el_ds->get_proc(row_4_el[ele.index()]);
+    }
+
 }
 
 //ConvectionTransport::ConvectionTransport(struct Problem *problemMaterialDatabase, Mesh *init_mesh)

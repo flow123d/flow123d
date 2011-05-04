@@ -23,6 +23,7 @@
 
 # Include global settings
 include ../makefile.in
+include ../makefile.include
 
 LOCAL_INCLUDE = -I../include -I.
 
