@@ -49,6 +49,4 @@ USE_PRINTALL = -DMPI_PRINTALL
 #MACHINE=
 
 
-# set build dir, used when running on bitten, only for automatic builds
-BUILD_DIR=bitten_tmp
 
