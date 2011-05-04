@@ -10,6 +10,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${Flow123d_SOURCE_DIR}/CMake/Modules
 message(STATUS "CMake module path: ${CMAKE_MODULE_PATH}")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/makefile.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/makefile.in
+)
+include(${CMAKE_CURRENT_BINARY_DIR}/makefile.in OPTIONAL)
 
 find_package(PETSc REQUIRED)
 find_package(PARMETIS REQUIRED)
@@ -58,6 +62,6 @@ endif(CMAKE_BUILD_TYPE STREQUAL "debug")
 ##############
 
 add_subdirectory(src)
-#add_subdirectory(doc)
+add_subdirectory(doc)
 
 enable_testing()

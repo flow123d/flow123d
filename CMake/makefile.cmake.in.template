@@ -1,0 +1,15 @@
+
+### PETSC library ###################################################################
+# The Flow123 requires PETSC library (2.x), you have to set 
+# the location of PETSC and used PETSC architecture unless you
+# would to use system wide settings.
+# eg.
+#set(PETSC_DIR "$HOME/local/petsc")
+#set(PETSC_ARCH "linux-gcc-dbg")
+
+set(PETSC_DIR "$PETSC_DIR")
+set(PETSC_ARCH "$PETSC_ARCH")
+
+### current_flow ###
+# specify machine dependent filename for execute flow123d 
+set(CURRENT_FLOW "generic_flow.sh")
