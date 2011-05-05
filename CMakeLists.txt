@@ -32,6 +32,8 @@ set(Flow123dIncludeDirectories
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/mesh
     ${CMAKE_SOURCE_DIR}/include/transport
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/system
     ${CMAKE_SOURCE_DIR}/src/decay
     ${CMAKE_SOURCE_DIR}/src/semchem
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
@@ -42,7 +44,7 @@ set(Flow123dIncludeDirectories
 include_directories(${Flow123dIncludeDirectories})
 
 set(Flow123dLinkDirectories
-    ${Flow123d_BINARY_dir}/src
+    ${Flow123d_BINARY_dir}/lib
     ${Boost_LIBRARY_DIRS}
 )
 
@@ -65,3 +67,5 @@ add_subdirectory(src)
 add_subdirectory(doc)
 
 enable_testing()
+add_subdirectory(test_units)
+

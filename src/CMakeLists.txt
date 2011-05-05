@@ -26,7 +26,7 @@ set(libFlow123d_SRCS
     convert.cc
     la_linsys.cc
     la_schur.cc
-    main.cc
+#    main.cc
     materials.cc
     msh_gmshreader.cc
     output.cc
@@ -51,12 +51,17 @@ endforeach(file)
 
 # add build targets
 link_directories(${Flow123dLinkDirectories})
-add_executable(flow123d ${libFlow123d_SRCS})
+add_library(Flow123d ${libFlow123d_SRCS})
+set_target_properties(Flow123d PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+)
+
+add_executable(flow123d main.cc)
 add_custom_command(TARGET flow123d POST_BUILD 
   COMMAND ln -s ${CMAKE_SOURCE_DIR}/bin/${CURRENT_FLOW} ${CMAKE_BINARY_DIR}/bin/current_flow
 )
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/bin/current_flow)
-target_link_libraries(flow123d ${PETSC_LIBRARIES} ${PARMETIS_LIBRARIES})
+target_link_libraries(flow123d ${PETSC_LIBRARIES} ${PARMETIS_LIBRARIES} Flow123d)
 set_target_properties(flow123d PROPERTIES
    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
    OBJECT_DIR ${PROJECT_BINARY_DIR}/build/obj
