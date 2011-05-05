@@ -178,7 +178,7 @@ void make_element_geometry() {
 
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
-    DBGMSG("el geom 1444: %d\n",mesh->element[1443].n_sides);
+
     ASSERT(NONULL(mesh), "No mesh for problem\n");
     ASSERT(mesh->element.size() > 0, "Empty mesh.\n");
 
