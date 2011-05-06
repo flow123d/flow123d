@@ -491,8 +491,8 @@ void write_sys_matlab( struct Solver *solver )
  *  @param[in] write_nz (1 - write number of non-zeroes (ISOL); 0 - don't write (MATLAB))
  */
 void write_matlab_linsys(LinSys *mtx,int write_nz) {
-    FILE *out;
-    int mi, ji,nnz;
+    //FILE *out;
+    //int mi, ji,nnz;
 
     F_ENTRY;
 

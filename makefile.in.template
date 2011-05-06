@@ -1,7 +1,7 @@
 
 # This file contains all system specific configuration.
-# Namely compilers, compilar flags, libraries, and 
-# some configuration macros for  conditioned compilation. 
+# Namely compilers, compiler flags, libraries, and 
+# some configuration macros for conditioned compilation. 
 # It is included by all makefiles of the project.
 
 ### PETSC library (REQUIRED) ###################################################################
@@ -35,7 +35,7 @@ FLOW_CFLAGS=-g -O0
 
 # Uncomment to print all messages from all parallel MPI processes.
 # This is only usefull for parallel debugging.
-USE_PRINTALL = -DMPI_PRINTALL
+# USE_PRINTALL = -DMPI_PRINTALL
 
 # This activates a workaround for build sucessfuly with ATLAS.
 # It is safe to use this until one would use "asa" PETSC preconditioner.
