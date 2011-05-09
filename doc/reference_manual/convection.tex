@@ -40,8 +40,8 @@ Assuming solution which is constant on every element (cell centered finite volum
     With respect to $e_i$, we define internal flow intake $U_{ij}^{-}$ (from element $e_j$) and
     internal flow drain $U_{ij}^{+}$ (to element $e_j$) as follows
     \begin{eqnarray}     
-      U_{ij}^{-} = \text{min}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0), \notag \\
-      U_{ij}^{+} = \text{max}(\int\limits_{\partial e_i \cap \partial e_j } \boldsymbol{v} \, \mathbf{dS},0). \label{iflux}  
+      U_{ij}^{-} = \text{min}(\int\limits_{\partial e_i \cap \partial e_j, i \ne j} \boldsymbol{v} \, \mathbf{dS},0), \notag \\
+      U_{ij}^{+} = \text{max}(\int\limits_{\partial e_i \cap \partial e_j, i \ne j} \boldsymbol{v} \, \mathbf{dS},0). \label{iflux}  
     \end{eqnarray}
   Those flows realizes solute transport in the area $\Omega$. On the $\partial\Omega$ we define external flows which will be important for transport Dirichlet boundary  
   conditions. In the same way as for internal flows we assume
@@ -99,9 +99,9 @@ For $\mathcal{G}_{l}$ we introduce its subsets $\mathcal{G}_{ij}$, $\mathcal{G}_
 it is hold  $|\mathcal{G}_{g}| - 1 = |\mathcal{G}_{ab}|; \forall a,b \in \mathcal{G}_{g}$.
 For $l$-th edge ($g_l$) we can define total edge flow $U_{g_{l}}$ eg. as
   \begin{eqnarray}
-   U_{g_{l}} &=& \sum\limits_{m \in \mathcal{G}_{ji}}  \left[ U_{jm}^{+} + | U_{mj}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{jk}}  \left[ U_{jm}^{+} + | U_{mj}^{-}| \right] \notag \\
-	      &=& \sum\limits_{m \in \mathcal{G}_{ij}}  \left[ U_{im}^{+} + | U_{mi}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{ik}}  \left[ U_{im}^{+} + | U_{mi}^{-}| \right] \notag \\ 
-	      &=& \sum\limits_{m \in \mathcal{G}_{ki}}  \left[ U_{km}^{+} + | U_{mk}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{kj}}  \left[ U_{km}^{+} + | U_{mk}^{-}| \right], \label{edgeflow} 
+   U_{g_{l}} &=& \sum\limits_{m \in \mathcal{G}_{ji}}  \left[ U_{mj}^{+} + | U_{jm}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{jk}}  \left[ U_{mj}^{+} + | U_{jm}^{-}| \right] \notag \\
+	      &=& \sum\limits_{m \in \mathcal{G}_{ij}}  \left[ U_{mi}^{+} + | U_{im}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{ik}}  \left[ U_{mi}^{+} + | U_{im}^{-}| \right] \notag \\ 
+	      &=& \sum\limits_{m \in \mathcal{G}_{ki}}  \left[ U_{mk}^{+} + | U_{km}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{kj}}  \left[ U_{mk}^{+} + | U_{km}^{-}| \right]. \label{edgeflow} 
   \end{eqnarray}
 $U_{g_{l}}$ with respect to any $e_m$; $m \in \mathcal{G}_{l}$ has to have the same value because continuity equation, for assumed incompresible flow, has to
  be fulfilled in every edge. Edges with more than two elements and two and more nonzero intakes to edge realize an ideal mixing (to an average concentration) 
