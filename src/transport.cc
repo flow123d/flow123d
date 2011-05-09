@@ -985,7 +985,6 @@ void ConvectionTransport::transport_one_step() {
 
 	MaterialDatabase::Iter material;
 	int sbi;
-	Linear_reaction *decayRad;
 
 	xprintf( Msg, "Time : %f\n",time);
 	for (sbi = 0; sbi < n_substances; sbi++) {
@@ -1009,10 +1008,9 @@ void ConvectionTransport::transport_one_step() {
 	        }
 
 
-	        /*
-	        //======================================
-	        //              CHEMISTRY
-	        //======================================
+	   /*/======================================
+	   //              CHEMISTRY
+	   //======================================
 	    if(OptGetBool("Semchem_module", "Compute_reactions", "no") == true)
 	    {
 	            if (t == 1) { //initial value of t == 1 & it is incremented at the beginning of the cycle
@@ -1026,21 +1024,19 @@ void ConvectionTransport::transport_one_step() {
 	    //===================================================
 	    //     RADIOACTIVE DECAY + FIRST ORDER REACTIONS
 	    //===================================================
-	    if(OptGetBool("Decay_module", "Compute_decay", "no") == true){
+	    if((OptGetBool("Reaction_module", "Compute_decay", "no") == true) || (OptGetBool("Reaction_module", "Compute_reactions", "no") == true)){
 	            int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
 	            //char dec_name[30];
-
 	            if (t == 1) {
-	                decayRad = new Linear_reaction(n_subst, time_step);
+	                decayRad = new Linear_reaction(n_substances, time_step);
 	    	}
 	            for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-	    		(*decayRad).compute_reaction(pconc[MOBILE], n_subst, loc_el);
+	    		(*decayRad).compute_reaction(pconc[MOBILE], n_substances, loc_el);
 	                if (dual_porosity == true) {
-	    			(*decayRad).compute_reaction(pconc[IMMOBILE], n_subst, loc_el);
+	    			(*decayRad).compute_reaction(pconc[IMMOBILE], n_substances, loc_el);
 	                }
 	            }
-	    }
-*/
+	    }*/
 }
 //=============================================================================
 //      TRANSPORT UNTIL TIME
@@ -1048,11 +1044,30 @@ void ConvectionTransport::transport_one_step() {
 void ConvectionTransport::transport_until_time(double time_interval) {
     	int step = 0;
     	register int t;
+    	// Chemistry initialization
+    	cout << "Just for fun" << endl;
+    	Linear_reaction *decayRad = new Linear_reaction(n_substances, time_step);
+    	bool semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
+
 	    //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
 	    for (t = 1; t <= steps; t++) {
 	    	time += time_step;
 	     //   SET_TIMER_SUBFRAMES("TRANSPORT",t);  // should be in destructor as soon as we have class iteration counter
 	    	transport_one_step();
+
+		     // Semchem initialization
+	    	    if ((t == 1) && (semchem_on == true)) {
+	    	       priprav();
+	    	    }
+		     // Calling linear reactions and Semchem together
+		    	  for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+		    	   	 (*decayRad).compute_reaction(pconc[MOBILE], n_substances, loc_el);
+		    	     if (dual_porosity == true) {
+		    	    	(*decayRad).compute_reaction(pconc[IMMOBILE], n_substances, loc_el);
+		    	     }
+		    	     if(semchem_on == true) che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
+		    	  }
+
 	        step++;
 	        //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
 	        if ((save_step == step) || (write_iterations)) {

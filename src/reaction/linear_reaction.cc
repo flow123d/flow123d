@@ -10,12 +10,18 @@ using namespace std;
 Linear_reaction::Linear_reaction(int n_subst, double time_step)
 	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false)
 {
-	decay_on = OptGetBool("Reactions_module","Compute_decay","no");
-	FoR_on = OptGetBool("Reactions_module","Compute_reactions","no");
-	if(decay_on == true) nr_of_decays = OptGetInt("Reactions_module","Nr_of_decay_chains","1");
-	if(FoR_on == true) nr_of_FoR = OptGetInt("Reactions_module","Nr_of_FoR","1");
-	allocate_reaction_matrix(n_subst);
-	modify_reaction_matrix_repeatedly(n_subst, time_step);
+	//decay_on = OptGetBool("Reactions_module","Compute_decay","no");
+	//FoR_on = OptGetBool("Reactions_module","Compute_reactions","no");
+	//if(decay_on == true)
+	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
+	//if(FoR_on == true)
+	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
+	cout << "number of FoR is"<< nr_of_FoR << endl;
+	cout << "number of decays is" << nr_of_decays << endl;
+	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
+		allocate_reaction_matrix(n_subst);
+		modify_reaction_matrix_repeatedly(n_subst, time_step);
+	}
 }
 
 Linear_reaction::~Linear_reaction()
@@ -46,6 +52,7 @@ double **Linear_reaction::allocate_reaction_matrix(int n_subst) //reaction matri
 	int index, rows, cols, dec_nr, dec_name_nr;
 	char dec_name[30];
 
+	cout << "We are going to allocate reaction matrix" << endl;
 	reaction_matrix = (double **)xmalloc(n_subst * sizeof(double*));//allocation section
 	for(rows = 0; rows < n_subst; rows++){
 		reaction_matrix[rows] = (double *)xmalloc(n_subst * sizeof(double));
@@ -73,7 +80,7 @@ double **Linear_reaction::modify_reaction_matrix(int n_subst, int nr_of_particip
 		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
 		return NULL;
 	}
-	if((decay_on == true) || (FoR_on == true)){
+	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		for(cols = 0; cols < nr_of_participants; cols++){
 			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 			if(cols < (nr_of_participants - 1)){
@@ -123,7 +130,7 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(int n_subst, double 
 	char dec_name[30];
 	int rows, cols, dec_nr, dec_name_nr = 1;
 
-	if(decay_on == true){
+	if(nr_of_decays > 0){
 		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
 		bifurcation.resize(nr_of_decays);
 		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
@@ -143,7 +150,7 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(int n_subst, double 
 			dec_name_nr++;
 		}
 	}
-	if(FoR_on == true){
+	if(nr_of_FoR > 0){
 		xprintf(Msg,"\nNumber of first order reactions is %d\n",nr_of_FoR);
 		//half_lives.resize(nr_of_FoR); //does not function at all
 		if(half_lives != NULL){
@@ -174,7 +181,8 @@ double **Linear_reaction::compute_reaction(double **concentrations, int n_subst,
 		return NULL;
 	}
 
-	for(cols = 0; cols < n_subst; cols++){
+	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
+		for(cols = 0; cols < n_subst; cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
 		xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols, n_subst, concentrations[cols][loc_el]); //prev_conc[cols]);
 		concentrations[cols][loc_el] = 0.0;
@@ -187,6 +195,7 @@ double **Linear_reaction::compute_reaction(double **concentrations, int n_subst,
 	}
 	free(prev_conc);
 	prev_conc = NULL;
+	}
 	return concentrations;
 }
 
@@ -367,3 +376,6 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
     	half_lives[react_nr] = log(2) / kinetic_constant[react_nr];
  	 //}
 }
+
+int Linear_reaction::get_nr_of_decays(void){return nr_of_decays;} // two simple inlinefunction returning private variables
+int Linear_reaction::get_nr_of_FoR(void){return nr_of_FoR;}

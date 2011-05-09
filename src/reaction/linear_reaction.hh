@@ -13,8 +13,10 @@ class Linear_reaction
 {
 	public:
 		Linear_reaction(int n_subst, double time_step); ///< constructor with parameters for initialization of  a new declared class member
-		~Linear_reaction(); ///< desctructor
+		~Linear_reaction(void); ///< desctructor
 		double **compute_reaction(double **concentrations, int n_subst, int loc_el); ///< method for multiplication of concentrations array by reaction matrix
+		int get_nr_of_decays(void); ///< is here to enable access to private variable nr_of_decays
+		int get_nr_of_FoR(void); ///< is here to enable access to private variable nr_of_FoR
 	private:
 		Linear_reaction(); ///< suppresses a use of constructor without parameters
 		int *set_indeces(char *section, int n_subst); ///< reads a sequence of numbers defining an order of substances in decay chain, from ini-file
@@ -47,6 +49,6 @@ class Linear_reaction
 		std::vector<std::vector<double> > bifurcation; ///< two dimensional array containing mass percentage of every single decay bifurcation on every single row
 		std::vector<double> kinetic_constant; ///< one dimensional array of kinetic constants belonging to considered reactions
 		bool bifurcation_on; ///< bifurcation is initialy switched off
-		bool FoR_on;
-		bool decay_on;
+		//bool FoR_on;
+		//bool decay_on;
 };
