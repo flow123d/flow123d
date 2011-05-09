@@ -99,24 +99,24 @@ For $\mathcal{G}_{l}$ we introduce its subsets $\mathcal{G}_{ij}$, $\mathcal{G}_
 it is hold  $|\mathcal{G}_{g}| - 1 = |\mathcal{G}_{ab}|; \forall a,b \in \mathcal{G}_{g}$.
 For $l$-th edge ($g_l$) we can define total edge flow $U_{g_{l}}$ eg. as
   \begin{eqnarray}
-   U_{g_{l}} &=& \sum\limits_{m \in \mathcal{G}_{ji}}  \left[ U_{mj}^{+} + | U_{jm}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{jk}}  \left[ U_{mj}^{+} + | U_{jm}^{-}| \right] \notag \\
-	      &=& \sum\limits_{m \in \mathcal{G}_{ij}}  \left[ U_{mi}^{+} + | U_{im}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{ik}}  \left[ U_{mi}^{+} + | U_{im}^{-}| \right] \notag \\ 
-	      &=& \sum\limits_{m \in \mathcal{G}_{ki}}  \left[ U_{mk}^{+} + | U_{km}^{-}| \right] = \sum\limits_{m \in \mathcal{G}_{kj}}  \left[ U_{mk}^{+} + | U_{km}^{-}| \right]. \label{edgeflow} 
+   U_{g_{l}} &=& \sum\limits_{m \in \mathcal{G}_{ji}}   \left[ U_{mj}^{+}   + \frac{ U_{jm}^{+}}{|\mathcal{G}_{ji}|} \right] = \sum\limits_{m \in \mathcal{G}_{jk}}  \left[ U_{mj}^{+}   +  \frac{ U_{jm}^{+}}{|\mathcal{G}_{jk}|} \right] \notag \\
+	      &=& \sum\limits_{m \in \mathcal{G}_{ij}}  \left[ U_{mi}^{+}   +  \frac{ U_{im}^{+}}{|\mathcal{G}_{ij}|} \right] = \sum\limits_{m \in \mathcal{G}_{ik}} \left[  U_{mi}^{+} +  \frac{ U_{im}^{+}}{|\mathcal{G}_{ik}|} \right] \notag \\ 
+	      &=& \sum\limits_{m \in \mathcal{G}_{ki}}  \left[ U_{mk}^{+}   +  \frac{ U_{km}^{+}}{|\mathcal{G}_{ki}|} \right] = \sum\limits_{m \in \mathcal{G}_{kj}}  \left[ U_{mk}^{+}   +  \frac{ U_{km}^{+}}{|\mathcal{G}_{kj}|} \right], \label{edgeflow}
   \end{eqnarray}
 $U_{g_{l}}$ with respect to any $e_m$; $m \in \mathcal{G}_{l}$ has to have the same value because continuity equation, for assumed incompresible flow, has to
  be fulfilled in every edge. Edges with more than two elements and two and more nonzero intakes to edge realize an ideal mixing (to an average concentration) 
 with weights which will be specified later. This fact modifies equation (\ref{Aeqsol}) on the general mesh into the form
     \begin{equation}
       c_i^{n+1} = c_i^n - \frac{\Delta t}{V_{i}} \left[ \sum_{j \in \mathcal{N}_{i}} \left[ U_{ij}^{+} c_i +  \frac{U_{ij}^{-}}{\sum\limits_{k \in \mathcal{G}_{ij}}
-      \left[ U_{ki}^{+} + |U_{ik}^{-}| \right] } \sum\limits_{k \in \mathcal{G}_{ij}} U_{ki}^{+} c_{k} \right] + 
-      \sum_{k \in \mathcal{B}_{i}}  \left[  U_{ik}^{e+} c_i +  U_{ik}^{e-} c_{B_{ik}} \right] \right]. \label{Aeqsol}
+      \left[ U_{ki}^{+} + \frac{U_{ik}^{+}}{|\mathcal{G}_{ij}|} \right] } \sum\limits_{k \in \mathcal{G}_{ij}} U_{ki}^{+} c_{k} \right] + 
+      \sum_{k \in \mathcal{B}_{i}}  \left[  U_{ik}^{e+} c_i +  U_{ik}^{e-} c_{B_{ik}} \right] \right]. \label{Aeqsol2}
     \end{equation}
 Concentrations $c_k$, $k \in \mathcal{G}_{ij}$ that may intakes into element $e_i$ are weighted with weights 
 \begin{equation}
- \alpha_k = \frac{U_{ki}^{+}}{\sum\limits_{k \in \mathcal{G}_{ij}} \left[ U_{ki}^{+} + |U_{ik}^{-}| \right] }, \label{weights}
+ \alpha_k = \frac{U_{ki}^{+}}{\sum\limits_{k \in \mathcal{G}_{ij}} \left[ U_{ki}^{+} + \frac{U_{ik}^{+}}{|\mathcal{G}_{ij}|} \right] }, \label{weights}
 \end{equation}
 so that the ideal mixing in this edge leads to the average concentration 
 \begin{equation}
- c_{av} = \frac{\sum\limits_{k \in \mathcal{G}_{ij}} U_{ki}^{+} c_{k}}{\sum\limits_{k \in \mathcal{G}_{ij}} \left[ U_{ki}^{+} + |U_{ik}^{-}| \right] }. \label{cav}
+ c_{av} = \frac{\sum\limits_{k \in \mathcal{G}_{ij}} U_{ki}^{+} c_{k}}{\sum\limits_{k \in \mathcal{G}_{ij}} \left[ U_{ki}^{+} + \frac{U_{ik}^{+}}{|\mathcal{G}_{ij}|} \right] }. \label{cav}
 \end{equation}
 Matrix notation is the same as in (\ref{AeqsolM}). Finally ...
