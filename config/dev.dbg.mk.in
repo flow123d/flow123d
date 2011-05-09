@@ -1,5 +1,5 @@
 PETSC_DIR=/home/nekvasil/petsc-3.0.0-p12
-PETSC_ARCH=flow
+PETSC_ARCH=flow_g
 
 #set name of machine
 #MACHINE=
