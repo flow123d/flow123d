@@ -12,7 +12,7 @@ CPP:=${FLOW_CPP}
 CFLAGS:=${FLOW_CFLAGS}
 
 # setup libraries
-ARMADILLO_LIBS=-L../third_party/armadillo-1.1.92 "-Wl,-rpath,$(PWD)/third_party/armadillo-1.1.92" -larmadillo 
+ARMADILLO_LIBS=-L../third_party/armadillo-1.1.92 -Wl,-rpath,$(PWD)/third_party/armadillo-1.1.92 -larmadillo 
 ARMADILLO_INCLUDE=-I../third_party/armadillo-1.1.92/include
 
 BOOST_INCLUDE=-I../third_party/boost-1.42/
