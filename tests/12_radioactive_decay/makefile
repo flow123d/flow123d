@@ -1,5 +1,5 @@
-INI_FILES="flow_decay_long2.ini"
-NPROC="1"
+INI_FILES="flow_decay.ini flow_lin_react.ini"
+NPROC="1 2"
 
 test:
 	../run_test.sh ${INI_FILES} ${NPROC}
