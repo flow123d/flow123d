@@ -1,5 +1,6 @@
 INI_FILES="flow_decay.ini flow_lin_react.ini"
-NPROC="1 2"
+NPROC="1"
+#FLOW_PARAMS=" -ksp_atol 1.0e-10 -ksp_rtol 1.0e-10 -ksp_monitor -i input"
 
 test:
-	../run_test.sh ${INI_FILES} ${NPROC}
+	bash ../run_test.sh ${INI_FILES} ${NPROC} #${FLOW_PARAMS}
