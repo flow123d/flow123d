@@ -94,19 +94,19 @@ do
 
 		mv ./err "$SAVE_OUTPUT"
 		mv ./out "$SAVE_OUTPUT"
-		mv ./*.log "$SAVE_OUTPUT"
-		mv ./output/* "$SAVE_OUTPUT"
-		
+		mv ./*.log "$SAVE_OUTPUT" 2>/dev/null
+		mv ./output/* "$SAVE_OUTPUT" 2>/dev/null
+		mv profiler* "$SAVE_OUTPUT" 2>/dev/null
 		
 		#runs ndiff.pl skript with ref and computed output files
 		echo "******************************************"
 		if ! ../run_check.sh "$SAVE_OUTPUT" "$TEST_DIR/ref_output/${INI_FILE%.ini}" "$INI_FILE" "$n"; then
 			ERROR=1
+		else 
+		  mv "${TEST_DIR}/diff.log" "$SAVE_OUTPUT"
+		  mv "${TEST_DIR}/stdout_diff.log" "$SAVE_OUTPUT"
 		fi
 		echo "******************************************"
-	
-		mv "${TEST_DIR}/diff.log" "$SAVE_OUTPUT"
-		mv "${TEST_DIR}/stdout_diff.log" "$SAVE_OUTPUT"
   
 	done
 done

@@ -30,10 +30,13 @@
 # Get actual output dir as the first argument
 OUT="$1"
 
+# directory with reference output
 REF_OUT="$2"
 
 # optional arguments to proper displaying
+# ini file
 INI=$3
+# num. of  procs
 n=$4
 
 # file comparison script, if not running as part of run_test.sh, set absolute path to ndiff
@@ -41,8 +44,9 @@ n=$4
 NDIFF="${TEST_DIR}/../ndiff.pl"
 
 if [ ! -x "$NDIFF" ]
-then echo "can not find or run ndiff.pl"
-exit 1
+then 
+  echo "can not find or run ndiff.pl"
+  exit 1
 fi
 
 INI="${INI##*/}"
@@ -50,7 +54,12 @@ TEST="${TEST_DIR##*/}"
 SCRIPT_PATH_DIR="`pwd`"
 ERROR=0
 
-cd "$REF_OUT"
+
+if ! cd "$REF_OUT" 
+then
+  echo "Error: can not change to directory with reference output!"
+  exit 1 
+fi
 	
 #VAR which contains names of files
 VAR=`ls`
