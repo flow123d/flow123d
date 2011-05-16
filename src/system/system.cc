@@ -595,9 +595,7 @@ bool skip_to( FILE *const in, const char *section )
 }
 
 IONameHandler* IONameHandler::instance = NULL;
-/*!
- * @brief Returns instance of IONameHandler.
- */
+
 IONameHandler* IONameHandler::get_instance() {
 	if (!instance) {
 		instance = new IONameHandler();
@@ -633,30 +631,20 @@ void IONameHandler::initialize_output_dir() {
 		this->output_dir = this->root_dir;
 	}
 }
-/*!
- * @brief Returns value of root_dir variable.
- */
+
 std::string IONameHandler::get_root_dir() {
 	return this->root_dir;
 }
-/*!
- * @brief Returns value of output_dir variable.
- */
+
 std::string IONameHandler::get_output_dir() {
 	return this->output_dir;
 }
-/*!
- * @brief Returns absolute path to given file.
- * @param[in] file_name Filename relatively to root directory.
- */
+
 std::string IONameHandler::get_input_file_name(std::string file_name) {
 	std::string file = this->get_root_dir() + "/" + file_name;
 	return substitute_value(file);
 }
-/*!
- * @brief Returns absolute path to given output file.
- * @param[in] file_name Filename relatively to output directory.
- */
+
 std::string IONameHandler::get_output_file_name(std::string file_name) {
 	std::string file = this->get_output_dir() + "/" + file_name;
 	return substitute_value(file);
@@ -672,20 +660,11 @@ std::string IONameHandler::substitute_value(std::string file) {
 	return file;
 }
 
-/*!
- * @brief Add new item to place holder.
- * @param[in] key Key of new item.
- * @param[in] val Value of new item.
- */
 bool IONameHandler::add_placeholder_item(std::string key, std::string value) {
 	this->placeholder.insert( pair<std::string,std::string>(key,value));
 	return true;
 }
-/*!
- * @brief Removes the key (and its corresponding value) from place holder.
- * @param[in] key The key that needs to be removed.
- * @return The value to which the key had been mapped in place holder, or empty string if the key did not have a mapping.
- */
+
 /*std::string IONameHandler::remove_placeholder_item(std::string key) {
 	std::string ret = "";
 	for (std::map<std::string,std::string>::iterator it = this->placeholder.begin(); it != this->placeholder.end(); it++) {
