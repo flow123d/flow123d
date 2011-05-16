@@ -528,6 +528,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
      getchar();
      */
 
+        
     MatZeroEntries(tm);
     MatZeroEntries(bcm);
 
@@ -544,6 +545,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     max_sum = 0.0;
     aii = 0.0;
+    START_TIMER("matrix_assembly_mpi");
+
     for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh->element(el_4_loc[loc_el]);
         new_i = row_4_el[elm.index()];
@@ -587,7 +590,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     aii -= (elm->side[si]->flux / (elm->volume * elm->material->por_m));
             } // end same dim     //ELEMENT_SIDES
 
-
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
             FOR_NEIGH_ELEMENTS(elm->neigh_vb[n],s)
                 if (elm.id() != ELEMENT_FULL_ITER(elm->neigh_vb[n]->element[s]).id()) {
@@ -600,6 +602,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     if (elm->neigh_vb[n]->side[s]->flux < 0.0)
                         aii += elm->neigh_vb[n]->side[s]->flux / (elm->volume * elm->material->por_m);
                 } // end comp model
+	
         FOR_ELM_NEIGHS_VV(elm,n) { //non-comp model
             ngh = elm->neigh_vv[n];
             FOR_NEIGH_ELEMENTS(ngh,s) {
@@ -618,7 +621,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 }
             }
         } // end non-comp model
-
+        
         MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
 
         if (fabs(aii) > max_sum)
@@ -630,15 +633,16 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     double glob_max_sum;
 
     MPI_Allreduce(&max_sum,&glob_max_sum,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD);
-
-    MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
-    MatAssemblyBegin(bcm, MAT_FINAL_ASSEMBLY);
-
     max_step = 1 / glob_max_sum;
     time_step = 0.9 / glob_max_sum;
+    
+    MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
+    MatAssemblyBegin(bcm, MAT_FINAL_ASSEMBLY);
+    
 
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(bcm, MAT_FINAL_ASSEMBLY);
+
 
 
     // MPI_Barrier(PETSC_COMM_WORLD);
@@ -1045,19 +1049,22 @@ void ConvectionTransport::transport_until_time(double time_interval) {
     	int step = 0;
     	register int t;
     	// Chemistry initialization
-    	cout << "Just for fun" << endl;
     	Linear_reaction *decayRad = new Linear_reaction(n_substances, time_step);
     	bool semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
+	
+	if (semchem_on) priprav();
+
 
 	    //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
 	    for (t = 1; t <= steps; t++) {
 	    	time += time_step;
 	     //   SET_TIMER_SUBFRAMES("TRANSPORT",t);  // should be in destructor as soon as we have class iteration counter
+		START_TIMER("transport_step");
 	    	transport_one_step();
+		END_TIMER("transport_step");
 
 		     // Semchem initialization
 	    	    if ((t == 1) && (semchem_on == true)) {
-	    	       priprav();
 	    	    }
 		     // Calling linear reactions and Semchem together
 		    	  for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -1085,12 +1092,19 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 void ConvectionTransport::convection() {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
+    MPI_Barrier(PETSC_COMM_WORLD);
     START_TIMER("TRANSPORT");
     xprintf( Msg, "Calculating transport...");
+    START_TIMER("transport_matrix_assembly");
+    
     create_transport_matrix_mpi();
+    
     compute_time_step();
+    
     transport_matrix_step_mpi(time_step); //matrix scale
+    
     calculate_bc_mpi(); // BC correction vector
+    END_TIMER("transport_matrix_assembly");
 
     /*  }
      else{
@@ -1099,7 +1113,9 @@ void ConvectionTransport::convection() {
      }*/
 
      xprintf( MsgVerb, "  %d computing cycles, %d writing steps\n",steps ,((int)(steps / save_step) + 1) );
+     START_TIMER("transport_steps");
      transport_until_time(0.0);
+     END_TIMER("transport_steps");
      xprintf( Msg, "O.K.\n");
      transport_output_finish();
 }

@@ -176,8 +176,7 @@ double **Linear_reaction::compute_reaction(double **concentrations, int n_subst,
 	int cols, rows, both;
 	double *prev_conc = (double *)xmalloc(n_subst * sizeof(double));
 
-	if(reaction_matrix == NULL){
-		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
+	if (reaction_matrix == NULL){
 		return NULL;
 	}
 
