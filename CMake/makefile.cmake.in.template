@@ -10,6 +10,14 @@
 set(PETSC_DIR "$ENV{PETSC_DIR}")
 set(PETSC_ARCH "$ENV{PETSC_ARCH}")
 
-### current_flow ###
+### verbose mode ###
+# option to produce more verbose compiling
+#set(CMAKE_VERBOSE_MAKEFILE on)
+
+### machine ###
 # specify machine dependent filename for execute flow123d 
-set(CURRENT_FLOW "generic_flow.sh")
+set(MACHINE "generic")
+
+### mpiexec ###
+# specify path to mpiexec (default value is PETSc mpiexec)
+#set(MPIEXEC "/path/to/mpiexec")

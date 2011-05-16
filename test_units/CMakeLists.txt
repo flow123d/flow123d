@@ -1,5 +1,6 @@
 
 if(GTEST_FOUND)
+  message(STATUS "Gtest tests allowed")
   add_executable(ioNameHandlerTest system/io_name_handler.cc)
 
   set_target_properties(ioNameHandlerTest PROPERTIES
@@ -10,3 +11,9 @@ if(GTEST_FOUND)
   add_test(NAME io_name_handler 
     COMMAND ioNameHandlerTest -o /output -i input)
 endif(GTEST_FOUND)
+
+if(CppUnit_FOUND)
+  message(STATUS "CppUnit tests allowed")
+
+
+endif(CppUnit_FOUND)

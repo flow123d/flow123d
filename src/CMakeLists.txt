@@ -2,7 +2,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 message(STATUS "Include directories: ${Flow123d_SOURCE_DIR}")
 
-set(libFlow123d_SRCS
+set(libflow123d_SRCS
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
     flow/local_matrix.cc
@@ -26,7 +26,6 @@ set(libFlow123d_SRCS
     convert.cc
     la_linsys.cc
     la_schur.cc
-#    main.cc
     materials.cc
     msh_gmshreader.cc
     output.cc
@@ -39,28 +38,58 @@ set(libFlow123d_SRCS
     xio.cc
 )
 
-set(libFlow123d_C_SRCS
+set(libflow123d_C_SRCS
     semchem/che_semchem.c
     semchem/cti_ichnew.c
 )
 
-foreach(file ${libFlow123d_C_SRCS})
-  set(libFlow123d_SRCS ${libFlow123d_SRCS} ${file}c)
+foreach(file ${libflow123d_C_SRCS})
+#  set(libflow123d_SRCS ${libFlow123d_SRCS} ${file}c)
+  list(APPEND libflow123d_SRCS ${file}c)
   configure_file(${file} ${file}c COPYONLY)
 endforeach(file)
 
 # add build targets
 link_directories(${Flow123dLinkDirectories})
-add_library(Flow123d ${libFlow123d_SRCS})
+add_library(Flow123d ${libflow123d_SRCS})
 set_target_properties(Flow123d PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
-
+ 
 add_executable(flow123d main.cc)
-add_custom_command(TARGET flow123d POST_BUILD 
-  COMMAND ln -s ${CMAKE_SOURCE_DIR}/bin/${CURRENT_FLOW} ${CMAKE_BINARY_DIR}/bin/current_flow
-)
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/bin/current_flow)
+# creates soft link to machine dependent flow runner
+if(EXISTS ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh)
+  add_custom_command(TARGET flow123d POST_BUILD
+    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/current_flow 
+    COMMAND ln ARGS -s ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh ${CMAKE_BINARY_DIR}/bin/current_flow
+  )
+else(EXISTS ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh)
+  add_custom_command(TARGET flow123d POST_BUILD
+    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/current_flow 
+    COMMAND ln ARGS -s ${CMAKE_SOURCE_DIR}/bin/generic_flow.sh ${CMAKE_BINARY_DIR}/bin/current_flow
+  )
+endif(EXISTS ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh)
+set_source_files_properties(${CMAKE_BINARY_DIR}/bin/current_flow PROPERTIES GENERATED true SYMBOLIC true)
+
+#creates soft link to mpiexec
+if(EXISTS ${MPIEXEC})
+  add_custom_command(TARGET flow123d POST_BUILD
+    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/mpiexec
+    COMMAND ln ARGS -s ${MPIEXEC} ${CMAKE_BINARY_DIR}/bin/mpiexec
+  )
+  set_source_files_properties(${CMAKE_BINARY_DIR}/bin/mpiexec PROPERTIES GENERATED true SYMBOLIC true)
+elseif(EXISTS ${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec)
+  add_custom_command(TARGET flow123d POST_BUILD
+    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/mpiexec
+    COMMAND ln ARGS -s ${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec ${CMAKE_BINARY_DIR}/bin/mpiexec
+  )
+  set_source_files_properties(${CMAKE_BINARY_DIR}/bin/mpiexec PROPERTIES GENERATED true SYMBOLIC true)
+else()
+  message(WARNING "Softlink to mpiexec wasn't created.")
+endif()
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/bin/current_flow;${CMAKE_BINARY_DIR}/bin/mpiexec")
+
+
 target_link_libraries(flow123d ${PETSC_LIBRARIES} ${PARMETIS_LIBRARIES} Flow123d)
 set_target_properties(flow123d PROPERTIES
    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
