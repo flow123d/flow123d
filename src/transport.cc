@@ -177,8 +177,7 @@ void ConvectionTransport::transport_init() {
     frame = 0;
     time = 0;
 
-  //  problem->material_database->read_transport_materials(dual_porosity, sorption,
-  //          n_substances);
+    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
 
 
 
@@ -802,7 +801,6 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, MaterialDatabase
     alpha = material->alpha[sbi];
     pcm = pconc[MOBILE][sbi][elm_pos];
     pci = pconc[IMMOBILE][sbi][elm_pos];
-
     // ---compute average concentration------------------------------------------
     conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
 

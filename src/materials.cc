@@ -151,7 +151,7 @@ void MaterialDatabase::read_transport_materials(bool dual_porosity, bool sorptio
 
     fin = xfopen(file_name.c_str(), "rt");
 
-    if (dual_porosity) {
+    //if (dual_porosity) {   - have to be read for all transport problems, not only for dual porosity problems
         // read dual porosity
         found = skip_to(fin, "$DualPorosity");
         if (found) {
@@ -179,7 +179,7 @@ void MaterialDatabase::read_transport_materials(bool dual_porosity, bool sorptio
             }
             valid_sections["DualPorosity"] = count;
         }
-    }
+   // }
 
     if ( sorption ) {
 	    xrewind(fin);
