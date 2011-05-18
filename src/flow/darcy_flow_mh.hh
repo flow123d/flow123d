@@ -53,6 +53,7 @@
 #include <time_governor.hh>
 #include <field_p0.hh>
 #include <materials.hh>
+#include "equation.hh"
 
 /// external types:
 class LinSys;
@@ -77,31 +78,17 @@ class SparseGraph;
  * make interface of DarcyFlowMH a general interface of time depenedent model. ....
  */
 
-class DarcyFlowMH {
+class DarcyFlowMH : public EquationBase {
 public:
-    virtual void compute_one_step() =0;
-    virtual void compute_until( double time);
-    inline const TimeGovernor& get_time()
-        {return *time;}
-    inline  Mesh *get_mesh()
-        {return mesh;}
-    inline const FieldP0<double> *get_sources()
-        {return sources;}
-    inline  MaterialDatabase *get_mat_base()
-        {return mat_base;}
-
-    virtual double * solution_vector() =0;
-
+    FieldP0<double>  * get_sources()
+        { return sources; }
 protected:
     virtual void postprocess() =0;
     //virtual void balance();
     //virtual void integrate_sources();
 
 protected:
-    Mesh *mesh;
-    MaterialDatabase *mat_base;
     FieldP0<double> *sources;
-    TimeGovernor *time;
 };
 
 
@@ -132,7 +119,8 @@ class DarcyFlowMH_Steady : public DarcyFlowMH
 public:
     DarcyFlowMH_Steady(Mesh *mesh, MaterialDatabase *mat_base_in);
     virtual void compute_one_step();
-    virtual double * solution_vector();
+    virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
+    virtual void get_parallel_solution_vector(Vec &vector);
     virtual void postprocess() {};
     ~DarcyFlowMH_Steady();
 

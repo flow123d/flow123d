@@ -48,13 +48,6 @@
 #include "flow/local_matrix.h"
 
 
-void DarcyFlowMH::compute_until(double end_time)
-{
-    ASSERT(NONULL(time),"Time governor was not created.\n");
-    while ( ! time->is_end() ) compute_one_step();
-}
-
-
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
 // - do it in parallel:
@@ -217,9 +210,15 @@ void DarcyFlowMH_Steady::compute_one_step() {
 
 }
 
-double * DarcyFlowMH_Steady::solution_vector()
+void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
 {
-    return solution;
+    vec=solution;
+    vec_size = size;
+}
+
+void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
+{
+    vec=schur0->get_solution();
 }
 
 

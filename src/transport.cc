@@ -13,6 +13,7 @@
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
+ *
  * You should have received a copy of the GNU General Public License along with this program; if not,
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
@@ -1061,9 +1062,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	    	transport_one_step();
 		END_TIMER("transport_step");
 
-		     // Semchem initialization
-	    	    if ((t == 1) && (semchem_on == true)) {
-	    	    } //function priprav(); is probaly missing
+
 		     // Calling linear reactions and Semchem together
 		    	  for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
 		    		 START_TIMER("decay_step");

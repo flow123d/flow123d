@@ -75,11 +75,12 @@ void DarcyFlowMHOutput::postprocess() {
 
 void DarcyFlowMHOutput::make_side_flux() {
     int li, soi;
+    unsigned int sol_size;
     double *sol;
     struct Side *sde;
 
     soi = 0;
-    sol = darcy_flow->solution_vector();
+    darcy_flow->get_solution_vector(sol, sol_size);
     FOR_ELEMENTS(ele)
     for (li = 0; li < ele->n_sides; li++) {
         sde = ele->side[ li ];
@@ -94,10 +95,11 @@ void DarcyFlowMHOutput::make_side_flux() {
 
 void DarcyFlowMHOutput::make_element_scalar() {
     int soi;
+    unsigned int sol_size;
     double *sol;
 
     soi = mesh->n_sides;
-    sol = darcy_flow->solution_vector();
+    darcy_flow->get_solution_vector(sol, sol_size);
     FOR_ELEMENTS(ele) ele->scalar = sol[ soi++ ];
 }
 
@@ -262,10 +264,11 @@ void DarcyFlowMHOutput::make_sides_scalar() {
     struct Edge *edg;
     double *sol;
     int soi, si;
+    unsigned int sol_size;
     struct Side *sde;
 
     soi = mesh->n_sides + mesh->n_elements();
-    sol = darcy_flow->solution_vector();
+    darcy_flow->get_solution_vector(sol, sol_size);
 
     FOR_EDGES(edg) {
         for (si = 0; si < edg->n_sides; si++) {

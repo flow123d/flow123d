@@ -213,6 +213,7 @@ sub readfile {
 	my $line_no;	
 	my $float;
 	my @file_list;
+	my $float_regexp = qr/([+-.0-9]+(?:[Ee][+-]?\d+)?)\b/;
 	
 	open FILE, $fname  or die "$!  \"$fname\" "; # or return the system error message
 	# read all lines
@@ -232,11 +233,25 @@ sub readfile {
 # this match only real number format		 
 #		while ( s/([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee](?:[+-]?\d+))?)\b// ) {
 # this match more strings, but it is faster	
-		while ( s/([+-.0-9]+(?:[Ee][+-]?\d+)?)\b// ) {
+#		/([+-.0-9]+(?:[Ee][+-]?\d+)?)\b/
+#
+		while ( s/$float_regexp// ) {
 			#print "match: <$1> line: $_";
 			$float=$1+0;	# cast to float -  does perl remember that we store number not string			
 			push(@{$reals},$float);
-		}	
+		}
+		
+		# this is little bit faster, but there is some bug  
+		#@line_list=split;
+		#for($i=0;$i<$line_list;$i++) {
+		#    if( is_float( $line_list[$i] ) ) {
+                #        $float=$line_list[$i]+0;
+                #        $line_list[$i]='';
+		#	push(@{$reals},$float);
+		#    }
+                #}
+		#$_=join @line_list;
+
 		s/\r//;	# remove CR (for windows compatibility)
 		eval $input_filter; # input filter command s/// ...
 		
