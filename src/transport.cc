@@ -1063,14 +1063,18 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 
 		     // Semchem initialization
 	    	    if ((t == 1) && (semchem_on == true)) {
-	    	    }
+	    	    } //function priprav(); is probaly missing
 		     // Calling linear reactions and Semchem together
 		    	  for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+		    		 START_TIMER("decay_step");
 		    	   	 (*decayRad).compute_reaction(pconc[MOBILE], n_substances, loc_el);
 		    	     if (dual_porosity == true) {
 		    	    	(*decayRad).compute_reaction(pconc[IMMOBILE], n_substances, loc_el);
 		    	     }
-		    	     if(semchem_on == true) che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
+		    	     END_TIMER("decay_step");
+		    	     START_TIMER("semchem_step");
+		    	     if(semchem_on == true) che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
+		    	     END_TIMER("semchem_step");
 		    	  }
 
 	        step++;
