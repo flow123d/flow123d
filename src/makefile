@@ -62,6 +62,9 @@ $(OBJS)/constantdb.o\
 $(OBJS)/msh_gmshreader.o\
 $(OBJS)/materials.o\
 $(OBJS)/output.o\
+$(OBJS)/output_vtk.o\
+$(OBJS)/output_pos.o\
+$(OBJS)/output_tmp.o\
 $(OBJS)/solve.o\
 $(OBJS)/problem.o\
 $(OBJS)/main.o\

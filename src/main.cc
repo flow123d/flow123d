@@ -199,8 +199,8 @@ int main(int argc, char **argv) {
  * FUNCTION "MAIN" FOR CONVERTING FILES TO POS
  */
 void main_convert_to_pos(struct Problem *problem) {
-    // Write outputs
-    output(problem);
+    // TODO: write outputs
+    xprintf(Err, "Not implemented yet in this version\n");
 }
 
 /**
@@ -223,15 +223,19 @@ void main_compute_mh(struct Problem *problem) {
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
-void main_compute_mh_unsteady_saturated(struct Problem *problem) {
+void main_compute_mh_unsteady_saturated(struct Problem *problem)
+{
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
     char * output_file=OptGetFileName("Output", "Output_file", "\\");
+    OutputTime *output_time;
+    int i, rank;
+
+
+    if(rank == 0) {
+        output_time = new OutputTime(mesh, output_file);
+    }
     char * str_output_file = (char *)IONameHandler::get_instance()->get_output_file_name(output_file).c_str();
-    //output_flow_field_init(problem);
-    //        output_flow_field_in_time(problem,0);
-    //output_init(problem);
-    output_msh_init_vtk_serial_ascii(str_output_file);
+
     DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(mesh, problem->material_database);
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
 
@@ -242,28 +246,30 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem) {
     double save_step=OptGetDbl("Global", "Save_step", "1.0");
     double save_time=0.0;
 
-    int out_step=0;
-
     while (! water_time.is_end()) {
         water->compute_one_step();
         water_output->postprocess();
 
         if ( water_time.ge( save_time ) )  {
 
-            //output_flow_field_in_time(problem, problem->water->get_time());
-            //output_time(problem, problem->water->get_time());
-            output_flow_time_vtk_serial_ascii(mesh,water_time.t(),out_step,str_output_file);
-            out_step++;
+            if(rank == 0) {
+                output_time->get_data_from_mesh();
+                // call output_time->register_node_data(name, unit, 0, data) to register other data on nodes
+                // call output_time->register_elem_data(name, unit, 0, data) to register other data on elements
+                output_time->write_data(water_time.t());
+                output_time->free_data_from_mesh();
+            }
+
             save_time+=save_step;
         }
     }
-    output_msh_finish_vtk_serial_ascii(str_output_file);
 }
 
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR STEADY SATURATED FLOW
  */
-void main_compute_mh_steady_saturated(struct Problem *problem) {
+void main_compute_mh_steady_saturated(struct Problem *problem)
+{
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int rank;
@@ -292,9 +298,19 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 
-
     water_output->postprocess();
-    output(problem);
+
+    /* Write static data to output file */
+    if (rank == 0) {
+        const char* out_fname = OptGetFileName("Output", "Output_file", NULL);
+        Output *output = new Output(mesh, string(out_fname));
+
+        // call output->register_node_data(name, unit, data) here to register other data on nodes
+        // call output->register_elem_data(name, unit, data) here to register other data on elements
+        output->write_data();
+
+        delete output;
+    }
 
     // pracovni vystup nekompatibilniho propojeni
     // melo by to byt ve water*
@@ -359,7 +375,17 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
      */
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
+        OutputTime *output_time = NULL;
+
+/*        if (rank == 0) {
+            output_time = new OutputTime(mesh, transport->transport_out_fname);
+        }*/
+
     	problem->otransport->convection();
+
+/*        if(output_time != NULL) {
+            delete output_time;
+        }*/
     }
     /*
         if (OptGetBool("Transport",  "Reactions", "no") == true) {
@@ -369,12 +395,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
         //if (rank == 0) {
 
         //}
-	
-        
-       // if (problem->transport->mpi != 1) {
-       //     transport_output(transport, 0.0, 0);
-       // }
-        
 
         // TODO: there is an uncoditioned jump in open_temp_files
         // also this function should be moved to btc.*
@@ -397,34 +417,31 @@ void main_compute_mh_steady_saturated(struct Problem *problem) {
 // vim: set cindent:
 //-----------------------------------------------------------------------------
 
+#if 0
+
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
-/*
-void main_compute_mh_density(struct Problem *problem) {
-  Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    int i, j, dens_step, n_step, frame = 0;
+void main_compute_mh_density(struct Problem *problem)
+{
+    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+    int i, j, dens_step, n_step, frame = 0, rank;
     double save_step, stop_time; // update_dens_time
     char statuslog[255];
- //   struct Transport *trans = problem->transport;
     FILE *log;
+    OutputTime *output_time = NULL;
 
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+/*
     transport_output_init(problem->otransport->transport_out_fname);
     transport_output(problem->otransport->out_conc,problem->otransport->substance_name ,problem->otransport->n_substances, 0.0, ++frame,problem->otransport->transport_out_fname);
+*/
 
-    output_init(problem); // time variable flow field
+    if(rank == 0) {
+        output_time = new OutputTime(mesh, problem->otransport->transport_out_fname);
+    }
 
-    //    btc_check(trans);
-
-    /*
-            if(problem->cross_section == true)
-            {
-            select_cross_section_element(problem);
-            output_transport_init_CS(problem);
-            output_transport_time_CS(problem,0);
-            }
-     */
     //save_step = problem->save_step;
     //stop_time = problem->stop_time;
     //trans->update_dens_time = problem->save_step / (ceil(problem->save_step / trans->dens_step));
@@ -433,8 +450,6 @@ void main_compute_mh_density(struct Problem *problem) {
 
     // DF problem - I don't understend to this construction !!!
     //problem->save_step = problem->stop_time = trans->update_dens_time;
-    /*  printf("\n%d\t%d\t%f\n",dens_step,n_step,update_dens_time );
-      getchar(); */
 
 
     /*
@@ -467,8 +482,7 @@ void main_compute_mh_density(struct Problem *problem) {
             //problem->water->solve();
             restart_iteration_C(problem);
             //postprocess(problem);
-            convection(trans);
-            // 	      	output( problem );
+            convection(trans, output_time);
 
             if (trans->dens_implicit == 0) {
                 xprintf(Msg, "no density iterations (explicit)", j);
@@ -477,28 +491,16 @@ void main_compute_mh_density(struct Problem *problem) {
             if (compare_dens_iter(problem) && (j > 0)) {
                 break; //at least one repeat of iteration is necessary to update both conc and pressure
             }
-            //xprintf( Msg, "repeat dens iter %d \n", j );
-        }
-        if (trans -> write_iterations == 0) {
-        //    transport_output(problem->transport, i * problem->time_step, ++frame);
         }
 
-        if ((trans -> write_iterations == 0) && (((i + 1) % n_step == 0) || (i == (dens_step - 1)))) {
-        //    transport_output(problem->transport, (i + 1) * problem->stop_time, ++frame);
-        //    output_time(problem, (i + 1) * problem->stop_time);
-
-            //                      output_transport_time_BTC(trans, (i+1) * trans->time_step);
-
-
-             //                       if(problem->cross_section == true)
-             //                       output_transport_time_CS(problem, (i+1) * problem->stop_time);
-
-        }
         xprintf(Msg, "step %d finished at %d density iterations\n", i, j);
         xfprintf(log, "%f \t %d\n", (i + 1) * trans->update_dens_time, j); // Status LOG
     }
 
-    transport_output_finish(problem->otransport->transport_out_fname);
-    output(problem);
+    if(rank == 0) {
+        delete output_time;
+    }
+
     xfclose(log); */
 //}
+#endif

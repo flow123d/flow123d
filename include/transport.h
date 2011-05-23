@@ -40,6 +40,8 @@
 
 struct BTC;
 
+class OutputTime;
+
 //=============================================================================
 // TRANSPORT
 //=============================================================================
@@ -59,14 +61,13 @@ public:
 	~ConvectionTransport();
 	void create_transport_matrix_mpi(); //
 	void convection(); // upravit
-	void output(); // vytvorit
 	void transport_one_step();
 	void transport_until_time(double time_interval);
 
+    double ***out_conc;
+    int              n_substances;    // # substances transported by water
+    char            **substance_name;   // Names of substances
 private:
-	void transport_output(); //
-	void transport_output_init(); //
-	void transport_output_finish(); //
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
 	void transport_init(); //
@@ -109,9 +110,7 @@ private:
             double ***pconc;
 
             // global
-            double ***out_conc;
-        	int		 		 n_substances;    // # substances transported by water
-        	char			**substance_name;	// Names of substances
+
         	std::string		transport_out_fname;// Name of file of trans. output
         	int              dens_step;            //
         	double 			update_dens_time;
@@ -200,6 +199,8 @@ private:
             double time;
             int save_step;
             int steps;
+
+            OutputTime *output_time;
 
 };
 

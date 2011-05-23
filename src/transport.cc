@@ -128,8 +128,9 @@ void ConvectionTransport::get_reaction(int i,oReaction *reaction) {
 //=============================================================================
 void ConvectionTransport::transport_init() {
     //struct Transport *transport = problem->transport;
-//	mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+	mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
     char *snames, *sscales;
+    int rank;
     F_ENTRY;
 
     // [Density]
@@ -188,8 +189,20 @@ void ConvectionTransport::transport_init() {
         alloc_transport_structs_mpi();
         fill_transport_vectors_mpi();
 
-        transport_output_init();
-        transport_output();
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+        if(rank==0) {
+            output_time = new OutputTime(mesh, transport_out_fname);
+
+            output_vector_gather();
+
+            /* TODO: try to register out_conc */
+            output_time->get_data_from_transport(this);
+            output_time->write_data(time);
+            output_time->free_data_from_transport();
+        } else {
+            output_time = NULL;
+        }
 
     INPUT_CHECK(!(n_substances < 1 ),"Number of substances must be positive\n");
 }
@@ -973,7 +986,6 @@ void ConvectionTransport::compute_sorption(double conc_avg, vector<double> &sorp
 //      TIME STEP (RECOMPUTE)
 //=============================================================================
 void ConvectionTransport::compute_time_step() {
-
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
     save_step = (int) ceil(problem_save_step / time_step); // transport  rev
@@ -1062,7 +1074,6 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	    	transport_one_step();
 		END_TIMER("transport_step");
 
-
 		     // Calling linear reactions and Semchem together
 		    	  for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
 		    		 START_TIMER("decay_step");
@@ -1080,7 +1091,14 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	        //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
 	        if ((save_step == step) || (write_iterations)) {
 	            xprintf( Msg, "Output\n");
-	            transport_output();
+	            if(output_time != NULL) {
+	                output_vector_gather();
+
+	                /* TODO: try to register out_conc */
+	                output_time->get_data_from_transport(this);
+	                output_time->write_data(time);
+	                output_time->free_data_from_transport();
+	            }
 	          //  if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
 	               // output_time(problem, t * time_step); // time variable flow field
 	            step = 0;
@@ -1118,7 +1136,9 @@ void ConvectionTransport::convection() {
      transport_until_time(0.0);
      END_TIMER("transport_steps");
      xprintf( Msg, "O.K.\n");
-     transport_output_finish();
+     if(output_time != NULL) {
+         delete output_time;
+     }
 }
 //=============================================================================
 //      OUTPUT VECTOR GATHER
@@ -1147,80 +1167,7 @@ void ConvectionTransport::output_vector_gather() {
     VecScatterDestroy(vconc_out_scatter);
     ISDestroy(is);
 }
-//=============================================================================
-//      TRANSPORT OUTPUT
-//=============================================================================
-//void transport_output(double ***out_conc,char **subst_names ,int n_subst,double time, int frame, char *transport_out_fname) {
-void ConvectionTransport::transport_output() {
-	int rank;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	output_vector_gather();
-	if (rank == 0){
-		switch (ConstantDB::getInstance()->getInt("Pos_format_id")) {
-		case POS_BIN:
-			output_transport_time_bin( out_conc, substance_name ,n_substances, time, frame, (char*)transport_out_fname.c_str());
-			break;
-		case POS_ASCII:
-			output_transport_time_ascii(out_conc, substance_name ,n_substances, time, frame, (char*)transport_out_fname.c_str());
-			break;
-		case VTK_SERIAL_ASCII:
-			output_transport_time_vtk_serial_ascii(out_conc, substance_name ,n_substances, time, frame, (char*)transport_out_fname.c_str());
-			break;
-		case VTK_PARALLEL_ASCII:
-			xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
-			break;
-		}
-	}
-	frame++;
-}
-//=============================================================================
-//      TRANSPORT OUTPUT INIT
-//=============================================================================
-//void transport_output_init(char *transport_out_fname) {
-void ConvectionTransport::transport_output_init() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-	int rank;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	if (rank == 0){
-		switch (ConstantDB::getInstance()->getInt("Pos_format_id")) {
-		case POS_BIN:
-			output_msh_init_bin(mesh, (char*)transport_out_fname.c_str());
-			break;
-		case POS_ASCII:
-			output_msh_init_ascii(mesh, (char*)transport_out_fname.c_str());
-			break;
-    	case VTK_SERIAL_ASCII:
-    		output_msh_init_vtk_serial_ascii( (char*)transport_out_fname.c_str());
-    		break;
-    	case VTK_PARALLEL_ASCII:
-    		xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
-    		break;
-		}
-	}
-}
-//=============================================================================
-//      TRANSPORT OUTPUT FINISH
-//=============================================================================
-void ConvectionTransport::transport_output_finish() {
-	int rank;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	if (rank == 0){
-		switch (ConstantDB::getInstance()->getInt("Pos_format_id")) {
-		case POS_BIN:
-			/* There is no need to do anything for this file format */
-			break;
-		case POS_ASCII:
-			/* There is no need to do anything for this file format */
-			break;
-		case VTK_SERIAL_ASCII:
-			output_msh_finish_vtk_serial_ascii((char*)transport_out_fname.c_str());
-			break;
-		case VTK_PARALLEL_ASCII:
-			xprintf(UsrErr, "VTK_PARALLEL_ASCII: not implemented yet\n");
-			break;
-		}
-	}
-}
+
 //=============================================================================
 //      COMPARE DENSITY ITERATION
 //=============================================================================

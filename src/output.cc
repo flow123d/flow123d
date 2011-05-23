@@ -22,1984 +22,897 @@
  * $LastChangedBy$
  * $LastChangedDate$
  *
- * @file output.cc
- * @ingroup io
+ * @file    output.cc
  * @brief   The functions for all outputs. This file should be split according to the
  *          quantities to output. In this general file, there should remain only general output functions.
  *
  */
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
 
-#include "system/system.hh"
 #include "xio.h"
 #include "output.h"
-#include "system/math_fce.h"
 #include "mesh/mesh.h"
-#include "convert.h"
 
-#include <mpi.h>
-#include <petsc.h>
+// TODO: remove in the future
+#include "constantdb.h"
 
-#include "ppfcs.h"  //FCS - DOPLNIT
+#include <string>
 
-// following deps. should probably be removed
-#include "mesh/boundaries.h"
-#include "problem.h"
-
-#include "transport.h"
-#include "mesh/neighbours.h"
-
-static void output_compute_mh(struct Problem *problem);
-static void output_flow_field_in_time_2(struct Problem *problem,double time);
-static void write_elm_position_to_binary_output(ElementIter elm,FILE *file);
-static void write_flow_vtk_serial(FILE *out);
-static void write_flow_ascii_data(FILE *out,struct Problem *problem);
-static void write_flow_binary_data(FILE *out,struct Problem *problem);
-
-//=============================================================================
-// GENERAL OUTPUT ROUTINE
-//=============================================================================
-// TODO: zrusit. Kazdy modul by mel mit vlastni volani vystupnich funkci
-// TODO: prevod do pos (pokud ho vubec podporovat) by mel byt proveden pri destrukci vystupniho objektu
-void output( struct Problem *problem )
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        int *data_data,
+        unsigned int size)
 {
-	// TODO - tohle by melo asi prijit jinam
-        int my_proc;
-        MPI_Comm_rank(PETSC_COMM_WORLD,&my_proc);
-        if (my_proc != 0) return;
-
-        if ((ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) &&
-                (ConstantDB::getInstance()->getInt("Problem_type") == STEADY_SATURATED || ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY)){
-                switch (ConstantDB::getInstance()->getInt("Out_file_type"))
-                {
-                        case GMSH_STYLE:
-                                output_compute_mh( problem );
-                        break;
-                        case FLOW_DATA_FILE:
-                                output_flow_field_init(problem);
-                                output_flow_field_in_time( problem, 0 );
-                        break;
-                        case BOTH_OUTPUT:
-                        // pridano -- upravy Ji. -- oba soubory najednou
-                                output_compute_mh( problem );
-                                output_flow_field_init(problem);
-                                output_flow_field_in_time_2( problem, 0 );
-                        break;
-                }
-
-
-// FTRANS           if (problem->ftrans_out == true && problem->type == STEADY_SATURATED)
-//                	output_veloc_ftrans(problem, 0);
-
-
-                if (OptGetBool("Transport", "Transport_on", "no") == true)
-                        {
-                //        output_transport_convert(problem);
-                        //if (problem->type == PROBLEM_DENSITY)
-                        //	output_convert(problem);    // time variable flow field
-                        }
-
-
-        }
-        if (ConstantDB::getInstance()->getInt("Goal") == CONVERT_TO_POS)
-                output_convert_to_pos(problem);
-
-        //flow_cs(problem);
-
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_ARRAY_INT_SCA;
+    comp_num = 1;
+    num = size;
 }
-//=============================================================================
-// OUTPUT ROUTINE FOR COMPUTING_MH
-//=============================================================================
-// TODO: prepinani typu vystupu by melo byt dano pri konstrukci; vystup presunout do proudeni
-static void output_compute_mh(struct Problem *problem)
+
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        float *data_data,
+        unsigned int size)
 {
-    FILE *out;
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_ARRAY_FLOAT_SCA;
+    comp_num = 1;
+    num = size;
+}
 
-    ASSERT(!( problem == NULL ),"NULL as argument of function output_compute_mh()\n");
-    if( OptGetBool("Output", "Write_output_file", "no") == false )
-        return;
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        double *data_data,
+        unsigned int size)
+{
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_ARRAY_DOUBLE_SCA;
+    comp_num = 1;
+    num = size;
+}
 
-    std::string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
-    const char* out_fname = output_file.c_str();
-    xprintf( Msg, "Writing flow output files: %s ... ", out_fname);
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        std::vector<int> &data_data)
+{
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_VECTOR_INT_SCA;
+    comp_num = 1;
+    num = data_data.size();
+}
 
-/*
-    // Temporary for debugging, necessary to find better more complicated solution for output of flow time steps
-    if ( problem->type == PROBLEM_DENSITY)
-        out = xfopen( out_fname, "at" );
-*/
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        std::vector< vector<int> > &data_data)
+{
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_VECTOR_INT_VEC;
+    comp_num = 3;
+    num = data_data.size();
+}
 
-    switch(ConstantDB::getInstance()->getInt("Pos_format_id")){
-    case POS_ASCII:
-        out = xfopen( out_fname, "wt" );
-        write_flow_ascii_data(out,problem);
-        break;
-    case POS_BIN:
-        out = xfopen( out_fname, "wb" );
-        write_flow_binary_data(out,problem);
-        break;
-    case VTK_SERIAL_ASCII:
-        out = xfopen( out_fname, "wt");
-        write_flow_vtk_serial(out);
-        break;
-    case VTK_PARALLEL_ASCII:
-        xprintf(Msg, "VTK_PARALLEL_ASCII file format not supported yet\n.");
-        break;
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        std::vector<float> &data_data)
+{
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_VECTOR_FLOAT_SCA;
+    comp_num = 1;
+    num = data_data.size();
+}
+
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        std::vector< vector<float> > &data_data)
+{
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_VECTOR_FLOAT_VEC;
+    comp_num = 3;
+    num = data_data.size();
+}
+
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        std::vector<double> &data_data)
+{
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_VECTOR_DOUBLE_SCA;
+    comp_num = 1;
+    num = data_data.size();
+}
+
+/**
+ * \brief Constructor for OutputData storing names of output data and their
+ * units.
+ */
+OutputData::OutputData(string data_name,
+        string data_units,
+        std::vector< vector<double> > &data_data)
+{
+    name = new string(data_name); units = new string(data_units);
+    data = (void*)&data_data;
+    type = OUT_VECTOR_DOUBLE_VEC;
+    comp_num = 3;
+    num = data_data.size();
+}
+
+/**
+ * \brief Destructor for OutputData
+ */
+OutputData::~OutputData()
+{
+}
+
+/**
+ * \brief This function free data from Mesh
+ */
+void Output::free_data_from_mesh(void)
+{
+    if(node_scalar != NULL) {
+        delete node_scalar->scalars;
+        delete node_scalar;
     }
 
-    xfclose( out );
+    if(element_scalar != NULL) {
+        delete element_scalar->scalars;
+        delete element_scalar;
+    }
 
-    xprintf( Msg, "O.K.\n");
-}
-//==============================================================================
-//      WRITE FLOW BINARY DATA TO THE POS FILE
-//==============================================================================
-// TODO: vystupni metody musi byt nezavisle na tom co vystupuji
-static void write_flow_binary_data(FILE *out,struct Problem *problem){
-
-        ElementIter ele;
-
-        Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-        int   view,i,j;
-        int one = 1;
-        double ts = 0;
-        double value;
-
-        char dbl_fmt[16];
-
-        int n_es;
-        struct Neighbour *ngh;
-        struct Side *sde;
-        double vector[3];
-
-        sprintf(dbl_fmt,"%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-
-        char* description = xstrcpy(OptGetStr("Global", "Description", "No description."));
-
-        for(i=0; i < ((signed)strlen(description) - 2);i++)
-                if((description[i] == ' ') || (description[i] == '\t'))
-                        description[i] = '^';
-
-        xfprintf(out, "$PostFormat\n");
-        xfprintf(out, "%g %d %d\n", 1.4, 1, sizeof(double));
-        xfprintf(out, "$EndPostFormat\n");
-        for(view = 0;view < 3;view++){
-                switch(view){
-                        case 0:
-                                xfprintf( out, "$View\n%s^-^p ", description );
-                                break;
-                        case 1:
-                                xfprintf( out, "$View\n%s^-^pc ", description );
-                                break;
-                        case 2:
-                        	xfprintf( out, "$View\n%s^-^pz ", description );
-                                break;
-                }
-
-        xfprintf(out, "1 0 0 0 %d 0 0 %d 0 0 0 0 0 %d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n",mesh->n_lines,mesh->n_triangles,mesh->n_tetrahedras);
-        xfwrite(&one, sizeof(int), 1, out);
-        xfwrite(&ts, sizeof(double), 1, out);
-
-        for(i = 1;i < 4;i++)
-                FOR_ELEMENTS( ele )
-                        if(ele->dim == i){
-                                write_elm_position_to_binary_output(ele,out);
-                                        FOR_ELEMENT_NODES(ele,j)
-                                                switch(view){
-                                                 case 0:
-                                                  xfwrite(&ele->node[j]->scalar,sizeof(double),1,out);
-                                                  break;
-                                                 case 1:
-                                                  xfwrite(&ele->scalar,sizeof(double),1,out);
-                                                  break;
-                                                 case 2:
-                                                  value = ele->scalar + ele->centre[2];
-                                                  xfwrite(&value,sizeof(double),1,out);
-                                                  break;
-                                                 }
-                        }
-                xfprintf(out, "\n$EndView\n");
-        }
-
-	xfprintf( out, "$View\n%s^-^u ", description );
-        xfprintf(out, "1 0 %d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n",mesh->n_elements());
-        xfwrite(&one, sizeof(int), 1, out);
-        xfwrite(&ts, sizeof(double), 1, out);
-	FOR_ELEMENTS( ele ){
-                for(i=0;i<3;i++)
-                        xfwrite(&ele->centre[i],sizeof(double),1,out);
-                for(i=0;i<3;i++)
-                        xfwrite(&ele->vector[i],sizeof(double),1,out);
-        }
-        xfprintf(out, "\n$EndView\n");
-
-        // NB 20
-
-     n_es = 0;
-     FOR_NEIGHBOURS( ngh )
-    	 if(ngh->type == VB_ES)
-    		 n_es++;
-
-     if(n_es > 0){
-     xfprintf( out, "$View\n%s^-^u^comp ", description );
-     xfprintf(out, "1 0 %d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n",n_es);
-     xfwrite(&one, sizeof(int), 1, out);
-     xfwrite(&ts, sizeof(double), 1, out);
-
-     FOR_NEIGHBOURS( ngh )
-    	 if(ngh->type == VB_ES){
-
-    	 ele = ngh->element[0];
-    	 sde = ngh->element[1]->side[ngh->sid[1]];
-
-    	 for(i=0;i<3;i++)
-    		 xfwrite(&ele->centre[i],sizeof(double),1,out);
-
-         for(i=0;i<3;i++)
-        	 vector[i] = sde->normal[i];
-
-         scale_vector(vector,-sde->flux);
-
-         for(i=0;i<3;i++)
-        	 xfwrite(&vector[i],sizeof(double),1,out);
-     }
-
-     xfprintf(out, "\n$EndView\n");
-
-     // END NB 20
-     }
-
-
-     /*
-	xfprintf( out, "$View\n%s^-^Qv ", description );
-        xfprintf(out, "1 0 %d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n",mesh->n_elements());
-        xfwrite(&one, sizeof(int), 1, out);
-        xfwrite(&ts, sizeof(double), 1, out);
-	FOR_ELEMENTS( ele ){
-                for(i=0;i<3;i++)
-                        xfwrite(&ele->centre[i],sizeof(double),1,out);
-
-                switch(ele->dim){
-                        case 1:
-                        case 2:
-                                for(i=0;i<3;i++){
-                                        qvector = ele->vector[i] * ele->material->size;
-                                        xfwrite(&qvector,sizeof(double),1,out);
-                                }
-                                break;
-                        case 3:
-                                flux = 0;
-                                FOR_ELEMENT_SIDES(ele,i)
-                                        if(ele->side[i]->flux > 0)
-                                                flux += ele->side[i]->flux;
-                                        for(j=0;j<3;j++){
-                                                qvector = flux * ele->vector[j] / vector_length(ele->vector);
-                                                xfwrite(&qvector,sizeof(double),1,out);
-                                        }
-                                break;
-                }
-        }
-        xfprintf(out, "\n$EndView\n");
-       */
+    if(element_vector != NULL) {
+        delete element_vector->vectors;
+        delete element_vector;
+    }
 }
 
 /**
- * \brief Write header of VTK file
- * \param[in]	out	The output file
+ * \brief This function gets data from mesh and save them in Output
  */
-static void write_flow_vtk_header(FILE *out)
+void Output::get_data_from_mesh(void)
 {
-    xfprintf(out, "<?xml version=\"1.0\"?>\n");
-    // TODO: test endianess of platform (this is important, when raw data are
-    // saved to the VTK file)
-    xfprintf(out, "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n");
-    xfprintf(out, "<UnstructuredGrid>\n");
-}
-
-/**
- * \brief Write geometry (position of nodes) to the VTK file
- * \param[in] *out The output file
- */
-static void write_flow_vtk_geometry(FILE *out)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
     NodeIter node;
-    char dbl_fmt[16];
-    int tmp;
-
-    /* Digit precision */
-    sprintf(dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-
-    /* Write Points begin*/
-    xfprintf(out, "<Points>\n");
-    /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
-    /* Write own coordinates */
-    tmp = 0;
-    FOR_NODES( node ) {
-        node->aux = tmp;   /* store index in the auxiliary variable */
-
-        xfprintf(out, dbl_fmt, node->getX());
-        xfprintf(out, dbl_fmt, node->getY());
-        xfprintf(out, dbl_fmt, node->getZ());
-
-        tmp++;
-    }
-    /* Write DataArray end */
-    xfprintf(out, "\n</DataArray>\n");
-    /* Write Points end*/
-    xfprintf(out, "</Points>\n");
-}
-
-/**
- * \brief Write topology (connection of nodes) to the VTK file
- * \param[in] *out The output file
- */
-static void write_flow_vtk_topology(FILE *out)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    Node* node;
     ElementIter ele;
-    char dbl_fmt[16];
-    int li, tmp;
 
-    /* Digit precision */
-    sprintf(dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
+    node_scalar = new OutScalar;
+    element_scalar = new OutScalar;
+    element_vector = new OutVector;
 
-    /* Write Cells begin*/
-    xfprintf(out, "<Cells>\n");
-    /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n");
-    /* Write own coordinates */
-    FOR_ELEMENTS(ele) {
-        FOR_ELEMENT_NODES(ele, li) {
-            node = ele->node[li];
-            xfprintf(out, "%d ", node->aux);   /* Write connectivity */
-        }
-    }
-    /* Write DataArray end */
-    xfprintf(out, "\n</DataArray>\n");
-
-    /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n");
-    /* Write own coordinates */
-    tmp = 0;
-    FOR_ELEMENTS(ele) {
-        /* Write number of nodes for each element */
-        switch(ele->type) {
-        case LINE:
-            tmp += VTK_LINE_SIZE;
-            break;
-        case TRIANGLE:
-            tmp += VTK_TRIANGLE_SIZE;
-            break;
-        case TETRAHEDRON:
-            tmp += VTK_TETRA_SIZE;
-            break;
-        }
-        xfprintf(out, "%d ", tmp);
-    }
-    /* Write DataArray end */
-    xfprintf(out, "\n</DataArray>\n");
-
-    /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n");
-    /* Write own coordinates */
-    FOR_ELEMENTS(ele) {
-        /* Write number of nodes for each element */
-        switch(ele->type) {
-        case LINE:
-            xfprintf(out, "%d ", VTK_LINE);
-            break;
-        case TRIANGLE:
-            xfprintf(out, "%d ", VTK_TRIANGLE);
-            break;
-        case TETRAHEDRON:
-            xfprintf(out, "%d ", VTK_TETRA);
-            break;
-        }
-    }
-    /* Write DataArray end */
-    xfprintf(out, "\n</DataArray>\n");
-
-    /* Write Cells end*/
-    xfprintf(out, "</Cells>\n");
-}
-
-/**
- * \brief Write scalar data to the VTK file
- * \param[in]	out		The output file
- * \param[in]	*name	The name of scalar data
- * \param[in]	digit	The digit precision
- * \param[in]	*vector	The vector of scalar values
- */
-static void write_flow_vtk_scalar_ascii(FILE *out, const char *name, const int digit, ScalarFloatVector *vector)
-{
-    char dbl_fmt[16];
-
-    /* Digit precision */
-    sprintf(dbl_fmt, "%%.%dg ", digit);
-
-    /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"Float64\" Name=\"%s\" format=\"ascii\">\n", name);
-    /* Write own data */
-    for(ScalarFloatVector::iterator val=vector->begin(); val != vector->end(); ++val) {
-        xfprintf(out, dbl_fmt, *val);
-    }
-    /* Write DataArray end */
-    xfprintf(out, "\n</DataArray>\n");
-}
-
-/**
- * \brief Write vector data
- * \param[in]	out		The output file
- * \param[in]	*name	The name of vector data
- * \param[in]	digit	The digit precision
- * \param[in]	*vector	The vector of vectors
- */
-static void write_flow_vtk_vector_ascii(FILE *out, const char *name, const int digit, VectorFloatVector *vector)
-{
-    char dbl_fmt[16];
-
-    /* Digit precision */
-    sprintf(dbl_fmt, "%%.%dg ", digit);
-
-    /* Write DataArray begin */
-    xfprintf(out, "<DataArray type=\"Float64\" Name=\"%s\" NumberOfComponents=\"3\" format=\"ascii\">\n", name);
-    /* Write own data */
-    for(VectorFloatVector::iterator val=vector->begin(); val != vector->end(); ++val) {
-        xfprintf(out, dbl_fmt, val->d[0]);
-        xfprintf(out, dbl_fmt, val->d[1]);
-        xfprintf(out, dbl_fmt, val->d[2]);
-    }
-    /* Write DataArray end */
-    xfprintf(out, "\n</DataArray>\n");
-}
-
-/**
- * \brief Go through all vectors of scalars and vectors and call functions that
- * write these data to VTK file
- * \param[in]	*out		The output file
- * \param[in]	*scalars	The vector of scalars
- * \param[in]	*vectors	The vector of vectors
- */
-static void write_flow_vtk_data(FILE *out, OutScalarsVector *scalars, OutVectorsVector *vectors)
-{
-    /* Write to the file all scalar arrays if any */
-    if(scalars != NULL) {
-        for(OutScalarsVector::iterator sca = scalars->begin();
-                sca != scalars->end(); ++sca) {
-            write_flow_vtk_scalar_ascii(out, sca->name, ConstantDB::getInstance()->getInt("Out_digit"), sca->scalars);
-        }
-    }
-
-    /* Write to the file all vector arrays if any */
-    if(vectors != NULL) {
-       for(OutVectorsVector::iterator vec = vectors->begin();
-                vec != vectors->end(); ++vec) {
-            write_flow_vtk_vector_ascii(out, vec->name, ConstantDB::getInstance()->getInt("Out_digit"), vec->vectors);
-        }
-
-    }
-}
-
-/**
- * \brief Write names of scalar and vector values to the VTK file
- * \param[in]	*out		The output file
- * \param[in]	*scalars	The vector of scalars
- * \param[in]	*vectors	The vector of vectors
- */
-static void write_flow_vtk_data_names(FILE *out, OutScalarsVector *scalars, OutVectorsVector *vectors)
-{
-    /* Write list of scalar array names if any */
-    if(scalars != NULL) {
-        xfprintf(out, "Scalars=\"");
-        /* Write all names of scalar arrays first */
-        for(OutScalarsVector::iterator sca = scalars->begin();
-                sca != scalars->end(); ++sca) {
-            xfprintf(out, "%s", sca->name);
-            if((sca+1) != scalars->end()) {
-                xfprintf(out, ",");
-            }
-        }
-        xfprintf(out, "\"");
-    }
-    /* Write list of scalar array names if any */
-    if(vectors != NULL) {
-        /* Write list of vector array names */
-        xfprintf(out, " Vectors=\"");
-        /* Write all names of scalar arrays first */
-        for(OutVectorsVector::iterator vec = vectors->begin();
-                vec != vectors->end(); ++vec) {
-            xfprintf(out, "%s", vec->name);
-            if((vec+1) != vectors->end()) {
-                xfprintf(out, ",");
-            }
-        }
-        xfprintf(out, "\"");
-    }
-}
-
-/**
- * \brief Write data on nodes to the VTK file
- * \param[in]	*out		The output file
- * \param[in]	*scalars	The vector of scalars
- * \param[in]	*vectors	The vector of vectors
- */
-static void write_flow_vtk_node_data(FILE *out, OutScalarsVector *scalars, OutVectorsVector *vectors)
-{
-    /* Write PointData begin */
-    xfprintf(out, "<PointData ");
-    write_flow_vtk_data_names(out, scalars, vectors);
-    xfprintf(out, ">\n");
-
-    /* Write own data */
-    write_flow_vtk_data(out, scalars, vectors);
-
-    /* Write PointData end */
-    xfprintf(out, "</PointData>\n");
-}
-
-/**
- * \brief Write data on elements to the VTK file
- * \param[in]	*out		The output file
- * \param[in]	*scalars	The vector of scalars
- * \param[in]	*vectors	The vector of vectors
- */
-static void write_flow_vtk_element_data(FILE *out, OutScalarsVector *scalars, OutVectorsVector *vectors)
-{
-    /* Write PointData begin */
-    xfprintf(out, "<CellData ");
-    write_flow_vtk_data_names(out, scalars, vectors);
-    xfprintf(out, ">\n");
-
-    /* Write own data */
-    write_flow_vtk_data(out, scalars, vectors);
-
-    /* Write PointData end */
-    xfprintf(out, "</CellData>\n");
-}
-
-/**
- * \brief Write tail of VTK file
- * \param[in]	*out	The output file
- */
-static void write_flow_vtk_tail(FILE *out)
-{
-    xfprintf(out, "</UnstructuredGrid>\n");
-    xfprintf(out, "</VTKFile>\n");
-}
-
-/**
- * \brief This function write all scalar and vector data on nodes and elements
- * to the VTK file
- * \param[in]	*out	The output file
- */
-static void write_flow_vtk_serial(FILE *out)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    NodeIter node;
-    OutScalarsVector *node_scalar_arrays = new OutScalarsVector;
-    OutScalarsVector *element_scalar_arrays = new OutScalarsVector;
-    OutVectorsVector *element_vector_arrays = new OutVectorsVector;
-    struct OutScalar node_out_scalar;
-    struct OutScalar element_out_scalar;
-    struct OutVector element_out_vector;
-
-    node_out_scalar.scalars = new ScalarFloatVector;
-    element_out_scalar.scalars = new ScalarFloatVector;
-    element_out_vector.vectors = new VectorFloatVector;
-
-    /* Write header */
-    write_flow_vtk_header(out);
-
-    /* Write Piece begin */
-    xfprintf(out,
-            "<Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n",
-            mesh->node_vector.size(),
-            mesh->n_elements());
-
-    /* Write VTK Geometry */
-    write_flow_vtk_geometry(out);
-
-    /* Write VTK Topology */
-    write_flow_vtk_topology(out);
-
-    /* Fill vector of node scalars */
-    strcpy(node_out_scalar.name, "node_scalars");
+    /* Fill temporary vector of node scalars */
+    node_scalar->scalars = new ScalarFloatVector;
+    node_scalar->name = "node_scalars";
+    node_scalar->unit = "";
     /* Generate vector for scalar data of nodes */
-    node_out_scalar.scalars->reserve(mesh->node_vector.size());   // reserver memory for vector
+    node_scalar->scalars->reserve(mesh->node_vector.size());   // reserver memory for vector
     FOR_NODES( node ) {
-        node_out_scalar.scalars->push_back(node->scalar);
+        node_scalar->scalars->push_back(node->scalar);
     }
-    node_scalar_arrays->push_back(node_out_scalar);
-
-    /* Write VTK scalar and vector data on nodes to the file */
-    write_flow_vtk_node_data(out, node_scalar_arrays, NULL);
 
     /* Fill vectors of element scalars and vectors */
-    strcpy(element_out_scalar.name, "element_scalars");
-    strcpy(element_out_vector.name, "element_vectors");
+    element_scalar->scalars = new ScalarFloatVector;
+    element_scalar->name = "element_scalars";
+    element_scalar->unit = "";
+    element_vector->vectors = new VectorFloatVector;
+    element_vector->name = "element_vectors";
+    element_vector->unit = "";
     /* Generate vectors for scalar and vector data of nodes */
-    element_out_scalar.scalars->reserve(mesh->n_elements());
-    element_out_vector.vectors->reserve(mesh->n_elements());
+    element_scalar->scalars->reserve(mesh->n_elements());
+    element_vector->vectors->reserve(mesh->n_elements());
     FOR_ELEMENTS(ele) {
-        tripple t;  /* TODO: more effective */
-        t.d[0] = ele->vector[0];
-        t.d[1] = ele->vector[1];
-        t.d[2] = ele->vector[2];
-        element_out_scalar.scalars->push_back(ele->scalar);
-        element_out_vector.vectors->push_back(t);
-    }
-    element_scalar_arrays->push_back(element_out_scalar);
-    element_vector_arrays->push_back(element_out_vector);
-
-    /* Write VTK data on elements */
-    write_flow_vtk_element_data(out, element_scalar_arrays, element_vector_arrays);
-
-    /* Write Piece end */
-    xfprintf(out, "</Piece>\n");
-
-    /* Write tail */
-    write_flow_vtk_tail(out);
-
-    /* Delete unused object */
-    delete node_out_scalar.scalars;
-    delete element_out_scalar.scalars;
-    delete element_out_vector.vectors;
-
-    delete node_scalar_arrays;
-    delete element_scalar_arrays;
-    delete element_vector_arrays;
-}
-
-//==============================================================================
-//      WRITE FLOW ASCII DATA TO THE POS FILE
-//==============================================================================
-// TODO: nezavislost na vystupovanych datech
-static void write_flow_ascii_data(FILE *out,struct Problem *problem){
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    Node* nod;
-    ElementIter ele;
-    char dbl_fmt[ 16 ];
-    int view,li;
-
-    sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-
-    write_ascii_header(problem, out); // header in POS for user view
-
-    /* Write to the pos file format p, pc, pz */
-    for(view=0; view<3; view++) {
-
-        const char* description = OptGetStr("Global", "Description", "No description.");
-
-        /* Write to the output name of problem  */
-        switch(view){
-            case 0:
-                xfprintf( out, "View \"%s - p\" {\n",description );
-                break;
-            case 1:
-                xfprintf( out, "View \"%s - pc\" {\n", description );
-                break;
-            case 2:
-                xfprintf( out, "View \"%s - pz\" {\n", description );
-                break;
-        }
-
-        /* Go through all elements */
-        FOR_ELEMENTS(ele) {
-            /* Write type and beginning of element position */
-            switch( ele->type ) {
-            case LINE:
-                xfprintf( out, "SL (" );
-                break;
-            case TRIANGLE:
-                xfprintf( out, "ST (" );
-                break;
-            case TETRAHEDRON:
-                xfprintf( out, "SS (" );
-                break;
-            }
-
-            /* Write coordinates of all point of current element */
-            FOR_ELEMENT_NODES(ele, li) {
-                nod = ele->node[ li ];
-                xfprintf( out, dbl_fmt, nod->getX() );
-                xfprintf( out, ", " );
-                xfprintf( out, dbl_fmt, nod->getY() );
-                xfprintf( out, ", " );
-                xfprintf( out, dbl_fmt, nod->getZ() );
-                /* Write delimiter between coordinates */
-                if( li != ele->n_nodes - 1 )
-                    xfprintf( out, ", " );
-            }
-            xfprintf( out, ") {" );
-
-            /* Write value of element */
-            FOR_ELEMENT_NODES(ele, li) {
-                nod = ele->node[ li ];
-                switch(view){
-                case 0:
-                    xfprintf( out, dbl_fmt, nod->scalar );
-                    break;
-                case 1:
-                    xfprintf( out, dbl_fmt, ele->scalar );
-                    break;
-                case 2:
-                    xfprintf( out, dbl_fmt, ele->scalar + ele->centre[2]);
-                    break;
-                }
-                /* Write delimiter between values */
-                if( li != ele->n_nodes - 1 )
-                    xfprintf( out, ", " );
-            }
-            xfprintf( out, "};\n" );
-        }
-        xfprintf( out, "};\n" );
+        /* Add scalar */
+        element_scalar->scalars->push_back(ele->scalar);
+        /* Add vector */
+        vector<double> vec;
+        vec.reserve(3);
+        vec.push_back(ele->vector[0]);
+        vec.push_back(ele->vector[1]);
+        vec.push_back(ele->vector[2]);
+        element_vector->vectors->push_back(vec);
     }
 
-    /* Write vectors in centers of elements */
-	xfprintf( out, "View \"%s - u\" {\n", OptGetStr("Global", "Description", "No description.") );
-	FOR_ELEMENTS( ele ) {
-		xfprintf( out, "VP (" );
-		xfprintf( out, dbl_fmt, ele->centre[ 0 ] );
-		xfprintf( out, ", " );
-		xfprintf( out, dbl_fmt, ele->centre[ 1 ] );
-		xfprintf( out, ", " );
-		xfprintf( out, dbl_fmt, ele->centre[ 2 ] );
-		xfprintf( out, ") {" );
-		xfprintf( out, dbl_fmt, ele->vector[ 0 ] );
-		xfprintf( out, ", " );
-		xfprintf( out, dbl_fmt, ele->vector[ 1 ] );
-		xfprintf( out, ", " );
-		xfprintf( out, dbl_fmt, ele->vector[ 2 ] );
-		xfprintf( out, "};\n" );
-	}
-	xfprintf( out, "};\n" );
-}
-
-//=============================================================================
-// OUTPUT ROUTINE FOR INITIALIZING FILE FOR FLOW FIELD
-//=============================================================================
-void output_flow_field_init(struct Problem *problem)
-{
-    FILE *out;
-    char dbl_fmt[ 16 ];
-
-    ASSERT(!( problem == NULL ),"NULL as argument of function output_flow_field_init()\n");
-    if( OptGetBool("Output", "Write_output_file", "no") == false )
-        return;
-
-    xprintf( Msg, "%s: Writing output files... %s ", __func__, problem->out_fname_2);
-
-    out = xfopen( problem->out_fname_2, "wt" );
-    sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-    xfprintf( out, "$DataFormat\n" );
-    xfprintf( out, "1.0 0 %d\n", sizeof( double ) );
-    xfprintf( out, "$EndDataFormat\n" );
-    xfclose( out );
-
-    xprintf( Msg, "O.K.\n");
-}
-//=============================================================================
-// OUTPUT ROUTINE FOR FLOW FIELD IN SPEC. TIME
-//=============================================================================
-void output_flow_field_in_time(struct Problem *problem,double time)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    int i,cit;
-    ElementIter ele;
-    FILE *out;
-    char dbl_fmt[ 16 ];
-
-    ASSERT(!( problem == NULL ),"NULL as argument of function output_flow_field_in_time()\n");
-    if( OptGetBool("Output", "Write_output_file", "no") == false )
-        return;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, problem->out_fname_2);
-
-    out = xfopen( problem->out_fname_2, "at" );
-    sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-    xfprintf( out, "$FlowField\n" );
-    xfprintf( out, "T = ");
-    xfprintf( out, dbl_fmt, time);
-    xfprintf( out, "\n%d\n", mesh->n_elements() );
-    cit = 0;
-
-    FOR_ELEMENTS( ele ) {
-        xfprintf( out, "%d ", cit);
-        xfprintf( out, "%d ", ele.id());
-        xfprintf( out, dbl_fmt, ele->scalar);
-        xfprintf( out, " %d ", ele->n_sides);
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( out, dbl_fmt, ele->side[i]->scalar);
-        xfprintf( out, "\t");
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( out, dbl_fmt, ele->side[i]->flux);
-        xfprintf( out, "\t");
-        xfprintf( out, "%d ", ele->n_neighs_vv);
-        for (i = 0; i < ele->n_neighs_vv; i++)
-            xfprintf( out, "%d ", ele->neigh_vv[i]->id);
-        xfprintf( out, "\n" );
-        cit ++;
-    }
-    xfprintf( out, "$EndFlowField\n\n" );
-    xfclose( out );
-
-    xprintf( Msg, "O.K.\n");
-}
-//=============================================================================
-// OUTPUT ROUTINE FOR FLOW FIELD IN SPEC. TIME - VERSION 2 - INC. VECTOR VALUE
-//=============================================================================
-static void output_flow_field_in_time_2(struct Problem *problem,double time)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    int i,cit;
-    ElementIter ele;
-    FILE *out;
-    char dbl_fmt[ 16 ];
-
-    ASSERT(!( problem == NULL ),"NULL as argument of function output_flow_field_in_time_2()\n");
-    if( OptGetBool("Output", "Write_output_file", "no") == false )
-        return;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, problem->out_fname_2);
-
-    out = xfopen( problem->out_fname_2, "at" );
-    sprintf( dbl_fmt, " %%15.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-    xfprintf( out, "$FlowField\n" );
-    xfprintf( out, "T = ");
-    xfprintf( out, dbl_fmt, time);
-    xfprintf( out, "\n%d\n", mesh->n_elements() );
-    cit = 0;
-    FOR_ELEMENTS( ele ) {
-        xfprintf( out, "%d  ", cit);
-        xfprintf( out, "%d  ", ele.id());
-        xfprintf( out, " %d ", ele->n_sides);
-        xfprintf( out, dbl_fmt, ele->scalar);
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( out, dbl_fmt, ele->side[i]->scalar);
-        xfprintf( out, "\n               ");
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( out, dbl_fmt, ele->side[i]->flux);
-        for (i = 0; i < 3; i++)
-            xfprintf( out, dbl_fmt, ele->vector[i]);
-        xfprintf( out, "%d ", ele->n_neighs_vv);
-        for (i = 0; i < ele->n_neighs_vv; i++)
-            xfprintf( out, "%d ", ele->neigh_vv[i]->id);
-        xfprintf( out, "\n\n" );
-        cit ++;
-    }
-    xfprintf( out, "$EndFlowField\n\n" );
-    xfclose( out );
-
-    xprintf( Msg, "O.K.\n");
-}
-
-//==============================================================================
-//      WRITE ASCII POS CUSTOM VIEW HEADER
-//==============================================================================
-void write_ascii_header(struct Problem *problem,FILE *out){
-    xfprintf( out, "General.Trackball=0;        \n");
-    xfprintf( out, "General.RotationX = %f;    \n",problem->pos_view_params->x_ang);
-    xfprintf( out, "General.RotationY = %f;    \n",problem->pos_view_params->y_ang);
-    xfprintf( out, "General.RotationZ = %f;    \n",problem->pos_view_params->z_ang);
-    xfprintf( out, "General.ScaleX = %f;       \n",problem->pos_view_params->x_sca);
-    xfprintf( out, "General.ScaleY = %f;       \n",problem->pos_view_params->y_sca);
-    xfprintf( out, "General.ScaleZ = %f;       \n",problem->pos_view_params->z_sca);
-    xfprintf( out, "General.TranslationX = %f;\n",problem->pos_view_params->x_tra);
-    xfprintf( out, "General.TranslationY = %f; \n",problem->pos_view_params->y_tra);
-}
-//==============================================================================
-//      WRITE ELEMENT POSITION TO THE BINARY FILE
-//==============================================================================
-static void write_elm_position_to_binary_output(ElementIter elm,FILE *file){
-    int i;
-
-    FOR_ELEMENT_NODES(elm,i) {
-        double x = elm->node[i]->getX();
-        xfwrite(&x,sizeof(double),1,file);
-    }
-    FOR_ELEMENT_NODES(elm,i) {
-        double y = elm->node[i]->getY();
-        xfwrite(&y,sizeof(double),1,file);
-    }
-    FOR_ELEMENT_NODES(elm,i) {
-        double z = elm->node[i]->getZ();
-        xfwrite(&z,sizeof(double),1,file);
-    }
-}
-//==============================================================================
-//      OUTPUT INIT
-//==============================================================================
-void output_init(struct Problem *problem)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    FILE *out;
-    int i;
-    ElementIter ele;
-    NodeIter nod;
-    char dbl_fmt[ 16 ];
-    char filename[255];
-
-    std::string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
-    const char* out_fname = output_file.c_str();
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, out_fname);
-
-    sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-    sprintf( filename,"%s.tmp", out_fname);
-    out = xfopen( filename, "wt" );
-
-    xfprintf( out, "Nodes {\n");
-    FOR_NODES( nod ) {
-        xfprintf(out,"%d   ",nod->id);
-        xfprintf(out,dbl_fmt,nod->getX());xfprintf(out,"  ");
-        xfprintf(out,dbl_fmt,nod->getY());xfprintf(out,"  ");
-        xfprintf(out,dbl_fmt,nod->getZ());xfprintf(out,"\n");
-    }
-    xfprintf( out, "};\n");
-    xfprintf( out, "Elements {\n");
-    FOR_ELEMENTS(ele){
-        xfprintf(out,"%d  %d  %d   ",ele.id(),ele->type,ele->rid);
-        FOR_ELEMENT_NODES(ele,i) {
-            xfprintf(out,"%d  ",ele->node[i]->id);
-        }
-        xfprintf(out,"\n");
-    }
-    xfprintf( out, "};\nVALUES\n");
-    xfclose(out);
-
-    xprintf( Msg, "O.K.\n");
-}
-
-//==============================================================================
-//      OUTPUT FLOW IN THE TIME
-//==============================================================================
-void output_time(struct Problem *problem, double time)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    FILE *out;
-    ElementIter ele;
-    NodeIter nod;
-    char dbl_fmt[16];
-    char filename[PATH_MAX];
-
-    std::string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
-    const char* out_fname = output_file.c_str();
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, out_fname);
-
-    sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-    sprintf( filename,"%s.tmp", out_fname);
-    out = xfopen( filename, "at" );
-
-    xfprintf( out, "Time =");
-    xfprintf( out, dbl_fmt, time);
-    xfprintf( out, "{\n");
-    xfprintf( out, "  Nodes {\n" );
-    FOR_NODES( nod ){
-        xfprintf(out,"  %d   ",nod->id);
-        xfprintf(out,dbl_fmt,nod->scalar);
-        xfprintf(out,"\n");
-    }
-    xfprintf( out, "  };\n" );
-    xfprintf( out, "  Elements {\n" );
-    FOR_ELEMENTS( ele ){
-        xfprintf(out,"  %d   ",ele.id());
-        xfprintf(out,dbl_fmt,ele->scalar);
-        xfprintf(out,dbl_fmt,ele->vector[0]);
-        xfprintf(out,dbl_fmt,ele->vector[1]);
-        xfprintf(out,dbl_fmt,ele->vector[2]);
-        xfprintf(out,"\n");
-    }
-    xfprintf( out, "  };\n" );
-    xfprintf( out, "};\n" );
-    xfclose( out );
-
-    xprintf( Msg, "O.K.\n");
-}
-
-//==============================================================================
-//      OPEN TEMP FILES
-//==============================================================================
-/*
-FILE **open_temp_files(struct Transport *transport,const char *fileext,const char *open_param)
-{
-    FILE **out=NULL;
-    char filename0[255],filename1[255],filename2[255],filename3[255];
-    int n = 4; //max output files
-    int sub;
-
-    out = (FILE**)xmalloc(n*sizeof(FILE*));
-
-    sub = transport->transport_sub_problem;
-
-    sprintf(filename0, fileext, transport->transport_out_fname);
-    out[0] = xfopen(filename0, open_param);
-    out[1] = NULL;
-    out[2] = NULL;
-    out[3] = NULL;
-
-    if( ((sub & 1) == 1) && (strcmp(transport->transport_out_im_fname,"NULL") != 0)) {
-        sprintf( filename1,fileext,transport->transport_out_im_fname);
-        out[1] = xfopen( filename1, open_param );
-    }
-
-    if( ((sub & 2) == 2) && (strcmp(transport->transport_out_sorp_fname,"NULL") != 0)) {
-        sprintf(filename2,fileext,transport->transport_out_sorp_fname);
-        out[2] = xfopen( filename2, open_param );
-    }
-
-    if( ((sub & 3) == 3) && (strcmp(transport->transport_out_im_sorp_fname,"NULL") != 0)) {
-        sprintf(filename3,fileext,transport->transport_out_im_sorp_fname);
-        out[3] = xfopen( filename3, open_param );
-    }
-
-    return out;
-}
-*/
-//==============================================================================
-//	INITIALIZE OUTPUT MSH-like FILES (BINARY)
-//==============================================================================
-void output_msh_init_bin(Mesh* mesh, char *file)
-{
-    FILE *out;
-    ElementIter elm;
-    NodeIter nod;
-    int i,j,type,tags,zero,one,id;
-
-    zero = 0;
-    tags = 3;
-    one = 1;
-    type = 0;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, file);
-
-    out = xfopen(file,"wb");
-    xfprintf(out,"$MeshFormat\n");
-    xfprintf(out,"%d %d %d\n",2,1,sizeof(double));
-    xfwrite(&one,sizeof(int),1,out);
-    xfprintf(out,"\n");
-    xfprintf(out,"$EndMeshFormat\n");
-    xfprintf(out,"$Nodes\n");
-    xfprintf(out,"%d\n",mesh->node_vector.size());
-    FOR_NODES( nod ){
-        int label = nod->id;
-        xfwrite(&label,sizeof(int),1,out);
-        double x = nod->getX();
-        xfwrite(&x,sizeof(double),1,out);
-        double y = nod->getY();
-        xfwrite(&y,sizeof(double),1,out);
-        double z = nod->getZ();
-        xfwrite(&z,sizeof(double),1,out);
-    }
-    xfprintf(out,"\n");
-    xfprintf(out,"$EndNodes\n");
-    xfprintf(out,"$Elements\n");
-    xfprintf(out,"%d\n",mesh->n_elements());
-
-    for(j = 0; j < 3; j++){
-        switch(j) {
-        case 0:
-            type = 1;
-            if(mesh->n_lines != 0){
-                xfwrite(&type,sizeof(int),1,out);
-                xfwrite(&mesh->n_lines,sizeof(int),1,out);
-                id = 1;
-            }
-            else
-                id = 0;
-            break;
-        case 1:
-            type = 2;
-            if(mesh->n_triangles != 0){
-                xfwrite(&type,sizeof(int),1,out);
-                xfwrite(&mesh->n_triangles,sizeof(int),1,out);
-                id = 1;
-            }
-            else
-                id = 0;
-            break;
-        case 2:
-            type = 4;
-            if(mesh->n_tetrahedras != 0){
-                xfwrite(&type,sizeof(int),1,out);
-                xfwrite(&mesh->n_tetrahedras,sizeof(int),1,out);
-                id = 1;
-            }
-            else
-                id = 0;
-            break;
-        default:
-            id = 0;
-            break;
-        }
-
-        if(id == 1) {
-            xfwrite(&tags,sizeof(int),1,out);
-            FOR_ELEMENTS(elm) {
-                if(elm->type == type) {
-                    int tmp_id=elm.id();
-                    xfwrite(&tmp_id,sizeof(int),1,out);
-                    xfwrite(&elm->mid,sizeof(int),1,out);
-                    xfwrite(&elm->rid,sizeof(int),1,out);
-                    xfwrite(&elm->pid,sizeof(int),1,out);
-                    FOR_ELEMENT_NODES(elm,i) {
-                        int label = elm->node[i]->id;
-                        xfwrite(&label,sizeof(int),1,out);
-                    }
-                }
-            }
-        }
-    }
-    xfprintf(out,"\n");
-    xfprintf(out,"$EndElements\n");
-
-    xfclose(out);
-
-    xprintf( Msg, "O.K.\n");
-}
-
-//==============================================================================
-//	INITIALIZE OUTPUT MSH-like FILES (ASCII)
-//==============================================================================
-void output_msh_init_ascii(Mesh* mesh, char* file)
-{
-    FILE *out;
-    ElementIter elm;
-    NodeIter nod;
-    int i,type,tags,zero,one;
-
-    zero = 0;
-    tags = 3;
-    one = 1;
-    type = 0;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, file);
-
-    out = xfopen(file,"wt");
-    xfprintf(out,"$MeshFormat\n");
-    xfprintf(out,"%d %d %d\n",2,0,sizeof(double));
-    xfprintf(out,"$EndMeshFormat\n");
-    xfprintf(out,"$Nodes\n");
-    xfprintf(out, "%d\n", mesh->node_vector.size());
-    FOR_NODES( nod ) {
-        xfprintf(out,"%d %f %f %f\n",nod->id,nod->getX(),nod->getY(),nod->getZ());
-    }
-    xfprintf(out,"$EndNodes\n");
-    xfprintf(out,"$Elements\n");
-    xfprintf(out,"%d\n",mesh->n_elements());
-
-    FOR_ELEMENTS(elm) {
-        xfprintf(out,"%d %d %d %d %d %d",elm.id(),elm->type,3,elm->mid,elm->rid,elm->pid);
-        FOR_ELEMENT_NODES(elm,i)
-        xfprintf(out," %d",elm->node[i]->id);
-        xfprintf(out,"\n");
-    }
-    xfprintf(out,"$EndElements\n");
-
-    xfclose(out);
-
-    xprintf( Msg, "O.K.\n");
-}
-
-void output_msh_init_vtk_serial_ascii( char *file)
-{
-    FILE *out;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, file);
-
-    out = xfopen(file, "wt");
-
-    xfprintf(out, "<?xml version=\"1.0\"?>\n");
-    xfprintf(out, "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n");
-    xfprintf(out, "<Collection>\n");
-
-    xfclose(out);
-
-    xprintf( Msg, "O.K.\n");
-}
-
-void output_msh_finish_vtk_serial_ascii(char *file)
-{
-    FILE *out;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, file);
-
-    out = xfopen(file, "at");
-
-    xfprintf(out, "</Collection>\n");
-    xfprintf(out, "</VTKFile>\n");
-
-    xfclose(out);
-
-    xprintf( Msg, "O.K.\n");
-}
-
-//==============================================================================
-//	OUTPUT TRANSPORT SCALAR FIELD (BINARY)
-//==============================================================================
-void output_transport_time_bin(double ***out_conc,char **subst_name,int n_subst,
-		double time,
-		int step,
-		char *file)
-{
-	F_ENTRY;
-
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    FILE *out;
-    int sbi,el,itags,rtags,stags,comp,i,vcomp;
-    int i_out;
-    double vector[3];
-    itags = 3;
-    rtags = 1;
-    stags = 1;
-    comp = 1;
-    vcomp = 3;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, file);
-
-    out = xfopen(file,"ab");
-
-    /* Scalar view */
-    for(sbi=0;sbi<n_subst;sbi++) {
-        xfprintf(out,"$ElementData\n");
-        xfprintf(out,"%d\n",stags);                     // one string tag
-        xfprintf(out,"\"Concentration of %s\"\n",subst_name[sbi]);          // string tag
-        xfprintf(out,"%d\n",rtags);                                   // one raal tag
-        xfprintf(out,"%f\n",time);                                // first real tag = time
-        xfprintf(out,"%d\n",itags);                                   // 3 int tags
-        xfprintf(out,"%d\n",step);                              // step number (start = 0)
-        xfprintf(out,"%d\n",comp);                                   // one component - scalar field
-        xfprintf(out,"%d\n",mesh->n_elements());                    // n follows elements
-        FOR_ELEMENTS(ele) {
-            i_out=ele.id();
-            xfwrite(&i_out,sizeof(int),1,out);
-            xfwrite(&out_conc[MOBILE][sbi][ele.index()],sizeof(double),1,out);
-        }
-        xfprintf(out,"\n$EndElementData\n");
-    }
-
-    /* Vector view */
-    for(sbi=0;sbi<n_subst;sbi++){
-
-        xfprintf(out,"$ElementData\n");
-        xfprintf(out,"%d\n",stags);                     // one string tag
-        xfprintf(out,"\"Concentration of %s\"\n",subst_name[sbi]);          // string tag
-        xfprintf(out,"%d\n",rtags);                                   // one raal tag
-        xfprintf(out,"%f\n",time);                                // first real tag = time
-        xfprintf(out,"%d\n",itags);                                   // 3 int tags
-        xfprintf(out,"%d\n",step);                              // step number (start = 0)
-        xfprintf(out,"%d\n",vcomp);                                   // one component - scalar field
-        xfprintf(out,"%d\n",mesh->n_elements());                    // n follows elements
-        FOR_ELEMENTS(ele) {
-            if(vector_length(ele->vector) > ZERO){
-                for(i = 0; i < 3; i++)
-                    vector[i] = mesh->element[el].vector[i];
-                normalize_vector(vector);
-                scale_vector(vector,out_conc[MOBILE][sbi][el]);
-            }
-            else {
-                for(i = 0; i < 3; i++) vector[i] = 0.0;
-            }
-
-            i_out=ele.id();
-            xfwrite(&i_out,sizeof(int),1,out);
-            xfwrite(&vector,3*sizeof(double),1,out);
-        }
-    }
-    xfprintf(out,"$EndElementData\n");
-
-    xfclose(out);
-
-    xprintf( Msg, "O.K.\n");
-}
-
-
-/**
- * \brief This function writes only scalar data of the transport to the ascii
- * pos file.
- * \param[in]	*transport	The transport structure
- * \param[in]	time		The unused parameter of time
- * \param[in]	step		The current time frame
- * \param[in]	*file		The name of base name of the file
- */
-void output_transport_time_ascii(double ***out_conc,char **subst_name,int n_subst,
-		double time,
-		int step,
-		char *file)
-{
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    FILE *out;
-    int sbi,el,itags,rtags,stags,comp,i,vcomp;
-    double vector[3];
-    itags = 3;
-    rtags = 1;
-    stags = 1;
-    comp = 1;
-    vcomp = 3;
-
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, file);
-
-    out = xfopen(file,"at");
-    /* Scalar view */
-    for(sbi=0; sbi<n_subst; sbi++){
-        xfprintf(out,"$ElementData\n");
-        xfprintf(out,"%d\n",stags);  // one string tag
-        xfprintf(out,"\"Concentration of %s\"\n",subst_name[sbi]);    // string tag
-        xfprintf(out,"%d\n",rtags);  // one raal tag
-        xfprintf(out,"%f\n",time);   // first real tag = time
-        xfprintf(out,"%d\n",itags);  // 3 int tags
-        xfprintf(out,"%d\n",step);   // step number (start = 0)
-        xfprintf(out,"%d\n",comp);   // one component - scalar field
-        xfprintf(out,"%d\n",mesh->n_elements());   // n follows elements
-        FOR_ELEMENTS(ele)
-        		xfprintf(out,"%d %f\n", ele.id(), out_conc[MOBILE][sbi][ele.index()]);
-        xfprintf(out,"$EndElementData\n");
-    }
-
-    /* Vector view */
-/*
-    for(sbi=0; sbi<transport->n_substances; sbi++){
-        xfprintf(out,"$ElementData\n");
-        xfprintf(out,"%d\n",stags);  // one string tag
-        xfprintf(out,"\"Concentration of %s\"\n",transport->substance_name[sbi]);          // string tag
-        xfprintf(out,"%d\n",rtags);  // one raal tag
-        xfprintf(out,"%f\n",time);   // first real tag = time
-        xfprintf(out,"%d\n",itags);  // 3 int tags
-        xfprintf(out,"%d\n",step);   // step number (start = 0)
-        xfprintf(out,"%d\n",vcomp);  // one component - scalar field
-        xfprintf(out,"%d\n",mesh->n_elements());   // n follows elements
-        for(el=0;el < mesh->n_elements();el++) {
-            if(vector_length(mesh->element_hash[mesh->epos_id[el]]->vector) > ZERO) {
-                for(i = 0; i < 3; i++)
-                    vector[i] = mesh->element_hash[mesh->epos_id[el]]->vector[i];
-                normalize_vector(vector);
-                scale_vector(vector,transport->conc[MOBILE][sbi][el]);
-            } else {
-                for(i = 0; i < 3; i++)
-                    vector[i] = 0.0;
-            }
-            xfprintf(out,"%d %f %f %f\n",mesh->epos_id[el],vector[0],vector[1],vector[2]);
-        }
-    }
-    xfprintf(out,"$EndElementData\n");
-    */
-    xfclose(out);
-
-    xprintf( Msg, "O.K.\n");
+    register_node_data(node_scalar->name, node_scalar->unit, *node_scalar->scalars);
+    register_elem_data(element_scalar->name, element_scalar->unit, *element_scalar->scalars);
+    register_elem_data(element_vector->name, element_vector->unit, *element_vector->vectors);
 }
 
 /**
- * \brief This function writes data of transport to the VTK file (.vtu). This
- * function writes data of one frame to the one .vtu file. The name of output
- * file is derived from *file and step. When writing of data is successful,
- * then reference of .vtu file is written at the end of the file.pvd.
- * \param[in]	*transport	The transport structure
- * \param[in]	time		The unused parameter of time
- * \param[in]	step		The current time frame
- * \param[in]	*file		The name of base name of the file
+ * \brief Register array of data on nodes.
+ *
+ * This function will add reference on the array of data to the Output object.
+ * Own data will be written to the file, when write_data() method will be called.
+ *
+ * \param[in]   name    The name of data
+ * \param[in]   unit    The name of units
+ * \param[in]   data    The pointer on array of data
+ * \param[in]   size    The number of values in array
+ *
+ * \return This function return 1, when the length of data vector is the same as
+ * number of nodes in mesh. When the the number is different, then this
+ * function returns 0.
  */
-void output_transport_time_vtk_serial_ascii(double ***out_conc,char **subst_name,int n_subst,
-        double time,
-        int step,
-        char *file)
+template <typename _Data>
+int Output::register_node_data(std::string name,
+        std::string unit,
+        _Data *data,
+        uint size)
 {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+    if(mesh->node_vector.size() == size) {
+        int found = 0;
 
-    //struct Problem *problem = transport->problem;
-    OutScalarsVector *element_scalar_arrays = new OutScalarsVector;
-    OutVectorsVector *element_vector_arrays = new OutVectorsVector;
-    struct OutScalar *p_element_out_scalar;
-    struct OutVector element_out_vector;
-    FILE *p_out, *s_out;
-    char frame_file[PATH_MAX];
-    int  subst_id, i;
-    tripple t;
+        OutputData *out_data = new OutputData(name, unit, data, size);
+        node_data->push_back(*out_data);
 
-    sprintf(frame_file, "%s-%d.vtu", file, step);
-
-    /* Try to open file for frame "step" */
-    s_out = xfopen(frame_file, "wt");
-
-    if(s_out!=NULL) {
-
-    	/* Try to open .pvd file */
-        p_out = xfopen(file, "at");
-
-        /* If it is not possible to open pvd file, then close frame file */
-        if(p_out==NULL) {
-        	xfclose(s_out);
-        	return;
-        }
-
-        xprintf(Msg, "%s: Writing output file %s ... ", __func__, file);
-
-        /* Find first directory delimiter */
-        for(i=strlen(file); i>=0; i--) {
-            if(file[i]==DIR_DELIMITER) {
-                break;
-            }
-        }
-        /* Write reference to .vtu file of current frame to pvd file */
-        if(i>0) {
-            /* Strip out relative path, because vtu file is in the same directory as pvd file*/
-            xfprintf(p_out, "<DataSet timestep=\"%d\" group=\"\" part=\"0\" file=\"%s-%d.vtu\"/>\n", step, &file[i+1], step);
-        } else {
-            /* No path was found in string "file" */
-            xfprintf(p_out, "<DataSet timestep=\"%d\" group=\"\" part=\"0\" file=\"%s-%d.vtu\"/>\n", step, file, step);
-        }
-
-        xfclose(p_out);
-        xprintf(Msg, "O.K.\n");
+        return 1;
     } else {
-    	return;
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        return 0;
+    }
+}
+
+/**
+ * \brief Register array of data on elements.
+ *
+ * This function will add reference on this array of data to the Output object.
+ * Own data will be written to the file, when write_data() method will be called.
+ *
+ * \param[in]   name    The name of data
+ * \param[in]   unit    The name of units
+ * \param[in]   data    The pointer on array of data
+ * \param[in]   size    The number of values in array
+ *
+ * \return This function return 1, when the length of data vector is the same as
+ * number of elements in mesh. When the the number is different, then this
+ * function returns 0.
+ */
+template <typename _Data>
+int Output::register_elem_data(std::string name,
+        std::string unit,
+        _Data *data,
+        uint size)
+{
+    if(mesh->element.size() == size) {
+        int found = 0;
+
+        OutputData *out_data = new OutputData(name, unit, data, size);
+        elem_data->push_back(*out_data);
+
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        return 0;
+    }
+}
+
+/**
+ * \brief Register data on nodes.
+ *
+ * This function will add reference on this data to the Output object. Own data
+ * will be written to the file, when write_data() method will be called.
+ *
+ * \param[in]   name    The name of data
+ * \param[in]   unit    The name of units
+ * \param[in]   data    The reference on vector of data
+ *
+ * \return This function return 1, when the length of data vector is the same as
+ * number of nodes in mesh. When the the number is different, then this function
+ * returns 0.
+ */
+template <typename _Data>
+int Output::register_node_data(std::string name,
+        std::string unit,
+        std::vector<_Data> &data)
+{
+    if(mesh->node_vector.size() == data.size()) {
+        OutputData *out_data = new OutputData(name, unit, data);
+        node_data->push_back(*out_data);
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        return 0;
+    }
+}
+
+/**
+ * \brief Register data on elements.
+ *
+ * This function will add reference on the data to the Output object. Own data
+ * will be written to the file, when write_data() method will be called.
+ *
+ * \param[in]   name    The name of data
+ * \param[in]   unit    The name of units
+ * \param[in]   data    The reference on vector of data
+ *
+ * \return This function return 1, when the length of data vector is the same as
+ * number of elements in mesh. When the the number is different, then this
+ * function returns 0.
+ */
+template <typename _Data>
+int Output::register_elem_data(std::string name,
+        std::string unit,
+        std::vector<_Data> &data)
+{
+    if(mesh->element.size() == data.size()) {
+        OutputData *out_data = new OutputData(name, unit, data);
+        elem_data->push_back(*out_data);
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        return 0;
+    }
+}
+
+/**
+ * \brief NULL function for not yet supported formats
+ *
+ * \param[in]   *output The pointer at output object.
+ *
+ * \return This function returns always 0.
+ */
+int write_null_data(Output *output)
+{
+    xprintf(Msg, "This file format is not yet supported\n");
+
+    return 0;
+}
+
+/**
+ * \brief This function call pointer at _write_data(Output). It writes
+ * registered data to specified file format.
+ *
+ * \return This function return result of pointer at output function.
+ */
+int Output::write_data(void)
+{
+    return _write_data(this);
+}
+
+/**
+ * \brief Constructor of the Output object
+ *
+ * \param[in] *_mesh    The pointer at Mesh
+ * \param[in] *fname    The name of the output file
+ */
+Output::Output(Mesh *_mesh, string fname)
+{
+    if( OptGetBool("Output", "Write_output_file", "no") == false ) {
+        base_filename = NULL;
+        base_file = NULL;
+        mesh = NULL;
+
+        return;
     }
 
-    xprintf(Msg, "%s: Writing output (frame %d) file %s ... ", __func__, step, frame_file);
+    base_file = new ofstream;
 
-    /* Write header */
-    write_flow_vtk_header(s_out);
+    base_file->open(fname.c_str());
+    if(base_file->is_open() == false) {
+        xprintf(Msg, "Could not write output to the file: %s\n", fname.c_str());
+        base_filename = NULL;
+        delete base_file;
+        base_file = NULL;
+        mesh = NULL;
 
-    /* Write Piece begin */
-    xfprintf(s_out,
-            "<Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n",
-            mesh->node_vector.size(),
-            mesh->n_elements());
+        return;
+    } else {
+        xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
+    }
 
-    /* Write VTK geometry */
-    write_flow_vtk_geometry(s_out);
+    base_filename = new string(fname);
 
-    /* Write VTK topology */
-    write_flow_vtk_topology(s_out);
+    mesh = _mesh;
+    node_data = new OutputDataVec;
+    elem_data = new OutputDataVec;
 
-    /* Allocate memory for array of element scalars */
-    p_element_out_scalar = (OutScalar*)xmalloc(sizeof(struct OutScalar)*n_subst);
+    // TODO: remove in the future
+    format_type = ConstantDB::getInstance()->getInt("Pos_format_id");
+
+    switch(format_type) {
+    case VTK_SERIAL_ASCII:
+    case VTK_PARALLEL_ASCII:
+        _write_data = write_vtk_data;
+        break;
+    case POS_ASCII:
+    case POS_BIN:
+        _write_data = write_msh_data;
+        break;
+    default:
+        _write_data = write_null_data;
+        break;
+    }
+
+    base_filename = new string(fname);
+
+    get_data_from_mesh();
+}
+
+/**
+ * \brief Destructor of the Output object.
+ */
+Output::~Output()
+{
+    free_data_from_mesh();
+
+    // Free all reference on node and element data
+    if(node_data != NULL) {
+        delete node_data;
+    }
+
+    if(elem_data != NULL) {
+        delete elem_data;
+    }
+
+    if(base_filename != NULL) {
+        delete base_filename;
+    }
+
+    if(base_file != NULL) {
+        base_file->close();
+        delete base_file;
+    }
+
+    xprintf(Msg, "O.K.\n");
+}
+
+/**
+ * \brief This method free data that was got from transport
+ */
+void OutputTime::free_data_from_transport(void)
+{
+    /* Delete vectors */
+    delete element_vector->vectors;
+    delete element_vector;
+    /* Delete scalars */
+    for(int subst_id=0; subst_id<elem_sca_count; subst_id++) {
+        delete element_scalar[subst_id].scalars;
+    }
+    delete[] element_scalar;
+}
+
+/**
+ * \brief This method get data from transport and store it in OutputTime
+ *
+ * \param[in] *transport    The pointer at transport
+ */
+void OutputTime::get_data_from_transport(ConvectionTransport *transport)
+{
+    Mesh *mesh = get_mesh();
+    NodeIter node;
+    element_scalar = new OutScalar[transport->n_substances];
+    element_vector = new OutVector;
+
+    xprintf(Msg, "Getting data from transport ...\n");
+
+    elem_sca_count = transport->n_substances;
 
     /* Go through all substances and add them to vector of scalars */
-    for(subst_id=0; subst_id<n_subst; subst_id++) {
-        p_element_out_scalar[subst_id].scalars = new ScalarFloatVector;
-
-        /* Reserve memory for vectors */
-        p_element_out_scalar[subst_id].scalars->reserve(mesh->n_elements());
-
+    for(int subst_id=0; subst_id<elem_sca_count; subst_id++) {
+        element_scalar[subst_id].scalars = new ScalarFloatVector;
         /* Set up names */
-        strcpy(p_element_out_scalar[subst_id].name, subst_name[subst_id]);
-
+        element_scalar[subst_id].name = transport->substance_name[subst_id];
+        element_scalar[subst_id].unit = ""; // TODO: get units from somewhere
+        /* Reserve memory for vectors */
+        element_scalar[subst_id].scalars->reserve(mesh->n_elements());
+        /* Add scalar data to vector of scalars */
         for(int el=0; el<mesh->n_elements(); el++) {
-            /* Add scalar data to vector of scalars */
-            p_element_out_scalar[subst_id].scalars->push_back(out_conc[MOBILE][subst_id][el]);
+            element_scalar[subst_id].scalars->push_back(transport->out_conc[MOBILE][subst_id][el]);
         }
-
-        element_scalar_arrays->push_back(p_element_out_scalar[subst_id]);
+        register_elem_data(element_scalar[subst_id].name, element_scalar[subst_id].unit, *element_scalar[subst_id].scalars);
     }
 
     /* Add vectors to vector */
-    element_out_vector.vectors = new VectorFloatVector;
+    element_vector->vectors = new VectorFloatVector;
     /* Reserve memory for vector */
-    element_out_vector.vectors->reserve(mesh->n_elements());
+    element_vector->vectors->reserve(mesh->n_elements());
     /* Set up name */
-    strcpy(element_out_vector.name, "transport_vector");
+    element_vector->name = "transport_vector";
     /* Copy data */
     FOR_ELEMENTS(ele) {
         /* Add vector data do vector of vectors */
-        t.d[0] = ele->vector[0];
-        t.d[1] = ele->vector[1];
-        t.d[2] = ele->vector[2];
-        element_out_vector.vectors->push_back(t);
+        vector<double> vec;
+        vec.reserve(3);
+        vec.push_back(ele->vector[0]);
+        vec.push_back(ele->vector[1]);
+        vec.push_back(ele->vector[2]);
+        element_vector->vectors->push_back(vec);
     }
-    element_vector_arrays->push_back(element_out_vector);
+    register_elem_data(element_vector->name, element_vector->unit, *element_vector->vectors);
 
-    /* Write VTK data on elements */
-    write_flow_vtk_element_data(s_out, element_scalar_arrays, element_vector_arrays);
-
-    /* Write Piece end */
-    xfprintf(s_out, "</Piece>\n");
-
-    /* Write tail */
-    write_flow_vtk_tail(s_out);
-
-    xfclose(s_out);
-    xprintf( Msg, "O.K.\n");
-
-    /* Delete unused object */
-    for(subst_id=0; subst_id<n_subst; subst_id++) {
-        delete p_element_out_scalar[subst_id].scalars;
-    }
-
-    xfree(p_element_out_scalar);
-    delete element_out_vector.vectors;
-
-    delete element_scalar_arrays;
-    delete element_vector_arrays;
+    xprintf(Msg, "O.K.\n");
 }
 
-
 /**
- * THIS IS ONLY UGLY HACK basically copy of output_transport_vtk_...
+ * \brief This function register data on nodes.
+ *
+ * This function will add reference on this array of data to the Output object.
+ * It is possible to call this function only once, when data are at the same
+ * address during time. It is possible to call this function for each step, when
+ * data are not at the same address, but name of the data has to be same.
+ * Own data will be written to the file, when write_data() method will be called.
+ *
+ * \param[in] name  The name of data
+ * \param[in] unit  The units of data
+ * \param[in] *data The pointer at data (array of int, float or double)
+ * \param[in] size  The size of array (number of values)
+ *
+ * \return This function returns 1, when data were registered. This function
+ * returns 0, when it wasn't able to register data (number of values isn't
+ * same as number of nodes).
+ *
+ * TODO: Test this method!
  */
-void output_flow_time_vtk_serial_ascii(Mesh *mesh,
-        double time,
-        int step,
-        char *file)
+template <typename _Data>
+int OutputTime::register_node_data(std::string name,
+        std::string unit,
+        _Data *data,
+        uint size)
 {
+    std::vector<OutputData> *node_data = get_node_data();
+    Mesh *mesh = get_mesh();
 
-    //struct Problem *problem = transport->problem;
-    OutScalarsVector *element_scalar_arrays = new OutScalarsVector;
-    OutVectorsVector *element_vector_arrays = new OutVectorsVector;
-    struct OutScalar *p_element_out_scalar;
-    struct OutVector element_out_vector;
-    FILE *p_out, *s_out;
-    char frame_file[PATH_MAX];
-    int  subst_id, i;
-    tripple t;
+    if(mesh->node_vector.size() == size) {
+        int found = 0;
 
-    sprintf(frame_file, "%s-%d.vtu", file, step);
-
-    /* Try to open file for frame "step" */
-    s_out = xfopen(frame_file, "wt");
-
-    if(s_out!=NULL) {
-
-        /* Try to open .pvd file */
-        p_out = xfopen(file, "at");
-
-        /* If it is not possible to open pvd file, then close frame file */
-        if(p_out==NULL) {
-            xfclose(s_out);
-            return;
-        }
-
-        xprintf(Msg, "%s: Writing output file %s ... ", __func__, file);
-
-        /* Find first directory delimiter */
-        for(i=strlen(file); i>=0; i--) {
-            if(file[i]==DIR_DELIMITER) {
+        for(std::vector<OutputData>::iterator od_iter = node_data->begin();
+                od_iter != node_data->end();
+                od_iter++)
+        {
+            if(*od_iter->name == name) {
+                od_iter->data = (void*)&data;
+                found = 1;
                 break;
             }
         }
-        /* Write reference to .vtu file of current frame to pvd file */
-        if(i>0) {
-            /* Strip out relative path, because vtu file is in the same directory as pvd file*/
-            xfprintf(p_out, "<DataSet timestep=\"%d\" group=\"\" part=\"0\" file=\"%s-%d.vtu\"/>\n", step, &file[i+1], step);
-        } else {
-            /* No path was found in string "file" */
-            xfprintf(p_out, "<DataSet timestep=\"%d\" group=\"\" part=\"0\" file=\"%s-%d.vtu\"/>\n", step, file, step);
+
+        if(found == 0) {
+            OutputData *out_data = new OutputData(name, unit, data, size);
+            node_data->push_back(*out_data);
         }
 
-        xfclose(p_out);
-        xprintf(Msg, "O.K.\n");
+        return 1;
     } else {
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        return 0;
+    }
+}
+
+/**
+ * \brief This function register data on elements.
+ *
+ * This function will add reference on this array of data to the Output object.
+ * It is possible to call this function only once, when data are at the same
+ * address during time. it is possible to call this function for each step, when
+ * data are not at the same address, but name of the data has to be same.
+ * Own data will be written to the file, when write_data() method will be called.
+ *
+ * \param[in] name  The name of data
+ * \param[in] unit  The units of data
+ * \param[in] *data The pointer at data (array of int, float or double)
+ * \param[in] size  The size of array (number of values)
+ *
+ * \return This function returns 1, when data were registered. This function
+ * returns 0, when it wasn't able to register data (number of values isn't
+ * same as number of elements).
+ *
+ * TODO: Test this method!
+ */
+template <typename _Data>
+int OutputTime::register_elem_data(std::string name,
+        std::string unit,
+        _Data *data,
+        uint size)
+{
+    std::vector<OutputData> *elem_data = get_elem_data();
+    Mesh *mesh = get_mesh();
+
+    if(mesh->element.size() == size) {
+        int found = 0;
+
+        for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
+                od_iter != elem_data->end();
+                od_iter++)
+        {
+            if(*od_iter->name == name) {
+                od_iter->data = (void*)&data;
+                found = 1;
+                break;
+            }
+        }
+
+        if(found == 0) {
+            OutputData *out_data = new OutputData(name, unit, data, size);
+            elem_data->push_back(*out_data);
+        }
+
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        return 0;
+    }
+}
+
+/**
+ * \brief This function register data on nodes.
+ *
+ * This function will add reference on this array of data to the Output object.
+ * It is possible to call this function only once, when data are at the same
+ * address during time. it is possible to call this function for each step, when
+ * data are not at the same address, but name of the data has to be same.
+ * Own data will be written to the file, when write_data() method will be called.
+ *
+ * \param[in] name  The name of data
+ * \param[in] unit  The units of data
+ * \param[in] *data The pointer at data (array of int, float or double)
+ * \param[in] size  The size of array (number of values)
+ *
+ * \return This function returns 1, when data were registered. This function
+ * returns 0, when it wasn't able to register data (number of values isn't
+ * same as number of nodes).
+ *
+ * TODO: Test this method!
+ */
+template <typename _Data>
+int OutputTime::register_node_data(std::string name,
+        std::string unit,
+        std::vector<_Data> &data)
+{
+    std::vector<OutputData> *node_data = get_node_data();
+    Mesh *mesh = get_mesh();
+
+    if(mesh->node_vector.size() == data.size()) {
+        int found = 0;
+
+        for(std::vector<OutputData>::iterator od_iter = node_data->begin();
+                od_iter != node_data->end();
+                od_iter++)
+        {
+            if(*od_iter->name == name) {
+                od_iter->data = (void*)&data;
+                found = 1;
+                break;
+            }
+        }
+
+        if(found == 0) {
+            OutputData *out_data = new OutputData(name, unit, data);
+            node_data->push_back(*out_data);
+        }
+
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        return 0;
+    }
+}
+
+/**
+ * \brief Register vector of data on elements.
+ *
+ * This function will add reference on the data to the Output object. Own
+ * data will be written to the file, when write_data() method will be called.
+ * When the data has been already registered, then pointer at data will be
+ * updated. Otherwise, new data will be registered.
+ *
+ * \param[in] name  The name of data
+ * \param[in] unit  The unit of data
+ * \param[in] &data The reference on vector (int, float, double)
+ *
+ * \return This function returns 1, when data were successfully registered.
+ * This function returns 0, when number of elements and items of vector is
+ * not the same.
+ */
+template <typename _Data>
+int OutputTime::register_elem_data(std::string name,
+        std::string unit,
+        std::vector<_Data> &data)
+{
+    std::vector<OutputData> *elem_data = get_elem_data();
+    Mesh *mesh = get_mesh();
+
+    if(mesh->element.size() == data.size()) {
+        int found = 0;
+        for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
+                od_iter != elem_data->end();
+                od_iter++)
+        {
+            if(*od_iter->name == name) {
+                od_iter->data = (void*)&data;
+                found = 1;
+                break;
+            }
+        }
+
+        if(found == 0) {
+            OutputData *out_data = new OutputData(name, unit, data);
+            elem_data->push_back(*out_data);
+        }
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        return 0;
+    }
+
+}
+
+/**
+ * \brief This is fake output function for not supported formats. It writes
+ * only warning to the stdout and log file.
+ *
+ * \param[in] *output   The pointer at OutputTime function
+ *
+ * \return This function always return 0.
+ */
+int write_null_head(OutputTime *output)
+{
+    xprintf(Msg, "This file format: %d is not yet supported\n", output->get_format_type());
+
+    return 0;
+}
+
+/**
+ * \brief This is fake output function for not supported formats. It writes
+ * only warning to the stdout and log file.
+ *
+ * \param[in] *output   The pointer at OutputTime function
+ *
+ * \return This function always return 0.
+ */
+int write_null_time_data(OutputTime *output, double time, int step)
+{
+    xprintf(Msg, "This file format: %d is not yet supported\n", output->get_format_type());
+
+    return 0;
+}
+
+/**
+ * \brief This is fake output function for not supported formats. It writes
+ * only warning to the stdout and log file.
+ *
+ * \param[in] *output   The pointer at OutputTime function
+ *
+ * \return This function always return 0.
+ */
+int write_null_tail(OutputTime *output)
+{
+    xprintf(Msg, "This file format: %d is not yet supported\n", output->get_format_type());
+
+    return 0;
+}
+
+/**
+ * \brief This function call pointer at appropriate pointer at function,
+ * that write data to specific file format.
+ *
+ * \param[in] time  The output will be done for this time
+ *
+ * \return This function returns result of method _write_data().
+ */
+int OutputTime::write_data(double time)
+{
+    return _write_data(this, time, current_step++);
+}
+
+/**
+ * \brief Constructor of OutputTime object. It opens base file for writing.
+ *
+ * \param[in]   *_mesh  The pointer at mesh object.
+ * \param[in]   fname   The name of output file
+ */
+OutputTime::OutputTime(Mesh *_mesh, string fname)
+{
+    std::vector<OutputData> *node_data;
+    std::vector<OutputData> *elem_data;
+    Mesh *mesh = _mesh;
+    ofstream *base_file;
+    string *base_filename;
+    int format_type;
+
+    if( OptGetBool("Output", "Write_output_file", "no") == false ) {
+        base_filename = NULL;
+        base_file = NULL;
+        mesh = NULL;
+
         return;
     }
 
-    xprintf(Msg, "%s: Writing output (frame %d) file %s ... ", __func__, step, frame_file);
+    base_file = new ofstream;
 
-    /* Write header */
-    write_flow_vtk_header(s_out);
+    base_file->open(fname.c_str());
+    if(base_file->is_open() == false) {
+        xprintf(Msg, "Could not write output to the file: %s\n", fname.c_str());
+        base_filename = NULL;
+        delete base_file;
+        base_file = NULL;
+        mesh = NULL;
 
-    /* Write Piece begin */
-    xfprintf(s_out,
-            "<Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n",
-            mesh->node_vector.size(),
-            mesh->n_elements());
-
-    /* Write VTK geometry */
-    write_flow_vtk_geometry(s_out);
-
-    /* Write VTK topology */
-    write_flow_vtk_topology(s_out);
-
-    /* Allocate memory for array of element scalars */
-    p_element_out_scalar = (OutScalar*)xmalloc(sizeof(struct OutScalar)*1);
-
-    /* Go through all substances and add them to vector of scalars */
-    for(subst_id=0; subst_id<1; subst_id++) {
-        p_element_out_scalar[subst_id].scalars = new ScalarFloatVector;
-
-        /* Reserve memory for vectors */
-        p_element_out_scalar[subst_id].scalars->reserve(mesh->n_elements());
-
-        /* Set up names */
-        strcpy(p_element_out_scalar[subst_id].name, "pressure");
-
-        FOR_ELEMENTS(ele) {
-            /* Add scalar data to vector of scalars */
-            p_element_out_scalar[subst_id].scalars->push_back(ele->scalar);
-        }
-
-        element_scalar_arrays->push_back(p_element_out_scalar[subst_id]);
-    }
-
-    /* Add vectors to vector */
-    element_out_vector.vectors = new VectorFloatVector;
-    /* Reserve memory for vector */
-    element_out_vector.vectors->reserve(mesh->n_elements());
-    /* Set up name */
-    strcpy(element_out_vector.name, "transport_vector");
-    /* Copy data */
-    FOR_ELEMENTS(ele) {
-        /* Add vector data do vector of vectors */
-        t.d[0] = ele->vector[0];
-        t.d[1] = ele->vector[1];
-        t.d[2] = ele->vector[2];
-        element_out_vector.vectors->push_back(t);
-    }
-    element_vector_arrays->push_back(element_out_vector);
-
-    /* Write VTK data on elements */
-    write_flow_vtk_element_data(s_out, element_scalar_arrays, element_vector_arrays);
-
-    /* Write Piece end */
-    xfprintf(s_out, "</Piece>\n");
-
-    /* Write tail */
-    write_flow_vtk_tail(s_out);
-
-    xfclose(s_out);
-    xprintf( Msg, "O.K.\n");
-
-    /* Delete unused object */
-    for(subst_id=0; subst_id<1; subst_id++) {
-        delete p_element_out_scalar[subst_id].scalars;
-    }
-
-    xfree(p_element_out_scalar);
-    delete element_out_vector.vectors;
-
-    delete element_scalar_arrays;
-    delete element_vector_arrays;
-}
-/* =============================================================================
- * IMPORTANT NOTE: This is unused code. When following functions will not be
- * used, then it will be deleted in the future!
- * =============================================================================*/
-#if 0
-//==============================================================================
-//      OUTPUT TRANSPORT INIT
-//==============================================================================
-void output_transport_init(struct Problem *problem)
-{
-    FILE **out;
-    int i,j;
-    ElementIter ele;
-    Mesh* mesh;
-    Node* nod;
-    char dbl_fmt[ 16 ];
-
-    sprintf( dbl_fmt, "%%.%dg ", problem->out_digit );
-    out = open_temp_files(problem->transport,"%s.tmp","wt");
-    mesh = problem->mesh;
-
-    for(j = 0; j < 4; j++)
-    {
-        if (out[j] == NULL) continue;
-        xfprintf( out[j], "Nodes {\n");
-        FOR_NODES(nod){
-            xfprintf(out[j],"%d   ",nod->id);
-            xfprintf(out[j],dbl_fmt,nod->getX());xfprintf(out[j],"  ");
-            xfprintf(out[j],dbl_fmt,nod->getY());xfprintf(out[j],"  ");
-            xfprintf(out[j],dbl_fmt,nod->getZ());xfprintf(out[j],"\n");
-        }
-        xfprintf( out[j], "};\n");
-        xfprintf( out[j], "Elements {\n");
-        FOR_ELEMENTS(ele){
-            xfprintf(out[j],"%d  %d  %d   ",ele.id(),ele->type,ele->rid);
-            FOR_ELEMENT_NODES(ele,i)
-            xfprintf(out[j],"%d  ",ele->node[i]->id);
-            xfprintf(out[j],"\n");
-        }
-        xfprintf( out[j], "};\nVALUES\n");
-        xfclose(out[j]);
-    } //for end
-    xfree(out);
-}
-
-//==============================================================================
-//      OUTPUT TRANSPORT TIME
-//==============================================================================
-void output_transport_time(struct Problem *problem, double time)
-{
-        int i;
-        FILE **out;
-        ElementIter ele;
-        Mesh* mesh = problem->mesh;
-        Node* nod;
-        char dbl_fmt[ 16 ];
-        char filename[255];       // out
-    int sbi;
-    int n_subst;
-
-    n_subst = problem->transport->n_substances;
-    sprintf( dbl_fmt, "%%.%dg ", problem->out_digit );
-    sprintf( filename,"%s.tmp",problem->transport->transport_out_fname);
-    out = open_temp_files(problem->transport,"%s.tmp","at");
-
-        for(i = 0; i < 4; i++)        // phase for
-        {
-        if (out[i] == NULL) continue;
-        xfprintf( out[i], "Time =");
-        xfprintf( out[i], dbl_fmt, time);
-        xfprintf( out[i], "{\n");
-        xfprintf( out[i], "  Nodes {\n" );
-        FOR_NODES( nod ){
-                xfprintf(out[i],"  %d   ",nod->id);
-        for( sbi = 0; sbi < n_subst; sbi++ )
-                        switch(i)
-                        {
-                        case 0:
-                    xfprintf(out[i],dbl_fmt,nod->conc[sbi]);
-                        break;
-                        case 1:
-                    xfprintf(out[i],dbl_fmt,nod->conc_immobile[sbi]);
-                        break;
-                        case 2:
-                    xfprintf(out[i],dbl_fmt,nod->conc_sorb[sbi]);
-                        break;
-                        case 3:
-                    xfprintf(out[i],dbl_fmt,nod->conc_immobile_sorb[sbi]);
-                        break;
-                        }
-                xfprintf(out[i],"\n");
-        }
-        xfprintf( out[i], "  };\n" );
-        xfprintf( out[i], "  Elements {\n" );
-        FOR_ELEMENTS( ele ){
-                xfprintf(out[i],"  %d   ",ele.id());
-        for( sbi = 0; sbi < n_subst; sbi++ )
-                        switch(i)
-                        {
-                        case 0:
-                    xfprintf(out[i],dbl_fmt,ele->conc[sbi]);
-                        break;
-                        case 1:
-                    xfprintf(out[i],dbl_fmt,ele->conc_immobile[sbi]);
-                        break;
-                        case 2:
-                    xfprintf(out[i],dbl_fmt,ele->conc_sorb[sbi]);
-                        break;
-                        case 3:
-                    xfprintf(out[i],dbl_fmt,ele->conc_immobile_sorb[sbi]);
-                        break;
-                        }
-                xfprintf(out[i],"\n");
-        }
-        xfprintf( out[i], "  };\n" );
-        xfprintf( out[i], "};\n" );
-        xfclose( out[i] );
-
-        } //end for
-        xfree(out);
-}
-
-//==============================================================================
-// outputs velocity field (vector per element) in the ftrans coef file format
-//==============================================================================
-
-void output_veloc_ftrans(struct Problem *problem,double time)
-{
-  int i,cit;
-    ElementIter ele;
-    Mesh* mesh;
-    FILE *out;
-    char dbl_fmt[ 16 ];
-
-    ASSERT(!( problem == NULL ),"NULL as argument of function output_flow_field_in_time()\n");
-    if( problem->write_output == false )
         return;
-    mesh = problem->mesh;
-        xprintf( Msg, "Writing flow output files... ");// orig verb 2
-        out = xfopen( "coef_veloc.txt", "wt" );
-    //sprintf( dbl_fmt, "%%.%dg ", problem->out_digit );
-        sprintf( dbl_fmt, " %%15.%dg ", problem->out_digit );
-        xfprintf( out, "Velocity_field\n" );
-    xfprintf( out, "default 0    0   0   0   0   0\n");
-    xfprintf( out, "{\n");
-//        xfprintf( out, dbl_fmt, time);
-//  xfprintf( out, "\n%d\n", mesh->n_elements() );
-        cit = 0;
-    FOR_ELEMENTS( ele ) {
-//                xfprintf( out, "%d  ", cit);
-                xfprintf( out, "0  ");        // fracture NR. is always zero
-                xfprintf( out, "%d  ", ele.id());
-//                xfprintf( out, " %d ", ele->n_sides);     // 2do: test elem type - only for triangles
+    } else {
+        xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
+    }
 
-        //now works only in xy plane
-                xfprintf( out, dbl_fmt, ele->vector[0]);
-                xfprintf( out, " 0 ");  // additinal coefs for non-constant velocity on element
-                xfprintf( out, " 0 ");
-                xfprintf( out, dbl_fmt, ele->vector[1]);
-                xfprintf( out, " 0 ");  // additinal coefs for non-constant velocity on element
-                xfprintf( out, " 0 ");
+    base_filename = new string(fname);
 
-                xfprintf( out, "\n");
-                cit ++;
-        }
-        xfprintf( out, "}\n" );
-        xfclose( out );
- }
+    current_step = 0;
 
-//==============================================================================
-// INITIALIZE TRANSPORT OUTPUT FILE FOR CROSS SECTION
-//==============================================================================
-void output_transport_init_CS(struct Problem *problem)
-{
-        FILE **out;
-        int i,j;
-        char dbl_fmt[ 16 ];
-        ElementIter *elm_list;
+    node_data = new OutputDataVec;
+    elem_data = new OutputDataVec;
 
-        sprintf( dbl_fmt, "%%.%dg\t", problem->out_digit );
-        elm_list = problem->section->element_list;
+    // TODO: remove in the future
+    format_type = ConstantDB::getInstance()->getInt("Pos_format_id");
 
-        out = open_temp_files(problem, "%s.cs", "wt" );
+    set_base_file(base_file);
+    set_base_filename(base_filename);
+    set_mesh(mesh);
+    set_node_data(node_data);
+    set_elem_data(elem_data);
 
-        for(i=0; i < 4; i++)
-        if(out[i] == NULL) continue;
-        else
-        {
-        for(j=0; j < problem->section->n_elm; j++)
-        xfprintf(out[i], dbl_fmt, elm_list[j]->faux );
-        xfprintf(out[i],"\n");
-        xfclose(out[i]);
-        }
-}
-//==============================================================================
-// TRANSPORT CROSS SECTION OUTPUT IN TIME
-//==============================================================================
-void output_transport_time_CS(struct Problem *problem, double time)
-{
-        FILE **out;
-      //  Mesh* mesh;
-      //  TNode* nod;
-    char dbl_fmt[ 16 ];
-    int i,j,sbi,n_elm,n_subst;
-        ElementIter *elm,**elm_list;
+    set_format_type(format_type);
 
-        elm = problem->mesh->element_hash;
-        n_elm = problem->section->n_elm;
-        elm_list = problem->section->element_list;
-    n_subst = problem->n_substances;
-    sprintf( dbl_fmt, "%%.%dg\t", problem->out_digit );
-       // mesh = problem->mesh;
-        out = open_temp_files(problem, "%s.cs", "at" );
-        for(i=0; i < 4; i++){
-        if(out[i] == NULL) continue;
-        for( sbi = 0; sbi < n_subst; sbi++ )
-        {
-     //   xfprintf( out[i], "%s\t", problem->substance_name[sbi]);
-     //  xfprintf( out[i], dbl_fmt, time);
-        for(j=0; j < n_elm; j++)
-                switch(i)
-                {
-                case 0:
-                xfprintf(out[0],dbl_fmt,elm_list[j]->conc[sbi]);
-                break;
-                case 1:
-                xfprintf(out[1],dbl_fmt,elm_list[j]->conc_immobile[sbi]);
-                break;
-                case 2:
-                xfprintf(out[2],dbl_fmt,elm_list[j]->conc_sorb[sbi]);
-                break;
-                case 3:
-                xfprintf(out[3],dbl_fmt,elm_list[j]->conc_immobile_sorb[sbi]);
-                break;
-                }
-                xfprintf(out[i],"\n");
-        }
-     //   xfprintf( out[i], "\n" );
-        xfclose( out[i] );
-        }
+    switch(format_type) {
+    case VTK_SERIAL_ASCII:
+    case VTK_PARALLEL_ASCII:
+        _write_head = write_vtk_head;
+        _write_data = write_vtk_time_data;
+        _write_tail = write_vtk_tail;
+        break;
+    case POS_ASCII:
+    case POS_BIN:
+        _write_head = write_msh_head;
+        _write_data = write_msh_time_data;
+        _write_tail = write_msh_tail;
+        break;
+    default:
+        _write_head = write_null_head;
+        _write_data = write_null_time_data;
+        _write_tail = write_null_tail;
+        break;
+    }
+
+    _write_head(this);
 }
 
-//==============================================================================
-//      OUTPUT TRANSPORT TIME MATRIX
-//==============================================================================
-void output_transport_time_matrix(struct Problem *problem, double time)
+/**
+ * \brief Destructor of OutputTime. It doesn't do anything, because all
+ * necessary destructors will be called in destructor of Output
+ */
+OutputTime::~OutputTime(void)
 {
-        int i,el;
-        FILE **out;
-        ElementIter ele;
-        Mesh* mesh;
-        Node* nod;
-    char dbl_fmt[ 16 ];
-    int sbi;
-    int n_subst;
-
-    n_subst = problem->transport->n_substances;
-        mesh = problem->mesh;
-    sprintf( dbl_fmt, "%%.%dg ", problem->out_digit );
-        out = open_temp_files(problem->transport,"%s.tmp","at");
-
-        for(i = 0; i < 4; i++)        // phase for
-        {
-        if (out[i] == NULL) continue;
-        xfprintf( out[i], "Time =");
-        xfprintf( out[i], dbl_fmt, time);
-        xfprintf( out[i], "{\n");
-        xfprintf( out[i], "  Nodes {\n" );
-        FOR_NODES( nod ){
-                xfprintf(out[i],"  %d   ",nod->id);
-        for( sbi = 0; sbi < n_subst; sbi++ )
-                        switch(i)
-                        {
-                        case 0:
-                    xfprintf(out[i],dbl_fmt,nod->conc[sbi]);
-                        break;
-                        case 1:
-                    xfprintf(out[i],dbl_fmt,nod->conc_immobile[sbi]);
-                        break;
-                        case 2:
-                    xfprintf(out[i],dbl_fmt,nod->conc_sorb[sbi]);
-                        break;
-                        case 3:
-                    xfprintf(out[i],dbl_fmt,nod->conc_immobile_sorb[sbi]);
-                        break;
-                        }
-                xfprintf(out[i],"\n");
-        }
-        xfprintf( out[i], "  };\n" );
-        xfprintf( out[i], "  Elements {\n" );
-        for(el=0;el<mesh->n_elements();el++){
-                xfprintf(out[i],"  %d   ",mesh->epos_id[el]);
-        for( sbi = 0; sbi < n_subst; sbi++ )
-                        switch(i)
-                        {
-                        case 0:
-                    xfprintf(out[i],dbl_fmt,problem->transport->conc[MOBILE][sbi][el]);
-                        break;
-                        case 1:
-                    xfprintf(out[i],dbl_fmt,ele->conc_immobile[sbi]);
-                        break;
-                        case 2:
-                    xfprintf(out[i],dbl_fmt,ele->conc_sorb[sbi]);
-                        break;
-                        case 3:
-                    xfprintf(out[i],dbl_fmt,ele->conc_immobile_sorb[sbi]);
-                        break;
-                        }
-                xfprintf(out[i],"\n");
-        }
-        xfprintf( out[i], "  };\n" );
-        xfprintf( out[i], "};\n" );
-        xfclose( out[i] );
-
-        } //end for
-        xfree(out);
+    _write_tail(this);
 }
-
-#endif
-//-----------------------------------------------------------------------------
-// vim: set cindent:

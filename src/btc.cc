@@ -124,6 +124,45 @@ int *BTC_elm_list( int n_btc, char *line )
 		cp[ i ] = atoi( strtok( i == 0 ? line : NULL , " \t,;" ) );
 	return cp;
 }
+
+//==============================================================================
+//      OPEN TEMP FILES
+//==============================================================================
+static FILE **open_temp_files(struct Transport *transport,const char *fileext,const char *open_param)
+{
+    FILE **out=NULL;
+    char filename0[255],filename1[255],filename2[255],filename3[255];
+    int n = 4; //max output files
+    int sub;
+
+    out = (FILE**)xmalloc(n*sizeof(FILE*));
+
+    sub = transport->transport_sub_problem;
+
+    sprintf(filename0, fileext, transport->transport_out_fname);
+    out[0] = xfopen(filename0, open_param);
+    out[1] = NULL;
+    out[2] = NULL;
+    out[3] = NULL;
+
+    if( ((sub & 1) == 1) && (strcmp(transport->transport_out_im_fname,"NULL") != 0)) {
+        sprintf( filename1,fileext,transport->transport_out_im_fname);
+        out[1] = xfopen( filename1, open_param );
+    }
+
+    if( ((sub & 2) == 2) && (strcmp(transport->transport_out_sorp_fname,"NULL") != 0)) {
+        sprintf(filename2,fileext,transport->transport_out_sorp_fname);
+        out[2] = xfopen( filename2, open_param );
+    }
+
+    if( ((sub & 3) == 3) && (strcmp(transport->transport_out_im_sorp_fname,"NULL") != 0)) {
+        sprintf(filename3,fileext,transport->transport_out_im_sorp_fname);
+        out[3] = xfopen( filename3, open_param );
+    }
+
+    return out;
+}
+
 //==============================================================================
 // INITIALIZE TRANSPORT OUTPUT FILE FOR BTC
 //==============================================================================
