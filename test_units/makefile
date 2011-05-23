@@ -27,8 +27,9 @@
 
 # Include global settings
 include ../../makefile.in
+include ../../makefile.include
 
-LOCAL_INCLUDE = -I../../include
+LOCAL_INCLUDE = -I../../include -I../../src 
 
 # Important directories
 
@@ -77,9 +78,9 @@ ${OBJS}/%.o: ${SRC}/%.cpp
 	${CPP} -c -o $@ ${CFLAGS} ${CDEFS} ${LOCAL_INCLUDE} ${INCLUDE} $<	
 
 # Rule to compile one of the target
-test: ${TEST_OBJS} 
-	${CPP} -c -o test.o ${DEFS} ${LOCAL_INCLUDE} ${INCLUDE} test.cpp
-	${CPP_LINKER} ${CFLAGS} -o test test.o ${TEST_OBJS} ${LIBS}
+test: ${TEST_FILES} 
+	${CPP} -o test ${CDEFS} ${LOCAL_INCLUDE} ${INCLUDE} ${TEST_FILES} ${PETSC_LIB} -I../../third_party/boost-1.42/
+	./test
 
 # The rule to delete all generated files	
 clean: 

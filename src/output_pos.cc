@@ -31,6 +31,9 @@
 #include "xio.h"
 #include "mesh/mesh.h"
 
+// TODO: v tomto souboru se poflakuji vselijake funkce mimo tridy, to v objektovem navrhu nema co delat
+// maji to byt privatni metody nejake tridy (patrne Output)
+
 /**
  * \brief This function write header of GMSH (.msh) file format
  * \param[in]   *output     The pointer at output object

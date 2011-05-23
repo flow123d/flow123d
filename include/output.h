@@ -35,16 +35,21 @@
 #include <fstream>
 
 //#include "system.hh"
-#include "transport.h"
+#include "transport.h"  // TODO remove
 
 /// External types
-struct Problem;
-class ConvectionTransport;
+struct Problem;         // TODO remove
+class ConvectionTransport;  // TODO remove
 class Mesh;
 
+//TODO: v C++ by mely byt konstanty uvnitr definice trid, nejlepe jako enum napr:
+// enum OutputDataFormat { GMSH_ASCII, GMSH_BIN, ..}
+// a uvazit zda to ma byt public, nebo private (nebo protected)
+
+
 // FILE formats
-#define POS_ASCII           1
-#define POS_BIN             2
+#define POS_ASCII           1   //TODO GMSH_ASCII
+#define POS_BIN             2   //TODO
 #define VTK_SERIAL_ASCII    3
 #define VTK_PARALLEL_ASCII  4
 
@@ -91,6 +96,9 @@ class Mesh;
 #define OUT_ARRAY_FLOAT_SCA     8
 #define OUT_ARRAY_DOUBLE_SCA    9
 
+// TODO : i definice typu by mely byt uvnitr trid ktere tyto definice potrebuji
+// opet ? verejne/nevrejne ...
+
 /* Temporary structure for storing data */
 typedef std::vector<double> ScalarFloatVector;
 typedef std::vector< vector<double> > VectorFloatVector;
@@ -115,10 +123,15 @@ typedef std::vector<OutVector> OutVectorsVector;
 
 /**
  * Class of output data storing reference on data
+ *
+ * TODO: podrobnejsi komentar, metody komentovat v header filech
+ * stejne tak u dlasich trid.
  */
 class OutputData {
 private:
 public:
+    // TODO: promenne by mely byt private
+
     string          *name;      ///< String with name of data
     string          *units;     ///< String with units
     void            *data;      ///< Pointer at own data
@@ -163,6 +176,11 @@ private:
     std::vector<OutputData> *elem_data; ///< List of data on elements
 
 
+    // TODO: tohle by se melo resit jinak. napr: Output by melo obsahovat
+    // abstraktni virtualni metodu write_data
+    // pak bychom meli potomky tridy Output pro jednotlive formaty vystupu,
+    // a ty by definovali vystup do patricneho formatu
+
     // Internal API for file formats
     int (*_write_data)(Output *output);
 protected:
@@ -176,6 +194,10 @@ protected:
     void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
     void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
 public:
+
+    // TODO: pokud je zde default konstruktor,
+    // mela by byt moznost pozdeji nastavit ukazatel na sit, jinak se prislusna instance neda k nicemu pouzit
+
     Output() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
 
     Output(Mesh *mesh, string filename);

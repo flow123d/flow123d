@@ -304,8 +304,8 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 
     /* Write static data to output file */
     if (rank == 0) {
-        const char* out_fname = OptGetFileName("Output", "Output_file", NULL);
-        Output *output = new Output(mesh, string(out_fname));
+        string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
+        Output *output = new Output(mesh, out_fname);
 
         // call output->register_node_data(name, unit, data) here to register other data on nodes
         // call output->register_elem_data(name, unit, data) here to register other data on elements
