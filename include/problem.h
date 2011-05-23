@@ -47,6 +47,7 @@ class Mesh;
 struct Transport;
 class MaterialDatabase;
 class ConvectionTransport;
+class TransportOperatorSplitting;
 
 //=============================================================================
 // STRUCTURE OF THE SOLVED TASK
@@ -91,6 +92,7 @@ struct Problem {
     //Transport
    // struct Transport *transport;
     ConvectionTransport *otransport;
+    TransportOperatorSplitting *transport_os;
 
     // Reaction
     //struct Reaction *react;

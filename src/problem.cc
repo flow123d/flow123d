@@ -36,6 +36,7 @@
 
 #include "system/system.hh"
 #include "xio.h"
+#include "transport_operator_splitting.hh"
 #include "mesh/mesh.h"
 #include "materials.hh"
 #include "flow/darcy_flow_mh.hh"

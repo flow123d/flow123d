@@ -73,6 +73,7 @@ $(OBJS)/xio.o\
 $(OBJS)/sparse_graph.o\
 $(OBJS)/convert.o\
 $(OBJS)/transport.o\
+$(OBJS)/transport_operator_splitting.o\
 $(OBJS)/la_linsys.o\
 $(OBJS)/time_governor.o\
 \

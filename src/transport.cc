@@ -109,11 +109,12 @@ ConvectionTransport::ConvectionTransport(MaterialDatabase *material_database, Me
     transport_init();
 }
 
+/*
 ConvectionTransport::~ConvectionTransport()
 {
 
 }
-
+*/
 
 /*
 //=============================================================================
@@ -996,7 +997,7 @@ void ConvectionTransport::compute_time_step() {
 //=============================================================================
 //      TRANSPORT ONE STEP
 //=============================================================================
-void ConvectionTransport::transport_one_step() {
+void ConvectionTransport::compute_one_step() {
 
 	MaterialDatabase::Iter material;
 	int sbi;
@@ -1071,7 +1072,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	    	time += time_step;
 	     //   SET_TIMER_SUBFRAMES("TRANSPORT",t);  // should be in destructor as soon as we have class iteration counter
 		START_TIMER("transport_step");
-	    	transport_one_step();
+	    	compute_one_step();
 		END_TIMER("transport_step");
 
 		     // Calling linear reactions and Semchem together
@@ -1244,4 +1245,9 @@ void ConvectionTransport::save_time_step_C() {
             if (conc[ph][sbi] != NULL)
                 memcpy(prev_conc[ph][sbi], conc[ph][sbi], mesh->n_elements() * sizeof(double));
 
+}
+
+
+double ConvectionTransport::cfl_time_constrain() {
+	return time_step;
 }

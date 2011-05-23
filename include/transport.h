@@ -58,11 +58,12 @@ class OutputTime;
 class ConvectionTransport {
 public:
 	ConvectionTransport(MaterialDatabase *material_database, Mesh *init_mesh);
-	~ConvectionTransport();
+//	~ConvectionTransport();
 	void create_transport_matrix_mpi(); //
 	void convection(); // upravit
-	void transport_one_step();
+	void compute_one_step();
 	void transport_until_time(double time_interval);
+	double cfl_time_constrain();
 
     double ***out_conc;
     int              n_substances;    // # substances transported by water
@@ -205,7 +206,7 @@ private:
 };
 
 
-void alloc_transport(struct Problem *problem);
+//void alloc_transport(struct Problem *problem);
 
 
 

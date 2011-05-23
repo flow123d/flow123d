@@ -8,6 +8,15 @@
 #ifndef EQUATION_HH_
 #define EQUATION_HH_
 
+
+#include <petscmat.h>
+#include <time_governor.hh>
+class Mesh;
+class MaterialDatabase;
+class TimeGovernor;
+
+
+
 /**
  * Class EquationBase is abstract base class for a general time dependent model. This class should provide general interface
  * that can be used for general coupling of various particular models. By a model we mean a discrete solver of

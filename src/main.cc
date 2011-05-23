@@ -27,10 +27,12 @@
  *
  */
 
+
 #include "constantdb.h"
 #include "mesh/ini_constants_mesh.hh"
 
 #include "transport.h"
+#include "transport_operator_splitting.hh"
 
 #include <petsc.h>
 
@@ -63,7 +65,6 @@
 #include "rev_num.h"
 /// named version of the program
 #define _VERSION_   "1.6.5"
-
 
 static struct Problem G_problem;
 
@@ -293,6 +294,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
         problem->otransport = new ConvectionTransport(problem->material_database, mesh);
+        problem->transport_os = new TransportOperatorSplitting(problem->material_database, mesh);
     }
 
 
