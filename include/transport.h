@@ -65,9 +65,6 @@ public:
 	void transport_until_time(double time_interval);
 	double cfl_time_constrain();
 
-    double ***out_conc;
-    int              n_substances;    // # substances transported by water
-    char            **substance_name;   // Names of substances
 private:
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
@@ -118,6 +115,9 @@ private:
 
             //double ****node_conc;	// zatim nepouzite
 
+            double ***out_conc;
+            int              n_substances;    // # substances transported by water
+            char            **substance_name;   // Names of substances
 
         	//Density
             bool density;			// Density Yes/NO

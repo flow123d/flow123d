@@ -211,7 +211,7 @@ public:
     int register_node_data(std::string name, std::string unit, _Data *data, uint size);
 
     template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, _Data *data, uint size);
+    int register_elem_data(std::string name, std::string unit, _Data *data, unsigned int size);
 
     template <typename _Data>
     int register_node_data(std::string name, std::string unit, std::vector<_Data> &data);
@@ -241,10 +241,6 @@ public:
 class OutputTime : public Output {
 private:
     int              current_step;      ///< Current step
-    struct OutScalar *element_scalar;   // Temporary solution
-    int              elem_sca_count;    // Temporary solution
-    struct OutVector *element_vector;   // Temporary solution
-
     // Internal API for file formats
     int (*_write_data)(OutputTime *output, double time, int step);
     int (*_write_head)(OutputTime *output);
@@ -254,15 +250,13 @@ public:
     OutputTime(Mesh *mesh, string filename);
     ~OutputTime();
 
-    // Temporary solution for getting data from transport
-    void get_data_from_transport(ConvectionTransport *transport);
-    void free_data_from_transport(void);
+    template <typename _Array>
+    int register_node_data(std::string name, std::string unit, _Array *data, uint size);
 
-    template <typename _Data>
-    int register_node_data(std::string name, std::string unit, _Data *data, uint size);
+    template <typename _Array>
+    int register_elem_data(std::string name, std::string unit, _Array *data, uint size);
 
-    template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, _Data *data, uint size);
+    int register_elem_data(std::string name, std::string unit, double *data, uint size);
 
     // This method registers node data, that will be written to the file,
     // when write_data() will be called

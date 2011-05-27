@@ -197,10 +197,11 @@ void ConvectionTransport::transport_init() {
 
             output_vector_gather();
 
-            /* TODO: try to register out_conc */
-            output_time->get_data_from_transport(this);
+            // Register concentrations data on elements
+            for(int subst_id=0; subst_id<n_substances; subst_id++) {
+            	output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+            }
             output_time->write_data(time);
-            output_time->free_data_from_transport();
         } else {
             output_time = NULL;
         }
@@ -1095,10 +1096,11 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	            if(output_time != NULL) {
 	                output_vector_gather();
 
-	                /* TODO: try to register out_conc */
-	                output_time->get_data_from_transport(this);
+	                // Register concentrations data on elements
+	                for(int subst_id=0; subst_id<n_substances; subst_id++) {
+	                	output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+	                }
 	                output_time->write_data(time);
-	                output_time->free_data_from_transport();
 	            }
 	          //  if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
 	               // output_time(problem, t * time_step); // time variable flow field

@@ -287,16 +287,15 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
     problem->water=new DarcyFlowMH_Steady(mesh, problem->material_database);
+    // Pointer at Output should be in this object
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(problem->water);
 
     problem->water->compute_one_step();
-
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
         problem->otransport = new ConvectionTransport(problem->material_database, mesh);
         problem->transport_os = new TransportOperatorSplitting(problem->material_database, mesh);
     }
-
 
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 
@@ -307,9 +306,14 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
         string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
         Output *output = new Output(mesh, out_fname);
 
+        output->get_data_from_mesh();
+
         // call output->register_node_data(name, unit, data) here to register other data on nodes
         // call output->register_elem_data(name, unit, data) here to register other data on elements
+
         output->write_data();
+
+        output->free_data_from_mesh();
 
         delete output;
     }

@@ -459,8 +459,6 @@ Output::Output(Mesh *_mesh, string fname)
     }
 
     base_filename = new string(fname);
-
-    get_data_from_mesh();
 }
 
 /**
@@ -468,8 +466,6 @@ Output::Output(Mesh *_mesh, string fname)
  */
 Output::~Output()
 {
-    free_data_from_mesh();
-
     // Free all reference on node and element data
     if(node_data != NULL) {
         delete node_data;
@@ -487,73 +483,6 @@ Output::~Output()
         base_file->close();
         delete base_file;
     }
-
-    xprintf(Msg, "O.K.\n");
-}
-
-/**
- * \brief This method free data that was got from transport
- */
-void OutputTime::free_data_from_transport(void)
-{
-    /* Delete vectors */
-    delete element_vector->vectors;
-    delete element_vector;
-    /* Delete scalars */
-    for(int subst_id=0; subst_id<elem_sca_count; subst_id++) {
-        delete element_scalar[subst_id].scalars;
-    }
-    delete[] element_scalar;
-}
-
-/**
- * \brief This method get data from transport and store it in OutputTime
- *
- * \param[in] *transport    The pointer at transport
- */
-void OutputTime::get_data_from_transport(ConvectionTransport *transport)
-{
-    Mesh *mesh = get_mesh();
-    NodeIter node;
-    element_scalar = new OutScalar[transport->n_substances];
-    element_vector = new OutVector;
-
-    xprintf(Msg, "Getting data from transport ...\n");
-
-    elem_sca_count = transport->n_substances;
-
-    /* Go through all substances and add them to vector of scalars */
-    for(int subst_id=0; subst_id<elem_sca_count; subst_id++) {
-        element_scalar[subst_id].scalars = new ScalarFloatVector;
-        /* Set up names */
-        element_scalar[subst_id].name = transport->substance_name[subst_id];
-        element_scalar[subst_id].unit = ""; // TODO: get units from somewhere
-        /* Reserve memory for vectors */
-        element_scalar[subst_id].scalars->reserve(mesh->n_elements());
-        /* Add scalar data to vector of scalars */
-        for(int el=0; el<mesh->n_elements(); el++) {
-            element_scalar[subst_id].scalars->push_back(transport->out_conc[MOBILE][subst_id][el]);
-        }
-        register_elem_data(element_scalar[subst_id].name, element_scalar[subst_id].unit, *element_scalar[subst_id].scalars);
-    }
-
-    /* Add vectors to vector */
-    element_vector->vectors = new VectorFloatVector;
-    /* Reserve memory for vector */
-    element_vector->vectors->reserve(mesh->n_elements());
-    /* Set up name */
-    element_vector->name = "transport_vector";
-    /* Copy data */
-    FOR_ELEMENTS(ele) {
-        /* Add vector data do vector of vectors */
-        vector<double> vec;
-        vec.reserve(3);
-        vec.push_back(ele->vector[0]);
-        vec.push_back(ele->vector[1]);
-        vec.push_back(ele->vector[2]);
-        element_vector->vectors->push_back(vec);
-    }
-    register_elem_data(element_vector->name, element_vector->unit, *element_vector->vectors);
 
     xprintf(Msg, "O.K.\n");
 }
@@ -578,10 +507,10 @@ void OutputTime::get_data_from_transport(ConvectionTransport *transport)
  *
  * TODO: Test this method!
  */
-template <typename _Data>
+template <typename _Array>
 int OutputTime::register_node_data(std::string name,
         std::string unit,
-        _Data *data,
+        _Array *data,
         uint size)
 {
     std::vector<OutputData> *node_data = get_node_data();
@@ -595,7 +524,7 @@ int OutputTime::register_node_data(std::string name,
                 od_iter++)
         {
             if(*od_iter->name == name) {
-                od_iter->data = (void*)&data;
+                od_iter->data = (void*)data;
                 found = 1;
                 break;
             }
@@ -608,7 +537,7 @@ int OutputTime::register_node_data(std::string name,
 
         return 1;
     } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", size, mesh->node_vector.size());
         return 0;
     }
 }
@@ -633,11 +562,11 @@ int OutputTime::register_node_data(std::string name,
  *
  * TODO: Test this method!
  */
-template <typename _Data>
+template <typename _Array>
 int OutputTime::register_elem_data(std::string name,
         std::string unit,
-        _Data *data,
-        uint size)
+        _Array *data,
+        unsigned int size)
 {
     std::vector<OutputData> *elem_data = get_elem_data();
     Mesh *mesh = get_mesh();
@@ -650,7 +579,7 @@ int OutputTime::register_elem_data(std::string name,
                 od_iter++)
         {
             if(*od_iter->name == name) {
-                od_iter->data = (void*)&data;
+                od_iter->data = (void*)data;
                 found = 1;
                 break;
             }
@@ -663,7 +592,41 @@ int OutputTime::register_elem_data(std::string name,
 
         return 1;
     } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", size, mesh->element.size());
+        return 0;
+    }
+}
+
+int OutputTime::register_elem_data(std::string name,
+        std::string unit,
+        double *data,
+        unsigned int size)
+{
+    std::vector<OutputData> *elem_data = get_elem_data();
+    Mesh *mesh = get_mesh();
+
+    if(mesh->element.size() == size) {
+        int found = 0;
+
+        for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
+                od_iter != elem_data->end();
+                od_iter++)
+        {
+            if(*od_iter->name == name) {
+                od_iter->data = (void*)data;
+                found = 1;
+                break;
+            }
+        }
+
+        if(found == 0) {
+            OutputData *out_data = new OutputData(name, unit, data, size);
+            elem_data->push_back(*out_data);
+        }
+
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", size, mesh->element.size());
         return 0;
     }
 }
