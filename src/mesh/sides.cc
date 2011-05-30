@@ -363,7 +363,7 @@ void calc_side_c_val(struct Side *sde) {
 
 
 //=============================================================================
-// CALCULATE VALUE ON THE RHS
+// CALCULATE VALUE ON THE RHS -
 //=============================================================================
 
 void calc_side_rhs(struct Side *sde) {
@@ -373,6 +373,11 @@ void calc_side_rhs(struct Side *sde) {
     ele = sde->element;
     ASSERT(!(ele == NULL), "Element of the side %d not defined\n", sde->id);
     ele->rhs[ sde->lnum ] += (ele->centre[ 2 ] - sde->centre[ 2 ]);
+    /*
+     * prbably zero order approximation of :
+     * Int_{El} z div Psi - Int_{Side} z Psi .dot. normal
+     */
+
 }
 //=============================================================================
 

@@ -273,7 +273,8 @@ void DarcyFlowMH_Steady::mh_abstract_assembly() {
         // set block B, B': element-side, side-element
         ls->mat_set_values(1, &el_row, nsides, side_rows, minus_ones);
         ls->mat_set_values(nsides, side_rows, 1, &el_row, minus_ones);
-        // set RHS for sides - dirichlet BC; RHS for elements - neuman BC
+        // set RHS for sides - dirichlet BC; gravity term ?
+        // RHS for elements - neuman BC
         ls->rhs_set_values(nsides, side_rows, ele->rhs);
 
         // set sources
@@ -321,6 +322,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly() {
     //    MatAssemblyEnd(mtx->A,MAT_FINAL_ASSEMBLY);
     // }
     // set block F - diagonal: edge-edge from Newton BC
+    // also Dirichlet BC
     for (i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
         edge_row = row_4_edge[edge_4_loc[i_loc]];
         EdgeFullIter edg = mesh->edge(edge_4_loc[i_loc]);
