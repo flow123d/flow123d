@@ -376,5 +376,6 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
  	 //}
 }
 
+double Linear_reaction::set_timestep(double new_timestep){ return new_timestep;} //implementation will follow, early
 int Linear_reaction::get_nr_of_decays(void){return nr_of_decays;} // two simple inlinefunction returning private variables
 int Linear_reaction::get_nr_of_FoR(void){return nr_of_FoR;}

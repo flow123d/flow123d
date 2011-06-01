@@ -2,7 +2,7 @@
  *
  * Class in this file makes it possible to realize  simulation of reaction of the first order by simple matrix multiplication.
  * One step of the linear reaction is represented as a product of a matrix containing concentrations of observed speciesin elements in rows multiplied by so called
- * reaction_matrix.
+ * reaction_matrix. Through this way radioactive decay can bee also realized and that was exactly what we did at the begining of journey. :-)
  * Matrix containing concentrations has a dimension Nxn, where N is a number of elements in mesh and n denotes a number of transported chemical species.
  * The reaction_matrix is a square matrix and it has a dimension nxn.
  *
@@ -31,6 +31,7 @@ class Linear_reaction
 		void set_For_on(void); ///< reads an information if first order reactions simulation is switched on, duplicit to the function in problem.cc
 		void set_decay_on(void); ///< reads an information if a decay simulation is switched on, duplicit to the function in problem.cc
 		void set_kinetic_constants(char *section, int reaction_nr); ///< reads an information and prepares a vector (onedimensional double *array) containing kinetic constants of every single first order reactions, Those informations are placed in a block with a string section at the beginning, from those constants half-lives belonging to first order reactions are computed, from ini-file
+		double set_timestep(double new_timestep); ///< enables to change the timestep while the simulation is running further, method is not implemented yet
 		double **allocate_reaction_matrix(int n_subst); ///< allocates memory for (n_subst x n_subst) square reaction matrix, n_subst is the number of all the substances soluted in grounwater
 		double **modify_reaction_matrix(int n_subst,  int nr_of_participants, double time_step); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched off, this function modifies values identified by integer numbers in an array substance_ids
 		double **modify_reaction_matrix(int n_subst, double time_step, int bifurcation); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched on
