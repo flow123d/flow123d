@@ -3,37 +3,25 @@
 #define interfaceH
 //---------------------------------------------------------------------------
 #ifndef mobile
-#define mobile 0
+	#define mobile 0
 #endif
 //---------------------------------------------------------------------------
 #ifndef immobile
-#define immobile 1
+	#define immobile 1
 #endif
-//---------------------------------------------------------------------------
-//#ifndef mobile_sorb
-//#define mobile_sorb 2
-//#endif
-//---------------------------------------------------------------------------
-//#ifndef immobile_sorb
-//#define immobile_sorb 3
-//#endif
-//---------------------------------------------------------------------------
+#include "../mesh/elements.h"
 
-#include <stdio.h>
-#include <stdio.h>
-#include <dirent.h>
-#include "che_head.h"
-void print_usage(void);
-void kontrola(void);
-void priprav(void);
-
-//--------------pro semchem--------------------------------------------------
-void che_nadpis__soubor(char *soubor);
-void che_outpocp_soubor(FILE *fw);
-void che_pocitej_soubor(char *soubor, int *poc_krok);
-void che_vypis_soubor(char *soubor);
-void che_presun_poc_p_(void);
-void che_vypis__soubor(char *soubor);
+class Semchem_interface
+{
+	public:
+		Semchem_interface(void);
+		void compute_reactions(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr);
+		bool semchem_on;
+	private:
+		double set_timestep(double new_timestep);
+//		void priprav(void);
+//		double change_time_step;
+};
 
 //--------------------------------------------------------------------------
 //  GLOBALNI PROMENNE

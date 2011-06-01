@@ -1,27 +1,18 @@
 //---------------------------------------------------------------------------
 
-#pragma hdrstop
-#include "semchem_interface.hh"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <petscvec.h>
 #include "materials.hh"
 #include "transport.h"
-//#include "mesh/mesh.h"
 #include "problem.h"
-#include "system/system.hh"
-//#include "mesh/ini_constants_mesh.hh"
+#include "../system/system.hh"
 #include "constantdb.h"
-//#include "mesh/mesh_types.hh"
+#include "che_semchem.h"
+#include "semchem_interface.hh"
 
-//--------------pro semchem--------------------------------------------------
-// void che_nadpis__soubor(char *soubor);
-// void che_outpocp_soubor(FILE *fw);
-// void che_pocitej_soubor(char *soubor, int *poc_krok);
-// void che_vypis_soubor(char *soubor);
-// void che_presun_poc_p_(void);
-// void che_vypis__soubor(char *soubor);
+using namespace std;
 
 //---------------------------------------------------------------------------
 //  GLOBALNI PROMENNE
@@ -31,26 +22,24 @@ struct TS_lat 	*P_lat;
 struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
-//void priprav(char *jmeno){
-void priprav(void){
+Semchem_interface::Semchem_interface(void)
+	:semchem_on(false)
+{
   FILE *fw_chem;
 
+  //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
   fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
-  ctiich();
+  this->semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
+  if(semchem_on == true) ctiich();
   return;
 }
 
 //---------------------------------------------------------------------------
 //                 FUNKCE NA VYPOCET CHEMIE PRO ELEMENT V TRANSPORTU
 //---------------------------------------------------------------------------
-//void che_vypocetchemie(struct Problem *problem, Vec *conc_mob_arr, Vec *conc_immob_arr, Vec *sorb_mob_arr, Vec *sorb_immob_arr)
-//void che_vypocetchemie(struct Problem *problem, PetscScalar **conc_mob_arr, PetscScalar **conc_immob_arr, PetscScalar **sorb_mob_arr, PetscScalar **sorb_immob_arr)
-void che_vypocetchemie(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
+void Semchem_interface::compute_reactions(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
 {
-   //Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-  
-   //ElementIter ppelm;
-   FILE *fw, *stream, *fr;
+  FILE *fw, *stream, *fr;
    int i, j; //, poradi;
    int krok;
    int poc_krok;
@@ -63,12 +52,7 @@ void che_vypocetchemie(bool porTyp, double time_step, ElementIter ppelm, int por
 
    ASSERT(P_lat != NULL,"\nP_lat NENI ALOKOVANE\n");
 
-   //FOR_ELEMENTS(ppelm){
-   //poradi = ELEMENT_FULL_ITER(ppelm) - mesh->element.begin();
-   //xprintf(Msg,"\n!!!! TRANSPORT %d!!!!\n",problem->transport);
-   //xprintf(Msg,"\nmolarni hmotnost: %f, latka %d, poradi %d\n",P_lat[0].M,0,poradi);
-
-   //==================================================================
+  //==================================================================
    // ----------------- NEJPRVE PRO MOBILNI PORY ----------------------
    //==================================================================
    n = (ppelm->material->por_m) / (1 - ppelm->material->por_m); //asi S/V jako zze splocha
@@ -232,4 +216,8 @@ void che_vypocetchemie(bool porTyp, double time_step, ElementIter ppelm, int por
    xprintf(Msg,"\n skoncila chemie\n");
 }
 
-#pragma package(smart_init)
+double Semchem_interface::set_timestep(double new_timestep)
+{
+	; //implementation will folow
+}
+

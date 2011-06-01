@@ -1,18 +1,28 @@
+#ifndef BIGHEAD
+#define BIGHEAD
 /********************************************************************/
 /*   BIG-HEAD.H     GEN-TRAN Verse 1.0                              */
 /********************************************************************/
 #define DOS                                 /* Prepinac DOS X UNIX  */
 #define VERB                                /* Upovidany vystup     */
 #define BOOL int
-//#define PBOOL *int
-/********************************************************************/
-//#include "..\moduly\verze.h"
-//#include "verze.h"
-/********************************************************************/
+
+#ifdef MAIN
+	#define EX
+#else
+	#define EX extern
+#endif
+
+#ifndef MAXPATH
+	#define MAXPATH 2048
+#endif
+#define MAX_POC_LATEK 200
+#define MAX_POC_PARAM_SORPCE 5
+#define ACCURACY 1e-12
+
 #define fnsplit _splitpath                                            // ! Dressler 24.08.2001
 #define fnmerge _makepath                                             // ! Dressler 24.08.2001
-#ifdef DOS                                               
- //#include <alloc.h>
+#ifdef DOS
  #include <dirent.h>
 #endif
 #include <stdlib.h>                                                   // ! Dressler 24.08.2001
@@ -24,7 +34,7 @@
 #else
  #define EX extern
 #endif
-//#include<WinDef.h>  //pridano
+
 /********************************************************************/
 
 // mh: kompiluju flow/tran
@@ -33,12 +43,12 @@
 /********************************************************************/
 
 #ifndef SKUPINY_MATERIALU
- #define SKUPINY_MATERIALU
+	#define SKUPINY_MATERIALU
 #endif //SKUPINY_MATERIALU
 /*------------------------------------------------------------------*/
 
 #ifndef SKUPINA_SCENAR
- #define SKUPINA_SCENAR
+	#define SKUPINA_SCENAR
 #endif // SKUPINA_SCENAR
 /*------------------------------------------------------------------*/
 
@@ -48,7 +58,7 @@
 /*------------------------------------------------------------------*/
 
 #ifndef SKUPINA_RESICE
- #define SKUPINA_RESICE
+	#define SKUPINA_RESICE
 #endif // SKUPINA_RESICE
 /*------------------------------------------------------------------*/
 
@@ -58,25 +68,25 @@
 /*------------------------------------------------------------------*/
 
 #ifndef SKUPINA_DUALPOROSITY
- #define SKUPINA_DUALPOROSITY
+	#define SKUPINA_DUALPOROSITY
 #endif // SKUPINA_DUALPOROSITY
 
 /*------------------------------------------------------------------*/
 
 #ifndef SKUPINA_REAKCE
- #define SKUPINA_REAKCE
+	#define SKUPINA_REAKCE
 #endif // SKUPINA_REAKCE
 
 /*------------------------------------------------------------------*/
 /*
 #ifndef SKUPINA_INTERTRANSFER
- #define SKUPINA_INTERTRANSFER
+	 #define SKUPINA_INTERTRANSFER
 #endif SKUPINA_INTERTRANSFER
 */
 /*------------------------------------------------------------------*/
 /*
 #ifndef SKUPINA_CHEMIE
- #define SKUPINA_CHEMIE
+	#define SKUPINA_CHEMIE
 #endif SKUPINA_CHEMIE
 */
 /********************************************************************/
@@ -95,11 +105,10 @@
 #define PRG_NAME         "tran"
 /********************************************************************/
 #ifdef SKUPINA_CHEMIE
- #include "chem2\\chemd.h"    // mh: toto bude potreba zmenit !!!!!!
+	#include "chem2\\chemd.h"    // mh: toto bude potreba zmenit !!!!!!
 #endif // SKUPINA_CHEMIE
 #ifdef SKUPINA_REAKCE
-//#include "che_head.h"
-#include "semchem_interface.hh"
+	#include "semchem_interface.hh"
 #endif // SKUPINA_REAKCE
 /********************************************************************/
 /*                      Definice globalnich promennych              */
@@ -115,7 +124,7 @@ EX int      NULA;
 EX int      G_exit_code;
 /*------------------------------------------------------------------*/
 #ifdef SKUPINA_RESICE
-EX int      G_cas_resice, G_cas_rozhrani;
+	EX int      G_cas_resice, G_cas_rozhrani;
 #endif // SKUPINA_RESICE
 /*------------------------------------------------------------------*/
 #ifdef SKUPINA_CHEMIE
@@ -125,25 +134,25 @@ EX int      G_cas_chemie;
 /*   Seznam sousedu danych sten      ( -1 = vnejsi stena )          */
 /********************************************************************/
 #ifdef SKUPINA_STENY
-EX int      *P_Steny;
+	EX int      *P_Steny;
 #endif // SKUPINA_STENY
 /********************************************************************/
 /*  Vektory pro ulozeni soustavy linearnich rovnic                  */
 /********************************************************************/
 #ifdef SKUPINA_RESICE
-EX int      *P_i, *P_j;
-EX double   *P_MM, *P_MR, *P_MX;
+	EX int      *P_i, *P_j;
+	EX double   *P_MM, *P_MR, *P_MX;
 #endif // SKUPINA_RESICE
 /********************************************************************/
 /*  Vektory pro ulozeni slozek pro transport                        */
 /********************************************************************/
 #ifdef SKUPINA_TRANSPORT
-EX double   *P_rslo;
-EX double   *P_rslo_new;
- #ifdef SKUPINA_DUALPOROSITY
- EX double  *P_rslo_por;
- #endif // SKUPINA_DUALPOROSITY
-EX double   *P_sod;
+	EX double   *P_rslo;
+	EX double   *P_rslo_new;
+ 	 #ifdef SKUPINA_DUALPOROSITY
+	EX double  *P_rslo_por;
+ 	 #endif // SKUPINA_DUALPOROSITY
+	EX double   *P_sod;
 #endif // SKUPINA_TRANSPORT
 /********************************************************************/
 /*                      Definice datovych struktur                  */
@@ -416,7 +425,7 @@ struct S_rpo
 /*------------------------------------------------------------------*/
 };
 #ifdef SKUPINA_TRANSPORT
-EX struct S_rpo *P_rpo;
+	EX struct S_rpo *P_rpo;
 #endif // SKUPINA_TRANSPORT
 /********************************************************************/
 /*   Popis slozek Horniny                                           */
@@ -429,7 +438,7 @@ struct S_hpo
 /*------------------------------------------------------------------*/
 };
 #ifdef SKUPINA_CHEMIE
-EX struct S_hpo *P_hpo;
+	EX struct S_hpo *P_hpo;
 #endif // SKUPINA_CHEMIE
 /********************************************************************/
 /*   Seznam okrajovych podminek                                     */
@@ -457,7 +466,7 @@ struct S_sez
     int     NK_sez;                     /* Pocet casovych kroku F_T_Ch    */
 };
 #ifdef SKUPINA_SCENAR
-EX struct S_sez *P_sez;
+	EX struct S_sez *P_sez;
 #endif // SKUPINA_SCENAR
 /********************************************************************/
 /*   Popis okrajovych podminek - novy typ OKE                       */
@@ -476,7 +485,7 @@ struct S_oke
     int     zapnuto;                    /* priznak zapnuti OKE            */
 };
 #ifdef SKUPINA_SCENAR
-EX struct S_oke *P_oke;
+	EX struct S_oke *P_oke;
 #endif // SKUPINA_SCENAR
 /********************************************************************/
 /*   Popis typu materialu pro nenasycene proudeni (z INI souboru)   */
@@ -491,7 +500,7 @@ struct S_matr
    double   koef[ MAXMATRKOEF ];        /* koeficienty pro danou funkci   */
 };
 #ifdef SKUPINY_MATERIALU
-EX struct S_matr *P_matr;
+	EX struct S_matr *P_matr;
 #endif // SKUPINY_MATERIALU
 /********************************************************************/
 /*   Popis typu materialu pro DUAL POROSITY (z INI souboru)         */
@@ -504,7 +513,7 @@ struct S_dpor
    double   koef[ MAXDPORKOEF ];        /* koeficienty pro danou funkci */
 };
 #ifdef SKUPINA_DUALPOROSITY
-EX struct S_dpor *P_dpor;
+	EX struct S_dpor *P_dpor;
 #endif // SKUPINA_DUALPOROSITY
 /********************************************************************/
 /*   Popis prechodu pro INTERTRANSFER (z INI souboru)               */
@@ -517,7 +526,7 @@ struct S_ctr
    double   DOWN_hmota;
 };
 #ifdef SKUPINA_INTERTRANSFER
-EX struct S_ctr *P_ctr;
+	EX struct S_ctr *P_ctr;
 #endif // SKUPINA_INTERTRANSFER
 //
 /********************************************************************/
@@ -545,7 +554,7 @@ void sumace( double );
 
 //mh:
 #ifdef SKUPINA_DUALPOROSITY
-void init_DP_mater( void );  // nastaveni indexu materialu pro DP
+	void init_DP_mater( void );  // nastaveni indexu materialu pro DP
 #endif // SKUPINA_DUALPOROSITY
 
 /********************************************************************/
@@ -556,9 +565,9 @@ void init_DP_mater( void );  // nastaveni indexu materialu pro DP
 void pis_TS2( double );         /* Zapis souboru roztoku po vrst.  .TS2  */
 //void pisTS3( double );        /* Zapis souboru roztoku           .TS3  */
 #ifdef SKUPINA_DUALPOROSITY
-int pisTS34( int, int, double ); /* Zapis vysledku do .TS3 nebo     .TS4  */
-#else //SKUPINA_DUALPOROSITY
-int pisTS34( int, double );     /* Zapis vysledku do .TS3 nebo     .TS4  */
+	int pisTS34( int, int, double ); /* Zapis vysledku do .TS3 nebo     .TS4  */
+ #else //SKUPINA_DUALPOROSITY
+	int pisTS34( int, double );     /* Zapis vysledku do .TS3 nebo     .TS4  */
 #endif // SKUPINA_DUALPOROSITY
 int pisDF0( double, double, int ); /* Zapis vysledku do            .DF0  */
 int pisDF1( double, double, int ); /* Zapis vysledku do            .DF1  */
@@ -645,6 +654,87 @@ void caskrok_verze( struct S_verze * );
 void win_tran_verze( struct S_verze * );
 void slozky_verze( struct S_verze * );
 /********************************************************************/
-/*  BIG-HEAD.H      Konec souboru                                   */
+/*  copied from che_head.h to simplify structure of inclusions      */
 /********************************************************************/
 /* vim:  set ts=3 sw=3 expandtab: */
+
+struct TS_prm //typedef struct
+{
+   char jmeno_ich[ MAXPATH ];
+	int	pocet_latek;
+   int pocet_latekvefazi;
+	int	celkovy_pocet_reakci;
+	int	pocet_reakci_pro_matici;
+	int	pocet_rovnovah;
+	int	pocet_kinetik;
+	int	pocet_pom_kin;
+	int	pocet_rozpadu;
+     double T; //long long double
+     double TGf; //long long double
+     double Afi; //long double
+     double b;  //long double
+      double epsilon; //long double
+      double omega; //long double
+      double deltaT;  //long double
+      double objem; //long double
+      double splocha; //long double
+   int cas_kroku;
+   int vypisy;
+   int deleni_RK;
+   int skaluj_matici;
+   int abs_norma;
+}; //TS_prm;
+
+struct TS_lat //typedef struct
+{
+	  char nazev[ 80 ];      /* Jmeno latky */
+	  double m0;        /* pocatecni molalita *///long double
+//	  double m0_sorb;   /* pocatecni obsah sorbovany *///long double
+	   double m;         /* konecna molalita *///long double
+//	   double m_sorb;    /* konecny obsah sorbovany *///long double
+	   double M;	        /* molarni hmotnost *///long double
+	   double dGf;       /* prispevek ke Gibbsove energii *///long double
+	   double dHf;       /* prispevek k entalpii *///long double
+	int Q;            /* naboj */
+	  double aktivita;  /* aktivita *///long double
+	int typ_sorpce;   /* typ sorpce */
+	   double param_sorpce[MAX_POC_PARAM_SORPCE];//long double
+}; //TS_lat;
+
+struct TS_che //typedef struct
+{
+	char nazev[ 80 ];		/* Jmeno reakce              */
+	int stech_koef_p[MAX_POC_LATEK];	/* Stechiom.koef.slozek vpravo*/
+	   double K;			/*rovnovazna, nebo kineticka konstanta, nebo bilance*///long double
+	int typ_reakce;		/* 0==rovnovazna, 1==kineticka, 2==bilancni, 3==pomala kinetika */
+	   double exponent[MAX_POC_LATEK];		/* exponenty pro kinetiku*///long double
+      double zeta0;     /*pocatecni posunuti reakce*///long double
+}; //TS_che;
+
+//---------------------------------------------------------------------------
+//  Funkce z che_semchem.cpp
+//---------------------------------------------------------------------------
+void che_nactenichemie( void );	     /* funkce nacteni chemie */
+void ctiich (void); /*pomocna funkce nacteni chemie*/
+
+/********************************************************************/
+/*  copied from cti_ichnew.c to simplify structure of inclusions    */
+/********************************************************************/
+
+float che_poradi(int param1, double param2, double param3);
+void ctiich_obecne(void);
+void ctiich_latkyvefazi(void);
+void ctiich_dalsilatky(void);
+void ctiich_reakce(void);
+
+/********************************************************************/
+/*  copied from semchem_interface.hh to simplify structure of inclusions    */
+/********************************************************************/
+void che_nadpis__soubor(char *soubor);
+void che_outpocp_soubor(FILE *fw);
+void che_pocitej_soubor(char *soubor, int *poc_krok);
+void che_vypis_soubor(char *soubor);
+void che_presun_poc_p_(void);
+void che_vypis__soubor(char *soubor);
+
+#endif //belongs to BIGHEAD
