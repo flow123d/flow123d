@@ -1063,12 +1063,8 @@ void ConvectionTransport::transport_until_time(double time_interval) {
     	register int t;
     	// Chemistry initialization
     	Linear_reaction *decayRad = new Linear_reaction(n_substances, time_step);
-    	bool semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
-	
-	if (semchem_on) priprav();
+    	Semchem_interface *Semchem_reactions = new Semchem_interface();
 
-
-	    //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
 	    for (t = 1; t <= steps; t++) {
 	    	time += time_step;
 	     //   SET_TIMER_SUBFRAMES("TRANSPORT",t);  // should be in destructor as soon as we have class iteration counter
@@ -1085,7 +1081,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 		    	     }
 		    	     END_TIMER("decay_step");
 		    	     START_TIMER("semchem_step");
-		    	     if(semchem_on == true) che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
+		    	     if(Semchem_reactions->semchem_on == true) Semchem_reactions->compute_reactions(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
 		    	     END_TIMER("semchem_step");
 		    	  }
 

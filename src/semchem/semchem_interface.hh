@@ -1,14 +1,6 @@
-//---------------------------------------------------------------------------
 #ifndef interfaceH
-#define interfaceH
-//---------------------------------------------------------------------------
-#ifndef mobile
-	#define mobile 0
-#endif
-//---------------------------------------------------------------------------
-#ifndef immobile
-	#define immobile 1
-#endif
+	#define interfaceH
+
 #include "../mesh/elements.h"
 
 class Semchem_interface
@@ -22,12 +14,4 @@ class Semchem_interface
 //		void priprav(void);
 //		double change_time_step;
 };
-
-//--------------------------------------------------------------------------
-//  GLOBALNI PROMENNE
-//---------------------------------------------------------------------------
-extern struct TS_prm	G_prm;
-extern struct TS_lat 	*P_lat;
-extern struct TS_che	*P_che;
-
 #endif

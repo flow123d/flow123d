@@ -104,12 +104,12 @@
 // mh: kompiluju flow/tran
 #define PRG_NAME         "tran"
 /********************************************************************/
-#ifdef SKUPINA_CHEMIE
-	#include "chem2\\chemd.h"    // mh: toto bude potreba zmenit !!!!!!
-#endif // SKUPINA_CHEMIE
-#ifdef SKUPINA_REAKCE
-	#include "semchem_interface.hh"
-#endif // SKUPINA_REAKCE
+//#ifdef SKUPINA_CHEMIE
+	//#include "chem2\\chemd.h"    // mh: toto bude potreba zmenit !!!!!!
+//#endif // SKUPINA_CHEMIE
+//#ifdef SKUPINA_REAKCE
+	//#include "semchem_interface.hh"
+//#endif // SKUPINA_REAKCE
 /********************************************************************/
 /*                      Definice globalnich promennych              */
 /********************************************************************/

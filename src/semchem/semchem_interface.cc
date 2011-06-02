@@ -2,13 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <petscvec.h>
-#include "materials.hh"
-#include "transport.h"
-#include "problem.h"
 #include "../system/system.hh"
-#include "constantdb.h"
 #include "che_semchem.h"
 #include "semchem_interface.hh"
 
@@ -218,6 +212,6 @@ void Semchem_interface::compute_reactions(bool porTyp, double time_step, Element
 
 double Semchem_interface::set_timestep(double new_timestep)
 {
-	; //implementation will folow
+	return new_timestep; //implementation will folow
 }
 

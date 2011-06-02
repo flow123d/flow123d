@@ -1,9 +1,9 @@
-#include "linear_reaction.hh"
-#include "system/system.hh"
 #include <iostream>
 #include <cstring>
 #include <stdlib.h>
 #include <math.h>
+#include "linear_reaction.hh"
+#include "../system/system.hh"
 
 using namespace std;
 

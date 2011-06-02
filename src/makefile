@@ -80,8 +80,7 @@ $(OBJS)/time_governor.o\
 $(OBJS)/reaction/linear_reaction.o\
 \
 $(OBJS)/semchem/che_semchem.o\
-$(OBJS)/semchem/semchem_interface.o\
-$(OBJS)/semchem/cti_ichnew.o
+$(OBJS)/semchem/semchem_interface.o
 
 #$(OBJS)/hashes.o\
 #$(OBJS)/transport_bcd.o\

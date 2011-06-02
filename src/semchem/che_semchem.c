@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "che_semchem.h"
-#include "semchem_interface.hh"
+#include "../system/system.hh"
 #define _R 0.008314
 #define VERZE "30-09-2005"
 #define vystupni_soubor "che_out.txt"
@@ -13,6 +13,13 @@
 #define MAX_STAGNACE 400
 #define MAX_POC_VNITR_CYK 2000
 #define DROBNY_POSUN 1.0e-10
+
+//---------------------------------------------------------------------------
+//  GLOBAL VARIABLES
+//---------------------------------------------------------------------------
+extern struct TS_prm	G_prm;
+extern struct TS_lat 	*P_lat;
+extern struct TS_che	*P_che;
 
 
 void che_vypis_soubor(char *soubor)
