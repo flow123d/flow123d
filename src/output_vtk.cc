@@ -34,14 +34,13 @@
 #include "mesh/mesh.h"
 
 // TODO: v tomto souboru se poflakuji vselijake funkce mimo tridy, to v objektovem navrhu nema co delat
-// maji to byt privatni metody nejake tridy (patrne Output)
-// TODO: teky by se to nemelo jmenovat *_flow_*
+// maji to byt privatni metody nejake tridy (OutputVTK)
 
 /**
  * \brief Write header of VTK file (.vtu)
  * \param[in]	out	The output file
  */
-static void write_flow_vtk_header(Output *output)
+static void write_vtk_vtu_head(Output *output)
 {
     output->get_data_file() << "<?xml version=\"1.0\"?>" << endl;
     // TODO: test endianess of platform (this would be important, when raw
@@ -54,7 +53,7 @@ static void write_flow_vtk_header(Output *output)
  * \brief Write geometry (position of nodes) to the VTK file (.vtu)
  * \param[in] *out The output file
  */
-static void write_flow_vtk_geometry(Output *output)
+static void write_vtk_geometry(Output *output)
 {
     Mesh *mesh = output->get_mesh();
 
@@ -88,7 +87,7 @@ static void write_flow_vtk_geometry(Output *output)
  * \brief Write topology (connection of nodes) to the VTK file (.vtu)
  * \param[in] *out The output file
  */
-static void write_flow_vtk_topology(Output *output)
+static void write_vtk_topology(Output *output)
 {
     //Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
     Mesh *mesh = output->get_mesh();
@@ -160,7 +159,7 @@ static void write_flow_vtk_topology(Output *output)
  * \param[in]   *output     The pointer at Output object
  * \param[in]   *out_data   The pointer at structure storing pointer at own data.
  */
-void write_flow_vtk_ascii_data(Output *output, OutputData *out_data)
+static void write_vtk_ascii_data(Output *output, OutputData *out_data)
 {
     ofstream &file = output->get_data_file();
 
@@ -253,12 +252,12 @@ void write_flow_vtk_ascii_data(Output *output, OutputData *out_data)
  * \brief Write scalar data to the VTK file (.vtu)
  * \param[in]	out		The output file
  */
-static void write_flow_vtk_scalar_ascii(Output *output, OutputData *data)
+static void write_vtk_scalar_ascii(Output *output, OutputData *data)
 {
     /* Write DataArray begin */
-    output->get_data_file() << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << " " << *data->getUnits() <<"\" format=\"ascii\">" << endl;//, name);
+    output->get_data_file() << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_" << *data->getUnits() <<"\" format=\"ascii\">" << endl;//, name);
     /* Write own data */
-    write_flow_vtk_ascii_data(output, data);
+    write_vtk_ascii_data(output, data);
 
     /* Write DataArray end */
     output->get_data_file() << endl << "</DataArray>" << endl;
@@ -268,13 +267,13 @@ static void write_flow_vtk_scalar_ascii(Output *output, OutputData *data)
  * \brief Write vector data to VTK file (.vtu)
  * \param[in]	out		The output file
  */
-static void write_flow_vtk_ascii(Output *output, OutputData *data)
+static void write_vtk_vector_ascii(Output *output, OutputData *data)
 {
     /* Write DataArray begin */
     output->get_data_file() << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_" << *data->getUnits() << "\" NumberOfComponents=\"" << data->getCompNum() << "\" format=\"ascii\">" << endl;
 
     /* Write own data */
-    write_flow_vtk_ascii_data(output, data);
+    write_vtk_ascii_data(output, data);
 
     /* Write DataArray end */
     output->get_data_file() << endl << "</DataArray>" << endl;
@@ -285,13 +284,17 @@ static void write_flow_vtk_ascii(Output *output, OutputData *data)
  * write these data to VTK file (.vtu)
  * \param[in]	*out		The output file
  */
-static void write_flow_vtk_data(Output *output, std::vector<OutputData> *data)
+static void write_vtk_data_ascii(Output *output, std::vector<OutputData> *data)
 {
     /* Write data on nodes or elements */
     if(data != NULL) {
         for(OutputDataVec::iterator dta = data->begin();
                 dta != data->end(); dta++) {
-            write_flow_vtk_ascii(output, &(*dta));
+            if((*dta).getCompNum()==1) {
+                write_vtk_scalar_ascii(output, &(*dta));
+            } else {
+                write_vtk_vector_ascii(output, &(*dta));
+            }
         }
     }
 }
@@ -300,7 +303,7 @@ static void write_flow_vtk_data(Output *output, std::vector<OutputData> *data)
  * \brief Write names of scalar and vector values to the VTK file (.vtu)
  * \param[in]	*out		The output file
  */
-static void write_flow_vtk_data_names(Output *output, vector<OutputData> *data)
+static void write_vtk_data_names(Output *output, vector<OutputData> *data)
 {
     /* Write names of scalars */
     output->get_data_file() << "Scalars=\"";
@@ -333,17 +336,17 @@ static void write_flow_vtk_data_names(Output *output, vector<OutputData> *data)
  * \brief Write data on nodes to the VTK file (.vtu)
  * \param[in]	*out		The output file
  */
-static void write_flow_vtk_node_data(Output *output)
+static void write_vtk_node_data(Output *output)
 {
     std::vector<OutputData> *node_data = output->get_node_data();
 
     /* Write PointData begin */
     output->get_data_file() << "<PointData ";
-    write_flow_vtk_data_names(output, node_data);
+    write_vtk_data_names(output, node_data);
     output->get_data_file() << ">" << endl;
 
     /* Write own data */
-    write_flow_vtk_data(output, node_data);
+    write_vtk_data_ascii(output, node_data);
 
     /* Write PointData end */
     output->get_data_file() << "</PointData>" << endl;
@@ -353,17 +356,17 @@ static void write_flow_vtk_node_data(Output *output)
  * \brief Write data on elements to the VTK file (.vtu)
  * \param[in]	*output		The output object
  */
-static void write_flow_vtk_element_data(Output *output)
+static void write_vtk_element_data(Output *output)
 {
     std::vector<OutputData> *elem_data = output->get_elem_data();
 
     /* Write PointData begin */
     output->get_data_file() << "<CellData ";
-    write_flow_vtk_data_names(output, elem_data);
+    write_vtk_data_names(output, elem_data);
     output->get_data_file() << ">" << endl;
 
     /* Write own data */
-    write_flow_vtk_data(output, elem_data);
+    write_vtk_data_ascii(output, elem_data);
 
     /* Write PointData end */
     output->get_data_file() << "</CellData>" << endl;
@@ -373,7 +376,7 @@ static void write_flow_vtk_element_data(Output *output)
  * \brief Write tail of VTK file (.vtu)
  * \param[in]	*out	The output file
  */
-static void write_flow_vtk_tail(Output *output)
+static void write_vtk_vtu_tail(Output *output)
 {
     output->get_data_file() << "</UnstructuredGrid>" << endl;
     output->get_data_file() << "</VTKFile>" << endl;
@@ -384,33 +387,33 @@ static void write_flow_vtk_tail(Output *output)
  * to the VTK file (.vtu)
  * \param[in]	*out	The output file
  */
-static void write_flow_vtk_serial(Output *output)
+static void write_vtk_vtu(Output *output)
 {
     Mesh *mesh = output->get_mesh();
 
     /* Write header */
-    write_flow_vtk_header(output);
+    write_vtk_vtu_head(output);
 
     /* Write Piece begin */
     output->get_data_file() << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
     /* Write VTK Geometry */
-    write_flow_vtk_geometry(output);
+    write_vtk_geometry(output);
 
     /* Write VTK Topology */
-    write_flow_vtk_topology(output);
+    write_vtk_topology(output);
 
     /* Write VTK scalar and vector data on nodes to the file */
-    write_flow_vtk_node_data(output);
+    write_vtk_node_data(output);
 
     /* Write VTK data on elements */
-    write_flow_vtk_element_data(output);
+    write_vtk_element_data(output);
 
     /* Write Piece end */
     output->get_data_file() << "</Piece>" << endl;
 
     /* Write tail */
-    write_flow_vtk_tail(output);
+    write_vtk_vtu_tail(output);
 }
 
 
@@ -418,12 +421,13 @@ static void write_flow_vtk_serial(Output *output)
  * \brief This function output data to serial VTK file format
  * \param[in]   *output     The pointer at output object
  */
-int write_vtk_data(Output *output)
+int write_vtk_vtu_data(Output *output)
 {
     /* Serial VTK file format uses only one file */
     output->set_data_file( &output->get_base_file() );
 
-    write_flow_vtk_serial(output);
+    write_vtk_vtu(output);
+
     return 1;
 }
 
@@ -434,7 +438,7 @@ int write_vtk_data(Output *output)
  * \param[in]   time        The time from start
  * \param[in]   step        The number of steps from start
  */
-int write_vtk_time_data(OutputTime *output, double time, int step)
+int write_vtk_pvd_data(OutputTime *output, double time, int step)
 {
     Mesh *mesh = output->get_mesh();
     char frame_file_name[PATH_MAX];
@@ -474,26 +478,26 @@ int write_vtk_time_data(OutputTime *output, double time, int step)
         xprintf(Msg, "%s: Writing output (frame %d) file %s ... ", __func__, step, frame_file_name);
 
         /* Write header */
-        write_flow_vtk_header(output);
+        write_vtk_vtu_head(output);
 
         /* Write Piece begin */
         output->get_data_file() << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
-        write_flow_vtk_geometry(output);
+        write_vtk_geometry(output);
         /* Write VTK Topology */
-        write_flow_vtk_topology(output);
+        write_vtk_topology(output);
 
         /* Write VTK scalar and vector data on nodes */
-        write_flow_vtk_node_data(output);
+        write_vtk_node_data(output);
         /* Write VTK scalar and vector data on elements */
-        write_flow_vtk_element_data(output);
+        write_vtk_element_data(output);
 
         /* Write Piece end */
         output->get_data_file() << "</Piece>" << endl;
 
         /* Write tail */
-        write_flow_vtk_tail(output);
+        write_vtk_vtu_tail(output);
 
         /* Close stream for file of current frame */
         data_file->close();
@@ -510,7 +514,7 @@ int write_vtk_time_data(OutputTime *output, double time, int step)
  * \brief This function writes header of VTK (.pvd) file format
  * \param[in]   *output     The pointer at output Object
  */
-int write_vtk_head(OutputTime *output)
+int write_vtk_pvd_head(OutputTime *output)
 {
     xprintf( Msg, "%s: Writing output file (head) %s ... ", __func__, output->get_base_filename().c_str() );
 
@@ -527,7 +531,7 @@ int write_vtk_head(OutputTime *output)
  * \brief This function writes tail of VTK (.pvd) file format
  * \param[in]   *output     The pointer at output Object
  */
-int write_vtk_tail(OutputTime *output)
+int write_vtk_pvd_tail(OutputTime *output)
 {
     xprintf( Msg, "%s: Writing output file (tail) %s ... ", __func__, output->get_base_filename().c_str() );
 

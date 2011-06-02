@@ -447,7 +447,7 @@ Output::Output(Mesh *_mesh, string fname)
     switch(format_type) {
     case VTK_SERIAL_ASCII:
     case VTK_PARALLEL_ASCII:
-        _write_data = write_vtk_data;
+        _write_data = write_vtk_vtu_data;
         break;
     case POS_ASCII:
     case POS_BIN:
@@ -851,9 +851,9 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     switch(format_type) {
     case VTK_SERIAL_ASCII:
     case VTK_PARALLEL_ASCII:
-        _write_head = write_vtk_head;
-        _write_data = write_vtk_time_data;
-        _write_tail = write_vtk_tail;
+        _write_head = write_vtk_pvd_head;
+        _write_data = write_vtk_pvd_data;
+        _write_tail = write_vtk_pvd_tail;
         break;
     case POS_ASCII:
     case POS_BIN:

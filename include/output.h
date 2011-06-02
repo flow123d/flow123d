@@ -276,11 +276,11 @@ void output_flow_field_in_time(struct Problem *problem, double time);
 
 /* TODO: move to new output_vtk.hh */
 // Static data
-int write_vtk_data(Output *output);
+int write_vtk_vtu_data(Output *output);
 // Dynamic data
-int write_vtk_head(OutputTime *output);
-int write_vtk_time_data(OutputTime *output, double time, int step);
-int write_vtk_tail(OutputTime *output);
+int write_vtk_pvd_head(OutputTime *output);
+int write_vtk_pvd_data(OutputTime *output, double time, int step);
+int write_vtk_pvd_tail(OutputTime *output);
 
 /* TODO: move to new output_msh.hh */
 // Static data
