@@ -67,12 +67,14 @@ static void write_flow_vtk_geometry(Output *output)
     output->get_data_file() << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
     /* Write own coordinates */
     tmp = 0;
+    /* Set floating point precision */
+    output->get_data_file().precision(std::numeric_limits<double>::digits10);
     FOR_NODES( node ) {
         node->aux = tmp;   /* store index in the auxiliary variable */
 
-        output->get_data_file() << node->getX() << " ";
-        output->get_data_file() << node->getY() << " ";
-        output->get_data_file() << node->getZ() << " ";
+        output->get_data_file() << scientific << node->getX() << " ";
+        output->get_data_file() << scientific << node->getY() << " ";
+        output->get_data_file() << scientific << node->getZ() << " ";
 
         tmp++;
     }
@@ -183,39 +185,43 @@ void write_flow_vtk_ascii_data(Output *output, OutputData *out_data)
         }
         break;
     case OUT_VECTOR_FLOAT_SCA:
+        file.precision(std::numeric_limits<float>::digits10);
         for( std::vector<float>::iterator item = ((std::vector<float>*)out_data->data)->begin();
                 item != ((std::vector<float>*)out_data->data)->end();
                 item++) {
-            file << *item << " ";
+            file << scientific << *item << " ";
         }
         break;
     case OUT_VECTOR_FLOAT_VEC:
+        file.precision(std::numeric_limits<float>::digits10);
         for( std::vector< vector<float> >::iterator vec = ((std::vector< vector<float> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<float> >*)out_data->data)->end();
                 vec++) {
             for (std::vector<float>::iterator item = vec->begin();
                     item != vec->end();
                     item++) {
-                file << *item << " ";
+                file << scientific << *item << " ";
             }
             file << "  ";
         }
         break;
     case OUT_VECTOR_DOUBLE_SCA:
+        file.precision(std::numeric_limits<double>::digits10);
         for( std::vector<double>::iterator item = ((std::vector<double>*)out_data->data)->begin();
                 item != ((std::vector<double>*)out_data->data)->end();
                 item++) {
-            file << *item << " ";
+            file << scientific << *item << " ";
         }
         break;
     case OUT_VECTOR_DOUBLE_VEC:
+        file.precision(std::numeric_limits<double>::digits10);
         for( std::vector< vector<double> >::iterator vec = ((std::vector< vector<double> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<double> >*)out_data->data)->end();
                 vec++) {
             for (std::vector<double>::iterator item = vec->begin();
                     item != vec->end();
                     item++) {
-                file << *item << " ";
+                file << scientific << *item << " ";
             }
             file << "  ";
         }
@@ -226,13 +232,15 @@ void write_flow_vtk_ascii_data(Output *output, OutputData *out_data)
         }
         break;
     case OUT_ARRAY_FLOAT_SCA:
+        file.precision(std::numeric_limits<float>::digits10);
         for(int i=0; i<out_data->num; i++) {
-            file << ((float*)out_data->data)[i] << " ";
+            file << scientific << ((float*)out_data->data)[i] << " ";
         }
         break;
     case OUT_ARRAY_DOUBLE_SCA:
+        file.precision(std::numeric_limits<double>::digits10);
         for(int i=0; i<out_data->num; i++) {
-            file << ((double*)out_data->data)[i] << " ";
+            file << scientific << ((double*)out_data->data)[i] << " ";
         }
         break;
     default:
