@@ -33,10 +33,13 @@ class TransportOperatorSplitting : public EquationBase {
 public:
 	TransportOperatorSplitting(MaterialDatabase *material_database, Mesh *init_mesh);
 	virtual void compute_one_step();
+	//virtual void compute_until();
+
 //	~TransportOperatorSplitting();
 	 virtual void get_parallel_solution_vector(Vec &vc);
 	 virtual void get_solution_vector(double* &vector, unsigned int &size);
-
+	 void compute_until_save_time();
+	 TimeGovernor *time;
 protected:
 
 private:

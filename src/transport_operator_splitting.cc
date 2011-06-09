@@ -19,6 +19,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 {
 	mat_base = material_database;
 	mesh = init_mesh;
+    ConvectionTransport *convection;
+
+
+    double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
+    double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
+
 
 	convection = new ConvectionTransport(mat_base, mesh);
 
@@ -26,22 +32,31 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 	if(OptGetBool("Semchem_module", "Compute_reactions", "no") == yes)
 		chemistry = new Chemistry;
 	*/
-//	time = new TimeGovernor();
-	//time->
+
+
+
+	time = new TimeGovernor(0.0,0.0,problem_stop_time,problem_stop_time);
+	time->constrain_dt(convection->cfl_time_constrain());
 
 }
 
 void TransportOperatorSplitting::compute_one_step(){
 
 	convection->compute_one_step();
-	/*
-
-	chemistry->compute_one_step();
-
-	 */
-
-	// TimeGovernor
+	//chemistry->compute_one_step();
+	time->next_time();
 }
+
+void TransportOperatorSplitting::compute_until_save_time(){
+
+	//while(time->output_time())
+		compute_one_step();
+
+	//call output
+
+}
+
+
 
 
 void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
