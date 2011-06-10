@@ -1249,3 +1249,6 @@ void ConvectionTransport::save_time_step_C() {
 double ConvectionTransport::cfl_time_constrain() {
 	return time_step;
 }
+double ***ConvectionTransport::concentration_vector() {
+	return conc;
+}
