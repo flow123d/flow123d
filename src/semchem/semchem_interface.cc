@@ -39,7 +39,7 @@ void Semchem_interface::compute_one_step(bool porTyp, double time_step, ElementI
 	for (int loc_el = 0; loc_el < nr_of_elements; loc_el++)
 	{
 	   START_TIMER("semchem_step");
-	   if(this->semchem_on == true) this->compute_one_step(porTyp, time_step, ppelm, conc);
+	   if(this->semchem_on == true) this->compute_reaction(porTyp, time_step, ppelm, loc_el, conc[MOBILE], conc[IMMOBILE]);
 	   END_TIMER("semchem_step");
 	}
 }
