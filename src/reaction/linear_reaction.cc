@@ -4,6 +4,8 @@
 #include <math.h>
 #include "linear_reaction.hh"
 #include "../system/system.hh"
+#include "materials.hh"
+#include "transport.h"
 
 using namespace std;
 
@@ -16,8 +18,10 @@ Linear_reaction::Linear_reaction(int n_subst, double time_step)
 	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
 	//if(FoR_on == true)
 	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
+	nr_of_species = OptGetInt("Transport", "N_substances", NULL );
 	cout << "number of FoR is"<< nr_of_FoR << endl;
 	cout << "number of decays is" << nr_of_decays << endl;
+	cout << "number of species is" << nr_of_species << endl;
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		allocate_reaction_matrix(n_subst);
 		modify_reaction_matrix_repeatedly(n_subst, time_step);
@@ -374,6 +378,20 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
     	pom_buf = strtok( NULL, separators );
     	half_lives[react_nr] = log(2) / kinetic_constant[react_nr];
  	 //}
+}
+
+double **Linear_reaction::compute_one_step(double ***pconc, int nr_of_elements)
+{
+	 bool dual_porosity = false; //this is just a cheat, because I don't know how to get the information about dual porosity from this place in code
+
+	 for (int loc_el = 0; loc_el < nr_of_elements; loc_el++) {
+	  START_TIMER("decay_step");
+	 	 this->compute_reaction(pconc[MOBILE], nr_of_species, loc_el);
+	    if (dual_porosity == true) {
+	     this->compute_reaction(pconc[IMMOBILE], nr_of_species, loc_el);
+	    }
+	    END_TIMER("decay_step");
+	 }
 }
 
 double Linear_reaction::set_timestep(double new_timestep){ return new_timestep;} //implementation will follow, early

@@ -2,6 +2,8 @@
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
 #include "equation.hh"
+#include "./reaction/linear_reaction.hh"
+#include "./semchem/semchem_interface.hh"
 
 
 /// external types:
@@ -45,6 +47,8 @@ protected:
 private:
 
     ConvectionTransport *convection;
+    Linear_reaction *decayRad;
+    Semchem_interface *Semchem_reactions;
    // Mesh *mesh;
    // MaterialDatabase *mat_base;
    // TimeGovernor *time;

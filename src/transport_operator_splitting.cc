@@ -13,6 +13,8 @@
 //#include "equation.hh"
 #include "transport.h"
 #include "mesh/mesh.h"
+#include "reaction/linear_reaction.hh"
+#include "semchem/semchem_interface.hh"
 
 
 TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *material_database, Mesh *init_mesh)
@@ -20,20 +22,22 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 	mat_base = material_database;
 	mesh = init_mesh;
     ConvectionTransport *convection;
+    Linear_reaction *decayRad;
+    Semchem_interface *Semchem_reactions;
 
 
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
 
+    //temporary variables for chemistry
+    double time_step = 0.5;
+    int n_substances = OptGetInt("Transport", "N_substances", NULL );
 
 	convection = new ConvectionTransport(mat_base, mesh);
 
-	/*
-	if(OptGetBool("Semchem_module", "Compute_reactions", "no") == yes)
-		chemistry = new Chemistry;
-	*/
-
-
+	// Chemistry initialization
+	decayRad = new Linear_reaction(n_substances, time_step);
+	Semchem_reactions = new Semchem_interface();
 
 	time = new TimeGovernor(0.0,0.0,problem_stop_time,problem_stop_time);
 	time->constrain_dt(convection->cfl_time_constrain());
@@ -41,9 +45,19 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 }
 
 void TransportOperatorSplitting::compute_one_step(){
+	//following declarations are here just to enable compilation without errors
+	bool porTyp = true;
+	ElementIter ppelm;
+	int poradi;
+	double **conc_mob_arr, **conc_immob_arr, ***conc; //could be handled as **conc[MOBILE], **conc[IMMOBILE]
+	double time_step = 0.05;
+	int cheat = 10; // I need to get nr of elements instead of this variable
 
 	convection->compute_one_step();
-	//chemistry->compute_one_step();
+    // Calling linear reactions and Semchem
+	decayRad->compute_one_step(conc, cheat);
+	Semchem_reactions->compute_one_step(porTyp, time_step, ppelm, conc);
+	//Semchem_reactions->compute_one_step(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
 	time->next_time();
 }
 

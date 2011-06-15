@@ -1081,7 +1081,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 		    	     }
 		    	     END_TIMER("decay_step");
 		    	     START_TIMER("semchem_step");
-		    	     if(Semchem_reactions->semchem_on == true) Semchem_reactions->compute_reactions(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
+		    	     if(Semchem_reactions->semchem_on == true) Semchem_reactions->compute_reaction(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
 		    	     END_TIMER("semchem_step");
 		    	  }
 

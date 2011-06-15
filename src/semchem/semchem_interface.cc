@@ -5,6 +5,7 @@
 #include "../system/system.hh"
 #include "che_semchem.h"
 #include "semchem_interface.hh"
+#include "transport.h"
 
 using namespace std;
 
@@ -29,9 +30,24 @@ Semchem_interface::Semchem_interface(void)
 }
 
 //---------------------------------------------------------------------------
+//                 FOR-LOOP CALLING FOR ALL ELEMENTS
+//---------------------------------------------------------------------------
+void Semchem_interface::compute_one_step(bool porTyp, double time_step, ElementIter ppelm, double ***conc)
+{
+	int nr_of_elements = 10; //this is a cheat, because I do not know how to get number of elements from this place in source code
+
+	for (int loc_el = 0; loc_el < nr_of_elements; loc_el++)
+	{
+	   START_TIMER("semchem_step");
+	   if(this->semchem_on == true) this->compute_one_step(porTyp, time_step, ppelm, conc);
+	   END_TIMER("semchem_step");
+	}
+}
+
+//---------------------------------------------------------------------------
 //                 FUNKCE NA VYPOCET CHEMIE PRO ELEMENT V TRANSPORTU
 //---------------------------------------------------------------------------
-void Semchem_interface::compute_reactions(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
+void Semchem_interface::compute_reaction(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
 {
   FILE *fw, *stream, *fr;
    int i, j; //, poradi;

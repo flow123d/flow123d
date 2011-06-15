@@ -7,6 +7,9 @@
  * The reaction_matrix is a square matrix and it has a dimension nxn.
  *
  */
+#ifndef LINREACT
+#define LINREACT
+
 #include<vector> ///< included to enable saving bifurcation
 
 class Linear_reaction
@@ -15,6 +18,7 @@ class Linear_reaction
 		Linear_reaction(int n_subst, double time_step); ///< constructor with parameters for initialization of  a new declared class member,  n_subst id the number of species soluted in groundwater
 		~Linear_reaction(void); ///< desctructor
 		double **compute_reaction(double **concentrations, int n_subst, int loc_el); ///< method for multiplication of concentrations array (double **conc or double **pconc) by reaction matrix, n_subst represents reaction matrix dimension, loc_el identifies an element where reactions are simulated
+		double **compute_one_step(double ***concentrations, int nr_of_elements); ///< method which should call compute_reactions() for all elements, during one time_step
 		int get_nr_of_decays(void); ///< is here to enable access to private variable nr_of_decays
 		int get_nr_of_FoR(void); ///< is here to enable access to private variable nr_of_FoR
 	private:
@@ -43,6 +47,7 @@ class Linear_reaction
 		//std::vector<double> half_lives; ///< alternative to following row
 		double *half_lives; ///< one-dimensional array containing half-lives belonging to every single step of a current decay chain
 		int *substance_ids; ///< one-dimensional array with indeces of transported substances which are taking patr in a current decay chain or in a first order reaction
+		int nr_of_species; ///< it is just a number of species soluted in and transported through groundwater-flow
 		int nr_of_isotopes; ///< number of isotopes in a current decay chain
 		int nr_of_decays; ///< how many decay chains are under consideration, it means number of [Decay_i] sections in ini-file
 		int nr_of_FoR; ///< how many firts order reactions of the type A -> B are under consideration, it is a number of [FoReaction_i]
@@ -53,3 +58,5 @@ class Linear_reaction
 		//bool FoR_on;
 		//bool decay_on;
 };
+
+#endif
