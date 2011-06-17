@@ -93,6 +93,17 @@ appropriate action and rerun rebaseall.  Otherwise, you run the risk of fork()
 failing.
 
 ---------------------------------------------
+4c: pokud vam bude /bin/rebaseall hlasit neco takovyho:
+/usr/lib/cygicudata.dll: skipped because nonexist
+.
+.
+.
+FixImage (/usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgcc_s_sjlj-1.dll) failed with last error = 13
+
+tak script rebaseall neprobehne a pomuze ho zeditovat a doplnit na radek 110:
+-e '/\/sys-root\/mingw\/bin/d'
+
+---------------------------------------------
 5: Stalo se mi, ze neco zlobilo pri kompilaci.
    Stacilo spustit znovu, aby si dokompiloval nepovedene casti.
 ---------------------------------------------
