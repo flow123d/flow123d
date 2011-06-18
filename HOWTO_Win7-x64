@@ -123,3 +123,9 @@ tak script rebaseall neprobehne a pomuze ho zeditovat a doplnit na radek 110:
 9: Test
    make test
 ---------------------------------------------
+10: Jeste par drobnosti, ktere mohou nekomu v budoucnu usetrit cas:
+po normalni instalaci cygwin a eclipse mi eclipse hlasil, ze nemuze najit make,
+musel jsem pridat do PATH cestu C:\cygwin\bin (Ovladaci panely/System/Upresnit nastaveni systemu/Promenne prostredi)
+
+cesta v makefile.in k petsc - PETSC_DIR - musi byt s normalnimi lomitky (slash) - napr.: c:/cygwin/home/Wojta/local/petsc-3.0.0-p12
+---------------------------------------------
