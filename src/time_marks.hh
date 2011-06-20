@@ -14,24 +14,26 @@
  */
 class TimeMark {
 public:
+
     /**
      *  MarkType is a bitmap where each bit represents one base type such as (strict, Output, Input, ...)
      *  This allow more complex queries through bitwise operations. Also one TimeMark can be shared by more events.
      *  In the context of TimeMarks the MarkType can be either strict or vague. If a TimeGovernor is connected to the TimeMarks object
      *  the  TimeMarks with strict MarkType are used to match exactly their times. Base MarkTypes should be obtained form TimeMarks class
-     *  through the @fn new_mark_type method.
+     *  through the TimeMarks::new_mark_type method.
      */
     typedef unsigned long int Type;
 
     /// Base mark type for strict time marks.
     static const Type strict;
     static const Type every_type;
+
     /**
      * Constructor for a TimeMarks::Mark
      * @param time - time of the mark
      * @param type - mark type
      *
-     * In order to create a strict TimeMark (at time=0.1) with base type output_type, use:
+     * <b> In order to create a strict TimeMark (at time=0.1) with base type output_type, use:
      * TimeMark( 0.1, output_type | TimeMark::strict)
      */
     TimeMark(double time, Type type) :
@@ -53,12 +55,16 @@ public:
         return time_;
     }
 
-    /// Returns true if TimeMark's type has 1 on all positions where @param mask has 1.
+    /**
+     * Returns true if TimeMark's type has 1 on all positions where mask has 1.
+     * @param mask {Select bits that should be 1 for matching mark types.
+     */
+
     bool match_mask(const TimeMark::Type &mask) const {
         return ( mask & (~mark_type_) ) == 0;
     }
 
-    /// Comparison of time marks.
+    /// Comparison of time marks according to their time.
     bool operator<(const TimeMark& second) const
       { return time_ < second.time(); }
 private:
@@ -73,7 +79,7 @@ ostream& operator<<(ostream& stream, const TimeMark &marks);
 
 
 /**
- * Iterator into the TimeMarks of particular mask. Always const iterator.
+ * Iterator into the TimeMarks of particular mask. This is always const iterator, i.e. it points to const TimeMark.
  */
 class TimeMarksIterator {
 public:
@@ -117,15 +123,37 @@ private:
     TimeMark::Type mask_;
 };
 
-/**
- * Simple database of TimeMsrks. Provides questions about last and nearest TimeMarks for particular types. C
- */
 class TimeGovernor;
 
+/**
+ * @brief This class is a collection of time marks to manage various events occurring during simulation time.
+ *
+ * <b> TimeMark and their types </b>
+ * One TimeMark consists of time and type (TimeMark::Type) see the constructor TimeMark::TimeMark.
+ * The type of mark is bitmap where individual bits corresponds to some base event types like changing a BC, output solution, coupling time with another
+ * equation and so on. Base types can be combined by bitwise or (operator|).
+ *
+ * There is one particular base mark type TimeMark::strict.
+ * Only marks with this type are considered as fixed times by a TimeGovernor which is connected to particular TimeMarks object.
+ *
+ * <b> TimeMarks collection</b>
+ * TimeMarks collect marks of various types and provides methods for iterating over stored marks. You can selectively access only marks matching given
+ * type mask. See TimeMark::match_mask.
+ *
+ * You can add one new mark through method add or add evenly spaced marks of same type by TimeMarks::add_time_marks.
+ *
+ * You can allocate new TimeMark::Type in the context of one TimeMarks object by TimeMarks::new_mark_type and TimeMarks::new_strict_mark_type.
+ *
+ * For a given TimeGovernor (not necessarily connected one) you can ask about existence of mark in current time interval (TimeMarks::is_current) and iterate
+ * around current time (TimeMarks::next and TimeMarks::last).
+ *
+ * In most cases there will be only one TimeMarks object for the whole solved problem and used by TimeGovernors of individual equations. However
+ * this is not necessary.
+ */
 class TimeMarks {
 
 public:
-    /// this is alwaysconst_iterator.
+    /// Iterator class for iteration over time marks of particular type. This is always const_iterator.
     typedef TimeMarksIterator iterator;
 
 
@@ -151,17 +179,17 @@ public:
 
     /**
      * Basic method for inserting TimeMarks.
-     * @par time    Time of the TimeMark.
-     * @par type    MarkType or their combinations.
+     * @param time    Time of the TimeMark.
+     * @param type    MarkType or their combinations.
      */
     void add(const TimeMark &mark);
 
     /**
      * Method for creating and inserting equally spaced TimeMarks.
-     * @par time    Time of the first TimeMark.
-     * @par dt      Interval for further TimeMarks.
-     * @par end_time  No marks after the end_time.
-     * @par type    MarkType or their combinations.
+     * @param time    Time of the first TimeMark.
+     * @param dt      Interval for further TimeMarks.
+     * @param end_time  No marks after the end_time.
+     * @param type    MarkType or their combinations.
      *
      * Current lazy implementation have complexity O(m*n) where m is number of inserted time merks and n number of time marks in the array.
      * TODO: O(n+m) implementation
@@ -175,8 +203,11 @@ public:
     bool is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
     /**
-     * Return the first TimeMark with time strictly greater then @param tg.time() that match the @param mask.
-     * The time governor @param tg  is used also for time comparisons.
+     * Return the first TimeMark with time strictly greater then tg.time() that match the mask.
+     * The time governor tg  is used also for time comparisons.
+     *
+     * @param tg    the time governor
+     * @param mask  mask of marks to iterate on
      *
      * TODO: have also method which accepts double (time) instead of the whole TimeGovernor.
      * and compare without safety.
@@ -184,8 +215,10 @@ public:
     TimeMarks::iterator next(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
     /**
-     * Return the last TimeMark with time less or equal to @param tg.time() that match the @param mask.
-     * The time governor @param tg  is used also for time comparisons.
+     * Return the last TimeMark with time less or equal to tg.time() that match the mask.
+     * The time governor tg  is used also for time comparisons.
+     * @param tg    the time governor
+     * @param mask  mask of marks to iterate on
      */
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
@@ -205,6 +238,7 @@ private:
     /// TimeMarks list sorted according to the their time.
     vector<TimeMark> marks_;
 };
+
 /**
  * Output operator for TimeMarks database.
  */
