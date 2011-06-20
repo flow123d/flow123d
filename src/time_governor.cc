@@ -27,37 +27,55 @@
  * @brief Basic time management class.
  */
 
+#include "system/system.hh"
 #include <time_governor.hh>
+#include <time_marks.hh>
+
 #include <algorithm>
+
+
+const double TimeGovernor::comparison_precision = 0.01;
+const double TimeGovernor::time_step_lower_bound = DBL_EPSILON;
 
 /*
  * TODO:
  * TimeGovernor should be constructed from JSON object.
  */
-TimeGovernor::TimeGovernor(double time_init, double min_dt, double max_dt, double end_t)
+TimeGovernor::TimeGovernor( TimeMarks * const marks, double time_init, double end_t)
+: time_marks(marks)
 {
-    INPUT_CHECK( min_dt > 0.0,"Minimal time step has to be greater than ZERO\n");
-    INPUT_CHECK( max_dt >= min_dt,"Maximal time step has to be greater or equal to the minimal.\n");
     time=time_init;
     end_of_fixed_dt_interval=time;
-    end_time=end_t;
+    end_time_=end_t;
 
     dt_changed=true;
     dt_change_overhead=-1.0; // turn off
-    time_step=max_dt;
-    min_time_step=min_dt;
-    max_time_step=max_dt;
-    time_step_constrain = min(end_time-time, max_time_step);
+
+    min_time_step=0;
+    max_time_step=end_time_ - time_init;
+    time_step=max_time_step;
+    time_step_constrain = min(end_time_-time, max_time_step);
 
     time_level=0;
-    fix_times.push(end_t);
+    time_marks->add( TimeMark(time_init, TimeMark::strict) );
+    time_marks->add( TimeMark(end_time_, TimeMark::strict) );
 }
 
-void TimeGovernor::constrain_dt(double dt_constrain)
+void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
+{
+    ASSERT( min_dt > 0.0,"Minimal time step has to be greater than ZERO\n");
+    ASSERT( max_dt >= min_dt,"Maximal time step has to be greater or equal to the minimal.\n");
+
+    min_time_step=max(min_dt, time_step_lower_bound);
+    max_time_step=min(max_dt, end_time_-time);
+}
+
+void TimeGovernor::set_constrain(double dt_constrain)
 {
     time_step_constrain = min(time_step_constrain, dt_constrain);
 }
 
+/*
 void TimeGovernor::set_fix_time(double fix_time)
 {
     if (fix_time >= end_of_fixed_dt_interval)
@@ -65,11 +83,14 @@ void TimeGovernor::set_fix_time(double fix_time)
     else
         xprintf(Warn, "Inserted fixed time %f less then end of fixed dt interval %f.\n",fix_time, end_of_fixed_dt_interval);
 }
+*/
 
+/*
 void TimeGovernor::set_fix_times(double first_fix_time, double fix_interval)
 {
-    for(double tt=first_fix_time; tt< end_time; tt+=fix_interval) set_fix_time(tt);
+    for(double tt=first_fix_time; tt< end_time_; tt+=fix_interval) set_fix_time(tt);
 }
+*/
 
 void TimeGovernor::next_time()
 {
@@ -78,14 +99,14 @@ void TimeGovernor::next_time()
     last_time_step = time_step;
 
     // jump to the first future fix time
-     while ( this->ge(fix_times.top()) ) fix_times.pop();
+    TimeMarks::iterator fix_time_it = time_marks->next(*this, TimeMark::strict);
 
     // select algorithm for determination of time step
     if (dt_change_overhead <= 0.0) {
         // LOCAL DT CHOICE
 
         // compute step to next fix time and apply constrains
-        double full_step = fix_times.top() - last_time;
+        double full_step = fix_time_it->time() - last_time;
         time_step = min(full_step, time_step_constrain);
         time_step = min(time_step, max_time_step);
         time_step = max(time_step,min_time_step);
@@ -97,7 +118,7 @@ void TimeGovernor::next_time()
 
         end_of_fixed_dt_interval=time;
         dt_changed= (last_time_step == time_step);
-        time_step_constrain = min(end_time-time, max_time_step); // reset time step constrain
+        time_step_constrain = min(end_time_-time, max_time_step); // reset time step constrain
     } else {
         // OVERHEAD OPTIMIZATION
 
@@ -114,7 +135,7 @@ void TimeGovernor::next_time()
             //
 
               // compute step to next fix time and apply constrains
-              double full_step = fix_times.top() - last_time;
+              double full_step = fix_time_it->time() - last_time;
               time_step = min(full_step, time_step_constrain);
               time_step = min(time_step, max_time_step);
               time_step = max(time_step,min_time_step);
@@ -124,12 +145,12 @@ void TimeGovernor::next_time()
               int n_steps = ceil( full_step / time_step );
               time_step = full_step / n_steps;
 
-              while ( fix_times.top() != end_time &&
-                      fabs( round(fix_times.top() / time_step) - fix_times.top()/ time_step ) <= comparison_precision ) fix_times.pop();
+              while ( fix_time_it != time_marks->end() &&
+                      fabs( round(fix_time_it->time() / time_step) - fix_time_it->time()/ time_step ) <= comparison_precision ) ++fix_time_it;
 
-              end_of_fixed_dt_interval=fix_times.top();
+              end_of_fixed_dt_interval=fix_time_it->time();
               dt_changed= (last_time_step == time_step);
-              time_step_constrain = min(end_time-time, max_time_step);         // reset time step constrain
+              time_step_constrain = min(end_time_-time, max_time_step);         // reset time step constrain
 
             /*
              * following piece of code implements variant of Euclidead algorithm for GCD, but it appears that
@@ -171,7 +192,7 @@ void TimeGovernor::next_time()
             }
 
             // reset time step constrain
-            time_step_constrain = min(end_time-time, max_time_step); */
+            time_step_constrain = min(end_time_-time, max_time_step); */
         } else {
             dt_changed= false;
         }

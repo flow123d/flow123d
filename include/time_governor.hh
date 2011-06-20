@@ -32,6 +32,8 @@
 #include <algorithm>
 #include <queue>
 #include "system/system.hh"
+#include "time_marks.hh"
+
 /**
  * @brief
  * Basic time management functionality for unsteady solvers.
@@ -58,13 +60,20 @@
  *
  */
 
+class TimeMarks;
+
 class TimeGovernor
 {
 public:
     /**
      * Constructor - from given values, set fixed time step.
      */
-   TimeGovernor(double time_init, double min_dt, double max_dt, double end_t);
+   TimeGovernor(TimeMarks * const marks, double time_init, double end_t);
+
+   /**
+    * Permanent constrain for time step.
+    */
+   void set_permanent_constrain( double min_dt, double max_dt);
 
     /**
      * Set upper constrain for the choice of the next time step.
@@ -72,18 +81,18 @@ public:
      * When the time value is determined, the constrain is set to infinity. Until the next call of next_time you can
      * set constrains. The minimum of them is used for choice of the next time step.
      */
-    void constrain_dt(double dt_constrain);
+    void set_constrain(double dt_constrain);
 
     /**
      * Add a time that has to be meet by the time governor.
      * The time is inserted into priority queue of fixed times in which the solution has to be computed.
      */
-    void set_fix_time(double fix_time);
+    //void set_fix_time(double fix_time);
 
     /**
      * Add more equidistant fix times.
      */
-    void set_fix_times(double first_fix_time, double fix_interval);
+    //void set_fix_times(double first_fix_time, double fix_interval);
 
     /**
      *  Set the overhead in execution time that the solver has to do
@@ -124,8 +133,12 @@ public:
     inline double dt() const
         {return time_step;}
 
+    /// End time.
+    inline double end_time() const
+    { return end_time_; }
+
     inline bool is_end() const
-        {return this->ge(end_time); }
+        {return this->ge(end_time_); }
 
     /**
      * Performs comparison time > other_time, i.e. time is strictly greater then given parameter other_time
@@ -161,13 +174,18 @@ public:
 
     void view() const
     {
-        DBGMSG(" level: %d end time: %f time: %f step: %f\n",time_level, end_time, time, time_step);
+        DBGMSG(" level: %d end time: %f time: %f step: %f\n",time_level, end_time_, time, time_step);
     }
 
 private:
-    static const double comparison_precision=0.01;
-    int time_level;
 
+    /// we consider time difference is zero if it is less then comparison_precision * time_step
+    static const double comparison_precision;
+    /// technical bound for the time step given by finite precision
+    static const double time_step_lower_bound;
+
+    /// Number of time_next calls, i.e. total number of performed time steps.
+    int time_level;
     /// End of actual time interval; i.e. where the solution is computed.
     double time;
     /// Beginning of the actual time interval; i.e. the time of last computed solution.
@@ -175,7 +193,7 @@ private:
     /// End of interval if fixed time step. (defers from @var time only if overhead is positive)
     double end_of_fixed_dt_interval;
     /// End time of the simulation.
-    double end_time;
+    double end_time_;
 
     /// Length of actual time interval; i.e. the actual time step.
     double time_step;
@@ -198,7 +216,8 @@ private:
      * When the next time is chosen we need only the lowest fix time. Therefore we use
      * minimum priority queue of doubles based on the vector container.
      */
-    std::priority_queue<double, vector<double>, greater<double> > fix_times;
+    TimeMarks * const time_marks;
+    //std::priority_queue<double, vector<double>, greater<double> > fix_times;
 
 };
 

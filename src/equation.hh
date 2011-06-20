@@ -76,8 +76,9 @@ public:
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
 protected:
-    Mesh *mesh;
+    Mesh   *mesh;
     MaterialDatabase *mat_base;
+    TimeMarks   *time_marks;
     TimeGovernor *time;
 };
 

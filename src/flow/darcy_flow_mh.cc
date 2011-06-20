@@ -60,11 +60,12 @@
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh *mesh_in, MaterialDatabase *mat_base_in)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks *marks, Mesh *mesh_in, MaterialDatabase *mat_base_in)
 : DarcyFlowMH()
 
 {
     // can not be in initializer list since are not proper class members
+    time_marks= marks;
     mesh=mesh_in;
     mat_base=mat_base_in;
 
@@ -94,7 +95,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh *mesh_in, MaterialDatabase *mat_base
     }
 
     // time governor
-    time=new TimeGovernor(0, 1.0, 1.0, 1.0);
+    time=new TimeGovernor(time_marks,0.0, 1.0E100); // TODO: still we need init_time and end_time for steady !! should be setup for every equation
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -1160,16 +1161,21 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh *mesh_in, MaterialDatabase *mat_base_in)
-    : DarcyFlowMH_Steady(mesh_in, mat_base_in)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, MaterialDatabase *mat_base_in)
+    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
 {
     // time governor
     time=new TimeGovernor(
+            time_marks,
             0.0,
-            OptGetDbl("Global", "Time_step", "1.0"),
-            OptGetDbl("Global", "Time_step", "1.0"),
             OptGetDbl("Global", "Stop_time", "1.0")
             );
+
+    time->set_permanent_constrain(
+            OptGetDbl("Global", "Time_step", "1.0"),
+            OptGetDbl("Global", "Time_step", "1.0")
+            );
+
 
     // have created full steady linear system
     // save diagonal of steady matrix
@@ -1236,15 +1242,19 @@ void DarcyFlowMH_Unsteady::modify_system()
 // ========================
 // unsteady
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh *mesh_in, MaterialDatabase *mat_base_in)
-    : DarcyFlowMH_Steady(mesh_in, mat_base_in)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, MaterialDatabase *mat_base_in)
+    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
 {
     // time governor
     time=new TimeGovernor(
+            time_marks,
             0.0,
-            OptGetDbl("Global", "Time_step", "1.0"),
-            OptGetDbl("Global", "Time_step", "1.0"),
             OptGetDbl("Global", "Stop_time", "1.0")
+            );
+
+    time->set_permanent_constrain(
+            OptGetDbl("Global", "Time_step", "1.0"),
+            OptGetDbl("Global", "Time_step", "1.0")
             );
 
     // have created full steady linear system

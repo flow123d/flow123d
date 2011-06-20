@@ -25,6 +25,7 @@ public:
 
     /// Base mark type for strict time marks.
     static const Type strict;
+    static const Type every_type;
     /**
      * Constructor for a TimeMarks::Mark
      * @param time - time of the mark
@@ -33,18 +34,18 @@ public:
      * In order to create a strict TimeMark (at time=0.1) with base type output_type, use:
      * TimeMark( 0.1, output_type | TimeMark::strict)
      */
-    TimeMark(double time, TimeMarkType type) :
-        time_(time), mark_type_(type) {
-    }
+    TimeMark(double time, Type type) :
+        time_(time), mark_type_(type) {}
+
 
     /// Getter for mark type.
-    TimeMarkType mark_type() const {
+    Type mark_type() const {
         return mark_type_;
     }
 
     /// True if the TimeMark is strict.
     bool is_strict() const {
-        return mark_type_ && strict;
+        return mark_type_ & strict;
     }
 
     /// Getter for the time of the TimeMark.
@@ -52,51 +53,108 @@ public:
         return time_;
     }
 
-    /// Comparison of time marks.
-    bool operator<(const TimeMark &second_mark) {
-        return time_ < second_mark.time();
+    /// Returns true if TimeMark's type has 1 on all positions where @param mask has 1.
+    bool match_mask(const TimeMark::Type &mask) const {
+        return ( mask & (~mark_type_) ) == 0;
     }
 
+    /// Comparison of time marks.
+    bool operator<(const TimeMark& second) const
+      { return time_ < second.time(); }
 private:
     double time_;
-    TimeMarkType mark_type_;
+    Type mark_type_;
 };
-const TimeMark::Type TimeMark::strict = 0x1;
+/**
+ * Output operator for TimeMark class.
+ */
+ostream& operator<<(ostream& stream, const TimeMark &marks);
+
+
+
+/**
+ * Iterator into the TimeMarks of particular mask. Always const iterator.
+ */
+class TimeMarksIterator {
+public:
+    TimeMarksIterator(const vector<TimeMark> &marks,const  vector<TimeMark>::const_iterator &it, const TimeMark::Type &mask)
+    : marks_(marks), it_(it), mask_(mask) {}
+
+    TimeMarksIterator &operator=(const TimeMarksIterator &it)
+    {ASSERT(&marks_ == &it.marks_, "Can not assign TimeMarks::iterator of different container.\n");
+     it_=it.it_;
+     mask_=it.mask_;
+     return *this;
+    }
+    /// Prefix increment. Skip non-matching marks.
+    TimeMarksIterator &operator++()
+    { while ( it_ != marks_.begin() && ! (++it_) -> match_mask(mask_) ); return (*this); }
+
+    /// Prefix decrement. Skip non-matching marks.
+    TimeMarksIterator &operator--()
+    { while ( it_ != marks_.end() && ! (--it_) -> match_mask(mask_) ); return (*this); }
+
+
+    ///  * dereference operator
+    inline const TimeMark & operator *() const
+            { return *it_; }
+
+    /// -> dereference operator
+    inline const TimeMark * operator ->() const
+            { return &(*(it_)); }
+
+    inline bool operator ==(const TimeMarksIterator &other) const
+        {return it_ == other.it_; }
+
+    inline bool operator !=(const TimeMarksIterator &other) const
+            {return it_ != other.it_; }
+
+    TimeMark::Type mask()
+    { return mask_; }
+private:
+    const vector<TimeMark> &marks_;
+    vector<TimeMark>::const_iterator it_;
+    TimeMark::Type mask_;
+};
 
 /**
  * Simple database of TimeMsrks. Provides questions about last and nearest TimeMarks for particular types. C
  */
+class TimeGovernor;
+
 class TimeMarks {
 
 public:
-    TimeMarks() :
-        next_mark_type(2) {
+    /// this is alwaysconst_iterator.
+    typedef TimeMarksIterator iterator;
+
+
+
+    TimeMarks()
+        : next_mark_type_(2)
+    {
+        marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));
+        marks_.push_back(TimeMark(+INFINITY, TimeMark::every_type));
     }
 
     /**
      * Add a new base mark within the context of the particular TimeMarks instance.
      * User should keep the returned value (MarkType is basically a bitmap) for further queries and
      * TimeMark insertions. ATTENTION: You can not use the TimeMark::Type with other TimeMarks instance!
-     *
-     * If @param strict is true, we set bit for strict types. This distinguish those types that are used as a fix times for connected TimeGovernor.
      */
-    TimeMark::Type new_mark_type(bool strict) {
-        ASSERT(next_mark_type != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
-        TimeMark::Type current_type = next_mark_type;
-
-        next_mark_type <<= 1;
-        return current_type | TimeMark::strict;
-    }
+    TimeMark::Type new_mark_type();
+    /**
+     * Same as @fn new_mark_type, but set the strict bit.
+     * This distinguish those types that are used as a fix times for connected TimeGovernor.
+     */
+    TimeMark::Type new_strict_mark_type();
 
     /**
      * Basic method for inserting TimeMarks.
      * @par time    Time of the TimeMark.
      * @par type    MarkType or their combinations.
      */
-    void add_time_mark(TimeMark mark) {
-        vector<TimeMarks>::iterator first_ge = std::lower_bound(makrs.begin(), marks.end(), mark);
-        marks.insert(first_ge, mark);
-    }
+    void add(const TimeMark &mark);
 
     /**
      * Method for creating and inserting equally spaced TimeMarks.
@@ -108,52 +166,49 @@ public:
      * Current lazy implementation have complexity O(m*n) where m is number of inserted time merks and n number of time marks in the array.
      * TODO: O(n+m) implementation
      */
-    void add_time_marks(double time, double dt, double end_time, MarkType type) {
-        for (double t = time; t < end_time; t += dt)
-            add_time_mark(TimeMark(t, type));
-    }
-
-    bool is_current(const TimeGovernor &tg, const MarkType &mask) {
-        TimeMark tm = last(tg, mask);
-    }
-
-    TimeMark &next(const TimeGovernor &tg, const MarkType &mask) {
-        vector<TimeMarks>::iterator first_ge = std::lower_bound(makrs.begin(), marks.end(), mark);
-        --first_ge;
-        while (!tg.lt(first_ge.time()) || !mask_match(mask, first_ge.type()))
-            ++first_ge;
-        return first_ge;
-    }
+    void add_time_marks(double time, double dt, double end_time, TimeMark::Type type);
 
     /**
-     * Return the last TimeMark before @param tg.time() that  match the @param mask.
+     * Find the last time mark matching given mask, and returns true if it is in the time interval of
+     * current time step.
+     */
+    bool is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const;
+
+    /**
+     * Return the first TimeMark with time strictly greater then @param tg.time() that match the @param mask.
+     * The time governor @param tg  is used also for time comparisons.
+     *
+     * TODO: have also method which accepts double (time) instead of the whole TimeGovernor.
+     * and compare without safety.
+     */
+    TimeMarks::iterator next(const TimeGovernor &tg, const TimeMark::Type &mask) const;
+
+    /**
+     * Return the last TimeMark with time less or equal to @param tg.time() that match the @param mask.
      * The time governor @param tg  is used also for time comparisons.
      */
-    TimeMark &last(const TimeGovernor &tg, const MarkType &mask) {
-        vector<TimeMarks>::iterator first_ge = std::lower_bound(makrs.begin(), marks.end(), mark);
-        while (!tg.ge(first_ge.time()) || !mask_match(mask, first_ge.type()))
-            --first_ge;
-        return first_ge;
-    }
+    TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
+
+    TimeMarks::iterator begin() const
+    {return TimeMarks::iterator(marks_, marks_.begin(), TimeMark::every_type); }
+
+    TimeMarks::iterator end() const
+        {return TimeMarksIterator(marks_, --marks_.end(), TimeMark::every_type); }
+
+    friend ostream& operator<<(ostream& stream, const TimeMarks &marks);
 
 private:
 
-    /// Returns true if @param type has 1 on all positions where @param mask has 1.
-    bool mask_match(MarkType &mask, MarkType &type) {
-        return mask & (~type) == 0;
-    }
-
     /// MarkType that will be used at next add_time_mark call.
-    MarkType next_mark_type;
+    TimeMark::Type next_mark_type_;
 
     /// TimeMarks list sorted according to the their time.
-    vector<TimeMark> marks;
-
-    /// Since there can be queries form different TimeGovernors, we can not simply
-    /// pass through marks. We rather iterate marks every time using the largest
-    /// query time as the initial point.
-    double guess_time;
-    list<TimeMark> guess_iter;
+    vector<TimeMark> marks_;
 };
+/**
+ * Output operator for TimeMarks database.
+ */
+ostream& operator<<(ostream& stream, const  TimeMarks &marks);
+
 
 #endif /* TIME_MARKS_HH_ */

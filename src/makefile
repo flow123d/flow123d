@@ -37,6 +37,7 @@ TARGETS = $(BIN)/flow123d
 
 # List of object files of Flow123d
 FLOW123D_OBJS = \
+$(OBJS)/time_marks.o\
 $(OBJS)/mesh/ini_constants_mesh.o\
 $(OBJS)/mesh/mesh.o\
 $(OBJS)/mesh/nodes.o\

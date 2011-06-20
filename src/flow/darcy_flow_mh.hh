@@ -117,7 +117,7 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowMH_Steady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
     virtual void compute_one_step();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
@@ -195,7 +195,7 @@ void solve_water_linsys(DarcyFlowMH*);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowMH_Unsteady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
     DarcyFlowMH_Unsteady();
 protected:
     virtual void modify_system();
@@ -223,7 +223,7 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowLMH_Unsteady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
     DarcyFlowLMH_Unsteady();
 protected:
     virtual void modify_system();

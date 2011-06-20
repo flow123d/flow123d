@@ -227,31 +227,29 @@ void main_compute_mh(struct Problem *problem) {
 void main_compute_mh_unsteady_saturated(struct Problem *problem)
 {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-    char * output_file=OptGetFileName("Output", "Output_file", "\\");
     OutputTime *output_time;
+    TimeMarks * main_time_marks = new TimeMarks();
     int i, rank;
 
-
+    // setup output
     if(rank == 0) {
+        string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
         output_time = new OutputTime(mesh, output_file);
     }
-    char * str_output_file = (char *)IONameHandler::get_instance()->get_output_file_name(output_file).c_str();
 
-    DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(mesh, problem->material_database);
+    DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(main_time_marks,mesh, problem->material_database);
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
-
-    problem->water=water;
-
     const TimeGovernor &water_time=water->get_time();
 
-    double save_step=OptGetDbl("Global", "Save_step", "1.0");
-    double save_time=0.0;
+    // set output time marks
+    TimeMark::Type output_mark_type = main_time_marks->new_strict_mark_type();
+    main_time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), water_time.end_time(), output_mark_type );
 
     while (! water_time.is_end()) {
         water->compute_one_step();
         water_output->postprocess();
 
-        if ( water_time.ge( save_time ) )  {
+        if ( main_time_marks->is_current(water_time, output_mark_type) )  {
 
             if(rank == 0) {
                 output_time->get_data_from_mesh();
@@ -260,8 +258,6 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
                 output_time->write_data(water_time.t());
                 output_time->free_data_from_mesh();
             }
-
-            save_time+=save_step;
         }
     }
 }
@@ -272,6 +268,7 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
 void main_compute_mh_steady_saturated(struct Problem *problem)
 {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+    TimeMarks * main_time_marks = new TimeMarks();
 
     int rank;
     /*
@@ -284,9 +281,9 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
      */
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-    problem->water=new DarcyFlowMH_Steady(mesh, problem->material_database);
+
+    problem->water=new DarcyFlowMH_Steady(main_time_marks, mesh, problem->material_database);
     // Pointer at Output should be in this object
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(problem->water);
 

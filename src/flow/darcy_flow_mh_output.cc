@@ -548,7 +548,7 @@ void DarcyFlowMHOutput::water_balance() {
     delete bcd_balance;
 
     const FieldP0<double> *p_sources=darcy_flow->get_sources();
-    if (p_sources != 0) {
+    if (p_sources != NULL) {
         xprintf(Msg, "Calculating sources of water by material types...\n");
 
         MaterialDatabase *mat_base=darcy_flow->get_mat_base();
