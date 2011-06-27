@@ -25,7 +25,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
     Linear_reaction *decayRad;
     Semchem_interface *Semchem_reactions;
 
-
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
 
@@ -39,8 +38,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 	decayRad = new Linear_reaction(n_substances, time_step);
 	Semchem_reactions = new Semchem_interface();
 
-	time = new TimeGovernor(0.0,0.0,problem_stop_time,problem_stop_time);
-	time->constrain_dt(convection->cfl_time_constrain());
+	time_marks = new TimeMarks();
+	time = new TimeGovernor(time_marks, problem_stop_time, problem_stop_time);
+	time->set_constrain(convection->cfl_time_constrain());
 
 }
 
