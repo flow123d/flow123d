@@ -30,22 +30,15 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
+#include "mesh/mesh.h"
+
 #include <vector>
 #include <string>
 #include <fstream>
 
-//#include "system.hh"
-#include "transport.h"  // TODO remove
-
-/// External types
-struct Problem;         // TODO remove
-class ConvectionTransport;  // TODO remove
-class Mesh;
-
 //TODO: v C++ by mely byt konstanty uvnitr definice trid, nejlepe jako enum napr:
 // enum OutputDataFormat { GMSH_ASCII, GMSH_BIN, ..}
 // a uvazit zda to ma byt public, nebo private (nebo protected)
-
 
 // FILE formats
 #define POS_ASCII           1   //TODO GMSH_ASCII
@@ -81,9 +74,9 @@ class Mesh;
 #define VTK_TETRA_SIZE      4
 
 // Types of output files
-#define GMSH_STYLE  1
-#define FLOW_DATA_FILE 2
-#define BOTH_OUTPUT 3
+#define GMSH_STYLE          1
+#define FLOW_DATA_FILE      2
+#define BOTH_OUTPUT         3
 
 // Types of data, that could be written to output file
 #define OUT_VECTOR_INT_SCA      1
@@ -96,8 +89,91 @@ class Mesh;
 #define OUT_ARRAY_FLOAT_SCA     8
 #define OUT_ARRAY_DOUBLE_SCA    9
 
-// TODO : i definice typu by mely byt uvnitr trid ktere tyto definice potrebuji
-// opet ? verejne/nevrejne ...
+/**
+ * Class of output data storing reference on data
+ *
+ */
+class OutputData {
+private:
+public:
+    string          *name;      ///< String with name of data
+    string          *units;     ///< String with units
+    void            *data;      ///< Pointer at own data
+    unsigned char   type;       ///< Type values in vector
+    int             comp_num;   ///< Number of components in vector
+    int             num;        ///< Number of values in vector/array
+
+    OutputData() {};            ///< Un-named constructor can't be called directly
+
+    string* getName(void) { return name; };
+    string* getUnits(void) { return units; };
+    int getCompNum(void) { return comp_num; };
+    int getValueNum(void) { return num; };
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, int *data, unsigned int size);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, float *data, unsigned int size);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, double *data, unsigned int size);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, std::vector<int> &data);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, std::vector< vector<int> > &data);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, std::vector<float> &data);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, std::vector< vector<float> > &data);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, std::vector<double> &data);
+
+    /**
+     * \brief Constructor for OutputData storing names of output data and their
+     * units.
+     */
+    OutputData(std::string name, std::string unit, std::vector< vector<double> > &data);
+
+    /**
+     * \brief Destructor for OutputData
+     */
+    ~OutputData();
+};
+
+/**
+ * Definition of output data vector
+ */
+typedef std::vector<OutputData> OutputDataVec;
 
 /* Temporary structure for storing data */
 typedef std::vector<double> ScalarFloatVector;
@@ -108,7 +184,7 @@ typedef struct OutScalar {
     ScalarFloatVector   *scalars;
     string              name;
     string              unit;
-} OutScalars;
+} OutScalar;
 
 /* Temporary structure for storing data */
 typedef struct OutVector {
@@ -122,102 +198,110 @@ typedef std::vector<OutScalar> OutScalarsVector;
 typedef std::vector<OutVector> OutVectorsVector;
 
 /**
- * Class of output data storing reference on data
- *
- * TODO: podrobnejsi komentar, metody komentovat v header filech
- * stejne tak u dlasich trid.
- */
-class OutputData {
-private:
-public:
-    // TODO: promenne by mely byt private
-
-    string          *name;      ///< String with name of data
-    string          *units;     ///< String with units
-    void            *data;      ///< Pointer at own data
-    unsigned char   type;       ///< Type values in vector
-    int             comp_num;   ///< Number of components in vector
-    int             num;        ///< Number of values in vector/array
-    OutputData() {};            ///< Un-named constructor can't be called
-    string* getName(void) { return name; };
-    string* getUnits(void) { return units; };
-    int getCompNum(void) { return comp_num; };
-    int getValueNum(void) { return num; };
-    OutputData(std::string name, std::string unit, int *data, unsigned int size);
-    OutputData(std::string name, std::string unit, float *data, unsigned int size);
-    OutputData(std::string name, std::string unit, double *data, unsigned int size);
-    OutputData(std::string name, std::string unit, std::vector<int> &data);
-    OutputData(std::string name, std::string unit, std::vector< vector<int> > &data);
-    OutputData(std::string name, std::string unit, std::vector<float> &data);
-    OutputData(std::string name, std::string unit, std::vector< vector<float> > &data);
-    OutputData(std::string name, std::string unit, std::vector<double> &data);
-    OutputData(std::string name, std::string unit, std::vector< vector<double> > &data);
-    ~OutputData();
-};
-
-typedef std::vector<OutputData> OutputDataVec;
-
-/**
  * Class of output
  */
 class Output {
-private:
-    struct OutScalar *node_scalar;      // Temporary solution
-    struct OutScalar *element_scalar;   // Temporary solution
-    struct OutVector *element_vector;   // Temporary solution
-
-    ofstream    *base_file;             ///< Base output stream
-    string      *base_filename;         ///< Name of base output file
-    string      *data_filename;         ///< Name of data output file
-    ofstream    *data_file;             ///< Data output stream (could be same as base_file)
-    int         format_type;            ///< Type of output
-    Mesh        *mesh;
-    std::vector<OutputData> *node_data; ///< List of data on nodes
-    std::vector<OutputData> *elem_data; ///< List of data on elements
-
-
-    // TODO: tohle by se melo resit jinak. napr: Output by melo obsahovat
-    // abstraktni virtualni metodu write_data
-    // pak bychom meli potomky tridy Output pro jednotlive formaty vystupu,
-    // a ty by definovali vystup do patricneho formatu
-
-    // Internal API for file formats
-    int (*_write_data)(Output *output);
-protected:
-    // Protected getters for descendant
-
-    // Protected setters for descendant
-    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
-    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
-    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
-    void set_format_type(int _format_type) { format_type = _format_type; };
-    void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
-    void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
 public:
-
-    // TODO: pokud je zde default konstruktor,
-    // mela by byt moznost pozdeji nastavit ukazatel na sit, jinak se prislusna instance neda k nicemu pouzit
-
-    Output() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
-
+    /**
+     * \brief Constructor of the Output object
+     *
+     * \param[in] *_mesh    The pointer at Mesh
+     * \param[in] *fname    The name of the output file
+     */
     Output(Mesh *mesh, string filename);
+
+    /**
+     * \brief Destructor of the Output object.
+     */
     ~Output();
 
-    // Temporary solution
+    /**
+     * \brief This function gets data from mesh and save them in Output. It is temporary solution.
+     */
     void get_data_from_mesh(void);
+
+    /**
+     * \brief This function free data from Mesh. It is temporary solution.
+     */
     void free_data_from_mesh(void);
 
+    /**
+     * \brief Register array of data on nodes.
+     *
+     * This function will add reference on the array of data to the Output object.
+     * Own data will be written to the file, when write_data() method will be called.
+     *
+     * \param[in]   name    The name of data
+     * \param[in]   unit    The name of units
+     * \param[in]   data    The pointer on array of data
+     * \param[in]   size    The number of values in array
+     *
+     * \return This function return 1, when the length of data vector is the same as
+     * number of nodes in mesh. When the the number is different, then this
+     * function returns 0.
+     */
     template <typename _Data>
     int register_node_data(std::string name, std::string unit, _Data *data, uint size);
 
+    /**
+     * \brief Register array of data on elements.
+     *
+     * This function will add reference on this array of data to the Output object.
+     * Own data will be written to the file, when write_data() method will be called.
+     *
+     * \param[in]   name    The name of data
+     * \param[in]   unit    The name of units
+     * \param[in]   data    The pointer on array of data
+     * \param[in]   size    The number of values in array
+     *
+     * \return This function return 1, when the length of data vector is the same as
+     * number of elements in mesh. When the the number is different, then this
+     * function returns 0.
+     */
     template <typename _Data>
     int register_elem_data(std::string name, std::string unit, _Data *data, unsigned int size);
 
+    /**
+     * \brief Register data on nodes.
+     *
+     * This function will add reference on this data to the Output object. Own data
+     * will be written to the file, when write_data() method will be called.
+     *
+     * \param[in]   name    The name of data
+     * \param[in]   unit    The name of units
+     * \param[in]   data    The reference on vector of data
+     *
+     * \return This function return 1, when the length of data vector is the same as
+     * number of nodes in mesh. When the the number is different, then this function
+     * returns 0.
+     */
     template <typename _Data>
     int register_node_data(std::string name, std::string unit, std::vector<_Data> &data);
 
+    /**
+     * \brief Register data on elements.
+     *
+     * This function will add reference on the data to the Output object. Own data
+     * will be written to the file, when write_data() method will be called.
+     *
+     * \param[in]   name    The name of data
+     * \param[in]   unit    The name of units
+     * \param[in]   data    The reference on vector of data
+     *
+     * \return This function return 1, when the length of data vector is the same as
+     * number of elements in mesh. When the the number is different, then this
+     * function returns 0.
+     */
     template <typename _Data>
     int register_elem_data(std::string name, std::string unit, std::vector<_Data> &data);
+
+    /**
+     * \brief This function call pointer at _write_data(Output). It writes
+     * registered data to specified file format.
+     *
+     * \return This function return result of pointer at output function.
+     */
+    int write_data(void);
 
     // Public getters
     std::vector<OutputData> *get_node_data(void) { return node_data; };
@@ -232,11 +316,111 @@ public:
     // Public setters
     void set_data_file(ofstream *_data_file) { data_file = _data_file; };
 
-    int write_data(void);
+protected:
+    // Protected setters for descendant
+    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
+    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
+    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
+    void set_format_type(int _format_type) { format_type = _format_type; };
+    void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
+    void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
+
+    Output() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
+
+private:
+    struct OutScalar *node_scalar;      // Temporary solution
+    struct OutScalar *element_scalar;   // Temporary solution
+    struct OutVector *element_vector;   // Temporary solution
+
+    ofstream        *base_file;         ///< Base output stream
+    string          *base_filename;     ///< Name of base output file
+    string          *data_filename;     ///< Name of data output file
+    ofstream        *data_file;         ///< Data output stream (could be same as base_file)
+    int             format_type;        ///< Type of output
+    Mesh            *mesh;
+    OutputDataVec   *node_data;         ///< List of data on nodes
+    OutputDataVec   *elem_data;         ///< List of data on elements
+
+    // TODO: tohle by se melo resit jinak. napr: Output by melo obsahovat
+    // abstraktni virtualni metodu write_data
+    // pak bychom meli potomky tridy Output pro jednotlive formaty vystupu,
+    // a ty by definovali vystup do patricneho formatu
+
+    // Internal API for file formats
+    int (*_write_data)(Output *output);
 };
 
+template <typename _Data>
+int Output::register_node_data(std::string name,
+        std::string unit,
+        _Data *data,
+        uint size)
+{
+    if(mesh->node_vector.size() == size) {
+        int found = 0;
+
+        OutputData *out_data = new OutputData(name, unit, data, size);
+        node_data->push_back(*out_data);
+
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        return 0;
+    }
+}
+
+template <typename _Data>
+int Output::register_elem_data(std::string name,
+        std::string unit,
+        _Data *data,
+        uint size)
+{
+    if(mesh->element.size() == size) {
+        int found = 0;
+
+        OutputData *out_data = new OutputData(name, unit, data, size);
+        elem_data->push_back(*out_data);
+
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        return 0;
+    }
+}
+
+template <typename _Data>
+int Output::register_node_data(std::string name,
+        std::string unit,
+        std::vector<_Data> &data)
+{
+    if(mesh->node_vector.size() == data.size()) {
+        OutputData *out_data = new OutputData(name, unit, data);
+        node_data->push_back(*out_data);
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        return 0;
+    }
+}
+
+template <typename _Data>
+int Output::register_elem_data(std::string name,
+        std::string unit,
+        std::vector<_Data> &data)
+{
+    if(mesh->element.size() == data.size()) {
+        OutputData *out_data = new OutputData(name, unit, data);
+        elem_data->push_back(*out_data);
+        return 1;
+    } else {
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        return 0;
+    }
+}
+
+
 /**
- * Class of output of during time
+ * Class of output during time
  */
 class OutputTime : public Output {
 private:
@@ -246,46 +430,113 @@ private:
     int (*_write_head)(OutputTime *output);
     int (*_write_tail)(OutputTime *output);
 public:
-    // Constructor and destructor
+    /**
+     * \brief Constructor of OutputTime object. It opens base file for writing.
+     *
+     * \param[in]   *_mesh  The pointer at mesh object.
+     * \param[in]   fname   The name of output file
+     */
     OutputTime(Mesh *mesh, string filename);
+
+    /**
+     * \brief Destructor of OutputTime. It doesn't do anything, because all
+     * necessary destructors will be called in destructor of Output
+     */
     ~OutputTime();
 
+    /**
+     * \brief This function register data on nodes.
+     *
+     * This function will add reference on this array of data to the Output object.
+     * It is possible to call this function only once, when data are at the same
+     * address during time. It is possible to call this function for each step, when
+     * data are not at the same address, but name of the data has to be same.
+     * Own data will be written to the file, when write_data() method will be called.
+     *
+     * \param[in] name  The name of data
+     * \param[in] unit  The units of data
+     * \param[in] *data The pointer at data (array of int, float or double)
+     * \param[in] size  The size of array (number of values)
+     *
+     * \return This function returns 1, when data were registered. This function
+     * returns 0, when it wasn't able to register data (number of values isn't
+     * same as number of nodes).
+     */
     template <typename _Data>
     int register_node_data(std::string name, std::string unit, _Data *data, unsigned int size);
 
+    /**
+     * \brief This function register data on elements.
+     *
+     * This function will add reference on this array of data to the Output object.
+     * It is possible to call this function only once, when data are at the same
+     * address during time. it is possible to call this function for each step, when
+     * data are not at the same address, but name of the data has to be same.
+     * Own data will be written to the file, when write_data() method will be called.
+     *
+     * \param[in] name  The name of data
+     * \param[in] unit  The units of data
+     * \param[in] *data The pointer at data (array of int, float or double)
+     * \param[in] size  The size of array (number of values)
+     *
+     * \return This function returns 1, when data were registered. This function
+     * returns 0, when it wasn't able to register data (number of values isn't
+     * same as number of elements).
+     */
     template <typename _Data>
     int register_elem_data(std::string name, std::string unit, _Data *data, unsigned int size);
 
+    /**
+     * \brief This function register data on nodes.
+     *
+     * This function will add reference on this array of data to the Output object.
+     * It is possible to call this function only once, when data are at the same
+     * address during time. it is possible to call this function for each step, when
+     * data are not at the same address, but name of the data has to be same.
+     * Own data will be written to the file, when write_data() method will be called.
+     *
+     * \param[in] name  The name of data
+     * \param[in] unit  The units of data
+     * \param[in] *data The pointer at data (array of int, float or double)
+     * \param[in] size  The size of array (number of values)
+     *
+     * \return This function returns 1, when data were registered. This function
+     * returns 0, when it wasn't able to register data (number of values isn't
+     * same as number of nodes).
+     */
     template <typename _Data>
     int register_node_data(std::string name, std::string unit, std::vector<_Data> &data);
 
+    /**
+     * \brief Register vector of data on elements.
+     *
+     * This function will add reference on the data to the Output object. Own
+     * data will be written to the file, when write_data() method will be called.
+     * When the data has been already registered, then pointer at data will be
+     * updated. Otherwise, new data will be registered.
+     *
+     * \param[in] name  The name of data
+     * \param[in] unit  The unit of data
+     * \param[in] &data The reference on vector (int, float, double)
+     *
+     * \return This function returns 1, when data were successfully registered.
+     * This function returns 0, when number of elements and items of vector is
+     * not the same.
+     */
     template <typename _Data>
     int register_elem_data(std::string name, std::string unit, std::vector<_Data> &data);
 
-    // This method write data to the file
+    /**
+     * \brief This function call pointer at appropriate pointer at function,
+     * that write data to specific file format.
+     *
+     * \param[in] time  The output will be done for this time
+     *
+     * \return This function returns result of method _write_data().
+     */
     int write_data(double time);
 };
 
-/**
- * \brief This function register data on nodes.
- *
- * This function will add reference on this array of data to the Output object.
- * It is possible to call this function only once, when data are at the same
- * address during time. It is possible to call this function for each step, when
- * data are not at the same address, but name of the data has to be same.
- * Own data will be written to the file, when write_data() method will be called.
- *
- * \param[in] name  The name of data
- * \param[in] unit  The units of data
- * \param[in] *data The pointer at data (array of int, float or double)
- * \param[in] size  The size of array (number of values)
- *
- * \return This function returns 1, when data were registered. This function
- * returns 0, when it wasn't able to register data (number of values isn't
- * same as number of nodes).
- *
- * TODO: Test this method!
- */
 template <typename _Data>
 int OutputTime::register_node_data(std::string name,
         std::string unit,
@@ -321,24 +572,6 @@ int OutputTime::register_node_data(std::string name,
     }
 }
 
-/**
- * \brief This function register data on elements.
- *
- * This function will add reference on this array of data to the Output object.
- * It is possible to call this function only once, when data are at the same
- * address during time. it is possible to call this function for each step, when
- * data are not at the same address, but name of the data has to be same.
- * Own data will be written to the file, when write_data() method will be called.
- *
- * \param[in] name  The name of data
- * \param[in] unit  The units of data
- * \param[in] *data The pointer at data (array of int, float or double)
- * \param[in] size  The size of array (number of values)
- *
- * \return This function returns 1, when data were registered. This function
- * returns 0, when it wasn't able to register data (number of values isn't
- * same as number of elements).
- */
 template <typename _Data>
 int OutputTime::register_elem_data(std::string name,
         std::string unit,
@@ -374,26 +607,6 @@ int OutputTime::register_elem_data(std::string name,
     }
 }
 
-/**
- * \brief This function register data on nodes.
- *
- * This function will add reference on this array of data to the Output object.
- * It is possible to call this function only once, when data are at the same
- * address during time. it is possible to call this function for each step, when
- * data are not at the same address, but name of the data has to be same.
- * Own data will be written to the file, when write_data() method will be called.
- *
- * \param[in] name  The name of data
- * \param[in] unit  The units of data
- * \param[in] *data The pointer at data (array of int, float or double)
- * \param[in] size  The size of array (number of values)
- *
- * \return This function returns 1, when data were registered. This function
- * returns 0, when it wasn't able to register data (number of values isn't
- * same as number of nodes).
- *
- * TODO: Test this method!
- */
 template <typename _Data>
 int OutputTime::register_node_data(std::string name,
         std::string unit,
@@ -428,22 +641,6 @@ int OutputTime::register_node_data(std::string name,
     }
 }
 
-/**
- * \brief Register vector of data on elements.
- *
- * This function will add reference on the data to the Output object. Own
- * data will be written to the file, when write_data() method will be called.
- * When the data has been already registered, then pointer at data will be
- * updated. Otherwise, new data will be registered.
- *
- * \param[in] name  The name of data
- * \param[in] unit  The unit of data
- * \param[in] &data The reference on vector (int, float, double)
- *
- * \return This function returns 1, when data were successfully registered.
- * This function returns 0, when number of elements and items of vector is
- * not the same.
- */
 template <typename _Data>
 int OutputTime::register_elem_data(std::string name,
         std::string unit,

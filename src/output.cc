@@ -38,10 +38,6 @@
 
 #include <string>
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         int *data_data,
@@ -54,10 +50,6 @@ OutputData::OutputData(string data_name,
     num = size;
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         float *data_data,
@@ -70,10 +62,6 @@ OutputData::OutputData(string data_name,
     num = size;
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         double *data_data,
@@ -86,10 +74,6 @@ OutputData::OutputData(string data_name,
     num = size;
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         std::vector<int> &data_data)
@@ -101,10 +85,6 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         std::vector< vector<int> > &data_data)
@@ -116,10 +96,6 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         std::vector<float> &data_data)
@@ -131,10 +107,6 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         std::vector< vector<float> > &data_data)
@@ -146,10 +118,6 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         std::vector<double> &data_data)
@@ -161,10 +129,6 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-/**
- * \brief Constructor for OutputData storing names of output data and their
- * units.
- */
 OutputData::OutputData(string data_name,
         string data_units,
         std::vector< vector<double> > &data_data)
@@ -176,16 +140,10 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-/**
- * \brief Destructor for OutputData
- */
 OutputData::~OutputData()
 {
 }
 
-/**
- * \brief This function free data from Mesh
- */
 void Output::free_data_from_mesh(void)
 {
     if(node_scalar != NULL) {
@@ -204,9 +162,6 @@ void Output::free_data_from_mesh(void)
     }
 }
 
-/**
- * \brief This function gets data from mesh and save them in Output
- */
 void Output::get_data_from_mesh(void)
 {
     NodeIter node;
@@ -254,132 +209,6 @@ void Output::get_data_from_mesh(void)
 }
 
 /**
- * \brief Register array of data on nodes.
- *
- * This function will add reference on the array of data to the Output object.
- * Own data will be written to the file, when write_data() method will be called.
- *
- * \param[in]   name    The name of data
- * \param[in]   unit    The name of units
- * \param[in]   data    The pointer on array of data
- * \param[in]   size    The number of values in array
- *
- * \return This function return 1, when the length of data vector is the same as
- * number of nodes in mesh. When the the number is different, then this
- * function returns 0.
- */
-template <typename _Data>
-int Output::register_node_data(std::string name,
-        std::string unit,
-        _Data *data,
-        uint size)
-{
-    if(mesh->node_vector.size() == size) {
-        int found = 0;
-
-        OutputData *out_data = new OutputData(name, unit, data, size);
-        node_data->push_back(*out_data);
-
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
-        return 0;
-    }
-}
-
-/**
- * \brief Register array of data on elements.
- *
- * This function will add reference on this array of data to the Output object.
- * Own data will be written to the file, when write_data() method will be called.
- *
- * \param[in]   name    The name of data
- * \param[in]   unit    The name of units
- * \param[in]   data    The pointer on array of data
- * \param[in]   size    The number of values in array
- *
- * \return This function return 1, when the length of data vector is the same as
- * number of elements in mesh. When the the number is different, then this
- * function returns 0.
- */
-template <typename _Data>
-int Output::register_elem_data(std::string name,
-        std::string unit,
-        _Data *data,
-        uint size)
-{
-    if(mesh->element.size() == size) {
-        int found = 0;
-
-        OutputData *out_data = new OutputData(name, unit, data, size);
-        elem_data->push_back(*out_data);
-
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
-        return 0;
-    }
-}
-
-/**
- * \brief Register data on nodes.
- *
- * This function will add reference on this data to the Output object. Own data
- * will be written to the file, when write_data() method will be called.
- *
- * \param[in]   name    The name of data
- * \param[in]   unit    The name of units
- * \param[in]   data    The reference on vector of data
- *
- * \return This function return 1, when the length of data vector is the same as
- * number of nodes in mesh. When the the number is different, then this function
- * returns 0.
- */
-template <typename _Data>
-int Output::register_node_data(std::string name,
-        std::string unit,
-        std::vector<_Data> &data)
-{
-    if(mesh->node_vector.size() == data.size()) {
-        OutputData *out_data = new OutputData(name, unit, data);
-        node_data->push_back(*out_data);
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
-        return 0;
-    }
-}
-
-/**
- * \brief Register data on elements.
- *
- * This function will add reference on the data to the Output object. Own data
- * will be written to the file, when write_data() method will be called.
- *
- * \param[in]   name    The name of data
- * \param[in]   unit    The name of units
- * \param[in]   data    The reference on vector of data
- *
- * \return This function return 1, when the length of data vector is the same as
- * number of elements in mesh. When the the number is different, then this
- * function returns 0.
- */
-template <typename _Data>
-int Output::register_elem_data(std::string name,
-        std::string unit,
-        std::vector<_Data> &data)
-{
-    if(mesh->element.size() == data.size()) {
-        OutputData *out_data = new OutputData(name, unit, data);
-        elem_data->push_back(*out_data);
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
-        return 0;
-    }
-}
-
-/**
  * \brief NULL function for not yet supported formats
  *
  * \param[in]   *output The pointer at output object.
@@ -393,23 +222,11 @@ int write_null_data(Output *output)
     return 0;
 }
 
-/**
- * \brief This function call pointer at _write_data(Output). It writes
- * registered data to specified file format.
- *
- * \return This function return result of pointer at output function.
- */
 int Output::write_data(void)
 {
     return _write_data(this);
 }
 
-/**
- * \brief Constructor of the Output object
- *
- * \param[in] *_mesh    The pointer at Mesh
- * \param[in] *fname    The name of the output file
- */
 Output::Output(Mesh *_mesh, string fname)
 {
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
@@ -461,9 +278,6 @@ Output::Output(Mesh *_mesh, string fname)
     base_filename = new string(fname);
 }
 
-/**
- * \brief Destructor of the Output object.
- */
 Output::~Output()
 {
     // Free all reference on node and element data
@@ -532,25 +346,11 @@ int write_null_tail(OutputTime *output)
     return 0;
 }
 
-/**
- * \brief This function call pointer at appropriate pointer at function,
- * that write data to specific file format.
- *
- * \param[in] time  The output will be done for this time
- *
- * \return This function returns result of method _write_data().
- */
 int OutputTime::write_data(double time)
 {
     return _write_data(this, time, current_step++);
 }
 
-/**
- * \brief Constructor of OutputTime object. It opens base file for writing.
- *
- * \param[in]   *_mesh  The pointer at mesh object.
- * \param[in]   fname   The name of output file
- */
 OutputTime::OutputTime(Mesh *_mesh, string fname)
 {
     std::vector<OutputData> *node_data;
@@ -624,10 +424,6 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     _write_head(this);
 }
 
-/**
- * \brief Destructor of OutputTime. It doesn't do anything, because all
- * necessary destructors will be called in destructor of Output
- */
 OutputTime::~OutputTime(void)
 {
     _write_tail(this);
