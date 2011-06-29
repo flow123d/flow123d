@@ -90,8 +90,11 @@
 #define OUT_ARRAY_DOUBLE_SCA    9
 
 /**
- * Class of output data storing reference on data
+ * Class of output data storing reference on data.
  *
+ * This class is referenced in Output and OuputTime class. The object contains
+ * only reference on data. The referenced data could not be freed or rewrite
+ * until data are written to the output file.
  */
 class OutputData {
 private:
@@ -175,33 +178,55 @@ public:
  */
 typedef std::vector<OutputData> OutputDataVec;
 
-/* Temporary structure for storing data */
-typedef std::vector<double> ScalarFloatVector;
-typedef std::vector< vector<double> > VectorFloatVector;
-
-/* Temporary structure for storing data */
-typedef struct OutScalar {
-    ScalarFloatVector   *scalars;
-    string              name;
-    string              unit;
-} OutScalar;
-
-/* Temporary structure for storing data */
-typedef struct OutVector {
-    VectorFloatVector   *vectors;
-    string              name;
-    string              unit;
-} OutVector;
-
-/* Temporary structure for storing data */
-typedef std::vector<OutScalar> OutScalarsVector;
-typedef std::vector<OutVector> OutVectorsVector;
-
 /**
- * Class of output
+ * Class of output. This class is used for output data to the output files.
+ *
+ * This class is used for writing static data to the output files. This class
+ * itself doesn't include any method for writing data to the output file.
+ * The methods for writing data to the output files are in places. Look at
+ * output_vtk.cc and output_msh.cc that implement output for specific file
+ * formats.
  */
 class Output {
 public:
+    /*
+     * \brief Temporary definition for storing data (C++ vector of double scalars)
+     */
+    typedef std::vector<double> ScalarFloatVector;
+
+    /**
+     * \brief Temporary definition for storing data (C++ vector of double vectors)
+     */
+    typedef std::vector< vector<double> > VectorFloatVector;
+
+    /**
+     * \brief Temporary structure for storing data (double scalars)
+     */
+    typedef struct OutScalar {
+        ScalarFloatVector   *scalars;
+        string              name;
+        string              unit;
+    } _OutScalar;
+
+    /**
+     * \brief Temporary structure for storing data (double vectors)
+     */
+    typedef struct OutVector {
+        VectorFloatVector   *vectors;
+        string              name;
+        string              unit;
+    } _OutVector;
+
+    /**
+     * \brief Temporary vectors of structures for storing data (double scalars)
+     */
+    typedef std::vector<OutScalar> OutScalarsVector;
+
+    /**
+     * \brief Temporary vectors of structures for storing data (double vectors)
+     */
+    typedef std::vector<OutVector> OutVectorsVector;
+
     /**
      * \brief Constructor of the Output object
      *
@@ -303,7 +328,7 @@ public:
      */
     int write_data(void);
 
-    // Public getters
+    // TODO: Move public getters to protected section
     std::vector<OutputData> *get_node_data(void) { return node_data; };
     std::vector<OutputData> *get_elem_data(void) { return elem_data; };
     ofstream& get_base_file(void) { return *base_file; };
@@ -313,7 +338,7 @@ public:
     Mesh *get_mesh(void) { return mesh; };
     char get_format_type(void) { return format_type; };
 
-    // Public setters
+    // TODO: Move public setters to protected section
     void set_data_file(ofstream *_data_file) { data_file = _data_file; };
 
 protected:
@@ -420,15 +445,13 @@ int Output::register_elem_data(std::string name,
 
 
 /**
- * Class of output during time
+ * \brief The class for outputing data during time.
+ *
+ * This class is descendant of Output class. This class is used for outputing
+ * data varying in time. Own output to specific file formats is done at other
+ * places to. See output_vtk.cc and output_msh.cc.
  */
 class OutputTime : public Output {
-private:
-    int              current_step;      ///< Current step
-    // Internal API for file formats
-    int (*_write_data)(OutputTime *output, double time, int step);
-    int (*_write_head)(OutputTime *output);
-    int (*_write_tail)(OutputTime *output);
 public:
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
@@ -535,6 +558,12 @@ public:
      * \return This function returns result of method _write_data().
      */
     int write_data(double time);
+private:
+    int              current_step;      ///< Current step
+    // Internal API for file formats
+    int (*_write_data)(OutputTime *output, double time, int step);
+    int (*_write_head)(OutputTime *output);
+    int (*_write_tail)(OutputTime *output);
 };
 
 template <typename _Data>
@@ -674,10 +703,6 @@ int OutputTime::register_elem_data(std::string name,
     }
 
 }
-
-/* TODO: move to other file */
-void output_flow_field_init(char *fname);
-void output_flow_field_in_time(struct Problem *problem, double time);
 
 /* TODO: move to new output_vtk.hh */
 // Static data
