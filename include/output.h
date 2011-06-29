@@ -364,7 +364,7 @@ int Output::register_node_data(std::string name,
 
         return 1;
     } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
+        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", size, mesh->node_vector.size());
         return 0;
     }
 }
@@ -383,7 +383,7 @@ int Output::register_elem_data(std::string name,
 
         return 1;
     } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
+        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", size, mesh->element.size());
         return 0;
     }
 }
