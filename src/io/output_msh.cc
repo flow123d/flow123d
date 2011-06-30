@@ -22,12 +22,13 @@
  * $LastChangedBy$
  * $LastChangedDate$
  *
- * @file    output_pos.cc
+ * @file    output_msh.cc
  * @brief   The functions for outputs to GMSH files.
  *
  */
 
-#include "output.h"
+#include "io/output.h"
+#include "io/output_msh.h"
 #include "xio.h"
 #include "mesh/mesh.h"
 

@@ -29,8 +29,9 @@
 
 #include <limits.h>
 
-#include "output.h"
 #include "xio.h"
+#include "io/output.h"
+#include "io/output_vtk.h"
 #include "mesh/mesh.h"
 
 // TODO: v tomto souboru se poflakuji vselijake funkce mimo tridy, to v objektovem navrhu nema co delat

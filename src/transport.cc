@@ -47,7 +47,7 @@
 #include "problem.h"
 #include "mesh/mesh.h"
 #include "transport.h"
-#include "output.h"
+#include "io/output.h"
 #include "materials.hh"
 #include "read_ini.h"
 #include "ppfcs.h"

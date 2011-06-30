@@ -36,11 +36,10 @@
 
 #include "system/system.hh"
 #include "xio.h"
-#include "output.h"
+#include "io/output.h"
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "mesh/boundaries.h"
-#include "output.h"
 #include "convert.h"
 
 #include "problem.h"

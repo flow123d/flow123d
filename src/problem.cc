@@ -41,7 +41,7 @@
 #include "materials.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "solve.h"
-#include "output.h"
+#include "io/output.h"
 #include "problem.h"
 #include "read_ini.h"
 #include "constantdb.h"

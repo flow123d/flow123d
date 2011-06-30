@@ -22,7 +22,7 @@
  * $LastChangedBy$
  * $LastChangedDate$
  *
- * @file
+ * @file    output.h
  * @brief   Header: The functions for all outputs.
  *
  */
@@ -45,36 +45,6 @@ typedef enum {
     VTK_SERIAL_ASCII = 3,
     VTK_PARALLEL_ASCII = 4
 } OutFileFormat;
-
-// VTK Element types
-typedef enum {
-    VTK_VERTEX = 1,
-    VTK_POLY_VERTEX = 2,
-    VTK_LINE = 3,
-    VTK_POLY_LINE = 4,
-    VTK_TRIANGLE = 5,
-    VTK_TRIANGLE_STRIP = 6,
-    VTK_POLYGON = 7,
-    VTK_PIXEL = 8,
-    VTK_QUAD = 9,
-    VTK_TETRA = 10,
-    VTK_VOXEL = 11,
-    VTK_HEXAHEDRON = 12,
-    VTK_WEDGE = 13,
-    VTK_PYRAMID = 14,
-    VTK_QUADRIC_EDGE = 21,
-    VTK_QUADRIC_TRIANGLE = 22,
-    VTK_QUADRIC_QUAD = 23,
-    VTK_QUADRIC_TETRA = 24,
-    VTK_QUADRIC_HEXAHEDRON = 25
-} VTKElemType;
-
-// VTK Element size (number of nodes)
-typedef enum {
-    VTK_LINE_SIZE = 2,
-    VTK_TRIANGLE_SIZE = 3,
-    VTK_TETRA_SIZE = 4
-} VTKElemSize;
 
 // Types of data, that could be written to output file
 typedef enum {
@@ -703,21 +673,5 @@ int OutputTime::register_elem_data(std::string name,
     }
 
 }
-
-/* TODO: move to new output_vtk.hh */
-// Static data
-int write_vtk_vtu_data(Output *output);
-// Dynamic data
-int write_vtk_pvd_head(OutputTime *output);
-int write_vtk_pvd_data(OutputTime *output, double time, int step);
-int write_vtk_pvd_tail(OutputTime *output);
-
-/* TODO: move to new output_msh.hh */
-// Static data
-int write_msh_data(Output *output);
-// Dynamic data
-int write_msh_head(OutputTime *output);
-int write_msh_time_data(OutputTime *output, double time, int step);
-int write_msh_tail(OutputTime *output);
 
 #endif

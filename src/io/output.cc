@@ -23,20 +23,18 @@
  * $LastChangedDate$
  *
  * @file    output.cc
- * @brief   The functions for all outputs. This file should be split according to the
- *          quantities to output. In this general file, there should remain only general output functions.
+ * @brief   The functions for all outputs (methods of classes: Output and OutputTime).
  *
  */
 
+#include <string>
 
 #include "xio.h"
-#include "output.h"
+#include "io/output.h"
+#include "io/output_vtk.h"
+#include "io/output_msh.h"
 #include "mesh/mesh.h"
-
-// TODO: remove in the future
-#include "constantdb.h"
-
-#include <string>
+#include "constantdb.h" // TODO: remove in the future
 
 OutputData::OutputData(string data_name,
         string data_units,

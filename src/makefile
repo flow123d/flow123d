@@ -37,7 +37,15 @@ TARGETS = $(BIN)/flow123d
 
 # List of object files of Flow123d
 FLOW123D_OBJS = \
-$(OBJS)/time_marks.o\
+$(OBJS)/flow/local_matrix.o\
+$(OBJS)/flow/darcy_flow_mh.o\
+$(OBJS)/flow/darcy_flow_mh_output.o\
+\
+$(OBJS)/io/output.o\
+$(OBJS)/io/output_vtk.o\
+$(OBJS)/io/output_msh.o\
+$(OBJS)/io/output_tmp.o\
+\
 $(OBJS)/mesh/ini_constants_mesh.o\
 $(OBJS)/mesh/mesh.o\
 $(OBJS)/mesh/nodes.o\
@@ -48,9 +56,10 @@ $(OBJS)/mesh/boundaries.o\
 $(OBJS)/mesh/neighbours.o\
 ${OBJS}/mesh/topology.o\
 \
-$(OBJS)/flow/local_matrix.o\
-$(OBJS)/flow/darcy_flow_mh.o\
-$(OBJS)/flow/darcy_flow_mh_output.o\
+$(OBJS)/reaction/linear_reaction.o\
+\
+$(OBJS)/semchem/che_semchem.o\
+$(OBJS)/semchem/semchem_interface.o\
 \
 $(OBJS)/system/system.o\
 $(OBJS)/system/par_distribution.o\
@@ -58,14 +67,11 @@ $(OBJS)/system/sys_function_stack.o\
 $(OBJS)/system/sys_profiler.o\
 $(OBJS)/system/math_fce.o\
 \
+$(OBJS)/time_marks.o\
 $(OBJS)/read_ini.o\
 $(OBJS)/constantdb.o\
 $(OBJS)/msh_gmshreader.o\
 $(OBJS)/materials.o\
-$(OBJS)/output.o\
-$(OBJS)/output_vtk.o\
-$(OBJS)/output_pos.o\
-$(OBJS)/output_tmp.o\
 $(OBJS)/solve.o\
 $(OBJS)/problem.o\
 $(OBJS)/main.o\
@@ -76,20 +82,15 @@ $(OBJS)/convert.o\
 $(OBJS)/transport.o\
 $(OBJS)/transport_operator_splitting.o\
 $(OBJS)/la_linsys.o\
-$(OBJS)/time_governor.o\
-\
-$(OBJS)/reaction/linear_reaction.o\
-\
-$(OBJS)/semchem/che_semchem.o\
-$(OBJS)/semchem/semchem_interface.o
+$(OBJS)/time_governor.o
 
 #$(OBJS)/hashes.o\
 #$(OBJS)/transport_bcd.o\
 #$(OBJS)/concentrations.o\
-# $(OBJS)/ppfcs.o\
-# $(OBJS)/reaction.o\
-# $(OBJS)/reaction.o\
-# $(OBJS)/btc.o\
+#$(OBJS)/ppfcs.o\
+#$(OBJS)/reaction.o\
+#$(OBJS)/reaction.o\
+#$(OBJS)/btc.o\
 
 # src subdirs
 SUB_DIRS = \
@@ -109,7 +110,6 @@ FLOW123D_DEPS = $(addprefix $(DEPS)/, $(notdir $(FLOW123D_OBJS:.o=.d)))
 
 all: $(TARGETS)
 
-
 ${BUILD_DIRS}:
 	echo "make dir:" $@
 	mkdir -pf $@ 
@@ -117,16 +117,16 @@ ${BUILD_DIRS}:
 deps: $(FLOW123D_DEPS)
 
 # General rule to create dependencies files for .c source files
-${DEPS}/%.d:  %.c ${DEPS}
-	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(OBJS)/, $(notdir $(@:%.d=%.o)))" $<
+${DEPS}/%.d: %.c ${DEPS}
+	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.c)))" $<
 
 # General rule to create dependencies files for .cc source files
 ${DEPS}/%.d: %.cc ${DEPS}
-	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(OBJS)/, $(notdir $(@:%.d=%.o)))" $<
+	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.cc)))" $<
 
 # General rule to create dependencies files for .ccp source files
 ${DEPS}/%.d: %.ccp  ${DEPS}
-	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(OBJS)/, $(notdir $(@:%.d=%.o)))" $<
+	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.ccp)))" $<
 
 # Include generated files with dependencies
 -include $(FLOW123D_DEPS)
@@ -151,6 +151,11 @@ ${BIN}/flow123d: ${FLOW123D_OBJS}
 clean: 
 	rm -f ${TARGETS}
 	rm -f ${OBJS}/*.o ${DEPS}/*.d
-	rm -f ${OBJS}/mesh/*.o ${DEPS}/mesh/*.d 
-	rm -f ${OBJS}/semchem/*.o ${DEPS}/semchem/*.d 
+	rm -f ${OBJS}/flow/*.o
+	rm -f ${OBJS}/io/*.o
+	rm -f ${OBJS}/mesh/*.o
+	rm -f ${OBJS}/reaction/*.o 
+	rm -f ${OBJS}/semchem/*.o
+	rm -f ${OBJS}/system/*.o
+	rm -f ${OBJS}/transport/*.o 
 	
