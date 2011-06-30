@@ -36,58 +36,58 @@
 #include <string>
 #include <fstream>
 
-//TODO: v C++ by mely byt konstanty uvnitr definice trid, nejlepe jako enum napr:
-// enum OutputDataFormat { GMSH_ASCII, GMSH_BIN, ..}
-// a uvazit zda to ma byt public, nebo private (nebo protected)
+// TODO: move enums to classes
 
 // FILE formats
-#define POS_ASCII           1   //TODO GMSH_ASCII
-#define POS_BIN             2   //TODO
-#define VTK_SERIAL_ASCII    3
-#define VTK_PARALLEL_ASCII  4
+typedef enum {
+    GMSH_MSH_ASCII = 1,
+    GMSH_MSH_BIN = 2,
+    VTK_SERIAL_ASCII = 3,
+    VTK_PARALLEL_ASCII = 4
+} OutFileFormat;
 
 // VTK Element types
-#define VTK_VERTEX          1
-#define VTK_POLY_VERTEX     2
-#define VTK_LINE            3
-#define VTK_POLY_LINE       4
-#define VTK_TRIANGLE        5
-#define VTK_TRIANGLE_STRIP  6
-#define VTK_POLYGON         7
-#define VTK_PIXEL           8
-#define VTK_QUAD            9
-#define VTK_TETRA           10
-#define VTK_VOXEL           11
-#define VTK_HEXAHEDRON      12
-#define VTK_WEDGE           13
-#define VTK_PYRAMID         14
-
-#define VTK_QUADRIC_EDGE        21
-#define VTK_QUADRIC_TRIANGLE    22
-#define VTK_QUADRIC_QUAD        23
-#define VTK_QUADRIC_TETRA       24
-#define VTK_QUADRIC_HEXAHEDRON  25
+typedef enum {
+    VTK_VERTEX = 1,
+    VTK_POLY_VERTEX = 2,
+    VTK_LINE = 3,
+    VTK_POLY_LINE = 4,
+    VTK_TRIANGLE = 5,
+    VTK_TRIANGLE_STRIP = 6,
+    VTK_POLYGON = 7,
+    VTK_PIXEL = 8,
+    VTK_QUAD = 9,
+    VTK_TETRA = 10,
+    VTK_VOXEL = 11,
+    VTK_HEXAHEDRON = 12,
+    VTK_WEDGE = 13,
+    VTK_PYRAMID = 14,
+    VTK_QUADRIC_EDGE = 21,
+    VTK_QUADRIC_TRIANGLE = 22,
+    VTK_QUADRIC_QUAD = 23,
+    VTK_QUADRIC_TETRA = 24,
+    VTK_QUADRIC_HEXAHEDRON = 25
+} VTKElemType;
 
 // VTK Element size (number of nodes)
-#define VTK_LINE_SIZE       2
-#define VTK_TRIANGLE_SIZE   3
-#define VTK_TETRA_SIZE      4
-
-// Types of output files
-#define GMSH_STYLE          1
-#define FLOW_DATA_FILE      2
-#define BOTH_OUTPUT         3
+typedef enum {
+    VTK_LINE_SIZE = 2,
+    VTK_TRIANGLE_SIZE = 3,
+    VTK_TETRA_SIZE = 4
+} VTKElemSize;
 
 // Types of data, that could be written to output file
-#define OUT_VECTOR_INT_SCA      1
-#define OUT_VECTOR_INT_VEC      2
-#define OUT_VECTOR_FLOAT_SCA    3
-#define OUT_VECTOR_FLOAT_VEC    4
-#define OUT_VECTOR_DOUBLE_SCA   5
-#define OUT_VECTOR_DOUBLE_VEC   6
-#define OUT_ARRAY_INT_SCA       7
-#define OUT_ARRAY_FLOAT_SCA     8
-#define OUT_ARRAY_DOUBLE_SCA    9
+typedef enum {
+    OUT_VECTOR_INT_SCA,
+    OUT_VECTOR_INT_VEC,
+    OUT_VECTOR_FLOAT_SCA,
+    OUT_VECTOR_FLOAT_VEC,
+    OUT_VECTOR_DOUBLE_SCA,
+    OUT_VECTOR_DOUBLE_VEC,
+    OUT_ARRAY_INT_SCA,
+    OUT_ARRAY_FLOAT_SCA,
+    OUT_ARRAY_DOUBLE_SCA
+} OutDataType;
 
 /**
  * Class of output data storing reference on data.
@@ -102,7 +102,7 @@ public:
     string          *name;      ///< String with name of data
     string          *units;     ///< String with units
     void            *data;      ///< Pointer at own data
-    unsigned char   type;       ///< Type values in vector
+    OutDataType     type;       ///< Type values in vector
     int             comp_num;   ///< Number of components in vector
     int             num;        ///< Number of values in vector/array
 

@@ -210,9 +210,9 @@ struct Pos_view_params *pos_view_par_read( char *view_char )
 int pos_format_ID(char* format){
 
         if(strcmp(format,"ASCII") == 0)
-            return POS_ASCII;
+            return GMSH_MSH_ASCII;
         if(strcmp(format,"BIN") == 0)
-            return POS_BIN;
+            return GMSH_MSH_BIN;
         if(strcmp(format, "VTK_SERIAL_ASCII") == 0)
             return VTK_SERIAL_ASCII;
         if(strcmp(format, "VTK_PARALLEL_ASCII") == 0)

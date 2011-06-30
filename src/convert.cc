@@ -895,7 +895,7 @@ void output_transport_convert(struct Problem *problem){
 
 
         in = open_temp_files(problem->transport, "%s.tmp", "rt" );
-        out = open_temp_files(problem->transport, "%s", (problem->pos_format_id == POS_ASCII) ? "wt" : "wb" );
+        out = open_temp_files(problem->transport, "%s", (problem->pos_format_id == GMSH_MSH_ASCII) ? "wt" : "wb" );
 
 
     // find number of time steps
@@ -977,10 +977,10 @@ void output_transport_convert(struct Problem *problem){
 
         xprintf( Msg, "Writing transport output files... ")/*orig verb 2*/;
                 switch(problem->pos_format_id){
-                        case POS_ASCII:
+                        case GMSH_MSH_ASCII:
                                 write_transport_ascii_data(out[ph],problem,nodes,elements,time_steps,ph);
                                 break;
-                        case POS_BIN:
+                        case GMSH_MSH_BIN:
                                 write_transport_binary_data(out[ph],problem,nodes,elements,time_steps,ph);
                                 break;
                 }
