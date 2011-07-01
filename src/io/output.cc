@@ -42,7 +42,7 @@ OutputData::OutputData(string data_name,
         unsigned int size)
 {
     name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
+    data = (void*)data_data;
     type = OUT_ARRAY_INT_SCA;
     comp_num = 1;
     num = size;
@@ -54,7 +54,7 @@ OutputData::OutputData(string data_name,
         unsigned int size)
 {
     name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
+    data = (void*)data_data;
     type = OUT_ARRAY_FLOAT_SCA;
     comp_num = 1;
     num = size;
@@ -66,7 +66,7 @@ OutputData::OutputData(string data_name,
         unsigned int size)
 {
     name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
+    data = (void*)data_data;
     type = OUT_ARRAY_DOUBLE_SCA;
     comp_num = 1;
     num = size;
