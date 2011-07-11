@@ -35,7 +35,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 	convection = new ConvectionTransport(mat_base, mesh);
 
 	// Chemistry initialization
-	decayRad = new Linear_reaction(n_substances, time_step);
+	decayRad = new Linear_reaction(time_step);
+	decayRad->set_nr_of_species(convection->get_n_substances());
 	Semchem_reactions = new Semchem_interface();
 
 	time_marks = new TimeMarks();
@@ -56,7 +57,7 @@ void TransportOperatorSplitting::compute_one_step(){
 	convection->compute_one_step();
     // Calling linear reactions and Semchem
 	decayRad->compute_one_step(conc, cheat);
-	Semchem_reactions->compute_one_step(porTyp, time_step, ppelm, conc);
+	Semchem_reactions->compute_one_step(porTyp, ppelm, conc);
 	//Semchem_reactions->compute_one_step(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
 	time->next_time();
 }

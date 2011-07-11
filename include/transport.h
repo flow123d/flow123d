@@ -65,6 +65,7 @@ public:
 	void transport_until_time(double time_interval);
 	double cfl_time_constrain();
 	double ***concentration_vector();
+	int get_n_substances();
 private:
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);

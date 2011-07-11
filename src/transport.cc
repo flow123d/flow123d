@@ -1062,7 +1062,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
     	int step = 0;
     	register int t;
     	// Chemistry initialization
-    	Linear_reaction *decayRad = new Linear_reaction(n_substances, time_step);
+    	Linear_reaction *decayRad = new Linear_reaction(time_step);
     	Semchem_interface *Semchem_reactions = new Semchem_interface();
 
 	    for (t = 1; t <= steps; t++) {
@@ -1075,13 +1075,17 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 		     // Calling linear reactions and Semchem together
 		    	  for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
 		    		 START_TIMER("decay_step");
-		    	   	 (*decayRad).compute_reaction(pconc[MOBILE], n_substances, loc_el);
+		    	   	 (*decayRad).compute_reaction(pconc[MOBILE], loc_el);
 		    	     if (dual_porosity == true) {
-		    	    	(*decayRad).compute_reaction(pconc[IMMOBILE], n_substances, loc_el);
+		    	    	(*decayRad).compute_reaction(pconc[IMMOBILE], loc_el);
 		    	     }
 		    	     END_TIMER("decay_step");
 		    	     START_TIMER("semchem_step");
-		    	     if(Semchem_reactions->semchem_on == true) Semchem_reactions->compute_reaction(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
+		    	     if(Semchem_reactions->semchem_on == true){
+		    	    	 Semchem_reactions->set_timestep(time_step);
+		    	    	 //Semchem_reactions->compute_reaction(dual_porosity, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
+		    	    	 Semchem_reactions->compute_reaction(dual_porosity, mesh->element(el_4_loc[loc_el]), loc_el, pconc);
+		    	     }
 		    	     END_TIMER("semchem_step");
 		    	  }
 
@@ -1251,4 +1255,7 @@ double ConvectionTransport::cfl_time_constrain() {
 }
 double ***ConvectionTransport::concentration_vector() {
 	return conc;
+}
+int ConvectionTransport::get_n_substances() {
+	return n_substances;
 }

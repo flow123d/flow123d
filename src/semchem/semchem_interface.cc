@@ -24,7 +24,8 @@ Semchem_interface::Semchem_interface(void)
 
   //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
   fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
-  this->semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
+  //this->semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
+  this->set_chemistry_computation();
   if(semchem_on == true) ctiich();
   return;
 }
@@ -32,14 +33,14 @@ Semchem_interface::Semchem_interface(void)
 //---------------------------------------------------------------------------
 //                 FOR-LOOP CALLING FOR ALL ELEMENTS
 //---------------------------------------------------------------------------
-void Semchem_interface::compute_one_step(bool porTyp, double time_step, ElementIter ppelm, double ***conc)
+void Semchem_interface::compute_one_step(bool porTyp, ElementIter ppelm, double ***conc)
 {
 	int nr_of_elements = 10; //this is a cheat, because I do not know how to get number of elements from this place in source code
 
 	for (int loc_el = 0; loc_el < nr_of_elements; loc_el++)
 	{
 	   START_TIMER("semchem_step");
-	   if(this->semchem_on == true) this->compute_reaction(porTyp, time_step, ppelm, loc_el, conc[MOBILE], conc[IMMOBILE]);
+	   if(this->semchem_on == true) this->compute_reaction(porTyp, ppelm, loc_el, conc);
 	   END_TIMER("semchem_step");
 	}
 }
@@ -47,7 +48,8 @@ void Semchem_interface::compute_one_step(bool porTyp, double time_step, ElementI
 //---------------------------------------------------------------------------
 //                 FUNKCE NA VYPOCET CHEMIE PRO ELEMENT V TRANSPORTU
 //---------------------------------------------------------------------------
-void Semchem_interface::compute_reaction(bool porTyp, double time_step, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
+//void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
+void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double ***conc)
 {
   FILE *fw, *stream, *fr;
    int i, j; //, poradi;
@@ -55,6 +57,8 @@ void Semchem_interface::compute_reaction(bool porTyp, double time_step, ElementI
    int poc_krok;
    double celkova_molalita;
    char vystupni_soubor[] = "vystup.txt";
+   double **conc_mob_arr = conc[MOBILE];
+   double **conc_immob_arr = conc[IMMOBILE];
    double pomoc, n;
    //==================================================================
    // ----------- ALOKACE POLE PRO KONCENTRACE Z FLOWA ----------------
@@ -226,8 +230,15 @@ void Semchem_interface::compute_reaction(bool porTyp, double time_step, ElementI
    xprintf(Msg,"\n skoncila chemie\n");
 }
 
-double Semchem_interface::set_timestep(double new_timestep)
+void Semchem_interface::set_timestep(double new_timestep)
 {
-	return new_timestep; //implementation will folow
+	this->time_step = new_timestep;
+	return;
+}
+
+void Semchem_interface::set_chemistry_computation(void)
+{
+	this->semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
+	return;
 }
 
