@@ -29,15 +29,15 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
 
     //temporary variables for chemistry
-    double time_step = 0.5;
-    int n_substances = OptGetInt("Transport", "N_substances", NULL );
+    /*double time_step = 0.5;
+    int n_substances = OptGetInt("Transport", "N_substances", NULL );*/
 
 	convection = new ConvectionTransport(mat_base, mesh);
 
 	// Chemistry initialization
-	decayRad = new Linear_reaction(time_step);
+	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh->n_elements(),convection->get_concentration_matrix()); //will be get_cfl_time_constrain()
 	decayRad->set_nr_of_species(convection->get_n_substances());
-	Semchem_reactions = new Semchem_interface();
+	Semchem_reactions = new Semchem_interface(mesh->n_elements(),convection->get_concentration_matrix());
 
 	time_marks = new TimeMarks();
 	time = new TimeGovernor(time_marks, problem_stop_time, problem_stop_time);
@@ -47,17 +47,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 
 void TransportOperatorSplitting::compute_one_step(){
 	//following declarations are here just to enable compilation without errors
-	bool porTyp = true;
-	ElementIter ppelm;
-	int poradi;
-	double **conc_mob_arr, **conc_immob_arr, ***conc; //could be handled as **conc[MOBILE], **conc[IMMOBILE]
-	double time_step = 0.05;
-	int cheat = 10; // I need to get nr of elements instead of this variable
+	double ***conc = convection->get_concentration_matrix(); //could be handled as **conc[MOBILE], **conc[IMMOBILE]
 
 	convection->compute_one_step();
     // Calling linear reactions and Semchem
-	decayRad->compute_one_step(conc, cheat);
-	Semchem_reactions->compute_one_step(porTyp, ppelm, conc);
+	decayRad->compute_one_step();
+	Semchem_reactions->compute_one_step();
 	//Semchem_reactions->compute_one_step(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
 	time->next_time();
 }

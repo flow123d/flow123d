@@ -1062,8 +1062,8 @@ void ConvectionTransport::transport_until_time(double time_interval) {
     	int step = 0;
     	register int t;
     	// Chemistry initialization
-    	Linear_reaction *decayRad = new Linear_reaction(time_step);
-    	Semchem_interface *Semchem_reactions = new Semchem_interface();
+    	Linear_reaction *decayRad = new Linear_reaction(time_step,this->mesh->n_elements(),pconc);
+    	Semchem_interface *Semchem_reactions = new Semchem_interface(this->mesh->n_elements(),pconc);
 
 	    for (t = 1; t <= steps; t++) {
 	    	time += time_step;

@@ -6,6 +6,8 @@
 #include "che_semchem.h"
 #include "semchem_interface.hh"
 #include "transport.h"
+#include "constantdb.h"
+#include "../mesh/mesh.h"
 
 using namespace std;
 
@@ -17,8 +19,8 @@ struct TS_lat 	*P_lat;
 struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
-Semchem_interface::Semchem_interface(void)
-	:semchem_on(false)
+Semchem_interface::Semchem_interface(int nrOfElements, double ***ConcentrationMatrix)
+	:semchem_on(false), dual_porosity_on()
 {
   FILE *fw_chem;
 
@@ -27,20 +29,26 @@ Semchem_interface::Semchem_interface(void)
   //this->semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
   this->set_chemistry_computation();
   if(semchem_on == true) ctiich();
+  set_dual_porosity();
+  set_nr_of_elements(nrOfElements);
+  set_concentration_matrix(ConcentrationMatrix);
   return;
 }
 
 //---------------------------------------------------------------------------
 //                 FOR-LOOP CALLING FOR ALL ELEMENTS
 //---------------------------------------------------------------------------
-void Semchem_interface::compute_one_step(bool porTyp, ElementIter ppelm, double ***conc)
+void Semchem_interface::compute_one_step(void)
 {
-	int nr_of_elements = 10; //this is a cheat, because I do not know how to get number of elements from this place in source code
+	//ConstantDB* ConstantDB::instance = new ConstantDB();
+	double ***conc = concentration_matrix; //it would be better to call get-function
+	Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject("MAIN_INSTANCE");//(MESH::MAIN_INSTANCE);
+	ElementFullIter ppelm = ELEMENT_FULL_ITER_NULL;
 
 	for (int loc_el = 0; loc_el < nr_of_elements; loc_el++)
 	{
 	   START_TIMER("semchem_step");
-	   if(this->semchem_on == true) this->compute_reaction(porTyp, ppelm, loc_el, conc);
+	   if(this->semchem_on == true) this->compute_reaction(dual_porosity_on, ppelm, loc_el, conc);
 	   END_TIMER("semchem_step");
 	}
 }
@@ -104,7 +112,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
 	 }
 	 celkova_molalita += (P_lat[i].m0);
    }
-   xprintf(Msg,"\nCelkova molalita: %f\n",celkova_molalita);   
+   //xprintf(Msg,"\nCelkova molalita: %f\n",celkova_molalita);
    G_prm.deltaT = time_step/G_prm.cas_kroku; // dosazeni "spravneho" casoveho kroku
 
     //-----------------------VYPOCET CHEMIE----------------------------
@@ -112,29 +120,29 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    {
 	  if (G_prm.vypisy==1)
 	  {
-		fw = fopen(vystupni_soubor, "a");
+		/*fw = fopen(vystupni_soubor, "a"); //output to file
 		fprintf(fw,"\nie = %d, dt = %lf\n", poradi, time_step);
-		fclose(fw);
+		fclose(fw);*/
 		che_nadpis__soubor(vystupni_soubor);
 	  }
 	  else if (G_prm.vypisy>1)
 	  {
-		fw = fopen(vystupni_soubor, "a");
+		; /*fw = fopen(vystupni_soubor, "a"); //output to file
 		che_outpocp_soubor(fw);
-		fclose(fw);
+		fclose(fw);*/
 	  }
 	  for (krok = 1; krok <= G_prm.cas_kroku; krok++)
 	  {
-		 fw = fopen(vystupni_soubor, "a");
+		 //fw = fopen(vystupni_soubor, "a"); //output to file
 		 if (G_prm.vypisy>1)
 		 {
-			fprintf(fw,"\n..............................................................\ncasovy krok c. %d, cas %f:\n", krok, krok*G_prm.deltaT);
+			; //fprintf(fw,"\n..............................................................\ncasovy krok c. %d, cas %f:\n", krok, krok*G_prm.deltaT); //output to file
 		 }
 		 else if (G_prm.vypisy==1)
 		 {
-			fprintf(fw,"\n%d\t%f", krok, krok*G_prm.deltaT);
+			; //fprintf(fw,"\n%d\t%f", krok, krok*G_prm.deltaT); //output to file
 		 }
-		 fclose(fw);
+		 //fclose(fw); //output to file
 		 che_pocitej_soubor(vystupni_soubor, &poc_krok);
 		 for (i = 0; i < G_prm.pocet_latekvefazi; i++) {
 		   P_lat[i].m0 = P_lat[i].m;
@@ -142,11 +150,11 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
 		 }
 		 if (G_prm.vypisy>1)
 		 {
-			che_vypis_soubor(vystupni_soubor);
+			; //che_vypis_soubor(vystupni_soubor); //output to file
 		 }
 		 else if (G_prm.vypisy==1)
 		 {
-			che_vypis__soubor(vystupni_soubor);
+			; //che_vypis__soubor(vystupni_soubor); //output to file
 		 }
 		 che_presun_poc_p_();
 	  }
@@ -161,7 +169,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
 			}*/
 	  }
 	}
-   xprintf(Msg,"\n chemie je v pulce\n");
+   //xprintf(Msg,"\n chemie je v pulce\n"); //just a message
 
     //==================================================================
     // ----------------- POTE PRO IMOBILNI PORY ------------------------
@@ -198,17 +206,17 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
 
 	  for (krok = 1; krok<=G_prm.cas_kroku; krok++)
 	  {
-		 fw = fopen(vystupni_soubor, "a");
+		 //fw = fopen(vystupni_soubor, "a"); //output to file
 		 if (G_prm.vypisy>1)
-			fprintf(fw,"\n..............................................................\ncasovy krok c. %d, cas %f:\n", krok, krok*G_prm.deltaT);
+			; //fprintf(fw,"\n..............................................................\ncasovy krok c. %d, cas %f:\n", krok, krok*G_prm.deltaT); //output to file
 		 else if (G_prm.vypisy==1)
-			fprintf(fw,"\n%d\t%f", krok, krok*G_prm.deltaT);
-		 fclose(fw);
+			; //fprintf(fw,"\n%d\t%f", krok, krok*G_prm.deltaT); //output to file
+		 //fclose(fw); //output to file
 		 che_pocitej_soubor(vystupni_soubor,&poc_krok);
 		 if (G_prm.vypisy>1)
-			che_vypis_soubor(vystupni_soubor);
+			; //che_vypis_soubor(vystupni_soubor); //output to file
 		 else if (G_prm.vypisy==1)
-			che_vypis__soubor(vystupni_soubor);
+			; //che_vypis__soubor(vystupni_soubor); //output to file
 		 che_presun_poc_p_();
 	  }
 
@@ -224,10 +232,10 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
 	  }
       }
     }else{
-	  xprintf(Msg,"\n chemie pro imobilni: po:ry se nepocita\n");
+	  ; //xprintf(Msg,"\n chemie pro imobilni: po:ry se nepocita\n"); //just a message
     }
    //} //closing bracket for the loop FOR_ELEMENTS
-   xprintf(Msg,"\n skoncila chemie\n");
+   //xprintf(Msg,"\n skoncila chemie\n"); //just a message
 }
 
 void Semchem_interface::set_timestep(double new_timestep)
@@ -239,6 +247,24 @@ void Semchem_interface::set_timestep(double new_timestep)
 void Semchem_interface::set_chemistry_computation(void)
 {
 	this->semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
+	return;
+}
+
+void Semchem_interface::set_dual_porosity()
+{
+	this->dual_porosity_on = OptGetBool("Transport", "Dual_porosity", "no");
+	return;
+}
+
+void Semchem_interface::set_nr_of_elements(int nrOfElements)
+{
+	this->nr_of_elements = nrOfElements;
+	return;
+}
+
+void Semchem_interface::set_concentration_matrix(double ***ConcentrationMatrix)
+{
+	concentration_matrix = ConcentrationMatrix;
 	return;
 }
 

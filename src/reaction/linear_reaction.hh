@@ -15,10 +15,10 @@
 class Linear_reaction
 {
 	public:
-		Linear_reaction(double time_step); ///< constructor with parameter for initialization of  a new declared class member
+		Linear_reaction(double time_step, int nrOfElements, double ***ConcentrationMatrix); ///< constructor with parameter for initialization of  a new declared class member
 		~Linear_reaction(void); ///< desctructor
 		double **compute_reaction(double **concentrations, int loc_el); ///< method for multiplication of concentrations array (double **conc or double **pconc) by reaction matrix, loc_el identifies an element where reactions are simulated
-		void compute_one_step(double ***concentrations, int nr_of_elements); ///< method which should call compute_reaction() for all elements, during one time_step
+		void compute_one_step(void); ///< method which should call compute_reaction() for all elements, during one time_step
 		int get_nr_of_decays(void); ///< is here to enable access to private variable nr_of_decays
 		int get_nr_of_FoR(void); ///< is here to enable access to private variable nr_of_FoR
 		void set_nr_of_species(int n_substances); ///<
@@ -35,6 +35,8 @@ class Linear_reaction
 		void set_decay_on(void); ///< reads an information if a decay simulation is switched on, duplicit to the function in problem.cc
 		void set_kinetic_constants(char *section, int reaction_nr); ///< reads an information and prepares a vector (onedimensional double *array) containing kinetic constants of every single first order reactions, Those informations are placed in a block with a string section at the beginning, from those constants half-lives belonging to first order reactions are computed, from ini-file
 		void set_timestep(double new_timestep); ///< enables to change the timestep while the simulation is running further, method is not implemented yet
+		void set_nr_of_elements(int nrOfElements);
+		void set_concentration_matrix(double ***ConcentrationMatrix);
 		double **allocate_reaction_matrix(void); ///< allocates memory for (n_subst x n_subst) square reaction matrix, n_subst is the number of all the substances soluted in grounwater
 		double **modify_reaction_matrix(void); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched off, this function modifies values identified by integer numbers in an array substance_ids
 		double **modify_reaction_matrix(int bifurcation); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched on
@@ -55,6 +57,8 @@ class Linear_reaction
 		std::vector<double> kinetic_constant; ///< one dimensional array of kinetic constants belonging to considered reactions
 		bool bifurcation_on; ///< bifurcation is initialy switched off
 		double time_step; ///< time step for radioactive decay and first order reactions simulations
+		int nr_of_elements; ///< sets number of elements
+		double ***concentration_matrix;
 };
 
 #endif

@@ -9,7 +9,7 @@
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(double timestep)
+Linear_reaction::Linear_reaction(double timestep, int nrOfElements, double ***ConvectionMatrix)
 	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false)
 {
 	//decay_on = OptGetBool("Reactions_module","Compute_decay","no");
@@ -27,6 +27,8 @@ Linear_reaction::Linear_reaction(double timestep)
 		allocate_reaction_matrix();
 		modify_reaction_matrix_repeatedly();
 	}
+	set_nr_of_elements(nrOfElements);
+	set_concentration_matrix(ConvectionMatrix);
 }
 
 Linear_reaction::~Linear_reaction()
@@ -188,14 +190,14 @@ double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) 
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		for(cols = 0; cols < nr_of_species; cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
-		xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]);
+		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
 		concentrations[cols][loc_el] = 0.0;
 	}
 	for(rows = 0; rows <nr_of_species; rows++){
 		for(cols = 0; cols <nr_of_species; cols++){
 			concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
 		}
-		xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]);
+		//xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
 	}
 	free(prev_conc);
 	prev_conc = NULL;
@@ -386,9 +388,10 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
     return;
 }
 
-void Linear_reaction::compute_one_step(double ***pconc, int nr_of_elements)
+void Linear_reaction::compute_one_step(void)
 {
 	 bool dual_porosity = false; //this is just a cheat, because I don't know how to get the information about dual porosity from this place in code
+	 double ***pconc = concentration_matrix;
 
 	 for (int loc_el = 0; loc_el < nr_of_elements; loc_el++) {
 	  START_TIMER("decay_step");
@@ -404,6 +407,18 @@ void Linear_reaction::compute_one_step(double ***pconc, int nr_of_elements)
 void Linear_reaction::set_nr_of_species(int n_substances)
 {
 	this->nr_of_species = n_substances;
+	return;
+}
+
+void Linear_reaction::set_nr_of_elements(int nrOfElements)
+{
+	this->nr_of_elements = nrOfElements;
+	return;
+}
+
+void Linear_reaction::set_concentration_matrix(double ***ConcentrationMatrix)
+{
+	this->concentration_matrix = ConcentrationMatrix;
 	return;
 }
 
