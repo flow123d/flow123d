@@ -1249,11 +1249,18 @@ void ConvectionTransport::save_time_step_C() {
 
 }
 
+void ConvectionTransport::get_parallel_solution_vector(Vec &vc){
+	return;
+};
 
-double ConvectionTransport::cfl_time_constrain() {
+void ConvectionTransport::get_solution_vector(double* &vector, unsigned int &size){
+	return;
+};
+
+double ConvectionTransport::get_cfl_time_constrain() {
 	return time_step;
 }
-double ***ConvectionTransport::concentration_vector() {
+double ***ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
 int ConvectionTransport::get_n_substances() {

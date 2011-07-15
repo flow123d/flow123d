@@ -61,11 +61,16 @@ public:
 //	~ConvectionTransport();
 	void create_transport_matrix_mpi(); //
 	void convection(); // upravit
-	void compute_one_step();
+//	void compute_one_step();
 	void transport_until_time(double time_interval);
-	double cfl_time_constrain();
-	double ***concentration_vector();
+
+	double get_cfl_time_constrain();
+	double ***get_concentration_matrix();
 	int get_n_substances();
+
+	virtual void compute_one_step();
+	virtual void get_parallel_solution_vector(Vec &vc);
+	virtual void get_solution_vector(double* &vector, unsigned int &size);
 private:
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);

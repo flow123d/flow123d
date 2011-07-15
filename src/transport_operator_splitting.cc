@@ -41,7 +41,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 
 	time_marks = new TimeMarks();
 	time = new TimeGovernor(time_marks, problem_stop_time, problem_stop_time);
-	time->set_constrain(convection->cfl_time_constrain());
+	time->set_constrain(convection->get_cfl_time_constrain());
 
 }
 
