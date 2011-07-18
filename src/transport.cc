@@ -125,6 +125,16 @@ void ConvectionTransport::get_reaction(int i,oReaction *reaction) {
 }
 */
 //=============================================================================
+// RECOMPUTE MATRICES
+//=============================================================================
+
+void read_flow_field_vector(Vec *vec){
+	create_transport_matrix_mpi();
+	transport_matrix_step_mpi(time_step);
+	calculate_bc_mpi();
+}
+
+//=============================================================================
 // MAKE TRANSPORT
 //=============================================================================
 void ConvectionTransport::transport_init() {

@@ -66,7 +66,9 @@ void TransportOperatorSplitting::compute_until_save_time(){
 
 }
 
-
+void ReadFlowFieldVector(Vec *vec){
+	convection->read_flow_field_vector(vec);
+};
 
 
 void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
