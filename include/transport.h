@@ -63,7 +63,7 @@ public:
 	void convection(); // upravit
 //	void compute_one_step();
 	void transport_until_time(double time_interval);
-	void read_flow_field_vector(Vec *vec);
+/*	void read_flow_field_vector(Vec *vec);*/
 
 	double get_cfl_time_constrain();
 	double ***get_concentration_matrix();

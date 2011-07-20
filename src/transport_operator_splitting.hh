@@ -34,7 +34,7 @@ class MaterialDatabase;
 class TransportOperatorSplitting : public EquationBase {
 public:
 	TransportOperatorSplitting(MaterialDatabase *material_database, Mesh *init_mesh);
-	void ReadFlowFieldVector(Vec *vec);
+/*	void ReadFlowFieldVector(Vec *vec);*/
 	virtual void compute_one_step();
 	//virtual void compute_until();
 
