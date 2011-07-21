@@ -21,7 +21,7 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
-#set -x
+set -x
 # This script assumes that it is running in particular subdir of the "tests"
 # dir. 
 pwd

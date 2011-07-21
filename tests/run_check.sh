@@ -21,7 +21,7 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
-#set -x
+set -x
 # This script compares two given diretories
 
 #set if nor running as part of run_test.sh script
