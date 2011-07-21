@@ -43,8 +43,6 @@
 #include "mesh/boundaries.h"
 #include "materials.hh"
 
-#include "constantdb.h"
-
 
 
 static void calc_a_row(Mesh*);
