@@ -22,8 +22,6 @@
 # $LastChangedDate$
 #
 
-#check if script is called with relative or absolute path
-
 ShowHelp() {
 echo " This is Flow123d help page. Syntax:
  
@@ -37,14 +35,20 @@ echo " This is Flow123d help page. Syntax:
 			default can be specified in makefile.in"
 }
 
+# Check if script is called with relative or absolute path
 if [ ! "${0%%[^/]*}" == "" ]; then
 	SCRIPT_PATH_DIR="${0%/*}"
 else	
 	SCRIPT_PATH_DIR="`pwd`/${0%/*}"
 fi	
+
+# Set up default machine script
 MACHINE_SCRIPT="$SCRIPT_PATH_DIR/current_flow"
+
+# Set up default number of processes
 NPROC=1
-# passing arguments
+
+# Passing arguments
 while [ \( -n "$1" \) -a \( ! "$1" == "--" \) ]
 do
   if [ "$1" == "-np" ]; then
@@ -59,10 +63,11 @@ do
     QueueTime=$1
   elif [ "$1" == "-m" ]; then
     shift
+    # Is here any machine script; eq: "stroj_flow.sh"
 	if [ -e "$SCRIPT_PATH_DIR/${1}_flow.sh" ]; then
 		MACHINE_SCRIPT="$SCRIPT_PATH_DIR/${1}_flow.sh"
 	else
-		echo "ERROR: Missing MACHINE script, using default."
+		echo "ERROR: Machine script: ${1}_flow.sh does not exist, using default."
 	fi
   elif [ "$1" == "-h" ]; then
     ShowHelp
@@ -75,6 +80,7 @@ done
 
 FLOW_PARAMS="$@"
 
+# Is here any configuration ini file?
 if [ -z "$INI_FILE" ] 
 then
   echo "Error: No ini file!"
@@ -82,24 +88,21 @@ then
   exit 1
 fi
 
-
 export INI="${INI_FILE##*/}"
 if [ "${INI_FILE%%[^/]*}" == "" ]
 then 
-  # relative path
+  # Relative path
   INI_FILE="/$INI_FILE"
-  SOURCE_DIR="`pwd`/${INI_FILE%/*}"
+  DATA_DIR="`pwd`/${INI_FILE%/*}"
 else
-  #absolute path
-  SOURCE_DIR="${INI_FILE%/*}"
+  # Absolute path
+  DATA_DIR="${INI_FILE%/*}"
 fi
 
-
-
-# path to MPIEXEC
+# Path to MPIEXEC
 MPI_RUN="$SCRIPT_PATH_DIR/mpiexec"
 
-#paths to dirs, relative to tests/$WRK
+# Paths to dirs, relative to tests/$WRK
 if [ -e "$SCRIPT_PATH_DIR/flow123d.exe" ]; then
 	EXECUTABLE="$SCRIPT_PATH_DIR/flow123d.exe";
 elif [ -e "$SCRIPT_PATH_DIR/flow123d" ]; then
@@ -109,17 +112,17 @@ else
 	exit 1
 fi
  
-#exports for make_pbs scripts
+# Exports for make_pbs scripts
 export MPI_RUN
 export EXECUTABLE
 export NPROC
 export INI
 export FLOW_PARAMS
-export SOURCE_DIR
+export DATA_DIR
 
-cd "$SOURCE_DIR"
+cd "$DATA_DIR"
 
-#run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
+# Run flow, check if exists mpiexec skript, else allow run only with 1 procs without MPIEXEC	
 
 if [ -e "$MPI_RUN" ]; then
 	#$MPI_RUN -np $NPROC $EXECUTABLE -s $INI $FLOW_PARAMS 2>err 1>out
@@ -128,5 +131,4 @@ else
 	echo "Error: Missing mpiexec, unavailable to proceed with more then one procs"
 	exit 1
 fi
-	
-	
+
