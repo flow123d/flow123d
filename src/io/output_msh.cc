@@ -167,17 +167,17 @@ void write_msh_ascii_data(Output *output, OutputData *out_data)
         break;
     case OUT_ARRAY_INT_SCA:
         for(int i=0; i<out_data->num; i++, id++) {
-            file << id << ((int*)out_data->data)[i] << " ";
+            file << id << " " << ((int*)out_data->data)[i] << endl;
         }
         break;
     case OUT_ARRAY_FLOAT_SCA:
         for(int i=0; i<out_data->num; i++, id++) {
-            file << id << ((float*)out_data->data)[i] << " ";
+            file << id << " " << ((float*)out_data->data)[i] << endl;
         }
         break;
     case OUT_ARRAY_DOUBLE_SCA:
         for(int i=0; i<out_data->num; i++, id++) {
-            file << id << ((double*)out_data->data)[i] << " ";
+            file << id << " " << ((double*)out_data->data)[i] << endl;
         }
         break;
     default:
