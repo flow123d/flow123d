@@ -157,7 +157,7 @@ void DarcyFlowMH_Steady::compute_one_step() {
         make_schur1();
         make_schur2();
 
-        mat_count_off_proc_values(schur2->get_system()->get_matrix(),schur2->get_system()->get_solution());
+        //mat_count_off_proc_values(schur2->get_system()->get_matrix(),schur2->get_system()->get_solution());
         solve_system(solver, schur2->get_system());
 
         schur2->resolve();
@@ -239,7 +239,7 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 //       k tomuto je treba nejdriv spojit s JK verzi, aby se vedelo co se deje v transportu a
 //       predelat mesh a neigbouring
 // *****************************************
-void DarcyFlowMH_Steady::mh_abstract_assembly() {
+void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(NULL);
 
@@ -412,7 +412,7 @@ void DarcyFlowMH_Steady::make_schur0() {
             schur0 = new LinSys_MPIAIJ(lsize);
         schur0->set_symmetric();
         schur0->start_allocation();
-        mh_abstract_assembly(); // preallocation
+        assembly_steady_mh_matrix(); // preallocation
 
     }
 
@@ -423,7 +423,7 @@ void DarcyFlowMH_Steady::make_schur0() {
     xprintf( Msg, "Assembling MH matrix for water model ... \n " );
 
     schur0->start_add_assembly(); // finish allocation and create matrix
-    mh_abstract_assembly(); // fill matrix
+    assembly_steady_mh_matrix(); // fill matrix
     schur0->finalize();
 
     //schur0->view_local_matrix();

@@ -206,6 +206,11 @@ public:
     Output(Mesh *mesh, string filename);
 
     /**
+     * Convert string output format names into enum values.
+     */
+    OutFileFormat parse_output_format(char* format_name);
+
+    /**
      * \brief Destructor of the Output object.
      */
     ~Output();
@@ -316,7 +321,7 @@ protected:
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
     void set_base_file(ofstream *_base_file) { base_file = _base_file; };
     void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
-    void set_format_type(int _format_type) { format_type = _format_type; };
+    void set_format_type(OutFileFormat _format_type) { format_type = _format_type; };
     void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
     void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
 
@@ -331,7 +336,7 @@ private:
     string          *base_filename;     ///< Name of base output file
     string          *data_filename;     ///< Name of data output file
     ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    int             format_type;        ///< Type of output
+    OutFileFormat             format_type;        ///< Type of output
     Mesh            *mesh;
     OutputDataVec   *node_data;         ///< List of data on nodes
     OutputDataVec   *elem_data;         ///< List of data on elements

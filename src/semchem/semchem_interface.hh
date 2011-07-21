@@ -6,7 +6,7 @@
 class Semchem_interface
 {
 	public:
-		Semchem_interface(int nrOfElements, double ***ConcentrationMatrix);
+		Semchem_interface(int nrOfElements, double ***ConcentrationMatrix, Mesh *mesh);
 		//void compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr);
 		void compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double ***conc);
 		void compute_one_step(void);
@@ -21,6 +21,7 @@ class Semchem_interface
 		double ***concentration_matrix;
 	private:
 		double time_step;
+		Mesh *mesh_;
 //		void priprav(void);
 //		double change_time_step;
 };

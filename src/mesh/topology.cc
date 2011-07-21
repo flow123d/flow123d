@@ -71,18 +71,7 @@ static int elements_common_sides_3D(ElementFullIter ,ElementFullIter ,int[]);
 //=============================================================================
 //
 //=============================================================================
-void element_to_material(Mesh* mesh, MaterialDatabase &base)
-{
 
-	xprintf( MsgVerb, "   Element to material... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-	FOR_ELEMENTS( ele ) {
-	    ele->material=base.find_id(ele->mid);
-		INPUT_CHECK( ele->material != base.end(),
-		        "Reference to undefined material %d in element %d\n", ele->mid, ele.id() );
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
 //=============================================================================
 //
 //=============================================================================

@@ -30,8 +30,6 @@
 
 #include <unistd.h>
 
-#include "mesh/ini_constants_mesh.hh"
-#include "constantdb.h"
 
 #include "system/system.hh"
 #include "problem.h"
@@ -47,9 +45,9 @@
 // concentrations is in fact reimplemented in transport REMOVE it HERE
 
 // After removing non-geometrical things from mesh, this should be part of mash initializing.
-#include "topology.cc"
-#include "msh_reader.h"
-#include "msh_gmshreader.h"
+#include "mesh/topology.cc"
+#include "mesh/msh_reader.h"
+#include "mesh/msh_gmshreader.h"
 
 void count_element_types(Mesh*);
 void read_node_list(Mesh*);
@@ -84,89 +82,33 @@ Mesh::Mesh() {
 //    neighbour_hash = NULL;
 }
 
-//=============================================================================
-// MAKE AND FILL ALL LISTS IN STRUCT MESH
-//
-// DF - method make_mesh() will be removed outside from this file
-//=============================================================================
-
-void make_mesh(struct Problem *problem) {
-    F_ENTRY;
-
-    ASSERT(!(problem == NULL), "NULL pointer as argument of function make_mesh()\n");
-    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
-
-    Mesh* mesh = new Mesh();
-
-    /* Test of object storage */
-    ConstantDB::getInstance()->setObject(MESH::MAIN_INSTANCE, mesh);
-
-
-    // read all mesh files - this is work for MeshReader
-    // DF - elements are read by MeshReader
-    // --------------------- MeshReader testing - Begin
-    MeshReader* meshReader = new GmshMeshReader();
-    meshReader->read(mesh_file_name, mesh);
-    // --------------------- MeshReader testing - End
-
-    read_neighbour_list(mesh);
-
-    make_side_list(mesh);
-    make_edge_list(mesh);
-
-//    make_hashes(problem);
-    count_element_types(mesh);
-
-    // topology
-    element_to_material(mesh, *(problem->material_database));
-    node_to_element(mesh);
-    element_to_side_both(mesh);
-    neigh_vv_to_element(mesh);
-    element_to_neigh_vv(mesh);
-    neigh_vb_to_element_and_side(mesh);
-    neigh_bv_to_side(mesh);
-    element_to_neigh_vb(mesh);
-    side_shape_specific(mesh);
-    side_to_node(mesh);
-    neigh_bb_topology(mesh);
-    neigh_bb_to_edge_both(mesh);
-    edge_to_side_both(mesh);
-    neigh_vb_to_edge_both(mesh);
-    side_types(mesh);
-    count_side_types(mesh);
-    xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
-
-
-    read_boundary(mesh);
-
-}
 
 //=============================================================================
 // COUNT ELEMENT TYPES
 //=============================================================================
 
-void count_element_types(Mesh* mesh) {
+void Mesh::count_element_types() {
     //ElementIter elm;
+    Mesh *mesh = this;
 
     FOR_ELEMENTS(elm)
     switch (elm->type) {
         case 1:
-            mesh->n_lines++;
+            n_lines++;
             break;
         case 2:
-            mesh->n_triangles++;
+            n_triangles++;
             break;
         case 4:
-            mesh->n_tetrahedras++;
+            n_tetrahedras++;
             break;
     }
 }
 //=============================================================================
 // RETURN MAX NUMBER OF ENTRIES IN THE ROW
 //=============================================================================
-
+/*
 int *max_entry() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int *max_size, size, i;
 //    ElementIter elm;
@@ -203,7 +145,7 @@ int *max_entry() {
               if (ngh->element[n]->id == elm->id && n == 1)
                 size++;
          */
-
+/*
         size += elm->n_neighs_vv; // non-comp model
 
         max_size[0] += size;
@@ -211,7 +153,84 @@ int *max_entry() {
     }
     // getchar();
     return max_size;
+}*/
+
+void Mesh::setup_topology() {
+    Mesh *mesh=this;
+
+    /// initialize mesh topology (should be handled inside mesh object)
+    read_neighbour_list(mesh);
+
+    make_side_list( mesh);
+    make_edge_list(mesh);
+
+    //    make_hashes(problem);
+    count_element_types();
+
+    // topology
+    node_to_element(mesh);
+    element_to_side_both(mesh);
+    neigh_vv_to_element(mesh);
+    element_to_neigh_vv(mesh);
+    neigh_vb_to_element_and_side(mesh);
+    neigh_bv_to_side(mesh);
+    element_to_neigh_vb(mesh);
+    side_shape_specific(mesh);
+    side_to_node(mesh);
+    neigh_bb_topology(mesh);
+    neigh_bb_to_edge_both(mesh);
+    edge_to_side_both(mesh);
+    neigh_vb_to_edge_both(mesh);
+    side_types(mesh);
+    count_side_types(mesh);
+    xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
+
+    read_boundary(mesh);
+
 }
+
+void Mesh::setup_materials( MaterialDatabase &base)
+{
+    Mesh *mesh=this;
+
+    xprintf( MsgVerb, "   Element to material... ")/*orig verb 5*/;
+    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
+    FOR_ELEMENTS( ele ) {
+        ele->material=base.find_id(ele->mid);
+        INPUT_CHECK( ele->material != base.end(),
+                "Reference to undefined material %d in element %d\n", ele->mid, ele.id() );
+    }
+    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+
+    make_element_geometry();
+}
+
+/**
+ * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
+ */
+void Mesh::make_element_geometry() {
+    xprintf(Msg, "Calculating properties of elements... ")/*orig verb 2*/;
+    Mesh *mesh=this;
+
+
+
+    ASSERT(NONULL(mesh), "No mesh for problem\n");
+    ASSERT(mesh->element.size() > 0, "Empty mesh.\n");
+
+    FOR_ELEMENTS(ele) {
+        //DBGMSG("\n ele: %d \n",ele.id());
+        //FOR_ELEMENTS(ele1) {
+        //    printf("%d(%d) ",ele1.id(),ele1->type);
+        //    ele1->bas_alfa[0]=1.0;
+       // }
+        ele->calc_metrics();
+        ele->calc_volume();
+        ele->calc_centre();
+    }
+
+    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
+}
+
 //=============================================================================
 // ID-POS TRANSLATOR
 //=============================================================================

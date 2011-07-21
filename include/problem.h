@@ -36,9 +36,11 @@
 //#define COMPUTE_MH_NEW     3
 
 // problem types
-#define STEADY_SATURATED   1
-#define UNSTEADY_SATURATED 2
-#define PROBLEM_DENSITY    3
+typedef enum {
+STEADY_SATURATED=1,
+UNSTEADY_SATURATED=2,
+PROBLEM_DENSITY=3,
+UNSTEADY_SATURATED_LMH=4} ProblemType;
 
 struct Solver;
 struct DarcyFlowMH;

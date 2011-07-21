@@ -98,6 +98,18 @@ public:
         return edge.size();
     }
 
+    /**
+     * Setup various links between mesh entities. Should be simplified.
+     */
+    void setup_topology();
+
+    /**
+     * This set pointers from elements to materials. Mesh should store only material IDs of indices.
+     * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
+     */
+    void setup_materials( MaterialDatabase &base);
+    void make_element_geometry();
+
     // Files
     // DF - Move to ConstantDB
     // char *geometry_fname; // Name of file of nodes and elems
@@ -142,6 +154,10 @@ public:
 //    struct Edge **edge_hash;
 //    struct Side **side_hash;
 //    struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index
+
+private:
+    void count_element_types();
+
 };
 
 /**

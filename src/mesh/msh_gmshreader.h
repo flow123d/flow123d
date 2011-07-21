@@ -22,20 +22,39 @@
  * $LastChangedBy$
  * $LastChangedDate$
  *
- * @file   ini_constants_transport.hh
- * @brief ???
+ *
+ * @file   gmshmeshreader.h
  * @author dalibor
  *
- * @date 4. říjen 2010, 13:26
+ * @date October 3, 2010, 11:23 AM
  */
 
-#ifndef _TRANSPORT_CONSTANTS_HH
-#define	_TRANSPORT_CONSTANTS_HH
+#ifndef _GMSHMESHREADER_H
+#define	_GMSHMESHREADER_H
 
-class TRANSPORT {
+#include "mesh/msh_reader.h"
+#include "mesh/mesh.h"
+
+class GmshMeshReader : public MeshReader {
+private:
+    void read_nodes(FILE*, Mesh*);
+    void read_elements(FILE*, Mesh*);
+
+    char supported_element_type(int);
+    void parse_element_line(ElementVector&, char*, Mesh* mesh);
+    void element_type_specific(ElementFullIter);
+    void element_allocation_independent(ElementFullIter);
+
 public:
-    static const char* MAIN_INSTANCE;
+    GmshMeshReader();
+    ~GmshMeshReader();
+
+    /**
+     *  Read mesh from file
+     */
+    void read(const std::string &file_name, Mesh* mesh);
+
 };
 
-#endif	/* _TRANSPORT_CONSTANTS_HH */
+#endif	/* _GMSHMESHREADER_H */
 

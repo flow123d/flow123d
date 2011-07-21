@@ -46,7 +46,7 @@ $(OBJS)/io/output_vtk.o\
 $(OBJS)/io/output_msh.o\
 $(OBJS)/io/output_tmp.o\
 \
-$(OBJS)/mesh/ini_constants_mesh.o\
+$(OBJS)/mesh/msh_gmshreader.o\
 $(OBJS)/mesh/mesh.o\
 $(OBJS)/mesh/nodes.o\
 $(OBJS)/mesh/elements.o\
@@ -69,8 +69,6 @@ $(OBJS)/system/math_fce.o\
 \
 $(OBJS)/time_marks.o\
 $(OBJS)/read_ini.o\
-$(OBJS)/constantdb.o\
-$(OBJS)/msh_gmshreader.o\
 $(OBJS)/materials.o\
 $(OBJS)/solve.o\
 $(OBJS)/problem.o\
@@ -78,12 +76,15 @@ $(OBJS)/main.o\
 $(OBJS)/la_schur.o\
 $(OBJS)/xio.o\
 $(OBJS)/sparse_graph.o\
-$(OBJS)/convert.o\
 $(OBJS)/transport.o\
 $(OBJS)/transport_operator_splitting.o\
 $(OBJS)/la_linsys.o\
-$(OBJS)/time_governor.o
+$(OBJS)/time_governor.o\
+$(OBJS)/hc_explicit_sequential.o
 
+#$(OBJS)/convert.o\
+#$(OBJS)/mesh/ini_constants_mesh.o\
+#$(OBJS)/constantdb.o\
 #$(OBJS)/hashes.o\
 #$(OBJS)/transport_bcd.o\
 #$(OBJS)/concentrations.o\

@@ -6,7 +6,6 @@
 #include "che_semchem.h"
 #include "semchem_interface.hh"
 #include "transport.h"
-#include "constantdb.h"
 #include "../mesh/mesh.h"
 
 using namespace std;
@@ -19,8 +18,8 @@ struct TS_lat 	*P_lat;
 struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
-Semchem_interface::Semchem_interface(int nrOfElements, double ***ConcentrationMatrix)
-	:semchem_on(false), dual_porosity_on()
+Semchem_interface::Semchem_interface(int nrOfElements, double ***ConcentrationMatrix, Mesh * mesh)
+	:semchem_on(false), dual_porosity_on(), mesh_(mesh)
 {
   FILE *fw_chem;
 
@@ -42,8 +41,11 @@ void Semchem_interface::compute_one_step(void)
 {
 	//ConstantDB* ConstantDB::instance = new ConstantDB();
 	double ***conc = concentration_matrix; //it would be better to call get-function
-	Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject("MAIN_INSTANCE");//(MESH::MAIN_INSTANCE);
-	ElementFullIter ppelm = ELEMENT_FULL_ITER_NULL;
+	/*
+	 *  TODO: this is obvious error ppelm should be set to match loc_el i.e. element index on local processor in
+	 *  transport ordering.
+	 */
+	ElementIter ppelm = NULL;
 
 	for (int loc_el = 0; loc_el < nr_of_elements; loc_el++)
 	{

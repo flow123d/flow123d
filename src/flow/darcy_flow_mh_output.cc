@@ -34,10 +34,27 @@
 #include "flow/darcy_flow_mh_output.hh"
 #include "field_p0.hh"
 
+#include "io/output.h"
+
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
 : darcy_flow(flow), mesh(darcy_flow->get_mesh())
-{}
+{
+    int rank;
+    // setup output
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if(rank == 0) {
+        string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
+        output_writer = new OutputTime(mesh, output_file);
+    } else {
+        output_writer = NULL;
+    }
+
+    // set output time marks
+    TimeMarks *marks=darcy_flow->time()->marks();
+    output_mark_type = marks->new_strict_mark_type();
+    marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), darcy_flow->time()->end_time(), output_mark_type );
+}
 
 
 //=============================================================================
@@ -69,6 +86,20 @@ void DarcyFlowMHOutput::postprocess() {
     //         transport( problem );
     xprintf(Msg, "Postprocessing phase O.K.\n")/*orig verb 2*/;
 }
+
+void DarcyFlowMHOutput::output()
+{
+    if (darcy_flow->time()->is_current(output_mark_type)) {
+        if (output_writer != NULL) {
+            output_writer->get_data_from_mesh();
+            // call output_time->register_node_data(name, unit, 0, data) to register other data on nodes
+            // call output_time->register_elem_data(name, unit, 0, data) to register other data on elements
+            output_writer->write_data(darcy_flow->time()->t());
+            output_writer->free_data_from_mesh();
+        }
+    }
+}
+
 //=============================================================================
 // FILL TH "FLUX" FIELD FOR ALL SIDES IN THE MESH
 //=============================================================================

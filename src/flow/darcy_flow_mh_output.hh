@@ -35,6 +35,7 @@
 #include "mesh/mesh.h"
 
 class DarcyFlowMH;
+class OutputTime;
 
 
 /**
@@ -57,6 +58,7 @@ public:
     DarcyFlowMHOutput(DarcyFlowMH *flow) ;
 
     void postprocess();
+    void output();
 
 private:
     void make_side_flux();
@@ -77,6 +79,8 @@ private:
 
     DarcyFlowMH *darcy_flow;
     Mesh *mesh;
+    OutputTime *output_writer;
+    TimeMark::Type output_mark_type;
 };
 
 

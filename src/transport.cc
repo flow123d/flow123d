@@ -41,7 +41,7 @@
 //#include "system/system.hh"
 //#include "xio.h"
 
-#include "constantdb.h"
+
 #include "system/system.hh"
 #include "system/math_fce.h"
 #include "problem.h"
@@ -55,7 +55,7 @@
 //#include "reaction.h" XX
 #include "flow/darcy_flow_mh.hh"
 #include "system/par_distribution.hh"
-#include "mesh/ini_constants_mesh.hh"
+
 #include "sparse_graph.hh"
 #include "semchem/semchem_interface.hh"
 #include "reaction/linear_reaction.hh"
@@ -71,7 +71,6 @@ void ConvectionTransport::make_transport_partitioning() {
 
     F_ENTRY;
 
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
     int rank, np, i, j, k, row_MH, a;
     //struct DarcyFlowMH *water=transport->problem->water;
 
@@ -139,7 +138,7 @@ void ConvectionTransport::get_reaction(int i,oReaction *reaction) {
 //=============================================================================
 void ConvectionTransport::transport_init() {
     //struct Transport *transport = problem->transport;
-	mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+
     char *snames, *sscales;
     int rank;
     F_ENTRY;
@@ -168,12 +167,15 @@ void ConvectionTransport::transport_init() {
 
     DBGMSG("Transport substances.\n");
     n_substances = OptGetInt("Transport", "N_substances", NULL );
+    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
+
     snames = OptGetStr("Transport", "Substances", "none");
     subst_names(snames);
+    /*
     if (ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY) {
         sscales = OptGetStr("Transport", "Substances_density_scales", "1.0");
         subst_scales(sscales);
-    }
+    }*/
 
    // n_elements = mesh->n_elements();
 
@@ -245,8 +247,8 @@ void ConvectionTransport::subst_scales(char *line) {
 // READ INITIAL CONDITION
 //=============================================================================
 void ConvectionTransport::read_initial_condition() {
-		Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-		FILE	*in;		  // input file
+
+        FILE	*in;		  // input file
 		char     line[ LINE_SIZE ]; // line of data file
 		int sbi,index, id, eid, i,n_concentrations, global_idx;
 
@@ -305,7 +307,6 @@ void ConvectionTransport::read_initial_condition() {
 //	ALLOCATE OF TRANSPORT VARIABLES (ELEMENT & NODES)
 //=============================================================================
 void ConvectionTransport::alloc_transport_vectors() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int i, j, sbi, n_subst, ph;
     ElementIter elm;
@@ -354,7 +355,6 @@ void ConvectionTransport::alloc_transport_vectors() {
 //	ALLOCATE OF TRANSPORT (DENSITY VECTORS)
 //=============================================================================
 void ConvectionTransport::alloc_density_vectors() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int ph, sbi, i, sub;
     int n_subst = n_substances;
@@ -381,7 +381,6 @@ void ConvectionTransport::alloc_density_vectors() {
 //	ALLOCATION OF TRANSPORT VECTORS (MPI)
 //=============================================================================
 void ConvectionTransport::alloc_transport_structs_mpi() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int i, j, sbi, n_subst, ph, ierr, rank, np;
     ElementIter elm;
@@ -526,7 +525,6 @@ void ConvectionTransport::fill_transport_vectors_mpi() {
 // CREATE TRANSPORT MATRIX
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL;
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL;
@@ -814,7 +812,6 @@ double *transport_aloc_pi(Mesh* mesh) {
 //         material - material on corresponding mesh element
 //=============================================================================
 void ConvectionTransport::transport_dual_porosity( int elm_pos, MaterialDatabase::Iter material, int sbi) {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     double conc_avg = 0.0;
     int id;
@@ -878,7 +875,6 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, MaterialDatabase
 //      TRANSPORT SORPTION
 //=============================================================================
 void ConvectionTransport::transport_sorption( int elm_pos, MaterialDatabase::Iter mtr, int sbi) {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     double conc_avg = 0.0;
     double conc_avg_imm = 0.0;
@@ -1073,7 +1069,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
     	register int t;
     	// Chemistry initialization
     	Linear_reaction *decayRad = new Linear_reaction(time_step,this->mesh->n_elements(),pconc);
-    	Semchem_interface *Semchem_reactions = new Semchem_interface(this->mesh->n_elements(),pconc);
+    	Semchem_interface *Semchem_reactions = new Semchem_interface(this->mesh->n_elements(),pconc, mesh);
 
 	    for (t = 1; t <= steps; t++) {
 	    	time += time_step;
@@ -1122,7 +1118,6 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 //      CONVECTION
 //=============================================================================
 void ConvectionTransport::convection() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     MPI_Barrier(PETSC_COMM_WORLD);
     START_TIMER("TRANSPORT");
@@ -1157,7 +1152,6 @@ void ConvectionTransport::convection() {
 //      OUTPUT VECTOR GATHER
 //=============================================================================
 void ConvectionTransport::output_vector_gather() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int sbi, rank, np;
     IS is;
@@ -1185,7 +1179,6 @@ void ConvectionTransport::output_vector_gather() {
 //      COMPARE DENSITY ITERATION
 //=============================================================================
 int ConvectionTransport::compare_dens_iter() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     ElementIter elm;
     double max_err;
@@ -1210,7 +1203,6 @@ int ConvectionTransport::compare_dens_iter() {
 void ConvectionTransport::restart_iteration_C() {
     int sbi, n_subst, sub, ph;
 
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
    // struct Transport *transport = problem->transport;
    // double ***conc, ***prev_conc;
@@ -1230,7 +1222,6 @@ void ConvectionTransport::restart_iteration_C() {
 //      SAVE & RESTART ITERATION OF PRESSURE
 //=============================================================================
 void ConvectionTransport::save_restart_iteration_H() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     ElementIter elm;
     FOR_ELEMENTS( elm ) {
@@ -1241,7 +1232,6 @@ void ConvectionTransport::save_restart_iteration_H() {
 //      SAVE TIME STEP CONCENTRATION
 //=============================================================================
 void ConvectionTransport::save_time_step_C() {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
     int sbi, n_subst, sub, ph;
    // struct Transport *transport = problem->transport;

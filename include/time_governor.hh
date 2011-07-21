@@ -36,13 +36,23 @@
 
 /**
  * @brief
- * Basic time management functionality for unsteady solvers.
+ * Basic time management functionality for unsteady solvers (class Equation).
  *
- * This class provides only algorithms for selecting next time step, and information about current time step frame.
+ * This class provides algorithms for selecting next time step, and information about current time step frame. In particular,
+ *
+ *
+ *
+ * Choice of the next time step can be permanently constrained through function set_permanent_constrain() or one can set
+ * constrain only for the next time step through function set_constrain(). The later one can be called multiple times with various
+ * constrain values and we use the minimum of them. Function next_time() choose the next time step that meets actual constrains and
+ * uniform discrete time grid with this step hits the nearest fixed time in lowest possible number of steps.
+ *
+ * The
+ *
  * In particular fixed times are not time events, but can be added in order to meet the time of a time event. Time events are
  * managed by class TimeEvents.
  *
- * The time step can be chosen either only for the next time level (this is default behavior od @fn next_time) or
+ * The time step can be chosen either only for the next time level (this is default behavior of @fn next_time) or
  * for the largest possible time interval. The later possibility is necessary for explicit solvers, where the matrix used to perform one time step
  * depends on the time step and has to be modified, when the time step is changed.
  *
@@ -82,6 +92,30 @@ public:
      * set constrains. The minimum of them is used for choice of the next time step.
      */
     void set_constrain(double dt_constrain);
+
+    /**
+     * Getter for time marks.
+     */
+    inline TimeMarks *marks() const
+            {return time_marks;}
+
+    /**
+     * Simpler interface to TimeMarks::is_current().
+     */
+    inline bool is_current(const TimeMark::Type &mask) const
+        {time_marks->is_current(*this, mask); }
+
+    /**
+     * Simpler interface to TimeMarks::next().
+     */
+    inline TimeMarks::iterator next(const TimeMark::Type &mask) const
+        {time_marks->next(*this, mask);}
+
+    /**
+     * Simpler interface to TimeMarks::last().
+     */
+    inline TimeMarks::iterator last(const TimeMark::Type &mask) const
+        {time_marks->last(*this, mask);}
 
     /**
      * Add a time that has to be meet by the time governor.
@@ -126,6 +160,13 @@ public:
      */
     inline double t() const
         {return time;}
+
+    /**
+     * Beginning of the actual time interval; i.e. the time of last computed solution.
+     */
+    inline double last_t() const
+        {return last_time;}
+
 
     /**
      * Length of actual time interval; i.e. the actual time step.

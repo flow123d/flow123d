@@ -75,7 +75,6 @@ class SparseGraph;
  * 1) prepare_next_timestep
  * 2) actualize_solution - this is for iterative nonlinear solvers
  *
- * make interface of DarcyFlowMH a general interface of time depenedent model. ....
  */
 
 class DarcyFlowMH : public EquationBase {
@@ -129,7 +128,8 @@ protected:
     void set_R() {};
     void prepare_parallel();
     void make_row_numberings();
-    void mh_abstract_assembly();
+    void preallocate_mh_matrix();
+    void assembly_steady_mh_matrix();
     void make_schur0();
     void make_schur1();
     void make_schur2();
@@ -180,8 +180,6 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
         int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 void mat_count_off_proc_values(Mat m, Vec v);
 
-void create_water_linsys(Mesh*, DarcyFlowMH**);
-void solve_water_linsys(DarcyFlowMH*);
 
 
 /**

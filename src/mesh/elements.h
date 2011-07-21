@@ -44,6 +44,13 @@ class Element
 {
 public:
     Element();
+    void calc_metrics();
+    void calc_volume();
+    double element_length_line();
+    double element_area_triangle();
+    double element_volume_tetrahedron();
+    void calc_centre();
+
 
     // Data readed from mesh file
     int      type;      //
