@@ -27,8 +27,6 @@
  *
  */
 
-#include "mesh/ini_constants_mesh.hh"
-#include "constantdb.h"
 
 #include <stdlib.h>    // atof()
 #include <strings.h>
@@ -44,7 +42,7 @@
 #include "io/output.h"
 #include "problem.h"
 #include "read_ini.h"
-#include "constantdb.h"
+
 
 static void check_ini_values(struct Problem*);
 static struct Pos_view_params *pos_view_par_read( char *view_char );
@@ -60,28 +58,29 @@ void problem_init(struct Problem *problem)
     F_ENTRY;
 
     // [Global]
-    ConstantDB::getInstance()->setInt("Problem_type", OptGetInt("Global", "Problem_type", NULL));
+    //ConstantDB::getInstance()->setInt("Problem_type", OptGetInt("Global", "Problem_type", NULL));
 
     // problem -> dens         = OptGetBool( "Global", "Density_on", "no" );
 
 
     // [Output]
-    ConstantDB::getInstance()->setInt("Out_digit", OptGetInt("Output", "Output_digits", "6"));
+    //ConstantDB::getInstance()->setInt("Out_digit", OptGetInt("Output", "Output_digits", "6"));
+    //INPUT_CHECK(!( (ConstantDB::getInstance()->getInt("Out_digit") < 1)
+    //            || (ConstantDB::getInstance()->getInt("Out_digit") > 16) ), "Number of digits of output must be between %d and %d\n", 1, 16);
 
-    if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) {
-        problem->out_fname_2 = OptGetFileName("Output", "Output_file_2", NULL);
-    }
 
-    if(problem->out_fname_2[0] == '\\')
-        problem->out_fname_2 = OptGetFileName("Output", "Output_file", NULL);
+    //if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) {
+    //    problem->out_fname_2 = OptGetFileName("Output", "Output_file_2", NULL);
+    //}
 
-    ConstantDB::getInstance()->setInt("Out_file_type", OptGetInt("Output", "Output_file_type", "1"));
+    //if(problem->out_fname_2[0] == '\\')
+    //    problem->out_fname_2 = OptGetFileName("Output", "Output_file", NULL);
 
-    if(ConstantDB::getInstance()->getInt("Out_file_type") == 1)
-        problem->out_fname_2 = OptGetFileName("Output", "Output_file", NULL);
+    //ConstantDB::getInstance()->setInt("Out_file_type", OptGetInt("Output", "Output_file_type", "1"));
 
-    ConstantDB::getInstance()->setChar("Pos_format", OptGetStr("Output", "POS_format", "ASCII"));
-    ConstantDB::getInstance()->setInt("Pos_format_id", pos_format_ID( (char*)ConstantDB::getInstance()->getChar("Pos_format") ));
+    //if(ConstantDB::getInstance()->getInt("Out_file_type") == 1)
+    //    problem->out_fname_2 = OptGetFileName("Output", "Output_file", NULL);
+
 
     // TODO: Proper implementation of cross section
 #if 0
@@ -100,14 +99,11 @@ void problem_init(struct Problem *problem)
     problem->pos_view_params = pos_view_par_read(view_char);
 
     // [Constants]
-    ConstantDB::getInstance()->setDouble("G", OptGetDbl("Constants", "g", "1.0"));
-    ConstantDB::getInstance()->setDouble("Rho", OptGetDbl("Constants", "rho", "1.0"));
+//    ConstantDB::getInstance()->setDouble("G", OptGetDbl("Constants", "g", "1.0"));
+//    ConstantDB::getInstance()->setDouble("Rho", OptGetDbl("Constants", "rho", "1.0"));
+//    INPUT_CHECK( DBL_GT(ConstantDB::getInstance()->getDouble("G"), 0.0), "Gravitotional acceleration has to be greater than ZERO\n");
+//    INPUT_CHECK( DBL_GT(ConstantDB::getInstance()->getDouble("Rho"), 0.0), "Density of fluid has to be greater than ZERO\n");
 
-    // [Transport]
-    if(ConstantDB::getInstance()->getInt("Goal") == COMPUTE_MH) {
-        ConstantDB::getInstance()->setChar("Concentration_fname", OptGetFileName("Transport", "Concentration", "\\"));
-        ConstantDB::getInstance()->setChar("Transport_bcd_fname", OptGetFileName("Transport", "Transport_BCD", "\\"));
-    }
 
     // Material Database
     const std::string& material_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" ));
@@ -134,12 +130,7 @@ void check_ini_values( struct Problem *problem )
 {
 	ASSERT(NONULL( problem ),"NULL as argument of function check_ini_values()\n");
 
-        int type = ConstantDB::getInstance()->getInt("Problem_type");
-	INPUT_CHECK(
-                 ( type == STEADY_SATURATED ) ||
-                 ( type == UNSTEADY_SATURATED ) ||
-                 ( type == PROBLEM_DENSITY),
-                 "Unsupported type of problem: %d\n", type );
+
 	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", "\\")).c_str(), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of mesh file must be defined\n");
 	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" )).c_str(), "\\"  ) == 0 )
@@ -152,17 +143,11 @@ void check_ini_values( struct Problem *problem )
 	//	problem->sources_fname = NULL;
 	if( strcmpi( OptGetFileName("Output", "Output_file", "\\"), "\\"  ) == 0 )
 		xprintf(UsrErr,"Name of output file must be defined\n");
-	INPUT_CHECK(!( (ConstantDB::getInstance()->getInt("Out_digit") < 1)
-                || (ConstantDB::getInstance()->getInt("Out_digit") > 16) ), "Number of digits of output must be between %d and %d\n", 1, 16);
-	INPUT_CHECK( DBL_GT(ConstantDB::getInstance()->getDouble("G"), 0.0), "Gravitotional acceleration has to be greater than ZERO\n");
-	INPUT_CHECK( DBL_GT(ConstantDB::getInstance()->getDouble("Rho"), 0.0), "Density of fluid has to be greater than ZERO\n");
 
 
-    //TODO: proc je tohle zakomentovane? vypada to smysluplne...
-    //INPUT_CHECK(!( problem->transport_on == true && problem->n_substances < 1 ),"Number of substances must be positive\n");
 
-    if( (OptGetBool("Transport", "Transport_on", "no") != true) && (type == PROBLEM_DENSITY )) //|| problem->dens == true ) )
-		xprintf(UsrErr,"Transport must be ON for variable-density calculation\n");
+    //if( (OptGetBool("Transport", "Transport_on", "no") != true) && (type == PROBLEM_DENSITY )) //|| problem->dens == true ) )
+	//	xprintf(UsrErr,"Transport must be ON for variable-density calculation\n");
 
 
 /*	if( (problem->dens_eps < ZERO) || (problem->dens_eps > 1e2) )
@@ -207,19 +192,7 @@ struct Pos_view_params *pos_view_par_read( char *view_char )
 //=============================================================================
 //
 //=============================================================================
-int pos_format_ID(char* format){
 
-        if(strcmp(format,"ASCII") == 0)
-            return GMSH_MSH_ASCII;
-        if(strcmp(format,"BIN") == 0)
-            return GMSH_MSH_BIN;
-        if(strcmp(format, "VTK_SERIAL_ASCII") == 0)
-            return VTK_SERIAL_ASCII;
-        if(strcmp(format, "VTK_PARALLEL_ASCII") == 0)
-            return VTK_PARALLEL_ASCII;
-        xprintf(UsrErr,"Unknown file format: %s.\n", format );
-        return (-1);
-}
 
 
 //-----------------------------------------------------------------------------

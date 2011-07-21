@@ -34,7 +34,7 @@
 #include "io/output_vtk.h"
 #include "io/output_msh.h"
 #include "mesh/mesh.h"
-#include "constantdb.h" // TODO: remove in the future
+
 
 OutputData::OutputData(string data_name,
         string data_units,
@@ -256,8 +256,8 @@ Output::Output(Mesh *_mesh, string fname)
     node_data = new OutputDataVec;
     elem_data = new OutputDataVec;
 
-    // TODO: remove in the future
-    format_type = ConstantDB::getInstance()->getInt("Pos_format_id");
+
+    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
 
     switch(format_type) {
     case VTK_SERIAL_ASCII:
@@ -275,6 +275,21 @@ Output::Output(Mesh *_mesh, string fname)
 
     base_filename = new string(fname);
 }
+
+OutFileFormat Output::parse_output_format(char* format_name)
+{
+        if(strcmp(format_name,"ASCII") == 0)
+            return GMSH_MSH_ASCII;
+        if(strcmp(format_name,"BIN") == 0)
+            return GMSH_MSH_BIN;
+        if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0)
+            return VTK_SERIAL_ASCII;
+        if(strcmp(format_name, "VTK_PARALLEL_ASCII") == 0)
+            return VTK_PARALLEL_ASCII;
+        xprintf(Warn,"Unknown output file format: %s.\n", format_name );
+        return (VTK_SERIAL_ASCII);
+}
+
 
 Output::~Output()
 {
@@ -356,7 +371,7 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     Mesh *mesh = _mesh;
     ofstream *base_file;
     string *base_filename;
-    int format_type;
+    OutFileFormat format_type;
 
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
@@ -389,7 +404,7 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     elem_data = new OutputDataVec;
 
     // TODO: remove in the future
-    format_type = ConstantDB::getInstance()->getInt("Pos_format_id");
+    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
 
     set_base_file(base_file);
     set_base_filename(base_filename);

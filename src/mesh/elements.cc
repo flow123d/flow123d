@@ -44,7 +44,7 @@
 #include "materials.hh"
 
 #include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
+
 
 
 static void calc_a_row(Mesh*);
@@ -57,12 +57,6 @@ static char supported_element_type(int);
 static void element_type_specific(ElementFullIter );
 static void element_allocation_independent(ElementFullIter );
 static void make_block_d(Mesh *mesh, ElementFullIter );
-static void calc_metrics(ElementFullIter );
-static void calc_volume(ElementFullIter );
-static double element_length_line(ElementFullIter );
-static double element_area_triangle(ElementFullIter );
-static double element_volume_tetrahedron(ElementFullIter );
-static void calc_centre(ElementFullIter );
 static void calc_rhs(ElementFullIter );
 static void calc_rhs_b(ElementFullIter );
 static void dirichlet_elm(ElementFullIter );
@@ -170,31 +164,6 @@ void element_calculation_mh(Mesh* mesh) {
     xprintf(Msg, "O.K.\n")/*orig verb 2*/;
 }
 
-/**
- * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
- */
-void make_element_geometry() {
-    xprintf(Msg, "Calculating properties of elements... ")/*orig verb 2*/;
-
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-
-    ASSERT(NONULL(mesh), "No mesh for problem\n");
-    ASSERT(mesh->element.size() > 0, "Empty mesh.\n");
-
-    FOR_ELEMENTS(ele) {
-        //DBGMSG("\n ele: %d \n",ele.id());
-        //FOR_ELEMENTS(ele1) {
-        //    printf("%d(%d) ",ele1.id(),ele1->type);
-        //    ele1->bas_alfa[0]=1.0;
-       // }
-        calc_metrics(ele);
-        calc_volume(ele);
-        calc_centre(ele);
-    }
-
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
-}
 
 /**
  * CALCULATE THE "A_ROW" FIELD IN STRUCT ELEMENT
@@ -224,26 +193,26 @@ void calc_b_row(Mesh* mesh) {
 /**
  * SET THE "VOLUME" FIELD IN STRUCT ELEMENT
  */
-void calc_volume(ElementFullIter ele) {
-    ele->volume = ele->measure * ele->material->size; //UPDATE
+void Element::calc_volume() {
+    volume = measure * material->size; //UPDATE
     //        ele->volume = ele->metrics * ele->size;	   // JB version
-    INPUT_CHECK(!(ele->volume < NUM_ZERO),
-            "Volume of the element %d is nearly zero (volume= %g)\n", ele.id(), ele->volume);
+    INPUT_CHECK(!(volume < NUM_ZERO),
+            "Volume of the element is nearly zero (volume= %g)\n", volume);
 }
 
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
-void calc_metrics(ElementFullIter ele) {
-    switch (ele->type) {
+void Element::calc_metrics() {
+    switch (type) {
         case LINE:
-            ele->measure = element_length_line(ele);
+            measure = element_length_line();
             break;
         case TRIANGLE:
-            ele->measure = element_area_triangle(ele);
+            measure = element_area_triangle();
             break;
         case TETRAHEDRON:
-            ele->measure = element_volume_tetrahedron(ele);
+            measure = element_volume_tetrahedron();
             break;
     }
 }
@@ -252,19 +221,19 @@ void calc_metrics(ElementFullIter ele) {
  * CALCULATE LENGTH OF LINEAR ELEMENT
  */
 
-double element_length_line(ElementFullIter ele) {
+double Element::element_length_line() {
 
-    return arma::norm(*ele->node[ 1 ] - *ele->node[ 0 ] , 2);
+    return arma::norm(*(node[ 1 ]) - *(node[ 0 ]) , 2);
 }
 
 /**
  * CALCULATE AREA OF TRIANGULAR ELEMENT
  */
-double element_area_triangle(ElementFullIter ele) {
+double Element::element_area_triangle() {
 
     return
         arma::norm(
-            arma::cross(*ele->node[1] - *ele->node[0], *ele->node[2] - *ele->node[0]),
+            arma::cross(*(node[1]) - *(node[0]), *(node[2]) - *(node[0])),
             2
         ) / 2.0 ;
 }
@@ -272,11 +241,11 @@ double element_area_triangle(ElementFullIter ele) {
 /**
  * CALCULATE VOLUME OF TETRAHEDRA ELEMENT
  */
-double element_volume_tetrahedron(ElementFullIter ele) {
+double Element::element_volume_tetrahedron() {
     return fabs(
         arma::dot(
-            arma::cross(*ele->node[1] - *ele->node[0], *ele->node[2] - *ele->node[0]),
-            *ele->node[3] - *ele->node[0] )
+            arma::cross(*node[1] - *node[0], *node[2] - *node[0]),
+            *node[3] - *node[0] )
         ) / 6.0;
 }
 
@@ -284,31 +253,17 @@ double element_volume_tetrahedron(ElementFullIter ele) {
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
  */
 
-void calc_centre(ElementFullIter ele) {
+void Element::calc_centre() {
     int li;
 
-    ele->centre.zeros();
+    centre.zeros();
 
-    FOR_ELEMENT_NODES(ele, li) {
-        ele->centre += ele->node[ li ]->point();
+    FOR_ELEMENT_NODES(this, li) {
+        centre += node[ li ]->point();
     }
-    ele->centre /= (double) ele->n_nodes;
+    centre /= (double) n_nodes;
     //DBGMSG("%d: %f %f %f\n",ele.id(),ele->centre[0],ele->centre[1],ele->centre[2]);
 
-/*
-    ele->centre[ 0 ] = 0.0;
-    ele->centre[ 1 ] = 0.0;
-    ele->centre[ 2 ] = 0.0;
-
-    FOR_ELEMENT_NODES(ele, li) {
-        ele->centre[ 0 ] += ele->node[ li ]->getX();
-        ele->centre[ 1 ] += ele->node[ li ]->getY();
-        ele->centre[ 2 ] += ele->node[ li ]->getZ();
-    }
-    ele->centre[ 0 ] /= (double) ele->n_nodes;
-    ele->centre[ 1 ] /= (double) ele->n_nodes;
-    ele->centre[ 2 ] /= (double) ele->n_nodes;
-*/
 }
 
 

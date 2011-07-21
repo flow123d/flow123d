@@ -28,39 +28,32 @@
  */
 
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
 
-#include "transport.h"
-#include "transport_operator_splitting.hh"
+
+
 
 #include <petsc.h>
 
 #include "system/system.hh"
 #include "xio.h"
+
+
+#include "main.h"
+#include "read_ini.h"
+
+//#include "btc.h"
+#include "transport.h"
+#include "transport_operator_splitting.hh"
+#include "reaction.h"
+#include "solve.h"
 #include "mesh/mesh.h"
-#include "mesh/topology.h"
+#include "mesh/msh_gmshreader.h"
+//#include "mesh/topology.h"
 #include "io/output.h"
 #include "problem.h"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
-
-#include "main.h"
-#include "read_ini.h"
-#include "btc.h"
-#include "reaction.h"
-
-#include "solve.h"
-
-//#include "profiler.hh"
-
-/*
-#include "solve.h"
-#include "elements.h"
-#include "sides.h"
-#include "system/math_fce.h"
-#include "materials.h"
- */
+#include "materials.hh"
 
 #include "rev_num.h"
 /// named version of the program
@@ -150,11 +143,7 @@ int main(int argc, char **argv) {
     F_ENTRY;
 
     parse_cmd_line(argc, argv, goal, ini_fname); // command-line parsing
-    if (goal == -1) {
-        return EXIT_FAILURE;
-    } else {
-        ConstantDB::getInstance()->setInt("Goal", goal);
-    }
+    if (goal == -1)  return EXIT_FAILURE;
 
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
@@ -170,20 +159,13 @@ int main(int argc, char **argv) {
 
 
     problem_init(&G_problem);
-    // Read mesh
-    make_mesh(&G_problem);
 
-    /* Test of object storage */
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-    int numNodes = mesh->node_vector.size();
-    xprintf(Msg, " - Number of nodes in the mesh is: %d\n", numNodes);
 
-    Profiler::instance()->set_task_size(mesh->n_elements());
 
 
     // Calculate
-    make_element_geometry();
-    switch (ConstantDB::getInstance()->getInt("Goal")) {
+    //make_element_geometry();
+    switch (goal) {
         case CONVERT_TO_POS:
             main_convert_to_pos(&G_problem);
             break;
@@ -208,7 +190,8 @@ void main_convert_to_pos(struct Problem *problem) {
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM
  */
 void main_compute_mh(struct Problem *problem) {
-    switch (ConstantDB::getInstance()->getInt("Problem_type")) {
+    int type=OptGetInt("Global", "Problem_type", NULL);
+    switch (type) {
         case STEADY_SATURATED:
             main_compute_mh_steady_saturated(problem);
             break;
@@ -218,6 +201,8 @@ void main_compute_mh(struct Problem *problem) {
         case PROBLEM_DENSITY:
            // main_compute_mh_density(problem);
             break;
+        default:
+            xprintf(UsrErr,"Unsupported problem type: %d.",type);
     }
 }
 
@@ -226,7 +211,17 @@ void main_compute_mh(struct Problem *problem) {
  */
 void main_compute_mh_unsteady_saturated(struct Problem *problem)
 {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+
+    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
+    MeshReader* meshReader = new GmshMeshReader();
+
+    Mesh* mesh = new Mesh();
+    meshReader->read(mesh_file_name, mesh);
+    mesh->setup_topology();
+    mesh->setup_materials(* problem->material_database);
+    Profiler::instance()->set_task_size(mesh->n_elements());
+
+
     OutputTime *output_time;
     TimeMarks * main_time_marks = new TimeMarks();
     int i, rank;
@@ -267,7 +262,15 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
  */
 void main_compute_mh_steady_saturated(struct Problem *problem)
 {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
+    MeshReader* meshReader = new GmshMeshReader();
+
+    Mesh* mesh = new Mesh();
+    meshReader->read(mesh_file_name, mesh);
+    mesh->setup_topology();
+    mesh->setup_materials(* problem->material_database);
+    Profiler::instance()->set_task_size(mesh->n_elements());
+
     TimeMarks * main_time_marks = new TimeMarks();
 
     int rank;
