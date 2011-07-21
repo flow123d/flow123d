@@ -6,7 +6,7 @@
 #include "che_semchem.h"
 #include "semchem_interface.hh"
 #include "transport.h"
-#include "constantdb.h"
+
 #include "../mesh/mesh.h"
 
 using namespace std;

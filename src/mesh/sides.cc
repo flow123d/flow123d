@@ -38,8 +38,8 @@
 #include "problem.h"
 #include "mesh/boundaries.h"
 #include "materials.hh"
-#include "transport.h"
-#include "constantdb.h"
+//#include "transport.h"
+
 
 static struct Side *new_side(void);
 static void add_to_side_list(Mesh*, struct Side*);

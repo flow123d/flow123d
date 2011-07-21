@@ -28,10 +28,6 @@
  *
  */
 
-#include <strings.h>
-
-#include "constantdb.h"
-
 #include "system/system.hh"
 #include "xio.h"
 #include "mesh/boundaries.h"

@@ -31,8 +31,6 @@
  *
  */
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
 #include "transport.h"
 
 #include "read_ini.h"
