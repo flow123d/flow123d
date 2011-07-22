@@ -66,7 +66,7 @@ FLOW_PARAMS="$3"
 
 
 # Check if Flow123d exists and it is executable file
-if ! [ -x ${FLOW123D} ]
+if ! [ -x "${FLOW123D}" ]
 then
 	echo "Error: can't execute ${FLOW123D}"
 	exit 1
@@ -76,14 +76,15 @@ fi
 for INI_FILE in $INI_FILES
 do
 	# Check if it is possible to read ini file
-	if ! [ -e ${INI_FILE} -a -r ${INI_FILE} ]
+	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
 	then
 		echo "Error: can't read ${INI_FILE}"
 		exit 1
 	fi
 
 	echo -n "Runing flow123d ${INI_FILE} "
-	"${FLOW123D}" -S "${INI_FILE}" -- "${FLOW_PARAMS}" > ${FLOW123D_OUTPUT} 2>&1 &
+	# Flow123d run with changed priority (19 is the lowest priority)
+	nice --adjustment=10 "${FLOW123D}" -S "${INI_FILE}" -- "${FLOW_PARAMS}" > "${FLOW123D_OUTPUT}" 2>&1 &
 	FLOW123D_PID=$!
 	IS_RUNNING=1
 
@@ -133,9 +134,9 @@ done
 if [ $EXIT_STATUS -ne 0 ]
 then
 	echo "Error in execution: ${FLOW123D} -S ${INI_FILE} -- ${FLOW_PARAMS}"
-	cat ${FLOW123D_OUTPUT}
+	cat "${FLOW123D_OUTPUT}"
 else
-	rm ${FLOW123D_OUTPUT}
+	rm "${FLOW123D_OUTPUT}"
 fi
 
 exit ${EXIT_STATUS}
