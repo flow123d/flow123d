@@ -40,10 +40,10 @@ FLOW123D_OUTPUT="./flow_stdout.log"
 
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
-FLOW123D=../flow123d
+FLOW123D="../flow123d"
 
 # Relative path to Flow123d binary from current/working directory
-FLOW123D=${0%/*}/${FLOW123D}
+FLOW123D="${0%/*}/${FLOW123D}"
 
 # Variable with exit status. Possible values:
 # 0 - no error, all tests were finished correctly
@@ -83,7 +83,7 @@ do
 	fi
 
 	echo -n "Runing flow123d ${INI_FILE} "
-	${FLOW123D} -S "${INI_FILE}" -- "${FLOW_PARAMS}" > ${FLOW123D_OUTPUT} 2>&1 &
+	"${FLOW123D}" -S "${INI_FILE}" -- "${FLOW_PARAMS}" > ${FLOW123D_OUTPUT} 2>&1 &
 	FLOW123D_PID=$!
 	IS_RUNNING=1
 
