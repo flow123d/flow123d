@@ -28,9 +28,6 @@
  *
  */
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
-
 #include "transport.h"
 
 #include "system/system.hh"
@@ -39,7 +36,7 @@
 #include "problem.h"
 #include "mesh/mesh.h"
 #include "ppfcs.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 #include "materials.hh"
 
 

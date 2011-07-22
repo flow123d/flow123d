@@ -80,8 +80,6 @@ typedef struct Side {
 #define S_LINE      1
 #define S_TRIANGLE      2
 
-#define FOR_SIDES(i)        for((i)=mesh->side;(i)!=NULL;(i)=(i)->next)
-#define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 
 void make_side_list(Mesh*);
 void side_calculation_mh(Mesh *mesh);

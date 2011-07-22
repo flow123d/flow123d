@@ -34,7 +34,7 @@
 #include "hc_explicit_sequential.hh"
 
 #include "main.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 
 #include "rev_num.h"
 /// named version of the program

@@ -44,7 +44,7 @@
 
 #include "system/system.hh"
 #include "xio.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 
 static struct Read_ini *read_ini = NULL;
 

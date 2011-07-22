@@ -41,6 +41,7 @@ $(OBJS)/flow/local_matrix.o\
 $(OBJS)/flow/darcy_flow_mh.o\
 $(OBJS)/flow/darcy_flow_mh_output.o\
 \
+$(OBJS)/io/read_ini.o\
 $(OBJS)/io/output.o\
 $(OBJS)/io/output_vtk.o\
 $(OBJS)/io/output_msh.o\
@@ -68,7 +69,6 @@ $(OBJS)/system/sys_profiler.o\
 $(OBJS)/system/math_fce.o\
 \
 $(OBJS)/time_marks.o\
-$(OBJS)/read_ini.o\
 $(OBJS)/materials.o\
 $(OBJS)/solve.o\
 $(OBJS)/problem.o\

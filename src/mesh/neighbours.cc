@@ -30,8 +30,6 @@
  */
 
 #include <strings.h>
-
-#include "constantdb.h"
 #include "system/system.hh"
 #include "xio.h"
 #include "neighbours.h"
@@ -68,7 +66,7 @@ void read_neighbour_list(Mesh* mesh)
 	mesh->n_neighs = atoi( xstrtok( line) );
 	INPUT_CHECK(!( mesh->n_neighs < 1 ),"Number of neighbours  < 1 in read_neighbour_list()\n");
 	init_neighbour_list( mesh );
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		xfgets( line, LINE_SIZE - 2, in );
 		parse_neighbour_line( ngh, line );
 		neighbour_type_specific( ngh );

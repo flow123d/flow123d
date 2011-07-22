@@ -20,7 +20,7 @@
 TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *material_database, Mesh *init_mesh)
 {
 	mat_base = material_database;
-	mesh = init_mesh;
+	mesh_ = init_mesh;
     ConvectionTransport *convection;
     Linear_reaction *decayRad;
     Semchem_interface *Semchem_reactions;
@@ -32,12 +32,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
     /*double time_step = 0.5;
     int n_substances = OptGetInt("Transport", "N_substances", NULL );*/
 
-	convection = new ConvectionTransport(mat_base, mesh);
+	convection = new ConvectionTransport(mat_base, mesh_);
 
 	// Chemistry initialization
-	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh->n_elements(),convection->get_concentration_matrix()); //will be get_cfl_time_constrain()
+	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh_->n_elements(),convection->get_concentration_matrix()); //will be get_cfl_time_constrain()
 	decayRad->set_nr_of_species(convection->get_n_substances());
-	Semchem_reactions = new Semchem_interface(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
+	Semchem_reactions = new Semchem_interface(mesh_->n_elements(),convection->get_concentration_matrix(), mesh_);
 
 	time_marks = new TimeMarks();
 	time = new TimeGovernor(time_marks, problem_stop_time, problem_stop_time);

@@ -41,7 +41,7 @@
 #include "solve.h"
 #include "io/output.h"
 #include "problem.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 
 
 static void check_ini_values(struct Problem*);

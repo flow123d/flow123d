@@ -96,8 +96,8 @@ public:
     /**
      * Getter for time marks.
      */
-    inline TimeMarks *marks() const
-            {return time_marks;}
+    inline TimeMarks &marks() const
+            {return *time_marks;}
 
     /**
      * Simpler interface to TimeMarks::is_current().

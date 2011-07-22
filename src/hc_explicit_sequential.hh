@@ -15,6 +15,7 @@ class DarcyFlowMHOutput;
 class TimeMarks;
 class Mesh;
 class EquationBase;
+class TransportBase;
 
 
 /**
@@ -44,7 +45,7 @@ private:
     DarcyFlowMHOutput *water_output;
 
     /// explicit transport with chemistry through operator splitting
-    EquationBase *transport_reaction;
+    TransportBase *transport_reaction;
 
 };
 

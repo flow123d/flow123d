@@ -16,25 +16,48 @@ class Mesh;
 class ConvectionTransport;
 class MaterialDatabase;
 
+/**
+ * @brief Specification of transport model interface.
+ *
+ * Here one has to specify methods for setting or getting data particular to
+ * transport equations.
+ */
+class TransportBase : public EquationBase{
+public:
+    /**
+     * This method takes sequantial PETSc vector of side velocities and update
+     * transport matrix. The ordering is same as ordering of sides in the mesh.
+     *
+     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
+     */
+    virtual void set_velocity_field(Vec &velocity_vector) =0;
+};
+
+class TransportNothing : public TransportBase {
+public:
+    TransportNothing()
+    {
+        // make module solved for ever
+        time_=new TimeGovernor(NULL, numeric_limits<double>::infinity(), numeric_limits<double>::infinity());
+    };
+    virtual void get_solution_vector(double * &vector, unsigned int &size) {
+        vector = NULL;
+        size = 0;
+    }
+
+    virtual void get_parallel_solution_vector(Vec &vector) {};
+
+    virtual void set_velocity_field(Vec &velocity_field) {};
+};
 
 /**
- * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
- *
- * Abstract class for various implementations of Darcy flow. In future there should be
- * one further level of abstraction for general time dependent problem.
- *
- * maybe TODO:
- * split compute_one_step to :
- * 1) prepare_next_timestep
- * 2) actualize_solution - this is for iterative nonlinear solvers
- *
- * make interface of DarcyFlowMH a general interface of time depenedent model. ....
+ * @brief Reaction transport implemented a operator splitting.
  */
 
-class TransportOperatorSplitting : public EquationBase {
+class TransportOperatorSplitting : public TransportBase {
 public:
 	TransportOperatorSplitting(MaterialDatabase *material_database, Mesh *init_mesh);
-/*	void ReadFlowFieldVector(Vec *vec);*/
+	virtual void set_velocity_field(Vec &velocity_vector);
 	virtual void compute_one_step();
 	//virtual void compute_until();
 

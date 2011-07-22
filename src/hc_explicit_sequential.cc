@@ -54,7 +54,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
     if ( OptGetBool("Transport", "Transport_on", "no") ) {
         transport_reaction = new TransportOperatorSplitting(material_database, mesh);
     } else {
-        transport_reaction = new EquationNothing();
+        transport_reaction = new TransportNothing();
     }
 
 
@@ -63,26 +63,65 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
 
 void HC_ExplicitSequential::run_simulation()
 {
-    OutputTime *output_time;
 
-    int i, rank;
-    // setup output
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if(rank == 0) {
-        string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
-        output_time = new OutputTime(mesh, output_file);
-    }
+    // following should be specified in constructor:
+    // value for velocity interpolation :
+    // theta = 0     velocity from beginning of transport interval (fully explicit method)
+    // theta = 0.5   velocity from center of transport interval ( mimic Crank-Nicholson)
+    // theta = 1.0   velocity from end of transport interval (partialy explicit scheme)
+    const double theta=0.5;
+
+    double velocity_interpolation_time;
+    bool velocity_changed;
+    Vec velocity_field;
 
     // ensure we have planned times for both processes
     water->choose_next_time();
     transport_reaction->choose_next_time();
+
+    // following cycle is designed to support independent time stepping of
+    // both processes. The question is which value of the water field use to compute a transport step.
+    // Meaningful cases are
+    //      1) beginning (fully explicit method)
+    //      2) center ( mimic Crank-Nicholson)
+    //      3) end of the interval (partialy explicit scheme)
+    // However with current implementation of the explicit transport on have to assembly transport matrix for
+    // every new value of the velocity field. So we have to keep same velocity field over some time interval t_dt
+    // which is further split into shorter time intervals ts_dt dictated by the CFL condition.
+    // One can consider t_dt as the transport time step and apply one of the previous three cases.
+    //
+    // The question is how to choose intervals t_dt. That should depend on variability of the velocity field in time.
+    // Currently we simply use t_dt == w_dt.
+
     while (! (water->is_end() && transport_reaction->is_end() ) ) {
+        // in future here could be re-estimation of transport planed time according to
+        // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
+        // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
+        // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
+        velocity_interpolation_time= theta * transport_reaction->planned_time() + (1-theta) * transport_reaction->solved_time();
 
-        //
-        water->compute_one_step();
-        water_output->postprocess();
-        water_output->output();
+        // if transport is off, transport should return infinity solved and planned times so that
+        // only water branch takes the place
+        if (water->solved_time() < velocity_interpolation_time) {
+            // solve water over the nearest transport interval
+            water->compute_one_step();
+            water_output->postprocess();
+            // here possibly save solution from water in order to have
+            water_output->output();
+            velocity_changed = true;
+        } else {
+            // if we have neccesary information about velocity field we can perform transport step
 
+            // here should be interpolation of the velocity at least if the interpolation time
+            // is not so close to the solved_time of the water module
+            // for simplicity we use only last velocity field
+            if (velocity_changed) {
+                water->get_velocity_seq_vector(velocity_field);
+                transport_reaction->set_velocity_field(velocity_field);
+                velocity_changed = false;
+            }
+            transport_reaction->compute_one_step();
+        }
     }
 }
 

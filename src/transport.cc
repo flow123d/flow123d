@@ -49,7 +49,7 @@
 #include "transport.h"
 #include "io/output.h"
 #include "materials.hh"
-#include "read_ini.h"
+#include "io/read_ini.h"
 #include "ppfcs.h"
 //#include "btc.h" XX
 //#include "reaction.h" XX
@@ -87,14 +87,14 @@ void ConvectionTransport::make_transport_partitioning() {
 
     int *id_4_old = (int *) xmalloc(mesh->n_elements() * sizeof(int));
     i = 0;
-    FOR_ELEMENTS(ele)
+    FOR_ELEMENTS(mesh, ele)
         id_4_old[i] = i, i++;
     id_maps(mesh->n_elements(), id_4_old, init_ele_ds, (int *) loc_part, el_ds, el_4_loc, row_4_el);
 
     delete[] loc_part;
     xfree(id_4_old);
 
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(mesh, ele) {
         ele->pid=el_ds->get_proc(row_4_el[ele.index()]);
     }
 
@@ -526,8 +526,8 @@ void ConvectionTransport::fill_transport_vectors_mpi() {
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
 
-    ElementFullIter el2 = ELEMENT_FULL_ITER_NULL;
-    ElementFullIter elm = ELEMENT_FULL_ITER_NULL;
+    ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh);
+    ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh);
     struct Edge *edg;
     struct Neighbour *ngh;
     //struct Transport *transport;
@@ -559,7 +559,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
-    FOR_EDGES(edg) { // calculate edge Qv
+    FOR_EDGES(mesh, edg) { // calculate edge Qv
         edg->faux = 0;
         FOR_EDGE_SIDES(edg,s)
             if (edg->side[s]->flux > 0)
@@ -579,7 +579,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 if (elm->side[si]->flux < 0.0) {
                     if (elm->side[si]->neigh_bv != NULL) { //comp model
                         aij = -(elm->side[si]->flux / (elm->volume * elm->material->por_m));
-                        j = ELEMENT_FULL_ITER(elm->side[si]->neigh_bv->element[0]).index();
+                        j = ELEMENT_FULL_ITER(mesh, elm->side[si]->neigh_bv->element[0]).index();
                         new_j = row_4_el[j];
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                     }
@@ -591,7 +591,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                                 if ((edg->side[s]->id != elm->side[si]->id) && (edg->side[s]->flux > 0.0)) {
                                     aij = -(elm->side[si]->flux * edg->side[s]->flux / (edg->faux * elm->volume
                                             * elm->material->por_m));
-                                    j = ELEMENT_FULL_ITER(edg->side[s]->element).index();
+                                    j = ELEMENT_FULL_ITER(mesh, edg->side[s]->element).index();
                                     new_j = row_4_el[j];
                                     MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                                 }
@@ -602,7 +602,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             } else {
                 if (elm->side[si]->flux < 0.0) {
                     aij = -(elm->side[si]->flux / (elm->volume * elm->material->por_m));
-                    j = BOUNDARY_FULL_ITER(elm->side[si]->cond).index();
+                    j = BOUNDARY_FULL_ITER(mesh, elm->side[si]->cond).index();
                     MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
                     // vyresit BC matrix !!!!
                     //   printf("side in elm:%d value:%f\n ",elm->id,svector->val[j-1]);
@@ -615,10 +615,10 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
             FOR_NEIGH_ELEMENTS(elm->neigh_vb[n],s)
-                if (elm.id() != ELEMENT_FULL_ITER(elm->neigh_vb[n]->element[s]).id()) {
+                if (elm.id() != ELEMENT_FULL_ITER(mesh, elm->neigh_vb[n]->element[s]).id()) {
                     if (elm->neigh_vb[n]->side[s]->flux > 0.0) {
                         aij = elm->neigh_vb[n]->side[s]->flux / (elm->volume * elm->material->por_m);
-                        j = ELEMENT_FULL_ITER(elm->neigh_vb[n]->element[s]).index();
+                        j = ELEMENT_FULL_ITER(mesh, elm->neigh_vb[n]->element[s]).index();
                         new_j = row_4_el[j];
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                     }
@@ -630,7 +630,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             ngh = elm->neigh_vv[n];
             FOR_NEIGH_ELEMENTS(ngh,s) {
 
-                el2 = ELEMENT_FULL_ITER(ngh->element[s]);
+                el2 = ELEMENT_FULL_ITER(mesh, ngh->element[s]);
                 if (elm.id() != el2.id()) {
                     flux = ngh->sigma * ngh->geom_factor * (el2->scalar - elm->scalar);
                     if (flux > 0.0) {
@@ -724,7 +724,7 @@ double *transport_aloc_pi(Mesh* mesh) {
     NodeIter nod;
 
     max_elm = 0;
-    FOR_NODES(nod)
+    FOR_NODES(mesh, nod)
         if (max_elm < nod->n_elements)
             max_elm = nod->n_elements;
     pi = (double *) xmalloc(max_elm * sizeof(double));
@@ -1185,7 +1185,7 @@ int ConvectionTransport::compare_dens_iter() {
     max_err = 0;
     //	FOR_ELEMENTS( elm )
     //		xprintf(Msg,"%f %f %f\n",elm->scalar , elm->scalar_it,elm->scalar - elm->scalar_it);
-    FOR_ELEMENTS( elm ) {
+    FOR_ELEMENTS(mesh,  elm ) {
         if (fabs(elm->scalar - elm->scalar_it) > max_err) {
             max_err = fabs(elm->scalar - elm->scalar_it);
             //xprintf(Msg,"%f %f %f\n",elm->scalar , elm->scalar_it, elm->scalar - elm->scalar_it);
@@ -1224,7 +1224,7 @@ void ConvectionTransport::restart_iteration_C() {
 void ConvectionTransport::save_restart_iteration_H() {
 
     ElementIter elm;
-    FOR_ELEMENTS( elm ) {
+    FOR_ELEMENTS(mesh,  elm ) {
         elm->scalar_it = elm->scalar;
     }
 }

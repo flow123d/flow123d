@@ -78,7 +78,7 @@ private:
     double calc_water_balance();
 
     DarcyFlowMH *darcy_flow;
-    Mesh *mesh;
+    Mesh *mesh_;
     OutputTime *output_writer;
     TimeMark::Type output_mark_type;
 };

@@ -50,7 +50,7 @@
 
 #include <petscmat.h>
 #include "system/sys_vector.hh"
-#include <time_governor.hh>
+#include "time_governor.hh"
 #include <field_p0.hh>
 #include <materials.hh>
 #include "equation.hh"
@@ -81,8 +81,18 @@ class DarcyFlowMH : public EquationBase {
 public:
     FieldP0<double>  * get_sources()
         { return sources; }
+    void get_velocity_seq_vector(Vec &velocity_vec)
+        {
+            double *velocity_array;
+            unsigned int size;
+
+            get_solution_vector(velocity_array, size);
+            VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_sides, velocity_array, &velocity_vec);
+
+        }
 protected:
     virtual void postprocess() =0;
+
     //virtual void balance();
     //virtual void integrate_sources();
 

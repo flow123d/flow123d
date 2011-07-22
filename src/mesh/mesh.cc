@@ -88,10 +88,8 @@ Mesh::Mesh() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-    //ElementIter elm;
-    Mesh *mesh = this;
 
-    FOR_ELEMENTS(elm)
+    FOR_ELEMENTS(this, elm)
     switch (elm->type) {
         case 1:
             n_lines++;
@@ -191,11 +189,8 @@ void Mesh::setup_topology() {
 
 void Mesh::setup_materials( MaterialDatabase &base)
 {
-    Mesh *mesh=this;
-
     xprintf( MsgVerb, "   Element to material... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-    FOR_ELEMENTS( ele ) {
+    FOR_ELEMENTS(this, ele ) {
         ele->material=base.find_id(ele->mid);
         INPUT_CHECK( ele->material != base.end(),
                 "Reference to undefined material %d in element %d\n", ele->mid, ele.id() );
@@ -209,15 +204,12 @@ void Mesh::setup_materials( MaterialDatabase &base)
  * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
  */
 void Mesh::make_element_geometry() {
+
     xprintf(Msg, "Calculating properties of elements... ")/*orig verb 2*/;
-    Mesh *mesh=this;
 
+    ASSERT(element.size() > 0, "Empty mesh.\n");
 
-
-    ASSERT(NONULL(mesh), "No mesh for problem\n");
-    ASSERT(mesh->element.size() > 0, "Empty mesh.\n");
-
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(this, ele) {
         //DBGMSG("\n ele: %d \n",ele.id());
         //FOR_ELEMENTS(ele1) {
         //    printf("%d(%d) ",ele1.id(),ele1->type);

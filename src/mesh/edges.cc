@@ -110,7 +110,7 @@ int count_edges(Mesh* mesh)
 	struct Neighbour *ngh;
 
 	rc = mesh->n_sides;
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type == BB_E || ngh->type == BB_EL )
 			rc -= ( ngh->n_elements - 1 );
 	}
@@ -129,7 +129,7 @@ void edge_calculation_mh(Mesh* mesh)
 	xprintf( Msg, "Calculating properties of edges... ")/*orig verb 2*/;
 	ASSERT(!( mesh == NULL ),"NULL as argument of function edge_calculation_mh()\n");
 	edi = 0;
-	FOR_EDGES( edg ) {
+	FOR_EDGES(mesh,  edg ) {
 		edg->c_row = mesh->n_sides + mesh->n_elements() + edi;
 		edg->f_rhs=0.0;
 		if( edg->neigh_vb == NULL )

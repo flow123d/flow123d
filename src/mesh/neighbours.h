@@ -75,9 +75,7 @@ typedef struct Neighbour
 #define VB_ES        20     // compatible
 #define VV_2E        30     // noncompatible
 
-#define FOR_NEIGHBOURS(i)   for((i)=mesh->neighbour;(i)!=NULL;(i)=(i)->next)
-#define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
-#define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
+
 
 void read_neighbour_list(Mesh*);
 

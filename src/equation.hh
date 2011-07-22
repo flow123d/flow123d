@@ -74,22 +74,22 @@ public:
     /**
      * Basic getter method returns constant TimeGovernor reference which provides full read access to the time information.
      */
-    inline const TimeGovernor *time()
+    inline const TimeGovernor &time()
     {
         ASSERT(NONULL(time_),"Time governor was not created.\n");
-        return time_;
+        return *time_;
     }
 
     /**
      * Most actual planned time for solution.
      */
-    inline double get_planned_time()
+    inline double planned_time()
         { return time_->t(); }
 
     /**
      * Time of actual solution returned by get_solution_vector().
      */
-    inline double get_solved_time()
+    inline double solved_time()
         { return solved ? time_->t() : time_->last_t(); }
 
     /**
@@ -107,8 +107,11 @@ public:
     /**
      * This getter method provides the computational mesh currently used by the model.
      */
-    inline  Mesh *get_mesh()
-        {return mesh;}
+    inline  Mesh &mesh()
+    {
+        ASSERT(NONULL(mesh_),"Mesh was not created.\n");
+        return *mesh_;
+    }
 
     /**
      * This getter method provides the material database of the model.
@@ -130,7 +133,7 @@ public:
 protected:
     bool solved;
 
-    Mesh   *mesh;
+    Mesh   *mesh_;
     MaterialDatabase *mat_base;
     TimeMarks   *time_marks;
     TimeGovernor *time_;
@@ -139,28 +142,16 @@ protected:
 class EquationNothing : public EquationBase {
 
 public:
-    EquationNothing() {
-        empty = new double[1];
-        VecCreateSeqWithArray(PETSC_COMM_SELF, 0, empty, &empty_vec);
-    }
+    EquationNothing() {}
 
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
-        vector = empty;
+        vector = NULL;
         size = 0;
     }
 
-    virtual void get_parallel_solution_vector(Vec &vector) {
-        vector = empty_vec;
-    }
+    virtual void get_parallel_solution_vector(Vec &vector) {};
 
-    ~EquationNothing() {
-        VecDestroy(empty_vec);
-        delete[] empty;
-    }
-
-private:
-    Vec empty_vec;
-    double *empty;
+    ~EquationNothing() {};
 };
 
 
