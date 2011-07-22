@@ -29,15 +29,27 @@
 
 
 
-
 # Every test has to be finished in 60 seconds. Flow123d will be killed after
 # 60 seconds. It prevents test to run in never ending loop, when developemnt
 # version of Flow123d contains such error.
 TIMEOUT=60
 
+# Flow output is redirected to the file. This output is printed to the output
+# only in situation, when Flow123d return error (not zero) exit status
+FLOW123D_OUTPUT="./flow_stdout.log"
+
+# Relative path to Flow123d binary from the directory,
+# where this script is placed
+FLOW123D=../flow123d
+
+# Relative path to Flow123d binary from current/working directory
+FLOW123D=${0%/*}/${FLOW123D}
+
 # Variable with exit status. Possible values: 0 - no error; 1 - flow123d was
 # not finished corectly; 2 - execution of flow123d wasn't finished in time
 EXIT_STATUS=0
+
+
 
 # First parameter has to be list of ini files; eg: "flow.ini flow_vtk.ini"
 INI_FILES="$1"
@@ -48,17 +60,13 @@ NPROC="$2"
 # The last parameter could contain additional flow params
 FLOW_PARAMS="$3"
 
-# Flow123d binary
-FLOW123D=./bin/flow123d
-
-
 
 
 # For every ini file run one test
 for INI_FILE in $INI_FILES
 do
-	echo "Runing flow123 ..."
-	$FLOW123D -S "$INI_FILE" -- "$FLOW_PARAMS" > output_pokus.txt 2>&1 &
+	echo -n "Runing flow123d ${INI_FILE} "
+	${FLOW123D} -S "${INI_FILE}" -- "${FLOW_PARAMS}" > ${FLOW123D_OUTPUT} 2>&1 &
 	FLOW123D_PID=$!
 	IS_RUNNING=1
 
@@ -80,10 +88,10 @@ do
 	done
 
 	# Was RUNNER finished during TIMEOUT or is it still running?
-	if [ ${RUNNING} -eq 1 ]
+	if [ ${IS_RUNNING} -eq 1 ]
 	then
-		echo " [Failed]"
-		kill -9 ${RUNNER_PID}
+		echo " [Failed:loop]"
+		kill -9 ${RUNNER_PID} > /dev/null 2>&1
 		EXIT_STATUS=2
 		# No other test will be executed
 		break
@@ -96,13 +104,20 @@ do
 		then
 			echo " [Success]"
 		else
-			echo " [Failed]"
+			echo " [Failed:error]"
 			EXIT_STATUS=1
 			# No other test will be executed
 			break
 		fi
 	fi
 done
+
+# Print redirected stdout to stdout only in situation, when some error ocured
+if [ $EXIT_STATUS -ne 0 ]
+then
+	echo "Error in execution: ${FLOW123D} -S ${INI_FILE} -- ${FLOW_PARAMS}"
+	cat ${FLOW123D_OUTPUT}
+fi
 
 exit ${EXIT_STATUS}
 
