@@ -85,6 +85,10 @@ do
 		exit 1
 	fi
 
+	# Clear output file for every new test. Output of passed test isn't
+	# important. It is usefull to see the output of last test that failed.
+	echo "" > "${FLOW123D_OUTPUT}"
+
 	echo -n "Runing flow123d ${INI_FILE} "
 	# Flow123d runs with changed priority (19 is the lowest priority)
 	nice --adjustment=10 "${FLOW123D}" -S "${INI_FILE}" -- "${FLOW_PARAMS}" > "${FLOW123D_OUTPUT}" 2>&1 &
