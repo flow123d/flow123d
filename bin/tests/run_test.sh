@@ -53,6 +53,9 @@ FLOW123D="${0%/*}/${FLOW123D}"
 # 3 - execution of flow123d wasn't finished in time
 EXIT_STATUS=0
 
+# Set up memory limits that prevent too allocate too much memory.
+# The limit of virtual memory is 200MB (memory, that could be allocated)
+ulimit -S -v 200000
 
 
 # First parameter has to be list of ini files; eg: "flow.ini flow_vtk.ini"
@@ -83,7 +86,7 @@ do
 	fi
 
 	echo -n "Runing flow123d ${INI_FILE} "
-	# Flow123d run with changed priority (19 is the lowest priority)
+	# Flow123d runs with changed priority (19 is the lowest priority)
 	nice --adjustment=10 "${FLOW123D}" -S "${INI_FILE}" -- "${FLOW_PARAMS}" > "${FLOW123D_OUTPUT}" 2>&1 &
 	FLOW123D_PID=$!
 	IS_RUNNING=1
@@ -105,20 +108,21 @@ do
 		fi
 	done
 
-	# Was RUNNER finished during TIMEOUT or is it still running?
+	# Was Flow123d finished during TIMEOUT or is it still running?
 	if [ ${IS_RUNNING} -eq 1 ]
 	then
 		echo " [Failed:loop]"
-		kill -9 ${RUNNER_PID} > /dev/null 2>&1
+		kill -9 ${FLOW123D_PID} > /dev/null 2>&1
 		EXIT_STATUS=2
 		# No other test will be executed
 		break
 	else
 		# Get exit status variable of Flow123dd
-		wait ${RUNNER_PID}
+		wait ${FLOW123D_PID}
+		FLOW123D_EXIT_STATUS=$?
 
 		# Was Flow123d finished corectly?
-		if [ $? -eq 0 ]
+		if [ ${FLOW123D_EXIT_STATUS} -eq 0 ]
 		then
 			echo " [Success]"
 		else
