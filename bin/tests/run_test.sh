@@ -45,8 +45,12 @@ FLOW123D=../flow123d
 # Relative path to Flow123d binary from current/working directory
 FLOW123D=${0%/*}/${FLOW123D}
 
-# Variable with exit status. Possible values: 0 - no error; 1 - flow123d was
-# not finished corectly; 2 - execution of flow123d wasn't finished in time
+# Variable with exit status. Possible values:
+# 0 - no error, all tests were finished correctly
+# 1 - some important file (flow123d, ini file) doesn't exist or presmission
+#     are not granted
+# 2 - flow123d was not finished corectly
+# 3 - execution of flow123d wasn't finished in time
 EXIT_STATUS=0
 
 
@@ -61,10 +65,23 @@ NPROC="$2"
 FLOW_PARAMS="$3"
 
 
+# Check if Flow123d exists and it is executable file
+if ! [ -x ${FLOW123D} ]
+then
+	echo "Error: can't execute ${FLOW123D}"
+	exit 1
+fi
 
 # For every ini file run one test
 for INI_FILE in $INI_FILES
 do
+	# Check if it is possible to read ini file
+	if ! [ -e ${INI_FILE} -a -r ${INI_FILE} ]
+	then
+		echo "Error: can't read ${INI_FILE}"
+		exit 1
+	fi
+
 	echo -n "Runing flow123d ${INI_FILE} "
 	${FLOW123D} -S "${INI_FILE}" -- "${FLOW_PARAMS}" > ${FLOW123D_OUTPUT} 2>&1 &
 	FLOW123D_PID=$!
@@ -117,6 +134,8 @@ if [ $EXIT_STATUS -ne 0 ]
 then
 	echo "Error in execution: ${FLOW123D} -S ${INI_FILE} -- ${FLOW_PARAMS}"
 	cat ${FLOW123D_OUTPUT}
+else
+	rm ${FLOW123D_OUTPUT}
 fi
 
 exit ${EXIT_STATUS}
