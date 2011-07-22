@@ -1,13 +1,13 @@
 //---------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "../system/system.hh"
+//#include <stdio.h>
+//#include <stdlib.h>
+#include "system/system.hh"
 #include "che_semchem.h"
 #include "semchem_interface.hh"
 #include "transport.h"
 
-#include "../mesh/mesh.h"
+#include "mesh/mesh.h"
 
 using namespace std;
 
