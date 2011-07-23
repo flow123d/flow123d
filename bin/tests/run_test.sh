@@ -91,7 +91,7 @@ do
 
 	echo -n "Runing flow123d ${INI_FILE} "
 	# Flow123d runs with changed priority (19 is the lowest priority)
-	nice --adjustment=10 "${FLOW123D}" -S "${INI_FILE}" -- "${FLOW_PARAMS}" > "${FLOW123D_OUTPUT}" 2>&1 &
+	nice --adjustment=10 "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
 	FLOW123D_PID=$!
 	IS_RUNNING=1
 
@@ -143,9 +143,9 @@ if [ $EXIT_STATUS -ne 0 ]
 then
 	echo "Error in execution: ${FLOW123D} -S ${INI_FILE} -- ${FLOW_PARAMS}"
 	cat "${FLOW123D_OUTPUT}"
-else
-	rm "${FLOW123D_OUTPUT}"
 fi
+
+rm -f "${FLOW123D_OUTPUT}"
 
 exit ${EXIT_STATUS}
 
