@@ -11,6 +11,10 @@
 
 #include <petscmat.h>
 #include <time_governor.hh>
+#include <limits>
+
+#include "system/system.hh"
+
 class Mesh;
 class MaterialDatabase;
 class TimeGovernor;
@@ -56,9 +60,12 @@ public:
      * according to possible equation coefficients or other data which can be result of another model.
      */
     virtual void choose_next_time() {
+        if (is_end()) return;
         if (solved) {
+            DBGMSG("solved: %d\n",solved);
             time_->next_time();
             solved =false;
+            DBGMSG("solved: %d\n",solved);
         }
     }
 
@@ -102,7 +109,9 @@ public:
      * Returns true if solved_time is the end point of the time interval of the time governor.
      */
     inline bool is_end()
-        {return time_->is_end() && solved;}
+        {
+        DBGMSG("eq end: %f %d\n", time_->t(), solved);
+        return (time_->t() == numeric_limits<double>::infinity() || time_->is_end()) && solved;}
 
     /**
      * This getter method provides the computational mesh currently used by the model.

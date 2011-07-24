@@ -4,6 +4,7 @@
 #include "equation.hh"
 #include "./reaction/linear_reaction.hh"
 #include "./semchem/semchem_interface.hh"
+#include <limits>
 
 
 /// external types:
@@ -35,10 +36,11 @@ public:
 
 class TransportNothing : public TransportBase {
 public:
-    TransportNothing()
+    TransportNothing(TimeMarks &time_marks)
     {
         // make module solved for ever
-        time_=new TimeGovernor(NULL, numeric_limits<double>::infinity(), numeric_limits<double>::infinity());
+        time_=new TimeGovernor(&time_marks, numeric_limits<double>::infinity(), numeric_limits<double>::infinity());
+        solved = true;
     };
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
         vector = NULL;
@@ -65,7 +67,6 @@ public:
 	 virtual void get_parallel_solution_vector(Vec &vc);
 	 virtual void get_solution_vector(double* &vector, unsigned int &size);
 	 void compute_until_save_time();
-	 TimeGovernor *time;
 protected:
 
 private:

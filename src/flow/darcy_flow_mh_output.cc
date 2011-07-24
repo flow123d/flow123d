@@ -45,7 +45,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if(rank == 0) {
         string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
+        DBGMSG("create output\n");
         output_writer = new OutputTime(mesh_, output_file);
+
     } else {
         output_writer = NULL;
     }
@@ -54,6 +56,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
     TimeMarks &marks=darcy_flow->time().marks();
     output_mark_type = marks.new_strict_mark_type();
     marks.add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), darcy_flow->time().end_time(), output_mark_type );
+    DBGMSG("end create output\n");
 }
 
 

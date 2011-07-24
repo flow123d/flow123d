@@ -48,18 +48,29 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
             break;
     }
     // object for water postprocessing and output
+
     water_output = new DarcyFlowMHOutput(water);
 
     // optionally setup transport objects
     if ( OptGetBool("Transport", "Transport_on", "no") ) {
         transport_reaction = new TransportOperatorSplitting(material_database, mesh);
     } else {
-        transport_reaction = new TransportNothing();
+        transport_reaction = new TransportNothing(*main_time_marks);
     }
 
 
 
 }
+
+/**
+ * TODO:
+ * - have support for steady problems in TimeGovernor, make Noting problems steady
+ * - apply splitting of compute_one_step to particular models
+ * - how to set output time marks for steady problems (we need solved time == infinity) but
+ *   add no time marks
+ * - allow create steady time governor without time marks (at least in nothing models)
+ * - pass refference to time marks in time governor constructor?
+ */
 
 void HC_ExplicitSequential::run_simulation()
 {
@@ -94,6 +105,7 @@ void HC_ExplicitSequential::run_simulation()
     // Currently we simply use t_dt == w_dt.
 
     while (! (water->is_end() && transport_reaction->is_end() ) ) {
+        DBGMSG("trans end: %f %f\n ", transport_reaction->planned_time(), transport_reaction->solved_time());
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
@@ -107,7 +119,9 @@ void HC_ExplicitSequential::run_simulation()
             water->compute_one_step();
             water_output->postprocess();
             // here possibly save solution from water in order to have
+            DBGMSG("output");
             water_output->output();
+            DBGMSG("...output\n");
             velocity_changed = true;
         } else {
             // if we have neccesary information about velocity field we can perform transport step
@@ -122,6 +136,7 @@ void HC_ExplicitSequential::run_simulation()
             }
             transport_reaction->compute_one_step();
         }
+
     }
 }
 

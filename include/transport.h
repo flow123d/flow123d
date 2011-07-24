@@ -69,7 +69,7 @@ public:
 	double ***get_concentration_matrix();
 	int get_n_substances();
 
-	virtual void compute_one_step();
+	void compute_one_step();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
 private:

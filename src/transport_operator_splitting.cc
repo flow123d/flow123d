@@ -21,9 +21,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 {
 	mat_base = material_database;
 	mesh_ = init_mesh;
-    ConvectionTransport *convection;
-    Linear_reaction *decayRad;
-    Semchem_interface *Semchem_reactions;
+    //ConvectionTransport *convection;
+    //Linear_reaction *decayRad;
+    //Semchem_interface *Semchem_reactions;
 
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
@@ -34,27 +34,32 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 
 	convection = new ConvectionTransport(mat_base, mesh_);
 
+
 	// Chemistry initialization
 	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh_->n_elements(),convection->get_concentration_matrix()); //will be get_cfl_time_constrain()
 	decayRad->set_nr_of_species(convection->get_n_substances());
 	Semchem_reactions = new Semchem_interface(mesh_->n_elements(),convection->get_concentration_matrix(), mesh_);
 
 	time_marks = new TimeMarks();
-	time = new TimeGovernor(time_marks, problem_stop_time, problem_stop_time);
-	time->set_constrain(convection->get_cfl_time_constrain());
+	time_ = new TimeGovernor(time_marks, 0.0, problem_stop_time);
+	// TOdO: this has to be set after construction of transport matrix !!
+	//time_->set_constrain(convection->get_cfl_time_constrain());
 
+	solved = true;
+	DBGMSG("convection: ");
 }
 
 void TransportOperatorSplitting::compute_one_step(){
 	//following declarations are here just to enable compilation without errors
-	double ***conc = convection->get_concentration_matrix(); //could be handled as **conc[MOBILE], **conc[IMMOBILE]
+	//double ***conc = convection->get_concentration_matrix(); //could be handled as **conc[MOBILE], **conc[IMMOBILE]
 
-	convection->compute_one_step();
+    convection->convection();
+	//convection->compute_one_step();
     // Calling linear reactions and Semchem
 	decayRad->compute_one_step();
 	Semchem_reactions->compute_one_step();
 	//Semchem_reactions->compute_one_step(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
-	time->next_time();
+	choose_next_time();
 }
 
 void TransportOperatorSplitting::compute_until_save_time(){
@@ -66,9 +71,10 @@ void TransportOperatorSplitting::compute_until_save_time(){
 
 }
 
-/*void ReadFlowFieldVector(Vec *vec){
-	convection->read_flow_field_vector(vec);
-};*/
+void TransportOperatorSplitting::set_velocity_field(Vec &vec)
+{
+	//convection->read_flow_field_vector(&vec);
+};
 
 
 void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){

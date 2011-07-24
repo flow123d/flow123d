@@ -46,6 +46,7 @@
 #include "sparse_graph.hh"
 #include "field_p0.hh"
 #include "flow/local_matrix.h"
+#include <limits>
 
 
 //=============================================================================
@@ -68,7 +69,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks *marks, Mesh *mesh_in, Material
     time_marks= marks;
     mesh_=mesh_in;
     mat_base=mat_base_in;
-
+    solved =false;
 
     int ierr;
 
@@ -95,7 +96,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks *marks, Mesh *mesh_in, Material
     }
 
     // time governor
-    time_=new TimeGovernor(time_marks,0.0, 1.0E100); // TODO: still we need init_time and end_time for steady !! should be setup for every equation
+    time_=new TimeGovernor(time_marks, 0.0, numeric_limits<double>::infinity()); // TODO: still we need init_time and end_time for steady !! should be setup for every equation
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -138,7 +139,7 @@ void DarcyFlowMH_Steady::compute_one_step() {
 
     if (time_->is_end()) return;
     DBGMSG("compute one step.\n");
-    time_->next_time();
+
 
 
     modify_system(); // hack for unsteady model
@@ -208,6 +209,8 @@ void DarcyFlowMH_Steady::compute_one_step() {
     VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
             INSERT_VALUES, SCATTER_FORWARD);
 
+    solved=true;
+    choose_next_time();
 
 }
 

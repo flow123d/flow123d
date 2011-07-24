@@ -1123,6 +1123,7 @@ void ConvectionTransport::convection() {
     START_TIMER("TRANSPORT");
     xprintf( Msg, "Calculating transport...");
     START_TIMER("transport_matrix_assembly");
+    DBGMSG("n el. %d\n",mesh->n_elements());
     
     create_transport_matrix_mpi();
     

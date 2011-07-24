@@ -32,6 +32,7 @@
 #include <time_marks.hh>
 
 #include <algorithm>
+#include <limits>
 
 
 const double TimeGovernor::comparison_precision = 0.01;
@@ -44,6 +45,7 @@ const double TimeGovernor::time_step_lower_bound = DBL_EPSILON;
 TimeGovernor::TimeGovernor( TimeMarks * const marks, double time_init, double end_t)
 : time_marks(marks)
 {
+    last_time=time_init;
     time=time_init;
     end_of_fixed_dt_interval=time;
     end_time_=end_t;
@@ -94,7 +96,12 @@ void TimeGovernor::set_fix_times(double first_fix_time, double fix_interval)
 
 void TimeGovernor::next_time()
 {
-    if (is_end()) return;
+    if (time == numeric_limits<double>::infinity() || is_end()) return;
+    if (end_time_ == numeric_limits<double>::infinity()) {
+        time = end_time_;
+        return;
+    }
+
     last_time=time;
     last_time_step = time_step;
 
