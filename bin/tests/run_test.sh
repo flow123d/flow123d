@@ -45,6 +45,12 @@ FLOW123D="../flow123d"
 # Relative path to Flow123d binary from current/working directory
 FLOW123D="${0%/*}/${FLOW123D}"
 
+# Relative path to mpiexec from the directory, where this script is placed
+MPIEXEC="../mpiexec"
+
+# Relative path to mpiexec binary from current/working directory
+MPIEXEC="${0%/*}/${MPIEXEC}"
+
 # Variable with exit status. Possible values:
 # 0 - no error, all tests were finished correctly
 # 1 - some important file (flow123d, ini file) doesn't exist or presmission
@@ -62,7 +68,7 @@ ulimit -S -v 200000
 INI_FILES="$1"
 
 # Secons parameter has to be number of processors to run on; eg: "1 2 3 4 5"
-NPROC="$2"
+N_PROC="$2"
 
 # The last parameter could contain additional flow params
 FLOW_PARAMS="$3"
@@ -72,6 +78,13 @@ FLOW_PARAMS="$3"
 if ! [ -x "${FLOW123D}" ]
 then
 	echo "Error: can't execute ${FLOW123D}"
+	exit 1
+fi
+
+# Check if mpiexec exists and it is executable file
+if ! [ -x "${MPIEXEC}" ]
+then
+	echo "Error: can't execute ${MPIEXEC}"
 	exit 1
 fi
 
@@ -85,57 +98,63 @@ do
 		exit 1
 	fi
 
-	# Clear output file for every new test. Output of passed test isn't
-	# important. It is usefull to see the output of last test that failed.
-	echo "" > "${FLOW123D_OUTPUT}"
-
-	echo -n "Runing flow123d ${INI_FILE} "
-	# Flow123d runs with changed priority (19 is the lowest priority)
-	nice --adjustment=10 "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
-	FLOW123D_PID=$!
-	IS_RUNNING=1
-
-	# Wait max TIMEOUT seconds, then kill Flow123d
-	while [ ${TIMEOUT} -gt 0 ]
+	for NP in ${N_PROC}
 	do
-		TIMEOUT=`expr ${TIMEOUT} - 1`
-		echo -n "."
-		sleep 1
+		# Clear output file for every new test. Output of passed test isn't
+		# important. It is usefull to see the output of last test that failed.
+		echo "" > "${FLOW123D_OUTPUT}"
 
-		# Is Flow123d still running?
-		ps | gawk '{ print $1 }' | grep -q "${FLOW123D_PID}"
-		if [ $? -ne 0 ]
+		# Reset timer
+		TIMER="0"
+
+		echo -n "Runing flow123d [proc:${NP}] ${INI_FILE} ."
+		# Flow123d runs with changed priority (19 is the lowest priority)
+		nice --adjustment=10 "${MPIEXEC}" -np ${NP} "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+		FLOW123D_PID=$!
+		IS_RUNNING=1
+
+		# Wait max TIMEOUT seconds, then kill Flow123d
+		while [ ${TIMER} -lt ${TIMEOUT} ]
+		do
+			TIMER=`expr ${TIMER} + 1`
+			echo -n "."
+			sleep 1
+
+			# Is Flow123d still running?
+			ps | gawk '{ print $1 }' | grep -q "${FLOW123D_PID}"
+			if [ $? -ne 0 ]
+			then
+				# Flow123d was finished in time
+				IS_RUNNING="0"
+				break 1
+			fi
+		done
+
+		# Was Flow123d finished during TIMEOUT or is it still running?
+		if [ ${IS_RUNNING} -eq 1 ]
 		then
-			# Flow123d was finished in time
-			IS_RUNNING="0"
-			break
+			echo " [Failed:loop]"
+			kill -9 ${FLOW123D_PID} > /dev/null 2>&1
+			EXIT_STATUS=2
+			# No other test will be executed
+			break 2
+		else
+			# Get exit status variable of Flow123dd
+			wait ${FLOW123D_PID}
+			FLOW123D_EXIT_STATUS=$?
+
+			# Was Flow123d finished corectly?
+			if [ ${FLOW123D_EXIT_STATUS} -eq 0 ]
+			then
+				echo " [Success:${TIMER}s]"
+			else
+				echo " [Failed:error]"
+				EXIT_STATUS=1
+				# No other test will be executed
+				break 2
+			fi
 		fi
 	done
-
-	# Was Flow123d finished during TIMEOUT or is it still running?
-	if [ ${IS_RUNNING} -eq 1 ]
-	then
-		echo " [Failed:loop]"
-		kill -9 ${FLOW123D_PID} > /dev/null 2>&1
-		EXIT_STATUS=2
-		# No other test will be executed
-		break
-	else
-		# Get exit status variable of Flow123dd
-		wait ${FLOW123D_PID}
-		FLOW123D_EXIT_STATUS=$?
-
-		# Was Flow123d finished corectly?
-		if [ ${FLOW123D_EXIT_STATUS} -eq 0 ]
-		then
-			echo " [Success]"
-		else
-			echo " [Failed:error]"
-			EXIT_STATUS=1
-			# No other test will be executed
-			break
-		fi
-	fi
 done
 
 # Print redirected stdout to stdout only in situation, when some error ocured
