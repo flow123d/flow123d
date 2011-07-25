@@ -3,7 +3,7 @@ NPROC="1"
 FLOW_PARAMS=""
 
 test:
-	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC}
+	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 clean:
 	rm -f profiler_*
