@@ -34,6 +34,10 @@
 # version of Flow123d contains such error.
 TIMEOUT=60
 
+# Try to use MPI environment variable for timeout too. Some implementation
+# of MPI supports it and some implementations doesn't.
+export MPIEXEC_TIMEOUT=${TIMEOUT}
+
 # Flow output is redirected to the file. This output is printed to the output
 # only in situation, when Flow123d return error (not zero) exit status
 FLOW123D_OUTPUT="./flow_stdout.log"
@@ -107,24 +111,29 @@ do
 		# Reset timer
 		TIMER="0"
 
-		echo -n "Runing flow123d [proc:${NP}] ${INI_FILE} ."
 		# Flow123d runs with changed priority (19 is the lowest priority)
 		nice --adjustment=10 "${MPIEXEC}" -np ${NP} "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
-		FLOW123D_PID=$!
+		PARENT_MPIEXEC_PID=$!
+		# Fait for child proccesses
+		sleep 1
+		MPIEXEC_PID=`ps -o "${PARENT_MPIEXEC_PID} %P %p" | gawk '{if($1==$2){ print $3 };}'`
+
+		echo -n "Runing flow123d [proc:${NP}] ${INI_FILE} ."
 		IS_RUNNING=1
 
-		# Wait max TIMEOUT seconds, then kill Flow123d
+		# Wait max TIMEOUT seconds, then kill mpiexec, that executed flow123d proccesses
 		while [ ${TIMER} -lt ${TIMEOUT} ]
 		do
 			TIMER=`expr ${TIMER} + 1`
 			echo -n "."
+			#ps -o "%P %p"
 			sleep 1
 
-			# Is Flow123d still running?
-			ps | gawk '{ print $1 }' | grep -q "${FLOW123D_PID}"
+			# Is mpiexec and flow123d still running?
+			ps | gawk '{ print $1 }' | grep -q "${PARENT_MPIEXEC_PID}"
 			if [ $? -ne 0 ]
 			then
-				# Flow123d was finished in time
+				# set up, that flow123d was finished in time
 				IS_RUNNING="0"
 				break 1
 			fi
@@ -134,17 +143,18 @@ do
 		if [ ${IS_RUNNING} -eq 1 ]
 		then
 			echo " [Failed:loop]"
-			kill -9 ${FLOW123D_PID} > /dev/null 2>&1
+			# Send SIGTERM to mpiexec. It should kill child proccessed
+			kill -s SIGTERM ${MPIEXEC_PID} #> /dev/null 2>&1
 			EXIT_STATUS=2
 			# No other test will be executed
 			break 2
 		else
-			# Get exit status variable of Flow123dd
-			wait ${FLOW123D_PID}
-			FLOW123D_EXIT_STATUS=$?
+			# Get exit status variable of mpiexec executing mpiexec executing flow123d
+			wait ${PARENT_MPIEXEC_PID}
+			MPIEXEC_EXIT_STATUS=$?
 
 			# Was Flow123d finished corectly?
-			if [ ${FLOW123D_EXIT_STATUS} -eq 0 ]
+			if [ ${MPIEXEC_EXIT_STATUS} -eq 0 ]
 			then
 				echo " [Success:${TIMER}s]"
 			else

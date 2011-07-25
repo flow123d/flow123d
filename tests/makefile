@@ -21,20 +21,18 @@
 # $LastChangedDate$
 #
 
+# Make all tests
 testall: 
 	make -C 01_steady_flow_123d test
 	make -C 02_transport_12d test
 
+# Rules for certain tests
+01.tst:
+	make -C 01_steady_flow_123d test
+02.tst:
+	make -C 02_transport_12d test
+
+# Rule to clean generated files in test directories
 clean:
 	make -C 01_steady_flow_123d clean
 	make -C 02_transport_12d clean
-
-%.tst:
-	BASE=$*;\
-	dir="`pwd`/`echo $${BASE}*`";\
-	echo $${dir};\
-	if test -d "$${dir}";\
-	then make -C "$${dir}" test;\
-	else echo "missing test directory $${dir}";\
-	exit 1;\
-	fi
