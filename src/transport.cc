@@ -216,7 +216,6 @@ void ConvectionTransport::transport_init() {
         } else {
             output_time = NULL;
         }
-        MPI_Barrier(PETSC_COMM_WORLD);
 
     INPUT_CHECK(!(n_substances < 1 ),"Number of substances must be positive\n");
 }
@@ -1115,7 +1114,6 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 					step = 0;
 				}
 	        }
-	        MPI_Barrier(PETSC_COMM_WORLD);
 	    }
 }
 //=============================================================================
@@ -1153,7 +1151,6 @@ void ConvectionTransport::convection() {
      if(rank==0 && output_time != NULL) {
          delete output_time;
      }
-     MPI_Barrier(PETSC_COMM_WORLD);
 }
 //=============================================================================
 //      OUTPUT VECTOR GATHER

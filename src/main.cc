@@ -316,7 +316,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 
         delete output;
     }
-    MPI_Barrier(PETSC_COMM_WORLD);
 
     // pracovni vystup nekompatibilniho propojeni
     // melo by to byt ve water*
