@@ -140,7 +140,7 @@ void ConvectionTransport::transport_init() {
     //struct Transport *transport = problem->transport;
 
     char *snames, *sscales;
-    int rank;
+    int rank=0;
     F_ENTRY;
 
     // [Density]
@@ -202,12 +202,11 @@ void ConvectionTransport::transport_init() {
         alloc_transport_structs_mpi();
         fill_transport_vectors_mpi();
 
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+        output_vector_gather();
 
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
         if(rank==0) {
             output_time = new OutputTime(mesh, transport_out_fname);
-
-            output_vector_gather();
 
             // Register concentrations data on elements
             for(int subst_id=0; subst_id<n_substances; subst_id++) {
@@ -217,6 +216,7 @@ void ConvectionTransport::transport_init() {
         } else {
             output_time = NULL;
         }
+        MPI_Barrier(PETSC_COMM_WORLD);
 
     INPUT_CHECK(!(n_substances < 1 ),"Number of substances must be positive\n");
 }
@@ -1066,7 +1066,7 @@ void ConvectionTransport::compute_one_step() {
 //=============================================================================
 void ConvectionTransport::transport_until_time(double time_interval) {
     	int step = 0;
-    	register int t;
+    	register int t, rank=0;
     	// Chemistry initialization
     	Linear_reaction *decayRad = new Linear_reaction(time_step,this->mesh->n_elements(),pconc);
     	Semchem_interface *Semchem_reactions = new Semchem_interface(this->mesh->n_elements(),pconc, mesh);
@@ -1096,29 +1096,33 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 		    	  }
 
 	        step++;
-	        //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
-	        if ((save_step == step) || (write_iterations)) {
-	            xprintf( Msg, "Output\n");
-	            if(output_time != NULL) {
-	                output_vector_gather();
 
-	                // Register concentrations data on elements
-	                for(int subst_id=0; subst_id<n_substances; subst_id++) {
-	                	output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
-	                }
-	                output_time->write_data(time);
-	            }
-	          //  if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
-	               // output_time(problem, t * time_step); // time variable flow field
-	            step = 0;
+			output_vector_gather();
+
+	        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	        if(rank==0) {
+				if ((save_step == step) || (write_iterations)) {
+					xprintf( Msg, "Output\n");
+					if(output_time != NULL) {
+
+						// Register concentrations data on elements
+						for(int subst_id=0; subst_id<n_substances; subst_id++) {
+							output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+						}
+						output_time->write_data(time);
+					}
+
+					step = 0;
+				}
 	        }
+	        MPI_Barrier(PETSC_COMM_WORLD);
 	    }
 }
 //=============================================================================
 //      CONVECTION
 //=============================================================================
 void ConvectionTransport::convection() {
-
+	int rank=0;
     MPI_Barrier(PETSC_COMM_WORLD);
     START_TIMER("TRANSPORT");
     xprintf( Msg, "Calculating transport...");
@@ -1144,22 +1148,25 @@ void ConvectionTransport::convection() {
      transport_until_time(0.0);
      END_TIMER("transport_steps");
      xprintf( Msg, "O.K.\n");
-     if(output_time != NULL) {
+
+     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+     if(rank==0 && output_time != NULL) {
          delete output_time;
      }
+     MPI_Barrier(PETSC_COMM_WORLD);
 }
 //=============================================================================
 //      OUTPUT VECTOR GATHER
 //=============================================================================
 void ConvectionTransport::output_vector_gather() {
 
-    int sbi, rank, np;
+    int sbi/*, rank, np*/;
     IS is;
     PetscViewer inviewer;
 
     //	MPI_Barrier(PETSC_COMM_WORLD);
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    MPI_Comm_size(PETSC_COMM_WORLD, &np);
+/*    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_size(PETSC_COMM_WORLD, &np);*/
 
 
     //ISCreateStride(PETSC_COMM_SELF,mesh->n_elements(),0,1,&is);

@@ -220,17 +220,18 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
     mesh->setup_topology();
     mesh->setup_materials(* problem->material_database);
     Profiler::instance()->set_task_size(mesh->n_elements());
-
-
     OutputTime *output_time;
     TimeMarks * main_time_marks = new TimeMarks();
-    int i, rank;
+    int i, rank=0;
+
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
     // setup output
     if(rank == 0) {
         string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
         output_time = new OutputTime(mesh, output_file);
     }
+
 
     DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(main_time_marks,mesh, problem->material_database);
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
@@ -273,7 +274,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 
     TimeMarks * main_time_marks = new TimeMarks();
 
-    int rank;
+    int rank=0;
     /*
        Mesh* mesh;
        ElementIter elm;
@@ -282,9 +283,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
        int i;
        mesh=problem->mesh;
      */
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-
 
     problem->water=new DarcyFlowMH_Steady(main_time_marks, mesh, problem->material_database);
     // Pointer at Output should be in this object
@@ -302,6 +300,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
     water_output->postprocess();
 
     /* Write static data to output file */
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank == 0) {
         string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
         Output *output = new Output(mesh, out_fname);
@@ -317,6 +316,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 
         delete output;
     }
+    MPI_Barrier(PETSC_COMM_WORLD);
 
     // pracovni vystup nekompatibilniho propojeni
     // melo by to byt ve water*
