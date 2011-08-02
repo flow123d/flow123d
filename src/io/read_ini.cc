@@ -212,7 +212,7 @@ char *OptGetStr(const char *section,const char *key,const char *defval)
 
 	if (rc == NULL) {
 		if (defval == NULL)
-			xprintf(UsrErr,"Required parameter: [%s] %s is not given.\n",section,key);
+			xprintf(UsrErr,"Required parameter: section '%s' key '%s' is not given.\n",section,key);
 		else
 			rc = defval;
 	}

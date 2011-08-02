@@ -34,7 +34,6 @@
 
 #include "system/system.hh"
 #include "xio.h"
-#include "transport_operator_splitting.hh"
 #include "mesh/mesh.h"
 #include "materials.hh"
 #include "flow/darcy_flow_mh.hh"
@@ -82,21 +81,9 @@ void problem_init(struct Problem *problem)
     //    problem->out_fname_2 = OptGetFileName("Output", "Output_file", NULL);
 
 
-    // TODO: Proper implementation of cross section
-#if 0
-    problem->ftrans_out       = get_b( "Output", "Write_ftrans_out", false );
-    problem->cross_section    = get_b( "Output", "Cross_section", false );         //jh
-    problem->cs_params        = get_s( "Output", "Cs_params", "0 0 0 0 0 0 0" );        //jh
-//    problem->res_run          = get_b( "Output", "Cs_results_run", false );           //jh
-//    problem->res_fin          = get_b( "Output", "Cs_results_final", false );
-    problem->specify_elm_output =  get_b( "Output", "Specify_elm_type", false );   //jh temp
-    problem->output_elm_type  = get_i( "Output", "Output_elm_type", 1 );        //jh temp
-    problem->fsec_params       = get_s( "Output", "FCs_params", "0 0 0 0 0" );
-//    problem->CF_params         = get_s( "Output", "ConfFlow_params", "0");
-#endif
 
-    view_char = OptGetStr("Output", "POS_view_params", "0 0 0 0 1 1 1 0 0");
-    problem->pos_view_params = pos_view_par_read(view_char);
+    //view_char = OptGetStr("Output", "POS_view_params", "0 0 0 0 1 1 1 0 0");
+    //problem->pos_view_params = pos_view_par_read(view_char);
 
     // [Constants]
 //    ConstantDB::getInstance()->setDouble("G", OptGetDbl("Constants", "g", "1.0"));
@@ -114,7 +101,7 @@ void problem_init(struct Problem *problem)
 
 
     // Initialize sub structures by NULL
-    problem->water = NULL;
+    //problem->water = NULL;
    // problem->transport = NULL;
 
     check_ini_values(problem);
@@ -127,19 +114,6 @@ void check_ini_values( struct Problem *problem )
 {
 	ASSERT(NONULL( problem ),"NULL as argument of function check_ini_values()\n");
 
-
-	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", "\\")).c_str(), "\\"  ) == 0 )
-		xprintf(UsrErr,"Name of mesh file must be defined\n");
-	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" )).c_str(), "\\"  ) == 0 )
-		xprintf(UsrErr,"Name of material properties file must be defined\n");
-	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Boundary", "\\" )).c_str(), "\\"  ) == 0 )
-		xprintf(UsrErr,"Name of boundary condition file must be defined\n");
-	if( strcmpi( IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" )).c_str(), "\\"  ) == 0 )
-		xprintf(UsrErr,"Name of file describing neighbouring must be defined\n");
-	// if( OptGetStr( "Input", "Sources", "\\" ), "\\"  ) == 0 )
-	//	problem->sources_fname = NULL;
-	if( strcmpi( OptGetFileName("Output", "Output_file", "\\"), "\\"  ) == 0 )
-		xprintf(UsrErr,"Name of output file must be defined\n");
 
 
 

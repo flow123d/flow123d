@@ -34,33 +34,43 @@ public:
     virtual void set_velocity_field(Vec &velocity_vector) =0;
 };
 
+
+
+/**
+ * @brief Empty transport class.
+ */
 class TransportNothing : public TransportBase {
 public:
-    TransportNothing(TimeMarks &time_marks)
+    TransportNothing()
     {
         // make module solved for ever
-        time_=new TimeGovernor(&time_marks, numeric_limits<double>::infinity(), numeric_limits<double>::infinity());
+        time_=new TimeGovernor();
         solved = true;
     };
+
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
-        vector = NULL;
-        size = 0;
+        ASSERT( 0 , "Empty transport class do not provide solution!");
     }
 
-    virtual void get_parallel_solution_vector(Vec &vector) {};
+    virtual void get_parallel_solution_vector(Vec &vector) {
+        ASSERT( 0 , "Empty transport class do not provide solution!");
+    };
 
     virtual void set_velocity_field(Vec &velocity_field) {};
 };
 
+
+
 /**
- * @brief Reaction transport implemented a operator splitting.
+ * @brief Reaction transport implemented by operator splitting.
  */
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-	TransportOperatorSplitting(MaterialDatabase *material_database, Mesh *init_mesh);
+	TransportOperatorSplitting(TimeMarks *marks, MaterialDatabase *material_database, Mesh *init_mesh);
 	virtual void set_velocity_field(Vec &velocity_vector);
-	virtual void compute_one_step();
+	virtual void update_solution();
+	//virtual void compute_one_step();
 	//virtual void compute_until();
 
 //	~TransportOperatorSplitting();

@@ -44,9 +44,8 @@
 
 #include "system/system.hh"
 #include "system/math_fce.h"
-#include "problem.h"
 #include "mesh/mesh.h"
-#include "transport.h"
+#include "transport/transport.h"
 #include "io/output.h"
 #include "materials.hh"
 #include "io/read_ini.h"

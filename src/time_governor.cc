@@ -31,36 +31,63 @@
 #include <time_governor.hh>
 #include <time_marks.hh>
 
-#include <algorithm>
 #include <limits>
 
 
 const double TimeGovernor::comparison_precision = 0.01;
 const double TimeGovernor::time_step_lower_bound = DBL_EPSILON;
+const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
 
 /*
  * TODO:
  * TimeGovernor should be constructed from JSON object.
  */
-TimeGovernor::TimeGovernor( TimeMarks * const marks, double time_init, double end_t)
-: time_marks(marks)
+TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMarks &marks,const TimeMark::Type fixed_time_mask)
+: last_time(init_time),
+  end_time_(end_time),
+  time_marks(&marks),
+  fixed_time_mark_mask(fixed_time_mask)
 {
-    last_time=time_init;
-    time=time_init;
+    time=last_time;
     end_of_fixed_dt_interval=time;
-    end_time_=end_t;
 
     dt_changed=true;
     dt_change_overhead=-1.0; // turn off
 
     min_time_step=0;
-    max_time_step=end_time_ - time_init;
+    if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
+    else max_time_step = inf_time;
+
+    time_step=max_time_step;
+
+    time_step_constrain = min(end_time_-time, max_time_step);
+
+    time_level=0;
+    time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
+    time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
+}
+
+TimeGovernor::TimeGovernor(double init_time)
+: last_time(init_time),
+  end_time_(inf_time),
+  time(inf_time),
+  time_marks(NULL),
+  fixed_time_mark_mask(TimeMark::strict)
+
+{
+    end_of_fixed_dt_interval=time;
+
+    dt_changed=true;
+    dt_change_overhead=-1.0; // turn off
+
+    min_time_step=0;
+    if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
+    else max_time_step = inf_time;
+
     time_step=max_time_step;
     time_step_constrain = min(end_time_-time, max_time_step);
 
     time_level=0;
-    time_marks->add( TimeMark(time_init, TimeMark::strict) );
-    time_marks->add( TimeMark(end_time_, TimeMark::strict) );
 }
 
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
@@ -76,6 +103,8 @@ void TimeGovernor::set_constrain(double dt_constrain)
 {
     time_step_constrain = min(time_step_constrain, dt_constrain);
 }
+
+
 
 /*
 void TimeGovernor::set_fix_time(double fix_time)
@@ -96,8 +125,9 @@ void TimeGovernor::set_fix_times(double first_fix_time, double fix_interval)
 
 void TimeGovernor::next_time()
 {
-    if (time == numeric_limits<double>::infinity() || is_end()) return;
-    if (end_time_ == numeric_limits<double>::infinity()) {
+    DBGMSG("%f %f\n",time, end_time_);
+    if (time == inf_time || is_end()) return;
+    if (end_time_ == inf_time) {
         time = end_time_;
         return;
     }
@@ -106,7 +136,7 @@ void TimeGovernor::next_time()
     last_time_step = time_step;
 
     // jump to the first future fix time
-    TimeMarks::iterator fix_time_it = time_marks->next(*this, TimeMark::strict);
+    TimeMarks::iterator fix_time_it = time_marks->next(*this, fixed_time_mark_mask);
 
     // select algorithm for determination of time step
     if (dt_change_overhead <= 0.0) {

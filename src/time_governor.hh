@@ -29,44 +29,34 @@
 #ifndef TIME_HH_
 #define TIME_HH_
 
-#include <algorithm>
-#include <queue>
+#include <limits>
+
 #include "system/system.hh"
 #include "time_marks.hh"
 
 /**
  * @brief
- * Basic time management functionality for unsteady solvers (class Equation).
+ * Basic time management functionality for unsteady (and steady) solvers (class Equation).
  *
- * This class provides algorithms for selecting next time step, and information about current time step frame. In particular,
- *
- *
- *
+ * This class provides algorithms for selecting next time step, and information about current time step frame.
  * Choice of the next time step can be permanently constrained through function set_permanent_constrain() or one can set
- * constrain only for the next time step through function set_constrain(). The later one can be called multiple times with various
- * constrain values and we use the minimum of them. Function next_time() choose the next time step that meets actual constrains and
- * uniform discrete time grid with this step hits the nearest fixed time in lowest possible number of steps.
+ * constrain only for the very next time step choice through function set_constrain(). The later one can be called multiple times with various
+ * constrain values and we use the minimum of them. Function next_time() choose the next time step in such a way that it meets actual constrains and
+ * a uniform discrete time grid with this step hits the nearest fixed time in lowest possible number of steps.
  *
- * The
+ * The fixed times are time marks of time_marks object passed at construction time with particular mask.
  *
- * In particular fixed times are not time events, but can be added in order to meet the time of a time event. Time events are
- * managed by class TimeEvents.
- *
- * The time step can be chosen either only for the next time level (this is default behavior of @fn next_time) or
+ * The time step can be chosen either only for the next time level (this is default behavior of  next_time() ) or
  * for the largest possible time interval. The later possibility is necessary for explicit solvers, where the matrix used to perform one time step
  * depends on the time step and has to be modified, when the time step is changed.
  *
- * This includes:
- * - actual time
+ * Information provided by time governor includes:
+ * - actual time, last time
  * - actual time step
- * - choice of next time step
- * - fixed times that has to be meet
- * - time level
+ * - number of the time level
  * - time comparison
- * TODO: should be initialized directly from JSON input
  *
- * Ideas: Distinguish init_time and start_time. The former one is initial value of the time value, the latter one is the beginning of the time frame
- * where an unsteady solver takes a place. Could be useful for short time processes
+ * TODO: should be initialized directly from JSON input
  *
  */
 
@@ -76,9 +66,29 @@ class TimeGovernor
 {
 public:
     /**
-     * Constructor - from given values, set fixed time step.
+     * Constructor - constructor for unsteady solvers
+     *
+     * @param init_time - initial time (the solution stands on the initial value before this time)
+     * @param end_time - final time of the particular equation
+     * @param marks - reference to TimeMarks object which will be used for fixed times
+     * @param fixed_time_mask - TimeMark mask used to select fixed times from all time marks
+     *
      */
-   TimeGovernor(TimeMarks * const marks, double time_init, double end_t);
+   TimeGovernor(const double init_time, const  double end_time, TimeMarks &marks, const TimeMark::Type fixed_time_mask = TimeMark::strict);
+
+   /**
+    * Default constructor - only for steady solvers
+    *
+    * We can have "zero step" steady problem (no computation, e.g. EquationNothing) and one step steady problem
+    * (e.g. steady water flow). This constructor is only shortcut for those cases which set TimeMarks to NULL, end time
+    * to infinity and time step to infinity.
+    *
+    * Optionally you can set initial time for "one step" steady problems.
+    * First call of next_time() push the actual time to infinity.
+    *
+    * However, you have to use full constructor for the "steady problem" that have time variable input data.
+    */
+   TimeGovernor(double init_time = inf_time);
 
    /**
     * Permanent constrain for time step.
@@ -186,25 +196,28 @@ public:
      * with precision relative to the time step. Precision is one percent of the time step.
      */
     inline bool gt(double other_time) const
-        { return time > other_time + comparison_precision * time_step; }
+        { return time >= other_time + comparison_fracture(); }
 
     /**
      * Performs comparison time >= other_time, with precision relative to the time step. See @fn gt
      */
     inline bool ge(double other_time) const
-        { return time > other_time - comparison_precision * time_step; }
+        { bool result = time + comparison_fracture() >= other_time;
+          DBGMSG("ge: %d %f %f %f\n", result, time, other_time, time_step);
+          return result;
+        }
 
     /**
      * Performs comparison time < other_time, with precision relative to the time step. See @fn gt
      */
     inline bool lt(double other_time) const
-        { return time < other_time - comparison_precision * time_step; }
+        { return time + comparison_fracture() <= other_time; }
 
     /**
      * Performs comparison time <= other_time, with precision relative to the time step. See @fn gt
      */
     inline bool le(double other_time) const
-        { return time < other_time + comparison_precision * time_step; }
+        { return time <= other_time + comparison_fracture(); }
 
     /**
      * Returns the time level.
@@ -218,7 +231,16 @@ public:
         DBGMSG(" level: %d end time: %f time: %f step: %f\n",time_level, end_time_, time, time_step);
     }
 
+    /// Infinity time used for steady case.
+    static const double inf_time;
+
 private:
+    inline double comparison_fracture() const
+    {
+        if (0 < time_step && time_step <=numeric_limits<double>::max() ) return comparison_precision * time_step;
+        else return numeric_limits<double>::epsilon();
+    }
+
 
     /// we consider time difference is zero if it is less then comparison_precision * time_step
     static const double comparison_precision;
@@ -258,7 +280,7 @@ private:
      * minimum priority queue of doubles based on the vector container.
      */
     TimeMarks * const time_marks;
-    //std::priority_queue<double, vector<double>, greater<double> > fix_times;
+    const TimeMark::Type fixed_time_mark_mask;
 
 };
 

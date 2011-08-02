@@ -5,19 +5,19 @@
  *      Author: jiri
  */
 
-#include "transport_operator_splitting.hh"
+#include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
 #include "system/sys_vector.hh"
 #include <time_governor.hh>
 #include <materials.hh>
-//#include "equation.hh"
-#include "transport.h"
+#include "equation.hh"
+#include "transport/transport.h"
 #include "mesh/mesh.h"
 #include "reaction/linear_reaction.hh"
 #include "semchem/semchem_interface.hh"
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *material_database, Mesh *init_mesh)
+TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks *marks, MaterialDatabase *material_database, Mesh *init_mesh)
 {
 	mat_base = material_database;
 	mesh_ = init_mesh;
@@ -40,16 +40,14 @@ TransportOperatorSplitting::TransportOperatorSplitting(MaterialDatabase *materia
 	decayRad->set_nr_of_species(convection->get_n_substances());
 	Semchem_reactions = new Semchem_interface(mesh_->n_elements(),convection->get_concentration_matrix(), mesh_);
 
-	time_marks = new TimeMarks();
-	time_ = new TimeGovernor(time_marks, 0.0, problem_stop_time);
+	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks);
 	// TOdO: this has to be set after construction of transport matrix !!
 	//time_->set_constrain(convection->get_cfl_time_constrain());
 
 	solved = true;
-	DBGMSG("convection: ");
 }
 
-void TransportOperatorSplitting::compute_one_step(){
+void TransportOperatorSplitting::update_solution() {
 	//following declarations are here just to enable compilation without errors
 	//double ***conc = convection->get_concentration_matrix(); //could be handled as **conc[MOBILE], **conc[IMMOBILE]
 

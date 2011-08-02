@@ -1,13 +1,14 @@
 #include "hc_explicit_sequential.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
-#include "transport_operator_splitting.hh"
-#include "transport.h"
+#include "transport/transport_operator_splitting.hh"
+#include "transport/transport.h"
 #include "equation.hh"
 #include "time_marks.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include "io/output.h"
+#include "main.h"
 
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
@@ -20,7 +21,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
     main_time_marks = new TimeMarks();
 
     // Material Database
-    const string& material_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", "\\" ));
+    const string& material_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", NULL ));
     material_database = new MaterialDatabase(material_file_name);
 
     // Read mesh
@@ -53,9 +54,9 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
 
     // optionally setup transport objects
     if ( OptGetBool("Transport", "Transport_on", "no") ) {
-        transport_reaction = new TransportOperatorSplitting(material_database, mesh);
+        transport_reaction = new TransportOperatorSplitting(main_time_marks, material_database, mesh);
     } else {
-        transport_reaction = new TransportNothing(*main_time_marks);
+        transport_reaction = new TransportNothing();
     }
 
 
@@ -105,7 +106,9 @@ void HC_ExplicitSequential::run_simulation()
     // Currently we simply use t_dt == w_dt.
 
     while (! (water->is_end() && transport_reaction->is_end() ) ) {
+        DBGMSG("water end: %f %f\n ", water->planned_time(), water->solved_time());
         DBGMSG("trans end: %f %f\n ", transport_reaction->planned_time(), transport_reaction->solved_time());
+
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
@@ -119,15 +122,15 @@ void HC_ExplicitSequential::run_simulation()
             water->compute_one_step();
             water_output->postprocess();
             // here possibly save solution from water in order to have
-            DBGMSG("output");
+
             water_output->output();
-            DBGMSG("...output\n");
+
             velocity_changed = true;
         } else {
-            // if we have neccesary information about velocity field we can perform transport step
+            // having information about velocity field we can perform transport step
 
             // here should be interpolation of the velocity at least if the interpolation time
-            // is not so close to the solved_time of the water module
+            // is not close to the solved_time of the water module
             // for simplicity we use only last velocity field
             if (velocity_changed) {
                 water->get_velocity_seq_vector(velocity_field);

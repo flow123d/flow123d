@@ -30,8 +30,6 @@
  *
  */
 
-#include "constantdb.h"
-
 #include "transport.h"
 
 #include "system/system.hh"
@@ -42,7 +40,6 @@
 #include "mesh/boundaries.h"
 #include "convert.h"
 
-#include "problem.h"
 #include "mesh/neighbours.h"
 
 static void output_convert_to_pos_source(struct Problem *problem);

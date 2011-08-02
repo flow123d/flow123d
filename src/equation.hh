@@ -28,10 +28,13 @@ class TimeGovernor;
  * Until we have field classes we only provide method get_solution_vector(), which returns pointer to sequential C array with linear combination of
  * base functions that represents the solution.
  *
- * Computation of one time step is split into update_solution()
+ * Computation of one time step (method compute_one_step() )  is split into update_solution() and choose_next_time().
  *
  * This class does not implement any constructor. In particular it does not initialize mesh, mat_base, and time. This has to be done in the constructor
  * of particular child class.
+ *
+ * Any constructor of child class should set solved = true. We assume, that after initialization an equation object stay solve in init time. For the first time step
+ * one calls method chose_next_time() which setup time frame of the first time step.
  *
  * TODO: clarify initialization of data members
  *
@@ -58,14 +61,16 @@ public:
      * Choose the next discrete time for computation. However do this only if the last planned time has been solved.
      * Can be rewritten in child class to set possible constrains
      * according to possible equation coefficients or other data which can be result of another model.
+     *
+     *
      */
     virtual void choose_next_time() {
+        DBGMSG("solved: %d %d\n",solved, is_end() );
         if (is_end()) return;
         if (solved) {
-            DBGMSG("solved: %d\n",solved);
+
             time_->next_time();
             solved =false;
-            DBGMSG("solved: %d\n",solved);
         }
     }
 
@@ -111,7 +116,8 @@ public:
     inline bool is_end()
         {
         DBGMSG("eq end: %f %d\n", time_->t(), solved);
-        return (time_->t() == numeric_limits<double>::infinity() || time_->is_end()) && solved;}
+        return time_->is_end() && solved;
+        }
 
     /**
      * This getter method provides the computational mesh currently used by the model.
@@ -148,6 +154,9 @@ protected:
     TimeGovernor *time_;
 };
 
+/**
+ * Demonstration of empty equation class, which can be used if user turns off some equation in the model.
+ */
 class EquationNothing : public EquationBase {
 
 public:

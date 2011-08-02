@@ -96,7 +96,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks *marks, Mesh *mesh_in, Material
     }
 
     // time governor
-    time_=new TimeGovernor(time_marks, 0.0, numeric_limits<double>::infinity()); // TODO: still we need init_time and end_time for steady !! should be setup for every equation
+    time_=new TimeGovernor(0.0, TimeGovernor::inf_time, *time_marks);
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -126,6 +126,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks *marks, Mesh *mesh_in, Material
     //edge_ds->view();
 
     make_schur0();
+
+    solved=true;
 }
 
 //=============================================================================
@@ -137,8 +139,8 @@ void DarcyFlowMH_Steady::compute_one_step() {
     START_TIMER("SOLVING MH SYSTEM");
     F_ENTRY;
 
-    if (time_->is_end()) return;
     DBGMSG("compute one step.\n");
+    if (is_end()) return;
 
 
 
@@ -216,13 +218,16 @@ void DarcyFlowMH_Steady::compute_one_step() {
 
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
 {
+
     vec=solution;
     vec_size = size;
+    ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
 void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 {
     vec=schur0->get_solution();
+    ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
 
@@ -1169,9 +1174,9 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, Mater
 {
     // time governor
     time_=new TimeGovernor(
-            time_marks,
             0.0,
-            OptGetDbl("Global", "Stop_time", "1.0")
+            OptGetDbl("Global", "Stop_time", "1.0"),
+            *time_marks
             );
 
     time_->set_permanent_constrain(
@@ -1226,7 +1231,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, Mater
     VecDuplicate(schur0->get_rhs(), &steady_rhs);
     VecCopy(schur0->get_rhs(),steady_rhs);
 
-
+    solved=true;
 }
 
 void DarcyFlowMH_Unsteady::modify_system()
@@ -1250,9 +1255,9 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, Mat
 {
     // time governor
     time_=new TimeGovernor(
-            time_marks,
             0.0,
-            OptGetDbl("Global", "Stop_time", "1.0")
+            OptGetDbl("Global", "Stop_time", "1.0"),
+            *time_marks
             );
 
     time_->set_permanent_constrain(
@@ -1313,6 +1318,8 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, Mat
 
     // auxiliary vector for time term
     VecDuplicate(schur0->get_rhs(), &time_term);
+
+    solved=true;
 
 }
 

@@ -8,7 +8,7 @@
 #ifndef HC_EXPLICIT_SEQUENTIAL_HH_
 #define HC_EXPLICIT_SEQUENTIAL_HH_
 
-#include "problem.h"
+#include "main.h"
 
 class DarcyFlowMH;
 class DarcyFlowMHOutput;
@@ -16,7 +16,7 @@ class TimeMarks;
 class Mesh;
 class EquationBase;
 class TransportBase;
-
+class MaterialDatabase;
 
 /**
  * @brief Class for solution of steady or unsteady flow with sequentially coupled explicit transport.

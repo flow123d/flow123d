@@ -35,10 +35,9 @@
 #include "sides.h"
 
 // following deps. should be removed
-#include "problem.h"
 #include "mesh/boundaries.h"
 #include "materials.hh"
-#include "transport.h"
+//#include "transport.h"
 
 
 static struct Side *new_side(void);

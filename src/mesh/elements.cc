@@ -39,7 +39,6 @@
 #include "elements.h"
 
 // following deps. should be removed
-#include "problem.h"
 #include "mesh/boundaries.h"
 #include "materials.hh"
 

@@ -32,13 +32,11 @@
 
 
 #include "system/system.hh"
-#include "problem.h"
 #include "mesh/mesh.h"
 
 // think about following dependencies
 #include "mesh/boundaries.h"
 
-#include "transport.h"
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
 // instances of a Element valued field
