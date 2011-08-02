@@ -21,6 +21,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks *marks, Materia
 {
 	mat_base = material_database;
 	mesh_ = init_mesh;
+	time_marks = marks;
     //ConvectionTransport *convection;
     //Linear_reaction *decayRad;
     //Semchem_interface *Semchem_reactions;
@@ -57,7 +58,9 @@ void TransportOperatorSplitting::update_solution() {
 	decayRad->compute_one_step();
 	Semchem_reactions->compute_one_step();
 	//Semchem_reactions->compute_one_step(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
-	choose_next_time();
+
+	solved=true;
+
 }
 
 void TransportOperatorSplitting::compute_until_save_time(){
