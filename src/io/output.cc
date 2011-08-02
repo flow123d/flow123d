@@ -144,6 +144,15 @@ OutputData::~OutputData()
 
 void Output::free_data_from_mesh(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     if(node_scalar != NULL) {
         delete node_scalar->scalars;
         delete node_scalar;
@@ -305,21 +314,32 @@ Output::Output(Mesh *_mesh, string fname)
 
 OutFileFormat Output::parse_output_format(char* format_name)
 {
-    if(strcmp(format_name,"ASCII") == 0)
+    if(strcmp(format_name,"ASCII") == 0) {
         return GMSH_MSH_ASCII;
-    if(strcmp(format_name,"BIN") == 0)
+    } else if(strcmp(format_name,"BIN") == 0) {
         return GMSH_MSH_BIN;
-    if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0)
+    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0) {
         return VTK_SERIAL_ASCII;
-    if(strcmp(format_name, "VTK_PARALLEL_ASCII") == 0)
+    } else if(strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
         return VTK_PARALLEL_ASCII;
-    xprintf(Warn,"Unknown output file format: %s.\n", format_name );
-    return (VTK_SERIAL_ASCII);
+    } else {
+        xprintf(Warn,"Unknown output file format: %s.\n", format_name );
+        return (VTK_SERIAL_ASCII);
+    }
 }
 
 
 Output::~Output()
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     // Free all reference on node and element data
     if(node_data != NULL) {
         delete node_data;
@@ -483,5 +503,14 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
 
 OutputTime::~OutputTime(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     _write_tail(this);
 }
