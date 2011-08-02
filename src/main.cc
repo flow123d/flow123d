@@ -222,16 +222,11 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
     Profiler::instance()->set_task_size(mesh->n_elements());
     OutputTime *output_time;
     TimeMarks * main_time_marks = new TimeMarks();
-    int i, rank=0;
-
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    int i;
 
     // setup output
-    if(rank == 0) {
-        string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
-        output_time = new OutputTime(mesh, output_file);
-    }
-
+    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
+    output_time = new OutputTime(mesh, output_file);
 
     DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(main_time_marks,mesh, problem->material_database);
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
@@ -246,14 +241,11 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
         water_output->postprocess();
 
         if ( main_time_marks->is_current(water_time, output_mark_type) )  {
-
-            if(rank == 0) {
-                output_time->get_data_from_mesh();
-                // call output_time->register_node_data(name, unit, 0, data) to register other data on nodes
-                // call output_time->register_elem_data(name, unit, 0, data) to register other data on elements
-                output_time->write_data(water_time.t());
-                output_time->free_data_from_mesh();
-            }
+            output_time->get_data_from_mesh();
+            // call output_time->register_node_data(name, unit, 0, data) to register other data on nodes
+            // call output_time->register_elem_data(name, unit, 0, data) to register other data on elements
+            output_time->write_data(water_time.t());
+            output_time->free_data_from_mesh();
         }
     }
 }
@@ -274,7 +266,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 
     TimeMarks * main_time_marks = new TimeMarks();
 
-    int rank=0;
     /*
        Mesh* mesh;
        ElementIter elm;
@@ -300,22 +291,14 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
     water_output->postprocess();
 
     /* Write static data to output file */
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank == 0) {
-        string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
-        Output *output = new Output(mesh, out_fname);
-
-        output->get_data_from_mesh();
-
-        // call output->register_node_data(name, unit, data) here to register other data on nodes
-        // call output->register_elem_data(name, unit, data) here to register other data on elements
-
-        output->write_data();
-
-        output->free_data_from_mesh();
-
-        delete output;
-    }
+	string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
+	Output *output = new Output(mesh, out_fname);
+	output->get_data_from_mesh();
+	// call output->register_node_data(name, unit, data) here to register other data on nodes
+	// call output->register_elem_data(name, unit, data) here to register other data on elements
+	output->write_data();
+	output->free_data_from_mesh();
+	delete output;
 
     // pracovni vystup nekompatibilniho propojeni
     // melo by to byt ve water*
@@ -380,18 +363,9 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
      */
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
-        OutputTime *output_time = NULL;
-
-/*        if (rank == 0) {
-            output_time = new OutputTime(mesh, transport->transport_out_fname);
-        }*/
-
     	problem->otransport->convection();
-
-/*        if(output_time != NULL) {
-            delete output_time;
-        }*/
     }
+
     /*
         if (OptGetBool("Transport",  "Reactions", "no") == true) {
             read_reaction_list(transport);

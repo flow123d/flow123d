@@ -186,6 +186,7 @@ void ConvectionTransport::transport_init() {
     sub_problem = 0;
     if (dual_porosity == true)
         sub_problem += 1;
+
     if (sorption == true)
         sub_problem += 2;
 
@@ -194,28 +195,21 @@ void ConvectionTransport::transport_init() {
 
     mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
 
+    make_transport_partitioning();
+    alloc_transport_vectors();
+    read_initial_condition();
+    alloc_transport_structs_mpi();
+    fill_transport_vectors_mpi();
 
+    output_vector_gather();
 
-        make_transport_partitioning();
-        alloc_transport_vectors();
-        read_initial_condition();
-        alloc_transport_structs_mpi();
-        fill_transport_vectors_mpi();
+    output_time = new OutputTime(mesh, transport_out_fname);
 
-        output_vector_gather();
-
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-        if(rank==0) {
-            output_time = new OutputTime(mesh, transport_out_fname);
-
-            // Register concentrations data on elements
-            for(int subst_id=0; subst_id<n_substances; subst_id++) {
-            	output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
-            }
-            output_time->write_data(time);
-        } else {
-            output_time = NULL;
-        }
+    // Register concentrations data on elements
+    for(int subst_id=0; subst_id<n_substances; subst_id++) {
+        output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+    }
+    output_time->write_data(time);
 
     INPUT_CHECK(!(n_substances < 1 ),"Number of substances must be positive\n");
 }
@@ -1098,22 +1092,17 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 
 			output_vector_gather();
 
-	        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	        if(rank==0) {
-				if ((save_step == step) || (write_iterations)) {
-					xprintf( Msg, "Output\n");
-					if(output_time != NULL) {
+			if ((save_step == step) || (write_iterations)) {
+			    xprintf( Msg, "Output\n");
 
-						// Register concentrations data on elements
-						for(int subst_id=0; subst_id<n_substances; subst_id++) {
-							output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
-						}
-						output_time->write_data(time);
-					}
+                // Register concentrations data on elements
+                for(int subst_id=0; subst_id<n_substances; subst_id++) {
+                    output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+                }
+                output_time->write_data(time);
 
-					step = 0;
-				}
-	        }
+			    step = 0;
+			}
 	    }
 }
 //=============================================================================
