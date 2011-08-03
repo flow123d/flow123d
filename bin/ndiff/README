@@ -1,0 +1,5 @@
+This directory includes scripts that help to check correctness of output files.
+
+* Diff.pm .... Perl package doing smart diff
+* ndiff.pl ... Perl script doing diff of output files
+* README ..... This file
