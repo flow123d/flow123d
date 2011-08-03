@@ -28,8 +28,7 @@
  *
  */
 
-
-#include "transport.h"
+#include "transport/transport.h"
 
 #include "system/system.hh"
 #include "xio.h"
@@ -37,7 +36,7 @@
 #include "problem.h"
 #include "mesh/mesh.h"
 #include "ppfcs.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 #include "materials.hh"
 
 
@@ -78,6 +77,22 @@ void flow_cs(struct Transport *transport)
 //==============================================================================
 int create_flow_section(struct Transport *transport)
 {
+
+    // This is ancient initialization from problem.c
+    // TODO: Proper implementation of cross section
+#if 0
+    problem->ftrans_out       = get_b( "Output", "Write_ftrans_out", false );
+    problem->cross_section    = get_b( "Output", "Cross_section", false );         //jh
+    problem->cs_params        = get_s( "Output", "Cs_params", "0 0 0 0 0 0 0" );        //jh
+//    problem->res_run          = get_b( "Output", "Cs_results_run", false );           //jh
+//    problem->res_fin          = get_b( "Output", "Cs_results_final", false );
+    problem->specify_elm_output =  get_b( "Output", "Specify_elm_type", false );   //jh temp
+    problem->output_elm_type  = get_i( "Output", "Output_elm_type", 1 );        //jh temp
+    problem->fsec_params       = get_s( "Output", "FCs_params", "0 0 0 0 0" );
+//    problem->CF_params         = get_s( "Output", "ConfFlow_params", "0");
+#endif
+
+
         double norm;
         int i;
 

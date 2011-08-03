@@ -29,6 +29,17 @@
 
 #ifndef MAIN_H
 #define MAIN_H
+
+
+
+// problem types
+typedef enum {
+CONVERT_TO_OUTPUT=0,
+STEADY_SATURATED=1,
+UNSTEADY_SATURATED=2,
+PROBLEM_DENSITY=3,
+UNSTEADY_SATURATED_LMH=4} ProblemType;
+
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

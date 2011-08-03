@@ -44,7 +44,7 @@
 
 #include "system/system.hh"
 #include "xio.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 
 static struct Read_ini *read_ini = NULL;
 
@@ -212,7 +212,7 @@ char *OptGetStr(const char *section,const char *key,const char *defval)
 
 	if (rc == NULL) {
 		if (defval == NULL)
-			xprintf(UsrErr,"Required parameter: [%s] %s is not given.\n",section,key);
+			xprintf(UsrErr,"Required parameter: section '%s' key '%s' is not given.\n",section,key);
 		else
 			rc = defval;
 	}

@@ -61,7 +61,7 @@ void write_msh_geometry(Output *output)
     // Write information about nodes
     output->get_base_file() << "$Nodes" << endl;
     output->get_base_file() <<  mesh->node_vector.size() << endl;
-    FOR_NODES( nod ) {
+    FOR_NODES(mesh,  nod ) {
         output->get_base_file() << nod->id << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
     }
     output->get_base_file() << "$EndNodes" << endl;
@@ -81,7 +81,7 @@ void write_msh_topology(Output *output)
     // Write information about elements
     output->get_base_file() << "$Elements" << endl;
     output->get_base_file() << mesh->n_elements() << endl;
-    FOR_ELEMENTS(elm) {
+    FOR_ELEMENTS(mesh, elm) {
         // element_id element_type 3_other_tags material region partition
         output->get_base_file() << elm.id() << " " << elm->type << " 3 " << elm->mid << " " << elm->rid << " " << elm->pid;
         FOR_ELEMENT_NODES(elm,i)

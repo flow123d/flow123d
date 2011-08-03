@@ -30,8 +30,7 @@
  *
  */
 
-
-#include "transport.h"
+#include "transport/transport.h"
 
 #include "system/system.hh"
 #include "xio.h"
@@ -41,7 +40,6 @@
 #include "mesh/boundaries.h"
 #include "convert.h"
 
-#include "problem.h"
 #include "mesh/neighbours.h"
 
 static void output_convert_to_pos_source(struct Problem *problem);

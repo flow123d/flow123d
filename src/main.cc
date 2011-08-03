@@ -28,46 +28,19 @@
  */
 
 
-
-
-
-
 #include <petsc.h>
 
 #include "system/system.hh"
-#include "xio.h"
-
+#include "hc_explicit_sequential.hh"
 
 #include "main.h"
-#include "read_ini.h"
-
-//#include "btc.h"
-#include "transport.h"
-#include "transport_operator_splitting.hh"
-#include "reaction.h"
-#include "solve.h"
-#include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
-//#include "mesh/topology.h"
-#include "io/output.h"
-#include "problem.h"
-#include "flow/darcy_flow_mh.hh"
-#include "flow/darcy_flow_mh_output.hh"
-#include "materials.hh"
+#include "io/read_ini.h"
 
 #include "rev_num.h"
 /// named version of the program
 #define _VERSION_   "1.6.5"
 
-static struct Problem G_problem;
-
-static void main_compute_mh(struct Problem*);
-static void main_compute_mh_unsteady_saturated(struct Problem*);
-static void main_compute_mh_steady_saturated(struct Problem*);
-static void main_convert_to_pos(struct Problem*);
-//static void main_compute_mh_density(struct Problem*);
-//void output_transport_init_BTC(struct Problem *problem);
-//void output_transport_time_BTC(struct Problem *problem, double time);
+static void main_convert_to_output();
 
 /**
  * @brief Main flow initialization
@@ -79,7 +52,7 @@ static void main_convert_to_pos(struct Problem*);
  * TODO: this parsing function should be in main.cc
  *
  */
-void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname) {
+void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
     const char USAGE_MSG[] = "\
     Wrong program parameters.\n\
     Usage: flow123d [options] ini_file\n\
@@ -88,13 +61,10 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
              Source files have to be in the current directory.\n\
     -S       Compute MH problem\n\
              Source files have to be in the same directory as ini file.\n\
-    -c       Convert flow data files into Gmsh parsed post-processing file format\n\
     -i       String used to change the 'variable' ${INPUT} in the file path.\n\
     -o       Absolute path to output directory.\n";
 
     xprintf(MsgLog, "Parsing program parameters ...\n");
-
-    goal = -1;
 
     // Check command line arguments
     if ((argc >= 3) && (strlen(argv[1]) == 2) && (argv[1][0] == '-')) {
@@ -113,21 +83,17 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
         }
 
         switch (argv[ 1 ][ 1 ]) {
-            case 's': goal = COMPUTE_MH;
+            case 's':
                 ini_fname=ini_argument;
                 break;
-            case 'S': goal = COMPUTE_MH;
+            case 'S':
                 xchdir(ini_dir.c_str());
                 break;
-            case 'c': goal = CONVERT_TO_POS;
-                break;
+            default:
+                //xprintf(UsrErr, USAGE_MSG);   // Caused crash of flow123d
+                xprintf(UsrErr,"%s", USAGE_MSG);
         }
 
-    }
-
-    if (goal < 0) {
-        //xprintf(UsrErr, USAGE_MSG);   // Caused crash of flow123d
-        printf("%s", USAGE_MSG);
     }
 }
 
@@ -137,13 +103,11 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
-    int goal;
     std::string ini_fname;
 
     F_ENTRY;
 
-    parse_cmd_line(argc, argv, goal, ini_fname); // command-line parsing
-    if (goal == -1)  return EXIT_FAILURE;
+    parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
 
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
@@ -157,21 +121,21 @@ int main(int argc, char **argv) {
     xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", _VERSION_,REVISION);
     xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
 
-
-    problem_init(&G_problem);
-
-
-
-
-    // Calculate
-    //make_element_geometry();
-    switch (goal) {
-        case CONVERT_TO_POS:
-            main_convert_to_pos(&G_problem);
-            break;
-        case COMPUTE_MH:
-            main_compute_mh(&G_problem);
-            break;
+    ProblemType type = (ProblemType) OptGetInt("Global", "Problem_type", NULL);
+    switch (type) {
+    case CONVERT_TO_OUTPUT:
+        main_convert_to_output();
+        break;
+    case STEADY_SATURATED:
+    case UNSTEADY_SATURATED:
+    case UNSTEADY_SATURATED_LMH: {
+        HC_ExplicitSequential problem(type);
+        problem.run_simulation();
+        break;
+    }
+    case PROBLEM_DENSITY:
+        // main_compute_mh_density(problem);
+        break;
     }
 
     // Say Goodbye
@@ -181,11 +145,17 @@ int main(int argc, char **argv) {
 /**
  * FUNCTION "MAIN" FOR CONVERTING FILES TO POS
  */
-void main_convert_to_pos(struct Problem *problem) {
-    // TODO: write outputs
+void main_convert_to_output() {
+    // TODO: implement output of input data fields
+    // Fields to output:
+    // 1) volume data (simple)
+    //    sources (Darcy flow and transport), initial condition, material id, partition id
+    // 2) boundary data (needs "virtual fractures" in output mesh)
+    //    flow and transport bcd
+
     xprintf(Err, "Not implemented yet in this version\n");
 }
-
+#if 0
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM
  */
@@ -395,7 +365,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 //-----------------------------------------------------------------------------
 // vim: set cindent:
 //-----------------------------------------------------------------------------
-
+#endif
 #if 0
 
 /**
@@ -483,3 +453,4 @@ void main_compute_mh_density(struct Problem *problem)
     xfclose(log); */
 //}
 #endif
+

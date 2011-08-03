@@ -57,7 +57,7 @@ void local_matrices_mh(Mesh* mesh)
 	xprintf( Msg, "Calculating local matrices... ")/*orig verb 2*/;
 	ASSERT(NONULL( mesh ),"No mesh for problem\n");
 
-	FOR_ELEMENTS( ele )
+	FOR_ELEMENTS(mesh, ele )
 		local_matrix( ele );
 	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }

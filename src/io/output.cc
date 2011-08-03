@@ -193,7 +193,7 @@ void Output::get_data_from_mesh(void)
     node_scalar->unit = "";
     /* Generate vector for scalar data of nodes */
     node_scalar->scalars->reserve(mesh->node_vector.size());   // reserver memory for vector
-    FOR_NODES( node ) {
+    FOR_NODES(mesh, node ) {
         node_scalar->scalars->push_back(node->scalar);
     }
 
@@ -207,7 +207,7 @@ void Output::get_data_from_mesh(void)
     /* Generate vectors for scalar and vector data of nodes */
     element_scalar->scalars->reserve(mesh->n_elements());
     element_vector->vectors->reserve(mesh->n_elements());
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(mesh, ele) {
         /* Add scalar */
         element_scalar->scalars->push_back(ele->scalar);
         /* Add vector */

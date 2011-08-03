@@ -9,6 +9,7 @@
 #include <time_marks.hh>
 #include <time_governor.hh>
 #include <algorithm>
+#include <limits>
 
 ostream& operator<<(ostream& stream, const TimeMark &mark)
 {
@@ -36,6 +37,7 @@ void TimeMarks::add(const TimeMark &mark) {
 }
 
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
+    if (end_time == numeric_limits<double>::infinity()) return;
     for (double t = time; t <= end_time; t += dt)
         add(TimeMark(t, type));
 }

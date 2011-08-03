@@ -31,15 +31,14 @@
  *
  */
 
-#include "transport.h"
+#include "transport/transport.h"
 
-#include "read_ini.h"
+#include "io/read_ini.h"
 #include "xio.h"
 #include "output.h"
 #include "btc.h"
 #include "system/system.hh"
 #include "mesh/mesh.h"
-#include "problem.h"
 
 static int *BTC_elm_list( int n_btc, char *line );
 static int count_BTC_elms( char *line );

@@ -69,7 +69,7 @@ static void write_vtk_geometry(Output *output)
     tmp = 0;
     /* Set floating point precision */
     output->get_data_file().precision(std::numeric_limits<double>::digits10);
-    FOR_NODES( node ) {
+    FOR_NODES(mesh, node ) {
         node->aux = tmp;   /* store index in the auxiliary variable */
 
         output->get_data_file() << scientific << node->getX() << " ";
@@ -102,7 +102,7 @@ static void write_vtk_topology(Output *output)
     /* Write DataArray begin */
     output->get_data_file() << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
     /* Write own coordinates */
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(mesh, ele) {
         FOR_ELEMENT_NODES(ele, li) {
             node = ele->node[li];
             output->get_data_file() << node->aux << " ";   /* Write connectivity */
@@ -115,7 +115,7 @@ static void write_vtk_topology(Output *output)
     output->get_data_file() << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
     /* Write number of nodes for each element */
     tmp = 0;
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(mesh, ele) {
         switch(ele->type) {
         case LINE:
             tmp += VTK_LINE_SIZE;
@@ -135,7 +135,7 @@ static void write_vtk_topology(Output *output)
     /* Write DataArray begin */
     output->get_data_file() << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
     /* Write type of nodes for each element */
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(mesh, ele) {
         switch(ele->type) {
         case LINE:
             output->get_data_file() << (int)VTK_LINE << " ";

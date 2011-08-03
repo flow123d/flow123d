@@ -35,7 +35,6 @@
 #include "sides.h"
 
 // following deps. should be removed
-#include "problem.h"
 #include "mesh/boundaries.h"
 #include "materials.hh"
 //#include "transport.h"
@@ -92,7 +91,7 @@ int count_sides(Mesh* mesh) {
 
     int rc = 0;
 
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(mesh, ele) {
         rc += ele->n_sides;
     }
     return rc;
@@ -178,7 +177,7 @@ void side_calculation_mh(Mesh* mesh) {
     ASSERT(mesh->n_sides != NDEF && NONULL(mesh->side), "No side list.\n");
     calc_side_c_col(mesh);
 
-    FOR_SIDES(sde) {
+    FOR_SIDES(mesh, sde) {
         calc_side_c_row(sde);
         calc_side_c_val(sde);
         calc_side_metrics(sde);
@@ -208,7 +207,7 @@ void calc_side_c_col(Mesh* mesh) {
     int li, i;
 
     i = 0;
-    FOR_ELEMENTS(ele)
+    FOR_ELEMENTS(mesh, ele)
     for (li = 0; li < ele->n_sides; li++)
         ele->side[ li ]->c_col = i++;
 }
@@ -422,7 +421,7 @@ void side_shape_specific(Mesh* mesh) {
     ASSERT(NONULL(mesh), "NULL as mesh argument!\n");
     ASSERT((mesh->n_sides != NDEF) && NONULL(mesh->side), "No side list.\n");
 
-    FOR_SIDES(sde) {
+    FOR_SIDES(mesh, sde) {
         ele = sde->element;
         ASSERT(!(ele == NULL), "Side %d has no reference to its element\n", sde->id);
         switch (ele->type) {
