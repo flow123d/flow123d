@@ -56,6 +56,7 @@ class OutputTime;
 class DarcyFlowMHOutput {
 public:
     DarcyFlowMHOutput(DarcyFlowMH *flow) ;
+    ~DarcyFlowMHOutput();
 
     void postprocess();
     void output();
@@ -63,6 +64,7 @@ public:
 private:
     void make_side_flux();
     void make_element_scalar();
+    void make_element_scalar(double* scalars);
     void make_element_vector();
 
     void make_element_vector_line(ElementFullIter);
@@ -70,7 +72,11 @@ private:
     void make_element_vector_tetrahedron(ElementFullIter);
 
     void make_sides_scalar();
-    double* make_node_scalar_param(double* scalars);
+    /**
+     * \brief Calculate nodes scalar,
+     * store it in double* node_scalars instead of node->scalar
+     *  */
+    void make_node_scalar_param(double* scalars);
     void make_node_scalar();
     void make_neighbour_flux();
     //void make_previous_scalar();
@@ -81,6 +87,22 @@ private:
     Mesh *mesh_;
     OutputTime *output_writer;
     TimeMark::Type output_mark_type;
+
+    /** \brief Array for storing nodes scalar, node index is used as index of array */
+    double* node_scalars;
+    /** \brief Array for storing elements scalar, element index is used as index of array */
+    double* ele_scalars;
+
+    /** \brief Structure for storing elements vectors, used in register_elem_data  */
+    typedef std::vector< vector<double> > VectorFloatVector;
+    typedef struct OutVector {
+        VectorFloatVector   *vectors;
+        string              name;
+        string              unit;
+    }_OutVector;
+
+    /** \brief Vector for storing elements vectors */
+    struct OutVector *element_vectors;
 };
 
 
