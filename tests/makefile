@@ -21,42 +21,18 @@
 # $LastChangedDate$
 #
 
-copy:
-	cp -r ../../../tests/test1 ./
-	cp -r ../../../tests/test2 ./
-	cp -r ../../../tests/test3 ./
-	cp -r ../../../tests/test4 ./
-	cp -r ../../../tests/test5 ./
-
-testbase:
-	make -C 01_steady_flow_123d test
-
+# Make all tests
 testall: 
 	make -C 01_steady_flow_123d test
 	make -C 02_transport_12d test
-	make -C 03_transport_small_12d test
-	make -C 04_density_driven_12d test
-	make -C 11_reactional_transport_semchem test
-	make -C 12_radioactive_decay test
 
-testchem:
-	make -C 11_reactional_transport_semchem test
-	make -C 12_radioactive_decay test
+# Rules for certain tests
+01.tst:
+	make -C 01_steady_flow_123d test
+02.tst:
+	make -C 02_transport_12d test
 
+# Rule to clean generated files in test directories
 clean:
-	rm -rf ./test1
-	rm -rf ./test2
-	rm -rf ./test3
-	rm -rf ./test4
-	rm -rf ./test5
-
-	
-%.tst:
-	BASE=$*;\
-	dir="`pwd`/`echo $${BASE}*`";\
-	echo $${dir};\
-	if test -d "$${dir}";\
-	then make -C "$${dir}" test;\
-	else echo "missing test directory $${dir}";\
-	exit 1;\
-	fi
+	make -C 01_steady_flow_123d clean
+	make -C 02_transport_12d clean

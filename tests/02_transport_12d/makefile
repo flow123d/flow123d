@@ -1,5 +1,10 @@
-INI_FILES="flow.ini flow_vtk.ini"
+INI_FILES="./flow.ini ./flow_vtk.ini"
 NPROC="1"
+FLOW_PARAMS=""
 
 test:
-	../run_test.sh ${INI_FILES} ${NPROC}
+	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
+
+clean:
+	rm -f profiler_*
+	rm -f output/*

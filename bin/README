@@ -1,0 +1,23 @@
+This file contain list and description of all binaries and scripts located
+in ./bin directory. If you add new script or binary to this directory, then
+please add short decription about it to this file.
+
+flow123d
+ - flow123d binary is product of build system
+ - generated file
+
+current_flow.sh
+ - bash script containing current absolute path to the flow123d binary
+ - generated file
+ - obsolete
+
+mpiexec
+ - bash script containing current absolute path to the mpiexec binary
+ - generated file
+ - obsolete
+ 
+README
+ - this file
+
+svnversion.sh
+ - script for getting the highest number of svn revision

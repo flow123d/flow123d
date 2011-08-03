@@ -29,7 +29,6 @@
  *
  */
 
-
 #include "transport/transport.h"
 
 #include "system/system.hh"

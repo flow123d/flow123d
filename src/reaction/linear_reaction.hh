@@ -10,12 +10,16 @@
 #ifndef LINREACT
 #define LINREACT
 
-#include<vector> ///< included to enable saving bifurcation
+#include <vector> ///< included to enable saving bifurcation
 
 class Linear_reaction
 {
 	public:
-		Linear_reaction(double time_step, int nrOfElements, double ***ConcentrationMatrix); ///< constructor with parameter for initialization of  a new declared class member
+        /**
+         *  Constructor with parameter for initialization of a new declared class member
+         *  TODO: parameter description
+         */
+		Linear_reaction(double time_step, int nrOfElements, double ***ConcentrationMatrix);
 		~Linear_reaction(void); ///< desctructor
 		double **compute_reaction(double **concentrations, int loc_el); ///< method for multiplication of concentrations array (double **conc or double **pconc) by reaction matrix, loc_el identifies an element where reactions are simulated
 		void compute_one_step(void); ///< method which should call compute_reaction() for all elements, during one time_step

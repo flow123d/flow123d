@@ -144,6 +144,15 @@ OutputData::~OutputData()
 
 void Output::free_data_from_mesh(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     if(node_scalar != NULL) {
         delete node_scalar->scalars;
         delete node_scalar;
@@ -162,6 +171,15 @@ void Output::free_data_from_mesh(void)
 
 void Output::get_data_from_mesh(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     NodeIter node;
     ElementIter ele;
 
@@ -222,11 +240,29 @@ int write_null_data(Output *output)
 
 int Output::write_data(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
     return _write_data(this);
 }
 
 Output::Output(Mesh *_mesh, string fname)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
@@ -278,21 +314,32 @@ Output::Output(Mesh *_mesh, string fname)
 
 OutFileFormat Output::parse_output_format(char* format_name)
 {
-        if(strcmp(format_name,"ASCII") == 0)
-            return GMSH_MSH_ASCII;
-        if(strcmp(format_name,"BIN") == 0)
-            return GMSH_MSH_BIN;
-        if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0)
-            return VTK_SERIAL_ASCII;
-        if(strcmp(format_name, "VTK_PARALLEL_ASCII") == 0)
-            return VTK_PARALLEL_ASCII;
+    if(strcmp(format_name,"ASCII") == 0) {
+        return GMSH_MSH_ASCII;
+    } else if(strcmp(format_name,"BIN") == 0) {
+        return GMSH_MSH_BIN;
+    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0) {
+        return VTK_SERIAL_ASCII;
+    } else if(strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
+        return VTK_PARALLEL_ASCII;
+    } else {
         xprintf(Warn,"Unknown output file format: %s.\n", format_name );
         return (VTK_SERIAL_ASCII);
+    }
 }
 
 
 Output::~Output()
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     // Free all reference on node and element data
     if(node_data != NULL) {
         delete node_data;
@@ -361,11 +408,28 @@ int write_null_tail(OutputTime *output)
 
 int OutputTime::write_data(double time)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
     return _write_data(this, time, current_step++);
 }
 
 OutputTime::OutputTime(Mesh *_mesh, string fname)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     std::vector<OutputData> *node_data;
     std::vector<OutputData> *elem_data;
     Mesh *mesh = _mesh;
@@ -439,5 +503,14 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
 
 OutputTime::~OutputTime(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     _write_tail(this);
 }

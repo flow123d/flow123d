@@ -356,6 +356,15 @@ int Output::register_node_data(std::string name,
         _Data *data,
         uint size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->node_vector.size() == size) {
         int found = 0;
 
@@ -375,6 +384,15 @@ int Output::register_elem_data(std::string name,
         _Data *data,
         uint size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->element.size() == size) {
         int found = 0;
 
@@ -393,6 +411,15 @@ int Output::register_node_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->node_vector.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
         node_data->push_back(*out_data);
@@ -408,6 +435,15 @@ int Output::register_elem_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->element.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
         elem_data->push_back(*out_data);
@@ -547,6 +583,15 @@ int OutputTime::register_node_data(std::string name,
         _Data *data,
         uint size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *node_data = get_node_data();
     Mesh *mesh = get_mesh();
 
@@ -582,6 +627,15 @@ int OutputTime::register_elem_data(std::string name,
         _Data *data,
         unsigned int size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *elem_data = get_elem_data();
     Mesh *mesh = get_mesh();
 
@@ -616,6 +670,15 @@ int OutputTime::register_node_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *node_data = get_node_data();
     Mesh *mesh = get_mesh();
 
@@ -650,6 +713,15 @@ int OutputTime::register_elem_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *elem_data = get_elem_data();
     Mesh *mesh = get_mesh();
 
