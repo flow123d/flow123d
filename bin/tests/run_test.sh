@@ -21,18 +21,21 @@
 # $LastChangedBy$
 # $LastChangedDate$
 #
-# This script assumes that Flow123d can contain any error. It means, that
+# Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
+#
+
+
+#
+# Note: This script assumes that Flow123d can contain any error. It means that
 # there could be nevere ending loop, flow could try to allocate infinity
 # amount of memory, etc.
 #
-# This script has to be run from root of source files.
-
 
 
 # Every test has to be finished in 60 seconds. Flow123d will be killed after
 # 60 seconds. It prevents test to run in never ending loop, when developemnt
 # version of Flow123d contains such error.
-TIMEOUT=60
+TIMEOUT=120
 
 # Try to use MPI environment variable for timeout too. Some implementation
 # of MPI supports it and some implementations doesn't.
@@ -45,15 +48,19 @@ FLOW123D_OUTPUT="./flow_stdout.log"
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
 FLOW123D="../flow123d"
-
 # Relative path to Flow123d binary from current/working directory
 FLOW123D="${0%/*}/${FLOW123D}"
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="../mpiexec"
-
 # Relative path to mpiexec binary from current/working directory
 MPIEXEC="${0%/*}/${MPIEXEC}"
+
+# Relative path to ndiff checking corectness of output files from this directory
+NDIFF="../ndiff/ndiff.pl"
+# Relative path to ndiff binary from current/working directory
+NDIFF="${0%/*}/${NDIFF}"
+
 
 # Variable with exit status. Possible values:
 # 0 - no error, all tests were finished correctly
@@ -76,6 +83,12 @@ N_PROC="$2"
 
 # The last parameter could contain additional flow params
 FLOW_PARAMS="$3"
+
+
+# Following function is used for checking output files
+function check_output {
+	${NDIFF} ${1} ${2}
+}
 
 
 # Check if Flow123d exists and it is executable file
