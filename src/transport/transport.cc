@@ -1094,13 +1094,13 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 
                     // Register concentrations data on elements
                     for(int subst_id=0; subst_id<n_substances; subst_id++) {
-                	output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+                        output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
                     }
                     output_time->write_data(time);
-                }
                 //  if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
                 // output_time(problem, t * time_step); // time variable flow field
                 step = 0;
+            }
 	    }
 }
 //=============================================================================
