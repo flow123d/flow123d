@@ -36,13 +36,13 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
     // setup water flow object
     switch (problem_type) {
         case STEADY_SATURATED:
-            water=new DarcyFlowMH_Steady(main_time_marks, mesh, material_database);
+            water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database);
             break;
         case UNSTEADY_SATURATED:
-            water=new DarcyFlowMH_Unsteady(main_time_marks, mesh, material_database);
+            water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database);
             break;
         case UNSTEADY_SATURATED_LMH:
-            water=new DarcyFlowLMH_Unsteady(main_time_marks, mesh, material_database);
+            water=new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database);
             break;
         default:
             xprintf(Err,"Wrong problem type: %d",problem_type);
@@ -54,9 +54,9 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
 
     // optionally setup transport objects
     if ( OptGetBool("Transport", "Transport_on", "no") ) {
-        transport_reaction = new TransportOperatorSplitting(main_time_marks, material_database, mesh);
+        transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database);
     } else {
-        transport_reaction = new TransportNothing();
+        transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
     }
 
 
@@ -120,6 +120,7 @@ void HC_ExplicitSequential::run_simulation()
         if (water->solved_time() < velocity_interpolation_time) {
             // solve water over the nearest transport interval
             water->compute_one_step();
+            DBGMSG("Water Postprocess\n");
             water_output->postprocess();
             // here possibly save solution from water in order to have
 

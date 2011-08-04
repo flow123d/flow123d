@@ -17,14 +17,9 @@
 #include "semchem/semchem_interface.hh"
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks *marks, MaterialDatabase *material_database, Mesh *init_mesh)
+TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database )
+: TransportBase(marks, init_mesh, material_database)
 {
-	mat_base = material_database;
-	mesh_ = init_mesh;
-	time_marks = marks;
-    //ConvectionTransport *convection;
-    //Linear_reaction *decayRad;
-    //Semchem_interface *Semchem_reactions;
 
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");

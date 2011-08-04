@@ -1,8 +1,31 @@
-/*
- * Equation.hh
+/*!
  *
- *  Created on: May 18, 2011
- *      Author: jb
+ * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+ *
+ * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+ * especially for academic research:
+ * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License version 3 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
+ *
+ *
+ * $Id: darcy_flow_mh.hh 877 2011-02-04 13:13:25Z jakub.sistek $
+ * $Revision: 877 $
+ * $LastChangedBy: jakub.sistek $
+ * $LastChangedDate: 2011-02-04 14:13:25 +0100 (Fri, 04 Feb 2011) $
+ *
+ * @file
+ * @brief Abstract base class for equation clasess.
+ *
+ *  @author Jan Brezina
  */
 
 #ifndef EQUATION_HH_
@@ -42,6 +65,16 @@ class TimeGovernor;
 class EquationBase {
 public:
     /**
+     * Common initialization constructor.
+     */
+    EquationBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base);
+
+    /**
+     * Require virtual destructor also for child classes.
+     */
+    virtual ~EquationBase() {};
+
+    /**
      *  Child class have to implement computation of solution in actual time.
      */
     virtual void update_solution() {
@@ -62,17 +95,8 @@ public:
      * Can be rewritten in child class to set possible constrains
      * according to possible equation coefficients or other data which can be result of another model.
      *
-     *
      */
-    virtual void choose_next_time() {
-        DBGMSG("solved: %d %d\n",solved, is_end() );
-        if (is_end()) return;
-        if (solved) {
-
-            time_->next_time();
-            solved =false;
-        }
-    }
+    virtual void choose_next_time();
 
     /**
      * This method implements basic cycle for computation until a given time. But could be overwritten at child class.
@@ -124,7 +148,6 @@ public:
      */
     inline  Mesh &mesh()
     {
-        ASSERT(NONULL(mesh_),"Mesh was not created.\n");
         return *mesh_;
     }
 
@@ -132,8 +155,8 @@ public:
      * This getter method provides the material database of the model.
      * TODO: Maybe it is better to have a database outside and use it to produce input fields.
      */
-    inline  MaterialDatabase *get_mat_base()
-        {return mat_base;}
+    inline  MaterialDatabase &get_mat_base()
+        {return *mat_base;}
 
     /**
      * Child class have to implement getter for sequential solution vector.
@@ -148,9 +171,9 @@ public:
 protected:
     bool solved;
 
-    Mesh   *mesh_;
-    MaterialDatabase *mat_base;
-    TimeMarks   *time_marks;
+    Mesh * const mesh_;
+    MaterialDatabase * mat_base;
+    TimeMarks * const time_marks;
     TimeGovernor *time_;
 };
 
@@ -160,7 +183,9 @@ protected:
 class EquationNothing : public EquationBase {
 
 public:
-    EquationNothing() {}
+    EquationNothing(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
+    : EquationBase(marks, mesh, mat_base)
+    {}
 
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
         vector = NULL;
@@ -169,7 +194,7 @@ public:
 
     virtual void get_parallel_solution_vector(Vec &vector) {};
 
-    ~EquationNothing() {};
+    virtual ~EquationNothing() {};
 };
 
 

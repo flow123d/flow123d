@@ -37,9 +37,14 @@ void TimeMarks::add(const TimeMark &mark) {
 }
 
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
-    if (end_time == numeric_limits<double>::infinity()) return;
-    for (double t = time; t <= end_time; t += dt)
-        add(TimeMark(t, type));
+    if (end_time == TimeGovernor::inf_time) {
+        if (time == TimeGovernor::inf_time) return;
+        else add(TimeMark(time, type));
+    }
+    else {
+        for (double t = time; t <= end_time; t += dt)
+            add(TimeMark(t, type));
+    }
 }
 
 bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const

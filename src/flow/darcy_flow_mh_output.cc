@@ -643,17 +643,17 @@ void DarcyFlowMHOutput::water_balance() {
     if (p_sources != NULL) {
         xprintf(Msg, "Calculating sources of water by material types...\n");
 
-        MaterialDatabase *mat_base=darcy_flow->get_mat_base();
-        std::vector<double> *src_balance = new std::vector<double>( mat_base->size(), 0.0 ); // initialize by zero
+        MaterialDatabase &mat_base = darcy_flow->get_mat_base();
+        std::vector<double> *src_balance = new std::vector<double>( mat_base.size(), 0.0 ); // initialize by zero
 
 
         FOR_ELEMENTS(mesh_, elm) {
-            (*src_balance)[mat_base->index(elm->material)] += elm->volume * p_sources->element_value(elm.index());
+            (*src_balance)[mat_base.index(elm->material)] += elm->volume * p_sources->element_value(elm.index());
         }
 
 
-        FOR_MATERIALS_IT(*mat_base, mat) {
-            xprintf(Msg, "Material flux #%d:\t% g\n", mat_base->get_id(mat), (*src_balance)[mat_base->index(mat)]);
+        FOR_MATERIALS_IT(mat_base, mat) {
+            xprintf(Msg, "Material flux #%d:\t% g\n", mat_base.get_id(mat), (*src_balance)[mat_base.index(mat)]);
         }
 
 

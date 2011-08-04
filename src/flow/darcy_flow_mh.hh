@@ -79,18 +79,26 @@ class SparseGraph;
 
 class DarcyFlowMH : public EquationBase {
 public:
+    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
+    : EquationBase(marks, mesh, mat_base)
+    {}
+
     FieldP0<double>  * get_sources()
         { return sources; }
+
     void get_velocity_seq_vector(Vec &velocity_vec)
-        {
-            double *velocity_array;
-            unsigned int size;
+        { velocity_vec = velocity_vector; }
 
-            get_solution_vector(velocity_array, size);
-            VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_sides, velocity_array, &velocity_vec);
-
-        }
 protected:
+    void setup_velocity_vector() {
+        double *velocity_array;
+        unsigned int size;
+
+        get_solution_vector(velocity_array, size);
+        VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_sides, velocity_array, &velocity_vector);
+
+    }
+
     virtual void postprocess() =0;
 
     //virtual void balance();
@@ -98,6 +106,7 @@ protected:
 
 protected:
     FieldP0<double> *sources;
+    Vec velocity_vector;
 };
 
 
@@ -126,7 +135,7 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
     virtual void compute_one_step();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
@@ -203,7 +212,7 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
     DarcyFlowMH_Unsteady();
 protected:
     virtual void modify_system();
@@ -231,7 +240,7 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
     DarcyFlowLMH_Unsteady();
 protected:
     virtual void modify_system();

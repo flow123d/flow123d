@@ -25,6 +25,10 @@ class MaterialDatabase;
  */
 class TransportBase : public EquationBase{
 public:
+    TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
+    : EquationBase(marks, mesh, mat_base)
+    {}
+
     /**
      * This method takes sequantial PETSc vector of side velocities and update
      * transport matrix. The ordering is same as ordering of sides in the mesh.
@@ -41,7 +45,8 @@ public:
  */
 class TransportNothing : public TransportBase {
 public:
-    TransportNothing()
+    TransportNothing(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in)
+    : TransportBase(marks, mesh_in, mat_base_in)
     {
         // make module solved for ever
         time_=new TimeGovernor();
@@ -67,7 +72,7 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-	TransportOperatorSplitting(TimeMarks *marks, MaterialDatabase *material_database, Mesh *init_mesh);
+	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
 	virtual void set_velocity_field(Vec &velocity_vector);
 	virtual void update_solution();
 	//virtual void compute_one_step();

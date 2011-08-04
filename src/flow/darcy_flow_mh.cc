@@ -61,16 +61,10 @@
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks *marks, Mesh *mesh_in, MaterialDatabase *mat_base_in)
-: DarcyFlowMH()
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in)
+: DarcyFlowMH(marks, mesh_in, mat_base_in)
 
 {
-    // can not be in initializer list since are not proper class members
-    time_marks= marks;
-    mesh_=mesh_in;
-    mat_base=mat_base_in;
-    solved =false;
-
     int ierr;
 
     size = mesh_->n_elements() + mesh_->n_sides + mesh_->n_edges();
@@ -1169,7 +1163,7 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, MaterialDatabase *mat_base_in)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
     : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
 {
     // time governor
@@ -1250,7 +1244,7 @@ void DarcyFlowMH_Unsteady::modify_system()
 // ========================
 // unsteady
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks *marks,Mesh *mesh_in, MaterialDatabase *mat_base_in)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
     : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
 {
     // time governor

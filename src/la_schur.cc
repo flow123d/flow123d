@@ -609,15 +609,10 @@ SchurComplement :: ~SchurComplement() {
     F_ENTRY;
 
     MatDestroy(IA);
-    MatDestroy(IA_sub);
     MatDestroy(B);
-    MatDestroy(B_sub);
     MatDestroy(Bt);
-    MatDestroy(Bt_sub);
     MatDestroy(xA);
-    MatDestroy(xA_sub);
     MatDestroy(IAB);
-    MatDestroy(IAB_sub);
     ISDestroy(IsA);
     ISDestroy(IsB);
     ISDestroy(fullIsA);
@@ -626,8 +621,16 @@ SchurComplement :: ~SchurComplement() {
     VecDestroy(RHS2);
     VecDestroy(Sol1);
     VecDestroy(Sol2);
-    VecDestroy(sub_vec_block2);
-    delete Compl;
-    delete [] IsALocalIndices;
 
+
+    if (Orig->type == LinSys::MAT_IS) {
+        MatDestroy(IA_sub);
+        MatDestroy(B_sub);
+        MatDestroy(Bt_sub);
+        MatDestroy(xA_sub);
+        MatDestroy(IAB_sub);
+        VecDestroy(sub_vec_block2);
+        delete [] IsALocalIndices;
+    }
+    delete Compl;
 }
