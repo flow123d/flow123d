@@ -40,17 +40,10 @@
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
 : darcy_flow(flow), mesh_(&darcy_flow->mesh())
 {
-    int rank;
     // setup output
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if(rank == 0) {
-        string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
-        DBGMSG("create output\n");
-        output_writer = new OutputTime(mesh_, output_file);
-
-    } else {
-        output_writer = NULL;
-    }
+    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
+    DBGMSG("create output\n");
+    output_writer = new OutputTime(mesh_, output_file);
 
     // set output time marks
     TimeMarks &marks=darcy_flow->time().marks();
@@ -67,6 +60,7 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
     delete [] node_scalars;
     delete [] ele_scalars;
     delete element_vectors;
+    delete output_writer;
 };
 
 //=============================================================================
@@ -110,39 +104,34 @@ void DarcyFlowMHOutput::output()
     unsigned int result = 0;
 
     if (darcy_flow->time().is_current(output_mark_type)) {
-        if (output_writer != NULL) {
-            result = output_writer->register_node_data(nodeName, nodeUnit, node_scalars, mesh_->node_vector.size());
-//            xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
+        result = output_writer->register_node_data(nodeName, nodeUnit, node_scalars, mesh_->node_vector.size());
+        xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
 
-            result = output_writer->register_elem_data(eleScalarName, eleScalarUnit, ele_scalars, mesh_->n_elements());
-//            xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
+        result = output_writer->register_elem_data(eleScalarName, eleScalarUnit, ele_scalars, mesh_->n_elements());
+        xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
 
-            element_vectors->vectors = new VectorFloatVector;
+        element_vectors->vectors = new VectorFloatVector;
 
-            element_vectors->vectors->reserve(mesh_->n_elements());
-            FOR_ELEMENTS(mesh_, ele) {
-                /* Add vector */
-                vector<double> vec;
-                vec.reserve(3);
-                vec.push_back(ele->vector[0]);
-                vec.push_back(ele->vector[1]);
-                vec.push_back(ele->vector[2]);
-                element_vectors->vectors->push_back(vec);
-            }
-            result = output_writer->register_elem_data(eleVectorName, eleVectorUnit, *element_vectors->vectors);
-//            xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
-
-            output_writer->write_data(darcy_flow->time().t());
-
-
-            if(element_vectors->vectors != NULL) {
-                delete element_vectors->vectors;
-            }
-
-//            output_writer->get_data_from_mesh();
-//            output_writer->write_data(darcy_flow->time().t());
-//            output_writer->free_data_from_mesh();
+        element_vectors->vectors->reserve(mesh_->n_elements());
+        FOR_ELEMENTS(mesh_, ele) {
+            /* Add vector */
+            vector<double> vec;
+            vec.reserve(3);
+            vec.push_back(ele->vector[0]);
+            vec.push_back(ele->vector[1]);
+            vec.push_back(ele->vector[2]);
+            element_vectors->vectors->push_back(vec);
         }
+        result = output_writer->register_elem_data(eleVectorName, eleVectorUnit, *element_vectors->vectors);
+        xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
+
+        output_writer->write_data(darcy_flow->time().t());
+
+        if(element_vectors->vectors != NULL) {
+            delete element_vectors->vectors;
+        }
+    } else {
+        xprintf(Msg, "no output to %s\n", output_writer->get_base_filename().c_str());
     }
 }
 

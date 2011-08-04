@@ -113,19 +113,19 @@ public:
      * Simpler interface to TimeMarks::is_current().
      */
     inline bool is_current(const TimeMark::Type &mask) const
-        {time_marks->is_current(*this, mask); }
+        {return time_marks->is_current(*this, mask); }
 
     /**
      * Simpler interface to TimeMarks::next().
      */
     inline TimeMarks::iterator next(const TimeMark::Type &mask) const
-        {time_marks->next(*this, mask);}
+        {return time_marks->next(*this, mask);}
 
     /**
      * Simpler interface to TimeMarks::last().
      */
     inline TimeMarks::iterator last(const TimeMark::Type &mask) const
-        {time_marks->last(*this, mask);}
+        {return time_marks->last(*this, mask);}
 
     /**
      * Add a time that has to be meet by the time governor.

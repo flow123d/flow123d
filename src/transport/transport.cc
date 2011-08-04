@@ -1133,9 +1133,7 @@ void ConvectionTransport::convection() {
      transport_until_time(0.0);
      END_TIMER("transport_steps");
      xprintf( Msg, "O.K.\n");
-     if(output_time != NULL) {
-         delete output_time;
-     }
+     delete output_time;
 }
 //=============================================================================
 //      OUTPUT VECTOR GATHER

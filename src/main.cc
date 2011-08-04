@@ -129,8 +129,9 @@ int main(int argc, char **argv) {
     case STEADY_SATURATED:
     case UNSTEADY_SATURATED:
     case UNSTEADY_SATURATED_LMH: {
-        HC_ExplicitSequential problem(type);
-        problem.run_simulation();
+        HC_ExplicitSequential *problem = new HC_ExplicitSequential(type);
+        problem->run_simulation();
+        delete problem;
         break;
     }
     case PROBLEM_DENSITY:

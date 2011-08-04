@@ -4,7 +4,7 @@
 #
 # Please make a following refer to Flow123d on your project site if you use the program for any purpose,
 # especially for academic research:
-# Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+# Flow123d, Research Center: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
 #
 # This program is free software; you can redistribute it and/or modify it under the terms
 # of the GNU General Public License version 3 as published by the Free Software Foundation.
@@ -81,7 +81,7 @@ TEST_RESULTS="./test_results"
 # 0 - no error, all tests were finished correctly
 # 1 - some important file (flow123d, ini file) doesn't exist or permission
 #     are not granted
-# 2 - flow123d was not finished corectly
+# 2 - flow123d was not finished correctly
 # 3 - execution of flow123d wasn't finished in time
 EXIT_STATUS=0
 
@@ -93,10 +93,10 @@ ulimit -S -v 200000
 # First parameter has to be list of ini files; eg: "flow.ini flow_vtk.ini"
 INI_FILES="$1"
 
-# Secons parameter has to be number of processors to run on; eg: "1 2 3 4 5"
+# Second parameter has to be number of processors to run on; eg: "1 2 3 4 5"
 N_PROC="$2"
 
-# The last parameter could contain additional flow params
+# The last parameter could contain additional flow parametres
 FLOW_PARAMS="$3"
 
 
@@ -133,8 +133,8 @@ function check_output {
 				then
 					# Compare output file using ndiff
 					${NDIFF} \
-						"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
 						"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
+						"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
 						> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 					# Check result of ndiff
 					if [ $? -eq 0 ]
@@ -142,7 +142,7 @@ function check_output {
 						echo -n "."
 					else
 						echo " [Failed]"
-						echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too diferent."
+						echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too different."
 						return 1
 					fi
 				else
@@ -193,10 +193,10 @@ do
 	for NP in ${N_PROC}
 	do
 		# Clear output file for every new test. Output of passed test isn't
-		# important. It is usefull to see the output of last test that failed.
+		# important. It is useful to see the output of last test that failed.
 		echo "" > "${FLOW123D_OUTPUT}"
 
-		# Erase content of ./output direcotory
+		# Erase content of ./output directory
 		rm -rf "${OUTPUT_DIR}"/*
 
 		# Reset timer
@@ -205,7 +205,7 @@ do
 		# Flow123d runs with changed priority (19 is the lowest priority)
 		nice --adjustment=10 "${MPIEXEC}" -np ${NP} "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
 		PARENT_MPIEXEC_PID=$!
-		# Wait for child proccesses
+		# Wait for child processes
 		sleep 1
 		MPIEXEC_PID=`ps -o "${PARENT_MPIEXEC_PID} %P %p" | gawk '{if($1==$2){ print $3 };}'`
 
@@ -250,7 +250,7 @@ do
 				echo " [Success:${TIMER}s]"
 				echo -n "Checking output files ."
 
-				# Check corretness of output files
+				# Check correctness of output files
 				check_output "${INI_FILE}" "${NP}"
 
 				# Were all output files correct?
@@ -258,9 +258,9 @@ do
 				then
 					echo " [Success]"
 				else
-					EXIT_STATUS=10
-					# No other test will be executed
-					break 2
+					# Do not run this test for more processes, when output is
+					# different for current number of processes
+					break 1 
 				fi
 			else
 				echo " [Failed:error]"
@@ -272,7 +272,7 @@ do
 	done
 done
 
-# Print redirected stdout to stdout only in situation, when some error ocured
+# Print redirected stdout to stdout only in situation, when some error occurred
 if [ $EXIT_STATUS -gt 0 -a $EXIT_STATUS -lt 10 ]
 then
 	echo "Error in execution: ${FLOW123D} -S ${INI_FILE} -- ${FLOW_PARAMS}"
