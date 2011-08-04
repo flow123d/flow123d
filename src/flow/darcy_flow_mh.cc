@@ -127,7 +127,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
 //=============================================================================
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
 //=============================================================================
-void DarcyFlowMH_Steady::compute_one_step() {
+void DarcyFlowMH_Steady::update_solution() {
 
 
     START_TIMER("SOLVING MH SYSTEM");
@@ -206,8 +206,6 @@ void DarcyFlowMH_Steady::compute_one_step() {
             INSERT_VALUES, SCATTER_FORWARD);
 
     solved=true;
-    choose_next_time();
-
 }
 
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)

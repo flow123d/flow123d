@@ -125,7 +125,7 @@ void DarcyFlowMHOutput::output()
         result = output_writer->register_elem_data(eleVectorName, eleVectorUnit, *element_vectors->vectors);
         xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
 
-        output_writer->write_data(darcy_flow->time().t());
+        output_writer->write_data(darcy_flow->solved_time());
 
         if(element_vectors->vectors != NULL) {
             delete element_vectors->vectors;

@@ -119,12 +119,13 @@ void HC_ExplicitSequential::run_simulation()
         // only water branch takes the place
         if (water->solved_time() < velocity_interpolation_time) {
             // solve water over the nearest transport interval
-            water->compute_one_step();
+            water->update_solution();
             DBGMSG("Water Postprocess\n");
             water_output->postprocess();
             // here possibly save solution from water in order to have
 
             water_output->output();
+            water->choose_next_time();
 
             velocity_changed = true;
         } else {

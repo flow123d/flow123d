@@ -136,7 +136,7 @@ class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
     DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
-    virtual void compute_one_step();
+    virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
     virtual void postprocess() {};

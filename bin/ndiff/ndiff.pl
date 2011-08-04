@@ -24,6 +24,7 @@
 
 use File::Basename;
 
+
 # BEGIN block is executed when perl compiles the file
 BEGIN {
 	$scriptdir = &File::Basename::dirname($0);
@@ -59,7 +60,7 @@ BEGIN {
 
 use lib "$scriptdir";
 use Diff;
-
+use Scalar::Util
 
 # global variables
 # constants, setting
@@ -135,15 +136,20 @@ sub discard_left {
 	my ($ia, $ib)=@_;
 	my $aln=$left[$ia];
 	my $bln=$right[$ib]; 
-	print OUT_LOG  "$aln->{line_no},$bln->{line_no} < ".$aln->{line};
+        my $b_line_num=$bln->{line_no} || "eof";
+	print OUT_LOG  "$aln->{line_no},$b_line_num < ".$aln->{line};
 	# push(@left_discard,$ia);	
+        $num_of_diffs ++;
 }    
 sub discard_right {
 	my ($ia, $ib)=@_;
 	my $aln=$left[$ia];
 	my $bln=$right[$ib]; 
-	print OUT_LOG  "$aln->{line_no},$bln->{line_no} < ".$bln->{line};
+        my $a_line_num=$aln->{line_no} || "eof";
+ 
+	print OUT_LOG  "$a_line_num,$bln->{line_no} > ".$bln->{line};
 	# push(@right_discard,$ib);	
+        $num_of_diffs ++;
 }    
 
 #################################
@@ -174,7 +180,9 @@ sub match {
 #	print "@{$l_ref}\n@{$r_ref}\n";
 	
 	if (scalar(@{$l_ref}) != scalar(@{$r_ref}) ) {
-		die( "PrgErr: lines match but have different number of floats:\n".$aln->{line}.$bln->{line} );
+                $num_of_diffs++;
+                push(@messages,"#floats differs, ");
+		#die( "PrgErr: lines match but have different number of floats:\n".$aln->{line}.$bln->{line} );
 	}		 
 		
 	$field_num=0;	
@@ -201,9 +209,10 @@ sub match {
 	}	
 	
 	if (scalar(@messages)) {
-		print OUT_LOG ">< @messages\n";
+		print OUT_LOG ">ndiff< @messages\n";
 		print OUT_LOG "$aln->{line_no},$bln->{line_no} < ".$aln->{line};
 		print OUT_LOG "$aln->{line_no},$bln->{line_no} > ".$bln->{line};
+                print OUT_LOG "--"
 	}		
 }
 
@@ -212,7 +221,10 @@ sub readfile {
 	$fname=shift @_;
 	my $line_no;	
 	my $float;
+        my $token;
+        my $tmp;
 	my @file_list;
+        my @line_list;
 	my $float_regexp = qr/([+-.0-9]+(?:[Ee][+-]?\d+)?)\b/;
 	
 	open FILE, $fname  or die "$!  \"$fname\" "; # or return the system error message
@@ -235,22 +247,28 @@ sub readfile {
 # this match more strings, but it is faster	
 #		/([+-.0-9]+(?:[Ee][+-]?\d+)?)\b/
 #
-		while ( s/$float_regexp// ) {
-			#print "match: <$1> line: $_";
-			$float=$1+0;	# cast to float -  does perl remember that we store number not string			
-			push(@{$reals},$float);
-		}
+		#while ( s/$float_regexp// ) {
+		#	#print "match: <$1> line: $_";
+		#	$float=$1+0;	# cast to float -  does perl remember that we store number not string			
+		#	push(@{$reals},$float);
+		#}
 		
 		# this is little bit faster, but there is some bug  
-		#@line_list=split;
-		#for($i=0;$i<$line_list;$i++) {
-		#    if( is_float( $line_list[$i] ) ) {
-                #        $float=$line_list[$i]+0;
-                #        $line_list[$i]='';
-		#	push(@{$reals},$float);
-		#    }
-                #}
-		#$_=join @line_list;
+		@line_list=split;
+                foreach my $token (@line_list) {  
+                    #$save=$token."0";
+                    #$tmp=$save;  
+                    #$diff = abs( (++$tmp) - 1 - $save );
+                    #print "dgb: /$token/$save/$tmp/$diff/\n";
+                    #if ($diff < 1.0e-15) {
+                    if (Scalar::Util::looks_like_number($token)) {
+                        $float = $token + 0;
+                        $token='0';
+			push(@{$reals},$float);
+		    }
+                }
+		$_=join " ", @line_list;
+                print "$_\n";
 
 		s/\r//;	# remove CR (for windows compatibility)
 		eval $input_filter; # input filter command s/// ...
@@ -263,6 +281,10 @@ sub readfile {
 		$line_no++;
 	}
 	close FILE;
+
+        # add \n to the last line if it is not present
+        my $end_ref = $file_list[-1];
+        $end_ref->{line} =~ s/[^\n]$/\n/;
 	return @file_list;
 }
 
