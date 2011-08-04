@@ -143,6 +143,17 @@ void HC_ExplicitSequential::run_simulation()
     }
 }
 
+HC_ExplicitSequential::~HC_ExplicitSequential() {
+
+    delete mesh;
+    delete material_database;
+    delete main_time_marks;
+    delete water;
+    delete water_output;
+    delete transport_reaction;
+}
+
+
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -26,6 +26,7 @@ class HC_ExplicitSequential {
 public:
     HC_ExplicitSequential(ProblemType problem_type);
     void run_simulation();
+    ~HC_ExplicitSequential();
 
 private:
     ProblemType type_;
