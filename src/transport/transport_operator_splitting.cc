@@ -39,34 +39,55 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 
 	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks);
+    TimeMark::Type output_mark_type = time_marks->new_strict_mark_type();
+    time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type );
 	// TOdO: this has to be set after construction of transport matrix !!
-	//time_->set_constrain(convection->get_cfl_time_constrain());
 
 	solved = true;
+
+	out_conc = convection->get_out_conc();
+    substance_name = convection->get_substance_names();
+
+    for(int subst_id=0; subst_id<convection->get_n_substances(); subst_id++) {
+         output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh_->n_elements());
+     }
+
+
+}
+void TransportOperatorSplitting::output_data(){
+	output_time->write_data(time_->t());
 }
 
-void TransportOperatorSplitting::update_solution() {
-    convection->convection();
-	//convection->compute_one_step();
-    // Calling linear reactions and Semchem
-	decayRad->compute_one_step();
-	Semchem_reactions->compute_one_step();
+void TransportOperatorSplitting::read_simulation_step(double sim_step) {
+	time_->set_constrain(sim_step);
+}
 
+
+void TransportOperatorSplitting::update_solution() {
+
+
+	convection->convection();
+	steps = (int) ceil(time_->dt() / convection->get_cfl_time_constrain());
+
+    START_TIMER("transport_steps");
+	for(int i=0;i < steps;i++)
+		compute_internal_step();
+    END_TIMER("transport_steps");
+    xprintf( Msg, "O.K.\n");
 	solved=true;
 }
 
-void TransportOperatorSplitting::compute_until_save_time(){
+void TransportOperatorSplitting::compute_internal_step(){
 
-	//while(time->output_time())
-		compute_one_step();
-
-	//call output
-
+	convection->compute_one_step();
+    // Calling linear reactions and Semchem
+	decayRad->compute_one_step();
+	Semchem_reactions->compute_one_step();
 }
 
 void TransportOperatorSplitting::set_velocity_field(Vec &vec)
 {
-	//convection->read_flow_field_vector(&vec);
+	convection->read_flow_field_vector(&vec);
 };
 
 

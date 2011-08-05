@@ -5,7 +5,7 @@
 #include "reaction/linear_reaction.hh"
 #include "semchem/semchem_interface.hh"
 #include <limits>
-
+#include "io/output.h"
 
 /// external types:
 //class LinSys;
@@ -16,7 +16,6 @@ class Mesh;
 //class SparseGraph;
 class ConvectionTransport;
 class MaterialDatabase;
-
 /**
  * @brief Specification of transport model interface.
  *
@@ -75,9 +74,11 @@ public:
 	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
 	virtual void set_velocity_field(Vec &velocity_vector);
 	virtual void update_solution();
+	void read_simulation_step(double sim_step);
 	//virtual void compute_one_step();
 	//virtual void compute_until();
-
+	void compute_internal_step();
+	void output_data();
 //	~TransportOperatorSplitting();
 	 virtual void get_parallel_solution_vector(Vec &vc);
 	 virtual void get_solution_vector(double* &vector, unsigned int &size);
@@ -89,10 +90,15 @@ private:
     ConvectionTransport *convection;
     Linear_reaction *decayRad;
     Semchem_interface *Semchem_reactions;
+    int steps;
+    OutputTime *output_time;
    // Mesh *mesh;
    // MaterialDatabase *mat_base;
    // TimeGovernor *time;
  //   Chemistry *chemistry;
+	double ***out_conc;
+    char    **substance_name;
+
 };
 
 #endif // TRANSPORT_OPERATOR_SPLITTING_HH_

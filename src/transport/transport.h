@@ -57,12 +57,11 @@ class OutputTime;
 class ConvectionTransport {
 public:
 	ConvectionTransport(MaterialDatabase *material_database, Mesh *init_mesh);
-//	~ConvectionTransport();
 	void create_transport_matrix_mpi(); //
 	void convection(); // upravit
-//	void compute_one_step();
+	void compute_one_step();
 	void transport_until_time(double time_interval);
-/*	void read_flow_field_vector(Vec *vec);*/
+	void read_flow_field_vector(Vec *vec);
 
 	double get_cfl_time_constrain();
 	double ***get_concentration_matrix();
@@ -70,10 +69,12 @@ public:
 	bool get_dual_porosity();
 	int get_n_substances();
 	int *get_el_4_loc();
-
-	virtual void compute_one_step();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
+	double ***get_out_conc();
+    char    **get_substance_names();
+
+
 private:
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
@@ -103,6 +104,7 @@ private:
 	void alloc_transport_structs_mpi(); //
 	void subst_names(char *line); //
 	void subst_scales(char *line); //
+
 
     //		double           stop_time;       // Number of time steps
     //		double           save_step;       // Step for outputing results

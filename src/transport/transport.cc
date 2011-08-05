@@ -126,11 +126,20 @@ void ConvectionTransport::get_reaction(int i,oReaction *reaction) {
 // RECOMPUTE MATRICES
 //=============================================================================
 
-/*void read_flow_field_vector(Vec *vec){
+void ConvectionTransport::read_flow_field_vector(Vec *vec){
 	create_transport_matrix_mpi();
 	transport_matrix_step_mpi(time_step);
 	calculate_bc_mpi();
-}*/
+};
+
+double ***ConvectionTransport::get_out_conc(){
+	return out_conc;
+}
+
+char    **ConvectionTransport::get_substance_names(){
+	return substance_name;
+}
+
 
 //=============================================================================
 // MAKE TRANSPORT
@@ -1135,12 +1144,14 @@ void ConvectionTransport::convection() {
      save_step = steps + 1;
      }*/
 
+    /*
      xprintf( MsgVerb, "  %d computing cycles, %d writing steps\n",steps ,((int)(steps / save_step) + 1) );
      START_TIMER("transport_steps");
      transport_until_time(0.0);
      END_TIMER("transport_steps");
      xprintf( Msg, "O.K.\n");
      delete output_time;
+     */
 }
 //=============================================================================
 //      OUTPUT VECTOR GATHER
