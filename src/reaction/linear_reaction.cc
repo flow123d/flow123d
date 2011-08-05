@@ -2,34 +2,32 @@
 #include <cstring>
 #include <stdlib.h>
 #include <math.h>
-#include "linear_reaction.hh"
-#include "../system/system.hh"
+#include "reaction/linear_reaction.hh"
+#include "system/system.hh"
 #include "materials.hh"
 #include "transport/transport.h"
 
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false)
+Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), dual_porosity_on(false)
 {
-	//decay_on = OptGetBool("Reactions_module","Compute_decay","no");
-	//FoR_on = OptGetBool("Reactions_module","Compute_reactions","no");
-	//if(decay_on == true)
 	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
-	//if(FoR_on == true)
 	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
-	nr_of_species = OptGetInt("Transport", "N_substances", NULL );
+	nr_of_species = OptGetInt("Transport", "N_substances", "0");
+	//dual_porosity_on = dualPorosity;
+	set_dual_porosity();
+	set_mesh_(mesh);
+	set_nr_of_elements(mesh->n_elements());
 	cout << "number of FoR is"<< nr_of_FoR << endl;
 	cout << "number of decays is" << nr_of_decays << endl;
 	cout << "number of species is" << nr_of_species << endl;
-	this->set_timestep(timestep);
+	this->set_timestep(timeStep);
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		allocate_reaction_matrix();
 		modify_reaction_matrix_repeatedly();
 	}
-	set_nr_of_elements(nrOfElements);
-	set_concentration_matrix(ConvectionMatrix);
 }
 
 Linear_reaction::~Linear_reaction()
@@ -391,14 +389,13 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
 
 void Linear_reaction::compute_one_step(void)
 {
-	 bool dual_porosity = false; //this is just a cheat, because I don't know how to get the information about dual porosity from this place in code
-	 double ***pconc = concentration_matrix;
-
-	 for (int loc_el = 0; loc_el < nr_of_elements; loc_el++) {
+	 //for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
+	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	 {
 	  START_TIMER("decay_step");
-	 	 this->compute_reaction(pconc[MOBILE], loc_el);
-	    if (dual_porosity == true) {
-	     this->compute_reaction(pconc[IMMOBILE], loc_el);
+	 	 this->compute_reaction(concentration_matrix[MOBILE], loc_el);
+	    if (dual_porosity_on == true) {
+	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
 	    }
 	    END_TIMER("decay_step");
 	 }
@@ -417,12 +414,27 @@ void Linear_reaction::set_nr_of_elements(int nrOfElements)
 	return;
 }
 
-void Linear_reaction::set_concentration_matrix(double ***ConcentrationMatrix)
+void Linear_reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc)
 {
-	this->concentration_matrix = ConcentrationMatrix;
+	concentration_matrix = ConcentrationMatrix;
+	distribution = conc_distr;
 	return;
 }
 
-void Linear_reaction::set_timestep(double new_timestep){ time_step = new_timestep; return;}
+void Linear_reaction::set_timestep(double new_timestep){
+	time_step = new_timestep;
+	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
+		allocate_reaction_matrix();
+		modify_reaction_matrix_repeatedly();
+	}
+	return;
+}
 int Linear_reaction::get_nr_of_decays(void){return nr_of_decays;} // two simple inlinefunction returning private variables
 int Linear_reaction::get_nr_of_FoR(void){return nr_of_FoR;}
+void Linear_reaction::set_mesh_(Mesh *Mesh){mesh = Mesh; return;}
+
+void Linear_reaction::set_dual_porosity()
+{
+	this->dual_porosity_on = OptGetBool("Transport", "Dual_porosity", "no");
+	return;
+}

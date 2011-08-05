@@ -66,9 +66,12 @@ public:
 
 	double get_cfl_time_constrain();
 	double ***get_concentration_matrix();
+	void get_par_info(int *el_4_loc, Distribution *el_ds);
+	bool get_dual_porosity();
 	int get_n_substances();
+	int *get_el_4_loc();
 
-	void compute_one_step();
+	virtual void compute_one_step();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
 private:

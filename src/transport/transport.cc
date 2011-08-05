@@ -1058,9 +1058,16 @@ void ConvectionTransport::compute_one_step() {
 void ConvectionTransport::transport_until_time(double time_interval) {
     	int step = 0;
     	register int t;
+    	/*Distribution *distribution;
+    	int *el_4_loc;
+
     	// Chemistry initialization
-    	Linear_reaction *decayRad = new Linear_reaction(time_step,this->mesh->n_elements(),pconc);
-    	Semchem_interface *Semchem_reactions = new Semchem_interface(this->mesh->n_elements(),pconc, mesh);
+    	Linear_reaction *decayRad = new Linear_reaction(time_step,mesh,n_substances,dual_porosity);
+    	this->get_par_info(el_4_loc, distribution);
+    	decayRad->set_concentration_matrix(pconc, distribution, el_4_loc);
+    	Semchem_interface *Semchem_reactions = new Semchem_interface(time_step,mesh,n_substances,dual_porosity);
+    	Semchem_reactions->set_el_4_loc(el_4_loc);
+    	Semchem_reactions->set_concentration_matrix(pconc, distribution, el_4_loc);*/
 
 	    for (t = 1; t <= steps; t++) {
 	    	time += time_step;
@@ -1069,7 +1076,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	    	compute_one_step();
 		END_TIMER("transport_step");
 
-		     // Calling linear reactions and Semchem together
+		     /*/ Calling linear reactions and Semchem together
 		    	  for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
 		    		 START_TIMER("decay_step");
 		    	   	 (*decayRad).compute_reaction(pconc[MOBILE], loc_el);
@@ -1084,7 +1091,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 		    	    	 Semchem_reactions->compute_reaction(dual_porosity, mesh->element(el_4_loc[loc_el]), loc_el, pconc);
 		    	     }
 		    	     END_TIMER("semchem_step");
-		    	  }
+		    	  }*/
 
 	        step++;
 	        //&& ((ConstantDB::getInstance()->getInt("Problem_type") != PROBLEM_DENSITY)
@@ -1247,9 +1254,25 @@ void ConvectionTransport::get_solution_vector(double* &vector, unsigned int &siz
 double ConvectionTransport::get_cfl_time_constrain() {
 	return time_step;
 }
+
 double ***ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
+
+void ConvectionTransport::get_par_info(int *el_4_loc, Distribution *distribution){
+	el_4_loc = this->el_4_loc;
+	distribution = this->el_ds;
+	return;
+}
+
+bool ConvectionTransport::get_dual_porosity(){
+	return dual_porosity;
+}
+
+int *ConvectionTransport::get_el_4_loc(){
+	return el_4_loc;
+}
+
 int ConvectionTransport::get_n_substances() {
 	return n_substances;
 }

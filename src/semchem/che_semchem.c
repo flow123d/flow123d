@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "che_semchem.h"
-#include "../system/system.hh"
+#include "semchem/che_semchem.h"
+#include "system/system.hh"
 #define _R 0.008314
 #define VERZE "30-09-2005"
 #define vystupni_soubor "che_out.txt"

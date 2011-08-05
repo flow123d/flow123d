@@ -3,8 +3,8 @@
 //#include <stdio.h>
 //#include <stdlib.h>
 #include "system/system.hh"
-#include "che_semchem.h"
-#include "semchem_interface.hh"
+#include "semchem/che_semchem.h"
+#include "semchem/semchem_interface.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
 
@@ -18,39 +18,33 @@ struct TS_lat 	*P_lat;
 struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
-Semchem_interface::Semchem_interface(int nrOfElements, double ***ConcentrationMatrix, Mesh * mesh)
-	:semchem_on(false), dual_porosity_on(), mesh_(mesh)
+Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //int nrOfElements, double ***ConcentrationMatrix)
+	:semchem_on(false), dual_porosity_on(false), mesh_(NULL)
 {
   FILE *fw_chem;
 
-  //fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
   fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
-  //this->semchem_on = OptGetBool("Semchem_module", "Compute_reactions", "no");
   this->set_chemistry_computation();
   if(semchem_on == true) ctiich();
   set_dual_porosity();
-  set_nr_of_elements(nrOfElements);
-  set_concentration_matrix(ConcentrationMatrix);
+  set_mesh_(mesh);
+  set_nr_of_elements(mesh_->n_elements());
   return;
 }
 
-//---------------------------------------------------------------------------
-//                 FOR-LOOP CALLING FOR ALL ELEMENTS
-//---------------------------------------------------------------------------
 void Semchem_interface::compute_one_step(void)
 {
-	//ConstantDB* ConstantDB::instance = new ConstantDB();
-	double ***conc = concentration_matrix; //it would be better to call get-function
 	/*
 	 *  TODO: this is obvious error ppelm should be set to match loc_el i.e. element index on local processor in
 	 *  transport ordering.
 	 */
-	ElementIter ppelm = NULL;
+	//ElementIter ppelm = NULL;
 
-	for (int loc_el = 0; loc_el < nr_of_elements; loc_el++)
+	//for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
+	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	{
 	   START_TIMER("semchem_step");
-	   if(this->semchem_on == true) this->compute_reaction(dual_porosity_on, ppelm, loc_el, conc);
+	   if(this->semchem_on == true) this->compute_reaction(dual_porosity_on, mesh_->element(el_4_loc[loc_el]), loc_el, concentration_matrix);
 	   END_TIMER("semchem_step");
 	}
 }
@@ -264,9 +258,22 @@ void Semchem_interface::set_nr_of_elements(int nrOfElements)
 	return;
 }
 
-void Semchem_interface::set_concentration_matrix(double ***ConcentrationMatrix)
+void Semchem_interface::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc)
 {
 	concentration_matrix = ConcentrationMatrix;
+	distribution = conc_distr;
+	return;
+}
+
+void Semchem_interface::set_el_4_loc(int *el_for_loc)
+{
+	el_4_loc = el_for_loc;
+	return;
+}
+
+void Semchem_interface::set_mesh_(Mesh *mesh)
+{
+	mesh_ = mesh;
 	return;
 }
 

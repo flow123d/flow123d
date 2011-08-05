@@ -2,8 +2,8 @@
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
 #include "equation.hh"
-#include "./reaction/linear_reaction.hh"
-#include "./semchem/semchem_interface.hh"
+#include "reaction/linear_reaction.hh"
+#include "semchem/semchem_interface.hh"
 #include <limits>
 
 

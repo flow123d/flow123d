@@ -15,26 +15,28 @@
 #include "mesh/mesh.h"
 #include "reaction/linear_reaction.hh"
 #include "semchem/semchem_interface.hh"
+#include "system/par_distribution.hh"
 
 
 TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database )
 : TransportBase(marks, init_mesh, material_database)
 {
+	Distribution *distribution;
+	int *el_4_loc;
 
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
 
-    //temporary variables for chemistry
-    /*double time_step = 0.5;
-    int n_substances = OptGetInt("Transport", "N_substances", NULL );*/
-
 	convection = new ConvectionTransport(mat_base, mesh_);
 
-
 	// Chemistry initialization
-	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh_->n_elements(),convection->get_concentration_matrix()); //will be get_cfl_time_constrain()
-	decayRad->set_nr_of_species(convection->get_n_substances());
-	Semchem_reactions = new Semchem_interface(mesh_->n_elements(),convection->get_concentration_matrix(), mesh_);
+	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh_, convection->get_n_substances(), convection->get_dual_porosity());
+	convection->get_par_info(el_4_loc, distribution);
+	decayRad->set_concentration_matrix(convection->get_concentration_matrix(), distribution, el_4_loc);
+	Semchem_reactions = new Semchem_interface(convection->get_cfl_time_constrain(), mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
+	Semchem_reactions->set_el_4_loc(el_4_loc);
+	Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), distribution, el_4_loc);
+
 
 	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks);
 	// TOdO: this has to be set after construction of transport matrix !!
@@ -44,18 +46,13 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 }
 
 void TransportOperatorSplitting::update_solution() {
-	//following declarations are here just to enable compilation without errors
-	//double ***conc = convection->get_concentration_matrix(); //could be handled as **conc[MOBILE], **conc[IMMOBILE]
-
     convection->convection();
 	//convection->compute_one_step();
     // Calling linear reactions and Semchem
 	decayRad->compute_one_step();
 	Semchem_reactions->compute_one_step();
-	//Semchem_reactions->compute_one_step(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, pconc[MOBILE], pconc[IMMOBILE]);
 
 	solved=true;
-
 }
 
 void TransportOperatorSplitting::compute_until_save_time(){

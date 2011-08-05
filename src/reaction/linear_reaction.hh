@@ -11,6 +11,8 @@
 #define LINREACT
 
 #include <vector> ///< included to enable saving bifurcation
+class Mesh;
+class Distribution;
 
 class Linear_reaction
 {
@@ -19,50 +21,189 @@ class Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Linear_reaction(double time_step, int nrOfElements, double ***ConcentrationMatrix);
-		~Linear_reaction(void); ///< desctructor
-		double **compute_reaction(double **concentrations, int loc_el); ///< method for multiplication of concentrations array (double **conc or double **pconc) by reaction matrix, loc_el identifies an element where reactions are simulated
-		void compute_one_step(void); ///< method which should call compute_reaction() for all elements, during one time_step
-		int get_nr_of_decays(void); ///< is here to enable access to private variable nr_of_decays
-		int get_nr_of_FoR(void); ///< is here to enable access to private variable nr_of_FoR
-		void set_nr_of_species(int n_substances); ///<
+		Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		/**
+		*	Destructor.
+		*/
+		~Linear_reaction(void);
+		/**
+		*	For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
+		*/
+		double **compute_reaction(double **concentrations, int loc_el);
+		/**
+		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
+		*/
+		void compute_one_step(void);
+		/**
+		*	It returns a number of decays defined in input-file.
+		*/
+		int get_nr_of_decays(void);
+		/**
+		*	It returns a number of first order reactions defined in input-file.
+		*/
+		int get_nr_of_FoR(void);
+		/**
+		*	It enables to set a number of transported species to set a size of reaction matrix.
+		*/
+		void set_nr_of_species(int n_substances);
+		/**
+		*	This method enables to change a data source the program is working with, during simulation.
+		*/
+		void set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
 	private:
-		Linear_reaction(); ///< suppresses a use of constructor without parameters
-		int *set_indeces(char *section, int n_subst); ///< function reads a sequence of numbers defining an order of substances in decay chain, this sequence is read from blocck starting with a chain section, from ini-file, n_subst describes how many substances take a part in decay chain
-		void set_nr_of_isotopes(char *section); ///< reads an information about number of decay chain members, This information is placed in block stsrting with a string section, from ini-file
-		void set_nr_of_decays(void); ///< reads an information about number of decays under consideration, from ini-file
-		void set_nr_of_FoR(void); ///< reads an information about a number of first order reactions under consideration, from ini-file
-		double *set_half_lives(char *section); ///< reads a sequence of (nr_of_isotopes - 1) halflives belonging to separate decay chain step, This information is placed in block starting with a string section, from ini-file
-		void set_bifurcation(char *section, int dec_nr); ///< reads an information for construction of a matrix describing bifurcation of every single decay chain on one row of the matrix (double **array), informations about bifurcation are placed in block starting with a string section, dec_nr identifies the which one decay chain is handled and which row of twodimensional bifurcation matrix (double **array)should be affected, from ini-file
-		void set_bifurcation_on(char *section); ///< reads an information if the bifurcation for a current decay chain is switched on in a block starting with a string section, from ini-file, initialy it is switched off,
-		void set_For_on(void); ///< reads an information if first order reactions simulation is switched on, duplicit to the function in problem.cc
-		void set_decay_on(void); ///< reads an information if a decay simulation is switched on, duplicit to the function in problem.cc
-		void set_kinetic_constants(char *section, int reaction_nr); ///< reads an information and prepares a vector (onedimensional double *array) containing kinetic constants of every single first order reactions, Those informations are placed in a block with a string section at the beginning, from those constants half-lives belonging to first order reactions are computed, from ini-file
-		void set_timestep(double new_timestep); ///< enables to change the timestep while the simulation is running further, method is not implemented yet
+		/**
+		*	This method disables to use constructor without parameters.
+		*/
+		Linear_reaction();
+		/**
+		*	This method reads a sequence of numbers defining an order of substances in decay chain. The string section defines where too look for indices inside of ini-file, whereas n_subst is a number of isotopes in described decay chain.
+		*/
+		int *set_indeces(char *section, int n_subst);
+		/**
+		*	This method reads an information about a number of isotopes in a decay chain described inside of ini-file in section given as an argument.
+		*/
+		void set_nr_of_isotopes(char *section);
+		/**
+		*	This method reads from ini-file an information how many radioactive decays are under consideration.
+		*/
+		void set_nr_of_decays(void);
+		/**
+		*	This method reads from ini-file an information how many first order reactions are under consideration.
+		*/
+		void set_nr_of_FoR(void);
+		/**
+		*	This method reads a sequence of (nr_of_isotopes - 1) halflives belonging to separate decay chain step. This information is placed in ini-file in a block starting with a string section.
+		*/
+		double *set_half_lives(char *section);
+		/**
+		*	This method reads form ini-file an information for construction of a matrix describing bifurcation of every single decay chain on one row of the reaction matrix. Informations about bifurcation are placed in a block starting with a string section. dec_nr identifies which one decay chain is handled and which row of twodimensional bifurcation matrix (double **array)should be affected.
+		*/
+		void set_bifurcation(char *section, int dec_nr);
+		/**
+		*	This method reads from ini-file an information if the bifurcation for a current decay chain is switched on in a block starting with a string section. Initialy bifurcation is switched of.
+		*/
+		void set_bifurcation_on(char *section);
+		/**
+		*	This method reads from ini-file an information if first order reactions simulation is switched on.
+		*/
+		void set_For_on(void);
+		/**
+		*	This method reads from ini-file an information if a radioactive decay simulation is switched on.
+		*/
+		void set_decay_on(void);
+		/**
+		*	This method reads from ini-file an information and prepares a vector (onedimensional double *array) containing kinetic constants of every single first order reactions. Those informations are placed in a block with a string section at the beginning. From those constants half-lives belonging to first order reactions are computed.
+		*/
+		void set_kinetic_constants(char *section, int reaction_nr);
+		/**
+		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
+		*/
+		void set_timestep(double new_timestep);
+		/**
+		*	This method enables to change total number of elements contained in mesh.
+		*/
 		void set_nr_of_elements(int nrOfElements);
-		void set_concentration_matrix(double ***ConcentrationMatrix);
-		double **allocate_reaction_matrix(void); ///< allocates memory for (n_subst x n_subst) square reaction matrix, n_subst is the number of all the substances soluted in grounwater
-		double **modify_reaction_matrix(void); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched off, this function modifies values identified by integer numbers in an array substance_ids
+		/**
+		*	This method transfer pointer to mesh between a transport and reactive part of a program.
+		*/
+		void set_mesh_(Mesh *mesh);
+		/**
+		*
+		*/
+		void set_dual_porosity(void);
+		/**
+		*	This method prepares a memory for storing of reaction matrix.
+		*/
+		double **allocate_reaction_matrix(void);
+		/**
+		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
+		*/
+		double **modify_reaction_matrix(void);
+		/**
+		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched on.
+		*/
 		double **modify_reaction_matrix(int bifurcation); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched on
+		/**
+		*	This method calls modify_reaction_matrix(...) for every single decay and first order reaction.
+		*/
 		double **modify_reaction_matrix_repeatedly(void); ///< calls the function modify_reaction_matrix(..) so many times as many decays are defined
-		void print_reaction_matrix(void); ///< it is here just to get control of reaction matrix modifications, n_subst is the number of all the substances soluted in grounwater
-		void print_indeces(int n_subst); ///< prints a sequence of indeces of chemical species contained in decay chain, n_subst id the number of species in decay chain
-		void print_half_lives(int n_subst); ///< prints a sequence of half-lives belonging to every single step of a current decay chain and returns a pointer to an array,  n_subst id the number of species in decay chain
-		double **reaction_matrix; ///< two-dimensional array describing together all radioactive decay chains and first order reactions under consideration, it is a square matrix with dimension nxn where n is the number of all the substances soluted in grounwater
+		/**
+		*	For control printing of a matrix describing simple chemical raections.
+		*/
+		void print_reaction_matrix(void);
+		/**
+		*	For printing nr_of_isotopes identifies of isotopes in a current decay chain.
+		*/
+		void print_indeces(int n_subst);
+		/**
+		*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
+		*/
+		void print_half_lives(int n_subst);
+		/**
+		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
+		*/
+		double **reaction_matrix;
 		//std::vector<double> half_lives; ///< alternative to following row
-		double *half_lives; ///< one-dimensional array containing half-lives belonging to every single step of a current decay chain
-		int *substance_ids; ///< one-dimensional array with indeces of transported substances which are taking patr in a current decay chain or in a first order reaction
-		int nr_of_species; ///< it is just a number of species soluted in and transported through groundwater-flow
-		int nr_of_isotopes; ///< number of isotopes in a current decay chain
-		int nr_of_decays; ///< how many decay chains are under consideration, it means number of [Decay_i] sections in ini-file
-		int nr_of_FoR; ///< how many firts order reactions of the type A -> B are under consideration, it is a number of [FoReaction_i]
-		bool dual_porosity_on; ///< should be computed chemistry simulation in immobile pores or not
-		std::vector<std::vector<double> > bifurcation; ///< two dimensional array containing mass percentage of every single decay bifurcation on every single row
-		std::vector<double> kinetic_constant; ///< one dimensional array of kinetic constants belonging to considered reactions
-		bool bifurcation_on; ///< bifurcation is initialy switched off
-		double time_step; ///< time step for radioactive decay and first order reactions simulations
-		int nr_of_elements; ///< sets number of elements
+		/**
+		*	Sequence of (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes.
+		*/
+		double *half_lives;
+		/**
+		*	Sequence of integers describing an order of isotopes in decay chain or first order reaction.
+		*/
+		int *substance_ids;
+		/**
+		*	Contains number of transported chemical species.
+		*/
+		int nr_of_species;
+		/**
+		*	Informs about the number of isotopes in a current decay chain.
+		*/
+		int nr_of_isotopes;
+		/**
+		*	Informs how many decay chains are under consideration. It means a number of [Decay_i] sections in ini-file.
+		*/
+		int nr_of_decays;
+		/**
+		*	Informs how many firts order reactions of the type A -> B are under consideration. It is a number of [FoReaction_i] in ini-file.
+		*/
+		int nr_of_FoR;
+		/**
+		*	Boolean which enables to compute reactions also in immobile pores.
+		*/
+		bool dual_porosity_on;
+		/**
+		*	Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
+		*/
+		std::vector<std::vector<double> > bifurcation;
+		/**
+		*	One dimensional array of kinetic constants belonging to considered reactions.
+		*/
+		std::vector<double> kinetic_constant;
+		/**
+		*	Boolean which enables to turn on branching of considered decay chain.
+		*/
+		bool bifurcation_on;
+		/**
+		*	Holds the double describing time step for radioactive decay or first order reactions simulations.
+		*/
+		double time_step;
+		/**
+		*	Containes information about total number of elements.
+		*/
+		int nr_of_elements;
+		/**
+		*	Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
+		*/
 		double ***concentration_matrix;
+		/**
+		*
+		*/
+		Mesh *mesh;
+		/**
+		*	Pointer to reference to distribution of elements between processors.
+		*/
+		Distribution *distribution;
 };
 
 #endif
