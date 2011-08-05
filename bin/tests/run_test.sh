@@ -100,73 +100,102 @@ N_PROC="$2"
 FLOW_PARAMS="$3"
 
 
-# Following function is used for checking output files
-function check_output {
-	INI_FILE="${1}"
-	NP="${2}"
+# Following function is used to copy output files to test_results
+function copy_outputs {
 
+	# Check, if function was called with right number of arguments
+	if [ $# -ge 2 ]
+	then
+		INI_FILE="${1}"
+		NP="${2}"
+	else
+		echo "Error: $0 called with wrong number of arguments: $#"
+		return 1
+	fi
 
 	# Remove all results of preview test
-	rm -rf ${TEST_RESULTS}/${INI_FILE}.${NP}
+	rm -rf "${TEST_RESULTS}/${INI_FILE}.${NP}"
 
 	# Try to create new directory for results
-	mkdir -p ${TEST_RESULTS}/${INI_FILE}.${NP} > /dev/null 2>&1
+	mkdir -p "${TEST_RESULTS}/${INI_FILE}.${NP}" > /dev/null 2>&1
 
 	# Was directory created successfully?
-	if [ $? -eq 0 -a -d ${TEST_RESULTS}/${INI_FILE}.${NP} ]
+	if [ $? -eq 0 -a -d "${TEST_RESULTS}/${INI_FILE}.${NP}" ]
 	then
 		# Move content of ./output directory to the directory containing
 		# results of tests
-		cp -R ${OUTPUT_DIR}/* ${TEST_RESULTS}/${INI_FILE}.${NP}/
-		if [ $? -eq 0 ]
+		cp -R "${OUTPUT_DIR}"/* "${TEST_RESULTS}/${INI_FILE}.${NP}"/
+		if [ $? -ne 0 ]
 		then
-                        # make comparison wtih reference output
-                        
-                        # Does this test contain directory for this .ini file?
-                        if [ ! -d "${REF_OUTPUT_DIR}/${INI_FILE}" ]
-                        then
-                                echo " [Failed]"
-                                echo "Error: directory with reference output files doesn't exist: ${REF_OUTPUT_DIR}/${INI_FILE}"
-                                return 1
-                        fi
-  
-			for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}"/`
-			do
-				# Does needed output file exist?
-				if [ -f "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
-				then
-					# Compare output file using ndiff
-					${NDIFF} \
-						"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
-						"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
-						> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-					# Check result of ndiff
-					if [ $? -eq 0 ]
-					then
-						echo -n "."
-					else
-						echo " [Failed]"
-						echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too different."
-						return 1
-					fi
-				else
-					echo " [Failed]"
-					echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} doesn't exist"
-					return 1
-				fi
-			done
-		else
-			echo " [Failed]"
 			echo "Error: can't copy files to: ${TEST_RESULTS}/${INI_FILE}.${NP}"
 			rm -rf "${TEST_RESULTS}/${INI_FILE}.${NP}"
 			return 1
 		fi
 	else
-		echo " [Failed]"
 		echo "Error: can't create directory: ${TEST_RESULTS}/${INI_FILE}.${NP}"
-		echo ${PWD}
 		return 1
 	fi
+}
+
+# Following function is used for checking output files
+function check_outputs {
+
+	echo -n "Checking output files ."
+
+	if [ $# -ge 2 ]
+	then
+		INI_FILE="${1}"
+		NP="${2}"
+	else
+		echo " [Failed]"
+		echo "Error: $0 called with wrong number of arguments: $#"
+		return 1
+	fi
+
+	
+	# Does exist reference directory for this .ini file?
+	if [ ! -d "${REF_OUTPUT_DIR}/${INI_FILE}" ]
+	then
+		echo " [Failed]"
+		echo "Error: directory with reference output files doesn't exist: ${REF_OUTPUT_DIR}/${INI_FILE}"
+		return 1
+	fi
+
+	# Does exist output directory for this .ini file and number of processes?
+	if ! [ -d "${TEST_RESULTS}/${INI_FILE}.${NP}" ]
+	then
+		echo " [Failed]"
+		echo "Error: directory with output files doesn't exist: ${TEST_RESULTS}/${INI_FILE}.${NP}"
+		return 1
+	fi
+
+	# For every file in reference directory try to find generated file
+	# and do ndiff
+	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}"/`
+	do
+		# Does needed output file exist?
+		if [ -f "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
+		then
+			# Compare output file using ndiff
+			${NDIFF} \
+				"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
+				"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
+				> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+			# Check result of ndiff
+			if [ $? -eq 0 ]
+			then
+				echo -n "."
+			else
+				echo " [Failed]"
+				echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too different."
+				return 1
+			fi
+		else
+			echo " [Failed]"
+			echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} doesn't exist"
+			return 1
+		fi
+	done
 }
 
 
@@ -191,9 +220,7 @@ do
 	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
 	then
 		echo "Error: can't read ${INI_FILE}"
-		EXIT_STATUS = 1
-                # continue with next ini file
-                continue 1
+		continue 1
 	fi
 
 	for NP in ${N_PROC}
@@ -236,6 +263,9 @@ do
 			fi
 		done
 
+		# In all cases copy content of ./output to ./test_results directory
+		copy_outputs "${INI_FILE}" "${NP}"
+
 		# Was Flow123d finished during TIMEOUT or is it still running?
 		if [ ${IS_RUNNING} -eq 1 ]
 		then
@@ -254,25 +284,24 @@ do
 			if [ ${MPIEXEC_EXIT_STATUS} -eq 0 ]
 			then
 				echo " [Success:${TIMER}s]"
-				echo -n "Checking output files ."
-
+				
 				# Check correctness of output files
-				check_output "${INI_FILE}" "${NP}"
+				check_outputs "${INI_FILE}" "${NP}"
 
 				# Were all output files correct?
 				if [ $? -eq 0 ]
 				then
 					echo " [Success]"
 				else
-					# Do not run this test for more processes, when output is
-					# different for current number of processes
-					break 1 
+					EXIT_STATUS=10
+					# No other test will be executed
+					break 2 
 				fi
 			else
 				echo " [Failed:error]"
 				EXIT_STATUS=1
-				# continue with next ini file 
-				continue 2
+				# No other test will be executed
+				break 2
 			fi
 		fi
 	done

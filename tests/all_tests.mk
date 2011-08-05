@@ -21,29 +21,14 @@
 # $LastChangedDate$
 #
 
-# Make all tests
-testall: 01.tst 02.tst
+# This file can be included by makefiles from particular tests
+# to use general rules: "test" and "clean"
 
+test:
+	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
-# Rules for certain tests
-01.tst:
-	make -C 01_steady_flow_123d test
-02.tst:
-	make -C 02_transport_12d test
-
-# General rule to run test given only by number
-#%.tst:
-#	BASE=$*;\
-#	dir="`pwd`/`echo $${BASE}*`";\
-#	echo $${dir};\
-#	if test -d "$${dir}";\
-#	then make -C "$${dir}" test;\
-#	else echo "missing test directory $${dir}";\
-#	exit 1;\
-#	fi
-
-
-# Rule to clean generated files in test directories
 clean:
-	make -C 01_steady_flow_123d clean
-	make -C 02_transport_12d clean
+	rm -rf Results
+	rm -rf test_results
+	rm -f profiler_*
+	rm -f output/*

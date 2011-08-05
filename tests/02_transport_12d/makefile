@@ -1,6 +1,5 @@
 INI_FILES="./flow.ini ./flow_vtk.ini"
-NPROC="1 2"
+NPROC="1"
 FLOW_PARAMS="-o output"
 
-include ../makefile
-
+include ../all_tests.mk
