@@ -105,12 +105,6 @@ function check_output {
 	INI_FILE="${1}"
 	NP="${2}"
 
-	# Does this test contain directory for this .ini file?
-	if [ ! -d "${REF_OUTPUT_DIR}/${INI_FILE}" ]
-	then
-		echo " [Failed]"
-		echo "Error: directory with reference output files doesn't exist: ${REF_OUTPUT_DIR}/${INI_FILE}"
-	fi
 
 	# Remove all results of preview test
 	rm -rf ${TEST_RESULTS}/${INI_FILE}.${NP}
@@ -126,6 +120,16 @@ function check_output {
 		cp -R ${OUTPUT_DIR}/* ${TEST_RESULTS}/${INI_FILE}.${NP}/
 		if [ $? -eq 0 ]
 		then
+                        # make comparison wtih reference output
+                        
+                        # Does this test contain directory for this .ini file?
+                        if [ ! -d "${REF_OUTPUT_DIR}/${INI_FILE}" ]
+                        then
+                                echo " [Failed]"
+                                echo "Error: directory with reference output files doesn't exist: ${REF_OUTPUT_DIR}/${INI_FILE}"
+                                return 1
+                        fi
+  
 			for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}"/`
 			do
 				# Does needed output file exist?
@@ -187,7 +191,9 @@ do
 	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
 	then
 		echo "Error: can't read ${INI_FILE}"
-		exit 1
+		EXIT_STATUS = 1
+                # continue with next ini file
+                continue 1
 	fi
 
 	for NP in ${N_PROC}
@@ -265,8 +271,8 @@ do
 			else
 				echo " [Failed:error]"
 				EXIT_STATUS=1
-				# No other test will be executed
-				break 2
+				# continue with next ini file 
+				continue 2
 			fi
 		fi
 	done

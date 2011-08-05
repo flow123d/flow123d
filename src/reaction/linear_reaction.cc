@@ -431,7 +431,7 @@ void Linear_reaction::set_timestep(double new_timestep){
 }
 int Linear_reaction::get_nr_of_decays(void){return nr_of_decays;} // two simple inlinefunction returning private variables
 int Linear_reaction::get_nr_of_FoR(void){return nr_of_FoR;}
-void Linear_reaction::set_mesh_(Mesh *Mesh){mesh = Mesh; return;}
+void Linear_reaction::set_mesh_(Mesh *mesh_in){mesh = mesh_in; return;}
 
 void Linear_reaction::set_dual_porosity()
 {

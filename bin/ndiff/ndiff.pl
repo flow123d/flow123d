@@ -268,7 +268,7 @@ sub readfile {
 		    }
                 }
 		$_=join " ", @line_list;
-                print "$_\n";
+                # print "$_\n";
 
 		s/\r//;	# remove CR (for windows compatibility)
 		eval $input_filter; # input filter command s/// ...

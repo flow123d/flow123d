@@ -274,17 +274,8 @@ Output::Output(Mesh *_mesh, string fname)
     base_file = new ofstream;
 
     base_file->open(fname.c_str());
-    if(base_file->is_open() == false) {
-        xprintf(Msg, "Could not write output to the file: %s\n", fname.c_str());
-        base_filename = NULL;
-        delete base_file;
-        base_file = NULL;
-        mesh = NULL;
-
-        return;
-    } else {
-        xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
-    }
+    INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
+    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
 
     base_filename = new string(fname);
 
@@ -448,17 +439,9 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     base_file = new ofstream;
 
     base_file->open(fname.c_str());
-    if(base_file->is_open() == false) {
-        xprintf(Msg, "Could not write output to the file: %s\n", fname.c_str());
-        base_filename = NULL;
-        delete base_file;
-        base_file = NULL;
-        mesh = NULL;
+    INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
+    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
 
-        return;
-    } else {
-        xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
-    }
 
     base_filename = new string(fname);
 
