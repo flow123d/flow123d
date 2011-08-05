@@ -49,6 +49,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	double ***out_conc = convection->get_out_conc();
 	char    **substance_name = convection->get_substance_names();
 
+	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
+	DBGMSG("create output\n");
+	output_time = new OutputTime(mesh_, output_file);
+
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
          std::string subst_name = std::string(substance_name[subst_id]);
