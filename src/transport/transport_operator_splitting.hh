@@ -96,8 +96,8 @@ private:
    // MaterialDatabase *mat_base;
    // TimeGovernor *time;
  //   Chemistry *chemistry;
-	double ***out_conc;
-    char    **substance_name;
+
+
 
 };
 

@@ -71,6 +71,10 @@ public:
 	int *get_el_4_loc();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
+	/**
+	 * Return pointer to sequential arrays for output.
+	 * TODO: Maybe this should be made by get_solution_vector, but here we have matrix of arrays.
+	 */
 	double ***get_out_conc();
     char    **get_substance_names();
 

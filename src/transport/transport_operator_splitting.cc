@@ -45,16 +45,23 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	solved = true;
 
-	out_conc = convection->get_out_conc();
-    substance_name = convection->get_substance_names();
+	// register output vectors from convection
+	double ***out_conc = convection->get_out_conc();
+	char    **substance_name = convection->get_substance_names();
 
-    for(int subst_id=0; subst_id<convection->get_n_substances(); subst_id++) {
-         output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh_->n_elements());
-     }
-
+    for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
+         // TODO: What about output also other "phases", IMMOBILE and so on.
+         std::string subst_name = std::string(substance_name[subst_id]);
+         double *data = out_conc[MOBILE][subst_id];
+         output_time->register_elem_data<double>(subst_name, "", data , mesh_->n_elements());
+    }
+    // write initial condition
+    output_time->write_data(time_->t());
 
 }
 void TransportOperatorSplitting::output_data(){
+
+
 	output_time->write_data(time_->t());
 }
 

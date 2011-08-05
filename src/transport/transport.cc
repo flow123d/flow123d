@@ -210,13 +210,13 @@ void ConvectionTransport::transport_init() {
 
     output_vector_gather();
 
-    output_time = new OutputTime(mesh, transport_out_fname);
+    //output_time = new OutputTime(mesh, transport_out_fname);
 
     // Register concentrations data on elements
-    for(int subst_id=0; subst_id<n_substances; subst_id++) {
-        output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
-    }
-    output_time->write_data(time);
+    //for(int subst_id=0; subst_id<n_substances; subst_id++) {
+    //    output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+    //}
+    //output_time->write_data(time);
 
     INPUT_CHECK(!(n_substances < 1 ),"Number of substances must be positive\n");
 }
@@ -311,44 +311,43 @@ void ConvectionTransport::alloc_transport_vectors() {
     int i, j, sbi, n_subst, ph;
     ElementIter elm;
     n_subst = n_substances;
-    
 
     conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     out_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     //transport->node_conc = (double****) xmalloc(MAX_PHASES * sizeof(double***));
     for (ph = 0; ph < MAX_PHASES; ph++) {
-      if ((sub_problem & ph) == ph) {
-        conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //(MAX_PHASES * sizeof(double*));
-        pconc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
-        out_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
-        //  transport->node_conc[sbi] = (double***) xmalloc(MAX_PHASES * sizeof(double**));
-    //}
-    //}
-	for(sbi = 0; sbi < n_subst; sbi++){
-           conc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
-           pconc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
-           out_conc[ph][sbi] = (double*) xmalloc(el_ds->size() * sizeof(double));
-           // transport->node_conc[sbi][ph] = (double**)xmalloc((mesh->n_elements() ) * sizeof(double*));
-           for (i = 0; i < el_ds->lsize(); i++) {
-             conc[ph][sbi][i] = 0.0;
-             pconc[ph][sbi][i] = 0.0;
-             out_conc[ph][sbi][i] = 0.0;
-           }
-                  /*
-                   i = 0;
-                   FOR_ELEMENTS(elm){
-                   transport->node_conc[sbi][ph][i++]=(double*)xmalloc((elm->n_nodes) * sizeof(double));
-                   for(j = 0 ;j < elm->n_nodes ; j++)
-                   transport->node_conc[sbi][ph][i-1][j] = 0.0;
-                   }*/
-	}
-      }else {
-                  conc[ph] = NULL;
-                  pconc[ph] = NULL;
-                  out_conc[ph] = NULL;
-                  //transport->node_conc[sbi][ph] = NULL;
-       }
+        if ((sub_problem & ph) == ph) {
+            conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //(MAX_PHASES * sizeof(double*));
+            pconc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
+            out_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
+            //  transport->node_conc[sbi] = (double***) xmalloc(MAX_PHASES * sizeof(double**));
+            //}
+            //}
+            for (sbi = 0; sbi < n_subst; sbi++) {
+                conc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+                pconc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+                out_conc[ph][sbi] = (double*) xmalloc(el_ds->size() * sizeof(double));
+                // transport->node_conc[sbi][ph] = (double**)xmalloc((mesh->n_elements() ) * sizeof(double*));
+                for (i = 0; i < el_ds->lsize(); i++) {
+                    conc[ph][sbi][i] = 0.0;
+                    pconc[ph][sbi][i] = 0.0;
+                    out_conc[ph][sbi][i] = 0.0;
+                }
+                /*
+                 i = 0;
+                 FOR_ELEMENTS(elm){
+                 transport->node_conc[sbi][ph][i++]=(double*)xmalloc((elm->n_nodes) * sizeof(double));
+                 for(j = 0 ;j < elm->n_nodes ; j++)
+                 transport->node_conc[sbi][ph][i-1][j] = 0.0;
+                 }*/
+            }
+        } else {
+            conc[ph] = NULL;
+            pconc[ph] = NULL;
+            out_conc[ph] = NULL;
+            //transport->node_conc[sbi][ph] = NULL;
+        }
     }
 }
 //=============================================================================
