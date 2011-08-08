@@ -79,6 +79,7 @@ void TransportOperatorSplitting::update_solution() {
 
 	convection->convection();
 	steps = (int) ceil(time_->dt() / convection->get_cfl_time_constrain());
+	// TODO: update linear reaciton marix here !!
 
     START_TIMER("transport_steps");
 	for(int i=0;i < steps;i++)

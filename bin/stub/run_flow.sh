@@ -43,7 +43,7 @@ else
 fi	
 
 # Set up default machine script
-MACHINE_SCRIPT="$SCRIPT_PATH_DIR/current_flow"
+MACHINE_SCRIPT="$SCRIPT_PATH_DIR/../current_flow"
 
 # Set up default number of processes
 NPROC=1
@@ -100,13 +100,13 @@ else
 fi
 
 # Path to MPIEXEC
-MPI_RUN="$SCRIPT_PATH_DIR/mpiexec"
+MPI_RUN="$SCRIPT_PATH_DIR/../mpiexec"
 
 # Paths to dirs, relative to tests/$WRK
-if [ -e "$SCRIPT_PATH_DIR/flow123d.exe" ]; then
-	EXECUTABLE="$SCRIPT_PATH_DIR/flow123d.exe";
-elif [ -e "$SCRIPT_PATH_DIR/flow123d" ]; then
-	EXECUTABLE="$SCRIPT_PATH_DIR/flow123d";
+if [ -e "$SCRIPT_PATH_DIR/../flow123d.exe" ]; then
+	EXECUTABLE="$SCRIPT_PATH_DIR/../flow123d.exe";
+elif [ -e "$SCRIPT_PATH_DIR/../flow123d" ]; then
+	EXECUTABLE="$SCRIPT_PATH_DIR/../flow123d";
 else
 	echo "Error: missing executable file!"
 	exit 1

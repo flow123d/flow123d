@@ -56,13 +56,13 @@ bin/current_flow:
 		echo '#!/bin/bash' > bin/current_flow; \
 		echo "\"`pwd`/bin/generic_flow.sh\"" >> bin/current_flow; \
 	else \
-		if [ -e "bin/${MACHINE}_flow.sh" ]; then \
+		if [ -e "bin/stub/${MACHINE}_flow.sh" ]; then \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/${MACHINE}_flow.sh"' >> bin/current_flow; \
+			echo '"`pwd`/bin/stub/${MACHINE}_flow.sh"' >> bin/current_flow; \
 		else \
 			echo "script for given MACHINE not found, using default"; \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/generic_flow.sh"' >> bin/current_flow; \
+			echo '"`pwd`/bin/stub/generic_flow.sh"' >> bin/current_flow; \
 		fi \
 	fi
 	chmod u+x bin/current_flow
