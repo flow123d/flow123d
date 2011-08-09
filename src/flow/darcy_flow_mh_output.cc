@@ -94,12 +94,12 @@ void DarcyFlowMHOutput::postprocess() {
 
 void DarcyFlowMHOutput::output()
 {
-    std::string nodeName = "node_scalars";
-    std::string nodeUnit = "";
-    std::string eleScalarName = "element_scalars";
-    std::string eleScalarUnit = "";
-    std::string eleVectorName = "element_vectors";
-    std::string eleVectorUnit = "";
+    std::string nodeName = "pressure_nodes";
+    std::string nodeUnit = "L";
+    std::string eleScalarName = "pressure_elements";
+    std::string eleScalarUnit = "L";
+    std::string eleVectorName = "velocity_elements";
+    std::string eleVectorUnit = "L/T";
 
     unsigned int result = 0;
 

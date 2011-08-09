@@ -189,8 +189,8 @@ void Output::get_data_from_mesh(void)
 
     /* Fill temporary vector of node scalars */
     node_scalar->scalars = new ScalarFloatVector;
-    node_scalar->name = "node_scalars";
-    node_scalar->unit = "";
+    node_scalar->name = "pressure_nodes";
+    node_scalar->unit = "L";
     /* Generate vector for scalar data of nodes */
     node_scalar->scalars->reserve(mesh->node_vector.size());   // reserver memory for vector
     FOR_NODES(mesh, node ) {
@@ -199,11 +199,11 @@ void Output::get_data_from_mesh(void)
 
     /* Fill vectors of element scalars and vectors */
     element_scalar->scalars = new ScalarFloatVector;
-    element_scalar->name = "element_scalars";
-    element_scalar->unit = "";
+    element_scalar->name = "pressure_elements";
+    element_scalar->unit = "L";
     element_vector->vectors = new VectorFloatVector;
-    element_vector->name = "element_vectors";
-    element_vector->unit = "";
+    element_vector->name = "velocity_elements";
+    element_vector->unit = "L/T";
     /* Generate vectors for scalar and vector data of nodes */
     element_scalar->scalars->reserve(mesh->n_elements());
     element_vector->vectors->reserve(mesh->n_elements());

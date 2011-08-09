@@ -256,7 +256,7 @@ static void write_vtk_ascii_data(Output *output, OutputData *out_data)
 static void write_vtk_scalar_ascii(Output *output, OutputData *data)
 {
     /* Write DataArray begin */
-    output->get_data_file() << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_" << *data->getUnits() <<"\" format=\"ascii\">" << endl;//, name);
+    output->get_data_file() << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_[" << *data->getUnits() <<"]\" format=\"ascii\">" << endl;//, name);
     /* Write own data */
     write_vtk_ascii_data(output, data);
 
@@ -271,7 +271,7 @@ static void write_vtk_scalar_ascii(Output *output, OutputData *data)
 static void write_vtk_vector_ascii(Output *output, OutputData *data)
 {
     /* Write DataArray begin */
-    output->get_data_file() << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_" << *data->getUnits() << "\" NumberOfComponents=\"" << data->getCompNum() << "\" format=\"ascii\">" << endl;
+    output->get_data_file() << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_[" << *data->getUnits() << "]\" NumberOfComponents=\"" << data->getCompNum() << "\" format=\"ascii\">" << endl;
 
     /* Write own data */
     write_vtk_ascii_data(output, data);
@@ -311,7 +311,7 @@ static void write_vtk_data_names(Output *output, vector<OutputData> *data)
     for(OutputDataVec::iterator dta = data->begin();
                 dta != data->end(); dta++) {
         if(dta->getCompNum() == 1) {
-            output->get_data_file() << *dta->getName() << "_" << *dta->getUnits();
+            output->get_data_file() << *dta->getName() << "_[" << *dta->getUnits() << "]";
             if((dta+1) != data->end()) {
                 output->get_data_file() << ",";
             }
@@ -324,7 +324,7 @@ static void write_vtk_data_names(Output *output, vector<OutputData> *data)
     for(OutputDataVec::iterator dta = data->begin();
                 dta != data->end(); dta++) {
         if(dta->getCompNum() == 3) {
-            output->get_data_file() << *dta->getName() << "_" << *dta->getUnits();
+            output->get_data_file() << *dta->getName() << "_[" << *dta->getUnits() << "]";
             if((dta+1) != data->end()) {
                 output->get_data_file() << ",";
             }

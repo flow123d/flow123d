@@ -56,9 +56,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
-         std::string subst_name = std::string(substance_name[subst_id]);
+         std::string subst_name = std::string(substance_name[subst_id]) + "_mobile";
          double *data = out_conc[MOBILE][subst_id];
-         field_output->register_elem_data<double>(subst_name, "", data , mesh_->n_elements());
+         field_output->register_elem_data<double>(subst_name, "M/L^3", data , mesh_->n_elements());
     }
     // write initial condition
     field_output->write_data(time_->t());

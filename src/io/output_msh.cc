@@ -205,7 +205,7 @@ void write_msh_node_data(Output *output, double time, int step)
             output->get_base_file() << "$NodeData" << endl;
 
             output->get_base_file() << "1" << endl;     // one string tag
-            output->get_base_file() << "\"" << *dta->getName() << "_" << *dta->getUnits() <<"\"" << endl;
+            output->get_base_file() << "\"" << *dta->getName() << "_[" << *dta->getUnits() <<"]\"" << endl;
 
             output->get_base_file() << "1" << endl;     // one real tag
             output->get_base_file() << time << endl;    // first real tag = time
@@ -241,7 +241,7 @@ void write_msh_elem_data(Output *output, double time, int step)
             output->get_base_file() << "$ElementData" << endl;
 
             output->get_base_file() << "1" << endl;     // one string tag
-            output->get_base_file() << "\"" << *dta->getName() << "_" << *dta->getUnits() <<"\"" << endl;
+            output->get_base_file() << "\"" << *dta->getName() << "_[" << *dta->getUnits() <<"]\"" << endl;
 
             output->get_base_file() << "1" << endl;     // one real tag
             output->get_base_file() << time << endl;    // first real tag = time
