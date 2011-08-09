@@ -32,6 +32,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	// Chemistry initialization
 	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	convection->get_par_info(el_4_loc, el_distribution);
+	//decayRad->release_reaction_matrix();
 	decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 	Semchem_reactions = new Semchem_interface(convection->get_cfl_time_constrain(), mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	Semchem_reactions->set_el_4_loc(el_4_loc);
@@ -94,6 +95,7 @@ void TransportOperatorSplitting::update_solution() {
 	cfl_dt = time_->dt() / steps;
 	convection->set_time_step(cfl_dt);
 	// TODO: update linear reaciton marix here !!
+	decayRad->set_time_step(cfl_dt);
 
     START_TIMER("transport_steps");
 	for(int i=0;i < steps;i++) {

@@ -50,6 +50,10 @@ class Linear_reaction
 		*	This method enables to change a data source the program is working with, during simulation.
 		*/
 		void set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
+		/**
+		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
+		*/
+		void set_time_step(double new_timestep);
 	private:
 		/**
 		*	This method disables to use constructor without parameters.
@@ -96,10 +100,6 @@ class Linear_reaction
 		*/
 		void set_kinetic_constants(char *section, int reaction_nr);
 		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
-		*/
-		void set_timestep(double new_timestep);
-		/**
 		*	This method enables to change total number of elements contained in mesh.
 		*/
 		void set_nr_of_elements(int nrOfElements);
@@ -135,6 +135,10 @@ class Linear_reaction
 		*	For printing nr_of_isotopes identifies of isotopes in a current decay chain.
 		*/
 		void print_indeces(int n_subst);
+		/**
+		* Following method releases reaction matrix to make it possible to set a new time step for chemistry.
+		*/
+		void release_reaction_matrix();
 		/**
 		*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
 		*/

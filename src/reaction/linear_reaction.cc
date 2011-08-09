@@ -23,7 +23,7 @@ Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, 
 	cout << "number of FoR is"<< nr_of_FoR << endl;
 	cout << "number of decays is" << nr_of_decays << endl;
 	cout << "number of species is" << nr_of_species << endl;
-	this->set_timestep(timeStep);
+	this->set_time_step(timeStep);
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		allocate_reaction_matrix();
 		modify_reaction_matrix_repeatedly();
@@ -40,14 +40,12 @@ Linear_reaction::~Linear_reaction()
 	half_lives = NULL;
 
 	free(substance_ids);
-	this->substance_ids = NULL;
+	substance_ids = NULL;
 
-	for(rows = 0; rows < nr_of_species;rows++){
-		free(reaction_matrix[rows]);
-		reaction_matrix[rows] = NULL;
-	}
-	free(reaction_matrix);
-	reaction_matrix = NULL;
+	free(half_lives);
+	half_lives = NULL;
+
+	release_reaction_matrix();
 }
 
 double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
@@ -418,9 +416,10 @@ void Linear_reaction::set_concentration_matrix(double ***ConcentrationMatrix, Di
 	return;
 }
 
-void Linear_reaction::set_timestep(double new_timestep){
+void Linear_reaction::set_time_step(double new_timestep){
 	time_step = new_timestep;
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
+		release_reaction_matrix();
 		allocate_reaction_matrix();
 		modify_reaction_matrix_repeatedly();
 	}
@@ -434,4 +433,22 @@ void Linear_reaction::set_dual_porosity()
 {
 	this->dual_porosity_on = OptGetBool("Transport", "Dual_porosity", "no");
 	return;
+}
+
+void Linear_reaction::release_reaction_matrix(void)
+{
+	int i;
+	if(reaction_matrix != NULL)
+	{
+		for(i = 0; i < nr_of_isotopes; i++)
+		{
+			if(reaction_matrix[i] != NULL)
+			{
+				free(reaction_matrix[i]);
+				reaction_matrix[i] = NULL;
+			}
+		}
+		free(reaction_matrix);
+		reaction_matrix = NULL;
+	}
 }
