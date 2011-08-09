@@ -60,11 +60,11 @@ BEGIN {
 
 use lib "$scriptdir";
 use Diff;
-use Scalar::Util
+use Scalar::Util;
 
 # global variables
 # constants, setting
-my $machine_prec=1E-30;
+my $machine_prec = 1.0E-30;
 my $rel_tol=0.01;
 my $abs_tol=0.0001;
 my $log_name="-"; # dafult is write to the output
@@ -177,7 +177,6 @@ sub match {
 #	print "$aln->{reals}, $bln->{reals}\n";
 	my $l_ref=$aln->{reals};
 	my $r_ref=$bln->{reals};
-#	print "@{$l_ref}\n@{$r_ref}\n";
 	
 	if (scalar(@{$l_ref}) != scalar(@{$r_ref}) ) {
                 $num_of_diffs++;
@@ -186,16 +185,16 @@ sub match {
 	}		 
 		
 	$field_num=0;	
-	while ( ($lfloat=shift @{$l_ref}) &&  ($rfloat=shift @{$r_ref}) ) {
+	while ( scalar(@{$l_ref}) &&  scalar(@{$r_ref}) ) {
+                $lfloat=shift @{$l_ref};
+                $rfloat=shift @{$r_ref}; 
 		$field_num++;
-#		print "cmp: $lfloat, $rfloat\n";
 		$max = max( abs($lfloat),abs($rfloat) );
 		if ($max < $machine_prec ) {next;}	# skip too small numbers
-		
 		$adiff=abs($lfloat-$rfloat);
 		$abs_norm=max($abs_norm,$adiff);
 		$rdiff=$adiff/$max;
-		$rel_norm=max($rel_norm,$rdiff);		 
+		$rel_norm=max($rel_norm,$rdiff);
 		if ( $adiff < $abs_tol ) {next;}		
 		if ( $rdiff < $rel_tol ) {next;}
 		
@@ -212,7 +211,7 @@ sub match {
 		print OUT_LOG ">ndiff< @messages\n";
 		print OUT_LOG "$aln->{line_no},$bln->{line_no} < ".$aln->{line};
 		print OUT_LOG "$aln->{line_no},$bln->{line_no} > ".$bln->{line};
-                print OUT_LOG "--"
+                print OUT_LOG "--\n"
 	}		
 }
 
@@ -268,7 +267,9 @@ sub readfile {
 		    }
                 }
 		$_=join " ", @line_list;
-                # print "$_\n";
+                #print "$fname : $_\n";
+#                foreach my $i (@{$reals}) {print "$i ";}
+#                print "\n";
 
 		s/\r//;	# remove CR (for windows compatibility)
 		eval $input_filter; # input filter command s/// ...
