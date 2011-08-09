@@ -50,7 +50,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	double ***out_conc = convection->get_out_conc();
 	char    **substance_name = convection->get_substance_names();
 
-	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
+	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
 	DBGMSG("create output\n");
 	field_output = new OutputTime(mesh_, output_file);
 

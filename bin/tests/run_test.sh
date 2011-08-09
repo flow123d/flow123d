@@ -294,8 +294,8 @@ do
 					echo " [Success]"
 				else
 					EXIT_STATUS=10
-					# No other test will be executed
-					break 2 
+					# Try next ini file
+					continue 2 
 				fi
 			else
 				echo " [Failed:error]"
