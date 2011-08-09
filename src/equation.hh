@@ -110,7 +110,7 @@ public:
     /**
      * Basic getter method returns constant TimeGovernor reference which provides full read access to the time information.
      */
-    inline const TimeGovernor &time()
+    inline TimeGovernor &time()
     {
         ASSERT(NONULL(time_),"Time governor was not created.\n");
         return *time_;
@@ -139,7 +139,7 @@ public:
      */
     inline bool is_end()
         {
-        DBGMSG("eq end: %f %d\n", time_->t(), solved);
+        //DBGMSG("eq end: %f %d\n", time_->t(), solved);
         return time_->is_end() && solved;
         }
 

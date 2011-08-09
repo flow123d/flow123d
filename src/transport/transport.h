@@ -57,15 +57,28 @@ class OutputTime;
 class ConvectionTransport {
 public:
 	ConvectionTransport(MaterialDatabase *material_database, Mesh *init_mesh);
-	void create_transport_matrix_mpi(); //
-	void convection(); // upravit
+	//void init_convection(); // upravit
+
+	/**
+	 * Calculates one time step of explicit transport.
+	 */
 	void compute_one_step();
-	void transport_until_time(double time_interval);
-	void read_flow_field_vector(Vec *vec);
+
+	//void transport_until_time(double time_interval);
+	/**
+	 * Use new flow field vector for construction of convection matrix.
+	 * Updates CFL time step constrain.
+	 */
+	void set_flow_field_vector(Vec *vec);
+
+	/**
+	 * Set time step to use. Rescale transport matrix.
+	 */
+	void set_time_step(double time_step);
 
 	double get_cfl_time_constrain();
 	double ***get_concentration_matrix();
-	void get_par_info(int *el_4_loc, Distribution *el_ds);
+	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
 	int get_n_substances();
 	int *get_el_4_loc();
@@ -80,11 +93,34 @@ public:
 
 
 private:
+    typedef enum {
+        scaled, unscaled
+    } ConvectionMatrixState;
+
+    /**
+     * Assembly convection term part of the matrix and boundary matrix for application of boundary conditions.
+     *
+     * Discretization of the convection term use explicit time scheme and finite volumes with full upwinding.
+     * We count on with exchange between dimensions and mixing on edges where more then two elements connect (can happen for 2D and 1D elements in
+     * 3D embedding space)
+     *
+     * In order to get multiplication matrix for explicit transport one have to scale the convection part by the acctual time step and
+     * add time term, i. e. unit matrix (see. transport_matrix_step_mpi)
+     *
+     * Updates CFL time step constrain.
+     *
+     * TODO: Remove assembling of boundary matrix and assembly directly boundary source vector.
+     * TODO: Do not use velocty values stored in mesh. Use separate velocity vector.
+     */
+    void create_transport_matrix_mpi();
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
-	void transport_init(); //
 	void read_initial_condition(); //
-	void fill_transport_vectors_mpi(); //
+	void fill_transport_vectors_mpi();
+
+	/**
+	 * Finish explicit transport matrix (time step scaling)
+	 */
 	void transport_matrix_step_mpi(double time_step); //
 	void calculate_bc_mpi(); //
 	void transport_step_mpi(Mat *tm, Vec *conc, Vec *pconc, Vec *bc);
@@ -110,13 +146,15 @@ private:
 	void subst_scales(char *line); //
 
 
-    //		double           stop_time;       // Number of time steps
-    //		double           save_step;       // Step for outputing results
-    		double           time_step;       // Time step for computation
-    		double			 max_step;		// bounded by CFL
-    		Mesh *mesh;
-    		MaterialDatabase *mat_base;
-          //  struct TMatrix* tmatrix;
+	ConvectionMatrixState convection_matrix_state;
+
+	Mesh *mesh;                            ///<  Used mesh.
+    MaterialDatabase *mat_base;            ///<   Used material database.
+
+    // TODO: Make simplified TimeGovernor and move following into it.
+    double time_step;                     ///< Time step for computation.
+    double max_step;		              ///< Time step constrain given by CFL condition.
+    unsigned int time_level;              ///< Number of computed time steps.
 
             // only local part
             double ***conc;
@@ -127,8 +165,6 @@ private:
         	std::string		transport_out_fname;// Name of file of trans. output
         	int              dens_step;            //
         	double 			update_dens_time;
-
-            //double ****node_conc;	// zatim nepouzite
 
             double ***out_conc;
             int              n_substances;    // # substances transported by water
@@ -173,10 +209,10 @@ private:
            int n_reaction;
            */
     //BTC
-            struct BTC		*btc;
+    //        struct BTC		*btc;
 
     //DECOVALEX
-            struct FSection *fsec;
+    //        struct FSection *fsec;
 
     //PEPA
             int 	pepa; // It enables Pepa Chudoba's  crazy functions
@@ -211,12 +247,12 @@ private:
             int *el_4_loc;
             Distribution *el_ds;
       // NEW OUTPUT
-            int frame;
-            double time;
-            int save_step;
-            int steps;
+      //      int frame;
+      //      double time;
+      //      int save_step;
+      //      int steps;
 
-            OutputTime *output_time;
+      //      OutputTime *output_time;
 
 };
 

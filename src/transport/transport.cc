@@ -52,15 +52,100 @@
 #include "ppfcs.h"
 //#include "btc.h" XX
 //#include "reaction.h" XX
-#include "flow/darcy_flow_mh.hh"
+
 #include "system/par_distribution.hh"
 
 #include "sparse_graph.hh"
-#include "semchem/semchem_interface.hh"
-#include "reaction/linear_reaction.hh"
+//#include "semchem/semchem_interface.hh"
+//#include "reaction/linear_reaction.hh"
 #include <string.h>
 
-static double *transport_aloc_pi(Mesh*);
+// TODO: move partitioning into mesh and remove this include
+#include "flow/darcy_flow_mh.hh"
+
+//ConvectionTransport::ConvectionTransport(struct Problem *problemMaterialDatabase, Mesh *init_mesh)
+//: problem(problem), mesh(init_mesh)
+ConvectionTransport::ConvectionTransport(MaterialDatabase *material_database, Mesh *init_mesh)
+: mat_base(material_database), mesh(init_mesh)
+{
+    //struct Transport *transport = problem->transport;
+
+    char *snames, *sscales;
+  
+    F_ENTRY;
+
+    // [Density]
+    max_dens_it = OptGetInt("Density", "Density_max_iter", "20");
+    dens_implicit = OptGetBool("Density", "Density_implicit", "no");
+    dens_eps = OptGetDbl("Density", "Eps_iter", "1.0e-5");
+    write_iterations = OptGetBool("Density", "Write_iterations", "no");
+    dens_step = OptGetInt("Density", "Density_steps", "1");
+    // [Transport]
+    transport_on = OptGetBool("Transport", "Transport_on", "no");
+    sorption = OptGetBool("Transport", "Sorption", "no");
+    dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
+    reaction_on = OptGetBool("Transport", "Reactions", "no");
+    concentration_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\"));
+    transport_bcd_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\"));
+    transport_out_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
+    transport_out_im_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im", "\\"));
+    transport_out_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_sorp", "\\"));
+    transport_out_im_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im_sorp", "\\"));
+
+    pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
+    type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
+
+
+    DBGMSG("Transport substances.\n");
+    n_substances = OptGetInt("Transport", "N_substances", NULL );
+    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
+
+    snames = OptGetStr("Transport", "Substances", "none");
+    subst_names(snames);
+
+    convection_matrix_state = unscaled;
+    time_level=0;
+    max_step=0.0;
+    time_step=0.0;
+
+    /*
+    if (ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY) {
+        sscales = OptGetStr("Transport", "Substances_density_scales", "1.0");
+        subst_scales(sscales);
+    }*/
+
+   // n_elements = mesh->n_elements();
+
+/*
+    reaction = NULL;
+    n_reaction = 0;
+*/
+    sub_problem = 0;
+    if (dual_porosity == true)
+        sub_problem += 1;
+    if (sorption == true)
+        sub_problem += 2;
+
+    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
+
+    make_transport_partitioning();
+    alloc_transport_vectors();
+    read_initial_condition();
+    alloc_transport_structs_mpi();
+    fill_transport_vectors_mpi();
+
+    output_vector_gather();
+
+    //output_time = new OutputTime(mesh, transport_out_fname);
+
+    // Register concentrations data on elements
+    //for(int subst_id=0; subst_id<n_substances; subst_id++) {
+    //    output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
+    //}
+    //output_time->write_data(time);
+
+    INPUT_CHECK(!(n_substances < 1 ),"Number of substances must be positive\n");
+}
 
 
 //=============================================================================
@@ -99,13 +184,6 @@ void ConvectionTransport::make_transport_partitioning() {
 
 }
 
-//ConvectionTransport::ConvectionTransport(struct Problem *problemMaterialDatabase, Mesh *init_mesh)
-//: problem(problem), mesh(init_mesh)
-ConvectionTransport::ConvectionTransport(MaterialDatabase *material_database, Mesh *init_mesh)
-: mat_base(material_database), mesh(init_mesh)
-{
-    transport_init();
-}
 
 /*
 ConvectionTransport::~ConvectionTransport()
@@ -126,10 +204,8 @@ void ConvectionTransport::get_reaction(int i,oReaction *reaction) {
 // RECOMPUTE MATRICES
 //=============================================================================
 
-void ConvectionTransport::read_flow_field_vector(Vec *vec){
+void ConvectionTransport::set_flow_field_vector(Vec *vec){
 	create_transport_matrix_mpi();
-	transport_matrix_step_mpi(time_step);
-	calculate_bc_mpi();
 };
 
 double ***ConvectionTransport::get_out_conc(){
@@ -141,85 +217,7 @@ char    **ConvectionTransport::get_substance_names(){
 }
 
 
-//=============================================================================
-// MAKE TRANSPORT
-//=============================================================================
-void ConvectionTransport::transport_init() {
-    //struct Transport *transport = problem->transport;
 
-    char *snames, *sscales;
-  
-    F_ENTRY;
-
-    // [Density]
-    max_dens_it = OptGetInt("Density", "Density_max_iter", "20");
-    dens_implicit = OptGetBool("Density", "Density_implicit", "no");
-    dens_eps = OptGetDbl("Density", "Eps_iter", "1.0e-5");
-    write_iterations = OptGetBool("Density", "Write_iterations", "no");
-    dens_step = OptGetInt("Density", "Density_steps", "1");
-    // [Transport]
-    transport_on = OptGetBool("Transport", "Transport_on", "no");
-    sorption = OptGetBool("Transport", "Sorption", "no");
-    dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
-    reaction_on = OptGetBool("Transport", "Reactions", "no");
-    concentration_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\"));
-    transport_bcd_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\"));
-    transport_out_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
-    transport_out_im_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im", "\\"));
-    transport_out_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_sorp", "\\"));
-    transport_out_im_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im_sorp", "\\"));
-
-    pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
-    type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
-
-
-    DBGMSG("Transport substances.\n");
-    n_substances = OptGetInt("Transport", "N_substances", NULL );
-    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
-
-    snames = OptGetStr("Transport", "Substances", "none");
-    subst_names(snames);
-    /*
-    if (ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY) {
-        sscales = OptGetStr("Transport", "Substances_density_scales", "1.0");
-        subst_scales(sscales);
-    }*/
-
-   // n_elements = mesh->n_elements();
-
-/*
-    reaction = NULL;
-    n_reaction = 0;
-*/
-    sub_problem = 0;
-    if (dual_porosity == true)
-        sub_problem += 1;
-    if (sorption == true)
-        sub_problem += 2;
-
-    frame = 0;
-    time = 0;
-
-    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
-
-    make_transport_partitioning();
-    alloc_transport_vectors();
-    read_initial_condition();
-    alloc_transport_structs_mpi();
-    fill_transport_vectors_mpi();
-
-    output_vector_gather();
-
-    //output_time = new OutputTime(mesh, transport_out_fname);
-
-    // Register concentrations data on elements
-    //for(int subst_id=0; subst_id<n_substances; subst_id++) {
-    //    output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh->n_elements());
-    //}
-    //output_time->write_data(time);
-
-    INPUT_CHECK(!(n_substances < 1 ),"Number of substances must be positive\n");
-}
 //=============================================================================
 //
 //=============================================================================
@@ -520,10 +518,108 @@ void ConvectionTransport::fill_transport_vectors_mpi() {
      */
 
 }
+
+void ConvectionTransport::compute_one_step() {
+
+    MaterialDatabase::Iter material;
+    int sbi;
+
+
+    for (sbi = 0; sbi < n_substances; sbi++) {
+                transport_step_mpi(&tm, &vconc[sbi], &vpconc[sbi], &bcvcorr[sbi]);
+                if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
+                    // cycle over local elements only in any order
+                    for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+                        material = (mesh->element(el_4_loc[loc_el])) -> material;
+
+                        if (dual_porosity == true)
+                            transport_dual_porosity(loc_el, material, sbi);
+                        if (sorption == true)
+                            transport_sorption(loc_el, material, sbi);
+                        /*
+                         if (reaction_on == true)
+                         transport_reaction(trans, loc_el, material, sbi);
+
+                         */
+                    }
+                // transport_node_conc(mesh,sbi,problem->transport_sub_problem);  // vyresit prepocet
+            }
+
+
+       /*/======================================
+       //              CHEMISTRY
+       //======================================
+        if(OptGetBool("Semchem_module", "Compute_reactions", "no") == true)
+        {
+                if (t == 1) { //initial value of t == 1 & it is incremented at the beginning of the cycle
+                    priprav();
+                }
+                for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+                    //xprintf(Msg,"\nKrok %f\n",trans->time_step);
+                    che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
+                }// for cycle running over elements
+            }
+        //===================================================
+        //     RADIOACTIVE DECAY + FIRST ORDER REACTIONS
+        //===================================================
+        if((OptGetBool("Reaction_module", "Compute_decay", "no") == true) || (OptGetBool("Reaction_module", "Compute_reactions", "no") == true)){
+                int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
+                //char dec_name[30];
+                if (t == 1) {
+                    decayRad = new Linear_reaction(n_substances, time_step);
+            }
+                for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+                (*decayRad).compute_reaction(pconc[MOBILE], n_substances, loc_el);
+                    if (dual_porosity == true) {
+                    (*decayRad).compute_reaction(pconc[IMMOBILE], n_substances, loc_el);
+                    }
+                }
+        }*/
+}
+
+
+void ConvectionTransport::set_time_step(double new_time_step)
+{
+    if (convection_matrix_state == scaled) {
+        // rescale matrix
+        MatScale(bcm, new_time_step/time_step);
+        MatShift(tm, -1.0);
+        MatScale(tm, new_time_step/time_step);
+        MatShift(tm, 1.0);
+    } else {
+        // scale fresh convection term matrix
+        MatScale(bcm, time_step);
+        MatScale(tm, time_step);
+        MatShift(tm, 1.0);
+    }
+    calculate_bc_mpi();
+    time_step = new_time_step;
+
+    convection_matrix_state = scaled;
+}
+
+//=============================================================================
+// MATRIX VECTOR PRODUCT (MPI)
+//=============================================================================
+void ConvectionTransport::calculate_bc_mpi() {
+    int sbi, n_subst;
+
+    n_subst = n_substances;
+
+    for (sbi = 0; sbi < n_subst; sbi++)
+        MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
+    /*
+     VecView(transport->bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
+     getchar();
+     */
+}
+
 //=============================================================================
 // CREATE TRANSPORT MATRIX
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
+
+    START_TIMER("transport_matrix_assembly");
 
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh);
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh);
@@ -656,7 +752,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     MPI_Allreduce(&max_sum,&glob_max_sum,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD);
     max_step = 1 / glob_max_sum;
-    time_step = 0.9 / glob_max_sum;
+    //time_step = 0.9 / glob_max_sum;
     
     MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
     MatAssemblyBegin(bcm, MAT_FINAL_ASSEMBLY);
@@ -672,36 +768,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
      MatView(transport->tm,PETSC_VIEWER_STDOUT_SELF);
      getchar();
      */
-
-}
-//=============================================================================
-// CREATE TRANSPORT MATRIX STEP MPI
-//=============================================================================
-void ConvectionTransport::transport_matrix_step_mpi(double time_step) {
-    MatScale(bcm, time_step);
-    MatScale(tm, time_step);
-    MatShift(tm, 1.0);
-
-    /*
-     MatView(transport->bcm,PETSC_VIEWER_STDOUT_WORLD);
-     getchar();
-     */
-
-}
-//=============================================================================
-// MATRIX VECTOR PRODUCT (MPI)
-//=============================================================================
-void ConvectionTransport::calculate_bc_mpi() {
-    int sbi, n_subst;
-
-    n_subst = n_substances;
-
-    for (sbi = 0; sbi < n_subst; sbi++)
-        MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
-    /*
-     VecView(transport->bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
-     getchar();
-     */
+    convection_matrix_state = unscaled;
+    END_TIMER("transport_matrix_assembly");
 }
 //=============================================================================
 // MATRIX VECTOR PRODUCT (MPI)
@@ -711,25 +779,8 @@ void ConvectionTransport::transport_step_mpi(Mat *tm, Vec *conc, Vec *pconc, Vec
     MatMultAdd(*tm, *pconc, *bc, *conc); // conc=tm*pconc + bc
     VecSwap(*conc, *pconc); // pconc = conc
 
-
 }
-//=============================================================================
-// ALLOCATING MEMORY FOR TRANSPORT VARIABLE PI
-//=============================================================================
-double *transport_aloc_pi(Mesh* mesh) {
-    int max_elm;
-    double *pi;
 
-    NodeIter nod;
-
-    max_elm = 0;
-    FOR_NODES(mesh, nod)
-        if (max_elm < nod->n_elements)
-            max_elm = nod->n_elements;
-    pi = (double *) xmalloc(max_elm * sizeof(double));
-
-    return pi;
-}
 //=============================================================================
 // COMPUTE CONCENTRATIONS IN THE NODES FROM THE ELEMENTS
 //=============================================================================
@@ -992,74 +1043,19 @@ void ConvectionTransport::compute_sorption(double conc_avg, vector<double> &sorp
 //=============================================================================
 //      TIME STEP (RECOMPUTE)
 //=============================================================================
-void ConvectionTransport::compute_time_step() {
-    double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
-    double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
-    save_step = (int) ceil(problem_save_step / time_step); // transport  rev
-    time_step = problem_save_step / save_step;
-    steps = save_step * (int) floor(problem_stop_time / problem_save_step);
-
-}
+//void ConvectionTransport::compute_time_step() {
+//    double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
+//    double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
+//    save_step = (int) ceil(problem_save_step / time_step); // transport  rev
+//    time_step = problem_save_step / save_step;
+//    steps = save_step * (int) floor(problem_stop_time / problem_save_step);
+//
+//}
 //=============================================================================
 //      TRANSPORT ONE STEP
 //=============================================================================
-void ConvectionTransport::compute_one_step() {
 
-	MaterialDatabase::Iter material;
-	int sbi;
-
-	xprintf( Msg, "Time : %f\n",time);
-	for (sbi = 0; sbi < n_substances; sbi++) {
-	            transport_step_mpi(&tm, &vconc[sbi], &vpconc[sbi], &bcvcorr[sbi]);
-	            if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
-	                // cycle over local elements only in any order
-	                for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-	                    material = (mesh->element(el_4_loc[loc_el])) -> material;
-
-	                    if (dual_porosity == true)
-	                        transport_dual_porosity(loc_el, material, sbi);
-	                    if (sorption == true)
-	                        transport_sorption(loc_el, material, sbi);
-	                    /*
-	                     if (reaction_on == true)
-	                     transport_reaction(trans, loc_el, material, sbi);
-
-	                     */
-	                }
-	            // transport_node_conc(mesh,sbi,problem->transport_sub_problem);  // vyresit prepocet
-	        }
-
-
-	   /*/======================================
-	   //              CHEMISTRY
-	   //======================================
-	    if(OptGetBool("Semchem_module", "Compute_reactions", "no") == true)
-	    {
-	            if (t == 1) { //initial value of t == 1 & it is incremented at the beginning of the cycle
-	                priprav();
-	            }
-	            for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-	                //xprintf(Msg,"\nKrok %f\n",trans->time_step);
-	                che_vypocetchemie(dual_porosity, time_step, mesh->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
-	            }// for cycle running over elements
-	        }
-	    //===================================================
-	    //     RADIOACTIVE DECAY + FIRST ORDER REACTIONS
-	    //===================================================
-	    if((OptGetBool("Reaction_module", "Compute_decay", "no") == true) || (OptGetBool("Reaction_module", "Compute_reactions", "no") == true)){
-	            int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
-	            //char dec_name[30];
-	            if (t == 1) {
-	                decayRad = new Linear_reaction(n_substances, time_step);
-	    	}
-	            for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-	    		(*decayRad).compute_reaction(pconc[MOBILE], n_substances, loc_el);
-	                if (dual_porosity == true) {
-	    			(*decayRad).compute_reaction(pconc[IMMOBILE], n_substances, loc_el);
-	                }
-	            }
-	    }*/
-}
+#if 0
 //=============================================================================
 //      TRANSPORT UNTIL TIME
 //=============================================================================
@@ -1118,40 +1114,9 @@ void ConvectionTransport::transport_until_time(double time_interval) {
             }
 	    }
 }
-//=============================================================================
-//      CONVECTION
-//=============================================================================
-void ConvectionTransport::convection() {
 
-    MPI_Barrier(PETSC_COMM_WORLD);
-    START_TIMER("TRANSPORT");
-    xprintf( Msg, "Calculating transport...");
-    START_TIMER("transport_matrix_assembly");
-    
-    create_transport_matrix_mpi();
-    
-    compute_time_step();
-    
-    transport_matrix_step_mpi(time_step); //matrix scale
-    
-    calculate_bc_mpi(); // BC correction vector
-    END_TIMER("transport_matrix_assembly");
+#endif
 
-    /*  }
-     else{
-     steps = (int)floor(problem->transport->update_dens_time / problem->transport->time_step);
-     save_step = steps + 1;
-     }*/
-
-    /*
-     xprintf( MsgVerb, "  %d computing cycles, %d writing steps\n",steps ,((int)(steps / save_step) + 1) );
-     START_TIMER("transport_steps");
-     transport_until_time(0.0);
-     END_TIMER("transport_steps");
-     xprintf( Msg, "O.K.\n");
-     delete output_time;
-     */
-}
 //=============================================================================
 //      OUTPUT VECTOR GATHER
 //=============================================================================
@@ -1262,16 +1227,16 @@ void ConvectionTransport::get_solution_vector(double* &vector, unsigned int &siz
 };
 
 double ConvectionTransport::get_cfl_time_constrain() {
-	return time_step;
+	return max_step;
 }
 
 double ***ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
 
-void ConvectionTransport::get_par_info(int *el_4_loc, Distribution *distribution){
-	el_4_loc = this->el_4_loc;
-	distribution = this->el_ds;
+void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_distribution_out){
+	el_4_loc_out = this->el_4_loc;
+	el_distribution_out = this->el_ds;
 	return;
 }
 

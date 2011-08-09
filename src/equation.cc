@@ -46,5 +46,6 @@ void EquationBase::choose_next_time() {
         time_->next_time();
         solved =false;
     }
+    DBGMSG("NEW time: %f\n",time_->t());
 }
 

@@ -203,7 +203,7 @@ public:
      */
     inline bool ge(double other_time) const
         { bool result = time + comparison_fracture() >= other_time;
-          DBGMSG("ge: %d %f %f %f\n", result, time, other_time, time_step);
+          //DBGMSG("ge: %d %f %f %f\n", result, time, other_time, time_step);
           return result;
         }
 

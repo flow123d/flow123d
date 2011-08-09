@@ -21,7 +21,7 @@
 TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database )
 : TransportBase(marks, init_mesh, material_database)
 {
-	Distribution *distribution;
+	Distribution *el_distribution;
 	int *el_4_loc;
 
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
@@ -31,15 +31,15 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	// Chemistry initialization
 	decayRad = new Linear_reaction(convection->get_cfl_time_constrain(), mesh_, convection->get_n_substances(), convection->get_dual_porosity());
-	convection->get_par_info(el_4_loc, distribution);
-	decayRad->set_concentration_matrix(convection->get_concentration_matrix(), distribution, el_4_loc);
+	convection->get_par_info(el_4_loc, el_distribution);
+	decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 	Semchem_reactions = new Semchem_interface(convection->get_cfl_time_constrain(), mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	Semchem_reactions->set_el_4_loc(el_4_loc);
-	Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), distribution, el_4_loc);
+	Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 
 	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks);
-    TimeMark::Type output_mark_type = time_marks->new_strict_mark_type();
+    output_mark_type = time_marks->new_strict_mark_type();
     time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type );
 	// TOdO: this has to be set after construction of transport matrix !!
 
@@ -51,22 +51,33 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
 	DBGMSG("create output\n");
-	output_time = new OutputTime(mesh_, output_file);
+	field_output = new OutputTime(mesh_, output_file);
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
          std::string subst_name = std::string(substance_name[subst_id]);
          double *data = out_conc[MOBILE][subst_id];
-         output_time->register_elem_data<double>(subst_name, "", data , mesh_->n_elements());
+         field_output->register_elem_data<double>(subst_name, "", data , mesh_->n_elements());
     }
     // write initial condition
-    output_time->write_data(time_->t());
+    field_output->write_data(time_->t());
 
 }
+
+TransportOperatorSplitting::~TransportOperatorSplitting()
+{
+    delete field_output;
+    delete convection;
+    delete decayRad;
+    delete Semchem_reactions;
+    delete time_;
+}
+
 void TransportOperatorSplitting::output_data(){
 
-
-	output_time->write_data(time_->t());
+    if (time_->is_current(output_mark_type)) {
+        field_output->write_data(time_->t());
+    }
 }
 
 void TransportOperatorSplitting::read_simulation_step(double sim_step) {
@@ -76,30 +87,32 @@ void TransportOperatorSplitting::read_simulation_step(double sim_step) {
 
 void TransportOperatorSplitting::update_solution() {
 
-
-	convection->convection();
-	steps = (int) ceil(time_->dt() / convection->get_cfl_time_constrain());
+    // setup convection matrix for actual CFL time step
+	double cfl_dt =  convection->get_cfl_time_constrain();
+	DBGMSG("cfl: %f dt: %f\n",cfl_dt, time_->dt());
+	int steps = (int) ceil(time_->dt() / cfl_dt);
+	cfl_dt = time_->dt() / steps;
+	convection->set_time_step(cfl_dt);
 	// TODO: update linear reaciton marix here !!
 
     START_TIMER("transport_steps");
-	for(int i=0;i < steps;i++)
-		compute_internal_step();
+	for(int i=0;i < steps;i++) {
+	    // one internal step
+	    xprintf( Msg, "Time : %f\n",time_->last_t() + i*cfl_dt);
+	    convection->compute_one_step();
+	    // Calling linear reactions and Semchem
+	    decayRad->compute_one_step();
+	    Semchem_reactions->compute_one_step();
+	}
     END_TIMER("transport_steps");
     xprintf( Msg, "O.K.\n");
 	solved=true;
 }
 
-void TransportOperatorSplitting::compute_internal_step(){
-
-	convection->compute_one_step();
-    // Calling linear reactions and Semchem
-	decayRad->compute_one_step();
-	Semchem_reactions->compute_one_step();
-}
 
 void TransportOperatorSplitting::set_velocity_field(Vec &vec)
 {
-	convection->read_flow_field_vector(&vec);
+	convection->set_flow_field_vector(&vec);
 };
 
 

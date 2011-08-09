@@ -34,7 +34,7 @@ Linear_reaction::~Linear_reaction()
 {
 	int i, rows, n_subst;
 
-	n_subst = sizeof(*reaction_matrix)/sizeof(double *);
+	//n_subst = sizeof(*reaction_matrix)/sizeof(double *);
 	xprintf(Msg,"\nDestructor is running.");
 	free(half_lives);
 	half_lives = NULL;
@@ -42,10 +42,7 @@ Linear_reaction::~Linear_reaction()
 	free(substance_ids);
 	this->substance_ids = NULL;
 
-	free(reaction_matrix);
-	reaction_matrix = NULL;
-
-	for(rows = 0; rows < n_subst;rows++){
+	for(rows = 0; rows < nr_of_species;rows++){
 		free(reaction_matrix[rows]);
 		reaction_matrix[rows] = NULL;
 	}
