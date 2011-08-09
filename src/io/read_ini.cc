@@ -46,6 +46,9 @@
 #include "xio.h"
 #include "io/read_ini.h"
 
+#include <boost/tokenizer.hpp>
+#include "boost/lexical_cast.hpp"
+
 static struct Read_ini *read_ini = NULL;
 
 #define FOR_INI_ITEMS(i)     for((i)=read_ini->ini_item;(i)!=NULL;(i)=(i)->next)
@@ -324,27 +327,29 @@ void OptionsInit(const char *fname )
 //=============================================================================
 // GET DOUBLE ARRAY VARIABLE FROM INI FILE
 //=============================================================================
-void OptGetDblArray( const char *section,const  char *key,const  char *defval, int ArrSize, double *Array)// ArrSize contain number of Array members (length), *Array is the adress of array which should be filled up
+void OptGetDblArray( const char *section,const  char *key,const  char *defval, std::vector<double> &array)
+// ArrSize contain number of Array members (length), *Array is the adress of array which should be filled up
 {
-	char *str;
-	double res;
-	int i;
 
-	str=OptGetStr(section,key,defval);
-	for(i = 1; i < ArrSize; i++){
-		if (sscanf(str,"%lg",&res) == 0) {
-		if (defval == NULL) xprintf(UsrErr,"Can not convert %d. ini-file entry to double parameter: [%s] %s.\n",i,section,key);
-		if (sscanf(defval,"%lg",&res) == 0)
-			xprintf(PrgErr,"Default value \"%s\" of parameter: [%s] %s is not an double.\n",defval,section,key);
-		}else{
-		  *(Array + (i-1)*sizeof(double)) = res;
-		}
-	}
+	char * tmp_str = OptGetStr(section,key,defval);
+	std::string str = tmp_str;
+	free(tmp_str);
+	boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\t "));
+	boost::tokenizer<boost::char_separator<char> >::iterator tok;
 
-	free( str );
-	//return res;
-	return;
+	double value;
+	try {
+	    for(    tok = line_tokenizer.begin();
+	            tok != line_tokenizer.end();
+	            ++tok) {
+	        value = boost::lexical_cast<double> (*tok);
+	        array.push_back(value);
+	    }
+	}  catch (boost::bad_lexical_cast &) {
+        xprintf(UsrErr, "INI file: Can not convert token `%s` of key `[%s] %s` to double.\n", (*tok).c_str(), section, key);
+    }
 }
+
 
 //=============================================================================
 // GET Int ARRAY VARIABLE FROM INI FILE

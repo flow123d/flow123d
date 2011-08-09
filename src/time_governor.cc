@@ -92,7 +92,7 @@ TimeGovernor::TimeGovernor(double init_time)
 
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
 {
-    ASSERT( min_dt > 0.0,"Minimal time step has to be greater than ZERO\n");
+    ASSERT( min_dt >= 0.0,"Minimal time step has to be greater than ZERO\n");
     ASSERT( max_dt >= min_dt,"Maximal time step has to be greater or equal to the minimal.\n");
 
     min_time_step=max(min_dt, time_step_lower_bound);

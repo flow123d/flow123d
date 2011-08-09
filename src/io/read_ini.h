@@ -30,6 +30,8 @@
 #ifndef READ_INI_H
 #define READ_INI_H
 
+#include <vector>
+
 struct Ini_item;
 struct Read_ini;
 
@@ -57,7 +59,12 @@ struct Ini_item
 	bool     OptGetBool(const char *section,const char *key,const char *defval);
 	double   OptGetDbl(const char *section,const char *key,const char *defval);
 	void     OptionsInit(const char *fname );
-	void	OptGetDblArray(const char *section, const char *key, const char *defval, int ArrSize, double *Array);
+	/**
+	 * Read value of particular key as list of doubles and store them  into array.
+	 * defval string is used if the key is not found.
+	 */
+	void	OptGetDblArray(const char *section, const char *key, const char *defval, std::vector<double> &array);
+
 	void	OptGetIntArray(const char *section, const char *key, const char *defval, int Arrsize, int *Array);
 	//char * OptGetStrArray();
 

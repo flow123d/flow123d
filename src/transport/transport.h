@@ -31,15 +31,20 @@
 #define TRANSPORT_H_
 
 #include <petscmat.h>
+#include "equation.hh"
 
-#include "system/par_distribution.hh"
-#include "mesh/mesh.h"
+//#include "system/par_distribution.hh"
+//#include "mesh/mesh.h"
 //#include "reaction.h"
 
 
 struct BTC;
-
 class OutputTime;
+class Mesh;
+class Distribution;
+class TimeMarks;
+class MaterialDatabase;
+
 
 //=============================================================================
 // TRANSPORT
@@ -54,9 +59,9 @@ class OutputTime;
 
 
 
-class ConvectionTransport {
+class ConvectionTransport : public EquationBase {
 public:
-	ConvectionTransport(MaterialDatabase *material_database, Mesh *init_mesh);
+	ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
 	//void init_convection(); // upravit
 
 	/**
@@ -72,11 +77,20 @@ public:
 	void set_flow_field_vector(Vec *vec);
 
 	/**
-	 * Set time step to use. Rescale transport matrix.
+	 * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
 	 */
-	void set_time_step(double time_step);
+	void set_target_time(double target_time);
 
-	double get_cfl_time_constrain();
+	/**
+	 * Update boundary source vectors. Possibly read time dependent boundary condition.
+	 */
+	void update_bc();
+	/**
+	 * Returns time step constrain given by CFL condition for the discretization of the
+	 * convection term. The constrain depends on actual convection matrix assembled by
+	 * create_transport_matrix_mpi()
+	 */
+	//double get_cfl_time_constrain();
 	double ***get_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
@@ -93,9 +107,7 @@ public:
 
 
 private:
-    typedef enum {
-        scaled, unscaled
-    } ConvectionMatrixState;
+
 
     /**
      * Assembly convection term part of the matrix and boundary matrix for application of boundary conditions.
@@ -146,23 +158,25 @@ private:
 	void subst_scales(char *line); //
 
 
-	ConvectionMatrixState convection_matrix_state;
-
-	Mesh *mesh;                            ///<  Used mesh.
-    MaterialDatabase *mat_base;            ///<   Used material database.
+	bool is_convection_matrix_scaled;
 
     // TODO: Make simplified TimeGovernor and move following into it.
-    double time_step;                     ///< Time step for computation.
-    double max_step;		              ///< Time step constrain given by CFL condition.
-    unsigned int time_level;              ///< Number of computed time steps.
+    //double time_step;                     ///< Time step for computation.
+    //double max_step;		              ///< Time step constrain given by CFL condition.
+    //unsigned int time_level;              ///< Number of computed time steps.
 
+    std::vector<double> bc_times;       ///< Times of reading time dependent boundary condition. Initial boundary condition is zero.
+    unsigned int bc_time_level;         ///< Index into bc_times vector.
+
+    TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
+    double cfl_max_step;
             // only local part
             double ***conc;
             double ***pconc;
 
             // global
 
-        	std::string		transport_out_fname;// Name of file of trans. output
+//        	std::string		transport_out_fname;// Name of file of trans. output
         	int              dens_step;            //
         	double 			update_dens_time;
 
@@ -182,21 +196,9 @@ private:
         	bool		write_iterations; // write results during iterations to transport POS file YES/NO
 
         	// Transport
-        	bool             transport_on;    // Compute transport YES/NO
-        	//unsigned int 			n_elements; 		// number of elements
-
-        	std::string 	concentration_fname;// Name of file of concentration
             bool              sorption;     // Include sorption  YES/NO
             bool              dual_porosity;   // Include dual porosity YES/NO
             bool              reaction_on;     // Include reaction  YES/NO
-        	std::string		transport_bcd_fname;// Name of file of transport bcd
-
-            std::string		transport_out_im_fname;// Name of file of trans. immobile output
-            std::string		transport_out_sorp_fname;// Name of file of trans. output
-            std::string		transport_out_im_sorp_fname;// Name of file of trans. immobile output
-
-
-            int             transport_sub_problem;
 
             // Other
            // struct Problem* problem;

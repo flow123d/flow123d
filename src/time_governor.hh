@@ -177,6 +177,11 @@ public:
     inline double last_t() const
         {return last_time;}
 
+    /**
+     * Previous time step.
+     */
+    inline double last_dt() const
+        {return last_time_step;}
 
     /**
      * Length of actual time interval; i.e. the actual time step.
