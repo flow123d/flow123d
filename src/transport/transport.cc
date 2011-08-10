@@ -71,8 +71,6 @@
 ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database)
 : EquationBase(marks,init_mesh,material_database)
 {
-
-  
     F_ENTRY;
 
     // [Density]
@@ -111,7 +109,6 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     alloc_transport_vectors();
     read_initial_condition();
     alloc_transport_structs_mpi();
-    fill_transport_vectors_mpi();
 
     // read times of time dependent boundary condition and check the input files
     // TODO: checking should be before reading, but needs working checkpointing
@@ -198,12 +195,11 @@ void ConvectionTransport::make_transport_partitioning() {
 }
 
 
-/*
+
 ConvectionTransport::~ConvectionTransport()
 {
-
+// TODO
 }
-*/
 
 /*
 //=============================================================================
@@ -463,57 +459,6 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
      PETSC_NULL,transport->db_row[rank],PETSC_NULL,transport->odb_row[rank],&transport->bcm);
      */
 }
-//=============================================================================
-//	FILL TRANSPORT VECTORS (MPI)
-//=============================================================================
-void ConvectionTransport::fill_transport_vectors_mpi() {
-
-    int rank, sbi;
-
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank == 0) {
-
-    xprintf( Msg, "Reading transport boundary conditions...");
-
-    int bcd_id, boundary_id, boundary_index;
-    double bcd_conc;
-    char     line[ LINE_SIZE ]; // line of data file
-    const std::string& transport_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\"));
-    FILE *in = xfopen( transport_file_name, "rt" );
-
-    skip_to( in, "$Transport_BCD" );
-    xfgets( line, LINE_SIZE - 2, in );
-    int n_bcd = atoi( xstrtok( line) );
-    for(int i_bcd=0; i_bcd<n_bcd; i_bcd++) {
-        xfgets( line, LINE_SIZE - 2, in );
-        bcd_id    = atoi( xstrtok( line) ); // scratch transport bcd id
-        boundary_id    = atoi( xstrtok( NULL) );
-//        DBGMSG("transp b. id: %d\n",boundary_id);
-        boundary_index = mesh_->boundary.find_id(boundary_id).index();
-        INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
-        for( sbi = 0; sbi < n_substances; sbi++ ) {
-            bcd_conc = atof( xstrtok( NULL) );
-            VecSetValue(bcv[sbi], boundary_index, bcd_conc, INSERT_VALUES);
-        }
-    }
-    xfclose( in );
-    xprintf( MsgVerb, " %d transport conditions read. ", n_bcd );
-    xprintf( Msg, "O.K.\n");
-    }
-
-    for(sbi=0;sbi < n_substances;sbi++) VecAssemblyBegin(bcv[sbi]);
-    for(sbi=0;sbi < n_substances;sbi++) VecZeroEntries(bcvcorr[sbi]);
-    for(sbi=0;sbi < n_substances;sbi++) VecAssemblyEnd(bcv[sbi]);
-
-
-    /*
-     VecView(transport->bcv[0],PETSC_VIEWER_STDOUT_SELF);
-     getchar();
-     VecView(transport->bcv[1],PETSC_VIEWER_STDOUT_SELF);
-     getchar();
-     */
-
-}
 
 std::string ConvectionTransport::make_bc_file_name(int level) {
 
@@ -532,38 +477,42 @@ void ConvectionTransport::read_bc_vector(int level) {
 
     int rank, sbi;
 
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-        if (rank == 0) {
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank == 0) {
+        xprintf(Msg, "Reading boundary conditions (level = %d)\n",level);
 
-            int bcd_id, boundary_id, boundary_index;
-            double bcd_conc;
-            char line[LINE_SIZE]; // line of data file
+        int bcd_id, boundary_id, boundary_index;
+        double bcd_conc;
+        char line[LINE_SIZE]; // line of data file
 
-            // make bc filename
+        // make bc filename
 
-            FILE *in = xfopen(make_bc_file_name(level).c_str(), "rt");
-            skip_to(in, "$Transport_BCD");
+        FILE *in = xfopen(make_bc_file_name(level).c_str(), "rt");
+        skip_to(in, "$Transport_BCD");
+        xfgets(line, LINE_SIZE - 2, in);
+        int n_bcd = atoi(xstrtok(line));
+        for (int i_bcd = 0; i_bcd < n_bcd; i_bcd++) {
             xfgets(line, LINE_SIZE - 2, in);
-            int n_bcd = atoi(xstrtok(line));
-            for (int i_bcd = 0; i_bcd < n_bcd; i_bcd++) {
-                xfgets(line, LINE_SIZE - 2, in);
-                bcd_id = atoi(xstrtok(line)); // scratch transport bcd id
-                boundary_id = atoi(xstrtok(NULL));
-                //        DBGMSG("transp b. id: %d\n",boundary_id);
-                boundary_index = mesh_->boundary.find_id(boundary_id).index();
-                INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
-                for (sbi = 0; sbi < n_substances; sbi++) {
-                    bcd_conc = atof(xstrtok(NULL));
-                    VecSetValue(bcv[sbi], boundary_index, bcd_conc, INSERT_VALUES);
-                }
+            bcd_id = atoi(xstrtok(line)); // scratch transport bcd id
+            boundary_id = atoi(xstrtok(NULL));
+            //        DBGMSG("transp b. id: %d\n",boundary_id);
+            boundary_index = mesh_->boundary.find_id(boundary_id).index();
+            INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
+            for (sbi = 0; sbi < n_substances; sbi++) {
+                bcd_conc = atof(xstrtok(NULL));
+                VecSetValue(bcv[sbi], boundary_index, bcd_conc, INSERT_VALUES);
             }
-            xfclose(in);
-            xprintf( MsgLog, " %d transport conditions read. ", n_bcd );
-            xprintf( Msg, "O.K.\n");
         }
-        for(sbi=0;sbi < n_substances;sbi++) VecAssemblyBegin(bcv[sbi]);
-        for(sbi=0;sbi < n_substances;sbi++) VecZeroEntries(bcvcorr[sbi]);
-        for(sbi=0;sbi < n_substances;sbi++) VecAssemblyEnd(bcv[sbi]);
+        xfclose(in);
+        xprintf( MsgLog, " %d transport conditions read. ", n_bcd );
+        xprintf( Msg, "O.K.\n");
+    }
+    for (sbi = 0; sbi < n_substances; sbi++)
+        VecAssemblyBegin(bcv[sbi]);
+    for (sbi = 0; sbi < n_substances; sbi++)
+        VecZeroEntries(bcvcorr[sbi]);
+    for (sbi = 0; sbi < n_substances; sbi++)
+        VecAssemblyEnd(bcv[sbi]);
 
     /*
      VecView(transport->bcv[0],PETSC_VIEWER_STDOUT_SELF);
@@ -634,33 +583,39 @@ void ConvectionTransport::compute_one_step() {
                 }
         }*/
         time_->next_time();
-        ASSERT(abs(time_->last_dt() - time_->dt()) < 8*numeric_limits<double>::epsilon() , "CFL dt does not remain constant. %f %f\n",time_->last_dt(), time_->dt());
 }
 
 
 void ConvectionTransport::set_target_time(double target_time)
 {
+    DBGMSG("CFL dt: %f\n",cfl_max_step);
     time_->marks().add(TimeMark(target_time, target_mark_type));
-    time_->set_permanent_constrain(0.0, cfl_max_step);
-    time_->next_time();
+    time_->set_constrain(cfl_max_step);
+    time_->fix_dt_until_mark();
+
     if ( is_convection_matrix_scaled ) {
         // rescale matrix
-        MatScale(bcm, time_->last_dt()/time_->dt());
+        MatScale(bcm, time_->dt()/time_->estimate_dt());
         MatShift(tm, -1.0);
-        MatScale(tm, time_->last_dt()/time_->dt() );
+        MatScale(tm, time_->dt()/time_->estimate_dt() );
         MatShift(tm, 1.0);
     } else {
         // scale fresh convection term matrix
-        MatScale(bcm, time_->dt());
-        MatScale(tm, time_->dt());
+        MatScale(bcm, time_->estimate_dt());
+        MatScale(tm, time_->estimate_dt());
         MatShift(tm, 1.0);
     }
     // possibly read boundary conditions
     if (bc_time_level != -1 && time_->is_current(bc_times[bc_time_level])) read_bc_vector(bc_time_level);
 
     // update source vectors
-    for (unsigned int sbi = 0; sbi < n_substances; sbi++)
+    for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
             MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
+            //VecView(bcv[sbi],PETSC_VIEWER_STDOUT_SELF);
+            //getchar();
+            //VecView(bcvcorr[sbi],PETSC_VIEWER_STDOUT_SELF);
+            //getchar();
+    }
 
     is_convection_matrix_scaled = true;
 }

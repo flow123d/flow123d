@@ -61,8 +61,15 @@ class MaterialDatabase;
 
 class ConvectionTransport : public EquationBase {
 public:
+    /**
+     * Constructor.
+     */
 	ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
-	//void init_convection(); // upravit
+
+	/**
+	 * TODO: destructor
+	 */
+	virtual ~ConvectionTransport();
 
 	/**
 	 * Calculates one time step of explicit transport.
@@ -132,7 +139,6 @@ private:
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
 	void read_initial_condition(); //
-	void fill_transport_vectors_mpi();
 
 	/**
 	 * Compose file name for boundary condition at given level.

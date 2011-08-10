@@ -106,8 +106,9 @@ void TransportOperatorSplitting::update_solution() {
 	// TODO: update linear reaciton marix here !!
 	decayRad->set_time_step(convection->time().dt());
 
+	DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
     START_TIMER("transport_steps");
-	while ( convection->time().lt(time_->t()) ) {
+    while ( convection->time().lt(time_->t()) ) {
 	    // one internal step
 	    xprintf( Msg, "Time : %f\n", convection->time().t() );
 	    convection->compute_one_step();

@@ -260,14 +260,16 @@ sub readfile {
                     #$diff = abs( (++$tmp) - 1 - $save );
                     #print "dgb: /$token/$save/$tmp/$diff/\n";
                     #if ($diff < 1.0e-15) {
-                    if (Scalar::Util::looks_like_number($token) && $token=~/[.eE]/) {
+                    
+                    # match numbers bud not Inf or NaN  
+                    if (Scalar::Util::looks_like_number($token) && (! ($token=~/[nN]/)) ) {
                         $float = $token + 0;
-                        $token='0';
+                        $token='.0';
 			push(@{$reals},$float);
 		    }
                 }
 		$_=join " ", @line_list;
-                #print "$fname : $_\n";
+                #print "$_\n";
 #                foreach my $i (@{$reals}) {print "$i ";}
 #                print "\n";
 

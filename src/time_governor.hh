@@ -56,8 +56,15 @@
  * - number of the time level
  * - time comparison
  *
- * TODO: should be initialized directly from JSON input
+ * TODO:
+ * - remove set_dt_changed_overhead and connected stuff
+ * - allow fixing of the time step until the first strict time mark, return it's time
+ * - allow estimation of next time and dt
  *
+ * So the usage cycle in general is:
+ * - estimate next t, dt   (this can be usefull in hc_seq_explicit for estimating next transport time)
+ * - fix next t, dt        (this is necessary for ConvectionTransport)
+ * - proceed to next t, dt (this can replace solved flag in equation classes)
  */
 
 class TimeMarks;
@@ -127,32 +134,7 @@ public:
     inline TimeMarks::iterator last(const TimeMark::Type &mask) const
         {return time_marks->last(*this, mask);}
 
-    /**
-     * Add a time that has to be meet by the time governor.
-     * The time is inserted into priority queue of fixed times in which the solution has to be computed.
-     */
-    //void set_fix_time(double fix_time);
 
-    /**
-     * Add more equidistant fix times.
-     */
-    //void set_fix_times(double first_fix_time, double fix_interval);
-
-    /**
-     *  Set the overhead in execution time that the solver has to do
-     *  when the time step is changed. @fn dt_change_overhead is the overhead relative to
-     *  the execution time of computation of one time step. Time governor tries to optimize
-     *  the overall execution time according to this overhead estimate.
-     *
-     *  The value has to be positive. Negative or zero values turns off algorithm that keeps
-     *  time step for longer periods.
-     *
-     *  Change in the time step can be tested by @fn is_changed_dt() and end of the time interval with fixed dt is provided
-     *  by @fn end_of_fixed_dt()
-     */
-
-    void set_dt_change_overhead(double overhead = 0.0)
-        { dt_change_overhead= overhead > 0.0 ? overhead : 0.0;}
 
     inline double end_of_fixed_dt() const
         {return end_of_fixed_dt_interval;}
@@ -161,7 +143,18 @@ public:
         {return dt_changed;}
 
     /**
-     * Choice of the next time step according to the dt constrains, fixed times and overhead.
+     * Fix time step until first fixed time mark. Return actual end of fixed time step.
+     *
+     * When called inside an already fixed interval, it overwrites previous setting.
+     */
+    inline double fix_dt_until_mark() {
+        end_of_fixed_dt_interval=time;
+        fixed_dt = estimate_dt();
+        return end_of_fixed_dt_interval = time_marks->next(*this, fixed_time_mark_mask)->time();
+    }
+
+    /**
+     * Proceed to the next time according to current estimate_dt().
      */
     void next_time();
 
@@ -188,6 +181,17 @@ public:
      */
     inline double dt() const
         {return time_step;}
+
+    /**
+     *  Estimate choice of next time step according to actual setting of constrains.
+     */
+    double estimate_dt() const;
+
+    /**
+     * Estimate next time.
+     */
+    inline double estimate_time() const
+        {return time+estimate_dt();}
 
     /// End time.
     inline double end_time() const
@@ -267,6 +271,8 @@ private:
     double time_step;
     /// time step just before last_time
     double last_time_step;
+    /// next fixed time step
+    double fixed_dt;
     /// changed dt flag
     bool dt_changed;
 
