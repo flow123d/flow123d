@@ -84,8 +84,8 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     dens_step = OptGetInt("Density", "Density_steps", "1");
     */
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
-    time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks);
-
+    target_mark_type=time_marks->new_strict_mark_type();
+    time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks, target_mark_type);
 
     sorption = OptGetBool("Transport", "Sorption", "no");
     dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
@@ -100,20 +100,47 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
     type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
 
+    sub_problem = 0;
+    if (dual_porosity == true)
+        sub_problem += 1;
+    if (sorption == true)
+        sub_problem += 2;
+
+    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
+    make_transport_partitioning();
+    alloc_transport_vectors();
+    read_initial_condition();
+    alloc_transport_structs_mpi();
+    fill_transport_vectors_mpi();
+
     // read times of time dependent boundary condition and check the input files
     // TODO: checking should be before reading, but needs working checkpointing
     OptGetDblArray("Transport", "bc_times", "", bc_times);
-    std::string transport_bc_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Transport_BCD", "\\"));
-    for(unsigned int i=0;i<bc_times.size();++i) {
-        std::stringstream name_str;
-        name_str << transport_bc_fname << "_" << std::setfill('0') << std::setw(3) << i;
-        FILE * f;
-        if ( !(f = xfopen(name_str.str().c_str(), "rt")) ) {
-            xprintf(UsrErr,"Missing file: %s", name_str.str().c_str());
+    FILE * f;
+    std::string fname;
+    if (bc_times.size() == 0) {
+        // only one boundary condition, check filename and read bc condition
+        bc_time_level = -1;
+        fname = make_bc_file_name(-1);
+        if ( !(f = xfopen(fname.c_str(), "rt")) ) {
+            xprintf(UsrErr,"Missing file: %s", fname.c_str());
         }
         xfclose(f);
+        read_bc_vector(-1);
+    } else {
+        bc_time_level = 0;
+        // set initial bc to zero
+        for(unsigned int sbi=0; sbi < n_substances; ++sbi) VecZeroEntries(bcv[sbi]);
+        // check files for bc time levels
+        for(unsigned int i=0;i<bc_times.size();++i) {
+            fname = make_bc_file_name(i);
+            if ( !(f = xfopen(fname.c_str(), "rt")) ) {
+                xprintf(UsrErr,"Missing file: %s", fname.c_str());
+            }
+            xfclose(f);
+        }
     }
-    target_mark_type=time_->marks().new_strict_mark_type();
+
 
     is_convection_matrix_scaled = false;
 
@@ -129,18 +156,7 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     reaction = NULL;
     n_reaction = 0;
 */
-    sub_problem = 0;
-    if (dual_porosity == true)
-        sub_problem += 1;
-    if (sorption == true)
-        sub_problem += 2;
 
-    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
-    make_transport_partitioning();
-    alloc_transport_vectors();
-    read_initial_condition();
-    alloc_transport_structs_mpi();
-    fill_transport_vectors_mpi();
     output_vector_gather();
 }
 
@@ -499,11 +515,23 @@ void ConvectionTransport::fill_transport_vectors_mpi() {
 
 }
 
-void ConvectionTransport::update_bc() {
+std::string ConvectionTransport::make_bc_file_name(int level) {
+
+    std::string bc_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport",
+            "Transport_BCD", "\\"));
+    if (level >= 0 ) {
+        std::stringstream name_str;
+        name_str << bc_fname << "_" << setfill('0') << setw(3) << level;
+        bc_fname = name_str.str();
+    }
+
+    return bc_fname;
+}
+
+void ConvectionTransport::read_bc_vector(int level) {
 
     int rank, sbi;
 
-    if (time_->is_current(bc_times[bc_time_level])) {
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
         if (rank == 0) {
 
@@ -512,12 +540,8 @@ void ConvectionTransport::update_bc() {
             char line[LINE_SIZE]; // line of data file
 
             // make bc filename
-            const std::string& bc_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport",
-                    "Transport_BCD", "\\"));
-            std::stringstream name_str;
-            name_str << bc_fname << "_" << setfill('0') << setw(3) << bc_time_level;
 
-            FILE *in = xfopen(name_str.str().c_str(), "rt");
+            FILE *in = xfopen(make_bc_file_name(level).c_str(), "rt");
             skip_to(in, "$Transport_BCD");
             xfgets(line, LINE_SIZE - 2, in);
             int n_bcd = atoi(xstrtok(line));
@@ -540,15 +564,14 @@ void ConvectionTransport::update_bc() {
         for(sbi=0;sbi < n_substances;sbi++) VecAssemblyBegin(bcv[sbi]);
         for(sbi=0;sbi < n_substances;sbi++) VecZeroEntries(bcvcorr[sbi]);
         for(sbi=0;sbi < n_substances;sbi++) VecAssemblyEnd(bcv[sbi]);
-    }
+
     /*
      VecView(transport->bcv[0],PETSC_VIEWER_STDOUT_SELF);
      getchar();
      VecView(transport->bcv[1],PETSC_VIEWER_STDOUT_SELF);
      getchar();
      */
-    for (unsigned int sbi = 0; sbi < n_substances; sbi++)
-        MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
+
 }
 
 void ConvectionTransport::compute_one_step() {
@@ -558,7 +581,10 @@ void ConvectionTransport::compute_one_step() {
 
 
     for (sbi = 0; sbi < n_substances; sbi++) {
-                transport_step_mpi(&tm, &vconc[sbi], &vpconc[sbi], &bcvcorr[sbi]);
+                // one step in MOBILE phase
+                MatMultAdd(tm, vpconc[sbi], bcvcorr[sbi], vconc[sbi]); // conc=tm*pconc + bc
+                VecSwap(vconc[sbi], vpconc[sbi]); // pconc = conc
+
                 if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
                     // cycle over local elements only in any order
                     for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -629,20 +655,16 @@ void ConvectionTransport::set_target_time(double target_time)
         MatScale(tm, time_->dt());
         MatShift(tm, 1.0);
     }
+    // possibly read boundary conditions
+    if (bc_time_level != -1 && time_->is_current(bc_times[bc_time_level])) read_bc_vector(bc_time_level);
+
+    // update source vectors
+    for (unsigned int sbi = 0; sbi < n_substances; sbi++)
+            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
 
     is_convection_matrix_scaled = true;
 }
 
-//=============================================================================
-// MATRIX VECTOR PRODUCT (MPI)
-//=============================================================================
-void ConvectionTransport::calculate_bc_mpi() {
-
-    /*
-     VecView(transport->bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
-     getchar();
-     */
-}
 
 //=============================================================================
 // CREATE TRANSPORT MATRIX
@@ -801,15 +823,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     is_convection_matrix_scaled = false;
     END_TIMER("transport_matrix_assembly");
 }
-//=============================================================================
-// MATRIX VECTOR PRODUCT (MPI)
-//=============================================================================
-void ConvectionTransport::transport_step_mpi(Mat *tm, Vec *conc, Vec *pconc, Vec *bc) {
 
-    MatMultAdd(*tm, *pconc, *bc, *conc); // conc=tm*pconc + bc
-    VecSwap(*conc, *pconc); // pconc = conc
-
-}
 
 //=============================================================================
 // COMPUTE CONCENTRATIONS IN THE NODES FROM THE ELEMENTS

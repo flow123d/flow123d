@@ -260,7 +260,7 @@ sub readfile {
                     #$diff = abs( (++$tmp) - 1 - $save );
                     #print "dgb: /$token/$save/$tmp/$diff/\n";
                     #if ($diff < 1.0e-15) {
-                    if (Scalar::Util::looks_like_number($token)) {
+                    if (Scalar::Util::looks_like_number($token) && $token=~/[.eE]/) {
                         $float = $token + 0;
                         $token='0';
 			push(@{$reals},$float);

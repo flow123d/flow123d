@@ -84,7 +84,11 @@ public:
 	/**
 	 * Update boundary source vectors. Possibly read time dependent boundary condition.
 	 */
-	void update_bc();
+	void read_bc_vector(int level);
+	/**
+	 * Communicate parallel concentration vectors into sequential output vector.
+	 */
+	void output_vector_gather(); //
 	/**
 	 * Returns time step constrain given by CFL condition for the discretization of the
 	 * convection term. The constrain depends on actual convection matrix assembled by
@@ -131,17 +135,20 @@ private:
 	void fill_transport_vectors_mpi();
 
 	/**
+	 * Compose file name for boundary condition at given level.
+	 * For level -1 use original fixed file name.
+	 */
+	std::string make_bc_file_name(int level);
+	/**
 	 * Finish explicit transport matrix (time step scaling)
 	 */
 	void transport_matrix_step_mpi(double time_step); //
-	void calculate_bc_mpi(); //
-	void transport_step_mpi(Mat *tm, Vec *conc, Vec *pconc, Vec *bc);
+
 	void transport_dual_porosity( int elm_pos, MaterialDatabase::Iter material, int sbi); //
 	void transport_sorption(int elm_pos, MaterialDatabase::Iter mtr, int sbi); //
 	void compute_sorption(double conc_avg, vector<double> &sorp_coef, int sorp_type, double *concx, double *concx_sorb, double Nv,
 	        double N); //
-	void compute_time_step();
-	void output_vector_gather(); //
+
 //	void get_reaction(int i,oReaction *reaction); //
 	//void transport_output(struct Transport *transport, double time, int frame);
 //	void transport_output_init(struct Transport *transport);
