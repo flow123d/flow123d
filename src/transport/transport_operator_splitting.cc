@@ -106,6 +106,7 @@ void TransportOperatorSplitting::update_solution() {
 
 	decayRad->set_time_step(convection->time().estimate_dt());
 	// TODO: update Semchem time step here!!
+	Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
     START_TIMER("transport_steps");
     while ( convection->time().lt(time_->t()) ) {

@@ -41,11 +41,14 @@ void Semchem_interface::compute_one_step(void)
 	//ElementIter ppelm = NULL;
 
 	//for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	if(semchem_on == true)
 	{
-	   START_TIMER("semchem_step");
-	   if(this->semchem_on == true) this->compute_reaction(dual_porosity_on, mesh_->element(el_4_loc[loc_el]), loc_el, concentration_matrix);
-	   END_TIMER("semchem_step");
+		for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+		{
+			START_TIMER("semchem_step");
+	   	   this->compute_reaction(dual_porosity_on, mesh_->element(el_4_loc[loc_el]), loc_el, concentration_matrix);
+	   	   END_TIMER("semchem_step");
+		}
 	}
 }
 
