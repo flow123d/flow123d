@@ -103,10 +103,10 @@ void TransportOperatorSplitting::update_solution() {
 	//cfl_dt = time_->dt() / steps;
 
 	convection->set_target_time(time_->t());
-	// TODO: update linear reaciton marix here !!
-	decayRad->set_time_step(convection->time().dt());
 
-	DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
+	decayRad->set_time_step(convection->time().estimate_dt());
+	// TODO: update Semchem time step here!!
+
     START_TIMER("transport_steps");
     while ( convection->time().lt(time_->t()) ) {
 	    // one internal step
@@ -118,6 +118,7 @@ void TransportOperatorSplitting::update_solution() {
 	}
     END_TIMER("transport_steps");
     xprintf( Msg, "O.K.\n");
+    DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
 	solved=true;
 }
 

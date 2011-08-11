@@ -528,7 +528,8 @@ void ConvectionTransport::compute_one_step() {
     MaterialDatabase::Iter material;
     int sbi;
 
-
+    // proceed to actually computed time
+    time_->next_time();
     for (sbi = 0; sbi < n_substances; sbi++) {
                 // one step in MOBILE phase
                 MatMultAdd(tm, vpconc[sbi], bcvcorr[sbi], vconc[sbi]); // conc=tm*pconc + bc
@@ -582,7 +583,7 @@ void ConvectionTransport::compute_one_step() {
                     }
                 }
         }*/
-        time_->next_time();
+
 }
 
 
