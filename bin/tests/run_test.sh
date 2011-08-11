@@ -177,10 +177,14 @@ function check_outputs {
 		if [ -f "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 		then
 			# Compare output file using ndiff
+                        echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
+                        >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+                        echo "----------------------" \
+                        >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 			${NDIFF} \
 				"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
 				"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
-				> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+				>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 			# Check result of ndiff
 			if [ $? -eq 0 ]
 			then

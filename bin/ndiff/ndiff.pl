@@ -120,7 +120,8 @@ print "Total num. of diff.      : $num_of_diffs\n";
 print "L-inf norm of abs. diff. : $abs_norm\n";
 print "L-inf norm of rel. diff. : $rel_norm\n";
 close(OUT_LOG);
-if ($num_of_diffs > 0) {exit 1;}    
+if ($num_of_diffs > 0) {exit 1;}
+exit 0;
     
 # ------------------------------------------------------------ SUBROUTINES    
     

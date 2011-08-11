@@ -126,10 +126,12 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
         read_bc_vector(-1);
     } else {
         bc_time_level = 0;
+        // add ending bc time
+        bc_times.push_back(time_->end_time()+1);
         // set initial bc to zero
         for(unsigned int sbi=0; sbi < n_substances; ++sbi) VecZeroEntries(bcv[sbi]);
         // check files for bc time levels
-        for(unsigned int i=0;i<bc_times.size();++i) {
+        for(unsigned int i=0;i<bc_times.size()-1;++i) {
             fname = make_bc_file_name(i);
             if ( !(f = xfopen(fname.c_str(), "rt")) ) {
                 xprintf(UsrErr,"Missing file: %s", fname.c_str());
@@ -522,6 +524,7 @@ void ConvectionTransport::read_bc_vector(int level) {
     for (sbi = 0; sbi < n_substances; sbi++)
         VecAssemblyEnd(bcv[sbi]);
 
+
     /*
      VecView(transport->bcv[0],PETSC_VIEWER_STDOUT_SELF);
      getchar();
@@ -615,15 +618,15 @@ void ConvectionTransport::set_target_time(double target_time)
         MatShift(tm, 1.0);
     }
     // possibly read boundary conditions
-    if (bc_time_level != -1 && time_->is_current(bc_times[bc_time_level])) read_bc_vector(bc_time_level);
+    if (bc_time_level != -1 && time_->ge(bc_times[bc_time_level])) read_bc_vector(bc_time_level++);
 
     // update source vectors
     for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
             MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
-            //VecView(bcv[sbi],PETSC_VIEWER_STDOUT_SELF);
-            //getchar();
-            //VecView(bcvcorr[sbi],PETSC_VIEWER_STDOUT_SELF);
-            //getchar();
+//            VecView(bcv[sbi],PETSC_VIEWER_STDOUT_SELF);
+//            getchar();
+//            VecView(bcvcorr[sbi],PETSC_VIEWER_STDOUT_SELF);
+//           getchar();
     }
 
     is_convection_matrix_scaled = true;
