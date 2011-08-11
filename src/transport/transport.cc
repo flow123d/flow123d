@@ -188,9 +188,17 @@ void ConvectionTransport::make_transport_partitioning() {
     delete[] loc_part;
     xfree(id_4_old);
 
-    FOR_ELEMENTS(mesh_, ele) {
-        ele->pid=el_ds->get_proc(row_4_el[ele.index()]);
-    }
+    // TODO: make output of partitioning is usefull but makes outputs different
+    // on different number of processors, which breaks tests.
+    //
+    // Possible solution:
+    // - have flag in ini file to turn this output ON
+    // - possibility to have different ref_output for different num of proc.
+    // - or do not test such kind of output
+    //
+    //FOR_ELEMENTS(mesh_, ele) {
+    //    ele->pid=el_ds->get_proc(row_4_el[ele.index()]);
+    //}
 
 }
 
