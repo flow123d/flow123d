@@ -1239,6 +1239,10 @@ double ***ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
 
+double ***ConvectionTransport::get_prev_concentration_matrix(){
+	return pconc;
+}
+
 void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_distribution_out){
 	el_4_loc_out = this->el_4_loc;
 	el_distribution_out = this->el_ds;

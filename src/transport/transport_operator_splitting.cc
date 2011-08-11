@@ -33,10 +33,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	convection->get_par_info(el_4_loc, el_distribution);
 	//decayRad->release_reaction_matrix();
-	decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
+	decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	Semchem_reactions->set_el_4_loc(el_4_loc);
-	Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
+	Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
 
 	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks);

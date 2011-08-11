@@ -103,6 +103,7 @@ public:
 	 */
 	//double get_cfl_time_constrain();
 	double ***get_concentration_matrix();
+	double ***get_prev_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
 	int get_n_substances();
