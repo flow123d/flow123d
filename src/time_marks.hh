@@ -41,17 +41,17 @@ public:
 
 
     /// Getter for mark type.
-    Type mark_type() const {
+    inline Type mark_type() const {
         return mark_type_;
     }
 
     /// True if the TimeMark is strict.
-    bool is_strict() const {
+    inline bool is_strict() const {
         return mark_type_ & strict;
     }
 
     /// Getter for the time of the TimeMark.
-    double time() const {
+    inline double time() const {
         return time_;
     }
 
@@ -60,13 +60,20 @@ public:
      * @param mask {Select bits that should be 1 for matching mark types.
      */
 
-    bool match_mask(const TimeMark::Type &mask) const {
+    inline bool match_mask(const TimeMark::Type &mask) const {
         return ( mask & (~mark_type_) ) == 0;
+    }
+
+    /// Add more bits that a mark satisfies.
+    inline void add_to_type(const TimeMark::Type &type) {
+        mark_type_ |= type;
     }
 
     /// Comparison of time marks according to their time.
     bool operator<(const TimeMark& second) const
       { return time_ < second.time(); }
+
+
 private:
     double time_;
     Type mark_type_;

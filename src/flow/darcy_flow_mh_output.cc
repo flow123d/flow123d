@@ -130,8 +130,6 @@ void DarcyFlowMHOutput::output()
         if(element_vectors->vectors != NULL) {
             delete element_vectors->vectors;
         }
-    } else {
-        xprintf(Msg, "no output to %s\n", output_writer->get_base_filename().c_str());
     }
 }
 

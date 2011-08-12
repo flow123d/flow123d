@@ -731,7 +731,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
     new_4_id = (int *) xmalloc((n_ids + 1) * sizeof(int));
 
     // create whole new->old mapping on each proc
-    DBGMSG("Creating global new->old mapping ...\n");
+    //DBGMSG("Creating global new->old mapping ...\n");
     AOCreateBasicIS(new_numbering, PETSC_NULL, &new_old_ao); // app ordering= new; petsc ordering = old
     for (i = 0; i < size; i++)
         old_4_new[i] = i;
@@ -739,7 +739,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
     AODestroy(new_old_ao);
 
     // compute id_4_loc
-    DBGMSG("Creating loc.number -> id mapping ...\n");
+    //DBGMSG("Creating loc.number -> id mapping ...\n");
     i_loc = 0;
     //DBGPRINT_INT("id_4_old",old_ds.lsize(),id_4_old);
     //DBGPRINT_INT("old_4_new",new_ds->lsize(),old_4_new)
@@ -749,7 +749,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
         id_4_loc[i_loc++] = id_4_old[old_4_new[i_new]];
     }
     // compute row_4_id
-    DBGMSG("Creating id -> stiffness mtx. row mapping ...\n");
+    //DBGMSG("Creating id -> stiffness mtx. row mapping ...\n");
     for (i_loc = 0; i_loc <= n_ids; i_loc++)
         new_4_id[i_loc] = -1; // ensure that all ids are initialized
     for (i_new = 0; i_new < size; i_new++)
@@ -872,7 +872,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
 	//el_ds->view();
 	//
-        DBGMSG("Compute appropriate edge partitioning ...\n");
+        //DBGMSG("Compute appropriate edge partitioning ...\n");
         //optimal element part; loc. els. id-> new el. numbering
         Distribution init_edge_ds(Distribution::Localized, mesh_->n_edges());
         // partitioning of edges, edge belongs to the proc of his first element
@@ -952,7 +952,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
         delete[] loc_part;
         xfree(id_4_old);
 
-        DBGMSG("Compute appropriate element partitioning ...\n");
+        //DBGMSG("Compute appropriate element partitioning ...\n");
         //optimal element part; loc. els. id-> new el. numbering
         Distribution init_el_ds(Distribution::Block, mesh_->n_elements());
         // partitioning of elements, element belongs to the proc of his first edge
@@ -983,7 +983,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
         xfree(id_4_old);
     }
 
-    DBGMSG("Compute side partitioning ...\n");
+    //DBGMSG("Compute side partitioning ...\n");
     //optimal side part; loc. sides; id-> new side numbering
     Distribution init_side_ds(Distribution::Block, mesh_->n_sides);
     // partitioning of sides follows elements

@@ -105,7 +105,7 @@ SchurComplement :: SchurComplement(LinSys *Orig, Mat inv_a, IS ia)
 
        // set size
        orig_sub_size = m;
-       DBGMSG("orig block size %d",orig_sub_size);
+       //DBGMSG("orig block size %d",orig_sub_size);
 
        // find inverted block size
        err = MatGetSize(IA_sub, &m, &n);
@@ -113,7 +113,7 @@ SchurComplement :: SchurComplement(LinSys *Orig, Mat inv_a, IS ia)
 
        // set size
        locSizeA = m;
-       DBGMSG("A block size %d",locSizeA);
+       //DBGMSG("A block size %d",locSizeA);
 
        // size of B block
        locSizeB = orig_sub_size-locSizeA;
@@ -419,9 +419,9 @@ void SchurComplement::form_schur()
     else if      (Orig->type == LinSys::MAT_MPIAIJ)
     {
 
-       DBGMSG("Compute Schur complement of\n");
+       //DBGMSG("Compute Schur complement of\n");
        //MatView(Schur->Orig->A,PETSC_VIEWER_STDOUT_WORLD);
-       DBGMSG("inverse IA:\n");
+       //DBGMSG("inverse IA:\n");
        //MatView(Schur->IA,PETSC_VIEWER_STDOUT_WORLD);
        // compose Schur complement
        // Petsc need some fill estimate for results of multiplication in form nnz(A*B)/(nnz(A)+nnz(B))
@@ -434,15 +434,15 @@ void SchurComplement::form_schur()
 
        // compute IAB=IA*B
        MatGetSubMatrix(Orig->get_matrix(), IsA, fullIsB, locSizeB, mat_reuse, &B);
-       DBGMSG(" B:\n");
+       //DBGMSG(" B:\n");
        //MatView(Schur->B,PETSC_VIEWER_STDOUT_WORLD);
        MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
-       DBGMSG(" IAB:\n");
+       //DBGMSG(" IAB:\n");
        //MatView(Schur->IAB,PETSC_VIEWER_STDOUT_WORLD);
        // compute xA=Bt* IAB = Bt * IA * B
        MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsA, locSizeA, mat_reuse, &(Bt));
        MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
-       DBGMSG("xA:\n");
+       //DBGMSG("xA:\n");
        //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
 
        // get C block
@@ -453,7 +453,7 @@ void SchurComplement::form_schur()
 
        //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
        MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
-       DBGMSG("C block:\n");
+       //DBGMSG("C block:\n");
        //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
        //
        //TODO: MatAXPY - umoznuje nasobit -1, t.j. bylo by lepe vytvorit konvencni Schuruv doplnek zde,

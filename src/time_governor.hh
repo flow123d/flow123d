@@ -184,6 +184,12 @@ public:
 
     /**
      *  Estimate choice of next time step according to actual setting of constrains.
+     *  Precedence of constrains:
+     *
+     *  1. meet next fixed time (always satisfied)
+     *  2. permanent upper bound (satisfied up to 1%)
+     *  3. permanent lower bound (satisfied if not in conflict with 1.)
+     *  4. current upper bound (satisfied if not in conflict with 3.)
      */
     double estimate_dt() const;
 

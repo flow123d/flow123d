@@ -3,7 +3,7 @@ $MaterialFormat
 $EndMaterialFormat
 $Materials
 	1
-	100	21	1
+	100	21	0.02
 $EndMaterials
 $Storativity
     100 	1.0

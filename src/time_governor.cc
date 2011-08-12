@@ -117,12 +117,22 @@ double TimeGovernor::estimate_dt() const {
     double full_step = fix_time_it->time() - time;
     double step_estimate = min(full_step, time_step_constrain);
     step_estimate = min(step_estimate, max_time_step);
-    step_estimate = max(step_estimate,min_time_step);
+    step_estimate = max(step_estimate, min_time_step); // possibly overwrites time_step_constrain
 
     // round the time step to have integer number of steps till next fix time
     // this always select shorter time step
     int n_steps = ceil( full_step / step_estimate );
-    return (full_step / n_steps);
+    step_estimate = full_step / n_steps;
+
+    // check permanent bounds with a bit of tolerance
+    if (step_estimate < min_time_step*0.99) {
+        // try longer step
+        double longer_step = full_step / (n_steps - 1);
+        if (longer_step <= max_time_step*1.01) {
+            step_estimate = longer_step;
+        }
+    }
+    return step_estimate;
 }
 
 void TimeGovernor::next_time()

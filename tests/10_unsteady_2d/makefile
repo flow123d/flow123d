@@ -1,5 +1,5 @@
 INI_FILES="uloha.ini"
 NPROC="1"
+FLOW_PARAMS="-o output"
 
-test:
-	bash ../run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
+include ../all_tests.mk

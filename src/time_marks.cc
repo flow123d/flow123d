@@ -33,6 +33,22 @@ TimeMark::Type TimeMarks::new_strict_mark_type() {
 
 void TimeMarks::add(const TimeMark &mark) {
     vector<TimeMark>::iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), mark);
+
+    // check equivalence with found mark
+    if (fabs(first_ge->time() - mark.time()) < 2*numeric_limits<double>::epsilon()) {
+        first_ge->add_to_type(mark.mark_type());
+        return;
+    }
+    // possibly check equivalence with previous mark
+    if (first_ge != marks_.begin()) {
+        vector<TimeMark>::iterator previous = first_ge;
+        --previous;
+        if (fabs(previous->time() - mark.time()) < 2*numeric_limits<double>::epsilon()) {
+            previous->add_to_type(mark.mark_type());
+            return;
+        }
+    }
+
     marks_.insert(first_ge, mark);
 }
 
@@ -42,15 +58,16 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
         else add(TimeMark(time, type));
     }
     else {
-        for (double t = time; t <= end_time; t += dt)
+        for (double t = time; t <= end_time*1.001; t += dt) {
             add(TimeMark(t, type));
+        }
     }
 }
 
 bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
     TimeMark tm = *last(tg, mask);
-    return tg.le(tm.time() + tg.dt());
+    return tg.lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
 }
 
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
