@@ -161,6 +161,16 @@ function check_outputs {
 		return 1
 	fi
 
+	REF_FILE_NUM=`ls "${REF_OUTPUT_DIR}/${INI_FILE}" | wc -l`
+	# Does reference directory contain any reference file?
+	if [ ${REF_FILE_NUM} -eq 0 ]
+	then
+		echo " [Failed]"
+		echo "Error: directory ${REF_OUTPUT_DIR}/${INI_FILE} doesn't contain any reference output files."
+		return 1
+	fi
+	unset REF_FILE_NUM
+
 	# Does exist output directory for this .ini file and number of processes?
 	if ! [ -d "${TEST_RESULTS}/${INI_FILE}.${NP}" ]
 	then
@@ -176,15 +186,18 @@ function check_outputs {
 		# Does needed output file exist?
 		if [ -f "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 		then
+			# Print some debug information to the output of ndiff
+			echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
+			>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+			
+			echo "" >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+			
 			# Compare output file using ndiff
-                        echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
-                        >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-                        echo "----------------------" \
-                        >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 			${NDIFF} \
 				"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
 				"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
 				>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+			
 			# Check result of ndiff
 			if [ $? -eq 0 ]
 			then
