@@ -1,5 +1,5 @@
 INI_FILES="flow_decay_long2.ini"
 NPROC="1"
+FLOW_PARAMS=""
 
-test:
-	../run_test.sh ${INI_FILES} ${NPROC}
+include ../all_tests.mk
