@@ -28,7 +28,4 @@ test:
 	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 clean:
-	rm -rf Results
-	rm -rf test_results
-	rm -f profiler_*
-	rm -f output/*
+	rm -rf Results test_results; rm -f profiler_*; rm -f output/*; rm -f vystup.txt

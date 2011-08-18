@@ -28,6 +28,7 @@ testall: 01.tst 02.tst 03.tst
 clean:
 	make -C 01_steady_flow_123d clean
 	make -C 02_transport_12d clean
+	make -C 03_transport_small_12d clean
 
 # General rule to run test given only by number
 %.tst:
