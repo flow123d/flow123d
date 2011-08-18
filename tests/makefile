@@ -22,7 +22,7 @@
 #
 
 # Make all tests
-testall: 01.tst 02.tst
+testall: 01.tst 02.tst 03.tst
 
 # Rule to clean generated files in test directories
 clean:
