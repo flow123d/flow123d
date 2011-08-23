@@ -38,14 +38,15 @@ Linear_reaction::~Linear_reaction()
 
 	//n_subst = sizeof(*reaction_matrix)/sizeof(double *);
 	xprintf(Msg,"\nDestructor is running.");
-	free(half_lives);
-	half_lives = NULL;
+	if(half_lives != NULL){
+		free(half_lives);
+		half_lives = NULL;
+	}
 
-	free(substance_ids);
-	substance_ids = NULL;
-
-	free(half_lives);
-	half_lives = NULL;
+	if(substance_ids != NULL){
+		free(substance_ids);
+		substance_ids = NULL;
+	}
 
 	release_reaction_matrix();
 }
@@ -135,6 +136,11 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 
 	if(nr_of_decays > 0){
 		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
+		if(half_lives != NULL){
+					free(half_lives);
+					half_lives = NULL;
+		}
+		half_lives = (double *)xmalloc(nr_of_decays * sizeof(double));
 		bifurcation.resize(nr_of_decays);
 		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
 			sprintf(dec_name,"Decay_%d", dec_name_nr);
@@ -163,11 +169,13 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 		half_lives = (double *)xmalloc(nr_of_FoR * sizeof(double));
 		for(dec_nr = 0; dec_nr < nr_of_FoR; dec_nr++){
 			sprintf(dec_name,"FoReact_%d", dec_name_nr);
+			set_nr_of_isotopes(2);
 			set_indeces(dec_name, 2);
 			set_kinetic_constants(dec_name, dec_nr);//instead of this line, here should be palced computation of halflives using kinetic constants
 			print_indeces(nr_of_FoR); //just a control
 			print_half_lives(2); //just a control
-			modify_reaction_matrix(2);
+			//modify_reaction_matrix(2);
+			modify_reaction_matrix();
 			dec_name_nr++;
 		}
 	}
@@ -310,15 +318,19 @@ void Linear_reaction::print_reaction_matrix(void)
 {
 	int cols,rows;
 
-	xprintf(Msg,"\nReaction matrix looks as follows:\n");
-	for(rows = 0; rows < nr_of_species; rows++){
-		for(cols = 0; cols < nr_of_species; cols++){
-			if(cols == (nr_of_species - 1)){
-				xprintf(Msg,"%f\n",reaction_matrix[rows][cols]);
-			}else{
-				xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);
+	if(reaction_matrix != NULL){
+		xprintf(Msg,"\nReaction matrix looks as follows:\n");
+		for(rows = 0; rows < nr_of_species; rows++){
+			for(cols = 0; cols < nr_of_species; cols++){
+				if(cols == (nr_of_species - 1)){
+					xprintf(Msg,"%f\n",reaction_matrix[rows][cols]);
+				}else{
+					xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);
+				}
 			}
 		}
+	}else{
+		xprintf(Msg,"\nReaction matrix needs to be allocated.\n");
 	}
 	return;
 }
@@ -453,4 +465,15 @@ void Linear_reaction::release_reaction_matrix(void)
 		free(reaction_matrix);
 		reaction_matrix = NULL;
 	}
+}
+
+double Linear_reaction::get_time_step(void)
+{
+	return time_step;
+}
+
+void Linear_reaction::set_nr_of_isotopes(int Nr_of_isotopes)
+{
+	nr_of_isotopes = Nr_of_isotopes;
+	return;
 }

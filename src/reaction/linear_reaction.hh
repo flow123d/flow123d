@@ -43,6 +43,10 @@ class Linear_reaction
 		*/
 		int get_nr_of_FoR(void);
 		/**
+		* 	It returns current time step used for first order reactions.
+		*/
+		double get_time_step(void);
+		/**
 		*	It enables to set a number of transported species to set a size of reaction matrix.
 		*/
 		void set_nr_of_species(int n_substances);
@@ -64,9 +68,13 @@ class Linear_reaction
 		*/
 		int *set_indeces(char *section, int n_subst);
 		/**
-		*	This method reads an information about a number of isotopes in a decay chain described inside of ini-file in section given as an argument.
+		*	This method reads an information about a number of isotopes in a decay chain described inside of ini-file in section given as an argument. This method is used for radioactive decay simulation.
 		*/
-		void set_nr_of_isotopes(char *section);
+		void set_nr_of_isotopes(char* section);
+		/**
+		*	This method sets number of isotopes for the case of first order reaction. The value should be always 2.
+		*/
+		void set_nr_of_isotopes(int Nr_of_isotopes);
 		/**
 		*	This method reads from ini-file an information how many radioactive decays are under consideration.
 		*/
