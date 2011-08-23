@@ -641,7 +641,7 @@ void DarcyFlowMHOutput::water_balance() {
     if (p_sources != NULL) {
         xprintf(Msg, "Calculating sources of water by material types...\n");
 
-        MaterialDatabase &mat_base = darcy_flow->get_mat_base();
+        MaterialDatabase &mat_base = darcy_flow->material_base();
         std::vector<double> *src_balance = new std::vector<double>( mat_base.size(), 0.0 ); // initialize by zero
 
 

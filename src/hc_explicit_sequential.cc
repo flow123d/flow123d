@@ -87,9 +87,6 @@ void HC_ExplicitSequential::run_simulation()
     bool velocity_changed;
     Vec velocity_field;
 
-    // ensure we have planned times for both processes
-    water->choose_next_time();
-    transport_reaction->choose_next_time();
 
     // following cycle is designed to support independent time stepping of
     // both processes. The question is which value of the water field use to compute a transport step.
@@ -105,11 +102,11 @@ void HC_ExplicitSequential::run_simulation()
     // The question is how to choose intervals t_dt. That should depend on variability of the velocity field in time.
     // Currently we simply use t_dt == w_dt.
 
-    while (! (water->is_end() && transport_reaction->is_end() ) ) {
+    while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
         DBGMSG("water end: %f %f\n ", water->planned_time(), water->solved_time());
         DBGMSG("trans end: %f %f\n ", transport_reaction->planned_time(), transport_reaction->solved_time());
 
-        transport_reaction->time().set_constrain(water->time().dt());
+        transport_reaction->set_time_step_constrain(water->time().dt());
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
@@ -126,7 +123,6 @@ void HC_ExplicitSequential::run_simulation()
             // here possibly save solution from water in order to have
 
             water_output->output();
-            water->choose_next_time();
 
             velocity_changed = true;
         } else {
@@ -143,7 +139,6 @@ void HC_ExplicitSequential::run_simulation()
             }
             transport_reaction->update_solution();
             transport_reaction->output_data();
-            transport_reaction->choose_next_time();
         }
 
     }

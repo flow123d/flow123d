@@ -38,7 +38,7 @@
  * @brief
  * Basic time management functionality for unsteady (and steady) solvers (class Equation).
  *
- * This class provides algorithms for selecting next time step, and information about current time step frame.
+ * This class provides algorithm for selecting next time step, and information about current time step frame.
  * Choice of the next time step can be permanently constrained through function set_permanent_constrain() or one can set
  * constrain only for the very next time step choice through function set_constrain(). The later one can be called multiple times with various
  * constrain values and we use the minimum of them. Function next_time() choose the next time step in such a way that it meets actual constrains and
@@ -46,9 +46,10 @@
  *
  * The fixed times are time marks of time_marks object passed at construction time with particular mask.
  *
- * The time step can be chosen either only for the next time level (this is default behavior of  next_time() ) or
- * for the largest possible time interval. The later possibility is necessary for explicit solvers, where the matrix used to perform one time step
- * depends on the time step and has to be modified, when the time step is changed.
+ * Solution of the next time step proceeds in following steps:
+ * -# Estimate next time step and set constrains (this can be usefull in hc_seq_explicit for estimating next transport time)
+ * -# Fix next time step up to the next time mark (this is necessary for ConvectionTransport)
+ * -# Proceed to the next time when solution is available. (this can replace solved flag in equation classes)
  *
  * Information provided by time governor includes:
  * - actual time, last time
@@ -56,18 +57,7 @@
  * - number of the time level
  * - time comparison
  *
- * TODO:
- * - remove set_dt_changed_overhead and connected stuff
- * - allow fixing of the time step until the first strict time mark, return it's time
- * - allow estimation of next time and dt
- *
- * So the usage cycle in general is:
- * - estimate next t, dt   (this can be usefull in hc_seq_explicit for estimating next transport time)
- * - fix next t, dt        (this is necessary for ConvectionTransport)
- * - proceed to next t, dt (this can replace solved flag in equation classes)
  */
-
-class TimeMarks;
 
 class TimeGovernor
 {
@@ -98,7 +88,7 @@ public:
    TimeGovernor(double init_time = inf_time);
 
    /**
-    * Permanent constrain for time step.
+    * Set permanent constrain for time step.
     */
    void set_permanent_constrain( double min_dt, double max_dt);
 
@@ -109,6 +99,23 @@ public:
      * set constrains. The minimum of them is used for choice of the next time step.
      */
     void set_constrain(double dt_constrain);
+
+    /**
+     * Fix time step until first fixed time mark. Return actual end of fixed time step.
+     *
+     * When called inside an already fixed interval, it overwrites previous setting.
+     */
+    inline double fix_dt_until_mark() {
+        if (time_marks == NULL) return inf_time;
+        end_of_fixed_dt_interval=time; // release previous fixed interval
+        fixed_dt = estimate_dt();
+        return end_of_fixed_dt_interval = time_marks->next(*this, fixed_time_mark_mask)->time();
+    }
+
+    /**
+     * Proceed to the next time according to current estimate_dt().
+     */
+    void next_time();
 
     /**
      * Getter for time marks.
@@ -135,28 +142,18 @@ public:
         {return time_marks->last(*this, mask);}
 
 
-
+    /**
+     * End of interval with currently fixed time step. Can be changed by next call of method fix_dt_until_mark.
+     */
     inline double end_of_fixed_dt() const
         {return end_of_fixed_dt_interval;}
 
+    /**
+     *
+     */
     inline bool is_changed_dt() const
         {return dt_changed;}
 
-    /**
-     * Fix time step until first fixed time mark. Return actual end of fixed time step.
-     *
-     * When called inside an already fixed interval, it overwrites previous setting.
-     */
-    inline double fix_dt_until_mark() {
-        end_of_fixed_dt_interval=time;
-        fixed_dt = estimate_dt();
-        return end_of_fixed_dt_interval = time_marks->next(*this, fixed_time_mark_mask)->time();
-    }
-
-    /**
-     * Proceed to the next time according to current estimate_dt().
-     */
-    void next_time();
 
     /**
      * End of actual time interval; i.e. where the solution is computed.
@@ -165,16 +162,16 @@ public:
         {return time;}
 
     /**
-     * Beginning of the actual time interval; i.e. the time of last computed solution.
+     * Beginning of the actual time interval; i.e. the time of last computed solution. OBSOLETE
      */
-    inline double last_t() const
-        {return last_time;}
+    //inline double last_t() const
+    //    {return last_time;}
 
     /**
-     * Previous time step.
+     * Previous time step. OBSOLETE
      */
-    inline double last_dt() const
-        {return last_time_step;}
+    //inline double last_dt() const
+    //    {return last_time_step;}
 
     /**
      * Length of actual time interval; i.e. the actual time step.
@@ -203,6 +200,7 @@ public:
     inline double end_time() const
     { return end_time_; }
 
+    /// True if we have solve end time.
     inline bool is_end() const
         {return this->ge(end_time_); }
 
@@ -267,7 +265,7 @@ private:
     /// End of actual time interval; i.e. where the solution is computed.
     double time;
     /// Beginning of the actual time interval; i.e. the time of last computed solution.
-    double last_time;
+    //double last_time;
     /// End of interval if fixed time step. (defers from @var time only if overhead is positive)
     double end_of_fixed_dt_interval;
     /// End time of the simulation.
@@ -276,7 +274,7 @@ private:
     /// Length of actual time interval; i.e. the actual time step.
     double time_step;
     /// time step just before last_time
-    double last_time_step;
+    //double last_time_step;
     /// next fixed time step
     double fixed_dt;
     /// changed dt flag

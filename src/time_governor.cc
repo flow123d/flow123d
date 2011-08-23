@@ -43,12 +43,11 @@ const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
  * TimeGovernor should be constructed from JSON object.
  */
 TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMarks &marks,const TimeMark::Type fixed_time_mask)
-: last_time(init_time),
+: time(init_time),
   end_time_(end_time),
   time_marks(&marks),
   fixed_time_mark_mask(fixed_time_mask)
 {
-    time=last_time;
     end_of_fixed_dt_interval=time;
 
     dt_changed=true;
@@ -68,8 +67,7 @@ TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMa
 }
 
 TimeGovernor::TimeGovernor(double init_time)
-: last_time(init_time),
-  end_time_(inf_time),
+: end_time_(inf_time),
   time(inf_time),
   time_marks(NULL),
   fixed_time_mark_mask(TimeMark::strict)
@@ -144,8 +142,8 @@ void TimeGovernor::next_time()
         return;
     }
 
-    last_time=time;
-    last_time_step = time_step;
+    //last_time=time;
+    double last_time_step = time_step;
 
     time_step = estimate_dt();
     dt_changed= (last_time_step == time_step);

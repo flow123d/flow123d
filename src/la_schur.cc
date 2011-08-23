@@ -449,7 +449,7 @@ void SchurComplement::form_schur()
        MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsB, locSizeB, mat_reuse, &(Compl->matrix));
        // compute complement = (-1)cA+xA = Bt*IA*B - C
        MatScale(Compl->get_matrix(),-1.0);
-       DBGMSG("C block:\n");
+       //DBGMSG("C block:\n");
 
        //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
        MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);

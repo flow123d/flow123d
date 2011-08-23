@@ -50,7 +50,6 @@ public:
     {
         // make module solved for ever
         time_=new TimeGovernor();
-        solved = true;
     };
 
     virtual void get_solution_vector(double * &vector, unsigned int &size) {

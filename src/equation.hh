@@ -34,6 +34,7 @@
 
 #include <petscmat.h>
 #include <time_governor.hh>
+#include <time_marks.hh>
 #include <limits>
 
 #include "system/system.hh"
@@ -78,39 +79,38 @@ public:
      *  Child class have to implement computation of solution in actual time.
      */
     virtual void update_solution() {
-        solved=true;
+        // solve equation here ...
+        time_->next_time();
     }
 
     /**
      *  Computation of one time step is split into update_solution() and choose_next_time() in order to allow dependency of the next time step
      *  on other coupled models.
      */
-    virtual void compute_one_step() {
-        update_solution();
-        choose_next_time();
-    }
+//    virtual void compute_one_step() {
+//        update_solution();
+//        choose_next_time();
+//    }
 
     /**
-     * Choose the next discrete time for computation. However do this only if the last planned time has been solved.
+     * Fix the next discrete time for computation.
      * Can be rewritten in child class to set possible constrains
      * according to possible equation coefficients or other data which can be result of another model.
      *
      */
-    virtual void choose_next_time();
+    virtual void choose_next_time()
+        {time_->fix_dt_until_mark();}
 
     /**
-     * This method implements basic cycle for computation until a given time. But could be overwritten at child class.
+     * Set external constrain for time governor of the equation.
      */
-    virtual void compute_until( double end_time)
-    {
-        ASSERT(NONULL(time_),"Time governor was not created.\n");
-        while ( ! time_->is_end() ) compute_one_step();
-    }
+    virtual void set_time_step_constrain(double dt)
+        {time_->set_constrain(dt);}
 
     /**
      * Basic getter method returns constant TimeGovernor reference which provides full read access to the time information.
      */
-    inline TimeGovernor &time()
+    inline TimeGovernor const &time()
     {
         ASSERT(NONULL(time_),"Time governor was not created.\n");
         return *time_;
@@ -120,28 +120,13 @@ public:
      * Most actual planned time for solution.
      */
     inline double planned_time()
-        { return time_->t(); }
+        { return time_->estimate_time(); }
 
     /**
      * Time of actual solution returned by get_solution_vector().
      */
     inline double solved_time()
-        { return solved ? time_->t() : time_->last_t(); }
-
-    /**
-     * Returns true if planned_time is solved_time.
-     */
-    inline bool is_solved()
-        {return solved;}
-
-    /**
-     * Returns true if solved_time is the end point of the time interval of the time governor.
-     */
-    inline bool is_end()
-        {
-        //DBGMSG("eq end: %f %d\n", time_->t(), solved);
-        return time_->is_end() && solved;
-        }
+        { return time_->t(); }
 
     /**
      * This getter method provides the computational mesh currently used by the model.
@@ -155,8 +140,14 @@ public:
      * This getter method provides the material database of the model.
      * TODO: Maybe it is better to have a database outside and use it to produce input fields.
      */
-    inline  MaterialDatabase &get_mat_base()
+    inline  MaterialDatabase &material_base()
         {return *mat_base;}
+
+    /**
+     * Getter for equation time mark type.
+     */
+    inline TimeMark::Type mark_type()
+        {return equation_mark_type_;}
 
     /**
      * Child class have to implement getter for sequential solution vector.
@@ -169,12 +160,12 @@ public:
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
 protected:
-    bool solved;
 
     Mesh * const mesh_;
     MaterialDatabase * mat_base;
     TimeMarks * const time_marks;
     TimeGovernor *time_;
+    TimeMark::Type equation_mark_type_;
 };
 
 /**

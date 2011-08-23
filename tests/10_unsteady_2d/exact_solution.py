@@ -24,6 +24,9 @@ class Parameters :
     k=0.02
     bc=100.0
     time=0.002
+    
+    x_scale=1.0
+    y_scale=1.0
 
     alfa=[]
     un=[]
@@ -39,10 +42,10 @@ class Parameters :
     def alfa_term(self,n):
       
       n_pi = math.pi * n
-      if (n % 2) 
+      if (n % 2) :
         # odd
         return -1/n * math.exp(-self.k*n_pi*n_pi*self.time )
-      else   
+      else :  
         #even
         return 1/n * math.exp(-self.k*n_pi*n_pi*self.time )
       
@@ -64,7 +67,7 @@ class Parameters :
     # one term of series for 2D value
     def series_2d(self, n, tx, ty):    
         n_pi = (n+1)*math.pi
-        return (self.alfa[n]*math.sin(n_pi*tx)
+        return (self.alfa[n]*math.sin(n_pi*tx))
      
 
     # sum the series with terms given by function "series"

@@ -121,7 +121,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
 
     make_schur0();
 
-    solved=true;
 }
 
 //=============================================================================
@@ -134,7 +133,7 @@ void DarcyFlowMH_Steady::update_solution() {
     F_ENTRY;
 
     DBGMSG("compute one step.\n");
-    if (is_end()) return;
+    if (time_->is_end()) return;
 
 
 
@@ -205,7 +204,7 @@ void DarcyFlowMH_Steady::update_solution() {
     VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
             INSERT_VALUES, SCATTER_FORWARD);
 
-    solved=true;
+    time_->next_time();
 }
 
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
@@ -1209,7 +1208,8 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
         // set initial condition
         local_sol[i_loc_row]=initial_pressure->element_value(ele.index());
         // set new diagonal
-        local_diagonal[i_loc_row]=-ele->material->stor*ele->volume /time_->dt();
+        DBGMSG("stor: %f dt: %f\n",ele->material->stor,time_->dt());
+        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure /time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     delete initial_pressure;
@@ -1223,7 +1223,6 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
     VecDuplicate(schur0->get_rhs(), &steady_rhs);
     VecCopy(schur0->get_rhs(),steady_rhs);
 
-    solved=true;
 }
 
 void DarcyFlowMH_Unsteady::modify_system()
@@ -1311,7 +1310,6 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
     // auxiliary vector for time term
     VecDuplicate(schur0->get_rhs(), &time_term);
 
-    solved=true;
 
 }
 

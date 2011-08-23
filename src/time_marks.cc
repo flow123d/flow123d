@@ -72,7 +72,6 @@ bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) c
 
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
-
     vector<TimeMark>::const_iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t(),mask));
     while (  ! tg.lt(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         //cout << *first_ge;

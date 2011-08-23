@@ -44,7 +44,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
     time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type );
 	// TOdO: this has to be set after construction of transport matrix !!
 
-	solved = true;
 
 	// register output vectors from convection
 	double ***out_conc = convection->get_out_conc();
@@ -96,12 +95,8 @@ void TransportOperatorSplitting::read_simulation_step(double sim_step) {
 
 void TransportOperatorSplitting::update_solution() {
 
-    // setup convection matrix for actual CFL time step
-	//double cfl_dt =  convection->get_cfl_time_constrain();
-	//DBGMSG("cfl: %f dt: %f\n",cfl_dt, );
-	//int steps = (int) ceil(time_->dt() / cfl_dt);
-	//cfl_dt = time_->dt() / steps;
 
+    time_->next_time();
 	convection->set_target_time(time_->t());
 
 	decayRad->set_time_step(convection->time().estimate_dt());
@@ -122,7 +117,7 @@ void TransportOperatorSplitting::update_solution() {
     END_TIMER("transport_steps");
     xprintf( Msg, "O.K.\n");
     DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
-	solved=true;
+
 }
 
 

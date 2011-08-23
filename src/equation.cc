@@ -35,17 +35,8 @@ EquationBase::EquationBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_b
   mesh_(&mesh),
   mat_base(&mat_base),
   time_(NULL),
-  solved(false)
+  equation_mark_type_(time_marks->new_mark_type())
 {}
 
 
-void EquationBase::choose_next_time() {
-    DBGMSG("solved: %d %d\n",solved, is_end() );
-    if (is_end()) return;
-    if (solved) {
-        time_->next_time();
-        solved =false;
-    }
-    DBGMSG("NEW time: %f\n",time_->t());
-}
 
