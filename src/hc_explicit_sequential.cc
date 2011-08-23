@@ -60,8 +60,6 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
         transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
     }
 
-
-
 }
 
 /**
@@ -125,6 +123,8 @@ void HC_ExplicitSequential::run_simulation()
 
             water_output->output();
 
+            water->choose_next_time();
+
             velocity_changed = true;
         } else {
             // having information about velocity field we can perform transport step
@@ -143,7 +143,9 @@ void HC_ExplicitSequential::run_simulation()
         }
 
     }
+
 }
+
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
 

@@ -190,21 +190,21 @@ public:
     virtual ~LinSys();
 
 protected:
-    Distribution vec_ds;            ///< Distribution of continuous blocks of system rows among the processors.
+    Distribution vec_ds;        ///< Distribution of continuous blocks of system rows among the processors.
     bool     symmetric;         ///< Flag for the symmetric system.
     bool     positive_definite; ///< Flag for positive definite system.
     bool     own_solution;      ///< Indicates if the solution array has been allocated by this class.
-    SetValuesMode status;        ///< Set value status of the linear system.
+    SetValuesMode status;       ///< Set value status of the linear system.
 
-    Mat     matrix;                  ///< Petsc matrix of the problem.
-    Vec     rhs;                  ///< PETSc vector constructed with vx array.
-    Vec     solution;                  ///< PETSc vector constructed with vb array.
-    double  *v_rhs;                ///< RHS vector.
-    double  *v_solution;                ///< Vector of solution.
+    Mat     matrix;             ///< Petsc matrix of the problem.
+    Vec     rhs;                ///< PETSc vector constructed with vx array.
+    Vec     solution;           ///< PETSc vector constructed with vb array.
+    double  *v_rhs;             ///< RHS vector.
+    double  *v_solution;        ///< Vector of solution.
 
     // for MATIS
-    int *subdomain_indices;                     ///< Remember indices which created mapping
-    Mat local_matrix;                           ///< local matrix of subdomain (used in LinSys_MATIS)
+    int *subdomain_indices;     ///< Remember indices which created mapping
+    Mat local_matrix;           ///< local matrix of subdomain (used in LinSys_MATIS)
 
     friend void SchurComplement::form_schur();
     friend class SchurComplement;

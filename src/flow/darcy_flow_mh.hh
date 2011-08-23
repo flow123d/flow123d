@@ -160,37 +160,38 @@ protected:
 
 	struct Solver *solver;
 
-	LinSys *schur0;  		// whole MH Linear System
-	SchurComplement *schur1;  	// first schur compl.
-	SchurComplement *schur2;	// second ..
-
+	LinSys *schur0;  		//< whole MH Linear System
+	SchurComplement *schur1;  	//< first schur compl.
+	SchurComplement *schur2;	//< second ..
 
 
 	// parallel
-	int np;  // number of procs
-	int myp; // my proc number
-	int	 lsize;				// local size of whole MH matrix
-	Distribution *edge_ds; // optimal distribution of edges
-	Distribution *el_ds; // optimal distribution of elements
-	Distribution *side_ds; // optimal distribution of elements
-	Distribution *rows_ds; // final distribution of rows of MH matrix
+	int np;                         //< number of procs
+	int myp;                        //< my proc number
+	int	 lsize;	                //< local size of whole MH matrix
+	Distribution *edge_ds;          //< optimal distribution of edges
+	Distribution *el_ds;            //< optimal distribution of elements
+	Distribution *side_ds;          //< optimal distribution of elements
+	Distribution *rows_ds;          //< final distribution of rows of MH matrix
 
-	int *el_4_loc;		// array of idexes of local elements (in ordering matching the optimal global)
-	int *row_4_el;		// element index to matrix row
-	int *side_id_4_loc;		// array of ids of local sides
-	int	*side_row_4_id;		// side id to matrix row
-	int *edge_4_loc;		// array of indexes of local edges
-	int	*row_4_edge;		// edge index to matrix row
-	//int *old_4_new;        // aux. array should be only part of parallel LinSys
+	int *el_4_loc;		        //< array of idexes of local elements (in ordering matching the optimal global)
+	int *row_4_el;		        //< element index to matrix row
+	int *side_id_4_loc;		//< array of ids of local sides
+	int	*side_row_4_id;		//< side id to matrix row
+	int *edge_4_loc;		//< array of indexes of local edges
+	int	*row_4_edge;		//< edge index to matrix row
+	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
 
 	// MATIS related arrays
-	int ndof_loc;                   // size of local block of MATIS matrix 
-	int *global_row_4_sub_row;      // global dof index for subdomain index
-	ISLocalToGlobalMapping map_side_local_to_global; ///< PETSC mapping form local SIDE indices of subdomain to global indices
+        std::vector<int> global_row_4_sub_row;           //< global dof index for subdomain index
+	ISLocalToGlobalMapping map_side_local_to_global; //< PETSC mapping form local SIDE indices of subdomain to global indices
 
 	// gather of the solution
-	Vec sol_vec;			// vector over solution array
+	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
+
+        Mat IA1;                                         //< inverse of matrix IA1
+        Mat IA2;                                         //< inverse of matrix IA2
 };
 
 

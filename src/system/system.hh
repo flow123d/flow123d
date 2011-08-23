@@ -30,7 +30,7 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include <mpi.h>
+//#include <mpi>
 
 
 #include "global_defs.h"

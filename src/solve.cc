@@ -355,13 +355,64 @@ void solver_petsc(Solver *solver)
 
 
     //    xprintf(Msg,"View KSP system\n");
-        //PetscViewerCreate(PETSC_COMM_WORLD,&mat_view);
-    //PetscViewerSetFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB);
-	//MatView(sys->get_matrix(),	PETSC_VIEWER_STDOUT_WORLD);
-	//VecView(sys->b,	PETSC_VIEWER_STDOUT_WORLD);
-        //PetscViewerDestroy(mat_view);
-    //MatConvert(locMtx,MATDENSE,MAT_INITIAL_MATRIX,&denseMtx);
-    //MatView(denseMtx, PETSC_VIEWER_STDOUT_SELF );
+        //Mat matrixForPrint;
+        //PetscErrorCode ierr;
+        //PetscInt m, n;
+        //MatGetSize( sys->get_matrix(), &m, &n );
+
+        //ierr = MatCreate( PETSC_COMM_WORLD, &matrixForPrint ); CHKERRV( ierr ); 
+        //ierr = MatSetType( matrixForPrint, MATMPIAIJ ); CHKERRV( ierr ); 
+        //ierr = MatSetSizes( matrixForPrint, PETSC_DECIDE, PETSC_DECIDE, m, n ); 
+
+        //std::cout << "Size of the matrix is :" << m << ", " << n << std::endl;
+        //Vec auxIn, auxOut;
+        //for ( int i = 0; i < n; i++ ) {
+        //    // create auxiliary vector of unit matrix
+        //    ierr = MatGetVecs( sys->get_matrix(), &auxIn, &auxOut ); CHKERRV( ierr );
+
+        //    VecSetValue( auxIn, i, 1., INSERT_VALUES );
+        //    ierr = VecAssemblyBegin( auxIn ); CHKERRV( ierr ); 
+        //    ierr = VecAssemblyEnd(   auxIn ); CHKERRV( ierr ); 
+ 
+        //    ierr = MatMult( sys->get_matrix(), auxIn, auxOut ); CHKERRV( ierr ); 
+
+        //    PetscInt low, high;
+        //    VecGetOwnershipRange( auxOut, &low, &high );
+        //    PetscInt locSize = high - low;
+
+        //    PetscScalar *values;
+        //    VecGetArray( auxOut, &values );
+
+        //    std::vector<PetscInt> rows;
+        //    std::vector<PetscInt> columns;
+        //    for ( int j = low; j < high; j++ ) {
+        //        rows.push_back( j );
+        //    }
+        //    columns.push_back( i );
+
+        //    MatSetValues( matrixForPrint, locSize, &(rows[0]), 1, &(columns[0]), values, INSERT_VALUES );
+
+        //    VecRestoreArray( auxOut, &values );
+        //    VecDestroy( auxIn );
+        //    VecDestroy( auxOut );
+        //}
+        //ierr = MatAssemblyBegin( matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
+        //ierr = MatAssemblyEnd(   matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
+
+
+        //PetscViewer matViewer;
+        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "matrix.m", &matViewer );
+        //PetscViewerSetFormat(matViewer,PETSC_VIEWER_ASCII_MATLAB);
+        //MatView( matrixForPrint, matViewer );
+        //MatDestroy( matrixForPrint );
+        //PetscViewerDestroy(matViewer);
+
+        //PetscViewer rhsViewer;
+        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "rhs.m", &rhsViewer );
+        //PetscViewerSetFormat(rhsViewer,PETSC_VIEWER_ASCII_MATLAB);
+        //VecView( sys->get_rhs(), rhsViewer );
+        //PetscViewerDestroy(rhsViewer);
+
 	KSPCreate(PETSC_COMM_WORLD,&System);
 	KSPSetOperators(System, sys->get_matrix(), sys->get_matrix(), DIFFERENT_NONZERO_PATTERN);
 	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
