@@ -51,19 +51,18 @@ TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMa
     end_of_fixed_dt_interval=time;
 
     dt_changed=true;
-    dt_change_overhead=-1.0; // turn off
 
     min_time_step=0;
     if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
     else max_time_step = inf_time;
-
-    time_step=max_time_step;
 
     time_step_constrain = min(end_time_-time, max_time_step);
 
     time_level=0;
     time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
     time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
+
+    time_step = estimate_dt();
 }
 
 TimeGovernor::TimeGovernor(double init_time)
@@ -74,18 +73,14 @@ TimeGovernor::TimeGovernor(double init_time)
 
 {
     end_of_fixed_dt_interval=time;
-
     dt_changed=true;
-    dt_change_overhead=-1.0; // turn off
 
     min_time_step=0;
-    if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
-    else max_time_step = inf_time;
-
-    time_step=max_time_step;
-    time_step_constrain = min(end_time_-time, max_time_step);
+    max_time_step = inf_time;
+    time_step_constrain = inf_time;
 
     time_level=0;
+    time_step = inf_time;
 }
 
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
@@ -106,6 +101,7 @@ void TimeGovernor::set_constrain(double dt_constrain)
 
 double TimeGovernor::estimate_dt() const {
     if (time == inf_time || is_end()) return 0.0;
+    if (time_marks == NULL) return inf_time;
     if (this->lt(end_of_fixed_dt_interval)) return fixed_dt;
 
     // jump to the first future fix time
@@ -113,14 +109,17 @@ double TimeGovernor::estimate_dt() const {
 
     // compute step to next fix time and apply constrains
     double full_step = fix_time_it->time() - time;
+
     double step_estimate = min(full_step, time_step_constrain);
     step_estimate = min(step_estimate, max_time_step);
     step_estimate = max(step_estimate, min_time_step); // possibly overwrites time_step_constrain
+
 
     // round the time step to have integer number of steps till next fix time
     // this always select shorter time step
     int n_steps = ceil( full_step / step_estimate );
     step_estimate = full_step / n_steps;
+
 
     // check permanent bounds with a bit of tolerance
     if (step_estimate < min_time_step*0.99) {
@@ -130,6 +129,7 @@ double TimeGovernor::estimate_dt() const {
             step_estimate = longer_step;
         }
     }
+
     return step_estimate;
 }
 
@@ -143,10 +143,10 @@ void TimeGovernor::next_time()
     }
 
     //last_time=time;
-    double last_time_step = time_step;
+    last_time_step = time_step;
 
     time_step = estimate_dt();
-    dt_changed= (last_time_step == time_step);
+    dt_changed= (last_time_step != time_step);
     time_step_constrain = min(end_time_-time, max_time_step); // reset time step constrain
 
     time+=time_step;

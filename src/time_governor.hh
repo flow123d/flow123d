@@ -168,10 +168,10 @@ public:
     //    {return last_time;}
 
     /**
-     * Previous time step. OBSOLETE
+     * Previous time step.
      */
-    //inline double last_dt() const
-    //    {return last_time_step;}
+    inline double last_dt() const
+        {return last_time_step;}
 
     /**
      * Length of actual time interval; i.e. the actual time step.
@@ -274,14 +274,11 @@ private:
     /// Length of actual time interval; i.e. the actual time step.
     double time_step;
     /// time step just before last_time
-    //double last_time_step;
+    double last_time_step;
     /// next fixed time step
     double fixed_dt;
     /// changed dt flag
     bool dt_changed;
-
-    /// Overhead when we change dt. Relative to the computation of one time step.
-    double dt_change_overhead;
 
     /// Upper constrain for the choice of the next time step. Relaxed after every dt choice.
     double time_step_constrain;

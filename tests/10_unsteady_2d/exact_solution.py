@@ -23,7 +23,7 @@ class Parameters :
     #parametry
     k=0.02
     bc=100.0
-    time=0.002
+    time=0.5
     
     x_scale=1.0
     y_scale=1.0
@@ -42,12 +42,13 @@ class Parameters :
     def alfa_term(self,n):
       
       n_pi = math.pi * n
+      value = 1.0/n * math.exp(-self.k*n_pi*n_pi*self.time )
       if (n % 2) :
         # odd
-        return -1/n * math.exp(-self.k*n_pi*n_pi*self.time )
+        return -value
       else :  
         #even
-        return 1/n * math.exp(-self.k*n_pi*n_pi*self.time )
+        return value
       
 
  
@@ -61,7 +62,7 @@ class Parameters :
     # fuction value for p2 - 2D pressure
     def p2_fce_value(self,x, y):
          series_sum = self.summarize(self.series_2d, x, y ) 
-         return self.k * x + 2*self.bc / math.pi * series_sum
+         return self.bc * x + 2*self.bc / math.pi * series_sum
          
 
     # one term of series for 2D value
@@ -121,7 +122,7 @@ for i in range (nc):
             p3 = pdi.GetPoint(cell.GetPointId(2))
             x3, y3, z3 = p3[:3]
 
-            tx=1-math.fabs((x1+x2+x3)/3) * Parameters.x_scale
+            tx=math.fabs((x1+x2+x3)/3) * Parameters.x_scale
             ty=math.fabs((y1+y2+y3)/3) * Parameters.y_scale
             p2=Parameters.p2_fce_value(params, tx, ty )
             #p2=5

@@ -216,6 +216,7 @@ public:
     DarcyFlowMH_Unsteady();
 protected:
     virtual void modify_system();
+    void setup_time_term();
 private:
     Vec steady_diagonal;
     Vec steady_rhs;

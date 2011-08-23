@@ -136,7 +136,7 @@ void DarcyFlowMH_Steady::update_solution() {
     if (time_->is_end()) return;
 
 
-
+    time_->next_time();
     modify_system(); // hack for unsteady model
 
     switch (n_schur_compls) {
@@ -204,7 +204,7 @@ void DarcyFlowMH_Steady::update_solution() {
     VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
             INSERT_VALUES, SCATTER_FORWARD);
 
-    time_->next_time();
+
 }
 
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
@@ -1163,17 +1163,21 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
     : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
 {
+    delete time_; // delete steady TG
+
     // time governor
     time_=new TimeGovernor(
             0.0,
             OptGetDbl("Global", "Stop_time", "1.0"),
             *time_marks
             );
+    DBGMSG("TG dt: %f\n",time_->dt());
 
     time_->set_permanent_constrain(
             OptGetDbl("Global", "Time_step", "1.0"),
             OptGetDbl("Global", "Time_step", "1.0")
             );
+    time_->fix_dt_until_mark();
 
 
     // have created full steady linear system
@@ -1208,12 +1212,11 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
         // set initial condition
         local_sol[i_loc_row]=initial_pressure->element_value(ele.index());
         // set new diagonal
-        DBGMSG("stor: %f dt: %f\n",ele->material->stor,time_->dt());
-        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure /time_->dt();
+        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure/time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
-    delete initial_pressure;
     MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+    delete initial_pressure;
 
     // set previous solution as copy of initial condition
     VecDuplicate(schur0->get_solution(), &previous_solution);
@@ -1225,9 +1228,19 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
 
 }
 
+
+
 void DarcyFlowMH_Unsteady::modify_system()
 {
 
+
+  if (time_->is_changed_dt()) {
+      DBGMSG("Scale\n");
+      MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
+
+      VecScale(new_diagonal, time_->last_dt()/time_->dt());
+      MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+  }
 
   // modify RHS - add previous solution
   VecPointwiseMult(schur0->get_rhs(),new_diagonal,schur0->get_solution());
@@ -1244,6 +1257,7 @@ void DarcyFlowMH_Unsteady::modify_system()
 DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
     : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
 {
+    delete time_; // delete steady TG
     // time governor
     time_=new TimeGovernor(
             0.0,
@@ -1255,6 +1269,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
             OptGetDbl("Global", "Time_step", "1.0"),
             OptGetDbl("Global", "Time_step", "1.0")
             );
+    time_->fix_dt_until_mark();
 
     // have created full steady linear system
     // save diagonal of steady matrix
@@ -1315,7 +1330,13 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
 
 void DarcyFlowLMH_Unsteady::modify_system()
 {
+    if (time_->is_changed_dt()) {
+        DBGMSG("Scale\n");
+        MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
 
+        VecScale(new_diagonal, time_->last_dt()/time_->dt());
+        MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+    }
 
   // modify RHS - add previous solution
   VecPointwiseMult(schur0->get_rhs(),new_diagonal,schur0->get_solution());

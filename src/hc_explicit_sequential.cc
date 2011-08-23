@@ -39,6 +39,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
             water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database);
             break;
         case UNSTEADY_SATURATED:
+            DBGMSG("Unsteady\n");
             water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database);
             break;
         case UNSTEADY_SATURATED_LMH:
