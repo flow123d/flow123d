@@ -103,13 +103,20 @@ then
 	exit 1
 else
 
+	# Check if it is possible to read ini file
+	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
+	then
+		echo "Error: can't read ${INI_FILE}"
+		exit 1
+	fi
+	
 	# Was memory limit set?
 	if [ -n "${MEM}" ]
 	then
 		# Set up memory limits that prevent too allocate too much memory.
 		# The limit of virtual memory is 200MB (memory, that could be allocated)
 		MEM_LIMIT=`expr ${MEM} \* 1000`
-		ulimit -S -v 200000
+		ulimit -S -v ${MEM_LIMIT}
 	fi
 	
 	# Was nice set?
@@ -125,39 +132,32 @@ else
 		# Clear output file.
 		echo "" > "${FLOW123D_OUTPUT}"
 	else
-		FLOW_OUTPUT=&1
+		unset FLOW123D_OUTPUT
 	fi
 	
-	echo "timeout: ${TIMEOUT}"
-	echo "mem_limit: ${MEM}"
-	echo "nice: ${NICE}"
-	echo "out_file: ${OUT_FILE}"
-	echo "ini_file: ${INI_FILE}"
-	echo "flow_params: ${FLOW_PARAMS}"
-	
-	# WIP exit :-)
-	exit 0
-		
 	# Was timeout set?
-	if [ -n "${TIMEOT}" ]
+	if [ -n "${TIMEOUT}" ]
 	then
 		# Flow123d runs with changed priority (19 is the lowest priority)
-		nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+		if [ -n "${FLOW123D_OUTPUT}" ]
+		then
+			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+		else
+			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} &
+		fi
 		FLOW123D_PID=$!
 		
-		echo -n "Running flow123d [proc:${NP}] ${INI_FILE} ."
 		IS_RUNNING=1
 
+		TIMER=0
 		# Wait max TIMEOUT seconds, then kill flow123d processes
 		while [ ${TIMER} -lt ${TIMEOUT} ]
 		do
 			TIMER=`expr ${TIMER} + 1`
-			echo -n "."
-			#ps -o "%P %p"
 			sleep 1
 
 			# Is mpiexec and flow123d still running?
-			ps | gawk '{ print $1 }' | grep -q "${PARENT_MPIEXEC_PID}"
+			ps | gawk '{ print $1 }' | grep -q "${FLOW123D_PID}"
 			if [ $? -ne 0 ]
 			then
 				# set up, that flow123d was finished in time
@@ -172,9 +172,7 @@ else
 			echo " [Failed:loop]"
 			# Send SIGTERM to flow123d.
 			kill -s SIGTERM ${FLOW123D_PID} #> /dev/null 2>&1
-			EXIT_STATUS=2
-			# No other test will be executed
-			break 2
+			exit 1
 		else
 			# Get exit status variable of flow123d
 			wait ${FLOW123D_PID}
@@ -183,13 +181,22 @@ else
 			# Was Flow123d finished correctly?
 			if [ ${FLOW123D_EXIT_STATUS} -eq 0 ]
 			then
-				echo " [Success:${TIMER}s]"
+				exit 0
+			else
+				exit 1
 			fi
 		fi
 	else
-		nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+		if [ -n "${FLOW123D_OUTPUT}" ]
+		then
+			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+		else
+			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS}
+		fi
 	fi
 	
 fi
+
+exit 0
 
 
