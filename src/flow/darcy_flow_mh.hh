@@ -246,6 +246,7 @@ public:
     DarcyFlowLMH_Unsteady();
 protected:
     virtual void modify_system();
+    void setup_time_term();
     virtual void postprocess();
 private:
     Vec steady_diagonal;

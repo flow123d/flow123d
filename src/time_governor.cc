@@ -33,9 +33,9 @@
 
 #include <limits>
 
-
-const double TimeGovernor::comparison_precision = 0.01;
-const double TimeGovernor::time_step_lower_bound = DBL_EPSILON;
+// fraction of subsequent time steps can not be less then the comparison_precision
+const double TimeGovernor::comparison_precision = 0.0001;
+const double TimeGovernor::time_step_lower_bound = numeric_limits<double>::epsilon();
 const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
 
 /*
@@ -48,21 +48,22 @@ TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMa
   time_marks(&marks),
   fixed_time_mark_mask(fixed_time_mask)
 {
-    end_of_fixed_dt_interval=time;
+
 
     dt_changed=true;
 
-    min_time_step=0;
     if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
     else max_time_step = inf_time;
 
     time_step_constrain = min(end_time_-time, max_time_step);
+    time_step=max_time_step;
+    end_of_fixed_dt_interval=time; //-inf_time; //turn off fixed interval
 
     time_level=0;
     time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
     time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
 
-    time_step = estimate_dt();
+    last_time_step=0.0;
 }
 
 TimeGovernor::TimeGovernor(double init_time)
@@ -75,12 +76,13 @@ TimeGovernor::TimeGovernor(double init_time)
     end_of_fixed_dt_interval=time;
     dt_changed=true;
 
-    min_time_step=0;
+    min_time_step=time_step_lower_bound;
     max_time_step = inf_time;
     time_step_constrain = inf_time;
 
     time_level=0;
     time_step = inf_time;
+    last_time_step=0.0;
 }
 
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
@@ -109,7 +111,6 @@ double TimeGovernor::estimate_dt() const {
 
     // compute step to next fix time and apply constrains
     double full_step = fix_time_it->time() - time;
-
     double step_estimate = min(full_step, time_step_constrain);
     step_estimate = min(step_estimate, max_time_step);
     step_estimate = max(step_estimate, min_time_step); // possibly overwrites time_step_constrain
@@ -119,7 +120,6 @@ double TimeGovernor::estimate_dt() const {
     // this always select shorter time step
     int n_steps = ceil( full_step / step_estimate );
     step_estimate = full_step / n_steps;
-
 
     // check permanent bounds with a bit of tolerance
     if (step_estimate < min_time_step*0.99) {

@@ -74,8 +74,6 @@ TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type
 {
     vector<TimeMark>::const_iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t(),mask));
     while (  ! tg.lt(first_ge->time()) || ! first_ge->match_mask(mask) ) {
-        //cout << *first_ge;
-        //DBGMSG(" iter: %d %d %d\n",first_ge - marks_.begin(), tg.lt(first_ge->time()), tg.t() < first_ge->time());
         ++first_ge;
     }
     return TimeMarksIterator(marks_, first_ge, mask);

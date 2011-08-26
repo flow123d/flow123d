@@ -600,10 +600,11 @@ void ConvectionTransport::compute_one_step() {
 
 void ConvectionTransport::set_target_time(double target_time)
 {
-    DBGMSG("CFL dt: %f\n",cfl_max_step);
+//    DBGMSG("CFL dt: %f tt: %f\n",cfl_max_step, target_time);
     time_->marks().add(TimeMark(target_time, target_mark_type));
     time_->set_constrain(cfl_max_step);
     time_->fix_dt_until_mark();
+//    DBGMSG("post fix dt: %f\n",time_->estimate_dt());
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix

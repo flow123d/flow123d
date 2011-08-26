@@ -30,6 +30,8 @@
 #define TIME_HH_
 
 #include <limits>
+#include <cmath>
+#include <algorithm>
 
 #include "system/system.hh"
 #include "time_marks.hh"
@@ -107,7 +109,7 @@ public:
      */
     inline double fix_dt_until_mark() {
         if (time_marks == NULL) return inf_time;
-        end_of_fixed_dt_interval=time; // release previous fixed interval
+        end_of_fixed_dt_interval=-inf_time; // release previous fixed interval
         fixed_dt = estimate_dt();
         return end_of_fixed_dt_interval = time_marks->next(*this, fixed_time_mark_mask)->time();
     }
@@ -202,35 +204,45 @@ public:
 
     /// True if we have solve end time.
     inline bool is_end() const
-        {return this->ge(end_time_); }
+        { return (this->ge(end_time_) || time == inf_time); }
 
     /**
-     * Performs comparison time > other_time, i.e. time is strictly greater then given parameter other_time
-     * with precision relative to the time step. Precision is one percent of the time step.
+     * Performs rounding safe comparison time > other_time, i.e. time is strictly greater then given parameter
+     * other_time with precision relative to the magnitude of the numbers time step.
+     * TODO: introduce type TimeDouble with overloaded comparison operators, use it consistently in TimeMarks.
      */
     inline bool gt(double other_time) const
-        { return time >= other_time + comparison_fracture(); }
-
-    /**
-     * Performs comparison time >= other_time, with precision relative to the time step. See @fn gt
-     */
-    inline bool ge(double other_time) const
-        { bool result = time + comparison_fracture() >= other_time;
-          //DBGMSG("ge: %d %f %f %f\n", result, time, other_time, time_step);
-          return result;
+        {
+            return ! time <= other_time
+            + 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
         }
 
     /**
-     * Performs comparison time < other_time, with precision relative to the time step. See @fn gt
+     * Performs rounding safe comparison time >= other_time See @fn gt
      */
-    inline bool lt(double other_time) const
-        { return time + comparison_fracture() <= other_time; }
+    inline bool ge(double other_time) const
+    {
+        return time >= other_time
+        - 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
+    }
 
     /**
-     * Performs comparison time <= other_time, with precision relative to the time step. See @fn gt
+     * Performs rounding safe comparison time < other_time. See @fn gt
+     */
+    inline bool lt(double other_time) const
+    {
+        return ! (time >= other_time
+        - 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time)));
+    }
+
+    /**
+     * Performs rounding safe comparison time <= other_time. See @fn gt
      */
     inline bool le(double other_time) const
-        { return time <= other_time + comparison_fracture(); }
+    {
+        return time <= other_time
+        + 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
+    }
 
     /**
      * Returns the time level.
@@ -250,7 +262,7 @@ public:
 private:
     inline double comparison_fracture() const
     {
-        if (0 < time_step && time_step <=numeric_limits<double>::max() ) return comparison_precision * time_step;
+        if (time_level!=0 && time_step <=numeric_limits<double>::max() ) return comparison_precision * time_step;
         else return numeric_limits<double>::epsilon();
     }
 

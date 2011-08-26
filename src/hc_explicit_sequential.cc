@@ -102,8 +102,8 @@ void HC_ExplicitSequential::run_simulation()
     // Currently we simply use t_dt == w_dt.
 
     while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
-        DBGMSG("water end: %f %f\n ", water->planned_time(), water->solved_time());
-        DBGMSG("trans end: %f %f\n ", transport_reaction->planned_time(), transport_reaction->solved_time());
+        DBGMSG("water end: %f %f is end: %d\n ", water->planned_time(), water->solved_time(),water->time().is_end());
+        DBGMSG("trans end: %f %f  is end: %d\n ", transport_reaction->planned_time(), transport_reaction->solved_time(),transport_reaction->time().is_end());
 
         transport_reaction->set_time_step_constrain(water->time().dt());
         // in future here could be re-estimation of transport planed time according to

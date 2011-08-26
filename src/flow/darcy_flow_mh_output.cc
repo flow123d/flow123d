@@ -79,7 +79,7 @@ void DarcyFlowMHOutput::postprocess() {
 
     /** new version of make_node_scalar */
     make_node_scalar_param(node_scalars);
-    make_node_scalar();
+    //make_node_scalar();
 
 
     //make_node_vector( mesh );

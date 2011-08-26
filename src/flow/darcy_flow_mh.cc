@@ -138,7 +138,6 @@ void DarcyFlowMH_Steady::update_solution() {
     START_TIMER("SOLVING MH SYSTEM");
     F_ENTRY;
 
-    DBGMSG("compute one step.\n");
     if (time_->is_end()) return;
 
 
@@ -1145,14 +1144,18 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
             OptGetDbl("Global", "Stop_time", "1.0"),
             *time_marks
             );
-    DBGMSG("TG dt: %f\n",time_->dt());
 
     time_->set_permanent_constrain(
             OptGetDbl("Global", "Time_step", "1.0"),
             OptGetDbl("Global", "Time_step", "1.0")
             );
     time_->fix_dt_until_mark();
+    setup_time_term();
 
+
+}
+
+void DarcyFlowMH_Unsteady::setup_time_term() {
 
     // have created full steady linear system
     // save diagonal of steady matrix
@@ -1179,6 +1182,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
     int i_loc_row, i_loc_el;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
+    DBGMSG("Setup with dt: %f\n",time_->dt());
     for (i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
         ele = mesh_->element(el_4_loc[i_loc_el]);
         i_loc_row=i_loc_el+side_ds->lsize();
@@ -1199,17 +1203,13 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
     // save RHS
     VecDuplicate(schur0->get_rhs(), &steady_rhs);
     VecCopy(schur0->get_rhs(),steady_rhs);
-
 }
-
-
 
 void DarcyFlowMH_Unsteady::modify_system()
 {
 
-
   if (time_->is_changed_dt()) {
-      DBGMSG("Scale\n");
+      DBGMSG("Scale ldt: %f dt: %f\n", time_->last_dt(), time_->dt());
       MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
 
       VecScale(new_diagonal, time_->last_dt()/time_->dt());
@@ -1244,64 +1244,67 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
             OptGetDbl("Global", "Time_step", "1.0")
             );
     time_->fix_dt_until_mark();
+    setup_time_term();
 
+}
+void DarcyFlowLMH_Unsteady::setup_time_term()
+{
     // have created full steady linear system
-    // save diagonal of steady matrix
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
+     // save diagonal of steady matrix
+     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+     MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
 
-    // read inital condition
+     // read inital condition
 
-    string file_name=IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Initial", "\\" ));
-    INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
-    VecZeroEntries(schur0->get_solution());
-    FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-    initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
+     string file_name=IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Initial", "\\" ));
+     INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
+     VecZeroEntries(schur0->get_solution());
+     FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
+     initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
 
-    VecDuplicate(steady_diagonal,& new_diagonal);
+     VecDuplicate(steady_diagonal,& new_diagonal);
 
-    // apply initial condition and modify matrix diagonal
-    // cycle over local element rows
-    int i_loc_row, i_loc_el, edge_row;
-    ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-    double init_value;
+     // apply initial condition and modify matrix diagonal
+     // cycle over local element rows
+     int i_loc_row, i_loc_el, edge_row;
+     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+     double init_value;
 
-    for (i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
-        ele = mesh_->element(el_4_loc[i_loc_el]);
-        i_loc_row=i_loc_el+side_ds->lsize();
+     for (i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
+         ele = mesh_->element(el_4_loc[i_loc_el]);
+         i_loc_row=i_loc_el+side_ds->lsize();
 
-        init_value=initial_pressure->element_value(ele.index());
+         init_value=initial_pressure->element_value(ele.index());
 
-        FOR_ELEMENT_SIDES(ele,i) {
-            edge_row = row_4_edge[mesh_->edge.index(ele->side[i]->edge)];
-            // set new diagonal
-            VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume /time_->dt()/ele->n_sides,ADD_VALUES);
-            // set initial condition
-            VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides,ADD_VALUES);
-        }
-    }
-    VecAssemblyBegin(new_diagonal);
-    VecAssemblyBegin(schur0->get_solution());
-    VecAssemblyEnd(new_diagonal);
-    VecAssemblyEnd(schur0->get_solution());
+         FOR_ELEMENT_SIDES(ele,i) {
+             edge_row = row_4_edge[mesh_->edge.index(ele->side[i]->edge)];
+             // set new diagonal
+             VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume /time_->dt()/ele->n_sides,ADD_VALUES);
+             // set initial condition
+             VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides,ADD_VALUES);
+         }
+     }
+     VecAssemblyBegin(new_diagonal);
+     VecAssemblyBegin(schur0->get_solution());
+     VecAssemblyEnd(new_diagonal);
+     VecAssemblyEnd(schur0->get_solution());
 
-    delete initial_pressure;
-    MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+     delete initial_pressure;
+     MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
 
-    // set previous solution as copy of initial condition
-    VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCopy(schur0->get_solution(), previous_solution);
+     // set previous solution as copy of initial condition
+     VecDuplicate(schur0->get_solution(), &previous_solution);
+     VecCopy(schur0->get_solution(), previous_solution);
 
-    // save RHS
-    VecDuplicate(schur0->get_rhs(), &steady_rhs);
-    VecCopy(schur0->get_rhs(),steady_rhs);
+     // save RHS
+     VecDuplicate(schur0->get_rhs(), &steady_rhs);
+     VecCopy(schur0->get_rhs(),steady_rhs);
 
-    // auxiliary vector for time term
-    VecDuplicate(schur0->get_rhs(), &time_term);
+     // auxiliary vector for time term
+     VecDuplicate(schur0->get_rhs(), &time_term);
 
 
 }
-
 void DarcyFlowLMH_Unsteady::modify_system()
 {
     if (time_->is_changed_dt()) {
