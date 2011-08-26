@@ -213,8 +213,8 @@ public:
      */
     inline bool gt(double other_time) const
         {
-            return ! time <= other_time
-            + 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
+            return ! (time <= other_time
+            + 16*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time)) );
         }
 
     /**
@@ -223,7 +223,7 @@ public:
     inline bool ge(double other_time) const
     {
         return time >= other_time
-        - 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
+        - 16*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
     }
 
     /**
@@ -231,8 +231,12 @@ public:
      */
     inline bool lt(double other_time) const
     {
-        return ! (time >= other_time
-        - 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time)));
+        double b=other_time
+                - 16*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
+        //DBGMSG("time: %e otime: %e eps: %e result: %d\n", time, b,
+        //        time - b,
+        //         time >= b);
+        return ! (time >= b);
     }
 
     /**
@@ -241,7 +245,7 @@ public:
     inline bool le(double other_time) const
     {
         return time <= other_time
-        + 2*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
+        + 16*numeric_limits<double>::epsilon()*max(abs(time),abs(other_time));
     }
 
     /**

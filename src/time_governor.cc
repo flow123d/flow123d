@@ -104,7 +104,7 @@ void TimeGovernor::set_constrain(double dt_constrain)
 double TimeGovernor::estimate_dt() const {
     if (time == inf_time || is_end()) return 0.0;
     if (time_marks == NULL) return inf_time;
-    if (this->lt(end_of_fixed_dt_interval)) return fixed_dt;
+    if (this->lt(end_of_fixed_dt_interval))    return fixed_dt;
 
     // jump to the first future fix time
     TimeMarks::iterator fix_time_it = time_marks->next(*this, fixed_time_mark_mask);
@@ -141,6 +141,10 @@ void TimeGovernor::next_time()
         time = end_time_;
         return;
     }
+    if (this->lt(end_of_fixed_dt_interval)) {
+        // make tiny correction of time step in order to avoid big rounding errors
+        fixed_dt= end_of_fixed_dt_interval / round( end_of_fixed_dt_interval / fixed_dt );
+    }
 
     //last_time=time;
     last_time_step = time_step;
@@ -151,5 +155,7 @@ void TimeGovernor::next_time()
 
     time+=time_step;
     time_level++;
+
+
 }
 
