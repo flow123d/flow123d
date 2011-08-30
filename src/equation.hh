@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: darcy_flow_mh.hh 877 2011-02-04 13:13:25Z jakub.sistek $
- * $Revision: 877 $
- * $LastChangedBy: jakub.sistek $
- * $LastChangedDate: 2011-02-04 14:13:25 +0100 (Fri, 04 Feb 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Abstract base class for equation clasess.
@@ -33,8 +33,8 @@
 
 
 #include <petscmat.h>
-#include <time_governor.hh>
-#include <time_marks.hh>
+#include "time_governor.hh"
+#include "time_marks.hh"
 #include <limits>
 
 #include "system/system.hh"

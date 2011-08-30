@@ -44,10 +44,10 @@
 #include <petscmat.h>
 
 #include "system/par_distribution.hh"
-#include <solve.h>
+#include "solve.h"
 #include "system/system.hh"
-#include <la_linsys.hh>
-#include <la_schur.hh>
+#include "la_linsys.hh"
+#include "la_schur.hh"
 
 /**
  *  Create Schur complement system.

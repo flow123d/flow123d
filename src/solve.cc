@@ -37,10 +37,10 @@
 #include <petscviewer.h>
 
 #include "system/system.hh"
-#include <xio.h>
+#include "xio.h"
 #include "system/par_distribution.hh"
-#include <solve.h>
-#include <la_linsys.hh>
+#include "solve.h"
+#include "la_linsys.hh"
 
 //#include "profiler.hh"
 

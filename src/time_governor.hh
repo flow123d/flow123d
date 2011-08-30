@@ -24,6 +24,7 @@
  *
  * @file
  * @brief Basic time management class.
+ *  @author Jan Brezina
  */
 
 #ifndef TIME_HH_

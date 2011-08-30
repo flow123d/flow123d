@@ -28,8 +28,8 @@
  */
 
 #include "system/system.hh"
-#include <time_governor.hh>
-#include <time_marks.hh>
+#include "time_governor.hh"
+#include "time_marks.hh"
 
 #include <limits>
 
