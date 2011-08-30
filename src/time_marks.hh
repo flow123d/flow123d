@@ -255,7 +255,7 @@ public:
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
     TimeMarks::iterator begin() const
-    {return TimeMarks::iterator(marks_, marks_.begin(), TimeMark::every_type); }
+    {return TimeMarksIterator(marks_, marks_.begin(), TimeMark::every_type); }
 
     TimeMarks::iterator end() const
         {return TimeMarksIterator(marks_, --marks_.end(), TimeMark::every_type); }
