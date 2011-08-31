@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+<UnstructuredGrid>
+<Piece NumberOfPoints="6" NumberOfCells="3">
+<Points>
+<DataArray type="Float64" NumberOfComponents="3" format="ascii">
+0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int32" Name="connectivity" format="ascii">
+0 1 2 4 0 2 3 4 2 3 4 5 
+</DataArray>
+<DataArray type="Int32" Name="offsets" format="ascii">
+4 8 12 
+</DataArray>
+<DataArray type="UInt8" Name="types" format="ascii">
+10 10 10 
+</DataArray>
+</Cells>
+<PointData Scalars="" Vectors="">
+</PointData>
+<CellData Scalars="Sr_mobile_[M/L^3],Y_mobile_[M/L^3],Cs_mobile_[M/L^3],Ba_mobile_[M/L^3],E_mobile_[M/L^3],F_mobile_[M/L^3]" Vectors="">
+<DataArray type="Float64" Name="Sr_mobile_[M/L^3]" format="ascii">
+1.000000000000000e-02 9.999999999999606e-03 1.000000000000000e-02 
+</DataArray>
+<DataArray type="Float64" Name="Y_mobile_[M/L^3]" format="ascii">
+1.197086969604474e-01 1.197086969604438e-01 1.197086969604474e-01 
+</DataArray>
+<DataArray type="Float64" Name="Cs_mobile_[M/L^3]" format="ascii">
+3.000000000000000e-02 2.999999999999921e-02 3.000000000000000e-02 
+</DataArray>
+<DataArray type="Float64" Name="Ba_mobile_[M/L^3]" format="ascii">
+2.965646708087138e-05 2.965646708087028e-05 2.965646708087138e-05 
+</DataArray>
+<DataArray type="Float64" Name="E_mobile_[M/L^3]" format="ascii">
+5.000000000000000e-02 4.999999999999843e-02 5.000000000000000e-02 
+</DataArray>
+<DataArray type="Float64" Name="F_mobile_[M/L^3]" format="ascii">
+2.616465724715588e-04 2.616465724715491e-04 2.616465724715588e-04 
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>
