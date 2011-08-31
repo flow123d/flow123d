@@ -22,9 +22,9 @@ Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, 
 	set_dual_porosity();
 	set_mesh_(mesh);
 	set_nr_of_elements(mesh->n_elements());
-	cout << "number of FoR is"<< nr_of_FoR << endl;
-	cout << "number of decays is" << nr_of_decays << endl;
-	cout << "number of species is" << nr_of_species << endl;
+	cout << "number of FoR is "<< nr_of_FoR << endl;
+	cout << "number of decays is " << nr_of_decays << endl;
+	cout << "number of species is " << nr_of_species << endl;
 	this->set_time_step(timeStep);
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		allocate_reaction_matrix();
@@ -53,7 +53,7 @@ Linear_reaction::~Linear_reaction()
 
 double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
 {
-	int index, rows, cols, dec_nr, dec_name_nr;
+	int index, rows, cols, dec_nr;
 	char dec_name[30];
 
 	cout << "We are going to allocate reaction matrix" << endl;
@@ -71,7 +71,7 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 			}
 	}
 
-	dec_name_nr = 1;
+	//print_reaction_matrix();
 	return reaction_matrix;
 }
 
@@ -117,6 +117,7 @@ double **Linear_reaction::modify_reaction_matrix(int dec_nr) //prepare the matri
 		index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 		if(cols < (nr_of_isotopes -1)){
 			rel_step = time_step/half_lives[cols];
+			xprintf(Msg,"time_step %f\n", time_step);
 		}
 		if(cols > 0){
 			bif_id = cols -1;
@@ -147,7 +148,7 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 			nr_of_isotopes = OptGetInt(dec_name,"Nr_of_isotopes","0");
 			set_half_lives(dec_name);
 			set_indeces(dec_name, nr_of_isotopes);
-			print_indeces(nr_of_decays); //just a control
+			print_indeces(nr_of_isotopes); //just a control
 			print_half_lives(nr_of_isotopes); //just a control
 			bifurcation_on = OptGetBool(dec_name,"Compute_decay","no");
 			if(bifurcation_on == true){
@@ -172,7 +173,7 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 			set_nr_of_isotopes(2);
 			set_indeces(dec_name, 2);
 			set_kinetic_constants(dec_name, dec_nr);//instead of this line, here should be palced computation of halflives using kinetic constants
-			print_indeces(nr_of_FoR); //just a control
+			print_indeces(nr_of_isotopes); //just a control
 			print_half_lives(2); //just a control
 			//modify_reaction_matrix(2);
 			modify_reaction_matrix();
@@ -319,7 +320,7 @@ void Linear_reaction::print_reaction_matrix(void)
 	int cols,rows;
 
 	if(reaction_matrix != NULL){
-		xprintf(Msg,"\nReaction matrix looks as follows:\n");
+		xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_step);
 		for(rows = 0; rows < nr_of_species; rows++){
 			for(cols = 0; cols < nr_of_species; cols++){
 				if(cols == (nr_of_species - 1)){
@@ -475,5 +476,17 @@ double Linear_reaction::get_time_step(void)
 void Linear_reaction::set_nr_of_isotopes(int Nr_of_isotopes)
 {
 	nr_of_isotopes = Nr_of_isotopes;
+	return;
+}
+
+void Linear_reaction::set_nr_of_decays(void)
+{
+	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
+	return;
+}
+
+void Linear_reaction::set_nr_of_FoR(void)
+{
+	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
 	return;
 }

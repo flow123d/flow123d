@@ -108,10 +108,12 @@ double TimeGovernor::estimate_dt() const {
 
     // jump to the first future fix time
     TimeMarks::iterator fix_time_it = time_marks->next(*this, fixed_time_mark_mask);
-
+    DBGMSG("fix time: %f time: %f\n",fix_time_it->time(), time);
+    cout << time_marks;
     // compute step to next fix time and apply constrains
     double full_step = fix_time_it->time() - time;
     double step_estimate = min(full_step, time_step_constrain);
+    DBGMSG("SE: %f\n",step_estimate);
     step_estimate = min(step_estimate, max_time_step);
     step_estimate = max(step_estimate, min_time_step); // possibly overwrites time_step_constrain
 

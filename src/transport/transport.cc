@@ -608,12 +608,15 @@ void ConvectionTransport::set_target_time(double target_time)
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix
+    	cout << "rescale, time->estimate_dt: " << time_->estimate_dt() << endl;
+    	cout << "time->dt: " << time_->dt() << endl;
         MatScale(bcm, time_->dt()/time_->estimate_dt());
         MatShift(tm, -1.0);
         MatScale(tm, time_->dt()/time_->estimate_dt() );
         MatShift(tm, 1.0);
     } else {
         // scale fresh convection term matrix
+    	cout << "scale, time->estimate_dt: " << time_->estimate_dt() << endl;
         MatScale(bcm, time_->estimate_dt());
         MatScale(tm, time_->estimate_dt());
         MatShift(tm, 1.0);
