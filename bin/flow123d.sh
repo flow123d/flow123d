@@ -32,7 +32,11 @@ FLOW123D="${0%/*}/${FLOW123D}"
 
 # Print help to this script
 function print_help {
-	echo "SYNTAX: flow123d.sh [OPTIONS] -i INI_FILE [ -f FLOW_PARAMS]"
+	echo "SYNTAX: flow123d.sh [OPTIONS] INI_FILE [\"FLOW_PARAMS\"]"
+	echo ""
+	echo "INI_FILE            Flow123d will load configuration from INI_FILE"
+	echo "FLOW_PARAMS         Flow123d will use it's specific parameters."
+	echo "                    Such parameters has to be in brackets"
 	echo ""
 	echo "OPTIONS:"
 	echo "    -h              Print this help"
@@ -40,16 +44,19 @@ function print_help {
 	echo "    -m MEM          Flow123d can use only MEM bytes"
 	echo "    -n NICE         Run Flow123d with changed (lower) priority"
 	echo "    -o OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
-	echo "    -i INI_FILE     Flow123d will load configuration from INI_FILE"
-	echo "    -f FLOW_PARAMS  Flow123d will use it's specific params"
+	echo "    -s              Working directory will be current directory (default)"
+	echo "    -S              Working directory will be relative path to ini file"
 	echo ""
 }
 
 # Make sure that INI_FILE is not set
 unset INI_FILE
 
+# Default behavior is to use -s parameter
+FLOW_OPT="-s"
+
 # Parse arguments with bash builtin command getopts
-while getopts ":ht:m:n:o:i:f:" opt
+while getopts ":ht:m:n:o:sS" opt
 do
 	case ${opt} in
 	h)
@@ -68,13 +75,11 @@ do
 	o)
 		OUT_FILE="${OPTARG}"
 		;;
-	i)
-		# -i has to be followed by ini file; e.g.: "flow.ini"
-		INI_FILE="${OPTARG}"
+	s)
+		FLOW_OPT="-s"
 		;;
-	f)
-		# Additional flow parametres; e.g.: "-i input -o output"
-		FLOW_PARAMS="${OPTARG}"
+	S)
+		FLOW_OPT="-S"
 		;;
 	\?)
 		echo ""
@@ -85,6 +90,17 @@ do
 		;;
 	esac
 done
+
+# Try to get remaining parameters as flow parameters
+if [ $# -ge $OPTIND ]
+then
+	# Shift options
+	shift `expr $OPTIND - 1`
+	# First parameter is .ini file
+	INI_FILE="${1}"
+	# Second parameter is flow parameters
+	FLOW_PARAMS="${2}"
+fi		
 
 # Check if Flow123d exists and it is executable file
 if ! [ -x "${FLOW123D}" ]
@@ -141,9 +157,9 @@ else
 		# Flow123d runs with changed priority (19 is the lowest priority)
 		if [ -n "${FLOW123D_OUTPUT}" ]
 		then
-			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
 		else
-			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} &
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} &
 		fi
 		FLOW123D_PID=$!
 		
@@ -189,9 +205,9 @@ else
 	else
 		if [ -n "${FLOW123D_OUTPUT}" ]
 		then
-			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
 		else
-			nice --adjustment="${NICE}" "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS}
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS}
 		fi
 	fi
 	
