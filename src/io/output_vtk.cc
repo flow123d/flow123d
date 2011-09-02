@@ -168,17 +168,17 @@ static void write_vtk_ascii_data(Output *output, OutputData *out_data)
     case OUT_VECTOR_INT_SCA:
         for( std::vector<int>::iterator item = ((std::vector<int>*)out_data->data)->begin();
                 item != ((std::vector<int>*)out_data->data)->end();
-                item++) {
+                ++item) {
             file << *item << " ";
         }
         break;
     case OUT_VECTOR_INT_VEC:
         for( std::vector< vector<int> >::iterator vec = ((std::vector< vector<int> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<int> >*)out_data->data)->end();
-                vec++) {
+                ++vec) {
             for (std::vector<int>::iterator item = vec->begin();
                     item != vec->end();
-                    item++) {
+                    ++item) {
                 file << *item << " ";
             }
             file << "  ";
@@ -188,7 +188,7 @@ static void write_vtk_ascii_data(Output *output, OutputData *out_data)
         file.precision(std::numeric_limits<float>::digits10);
         for( std::vector<float>::iterator item = ((std::vector<float>*)out_data->data)->begin();
                 item != ((std::vector<float>*)out_data->data)->end();
-                item++) {
+                ++item) {
             file << scientific << *item << " ";
         }
         break;
@@ -196,10 +196,10 @@ static void write_vtk_ascii_data(Output *output, OutputData *out_data)
         file.precision(std::numeric_limits<float>::digits10);
         for( std::vector< vector<float> >::iterator vec = ((std::vector< vector<float> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<float> >*)out_data->data)->end();
-                vec++) {
+                ++vec) {
             for (std::vector<float>::iterator item = vec->begin();
                     item != vec->end();
-                    item++) {
+                    ++item) {
                 file << scientific << *item << " ";
             }
             file << "  ";
@@ -209,7 +209,7 @@ static void write_vtk_ascii_data(Output *output, OutputData *out_data)
         file.precision(std::numeric_limits<double>::digits10);
         for( std::vector<double>::iterator item = ((std::vector<double>*)out_data->data)->begin();
                 item != ((std::vector<double>*)out_data->data)->end();
-                item++) {
+                ++item) {
             file << scientific << *item << " ";
         }
         break;
@@ -217,10 +217,10 @@ static void write_vtk_ascii_data(Output *output, OutputData *out_data)
         file.precision(std::numeric_limits<double>::digits10);
         for( std::vector< vector<double> >::iterator vec = ((std::vector< vector<double> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<double> >*)out_data->data)->end();
-                vec++) {
+                ++vec) {
             for (std::vector<double>::iterator item = vec->begin();
                     item != vec->end();
-                    item++) {
+                    ++item) {
                 file << scientific << *item << " ";
             }
             file << "  ";
@@ -290,7 +290,7 @@ static void write_vtk_data_ascii(Output *output, std::vector<OutputData> *data)
     /* Write data on nodes or elements */
     if(data != NULL) {
         for(OutputDataVec::iterator dta = data->begin();
-                dta != data->end(); dta++) {
+                dta != data->end(); ++dta) {
             if((*dta).getCompNum()==1) {
                 write_vtk_scalar_ascii(output, &(*dta));
             } else {
@@ -309,7 +309,7 @@ static void write_vtk_data_names(Output *output, vector<OutputData> *data)
     /* Write names of scalars */
     output->get_data_file() << "Scalars=\"";
     for(OutputDataVec::iterator dta = data->begin();
-                dta != data->end(); dta++) {
+                dta != data->end(); ++dta) {
         if(dta->getCompNum() == 1) {
             output->get_data_file() << *dta->getName() << "_[" << *dta->getUnits() << "]";
             if((dta+1) != data->end()) {
@@ -322,7 +322,7 @@ static void write_vtk_data_names(Output *output, vector<OutputData> *data)
     /* Write names of vectors */
     output->get_data_file() << "Vectors=\"";
     for(OutputDataVec::iterator dta = data->begin();
-                dta != data->end(); dta++) {
+                dta != data->end(); ++dta) {
         if(dta->getCompNum() == 3) {
             output->get_data_file() << *dta->getName() << "_[" << *dta->getUnits() << "]";
             if((dta+1) != data->end()) {

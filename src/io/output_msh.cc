@@ -105,19 +105,19 @@ void write_msh_ascii_data(Output *output, OutputData *out_data)
     case OUT_VECTOR_INT_SCA:
         for( std::vector<int>::iterator item = ((std::vector<int>*)out_data->data)->begin();
                 item != ((std::vector<int>*)out_data->data)->end();
-                item++, id++) {
+                ++item, ++id) {
             file << id << " " << *item << endl;
         }
         break;
     case OUT_VECTOR_INT_VEC:
         for( std::vector< vector<int> >::iterator vec = ((std::vector< vector<int> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<int> >*)out_data->data)->end();
-                vec++, id++)
+                ++vec, ++id)
         {
             file << id << " ";
             for (std::vector<int>::iterator item = vec->begin();
                     item != vec->end();
-                    item++) {
+                    ++item) {
                 file << *item << " ";
             }
             file << endl;
@@ -126,19 +126,19 @@ void write_msh_ascii_data(Output *output, OutputData *out_data)
     case OUT_VECTOR_FLOAT_SCA:
         for( std::vector<float>::iterator item = ((std::vector<float>*)out_data->data)->begin();
                 item != ((std::vector<float>*)out_data->data)->end();
-                item++, id++) {
+                ++item, ++id) {
             file << id << " " << *item << endl;
         }
         break;
     case OUT_VECTOR_FLOAT_VEC:
         for( std::vector< vector<float> >::iterator vec = ((std::vector< vector<float> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<float> >*)out_data->data)->end();
-                vec++)
+                ++vec)
         {
             file << id << " ";
             for (std::vector<float>::iterator item = vec->begin();
                     item != vec->end();
-                    item++) {
+                    ++item) {
                 file << *item << " ";
             }
             file << endl;
@@ -147,19 +147,19 @@ void write_msh_ascii_data(Output *output, OutputData *out_data)
     case OUT_VECTOR_DOUBLE_SCA:
         for( std::vector<double>::iterator item = ((std::vector<double>*)out_data->data)->begin();
                 item != ((std::vector<double>*)out_data->data)->end();
-                item++, id++) {
+                ++item, ++id) {
             file << id << " " << *item << endl;
         }
         break;
     case OUT_VECTOR_DOUBLE_VEC:
         for( std::vector< vector<double> >::iterator vec = ((std::vector< vector<double> >*)out_data->data)->begin();
                 vec != ((std::vector< vector<double> >*)out_data->data)->end();
-                vec++, id++)
+                ++vec, ++id)
         {
             file << id << " ";
             for (std::vector<double>::iterator item = vec->begin();
                     item != vec->end();
-                    item++) {
+                    ++item) {
                 file << *item << " ";
             }
             file << endl;
@@ -200,7 +200,7 @@ void write_msh_node_data(Output *output, double time, int step)
     if(node_data != NULL) {
         for(OutputDataVec::iterator dta = node_data->begin();
                     dta != node_data->end();
-                    dta++)
+                    ++dta)
         {
             output->get_base_file() << "$NodeData" << endl;
 
@@ -236,7 +236,7 @@ void write_msh_elem_data(Output *output, double time, int step)
     if(elem_data != NULL) {
         for(OutputDataVec::iterator dta = elem_data->begin();
                     dta != elem_data->end();
-                    dta++)
+                    ++dta)
         {
             output->get_base_file() << "$ElementData" << endl;
 
