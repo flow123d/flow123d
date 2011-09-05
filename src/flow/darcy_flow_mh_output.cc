@@ -47,7 +47,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
 
     // set output time marks
     TimeMarks &marks=darcy_flow->time().marks();
-    output_mark_type = marks.new_strict_mark_type();
+    output_mark_type = marks.new_mark_type() | marks.type_fixed_time();
     marks.add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), darcy_flow->time().end_time(), output_mark_type );
     DBGMSG("end create output\n");
 

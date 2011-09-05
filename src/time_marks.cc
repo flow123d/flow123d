@@ -34,13 +34,38 @@
 #include <algorithm>
 #include <limits>
 
+// ------------------------------------------------------
+// implementation of members of class TimeMark
+// ------------------------------------------------------
+
 ostream& operator<<(ostream& stream, const TimeMark &mark)
 {
     return ( stream << mark.time()<<": " << hex << mark.mark_type() );
 }
 
-const TimeMark::Type TimeMark::strict =  0x1;
+//const TimeMark::Type TimeMark::strict =  0x1;
 const TimeMark::Type TimeMark::every_type =  ~0x0;
+
+
+
+
+// ------------------------------------------------------
+// implementation of members of class TimeMarks
+// ------------------------------------------------------
+
+TimeMarks::TimeMarks()
+: next_mark_type_(0x1)
+{
+    // add predefined base mark types
+    type_fixed_time_ = new_mark_type();
+    type_output_ = new_mark_type();
+    type_bc_change_ = new_mark_type();
+
+    // insert start and end stoppers
+    marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));
+    marks_.push_back(TimeMark(+INFINITY, TimeMark::every_type));
+}
+
 
 TimeMark::Type TimeMarks::new_mark_type() {
     ASSERT(next_mark_type_ != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
@@ -50,9 +75,9 @@ TimeMark::Type TimeMarks::new_mark_type() {
     return current_type;
 }
 
-TimeMark::Type TimeMarks::new_strict_mark_type() {
-    return new_mark_type() | TimeMark::strict;
-}
+//TimeMark::Type TimeMarks::new_strict_mark_type() {
+//    return new_mark_type() | TimeMark::strict;
+//}
 
 void TimeMarks::add(const TimeMark &mark) {
     vector<TimeMark>::iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), mark);

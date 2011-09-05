@@ -46,9 +46,8 @@ TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMa
 : time(init_time),
   end_time_(end_time),
   time_marks(&marks),
-  fixed_time_mark_mask(fixed_time_mask)
+  fixed_time_mark_mask(fixed_time_mask | time_marks->type_fixed_time())
 {
-
 
     dt_changed=true;
 
@@ -70,7 +69,7 @@ TimeGovernor::TimeGovernor(double init_time)
 : end_time_(inf_time),
   time(inf_time),
   time_marks(NULL),
-  fixed_time_mark_mask(TimeMark::strict)
+  fixed_time_mark_mask(0x0)
 
 {
     end_of_fixed_dt_interval=time;
@@ -108,12 +107,9 @@ double TimeGovernor::estimate_dt() const {
 
     // jump to the first future fix time
     TimeMarks::iterator fix_time_it = time_marks->next(*this, fixed_time_mark_mask);
-    DBGMSG("fix time: %f time: %f\n",fix_time_it->time(), time);
-    cout << time_marks;
     // compute step to next fix time and apply constrains
     double full_step = fix_time_it->time() - time;
     double step_estimate = min(full_step, time_step_constrain);
-    DBGMSG("SE: %f\n",step_estimate);
     step_estimate = min(step_estimate, max_time_step);
     step_estimate = max(step_estimate, min_time_step); // possibly overwrites time_step_constrain
 

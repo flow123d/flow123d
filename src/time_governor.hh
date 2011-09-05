@@ -74,7 +74,9 @@ public:
      * @param fixed_time_mask - TimeMark mask used to select fixed times from all time marks
      *
      */
-   TimeGovernor(const double init_time, const  double end_time, TimeMarks &marks, const TimeMark::Type fixed_time_mask = TimeMark::strict);
+   TimeGovernor(const double init_time, const  double end_time,
+                TimeMarks &marks,
+                const TimeMark::Type fixed_time_mask = 0x0);
 
    /**
     * Default constructor - only for steady solvers
