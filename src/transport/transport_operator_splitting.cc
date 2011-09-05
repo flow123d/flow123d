@@ -39,8 +39,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
 
-	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks);
-	output_mark_type = time_marks->new_mark_type() | time_marks->type_fixed_time();
+	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks, this->mark_type());
+	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
 
     time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type );
 	// TOdO: this has to be set after construction of transport matrix !!

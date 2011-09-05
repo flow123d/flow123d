@@ -82,7 +82,7 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     dens_step = OptGetInt("Density", "Density_steps", "1");
     */
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
-    target_mark_type=time_marks->new_mark_type();
+    target_mark_type=this->mark_type();
     time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks, target_mark_type);
 
     sorption = OptGetBool("Transport", "Sorption", "no");
