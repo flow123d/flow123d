@@ -195,16 +195,16 @@ double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) 
 		prev_conc[cols] = concentrations[cols][loc_el];
 		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
 		concentrations[cols][loc_el] = 0.0;
-	}
-	for(rows = 0; rows <nr_of_species; rows++){
-		for(cols = 0; cols <nr_of_species; cols++){
-			concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
 		}
-		//xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
+        for(rows = 0; rows <nr_of_species; rows++){
+            for(cols = 0; cols <nr_of_species; cols++){
+                concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
+            }
+            //xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
+        }
 	}
-	free(prev_conc);
-	prev_conc = NULL;
-	}
+    free(prev_conc);
+    prev_conc = NULL;
 	return concentrations;
 }
 
