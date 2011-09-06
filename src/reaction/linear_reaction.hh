@@ -208,6 +208,9 @@ class Linear_reaction
 		*	Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
 		*/
 		double ***concentration_matrix;
+
+		/// Temporary space for saving original concentrations
+
 		/**
 		*
 		*/

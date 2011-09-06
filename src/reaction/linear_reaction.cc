@@ -185,12 +185,10 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 
 double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-	int cols, rows, both;
-	double *prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
+    if (reaction_matrix == NULL)   return NULL;
 
-	if (reaction_matrix == NULL){
-		return NULL;
-	}
+    int cols, rows, both;
+	double *prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
 
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		for(cols = 0; cols < nr_of_species; cols++){

@@ -43,22 +43,25 @@ const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
  * TimeGovernor should be constructed from JSON object.
  */
 TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMarks &marks,const TimeMark::Type fixed_time_mask)
-: time(init_time),
+: time_level(0),
+  time(init_time),
+  end_of_fixed_dt_interval(time),
   end_time_(end_time),
+  time_step(time_step_lower_bound),
+  last_time_step(time_step_lower_bound),
+  fixed_dt(0.0),
+  dt_changed(true),
+  time_step_constrain(end_time_ - time),
+  max_time_step(inf_time),
+  min_time_step(time_step_lower_bound),
   time_marks(&marks),
   fixed_time_mark_mask(fixed_time_mask | time_marks->type_fixed_time())
 {
 
-    dt_changed=true;
-
     if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
-    else max_time_step = inf_time;
 
-    time_step_constrain = min(end_time_-time, max_time_step);
     time_step=max_time_step;
-    end_of_fixed_dt_interval=time; //-inf_time; //turn off fixed interval
 
-    time_level=0;
     time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
     time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
 
@@ -66,23 +69,21 @@ TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMa
 }
 
 TimeGovernor::TimeGovernor(double init_time)
-: end_time_(inf_time),
-  time(inf_time),
+: time_level(0),
+  time(init_time),
+  end_of_fixed_dt_interval(time),
+  end_time_(inf_time),
+  time_step(inf_time),
+  last_time_step(0.0),
+  fixed_dt(0.0),
+  dt_changed(true),
+  time_step_constrain(inf_time),
+  max_time_step(inf_time),
+  min_time_step(time_step_lower_bound),
   time_marks(NULL),
   fixed_time_mark_mask(0x0)
 
-{
-    end_of_fixed_dt_interval=time;
-    dt_changed=true;
-
-    min_time_step=time_step_lower_bound;
-    max_time_step = inf_time;
-    time_step_constrain = inf_time;
-
-    time_level=0;
-    time_step = inf_time;
-    last_time_step=0.0;
-}
+{}
 
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
 {
