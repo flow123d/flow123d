@@ -1,0 +1,25 @@
+lc = 0.02;
+l1 = 0.3;
+l2 = 0.7;
+h1 = 0.2;
+h2 = 0.4;
+Point (1) = {0, 0, 0, lc};
+Point (2) = {l1+l2, 0, 0, lc};
+Point (3) = {l1+l2, -h2, 0, lc};
+Point (4) = {l1, -h2, 0, lc};
+Point (5) = {l1, -h1, 0, lc};
+Point (6) = {0, -h1, 0, lc};
+Line (1) = {1, 2};
+Line (2) = {2, 3};
+Line (3) = {3, 4};
+Line (4) = {4, 5};
+Line (5) = {5, 6};
+Line (6) = {6, 1};
+Line Loop (3) = {1, 2, 3, 4, 5, 6};
+Plane Surface (3) = {3};
+Surface Loop (3) = {3};
+
+Physical Line ("inflow") = {6};
+Physical Line ("outflow") = {2};
+Physical Line ("wall") = {1, 3, 4, 5};
+Physical Surface ("step")    = {3};
