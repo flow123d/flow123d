@@ -13,7 +13,7 @@
 using namespace std;
 
 Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), dual_porosity_on(false)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), dual_porosity_on(false), prev_conc(NULL)
 {
 	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
 	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
@@ -25,6 +25,11 @@ Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, 
 	cout << "number of FoR is "<< nr_of_FoR << endl;
 	cout << "number of decays is " << nr_of_decays << endl;
 	cout << "number of species is " << nr_of_species << endl;
+	if(prev_conc != NULL){
+		free(prev_conc);
+		prev_conc = NULL;
+	}
+	prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
 	this->set_time_step(timeStep);
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		allocate_reaction_matrix();
@@ -46,6 +51,11 @@ Linear_reaction::~Linear_reaction()
 	if(substance_ids != NULL){
 		free(substance_ids);
 		substance_ids = NULL;
+	}
+
+	if(prev_conc != NULL){
+		free(prev_conc);
+		prev_conc = NULL;
 	}
 
 	release_reaction_matrix();
@@ -188,7 +198,6 @@ double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) 
     if (reaction_matrix == NULL)   return NULL;
 
     int cols, rows, both;
-	double *prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
 
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		for(cols = 0; cols < nr_of_species; cols++){
@@ -203,8 +212,6 @@ double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) 
             //xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
         }
 	}
-    free(prev_conc);
-    prev_conc = NULL;
 	return concentrations;
 }
 

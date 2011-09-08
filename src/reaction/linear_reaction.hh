@@ -219,6 +219,10 @@ class Linear_reaction
 		*	Pointer to reference to distribution of elements between processors.
 		*/
 		Distribution *distribution;
+		/**
+		*	Pointer to reference previous concentration array used in compute_reaction().
+		*/
+		double *prev_conc;
 };
 
 #endif
