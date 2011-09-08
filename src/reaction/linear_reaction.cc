@@ -2,27 +2,30 @@
 #include <cstring>
 #include <stdlib.h>
 #include <math.h>
-#include "linear_reaction.hh"
-#include "../system/system.hh"
+#include "reaction/linear_reaction.hh"
+#include "system/system.hh"
 #include "materials.hh"
-#include "transport.h"
+#include "transport/transport.h"
+#include "system/par_distribution.hh"
+#include "mesh/mesh.h"
+
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(double timestep)
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false)
+Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), dual_porosity_on(false)
 {
-	//decay_on = OptGetBool("Reactions_module","Compute_decay","no");
-	//FoR_on = OptGetBool("Reactions_module","Compute_reactions","no");
-	//if(decay_on == true)
 	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
-	//if(FoR_on == true)
 	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
-	nr_of_species = OptGetInt("Transport", "N_substances", NULL );
-	cout << "number of FoR is"<< nr_of_FoR << endl;
-	cout << "number of decays is" << nr_of_decays << endl;
-	cout << "number of species is" << nr_of_species << endl;
-	this->set_timestep(timestep);
+	nr_of_species = OptGetInt("Transport", "N_substances", "0");
+	//dual_porosity_on = dualPorosity;
+	set_dual_porosity();
+	set_mesh_(mesh);
+	set_nr_of_elements(mesh->n_elements());
+	cout << "number of FoR is "<< nr_of_FoR << endl;
+	cout << "number of decays is " << nr_of_decays << endl;
+	cout << "number of species is " << nr_of_species << endl;
+	this->set_time_step(timeStep);
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		allocate_reaction_matrix();
 		modify_reaction_matrix_repeatedly();
@@ -33,28 +36,24 @@ Linear_reaction::~Linear_reaction()
 {
 	int i, rows, n_subst;
 
-	n_subst = sizeof(*reaction_matrix)/sizeof(double *);
+	//n_subst = sizeof(*reaction_matrix)/sizeof(double *);
 	xprintf(Msg,"\nDestructor is running.");
-	free(half_lives);
-	half_lives = NULL;
-
-	free(substance_ids);
-	this->substance_ids = NULL;
-
-	free(reaction_matrix);
-	reaction_matrix = NULL;
-
-	for(rows = 0; rows < n_subst;rows++){
-		free(reaction_matrix[rows]);
-		reaction_matrix[rows] = NULL;
+	if(half_lives != NULL){
+		free(half_lives);
+		half_lives = NULL;
 	}
-	free(reaction_matrix);
-	reaction_matrix = NULL;
+
+	if(substance_ids != NULL){
+		free(substance_ids);
+		substance_ids = NULL;
+	}
+
+	release_reaction_matrix();
 }
 
 double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
 {
-	int index, rows, cols, dec_nr, dec_name_nr;
+	int index, rows, cols, dec_nr;
 	char dec_name[30];
 
 	cout << "We are going to allocate reaction matrix" << endl;
@@ -72,7 +71,7 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 			}
 	}
 
-	dec_name_nr = 1;
+	//print_reaction_matrix();
 	return reaction_matrix;
 }
 
@@ -118,6 +117,7 @@ double **Linear_reaction::modify_reaction_matrix(int dec_nr) //prepare the matri
 		index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 		if(cols < (nr_of_isotopes -1)){
 			rel_step = time_step/half_lives[cols];
+			xprintf(Msg,"time_step %f\n", time_step);
 		}
 		if(cols > 0){
 			bif_id = cols -1;
@@ -137,13 +137,18 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 
 	if(nr_of_decays > 0){
 		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
+		if(half_lives != NULL){
+					free(half_lives);
+					half_lives = NULL;
+		}
+		half_lives = (double *)xmalloc(nr_of_decays * sizeof(double));
 		bifurcation.resize(nr_of_decays);
 		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
 			sprintf(dec_name,"Decay_%d", dec_name_nr);
 			nr_of_isotopes = OptGetInt(dec_name,"Nr_of_isotopes","0");
 			set_half_lives(dec_name);
 			set_indeces(dec_name, nr_of_isotopes);
-			print_indeces(nr_of_decays); //just a control
+			print_indeces(nr_of_isotopes); //just a control
 			print_half_lives(nr_of_isotopes); //just a control
 			bifurcation_on = OptGetBool(dec_name,"Compute_decay","no");
 			if(bifurcation_on == true){
@@ -165,11 +170,13 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 		half_lives = (double *)xmalloc(nr_of_FoR * sizeof(double));
 		for(dec_nr = 0; dec_nr < nr_of_FoR; dec_nr++){
 			sprintf(dec_name,"FoReact_%d", dec_name_nr);
+			set_nr_of_isotopes(2);
 			set_indeces(dec_name, 2);
 			set_kinetic_constants(dec_name, dec_nr);//instead of this line, here should be palced computation of halflives using kinetic constants
-			print_indeces(nr_of_FoR); //just a control
+			print_indeces(nr_of_isotopes); //just a control
 			print_half_lives(2); //just a control
-			modify_reaction_matrix(2);
+			//modify_reaction_matrix(2);
+			modify_reaction_matrix();
 			dec_name_nr++;
 		}
 	}
@@ -178,28 +185,26 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 
 double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-	int cols, rows, both;
-	double *prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
+    if (reaction_matrix == NULL)   return NULL;
 
-	if (reaction_matrix == NULL){
-		return NULL;
-	}
+    int cols, rows, both;
+	double *prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
 
 	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
 		for(cols = 0; cols < nr_of_species; cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
-		xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]);
+		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
 		concentrations[cols][loc_el] = 0.0;
-	}
-	for(rows = 0; rows <nr_of_species; rows++){
-		for(cols = 0; cols <nr_of_species; cols++){
-			concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
 		}
-		xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]);
+        for(rows = 0; rows <nr_of_species; rows++){
+            for(cols = 0; cols <nr_of_species; cols++){
+                concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
+            }
+            //xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
+        }
 	}
-	free(prev_conc);
-	prev_conc = NULL;
-	}
+    free(prev_conc);
+    prev_conc = NULL;
 	return concentrations;
 }
 
@@ -312,15 +317,19 @@ void Linear_reaction::print_reaction_matrix(void)
 {
 	int cols,rows;
 
-	xprintf(Msg,"\nReaction matrix looks as follows:\n");
-	for(rows = 0; rows < nr_of_species; rows++){
-		for(cols = 0; cols < nr_of_species; cols++){
-			if(cols == (nr_of_species - 1)){
-				xprintf(Msg,"%f\n",reaction_matrix[rows][cols]);
-			}else{
-				xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);
+	if(reaction_matrix != NULL){
+		xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_step);
+		for(rows = 0; rows < nr_of_species; rows++){
+			for(cols = 0; cols < nr_of_species; cols++){
+				if(cols == (nr_of_species - 1)){
+					xprintf(Msg,"%f\n",reaction_matrix[rows][cols]);
+				}else{
+					xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);
+				}
 			}
 		}
+	}else{
+		xprintf(Msg,"\nReaction matrix needs to be allocated.\n");
 	}
 	return;
 }
@@ -386,15 +395,15 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
     return;
 }
 
-void Linear_reaction::compute_one_step(double ***pconc, int nr_of_elements)
+void Linear_reaction::compute_one_step(void)
 {
-	 bool dual_porosity = false; //this is just a cheat, because I don't know how to get the information about dual porosity from this place in code
-
-	 for (int loc_el = 0; loc_el < nr_of_elements; loc_el++) {
+	 //for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
+	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	 {
 	  START_TIMER("decay_step");
-	 	 this->compute_reaction(pconc[MOBILE], loc_el);
-	    if (dual_porosity == true) {
-	     this->compute_reaction(pconc[IMMOBILE], loc_el);
+	 	 this->compute_reaction(concentration_matrix[MOBILE], loc_el);
+	    if (dual_porosity_on == true) {
+	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
 	    }
 	    END_TIMER("decay_step");
 	 }
@@ -407,6 +416,75 @@ void Linear_reaction::set_nr_of_species(int n_substances)
 	return;
 }
 
-void Linear_reaction::set_timestep(double new_timestep){ time_step = new_timestep; return;}
+void Linear_reaction::set_nr_of_elements(int nrOfElements)
+{
+	this->nr_of_elements = nrOfElements;
+	return;
+}
+
+void Linear_reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc)
+{
+	concentration_matrix = ConcentrationMatrix;
+	distribution = conc_distr;
+	return;
+}
+
+void Linear_reaction::set_time_step(double new_timestep){
+	time_step = new_timestep;
+	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
+		release_reaction_matrix();
+		allocate_reaction_matrix();
+		modify_reaction_matrix_repeatedly();
+	}
+	return;
+}
 int Linear_reaction::get_nr_of_decays(void){return nr_of_decays;} // two simple inlinefunction returning private variables
 int Linear_reaction::get_nr_of_FoR(void){return nr_of_FoR;}
+void Linear_reaction::set_mesh_(Mesh *mesh_in){mesh = mesh_in; return;}
+
+void Linear_reaction::set_dual_porosity()
+{
+	this->dual_porosity_on = OptGetBool("Transport", "Dual_porosity", "no");
+	return;
+}
+
+void Linear_reaction::release_reaction_matrix(void)
+{
+	int i;
+	if(reaction_matrix != NULL)
+	{
+		for(i = 0; i < nr_of_isotopes; i++)
+		{
+			if(reaction_matrix[i] != NULL)
+			{
+				free(reaction_matrix[i]);
+				reaction_matrix[i] = NULL;
+			}
+		}
+		free(reaction_matrix);
+		reaction_matrix = NULL;
+	}
+}
+
+double Linear_reaction::get_time_step(void)
+{
+	return time_step;
+}
+
+void Linear_reaction::set_nr_of_isotopes(int Nr_of_isotopes)
+{
+	nr_of_isotopes = Nr_of_isotopes;
+	return;
+}
+
+void Linear_reaction::set_nr_of_decays(void)
+{
+	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
+	return;
+}
+
+void Linear_reaction::set_nr_of_FoR(void)
+{
+	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
+	return;
+}

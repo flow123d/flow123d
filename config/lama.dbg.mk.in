@@ -1,5 +1,5 @@
-PETSC_DIR=/cygdrive/c/cygwin/cygdrive/home/michal.nekvasil/petsc-3.0.0-p12
-PETSC_ARCH=cygwin_gcc
+PETSC_DIR=/home/jiri.jenicek/petsc-3.0.0-p12
+PETSC_ARCH=cygwin-c-debug
 
 FLOW_CFLAGS=-g -O0
 
@@ -13,8 +13,8 @@ FLOW_CFLAGS=-g -O0
 
 # Uncomment to print all messages from all parallel MPI processes.
 # This only has effect with USE_PARALLEL 
-# USE_PRINTALL = -DMPI_PRINTALL
+#USE_PRINTALL = -DMPI_PRINTALL
 
 # This activates a workaround for build sucessfuly with ATLAS.
 # It is safe to use this until one would use "asa" PETSC preconditioner.
-# ATLAS= -DHAVE_ATLAS_ONLY_BLAS
+#ATLAS= -DHAVE_ATLAS_ONLY_BLAS

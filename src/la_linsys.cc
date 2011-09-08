@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <petscmat.h>
 #include "system/system.hh"
-#include <la_linsys.hh>
+#include "la_linsys.hh"
 
 /**
  *  @brief Constructs a parallel system with given local size.
@@ -380,7 +380,7 @@ LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int sz, int *global_row_4_su
 
     int i;
 
-    xprintf(Msg,"sub size %d \n",subdomain_size);
+    //xprintf(Msg,"sub size %d \n",subdomain_size);
 
     // ulozit global_row_4_sub_row
     subdomain_indices = new int[subdomain_size];
@@ -519,11 +519,6 @@ void LinSys_MATIS::view_local_matrix()
 LinSys_MATIS:: ~LinSys_MATIS()
 {
      PetscErrorCode err;
-
-     // destroy local subdomain matrix
-     err = MatDestroy(local_matrix);
-     ASSERT(err == 0,"Error in MatDestroy.");
-     xprintf(Msg,"Error code MatDestroy %d \n",err);
 
      // destroy mapping
      err = ISLocalToGlobalMappingDestroy(map_local_to_global);

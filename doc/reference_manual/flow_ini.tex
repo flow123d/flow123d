@@ -145,6 +145,14 @@ Names of the substances separated by commas.
 \key{Substances\_density\_scales} & \type{list of doubles} & 1.0 &
 Scales of substances for the density flow calculation.\\
   \hline
+\\ 
+\hline
+\key{bc\_times} & \type{list of doubles} & NULL &
+Times for changing boundary conditions. If you set this variable, you have to prepare a separate file with boundary condintions for every 
+time in the list. Filenames for individual time level are formed from BC filename by appending underscore and three digits of time level number, e.g. 
+{\tt transport\_bcd\_000, transport\_bcd\_001, etc.} \\
+  \hline
+
 \end{initable}
  
 \begin{initable}{Constants}

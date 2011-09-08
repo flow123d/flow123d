@@ -34,7 +34,7 @@
 #include "io/output_vtk.h"
 #include "io/output_msh.h"
 #include "mesh/mesh.h"
-#include "constantdb.h" // TODO: remove in the future
+
 
 OutputData::OutputData(string data_name,
         string data_units,
@@ -144,6 +144,15 @@ OutputData::~OutputData()
 
 void Output::free_data_from_mesh(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     if(node_scalar != NULL) {
         delete node_scalar->scalars;
         delete node_scalar;
@@ -162,6 +171,15 @@ void Output::free_data_from_mesh(void)
 
 void Output::get_data_from_mesh(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     NodeIter node;
     ElementIter ele;
 
@@ -171,25 +189,25 @@ void Output::get_data_from_mesh(void)
 
     /* Fill temporary vector of node scalars */
     node_scalar->scalars = new ScalarFloatVector;
-    node_scalar->name = "node_scalars";
-    node_scalar->unit = "";
+    node_scalar->name = "pressure_nodes";
+    node_scalar->unit = "L";
     /* Generate vector for scalar data of nodes */
     node_scalar->scalars->reserve(mesh->node_vector.size());   // reserver memory for vector
-    FOR_NODES( node ) {
+    FOR_NODES(mesh, node ) {
         node_scalar->scalars->push_back(node->scalar);
     }
 
     /* Fill vectors of element scalars and vectors */
     element_scalar->scalars = new ScalarFloatVector;
-    element_scalar->name = "element_scalars";
-    element_scalar->unit = "";
+    element_scalar->name = "pressure_elements";
+    element_scalar->unit = "L";
     element_vector->vectors = new VectorFloatVector;
-    element_vector->name = "element_vectors";
-    element_vector->unit = "";
+    element_vector->name = "velocity_elements";
+    element_vector->unit = "L/T";
     /* Generate vectors for scalar and vector data of nodes */
     element_scalar->scalars->reserve(mesh->n_elements());
     element_vector->vectors->reserve(mesh->n_elements());
-    FOR_ELEMENTS(ele) {
+    FOR_ELEMENTS(mesh, ele) {
         /* Add scalar */
         element_scalar->scalars->push_back(ele->scalar);
         /* Add vector */
@@ -222,11 +240,29 @@ int write_null_data(Output *output)
 
 int Output::write_data(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
     return _write_data(this);
 }
 
 Output::Output(Mesh *_mesh, string fname)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
@@ -238,17 +274,8 @@ Output::Output(Mesh *_mesh, string fname)
     base_file = new ofstream;
 
     base_file->open(fname.c_str());
-    if(base_file->is_open() == false) {
-        xprintf(Msg, "Could not write output to the file: %s\n", fname.c_str());
-        base_filename = NULL;
-        delete base_file;
-        base_file = NULL;
-        mesh = NULL;
-
-        return;
-    } else {
-        xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
-    }
+    INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
+    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
 
     base_filename = new string(fname);
 
@@ -256,8 +283,8 @@ Output::Output(Mesh *_mesh, string fname)
     node_data = new OutputDataVec;
     elem_data = new OutputDataVec;
 
-    // TODO: remove in the future
-    format_type = ConstantDB::getInstance()->getInt("Pos_format_id");
+
+    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
 
     switch(format_type) {
     case VTK_SERIAL_ASCII:
@@ -276,8 +303,34 @@ Output::Output(Mesh *_mesh, string fname)
     base_filename = new string(fname);
 }
 
+OutFileFormat Output::parse_output_format(char* format_name)
+{
+    if(strcmp(format_name,"ASCII") == 0) {
+        return GMSH_MSH_ASCII;
+    } else if(strcmp(format_name,"BIN") == 0) {
+        return GMSH_MSH_BIN;
+    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0) {
+        return VTK_SERIAL_ASCII;
+    } else if(strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
+        return VTK_PARALLEL_ASCII;
+    } else {
+        xprintf(Warn,"Unknown output file format: %s.\n", format_name );
+        return (VTK_SERIAL_ASCII);
+    }
+}
+
+
 Output::~Output()
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     // Free all reference on node and element data
     if(node_data != NULL) {
         delete node_data;
@@ -346,17 +399,34 @@ int write_null_tail(OutputTime *output)
 
 int OutputTime::write_data(double time)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
     return _write_data(this, time, current_step++);
 }
 
 OutputTime::OutputTime(Mesh *_mesh, string fname)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     std::vector<OutputData> *node_data;
     std::vector<OutputData> *elem_data;
     Mesh *mesh = _mesh;
     ofstream *base_file;
     string *base_filename;
-    int format_type;
+    OutFileFormat format_type;
 
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
@@ -369,17 +439,9 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     base_file = new ofstream;
 
     base_file->open(fname.c_str());
-    if(base_file->is_open() == false) {
-        xprintf(Msg, "Could not write output to the file: %s\n", fname.c_str());
-        base_filename = NULL;
-        delete base_file;
-        base_file = NULL;
-        mesh = NULL;
+    INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
+    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
 
-        return;
-    } else {
-        xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
-    }
 
     base_filename = new string(fname);
 
@@ -389,7 +451,7 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     elem_data = new OutputDataVec;
 
     // TODO: remove in the future
-    format_type = ConstantDB::getInstance()->getInt("Pos_format_id");
+    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
 
     set_base_file(base_file);
     set_base_filename(base_filename);
@@ -424,5 +486,14 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
 
 OutputTime::~OutputTime(void)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
     _write_tail(this);
 }

@@ -206,6 +206,11 @@ public:
     Output(Mesh *mesh, string filename);
 
     /**
+     * Convert string output format names into enum values.
+     */
+    OutFileFormat parse_output_format(char* format_name);
+
+    /**
      * \brief Destructor of the Output object.
      */
     ~Output();
@@ -316,7 +321,7 @@ protected:
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
     void set_base_file(ofstream *_base_file) { base_file = _base_file; };
     void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
-    void set_format_type(int _format_type) { format_type = _format_type; };
+    void set_format_type(OutFileFormat _format_type) { format_type = _format_type; };
     void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
     void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
 
@@ -331,7 +336,7 @@ private:
     string          *base_filename;     ///< Name of base output file
     string          *data_filename;     ///< Name of data output file
     ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    int             format_type;        ///< Type of output
+    OutFileFormat             format_type;        ///< Type of output
     Mesh            *mesh;
     OutputDataVec   *node_data;         ///< List of data on nodes
     OutputDataVec   *elem_data;         ///< List of data on elements
@@ -351,6 +356,15 @@ int Output::register_node_data(std::string name,
         _Data *data,
         uint size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->node_vector.size() == size) {
         int found = 0;
 
@@ -370,6 +384,15 @@ int Output::register_elem_data(std::string name,
         _Data *data,
         uint size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->element.size() == size) {
         int found = 0;
 
@@ -388,6 +411,15 @@ int Output::register_node_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->node_vector.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
         node_data->push_back(*out_data);
@@ -403,6 +435,15 @@ int Output::register_elem_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     if(mesh->element.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
         elem_data->push_back(*out_data);
@@ -542,33 +583,42 @@ int OutputTime::register_node_data(std::string name,
         _Data *data,
         uint size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	int found = 0;
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *node_data = get_node_data();
     Mesh *mesh = get_mesh();
 
-    if(mesh->node_vector.size() == size) {
-        int found = 0;
+    ASSERT(mesh->node_vector.size() == size,
+            "mesh->node_vector.size(): %d != size: %d",
+            mesh->node_vector.size(),
+            size);
 
-        for(std::vector<OutputData>::iterator od_iter = node_data->begin();
-                od_iter != node_data->end();
-                od_iter++)
-        {
-            if(*od_iter->name == name) {
-                od_iter->data = (void*)data;
-                found = 1;
-                break;
-            }
+    for(std::vector<OutputData>::iterator od_iter = node_data->begin();
+            od_iter != node_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == name) {
+            od_iter->data = (void*)data;
+            found = 1;
+            break;
         }
-
-        if(found == 0) {
-            OutputData *out_data = new OutputData(name, unit, data, size);
-            node_data->push_back(*out_data);
-        }
-
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", size, mesh->node_vector.size());
-        return 0;
     }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(name, unit, data, size);
+        node_data->push_back(*out_data);
+    }
+
+    return 1;
+
 }
 
 template <typename _Data>
@@ -577,33 +627,41 @@ int OutputTime::register_elem_data(std::string name,
         _Data *data,
         unsigned int size)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    int found = 0;
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *elem_data = get_elem_data();
     Mesh *mesh = get_mesh();
 
-    if(mesh->element.size() == size) {
-        int found = 0;
+    ASSERT(mesh->element.size() == size,
+            "mesh->element.size(): %d != size: %d",
+            mesh->element.size(),
+            size);
 
-        for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
-                od_iter != elem_data->end();
-                od_iter++)
-        {
-            if(*od_iter->name == name) {
-                od_iter->data = (void*)data;
-                found = 1;
-                break;
-            }
+    for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
+            od_iter != elem_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == name) {
+            od_iter->data = (void*)data;
+            found = 1;
+            break;
         }
-
-        if(found == 0) {
-            OutputData *out_data = new OutputData(name, unit, data, size);
-            elem_data->push_back(*out_data);
-        }
-
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", size, mesh->element.size());
-        return 0;
     }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(name, unit, data, size);
+        elem_data->push_back(*out_data);
+    }
+
+    return 1;
 }
 
 template <typename _Data>
@@ -611,33 +669,42 @@ int OutputTime::register_node_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    int found = 0;
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *node_data = get_node_data();
     Mesh *mesh = get_mesh();
 
-    if(mesh->node_vector.size() == data.size()) {
-        int found = 0;
+    ASSERT(mesh->node_vector.size() == data.size(),
+            "mesh->node_vector.size(): %d != size: %d",
+            mesh->node_vector.size(),
+            data.size());
 
-        for(std::vector<OutputData>::iterator od_iter = node_data->begin();
-                od_iter != node_data->end();
-                od_iter++)
-        {
-            if(*od_iter->name == name) {
-                od_iter->data = (void*)&data;
-                found = 1;
-                break;
-            }
+    for(std::vector<OutputData>::iterator od_iter = node_data->begin();
+            od_iter != node_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == name) {
+            od_iter->data = (void*)&data;
+            found = 1;
+            break;
         }
-
-        if(found == 0) {
-            OutputData *out_data = new OutputData(name, unit, data);
-            node_data->push_back(*out_data);
-        }
-
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
-        return 0;
     }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(name, unit, data);
+        node_data->push_back(*out_data);
+    }
+
+    return 1;
+
 }
 
 template <typename _Data>
@@ -645,32 +712,40 @@ int OutputTime::register_elem_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
+	int rank=0;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    int found = 0;
+
+	/* It's possible now to do output to the file only in the first process */
+	if(rank!=0) {
+		/* TODO: do something, when support for Parallel VTK is added */
+		return 0;
+	}
+
     std::vector<OutputData> *elem_data = get_elem_data();
     Mesh *mesh = get_mesh();
 
-    if(mesh->element.size() == data.size()) {
-        int found = 0;
+    ASSERT(mesh->element.size() == data.size(),
+            "mesh->element.size(): %d != size: %d",
+            mesh->element.size(),
+            data.size());
 
-        for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
-                od_iter != elem_data->end();
-                od_iter++)
-        {
-            if(*od_iter->name == name) {
-                od_iter->data = (void*)&data;
-                found = 1;
-                break;
-            }
+    for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
+            od_iter != elem_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == name) {
+            od_iter->data = (void*)&data;
+            found = 1;
+            break;
         }
-
-        if(found == 0) {
-            OutputData *out_data = new OutputData(name, unit, data);
-            elem_data->push_back(*out_data);
-        }
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
-        return 0;
     }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(name, unit, data);
+        elem_data->push_back(*out_data);
+    }
+    return 1;
 
 }
 

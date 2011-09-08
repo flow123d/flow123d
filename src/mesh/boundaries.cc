@@ -28,10 +28,6 @@
  *
  */
 
-#include <strings.h>
-
-#include "constantdb.h"
-
 #include "system/system.hh"
 #include "xio.h"
 #include "mesh/boundaries.h"
@@ -51,8 +47,8 @@ void read_boundary( struct Mesh *mesh )
 	char     line[ LINE_SIZE ]; // line of data file
 //	int where;
 	int bcd_id, n_tags;
-	BoundaryFullIter bcd = BOUNDARY_NULL;
-	ElementFullIter ele = ELEMENT_FULL_ITER_NULL;
+	BoundaryFullIter bcd = BOUNDARY_NULL(mesh);
+	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh);
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_boundary_list()\n");
 	xprintf( Msg, "Reading boundary conditions...")/*orig verb 2*/;
@@ -173,7 +169,7 @@ void boundary_calculation_mh( struct Mesh *mesh )
 
 	xprintf( Msg, "Calculating properties of boundaries... ");
 	ASSERT( NONULL(mesh) ,"NULL as argument of function boundary_calculation_mh()\n");
-	FOR_BOUNDARIES( bcd ) {
+	FOR_BOUNDARIES(mesh,  bcd ) {
 		edg=bcd->side->edge;
 		// following code may not work if a BC is applied to an edge with neighbouring
 		// in such a case we need to add to the f_val, nevertheless the original code

@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: main_doc.hh 1028 2011-04-11 18:56:00Z jan.brezina $
- * $Revision: 1028 $
- * $LastChangedBy: jan.brezina $
- * $LastChangedDate: 2011-04-11 20:56:00 +0200 (Mon, 11 Apr 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  */
 
 
@@ -73,7 +73,7 @@
  *
  * @ref Authors "List of Contributors"
  *
- * $LastChangedDate: 2011-04-11 20:56:00 +0200 (Mon, 11 Apr 2011) $
+ * $LastChangedDate$
  *
  */
 

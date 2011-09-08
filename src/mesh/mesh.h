@@ -55,22 +55,22 @@
  * The parameter is FullIter local variable of the cycle, so it need not be declared before.
  * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
  */
-#define FOR_NODES(i) \
-    for( NodeFullIter i( mesh->node_vector.begin() ); \
-        i != mesh->node_vector.end(); \
+#define FOR_NODES(_mesh_, i) \
+    for( NodeFullIter i( _mesh_->node_vector.begin() ); \
+        i != _mesh_->node_vector.end(); \
         ++i)
 
 /**
  * Macro for conversion form Iter to FullIter for nodes.
  */
-#define NODE_FULL_ITER(i) \
-    mesh->node_vector.full_iter(i)
+#define NODE_FULL_ITER(_mesh_,i) \
+    _mesh_->node_vector.full_iter(i)
 
 /**
  * Macro to get "NULL" ElementFullIter.
  */
-#define NODE_FULL_ITER_NULL \
-    NodeFullIter(mesh->node_vector)
+#define NODE_FULL_ITER_NULL(_mesh_) \
+    NodeFullIter(_mesh_->node_vector)
 
 
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
@@ -97,6 +97,18 @@ public:
     inline unsigned int n_edges() const {
         return edge.size();
     }
+
+    /**
+     * Setup various links between mesh entities. Should be simplified.
+     */
+    void setup_topology();
+
+    /**
+     * This set pointers from elements to materials. Mesh should store only material IDs of indices.
+     * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
+     */
+    void setup_materials( MaterialDatabase &base);
+    void make_element_geometry();
 
     // Files
     // DF - Move to ConstantDB
@@ -142,6 +154,10 @@ public:
 //    struct Edge **edge_hash;
 //    struct Side **side_hash;
 //    struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index
+
+private:
+    void count_element_types();
+
 };
 
 /**
@@ -149,52 +165,59 @@ public:
  * The parameter is FullIter local variable of the cycle, so it need not be declared before.
  * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
  */
-#define FOR_ELEMENTS(__i) \
-    for( ElementFullIter __i( mesh->element.begin() ); \
-        __i != mesh->element.end(); \
+#define FOR_ELEMENTS(_mesh_,__i) \
+    for( ElementFullIter __i( _mesh_->element.begin() ); \
+        __i != _mesh_->element.end(); \
         ++__i)
 
 /**
  * Macro for conversion form Iter to FullIter for elements.
  */
-#define ELEMENT_FULL_ITER(i) \
-    mesh->element.full_iter(i)
+#define ELEMENT_FULL_ITER(_mesh_,i) \
+    _mesh_->element.full_iter(i)
 
 /**
  * Macro to get "NULL" ElementFullIter.
  */
-#define ELEMENT_FULL_ITER_NULL \
-    ElementFullIter(mesh->element)
+#define ELEMENT_FULL_ITER_NULL(_mesh_) \
+    ElementFullIter(_mesh_->element)
 
 
-#define FOR_BOUNDARIES(i) \
-for( BoundaryFullIter i( mesh->boundary.begin() ); \
-    i != mesh->boundary.end(); \
+#define FOR_BOUNDARIES(_mesh_,i) \
+for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
+    i != _mesh_->boundary.end(); \
     ++i)
 
 /**
  * Macro for conversion form Iter to FullIter for boundaries.
  */
-#define BOUNDARY_FULL_ITER(i) \
-    mesh->boundary.full_iter(i)
+#define BOUNDARY_FULL_ITER(_mesh_,i) \
+    _mesh_->boundary.full_iter(i)
 
 /**
  * Macro to get "NULL" BoundaryFullIter.
  */
-#define BOUNDARY_NULL \
-    BoundaryFullIter(mesh->boundary)
+#define BOUNDARY_NULL(_mesh_) \
+    BoundaryFullIter(_mesh_->boundary)
 
 
 /**
  * Provides for statement to iterate over the Edges of the Mesh. see FOR_ELEMENTS
  */
-#define FOR_EDGES(__i) \
-    for( EdgeFullIter __i( mesh->edge.begin() ); \
-        __i != mesh->edge.end(); \
+#define FOR_EDGES(_mesh_,__i) \
+    for( EdgeFullIter __i( _mesh_->edge.begin() ); \
+        __i !=_mesh_->edge.end(); \
         ++__i)
 
-void make_mesh(struct Problem*);
-int *max_entry();
+#define FOR_SIDES(_mesh_,i)        for((i)=_mesh_->side;(i)!=NULL;(i)=(i)->next)
+#define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
+
+
+#define FOR_NEIGHBOURS(_mesh_, i)   for((i)=_mesh_->neighbour;(i)!=NULL;(i)=(i)->next)
+#define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
+#define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
+
+//int *max_entry();
 
 
 #endif

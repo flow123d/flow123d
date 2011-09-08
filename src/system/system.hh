@@ -30,11 +30,11 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include <mpi.h>
+//#include <mpi>
 
 
 #include "global_defs.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 #include "system/math_fce.h"
 #include "sys_function_stack.hh"
 #include "sys_profiler.hh"

@@ -1,8 +1,33 @@
-/*
- * time_marks.hh
+/*!
  *
+ * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+ *
+ * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+ * especially for academic research:
+ * Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License version 3 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program; if not,
+ * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
+ *
+ *
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
+ *
+ * @file
+ * @brief
+ *
+ *  @author Jan Brezina
  *  Created on: Jun 15, 2011
- *      Author: jb
+ *
  */
 
 #ifndef TIME_MARKS_HH_
@@ -24,8 +49,7 @@ public:
      */
     typedef unsigned long int Type;
 
-    /// Base mark type for strict time marks.
-    static const Type strict;
+    /// Mask that matchs every type of TimeMark.
     static const Type every_type;
 
     /**
@@ -41,17 +65,12 @@ public:
 
 
     /// Getter for mark type.
-    Type mark_type() const {
+    inline Type mark_type() const {
         return mark_type_;
     }
 
-    /// True if the TimeMark is strict.
-    bool is_strict() const {
-        return mark_type_ & strict;
-    }
-
     /// Getter for the time of the TimeMark.
-    double time() const {
+    inline double time() const {
         return time_;
     }
 
@@ -60,21 +79,34 @@ public:
      * @param mask {Select bits that should be 1 for matching mark types.
      */
 
-    bool match_mask(const TimeMark::Type &mask) const {
+    inline bool match_mask(const TimeMark::Type &mask) const {
         return ( mask & (~mark_type_) ) == 0;
+    }
+
+    /// Add more bits that a mark satisfies.
+    inline void add_to_type(const TimeMark::Type &type) {
+        mark_type_ |= type;
     }
 
     /// Comparison of time marks according to their time.
     bool operator<(const TimeMark& second) const
       { return time_ < second.time(); }
+
+
 private:
     double time_;
     Type mark_type_;
 };
+
 /**
  * Output operator for TimeMark class.
  */
 ostream& operator<<(ostream& stream, const TimeMark &marks);
+
+
+
+
+/***************************************************************************************/
 
 
 
@@ -123,7 +155,10 @@ private:
     TimeMark::Type mask_;
 };
 
+
+/***************************************************************************************/
 class TimeGovernor;
+
 
 /**
  * @brief This class is a collection of time marks to manage various events occurring during simulation time.
@@ -156,14 +191,10 @@ public:
     /// Iterator class for iteration over time marks of particular type. This is always const_iterator.
     typedef TimeMarksIterator iterator;
 
-
-
-    TimeMarks()
-        : next_mark_type_(2)
-    {
-        marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));
-        marks_.push_back(TimeMark(+INFINITY, TimeMark::every_type));
-    }
+    /**
+     * Default constructor.
+     */
+    TimeMarks();
 
     /**
      * Add a new base mark within the context of the particular TimeMarks instance.
@@ -171,11 +202,19 @@ public:
      * TimeMark insertions. ATTENTION: You can not use the TimeMark::Type with other TimeMarks instance!
      */
     TimeMark::Type new_mark_type();
-    /**
-     * Same as @fn new_mark_type, but set the strict bit.
-     * This distinguish those types that are used as a fix times for connected TimeGovernor.
-     */
-    TimeMark::Type new_strict_mark_type();
+
+    /// Predefined base TimeMark type that is taken into account by the TimeGovernor.
+    inline TimeMark::Type type_fixed_time()
+    { return type_fixed_time_;}
+
+    /// Predefined base TimeMark type for output times.
+    inline TimeMark::Type type_output()
+    { return type_output_;}
+
+    /// Predefined base TimeMark type for times when the boundary condition is changed.
+    inline TimeMark::Type type_bc_change()
+    { return type_bc_change_;}
+
 
     /**
      * Basic method for inserting TimeMarks.
@@ -191,7 +230,7 @@ public:
      * @param end_time  No marks after the end_time.
      * @param type    MarkType or their combinations.
      *
-     * Current lazy implementation have complexity O(m*n) where m is number of inserted time merks and n number of time marks in the array.
+     * Current lazy implementation have complexity O(m*n) where m is number of inserted time marks and n number of time marks in the array.
      * TODO: O(n+m) implementation
      */
     void add_time_marks(double time, double dt, double end_time, TimeMark::Type type);
@@ -222,21 +261,29 @@ public:
      */
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
+    /// Iterator for the begging mimics container-like  of TimeMarks
     TimeMarks::iterator begin() const
-    {return TimeMarks::iterator(marks_, marks_.begin(), TimeMark::every_type); }
+    {return TimeMarksIterator(marks_, marks_.begin(), TimeMark::every_type); }
 
+    /// Iterator for the end mimics container-like  of TimeMarks
     TimeMarks::iterator end() const
         {return TimeMarksIterator(marks_, --marks_.end(), TimeMark::every_type); }
 
+    /// Friend output operator.
     friend ostream& operator<<(ostream& stream, const TimeMarks &marks);
 
 private:
 
-    /// MarkType that will be used at next add_time_mark call.
+    /// MarkType that will be used at next new_time_mark() call.
     TimeMark::Type next_mark_type_;
 
     /// TimeMarks list sorted according to the their time.
     vector<TimeMark> marks_;
+
+    /// Predefined types.
+    TimeMark::Type type_fixed_time_;
+    TimeMark::Type type_output_;
+    TimeMark::Type type_bc_change_;
 };
 
 /**

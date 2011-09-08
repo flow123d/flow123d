@@ -21,42 +21,20 @@
 # $LastChangedDate$
 #
 
-copy:
-	cp -r ../../../tests/test1 ./
-	cp -r ../../../tests/test2 ./
-	cp -r ../../../tests/test3 ./
-	cp -r ../../../tests/test4 ./
-	cp -r ../../../tests/test5 ./
+# Make all tests
+testall: 01.tst 02.tst 03.tst 11.tst 12.tst 13.tst 14.tst
 
-testbase:
-	make -C 01_steady_flow_123d test
-
-testall: 
-	make -C 01_steady_flow_123d test
-	make -C 02_transport_12d test
-	make -C 03_transport_small_12d test
-	make -C 04_density_driven_12d test
-	make -C 11_reactional_transport_semchem test
-	make -C 12_radioactive_decay test
-
-testchem:
-	make -C 11_reactional_transport_semchem test
-	make -C 12_radioactive_decay test
-
+# Rule to clean generated files in test directories
 clean:
-	rm -rf ./test1
-	rm -rf ./test2
-	rm -rf ./test3
-	rm -rf ./test4
-	rm -rf ./test5
-
+	make -C 01_steady_flow_123d clean
+	make -C 02_transport_12d clean
+	make -C 03_transport_small_12d clean
+	make -C 11_reactional_transport_semchem clean
+	make -C 12_radioactive_decay clean
+	make -C 13_edge_solute_mixing clean
+	make -C 14_trans_time_bc clean
 	
+
+# General rule to run test given only by number
 %.tst:
-	BASE=$*;\
-	dir="`pwd`/`echo $${BASE}*`";\
-	echo $${dir};\
-	if test -d "$${dir}";\
-	then make -C "$${dir}" test;\
-	else echo "missing test directory $${dir}";\
-	exit 1;\
-	fi
+	BASE=$*;DIR="`pwd`/`echo $${BASE}_*`";if test -d "$${DIR}";then make -C "$${DIR}" test;else exit 1;fi

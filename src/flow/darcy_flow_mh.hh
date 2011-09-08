@@ -50,7 +50,7 @@
 
 #include <petscmat.h>
 #include "system/sys_vector.hh"
-#include <time_governor.hh>
+#include "time_governor.hh"
 #include <field_p0.hh>
 #include <materials.hh>
 #include "equation.hh"
@@ -75,20 +75,38 @@ class SparseGraph;
  * 1) prepare_next_timestep
  * 2) actualize_solution - this is for iterative nonlinear solvers
  *
- * make interface of DarcyFlowMH a general interface of time depenedent model. ....
  */
 
 class DarcyFlowMH : public EquationBase {
 public:
+    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
+    : EquationBase(marks, mesh, mat_base)
+    {}
+
     FieldP0<double>  * get_sources()
         { return sources; }
+
+    void get_velocity_seq_vector(Vec &velocity_vec)
+        { velocity_vec = velocity_vector; }
+
 protected:
+    void setup_velocity_vector() {
+        double *velocity_array;
+        unsigned int size;
+
+        get_solution_vector(velocity_array, size);
+        VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_sides, velocity_array, &velocity_vector);
+
+    }
+
     virtual void postprocess() =0;
+
     //virtual void balance();
     //virtual void integrate_sources();
 
 protected:
     FieldP0<double> *sources;
+    Vec velocity_vector;
 };
 
 
@@ -117,8 +135,8 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
-    virtual void compute_one_step();
+    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
+    virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
     virtual void postprocess() {};
@@ -129,7 +147,8 @@ protected:
     void set_R() {};
     void prepare_parallel();
     void make_row_numberings();
-    void mh_abstract_assembly();
+    void preallocate_mh_matrix();
+    void assembly_steady_mh_matrix();
     void make_schur0();
     void make_schur1();
     void make_schur2();
@@ -141,37 +160,38 @@ protected:
 
 	struct Solver *solver;
 
-	LinSys *schur0;  		// whole MH Linear System
-	SchurComplement *schur1;  	// first schur compl.
-	SchurComplement *schur2;	// second ..
-
+	LinSys *schur0;  		//< whole MH Linear System
+	SchurComplement *schur1;  	//< first schur compl.
+	SchurComplement *schur2;	//< second ..
 
 
 	// parallel
-	int np;  // number of procs
-	int myp; // my proc number
-	int	 lsize;				// local size of whole MH matrix
-	Distribution *edge_ds; // optimal distribution of edges
-	Distribution *el_ds; // optimal distribution of elements
-	Distribution *side_ds; // optimal distribution of elements
-	Distribution *rows_ds; // final distribution of rows of MH matrix
+	int np;                         //< number of procs
+	int myp;                        //< my proc number
+	int	 lsize;	                //< local size of whole MH matrix
+	Distribution *edge_ds;          //< optimal distribution of edges
+	Distribution *el_ds;            //< optimal distribution of elements
+	Distribution *side_ds;          //< optimal distribution of elements
+	Distribution *rows_ds;          //< final distribution of rows of MH matrix
 
-	int *el_4_loc;		// array of idexes of local elements (in ordering matching the optimal global)
-	int *row_4_el;		// element index to matrix row
-	int *side_id_4_loc;		// array of ids of local sides
-	int	*side_row_4_id;		// side id to matrix row
-	int *edge_4_loc;		// array of indexes of local edges
-	int	*row_4_edge;		// edge index to matrix row
-	//int *old_4_new;        // aux. array should be only part of parallel LinSys
+	int *el_4_loc;		        //< array of idexes of local elements (in ordering matching the optimal global)
+	int *row_4_el;		        //< element index to matrix row
+	int *side_id_4_loc;		//< array of ids of local sides
+	int	*side_row_4_id;		//< side id to matrix row
+	int *edge_4_loc;		//< array of indexes of local edges
+	int	*row_4_edge;		//< edge index to matrix row
+	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
 
 	// MATIS related arrays
-	int ndof_loc;                   // size of local block of MATIS matrix 
-	int *global_row_4_sub_row;      // global dof index for subdomain index
-	ISLocalToGlobalMapping map_side_local_to_global; ///< PETSC mapping form local SIDE indices of subdomain to global indices
+        std::vector<int> global_row_4_sub_row;           //< global dof index for subdomain index
+	ISLocalToGlobalMapping map_side_local_to_global; //< PETSC mapping form local SIDE indices of subdomain to global indices
 
 	// gather of the solution
-	Vec sol_vec;			// vector over solution array
+	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
+
+        Mat IA1;                                         //< inverse of matrix IA1
+        Mat IA2;                                         //< inverse of matrix IA2
 };
 
 
@@ -180,8 +200,6 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
         int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 void mat_count_off_proc_values(Mat m, Vec v);
 
-void create_water_linsys(Mesh*, DarcyFlowMH**);
-void solve_water_linsys(DarcyFlowMH*);
 
 
 /**
@@ -195,10 +213,11 @@ void solve_water_linsys(DarcyFlowMH*);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
     DarcyFlowMH_Unsteady();
 protected:
     virtual void modify_system();
+    void setup_time_term();
 private:
     Vec steady_diagonal;
     Vec steady_rhs;
@@ -223,10 +242,11 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(TimeMarks *marks,Mesh *mesh, MaterialDatabase *mat_base_in);
+    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
     DarcyFlowLMH_Unsteady();
 protected:
     virtual void modify_system();
+    void setup_time_term();
     virtual void postprocess();
 private:
     Vec steady_diagonal;

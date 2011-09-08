@@ -28,42 +28,66 @@
  */
 
 #include "system/system.hh"
-#include <time_governor.hh>
-#include <time_marks.hh>
+#include "time_governor.hh"
+#include "time_marks.hh"
 
-#include <algorithm>
+#include <limits>
 
-
-const double TimeGovernor::comparison_precision = 0.01;
-const double TimeGovernor::time_step_lower_bound = DBL_EPSILON;
+// fraction of subsequent time steps can not be less then the comparison_precision
+const double TimeGovernor::comparison_precision = 0.0001;
+const double TimeGovernor::time_step_lower_bound = numeric_limits<double>::epsilon();
+const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
 
 /*
  * TODO:
  * TimeGovernor should be constructed from JSON object.
  */
-TimeGovernor::TimeGovernor( TimeMarks * const marks, double time_init, double end_t)
-: time_marks(marks)
+TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMarks &marks,const TimeMark::Type fixed_time_mask)
+: time_level(0),
+  time(init_time),
+  end_of_fixed_dt_interval(time),
+  end_time_(end_time),
+  time_step(time_step_lower_bound),
+  last_time_step(time_step_lower_bound),
+  fixed_dt(0.0),
+  dt_changed(true),
+  time_step_constrain(end_time_ - time),
+  max_time_step(inf_time),
+  min_time_step(time_step_lower_bound),
+  time_marks(&marks),
+  fixed_time_mark_mask(fixed_time_mask | time_marks->type_fixed_time())
 {
-    time=time_init;
-    end_of_fixed_dt_interval=time;
-    end_time_=end_t;
 
-    dt_changed=true;
-    dt_change_overhead=-1.0; // turn off
+    if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
 
-    min_time_step=0;
-    max_time_step=end_time_ - time_init;
     time_step=max_time_step;
-    time_step_constrain = min(end_time_-time, max_time_step);
 
-    time_level=0;
-    time_marks->add( TimeMark(time_init, TimeMark::strict) );
-    time_marks->add( TimeMark(end_time_, TimeMark::strict) );
+    time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
+    time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
+
+    last_time_step=0.0;
 }
+
+TimeGovernor::TimeGovernor(double init_time)
+: time_level(0),
+  time(init_time),
+  end_of_fixed_dt_interval(time),
+  end_time_(inf_time),
+  time_step(inf_time),
+  last_time_step(0.0),
+  fixed_dt(0.0),
+  dt_changed(true),
+  time_step_constrain(inf_time),
+  max_time_step(inf_time),
+  min_time_step(time_step_lower_bound),
+  time_marks(NULL),
+  fixed_time_mark_mask(0x0)
+
+{}
 
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
 {
-    ASSERT( min_dt > 0.0,"Minimal time step has to be greater than ZERO\n");
+    ASSERT( min_dt >= 0.0,"Minimal time step has to be greater than ZERO\n");
     ASSERT( max_dt >= min_dt,"Maximal time step has to be greater or equal to the minimal.\n");
 
     min_time_step=max(min_dt, time_step_lower_bound);
@@ -75,133 +99,62 @@ void TimeGovernor::set_constrain(double dt_constrain)
     time_step_constrain = min(time_step_constrain, dt_constrain);
 }
 
-/*
-void TimeGovernor::set_fix_time(double fix_time)
-{
-    if (fix_time >= end_of_fixed_dt_interval)
-        fix_times.push(fix_time);
-    else
-        xprintf(Warn, "Inserted fixed time %f less then end of fixed dt interval %f.\n",fix_time, end_of_fixed_dt_interval);
-}
-*/
 
-/*
-void TimeGovernor::set_fix_times(double first_fix_time, double fix_interval)
-{
-    for(double tt=first_fix_time; tt< end_time_; tt+=fix_interval) set_fix_time(tt);
+
+double TimeGovernor::estimate_dt() const {
+    if (time == inf_time || is_end()) return 0.0;
+    if (time_marks == NULL) return inf_time;
+    if (this->lt(end_of_fixed_dt_interval))    return fixed_dt;
+
+    // jump to the first future fix time
+    TimeMarks::iterator fix_time_it = time_marks->next(*this, fixed_time_mark_mask);
+    // compute step to next fix time and apply constrains
+    double full_step = fix_time_it->time() - time;
+    double step_estimate = min(full_step, time_step_constrain);
+    step_estimate = min(step_estimate, max_time_step);
+    step_estimate = max(step_estimate, min_time_step); // possibly overwrites time_step_constrain
+
+
+    // round the time step to have integer number of steps till next fix time
+    // this always select shorter time step
+    int n_steps = ceil( full_step / step_estimate );
+    step_estimate = full_step / n_steps;
+
+    // check permanent bounds with a bit of tolerance
+    if (step_estimate < min_time_step*0.99) {
+        // try longer step
+        double longer_step = full_step / (n_steps - 1);
+        if (longer_step <= max_time_step*1.01) {
+            step_estimate = longer_step;
+        }
+    }
+
+    return step_estimate;
 }
-*/
 
 void TimeGovernor::next_time()
 {
-    if (is_end()) return;
-    last_time=time;
+    if (time == inf_time || is_end()) return;
+    // TODO: following is because steady solvers but needs better solution
+    if (end_time_ == inf_time) {
+        time = end_time_;
+        return;
+    }
+    if (this->lt(end_of_fixed_dt_interval)) {
+        // make tiny correction of time step in order to avoid big rounding errors
+        fixed_dt= end_of_fixed_dt_interval / round( end_of_fixed_dt_interval / fixed_dt );
+    }
+
+    //last_time=time;
     last_time_step = time_step;
 
-    // jump to the first future fix time
-    TimeMarks::iterator fix_time_it = time_marks->next(*this, TimeMark::strict);
-
-    // select algorithm for determination of time step
-    if (dt_change_overhead <= 0.0) {
-        // LOCAL DT CHOICE
-
-        // compute step to next fix time and apply constrains
-        double full_step = fix_time_it->time() - last_time;
-        time_step = min(full_step, time_step_constrain);
-        time_step = min(time_step, max_time_step);
-        time_step = max(time_step,min_time_step);
-
-        // round the time step to have integer number of steps till next fix time
-        // this always select shorter time step
-        int n_steps = ceil( full_step / time_step );
-        time_step = full_step / n_steps;
-
-        end_of_fixed_dt_interval=time;
-        dt_changed= (last_time_step == time_step);
-        time_step_constrain = min(end_time_-time, max_time_step); // reset time step constrain
-    } else {
-        // OVERHEAD OPTIMIZATION
-
-
-        if (this->ge(end_of_fixed_dt_interval)) {
-            // end of fixed time_step
-
-            // simple solution that do not take overhead into account, only add fix points until they match the pattern
-            //
-            // possible problem: suppose fix_times: 0.5   1.0   2.0   3.0 ...
-            // for reasonable overhead the optimal choice is 0.5 till time 1.0 and then time step 1.0
-            // how to detect this? We should determine time_step for interval after proposed end_of_fixed_dt_interval
-            // and compare total price per time for both intervals.
-            //
-
-              // compute step to next fix time and apply constrains
-              double full_step = fix_time_it->time() - last_time;
-              time_step = min(full_step, time_step_constrain);
-              time_step = min(time_step, max_time_step);
-              time_step = max(time_step,min_time_step);
-
-              // round the time step to have integer number of steps till next fix time
-              // this always select shorter time step
-              int n_steps = ceil( full_step / time_step );
-              time_step = full_step / n_steps;
-
-              while ( fix_time_it != time_marks->end() &&
-                      fabs( round(fix_time_it->time() / time_step) - fix_time_it->time()/ time_step ) <= comparison_precision ) ++fix_time_it;
-
-              end_of_fixed_dt_interval=fix_time_it->time();
-              dt_changed= (last_time_step == time_step);
-              time_step_constrain = min(end_time_-time, max_time_step);         // reset time step constrain
-
-            /*
-             * following piece of code implements variant of Euclidead algorithm for GCD, but it appears that
-             * this can not be used for our problem. Mathematical problem behind is:
-             *
-             * Find dt such that for every x_i there exists n_i such that | n_i * dt - x_i| < eps * dt
-             * where x_i is given set of real numbers.
-             *
-             * Problem is that if the condition holds for some dt, it does not hold for dt/2 for example
-             * 1) we have to check the condition for every proposed dt value
-             * 2) the Eucleidean sequance probably do not produce god estimates of dt
-             *
-             */
-/*
-            // till the first fixed time we only shorten the time_step_constrain
-            time_step=min(time_step_constrain, max_time_step);
-            fixed_dt_interval = fix_times.top()-time;
-            n_steps = ceil( fixed_dt_interval / time_step );
-            time_step = fixed_dt_interval / n_steps;
-
-            best_price = (dt_change_overhead + n_steps)/ fixed_dt_interval;
-            end_of_fixed_dt_interval = fix_times.top();
-            fixed_times.pop();
-
-            // try further fixed points by greatest common interval divisor
-            while (1) {
-                fixed_dt_interval = fix_times.top()-time;
-                try_dt=common_dt(fixed_dt_interval, time_step);
-                n_steps = ceil( fixed_dt_interval / try_dt );
-                price = (dt_change_overhead + n_steps)/ fixed_dt_interval;
-
-                if (try_dt < min_time_step || price > best_price) break; // can not find good GCD
-
-                // keep trying
-                best_price=price;
-                time_step = fixed_dt_interval / n_steps;
-                end_of_fixed_dt_interval = fix_times.top();
-                fix_times.pop();
-            }
-
-            // reset time step constrain
-            time_step_constrain = min(end_time_-time, max_time_step); */
-        } else {
-            dt_changed= false;
-        }
-
-
-    }
+    time_step = estimate_dt();
+    dt_changed= (last_time_step != time_step);
+    time_step_constrain = min(end_time_-time, max_time_step); // reset time step constrain
 
     time+=time_step;
     time_level++;
+
 
 }
 

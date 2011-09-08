@@ -28,53 +28,19 @@
  */
 
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
-
-#include "transport.h"
-#include "transport_operator_splitting.hh"
-
 #include <petsc.h>
 
 #include "system/system.hh"
-#include "xio.h"
-#include "mesh/mesh.h"
-#include "mesh/topology.h"
-#include "io/output.h"
-#include "problem.h"
-#include "flow/darcy_flow_mh.hh"
-#include "flow/darcy_flow_mh_output.hh"
+#include "hc_explicit_sequential.hh"
 
 #include "main.h"
-#include "read_ini.h"
-#include "btc.h"
-#include "reaction.h"
-
-#include "solve.h"
-
-//#include "profiler.hh"
-
-/*
-#include "solve.h"
-#include "elements.h"
-#include "sides.h"
-#include "system/math_fce.h"
-#include "materials.h"
- */
+#include "io/read_ini.h"
 
 #include "rev_num.h"
 /// named version of the program
 #define _VERSION_   "1.6.5"
 
-static struct Problem G_problem;
-
-static void main_compute_mh(struct Problem*);
-static void main_compute_mh_unsteady_saturated(struct Problem*);
-static void main_compute_mh_steady_saturated(struct Problem*);
-static void main_convert_to_pos(struct Problem*);
-//static void main_compute_mh_density(struct Problem*);
-//void output_transport_init_BTC(struct Problem *problem);
-//void output_transport_time_BTC(struct Problem *problem, double time);
+static void main_convert_to_output();
 
 /**
  * @brief Main flow initialization
@@ -86,7 +52,7 @@ static void main_convert_to_pos(struct Problem*);
  * TODO: this parsing function should be in main.cc
  *
  */
-void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname) {
+void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
     const char USAGE_MSG[] = "\
     Wrong program parameters.\n\
     Usage: flow123d [options] ini_file\n\
@@ -95,13 +61,10 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
              Source files have to be in the current directory.\n\
     -S       Compute MH problem\n\
              Source files have to be in the same directory as ini file.\n\
-    -c       Convert flow data files into Gmsh parsed post-processing file format\n\
     -i       String used to change the 'variable' ${INPUT} in the file path.\n\
     -o       Absolute path to output directory.\n";
 
     xprintf(MsgLog, "Parsing program parameters ...\n");
-
-    goal = -1;
 
     // Check command line arguments
     if ((argc >= 3) && (strlen(argv[1]) == 2) && (argv[1][0] == '-')) {
@@ -120,21 +83,17 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
         }
 
         switch (argv[ 1 ][ 1 ]) {
-            case 's': goal = COMPUTE_MH;
+            case 's':
                 ini_fname=ini_argument;
                 break;
-            case 'S': goal = COMPUTE_MH;
+            case 'S':
                 xchdir(ini_dir.c_str());
                 break;
-            case 'c': goal = CONVERT_TO_POS;
-                break;
+            default:
+                //xprintf(UsrErr, USAGE_MSG);   // Caused crash of flow123d
+                xprintf(UsrErr,"%s", USAGE_MSG);
         }
 
-    }
-
-    if (goal < 0) {
-        //xprintf(UsrErr, USAGE_MSG);   // Caused crash of flow123d
-        printf("%s", USAGE_MSG);
     }
 }
 
@@ -144,17 +103,11 @@ void parse_cmd_line(const int argc, char * argv[], int &goal, string &ini_fname)
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
-    int goal;
     std::string ini_fname;
 
     F_ENTRY;
 
-    parse_cmd_line(argc, argv, goal, ini_fname); // command-line parsing
-    if (goal == -1) {
-        return EXIT_FAILURE;
-    } else {
-        ConstantDB::getInstance()->setInt("Goal", goal);
-    }
+    parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
 
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
@@ -168,28 +121,22 @@ int main(int argc, char **argv) {
     xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", _VERSION_,REVISION);
     xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
 
-
-    problem_init(&G_problem);
-    // Read mesh
-    make_mesh(&G_problem);
-
-    /* Test of object storage */
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-    int numNodes = mesh->node_vector.size();
-    xprintf(Msg, " - Number of nodes in the mesh is: %d\n", numNodes);
-
-    Profiler::instance()->set_task_size(mesh->n_elements());
-
-
-    // Calculate
-    make_element_geometry();
-    switch (ConstantDB::getInstance()->getInt("Goal")) {
-        case CONVERT_TO_POS:
-            main_convert_to_pos(&G_problem);
-            break;
-        case COMPUTE_MH:
-            main_compute_mh(&G_problem);
-            break;
+    ProblemType type = (ProblemType) OptGetInt("Global", "Problem_type", NULL);
+    switch (type) {
+    case CONVERT_TO_OUTPUT:
+        main_convert_to_output();
+        break;
+    case STEADY_SATURATED:
+    case UNSTEADY_SATURATED:
+    case UNSTEADY_SATURATED_LMH: {
+        HC_ExplicitSequential *problem = new HC_ExplicitSequential(type);
+        problem->run_simulation();
+        delete problem;
+        break;
+    }
+    case PROBLEM_DENSITY:
+        // main_compute_mh_density(problem);
+        break;
     }
 
     // Say Goodbye
@@ -199,16 +146,23 @@ int main(int argc, char **argv) {
 /**
  * FUNCTION "MAIN" FOR CONVERTING FILES TO POS
  */
-void main_convert_to_pos(struct Problem *problem) {
-    // TODO: write outputs
+void main_convert_to_output() {
+    // TODO: implement output of input data fields
+    // Fields to output:
+    // 1) volume data (simple)
+    //    sources (Darcy flow and transport), initial condition, material id, partition id
+    // 2) boundary data (needs "virtual fractures" in output mesh)
+    //    flow and transport bcd
+
     xprintf(Err, "Not implemented yet in this version\n");
 }
-
+#if 0
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM
  */
 void main_compute_mh(struct Problem *problem) {
-    switch (ConstantDB::getInstance()->getInt("Problem_type")) {
+    int type=OptGetInt("Global", "Problem_type", NULL);
+    switch (type) {
         case STEADY_SATURATED:
             main_compute_mh_steady_saturated(problem);
             break;
@@ -218,6 +172,8 @@ void main_compute_mh(struct Problem *problem) {
         case PROBLEM_DENSITY:
            // main_compute_mh_density(problem);
             break;
+        default:
+            xprintf(UsrErr,"Unsupported problem type: %d.",type);
     }
 }
 
@@ -226,16 +182,22 @@ void main_compute_mh(struct Problem *problem) {
  */
 void main_compute_mh_unsteady_saturated(struct Problem *problem)
 {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+
+    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
+    MeshReader* meshReader = new GmshMeshReader();
+
+    Mesh* mesh = new Mesh();
+    meshReader->read(mesh_file_name, mesh);
+    mesh->setup_topology();
+    mesh->setup_materials(* problem->material_database);
+    Profiler::instance()->set_task_size(mesh->n_elements());
     OutputTime *output_time;
     TimeMarks * main_time_marks = new TimeMarks();
-    int i, rank;
+    int i;
 
     // setup output
-    if(rank == 0) {
-        string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
-        output_time = new OutputTime(mesh, output_file);
-    }
+    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
+    output_time = new OutputTime(mesh, output_file);
 
     DarcyFlowMH *water = new DarcyFlowLMH_Unsteady(main_time_marks,mesh, problem->material_database);
     DarcyFlowMHOutput *water_output = new DarcyFlowMHOutput(water);
@@ -250,14 +212,11 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
         water_output->postprocess();
 
         if ( main_time_marks->is_current(water_time, output_mark_type) )  {
-
-            if(rank == 0) {
-                output_time->get_data_from_mesh();
-                // call output_time->register_node_data(name, unit, 0, data) to register other data on nodes
-                // call output_time->register_elem_data(name, unit, 0, data) to register other data on elements
-                output_time->write_data(water_time.t());
-                output_time->free_data_from_mesh();
-            }
+            output_time->get_data_from_mesh();
+            // call output_time->register_node_data(name, unit, 0, data) to register other data on nodes
+            // call output_time->register_elem_data(name, unit, 0, data) to register other data on elements
+            output_time->write_data(water_time.t());
+            output_time->free_data_from_mesh();
         }
     }
 }
@@ -267,10 +226,17 @@ void main_compute_mh_unsteady_saturated(struct Problem *problem)
  */
 void main_compute_mh_steady_saturated(struct Problem *problem)
 {
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
+    MeshReader* meshReader = new GmshMeshReader();
+
+    Mesh* mesh = new Mesh();
+    meshReader->read(mesh_file_name, mesh);
+    mesh->setup_topology();
+    mesh->setup_materials(* problem->material_database);
+    Profiler::instance()->set_task_size(mesh->n_elements());
+
     TimeMarks * main_time_marks = new TimeMarks();
 
-    int rank;
     /*
        Mesh* mesh;
        ElementIter elm;
@@ -279,9 +245,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
        int i;
        mesh=problem->mesh;
      */
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-
 
     problem->water=new DarcyFlowMH_Steady(main_time_marks, mesh, problem->material_database);
     // Pointer at Output should be in this object
@@ -299,21 +262,14 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
     water_output->postprocess();
 
     /* Write static data to output file */
-    if (rank == 0) {
-        string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
-        Output *output = new Output(mesh, out_fname);
-
-        output->get_data_from_mesh();
-
-        // call output->register_node_data(name, unit, data) here to register other data on nodes
-        // call output->register_elem_data(name, unit, data) here to register other data on elements
-
-        output->write_data();
-
-        output->free_data_from_mesh();
-
-        delete output;
-    }
+	string out_fname =  IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL));
+	Output *output = new Output(mesh, out_fname);
+	output->get_data_from_mesh();
+	// call output->register_node_data(name, unit, data) here to register other data on nodes
+	// call output->register_elem_data(name, unit, data) here to register other data on elements
+	output->write_data();
+	output->free_data_from_mesh();
+	delete output;
 
     // pracovni vystup nekompatibilniho propojeni
     // melo by to byt ve water*
@@ -378,18 +334,9 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
      */
 
     if (OptGetBool("Transport", "Transport_on", "no") == true) {
-        OutputTime *output_time = NULL;
-
-/*        if (rank == 0) {
-            output_time = new OutputTime(mesh, transport->transport_out_fname);
-        }*/
-
     	problem->otransport->convection();
-
-/*        if(output_time != NULL) {
-            delete output_time;
-        }*/
     }
+
     /*
         if (OptGetBool("Transport",  "Reactions", "no") == true) {
             read_reaction_list(transport);
@@ -419,7 +366,7 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
 //-----------------------------------------------------------------------------
 // vim: set cindent:
 //-----------------------------------------------------------------------------
-
+#endif
 #if 0
 
 /**
@@ -507,3 +454,4 @@ void main_compute_mh_density(struct Problem *problem)
     xfclose(log); */
 //}
 #endif
+

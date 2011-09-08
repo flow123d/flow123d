@@ -71,18 +71,7 @@ static int elements_common_sides_3D(ElementFullIter ,ElementFullIter ,int[]);
 //=============================================================================
 //
 //=============================================================================
-void element_to_material(Mesh* mesh, MaterialDatabase &base)
-{
 
-	xprintf( MsgVerb, "   Element to material... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-	FOR_ELEMENTS( ele ) {
-	    ele->material=base.find_id(ele->mid);
-		INPUT_CHECK( ele->material != base.end(),
-		        "Reference to undefined material %d in element %d\n", ele->mid, ele.id() );
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
 //=============================================================================
 //
 //=============================================================================
@@ -95,7 +84,7 @@ void element_to_side_both(Mesh* mesh)
 	xprintf( MsgVerb, "   Element to side and back... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 	sde = mesh->side;
-	FOR_ELEMENTS( ele ) {
+	FOR_ELEMENTS(mesh, ele ) {
 		FOR_ELEMENT_SIDES( ele, li ) {
 			ASSERT(!( sde == NULL ),"Inconsistency between number of elements and number of sides\n");
 			ele->side[ li ] = sde;
@@ -118,7 +107,7 @@ void neigh_vv_to_element(Mesh* mesh)
 	xprintf( MsgVerb, "   Neighbour of vv2 type to element... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-    FOR_NEIGHBOURS( ngh ) {
+    FOR_NEIGHBOURS(mesh, ngh ) {
 		if( ngh->type != VV_2E )
 			continue;
 		if( ngh->eid[ 0 ] > ngh->eid[ 1 ] ) {
@@ -140,36 +129,36 @@ void neigh_vv_to_element(Mesh* mesh)
 void element_to_neigh_vv(Mesh* mesh)
 {
 	struct Neighbour *ngh;
-    ElementFullIter ele = ELEMENT_FULL_ITER_NULL;
+    ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh );
 
 	xprintf( MsgVerb, "   Element to neighbours of vv2 type... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     // Counting the neighbours using the aux variable
-	FOR_ELEMENTS( ele )
+	FOR_ELEMENTS(mesh, ele )
 		ele->aux = 0;
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh, ngh ) {
 		if( ngh->type != VV_2E )
 			continue;
-		ele = ELEMENT_FULL_ITER(ngh->element[ 0 ]);
+		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
 		ele->aux++;
-		ele = ELEMENT_FULL_ITER(ngh->element[ 1 ]);
+		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 1 ]);
 		ele->aux++;
 	}
 	// Allocation of the array
-	FOR_ELEMENTS( ele ) {
+	FOR_ELEMENTS(mesh,  ele ) {
 		ele->n_neighs_vv = ele->aux;
 		if( ele->n_neighs_vv > 0 )
 			ele->neigh_vv = (struct Neighbour**) xmalloc(
 				ele->n_neighs_vv * sizeof( struct Neighbour* ) );
 	}
 	// Fill the array
-	FOR_ELEMENTS( ele )
+	FOR_ELEMENTS(mesh,  ele )
 		ele->aux = 0;
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != VV_2E )
 			continue;
-		ele = ELEMENT_FULL_ITER(ngh->element[ 0 ]);
+		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
 		ele->neigh_vv[ ele->aux ] = ngh;
                 if (ele->aux > 0)
                         if( ele->neigh_vv[ ele->aux - 1 ]->element[ 1 ] >
@@ -178,7 +167,7 @@ void element_to_neigh_vv(Mesh* mesh)
                                         "have to be given in order from the lowest id to the highest one. ",
                                         "Check the input file of the neighbours.", ele.id());
 		ele->aux++;
-		ele = ELEMENT_FULL_ITER(ngh->element[ 1 ]);
+		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 1 ]);
 		ele->neigh_vv[ ele->aux ] = ngh;
                 if (ele->aux > 0)
                         if( ele->neigh_vv[ ele->aux - 1 ]->element[ 1 ] >
@@ -202,7 +191,7 @@ void neigh_vb_to_element_and_side(Mesh* mesh)
 	xprintf( MsgVerb, "   Neighbour of vb2 type to element... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-    FOR_NEIGHBOURS( ngh ) {
+    FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != VB_ES )
 			continue;
 		for( li = 0; li < 2; li++ ) {
@@ -227,7 +216,7 @@ void neigh_bv_to_side(Mesh* mesh)
 
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != VB_ES )
 			continue;
                 ngh->side[1]->neigh_bv = ngh;
@@ -246,25 +235,25 @@ void element_to_neigh_vb(Mesh* mesh)
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     // Counting the neighbours using the aux variable
-	FOR_ELEMENTS( ele )
+	FOR_ELEMENTS(mesh,  ele )
 		ele->aux = 0;
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != VB_ES )
 			continue;
 		ele = ngh->element[ 0 ];
 		ele->aux++;
 	}
 	// Allocation of the array
-	FOR_ELEMENTS( ele ) {
+	FOR_ELEMENTS(mesh,  ele ) {
 		ele->n_neighs_vb = ele->aux;
 		if( ele->n_neighs_vb > 0 )
 			ele->neigh_vb = (struct Neighbour**) xmalloc(
 				ele->n_neighs_vb * sizeof( struct Neighbour* ) );
 	}
 	// Fill the array
-	FOR_ELEMENTS( ele )
+	FOR_ELEMENTS(mesh,  ele )
 		ele->aux = 0;
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != VB_ES )
 			continue;
 		ele = ngh->element[ 0 ];
@@ -283,7 +272,7 @@ void side_to_node(Mesh* mesh)
 	xprintf( MsgVerb, "   Side to node... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-    FOR_ELEMENTS( ele )
+    FOR_ELEMENTS(mesh,  ele )
 		switch( ele->type ) {
 			case LINE:
 				side_to_node_line( ele );
@@ -371,23 +360,23 @@ void node_to_element(Mesh* mesh)
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
 	// Set counter of elements in node to zero
-	FOR_NODES( nod )
+	FOR_NODES(mesh,  nod )
 		nod->n_elements = 0;
 	// Count elements
-	FOR_ELEMENTS( ele )
+	FOR_ELEMENTS(mesh,  ele )
 		FOR_ELEMENT_NODES( ele, li ) {
 			nod = ele->node[ li ];
 			(nod->n_elements)++;
 		}
 	// Allocate arrays
-	FOR_NODES( nod ) {
+	FOR_NODES(mesh,  nod ) {
                 if (nod->n_elements == 0)
                         continue;
        		nod->element = (ElementIter *) xmalloc( nod->n_elements * sizeof( ElementIter ) );
 		nod->aux = 0;
 	}
 	// Set poiners in arrays
-	FOR_ELEMENTS( ele )
+	FOR_ELEMENTS(mesh,  ele )
 		FOR_ELEMENT_NODES( ele, li ) {
 			nod = ele->node[ li ];
 			nod->element[ nod->aux ] = ele;
@@ -405,7 +394,7 @@ void side_types(Mesh* mesh)
 	xprintf( MsgVerb, "   Side types... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-	FOR_SIDES( sde )
+	FOR_SIDES(mesh,  sde )
 		sde->type = ( sde->edge->n_sides == 1 ? EXTERNAL : INTERNAL );
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
@@ -421,7 +410,7 @@ void count_side_types(Mesh* mesh)
 
 	mesh->n_insides = 0;
 	mesh->n_exsides = 0;
-	FOR_SIDES( sde )
+	FOR_SIDES(mesh,  sde )
 		switch( sde->type ) {
 			case INTERNAL:
 				mesh->n_insides++;
@@ -446,7 +435,7 @@ void neigh_bb_topology(Mesh* mesh)
 	xprintf( MsgVerb, "   Neighbour BB to element and side... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-    FOR_NEIGHBOURS( ngh ) {
+    FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != BB_E && ngh->type != BB_EL )
 			continue;
 		neigh_bb_to_element( ngh, mesh );
@@ -497,17 +486,17 @@ void neigh_bb_el_to_side( struct Neighbour *ngh )
 void neigh_bb_e_to_side(Mesh *mesh, struct Neighbour *ngh )
 {
 	int li, s[ 2 ];
-	ElementFullIter e0 = ELEMENT_FULL_ITER_NULL;
-    ElementFullIter e1 = ELEMENT_FULL_ITER_NULL;
+	ElementFullIter e0 = ELEMENT_FULL_ITER_NULL(mesh);
+    ElementFullIter e1 = ELEMENT_FULL_ITER_NULL(mesh);
 
     ASSERT(!( ngh == NULL ),"Neighbour is NULL\n");
 
     FOR_NEIGH_ELEMENTS( ngh, li ) {
 		if( li == 0 ) {
-			e0 = ELEMENT_FULL_ITER(ngh->element[ 0 ]);
+			e0 = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
 			continue;
 		}
-		e1 = ELEMENT_FULL_ITER(ngh->element[ li ]);
+		e1 = ELEMENT_FULL_ITER(mesh, ngh->element[ li ]);
 		if( elements_common_sides( e0, e1, s ) == false )
 		       xprintf(UsrErr,"In neighbour %d elements %d and %d do not have common side\n",
 				  ngh->id, e0.id(), e1.id() );
@@ -670,7 +659,7 @@ void neigh_bb_to_edge_both(Mesh* mesh)
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     EdgeFullIter edg = mesh->edge.begin();
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != BB_E && ngh->type != BB_EL )
 			continue;
 		ngh->edge = edg;
@@ -694,7 +683,7 @@ void edge_to_side_both(Mesh* mesh)
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     // first, the internal sides
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != BB_E && ngh->type != BB_EL )
 			continue;
 		edg = ngh->edge;
@@ -709,7 +698,7 @@ void edge_to_side_both(Mesh* mesh)
 	}
 	// now the external ones
 	sde = mesh->side;
-	FOR_EDGES( edg ) {
+	FOR_EDGES(mesh,  edg ) {
 		if( edg->n_sides != NDEF )
 			continue;
 		edg->n_sides = 1;
@@ -737,7 +726,7 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 	xprintf( MsgVerb, "   Neighbour VB to edge and back... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-	FOR_NEIGHBOURS( ngh ) {
+	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != VB_ES )
 			continue;
 		sde = ngh->side[ 1 ];

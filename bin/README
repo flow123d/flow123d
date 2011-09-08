@@ -1,0 +1,30 @@
+This file contain list and description of all binaries and scripts located
+in ./bin directory. If you add new script or binary to this directory, then
+please add short description about it to this file.
+
+ndiff
+ - Folder containing Perl scripts for smart diff of output files
+
+py
+ - Folder with some Python scripts
+
+stub
+ - Folder with obsolete scripts
+
+tests
+ - Folder with test scripts
+ 
+flow123d
+ - flow123d binary is product of build system
+ - Generated file
+
+mpiexec
+ - Bash script containing current absolute path to the mpiexec binary
+ - Generated file
+ - Obsolete
+ 
+README
+ - This file
+
+svnversion.sh
+ - Script for getting the highest number of svn revision
