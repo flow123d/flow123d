@@ -21,7 +21,12 @@ BOOST_INCLUDE=-I../third_party/boost-1.42/
 # metis is linked from parmetis from petsc, but petsc din't provide header files so we use our own ones
 METIS_INCLUDE=-I../third_party/metis-include
 
+# FParser
+FP_DIR=../third_party/fparser-4.4.3
+FPARSER_INCLUDE=-I${FP_DIR}
+FPARSER_LIB=${FP_DIR}/fparser.o ${FP_DIR}/fpoptimizer.o
+
 INCLUDE= ${ARMADILLO_INCLUDE} ${PETSC_INCLUDE} ${BOOST_INCLUDE} ${METIS_INCLUDE}
-LIBS=${ARMADILLO_LIBS} ${PETSC_LIB} 
+LIBS=${ARMADILLO_LIBS} ${PETSC_LIB} ${FPARSER_LIB}
 CPP_LINKER=${CPP}
 CDEFS=${USE_NODEBUG} ${USE_PRINTALL} ${ATLAS}

@@ -139,7 +139,8 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
-    virtual void postprocess() {};
+    /// postprocess velocity field (add sources)
+    virtual void postprocess();
     ~DarcyFlowMH_Steady();
 
 protected:

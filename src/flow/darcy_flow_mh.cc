@@ -223,6 +223,30 @@ void DarcyFlowMH_Steady::update_solution() {
 
 }
 
+void DarcyFlowMH_Steady::postprocess() {
+    if (sources == NULL)
+        return;
+
+    int i_loc, side_rows[4];
+    double values[4];
+    ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    ;
+
+    // modify side fluxes in parallel
+    // for every local edge take time term on digonal and add it to the corresponding flux
+    for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+        ele = mesh_->element(el_4_loc[i_loc]);
+        FOR_ELEMENT_SIDES(ele,i) {
+            side_rows[i] = side_row_4_id[ele->side[i]->id];
+            values[i] = -1.0 * ele->volume * sources->element_value(ele.index()) / ele->n_sides;
+        }
+        VecSetValues(schur0->get_solution(), ele->n_sides, side_rows, values, ADD_VALUES);
+    }
+    VecAssemblyBegin(schur0->get_solution());
+    VecAssemblyEnd(schur0->get_solution());
+}
+
+
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
 {
 
@@ -1169,7 +1193,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     VecZeroEntries(schur0->get_solution());
 
     FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-    initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
+    initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
     double *local_sol=schur0->get_solution_array();
 
     PetscScalar *local_diagonal;
@@ -1260,7 +1284,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
      INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
      VecZeroEntries(schur0->get_solution());
      FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-     initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
+     initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
 
      VecDuplicate(steady_diagonal,& new_diagonal);
 
@@ -1354,10 +1378,12 @@ void DarcyFlowLMH_Unsteady::postprocess()
           VecSetValue(schur0->get_solution(),side_row,time_coef*(new_pressure-old_pressure),ADD_VALUES);
       }
   }
-  VecGetArray(previous_solution, &loc_prev_sol);
+  VecRestoreArray(previous_solution, &loc_prev_sol);
 
   VecAssemblyBegin(schur0->get_solution());
   VecAssemblyEnd(schur0->get_solution());
+
+  DarcyFlowMH_Steady::postprocess();
 }
 
 //-----------------------------------------------------------------------------

@@ -15,37 +15,22 @@
 # You should have received a copy of the GNU General Public License along with this program; if not,
 # write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 #
-# $Id$
-# $Revision$
-# $LastChangedBy$
-# $LastChangedDate$
+# $Id: makefile 1102 2011-05-04 14:24:17Z jan.brezina $
+# $Revision: 1102 $
+# $LastChangedBy: jan.brezina $
+# $LastChangedDate: 2011-05-04 16:24:17 +0200 (Wed, 04 May 2011) $
 #
 
-include ../makefile.in
+include ../../makefile.in
+include ../../makefile.include
 
-all: armadillo fparser
-
-
-metis:
-	make -C metis-4.0
-
-# use CMAKE_PREFIX_PETH to use our copy of boost
-#
-# unfortunately I didn't succeed with blas and lapack form PETSC ...
-# how to setup armadillo's cmake to use them
-armadillo:
-	cd armadillo-1.1.92; \
-	export PETSC_DIR=${PETSC_DIR}; \
-	export PETSC_ARCH=${PETSC_ARCH}; \
-	cmake . -DCMAKE_PREFIX_PATH=../boost-1.42;\
-	make
-
-fparser:
-	make -C fparser-4.4.3
+all: fparser.o foptimizer.o
 
 clean:
-	rm -f all
-	make -C metis-4.0 realclean
-	make -C armadillo-1.1.92 clean
-	make -C fparser-4.4.3 clean
-	
+	rm -f fparser.o fpoptimizer.o
+
+fparser.o:
+	${CPP} ${CFLAGS} -I. -c fparser.cc
+
+foptimizer.o:
+	${CPP} ${CFLAGS} -I. -c fpoptimizer.cc

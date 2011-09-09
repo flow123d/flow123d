@@ -544,7 +544,7 @@ void ConvectionTransport::compute_one_step() {
     for (sbi = 0; sbi < n_substances; sbi++) {
                 // one step in MOBILE phase
                 MatMultAdd(tm, vpconc[sbi], bcvcorr[sbi], vconc[sbi]); // conc=tm*pconc + bc
-                VecSwap(vconc[sbi], vpconc[sbi]); // pconc = conc
+                VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
 
                 if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
                     // cycle over local elements only in any order
