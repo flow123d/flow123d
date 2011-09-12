@@ -35,17 +35,18 @@
 # Every test has to be finished in 60 seconds. Flow123d will be killed after
 # 60 seconds. It prevents test to run in never ending loop, when development
 # version of Flow123d contains such error.
-TIMEOUT=120
+#TIMEOUT=120
+TIMEOUT=20
 
 # Try to use MPI environment variable for timeout too. Some implementation
 # of MPI supports it and some implementations doesn't.
 export MPIEXEC_TIMEOUT=${TIMEOUT}
 
-# Relative path to Flow123d binary from the directory,
+# Relative path to Flow123d script from the directory,
 # where this script is placed
-FLOW123D="../flow123d"
+FLOW123D_SH="../flow123d.sh"
 # Relative path to Flow123d binary from current/working directory
-FLOW123D="${0%/*}/${FLOW123D}"
+FLOW123D_SH="${0%/*}/${FLOW123D_SH}"
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="../mpiexec"
@@ -217,9 +218,9 @@ function check_outputs {
 
 
 # Check if Flow123d exists and it is executable file
-if ! [ -x "${FLOW123D}" ]
+if ! [ -x "${FLOW123D_SH}" ]
 then
-	echo "Error: can't execute ${FLOW123D}"
+	echo "Error: can't execute ${FLOW123D_SH}"
 	exit 1
 fi
 
@@ -253,16 +254,14 @@ do
 		TIMER="0"
 
 		# Flow123d runs with changed priority (19 is the lowest priority)
-		nice --adjustment=10 "${MPIEXEC}" -np ${NP} "${FLOW123D}" -S "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
-		PARENT_MPIEXEC_PID=$!
-		# Wait for child processes
-		sleep 1
-		MPIEXEC_PID=`ps -o "${PARENT_MPIEXEC_PID} %P %p" | gawk '{if($1==$2){ print $3 };}'`
+		"${MPIEXEC}" -np ${NP} "${FLOW123D_SH}" -n 10 -t ${TIMEOUT} -o "${FLOW123D_OUTPUT}" -S "${INI_FILE}" "${FLOW_PARAMS}" &
+		# Get PID of mpiexec
+		MPIEXEC_PID=$!
 
 		echo -n "Running flow123d [proc:${NP}] ${INI_FILE} ."
 		IS_RUNNING=1
 
-		# Wait max TIMEOUT seconds, then kill mpiexec, that executed flow123d processes
+		# Wait max TIMEOUT seconds, then flow123d processes should be killed by flo123d.sh script
 		while [ ${TIMER} -lt ${TIMEOUT} ]
 		do
 			TIMER=`expr ${TIMER} + 1`
@@ -270,8 +269,8 @@ do
 			#ps -o "%P %p"
 			sleep 1
 
-			# Is mpiexec and flow123d still running?
-			ps | gawk '{ print $1 }' | grep -q "${PARENT_MPIEXEC_PID}"
+			# Is mpiexec and still running?
+			ps | gawk '{ print $1 }' | grep -q "${MPIEXEC_PID}"
 			if [ $? -ne 0 ]
 			then
 				# set up, that flow123d was finished in time
@@ -283,43 +282,32 @@ do
 		# In all cases copy content of ./output to ./test_results directory
 		copy_outputs "${INI_FILE}" "${NP}"
 
-		# Was Flow123d finished during TIMEOUT or is it still running?
-		if [ ${IS_RUNNING} -eq 1 ]
+		# Get exit status variable of mpiexec executing mpiexec executing flow123d
+		wait ${MPIEXEC_PID}
+		MPIEXEC_EXIT_STATUS=$?
+
+		# Was Flow123d finished correctly?
+		if [ ${MPIEXEC_EXIT_STATUS} -eq 0 ]
 		then
-			echo " [Failed:loop]"
-			# Send SIGTERM to mpiexec. It should kill child processed
-			kill -s SIGTERM ${MPIEXEC_PID} #> /dev/null 2>&1
-			EXIT_STATUS=2
+			echo " [Success:${TIMER}s]"
+			
+			# Check correctness of output files
+			check_outputs "${INI_FILE}" "${NP}"
+
+			# Were all output files correct?
+			if [ $? -eq 0 ]
+			then
+				echo " [Success]"
+			else
+				EXIT_STATUS=10
+				# Try next ini file
+				continue 2 
+			fi
+		else
+			echo " [Failed:error]"
+			EXIT_STATUS=1
 			# No other test will be executed
 			break 2
-		else
-			# Get exit status variable of mpiexec executing mpiexec executing flow123d
-			wait ${PARENT_MPIEXEC_PID}
-			MPIEXEC_EXIT_STATUS=$?
-
-			# Was Flow123d finished correctly?
-			if [ ${MPIEXEC_EXIT_STATUS} -eq 0 ]
-			then
-				echo " [Success:${TIMER}s]"
-				
-				# Check correctness of output files
-				check_outputs "${INI_FILE}" "${NP}"
-
-				# Were all output files correct?
-				if [ $? -eq 0 ]
-				then
-					echo " [Success]"
-				else
-					EXIT_STATUS=10
-					# Try next ini file
-					continue 2 
-				fi
-			else
-				echo " [Failed:error]"
-				EXIT_STATUS=1
-				# No other test will be executed
-				break 2
-			fi
 		fi
 	done
 done
@@ -327,7 +315,7 @@ done
 # Print redirected stdout to stdout only in situation, when some error occurred
 if [ $EXIT_STATUS -gt 0 -a $EXIT_STATUS -lt 10 ]
 then
-	echo "Error in execution: ${FLOW123D} -S ${INI_FILE} -- ${FLOW_PARAMS}"
+	echo "Error in execution: ${FLOW123D_SH} -S ${INI_FILE} -- ${FLOW_PARAMS}"
 	cat "${FLOW123D_OUTPUT}"
 fi
 
