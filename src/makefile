@@ -81,7 +81,8 @@ $(OBJS)/xio.o\
 $(OBJS)/sparse_graph.o\
 $(OBJS)/la_linsys.o\
 $(OBJS)/time_governor.o\
-$(OBJS)/hc_explicit_sequential.o
+$(OBJS)/hc_explicit_sequential.o\
+$(OBJS)/field_p0.o
 
 
 #$(OBJS)/convert.o\
@@ -117,7 +118,7 @@ ${BUILD_DIRS}:
 	echo "make dir:" $@
 	mkdir -pf $@ 
 	
-deps: $(FLOW123D_DEPS)
+deps: $(BUILD_DIRS) $(FLOW123D_DEPS)
 
 # General rule to create dependencies files for .c source files
 ${DEPS}/%.d: %.c ${DEPS}

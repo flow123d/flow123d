@@ -24,13 +24,13 @@
 include ../../makefile.in
 include ../../makefile.include
 
-all: fparser.o foptimizer.o
+all: fparser.o fpoptimizer.o
 
 clean:
 	rm -f fparser.o fpoptimizer.o
 
-fparser.o:
+fparser.o: fparser.cc
 	${CPP} ${CFLAGS} -I. -c fparser.cc
 
-foptimizer.o:
+fpoptimizer.o: fpoptimizer.cc
 	${CPP} ${CFLAGS} -I. -c fpoptimizer.cc

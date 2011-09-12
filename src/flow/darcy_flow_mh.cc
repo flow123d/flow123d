@@ -46,8 +46,9 @@
 #include "sparse_graph.hh"
 #include "field_p0.hh"
 #include "flow/local_matrix.h"
-#include <limits>
 
+
+#include <limits>
 #include <set>
 #include <vector>
 #include <iostream>
@@ -93,6 +94,12 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     if (sources_fname!= "//") {
         sources= new FieldP0<double>(mesh_);
         sources->read_field(IONameHandler::get_instance()->get_input_file_name(sources_fname),string("$Sources"));
+    }
+
+    string sources_formula = OptGetStr("Input", "sources_formula","//");
+    if (sources_formula!= "//") {
+        sources= new FieldP0<double>(mesh_);
+        sources->setup_from_function(sources_formula);
     }
 
     // time governor

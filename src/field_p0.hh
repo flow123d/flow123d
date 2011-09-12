@@ -34,7 +34,7 @@
 #include <string>
 #include "mesh/mesh_types.hh"
 #include "mesh/mesh.h"
-
+#include "system/parsed_function.hh"
 
 /**
  * Class can read scalar field - piecewise constant on elements.
@@ -61,6 +61,7 @@ public:
 
     FieldP0(Mesh *mesh);
     void read_field(const string f_name, const string section);
+    void setup_from_function(const std::string &expr);
     inline Value element_value(const unsigned int el_idx) const
         { return data[el_idx]; }
     void integrate_material_subdomains(vector<Value> &integrals);
@@ -116,5 +117,16 @@ void FieldP0<Value>::read_field(const string f_name,const string section)
     }
     xfclose( in );
 }
+
+// general template
+template <class Value>
+void FieldP0<Value>::setup_from_function(const std::string &expr)
+{
+    // not implemented
+}
+
+// specialization for Value == double
+template<>
+void FieldP0<double>::setup_from_function(const std::string &expr);
 
 #endif /* FIELD_P0_HH_ */

@@ -68,6 +68,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
          field_output->register_elem_data<double>(subst_name, "M/L^3", data , mesh_->n_elements());
     }
     // write initial condition
+    convection->output_vector_gather();
     field_output->write_data(time_->t());
 
 }
