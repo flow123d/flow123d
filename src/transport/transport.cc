@@ -111,7 +111,10 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     alloc_transport_structs_mpi();
 
     // read times of time dependent boundary condition and check the input files
-    // TODO: checking should be before reading, but needs working checkpointing
+
+    // bc marks do not influent choice of time step (not fixed_time type)
+    bc_mark_type_ = time_marks->type_bc_change() | equation_mark_type_;
+    std::vector<double> bc_times;
     OptGetDblArray("Transport", "bc_times", "", bc_times);
     FILE * f;
     std::string fname;
@@ -123,20 +126,20 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
             xprintf(UsrErr,"Missing file: %s", fname.c_str());
         }
         xfclose(f);
-        read_bc_vector(-1);
+        read_bc_vector();
     } else {
         bc_time_level = 0;
-        // add ending bc time
-        bc_times.push_back(time_->end_time()+1);
         // set initial bc to zero
         for(unsigned int sbi=0; sbi < n_substances; ++sbi) VecZeroEntries(bcv[sbi]);
-        // check files for bc time levels
-        for(unsigned int i=0;i<bc_times.size()-1;++i) {
+        // check files for bc time levels and set TimeMarks
+        for(unsigned int i=0;i<bc_times.size();++i) {
             fname = make_bc_file_name(i);
             if ( !(f = xfopen(fname.c_str(), "rt")) ) {
                 xprintf(UsrErr,"Missing file: %s", fname.c_str());
             }
             xfclose(f);
+
+            time_marks->add(TimeMark(bc_times[i],bc_mark_type_));
         }
     }
 
@@ -483,13 +486,14 @@ std::string ConvectionTransport::make_bc_file_name(int level) {
     return bc_fname;
 }
 
-void ConvectionTransport::read_bc_vector(int level) {
+void ConvectionTransport::read_bc_vector() {
 
     int rank, sbi;
 
+
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank == 0) {
-        xprintf(Msg, "Reading boundary conditions (level = %d)\n",level);
+        xprintf(Msg, "Reading boundary conditions (level = %d)\n",bc_time_level);
 
         int bcd_id, boundary_id, boundary_index;
         double bcd_conc;
@@ -497,7 +501,7 @@ void ConvectionTransport::read_bc_vector(int level) {
 
         // make bc filename
 
-        FILE *in = xfopen(make_bc_file_name(level).c_str(), "rt");
+        FILE *in = xfopen(make_bc_file_name(bc_time_level).c_str(), "rt");
         skip_to(in, "$Transport_BCD");
         xfgets(line, LINE_SIZE - 2, in);
         int n_bcd = atoi(xstrtok(line));
@@ -519,18 +523,19 @@ void ConvectionTransport::read_bc_vector(int level) {
     }
     for (sbi = 0; sbi < n_substances; sbi++)
         VecAssemblyBegin(bcv[sbi]);
-    for (sbi = 0; sbi < n_substances; sbi++)
-        VecZeroEntries(bcvcorr[sbi]);
+    //for (sbi = 0; sbi < n_substances; sbi++)
+    //    VecZeroEntries(bcvcorr[sbi]);
     for (sbi = 0; sbi < n_substances; sbi++)
         VecAssemblyEnd(bcv[sbi]);
 
+    // update source vectors
+    for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
+            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
+    }
 
-    /*
-     VecView(transport->bcv[0],PETSC_VIEWER_STDOUT_SELF);
-     getchar();
-     VecView(transport->bcv[1],PETSC_VIEWER_STDOUT_SELF);
-     getchar();
-     */
+    // VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
+    // getchar();
+    bc_time_level++;
 
 }
 
@@ -539,8 +544,13 @@ void ConvectionTransport::compute_one_step() {
     MaterialDatabase::Iter material;
     int sbi;
 
+    // possibly read boundary conditions
+
+    if (bc_time_level != -1 && time_->is_current(bc_mark_type_)) read_bc_vector();
+
     // proceed to actually computed time
     time_->next_time();
+
     for (sbi = 0; sbi < n_substances; sbi++) {
                 // one step in MOBILE phase
                 MatMultAdd(tm, vpconc[sbi], bcvcorr[sbi], vconc[sbi]); // conc=tm*pconc + bc
@@ -621,8 +631,6 @@ void ConvectionTransport::set_target_time(double target_time)
         MatScale(tm, time_->estimate_dt());
         MatShift(tm, 1.0);
     }
-    // possibly read boundary conditions
-    if (bc_time_level != -1 && time_->ge(bc_times[bc_time_level])) read_bc_vector(bc_time_level++);
 
     // update source vectors
     for (unsigned int sbi = 0; sbi < n_substances; sbi++) {

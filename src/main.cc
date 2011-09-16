@@ -136,6 +136,7 @@ int main(int argc, char **argv) {
     }
     case PROBLEM_DENSITY:
         // main_compute_mh_density(problem);
+        xprintf(UsrErr,"Density driven model not yet reimplemented.");
         break;
     }
 

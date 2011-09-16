@@ -84,6 +84,8 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 
 void TransportOperatorSplitting::output_data(){
 
+    cout << *time_marks;
+    cout << scientific << "t: " << time_->t() <<"dt:" << time_->dt() << "type: " << output_mark_type << endl;
     if (time_->is_current(output_mark_type)) {
         convection->output_vector_gather();
         field_output->write_data(time_->t());

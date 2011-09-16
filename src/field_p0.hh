@@ -101,10 +101,10 @@ void FieldP0<Value>::read_field(const string f_name,const string section)
     line_stream.str(string(line));
     line_stream >> n_sources;
     INPUT_CHECK( line_stream.good(), "Can not convert input to int.\n");
+    INPUT_CHECK( n_sources >= mesh->n_elements(), "Number of sources %d less then num. of elements %din file: %s.\n",n_sources,mesh->n_elements(),f_name.c_str());
+    data.resize(mesh->n_elements());
 
-    data.resize(mesh->element.size());
-
-    for(int i_line=0; i_line<n_sources; i_line++) {
+    for(int i_line=0; i_line<mesh->n_elements(); i_line++) {
         xfgets( line, LINE_SIZE - 2, in );
         line_stream.str(string(line));
         line_stream >> eid;

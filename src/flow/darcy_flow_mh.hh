@@ -80,7 +80,7 @@ class SparseGraph;
 class DarcyFlowMH : public EquationBase {
 public:
     DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-    : EquationBase(marks, mesh, mat_base)
+    : EquationBase(marks, mesh, mat_base), sources(NULL)
     {}
 
     FieldP0<double>  * get_sources()
@@ -105,6 +105,7 @@ protected:
     //virtual void integrate_sources();
 
 protected:
+    bool solution_changed_for_scatter;
     FieldP0<double> *sources;
     Vec velocity_vector;
 };
@@ -131,6 +132,10 @@ protected:
  *    R = \frac{\rho}{\rho_0} -1 = \rho_0^{-1}\sum_{i=1}^s c_i
  * @f]
  *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
+ *
+ *
+ *   TODO:
+ *   - consider create auxiliary classes for creation of inverse of block A
  */
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
@@ -193,6 +198,8 @@ protected:
 
         Mat IA1;                                         //< inverse of matrix IA1
         Mat IA2;                                         //< inverse of matrix IA2
+
+        Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
 };
 
 

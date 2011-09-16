@@ -35,14 +35,12 @@ public:
     {
         if (changed) parse();
         double res=parser.Eval(point.memptr());
-        DBGMSG("point: %f %f %f val: %f\n",point.memptr()[0],point.memptr()[1],point.memptr()[2],res);
         return res;
     }
 private:
     void parse()
     {
         std::string vars = "x,y,z";
-        DBGMSG("%s::%s\n",expression.c_str(),vars.c_str());
         parser.Parse(expression, vars);
         INPUT_CHECK(parser.GetParseErrorType() == FunctionParser::FP_NO_ERROR,"Parsed Function: %s\n",parser.ErrorMsg());
         parser.Optimize();

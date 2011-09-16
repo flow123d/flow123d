@@ -131,9 +131,12 @@ void HC_ExplicitSequential::run_simulation()
     // The question is how to choose intervals t_dt. That should depend on variability of the velocity field in time.
     // Currently we simply use t_dt == w_dt.
 
+    // output initial condition
+    water_output->postprocess();
+    water_output->output();
+
+
     while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
-        DBGMSG("water end: %f %f is end: %d\n ", water->planned_time(), water->solved_time(),water->time().is_end());
-        DBGMSG("trans end: %f %f  is end: %d\n ", transport_reaction->planned_time(), transport_reaction->solved_time(),transport_reaction->time().is_end());
 
         transport_reaction->set_time_step_constrain(water->time().dt());
         // in future here could be re-estimation of transport planed time according to
@@ -147,9 +150,8 @@ void HC_ExplicitSequential::run_simulation()
         if (water->solved_time() < velocity_interpolation_time) {
             // solve water over the nearest transport interval
             water->update_solution();
-            DBGMSG("Water Postprocess\n");
             water_output->postprocess();
-            // here possibly save solution from water in order to have
+            // here possibly save solution from water for interpolation in time
 
             water_output->output();
 
