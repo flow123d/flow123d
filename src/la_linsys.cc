@@ -294,7 +294,6 @@ void LinSys_MPIAIJ::start_allocation()
      VecDuplicate(on_vec,&(off_vec));
      status=ALLOCATE;
 
-     DBGMSG("allocation started\n");
 }
 
 void LinSys_MPIAIJ::preallocate_matrix()

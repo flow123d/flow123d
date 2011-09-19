@@ -59,7 +59,6 @@ void local_matrices_mh(Mesh* mesh)
 
 	FOR_ELEMENTS(mesh, ele )
 		local_matrix( ele );
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }
 //=============================================================================
 // CALCULATE LOCAL MARIX FOR ONE ELEMENT

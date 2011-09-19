@@ -258,7 +258,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
         problem->transport_os = new TransportOperatorSplitting(problem->material_database, mesh);
     }
 
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 
     water_output->postprocess();
 

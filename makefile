@@ -30,7 +30,7 @@ include makefile.include
 
 all: bin/mpiexec revnumber bin/current_flow
 	make -C third_party all
-	make -C src all
+	make -j 4 -C src all
 	
 bin/mpiexec: makefile.in
 	# TODO:

@@ -184,6 +184,8 @@ void DarcyFlowMH_Steady::update_solution() {
 
 
     time_->next_time();
+
+    xprintf(Msg, "t: %f (Darcy) dt: %f\n",time_->t(), time_->dt());
     modify_system(); // hack for unsteady model
 
     switch (n_schur_compls) {
@@ -450,7 +452,6 @@ void DarcyFlowMH_Steady::make_schur0() {
     START_TIMER("PREALLOCATION");
 
     if (schur0 == NULL) { // create Linear System for MH matrix
-        xprintf( Msg, "Allocating MH matrix for water model ... \n " );
 
         if (solver->type == PETSC_MATIS_SOLVER) 
             schur0 = new LinSys_MATIS( lsize, static_cast<int>( global_row_4_sub_row.size() ),
@@ -467,8 +468,6 @@ void DarcyFlowMH_Steady::make_schur0() {
     END_TIMER("PREALLOCATION");
 
     START_TIMER("ASSEMBLY");
-
-    xprintf( Msg, "Assembling MH matrix for water model ... \n " );
 
     schur0->start_add_assembly(); // finish allocation and create matrix
     assembly_steady_mh_matrix(); // fill matrix
@@ -1245,7 +1244,6 @@ void DarcyFlowMH_Unsteady::modify_system()
 {
 
   if (time_->is_changed_dt()) {
-      DBGMSG("Scale ldt: %f dt: %f\n", time_->last_dt(), time_->dt());
       MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
 
       VecScale(new_diagonal, time_->last_dt()/time_->dt());
@@ -1346,7 +1344,6 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 void DarcyFlowLMH_Unsteady::modify_system()
 {
     if (time_->is_changed_dt()) {
-        DBGMSG("Scale\n");
         MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
 
         VecScale(new_diagonal, time_->last_dt()/time_->dt());

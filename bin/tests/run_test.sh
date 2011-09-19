@@ -36,7 +36,7 @@
 # 60 seconds. It prevents test to run in never ending loop, when development
 # version of Flow123d contains such error.
 #TIMEOUT=120
-TIMEOUT=20
+TIMEOUT=120
 
 # Try to use MPI environment variable for timeout too. Some implementation
 # of MPI supports it and some implementations doesn't.

@@ -272,7 +272,6 @@ void ConvectionTransport::read_initial_condition() {
 		char     line[ LINE_SIZE ]; // line of data file
 		int sbi,index, id, eid, i,n_concentrations, global_idx;
 
-		xprintf( Msg, "Reading concentrations...")/*orig verb 2*/;
         std::string concentration_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\"));
 		in = xfopen( concentration_fname, "rt" );
 
@@ -301,8 +300,6 @@ void ConvectionTransport::read_initial_condition() {
 	    }
 
 		xfclose( in );
-		xprintf( MsgVerb, " %d concentrations readed. ", n_concentrations )/*orig verb 4*/;
-		xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 
 }
 
@@ -493,7 +490,7 @@ void ConvectionTransport::read_bc_vector() {
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank == 0) {
-        xprintf(Msg, "Reading boundary conditions (level = %d)\n",bc_time_level);
+        xprintf(Msg, "Convection: Reading BC (level = %d)\n",bc_time_level);
 
         int bcd_id, boundary_id, boundary_index;
         double bcd_conc;
@@ -518,8 +515,6 @@ void ConvectionTransport::read_bc_vector() {
             }
         }
         xfclose(in);
-        xprintf( MsgLog, " %d transport conditions read. ", n_bcd );
-        xprintf( Msg, "O.K.\n");
     }
     for (sbi = 0; sbi < n_substances; sbi++)
         VecAssemblyBegin(bcv[sbi]);
@@ -529,9 +524,11 @@ void ConvectionTransport::read_bc_vector() {
         VecAssemblyEnd(bcv[sbi]);
 
     // update source vectors
-    for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
+    // TODO: rather use Lazy dependency
+    if (bc_time_level != -1)
+        for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
             MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
-    }
+        }
 
     // VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
     // getchar();
@@ -618,15 +615,12 @@ void ConvectionTransport::set_target_time(double target_time)
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix
-    	cout << "rescale, time->estimate_dt: " << time_->estimate_dt() << endl;
-    	cout << "time->dt: " << time_->dt() << endl;
         MatScale(bcm, time_->dt()/time_->estimate_dt());
         MatShift(tm, -1.0);
         MatScale(tm, time_->dt()/time_->estimate_dt() );
         MatShift(tm, 1.0);
     } else {
         // scale fresh convection term matrix
-    	cout << "scale, time->estimate_dt: " << time_->estimate_dt() << endl;
         MatScale(bcm, time_->estimate_dt());
         MatScale(tm, time_->estimate_dt());
         MatShift(tm, 1.0);

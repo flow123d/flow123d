@@ -394,29 +394,31 @@ void SchurComplement::form_schur()
        ASSERT(ierr == 0,"Error in MatISGetLocalMat.");
 
        // B
-       MatGetSubMatrix(orig_mat_sub, IsA_sub, IsB_sub, locSizeB, mat_reuse, &B_sub);
+       ierr+=MatGetSubMatrix(orig_mat_sub, IsA_sub, IsB_sub, locSizeB, mat_reuse, &B_sub);
 
        // A^-1 * B
-       MatMatMult(IA_sub, B_sub, mat_reuse, 1.0 ,&(IAB_sub)); // 6/7 - fill estimate
+       ierr+=MatMatMult(IA_sub, B_sub, mat_reuse, 1.0 ,&(IAB_sub)); // 6/7 - fill estimate
 
        // B^T
-       MatGetSubMatrix(orig_mat_sub, IsB_sub, IsA_sub, locSizeA, mat_reuse, &Bt_sub);
+       ierr+=MatGetSubMatrix(orig_mat_sub, IsB_sub, IsA_sub, locSizeA, mat_reuse, &Bt_sub);
 
        // B^T*A^-1*B
-       MatMatMult(Bt_sub, IAB_sub, mat_reuse, 1.9 ,&(xA_sub)); // 1.1 - fill estimate (PETSC report values over 1.8)
+       ierr+=MatMatMult(Bt_sub, IAB_sub, mat_reuse, 1.9 ,&(xA_sub)); // 1.1 - fill estimate (PETSC report values over 1.8)
 
        // get C block TODO: matrix reuse
-       MatGetSubMatrix(orig_mat_sub, IsB_sub, IsB_sub, locSizeB, MAT_INITIAL_MATRIX, &local_compl_aux);
-       MatCopy(local_compl_aux, Compl->local_matrix,DIFFERENT_NONZERO_PATTERN);
-       MatDestroy(local_compl_aux);
+       ierr+=MatGetSubMatrix(orig_mat_sub, IsB_sub, IsB_sub, locSizeB, MAT_INITIAL_MATRIX, &local_compl_aux);
+       ierr+=MatCopy(local_compl_aux, Compl->local_matrix,DIFFERENT_NONZERO_PATTERN);
+       ierr+=MatDestroy(local_compl_aux);
 
        // compute complement = (-1)cA+xA = Bt*IA*B - C
-       MatScale(Compl->local_matrix,-1.0);
-       MatAXPY(Compl->local_matrix, 1, xA_sub, DIFFERENT_NONZERO_PATTERN);
+       ierr+=MatScale(Compl->local_matrix,-1.0);
+       ierr+=MatAXPY(Compl->local_matrix, 1, xA_sub, DIFFERENT_NONZERO_PATTERN);
 
        // assemble final MATIS matrix
-       MatAssemblyBegin(Compl->get_matrix(),MAT_FINAL_ASSEMBLY);
-       MatAssemblyEnd(Compl->get_matrix(),MAT_FINAL_ASSEMBLY);
+       ierr+=MatAssemblyBegin(Compl->get_matrix(),MAT_FINAL_ASSEMBLY);
+       ierr+=MatAssemblyEnd(Compl->get_matrix(),MAT_FINAL_ASSEMBLY);
+
+       ASSERT( ierr == 0, "PETSC Error during claculation of Schur complement.\n");
 
     }
     else if      (Orig->type == LinSys::MAT_MPIAIJ)
@@ -436,26 +438,26 @@ void SchurComplement::form_schur()
        // and 1.5 for the second multiplication
 
        // compute IAB=IA*B
-       MatGetSubMatrix(Orig->get_matrix(), IsA, fullIsB, locSizeB, mat_reuse, &B);
+       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsA, fullIsB, locSizeB, mat_reuse, &B);
        //DBGMSG(" B:\n");
        //MatView(Schur->B,PETSC_VIEWER_STDOUT_WORLD);
-       MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
+       ierr+=MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
        //DBGMSG(" IAB:\n");
        //MatView(Schur->IAB,PETSC_VIEWER_STDOUT_WORLD);
        // compute xA=Bt* IAB = Bt * IA * B
-       MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsA, locSizeA, mat_reuse, &(Bt));
-       MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
+       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsA, locSizeA, mat_reuse, &(Bt));
+       ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
        //DBGMSG("xA:\n");
        //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
 
        // get C block
-       MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsB, locSizeB, mat_reuse, &(Compl->matrix));
+       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsB, locSizeB, mat_reuse, &(Compl->matrix));
        // compute complement = (-1)cA+xA = Bt*IA*B - C
-       MatScale(Compl->get_matrix(),-1.0);
+       ierr+=MatScale(Compl->get_matrix(),-1.0);
        //DBGMSG("C block:\n");
 
        //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
-       MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
+       ierr+=MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
        //DBGMSG("C block:\n");
        //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
        //
@@ -463,6 +465,7 @@ void SchurComplement::form_schur()
        // a ve funkci schur1 (a ne v schur2) uzit metodu "scale" z tohoto objektu - kvuli negativni definitnosti
        // usetri se tim jeden MatScale
 
+       ASSERT( ierr == 0, "PETSC Error during claculation of Schur complement.\n");
     }
 
     /*

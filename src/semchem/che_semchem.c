@@ -2823,12 +2823,12 @@ void ctiich_reakce( void )
 // Cte soubor parametru chemie .ICH
 void ctiich( void )
 {
-	xprintf(Msg, "Cteni parametru (%s): \n", G_prm.jmeno_ich );
-	ctiich_obecne(); xprintf(Msg,"probehla funkce ctiich_obecne()\n");
-	ctiich_latkyvefazi(); xprintf(Msg,"probehla funkce ctiich_latkyvefazi()\n");
-	ctiich_dalsilatky(); xprintf(Msg,"probehla funkce ctiich_dalsilatky()\n");
-	ctiich_reakce(); xprintf(Msg,"probehla funkce ctiich_reakce()\n");
-	xprintf(Msg, "O.K.\n" );
+	xprintf(MsgLog, "Cteni parametru (%s): \n", G_prm.jmeno_ich );
+	ctiich_obecne(); xprintf(MsgLog,"probehla funkce ctiich_obecne()\n");
+	ctiich_latkyvefazi(); xprintf(MsgLog,"probehla funkce ctiich_latkyvefazi()\n");
+	ctiich_dalsilatky(); xprintf(MsgLog,"probehla funkce ctiich_dalsilatky()\n");
+	ctiich_reakce(); xprintf(MsgLog,"probehla funkce ctiich_reakce()\n");
+	xprintf(MsgLog, "O.K.\n" );
 }
 
 /*oid che_cti_param_soubor (char *soubor)

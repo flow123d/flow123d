@@ -42,7 +42,6 @@ Linear_reaction::~Linear_reaction()
 	int i, rows, n_subst;
 
 	//n_subst = sizeof(*reaction_matrix)/sizeof(double *);
-	xprintf(Msg,"\nDestructor is running.");
 	if(half_lives != NULL){
 		free(half_lives);
 		half_lives = NULL;

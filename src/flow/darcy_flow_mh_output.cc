@@ -38,7 +38,8 @@
 
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
-: darcy_flow(flow), mesh_(&darcy_flow->mesh())
+: darcy_flow(flow), mesh_(&darcy_flow->mesh()),
+  balance_output_file(NULL)
 {
     // setup output
     string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
@@ -54,6 +55,14 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
     ele_scalars = new double[mesh_->n_elements()];
     node_scalars = new double[mesh_->node_vector.size()];
     element_vectors = new OutVector();
+
+    // temporary solution for balance output
+    std::string balance_output_fname =
+            IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "balance_output", "\\"));
+    if (balance_output_fname!= "//") {
+        balance_output_file = xfopen(balance_output_fname.c_str(), "wt");
+    }
+
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
@@ -61,6 +70,8 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
     delete [] ele_scalars;
     delete element_vectors;
     delete output_writer;
+
+    if (balance_output_file != NULL) fclose(balance_output_file);
 };
 
 //=============================================================================
@@ -85,11 +96,9 @@ void DarcyFlowMHOutput::postprocess() {
     //make_node_vector( mesh );
     make_neighbour_flux();
     //make_previous_scalar();
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
     water_balance();
     //  if (problem->transport_on == true)
     //         transport( problem );
-    xprintf(Msg, "Postprocessing phase O.K.\n")/*orig verb 2*/;
 }
 
 void DarcyFlowMHOutput::output()
@@ -386,7 +395,6 @@ void DarcyFlowMHOutput::make_node_scalar_param(double* scalars) {
     struct Side* side;
 
     int n_nodes = mesh_->node_vector.size(); //!< number of nodes in the mesh */
-    xprintf(Msg,"n_nodes: %i\n", n_nodes);
     int node_index = 0; //!< index of each node */
 
     int* sum_elements = new int [n_nodes]; //!< sum elements joined to node */
@@ -623,27 +631,27 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
 void DarcyFlowMHOutput::water_balance() {
     F_ENTRY;
 
+    if (balance_output_file == NULL) return;
+
     double bal;
     int c_water;
     struct Boundary *bcd;
-
-    xprintf(Msg, "Calculating balance of water by types...\n");
-
     std::vector<double> *bcd_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
 
+    fprintf(balance_output_file,"********************************\n");
+    fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
     FOR_BOUNDARIES(mesh_, bcd) (*bcd_balance)[bcd->group] += bcd->side->flux;
     for(int i=0; i < bcd_balance->size(); ++i)
-        xprintf(Msg, "Boundary flux #%d\t%g\n", mesh_->bcd_group_id(i).id(), (*bcd_balance)[i]);
+        fprintf(balance_output_file, "boundary #%d\t%g\n", mesh_->bcd_group_id(i).id(), (*bcd_balance)[i]);
 
     delete bcd_balance;
 
     const FieldP0<double> *p_sources=darcy_flow->get_sources();
     if (p_sources != NULL) {
-        xprintf(Msg, "Calculating sources of water by material types...\n");
 
+        fprintf(balance_output_file,"\nSource fluxes over material subdomains:\n");
         MaterialDatabase &mat_base = darcy_flow->material_base();
         std::vector<double> *src_balance = new std::vector<double>( mat_base.size(), 0.0 ); // initialize by zero
-
 
         FOR_ELEMENTS(mesh_, elm) {
             (*src_balance)[mat_base.index(elm->material)] += elm->volume * p_sources->element_value(elm.index());
@@ -651,14 +659,9 @@ void DarcyFlowMHOutput::water_balance() {
 
 
         FOR_MATERIALS_IT(mat_base, mat) {
-            xprintf(Msg, "Material flux #%d:\t% g\n", mat_base.get_id(mat), (*src_balance)[mat_base.index(mat)]);
+            fprintf(balance_output_file, "material #%d:\t% g\n", mat_base.get_id(mat), (*src_balance)[mat_base.index(mat)]);
         }
-
-
     }
-
-
-
 }
 //=============================================================================
 //

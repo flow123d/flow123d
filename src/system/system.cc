@@ -146,7 +146,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 	static int mpi_msg_id = 0;
 	int ierr;
 
-	if ((type == MsgVerb) && (sys_info.verbosity > 0))
+	if ((type == MsgVerb) && (sys_info.verbosity <= 0))
 		return 0;
 
 	if ((type < 0) || (type >= NUM_OF_FMTS))

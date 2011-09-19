@@ -80,6 +80,17 @@ private:
     void make_node_scalar();
     void make_neighbour_flux();
     //void make_previous_scalar();
+
+    /**
+     * Calculate and output water balance over material subdomains and boudary fluxes.
+     * Works only for steady flow.
+     *
+     * TODO:
+     * - fix it also for unsteady flow
+     * - create separate class for this caculations and output
+     * - create class for output of tables with support to output into various file formats
+     *   like GNUplot of excel/open calc
+     **/
     void water_balance();
     double calc_water_balance();
 
@@ -103,6 +114,9 @@ private:
 
     /** \brief Vector for storing elements vectors */
     struct OutVector *element_vectors;
+
+    /// Temporary solution for writing balance into separate file.
+    FILE *balance_output_file;
 };
 
 
