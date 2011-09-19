@@ -117,7 +117,7 @@ bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) c
 {
     if (tg.end_time() == TimeGovernor::inf_time) return (tg.t() == TimeGovernor::inf_time);
     const TimeMark &tm = *last(tg, mask);
-    cout << "last: " << tm << endl;
+    //cout << "last: " << tm << endl;
     return tg.lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
 }
 

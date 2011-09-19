@@ -64,6 +64,11 @@
  * - TimeMarks::is_current
  * - TimeGovernor:: lt le ge gt
  *
+ * TODO:
+ * - still we have problems with time comparisons
+ * 1) TimeMarks can merge marks only with fixed precision, since they are shared by several equations with possibly different timesteps
+ * 2) queries
+ *
  *
  *
  */

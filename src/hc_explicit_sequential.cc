@@ -165,7 +165,7 @@ void HC_ExplicitSequential::run_simulation()
             // is not close to the solved_time of the water module
             // for simplicity we use only last velocity field
             if (velocity_changed) {
-                DBGMSG("velocity update\n");
+                //DBGMSG("velocity update\n");
                 water->get_velocity_seq_vector(velocity_field);
                 transport_reaction->set_velocity_field(velocity_field);
                 velocity_changed = false;

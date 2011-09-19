@@ -105,10 +105,10 @@ void DarcyFlowMHOutput::output()
 
     if (darcy_flow->time().is_current(output_mark_type)) {
         result = output_writer->register_node_data(nodeName, nodeUnit, node_scalars, mesh_->node_vector.size());
-        xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
+        //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
 
         result = output_writer->register_elem_data(eleScalarName, eleScalarUnit, ele_scalars, mesh_->n_elements());
-        xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
+        //xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
 
         element_vectors->vectors = new VectorFloatVector;
 
@@ -123,7 +123,7 @@ void DarcyFlowMHOutput::output()
             element_vectors->vectors->push_back(vec);
         }
         result = output_writer->register_elem_data(eleVectorName, eleVectorUnit, *element_vectors->vectors);
-        xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
+        //xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
 
         output_writer->write_data(darcy_flow->solved_time());
 
