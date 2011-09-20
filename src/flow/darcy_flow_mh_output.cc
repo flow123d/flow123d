@@ -80,7 +80,7 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
 
 void DarcyFlowMHOutput::postprocess() {
 
-//    make_side_flux();
+    make_side_flux();
 
     /*  writes scalar values to mesh - cannot be moved to output!
      *  all other methods are moved to output
@@ -111,8 +111,6 @@ void DarcyFlowMHOutput::output()
     unsigned int result = 0;
 
     if (darcy_flow->time().is_current(output_mark_type)) {
-        make_side_flux();
-
         make_element_scalar(ele_scalars);
 
         make_element_vector();
