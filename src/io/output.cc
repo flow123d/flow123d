@@ -275,7 +275,7 @@ Output::Output(Mesh *_mesh, string fname)
 
     base_file->open(fname.c_str());
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
+    xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
     base_filename = new string(fname);
 
@@ -349,7 +349,7 @@ Output::~Output()
         delete base_file;
     }
 
-    xprintf(Msg, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 }
 
 /**
@@ -440,7 +440,7 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
 
     base_file->open(fname.c_str());
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
+    xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
 
     base_filename = new string(fname);
