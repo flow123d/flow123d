@@ -59,6 +59,8 @@ public:
     ~DarcyFlowMHOutput();
 
     void postprocess();
+
+    /** \brief Calculate values for output.  **/
     void output();
 
 private:

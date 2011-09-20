@@ -80,25 +80,23 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
 
 void DarcyFlowMHOutput::postprocess() {
 
-    make_side_flux();
+//    make_side_flux();
 
+    /*  writes scalar values to mesh - cannot be moved to output!
+     *  all other methods are moved to output
+     */
     make_element_scalar();
-    make_element_scalar(ele_scalars);
+//    make_element_scalar(ele_scalars);
 
-    make_element_vector();
-    make_sides_scalar();
+//    make_element_vector();
+//    make_sides_scalar();
 
-    /** new version of make_node_scalar */
-    make_node_scalar_param(node_scalars);
-    //make_node_scalar();
+    /* new version of make_node_scalar */
+//    make_node_scalar_param(node_scalars);
 
 
-    //make_node_vector( mesh );
-    make_neighbour_flux();
-    //make_previous_scalar();
-    water_balance();
-    //  if (problem->transport_on == true)
-    //         transport( problem );
+//    make_neighbour_flux();
+//    water_balance();
 }
 
 void DarcyFlowMHOutput::output()
@@ -113,6 +111,19 @@ void DarcyFlowMHOutput::output()
     unsigned int result = 0;
 
     if (darcy_flow->time().is_current(output_mark_type)) {
+        make_side_flux();
+
+        make_element_scalar(ele_scalars);
+
+        make_element_vector();
+        make_sides_scalar();
+
+        make_node_scalar_param(node_scalars);
+
+        make_neighbour_flux();
+
+        water_balance();
+
         result = output_writer->register_node_data(nodeName, nodeUnit, node_scalars, mesh_->node_vector.size());
         //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
 
