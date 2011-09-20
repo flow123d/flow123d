@@ -374,7 +374,7 @@ void SchurComplement::form_schur()
 {
     // MATIS vars
     PetscScalar *rhs_array_old, *rhs_array_new, *rhs2_array_new;
-    PetscErrorCode ierr;
+    PetscErrorCode ierr = 0;
     Mat orig_mat_sub;
     Mat local_compl_aux;
     Vec rhs1_vec;
