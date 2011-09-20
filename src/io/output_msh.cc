@@ -265,7 +265,7 @@ void write_msh_elem_data(Output *output, double time, int step)
  */
 int write_msh_data(Output *output)
 {
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
 
     write_msh_header(output);
 
@@ -277,7 +277,7 @@ int write_msh_data(Output *output)
 
     write_msh_elem_data(output, 0.0, 0);
 
-    xprintf( Msg, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }
@@ -289,7 +289,7 @@ int write_msh_data(Output *output)
  */
 int write_msh_head(OutputTime *output)
 {
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
 
     write_msh_header(output);
 
@@ -297,7 +297,7 @@ int write_msh_head(OutputTime *output)
 
     write_msh_topology(output);
 
-    xprintf( Msg, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }
@@ -312,7 +312,7 @@ int write_msh_head(OutputTime *output)
  */
 int write_msh_time_data(OutputTime *output, double time, int step)
 {
-    xprintf( Msg, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
 
     write_msh_node_data(output, time, step);
 
@@ -321,7 +321,7 @@ int write_msh_time_data(OutputTime *output, double time, int step)
     // Flush stream to be sure everything is in the file now
     output->get_base_file().flush();
 
-    xprintf( Msg, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }
