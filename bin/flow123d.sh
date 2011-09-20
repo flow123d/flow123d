@@ -43,7 +43,7 @@ function print_help {
 	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOU seconds"
 	echo "    -m MEM          Flow123d can use only MEM bytes"
 	echo "    -n NICE         Run Flow123d with changed (lower) priority"
-	echo "    -o OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
+	echo "    -r OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
 	echo "    -s              Working directory will be current directory (default)"
 	echo "    -S              Working directory will be relative path to ini file"
 	echo ""
@@ -65,7 +65,7 @@ unset INI_FILE
 FLOW_OPT="-s"
 
 # Parse arguments with bash builtin command getopts
-while getopts ":ht:m:n:o:sS" opt
+while getopts ":ht:m:n:r:sS" opt
 do
 	case ${opt} in
 	h)
@@ -81,7 +81,7 @@ do
 	n)
 		NICE="${OPTARG}"
 		;;
-	o)
+	r)
 		OUT_FILE="${OPTARG}"
 		;;
 	s)

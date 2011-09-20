@@ -254,7 +254,7 @@ do
 		TIMER="0"
 
 		# Flow123d runs with changed priority (19 is the lowest priority)
-		"${MPIEXEC}" -np ${NP} "${FLOW123D_SH}" -n 10 -t ${TIMEOUT} -o "${FLOW123D_OUTPUT}" -S "${INI_FILE}" "${FLOW_PARAMS}" &
+		"${MPIEXEC}" -np ${NP} "${FLOW123D_SH}" -n 10 -t ${TIMEOUT} -r "${FLOW123D_OUTPUT}" -S "${INI_FILE}" "${FLOW_PARAMS}" &
 		# Get PID of mpiexec
 		MPIEXEC_PID=$!
 
