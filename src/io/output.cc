@@ -263,6 +263,7 @@ Output::Output(Mesh *_mesh, string fname)
         return;
     }
 
+    // TODO: Remove this. Output is off if no filename is given.
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
@@ -428,6 +429,7 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     string *base_filename;
     OutFileFormat format_type;
 
+    // TODO: Remove this. Output is off if no filename is given.
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
