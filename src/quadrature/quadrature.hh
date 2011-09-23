@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: time_governor.hh 1323 2011-09-08 08:00:03Z jan.stebel $
- * $Revision: 1323 $
- * $LastChangedBy: jan.stebel $
- * $LastChangedDate: 2011-09-08 10:00:03 +0200 (Čt, 08 zář 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Basic definitions of quadratures.
@@ -62,7 +62,7 @@ public:
     /**
      * Number of quadrature points.
      */
-    unsigned int size() const;
+    const unsigned int size() const;
 
     /**
      * Return the <tt>i</tt>th quadrature point.
@@ -98,8 +98,26 @@ protected:
     vector<double> weights;
 };
 
+
+
 template<int dim>
-inline unsigned int Quadrature<dim>::size() const {
+Quadrature<dim>::Quadrature(const unsigned int n_q) :
+        quadrature_points(0),
+        weights(n_q, 0)
+{
+    vec::fixed<dim> v;
+    v.fill(0);
+    quadrature_points.resize(n_q, v);
+}
+
+template<int dim>
+Quadrature<dim>::Quadrature(const Quadrature<dim> &q) :
+        quadrature_points(q.quadrature_points),
+        weights(q.weights)
+{}
+
+template<int dim>
+inline const unsigned int Quadrature<dim>::size() const {
     return weights.size();
 }
 
@@ -123,5 +141,14 @@ template<int dim>
 inline const vector<double> & Quadrature<dim>::get_weights() const {
     return weights;
 }
+
+template<int dim>
+Quadrature<dim>::~Quadrature()
+{}
+
+
+
+
+
 
 #endif /* QUADRATURE_HH_ */

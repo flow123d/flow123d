@@ -57,6 +57,8 @@ $(OBJS)/mesh/boundaries.o\
 $(OBJS)/mesh/neighbours.o\
 ${OBJS}/mesh/topology.o\
 \
+$(OBJS)/quadrature/quadrature_lib.o\
+\
 $(OBJS)/reaction/linear_reaction.o\
 \
 $(OBJS)/semchem/che_semchem.o\
@@ -99,6 +101,7 @@ SUB_DIRS = \
 system\
 mesh\
 io\
+quadrature\
 semchem\
 flow\
 transport\
