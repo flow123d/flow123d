@@ -1,0 +1,30 @@
+Test problem 13
+---------------------
+verification of:
+-edge mixing
+-transport (convection)
+-flow/transport interconnection
+
+
+Analytic solution for:
+
+Explanatory note: 
+first branch (negative Z coordinate)
+second branch (positive Z coordinate)
+main branch (branch in the XY plane)
+
+Flow:
+-total flow  = 0.875 M/L^3
+- first branch flow  = 0.795 M/L^3 
+- second branch flow  = 0.080 M/L^3
+
+Preasure:
+- loss of preasure in the main branch  = 4.375 L
+- loss of preasure in the other branches  = 5.625 L
+
+Time:
+solute in intersection: 5.71 T
+solute at the end of the first branch: 14.60 T
+solute at the end of the second branch:  94.60 T
+
+
