@@ -159,7 +159,7 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 			set_indeces(dec_name, nr_of_isotopes);
 			print_indeces(nr_of_isotopes); //just a control
 			print_half_lives(nr_of_isotopes); //just a control
-			bifurcation_on = OptGetBool(dec_name,"Compute_decay","no");
+			bifurcation_on = OptGetBool(dec_name,"Bifurcation_on","no");
 			if(bifurcation_on == true){
 				set_bifurcation(dec_name, dec_nr);
 				modify_reaction_matrix(dec_nr);

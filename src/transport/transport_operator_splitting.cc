@@ -112,6 +112,7 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
+	    //xprintf( Msg, "Time : %f\n", convection->time().t() );
 	    convection->compute_one_step();
 	    // Calling linear reactions and Semchem
 	    decayRad->compute_one_step();

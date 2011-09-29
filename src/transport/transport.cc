@@ -570,38 +570,6 @@ void ConvectionTransport::compute_one_step() {
                     }
                 // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
             }
-
-
-       /*/======================================
-       //              CHEMISTRY
-       //======================================
-        if(OptGetBool("Semchem_module", "Compute_reactions", "no") == true)
-        {
-                if (t == 1) { //initial value of t == 1 & it is incremented at the beginning of the cycle
-                    priprav();
-                }
-                for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-                    //xprintf(Msg,"\nKrok %f\n",trans->time_step);
-                    che_vypocetchemie(dual_porosity, time_step, mesh_->element(el_4_loc[loc_el]), loc_el, conc[MOBILE], conc[IMMOBILE]);
-                }// for cycle running over elements
-            }
-        //===================================================
-        //     RADIOACTIVE DECAY + FIRST ORDER REACTIONS
-        //===================================================
-        if((OptGetBool("Reaction_module", "Compute_decay", "no") == true) || (OptGetBool("Reaction_module", "Compute_reactions", "no") == true)){
-                int rows, cols, dec_nr, nr_of_decay, dec_name_nr = 1;
-                //char dec_name[30];
-                if (t == 1) {
-                    decayRad = new Linear_reaction(n_substances, time_step);
-            }
-                for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-                (*decayRad).compute_reaction(pconc[MOBILE], n_substances, loc_el);
-                    if (dual_porosity == true) {
-                    (*decayRad).compute_reaction(pconc[IMMOBILE], n_substances, loc_el);
-                    }
-                }
-        }*/
-
 }
 
 
