@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup la
  * @brief   Wrappers for linear systems based on MPIAIJ and MATIS format.
  * @author  Jan Brezina
  *
@@ -30,8 +31,8 @@
 
 #include <algorithm>
 #include <petscmat.h>
-#include <system.hh>
-#include <la_linsys.hh>
+#include "system/system.hh"
+#include "la_linsys.hh"
 
 /**
  *  @brief Constructs a parallel system with given local size.
@@ -42,7 +43,7 @@
  */
 
 LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
-:vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE)
+:vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE),type(MAT_MPIAIJ)
 {
     // create PETSC vectors
     v_rhs=(double *) xmalloc(sizeof(double) * (this->vec_lsize() + 1) );
@@ -293,7 +294,6 @@ void LinSys_MPIAIJ::start_allocation()
      VecDuplicate(on_vec,&(off_vec));
      status=ALLOCATE;
 
-     DBGMSG("allocation started\n");
 }
 
 void LinSys_MPIAIJ::preallocate_matrix()
@@ -372,19 +372,31 @@ LinSys_MPIAIJ:: ~LinSys_MPIAIJ()
 
 //**********************************************************************************************
 
-LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int subdomain_size, int *global_row_4_sub_row, double *sol_array)
-: LinSys(vec_lsize, sol_array), subdomain_size(subdomain_size)
+LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int sz, int *global_row_4_sub_row, double *sol_array)
+: LinSys(vec_lsize, sol_array), subdomain_size(sz)
 {
     PetscErrorCode err;
 
+    int i;
+
+    //xprintf(Msg,"sub size %d \n",subdomain_size);
+
+    // ulozit global_row_4_sub_row
+    subdomain_indices = new int[subdomain_size];
+    for (i = 0;i < subdomain_size; i++) 
+    {
+       subdomain_indices[i] = global_row_4_sub_row[i];
+    }
+
     // vytvorit mapping v PETSc z global_row_4_sub_row
-    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, global_row_4_sub_row, &map_local_to_global);
+    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, subdomain_indices, &map_local_to_global);
     ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
     // initialize loc_rows array
     loc_rows_size=100;
     loc_rows = new int[loc_rows_size];
 
+    type = MAT_IS;
 };
 
 
@@ -401,6 +413,10 @@ void LinSys_MATIS::start_allocation()
 
      err = MatISGetLocalMat(matrix, &local_matrix);
      ASSERT(err == 0,"Error in MatISGetLocalMat.");
+
+     // extract scatter
+     MatMyIS *mis = (MatMyIS*) matrix->data;
+     sub_scatter = mis->ctx;
 
      subdomain_nz= new int[subdomain_size];      // count local nozero for every row of subdomain matrix
      SET_ARRAY_ZERO(subdomain_nz,subdomain_size); // set zeros to the array
@@ -503,11 +519,6 @@ LinSys_MATIS:: ~LinSys_MATIS()
 {
      PetscErrorCode err;
 
-     // destroy local subdomain matrix
-     err = MatDestroy(local_matrix);
-     ASSERT(err == 0,"Error in MatDestroy.");
-     xprintf(Msg,"Error code MatDestroy %d \n",err);
-
      // destroy mapping
      err = ISLocalToGlobalMappingDestroy(map_local_to_global);
      ASSERT(err == 0,"Error in ISLocalToGlobalMappingDestroy.");
@@ -515,8 +526,24 @@ LinSys_MATIS:: ~LinSys_MATIS()
 
 
      delete[] loc_rows;
+     delete[] subdomain_indices;
      if (status == ALLOCATE) {
          delete subdomain_nz;
      }
 
 }
+
+#ifdef HAVE_ATLAS_ONLY_LAPACK
+/*
+ * This is a workaround to build Flow with PETSC 3.0 and ATLAS, since one particular and unimportant preconditioner (asa)
+ * needs this Lapack function, which is not implemented in ATLAS.
+ */
+extern "C" {
+
+void dgeqrf_(int m, int n, double **A, double *TAU, double *work, int lwork, int info)
+{
+}
+
+}
+#endif
+

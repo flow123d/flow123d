@@ -23,8 +23,9 @@
 
 # Include global settings
 include ../makefile.in
+include ../makefile.include
 
-LOCAL_INCLUDE = -I../include
+LOCAL_INCLUDE = -I../include -I.
 
 # Important directories
 BIN = ../bin
@@ -36,44 +37,76 @@ TARGETS = $(BIN)/flow123d
 
 # List of object files of Flow123d
 FLOW123D_OBJS = \
-$(OBJS)/mesh/ini_constants_mesh.o\
-$(OBJS)/transport_bcd.o\
-$(OBJS)/system.o\
-$(OBJS)/read_ini.o\
-$(OBJS)/constantdb.o\
-$(OBJS)/math_fce.o\
-$(OBJS)/msh_gmshreader.o\
-$(OBJS)/nodes.o\
-$(OBJS)/elements.o\
-$(OBJS)/sides.o\
-$(OBJS)/edges.o\
-$(OBJS)/hashes.o\
-$(OBJS)/boundaries.o\
-$(OBJS)/neighbours.o\
-$(OBJS)/mesh.o\
+$(OBJS)/flow/local_matrix.o\
+$(OBJS)/flow/darcy_flow_mh.o\
+$(OBJS)/flow/darcy_flow_mh_output.o\
+\
+$(OBJS)/io/read_ini.o\
+$(OBJS)/io/output.o\
+$(OBJS)/io/output_vtk.o\
+$(OBJS)/io/output_msh.o\
+$(OBJS)/io/output_tmp.o\
+\
+$(OBJS)/mesh/msh_gmshreader.o\
+$(OBJS)/mesh/mesh.o\
+$(OBJS)/mesh/nodes.o\
+$(OBJS)/mesh/elements.o\
+$(OBJS)/mesh/sides.o\
+$(OBJS)/mesh/edges.o\
+$(OBJS)/mesh/boundaries.o\
+$(OBJS)/mesh/neighbours.o\
+${OBJS}/mesh/topology.o\
+\
+$(OBJS)/reaction/linear_reaction.o\
+\
+$(OBJS)/semchem/che_semchem.o\
+$(OBJS)/semchem/semchem_interface.o\
+\
+$(OBJS)/system/system.o\
+$(OBJS)/system/par_distribution.o\
+$(OBJS)/system/sys_function_stack.o\
+$(OBJS)/system/sys_profiler.o\
+$(OBJS)/system/math_fce.o\
+\
+$(OBJS)/transport/transport.o\
+$(OBJS)/transport/transport_operator_splitting.o\
+\
+$(OBJS)/equation.o\
+$(OBJS)/time_marks.o\
 $(OBJS)/materials.o\
-$(OBJS)/local_matrix.o\
-$(OBJS)/calculation.o\
-$(OBJS)/darcy_flow_mh.o\
-$(OBJS)/output.o\
-$(OBJS)/concentrations.o\
-$(OBJS)/postprocess.o\
-$(OBJS)/preprocess.o\
 $(OBJS)/solve.o\
-$(OBJS)/problem.o\
 $(OBJS)/main.o\
-$(OBJS)/btc.o\
-$(OBJS)/par_distribution.o\
 $(OBJS)/la_schur.o\
 $(OBJS)/xio.o\
 $(OBJS)/sparse_graph.o\
-$(OBJS)/convert.o\
-$(OBJS)/sys_function_stack.o\
-$(OBJS)/transport.o\
-$(OBJS)/reaction.o\
-$(OBJS)/la_linsys.o
+$(OBJS)/la_linsys.o\
+$(OBJS)/time_governor.o\
+$(OBJS)/hc_explicit_sequential.o\
+$(OBJS)/field_p0.o
 
-# $(OBJS)/ppfcs.o\
+
+#$(OBJS)/convert.o\
+#$(OBJS)/mesh/ini_constants_mesh.o\
+#$(OBJS)/constantdb.o\
+#$(OBJS)/hashes.o\
+#$(OBJS)/transport_bcd.o\
+#$(OBJS)/concentrations.o\
+#$(OBJS)/ppfcs.o\
+#$(OBJS)/reaction.o\
+#$(OBJS)/reaction.o\
+#$(OBJS)/btc.o\
+
+# src subdirs
+SUB_DIRS = \
+system\
+mesh\
+io\
+semchem\
+flow\
+transport\
+reaction
+
+BUILD_DIRS = $(addprefix $(DEPS)/, $(SUB_DIRS)) $(addprefix $(OBJS)/, $(SUB_DIRS)) 
 
 FLOW123D_DEPS = $(addprefix $(DEPS)/, $(notdir $(FLOW123D_OBJS:.o=.d)))
 
@@ -81,18 +114,30 @@ FLOW123D_DEPS = $(addprefix $(DEPS)/, $(notdir $(FLOW123D_OBJS:.o=.d)))
 
 all: $(TARGETS)
 
-deps: $(FLOW123D_DEPS)
+${BUILD_DIRS}:
+	echo "make dir:" $@
+	mkdir -pf $@ 
+	
+deps: $(BUILD_DIRS) $(FLOW123D_DEPS)
+
+# General rule to create dependencies files for .c source files
+${DEPS}/%.d: %.c ${DEPS}
+	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.c)))" $<
 
 # General rule to create dependencies files for .cc source files
-${DEPS}/%.d: %.cc
-	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(OBJS)/, $(notdir $(@:%.d=%.o)))" $<
+${DEPS}/%.d: %.cc ${DEPS}
+	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.cc)))" $<
 
 # General rule to create dependencies files for .ccp source files
-${DEPS}/%.d: %.ccp
-	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(OBJS)/, $(notdir $(@:%.d=%.o)))" $<
+${DEPS}/%.d: %.ccp  ${DEPS}
+	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.ccp)))" $<
 
 # Include generated files with dependencies
 -include $(FLOW123D_DEPS)
+
+# General rule to compile .c source files (pure C)
+${OBJS}/%.o: %.c ../makefile.in
+	${CPP} -c -o $@ ${CFLAGS} ${CDEFS} ${LOCAL_INCLUDE} ${INCLUDE} $<
 
 # General rule to compile .cc source files (mixture of C and C++)
 ${OBJS}/%.o: %.cc ../makefile.in
@@ -108,4 +153,13 @@ ${BIN}/flow123d: ${FLOW123D_OBJS}
 
 # The rule to delete all generated files	
 clean: 
-	rm -f ${OBJS}/*.o ${DEPS}/*.d ${TARGETS}
+	rm -f ${TARGETS}
+	rm -f ${OBJS}/*.o ${DEPS}/*.d
+	rm -f ${OBJS}/flow/*.o
+	rm -f ${OBJS}/io/*.o
+	rm -f ${OBJS}/mesh/*.o
+	rm -f ${OBJS}/reaction/*.o 
+	rm -f ${OBJS}/semchem/*.o
+	rm -f ${OBJS}/system/*.o
+	rm -f ${OBJS}/transport/*.o 
+	

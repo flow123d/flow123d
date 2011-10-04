@@ -27,16 +27,16 @@
  *
  */
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
 #include <boost/algorithm/string/trim.hpp> // trim string leading and ending spaces
 #include <boost/algorithm/string/classification.hpp>
 
-//#include "mesh.h"
+//#include "mesh/mesh.h"
 //#include "problem.h"
 #include "materials.hh"
 //#include "transport.h"
-#include "math_fce.h"
+#include "system/math_fce.h"
 
 flow::VectorId<int> xx;
 
@@ -151,7 +151,7 @@ void MaterialDatabase::read_transport_materials(bool dual_porosity, bool sorptio
 
     fin = xfopen(file_name.c_str(), "rt");
 
-    if (dual_porosity) {
+    //if (dual_porosity) {   - have to be read for all transport problems, not only for dual porosity problems
         // read dual porosity
         found = skip_to(fin, "$DualPorosity");
         if (found) {
@@ -179,7 +179,7 @@ void MaterialDatabase::read_transport_materials(bool dual_porosity, bool sorptio
             }
             valid_sections["DualPorosity"] = count;
         }
-    }
+   // }
 
     if ( sorption ) {
 	    xrewind(fin);
@@ -230,7 +230,7 @@ void MaterialDatabase::read_transport_materials(bool dual_porosity, bool sorptio
  * @brief  CREATE NEW MATERIAL
  * @return material structure
  */
-MaterialDatabase::Iter MaterialDatabase::new_material( int id )
+MaterialDatabase::FullIter MaterialDatabase::new_material( int id )
 {
 
 	F_ENTRY;
@@ -264,7 +264,7 @@ MaterialDatabase::Iter MaterialDatabase::new_material( int id )
  * @brief SET THE "a[][]" AND "k[][]" FIELDS IN STRUCT ELEMENT
  * @param[in,out] ele element
  */
-void MaterialDatabase::calc_material_resistance( int type, double coef[6], MaterialIter mat)
+void MaterialDatabase::calc_material_resistance( int type, double coef[6], MaterialDatabase::Iter mat)
 {
     F_ENTRY;
 

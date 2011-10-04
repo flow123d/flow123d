@@ -1,0 +1,22 @@
+Test problem 10
+---------------------
+verification of:
+- unsteady flow MH and LMH method
+- unsteady flow + transport ( only qualitativly checked, need quantitative test !!!)
+
+- using analytical solution from "paper.pdf"
+
+setting:
+
+square (0,1)x(0,1)
+flow: dirichlet BC, 100.0 on right, 0.0 on left boundary
+conductivity 0.02
+storativity 1.0
+
+
+transport: dirichlet BC = 10.0 on the inflow (on right)
+
+TODO:
+- nonuniform timesteping
+- more output times
+- better transport test (no discontinuity in time zero)

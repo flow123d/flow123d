@@ -23,22 +23,20 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup io
  * @brief  Cross-sections computation
  *
  */
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
+#include "transport/transport.h"
 
-#include "transport.h"
-
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "math_fce.h"
-#include "problem.h"
-#include "mesh.h"
+#include "system/math_fce.h"
+//#include "problem.h"
+#include "mesh/mesh.h"
 #include "ppfcs.h"
-#include "read_ini.h"
+#include "io/read_ini.h"
 #include "materials.hh"
 
 
@@ -79,6 +77,22 @@ void flow_cs(struct Transport *transport)
 //==============================================================================
 int create_flow_section(struct Transport *transport)
 {
+
+    // This is ancient initialization from problem.c
+    // TODO: Proper implementation of cross section
+#if 0
+    problem->ftrans_out       = get_b( "Output", "Write_ftrans_out", false );
+    problem->cross_section    = get_b( "Output", "Cross_section", false );         //jh
+    problem->cs_params        = get_s( "Output", "Cs_params", "0 0 0 0 0 0 0" );        //jh
+//    problem->res_run          = get_b( "Output", "Cs_results_run", false );           //jh
+//    problem->res_fin          = get_b( "Output", "Cs_results_final", false );
+    problem->specify_elm_output =  get_b( "Output", "Specify_elm_type", false );   //jh temp
+    problem->output_elm_type  = get_i( "Output", "Output_elm_type", 1 );        //jh temp
+    problem->fsec_params       = get_s( "Output", "FCs_params", "0 0 0 0 0" );
+//    problem->CF_params         = get_s( "Output", "ConfFlow_params", "0");
+#endif
+
+
         double norm;
         int i;
 
@@ -352,7 +366,7 @@ void output_FCS(struct Transport *transport)
 	char dbl_fmt[ 16 ],file[LINE_SIZE];
 
  	sprintf( dbl_fmt, "%%.%dg", ConstantDB::getInstance()->getInt("Out_digit"));
-        sprintf(file,"%s.fcs", OptGetFileName("Output", "Output_file", NULL) );
+        sprintf(file,"%s.fcs", IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", NULL)) );
         out = xfopen(file,"wt");
 
         FOR_ELEMENTCUT(ec){

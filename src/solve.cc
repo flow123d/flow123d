@@ -23,6 +23,7 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup la
  * @brief	Unified interface to various linear solvers
  * @author	Jan Brezina
  *
@@ -35,11 +36,13 @@
 #include <petscksp.h>
 #include <petscviewer.h>
 
-#include <system.hh>
-#include <xio.h>
-#include <par_distribution.hh>
-#include <solve.h>
-#include <la_linsys.hh>
+#include "system/system.hh"
+#include "xio.h"
+#include "system/par_distribution.hh"
+#include "solve.h"
+#include "la_linsys.hh"
+
+//#include "profiler.hh"
 
 static void solver_set_type( struct Solver *solver );
 static void RunExtern( struct Solver *solver,char *cmdline,void (*write_sys)(struct Solver *), void (*read_sol)(struct Solver *) );
@@ -81,7 +84,7 @@ void solver_init( struct Solver *solver) {
     solver->manual_run     = OptGetBool( "Solver", "Manual_solver_run", "no" );
     solver->use_ctrl_file  = OptGetBool( "Solver", "Use_control_file", "no" );
     if (solver->use_ctrl_file)
-    	solver->ctrl_file      = OptGetStr( "Solver", "Control_file", NULL );
+    	solver->ctrl_file      = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Solver", "Control_file", NULL )).c_str();
     solver->use_last_sol    =OptGetBool( "Solver", "Use_last_solution", "no" );
     /// Last solution reuse is possible only for external solvers
     if (solver->use_last_sol && (solver->type == PETSC_SOLVER)) {
@@ -143,7 +146,6 @@ void solve_system( struct Solver *solver, struct LinSys *system )
 
 	ASSERT( NONULL( solver ),"NULL 'solver' argument.\n");
     ASSERT( NONULL( system ),"NULL 'system' argument.\n");
-	xprintf(Msg, "Solve system ...\n");
 
 	solver->LinSys=system;
 	switch (solver->type) {
@@ -167,7 +169,6 @@ void solve_system( struct Solver *solver, struct LinSys *system )
 	            xprintf(UsrErr,"UNKNOWN solver is not supported.\n");
 	}
 
-	xprintf( Msg, "Solver O.K.\n")/*orig verb 2*/;
 }
 
 //=============================================================================
@@ -231,7 +232,6 @@ void RunExtern( Solver *solver,char *cmdline,
 	}
 
     xprintf( Msg, "END OF MESSAGES OF THE SOLVER\n\n");
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }
 //=============================================================================
 /*! @brief Clean temporary directory of external solver.
@@ -335,7 +335,7 @@ void solver_petsc(Solver *solver)
 	   }
 	}
 	petsc_str=OptGetStr("Solver","Solver_params",petsc_dflt_opt);
-	xprintf(Msg,"inserting petsc options: %s\n",petsc_str);
+	xprintf(MsgVerb,"inserting petsc options: %s\n",petsc_str);
 	
 /**
  *
@@ -348,16 +348,68 @@ void solver_petsc(Solver *solver)
 	PetscOptionsInsertString(petsc_str); // overwrites previous options values
 	xfree(petsc_str);
     
-    MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
+        MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
+
 
     //    xprintf(Msg,"View KSP system\n");
-        //PetscViewerCreate(PETSC_COMM_WORLD,&mat_view);
-    //PetscViewerSetFormat(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_ASCII_MATLAB);
-	//MatView(sys->get_matrix(),	PETSC_VIEWER_STDOUT_WORLD);
-	//VecView(sys->b,	PETSC_VIEWER_STDOUT_WORLD);
-        //PetscViewerDestroy(mat_view);
-    //MatConvert(locMtx,MATDENSE,MAT_INITIAL_MATRIX,&denseMtx);
-    //MatView(denseMtx, PETSC_VIEWER_STDOUT_SELF );
+        //Mat matrixForPrint;
+        //PetscErrorCode ierr;
+        //PetscInt m, n;
+        //MatGetSize( sys->get_matrix(), &m, &n );
+
+        //ierr = MatCreate( PETSC_COMM_WORLD, &matrixForPrint ); CHKERRV( ierr ); 
+        //ierr = MatSetType( matrixForPrint, MATMPIAIJ ); CHKERRV( ierr ); 
+        //ierr = MatSetSizes( matrixForPrint, PETSC_DECIDE, PETSC_DECIDE, m, n ); 
+
+        //std::cout << "Size of the matrix is :" << m << ", " << n << std::endl;
+        //Vec auxIn, auxOut;
+        //for ( int i = 0; i < n; i++ ) {
+        //    // create auxiliary vector of unit matrix
+        //    ierr = MatGetVecs( sys->get_matrix(), &auxIn, &auxOut ); CHKERRV( ierr );
+
+        //    VecSetValue( auxIn, i, 1., INSERT_VALUES );
+        //    ierr = VecAssemblyBegin( auxIn ); CHKERRV( ierr ); 
+        //    ierr = VecAssemblyEnd(   auxIn ); CHKERRV( ierr ); 
+ 
+        //    ierr = MatMult( sys->get_matrix(), auxIn, auxOut ); CHKERRV( ierr ); 
+
+        //    PetscInt low, high;
+        //    VecGetOwnershipRange( auxOut, &low, &high );
+        //    PetscInt locSize = high - low;
+
+        //    PetscScalar *values;
+        //    VecGetArray( auxOut, &values );
+
+        //    std::vector<PetscInt> rows;
+        //    std::vector<PetscInt> columns;
+        //    for ( int j = low; j < high; j++ ) {
+        //        rows.push_back( j );
+        //    }
+        //    columns.push_back( i );
+
+        //    MatSetValues( matrixForPrint, locSize, &(rows[0]), 1, &(columns[0]), values, INSERT_VALUES );
+
+        //    VecRestoreArray( auxOut, &values );
+        //    VecDestroy( auxIn );
+        //    VecDestroy( auxOut );
+        //}
+        //ierr = MatAssemblyBegin( matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
+        //ierr = MatAssemblyEnd(   matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
+
+
+        //PetscViewer matViewer;
+        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "matrix.m", &matViewer );
+        //PetscViewerSetFormat(matViewer,PETSC_VIEWER_ASCII_MATLAB);
+        //MatView( matrixForPrint, matViewer );
+        //MatDestroy( matrixForPrint );
+        //PetscViewerDestroy(matViewer);
+
+        //PetscViewer rhsViewer;
+        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "rhs.m", &rhsViewer );
+        //PetscViewerSetFormat(rhsViewer,PETSC_VIEWER_ASCII_MATLAB);
+        //VecView( sys->get_rhs(), rhsViewer );
+        //PetscViewerDestroy(rhsViewer);
+
 	KSPCreate(PETSC_COMM_WORLD,&System);
 	KSPSetOperators(System, sys->get_matrix(), sys->get_matrix(), DIFFERENT_NONZERO_PATTERN);
 	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
@@ -365,8 +417,12 @@ void solver_petsc(Solver *solver)
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);
-	xprintf(Msg,"Lin Solver: its: %d conv. reason: %i\n",nits,Reason);
+
+	// TODO: make solver part of LinSyt, and make gatter for num of it
+	xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", Reason, nits);
+    Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 	KSPDestroy(System);
+
 }
 
 //=============================================================================
@@ -485,8 +541,8 @@ void write_sys_matlab( struct Solver *solver )
  *  @param[in] write_nz (1 - write number of non-zeroes (ISOL); 0 - don't write (MATLAB))
  */
 void write_matlab_linsys(LinSys *mtx,int write_nz) {
-    FILE *out;
-    int mi, ji,nnz;
+    //FILE *out;
+    //int mi, ji,nnz;
 
     F_ENTRY;
 

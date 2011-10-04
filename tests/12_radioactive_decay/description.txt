@@ -1,0 +1,6 @@
+Test problem 12
+---------------
+verification of:
+- first order reaction A->B determined by kinetic constant,
+- narrow radioctive decay chain without branches, A -> B -> C,
+without combination with transport (zero pressure gradient).

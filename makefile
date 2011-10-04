@@ -25,12 +25,12 @@
 #
 
 include makefile.in
+include makefile.include
+
 
 all: bin/mpiexec revnumber bin/current_flow
-#	make -C src clean
 	make -C third_party all
-	make -C src all
-
+	make -j 4 -C src all
 	
 bin/mpiexec: makefile.in
 	# TODO:
@@ -54,15 +54,15 @@ bin/current_flow:
 	if [ -z "${MACHINE}" ]; then \
 		echo "Using default: current_flow"; \
 		echo '#!/bin/bash' > bin/current_flow; \
-		echo "`pwd`/bin/generic_flow.sh" >> bin/current_flow; \
+		echo "\"`pwd`/bin/generic_flow.sh\"" >> bin/current_flow; \
 	else \
-		if [ -e "bin/${MACHINE}_flow.sh" ]; then \
+		if [ -e "bin/stub/${MACHINE}_flow.sh" ]; then \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/${MACHINE}_flow.sh"' >> bin/current_flow; \
+			echo '"`pwd`/bin/stub/${MACHINE}_flow.sh"' >> bin/current_flow; \
 		else \
 			echo "script for given MACHINE not found, using default"; \
 			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/generic_flow.sh"' >> bin/current_flow; \
+			echo '"`pwd`/bin/stub/generic_flow.sh"' >> bin/current_flow; \
 		fi \
 	fi
 	chmod u+x bin/current_flow
@@ -74,27 +74,22 @@ revnumber:
 	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >include/rev_num.h;\
 	fi
 
-# make package Windows:
-# 1) build flow, bcd, ngh, mpiexec
-# 2) copy doc, only PDF, wihtout .svn subdirs
-# 3) copty tests, only input and output files, no scripts
-
-
+# Remove all generated files
 clean:
-	make -C third_party clean
 	make -C src clean
 	make -C doc/doxy clean
+	make -C tests clean
 	rm -f bin/mpiexec
 	rm -f bin/current_flow
 
-test: all 
-	make -C tests testbase
-	
-testall: all
+# Make all tests	
+testall:
 	make -C tests testall
 
-online-doc:
-	make -C doc/doxy doc
-	
+# Make only certain test (eg: make 01.tst will make first test)
 %.tst :
 	make -C tests $*.tst
+
+# Create doxygen documentation
+online-doc:
+	make -C doc/doxy doc

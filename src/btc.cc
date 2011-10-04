@@ -23,22 +23,22 @@
  * $LastChangedDate$
  *
  * @file
- * @brief
- * @todo documentation!!!
+ * @ingroup io
+ *
+ * @brief Break through curve.
+ * @todo Rewrite to be applyable to general fields and produce specified output. documentation!!!
+ *
  *
  */
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
-#include "transport.h"
+#include "transport/transport.h"
 
-#include "read_ini.h"
+#include "io/read_ini.h"
 #include "xio.h"
 #include "output.h"
 #include "btc.h"
-#include "system.hh"
-#include "mesh.h"
-#include "problem.h"
+#include "system/system.hh"
+#include "mesh/mesh.h"
 
 static int *BTC_elm_list( int n_btc, char *line );
 static int count_BTC_elms( char *line );
@@ -51,7 +51,7 @@ void btc_init(struct BTC *btc){
 
 	char *Btc;
 
-	Btc					= OptGetStr( "Output", "BTC_elms", "-9999" );
+	Btc					= IONameHandler::get_instance()->get_output_file_name(OptGetStr( "Output", "BTC_elms", "-9999" )).c_str();
 	btc->n_BTC_elms		= count_BTC_elms( Btc );
 	btc->BTC_elm		= BTC_elm_list( btc->n_BTC_elms, Btc );
 
@@ -121,6 +121,45 @@ int *BTC_elm_list( int n_btc, char *line )
 		cp[ i ] = atoi( strtok( i == 0 ? line : NULL , " \t,;" ) );
 	return cp;
 }
+
+//==============================================================================
+//      OPEN TEMP FILES
+//==============================================================================
+static FILE **open_temp_files(struct Transport *transport,const char *fileext,const char *open_param)
+{
+    FILE **out=NULL;
+    char filename0[255],filename1[255],filename2[255],filename3[255];
+    int n = 4; //max output files
+    int sub;
+
+    out = (FILE**)xmalloc(n*sizeof(FILE*));
+
+    sub = transport->transport_sub_problem;
+
+    sprintf(filename0, fileext, transport->transport_out_fname);
+    out[0] = xfopen(filename0, open_param);
+    out[1] = NULL;
+    out[2] = NULL;
+    out[3] = NULL;
+
+    if( ((sub & 1) == 1) && (strcmp(transport->transport_out_im_fname,"NULL") != 0)) {
+        sprintf( filename1,fileext,transport->transport_out_im_fname);
+        out[1] = xfopen( filename1, open_param );
+    }
+
+    if( ((sub & 2) == 2) && (strcmp(transport->transport_out_sorp_fname,"NULL") != 0)) {
+        sprintf(filename2,fileext,transport->transport_out_sorp_fname);
+        out[2] = xfopen( filename2, open_param );
+    }
+
+    if( ((sub & 3) == 3) && (strcmp(transport->transport_out_im_sorp_fname,"NULL") != 0)) {
+        sprintf(filename3,fileext,transport->transport_out_im_sorp_fname);
+        out[3] = xfopen( filename3, open_param );
+    }
+
+    return out;
+}
+
 //==============================================================================
 // INITIALIZE TRANSPORT OUTPUT FILE FOR BTC
 //==============================================================================

@@ -1,74 +1,29 @@
-# 
-# Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
-#
-# Please make a following refer to Flow123d on your project site if you use the program for any purpose,
-# especially for academic research:
-# Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
-#
-# This program is free software; you can redistribute it and/or modify it under the terms
-# of the GNU General Public License version 3 as published by the Free Software Foundation.
-# 
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with this program; if not,
-# write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
-#
-# $Id$
-# $Revision$
-# $LastChangedBy$
-# $LastChangedDate$
 
-#
 # This file contains all system specific configuration.
-# Namely compilers, compilar flags, libraries, and 
-# some configuration macros for  conditioned compilation. 
+# Namely compilers, compiler flags, libraries, and 
+# some configuration macros for conditioned compilation. 
 # It is included by all makefiles of the project.
-#
 
-### PETSC library ###################################################################
-# The Flow123 requires PETSC library (2.x), you have to set 
+### PETSC library (REQUIRED) ###################################################################
+# The Flow123 requires PETSC library (3.0.x), you have to set 
 # the location of PETSC and used PETSC architecture unless you
 # would to use system wide settings.
-# eg.
-#PETSC_DIR=$HOME/local/petsc
-#PETSC_ARCH=linux-gcc-dbg
 
-#PETSC_DIR=
-#PETSC_ARCH=
+PETSC_DIR=
+PETSC_ARCH=
 
-#MACHINE specifies what pbs script will be used when rrunnin on paralel system( clusters, etc.)
-#if is not specified or is not existing, uses default ( bin/current_make_pbs.qsub)
+### Compiler Setup (OPTIONAL) ##################################################################
+# setup C/C++ compiler,linker and options;  
+# if you don't specify we use PETSC setting
 
-MACHINE=
+# e.g. to use  GCC
+#FLOW_CPP=g++
 
-##################################################################################
-## user should not change this
-include ${PETSC_DIR}/conf/variables
-##################################################################################
-
-### Compiler Setup ##################################################################
-# setup C/C++ compiler,linker and options
-
-# use the PETSC choice
-#CC=${CC}
-CPP=${CXX}
-
-# for GCC
-#CC=gcc
-#CPP=gcc
-
-# for Intel Compiler
-#CC=icc
-#CPP=icpc
-
-### Optimisation #####################################################
 # for debuging
-CFLAGS=-g -O0
+FLOW_CFLAGS=-g -O0
 
 # for production
-#CFLAGS=-O3
+#FLOW_CFLAGS=-O3
 
 ### Configuration defines #####################################################
 # here you can set some compile-time options
@@ -79,22 +34,19 @@ CFLAGS=-g -O0
 # USE_NODEBUG= -DNODEBUG
 
 # Uncomment to print all messages from all parallel MPI processes.
-# This only has effect with USE_PARALLEL 
-USE_PRINTALL = -DMPI_PRINTALL
+# This is only usefull for parallel debugging.
+# USE_PRINTALL = -DMPI_PRINTALL
 
-### Parallel stuff ########################################################
-## manual ParMetis setup (if it is not part of PETSC)
-#PARMETIS_INCLUDE=-I ${HOME}/local/ParMetis-3.1.1
-#PARMETIS_LIB=-L${HOME}/local/ParMetis-3.1.1  -lparmetis -lmetis
+# This activates a workaround for build sucessfuly with ATLAS.
+# It is safe to use this until one would use "asa" PETSC preconditioner.
+#ATLAS= -DHAVE_ATLAS_ONLY_LAPACK
+
+### Specialization of run script ##############################
+# Set the name of the script which will be used for batch processing.
+# the script with name ./bin/${MACHINE}_flow.sh will be used.
+#
+# valid values are: generic (default), hydra
+#MACHINE=
 
 
-#############################################################################
-# third party include dirs relative to ./src
-THIRD_INCLUDE=-I../third_party/Deal-II-tensor -I../third_party/boost-1.42/ -I../third_party/metis-4.0/Lib
-THIRD_LIBS=-L../third_party/metis-4.0/  -lmetis
-
-INCLUDE= ${PETSC_INCLUDE} ${PARMETIS_INCLUDE} ${THIRD_INCLUDE}
-LIBS=${THIRD_LIBS} ${PARMETIS_LIB} ${PETSC_LIB} 
-CPP_LINKER=${CPP}
-CDEFS=${USE_NODEBUG} ${USE_PARALLEL} ${USE_PRINTALL}
 

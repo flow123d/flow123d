@@ -1,2 +1,0 @@
-Arbitrary dimension tensor templates. Taken from DEAL-II project.
-Seems to be faster then TVMET library according simple mat*vec  measurments.

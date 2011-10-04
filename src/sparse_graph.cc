@@ -24,12 +24,13 @@
  *
  *
  * @file
+ * @ingroup la
  * @brief  Construction and partitioning of a sparse graph
  *
  */
 
-#include "system.hh"
-#include "par_distribution.hh"
+#include "system/system.hh"
+#include "system/par_distribution.hh"
 #include "sparse_graph.hh"
 
 #include "boost/lambda/lambda.hpp"
@@ -129,7 +130,7 @@ void SparseGraph::finalize()
    int * scounts = (int *) xmalloc( vtx_distr.np() * sizeof(int) );
 
    total_size=0;
-   for(proc=0, s=adj_of_proc.begin(); s!=adj_of_proc.end();s++, proc++)
+   for(proc=0, s=adj_of_proc.begin(); s!=adj_of_proc.end();++s, ++proc)
    {
        sdispls[proc] = total_size;
        scounts[proc] = edge_size * (s)->size(); 
@@ -139,7 +140,7 @@ void SparseGraph::finalize()
 
    Edge edge;
    int buf_pos=0;
-   for(proc=0, s = adj_of_proc.begin(); s!=adj_of_proc.end(); s++, proc++)
+   for(proc=0, s = adj_of_proc.begin(); s!=adj_of_proc.end(); ++s, ++proc)
    {
        ASSERT(sdispls[proc] == buf_pos,
                "Mismatch between displacement %d and buffer position %d. \n", sdispls[proc], buf_pos );

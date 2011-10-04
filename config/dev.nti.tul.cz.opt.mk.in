@@ -1,0 +1,17 @@
+## Directory containing installation of PETSC
+PETSC_DIR=/home/tester.flow123d/petsc-3.0.0-p12
+## Architecture of PETSC
+PETSC_ARCH=flow_g
+
+## Set up name of machine
+#MACHINE=
+
+## This is directory, where flow123d is be built
+BUILD_DIR=bitten_tmp
+
+## Compile arguments
+FLOW_CFLAGS=-O3
+
+## Debug information
+#USE_NODEBUG=-DNODEBUG
+#USE_PRINTALL=-DMPI_PRINTALL

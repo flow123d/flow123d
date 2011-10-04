@@ -15,7 +15,7 @@
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section*{Boundary conditions file format, version 1.0}
+\subsection{Boundary conditions file format, version 1.0}
 The file is divided in two sections, header and data.
 \begin{fileformat}
 \$BoundaryFormat\\
@@ -56,7 +56,8 @@ where
    boundary condition. Values are
    separated by spaces or tabs. By default we set
    \vari{number-of-tags}=1, where \vari{tag1} defines group of boundary
-   conditions, "type of water" in our jargon.
+   conditions, "type of water" in our jargon. This can be used to calculate total fluxes through 
+   the boundary group.
  \ditem{[text]}{char[]} --- arbitrary text, description of the fracture, notes,
    etc., up to 256 chars. This is an optional parameter.
 \end{description}
@@ -71,7 +72,7 @@ where
       \vari{type} & \vari{type-specific-data} & Description \\
       \hline
       \hline
-      1 & \vari{scalar} & Prescribed value of pressure or piez. head \\
+      1 & \vari{scalar} & Prescribed value of pressure  (in meters [m]) \\
       \hline
       2 & \vari{flux} & Prescribed value of flux through the boundary \\
       \hline 

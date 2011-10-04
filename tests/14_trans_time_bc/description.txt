@@ -1,0 +1,18 @@
+Test problem 14
+---------------------
+verification of:
+- time variable bc for transport
+
+setting:
+- 2D strip, horizontal
+- constant velocity field = 1
+- apply dirichlet BC on inflow (on right)
+  pulses:
+  time: 0       conc: 0
+  time: 1       conc: 20 (time interval 1-3)
+  time: 3       conc: 0
+  time: 6       conc: 40 (time interval 6-7)
+  time: 7       conc: 0
+
+
+

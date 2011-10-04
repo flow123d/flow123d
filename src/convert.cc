@@ -23,32 +23,24 @@
  * $LastChangedDate$
  *
  * @file
- * @brief ???
+ * @brief Functions for exporting some input files into output formats.
+ * @ingroup io
  *
- * @author jiri
+ * Should be replaced by unified output classes
+ *
  */
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
-#include "transport_bcd.h"
-#include "transport.h"
+#include "transport/transport.h"
 
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "output.h"
-#include "math_fce.h"
-#include "mesh.h"
-#include "boundaries.h"
-#include "output.h"
+#include "io/output.h"
+#include "system/math_fce.h"
+#include "mesh/mesh.h"
+#include "mesh/boundaries.h"
 #include "convert.h"
 
-#include "problem.h"
-#include "sources.h"
-//#include "materials.hh"
-#include "concentrations.h"
-#include "boundaries.h"
-#include "postprocess.h"
-#include "neighbours.h"
+#include "mesh/neighbours.h"
 
 static void output_convert_to_pos_source(struct Problem *problem);
 static void output_convert_to_pos_bcd(struct Problem *problem);
@@ -75,13 +67,14 @@ void output_convert_to_pos(struct Problem *problem)
             output_convert_to_pos_source(problem);
     output_convert_to_pos_bcd(problem);
     output_convert_to_pos_material(problem);
+    /*
     if (OptGetBool("Transport", "Transport_on", "no") == true)
     {
             if (ConstantDB::getInstance()->getChar("Concentration_fname") != NULL)
                     output_convert_to_pos_concentration(problem);
             if (ConstantDB::getInstance()->getChar("Transport_bcd_fname") != NULL)
                     output_convert_to_pos_transport_bcd(problem);
-    }
+    }*/
 }
 //=============================================================================
 // OUTPUT ROUTINE FOR CONVERTING SOURCES TO POS
@@ -130,9 +123,6 @@ void output_convert_to_pos_source(struct Problem *problem)
         xfprintf( out, ", " );
     }
     for( li = 0; li < elm->n_nodes; li++ ) {
-      if (elm->source != NULL)
-        xfprintf( out, dbl_fmt, elm->source->density);
-      else
         xfprintf( out, dbl_fmt, 0.0);
       if( li == elm->n_nodes - 1 )
         xfprintf( out, "};\n" );
@@ -154,7 +144,8 @@ void output_convert_to_pos_bcd(struct Problem *problem)
   const char *bcd_names[] = {"Dirichlet","Neumann","Newton P","Newton Sigma"};
   FILE *out;
   int li,j,test;
-  char *filename = OptGetStr( "Input", "Boundary", "\\" );
+  // Opravdu je to output - meni se na .pos
+  std::string filename = IONameHandler::get_instance()->get_output_file_name(OptGetStr( "Input", "Boundary", "\\" ));
   char dbl_fmt[ 16 ];
   ElementIter elm;
   Node* nod;
@@ -164,8 +155,8 @@ void output_convert_to_pos_bcd(struct Problem *problem)
 
   ASSERT(!( problem == NULL ),"NULL as argument of function output_convert_to_pos_bcd()\n");
   sprintf( dbl_fmt, "%%.%dg ", ConstantDB::getInstance()->getInt("Out_digit"));
-  strcat(filename,".pos");
-  out = xfopen( filename, "wt" );
+  const std::string& file = filename + ".pos";
+  out = xfopen( file, "wt" );
   xfprintf( out, "View \"%s - mesh\" {\n", OptGetStr("Global", "Description", "No description.") );
   FOR_ELEMENTS(elm)
   {
@@ -326,6 +317,7 @@ void output_convert_to_pos_material(struct Problem *problem)
 //=============================================================================
 // OUTPUT ROUTINE FOR CONVERTING CONCENTRATIONS TO POS
 //=============================================================================
+/*
 void output_convert_to_pos_concentration(struct Problem *problem)
 {
   Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
@@ -473,7 +465,7 @@ void output_convert_to_pos_transport_bcd(struct Problem *problem)
   }
   xfprintf( out, "};\n" );
   xfclose(out);
-}
+}*/
 
 // folowing function seems to be completly WRONG by desing and implementation
 // - no need to recreate whole Element and Node structures HERE
@@ -899,7 +891,7 @@ void output_transport_convert(struct Problem *problem){
 
 
         in = open_temp_files(problem->transport, "%s.tmp", "rt" );
-        out = open_temp_files(problem->transport, "%s", (problem->pos_format_id == POS_ASCII) ? "wt" : "wb" );
+        out = open_temp_files(problem->transport, "%s", (problem->pos_format_id == GMSH_MSH_ASCII) ? "wt" : "wb" );
 
 
     // find number of time steps
@@ -981,10 +973,10 @@ void output_transport_convert(struct Problem *problem){
 
         xprintf( Msg, "Writing transport output files... ")/*orig verb 2*/;
                 switch(problem->pos_format_id){
-                        case POS_ASCII:
+                        case GMSH_MSH_ASCII:
                                 write_transport_ascii_data(out[ph],problem,nodes,elements,time_steps,ph);
                                 break;
-                        case POS_BIN:
+                        case GMSH_MSH_BIN:
                                 write_transport_binary_data(out[ph],problem,nodes,elements,time_steps,ph);
                                 break;
                 }

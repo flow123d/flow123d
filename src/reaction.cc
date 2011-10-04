@@ -23,26 +23,20 @@
  * $LastChangedDate$
  *
  * @file
+ * @ingroup transport
  * @brief Reactions
  * Read input data and perform reaction computation
  *
  */
 
-#include "constantdb.h"
-#include "mesh/ini_constants_mesh.hh"
+#include "transport/transport.h"
 
-#include "transport.h"
-
-#include "system.hh"
+#include "system/system.hh"
 #include "xio.h"
-#include "mesh.h"
+#include "mesh/mesh.h"
 #include "reaction.h"
 #include "materials.hh"
 #include "elements.h"
-
-static int reaction_type_specific_coefficients( int st );
-static char supported_reaction_type( int st );
-void parse_reaction_line( struct Transport *transport, int i, char *line);
 
 //=============================================================================
 //      TRANSPORT REACTION
@@ -53,34 +47,34 @@ void parse_reaction_line( struct Transport *transport, int i, char *line);
  *
  */
 //=============================================================================
-void transport_reaction(struct Transport *transport, int elm_pos, MaterialDatabase::Iter material, int sbi)
+void oReaction::transport_reaction( double time_step,double ***conc, double ***pconc,int elm_pos, MaterialDatabase::Iter material, int sbi)
 {
     Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
 
-    struct Reaction *rct;
+    //struct Reaction *rct;
         int i;
-        double ***conc=transport->conc,***pconc=transport->pconc;
+    //    double ***conc=transport->conc,***pconc=transport->pconc;
 
         // TODO: remove epos_id, find_id
-        for(i=0;i < transport->n_reaction;i++){
-				rct = &transport->reaction[i];
-                switch(rct->type){
+        //for(i=0;i < transport->n_reaction;i++){
+			//	rct = &transport->reaction[i];
+                switch(type){
                         case 0:
-                         if(rct->sbi != sbi)
+                         if(substancei != sbi)
                                 break;
-                         if(rct->coef[0] != -1.0){
-                        	 conc[rct->sbi][MOBILE][elm_pos] += rct->coef[0] * transport->time_step;
-                        	 pconc[rct->sbi][MOBILE][elm_pos] = conc[rct->sbi][MOBILE][elm_pos];
+                         if(coef[0] != -1.0){
+                        	 conc[MOBILE][substancei][elm_pos] += coef[0] * time_step;
+                        	 pconc[MOBILE][substancei][elm_pos] = conc[MOBILE][substancei][elm_pos];
                       //  	 printf("%f\t%f\n",rct->coef[0],transport->time_step);
                       //  	 getchar();
                          }
                          else{
-                        	 conc[rct->sbi][MOBILE][elm_pos] += 1/(material->size);
-                        	 pconc[rct->sbi][MOBILE][elm_pos] = conc[rct->sbi][MOBILE][elm_pos];
+                        	 conc[MOBILE][substancei][elm_pos] += 1/(material->size);
+                        	 pconc[MOBILE][substancei][elm_pos] = conc[MOBILE][substancei][elm_pos];
                          }
                          break;
                 }
-        }
+       // }
 }
 //=============================================================================
 // PARSE REACTION LINE
@@ -90,12 +84,14 @@ void transport_reaction(struct Transport *transport, int elm_pos, MaterialDataba
  *
  */
 //=============================================================================
-void parse_reaction_line( struct Transport *transport, int i, char *line)
+oReaction *parse_reaction_line( int i, char *line)
 {
 	int ci,pc;     // si - substance index
-	struct Reaction *rct;
+	oReaction *oreact;
+	//struct Reaction *rct;
+	//rct = &transport->reaction[i];
 
-	rct = &transport->reaction[i];
+	oreact = new oReaction();
 
 	rct->type      = atoi( xstrtok( line) );
     if(supported_reaction_type(rct->type) == true)
@@ -186,5 +182,4 @@ void read_reaction_list( struct Transport *transport )
 				parse_reaction_line(transport, i ,line );
 			}
             xfclose( in );
-            xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }

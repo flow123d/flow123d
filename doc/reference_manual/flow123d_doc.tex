@@ -35,6 +35,11 @@
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
 
+\usepackage{fancyvrb}	% extended verbatim environments (for examples of IO files)
+\usepackage{hyperref}   % hypertext capabilities, should by last package
+
+\hypersetup{backref,colorlinks=true}  %setup hyperef package
+
 \newcommand{\vari}[1]{{\it #1}}
 \newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
 \newenvironment{fileformat}{\tt\begin{flushleft}}{\end{flushleft}}
@@ -74,6 +79,7 @@
 %%% remove comment delimiter ('%') and specify parameters if required
 %\usepackage[dvips]{graphics}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DOCUMENT
 %% set specific page layout
 \addtolength{\textwidth}{3cm}
 \addtolength{\hoffset}{-1.5cm}
@@ -104,7 +110,7 @@ FLOW123D
 
 \vspace{1cm}
 \textbf{\Large{
-version 1.6.0
+version 1.6.5
 }}
 
 \vspace{1cm}
@@ -115,19 +121,155 @@ and brief user manual.
 }}
 
 
-\vspace{10cm}
+\vspace{7cm}
 
-\noindent \textbf{\Large{Liberec, 2010}}
+\noindent \textbf{\Large{Liberec, 2011}}
+
+\vspace{1cm}
 
 {\bf Acknowledgement.} This work was realized under the state  subsidy of the Czech Republic within the research and development 
-project ``Advanced Remediation Technologies and Processes Center`` 1M0554 
+project ``Advanced Remediation Technologies and Processes Center'' 1M0554 
 -- Program of Research Centers PP2-D01 supported by Ministry of Education.
 \end{center}
 \noindent 
 
 \noindent
 
-\include{flow123d} 
+\setcounter{page}{2}
+
+\parindent=0pt
+\parskip=1ex
+
+\section{Overview}
+Flow123D is a software for simulation of water flow and reactionary solute transport in a heterogeneous 
+porous and fractured medium. In particular it is suited for simulation of underground processes in a granite rock massive.
+The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D chanels and exchange between 
+domains of different dimension. The computational mesh is therefore collection of 3D tetrahedrons, 2D triangles and 1D line segments.
+
+The water flow model assumes a saturated medium described by Darcy law. For discretization, we use lumped mixed-hybrid finite element method.
+We support both steady and unsteady water flow.
+
+The solute transport model can deal with several dissolved substances. It contains non-equilibrium dual porosity model, 
+i.e. exchange between mobile and immobile 
+pores. There is also model for several types of adsorption in both the mobile and immobile zone. The implemented adsorption models are
+linear adsorption, Freundlich isotherm and Langmuir isotherm. The solute transport model uses finite volume discretization 
+with up-winding in space and explicit Euler discretization in time. The dual porosity and the adsorption are introduced into transport by operator splitting.
+The dual porosity model use analytic solution and the non-linear adsorption is solved numerically by the Newton method.
+
+Reaction between transported substances can be modeled either by a SEMCHEM module, which is slow, but can describe all sorts of reactions. On the other hand,
+for reactions of the first order, i.e. linear reactions or decays, we provide our own solver which is much faster. Reactions are coupled with transport 
+by the operator splitting method,
+
+The program provides output of the pressure, the velocity and the concentration fields in two file formats. You can use file format of GMSH mesh generator and post-processor 
+or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of VTK data.
+
+The program is implemented in C/C++ using essentially PETSC library for linear algebra. The water flow as well as the transport simulation and reactions can be computed 
+in parallel using MPI environment. 
+
+The program is distributed under GNU GPL v. 3 license and is available on the project web page:
+http://dev.nti.tul.cz/trac/flow123d
+
+\section{Basic usage}
+
+\subsection{How to run the simulation.}
+On the Linux system the program can be started either directly or through a script \verb'flow123d.sh'. When started directly, e.g. by the command
+\begin{verbatim}
+  > flow123d -s example.ini
+\end{verbatim}
+the program requires one argument after switch \verb'-s' which is the name of the principal input file. Full list of possible command line arguments is as follows.
+
+\begin{description}
+ \item[-s {\bf\it file}] \hfill\\
+ 	 Set principal INI input file. All relative paths in the INI file are relative against current directory.
+ \item[-S {\bf\it file}] \hfill\\
+ 	Set principal INI input file. All relative paths in the INI file are relative against directory of the INI file. This is equivalent
+to change directory to the directory of the INI file at the start of the program.
+ \item[-i {\bf\it path}] \hfill\\
+ 	When there is string \verb"${INPUT}" %$
+  	in the any path in the INI file, it will be replaced by given {\it path}.
+ \item[-o {\bf\it path}] \hfill\\
+ 	Every relative path for any output file will be relative to this {\it path}. 
+\end{description}
+
+All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solver. In order to get list of supported options 
+use parameter \verb'-help'.
+
+
+You can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. This script accepts the same parameters as the program itself
+and further some additional parameters.
+
+\begin{description}
+  \item[-h] \hfill\\
+  	Usage overview.
+  \item[-t {\bf\it timeout}] \hfill\\
+  	Upper estimate for real runing time of the calculation. Kill calculation after {\it timeout} seconds. 
+  	Can also be used by PBS to choose appropriate job queue. 
+  \item[-np {\bf\it number of processes}] \hfill\\
+  	Specify number of parallel processes for calculation.
+  \item[-m {\bf\it memory limit}] \hfill\\
+  	Limits total available memory to {\it memory limit} bytes.
+  \item[-n {\bf\it priority}] \hfill\\
+  	Change (lower) priority for the calculation. See {\tt nice} command.
+  \item[-r {\bf\it out file}] \hfill\\
+  	Stdout and stderr will be redirected to {\it out file}.
+\end{description}
+
+On the Windows system you have to use Cygwin libraries in other to emulate Linux API. The program with libraries can be downloaded form:
+
+\verb'http://dev.nti.tul.cz/~brezina/flow123d_packages/'
+
+Then you can start a sequential run by command:
+\begin{verbatim}
+  > flow123d.exe -s example.ini
+\end{verbatim}
+or a parallel run by command:
+\begin{verbatim}
+  > mpiexec.exe -np 2 flow123d.exe -s example.ini
+\end{verbatim}
+The program accepts the same parameters as the Linux version, but there is no script similar to \verb'flow123d.sh' on Windows system.
+
+
+\subsection{Structure of input}
+
+The principal input file of the program is an INI file which contains names of other necessary input files.
+Those are the file with calculation mesh (\verb'*.msh'), the file with specification of adjacency between dimensions (\verb'*.ngh'),
+the file with material description (\verb'*.mtr') and the file with boundary conditions for the water flow problem (\verb'*.bcd').
+For unsteady water flow you have to specify file with initial condition for the pressure (key \verb'Input/Initial') and optionally one can introduce 
+file with water sources (key \verb'Input/Sources').
+
+In the case of transport simulation one have to specify also the file with transport boundary conditions (\verb'*.tbc') 
+and the file with transport initial condition
+for individual substances (\verb'*.tic').
+
+ \begin{figure}[h]
+    \begin{center}
+      \includegraphics[scale=0.7]{schema.pdf} % 
+      \caption{Preparation of input files.}
+      \label{obr3}
+    \end{center}
+  \end{figure}
+
+
+For the preparation of input files we use several utilities (see Figure \ref{obr3}). 
+We usually begin with a \verb'*.geo' file as a description of the domain geometry. This come as an input for the GMSH mesh generator, which produce 
+the mesh file. Then we run program \verb'ngh' to produce adjacency file. Finally we can use program \verb'bcd' for the preparation of files with
+boundary and initial conditions. The file with material properties has to be created manually, preferably by modifying some of the example problems.
+The programs \verb'ngh' and \verb'bcd' are distributed together with flow123d with their own limited documentation.
+
+The output files can be either \verb'*.pos' files accepted by the GMSH or one can use VTK format that can be post-processed by Paraview.
+
+In following sections we briefly describe structure of individual input files.
+
+\section{Water flow model}
+\subsection{Governing equations}
+\subsection{Mixed-hybrid discretization}
+
+\section{Transport model}
+\include{convection}
+
+\section{Reaction model}
+
+\section{Input files}
 \include{flow_ini}
 \include{msh_20} 
 \include{mtr_10}
@@ -136,8 +278,10 @@ project ``Advanced Remediation Technologies and Processes Center`` 1M0554
 \include{src_10}  
 \include{pos_12}   
 
+\section{Output files}
+\include{output}
+
 
 \end{document}
 
-% == UNREGISTERED! == GrindEQ Word-to-LaTeX 2008 ==
 

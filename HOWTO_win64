@@ -5,8 +5,6 @@ Platforma: Win64, Cygwin, Eclipse
 *****************************************
 Eclipse:
 	stahnout eclipse-cpp-galileo-SR1-win32.zip, rozbalit, spustit. Hotovo.
-	nebo: eclipse-SDK-3.6.1-win32.zip, rozbalit, spustit.
-		  Help -> Install new software -> Add: CDT - http://download.eclipse.org/tools/cdt/releases/helios 
 
 SVN pro Eclipse:
 	Help->Install new software-> Add: Subversive - http://subclipse.tigris.org/update_1.6.x, zaskrtnout a nainstalovat vsechno. Hotovo.
@@ -48,17 +46,13 @@ Petsc:
 New project
 SVN checkout
 https://dev.nti.tul.cz/repos/flow123d
-Vybrat: branches/<neco> nebo trunk 
+Branches -> JB-JK-merge
 Checkout as: New Project Wizard
 C project
 Name: "moje_jmeno", Makefile project->Empty->Cygwin GCC toolchain
 Project->Properties->C/C++ build->Behaviour->Use parallel build, use optimal jobs number
-
-*****************************************
-* Eclipse projekt - ZMENA NA JINY BRANCH V REPOZITARI
-*****************************************
-Okno "Project explorer" -> RBM -> Team -> Switch To Another Branch
-Pomoci Select vybrat novy branch, OK. Hotovo.
+Window->Preferences->General->Workspace->Text file encoding = UTF8
+Window->Preferences->C/C++->Editor->Documentation tool = Doxygen
 
 *****************************************
 * Nutne upravy v projektu
