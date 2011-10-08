@@ -31,7 +31,7 @@ TestProblem::TestProblem ()
   Point<2> pa(0,0), pb(1,-5);
   std::vector<unsigned int> grid_steps;
   grid_steps.push_back(1);
-  grid_steps.push_back(5000);
+  grid_steps.push_back(50);
 
   // colorize boudaries (x- 0,1; y- 2,3; z- 4,5) and materials (according to octants)
   GridGenerator::subdivided_hyper_rectangle (coarse_tria,grid_steps ,pa, pb,true);

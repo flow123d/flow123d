@@ -301,7 +301,7 @@ Richards<dim>::Richards (Triangulation<dim> &coarse_tria, unsigned int order)
     // Crank Nicholson still makes problem with velocity oscilations
     //
     time_theta = 1; //0.5;
-    weight=1.0;//0.9; // 1 - mixed. ; 0 - decoupled ?? doesn't work
+    weight=0.0;//0.9; // 1 - mixed. ; 0 - decoupled ?? doesn't work
 
  
 
@@ -418,7 +418,7 @@ void Richards<dim>::saturation_update() {
 
 template <int dim>
 void Richards<dim>::assemble_system() {
-    QGauss<dim> quadrature_formula(order + 2);
+    QGauss<dim> quadrature_formula(order + 1);
     QGauss < dim - 1 > face_quadrature_formula(order + 1);
 
    FEValues<dim> fe_values(fe, quadrature_formula,
@@ -539,7 +539,7 @@ void Richards<dim>::assemble_system() {
 
                     // posileni diagonaly touto cesotu vede k prilis male rychlosti
 
-                    local_matrix(i,i) +=  (1-weight) * phi_i_u * k_inverse_values[q] *  phi_j_u * inv_k / 2;
+                    local_matrix(i,i) +=  (1-weight) * phi_i_u * k_inverse_values[q] *  phi_j_u * inv_k * fe_values.JxW(q);;
                     local_matrix(i, j) += (
                               time_theta* (
                                   weight * phi_i_u * k_inverse_values[q] *  phi_j_u * inv_k
@@ -641,6 +641,8 @@ void Richards<dim>::assemble_system() {
             }
         }
 
+        cout << "------------\n";
+        local_matrix.print_formatted(cout);
         cell->get_dof_indices(local_dof_indices);
         linear_system.matrix_add(local_dof_indices, local_matrix);
         linear_system.rhs_add(local_dof_indices, local_rhs);

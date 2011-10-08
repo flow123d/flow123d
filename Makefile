@@ -30,7 +30,7 @@ run-parameters  =
 # the deal.II toplevel directory:
 D = ${HOME}/local/deal.II-6.2.1
 
-
+BOOST_INCLUDE=${D}/contrib/boost/include/boost
 
 
 #
@@ -42,7 +42,7 @@ D = ${HOME}/local/deal.II-6.2.1
 include $D/common/Make.global_options
 
 ACTUAL=$(shell pwd)
-INCLUDE += -I${ACTUAL}/include -I${ACTUAL}/lib/boost-1.42 -I${ACTUAL}/lib
+INCLUDE += -I${ACTUAL}/include -I${BOOST_INCLUDE} -I${ACTUAL}/lib
 CXXFLAGS.g+= -Wno-unused
 
 # First get a list of files belonging to the project. Include files
@@ -56,7 +56,7 @@ h-files     = $(wildcard include/*.h)
 lib-h-files = $(shell echo $D/base/include/base/*.h \
 		 $D/lac/include/lac/*.h             \
 		 $D/deal.II/include/*/*.h \
-		 ./lib/boost-1.42/boost/*.h )
+		 ${BOOST_INCLUDE}/*.h )
 
 # As before, define a list of libraries. This, of course depends on
 # the dimension in which we are working:
@@ -106,6 +106,7 @@ lib/$(deal_II_dimension)d/%.$(OBJEXT) :
 	$(CXX)  $(flags) -c $< -o $@
 
 
+all: $(target)$(EXEEXT)
 
 # Next define how to link the executable
 $(target)$(EXEEXT) : $(libraries) Makefile
