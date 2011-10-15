@@ -128,9 +128,9 @@ ${DEPS}/%.d: %.c ${DEPS}
 ${DEPS}/%.d: %.cc ${DEPS}
 	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.cc)))" $<
 
-# General rule to create dependencies files for .ccp source files
-${DEPS}/%.d: %.ccp  ${DEPS}
-	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.ccp)))" $<
+# General rule to create dependencies files for .cpp source files
+${DEPS}/%.d: %.cpp  ${DEPS}
+	${CPP} -o $@ ${LOCAL_INCLUDE} ${INCLUDE} -MM -MG -MP -MT "$(addprefix $(DEPS)/, $(notdir $(@:%.o=%.cpp)))" $<
 
 # Include generated files with dependencies
 -include $(FLOW123D_DEPS)
