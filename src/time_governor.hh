@@ -60,6 +60,17 @@
  * - number of the time level
  * - time comparison
  *
+ * TODO: better implementation of steady TimeGovernor, be careful with infinite values namely where we do some calculations with time:
+ * - TimeMarks::is_current
+ * - TimeGovernor:: lt le ge gt
+ *
+ * TODO:
+ * - still we have problems with time comparisons
+ * 1) TimeMarks can merge marks only with fixed precision, since they are shared by several equations with possibly different timesteps
+ * 2) queries
+ *
+ *
+ *
  */
 
 class TimeGovernor
@@ -89,6 +100,8 @@ public:
     * First call of next_time() push the actual time to infinity.
     *
     * However, you have to use full constructor for the "steady problem" that have time variable input data.
+    *
+    * Allow set TimeMarks. Use only this constructor for steady problems.
     */
    TimeGovernor(double init_time = inf_time);
 

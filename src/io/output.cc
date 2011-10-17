@@ -263,6 +263,7 @@ Output::Output(Mesh *_mesh, string fname)
         return;
     }
 
+    // TODO: Remove this. Output is off if no filename is given.
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
@@ -275,7 +276,7 @@ Output::Output(Mesh *_mesh, string fname)
 
     base_file->open(fname.c_str());
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
+    xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
     base_filename = new string(fname);
 
@@ -349,7 +350,7 @@ Output::~Output()
         delete base_file;
     }
 
-    xprintf(Msg, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 }
 
 /**
@@ -428,6 +429,7 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     string *base_filename;
     OutFileFormat format_type;
 
+    // TODO: Remove this. Output is off if no filename is given.
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
@@ -440,7 +442,7 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
 
     base_file->open(fname.c_str());
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    xprintf(Msg, "Writing flow output file: %s ... \n", fname.c_str());
+    xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
 
     base_filename = new string(fname);

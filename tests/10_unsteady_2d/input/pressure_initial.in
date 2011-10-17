@@ -1,7 +1,7 @@
 $ConcentrationFormat
 1.0	0	8
 $EndConcentrationFormat
-$Sources
+$PressureHead
 906
 	1	 0.000000000000
 	2	 0.000000000000
@@ -909,4 +909,4 @@ $Sources
 	904	 0.000000000000
 	905	 0.000000000000
 	906	 0.000000000000
-$EndSources
+$EndPressureHead

@@ -56,7 +56,13 @@ class MaterialDatabase;
 
 #define MAX_PHASES 4
 
-
+/**
+ * TODO:
+ * - doxy documentation
+ * - remove boundary matrix, make method for assembly of boundary source vector directly (when bc or velocity has changed) or
+ *   use rescaling for change of time step
+ * - make separate method for changing time step (rescaling only)
+ */
 
 
 class ConvectionTransport : public EquationBase {
@@ -89,9 +95,9 @@ public:
 	void set_target_time(double target_time);
 
 	/**
-	 * Update boundary source vectors. Possibly read time dependent boundary condition.
+	 * Read time dependent boundary condition and update boundary source vectors.
 	 */
-	void read_bc_vector(int level);
+	void read_bc_vector();
 	/**
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
@@ -179,7 +185,8 @@ private:
     //double max_step;		              ///< Time step constrain given by CFL condition.
     //unsigned int time_level;              ///< Number of computed time steps.
 
-    std::vector<double> bc_times;       ///< Times of reading time dependent boundary condition. Initial boundary condition is zero.
+    //std::vector<double> bc_times;       ///< Times of reading time dependent boundary condition. Initial boundary condition is zero.
+	TimeMark::Type bc_mark_type_;
     unsigned int bc_time_level;         ///< Index into bc_times vector.
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.

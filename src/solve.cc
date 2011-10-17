@@ -146,7 +146,6 @@ void solve_system( struct Solver *solver, struct LinSys *system )
 
 	ASSERT( NONULL( solver ),"NULL 'solver' argument.\n");
     ASSERT( NONULL( system ),"NULL 'system' argument.\n");
-	xprintf(Msg, "Solve system ...\n");
 
 	solver->LinSys=system;
 	switch (solver->type) {
@@ -170,7 +169,6 @@ void solve_system( struct Solver *solver, struct LinSys *system )
 	            xprintf(UsrErr,"UNKNOWN solver is not supported.\n");
 	}
 
-	xprintf( Msg, "Solver O.K.\n")/*orig verb 2*/;
 }
 
 //=============================================================================
@@ -234,7 +232,6 @@ void RunExtern( Solver *solver,char *cmdline,
 	}
 
     xprintf( Msg, "END OF MESSAGES OF THE SOLVER\n\n");
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }
 //=============================================================================
 /*! @brief Clean temporary directory of external solver.
@@ -338,7 +335,7 @@ void solver_petsc(Solver *solver)
 	   }
 	}
 	petsc_str=OptGetStr("Solver","Solver_params",petsc_dflt_opt);
-	xprintf(Msg,"inserting petsc options: %s\n",petsc_str);
+	xprintf(MsgVerb,"inserting petsc options: %s\n",petsc_str);
 	
 /**
  *
@@ -420,8 +417,10 @@ void solver_petsc(Solver *solver)
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);
-	DBGMSG ("convergence reason %d, number of iterations is %d", Reason, nits);
-        Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
+
+	// TODO: make solver part of LinSyt, and make gatter for num of it
+	xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", Reason, nits);
+    Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 	KSPDestroy(System);
 
 }

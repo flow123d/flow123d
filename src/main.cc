@@ -136,6 +136,7 @@ int main(int argc, char **argv) {
     }
     case PROBLEM_DENSITY:
         // main_compute_mh_density(problem);
+        xprintf(UsrErr,"Density driven model not yet reimplemented.");
         break;
     }
 
@@ -257,7 +258,6 @@ void main_compute_mh_steady_saturated(struct Problem *problem)
         problem->transport_os = new TransportOperatorSplitting(problem->material_database, mesh);
     }
 
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 
     water_output->postprocess();
 

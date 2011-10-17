@@ -43,9 +43,18 @@ function print_help {
 	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOU seconds"
 	echo "    -m MEM          Flow123d can use only MEM bytes"
 	echo "    -n NICE         Run Flow123d with changed (lower) priority"
-	echo "    -o OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
+	echo "    -r OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
 	echo "    -s              Working directory will be current directory (default)"
 	echo "    -S              Working directory will be relative path to ini file"
+	echo ""
+	echo "RETURN VALUES:"
+	echo "    0               Flow123d exited normaly"
+	echo "    10              Bad argument/option"
+	echo "    11              Flow123d can't be executed"
+	echo "    12              INI file doesn't exist"
+	echo "    13              Flow123d can't read INI file"
+	echo "    14              Flow123d was killed (TIMEOUT exceeded)"
+	echo "    15              Flow123d crashed"
 	echo ""
 }
 
@@ -56,7 +65,7 @@ unset INI_FILE
 FLOW_OPT="-s"
 
 # Parse arguments with bash builtin command getopts
-while getopts ":ht:m:n:o:sS" opt
+while getopts ":ht:m:n:r:sS" opt
 do
 	case ${opt} in
 	h)
@@ -72,7 +81,7 @@ do
 	n)
 		NICE="${OPTARG}"
 		;;
-	o)
+	r)
 		OUT_FILE="${OPTARG}"
 		;;
 	s)
@@ -86,7 +95,7 @@ do
 		echo "Error: Invalid option: -$OPTARG"
 		echo ""
 		print_help
-		exit 1
+		exit 10
 		;;
 	esac
 done
@@ -106,7 +115,7 @@ fi
 if ! [ -x "${FLOW123D}" ]
 then
 	echo "Error: can't execute ${FLOW123D}"
-	exit 1
+	exit 11
 fi
 
 # Was any ini file set?
@@ -116,14 +125,14 @@ then
 	echo "Error: No ini file"
 	echo ""
 	print_help
-	exit 1
+	exit 12
 else
 
 	# Check if it is possible to read ini file
 	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
 	then
 		echo "Error: can't read ${INI_FILE}"
-		exit 1
+		exit 13
 	fi
 	
 	# Was memory limit set?
@@ -185,10 +194,9 @@ else
 		# Was Flow123d finished during TIMEOUT or is it still running?
 		if [ ${IS_RUNNING} -eq 1 ]
 		then
-			echo " [Failed:loop]"
 			# Send SIGTERM to flow123d.
 			kill -s SIGTERM ${FLOW123D_PID} #> /dev/null 2>&1
-			exit 1
+			exit 14
 		else
 			# Get exit status variable of flow123d
 			wait ${FLOW123D_PID}
@@ -199,13 +207,13 @@ else
 			then
 				exit 0
 			else
-				exit 1
+				exit 15
 			fi
 		fi
 	else
 		if [ -n "${FLOW123D_OUTPUT}" ]
 		then
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1
 		else
 			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS}
 		fi

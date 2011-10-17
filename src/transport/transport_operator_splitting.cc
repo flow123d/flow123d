@@ -51,7 +51,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	char    **substance_name = convection->get_substance_names();
 
 	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
-	DBGMSG("create output\n");
 	field_output = new OutputTime(mesh_, output_file);
 
 	/*
@@ -68,6 +67,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
          field_output->register_elem_data<double>(subst_name, "M/L^3", data , mesh_->n_elements());
     }
     // write initial condition
+    convection->output_vector_gather();
     field_output->write_data(time_->t());
 
 }
@@ -105,20 +105,22 @@ void TransportOperatorSplitting::update_solution() {
 	// TODO: update Semchem time step here!!
 	Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
+    xprintf( Msg, "t: %f (TOS)                  cfl_dt: %f ", convection->time().t(), convection->time().dt() );
     START_TIMER("transport_steps");
+    int steps=0;
     while ( convection->time().lt(time_->t()) )
     {
+        steps++;
 	    // one internal step
-	    xprintf( Msg, "Time : %f\n", convection->time().t() );
+	    //xprintf( Msg, "Time : %f\n", convection->time().t() );
 	    convection->compute_one_step();
 	    // Calling linear reactions and Semchem
 	    decayRad->compute_one_step();
 	    Semchem_reactions->compute_one_step();
 	}
     END_TIMER("transport_steps");
-    xprintf( Msg, "O.K.\n");
-    DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
-
+    //DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
+    xprintf( Msg, " steps: %d\n",steps);
 }
 
 

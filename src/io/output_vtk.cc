@@ -450,13 +450,13 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
 
     data_file->open(frame_file_name);
     if(data_file->is_open() == false) {
-        xprintf(Msg, "Could not write output to the file: %s\n", frame_file_name);
+        xprintf(Err, "Could not write output to the file: %s\n", frame_file_name);
         return 0;
     } else {
         /* Set upd data file */
         output->set_data_file(data_file);
 
-        xprintf(Msg, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
+        xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
 
         /* Find first directory delimiter */
         for(i=strlen(frame_file_name); i>=0; i--) {
@@ -474,9 +474,9 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
             output->get_base_file() << "<DataSet timestep=\"" << step << "\" group=\"\" part=\"0\" file=\"" << frame_file_name <<"\"/>" << endl;
         }
 
-        xprintf(Msg, "O.K.\n");
+        xprintf(MsgLog, "O.K.\n");
 
-        xprintf(Msg, "%s: Writing output (frame %d) file %s ... ", __func__, step, frame_file_name);
+        xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__, step, frame_file_name);
 
         /* Write header */
         write_vtk_vtu_head(output);
@@ -505,7 +505,7 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
         delete data_file;
         output->set_data_file(NULL);
 
-        xprintf( Msg, "O.K.\n");
+        xprintf(MsgLog, "O.K.\n");
     }
 
     return 1;
@@ -517,13 +517,13 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
  */
 int write_vtk_pvd_head(OutputTime *output)
 {
-    xprintf( Msg, "%s: Writing output file (head) %s ... ", __func__, output->get_base_filename().c_str() );
+    xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__, output->get_base_filename().c_str() );
 
     output->get_base_file() << "<?xml version=\"1.0\"?>" << endl;
     output->get_base_file() << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
     output->get_base_file() << "<Collection>" << endl;
 
-    xprintf( Msg, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }
@@ -534,12 +534,12 @@ int write_vtk_pvd_head(OutputTime *output)
  */
 int write_vtk_pvd_tail(OutputTime *output)
 {
-    xprintf( Msg, "%s: Writing output file (tail) %s ... ", __func__, output->get_base_filename().c_str() );
+    xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__, output->get_base_filename().c_str() );
 
     output->get_base_file() << "</Collection>" << endl;
     output->get_base_file() << "</VTKFile>" << endl;
 
-    xprintf( Msg, "O.K.\n");
+    xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }

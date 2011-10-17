@@ -182,5 +182,4 @@ void read_reaction_list( struct Transport *transport )
 				parse_reaction_line(transport, i ,line );
 			}
             xfclose( in );
-            xprintf( Msg, "O.K.\n")/*orig verb 2*/;
 }

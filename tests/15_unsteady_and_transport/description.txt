@@ -1,0 +1,18 @@
+Test problem 15
+---------------------
+verification of:
+- unsteady flow (LMH) + transport
+
+setting:
+
+rectangle (0,1)x(0,16)
+flow: zero dirichlet BC for x=0, zero Neuman else, source = -x
+conductivity 1.0
+storativity 1.0
+near x=0 pressure is = -tx
+         velocity is = t
+
+transport: dirichlet BC = 10.0 on the inflow (on left) for time interval (0,0.1)
+
+exact solution for t>0.1: conc = 10.0 on (0,0.005) + t^2/2 and zero elsewhere
+

@@ -22,16 +22,16 @@
 </PointData>
 <CellData Scalars="A_mobile_[M/L^3],B_mobile_[M/L^3],C_mobile_[M/L^3],D_mobile_[M/L^3],E_mobile_[M/L^3],F_mobile_[M/L^3],G_mobile_[M/L^3],H_mobile_[M/L^3]" Vectors="">
 <DataArray type="Float64" Name="A_mobile_[M/L^3]" format="ascii">
-1.201863519188599e-18 1.201863519188586e-18 1.201863519188599e-18 
+4.321436736015247e-18 4.321436736015197e-18 4.321436736015247e-18 
 </DataArray>
 <DataArray type="Float64" Name="B_mobile_[M/L^3]" format="ascii">
 1.254214390493651e-18 1.254214390493638e-18 1.254214390493651e-18 
 </DataArray>
 <DataArray type="Float64" Name="C_mobile_[M/L^3]" format="ascii">
-3.599997722157516e-01 3.599997722157475e-01 3.599997722157516e-01 
+3.599999999999997e-01 3.599999999999957e-01 3.599999999999997e-01 
 </DataArray>
 <DataArray type="Float64" Name="D_mobile_[M/L^3]" format="ascii">
-1.520424140321467e-21 1.520424140321454e-21 1.520424140321467e-21 
+1.520424140321467e-21 1.520424140321453e-21 1.520424140321467e-21 
 </DataArray>
 <DataArray type="Float64" Name="E_mobile_[M/L^3]" format="ascii">
 2.117582368135751e-23 2.117582368135730e-23 2.117582368135751e-23 
@@ -40,10 +40,10 @@
 5.385011962169212e-20 5.385011962169160e-20 5.385011962169212e-20 
 </DataArray>
 <DataArray type="Float64" Name="G_mobile_[M/L^3]" format="ascii">
-8.700584074594671e-08 8.700584074594579e-08 8.700584074594671e-08 
+2.392368470550120e-16 2.392368470550093e-16 2.392368470550120e-16 
 </DataArray>
 <DataArray type="Float64" Name="H_mobile_[M/L^3]" format="ascii">
-1.407784075443621e-07 1.407784075443607e-07 1.407784075443621e-07 
+1.296433138386942e-17 1.296433138386928e-17 1.296433138386942e-17 
 </DataArray>
 </CellData>
 </Piece>

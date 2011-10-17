@@ -1,7 +1,14 @@
 Test problem 1
 ---------------------
-verification of:
--flow
--multidimenzional connection (1D-2D,2D-3D,1D-3D)
--solver convergence
-- water sources
+verification of flow sources
+
+test problem:
+domain: (-1,1)x(-1,1) 
+solution = (1-x^2)*(1-y^2)
+
+homogeneous Dirichlet BC
+
+sources = -Laplace of solution = 2(1-y^2) + 2(1-x^2)
+
+use function parser to parse given formula 
+(new key in ini file: source_formula)

@@ -46,8 +46,9 @@
 #include "sparse_graph.hh"
 #include "field_p0.hh"
 #include "flow/local_matrix.h"
-#include <limits>
 
+
+#include <limits>
 #include <set>
 #include <vector>
 #include <iostream>
@@ -85,7 +86,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     schur0   = NULL;
     schur1   = NULL;
     schur2   = NULL;
-    sources  = NULL;
     IA1      = NULL;
     IA2      = NULL;
 
@@ -95,8 +95,14 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
         sources->read_field(IONameHandler::get_instance()->get_input_file_name(sources_fname),string("$Sources"));
     }
 
+    string sources_formula = OptGetStr("Input", "sources_formula","//");
+    if (sources_formula!= "//") {
+        sources= new FieldP0<double>(mesh_);
+        sources->setup_from_function(sources_formula);
+    }
+
     // time governor
-    time_=new TimeGovernor(0.0, TimeGovernor::inf_time, *time_marks);
+    time_=new TimeGovernor(-1, TimeGovernor::inf_time, *time_marks);
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -127,6 +133,42 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
 
     make_schur0();
 
+    // prepare Scatter form parallel to sequantial in original numbering
+    {
+            IS is_par, is_loc;
+            int i, si, *loc_idx;
+            Edge *edg;
+
+            // create local solution vector
+            solution = (double *) xmalloc(size * sizeof(double));
+            VecCreateSeqWithArray(PETSC_COMM_SELF, size, solution,
+                    &(sol_vec));
+
+            // create seq. IS to scatter par solutin to seq. vec. in original order
+            // use essentialy row_4_id arrays
+            loc_idx = (int *) xmalloc(size * sizeof(int));
+            i = 0;
+            FOR_ELEMENTS(mesh_, ele) {
+                FOR_ELEMENT_SIDES(ele,si) {
+                    loc_idx[i++] = side_row_4_id[ele->side[si]->id];
+                }
+            }
+            FOR_ELEMENTS(mesh_, ele) {
+                loc_idx[i++] = row_4_el[ele.index()];
+            }
+            FOR_EDGES(mesh_, edg) {
+                loc_idx[i++] = row_4_edge[edg.index()];
+            }
+            ASSERT( i==size,"Size of array does not match number of fills.\n");
+            //DBGPRINT_INT("loc_idx",size,loc_idx);
+            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, &(is_loc));
+            xfree(loc_idx);
+            VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
+                    PETSC_NULL, &par_to_all);
+            ISDestroy(is_loc);
+        }
+    solution_changed_for_scatter=true;
+
 }
 
 //=============================================================================
@@ -142,6 +184,8 @@ void DarcyFlowMH_Steady::update_solution() {
 
 
     time_->next_time();
+
+    xprintf(Msg, "t: %f (Darcy) dt: %f\n",time_->t(), time_->dt());
     modify_system(); // hack for unsteady model
 
     switch (n_schur_compls) {
@@ -167,48 +211,6 @@ void DarcyFlowMH_Steady::update_solution() {
     }
     postprocess();
 
-    // TODO PARALLEL
-    xprintf(MsgVerb,"Scattering solution vector to all processors ...\n");
-    // scatter solution to all procs
-    if (solution == NULL) {
-        IS is_par, is_loc;
-        int i, si, *loc_idx;
-        Edge *edg;
-
-        // create local solution vector
-        solution = (double *) xmalloc(size * sizeof(double));
-        VecCreateSeqWithArray(PETSC_COMM_SELF, size, solution,
-                &(sol_vec));
-
-        // create seq. IS to scatter par solutin to seq. vec. in original order
-        // use essentialy row_4_id arrays
-        loc_idx = (int *) xmalloc(size * sizeof(int));
-        i = 0;
-        FOR_ELEMENTS(mesh_, ele) {
-            FOR_ELEMENT_SIDES(ele,si) {
-                loc_idx[i++] = side_row_4_id[ele->side[si]->id];
-            }
-        }
-        FOR_ELEMENTS(mesh_, ele) {
-            loc_idx[i++] = row_4_el[ele.index()];
-        }
-        FOR_EDGES(mesh_, edg) {
-            loc_idx[i++] = row_4_edge[edg.index()];
-        }
-        ASSERT( i==size,"Size of array does not match number of fills.\n");
-        //DBGPRINT_INT("loc_idx",size,loc_idx);
-        ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, &(is_loc));
-        xfree(loc_idx);
-        VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
-                PETSC_NULL, &par_to_all);
-        ISDestroy(is_loc);
-    }
-    VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec,
-            INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
-            INSERT_VALUES, SCATTER_FORWARD);
-
-    
     //int rank;
     //MPI_Comm_rank( PETSC_COMM_WORLD, &rank );
     //if ( rank == 0 ) {
@@ -219,12 +221,45 @@ void DarcyFlowMH_Steady::update_solution() {
     //    PetscViewerDestroy(solViewer);
     //}
 
-    //solved=true;
-
+    solution_changed_for_scatter=true;
 }
+
+void DarcyFlowMH_Steady::postprocess() {
+    if (sources == NULL)
+        return;
+
+    int i_loc, side_rows[4];
+    double values[4];
+    ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    ;
+
+    // modify side fluxes in parallel
+    // for every local edge take time term on digonal and add it to the corresponding flux
+    for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+        ele = mesh_->element(el_4_loc[i_loc]);
+        FOR_ELEMENT_SIDES(ele,i) {
+            side_rows[i] = side_row_4_id[ele->side[i]->id];
+            values[i] = -1.0 * ele->volume * sources->element_value(ele.index()) / ele->n_sides;
+        }
+        VecSetValues(schur0->get_solution(), ele->n_sides, side_rows, values, ADD_VALUES);
+    }
+    VecAssemblyBegin(schur0->get_solution());
+    VecAssemblyEnd(schur0->get_solution());
+}
+
 
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
 {
+    // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
+    // and use its mechanism to manage dependency between vectors
+    if (solution_changed_for_scatter) {
+        // scatter solution to all procs
+        VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec,
+                INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
+                INSERT_VALUES, SCATTER_FORWARD);
+        solution_changed_for_scatter=false;
+    }
 
     vec=solution;
     vec_size = size;
@@ -417,7 +452,6 @@ void DarcyFlowMH_Steady::make_schur0() {
     START_TIMER("PREALLOCATION");
 
     if (schur0 == NULL) { // create Linear System for MH matrix
-        xprintf( Msg, "Allocating MH matrix for water model ... \n " );
 
         if (solver->type == PETSC_MATIS_SOLVER) 
             schur0 = new LinSys_MATIS( lsize, static_cast<int>( global_row_4_sub_row.size() ),
@@ -434,8 +468,6 @@ void DarcyFlowMH_Steady::make_schur0() {
     END_TIMER("PREALLOCATION");
 
     START_TIMER("ASSEMBLY");
-
-    xprintf( Msg, "Assembling MH matrix for water model ... \n " );
 
     schur0->start_add_assembly(); // finish allocation and create matrix
     assembly_steady_mh_matrix(); // fill matrix
@@ -533,12 +565,15 @@ void DarcyFlowMH_Steady::make_schur1() {
     }
     else if (schur0->type == LinSys::MAT_MPIAIJ)
     {
+       if (schur1 == NULL) {
        // create Inverse of the A block
        ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(),
                side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
                PETSC_NULL, 0, PETSC_NULL, &(IA1));
 
        MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE);
+       schur1 = new SchurComplement(schur0, IA1);
+       }
 
        for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
            ele = mesh_->element(el_4_loc[i_loc]);
@@ -565,10 +600,7 @@ void DarcyFlowMH_Steady::make_schur1() {
     MatAssemblyBegin(IA1, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(IA1, MAT_FINAL_ASSEMBLY);
 
-    schur1 = new SchurComplement(schur0, IA1);
-
     schur1->form_schur();
-
     schur1->set_spd();
 }
 
@@ -576,34 +608,35 @@ void DarcyFlowMH_Steady::make_schur1() {
  * COMPUTE THE SECOND (B-block) SCHUR COMPLEMENT
  ******************************************************************************/
 void DarcyFlowMH_Steady::make_schur2() {
-    Vec Diag, DiagB;
     PetscScalar *vDiag;
     int ierr, loc_el_size;
     F_ENTRY;
     START_TIMER("Schur 2");
     // create Inverse of the B block ( of the first complement )
 
-
-    // get subdiagonal of local size == loc num of elements
     loc_el_size = el_ds->lsize();
-    VecCreateMPI(PETSC_COMM_WORLD, schur1->get_system()->vec_lsize(),
-            PETSC_DETERMINE, &Diag);
-    MatGetDiagonal(schur1->get_system()->get_matrix(), Diag); // get whole diagonal
-    VecGetArray(Diag,&vDiag);
-    // define sub vector of B-block diagonal
-    VecCreateMPIWithArray(PETSC_COMM_WORLD, loc_el_size, PETSC_DETERMINE,
-            vDiag, &DiagB);
-    // compute inverse
-    VecReciprocal(DiagB);
-    ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
-            PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL, 0, PETSC_NULL,
-            &(IA2)); // construct matrix
-    MatDiagonalSet(IA2, DiagB, INSERT_VALUES);
-    VecDestroy(DiagB); // clean up
-    VecRestoreArray(Diag,&vDiag);
-    VecDestroy(Diag);
 
-    schur2 = new SchurComplement(schur1->get_system(), IA2);
+    if (schur2 == NULL) {
+      // get subdiagonal of local size == loc num of elements
+      VecCreateMPI(PETSC_COMM_WORLD, schur1->get_system()->vec_lsize(),
+              PETSC_DETERMINE, &diag_schur1);
+      ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
+              PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL, 0, PETSC_NULL,
+              &(IA2)); // construct matrix
+      VecGetArray(diag_schur1,&vDiag);
+      // define sub vector of B-block diagonal
+      VecCreateMPIWithArray(PETSC_COMM_WORLD, loc_el_size, PETSC_DETERMINE,
+              vDiag, &diag_schur1_b);
+      VecRestoreArray(diag_schur1,&vDiag);
+      schur2 = new SchurComplement(schur1->get_system(), IA2);
+
+    }
+
+    MatGetDiagonal(schur1->get_system()->get_matrix(), diag_schur1); // get whole diagonal
+    // compute inverse of B-block
+    VecReciprocal(diag_schur1_b);
+    MatDiagonalSet(IA2, diag_schur1_b, INSERT_VALUES);
+
     schur2->form_schur();
     schur2->scale(-1.0);
     schur2->set_spd();
@@ -1169,7 +1202,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     VecZeroEntries(schur0->get_solution());
 
     FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-    initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
+    initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
     double *local_sol=schur0->get_solution_array();
 
     PetscScalar *local_diagonal;
@@ -1203,13 +1236,14 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     // save RHS
     VecDuplicate(schur0->get_rhs(), &steady_rhs);
     VecCopy(schur0->get_rhs(),steady_rhs);
+
+    solution_changed_for_scatter=true;
 }
 
 void DarcyFlowMH_Unsteady::modify_system()
 {
 
   if (time_->is_changed_dt()) {
-      DBGMSG("Scale ldt: %f dt: %f\n", time_->last_dt(), time_->dt());
       MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
 
       VecScale(new_diagonal, time_->last_dt()/time_->dt());
@@ -1260,7 +1294,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
      INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
      VecZeroEntries(schur0->get_solution());
      FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-     initial_pressure->read_field("input/pressure_initial.in",string("$Sources"));
+     initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
 
      VecDuplicate(steady_diagonal,& new_diagonal);
 
@@ -1303,12 +1337,13 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
      // auxiliary vector for time term
      VecDuplicate(schur0->get_rhs(), &time_term);
 
+     solution_changed_for_scatter=true;
 
 }
+
 void DarcyFlowLMH_Unsteady::modify_system()
 {
     if (time_->is_changed_dt()) {
-        DBGMSG("Scale\n");
         MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
 
         VecScale(new_diagonal, time_->last_dt()/time_->dt());
@@ -1354,10 +1389,12 @@ void DarcyFlowLMH_Unsteady::postprocess()
           VecSetValue(schur0->get_solution(),side_row,time_coef*(new_pressure-old_pressure),ADD_VALUES);
       }
   }
-  VecGetArray(previous_solution, &loc_prev_sol);
+  VecRestoreArray(previous_solution, &loc_prev_sol);
 
   VecAssemblyBegin(schur0->get_solution());
   VecAssemblyEnd(schur0->get_solution());
+
+  DarcyFlowMH_Steady::postprocess();
 }
 
 //-----------------------------------------------------------------------------

@@ -15,12 +15,19 @@
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
 \normalsize
- \section*{Flow123D ini file format}
+\subsection{Flow123D ini file format}
+
+In this section we briefly descripte every option you can use in global INI-file. Options marked
+(NOT IMPLEMENTED) are not implemented in current version, but probably will be reimplemented in near future.
+Options marked (NOT SUPPORTED) has not been tested since they are obsolete and will be replaced by similar functionality.
+
  
 \begin{initable}{Global}
  \key{Problem\_type} & \type{int} & NULL &
  Type of solved problem. Currently supported:\break %\br 
- 1 = steady saturated flow\break %\br
+ 1 = steady saturated flow \br
+ 2 = unsteady saturated flow using MH method \br
+ 4 = unstedy saturated flow using Lumped MH method 
 % 3 = variable-density saturated flow
  \\
  \hline
@@ -30,6 +37,11 @@
  \hline
  \key{Stop\_time} & \type{double} & 1.0 &
  Time interval of the whole problem.%\br
+ [time units]
+ \\
+ \hline
+ \key{Time\_step} & \type{double} & 1.0 &
+ Time step for unstedy water flow solver.
  [time units]
  \\
  \hline
@@ -81,12 +93,19 @@ Name of file with boundary condition data.
 Name of file describing topology of the mesh.
 \\
 \hline
+\key{Initial} & \type{string} & NULL &
+Name of file with initial condition for preasure head [length].\\
+\hline
 \key{Sources} & \type{string} & NULL &
 Name of file with definition of fluid sources. 
 This is optional file, if this key is not
 defined, calculation goes on without sources.
 \\
 \hline
+\key{sources\_formula} & \type{string} & NULL &
+Expression for sources as function of space coordinates $x$, $y$, $z$.
+See documentation of FParser library:
+\url{http://warp.povusers.org/FunctionParser/fparser.html\#literals}
 \end{initable}
 
 
@@ -111,7 +130,7 @@ If set "YES" program include reactions too.
 \\
 \hline
 \key{Concentration} & \type{string} & NULL &
-Name of file with initial concentration.
+Name of file with initial condition for concentrations of individual substances.
 \\ 
 \hline
 \key{Transport\_BCD} & \type{string} & NULL &
@@ -123,15 +142,15 @@ Name of transport output file.
 \\
 \hline
 \key{Transport\_out\_im} & \type{string} & NULL &
-Name of transport immobile output file.
+(NOT IMPLEMENTED IN 1.6.5) Name of transport immobile output file.
 \\ 
 \hline
 \key{Transport\_out\_sorp} & \type{string} & NULL &
-Name of transport sorbed output file.
+(NOT IMPLEMENTED IN 1.6.5) Name of transport sorbed output file.
 \\ 
 \hline
 \key{Transport\_out\_im\_sorp} & \type{string} & NULL &
-Name of transport sorbed immobile output file.
+(NOT IMPLEMENTED IN 1.6.5) Name of transport sorbed immobile output file.
 \\ 
 \hline
 \key{N\_substances} & \type{int} & -1 &
@@ -142,48 +161,43 @@ Number of substances.
 Names of the substances separated by commas.
 \\ 
 \hline
-\key{Substances\_density\_scales} & \type{list of doubles} & 1.0 &
-Scales of substances for the density flow calculation.\\
-  \hline
+%\key{Substances\_density\_scales} & \type{list of doubles} & 1.0 &
+%Scales of substances for the density flow calculation.\\
+%  \hline
 \\ 
-\hline
 \key{bc\_times} & \type{list of doubles} & NULL &
 Times for changing boundary conditions. If you set this variable, you have to prepare a separate file with boundary condintions for every 
 time in the list. Filenames for individual time level are formed from BC filename by appending underscore and three digits of time level number, e.g. 
 {\tt transport\_bcd\_000, transport\_bcd\_001, etc.} \\
-  \hline
+\hline
 
 \end{initable}
  
-\begin{initable}{Constants}
-\key{g} & \type{double} & 1.0 &
-Gravity acceleration.
-\\ 
-\hline
-\key{rho} & \type{double} & 1.0 &
-Density of fluid.
-\\
-\hline
-\end{initable}
+%\begin{initable}{Constants}
+%\key{g} & \type{double} & 1.0 &
+%Gravity acceleration.
+%\\ 
+%\hline
+%\key{rho} & \type{double} & 1.0 &
+%Density of fluid.
+%\\
+%\hline
+%\end{initable}
  
- \normalsize
+% \normalsize
  
 \begin{initable}{Run}
 %\key{Log\_file} & \type{string} & mixhyb.log &
 %Name of log file.
 %\\ 
 %\hline
-\key{Screen\_verbosity} & \type{int} & 8 &
-Amount of messages printed on the screen. (0 = no messages, ..., 7 = all messages)
+\key{Screen\_verbosity} & \type{int} & 0 &
+Nonzero value turn on a more verbose mode (more messages on screen), however everything is in the log file.
 \\
 \hline
-%\key{Log\_verbosity} & int & 8 &
-%Amount of messages printed to the log file. (0 = no messages, ..., 7 = all messages)
-%\\
-%\hline
 \key{Pause\_after\_run} & \type{YES/NO} & NO &
-If set to "YES", the program waits for a key press before it finishes.
-\\ 
+Wait for Enter after end of progam in order to keep output screen open.
+\\
 \hline
 \end{initable}
  
@@ -212,19 +226,19 @@ To use parallel direct solver MUMPS use:
 \\
 \hline
 \key{Keep\_solver\_files} & \type{YES/NO} & NO &
-If set to "YES", files for solver are not deleted after the run of the solver.
+(NOT SUPPROTED IN 1.6.5) If set to "YES", files for solver are not deleted after the run of the solver.
 \\
 \hline
 \key{Manual\_solver\_run} & \type{YES/NO} & NO &
-If set to "YES", programm stops after writing input files for solver and lets user to run it.
+(NOT SUPPROTED IN 1.6.5) If set to "YES", programm stops after writing input files for solver and lets user to run it.
 \\ 
 \hline
 \key{Use\_control\_file} & \type{YES/NO} & NO &
-If set to "YES", programm do not create control file for solver, it uses given file.
+(NOT SUPPROTED IN 1.6.5) If set to "YES", programm do not create control file for solver, it uses given file.
 \\
 \hline
 \key{Control\_file} & \type{string} & NULL &
-Name of control file for situation, when {\tt Use\_control\_file} \= YES.
+(NOT SUPPROTED IN 1.6.5) Name of control file for situation, when {\tt Use\_control\_file} \= YES.
 \\
 \hline
 \key{NSchurs} & \type{int} & 2 &
@@ -283,31 +297,23 @@ If set to "YES", writes output file.
 \\
 \hline
 \key{Output\_file} & \type{string} & NULL &
-Name of the output file (type 1).
+Name of the output file for water flow output.
 \\
 \hline
 \key{Output\_file\_2} & \type{string} & NULL &
-Name of the output file (type 2).
+(NOT IMPLEMENTED IN 1.6.5) Name of the output file (type 2).
 \\
 \hline
 \key{Output\_digits} & \type{int} & 6 &
-Number of digits used for floating point numbers in output file.
+(NOT IMPLEMENTED IN 1.6.5) Number of digits used for floating point numbers in output file.
 \\
 \hline
 \key{Output\_file\_type} & \type{int} & 1 &
+(NOT IMPLEMENTED IN 1.6.5)
 Type of output file\br
  1 - GMSH like format\br
  2 - Flow data file\br
  3 - both files (two separate names)
-\\
-\hline
-\key{POS\_view\_params} & \type{double[8]}& 
-        0 0 0\br
-        1 1 1\br
-        0 0 &
- [x y z] angle of rotation "RotationX"\br
- [x y z] scaling "ScaleX"\br
- [x y] screen position shift "TranslationX"
 \\
 \hline
 %\key{Write\_ftrans\_out} & \type{YES/NO} & NO &
@@ -352,6 +358,10 @@ Type of output file\br
 Output file format. One can use: ASCII, BIN, or VTK\_SERIAL\_ASCII
 \\
 \hline\\
+\key{balance\_output} & \type{string} & NULL &
+Name of file for output of water boundary fluxes and balnace of sources over material subdomains.
+\\
+\hline
 \end{initable}
 Description: Options controling output file of the programm
 
@@ -494,24 +504,24 @@ Equilibrium constant defining i-th reaction.
 \end{initable}
 
 \newpage
-\begin{initable}{Decay\_module}
+\begin{initable}{Reaction\_module}
 \key{Compute\_decay} & \type{Yes/No} & "No" &
-Enables to switch on simulation of radioactive decay.
+It enables to switch on simulation of radioactive decay or first order reactions.
 \\
 \hline
-\key{Nr\_of\_decay\_chain} & \type{int} & 0 &
-How many steps is defined decay chain consisting of?
+\key{Nr\_of\_decay\_chains} & \type{int} & 0 &
+How many decay chains are considered.
+\\
+\hline
+\key{Nr\_of\_FoR} & \type{int} & 0 &
+How many first order reactions are defined.
 \\
 \hline
 \end{initable}
 
 \begin{initable}{Decay\_i}
-\key{Reaction\_type} & \type{enumerate} & "decay" &
-In this time just decay type is possible.
-\\
-\hline
 \key{Nr\_of\_isotopes} & \type{int} & 0 &
-How many isotopes does the section work with.
+It defines the number of isotopes which does the current section [Decay\_i] work with.
 \\
 \hline
 \key{Substance\_ids} & \type{array of int} & NULL &
@@ -523,11 +533,22 @@ Contain half-lives belonging to isotopes defined by ids.
 \\
 \hline
 \key{Bifurcation\_on} & \type{Yes/No} & "No" &
-Make it possible to switch of bifurcation in current [Decay\_i].
+It makes it possible to define branches in current [Decay\_i].
 \\
 \hline
 \key{Bifurcation} & \type{array of double} & NULL &
-Gives a percentage, which is the first isotope in current [Decay\_i] decaying to products.
+It defines a percentage, which is the first isotope in current [Decay\_i] decaying to products.
+\\
+\hline
+\end{initable}
+
+\begin{initable}{FoReact\_i}
+\key{Kinetic\_constant} & \type{double} & 0.0 &
+It defines kinetic constant which is the corresponding half-life computed from.
+\\
+\hline
+\key{Substance\_ids} & \type{array of int} & NULL &
+It containes a couple of indices of substances which are taking part in first order reactions described in current section FoReact\_i.
 \\
 \hline
 \end{initable}

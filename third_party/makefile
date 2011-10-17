@@ -23,7 +23,7 @@
 
 include ../makefile.in
 
-all: armadillo
+all: armadillo fparser
 
 
 metis:
@@ -40,9 +40,12 @@ armadillo:
 	cmake . -DCMAKE_PREFIX_PATH=../boost-1.42;\
 	make
 
+fparser:
+	make -C fparser-4.4.3
+
 clean:
 	rm -f all
 	make -C metis-4.0 realclean
-	cd armadillo-1.1.92; \
-	make clean
+	make -C armadillo-1.1.92 clean
+	make -C fparser-4.4.3 clean
 	
