@@ -108,6 +108,8 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     make_transport_partitioning();
     alloc_transport_vectors();
     read_initial_condition();
+    read_concentration_sources();
+
     alloc_transport_structs_mpi();
 
     // read times of time dependent boundary condition and check the input files
@@ -289,7 +291,7 @@ void ConvectionTransport::read_initial_condition() {
 	    	id    = atoi( xstrtok( line) );	// TODO: id musi byt >0 nebo >=0 ???
 	    	INPUT_CHECK(!( id < 0 ),"Id number of concentration must be > 0\n");
 	    	eid    = atoi( xstrtok( NULL) );
-	    	int global_idx =row_4_el[mesh_->element.find_id(eid).index()];
+	    	global_idx =row_4_el[mesh_->element.find_id(eid).index()];
 	    	if ( el_ds->is_local(global_idx) ) {
 	    		index = global_idx - el_ds->begin();
 	    		for( sbi = 0; sbi < n_substances; sbi++ ){
@@ -302,7 +304,62 @@ void ConvectionTransport::read_initial_condition() {
 		xfclose( in );
 
 }
+//=============================================================================
+// READ CONCENTRATION SOURCES
+//=============================================================================
+void ConvectionTransport::read_concentration_sources() {
 
+        FILE	*in;		  // input file
+		char     line[ LINE_SIZE ]; // line of data file
+		int sbi,index, id, eid, i,n_sources, global_idx;
+
+        std::string concentration_sources_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Sources", "\\"));
+
+		if(concentration_sources_fname == "\\")
+			return;
+		in = xfopen( concentration_sources_fname, "rt" );
+		skip_to( in, "$Sources" );
+		xfgets( line, LINE_SIZE - 2, in );
+		n_sources = atoi( xstrtok( line) );
+		INPUT_CHECK(!( n_sources < 1 ),"Number of concentration sources < 1 in function read_concentration_sources()\n");
+	    INPUT_CHECK(!( mesh_->n_elements() != n_sources),"Different number of elements and concentration sources\n");
+
+
+	    for (i = 0; i < n_sources; i++) {
+	    	//printf("%s\n",line);
+	    	xfgets( line, LINE_SIZE - 2, in );
+	    	ASSERT(!(line == NULL),"NULL as argument of function read_concentration_sources()\n");
+	    	id    = atoi( xstrtok( line) );	// TODO: id musi byt >0 nebo >=0 ???
+	    	INPUT_CHECK(!( id < 0 ),"Id number of concentration sources must be > 0\n");
+	    	eid    = atoi( xstrtok( NULL) );
+	    	global_idx =row_4_el[mesh_->element.find_id(eid).index()];
+	    	if ( el_ds->is_local(global_idx) ) {
+	    		index = global_idx - el_ds->begin();
+	    		for( sbi = 0; sbi < n_substances; sbi++ ){
+	    			sources_density[ sbi ][index] = atof( xstrtok( NULL) );
+	    			sources_sigma[ sbi ][index] = atof( xstrtok( NULL) );
+	    			sources_conc[ sbi ][index] = atof( xstrtok( NULL) );
+	    		}
+	    	}
+	    }
+
+		xfclose( in );
+
+}
+//=============================================================================
+// COMPUTE SOURCES
+//=============================================================================
+void ConvectionTransport::compute_concentration_sources() {
+
+	int sbi,i_loc;
+    for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++)
+        for( sbi = 0; sbi < n_substances; sbi++ ){
+        	sources_corr[sbi][i_loc] = sources_density[ sbi ][i_loc] +
+        			   	   	   	   	   + ((sources_conc[ sbi ][i_loc]- pconc[MOBILE][sbi][i_loc]) > 0.0) ?
+        			   	   	   	   	   (sources_conc[ sbi ][i_loc]- pconc[MOBILE][sbi][i_loc])*sources_sigma[ sbi ][i_loc]:
+        			    				0.0;
+        }
+}
 //=============================================================================
 //	ALLOCATE OF TRANSPORT VARIABLES (ELEMENT & NODES)
 //=============================================================================
@@ -327,7 +384,7 @@ void ConvectionTransport::alloc_transport_vectors() {
             for (sbi = 0; sbi < n_subst; sbi++) {
                 conc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
                 pconc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
-                out_conc[ph][sbi] = (double*) xmalloc(el_ds->size() * sizeof(double));
+                out_conc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
                 // transport->node_conc[sbi][ph] = (double**)xmalloc((mesh__->n_elements() ) * sizeof(double*));
                 for (i = 0; i < el_ds->lsize(); i++) {
                     conc[ph][sbi][i] = 0.0;
@@ -349,6 +406,31 @@ void ConvectionTransport::alloc_transport_vectors() {
             //transport->node_conc[sbi][ph] = NULL;
         }
     }
+
+
+    sources_density = (double**) xmalloc(n_subst * sizeof(double*));
+    sources_sigma = (double**) xmalloc( n_subst* sizeof(double*));
+    sources_conc = (double**) xmalloc(n_subst * sizeof(double*));
+    sources_corr = (double**) xmalloc(n_subst * sizeof(double*));
+    cumulative_corr = (double**) xmalloc(n_subst * sizeof(double*));
+
+
+    for (sbi = 0; sbi < n_subst; sbi++){
+        sources_density[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+        sources_sigma[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+        sources_conc[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+        sources_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+        cumulative_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+    }
+
+    for (sbi = 0; sbi < n_subst; sbi++)
+        for (i = 0; i < el_ds->lsize(); i++){
+            sources_density[sbi][i] = 0.0;
+            sources_sigma[sbi][i] = 0.0;
+            sources_conc[sbi][i] = 0.0;
+            sources_corr[sbi][i] = 0.0;
+            cumulative_corr[sbi][i] = 0.0;
+        }
 }
 //=============================================================================
 //	ALLOCATE OF TRANSPORT (DENSITY VECTORS)
@@ -394,13 +476,22 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     vconc = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vpconc = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
 
+    vsources_density = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    vsources_sigma = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    vsources_conc = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    vsources_corr = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    vcumulative_corr = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+
+
     // if( rank == 0)
     vconc_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
     // TODO: should be replaced by Distribution(Block) or better remove whole boundary matrix with these vectors
+
     lb_col = (int*) xmalloc(np * sizeof(int)); // local rows in BM
-    for (i = 0; i < np; i++) {
-        lb_col[i] = mesh_->n_boundaries() / np;
+    lb_col[0] = 0;
+    for (i = 0; i < (np -1); i++) {
+        lb_col[i] = (int)floor(mesh_->n_boundaries() / np);
     }
     lb_col[np - 1] = mesh_->n_boundaries() - (np - 1) * lb_col[0];
 
@@ -431,6 +522,18 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
                 &vconc[sbi]);
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
                 pconc[MOBILE][sbi], &vpconc[sbi]);
+
+        // SOURCES
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+        		sources_density[sbi],&vsources_density[sbi]);
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+        		sources_sigma[sbi],&vsources_sigma[sbi]);
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+        		sources_conc[sbi],&vsources_conc[sbi]);
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+        		sources_corr[sbi],&vsources_corr[sbi]);
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+        		cumulative_corr[sbi],&vcumulative_corr[sbi]);
 
         //  if(rank == 0)
         ierr = VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_elements(), out_conc[MOBILE][sbi], &vconc_out[sbi]);
@@ -482,7 +585,6 @@ std::string ConvectionTransport::make_bc_file_name(int level) {
 
     return bc_fname;
 }
-
 void ConvectionTransport::read_bc_vector() {
 
     int rank, sbi;
@@ -550,7 +652,9 @@ void ConvectionTransport::compute_one_step() {
 
     for (sbi = 0; sbi < n_substances; sbi++) {
                 // one step in MOBILE phase
-                MatMultAdd(tm, vpconc[sbi], bcvcorr[sbi], vconc[sbi]); // conc=tm*pconc + bc
+    			compute_concentration_sources();
+    			VecAXPBYPCZ(vcumulative_corr[sbi],1.0,time_->estimate_dt(),0.0,bcvcorr[sbi],vsources_corr[sbi]);
+                MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
                 VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
 
                 if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
