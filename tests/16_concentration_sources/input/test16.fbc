@@ -1,0 +1,8 @@
+$BoundaryFormat
+1.0	0	8
+$EndBoundaryFormat
+$BoundaryConditions
+2
+0	1	 194.7368421052	2	39	2	1	0
+1	1	 005.2631578947	2	392	1	1	0
+$EndBoundaryConditions
