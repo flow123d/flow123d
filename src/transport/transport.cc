@@ -315,7 +315,7 @@ void ConvectionTransport::read_concentration_sources() {
 
         std::string concentration_sources_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Sources", "\\"));
 
-        if(concentration_sources_fname.compare("\\") != 0)
+        if(concentration_sources_fname.compare("\\") == 0)
 			return;
 
         //if(concentration_sources_fname == "\\")
