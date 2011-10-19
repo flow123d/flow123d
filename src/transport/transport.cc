@@ -315,8 +315,11 @@ void ConvectionTransport::read_concentration_sources() {
 
         std::string concentration_sources_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Sources", "\\"));
 
-		if(concentration_sources_fname == "\\")
+        if(concentration_sources_fname.compare("\\") != 0)
 			return;
+
+        //if(concentration_sources_fname == "\\")
+
 		in = xfopen( concentration_sources_fname, "rt" );
 		skip_to( in, "$Sources" );
 		xfgets( line, LINE_SIZE - 2, in );
@@ -352,13 +355,26 @@ void ConvectionTransport::read_concentration_sources() {
 void ConvectionTransport::compute_concentration_sources() {
 
 	int sbi,i_loc;
+	//*
     for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++)
         for( sbi = 0; sbi < n_substances; sbi++ ){
         	sources_corr[sbi][i_loc] = sources_density[ sbi ][i_loc] +
-        			   	   	   	   	   + ((sources_conc[ sbi ][i_loc]- pconc[MOBILE][sbi][i_loc]) > 0.0) ?
+        			   	   	   	   	   + ((sources_conc[ sbi ][i_loc] - pconc[MOBILE][sbi][i_loc]) > 0.0) ?
         			   	   	   	   	   (sources_conc[ sbi ][i_loc]- pconc[MOBILE][sbi][i_loc])*sources_sigma[ sbi ][i_loc]:
         			    				0.0;
         }
+    /*
+    for( sbi = 0; sbi < n_substances; sbi++ ){
+    	VecAXPBYPCZ(vsources_corr[n_substances],1.0,-1.0,0.0,vconc[sbi],vsources_conc[sbi]);
+    	VecCopy(vsources_corr[n_substances],vsources_corr[sbi]);
+    	VecAbs(vsources_corr[n_substances]);
+    	VecAXPBY(vsources_corr[sbi],1.0,1.0,vsources_corr[n_substances]);
+    	VecScale (vsources_corr[sbi], 0.5);
+    	VecPointwiseMult(vsources_corr[sbi], vsources_corr[sbi],vsources_sigma[ sbi ]);
+    	VecAXPBY(vsources_corr[sbi],1.0,1.0,vsources_density[ sbi ]);
+    	MPI_Barrier( PETSC_COMM_WORLD );
+    }
+    */
 }
 //=============================================================================
 //	ALLOCATE OF TRANSPORT VARIABLES (ELEMENT & NODES)
@@ -412,7 +428,7 @@ void ConvectionTransport::alloc_transport_vectors() {
     sources_sigma = (double**) xmalloc( n_subst* sizeof(double*));
     sources_conc = (double**) xmalloc(n_subst * sizeof(double*));
     sources_corr = (double**) xmalloc(n_subst * sizeof(double*));
-    cumulative_corr = (double**) xmalloc(n_subst * sizeof(double*));
+    cumulative_corr = (double**) xmalloc((n_subst+1) * sizeof(double*));
 
 
     for (sbi = 0; sbi < n_subst; sbi++){
@@ -422,6 +438,7 @@ void ConvectionTransport::alloc_transport_vectors() {
         sources_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
         cumulative_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
     }
+    cumulative_corr[n_subst] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
 
     for (sbi = 0; sbi < n_subst; sbi++)
         for (i = 0; i < el_ds->lsize(); i++){
@@ -431,6 +448,8 @@ void ConvectionTransport::alloc_transport_vectors() {
             sources_corr[sbi][i] = 0.0;
             cumulative_corr[sbi][i] = 0.0;
         }
+     for (i = 0; i < el_ds->lsize(); i++)
+    	 cumulative_corr[n_subst][i] = 0.0;
 }
 //=============================================================================
 //	ALLOCATE OF TRANSPORT (DENSITY VECTORS)
