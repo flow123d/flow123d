@@ -314,16 +314,13 @@ void ConvectionTransport::read_concentration_sources() {
 		const char *p;
 		int sbi,index, id, eid, i,n_sources, global_idx;
 
-        std::string concentration_sources_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Sources", "\\"));
+        std::string concentration_sources_fname = OptGetFileName("Transport", "Sources", "\\");
+        if (concentration_sources_fname == "\\") {
 
-        p = concentration_sources_fname.c_str();
-        int l = concentration_sources_fname.length();
-        if(strcmp(&p[l-1],"\\") == 0)
-        	return;
+            return;
+        }
 
-        //if(concentration_sources_fname == "\\")
-
-		in = xfopen( concentration_sources_fname, "rt" );
+		in = xfopen( IONameHandler::get_instance()->get_input_file_name(concentration_sources_fname), "rt" );
 		skip_to( in, "$Sources" );
 		xfgets( line, LINE_SIZE - 2, in );
 		n_sources = atoi( xstrtok( line) );

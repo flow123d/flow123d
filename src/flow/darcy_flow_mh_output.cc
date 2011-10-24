@@ -58,10 +58,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
 
     // temporary solution for balance output
     std::string balance_output_fname =
-            IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "balance_output", "\\"));
-    if (balance_output_fname!= "\\") {
-        balance_output_file = xfopen(balance_output_fname.c_str(), "wt");
-    }
+            IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "balance_output", "water_balance"));
+    balance_output_file = xfopen(balance_output_fname.c_str(), "wt");
+
 
 }
 
