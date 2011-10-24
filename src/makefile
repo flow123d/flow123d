@@ -37,6 +37,8 @@ TARGETS = $(BIN)/flow123d
 
 # List of object files of Flow123d
 FLOW123D_OBJS = \
+$(OBJS)/fem/dofhandler.o\
+\
 $(OBJS)/flow/local_matrix.o\
 $(OBJS)/flow/darcy_flow_mh.o\
 $(OBJS)/flow/darcy_flow_mh_output.o\
@@ -105,6 +107,7 @@ mesh\
 io\
 quadrature\
 semchem\
+fem\
 flow\
 transport\
 reaction
@@ -158,6 +161,7 @@ ${BIN}/flow123d: ${FLOW123D_OBJS}
 clean: 
 	rm -f ${TARGETS}
 	rm -f ${OBJS}/*.o ${DEPS}/*.d
+	rm -f ${OBJS}/fem/*.o
 	rm -f ${OBJS}/flow/*.o
 	rm -f ${OBJS}/io/*.o
 	rm -f ${OBJS}/mesh/*.o
