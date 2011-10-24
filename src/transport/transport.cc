@@ -321,7 +321,7 @@ void ConvectionTransport::read_concentration_sources() {
         }
 
 		in = xfopen( IONameHandler::get_instance()->get_input_file_name(concentration_sources_fname), "rt" );
-		skip_to( in, "$Sources" );
+		skip_to( in, "$TransportSources" );
 		xfgets( line, LINE_SIZE - 2, in );
 		n_sources = atoi( xstrtok( line) );
 		INPUT_CHECK(!( n_sources < 1 ),"Number of concentration sources < 1 in function read_concentration_sources()\n");

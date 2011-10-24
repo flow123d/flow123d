@@ -1,7 +1,7 @@
-$ConcentrationFormat
+$TransportSourceFormat
 1.0	0	8
-$EndConcentrationFormat
-$Sources
+$EndTransportSourceFormat
+$TransportSources
 396
 1	1	 1.0 1.0 10.0
 2	2	 1.0 1.0 10.0
@@ -399,4 +399,4 @@ $Sources
 394	394	 1.0 1.0 10.0
 395	395	 1.0 1.0 10.0
 396	396	 1.0 1.0 10.0
-$EndConcentrations
+$EndTransportSources
