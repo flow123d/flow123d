@@ -162,7 +162,7 @@ private:
 	void transport_sorption(int elm_pos, MaterialDatabase::Iter mtr, int sbi); //
 	void compute_sorption(double conc_avg, vector<double> &sorp_coef, int sorp_type, double *concx, double *concx_sorb, double Nv,
 	        double N); //
-	void compute_concentration_sources();
+	void compute_concentration_sources(int sbi);
 
 //	void get_reaction(int i,oReaction *reaction); //
 	//void transport_output(struct Transport *transport, double time, int frame);
