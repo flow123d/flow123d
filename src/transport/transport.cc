@@ -1117,7 +1117,7 @@ void ConvectionTransport::output_vector_gather() {
 
 
     //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, &is); //WithArray
+    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
     VecScatterCreate(vconc[0], is, vconc_out[0], PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < n_substances; sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc[sbi], vconc_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
@@ -1125,8 +1125,8 @@ void ConvectionTransport::output_vector_gather() {
     }
     //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
     //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
-    VecScatterDestroy(vconc_out_scatter);
-    ISDestroy(is);
+    VecScatterDestroy(&(vconc_out_scatter));
+    ISDestroy(&(is));
 }
 
 //=============================================================================

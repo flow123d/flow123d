@@ -370,9 +370,9 @@ void SparseGraphPETSC::partition(int *loc_part)
 
 SparseGraphPETSC::~SparseGraphPETSC()
 {
-    ISDestroy(part_IS);
-    MatPartitioningDestroy(petsc_part);
-    MatDestroy(petsc_adj_mat);
+    ISDestroy(&part_IS);
+    MatPartitioningDestroy(&petsc_part);
+    MatDestroy(&petsc_adj_mat);
 
     if (adj) PetscFree(adj);
     if (rows) PetscFree(rows);

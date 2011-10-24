@@ -115,9 +115,9 @@ void view(std::ostream output_stream, int * output_mapping = NULL)
 
 LinSys:: ~LinSys()
 {
-    MatDestroy(matrix);
-    VecDestroy(rhs);
-    VecDestroy(solution);
+    MatDestroy(&matrix);
+    VecDestroy(&rhs);
+    VecDestroy(&solution);
 
     xfree(v_rhs);
     if (own_solution) xfree(v_solution);
@@ -324,8 +324,8 @@ void LinSys_MPIAIJ::preallocate_matrix()
 
      VecRestoreArray(on_vec,&on_array);
      VecRestoreArray(off_vec,&off_array);
-     VecDestroy(on_vec);
-     VecDestroy(off_vec);
+     VecDestroy(&on_vec);
+     VecDestroy(&off_vec);
 
      // create PETSC matrix with preallocation
      MatCreateMPIAIJ(PETSC_COMM_WORLD, vec_ds.lsize(), vec_ds.lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
@@ -365,8 +365,8 @@ void LinSys_MPIAIJ::view_local_matrix()
 LinSys_MPIAIJ:: ~LinSys_MPIAIJ()
 {
      if (status == ALLOCATE) {
-         VecDestroy(on_vec);
-         VecDestroy(off_vec);
+         VecDestroy(&on_vec);
+         VecDestroy(&off_vec);
      }
 }
 
@@ -389,7 +389,7 @@ LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int sz, int *global_row_4_su
     }
 
     // vytvorit mapping v PETSc z global_row_4_sub_row
-    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, subdomain_indices, &map_local_to_global);
+    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, subdomain_indices, PETSC_COPY_VALUES, &map_local_to_global);
     ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
     // initialize loc_rows array
@@ -520,7 +520,7 @@ LinSys_MATIS:: ~LinSys_MATIS()
      PetscErrorCode err;
 
      // destroy mapping
-     err = ISLocalToGlobalMappingDestroy(map_local_to_global);
+     err = ISLocalToGlobalMappingDestroy(&map_local_to_global);
      ASSERT(err == 0,"Error in ISLocalToGlobalMappingDestroy.");
      xprintf(Msg,"Error code %d \n",err);
 

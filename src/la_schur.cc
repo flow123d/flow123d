@@ -148,7 +148,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        }
        ISRestoreIndices(IsA,&IsAIndices);
 
-       ISCreateGeneralWithArray(PETSC_COMM_SELF,locSizeA,IsALocalIndices,&IsA_sub);
+       ISCreateGeneral(PETSC_COMM_SELF,locSizeA,IsALocalIndices,PETSC_USE_POINTER,&IsA_sub);
        //DBGPRINT_INT("pole_lokalnich_indexu",locSizeA,IsALocalIndices);
        MPI_Barrier(PETSC_COMM_WORLD);
 
@@ -196,8 +196,8 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        ierr = VecScatterEnd  ( ScatterToB, Orig->get_solution(), Sol2, INSERT_VALUES, SCATTER_FORWARD);
 
        // Destroy Scatters
-       ierr = VecScatterDestroy ( ScatterToA );
-       ierr = VecScatterDestroy ( ScatterToB );
+       ierr = VecScatterDestroy ( &(ScatterToA) );
+       ierr = VecScatterDestroy ( &(ScatterToB) );
 
     }
     else if (Orig->type == LinSys::MAT_MPIAIJ)
@@ -393,22 +393,22 @@ void SchurComplement::form_schur()
        ierr = MatISGetLocalMat(Orig->get_matrix(), &orig_mat_sub);
        ASSERT(ierr == 0,"Error in MatISGetLocalMat.");
 
-       // B
-       ierr+=MatGetSubMatrix(orig_mat_sub, IsA_sub, IsB_sub, locSizeB, mat_reuse, &B_sub);
+       // B, locSizeB removed
+       ierr+=MatGetSubMatrix(orig_mat_sub, IsA_sub, IsB_sub, mat_reuse, &B_sub);
 
        // A^-1 * B
        ierr+=MatMatMult(IA_sub, B_sub, mat_reuse, 1.0 ,&(IAB_sub)); // 6/7 - fill estimate
 
-       // B^T
-       ierr+=MatGetSubMatrix(orig_mat_sub, IsB_sub, IsA_sub, locSizeA, mat_reuse, &Bt_sub);
+       // B^T,  locSizeA removed
+       ierr+=MatGetSubMatrix(orig_mat_sub, IsB_sub, IsA_sub, mat_reuse, &Bt_sub);
 
        // B^T*A^-1*B
        ierr+=MatMatMult(Bt_sub, IAB_sub, mat_reuse, 1.9 ,&(xA_sub)); // 1.1 - fill estimate (PETSC report values over 1.8)
 
-       // get C block TODO: matrix reuse
-       ierr+=MatGetSubMatrix(orig_mat_sub, IsB_sub, IsB_sub, locSizeB, MAT_INITIAL_MATRIX, &local_compl_aux);
+       // get C block TODO: matrix reuse,  locSizeB removed
+       ierr+=MatGetSubMatrix(orig_mat_sub, IsB_sub, IsB_sub, MAT_INITIAL_MATRIX, &local_compl_aux);
        ierr+=MatCopy(local_compl_aux, Compl->local_matrix,DIFFERENT_NONZERO_PATTERN);
-       ierr+=MatDestroy(local_compl_aux);
+       ierr+=MatDestroy(&local_compl_aux);
 
        // compute complement = (-1)cA+xA = Bt*IA*B - C
        ierr+=MatScale(Compl->local_matrix,-1.0);
@@ -437,21 +437,21 @@ void SchurComplement::form_schur()
        // nevertheless Petsc does not allows fill ratio below 1. so we use 1.1 for the first
        // and 1.5 for the second multiplication
 
-       // compute IAB=IA*B
-       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsA, fullIsB, locSizeB, mat_reuse, &B);
+       // compute IAB=IA*B, locSizeB removed
+       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsA, IsB, mat_reuse, &B);
        //DBGMSG(" B:\n");
        //MatView(Schur->B,PETSC_VIEWER_STDOUT_WORLD);
        ierr+=MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
        //DBGMSG(" IAB:\n");
        //MatView(Schur->IAB,PETSC_VIEWER_STDOUT_WORLD);
-       // compute xA=Bt* IAB = Bt * IA * B
-       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsA, locSizeA, mat_reuse, &(Bt));
+       // compute xA=Bt* IAB = Bt * IA * B, locSizeA removed
+       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, IsA, mat_reuse, &(Bt));
        ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
        //DBGMSG("xA:\n");
        //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
 
-       // get C block
-       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, fullIsB, locSizeB, mat_reuse, &(Compl->matrix));
+       // get C block, locSizeB removed
+       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, IsB, mat_reuse, &(Compl->matrix));
        // compute complement = (-1)cA+xA = Bt*IA*B - C
        ierr+=MatScale(Compl->get_matrix(),-1.0);
        //DBGMSG("C block:\n");
@@ -546,9 +546,9 @@ void SchurComplement::form_rhs()
        VecAXPY(Compl->get_rhs( ),1,RHS2_update);
        VecAXPY(Compl->get_rhs( ),-1,RHS2);
 
-       VecDestroy(rhs1_vec);
+       VecDestroy(&(rhs1_vec));
        delete [ ] rhs_interior;
-       VecDestroy(RHS2_update);
+       VecDestroy(&(RHS2_update));
     }
     else if (Orig->type == LinSys::MAT_MPIAIJ)
     {
@@ -595,7 +595,7 @@ void SchurComplement::resolve()
        MatMult(IAB_sub,sub_vec_block2,sol1_vec_loc);
        VecRestoreArray(Sol1,&sol1_array_loc);
 
-       VecDestroy(sol1_vec_loc);
+       VecDestroy(&(sol1_vec_loc));
 
     }
     else if (Orig->type == LinSys::MAT_MPIAIJ)
@@ -642,23 +642,23 @@ SchurComplement :: ~SchurComplement() {
 
     F_ENTRY;
 
-    if ( B  != NULL )             MatDestroy(B);
-    if ( Bt != NULL )             MatDestroy(Bt);
-    if ( xA != NULL )             MatDestroy(xA);
-    if ( IAB != NULL )            MatDestroy(IAB);
-    if ( IsA != NULL )            ISDestroy(IsA);
-    if ( IsB != NULL )            ISDestroy(IsB);
-    if ( fullIsA != NULL )        ISDestroy(fullIsA);
-    if ( fullIsB != NULL )        ISDestroy(fullIsB);
-    if ( RHS1 != NULL )           VecDestroy(RHS1);
-    if ( RHS2 != NULL )           VecDestroy(RHS2);
-    if ( Sol1 != NULL )           VecDestroy(Sol1);
-    if ( Sol2 != NULL )           VecDestroy(Sol2);
-    if ( B_sub != NULL )          MatDestroy(B_sub);
-    if ( Bt_sub != NULL )         MatDestroy(Bt_sub);
-    if ( xA_sub != NULL )         MatDestroy(xA_sub);
-    if ( IAB_sub != NULL )        MatDestroy(IAB_sub);
-    if ( sub_vec_block2 != NULL ) VecDestroy(sub_vec_block2);
+    if ( B  != NULL )             MatDestroy(&B);
+    if ( Bt != NULL )             MatDestroy(&Bt);
+    if ( xA != NULL )             MatDestroy(&xA);
+    if ( IAB != NULL )            MatDestroy(&IAB);
+    if ( IsA != NULL )            ISDestroy(&IsA);
+    if ( IsB != NULL )            ISDestroy(&IsB);
+    if ( fullIsA != NULL )        ISDestroy(&fullIsA);
+    if ( fullIsB != NULL )        ISDestroy(&fullIsB);
+    if ( RHS1 != NULL )           VecDestroy(&RHS1);
+    if ( RHS2 != NULL )           VecDestroy(&RHS2);
+    if ( Sol1 != NULL )           VecDestroy(&Sol1);
+    if ( Sol2 != NULL )           VecDestroy(&Sol2);
+    if ( B_sub != NULL )          MatDestroy(&B_sub);
+    if ( Bt_sub != NULL )         MatDestroy(&Bt_sub);
+    if ( xA_sub != NULL )         MatDestroy(&xA_sub);
+    if ( IAB_sub != NULL )        MatDestroy(&IAB_sub);
+    if ( sub_vec_block2 != NULL ) VecDestroy(&sub_vec_block2);
 
     if      (Orig->type == LinSys::MAT_IS) {
         delete [] IsALocalIndices;

@@ -161,11 +161,11 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
             }
             ASSERT( i==size,"Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
-            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, &(is_loc));
+            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
             xfree(loc_idx);
             VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
-            ISDestroy(is_loc);
+            ISDestroy(&(is_loc));
         }
     solution_changed_for_scatter=true;
 
@@ -493,8 +493,8 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
     if (schur2 != NULL) delete schur2;
     if (schur1 != NULL) delete schur1;
 
-    if ( IA1 != NULL ) MatDestroy( IA1 );
-    if ( IA2 != NULL ) MatDestroy( IA2 );
+    if ( IA1 != NULL ) MatDestroy( &(IA1) );
+    if ( IA2 != NULL ) MatDestroy( &(IA2) );
 
     delete schur0;
 
@@ -525,7 +525,7 @@ void DarcyFlowMH_Steady::make_schur1() {
     if      (schur0->type == LinSys::MAT_IS)
     {
        // create mapping for PETSc
-       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, side_ds->lsize(), side_id_4_loc, &map_side_local_to_global);
+       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, side_ds->lsize(), side_id_4_loc, PETSC_COPY_VALUES, &map_side_local_to_global);
        ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
        err = MatCreateIS(PETSC_COMM_WORLD,  side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA1);
@@ -767,7 +767,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
     // make distribution and numbering
     //DBGPRINT_INT("Local partitioning",old_ds->lsize,loc_part);
 
-    ISCreateGeneral(PETSC_COMM_WORLD, old_ds.lsize(), loc_part, &part); // global IS part.
+    ISCreateGeneral(PETSC_COMM_WORLD, old_ds.lsize(), loc_part, PETSC_COPY_VALUES, &part); // global IS part.
     ISPartitioningCount(part, old_ds.np(), new_counts); // new size of each proc
 
     new_ds = new Distribution((unsigned int *) new_counts); // new distribution
@@ -787,7 +787,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
     for (i = 0; i < size; i++)
         old_4_new[i] = i;
     AOApplicationToPetsc(new_old_ao, size, old_4_new);
-    AODestroy(new_old_ao);
+    AODestroy(&(new_old_ao));
 
     // compute id_4_loc
     //DBGMSG("Creating loc.number -> id mapping ...\n");

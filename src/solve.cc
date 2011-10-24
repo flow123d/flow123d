@@ -421,7 +421,7 @@ void solver_petsc(Solver *solver)
 	// TODO: make solver part of LinSyt, and make gatter for num of it
 	xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", Reason, nits);
     Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
-	KSPDestroy(System);
+	KSPDestroy(&System);
 
 }
 
