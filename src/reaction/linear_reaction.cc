@@ -97,7 +97,7 @@ double **Linear_reaction::modify_reaction_matrix(void) //prepare the matrix, whi
 		for(cols = 0; cols < nr_of_isotopes; cols++){
 			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 			if(cols < (nr_of_isotopes - 1)){
-				rel_step = time_step/half_lives[cols];
+				rel_step = half_lives[cols]/time_step;
 			}
 			if(cols > 0){
 				reaction_matrix[prev_index][prev_index] -= pow(0.5,prev_rel_step);
@@ -125,7 +125,7 @@ double **Linear_reaction::modify_reaction_matrix(int dec_nr) //prepare the matri
 	for(cols = 0; cols < nr_of_isotopes; cols++){
 		index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 		if(cols < (nr_of_isotopes -1)){
-			rel_step = time_step/half_lives[cols];
+			rel_step = half_lives[cols]/time_step;
 			xprintf(Msg,"time_step %f\n", time_step);
 		}
 		if(cols > 0){
