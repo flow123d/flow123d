@@ -33,7 +33,6 @@
 #include <strings.h>
 
 #include "system/system.hh"
-#include "xio.h"
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "elements.h"

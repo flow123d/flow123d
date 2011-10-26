@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
+ * $Id: la_linsys.hh 1299 2011-08-23 21:42:50Z jakub.sistek $
+ * $Revision: 1299 $
+ * $LastChangedBy: jakub.sistek $
+ * $LastChangedDate: 2011-08-23 23:42:50 +0200 (Tue, 23 Aug 2011) $
  *
  * @file
  * @brief   Wrappers for linear systems based on MPIAIJ and MATIS format.
@@ -47,7 +47,7 @@
 #include "petscmat.h"
 #include "private/matimpl.h"
 
-#include "la_schur.hh"
+//#include "la/schur.hh"
 #include "system/par_distribution.hh"
 
 
@@ -267,7 +267,7 @@ private:
        Vec                    x,y;           /* work space for ghost values for matrix vector product */
        ISLocalToGlobalMapping mapping;
        int                    rstart,rend;   /* local row ownership */
-       PetscBool             pure_neumann;	/* PetscBool instead of PetscTruth*/
+       PetscTruth             pure_neumann;
     } MatMyIS ;
 };
 

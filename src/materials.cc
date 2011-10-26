@@ -28,7 +28,6 @@
  */
 
 #include "system/system.hh"
-#include "xio.h"
 #include <boost/algorithm/string/trim.hpp> // trim string leading and ending spaces
 #include <boost/algorithm/string/classification.hpp>
 

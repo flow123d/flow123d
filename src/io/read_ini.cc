@@ -43,7 +43,7 @@
 #include <limits.h>
 
 #include "system/system.hh"
-#include "xio.h"
+#include "system/xio.h"
 #include "io/read_ini.h"
 
 #include <boost/tokenizer.hpp>

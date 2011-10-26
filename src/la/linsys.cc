@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <petscmat.h>
 #include "system/system.hh"
-#include "la_linsys.hh"
+#include "la/linsys.hh"
 
 /**
  *  @brief Constructs a parallel system with given local size.

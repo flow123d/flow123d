@@ -29,7 +29,7 @@
 
 #include <limits.h>
 
-#include "xio.h"
+#include "system/xio.h"
 #include "io/output.h"
 #include "io/output_vtk.h"
 #include "mesh/mesh.h"

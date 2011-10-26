@@ -30,7 +30,6 @@
  */
 
 #include "system/system.hh"
-#include "xio.h"
 #include "neighbours.h"
 #include "mesh/mesh.h"
 

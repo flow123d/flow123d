@@ -43,7 +43,7 @@
 #include "global_defs.h"
 #include "system/system.hh"
 #include "io/read_ini.h"
-#include "xio.h"
+#include "system/xio.h"
 
 #ifdef WINDOWS
   #include <direct.h>

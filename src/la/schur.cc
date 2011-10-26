@@ -46,8 +46,8 @@
 #include "system/par_distribution.hh"
 #include "solve.h"
 #include "system/system.hh"
-#include "la_linsys.hh"
-#include "la_schur.hh"
+#include "la/linsys.hh"
+#include "la/schur.hh"
 
 /**
  *  Create Schur complement system.
