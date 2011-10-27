@@ -1,7 +1,7 @@
 ## Directory containing installation of PETSC
-PETSC_DIR=/home/tester.flow123d/petsc-3.0.0-p12
+PETSC_DIR=/home/tester.flow123d/petsc-3.2-p4
 ## Architecture of PETSC
-PETSC_ARCH=flow_g
+PETSC_ARCH=linux-gnu-c-debug
 
 ## Set up name of machine
 #MACHINE=
