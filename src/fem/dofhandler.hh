@@ -35,10 +35,10 @@
 
 using namespace std;
 
-template <int> class FiniteElement;
+template <unsigned int> class FiniteElement;
 class Mesh;
 
-template <int dim>
+template <unsigned int dim>
 class DOFHandler
 {
 public:

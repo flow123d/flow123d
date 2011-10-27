@@ -30,12 +30,16 @@
 
 
 #include "fem/dofhandler.hh"
+#include "fem/finite_element.hh"
 #include "mesh/mesh.h"
 
+#include "fem/fe_p.hh"
+
+FE_P<3,0> fe;
 
 
 
-template<int dim> inline DOFHandler<dim>::DOFHandler(Mesh & _mesh)
+template<unsigned int dim> inline DOFHandler<dim>::DOFHandler(Mesh & _mesh)
 : mesh(&_mesh),
   n_dofs(0)
 {
@@ -43,13 +47,15 @@ template<int dim> inline DOFHandler<dim>::DOFHandler(Mesh & _mesh)
 
 
 
-template<int dim> inline void DOFHandler<dim>::distribute_dofs(const FiniteElement<dim> & fe, const unsigned int offset)
+template<unsigned int dim> inline void DOFHandler<dim>::distribute_dofs(const FiniteElement<dim> & fe, const unsigned int offset)
 {
     unsigned int next_free_dof = offset;
     // remember ids of global dofs assigned to nodes
     int node_dof_ids[mesh->node_vector.size()];
 
     for (int i=0; i<mesh->node_vector.size(); i++) node_dof_ids[i] = -1;
+
+    // TODO: Maybe check if dofs are not yet distributed?
 
     finite_element = &fe;
     global_dof_offset = offset;
@@ -70,19 +76,15 @@ template<int dim> inline void DOFHandler<dim>::distribute_dofs(const FiniteEleme
             {
                 switch (fe.dof_type(d))
                 {
-                case FiniteElement<dim>::DOFType_node:
+                case FE_OBJECT_POINT:
                     // dof is sitting on a node (vertex)
                     // TODO: Class Node has to be modified so that mesh nodes are assigned unique id numbers.
-                    int v_id = cell->node[fe.dof_node_id(d)]->id();
+                    int v_id = cell->node[fe.dof_object_id(d)]->id();
                     if (node_dof_ids[v_id] == -1)
                     {
-                        node_dof_ids[v_id]     = next_free_dof;
-                        cell_dof_ids[cell.id()][d] = next_free_dof++;
+                        node_dof_ids[v_id] = next_free_dof++;
                     }
-                    else
-                    {
-                        cell_dof_ids[cell.id()][d] = node_dof_ids[v_id];
-                    }
+                    cell_dof_ids[cell.id()][d] = node_dof_ids[v_id];
                     break;
                 }
             }
@@ -98,40 +100,40 @@ template<int dim> inline void DOFHandler<dim>::distribute_dofs(const FiniteEleme
 
 
 
-template<int dim> inline const unsigned int DOFHandler<dim>::n_local_dofs()
+template<unsigned int dim> inline const unsigned int DOFHandler<dim>::n_local_dofs()
 {
     return finite_element->n_dofs();
 }
 
 
 
-template<int dim> inline const unsigned int DOFHandler<dim>::n_global_dofs()
+template<unsigned int dim> inline const unsigned int DOFHandler<dim>::n_global_dofs()
 {
     return n_dofs;
 }
 
 
 
-template<int dim> inline const unsigned int DOFHandler<dim>::global_dof_id(const CellIterator &cell, const unsigned int local_dof_id)
+template<unsigned int dim> inline const unsigned int DOFHandler<dim>::global_dof_id(const CellIterator &cell, const unsigned int local_dof_id)
 {
     return cell_dof_ids[cell.id()][local_dof_id];
 }
 
 
 
-template<int dim> inline typename DOFHandler<dim>::CellIterator DOFHandler<dim>::begin_cell() const
+template<unsigned int dim> inline typename DOFHandler<dim>::CellIterator DOFHandler<dim>::begin_cell() const
 {
     return mesh->element.begin();
 }
 
 
 
-template<int dim> inline typename DOFHandler<dim>::CellIterator DOFHandler<dim>::end_cell() const
+template<unsigned int dim> inline typename DOFHandler<dim>::CellIterator DOFHandler<dim>::end_cell() const
 {
     return mesh->element.end();
 }
 
-template<int dim> inline DOFHandler<dim>::~DOFHandler()
+template<unsigned int dim> inline DOFHandler<dim>::~DOFHandler()
 {
     for (vector<int*>::iterator icell = cell_dof_ids.begin(); icell != cell_dof_ids.end(); icell++)
         delete[] icell;
