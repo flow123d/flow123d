@@ -21,8 +21,4 @@ FLOW_CFLAGS=-g -O0
 # This only has effect with USE_PARALLEL 
 # USE_PRINTALL = -DMPI_PRINTALL
 
-
-
-
-
-
+MAKE_JOBS=4

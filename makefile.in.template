@@ -48,5 +48,6 @@ FLOW_CFLAGS=-g -O0
 # valid values are: generic (default), hydra
 #MACHINE=
 
-
-
+# Number of jobs that will be used for compilation. Increase this value, when
+# you have more processors or cores ;-)
+MAKE_JOBS=2
