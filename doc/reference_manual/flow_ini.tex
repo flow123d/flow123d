@@ -15,7 +15,7 @@
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
 \normalsize
-\subsection{Flow123D ini file format}
+\section{Flow123D ini file format (OBSOLETE)}
 
 In this section we briefly descripte every option you can use in global INI-file. Options marked
 (NOT IMPLEMENTED) are not implemented in current version, but probably will be reimplemented in near future.
@@ -506,22 +506,22 @@ Equilibrium constant defining i-th reaction.
 \newpage
 \begin{initable}{Reaction\_module}
 \key{Compute\_decay} & \type{Yes/No} & "No" &
-It enables to switch on simulation of radioactive decay or first order reactions.
+Enables to switch on simulation of radioactive decay.
 \\
 \hline
-\key{Nr\_of\_decay\_chains} & \type{int} & 0 &
-How many decay chains are considered.
-\\
-\hline
-\key{Nr\_of\_FoR} & \type{int} & 0 &
-How many first order reactions are defined.
+\key{Nr\_of\_decay\_chain} & \type{int} & 0 &
+How many steps is defined decay chain consisting of?
 \\
 \hline
 \end{initable}
 
 \begin{initable}{Decay\_i}
+\key{Reaction\_type} & \type{enumerate} & "decay" &
+In this time just decay type is possible.
+\\
+\hline
 \key{Nr\_of\_isotopes} & \type{int} & 0 &
-It defines the number of isotopes which does the current section [Decay\_i] work with.
+How many isotopes does the section work with.
 \\
 \hline
 \key{Substance\_ids} & \type{array of int} & NULL &
@@ -533,22 +533,11 @@ Contain half-lives belonging to isotopes defined by ids.
 \\
 \hline
 \key{Bifurcation\_on} & \type{Yes/No} & "No" &
-It makes it possible to define branches in current [Decay\_i].
+Make it possible to switch of bifurcation in current [Decay\_i].
 \\
 \hline
 \key{Bifurcation} & \type{array of double} & NULL &
-It defines a percentage, which is the first isotope in current [Decay\_i] decaying to products.
-\\
-\hline
-\end{initable}
-
-\begin{initable}{FoReact\_i}
-\key{Kinetic\_constant} & \type{double} & 0.0 &
-It defines kinetic constant which is the corresponding half-life computed from.
-\\
-\hline
-\key{Substance\_ids} & \type{array of int} & NULL &
-It containes a couple of indices of substances which are taking part in first order reactions described in current section FoReact\_i.
+Gives a percentage, which is the first isotope in current [Decay\_i] decaying to products.
 \\
 \hline
 \end{initable}
