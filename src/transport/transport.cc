@@ -702,7 +702,7 @@ void ConvectionTransport::compute_one_step() {
     for (sbi = 0; sbi < n_substances; sbi++) {
                 // one step in MOBILE phase
     			compute_concentration_sources(sbi);
-    			VecAXPBYPCZ(vcumulative_corr[sbi],1.0,time_->estimate_dt(),0.0,bcvcorr[sbi],vsources_corr[sbi]);
+    			VecAXPBYPCZ(vcumulative_corr[sbi],1.0,time_->dt(),0.0,bcvcorr[sbi],vsources_corr[sbi]);
                 MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
                 VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
 
