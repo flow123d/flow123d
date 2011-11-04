@@ -307,7 +307,9 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
     }
     else if (Orig->type == LinSys::MAT_MPIAIJ)
     {
-       Compl = new LinSys_MPIAIJ( locSizeB, &(sol_array[locSizeA]) );
+       VecGetArray( Sol2, &sol_array );
+       Compl = new LinSys_MPIAIJ( locSizeB, sol_array );
+       VecRestoreArray( Sol2, &sol_array );
     }
 
     // TODO: have old_4_new as a mapping inicialized by onother one and
