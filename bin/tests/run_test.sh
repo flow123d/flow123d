@@ -138,11 +138,51 @@ function copy_outputs {
 	fi
 }
 
+# Following function is used fot checking one output file
+function check_file {
+	
+	# Check, if function was called with right number of arguments
+	if [ $# -ge 3 ]
+	then
+		INI_FILE="${1}"
+		NP="${2}"
+		OUT_FILE="${3}"
+	else
+		echo " [Failed]"
+		echo "Error: $0 called with wrong number of arguments: $#"
+		return 1
+	fi
+	
+	# Print some debug information to the output of ndiff
+	echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
+	>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+	
+	echo "" >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+	
+	# Compare output file using ndiff
+	${NDIFF} \
+		"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
+		"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
+		>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+	
+	# Check result of ndiff
+	if [ $? -eq 0 ]
+	then
+		echo -n "."
+		return 0
+	else
+		echo " [Failed]"
+		echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too different."
+		return 1
+	fi
+}
+
 # Following function is used for checking output files
 function check_outputs {
 
 	echo -n "Checking output files ."
 
+	# Check, if function was called with right number of arguments
 	if [ $# -ge 2 ]
 	then
 		INI_FILE="${1}"
@@ -187,26 +227,23 @@ function check_outputs {
 		# Does needed output file exist?
 		if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 		then
-			# Print some debug information to the output of ndiff
-			echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
-			>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-			
-			echo "" >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-			
-			# Compare output file using ndiff
-			${NDIFF} \
-				"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
-				"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
-				>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-			
-			# Check result of ndiff
-			if [ $? -eq 0 ]
+			if [ -d "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 			then
-				echo -n "."
+				# If $file is directory, then check all files in this directory
+				for out_file in `ls "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}"`
+				do
+					check_file "${INI_FILE}" "${NP}" "${file}/${out_file}"
+					if [ $? -ne 0 ]
+					then
+						return 1
+					fi		
+				done
 			else
-				echo " [Failed]"
-				echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too different."
-				return 1
+				check_file ${INI_FILE} ${NP} ${file}
+				if [ $? -ne 0 ]
+				then
+					return 1
+				fi
 			fi
 		else
 			echo " [Failed]"
