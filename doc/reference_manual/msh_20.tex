@@ -36,13 +36,14 @@ Comments concerning Flow123d:
         \item Difference between \vari{number-of-elements} and actual number of
           lines in elements' section.
       \end{itemize}
-  \item By default Flow123d assumes meshes with \vari{number-of-tags} = 3.
+  \item By default Flow123d assumes meshes with \vari{number-of-tags} = 3. 
     \begin{description}
-    \item[\vari{tag1}] is number of geometry region in which the element lies. 
-    \item[\vari{tag2}] is number of material (reference to {\tt
+    \item[\vari{tag1}] is number of material (reference to {\tt
     .MTR} file) in the element.
+    \item[\vari{tag2}] is number of geometry region in which the element lies. 
     \item[\vari{tag3}] is partition number (CURRENTLY NOT USED).
     \end{description}
+    In accordance with specification of GMSH mesh format.
   \item Currently, line (\vari{type} = 1), triangle (\vari{type} = 2) and
     tetrahedron (\vari{type} = 4) are the only supported types
     of elements. Existence of an element of different type stops the calculation.
