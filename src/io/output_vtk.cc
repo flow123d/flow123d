@@ -33,6 +33,9 @@
 #include "io/output.h"
 #include "io/output_vtk.h"
 #include "mesh/mesh.h"
+#include <dirent.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 // TODO: v tomto souboru se poflakuji vselijake funkce mimo tridy, to v objektovem navrhu nema co delat
 // maji to byt privatni metody nejake tridy (OutputVTK)
@@ -442,18 +445,62 @@ int write_vtk_vtu_data(Output *output)
 int write_vtk_pvd_data(OutputTime *output, double time, int step)
 {
     Mesh *mesh = output->get_mesh();
+    char base_dir_name[PATH_MAX];
+    char new_dir_name[PATH_MAX];
+    char base_file_name[PATH_MAX];
+    char base[PATH_MAX];
     char frame_file_name[PATH_MAX];
     ofstream *data_file = new ofstream;
-    int i;
+    DIR *dir;
+    int i, j, ret;
 
-    sprintf(frame_file_name, "%s-%d.vtu", output->get_base_filename().c_str(), step);
+    strncpy(base_dir_name, output->get_base_filename().c_str(), PATH_MAX);
+
+    /* Remove last file name from base_name and find position of last directory
+     * delimiter: '/' */
+    for(j=strlen(base_dir_name); j>0; j--) {
+        if(base_dir_name[j]=='/') {
+            base_dir_name[j]='\0';
+            break;
+        }
+    }
+
+    strncpy(base_file_name, output->get_base_filename().c_str(), PATH_MAX);
+
+    /* Find, where is the '.' character of .pvd suffix of base_name */
+    for(i=strlen(base_file_name); i>=0; i--) {
+        if(base_file_name[i]=='.') {
+            break;
+        }
+    }
+
+    /* Create base of pvd file. Example ./output/transport.pvd -> transport */
+    strncpy(base, &base_file_name[j+1], i-j-1);
+
+    /* New folder for output */
+    sprintf(new_dir_name, "%s/%s", base_dir_name, base);
+
+    /* Try to open directory */
+    dir = opendir(new_dir_name);
+    if(dir == NULL) {
+        /* Directory doesn't exist. Create new one. */
+        ret = mkdir(new_dir_name, 0777);
+
+        if(ret != 0) {
+            xprintf(Err, "Couldn't create directory: %s, error: %s\n", new_dir_name, strerror(errno));
+        }
+    } else {
+        closedir(dir);
+    }
+
+    sprintf(frame_file_name, "%s/%s-%06d.vtu", new_dir_name, base, step);
 
     data_file->open(frame_file_name);
     if(data_file->is_open() == false) {
         xprintf(Err, "Could not write output to the file: %s\n", frame_file_name);
         return 0;
     } else {
-        /* Set upd data file */
+        /* Set up data file */
         output->set_data_file(data_file);
 
         xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, output->get_base_filename().c_str());
@@ -465,14 +512,11 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
             }
         }
 
-        /* Write reference to .vtu file of current frame to pvd file */
-        if(i>0) {
-            /* Strip out relative path, because vtu file is in the same directory as pvd file*/
-            output->get_base_file() << "<DataSet timestep=\"" << step << "\" group=\"\" part=\"0\" file=\"" << &frame_file_name[i+1] <<"\"/>" << endl;
-        } else {
-            /* No path was found in string "frame_file_name" */
-            output->get_base_file() << "<DataSet timestep=\"" << step << "\" group=\"\" part=\"0\" file=\"" << frame_file_name <<"\"/>" << endl;
-        }
+        /* Set floating point precision to max */
+        output->get_base_file().precision(std::numeric_limits<double>::digits10);
+
+        /* Strip out relative path and add "base/" string */
+        output->get_base_file() << scientific << "<DataSet timestep=\"" << time << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
 
         xprintf(MsgLog, "O.K.\n");
 
