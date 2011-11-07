@@ -185,7 +185,7 @@ function check_outputs {
 	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}"/`
 	do
 		# Does needed output file exist?
-		if [ -f "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
+		if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 		then
 			# Print some debug information to the output of ndiff
 			echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
