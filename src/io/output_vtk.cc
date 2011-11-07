@@ -458,7 +458,7 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
 
     /* Remove last file name from base_name and find position of last directory
      * delimiter: '/' */
-    for(j=strlen(base_dir_name); j>0; j--) {
+    for(j=strlen(base_dir_name)-1; j>0; j--) {
         if(base_dir_name[j]=='/') {
             base_dir_name[j]='\0';
             break;
@@ -468,7 +468,7 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
     strncpy(base_file_name, output->get_base_filename().c_str(), PATH_MAX);
 
     /* Find, where is the '.' character of .pvd suffix of base_name */
-    for(i=strlen(base_file_name); i>=0; i--) {
+    for(i=strlen(base_file_name)-1; i>=0; i--) {
         if(base_file_name[i]=='.') {
             break;
         }
