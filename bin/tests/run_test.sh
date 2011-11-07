@@ -154,15 +154,15 @@ function check_file {
 	fi
 	
 	# Print some debug information to the output of ndiff
-	echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
+	echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE}" \
 	>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 	
 	echo "" >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 	
 	# Compare output file using ndiff
 	${NDIFF} \
-		"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
-		"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
+		"${REF_OUTPUT_DIR}/${INI_FILE}/${OUT_FILE}" \
+		"${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE}" \
 		>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
 	
 	# Check result of ndiff
@@ -172,7 +172,7 @@ function check_file {
 		return 0
 	else
 		echo " [Failed]"
-		echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too different."
+		echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE} is too different."
 		return 1
 	fi
 }
@@ -230,13 +230,21 @@ function check_outputs {
 			if [ -d "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 			then
 				# If $file is directory, then check all files in this directory
-				for out_file in `ls "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}"`
+				subdir="${file}"
+				for subfile in `ls "${REF_OUTPUT_DIR}/${INI_FILE}/${subdir}/"`
 				do
-					check_file "${INI_FILE}" "${NP}" "${file}/${out_file}"
-					if [ $? -ne 0 ]
+					if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${subdir}/${subfile}" ]
 					then
+						check_file "${INI_FILE}" "${NP}" "${subdir}/${subfile}"
+						if [ $? -ne 0 ]
+						then
+							return 1
+						fi
+					else
+						echo " [Failed]"
+						echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${subdir}/${subfile} doesn't exist"
 						return 1
-					fi		
+					fi
 				done
 			else
 				check_file ${INI_FILE} ${NP} ${file}
