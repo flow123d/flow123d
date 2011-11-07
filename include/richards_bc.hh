@@ -9,7 +9,10 @@
 #define	_RICHARDS_BC_HH
 
 #include <base/subscriptor.h>
+#include <base/function.h>
+#include <base/point.h>
 
+using namespace dealii;
 /**
  * Boundary condition class provides type of the boundary condition and
  * its value. For further use, there can be also supprot for Newton (returns a vector)

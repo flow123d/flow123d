@@ -1,62 +1,22 @@
-#include "output.hh"
-
-
-
-///////////////// TODO:
-/* - otazka je proc infiltraca pri mixed schamtu trva dele a to i pri jemnejsisch casovych/prostorovych krocich
- * - pro prostorovy krok 0.001 je treba zvysit presnost nelinearniho solveru - dalsi neblaha vlastnost
- *   v pocastu simulace se i pro jemny krok objevily kladne rychlosti
- * - i pro takhle jemnou sit se rychlost chova divne alespon na pocatku, sit stale neni schopna vystihnout 
- *   krivost tlaku blizko bodu nasyceni
+/*
+ * richards_lmh.hh
  *
- * - mixed schema je nestabilni pro male hodnoty parametru dt*Ks/dx, presneji male hodnoty
- *   tohoto parametru snaze vedou k situaci, kdy skok ve vodivosi je prilis veliky coz vyvola
- *   oscilace rychlosti a tim i tlaku
- *
- *   pro RT0 nejsou oscilace prilis velke, pouze zakmit v tlaku
- *   pro vyssi rad to uplne polozi nelinearni solver
- *
- * - theta time discretization - funguje pro hodnoty theta > 0.5, pro 0.5 dochazi k oscilacim v nasycene elipticke zone
- *   otazka jestli ma pak theta vyznam
- *
- * - dodelat poradne okrajove podminky, zadavani toku, 
- *
- *   napr chybu zpusobenou casovym krokem by slo odovdit z rozdilu implic a explic resp implic a CN schematu
- *   ve vysledku by melo vyjit neco jako dela ten kluk ... viz. simona
- *   .. hm tak ten kluk se jmenuje Kuraz, pro kazdou celociselnou hodnotu tlaku urci rozsah kam az se muze tlak
- *   pohnout aby diference saturaci byla dobre (v dane presnosti) aproximovana kapacitou*diference tlaku
- *   pak voli casovy krok tak, aby tato podminka byla splnena. Jiste je, ze to patrne povede k dobre konvergenci
- *   nelinearniho solveru. Nicmene to nic nerika o casove chybe.
- *
- * - pro prostorovou adaptivitu potrebuju dobry estimator. Kellyho nelze pouzit. Ad hoc napad je diference mezi tlaky, to by se asi pocitalo podobne jako Kelly.
- *   lepsi estimator, ktery by daval skutecnou chybu by byl lepsi.
- *
- * - vykreslovani vtoku v gnuplotu (porovnani oproti jemnemu s1d), druhy indikator
- * - u dalsiho zkoumat jednak chybu a pak pocet linearnich iteraci * pocet dofu
- *
- * - vliv eliminace rychlosti pred vypoctem residua
- * - zkusit adaptivitu v prostoru
- * - rozmyslet kriteria pro volbu casoveho kroku
- * - ma se na zjemnene siti pro ukonceni nelin. solveru pocitat l2 norma vektoru residua
- *   nebo radeji L@ integral z prislusne chyby ve water content
- * - zjistit kde unika voda, asi problem okrajovych podminek
- *
- * 1) pro order > 0 je potreba poradne rozbyslet pocitani saturace z tlaku
- * 2) nejprve odladit 0 order model
- * 3) toky by mely jit pocitat z hodnot bazovych funkci
- * 4) hodilo by se mi, aby konstantni polynomy byly primo v bazi Q_k na elementu i na hranici (pro RT prvky)
- *    pak bych mohl lepe zajistit bilanci
- *
- * adaptivita: viz. tutorial 23, bez Dirichleta pres constrains
- * zacit refine_grid, a zkontrolovat kdy se musi aplikovat constrainy
+ *  Created on: Oct 9, 2011
+ *      Author: jb
  */
 
-#define MAX_NUM_OF_DEALII_BOUNDARIES 255
+#ifndef RICHARDS_LMH_HH_
+#define RICHARDS_LMH_HH_
+
+
+
+
+
 
 #include <fstream>
 #include <iostream>
 
-#include <base/quadrature_lib.h>
+
 #include <base/logstream.h>
 //#include <base/function.h>
 #include <grid/tria_accessor.h>
@@ -69,10 +29,19 @@
 #include <fe/fe_system.h>
 #include <fe/fe_values.h>
 #include <fe/fe_raviart_thomas.h>
+#include <fe/fe_dg_vector.h>
+#include <base/polynomials_raviart_thomas.h>
+#include <fe/fe_face.h>
 #include <numerics/data_out.h>
 
 #include <base/tensor_function.h>
 #include <lac/sparse_ilu.h>
+#include <lac/vector.h>
+//#include <lac/full_matrix.h>
+#include <lac/sparse_matrix.h>
+#include <lac/compressed_sparsity_pattern.h>
+#include <lac/solver_cg.h>
+#include <lac/precondition.h>
 
  #include <numerics/error_estimator.h>
  #include <grid/grid_refinement.h>
@@ -95,7 +64,9 @@ using namespace dealii;
 #include <spatial_functions.hh>
 #include <hydro_functions.hh>
 #include <richards_bc.hh>
+//#include <bc_output.hh>
 #include <output.hh>
+#include <local_assembly.hh>
 
 
 
@@ -103,47 +74,6 @@ using namespace dealii;
  *  Richards' equation solver.
  */
 
-static const HydrologyParams h_params=
-{
-    1.14, //n
-    0.1, //alfa
-    
-    0.01, //Qr
-    0.480,  //Qs;
-    //1.0,
-    0.999,
-    //0.99792, //cut_fraction;  simulation is very sensitive for cutting value
-                        
-    2,  // Ks;             // saturated conductivity
-    2   // Kk;             // conductivity at the cut point
-};
-
-// nasledujici data jsou z Genuchtenova clanku
-static const HydrologyParams sand_stone_params=
-{
-    10.4, //n
-    0.79, //alfa m^-1 (0.0079 cm^-1
-
-    0.153, //Qr
-    0.25,  //Qs;
-    0.9978, //cut_fraction;
-
-    1.25E-5,  // Ks;             // saturated conductivity m/s (108. cm/day)
-    1.25E-5   // Kk;             // conductivity at the cut point
-};
-
-static const HydrologyParams silt_loam_GE3_params=
-{
-    2.06, //n
-    0.423, //alfa
-
-    0.131, //Qr
-    0.396,  //Qs;
-    0.9978, //cut_fraction;
-
-    5.74E-7,  // Ks;             // saturated conductivity
-    5.74E-7   // Kk;             // conductivity at the cut point
-};
 
 
 /***
@@ -165,46 +95,37 @@ static const HydrologyParams silt_loam_GE3_params=
  */
 
 
-typedef UMFPACKSystem SolverType;
 
 template <int dim>
-class Richards : public Subscriptor {
+class Richards_LMH : public Subscriptor {
 public:
-    Richards(Triangulation<dim> &coarse_tria, unsigned int order);
+    Richards_LMH(Triangulation<dim> &coarse_tria, ParameterHandler &prm, unsigned int order);
     //! Add boundary condition bc for the given boundary_index.
     //! boundary without assigned BC are homogeneous Dirichlet, but rather leads to exception
-    void add_bc(const unsigned int boundary_index,  BoundaryCondition<dim> *one_bc)
-        { Assert( boundary_index < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid index.") );
-        bc[boundary_index]=one_bc;
-        }
 
-    void add_resistivity(TensorFunction<2,dim> *resist)
-        { k_inverse=resist; }
+
+    void set_data(struct RichardsData<dim> *data)
+        { richards_data = data; local_assembly.set_data(data); }
+
+    void solve();
 
     void run();
 
 private:
-    enum block_names {vel_b=0, head_b=1};
+    //enum block_names {traces=0, saturation=1};
 
     void saturation_update();
     void assemble_system();
     void grid_refine();
     //void compute_errors () const;
-    void output_results();
-    void output_residuum();
 
     //! physical data
-    SmartPointer< TensorFunction<2,dim> > k_inverse;       //! inverse of (possibly) heterogeneous hydraulic tensor
-    //! there should be whole BC descriptor object which returns
-    //! BC objects for given index with checking, possibly returning None type of BC
-    SmartPointer< BoundaryCondition<dim> > bc[MAX_NUM_OF_DEALII_BOUNDARIES];
+
+
     //! TODO: material functions should be packed up into a Soil object
     //! moreover there should be array of Materials for individual mat. indexes
-    INV_FK< B<double> > inv_fk_diff;
-    FQ< B<double> > fq_diff;
-    FC<double> fc;
-    FQ<double> fq;
-    INV_FK<double> inv_fk;
+
+
     //! TODO: precise formulation to include variable density, and gravity field
     double density;
     double gravity;
@@ -213,46 +134,42 @@ private:
     //! numerics
     SolverTime time;
 
-    double print_time_step;
-    double print_time;
-    int print_step;
-
     int order; // order of FE
     double time_theta; // theta time method
-    double weight; // velocity mass lumping weight
 
     int max_non_lin_iter;
     double nonlin_tol;
     bool newton;
 
-
-
 //    std::vector<bool> velocity_component_mask;
 
     Triangulation<dim> triangulation;
+    FE_FaceQ<dim> trace_fe;
     FESystem<dim> fe;
-    FE_DGQ<dim> sat_fe;
+
     DoFHandler<dim> dof_handler;
-    DoFHandler<dim> sat_dh;
-    std::vector<unsigned int> component_to_block;
+    //std::vector<unsigned int> component_to_block;
 
-    //! linear algerba objects
-    typedef typename SolverType::VectorType VectorType;
-    typedef typename SolverType::MatrixType MatrixType;
-    SolverType linear_system;
+    /// linear algerba objects
+    Vector<double> solution, old_solution;
+    Vector<double> saturation, old_saturation;
+    Vector<double> rhs, residual;
 
-    ConstraintMatrix     hanging_node_constraints;
+    SparsityPattern sparsity_pattern;
+    SparseMatrix<double> matrix;
+
+    ConstraintMatrix     constraints;
 
     //! field vectors
-    Vector<double> saturation;
-    Vector<double> old_saturation;
-    Vector<double> m_mat_crit;
-    VectorType solution;
-    VectorType old_solution; // previous time step
-    VectorType residual;
-    Vector<double> theta_diff;
+//    Vector<double> saturation;
+//    Vector<double> old_saturation;
+//    Vector<double> m_mat_crit;
+//    Vector<double> theta_diff;
 
-    BCOutput<dim>    bc_out;
+//    BCOutput<dim>    bc_out;
+    RichardsData<dim> *richards_data;
+    FieldOutput<dim> field_output;
+    LocalAssembly<dim> local_assembly;
 };
 
 /**
@@ -260,28 +177,25 @@ private:
  */
 
 template <int dim>
-Richards<dim>::Richards (Triangulation<dim> &coarse_tria, unsigned int order)
-		:
+Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandler &prm, unsigned int order)
+        :
                 //bc(MAX_NUM_OF_DEALII_BOUNDARIES),
-                inv_fk_diff(h_params),
-                fq_diff(h_params),
-                fc(h_params),
-                fq(h_params),
-                inv_fk(h_params),
+
                 time(0.0, 1.0, 0.000001),                  // start, end, dt_init
                 order(order),
-                fe (FE_RaviartThomas<dim>(order), 1,    // one component is velocity vector
-                    FE_DGQ<dim>(order), 1),             // one component is pressure-head, seccond saturation
-                sat_fe(order),
-		dof_handler (triangulation),             // dof_handler is initialized by empty tria.
-                sat_dh(triangulation),
-                linear_system(2),                     // three blocks two active
-                bc_out("bc_output", order)
+
+                trace_fe(order),
+                fe(trace_fe,2),
+
+                triangulation(),
+                dof_handler (triangulation),             // dof_handler is initialized by empty tria.
+
+                field_output(triangulation,order),
+                local_assembly(order)
 {
     density = 1.0;
     gravity = 1.0;
     z_component = dim - 1; // z-coord in Point
-    print_time_step = 0.01;
 
     max_non_lin_iter = 60;
     nonlin_tol = 0.0001;
@@ -289,29 +203,50 @@ Richards<dim>::Richards (Triangulation<dim> &coarse_tria, unsigned int order)
     // Crank Nicholson still makes problem with velocity oscilations
     //
     time_theta = 1; //0.5;
-    weight=0.0;//0.9; // 1 - mixed. ; 0 - decoupled ?? doesn't work
-
- 
 
     triangulation.copy_triangulation(coarse_tria);
 
-    dof_handler.distribute_dofs(fe);
-    sat_dh.distribute_dofs(sat_fe);
+    cout<<"dofs_per_cell: "<<fe.dofs_per_cell<<endl;
+    cout<<"dofs_per_face: "<<fe.dofs_per_face<<endl;
+
+    dof_handler.distribute_dofs(trace_fe);
+    constraints.clear();
+    DoFTools::make_hanging_node_constraints (dof_handler, constraints);
+    constraints.close();
+
+    CompressedSparsityPattern csp(dof_handler.n_dofs(), dof_handler.n_dofs());
+    DoFTools::make_sparsity_pattern (dof_handler,csp, constraints);
+    constraints.condense (csp);
+    csp.compress();
+
+    sparsity_pattern.copy_from(csp);
+
     std::cout << "active cells "<< triangulation.n_active_cells()
-	    << " total cells: " << triangulation.n_cells()
+        << " total cells: " << triangulation.n_cells()
             << " dofs: " << dof_handler.n_dofs() << std::endl;
 
-    component_to_block.assign(dim,vel_b);
-    component_to_block.push_back(head_b);
-    DoFRenumbering::component_wise (dof_handler,component_to_block);
-    linear_system.reinit(dof_handler);
+//    component_to_block.assign(dim,vel_b);
+//    component_to_block.push_back(head_b);
+//    DoFRenumbering::component_wise (dof_handler);
 
-    solution.reinit(linear_system.get_rhs());
-    old_solution.reinit (linear_system.get_rhs());
-    saturation.reinit(solution.block(head_b));
-    old_saturation.reinit(solution.block(head_b));
-    m_mat_crit.reinit(solution.block(head_b));
-    residual.reinit(linear_system.get_rhs());
+    //DoFTools::count_dofs_per_block (dof_handler, blocks);
+
+
+    //std::cout<< "blocks: ";
+    //copy(blocks.begin(), blocks.end(), ostream_iterator<int>( cout, " " ) );
+    //cout << std::endl;
+
+    matrix.reinit(sparsity_pattern);
+    rhs.reinit(dof_handler.n_dofs());
+
+    solution.reinit(rhs);
+    old_solution.reinit (rhs);
+    saturation.reinit(rhs);
+    old_saturation.reinit(rhs);
+    residual.reinit(rhs);
+
+    field_output.reinit(prm);
+
 }
 
 
@@ -321,19 +256,20 @@ Richards<dim>::Richards (Triangulation<dim> &coarse_tria, unsigned int order)
  * refinement and coarsing shall be done after sucesfull solution of the timestep.
  */
 template <int dim>
-void Richards<dim>::grid_refine()
+void Richards_LMH<dim>::grid_refine()
 {
    Vector<float> estimated_error_per_cell (triangulation.n_active_cells());
-   std::vector<bool> component_mask(dim+1, true);
+   std::vector<bool> component_mask(dim+2, true);
    component_mask[dim]=false;
+   
 
    // compute refinement indicators
-   KellyErrorEstimator<dim>::estimate (dof_handler,
-                                      QGauss<dim-1>(order+1),
-                                      typename FunctionMap<dim>::type(),    // Neuman boundary function
-                                      solution,
-                                      estimated_error_per_cell,
-                                      component_mask);
+   //KellyErrorEstimator<dim>::estimate (dof_handler,
+   //                                   QGauss<dim-1>(order+1),
+   //                                   typename FunctionMap<dim>::type(),    // Neuman boundary function
+   //                                   solution,
+   //                                   estimated_error_per_cell,
+    //                                  component_mask);
 /*
    { // compute error estimate based on jumps in pressure
     // Main cycle over the cells.
@@ -356,10 +292,11 @@ void Richards<dim>::grid_refine()
                                                    estimated_error_per_cell,
                                                    0, 0.33, 1000 );
     */
+   /*
     triangulation.prepare_coarsening_and_refinement();
     SolutionTransfer<dim, BlockVector<double> > solution_transfer(dof_handler);
     solution_transfer.prepare_for_coarsening_and_refinement (solution);
-    
+
     SolutionTransfer<dim, Vector<double> > sat_transfer(sat_dh);
     sat_transfer.prepare_for_coarsening_and_refinement (saturation);
 
@@ -367,10 +304,10 @@ void Richards<dim>::grid_refine()
     dof_handler.distribute_dofs (fe);
     sat_dh.distribute_dofs (sat_fe);
         std::cout << "active cells "<< triangulation.n_active_cells()
-	    << " total cells: " << triangulation.n_cells()
+        << " total cells: " << triangulation.n_cells()
             << " dofs: " << dof_handler.n_dofs() << std::endl;
 
-    DoFRenumbering::component_wise (dof_handler,component_to_block);
+    DoFRenumbering::component_wise (dof_handler);
     linear_system.reinit(dof_handler);
     old_solution.reinit (linear_system.get_rhs());
     old_saturation.reinit(old_solution.block(head_b));
@@ -386,6 +323,7 @@ void Richards<dim>::grid_refine()
     // saturation is discontinuous -> no constrains,
     // also we don't copy saturation, since it will be imediatelly updated from solution
     residual.reinit(linear_system.get_rhs());
+*/
 }
 
 
@@ -394,10 +332,10 @@ void Richards<dim>::grid_refine()
  */
 
 template <int dim>
-void Richards<dim>::saturation_update() {
-  for(unsigned int i=0;i<solution.block(head_b).size();i++) {
+void Richards_LMH<dim>::saturation_update() {
+  for(unsigned int i=0;i<solution.size();i++) {
       //cout << i <<" : " << (solution.block(head_b))(i) << " " << saturation(i) << endl;
-      saturation(i)=fq( (solution.block(head_b))(i) );
+      saturation(i)=richards_data->fq( solution(i) );
   }
 }
 /**
@@ -405,28 +343,13 @@ void Richards<dim>::saturation_update() {
  */
 
 template <int dim>
-void Richards<dim>::assemble_system() {
-    QGauss<dim> quadrature_formula(order + 1);
-    QGauss < dim - 1 > face_quadrature_formula(order + 1);
-
-   FEValues<dim> fe_values(fe, quadrature_formula,
-            update_values | update_gradients |
-            update_quadrature_points | update_JxW_values);
-    FEValues<dim> sat_fe_values(sat_fe, quadrature_formula,
-            update_values);
-    FEFaceValues<dim> fe_face_values(fe, face_quadrature_formula,
-            update_values | update_normal_vectors |
-            update_quadrature_points | update_JxW_values);
+void Richards_LMH<dim>::assemble_system() {
+    std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
+    /*
+    FullMatrix<double> local_matrix(fe.dofs_per_cell, fe.dofs_per_cell);
+    Vector<double> local_rhs(fe.dofs_per_cell);
 
 
-    const unsigned int dofs_per_cell = fe.dofs_per_cell;
-    const unsigned int n_q_points = quadrature_formula.size();
-    const unsigned int n_face_q_points = face_quadrature_formula.size();
-
-    FullMatrix<double> local_matrix(dofs_per_cell, dofs_per_cell);
-    Vector<double> local_rhs(dofs_per_cell);
-
-    std::vector<unsigned int> local_dof_indices(dofs_per_cell);
     std::vector<unsigned int> face_dofs(fe.dofs_per_face);
 
 
@@ -449,21 +372,28 @@ void Richards<dim>::assemble_system() {
 
     const FEValuesExtractors::Vector velocities(0);
     const FEValuesExtractors::Scalar pressure(dim);
- 
+    const FEValuesExtractors::Scalar pressure_trace(dim+1);
+
     std::map<unsigned int, double> RT_boundary_values;
+*/
+    matrix=0;
+    rhs=0;
+    local_assembly.set_vectors(solution, old_solution, saturation, old_saturation);
+    local_assembly.set_dt(time.dt());
 
-    linear_system.set_zero();
-
-    double max_m_crit=0;
+//    double max_m_crit=0;
     // Main cycle over the cells.
     typename DoFHandler<dim>::active_cell_iterator
         cell = dof_handler.begin_active(),
             endc = dof_handler.end();
-    typename DoFHandler<dim>::active_cell_iterator
-        sat_cell = sat_dh.begin_active();
-    for (; cell != endc; ++cell, ++sat_cell) {
+//    typename DoFHandler<dim>::active_cell_iterator
+//        sat_cell = sat_dh.begin_active();
+    for (; cell != endc; ++cell) {
+        local_assembly.reinit(cell);
+
+/*
         fe_values.reinit(cell);
-        sat_fe_values.reinit(sat_cell);
+//        sat_fe_values.reinit(sat_cell);
         local_matrix = 0;
         local_rhs = 0;
 
@@ -481,8 +411,6 @@ void Richards<dim>::assemble_system() {
         fe_values[velocities].get_function_divergences(old_solution, old_div_u_values);
         fe_values[velocities].get_function_values(solution, u_values);
 
-        // M-matrix criterium 6*dt > crit.
-        double m_crit=0;
         // cycle over quadrature points
         for (unsigned int q = 0; q < n_q_points; ++q) {
 
@@ -512,25 +440,21 @@ void Richards<dim>::assemble_system() {
             //diff_sat=0.0;
             //sat=sat_old=0.0;
 
-            m_crit+=diff_sat*inv_k*fe_values.JxW(q); // dx*C/K
-
-            for (unsigned int i = 0; i < dofs_per_cell; ++i) {
+            for (unsigned int i = 0; i < fe.dofs_per_cell; ++i) {
                 const Tensor < 1, dim> phi_i_u = fe_values[velocities].value(i, q);
                 const double div_phi_i_u = fe_values[velocities].divergence(i, q);
                 const double phi_i_p = fe_values[pressure].value(i, q);
 
-                for (unsigned int j = 0; j < dofs_per_cell; ++j) {
+                for (unsigned int j = 0; j < fe.dofs_per_cell; ++j) {
                     const Tensor < 1, dim> phi_j_u = fe_values[velocities].value(j, q);
                     const double div_phi_j_u = fe_values[velocities].divergence(j, q);
                     const double phi_j_p = fe_values[pressure].value(j, q);
 
 
-                    // posileni diagonaly touto cesotu vede k prilis male rychlosti
 
-                    local_matrix(i,i) +=  (1-weight) * phi_i_u * k_inverse_values[q] *  phi_j_u * inv_k * fe_values.JxW(q);;
                     local_matrix(i, j) += (
                               time_theta* (
-                                  weight * phi_i_u * k_inverse_values[q] *  phi_j_u * inv_k
+                                  phi_i_u * k_inverse_values[q] *  phi_j_u * inv_k
                                 - div_phi_i_u * phi_j_p
                                 - phi_i_p * div_phi_j_u
                               )
@@ -555,25 +479,22 @@ void Richards<dim>::assemble_system() {
                          + (sat - sat_old) / time.dt() * phi_i_p
                          ) * fe_values.JxW(q);
                 if (newton) {
-                    local_rhs(i) += 
+                    local_rhs(i) +=
                             phi_i_u * k_inverse_values[q] * velocity * diff_inv_k * last_p;
                 }
             }
         } // q points cycle
 
-        m_crit*=cell->measure();
-
-        if (m_crit> max_m_crit) max_m_crit=m_crit;
-       // if (m_crit > 6*time.dt()) {
-       //     cout << "CRIT: "<< m_crit/(6*time.dt()) << ", " << m_crit/cell->measure() << endl;
-       // }
-        std::vector<unsigned int> sat_local_dofs(sat_fe.dofs_per_cell);
-        sat_cell->get_dof_indices(sat_local_dofs);
-        for(int i=0;i<sat_local_dofs.size();++i) m_mat_crit(sat_local_dofs[i])=m_crit/(6*time.dt());
+        //std::vector<unsigned int> sat_local_dofs(sat_fe.dofs_per_cell);
+        //sat_cell->get_dof_indices(sat_local_dofs);
+        // for(int i=0;i<sat_local_dofs.size();++i) m_mat_crit(sat_local_dofs[i])=m_crit/(6*time.dt());
 
         if (cell->at_boundary()) {
-            for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
-                unsigned int b_ind = cell->face(face_no)->boundary_indicator();
+        int faces_per_cell = GeometryInfo<dim>::faces_per_cell;
+        std::vector<double> face_values(faces_per_cell);
+        for (unsigned int face_no = 0; face_no < faces_per_cell; ++face_no) {
+            // faces vector
+              unsigned int b_ind = cell->face(face_no)->boundary_indicator();
                 if (b_ind == 255) continue;
                 BoundaryCondition<dim> *face_bc = bc[b_ind];
                 fe_face_values.reinit(cell, face_no);
@@ -587,7 +508,7 @@ void Richards<dim>::assemble_system() {
                         for (unsigned int q = 0; q < n_face_q_points; ++q) {
                             Point<dim> &q_point=quadrature_points[q];
                             //cout << "val:" << face_bc->value(q_point)<<endl;
-                            for (unsigned int i = 0; i < dofs_per_cell; ++i)
+                            for (unsigned int i = 0; i < fe.dofs_per_cell; ++i)
                                 local_rhs(i) += -(fe_face_values[velocities].value(i, q) *
                                     fe_face_values.normal_vector(q) *
                                     (face_bc->value(q_point) + density * gravity * q_point(z_component)) *
@@ -597,7 +518,7 @@ void Richards<dim>::assemble_system() {
 
 
                         break;
-                        
+
                     case BoundaryCondition<dim>::Neuman:
                         // up to now only homogeneous, and not sure it is OK
                         // set all dofs on boundary to zero
@@ -606,7 +527,7 @@ void Richards<dim>::assemble_system() {
                         // 1) Are the basic functions with nodal points on the boundary (which means taht with boundary moments)
                         //    the only functions with non zero normal flux over the boundary?
                         //    Or also interior functions have nonzero normal flux?
-                        // 2) Can I use FETools::inteploate  to set Dirichlet DOFs, giving 
+                        // 2) Can I use FETools::inteploate  to set Dirichlet DOFs, giving
                         // a vector function in the quadrature points?
 
                         cell->face(face_no)->get_dof_indices(face_dofs, cell->active_fe_index());
@@ -631,29 +552,32 @@ void Richards<dim>::assemble_system() {
 
         cout << "------------\n";
         local_matrix.print_formatted(cout);
+        */
+        //std::cout << "ldi size: " << local_dof_indices.size() << "fe dpc: " << cell->get_fe().dofs_per_cell << std::endl;
         cell->get_dof_indices(local_dof_indices);
-        linear_system.matrix_add(local_dof_indices, local_matrix);
-        linear_system.rhs_add(local_dof_indices, local_rhs);
+        matrix.add(local_dof_indices, local_assembly.get_matrix());
+        rhs.add(local_dof_indices, local_assembly.get_rhs());
 
 
     }
 
-    MatrixTools::apply_boundary_values(RT_boundary_values,
-            linear_system.get_matrix(),
-            solution,
-            linear_system.get_rhs());
+//    MatrixTools::apply_boundary_values(RT_boundary_values,
+//            linear_system.get_matrix(),
+//            solution,
+//            linear_system.get_rhs());
 
 
-     cout << "CRIT: "<< max_m_crit/(6*time.dt()) << endl;
+//     cout << "CRIT: "<< max_m_crit/(6*time.dt()) << endl;*/
 }
 
 
 /**
  *  Output method
  */
+/*
 
 template <int dim>
-void Richards<dim>::output_results ()
+void Richards_LMH<dim>::output_results ()
 {
   std::vector<std::string> solution_names;
 
@@ -670,19 +594,21 @@ void Richards<dim>::output_results ()
             solution_names.push_back ("u");
             solution_names.push_back ("v");
             solution_names.push_back ("p");
+            solution_names.push_back ("lambda");
             //solution_names.push_back ("r");
 
             break;
-            
+
       case 3:
             solution_names.push_back ("u");
             solution_names.push_back ("v");
             solution_names.push_back ("w");
             solution_names.push_back ("p");
+            solution_names.push_back ("lambda");
 //            solution_names.push_back ("S");
 
             break;
-            
+
       default:
             Assert (false, ExcNotImplemented());
     }
@@ -697,24 +623,26 @@ void Richards<dim>::output_results ()
 
   std::ofstream output (filename.str().c_str());
   data_out.write_vtk (output);
-  
+
   print_step++;
 }
+*/
 
 
 /**
  *  Output residuum and other numericaly important fields during given interval.
- * 
- */ 
+ *
+ */
+/*
 
 template <int dim>
-void Richards<dim>::output_residuum()
+void Richards_LMH<dim>::output_residuum()
 {
   static int n_output=0;
- 
+
   std::vector<std::string> solution_names;
   solution_names.push_back ("residuum");
-  
+
   DataOut<dim> data_out;
   data_out.attach_dof_handler (sat_dh);
   data_out.add_data_vector (residual.block(head_b), "residuum");
@@ -724,13 +652,27 @@ void Richards<dim>::output_residuum()
   data_out.add_data_vector (m_mat_crit, "crit");
   data_out.build_patches (order+1);
 
-  std::ostringstream filename; 
+  std::ostringstream filename;
   filename << "./output/residuum-" << setfill('0')<<setw(3) << n_output << ".vtk";
 
   std::ofstream output (filename.str().c_str());
   data_out.write_vtk (output);
-  
-  n_output++;    
+
+  n_output++;
+}
+  */
+
+template <int dim>
+void Richards_LMH<dim>::solve ()
+{
+  SolverControl           solver_control (1000, 1e-12);
+  SolverCG<>              solver (solver_control);
+  solver.solve (matrix, solution, rhs,
+        PreconditionIdentity());
+
+  std::cout << "   " << solver_control.last_step()
+        << " CG iterations needed to obtain convergence."
+        << std::endl;
 }
 
 
@@ -741,16 +683,36 @@ void Richards<dim>::output_residuum()
 
 
 template <int dim>
-void Richards<dim>::run () 
+void Richards_LMH<dim>::run ()
 {
+    // set initial condition
+    std::vector<Point<dim> > support_points(trace_fe.dofs_per_face);
+    Quadrature<dim-1> support_quadrature(trace_fe.get_unit_face_support_points());
+    std::vector<unsigned int> face_dofs(trace_fe.dofs_per_face);
+    FEFaceValues<dim> fe_face_values(trace_fe, support_quadrature,
+                update_quadrature_points );
+    typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+
+
+    for (; cell != dof_handler.end(); ++cell) {
+        for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
+            fe_face_values.reinit(cell,face_no);
+            support_points = fe_face_values.get_quadrature_points();
+            cell->face(face_no)->get_dof_indices(face_dofs);
+
+            for(unsigned int i=0; i< support_points.size();++i)
+                solution(face_dofs[i])=richards_data -> initial_value->value(support_points[i]);
+        }
+    }
+
 
 //    VectorType &system_rhs=linear_system->get_rhs();
 //    MatrixType &system_matrix=linear_system->get_matrix();
 
 //    Vector<double> rhs_vel(solution.block(1).size());
 
-    Vector<double> head_last, sat_last;
-    Vector<double> head_new;
+//    Vector<double> head_last, sat_last;
+//    Vector<double> head_new;
 
 //    SparseILU<double> preconditioner;
 
@@ -758,27 +720,16 @@ void Richards<dim>::run ()
     double last_res_norm;
     double decrease, last_decrease;
 
-  {
-    ConstraintMatrix constraints;
-    constraints.close();
-    
-    VectorTools::project (dof_handler,
-                          constraints,
-                          QGauss<dim>(order+2),
-                          InitialValues<dim>(),
-                          solution);
-  }
 
-  head_last.reinit(old_solution.block(head_b).size());
-  head_new.reinit(old_solution.block(head_b).size());
-  sat_last.reinit(old_solution.block(head_b).size());
+
+//  head_last.reinit(old_solution.block(head_b).size());
+//  head_new.reinit(old_solution.block(head_b).size());
+//  sat_last.reinit(old_solution.block(head_b).size());
   // update saturation
   //saturation=1.;
   //old_saturation=1.;
   saturation_update();
-  print_step=0.01;
-  print_time=time.t();
-  output_results ();
+  field_output.output_fields(dof_handler, solution, time.t());
   time.inc();
 
   double lambda;
@@ -799,9 +750,9 @@ renew_timestep:
       do {
             lambda=1;
  line_search:
-            sat_last=saturation;
+//            sat_last=saturation;
             saturation_update();
-        
+
             assemble_system (); // this also apply boundary conditions thus change solution
             //std::cout << "assembled, ";
 
@@ -811,21 +762,21 @@ renew_timestep:
             // but leads to error independent of timestep
             // possibly it is to hard to satify ???
             //linear_system.eliminate_block(solution,vel_b);
-            res_norm=linear_system.residual(solution,residual);
+            res_norm=matrix.residual(residual, rhs, solution);
             res_norm*=time.dt();
             //output_residuum();
 
             last_decrease=decrease;
             decrease = (iter == 0? 100 : res_norm/last_res_norm);
-            
+/*
             {
             // vypada to, ze posun cela by mohla lepe zachytit norma zmeny reseni - integral
             Vector<double> diff(saturation);
             Vector<double> diff_integral(triangulation.n_active_cells());
-            
+
             VectorTools::integrate_difference(sat_dh, residual.block(head_b), ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
             double res_diff=diff_integral.l2_norm();
-            
+
             diff=saturation; diff-=sat_last;
             VectorTools::integrate_difference(sat_dh, diff, ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
             double sat_diff=diff_integral.l2_norm();
@@ -843,6 +794,7 @@ renew_timestep:
                 <<head_diff << " " << endl;
 
             }
+*/
             // this is very simple and ugly linesearch the aim is only
             // demonstrate that the equation have solution even for longer timesteps
             // so the adaptivity should not be used to overcome bed nonlinear solver
@@ -874,9 +826,9 @@ renew_timestep:
 
 
 
-            linear_system.solve(solution);
-            head_last=head_new;
-            head_new=solution.block(head_b);
+            this->solve();
+//            head_last=head_new;
+//            head_new=solution.block(head_b);
 
             iter++;
             cum_iter++;
@@ -884,6 +836,7 @@ renew_timestep:
       } while (1);
 
       // time error estimator
+/*
       if (theta_diff.size() == 0) {
         theta_diff.reinit(saturation.size(),false);
       }
@@ -899,7 +852,7 @@ renew_timestep:
       err*=time.dt()/2.0;
 
       cout << "time err est: " << err << endl;
-
+*/
 
       // adapt time step
       double factor=1.0;
@@ -908,19 +861,22 @@ renew_timestep:
       time.scale_time_step(factor);
 
       std::cout << "nonlin iter: "<< iter << " cum: "<<cum_iter<< endl;
-
+/*
       double final_res_norm;
       linear_system.eliminate_block(solution,vel_b);
       final_res_norm=linear_system.residual(solution,residual);
       cout << "final res: " << final_res_norm << endl;
       residual.block(head_b)*=time.dt();
       saturation-= residual.block(head_b);
-      
-      output_results ();
-      output_residuum();
-      
-      std::cout << endl;
-                
+*/
+      field_output.output_fields(dof_handler, solution, time.t());
+//      output_residuum();
+
+//      std::cout << endl;
+
     }
   while (time.inc());
 }
+
+
+#endif /* RICHARDS_LMH_HH_ */

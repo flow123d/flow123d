@@ -1,178 +1,190 @@
-/* 
- * File:   output.hh
- * Author: jb
+/*
+ * output.hh
  *
- * Created on June 12, 2010, 7:44 AM
+ *  Created on: Oct 26, 2011
+ *      Author: jb
  */
 
-/**
- * you can plot 4th column of bc_output by gnuplot command:
- *
- * gnuplot>  plot "./bc_output" using ($1):($4)
- * 
- */
+#ifndef OUTPUT_HH_
+#define OUTPUT_HH_
 
-#ifndef _OUTPUT_HH
-#define	_OUTPUT_HH
 
-#include <iostream>
 #include <fstream>
-#include <iomanip>
-#include <string>
+#include <iostream>
 
-#include <numerics/vectors.h>
+//#include <base/quadrature_lib.h>
+//#include <base/logstream.h>
+//#include <base/function.h>
+#include <grid/tria_accessor.h>
+#include <grid/tria_iterator.h>
+
+#include <dofs/dof_renumbering.h>
+#include <dofs/dof_accessor.h>
+#include <dofs/dof_tools.h>
+#include <fe/fe_dgq.h>
+#include <fe/fe_system.h>
 #include <fe/fe_values.h>
+#include <fe/fe_raviart_thomas.h>
+#include <fe/fe_dg_vector.h>
+#include <base/polynomials_raviart_thomas.h>
+#include <fe/fe_face.h>
+#include <numerics/data_out.h>
+#include <lac/block_vector.h>
+#include "base/parameter_handler.h"
 
-#include "time.hh"
 
-using namespace std;
+//#include <base/tensor_function.h>
+
+// #include <numerics/error_estimator.h>
+// #include <grid/grid_refinement.h>
+// #include <numerics/solution_transfer.h>
+
+//#include <petsc.h>
+
 using namespace dealii;
 
+
+
+
+/**
+ * Output class.
+ *
+ * We need to reconstruct some output data per every cell idealy this should be done
+ * by introducing our own child of DataOut_DoFData, and implement our own build_patches function.
+ * But in order not to stuck in technicalities we just use another DoFHandler with all necessary fields.
+ *
+ * We may also use merge_patches method of DataOut_DoFData.
+ */
+
+
 template <int dim>
-class BCOutput {
+class FieldOutput {
 public:
-    BCOutput( char * filename, unsigned int order)
-      :  bc_output(filename), order(order)
-      {
-      // TODO: this is indexed by boundary indicators
-      // should by indexed by application index of the boundary
-      // when we implement some boundary descriptor
-      bc_flux.reinit(4);
-      bc_head.reinit(4);
-      bc_surface.reinit(4);
-      init_volume=-1;
-      cum_bc_flux.reinit(4,0.0);
-          bc_output<< "* time flux[i] head[i] ... volume error" << endl;
+    FieldOutput(Triangulation<dim> &tria, unsigned int order = 0);
+    void reinit(ParameterHandler &prm);
+    void output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time);
+    ~FieldOutput();
 
-      }
-
-    template <class DH, class  sat_DH>
-    void output(SolverTime &time, DH &dh, sat_DH &sat_dh, BlockVector<double> &solution, Vector<double> &saturation) {
-
-    QGauss<dim> quadrature_formula(order + 1);
-    QGauss < dim - 1 > face_quadrature_formula(order + 1);
-
-    FEValues<dim> sat_fe_values(sat_dh.get_fe(), quadrature_formula,
-            update_values | update_JxW_values);
-    FEFaceValues<dim> fe_face_values(dh.get_fe(), face_quadrature_formula,
-            update_values | update_normal_vectors |
-            update_quadrature_points | update_JxW_values);
-
-
-    //const unsigned int dofs_per_cell = dh.get_fe().dofs_per_cell;
-    const unsigned int n_q_points = quadrature_formula.size();
-    const unsigned int n_face_q_points = face_quadrature_formula.size();
-
-//    std::vector<unsigned int> local_dof_indices(dofs_per_cell);
-//    std::vector<unsigned int> face_dofs(dh.get_fe().dofs_per_face);
-
-    std::vector<double> saturation_values(n_q_points);
-    std::vector<Tensor <1,dim> > face_u_values(n_face_q_points);
-    std::vector<double> face_p_values(n_face_q_points);
-    std::vector<unsigned int> face_dofs(dh.get_fe().dofs_per_face);
-
-    const FEValuesExtractors::Vector velocities(0);
-    const FEValuesExtractors::Scalar pressure(dim);
-
-    bc_flux=0;
-    bc_head=0;
-    bc_surface=0;
-    volume=0;
-
-    // Main cycle over the cells.
-    typename DoFHandler<dim>::active_cell_iterator
-        cell = dh.begin_active(),
-            endc = dh.end();
-    typename DoFHandler<dim>::active_cell_iterator
-        sat_cell = sat_dh.begin_active();
-    for (; cell != endc; ++cell, ++sat_cell) {
-        // volume integrals
-        sat_fe_values.reinit(sat_cell);
-        sat_fe_values.get_function_values(saturation, saturation_values);
-        // cycle over quadrature points
-        for (unsigned int q = 0; q < n_q_points; ++q) 
-            volume += saturation_values[q] * sat_fe_values.JxW(q);
-
-        if (cell->at_boundary()) {
-            for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
-                unsigned int b_ind = cell->face(face_no)->boundary_indicator();
-                if (b_ind == 255) continue;
-                fe_face_values.reinit(cell, face_no);
-
-                // compute boundary integrals
-                fe_face_values[velocities].get_function_values(solution, face_u_values);
-                fe_face_values[pressure].get_function_values(solution, face_p_values);
-                for (unsigned int q = 0; q < n_face_q_points; ++q) {
-                    bc_head(b_ind) += face_p_values[q] * fe_face_values.JxW(q);
-                    bc_flux(b_ind) += (face_u_values[q] * fe_face_values.normal_vector(q)) * fe_face_values.JxW(q);
-                    bc_surface(b_ind) += fe_face_values.JxW(q);
-                }
-            }
-        }
-    }
-
-     for(unsigned int i=0;i<4;i++) {
-        if (bc_surface(i) != 0) {
-            //bc_flux(i)/=bc_surface(i);
-            bc_head(i)/=bc_surface(i);
-            cum_bc_flux(i)+=bc_flux(i) * time.dt();
-        }
-     }
-    // check of stability, negative velocity, min and max of pressure
-    
-    double u_min=*(min_element(solution.block(0).begin(),solution.block(0).end()));
-    double u_max=*(max_element(solution.block(0).begin(),solution.block(0).end()));
-    double h_min=*(min_element(solution.block(1).begin(),solution.block(1).end()));
-    double h_max=*(max_element(solution.block(1).begin(),solution.block(1).end()));
-/*
-    for(int i=0;i<solution.block(0).size();++i) {
-        if ((solution.block(0))(i)<u_min) u_min=solution.block(0).(i);
-        if (solution.block(0)(i)>u_max) u_max=solution.block(0).(i);
-    }
-    double h_min=1000;
-    double h_max=-1000;
-    for(int i=0;i<solution.block(0).size();++i) {
-        if (solution.block(1).(i)<h_min) h_min=solution.block(1).(i);
-        if (solution.block(1).(i)>h_max) h_max=solution.block(1).(i);
-    }
-*/
-    if (init_volume < 0.0) init_volume = volume;
-
-    double error = 0;
-    for (unsigned int i=0; i < cum_bc_flux.size();i++) {
-        error+=cum_bc_flux(i);
-        cout << i << " :BC " << cum_bc_flux(i) <<endl;
-    }
-    error=( (volume - init_volume)  + error  ) / volume;
-
-      bc_output << setw(10) << time.t();
-      bc_output << setw(13) << bc_flux(2);
-      bc_output << setw(13) << bc_head(2);
-      bc_output << setw(13) << bc_flux(3);
-      bc_output << setw(13) << bc_head(3)
-                << setw(13) << u_min
-              << setw(13)<< u_max
-              << setw(13)<< h_min
-              << setw(13)<< h_max
-                << setw(13) << volume
-                << setw(13) << error << endl;
-
-
-    }
 private:
-    std::ofstream bc_output;
-    int order;
+    enum block_index_names {
+        velocity_bl=0,
+        pressure_bl=1,
+        saturation_bl=2,
+        estimator_bl=3,
+        p_traces_bl=4
+    };
 
-    // bc values
-    Vector<double> bc_flux;
-    Vector<double> bc_head;
-    Vector<double> bc_surface;
-    Vector<double> cum_bc_flux;
+    FE_DGVector<PolynomialsRaviartThomas<dim>, dim> velocity_fe;
+    FE_FaceQ<dim> pressure_trace_fe;
+    FE_DGQ<dim> pressure_fe;
+    FESystem<dim> fe;
+    DoFHandler<dim> dh;
+    BlockVector<double> out_vec;
+    DataOut<dim> data_out;
 
-    double init_volume;
-    double volume;
+    unsigned int order;
+    std::string file_name;
+    double print_time;
+    unsigned int print_level;
+    double print_time_step;
+    std::vector<unsigned int> blocks;
+
+    static const unsigned int n_output_components = dim + 4;
+
+    void set_parameters(ParameterHandler &prm);
 
 };
 
-#endif	/* _OUTPUT_HH */
+template <int dim>
+FieldOutput<dim>::FieldOutput(Triangulation<dim> &tria, unsigned int p_order)
+: order(p_order),
+  velocity_fe(order,mapping_piola),
+  pressure_fe(order),
+  pressure_trace_fe(order),
+  fe (velocity_fe,1,pressure_fe,3,pressure_trace_fe,1),
+  dh(tria),
+  print_level(0),
+  print_time(0.0),
+  print_time_step(0.1)
+{}
 
+template <int dim>
+void FieldOutput<dim>::reinit(ParameterHandler &prm)
+{
+    set_parameters(prm);
+
+    dh.distribute_dofs(fe);
+    DoFRenumbering::component_wise (dh);
+    blocks.resize(5);
+
+    DoFTools::count_dofs_per_block (dh, blocks);
+
+    out_vec.reinit(blocks.size());
+    for (unsigned int i=0; i < blocks.size(); i++) {
+        std::cout << blocks[i] << std::endl;
+          out_vec.block(i).reinit(blocks[i]); // fast reinit, since
+    }
+    out_vec.collect_sizes();
+
+    data_out.attach_dof_handler (dh);
+
+    std::vector<std::string> names(dim, "flux");
+    names.push_back("pressure");
+    names.push_back("saturation");
+    names.push_back("estimator");
+    names.push_back("pressure_traces");
+
+    std::vector<DataComponentInterpretation::DataComponentInterpretation> component_interpretation(dim,
+            DataComponentInterpretation::component_is_part_of_vector);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+
+    data_out.add_data_vector(out_vec, names, DataOut<dim>::type_automatic, component_interpretation);
+}
+
+template <int dim>
+FieldOutput<dim>::~FieldOutput()
+{
+
+}
+
+
+template <int dim>
+void FieldOutput<dim>::set_parameters(ParameterHandler &prm)
+{
+    prm.declare_entry ("print_time_step", "0.1",
+                        Patterns::Double(),
+                        "Time step for filed output.");
+    print_time_step=prm.get_double("print_time_step");
+
+}
+
+
+template <int dim>
+void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time)
+{
+
+//  bc_out.output(time, dof_handler, sat_dh, solution, saturation);
+
+  if (time < print_time) return;
+  std::cout << "PRINT time (" << print_level << "): " << time << std::endl;
+  print_time += print_time_step;
+
+  // file name
+  std::ostringstream fns;
+  fns << "./output/solution-" << std::setfill('0')<<std::setw(3) << print_level << ".vtk";
+  file_name = fns.str();
+  print_level++;
+
+  // update vector
+  AssertDimension(out_vec.block(p_traces_bl).size(),  solution_vector.size());
+  out_vec.block(p_traces_bl) = solution_vector;
+
+  data_out.build_patches (order+1);
+  std::ofstream output (file_name.c_str());
+  data_out.write_vtk (output);
+
+}
+#endif /* OUTPUT_HH_ */

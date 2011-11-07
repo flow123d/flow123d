@@ -15,7 +15,7 @@ deal_II_dimension = 2
 target   = lib/richards-$(deal_II_dimension)d
 
 # The `debug-mode' variable works as in the small projects Makefile:
-debug-mode = off
+debug-mode = on
 
 # And so does the following variable. You will have to set it to
 # something more reasonable, of course.
@@ -28,11 +28,13 @@ run-parameters  =
 
 # Now, this is the last variable you need to set, namely the path to
 # the deal.II toplevel directory:
-D = ${HOME}/local/deal.II-6.2.1
+D = ${HOME}/local/deal.II
 
 BOOST_INCLUDE=${D}/contrib/boost/include/boost
+PETSC_DIR=/home/jb/local/petsc-3.0.0-p7
+PETSC_ARCH=gcc_serial
 
-
+LD_LIBRARY_PATH+=${PETSC_DIR}/${PETSC_ARCH}/lib
 #
 #
 # Usually, you will not need to change anything beyond this point.
@@ -53,19 +55,23 @@ cc-files    = $(shell echo source/*.cc)
 o-files     = $(cc-files:source/%.cc=lib/$(deal_II_dimension)d/%.$(OBJEXT))
 go-files    = $(cc-files:source/%.cc=lib/$(deal_II_dimension)d/%.g.$(OBJEXT))
 h-files     = $(wildcard include/*.h)
-lib-h-files = $(shell echo $D/base/include/base/*.h \
-		 $D/lac/include/lac/*.h             \
-		 $D/deal.II/include/*/*.h \
-		 ${BOOST_INCLUDE}/*.h )
+lib-h-files = $( shell echo ${BOOST_INCLUDE}/*.h )
+
+#$(shell echo ${D}/base/include/base/*.h \
+#   ${D}/lac/include/lac/*.h \
+#   ${D}/deal.II/include/*/*.h \
 
 # As before, define a list of libraries. This, of course depends on
 # the dimension in which we are working:
-libs.g   = $(lib-deal2-$(deal_II_dimension)d.g) \
-	   $(lib-lac.g)                         \
-           $(lib-base.g)
-libs.o   = $(lib-deal2-$(deal_II_dimension)d.o) \
-	   $(lib-lac.o)                         \
-           $(lib-base.o)
+libs.g   := $(lib-deal2.g)
+libs.o   := $(lib-deal2.o)
+
+#libs.g   = $(lib-deal2-$(deal_II_dimension)d.g) \
+#	   $(lib-lac.g)                         \
+#           $(lib-base.g)
+#libs.o   = $(lib-deal2-$(deal_II_dimension)d.o) \
+#	   $(lib-lac.o)                         \
+#           $(lib-base.o)
 
 
 
@@ -111,7 +117,7 @@ all: $(target)$(EXEEXT)
 # Next define how to link the executable
 $(target)$(EXEEXT) : $(libraries) Makefile
 	@echo =====waves=======$(deal_II_dimension)d==============$(MT)== Linking $(@F)
-	@$(CXX) -o $@ $(libraries) $(LIBS) $(LDFLAGS)
+	$(CXX) -o $@ $(libraries) $(LIBS) $(LDFLAGS)
 
 
 

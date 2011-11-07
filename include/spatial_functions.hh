@@ -8,14 +8,24 @@
 #ifndef _SPATIAL_FUNCTIONS_HH
 #define	_SPATIAL_FUNCTIONS_HH
 
+#include <iostream>
+
 #include <base/function.h>
 #include <base/tensor_function.h>
+
+#include <hydro_functions.hh>
+#include <richards_bc.hh>
+#include "FADBAD++/fadbad.h"
+#include "FADBAD++/badiff.h"
+using namespace fadbad;
 
 //*****************************************************************
 // FUNCTIONS
 /**
  *  Water source function
  */
+using namespace dealii;
+
 
 template <int dim>
 class RightHandSide : public Function<dim>
@@ -129,7 +139,7 @@ KInverse<dim>::KInverse (const unsigned int n_centers, Point<dim> pa, Point<dim>
   for (unsigned int d=0; d<dim; ++d)
     radius =   std::min(radius, std::abs( pb[d] - pa[d] ) );
 
-  std:: cout << std::endl << "rad: "<< radius<< std::endl;
+  std::cout << std::endl << "rad: "<< radius<< std::endl;
 }
 
 
@@ -165,32 +175,53 @@ KInverse<dim>::value_list (const std::vector<Point<dim> > &points,
  */
 
 template <int dim>
-class InitialValues : public Function<dim>
+class InitialValue : public Function<dim>
 {
-  mutable Vector<double> val;
 
   public:
-    InitialValues () : Function<dim>(dim+1), val(dim+1) { val=0.0; }
+    InitialValue () : Function<dim>(1) {}
 
     virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
     {
-        val(dim) = p(1);
-        return val(component);
+        return -150;
     }
 
-    virtual void vector_value (const Point<dim> &p, Vector<double>   &value) const
-    {
-        // top , bottom
-        //val(dim) = (-90.0)*( 1-p(dim-1)/(-10.) ) + (-70.0)* p(dim-1) / (-10.) ;
-        val(dim) = -150;
-        value = val;
-    }
 
 };
 
+#define MAX_NUM_OF_DEALII_BOUNDARIES 255
+
+template <int dim>
+struct RichardsData {
+public:
+
+    RichardsData(const HydrologyParams & h_params):
+    fq_diff(h_params),
+    fc(h_params),
+    fq(h_params),
+    inv_fk(h_params),
+    inv_fk_diff(h_params)
+    {}
+
+    void add_bc(const unsigned int boundary_index,  BoundaryCondition<dim> *one_bc)
+        { Assert( boundary_index < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid index.") );
+        bc[boundary_index]=one_bc;
+        }
+
+    KInverse<dim> *k_inverse;
+    InitialValue<dim> *initial_value;
+
+    //! there should be whole BC descriptor object which returns
+    //! BC objects for given index with checking, possibly returning None type of BC
+    SmartPointer< BoundaryCondition<dim> > bc[MAX_NUM_OF_DEALII_BOUNDARIES];
 
 
-
+    INV_FK< B<double> > inv_fk_diff;
+    FQ< B<double> > fq_diff;
+    FC<double> fc;
+    FQ<double> fq;
+    INV_FK<double> inv_fk;
+};
 
 
 

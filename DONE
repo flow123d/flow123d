@@ -1,3 +1,68 @@
+13.10. ---------------------------
+* modified fe_poly_face.templates.h to implement get_data, and just do not updata vector and tensor values instead of NotImplemented exception
+* this is necessary, since get_data is used also when get_face_data is called for FE_System
+* furthermore we want to use FEVAlues for the whole system on cell even if do not worry about face elements
+* program runs until linear solve, but still we have to modify assembly and review linear solve after.
+
+11.10. ---------------------------
+* try to modify setting initial value into pressure traces
+* can not use VectorTools::interpolate (since RT elements dosn't have values in suppport points)
+* can not use VectorTools::project (since FE_FaceQ do not implement get_data()
+* implement my own cycle over cells
+* can not use FEFaceValues for whole system fe, since get_face_data for FESystem is implemented by calling get_data which do not work for FE_FaceQ
+
+
+Older then 8.10. ---------------------------------------------------------
+
+///////////////// TODO:
+/* - otazka je proc infiltraca pri mixed schamtu trva dele a to i pri jemnejsisch casovych/prostorovych krocich
+ * - pro prostorovy krok 0.001 je treba zvysit presnost nelinearniho solveru - dalsi neblaha vlastnost
+ *   v pocastu simulace se i pro jemny krok objevily kladne rychlosti
+ * - i pro takhle jemnou sit se rychlost chova divne alespon na pocatku, sit stale neni schopna vystihnout 
+ *   krivost tlaku blizko bodu nasyceni
+ *
+ * - mixed schema je nestabilni pro male hodnoty parametru dt*Ks/dx, presneji male hodnoty
+ *   tohoto parametru snaze vedou k situaci, kdy skok ve vodivosi je prilis veliky coz vyvola
+ *   oscilace rychlosti a tim i tlaku
+ *
+ *   pro RT0 nejsou oscilace prilis velke, pouze zakmit v tlaku
+ *   pro vyssi rad to uplne polozi nelinearni solver
+ *
+ * - theta time discretization - funguje pro hodnoty theta > 0.5, pro 0.5 dochazi k oscilacim v nasycene elipticke zone
+ *   otazka jestli ma pak theta vyznam
+ *
+ * - dodelat poradne okrajove podminky, zadavani toku, 
+ *
+ *   napr chybu zpusobenou casovym krokem by slo odovdit z rozdilu implic a explic resp implic a CN schematu
+ *   ve vysledku by melo vyjit neco jako dela ten kluk ... viz. simona
+ *   .. hm tak ten kluk se jmenuje Kuraz, pro kazdou celociselnou hodnotu tlaku urci rozsah kam az se muze tlak
+ *   pohnout aby diference saturaci byla dobre (v dane presnosti) aproximovana kapacitou*diference tlaku
+ *   pak voli casovy krok tak, aby tato podminka byla splnena. Jiste je, ze to patrne povede k dobre konvergenci
+ *   nelinearniho solveru. Nicmene to nic nerika o casove chybe.
+ *
+ * - pro prostorovou adaptivitu potrebuju dobry estimator. Kellyho nelze pouzit. Ad hoc napad je diference mezi tlaky, to by se asi pocitalo podobne jako Kelly.
+ *   lepsi estimator, ktery by daval skutecnou chybu by byl lepsi.
+ *
+ * - vykreslovani vtoku v gnuplotu (porovnani oproti jemnemu s1d), druhy indikator
+ * - u dalsiho zkoumat jednak chybu a pak pocet linearnich iteraci * pocet dofu
+ *
+ * - vliv eliminace rychlosti pred vypoctem residua
+ * - zkusit adaptivitu v prostoru
+ * - rozmyslet kriteria pro volbu casoveho kroku
+ * - ma se na zjemnene siti pro ukonceni nelin. solveru pocitat l2 norma vektoru residua
+ *   nebo radeji L@ integral z prislusne chyby ve water content
+ * - zjistit kde unika voda, asi problem okrajovych podminek
+ *
+ * 1) pro order > 0 je potreba poradne rozbyslet pocitani saturace z tlaku
+ * 2) nejprve odladit 0 order model
+ * 3) toky by mely jit pocitat z hodnot bazovych funkci
+ * 4) hodilo by se mi, aby konstantni polynomy byly primo v bazi Q_k na elementu i na hranici (pro RT prvky)
+ *    pak bych mohl lepe zajistit bilanci
+ *
+ * adaptivita: viz. tutorial 23, bez Dirichleta pres constrains
+ * zacit refine_grid, a zkontrolovat kdy se musi aplikovat constrainy
+ */
+
 TODO:
 
 

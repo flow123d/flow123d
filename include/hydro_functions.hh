@@ -8,9 +8,9 @@
 #ifndef _HYDRO_FUNCTIONS_HH
 #define	_HYDRO_FUNCTIONS_HH
 
-#include "FADBAD++/fadbad.h"
-#include "FADBAD++/badiff.h"
-using namespace fadbad;
+//#include "FADBAD++/fadbad.h"
+//#include "FADBAD++/badiff.h"
+//using namespace fadbad;
 #include <algorithm>
 
 using namespace std;
@@ -68,7 +68,7 @@ HydrologyParams par;
 // auxiliary parameters
 double Qa,Qm,Qk,m,Hr,Hk,Hs,C1Qee,C2Qee,Qeer,Qees,Qeek;
 public:
-    INV_FK(HydrologyParams par);
+    INV_FK(const HydrologyParams &par);
     T operator()(const T&  h);
 };
 
@@ -76,7 +76,7 @@ template <class T> const double INV_FK<T>::Bpar =0.5;
 template <class T> const double INV_FK<T>::PPar =2;
 
 template <class T>
-INV_FK<T> :: INV_FK(HydrologyParams par)
+INV_FK<T> :: INV_FK(const HydrologyParams &par)
 : par(par)
 {
 
@@ -122,7 +122,7 @@ T INV_FK<T> :: operator()(const T& h)
             Qe = C1Qe*Q + C2Qe;
             Qek = C1Qe*Qk + C2Qe;
             Kr = pow(Qe/Qek,Bpar)*pow((FFQr - FFQ)/(FFQr - FFQk),PPar) * par.Kk/par.Ks;
-            return 1.0 / ( max<T>(par.Ks*Kr,par.Ks*(1E-10)) );
+            return ( 1.0 / ( max<T>(par.Ks*Kr,par.Ks*(1E-10)) ) );
     }
     else if(h <= Hs)
     {
@@ -141,12 +141,12 @@ HydrologyParams par;
 // auxiliary parameters
 double  m, Qeer,Qees,Hr,Hs, Qa, Qm;
 public:
-    FQ(HydrologyParams par);
+    FQ(const HydrologyParams &par);
     T operator()(const T&  h);
 };
 
 template <class T>
-FQ<T>::FQ(HydrologyParams par)
+FQ<T>::FQ(const HydrologyParams &par)
 : par(par)
 {
     m = 1 - 1 / par.n;
@@ -187,12 +187,12 @@ HydrologyParams par;
 // auxiliary parameters
 double  m, C1Qee,C2Qee,Qeer,Qees,Hr,Hs, Qa, Qm;
 public:
-    FC(HydrologyParams par);
+    FC(const HydrologyParams &par);
     T operator()(const T&  h);
 };
 
 template <class T>
-FC<T>::FC(HydrologyParams par)
+FC<T>::FC(const HydrologyParams &par)
 : par(par)
 {
     m = 1 - 1 / par.n;
