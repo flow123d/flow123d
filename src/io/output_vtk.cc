@@ -476,7 +476,7 @@ int write_vtk_pvd_data(OutputTime *output, double time, int step)
 
     /* Create base of pvd file. Example ./output/transport.pvd -> transport */
     strncpy(base, &base_file_name[j+1], i-j-1);
-    base[i-j]='\0';
+    base[i-j-1]='\0';
 
     /* New folder for output */
     sprintf(new_dir_name, "%s/%s", base_dir_name, base);
