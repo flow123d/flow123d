@@ -20,24 +20,24 @@
 </Cells>
 <PointData Scalars="" Vectors="">
 </PointData>
-<CellData Scalars="Sr_mobile_[M/L^3],Y_mobile_[M/L^3],Cs_mobile_[M/L^3],Ba_mobile_[M/L^3],E_mobile_[M/L^3],F_mobile_[M/L^3]" Vectors="">
-<DataArray type="Float64" Name="Sr_mobile_[M/L^3]" format="ascii">
-1.000000000000000e-02 9.999999999999995e-03 1.000000000000000e-02 
+<CellData Scalars="A_mobile_[M/L^3],B_mobile_[M/L^3],C_mobile_[M/L^3],D_mobile_[M/L^3],E_mobile_[M/L^3],F_mobile_[M/L^3]" Vectors="">
+<DataArray type="Float64" Name="A_mobile_[M/L^3]" format="ascii">
+1.000000000000000e-02 9.999999999999993e-03 1.000000000000000e-02 
 </DataArray>
-<DataArray type="Float64" Name="Y_mobile_[M/L^3]" format="ascii">
-2.556579589843750e-02 2.556579589843749e-02 2.556579589843750e-02 
+<DataArray type="Float64" Name="B_mobile_[M/L^3]" format="ascii">
+4.225208511710506e-02 4.225208511710504e-02 4.225208511710506e-02 
 </DataArray>
-<DataArray type="Float64" Name="Cs_mobile_[M/L^3]" format="ascii">
+<DataArray type="Float64" Name="C_mobile_[M/L^3]" format="ascii">
 3.000000000000000e-02 2.999999999999999e-02 3.000000000000000e-02 
 </DataArray>
-<DataArray type="Float64" Name="Ba_mobile_[M/L^3]" format="ascii">
-3.636596679687500e-02 3.636596679687498e-02 3.636596679687500e-02 
+<DataArray type="Float64" Name="D_mobile_[M/L^3]" format="ascii">
+2.639015821545788e-02 2.639015821545787e-02 2.639015821545788e-02 
 </DataArray>
 <DataArray type="Float64" Name="E_mobile_[M/L^3]" format="ascii">
 5.000000000000000e-02 4.999999999999998e-02 5.000000000000000e-02 
 </DataArray>
 <DataArray type="Float64" Name="F_mobile_[M/L^3]" format="ascii">
-5.806823730468750e-02 5.806823730468749e-02 5.806823730468750e-02 
+5.135775666743705e-02 5.135775666743703e-02 5.135775666743705e-02 
 </DataArray>
 </CellData>
 </Piece>

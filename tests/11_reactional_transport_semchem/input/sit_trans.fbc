@@ -3,6 +3,6 @@ $BoundaryFormat
 $EndBoundaryFormat
 $BoundaryConditions
 2
-0	1	 200.000000000000	2	323	3	1	0
+0	1	 2100.000000000000	2	323	3	1	0
 1	1	 100.000000000000	2	367	0	1	1
 $EndBoundaryConditions
