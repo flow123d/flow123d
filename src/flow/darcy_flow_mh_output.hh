@@ -33,6 +33,9 @@
 #define DARCY_FLOW_MH_OUTPUT_HH_
 
 #include "mesh/mesh.h"
+#include <string>
+#include <vector>
+#include "io/output.h"
 
 class DarcyFlowMH;
 class OutputTime;
@@ -66,7 +69,6 @@ public:
 private:
     void make_side_flux();
     void make_element_scalar();
-    void make_element_scalar(double* scalars);
     void make_element_vector();
 
     void make_element_vector_line(ElementFullIter);
@@ -78,10 +80,11 @@ private:
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param(double* scalars);
+    void make_node_scalar_param(std::vector<double> &scalars);
     void make_node_scalar();
     void make_neighbour_flux();
     //void make_previous_scalar();
+    void output_internal_flow_data();
 
     /**
      * Calculate and output water balance over material subdomains and boudary fluxes.
@@ -102,16 +105,16 @@ private:
     TimeMark::Type output_mark_type;
 
     /** \brief Array for storing nodes scalar, node index is used as index of array */
-    double* node_scalars;
+    std::vector<double> node_pressure;
     /** \brief Array for storing elements scalar, element index is used as index of array */
-    double* ele_scalars;
+    std::vector<double> ele_pressure;
 
     /** \brief Structure for storing elements vectors, used in register_elem_data  */
     typedef std::vector< vector<double> > VectorFloatVector;
     typedef struct OutVector {
         VectorFloatVector   *vectors;
-        string              name;
-        string              unit;
+        std::string              name;
+        std::string              unit;
     }_OutVector;
 
     /** \brief Vector for storing elements vectors */
@@ -119,6 +122,8 @@ private:
 
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;
+    /// Raw data output file.
+    FILE *raw_output_file;
 };
 
 

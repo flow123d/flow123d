@@ -168,7 +168,7 @@ void Mesh::setup_topology() {
     node_to_element(mesh);
     element_to_side_both(mesh);
     neigh_vv_to_element(mesh);
-    element_to_neigh_vv(mesh);
+    //element_to_neigh_vv(mesh);
     neigh_vb_to_element_and_side(mesh);
     neigh_bv_to_side(mesh);
     element_to_neigh_vb(mesh);

@@ -67,8 +67,8 @@ public:
 
     MaterialDatabase::Iter material; // Element's material
     struct Side **side; // Element's sides
-    int      n_neighs_vv;   // # of neighbours, V-V type (noncomp.)
-    struct Neighbour **neigh_vv; // List og neighbours, V-V type (noncomp.)
+//    int      n_neighs_vv;   // # of neighbours, V-V type (noncomp.)
+//    struct Neighbour **neigh_vv; // List og neighbours, V-V type (noncomp.)
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
@@ -114,20 +114,20 @@ public:
     
     // Results
     double   vector[ 3 ];   // Vector quantity - velocity of flow
-    double   v_length;  // Length of vector quantity
-    double   scalar;    // Scalar quantity (piez. head or pressure)
-    double   pscalar;   // As scalar but in previous time step
-    double   balance;   // Balance of flux
+//    double   v_length;  // Length of vector quantity
+//    double   scalar;    // Scalar quantity (piez. head or pressure)
+//    double   pscalar;   // As scalar but in previous time step
+//    double   balance;   // Balance of flux
 
-    double   scalar_it; // for density iteration
+//    double   scalar_it; // for density iteration
     //double   *conc_prev;         // for density iteration
     //double   *conc_prev_immobile;         // for density iteration
     //double   *conc_prev_sorb;         // for density iteration
     //double   *conc_prev_immobile_sorb;         // for density iteration
 
     // Misc
-    int     aux;       // Auxiliary flag
-    double  faux;      // Auxiliary number
+//    int     aux;       // Auxiliary flag
+//    double  faux;      // Auxiliary number
 };
 
 

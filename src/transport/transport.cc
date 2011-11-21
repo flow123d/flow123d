@@ -866,7 +866,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     if (elm->neigh_vb[n]->side[s]->flux < 0.0)
                         aii += elm->neigh_vb[n]->side[s]->flux / (elm->volume * elm->material->por_m);
                 } // end comp model
-	
+	/*
         FOR_ELM_NEIGHS_VV(elm,n) { //non-comp model
             ngh = elm->neigh_vv[n];
             FOR_NEIGH_ELEMENTS(ngh,s) {
@@ -885,7 +885,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 }
             }
         } // end non-comp model
-        
+      */
         MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
 
         if (fabs(aii) > max_sum)
@@ -1286,7 +1286,7 @@ void ConvectionTransport::output_vector_gather() {
 //      COMPARE DENSITY ITERATION
 //=============================================================================
 int ConvectionTransport::compare_dens_iter() {
-
+/*
     ElementIter elm;
     double max_err;
     max_err = 0;
@@ -1302,7 +1302,7 @@ int ConvectionTransport::compare_dens_iter() {
     if (max_err > dens_eps)
         return 0;
     else
-        return 1;
+        return 1;*/
 }
 //=============================================================================
 //      RESTART ITERATION CONCENTRATION
@@ -1329,11 +1329,12 @@ void ConvectionTransport::restart_iteration_C() {
 //      SAVE & RESTART ITERATION OF PRESSURE
 //=============================================================================
 void ConvectionTransport::save_restart_iteration_H() {
-
+/*
     ElementIter elm;
     FOR_ELEMENTS(mesh_,  elm ) {
         elm->scalar_it = elm->scalar;
     }
+    */
 }
 //=============================================================================
 //      SAVE TIME STEP CONCENTRATION

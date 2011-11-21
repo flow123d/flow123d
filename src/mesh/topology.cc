@@ -126,12 +126,13 @@ void neigh_vv_to_element(Mesh* mesh)
 //=============================================================================
 //
 //=============================================================================
+/*
 void element_to_neigh_vv(Mesh* mesh)
 {
 	struct Neighbour *ngh;
     ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh );
 
-	xprintf( MsgVerb, "   Element to neighbours of vv2 type... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Element to neighbours of vv2 type... ");
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     // Counting the neighbours using the aux variable
@@ -177,8 +178,8 @@ void element_to_neigh_vv(Mesh* mesh)
                                         "Check the input file of the neighbours.", ele.id());
 		ele->aux++;
 	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
+	xprintf( MsgVerb, "O.K.\n");
+}*/
 //=============================================================================
 //
 //=============================================================================
@@ -234,32 +235,25 @@ void element_to_neigh_vb(Mesh* mesh)
 	xprintf( MsgVerb, "   Element to neighbours of vb2 type... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-    // Counting the neighbours using the aux variable
-	FOR_ELEMENTS(mesh,  ele )
-		ele->aux = 0;
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != VB_ES )
-			continue;
-		ele = ngh->element[ 0 ];
-		ele->aux++;
-	}
+    FOR_ELEMENTS(mesh,ele) ele->n_neighs_vb =0;
+    // count vb neighs
+    FOR_NEIGHBOURS(mesh,  ngh )
+        if( ngh->type == VB_ES ) {
+            ele = ngh->element[ 0 ];
+            ele->n_neighs_vb++;
+        }
 	// Allocation of the array
-	FOR_ELEMENTS(mesh,  ele ) {
-		ele->n_neighs_vb = ele->aux;
-		if( ele->n_neighs_vb > 0 )
-			ele->neigh_vb = (struct Neighbour**) xmalloc(
-				ele->n_neighs_vb * sizeof( struct Neighbour* ) );
-	}
-	// Fill the array
 	FOR_ELEMENTS(mesh,  ele )
-		ele->aux = 0;
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != VB_ES )
-			continue;
-		ele = ngh->element[ 0 ];
-		ele->neigh_vb[ ele->aux ] = ngh;
-		ele->aux++;
-	}
+		if( ele->n_neighs_vb > 0 ) {
+			ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb];
+			ele->n_neighs_vb=0;
+		}
+	// fill
+	FOR_NEIGHBOURS(mesh,  ngh )
+		if( ngh->type == VB_ES ) {
+		    ele = ngh->element[ 0 ];
+		    ele->neigh_vb[ ele->n_neighs_vb++ ] = ngh;
+		}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
 //=============================================================================
@@ -481,7 +475,7 @@ void neigh_bb_el_to_side( struct Neighbour *ngh )
 	}
 }
 //=============================================================================
-//
+// make sides references for edge ngh (same dim)
 //=============================================================================
 void neigh_bb_e_to_side(Mesh *mesh, struct Neighbour *ngh )
 {
@@ -491,20 +485,21 @@ void neigh_bb_e_to_side(Mesh *mesh, struct Neighbour *ngh )
 
     ASSERT(!( ngh == NULL ),"Neighbour is NULL\n");
 
+    e0 = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
+    unsigned int e0_side;
     FOR_NEIGH_ELEMENTS( ngh, li ) {
-		if( li == 0 ) {
-			e0 = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
-			continue;
-		}
+        if (li == 0) continue;
 		e1 = ELEMENT_FULL_ITER(mesh, ngh->element[ li ]);
 		if( elements_common_sides( e0, e1, s ) == false )
 		       xprintf(UsrErr,"In neighbour %d elements %d and %d do not have common side\n",
 				  ngh->id, e0.id(), e1.id() );
+
+		// set ngh->side only for internal edges , i.e. at least neigh. 2 elements
 		if( li == 1 ) {
-			e0->aux = s[ 0 ];
+			e0_side = s[ 0 ];
 			ngh->side[ 0 ] = e0->side[ s [ 0 ] ];
 		} else {
-			INPUT_CHECK( s[ 0 ] == e0->aux ,"Cannot find free side for edge %d\n", ngh->id); // TODO message ??
+			INPUT_CHECK( s[ 0 ] == e0_side ,"Elements of edge %d have two sides in common.", ngh->id);
 		}
 		ngh->side[ li ] = e1->side[ s [ 1 ] ];
 	}

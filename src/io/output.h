@@ -216,16 +216,6 @@ public:
     ~Output();
 
     /**
-     * \brief This function gets data from mesh and save them in Output. It is temporary solution.
-     */
-    void get_data_from_mesh(void);
-
-    /**
-     * \brief This function free data from Mesh. It is temporary solution.
-     */
-    void free_data_from_mesh(void);
-
-    /**
      * \brief Register array of data on nodes.
      *
      * This function will add reference on the array of data to the Output object.
