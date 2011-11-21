@@ -424,7 +424,12 @@ time_governor={
 }
 \end{verbatim}
 This will set key \verb'time_governor' to the same value as the entity specified by the address.
-The address is absolute or relative identification of an entity. For example assume the file
+The address is an array of strings for keys and integers for indices.
+The address can be absolute or relative identification of an entity. The relative address is relative to the entity in which the reference record is contained.
+One can use string \verb'".."' to move to parent entity and string \verb'"//"' to move to the root record of current file.
+Indices in address starts from 0.
+
+For example assume the file
 \begin{verbatim}
 mesh={
 	file_name="xyz"
@@ -437,14 +442,14 @@ array=[
 outer_record={
 	output_file="x_out"
 	inner_record={
-		output_file={REF="../output_file"} 	# value "x_out"
+		output_file={REF=["..","output_file"]} 	# value "x_out"
 	}
-	x={REF="/array/3/x"}					# value "3"
-	f_name={REF="/mesh/file_name"}			# value "xyz"
+	x={REF="/array/2/x"}					# value "3"
+	f_name={REF=["//","mesh","file_name"]}			# value "xyz"
 }	
 \end{verbatim}
 
-Concept of addres should be better explained and used consistently in reader interface. Arrays are indexed form $0$.
+Concept of addres should be better explained and used consistently in reader interface.
 \end{description}
 
 \subsection{Semantic rules}
