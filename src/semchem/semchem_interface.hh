@@ -65,6 +65,10 @@ class Semchem_interface
 		*	It is a pointer on three dimensional matrix full of doubles.
 		*/
 		double ***concentration_matrix;
+		/**
+		*	It is a pointer on three dimensional matrix full of doubles.
+		*/
+		FILE *fw_chem;
 	private:
 		/**
 		*	It holds an information about the length of time step for chemical reaction simulation.

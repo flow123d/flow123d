@@ -1,7 +1,5 @@
 //---------------------------------------------------------------------------
 
-//#include <stdio.h>
-//#include <stdlib.h>
 #include "system/system.hh"
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
@@ -18,12 +16,9 @@ struct TS_lat 	*P_lat;
 struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
-Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //int nrOfElements, double ***ConcentrationMatrix)
-	:semchem_on(false), dual_porosity_on(false), mesh_(NULL)
+Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
+	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL)
 {
-  FILE *fw_chem;
-
-  fw_chem = fopen("vystup.txt","w"); fclose(fw_chem); //makes chemistry output file clean, before transport is computed
   this->set_chemistry_computation();
   if(semchem_on == true) ctiich();
   set_dual_porosity();
@@ -32,15 +27,18 @@ Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpeci
   return;
 }
 
+/*Semchem_interface::~Semchem_interface(void)
+{
+	if(semchem_output != NULL)
+	{
+		free(semchem_output);
+		semchem_output = NULL;
+	}
+	return;
+}*/
+
 void Semchem_interface::compute_one_step(void)
 {
-	/*
-	 *  TODO: this is obvious error ppelm should be set to match loc_el i.e. element index on local processor in
-	 *  transport ordering.
-	 */
-	//ElementIter ppelm = NULL;
-
-	//for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
 	if(semchem_on == true)
 	{
 		for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
@@ -63,7 +61,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    int krok;
    int poc_krok;
    double celkova_molalita;
-   char vystupni_soubor[] = "vystup.txt";
+   char vystupni_soubor[] = "./output/semchem_output.txt";
    double **conc_mob_arr = conc[MOBILE];
    double **conc_immob_arr = conc[IMMOBILE];
    double pomoc, n;
@@ -94,66 +92,19 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
     //------------PREDANI VSECH INFORMACI Z FLOWA DO SEMCHEMU----------
    for ( i=0 ; i<(G_prm.pocet_latekvefazi); i++)
    {
-	 //xprintf(Msg,"\nmolarni hmotnost: %f, latka %d, poradi %d, koncentrace z flowa %f,\n",P_lat[i].M,i,poradi,problem->transport->pconc[mobile][i][poradi]);
 	 P_lat[i].m0 = (double)((conc_mob_arr[i][poradi])) / (P_lat[i].M);
-	 /*if ((problem->transport->sorption == true))
-	 {
-		 P_lat[i].m0_sorb = (double)((sorb_mob_arr[i][poradi]) / (P_lat[i].M));
-	 }
-	 else
-	 {
-		 P_lat[i].m0_sorb = 0.0;
-	 }*/
-	 //xprintf(Msg,"\n %d POCATECNI KONCENTRACE transport->pconc[mobile][%d][%d]: %f, %f, sorbovane %f \n nejen G_prm.objem: %f, %f, %f\n",poradi,i,poradi,conc_mob_arr[i][poradi],P_lat[i].m0,P_lat[i].m0_sorb,ppelm->volume,pomoc,G_prm.objem);
-	 if (G_prm.vypisy>1)
-	 {
-	  //xprintf(Msg,"\n slozka %d, mol. hmotnost %f, jednotka g/l, z transportu rslo %f, v chemii molalita %f\n", i, P_lat[i].M, problem->transport->pconc[mobile][i][poradi], P_lat[i].m0);
-	 }
 	 celkova_molalita += (P_lat[i].m0);
    }
-   //xprintf(Msg,"\nCelkova molalita: %f\n",celkova_molalita);
    G_prm.deltaT = time_step/G_prm.cas_kroku; // dosazeni "spravneho" casoveho kroku
 
     //-----------------------VYPOCET CHEMIE----------------------------
    if (celkova_molalita > 1e-16)
    {
-	  if (G_prm.vypisy==1)
-	  {
-		/*fw = fopen(vystupni_soubor, "a"); //output to file
-		fprintf(fw,"\nie = %d, dt = %lf\n", poradi, time_step);
-		fclose(fw);*/
-		che_nadpis__soubor(vystupni_soubor);
-	  }
-	  else if (G_prm.vypisy>1)
-	  {
-		; /*fw = fopen(vystupni_soubor, "a"); //output to file
-		che_outpocp_soubor(fw);
-		fclose(fw);*/
-	  }
 	  for (krok = 1; krok <= G_prm.cas_kroku; krok++)
 	  {
-		 //fw = fopen(vystupni_soubor, "a"); //output to file
-		 if (G_prm.vypisy>1)
-		 {
-			; //fprintf(fw,"\n..............................................................\ncasovy krok c. %d, cas %f:\n", krok, krok*G_prm.deltaT); //output to file
-		 }
-		 else if (G_prm.vypisy==1)
-		 {
-			; //fprintf(fw,"\n%d\t%f", krok, krok*G_prm.deltaT); //output to file
-		 }
-		 //fclose(fw); //output to file
 		 che_pocitej_soubor(vystupni_soubor, &poc_krok);
 		 for (i = 0; i < G_prm.pocet_latekvefazi; i++) {
 		   P_lat[i].m0 = P_lat[i].m;
-		   //if(problem->transport->sorption == true) P_lat[i].m0_sorb = P_lat[i].m_sorb;
-		 }
-		 if (G_prm.vypisy>1)
-		 {
-			; //che_vypis_soubor(vystupni_soubor); //output to file
-		 }
-		 else if (G_prm.vypisy==1)
-		 {
-			; //che_vypis__soubor(vystupni_soubor); //output to file
 		 }
 		 che_presun_poc_p_();
 	  }
@@ -162,18 +113,13 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
 	  for ( i=0 ; i<G_prm.pocet_latekvefazi; i++)
 	  {
 			conc_mob_arr[i][poradi] = (double)(P_lat[i].m0 * P_lat[i].M);
-			/*if (problem->transport->sorption == true)
-			{
-			   sorb_mob_arr[i][poradi] = (double)(P_lat[i].m0_sorb * (P_lat[i].M ));
-			}*/
 	  }
 	}
-   //xprintf(Msg,"\n chemie je v pulce\n"); //just a message
 
     //==================================================================
     // ----------------- POTE PRO IMOBILNI PORY ------------------------
     //==================================================================
-   if (porTyp == true) {
+   if(porTyp == true) {
    switch (ppelm->dim) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
@@ -189,33 +135,18 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
     //------------PREDANI VSECH INFORMACI Z FLOWA DO SEMCHEMU----------
    for ( i=0 ; i<G_prm.pocet_latekvefazi ; i++)
    {
-		 P_lat[i].m0 = (double)(conc_immob_arr[i][poradi] / P_lat[i].M);
-
-		 /*if(problem->transport->sorption == true)
-		 {
-			 P_lat[i].m0_sorb = (sorb_immob_arr[i][poradi] / P_lat[i].M);
-		 }*/
-	  celkova_molalita += P_lat[i].m0;
+	 P_lat[i].m0 = (double)(conc_immob_arr[i][poradi] / P_lat[i].M);
+	 celkova_molalita += P_lat[i].m0;
    }
 
     //-----------------------VYPOCET CHEMIE----------------------------
   if (celkova_molalita > 1e-16)
    {
-	  if (G_prm.vypisy==1) che_nadpis__soubor(vystupni_soubor);
+	  //if (G_prm.vypisy==1) che_nadpis__soubor(fw_chem);
 
 	  for (krok = 1; krok<=G_prm.cas_kroku; krok++)
 	  {
-		 //fw = fopen(vystupni_soubor, "a"); //output to file
-		 if (G_prm.vypisy>1)
-			; //fprintf(fw,"\n..............................................................\ncasovy krok c. %d, cas %f:\n", krok, krok*G_prm.deltaT); //output to file
-		 else if (G_prm.vypisy==1)
-			; //fprintf(fw,"\n%d\t%f", krok, krok*G_prm.deltaT); //output to file
-		 //fclose(fw); //output to file
 		 che_pocitej_soubor(vystupni_soubor,&poc_krok);
-		 if (G_prm.vypisy>1)
-			; //che_vypis_soubor(vystupni_soubor); //output to file
-		 else if (G_prm.vypisy==1)
-			; //che_vypis__soubor(vystupni_soubor); //output to file
 		 che_presun_poc_p_();
 	  }
 
@@ -223,18 +154,11 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
 	  for ( i=0 ; i<G_prm.pocet_latekvefazi ; i++)
 	  {
 			conc_immob_arr[i][poradi] = (P_lat[i].m0 * P_lat[i].M); //m nebo m0, co?
-			/*if(problem->transport->sorption == true)
-			{
-			  sorb_immob_arr[i][poradi] == P_lat[i].m0 * P_lat[i].M;
-			}*/
-	  //xprintf(Msg,"\n transport->conc[immobile][i][%d]: %f \n",i,problem->transport->conc[immobile][i][poradi]);
 	  }
-      }
+     }
     }else{
-	  ; //xprintf(Msg,"\n chemie pro imobilni: po:ry se nepocita\n"); //just a message
+	  ;
     }
-   //} //closing bracket for the loop FOR_ELEMENTS
-   //xprintf(Msg,"\n skoncila chemie\n"); //just a message
 }
 
 void Semchem_interface::set_timestep(double new_timestep)
@@ -279,4 +203,3 @@ void Semchem_interface::set_mesh_(Mesh *mesh)
 	mesh_ = mesh;
 	return;
 }
-

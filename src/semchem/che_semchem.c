@@ -74,7 +74,7 @@ int che_Gauss ( double *matice, double *prstrana, int *hprvky, int rozmer )
    int prvek = 0;
    double velprvku = 0.0;
 
-	if (G_prm.vypisy>4) printf("\nChe_Gauss");//xprintf(Msg,"\nche_Gauss: ");
+	if (G_prm.vypisy>4) printf("\nChe_Gauss");
    if (rozmer <1)
       return -1;
    if (rozmer ==1)
@@ -82,7 +82,7 @@ int che_Gauss ( double *matice, double *prstrana, int *hprvky, int rozmer )
       hprvky[0]=0;
       if (matice[0] == 0.0)
       {
-      	printf("prusvih Newtona: nulova derivace, prava strana = %f !\n", prstrana[0]);//xprintf(Msg,"prusvih Newtona: nulova derivace, prava strana = %f !\n", prstrana[0]);
+      	printf("prusvih Newtona: nulova derivace, prava strana = %f !\n", prstrana[0]);
          if ( prstrana[0] == 0.0)
          {
          	prstrana[0] = 1.0e-10;						// cislo vycucane z prstu
@@ -125,7 +125,7 @@ int che_Gauss ( double *matice, double *prstrana, int *hprvky, int rozmer )
 // hlavni prvek vybran v prvek
       if (prvek == -1)
       {
-         printf("Prusvih v %d. sloupci\n", i);//xprintf(Msg,"Prusvih v %d. sloupci\n", i);
+         printf("Prusvih v %d. sloupci\n", i);
          for ( j=0; j<rozmer; ++j )
          {
             if (i>0)
@@ -180,7 +180,7 @@ int che_Gauss ( double *matice, double *prstrana, int *hprvky, int rozmer )
          }
       }
    }
-	if (G_prm.vypisy>4) printf("o.k. (che_Gauss)");//xprintf(Msg,"o.k. (che_Gauss)");
+	if (G_prm.vypisy>4) printf("o.k. (che_Gauss)");
 
    return 0;
 }
@@ -682,7 +682,6 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
 			  dk1*=che_poww_ld(che_m(i,zeta),-1.0*P_che[rce].exponent[i],&chyba);
             if (chyba > 0)
             {
-               // nula na zaporne cislo nebo zaporne cislo na necele cislo!
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                {
@@ -1383,7 +1382,6 @@ int che_urci_zeta0(void)
 			osklivost=che_osklivost (zeta, &zapornych0, &nulovych0, &nejhorsi0);
             if (osklivost < osklivost0)
             {
-   //printf("\n%f<%Le ", osklivost, osklivost0);
                osklivost0 = osklivost;
                for ( k=0; k<G_prm.pocet_reakci_pro_matici; k++)
                {
@@ -1667,7 +1665,7 @@ void che_spocitej_rychlosti(FILE *fw, double *rychlosti, double *poloha, double 
 	   	rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu] *= che_poww_ld(poloha[j],P_che[i].exponent[j],&chyba);
 	 if (G_prm.vypisy > 4)
 	 {
-	      fprintf(fw,"\n  %d.  rychlost %d. kineticke reakce %10.24f, poloha = %f, exponent = %f\n", j, i, rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu], poloha[j], P_che[i].exponent[j]);
+	      xprintf(Msg,"\n  %d.  rychlost %d. kineticke reakce %10.24f, poloha = %f, exponent = %f\n", j, i, rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu], poloha[j], P_che[i].exponent[j]);
 	 }
          if (chyba > 0)
          {
@@ -1723,8 +1721,8 @@ void che_zkrat_latku_o(FILE *fw, int kterou, double o_kolik, double *rychlosti)
       }
       if (reakce==-1)
       {
-         fprintf (fw,"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - nelze uz zkratit spotrebu latky!");
-         fclose(fw);
+         xprintf (Msg,"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - nelze uz zkratit spotrebu latky!");
+         //fclose(fw);
          exit(224);
       }
       if (maximum>=o_kolik)
@@ -1742,7 +1740,7 @@ void che_zkrat_latku_o(FILE *fw, int kterou, double o_kolik, double *rychlosti)
 
 void che_pomala_kinetika (char *soubor, int poc_kroku)
 {
-   FILE *fw = NULL;
+   FILE *fw;
    int i,j, krok;
    double *poloha = NULL;
    double *poloha2 = NULL;
@@ -1763,7 +1761,6 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
    {
       return;
    }
-   fw = fopen(soubor, "a");
    if (G_prm.vypisy>4) xprintf(Msg,"\nche_pomala_kinetika: ");
 
 //  TOHLE JE JEDEN KROK RUNGE-KUTTA - mel bych priprogramovat moznost rozdelit vypocet na vic kroku
@@ -1831,7 +1828,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
          poloha[j] = P_lat[j].m0;
          if (P_lat[j].m0<0.0)
          {
-            fprintf (fw,"\nchemie: Vstup do pomalych kinetickych reakci obsahoval zapornou molalitu %d. latky-neprobehne vypocet!!", j+1);
+            xprintf (Msg,"\nchemie: Vstup do pomalych kinetickych reakci obsahoval zapornou molalitu %d. latky-neprobehne vypocet!!", j+1);
             free(rychlosti);
 	    rychlosti = NULL;
             
@@ -1882,7 +1879,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
       {
          if (poloha2[j]<0.0)
          {
-            fprintf (fw,"\nchemie: pri pomalych kinetickych reakcich dosla %d. latka (%f)\t", j+1, poloha2[j]);
+            xprintf (Msg,"\nchemie: pri pomalych kinetickych reakcich dosla %d. latka (%f)\t", j+1, poloha2[j]);
             che_zkrat_latku_o(fw,j,-poloha2[j],rychlosti);
             che_spocitej_posunuti(posunuti, rychlosti);
             che_prepocitej_polohu(poloha2, poloha, posunuti);
@@ -1900,8 +1897,8 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
             }
             else
             {
-               fprintf (fw,"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - pomale kineticke reakce nejsou dost pomale!\n%d.latka (%f)", j+1,P_lat[j].m0);
-               fclose(fw);
+               xprintf (Msg,"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - pomale kineticke reakce nejsou dost pomale!\n%d.latka (%f)", j+1,P_lat[j].m0);
+               //fclose(fw);
                exit(224);
             }
          }
@@ -1931,7 +1928,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
   free(poloha);
   poloha = NULL;
 //
-   fclose (fw);
+   //fclose (fw);
   	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_pomala_kinetika)");
 }
 
@@ -1967,23 +1964,6 @@ void che_pocitej_soubor(char *soubor, int *poc_krok)
    }
 	che_pomala_kinetika(soubor,G_prm.deleni_RK);
 	che_matice_se_sorpci(soubor);
-}
-
-void che_nadpis__soubor(char *soubor)
-{
-	int i = 0;
-   FILE *fw = NULL;
-
-   fw = fopen(soubor, "a");
-	fprintf (fw,"\nkrok\tcas");
-   for (i=0; i<G_prm.pocet_latekvefazi; i++)
-   {
- 		fprintf (fw,"\t%d. latka(rozp.)", i);
-   }
-   fprintf(fw,"\tobjem");
-	fprintf (fw,"\n0\t0.0");
-   che_outpocp__soubor(fw);
-   fclose(fw);
 }
 
 //*************************************************************************
