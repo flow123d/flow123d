@@ -41,7 +41,7 @@ using namespace arma;
  * This class stores quadrature points and weights on the reference line,
  * triangle, tetrahedron etc.
  */
-template<int dim>
+template<unsigned int dim>
 class Quadrature {
 public:
     /**
@@ -100,7 +100,7 @@ protected:
 
 
 
-template<int dim>
+template<unsigned int dim>
 Quadrature<dim>::Quadrature(const unsigned int n_q) :
         quadrature_points(0),
         weights(n_q, 0)
@@ -110,39 +110,39 @@ Quadrature<dim>::Quadrature(const unsigned int n_q) :
     quadrature_points.resize(n_q, v);
 }
 
-template<int dim>
+template<unsigned int dim>
 Quadrature<dim>::Quadrature(const Quadrature<dim> &q) :
         quadrature_points(q.quadrature_points),
         weights(q.weights)
 {}
 
-template<int dim>
+template<unsigned int dim>
 inline const unsigned int Quadrature<dim>::size() const {
     return weights.size();
 }
 
-template<int dim>
+template<unsigned int dim>
 inline const vec::fixed<dim> & Quadrature<dim>::point(
         const unsigned int i) const {
     return quadrature_points[i];
 }
 
-template<int dim>
+template<unsigned int dim>
 inline const vector<vec::fixed<dim> > & Quadrature<dim>::get_points() const {
     return quadrature_points;
 }
 
-template<int dim>
+template<unsigned int dim>
 inline double Quadrature<dim>::weight(const unsigned int i) const {
     return weights[i];
 }
 
-template<int dim>
+template<unsigned int dim>
 inline const vector<double> & Quadrature<dim>::get_weights() const {
     return weights;
 }
 
-template<int dim>
+template<unsigned int dim>
 Quadrature<dim>::~Quadrature()
 {}
 

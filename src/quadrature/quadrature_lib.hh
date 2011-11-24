@@ -30,7 +30,8 @@
 #ifndef QUADRATURE_LIB_HH_
 #define QUADRATURE_LIB_HH_
 
-#include "quadrature.hh"
+#include "quadrature/quadrature.hh"
+
 
 /**
  * Gauss-Legendre quadrature of arbitrary order.
@@ -38,20 +39,17 @@
  * The coefficients are computed by a function from <tt>Numerical Recipes</tt>.
  *
  */
-template<int dim>
+template<unsigned int dim>
 class QGauss : public Quadrature<dim> {
 public:
     /**
-     * Generate a formula with <tt>n</tt> quadrature points,
-     * exact for polynomials of degree ???.
+     * Generate a formula of given order (exact for polynomials of degree @p order).
      */
-    QGauss(const unsigned int n = 0);
+    QGauss(const unsigned int order);
 };
 
 
-/* Declarations of explicit specializations */
 
-template<> QGauss<1>::QGauss(const unsigned int n);
 
 
 #endif /* QUADRATURE_LIB_HH_ */
