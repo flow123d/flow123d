@@ -12,6 +12,8 @@
 
 #include <base/function.h>
 #include <base/tensor_function.h>
+#include <base/tensor_base.h>
+#include <base/tensor.h>
 
 #include <hydro_functions.hh>
 #include <richards_bc.hh>
@@ -35,6 +37,7 @@ class RightHandSide : public Function<dim>
 
     virtual double value (const Point<dim>   &p,
 			  const unsigned int  component = 0) const;
+    virtual ~RightHandSide() {}
 };
 
 template <int dim>
@@ -183,7 +186,11 @@ class InitialValue : public Function<dim>
 
     virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
     {
-        return -150;
+        //return -100 + p[dim-1]; // piezometric head
+        // analytical solution
+        double s = p[dim-1];
+        return -tan( (exp(s)-1) / (exp(s) +1 ));
+
     }
 
 
@@ -197,30 +204,55 @@ public:
 
     RichardsData(const HydrologyParams & h_params):
     fq_diff(h_params),
-    fc(h_params),
+    //fc(h_params),
     fq(h_params),
     inv_fk(h_params),
-    inv_fk_diff(h_params)
+    inv_fk_diff(h_params),
+    density(1.0),
+    gravity(0.0),
+    bc(MAX_NUM_OF_DEALII_BOUNDARIES, NULL)
     {}
+
+    ~RichardsData() {
+        if (k_inverse != NULL) delete k_inverse;
+        if (initial_value != NULL) delete initial_value;
+        for(unsigned int i=0; i<MAX_NUM_OF_DEALII_BOUNDARIES;i++)
+            if (bc[i] !=NULL) delete bc[i];
+    }
 
     void add_bc(const unsigned int boundary_index,  BoundaryCondition<dim> *one_bc)
         { Assert( boundary_index < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid index.") );
         bc[boundary_index]=one_bc;
         }
 
+    inline double pressure(double p_head, Point<dim> point)
+    {
+        return (p_head - point[dim-1])*density*gravity;
+    }
+
+    void print_mat_table() {
+        cout << "MATERIAL TABLE" <<
+        cout << "(h, sat, cond)" << endl;
+        for(double h = -50; h < 0.1; h+=0.1) {
+            cout << h << " " << fq(h) << " " << 1.0/inv_fk(h) << endl;
+        }
+    }
+
     KInverse<dim> *k_inverse;
     InitialValue<dim> *initial_value;
 
     //! there should be whole BC descriptor object which returns
     //! BC objects for given index with checking, possibly returning None type of BC
-    SmartPointer< BoundaryCondition<dim> > bc[MAX_NUM_OF_DEALII_BOUNDARIES];
+    std::vector< BoundaryCondition<dim> *> bc;
 
+    FQ_analytical< B<double> > fq_diff;
+    //FC<double> fc;
+    FQ_analytical<double> fq;
+    INV_FK_analytical<double> inv_fk;
+    INV_FK_analytical< B<double> > inv_fk_diff;
 
-    INV_FK< B<double> > inv_fk_diff;
-    FQ< B<double> > fq_diff;
-    FC<double> fc;
-    FQ<double> fq;
-    INV_FK<double> inv_fk;
+    double density;
+    double gravity;
 };
 
 

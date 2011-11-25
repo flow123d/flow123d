@@ -625,6 +625,7 @@ void Richards<dim>::assemble_system() {
                         break;
                     default:
                          Assert (false, ExcNotImplemented());
+                         break;
                 }
             }
         }
@@ -685,6 +686,7 @@ void Richards<dim>::output_results ()
             
       default:
             Assert (false, ExcNotImplemented());
+            break;
     }
 
   DataOut<dim> data_out;

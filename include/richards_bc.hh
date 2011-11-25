@@ -34,7 +34,10 @@ public:
         {return bc_type;}
 
     virtual double value (const Point<dim>   &p, const unsigned int component = 0) const
-        { return bc_value; }
+        {
+          return bc_value;
+        }
+    virtual ~BoundaryCondition() {}
 
 private:
     BCType bc_type;

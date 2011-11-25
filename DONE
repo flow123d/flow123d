@@ -1,3 +1,18 @@
+25.11. ---------------------------
+- nektere parametry (dt a dz ...) ze vstupniho souboru
+- vychytany nektere chyby (standardne deal.ii hazel vyjimku pri nekonvergenci solveru 
+- snaha napocitat analyticke reseni, zatim nevychazi
+22.11. ---------------------------
+Na male siti a jednoduche infiltraci je kod kvalitativne funkcni
+19.11. ---------------------------
+- pouzit piezometrickou vysku jako neznamou na hranach, pri vypoctu nelinearit musime odecist Z souradnici
+- nechapat saturaci jako nezavislou promennou udrzujici perfektni bilanci, ale mit samostatny zdrojovy clen (jako v poslednim s3d)
+- tim padem se nelinearity mohou pocitat pouze v assemblaci, kdy zname polohu bodu a tim i z souradnici
+18.11. ---------------------------
+- using deal.ii 7.1.0 that has fixed some problems in fe_poly_face
+- fixed initialization of the vector
+- implemented assembly (not fuly checed)
+- start to implement output (reconstruction)
 13.10. ---------------------------
 * modified fe_poly_face.templates.h to implement get_data, and just do not updata vector and tensor values instead of NotImplemented exception
 * this is necessary, since get_data is used also when get_face_data is called for FE_System

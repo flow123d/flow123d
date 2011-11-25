@@ -28,7 +28,7 @@ run-parameters  =
 
 # Now, this is the last variable you need to set, namely the path to
 # the deal.II toplevel directory:
-D = ${HOME}/local/deal.II
+D = ${HOME}/local/deal.ii-7.1.0
 
 BOOST_INCLUDE=${D}/contrib/boost/include/boost
 PETSC_DIR=/home/jb/local/petsc-3.0.0-p7
@@ -45,7 +45,7 @@ include $D/common/Make.global_options
 
 ACTUAL=$(shell pwd)
 INCLUDE += -I${ACTUAL}/include -I${BOOST_INCLUDE} -I${ACTUAL}/lib
-CXXFLAGS.g+= -Wno-unused
+flags= -Wno-unused -g
 
 # First get a list of files belonging to the project. Include files
 # are expected in `include/', while implementation files are expected
@@ -106,7 +106,7 @@ flags += -Ddeal_II_dimension=$(deal_II_dimension)
 # files:
 lib/$(deal_II_dimension)d/%.g.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====debug=====$(MT)== $(<F)
-	$(CXX)  $(flags) -c $< -o $@
+	$(CXX)  -g3 -rdynamic  $(flags) -c $< -o $@
 lib/$(deal_II_dimension)d/%.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====optimized=$(MT)== $(<F)
 	$(CXX)  $(flags) -c $< -o $@
@@ -117,7 +117,7 @@ all: $(target)$(EXEEXT)
 # Next define how to link the executable
 $(target)$(EXEEXT) : $(libraries) Makefile
 	@echo =====waves=======$(deal_II_dimension)d==============$(MT)== Linking $(@F)
-	$(CXX) -o $@ $(libraries) $(LIBS) $(LDFLAGS)
+	$(CXX) -g3 -rdynamic -o $@ $(libraries) $(LIBS) $(LDFLAGS)
 
 
 

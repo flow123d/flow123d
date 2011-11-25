@@ -12,6 +12,7 @@
 //#include "FADBAD++/badiff.h"
 //using namespace fadbad;
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -177,6 +178,7 @@ T FQ<T>::operator()(const T& h)
         return Qa + (Qm - Qa) * Qee;
     }
     else return par.Qs;
+
 }
 
 //FC--------------------------------------------------------------
@@ -253,6 +255,32 @@ double precision :: n,m,Qr,Qs,Qa,Qm,Alfa,Q,Qee
   FH_8=-1/Alfa*(Qee**(-1/m)-1)**(1/n)
 end function FH_8
 */
+
+// Conductivity (inverse) for analytical solution
+template <class T>
+class INV_FK_analytical
+{
+private:
+public:
+    INV_FK_analytical(const HydrologyParams &par) {};
+    T operator()(const T&  h) {
+        return 1.0 /
+               ( 2.0 / (1+h*h) );
+    }
+};
+
+template <class T>
+class FQ_analytical
+{
+private:
+public:
+    FQ_analytical(const HydrologyParams &par) {};
+    T operator()(const T&  h) {
+        static T pi_half =std::atan(1.0)*2;
+        T a_tan = atan(h);
+        return 2*pi_half*pi_half - a_tan*a_tan;
+    }
+};
 
 
 #endif	/* _HYDRO_FUNCTIONS_HH */

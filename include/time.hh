@@ -9,6 +9,7 @@
 #define	_TIME__HH
 
 #include <queue>
+#include "base/parameter_handler.h"
 
 
 class SolverTime {
@@ -25,15 +26,22 @@ class SolverTime {
     double suggested_dt;
 
 public:
-    SolverTime(double start, double end, double dt_init)
-            :   start_time(start),
-                end_time(end),
-                time(start),
-                time_step(dt_init),
-                step_number(0),
+    SolverTime(ParameterHandler &prm)
+                :step_number(0),
                 suggested_dt(-1.0)
 
-    { target_times.push(end); }
+
+    {
+
+        start_time = prm.get_double("t_init");
+        time = start_time;
+        end_time = prm.get_double("t_end");
+        time_step = prm.get_double("dt_init");
+        step_min = prm.get_double("dt_min");
+        step_max = prm.get_double("dt_max");
+
+        target_times.push(end_time);
+    }
 
     void add_target_time(double target_time)
     {
@@ -48,6 +56,9 @@ public:
         while (target_times.top() < time) target_times.pop();
 
         time_step=(target_times.top() - time)/ceil( (target_times.top() - time)/time_step );
+        if (time_step < step_min) time_step = step_min;
+        if (time_step > step_max) time_step = step_max;
+
         time+=time_step;
         step_number++;
 
@@ -58,6 +69,9 @@ public:
     {
         time-=time_step;
         time_step=time_step*factor;
+        if (time_step < step_min) time_step = step_min;
+        if (time_step > step_max) time_step = step_max;
+
         time+=time_step;
     }
 
