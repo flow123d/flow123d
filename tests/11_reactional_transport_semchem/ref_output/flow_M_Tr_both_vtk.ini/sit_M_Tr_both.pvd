@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
 <Collection>
-<DataSet timestep="0" group="" part="0" file="sit_M_Tr_both.vtu-0.vtu"/>
+<DataSet timestep="inf" group="" part="0" file="sit_M_Tr_both/sit_M_Tr_both-000000.vtu"/>
 </Collection>
 </VTKFile>
