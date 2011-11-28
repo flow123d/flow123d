@@ -656,14 +656,26 @@ void DarcyFlowMHOutput::water_balance() {
     int c_water;
     struct Boundary *bcd;
     std::vector<double> *bcd_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
+    std::vector<double> *bcd_plus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
+    std::vector<double> *bcd_minus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
 
     fprintf(balance_output_file,"********************************\n");
     fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
     FOR_BOUNDARIES(mesh_, bcd) (*bcd_balance)[bcd->group] += bcd->side->flux;
+    FOR_BOUNDARIES(mesh_, bcd)
+    	if((*bcd_plus_balance)[bcd->group] > 0)
+    		(*bcd_plus_balance)[bcd->group]+= bcd->side->flux;
+    FOR_BOUNDARIES(mesh_, bcd)
+     	if((*bcd_minus_balance)[bcd->group] < 0)
+     		(*bcd_minus_balance)[bcd->group]+= bcd->side->flux;
+
+
     for(int i=0; i < bcd_balance->size(); ++i)
-        fprintf(balance_output_file, "boundary #%d\t%g\n", mesh_->bcd_group_id(i).id(), (*bcd_balance)[i]);
+        fprintf(balance_output_file, "boundary #%d\t%g\t%g\t%g\n", mesh_->bcd_group_id(i).id(), (*bcd_balance)[i],(*bcd_plus_balance)[i],(*bcd_minus_balance)[i]);
 
     delete bcd_balance;
+    delete bcd_plus_balance;
+    delete bcd_minus_balance;
 
     const FieldP0<double> *p_sources=darcy_flow->get_sources();
     if (p_sources != NULL) {
