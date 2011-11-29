@@ -106,7 +106,7 @@ flags += -Ddeal_II_dimension=$(deal_II_dimension)
 # files:
 lib/$(deal_II_dimension)d/%.g.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====debug=====$(MT)== $(<F)
-	$(CXX)  -g3 -rdynamic  $(flags) -c $< -o $@
+	$(CXX)  -std=c++0x -g3 -rdynamic  $(flags) -c $< -o $@
 lib/$(deal_II_dimension)d/%.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====optimized=$(MT)== $(<F)
 	$(CXX)  $(flags) -c $< -o $@

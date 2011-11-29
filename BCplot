@@ -1,0 +1,145 @@
+#!/usr/bin/perl
+#
+#
+#  usage: plot [-c'comands'] [-rx[xmin:xmax]] [-ry[ymin:ymax]] [-|+num] file1 file2 ...
+#
+#  print negative or positive values of column(s) num. The time column is zero.
+#  
+#  eg: plot -1 +2 out1 out2
+#
+#  assume at least 3 columns in files out1 and out2, the first column is used for x-axes, the second
+#  is printed negatively, and the third as it is. Togather there will be 4 plots 2 for each file.
+
+sub MAX {
+  local($max) = pop(@_);
+  foreach $foo (@_) {
+     $max = $foo if $max < $foo;
+  }   
+  $max;
+}
+
+sub MIN {
+  local($min) = pop(@_);
+  foreach $foo (@_) {
+     $min = $foo if $min > $foo;
+  }
+  $min;
+}
+
+# MAIN ------------------------------------------------------------------
+
+# parse arguments
+$AddCmd='';
+while ($_=shift @ARGV) {
+###  print "#$_#\n";
+  if (/^-c(.*)/) {	# additional gnuplot command lunched just before the plot
+	$AddCmd.="$1\n";
+  } elsif (/^-rx(\[.*\])/) { # xrange
+	$AddCmd.="set xrange $1\n";
+  } elsif (/^-ry(\[.*\])/) { # yrange
+	$AddCmd.="set yrange $1\n"  	   
+  } elsif (/^[-]([0-9]+)/) {	# negative columns		
+	push(@Column, ("-\$$1") );
+  } elsif (/^[+]([0-9]+)/) {	# positive columns		
+	push(@Column, ("\$$1") );
+  } else {
+	unshift(@ARGV,$_);
+	last;
+  }
+###	print "#$AddCmd#\n";
+};
+
+#defalut column
+if ($#Column == -1) {push(@Column, '-$1');}	
+
+#default file
+if ($#ARGV == -1) {unshift(@ARGV,"./s_1d_dual.out/wt_bc.out");}
+
+$plotcmd="plot ";
+$TimeStart=99999999;
+$TimeStac=$TimeEnd=0;
+$NSame=0;
+# go through the given files
+for($i=0;$i<=$#ARGV;$i++) {
+  open(IN,$ARGV[$i]) || die("Missing file $ARGV[$i]\n");
+  do {
+    
+    # get min and max (steady state) time for the file	
+    $State=1;					# before the first time read
+    while (<IN>) {
+      if (/^ *\*/||/^ *$/) {next;} 		# skip header and blank lines
+      chop;($Time,$rTop,$vTop,$vBot)=split;
+      if ($State == 1) {			# read the start time
+        $TimeStart=&MIN($Time,$TimeStart);
+	$State=2;
+      };
+#      if ($State == 2 && abs($Q1+$Q2) < 0.005*(abs($Q1)+abs($Q2))) {
+      if ($vTop == $LastvTop && $vBot == $LastvBot) {
+	$NSame++;
+      }
+      else {$NSame=0;}
+      $LasvTop=$vTop; $LastvBot=$vBot;
+      if ($State == 2 && $NSame > 3) { 			# after three same values detect steady state
+        $TimeStac=&MAX($Time,$TimeStac);$State=3;
+      };
+    }    
+    $TimeEnd=&MAX($Time,$TimeEnd);
+  }; 
+  close(IN) || die("Can't close the file\n");
+  print "After file $ARGV[$i] times (Start,Stac,End): $TimeStart,$TimeStac,$TimeEnd\n";
+  
+  # prepare the plot command
+  $Fname=$name=$ARGV[$i];
+  $Fname=~s/.*\///;
+  for $col (@Column) {
+  	$plotcmd.=q("< tr '*' '#' < ).$name.
+        	q(" using ($1):)."($col) title '$col:$Fname',\\\n";
+  }
+}
+
+# finich the plot file and call gnuplot
+
+#if ($TimeStac <= $TimeStart) {$TimeStac=$TimeEnd;}
+$TimeStac=$TimeEnd;
+open(OUT,">script.gplt");
+print OUT "mintime = ".$TimeStart."\n";
+print OUT "maxtime = ".$TimeStac."\n";
+print OUT "set xrange [mintime:maxtime] \n";
+#print OUT "set data style lines\n";
+print OUT $AddCmd;
+$plotcmd =~ s/,\\\n *$//;
+print OUT $plotcmd."\n";
+print OUT 'set output "plot.ps"'."\n";
+print OUT "set terminal postscript\n";
+print OUT "replot\n";
+close(OUT);
+exec "gnuplot -persist script.gplt";
+
+# #!/usr/bin/gnuplot -persist
+# ! if test ! -e "output/checkfile";then ./makecheck; fi
+# maxtime = `cat output/checkfile|grep screen|sed 's/^.*: *\([^ ]*\).*/\1/'`
+# maxtime = 1.2*maxtime
+# 
+# plot "< tr '*' '#' < output/screen.out" using ($1):(-$4) title 'inflow',\
+#      "< tr '*' '#' < output/screen.out" using ($1):($5) title 'outflow' 
+# set terminal x11
+# replot
+
+
+# open(IN,"output/run_inf.out") &&
+# do {
+#   while (<IN>) {if (/Switch/) {
+#     $_=<IN>; chop;($It,$ItCum,$lIt,$CumlIt,$rest)=split;}}
+#   print OUT "run_inf(cum iters): $ItCum  $CumlIt\n";
+# } && close(IN);
+
+# open(IN,"output/w_balance.out") &&
+# do {
+#   $merr=0.0;
+#   while (<IN>) {if (/Error/) {
+#     chop;($x,$y,$err)=split;
+#     if (abs($err)>abs($merr)) {$merr=$err;}
+#   }}
+#   print OUT "w_balance(max. err.): $merr\n";  
+# } && close(IN);
+

@@ -61,6 +61,8 @@ public:
     double get_output_el_phead() {return output_el_phead;}
     double get_output_el_head() {return output_el_head;}
 
+    RichardsData<dim> *richards_data;
+
 private:
     typename DoFHandler<dim>::active_cell_iterator dh_cell;
 
@@ -98,7 +100,7 @@ private:
 
     const Vector<double> * solution;
     const Vector<double> * old_solution;
-    RichardsData<dim> *richards_data;
+
 
     std::vector<unsigned int> local_dof_indices;
     //std::vector<unsigned int> face_dofs;
@@ -108,6 +110,8 @@ private:
     double dt, time;
 
     std::vector<Tensor < 2, dim> > k_inverse_values;
+    double conductivity;
+    double element_volume;
 };
 
 template <int dim>
@@ -185,8 +189,11 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
 
     // lm_00 inverse and compute lumping weights
     inv_local_matrix_00.invert(local_matrix_00);
+//    local_matrix_00.print_formatted(cout);
+//    inv_local_matrix_00.print_formatted(cout);
     // scale 00 matrix by 02 matrix
     alphas_total = 0;
+    //local_matrix_02.print_formatted(cout);
     for (unsigned int i = 0; i < local_matrix_00.size(0); ++i) {
         alphas(i) = 0;
         for (unsigned int j = 0; j < local_matrix_00.size(0); ++j) {
@@ -198,10 +205,11 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
 
     lumping_weights = alphas;
     lumping_weights.scale(1 / alphas_total);
+    //alphas.print(cout);
+    //lumping_weights.print(cout);
 
-    const double element_volume = cell->measure();
-
-    double conductivity = 0;
+    element_volume = cell->measure();
+    conductivity = 0;
 
     // matrix 22, trace * trace - lumped diagonal matrix for time term
     // not clear how to write this as cycle over quadrature points, namely i it not clear
@@ -217,23 +225,23 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
         Point<dim> barycenter = cell->face(face_no)->barycenter();
 
         double trace_phead = (*solution)(local_dof_indices[0]);
-        fadbad::B<double> p = richards_data->pressure( trace_phead, barycenter);
+        double trace_pressure = richards_data->pressure( trace_phead, barycenter);
         double trace_pressure_old = richards_data->pressure( (*old_solution)(local_dof_indices[0]) , barycenter);
-        fadbad::B<double> f = richards_data->fq_diff(p);
-        f.diff(0, 1);
+
         //double sat=f.val();
-        double capacity = p.d(0);
+        double capacity;
         //double capacity = 0.0;
 //        double sat_new = capacity* p.val(); //f.val();
 //        double sat_old = capacity* trace_pressure_old; //richards_data->fq(trace_pressure_old);
-        double sat_new = f.val();
+        double sat_new = richards_data->fq(trace_pressure, capacity);
         double sat_old = richards_data->fq(trace_pressure_old);
 
+        //cout << "tph sn so c:" << trace_phead << " "<<sat_new<<" "<<sat_old<<" "<<capacity<<endl;
 
         local_matrix_22(i, i) = lumping_weights(i) * element_volume / dt * capacity;
         local_rhs_2(i) = lumping_weights(i) * element_volume / dt * (capacity * trace_phead - (sat_new - sat_old));
 
-        conductivity += lumping_weights(i) / richards_data->inv_fk(p.val());
+        conductivity += lumping_weights(i) * richards_data->fk(trace_pressure);
 /*
         cout << i << "(lw, ev, dt, capcap: " << capacity << "lm: " << local_matrix_22(i, i) << endl;
         cout << "rhs: " << local_rhs_2(i) << "con: " << conductivity << endl;
@@ -245,17 +253,25 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
     //conductivity = 0.1;
     // make schur
     // modify inverse matrix
+
+    //inv_local_matrix_00.print_formatted(cout);
     for (unsigned int i = 0; i < local_matrix_22.size(0); ++i) {
         for (unsigned int j = 0; j < local_matrix_22.size(0); ++j) {
             inv_local_matrix_00(i, j) += -alphas(i) * alphas(j) / alphas_total;
             inv_local_matrix_00(i, j) *= conductivity;
         }
     }
+    //inv_local_matrix_00.print_formatted(cout);
+    //alphas.print(cout);
+    //inv_local_matrix_00.print_formatted(cout);
+    //local_matrix_22.print_formatted(cout);
 
     local_matrix_22.add(1.0, inv_local_matrix_00);
 
+
     //cout << "local matrix" << endl;
     //local_matrix_22.print_formatted(cout);
+
     //cout << "local rhs" << endl;
     //local_rhs_2.print(cout);
     //Assert(false, ExcNotImplemented());
@@ -264,7 +280,7 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
 
 template <int dim>
 void LocalAssembly<dim>::make_A() {
-    richards_data->k_inverse->value_list(velocity_fe_values.get_quadrature_points(), k_inverse_values);
+    richards_data->k_inverse.value_list(velocity_fe_values.get_quadrature_points(), k_inverse_values);
 
     // assembly velocity and cell pressure blocks
     // cycle over quadrature points
@@ -276,6 +292,8 @@ void LocalAssembly<dim>::make_A() {
             // matrix_00, velocity * velocity
             for (unsigned int j = 0; j < velocity_fe.dofs_per_cell; ++j) {
                 const Tensor < 1, dim> phi_j_u = velocity_fe_values[vec_extr].value(j, q);
+
+
                 local_matrix_00(i,j) += (phi_i_u * k_inverse_values[q] *  phi_j_u) * velocity_fe_values.JxW(q);
             }
 /*
@@ -333,17 +351,21 @@ void LocalAssembly<dim>::apply_bc(std::map<unsigned int, double> &boundary_value
         unsigned int n_dofs = dh_cell->get_fe().n_dofs_per_face();
         Assert (  n_dofs== 1, ExcDimensionMismatch (n_dofs, 1) );
 
-        BoundaryCondition<dim> *face_bc = richards_data->bc[b_ind];
-        switch (face_bc->type()) {
-             case BoundaryCondition<dim>::Dirichlet:
+        switch ( richards_data->bc_type(b_ind) ) {
+             case RichardsData<dim>::Dirichlet:
              // use boundary values map to eliminate Dirichlet boundary trace pressures
-             s=dh_cell->face(face_no)->barycenter()[dim-1] - time;
-             boundary_values[dh_cell->face(face_no)->dof_index(0)] = -tan( (exp(s)-1) / (exp(s) +1 ));//analytical
+             boundary_values[dh_cell->face(face_no)->dof_index(0)] =
+                     richards_data->bc_func(b_ind)->value(
+                                 dh_cell->face(face_no)->barycenter()
+                             );
+             //cout << "BC(z,s,v):" << dh_cell->face(face_no)->barycenter()[dim-1] << " "
+             //     << s << " "
+             //     << -tan( (exp(s)-1) / (exp(s) +1 )) << " "<<endl;
                      //face_bc->value(trace_fe_face_values.quadrature_point(0));
 
              break;
 
-             case BoundaryCondition<dim>::Neuman:
+             case RichardsData<dim>::Neuman:
              // add BC to RHS - not necessary for homogeneous Neuman
              /*
              for (unsigned int j = 0; j < trace_fe.dofs_per_cell; ++j) {
@@ -378,8 +400,12 @@ void LocalAssembly<dim>::output_evaluate()
         dh_cell->face(face_no)->get_dof_indices(local_dof_indices);
         trace_phead(face_no) = (*solution)(local_dof_indices[0]);
         output_el_phead += trace_phead(face_no) * lumping_weights(face_no);
+
     }
     output_el_head = richards_data->pressure(output_el_phead,dh_cell->barycenter());
+    //output_el_head = trace_phead(3);
+    //cout << "head: " << dh_cell->barycenter()[dim-1] << " "
+    //     << output_el_head << " " << output_el_phead << endl;
 
     inv_local_matrix_00.vmult(local_velocity, trace_phead);
 
@@ -392,9 +418,11 @@ void LocalAssembly<dim>::output_evaluate()
         double sat_old = richards_data->fq( richards_data->pressure( (*old_solution)(local_dof_indices[0]) , barycenter) );
         double sat_new = richards_data->fq( richards_data->pressure( trace_phead(i) , barycenter) );
 
-        local_velocity(i)= (lumping_weights(i)* (sat_new - sat_old) / dt - local_velocity(i) ) * local_matrix_02(i,i);
+        local_velocity(i)= -( element_volume*lumping_weights(i)* (sat_new - sat_old) / dt + local_velocity(i) ) * local_matrix_02(i,i); //
         output_el_sat += lumping_weights(i) * sat_new;
     }
+
+    //cout << "cond diff: " << dh_cell->barycenter()[dim-1] << " "
 }
 
 #endif /* LOCAL_ASSEMBLY_HH_ */

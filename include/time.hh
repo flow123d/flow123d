@@ -62,17 +62,19 @@ public:
         time+=time_step;
         step_number++;
 
-        return (time <= end_time);
+        return (time <= end_time * 1.000001);
     }
 
-    void reinc_time(double factor)
+    bool reinc_time(double factor)
     {
+        bool result =true;
         time-=time_step;
         time_step=time_step*factor;
-        if (time_step < step_min) time_step = step_min;
+        if (time_step < step_min) {time_step = step_min; result=false;}
         if (time_step > step_max) time_step = step_max;
 
         time+=time_step;
+        return result;
     }
 
     void scale_time_step(double factor) 

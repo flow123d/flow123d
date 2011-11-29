@@ -1,3 +1,6 @@
+29.11. ----------------------------
+- odladena konvergence tlaku i toku vuci analytickemu reseni
+
 25.11. ---------------------------
 - nektere parametry (dt a dz ...) ze vstupniho souboru
 - vychytany nektere chyby (standardne deal.ii hazel vyjimku pri nekonvergenci solveru 

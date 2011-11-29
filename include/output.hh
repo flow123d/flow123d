@@ -32,6 +32,7 @@
 #include <lac/block_vector.h>
 #include "base/parameter_handler.h"
 
+#include "spatial_functions.hh"
 
 //#include <base/tensor_function.h>
 
@@ -89,15 +90,15 @@ private:
     DataOut<dim> data_out;
 
     std::string file_name;
-    double print_time;
     unsigned int print_level;
+    double print_time;
     double print_time_step;
     std::vector<unsigned int> blocks;
     LocalAssembly<dim> & local_assembly;
 
     static const unsigned int n_output_components = dim + 4;
+    double x_size;
 
-    void set_parameters(ParameterHandler &prm);
 
 };
 
@@ -105,10 +106,11 @@ template <int dim>
 FieldOutput<dim>::FieldOutput(Triangulation<dim> &tria, unsigned int p_order, LocalAssembly<dim> &la)
 : order(p_order),
   velocity_fe(order),
-  pressure_fe(order),
   pressure_trace_fe(order+2),
+  pressure_fe(order),
   fe (velocity_fe,1,pressure_fe,4,pressure_trace_fe,1),
   dh(tria),
+
   print_level(0),
   print_time(0.0),
   print_time_step(0.1),
@@ -121,7 +123,11 @@ FieldOutput<dim>::FieldOutput(Triangulation<dim> &tria, unsigned int p_order, Lo
 template <int dim>
 void FieldOutput<dim>::reinit(ParameterHandler &prm)
 {
-    set_parameters(prm);
+
+    print_time_step=prm.get_double("print_time_step");
+    x_size=prm.get_double("x_size");
+
+
 
     dh.distribute_dofs(fe);
     DoFRenumbering::component_wise (dh);
@@ -163,13 +169,6 @@ FieldOutput<dim>::~FieldOutput()
 }
 
 
-template <int dim>
-void FieldOutput<dim>::set_parameters(ParameterHandler &prm)
-{
-
-    print_time_step=prm.get_double("print_time_step");
-
-}
 
 
 template <int dim>
@@ -178,7 +177,7 @@ void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double
 
 //  bc_out.output(time, dof_handler, sat_dh, solution, saturation);
 
-  if (time < print_time) return;
+  if (time * 1.0000001 < print_time) return;
   std::cout << "PRINT time (" << print_level << "): " << time << std::endl;
   print_time += print_time_step;
 
@@ -211,16 +210,21 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
     std::pair<unsigned int,unsigned int> block_index;
 
     double l2_error=0;
+    double l2_flux_error = 0;
     out_vec=0;
     for (; cell != endc; ++cell, ++sol_cell) {
         local_assembly.reinit(sol_cell);
         local_assembly.output_evaluate();
 
-        double s = cell->barycenter()[dim -1] - time;
-        double anal_sol = -tan( (exp(s)-1) / (exp(s) +1 ));
+        double anal_sol = local_assembly.richards_data->anal_sol->value(cell->barycenter());
         double error = local_assembly.get_output_el_head() - anal_sol;
 
+        double flux = (local_assembly.get_output_velocity() (2) + local_assembly.get_output_velocity() (3) ) / 2.0;
+        double anal_flux =  local_assembly.richards_data->anal_flux->value(cell->barycenter());
+        double flux_error = flux - anal_flux;
+
         l2_error += cell->measure() * error * error;
+        l2_flux_error += cell->measure() * flux_error * flux_error;
 
 
         local_output = 0;
@@ -232,7 +236,7 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
                 local_output(global_i) = local_assembly.get_output_velocity() (block_index.second);
                 break;
             case piezo_bl:
-                local_output(global_i) = anal_sol;//local_assembly.get_output_el_phead();
+                local_output(global_i) = anal_flux;//anal_sol;//local_assembly.get_output_el_phead();
                 break;
             case pressure_bl:
                 local_output(global_i) = local_assembly.get_output_el_head();
@@ -241,7 +245,7 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
                 local_output(global_i) = local_assembly.get_output_el_sat();
                 break;
             case estimator_bl:
-                local_output(global_i) = fabs(error);
+                local_output(global_i) = flux_error;
                 break;
             }
         }
@@ -251,7 +255,7 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
 
 
     }
-    cout << "Time: " << time << " L2 error: " << sqrt(l2_error) << endl;
+    cout << "Time: " << time << " L2 error: " << sqrt(l2_error) << " " << sqrt(l2_flux_error) << endl;
 }
 
 #endif /* OUTPUT_HH_ */

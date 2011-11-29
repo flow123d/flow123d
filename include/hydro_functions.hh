@@ -57,7 +57,7 @@ double  Kk;             // conductivity at the cut point
 
 //FK-------------------------------------------------------------
 template <class T>
-class INV_FK	//FK - hydraulic conductivity function
+class FK	//FK - hydraulic conductivity function
 {
 private:
 // function parameters
@@ -69,15 +69,15 @@ HydrologyParams par;
 // auxiliary parameters
 double Qa,Qm,Qk,m,Hr,Hk,Hs,C1Qee,C2Qee,Qeer,Qees,Qeek;
 public:
-    INV_FK(const HydrologyParams &par);
+    FK(const HydrologyParams &par);
     T operator()(const T&  h);
 };
 
-template <class T> const double INV_FK<T>::Bpar =0.5;
-template <class T> const double INV_FK<T>::PPar =2;
+template <class T> const double FK<T>::Bpar =0.5;
+template <class T> const double FK<T>::PPar =2;
 
 template <class T>
-INV_FK<T> :: INV_FK(const HydrologyParams &par)
+FK<T> :: FK(const HydrologyParams &par)
 : par(par)
 {
 
@@ -106,11 +106,11 @@ INV_FK<T> :: INV_FK(const HydrologyParams &par)
 }
 
 template <class T>
-T INV_FK<T> :: operator()(const T& h)
+T FK<T> :: operator()(const T& h)
 {
     T Kr,FFQr,FFQ,FFQk,Qee,Qe,Qek,C1Qe,C2Qe,Q;
 
-    if (h < Hr) return 1.0 / par.Ks*(1E-200);      // numericaly zero Kr
+    if (h < Hr) return par.Ks*(1E-200);      // numericaly zero Kr
     else 
       if (h < Hk) {
             Q = Qa + (Qm - Qa)*pow((1 + pow(-par.alfa*h,par.n)),-m);
@@ -123,14 +123,14 @@ T INV_FK<T> :: operator()(const T& h)
             Qe = C1Qe*Q + C2Qe;
             Qek = C1Qe*Qk + C2Qe;
             Kr = pow(Qe/Qek,Bpar)*pow((FFQr - FFQ)/(FFQr - FFQk),PPar) * par.Kk/par.Ks;
-            return ( 1.0 / ( max<T>(par.Ks*Kr,par.Ks*(1E-10)) ) );
+            return ( max<T>(par.Ks*Kr,par.Ks*(1E-10)) );
     }
     else if(h <= Hs)
     {
          Kr = (1-par.Kk/par.Ks)/(Hs-Hk)*(h-Hs) + 1;
-         return 1.0 / ( par.Ks*Kr );
+         return ( par.Ks*Kr );
     }
-    else return 1.0 / par.Ks;
+    else return par.Ks;
 }
 
 
@@ -258,14 +258,14 @@ end function FH_8
 
 // Conductivity (inverse) for analytical solution
 template <class T>
-class INV_FK_analytical
+class FK_analytical
 {
 private:
 public:
-    INV_FK_analytical(const HydrologyParams &par) {};
+    FK_analytical(const HydrologyParams &par) {};
     T operator()(const T&  h) {
-        return 1.0 /
-               ( 2.0 / (1+h*h) );
+        if (h>=0.0) return ( 2.0 );
+        return ( 2.0 / (1+h*h) );
     }
 };
 
@@ -277,11 +277,34 @@ public:
     FQ_analytical(const HydrologyParams &par) {};
     T operator()(const T&  h) {
         static T pi_half =std::atan(1.0)*2;
+        if (h>=0.0) return ( 2.0*pi_half*pi_half );
         T a_tan = atan(h);
-        return 2*pi_half*pi_half - a_tan*a_tan;
+        return ( 2*pi_half*pi_half - a_tan*a_tan );
     }
 };
 
+// Conductivity (inverse) for analytical solution
+template <class T>
+class FK_lin
+{
+private:
+public:
+    FK_lin(const HydrologyParams &par) {};
+    T operator()(const T&  h) {
+        return 1.0;
+    }
+};
+
+template <class T>
+class FQ_lin
+{
+private:
+public:
+    FQ_lin(const HydrologyParams &par) {};
+    T operator()(const T&  h) {
+        return h;
+    }
+};
 
 #endif	/* _HYDRO_FUNCTIONS_HH */
 

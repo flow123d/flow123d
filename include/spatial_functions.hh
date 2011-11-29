@@ -16,97 +16,87 @@
 #include <base/tensor.h>
 
 #include <hydro_functions.hh>
-#include <richards_bc.hh>
+//#include <richards_bc.hh>
 #include "FADBAD++/fadbad.h"
 #include "FADBAD++/badiff.h"
+#include "base/parameter_handler.h"
 using namespace fadbad;
+using namespace dealii;
 
 //*****************************************************************
 // FUNCTIONS
+//*****************************************************************
+
+
 /**
  *  Water source function
  */
-using namespace dealii;
-
-
 template <int dim>
 class RightHandSide : public Function<dim>
 {
   public:
     RightHandSide () : Function<dim>(1) {}
-
-    virtual double value (const Point<dim>   &p,
-			  const unsigned int  component = 0) const;
+    virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
+    {
+        return 0;
+    }
     virtual ~RightHandSide() {}
 };
 
-template <int dim>
-double RightHandSide<dim>::value (const Point<dim>  &/*p*/,
-				  const unsigned int /*component*/) const
-{
-  return 0;
-}
-
 /**
- *  Dirichlet pressure head on the boundary.
+ *  BOUNDARY FUNCTIONS
  */
 
-
 template <int dim>
-class PressureBoundaryValues : public Function<dim>
-{
-  public:
-    PressureBoundaryValues () : Function<dim>(1) {}
+class ASol_ATan : public Function<dim> {
 
-    virtual double value (const Point<dim>   &p,
-			  const unsigned int  component = 0) const;
+    virtual double value (const Point<dim>   &p, const unsigned int component = 0) const
+    {
+        double s = p[dim-1] - this->get_time();
+        if (s <=0) return -s/2;
+        else return -tan( (exp(s)-1) / (exp(s) +1 ));
+    }
+    virtual ~ASol_ATan() {}
 };
 
 template <int dim>
-double PressureBoundaryValues<dim>::value (const Point<dim>  &p,
-					   const unsigned int component) const
-{
+class AFlux_ATan : public Function<dim> {
 
-    //return ( (1-p(0)) * (1+p(0)) * (p(1)+1) ); // just constant saturated
-    //return ( (p(1)+1)*(p(1)+1)*11.0 / 2.0 -20 ); // just constant saturated
-    return 0.5;
-}
-
-
-/*
-template <int dim>
-class ExactSolution : public Function<dim>
-{
-  public:
-    ExactSolution () : Function<dim>(dim+1) {}
-
-    virtual void vector_value (const Point<dim> &p,
-			       Vector<double>   &value) const;
+    virtual double value (const Point<dim>   &p, const unsigned int component = 0) const
+    {
+        double s = p[dim-1] - this->get_time();
+        if (s <=0) return 0.5*2.0;
+        else {
+            double tmp=cos( (exp(s)-1)/(exp(s)+1) ) * ( exp(s)+1 );
+            double h=-tan( (exp(s)-1) / (exp(s) +1 ));
+            return 2*exp(s)/tmp/tmp *2.0 / (1+h*h);
+        }
+    }
+    virtual ~AFlux_ATan() {}
 };
 
+template <int dim>
+class ASol_lin : public Function<dim> {
 
-
-
-
-
-
+    virtual double value (const Point<dim>   &p, const unsigned int component = 0) const
+    {
+        double s = p[dim-1] - this->get_time();
+        return  exp(-s);
+    }
+    virtual ~ASol_lin() {}
+};
 
 template <int dim>
-void
-ExactSolution<dim>::vector_value (const Point<dim> &p,
-				  Vector<double>   &values) const
-{
-  Assert (values.size() == dim+1,
-	  ExcDimensionMismatch (values.size(), dim+1));
+class ASol_lin_steady : public Function<dim> {
 
-  const double alpha = 0.3;
-  const double beta = 1;
+    virtual double value (const Point<dim>   &p, const unsigned int component = 0) const
+    {
+        double s = p[dim-1];
+        return exp(s/2.0) + exp(-s/2.0);
+    }
+    virtual ~ASol_lin_steady() {}
+};
 
-  values(0) = alpha*p[1]*p[1]/2 + beta - alpha*p[0]*p[0]/2;
-  values(1) = alpha*p[0]*p[1];
-  values(2) = -(alpha*p[0]*p[1]*p[1]/2 + beta*p[0] - alpha*p[0]*p[0]*p[0]/6);
-}
-*/
 
 //*************************************************************************
 /**
@@ -118,7 +108,7 @@ template <int dim>
 class KInverse : public TensorFunction<2,dim>
 {
   public:
-    KInverse (const unsigned int n_centers, Point<dim> pa, Point<dim> pb);
+    KInverse (ParameterHandler &prm);
 
     virtual void value_list (const std::vector<Point<dim> > &points,
                              std::vector<Tensor<2,dim> >    &values) const;
@@ -130,17 +120,22 @@ class KInverse : public TensorFunction<2,dim>
 
 
 template <int dim>
-KInverse<dim>::KInverse (const unsigned int n_centers, Point<dim> pa, Point<dim> pb)
+KInverse<dim>::KInverse (ParameterHandler &prm)
 {
+  unsigned int n_centers = prm.get_integer("hetero_k_n_centers");
+  double size[dim];
+  size[0] = prm.get_double("x_size");
+  size[1] = prm.get_double("z_size");
+
   centers.resize (n_centers);
   for (unsigned int i=0; i<n_centers; ++i)
     for (unsigned int d=0; d<dim; ++d) {
-      centers[i][d] = pa[d] + ( ((double)rand()) * (pb[d]-pa[d]) ) / RAND_MAX;
+      centers[i][d] = ( ((double)rand()) * size[d] ) / RAND_MAX;
       std::cout << centers[i][d] << " ";
     }
   radius = 1.0E100;
   for (unsigned int d=0; d<dim; ++d)
-    radius =   std::min(radius, std::abs( pb[d] - pa[d] ) );
+    radius =   std::min(radius, std::abs( size[d] ) );
 
   std::cout << std::endl << "rad: "<< radius<< std::endl;
 }
@@ -172,88 +167,136 @@ KInverse<dim>::value_list (const std::vector<Point<dim> > &points,
     }
 }
 
-/**
- *  initial pressure head profile
- *
- */
-
-template <int dim>
-class InitialValue : public Function<dim>
-{
-
-  public:
-    InitialValue () : Function<dim>(1) {}
-
-    virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
-    {
-        //return -100 + p[dim-1]; // piezometric head
-        // analytical solution
-        double s = p[dim-1];
-        return -tan( (exp(s)-1) / (exp(s) +1 ));
-
-    }
-
-
-};
 
 #define MAX_NUM_OF_DEALII_BOUNDARIES 255
 
+/**
+ * Collect all equation data.
+ */
 template <int dim>
-struct RichardsData {
+class RichardsData {
+public:
+    typedef enum { None, Dirichlet, Neuman } BCType;
+    KInverse<dim> k_inverse;
+    Function<dim> *initial;
+    Function<dim> *anal_sol;
+    Function<dim> *anal_flux;
+
+private:
+    //! there should be whole BC descriptor object which returns
+    //! BC objects for given index with checking, possibly returning None type of BC
+    std::vector< std::pair<BCType, Function<dim> *> > bc_segments;
+
+    //FQ_lin< B<double> > fq_diff;
+    //FK_lin< B<double> > fk_diff;
+
+    FQ_analytical< B<double> > fq_diff;
+    FK_analytical< B<double> > fk_diff;
+
+    double density;
+    double gravity;
+
 public:
 
-    RichardsData(const HydrologyParams & h_params):
+    RichardsData(const HydrologyParams & h_params, ParameterHandler &prm):
+    k_inverse(prm),
+    initial(NULL),
+    bc_segments(MAX_NUM_OF_DEALII_BOUNDARIES, std::pair<BCType, Function<dim> * >(None, (Function<dim> *)(NULL) ) ),
     fq_diff(h_params),
     //fc(h_params),
-    fq(h_params),
-    inv_fk(h_params),
-    inv_fk_diff(h_params),
+    fk_diff(h_params),
     density(1.0),
-    gravity(0.0),
-    bc(MAX_NUM_OF_DEALII_BOUNDARIES, NULL)
-    {}
+    gravity(0.0)
+    {
+        add_bc(0, Neuman, new ZeroFunction<dim>() ); // left
+        add_bc(1, Neuman, new ZeroFunction<dim>() ); // right
+        add_bc(2, Dirichlet, new ASol_ATan<dim>() ); // bottom
+        add_bc(3, Dirichlet, new ASol_ATan<dim>()); // top
+        //add_bc(3,Dirichlet, new ConstantFunction<dim>(1.0); // top
+        //add_bc(3,Dirichlet, new ConstantFunction<dim>(1.0); // top
 
-    ~RichardsData() {
-        if (k_inverse != NULL) delete k_inverse;
-        if (initial_value != NULL) delete initial_value;
-        for(unsigned int i=0; i<MAX_NUM_OF_DEALII_BOUNDARIES;i++)
-            if (bc[i] !=NULL) delete bc[i];
+        initial = new ASol_ATan<dim>();
+        anal_sol = new ASol_ATan<dim>();
+        anal_flux = new AFlux_ATan<dim>();
+
+        //anal_sol = new ASol_lin<dim>();
+        //initial = new ASol_lin<dim>();
+
+
     }
 
-    void add_bc(const unsigned int boundary_index,  BoundaryCondition<dim> *one_bc)
-        { Assert( boundary_index < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid index.") );
-        bc[boundary_index]=one_bc;
-        }
+    ~RichardsData() {
+        for(unsigned int i=0; i<MAX_NUM_OF_DEALII_BOUNDARIES;i++)
+            if (bc_segments[i].second != NULL) delete bc_segments[i].second;
+    }
+
+    void add_bc(const unsigned int boundary_index, const BCType bt, Function<dim> * f)
+    {
+        Assert( boundary_index < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid BC index.") );
+        Assert( f->n_components == 1, ExcMessage("Function for BC should have 1 component.") );
+        bc_segments[boundary_index].first= bt;
+        bc_segments[boundary_index].second= f;
+    }
+
+    double fq(double h) {return fq(h,h);}
+
+    double fq(const double h, double &dfdx) {
+      B<double> x(h), f(fq_diff(x));
+      f.diff(0,1);
+      dfdx=x.d(0);
+      return f.val();
+    }
+
+    double fk(double h) {return fk(h,h);}
+
+    double fk(const double h, double &dfdx) {
+      B<double> x(h), f(fk_diff(x));
+      f.diff(0,1);
+      dfdx=x.d(0);
+      return f.val();
+    }
+
+    void set_time(double t) {
+        k_inverse.set_time(t);
+        initial->set_time(t);
+        anal_sol->set_time(t);
+        anal_flux->set_time(t);
+        for(unsigned int i=0; i<MAX_NUM_OF_DEALII_BOUNDARIES; i++)
+            if (bc_segments[i].second != NULL) bc_segments[i].second->set_time(t);
+
+    }
 
     inline double pressure(double p_head, Point<dim> point)
     {
-        return (p_head - point[dim-1])*density*gravity;
+        return p_head - point[dim-1]*density*gravity;
+    }
+
+    BCType bc_type(unsigned int idx)
+    {
+        Assert( idx < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid BC index.") );
+        return bc_segments[idx].first;
+    }
+
+    Function<dim> *bc_func(unsigned int idx)
+    {
+        Assert( idx < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid BC index.") );
+        Assert( bc_segments[idx].second != NULL, ExcMessage("BC function not initialized.") );
+        return bc_segments[idx].second;
     }
 
     void print_mat_table() {
         cout << "MATERIAL TABLE" <<
         cout << "(h, sat, cond)" << endl;
         for(double h = -50; h < 0.1; h+=0.1) {
-            cout << h << " " << fq(h) << " " << 1.0/inv_fk(h) << endl;
+            cout << h << " " << fq(h) << " " << fk(h) << endl;
         }
     }
 
-    KInverse<dim> *k_inverse;
-    InitialValue<dim> *initial_value;
 
-    //! there should be whole BC descriptor object which returns
-    //! BC objects for given index with checking, possibly returning None type of BC
-    std::vector< BoundaryCondition<dim> *> bc;
 
-    FQ_analytical< B<double> > fq_diff;
-    //FC<double> fc;
-    FQ_analytical<double> fq;
-    INV_FK_analytical<double> inv_fk;
-    INV_FK_analytical< B<double> > inv_fk_diff;
-
-    double density;
-    double gravity;
 };
+
+
 
 
 

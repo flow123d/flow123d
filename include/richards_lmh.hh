@@ -63,7 +63,7 @@ using namespace dealii;
 #include <time.hh>
 #include <spatial_functions.hh>
 #include <hydro_functions.hh>
-#include <richards_bc.hh>
+//#include <richards_bc.hh>
 //#include <bc_output.hh>
 #include <output.hh>
 #include <local_assembly.hh>
@@ -120,6 +120,8 @@ private:
     void grid_refine();
     //void compute_errors () const;
 
+    ParameterHandler &prm;
+
     //! numerics
     SolverTime time;
 
@@ -172,7 +174,7 @@ template <int dim>
 Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandler &prm, unsigned int order)
         :
                 //bc(MAX_NUM_OF_DEALII_BOUNDARIES),
-
+                prm(prm),
                 time(prm),                  // start, end, dt_init
                 order(order),
 
@@ -186,8 +188,8 @@ Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandle
                 field_output(triangulation,order, local_assembly)
 {
 
-    max_non_lin_iter = 20;
-    nonlin_tol = 0.0001;
+    max_non_lin_iter = prm.get_integer("nonlin_max_it");
+    nonlin_tol = prm.get_double("nonlin_tol");
     //theta=1. / 2.;  // 1 implicit, 0 explicit
     // Crank Nicholson still makes problem with velocity oscilations
     //
@@ -456,7 +458,10 @@ void Richards_LMH<dim>::output_residuum()
 template <int dim>
 void Richards_LMH<dim>::solve ()
 {
-  ReductionControl        solver_control (1000, 1e-6, 0.003);
+  double rtol=prm.get_double("lin_rtol");
+  double atol=prm.get_double("lin_atol");
+  int max_it=prm.get_integer("lin_max_it");
+  ReductionControl        solver_control (max_it, atol, rtol);
   solver_control.log_history(true);
   SolverCG<>              solver (solver_control);
 
@@ -474,6 +479,7 @@ void Richards_LMH<dim>::solve ()
         <<solver_control.last_value() << " cum lin it: " << cum_lin_iter
         << std::endl;
 
+  //solution.print(cout);
 }
 
 
@@ -487,7 +493,7 @@ template <int dim>
 void Richards_LMH<dim>::run ()
 {
     // set initial condition
-
+    richards_data->set_time(time.t());
 
     std::vector<unsigned int> face_dofs(trace_fe.dofs_per_face);
     typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
@@ -497,7 +503,7 @@ void Richards_LMH<dim>::run ()
         for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
             cell->face(face_no)->get_dof_indices(face_dofs);
 
-            solution(face_dofs[0])=richards_data -> initial_value->value(cell->face(face_no)->barycenter());
+            solution(face_dofs[0])=richards_data->initial->value(cell->face(face_no)->barycenter());
 
         }
     }
@@ -508,8 +514,8 @@ void Richards_LMH<dim>::run ()
 
 //    Vector<double> rhs_vel(solution.block(1).size());
 
-//    Vector<double> head_last, sat_last;
-//    Vector<double> head_new;
+    Vector<double> sol_last;//, sat_last;
+    Vector<double> sol_new;
 
 //    SparseILU<double> preconditioner;
 
@@ -536,6 +542,7 @@ void Richards_LMH<dim>::run ()
   int cum_iter=0;
   cum_lin_iter = 0;
 
+  double c_1 = prm.get_double("linesearch_c_1");
 
   do {  // ---------------------------- Time loop
       old_solution=solution;
@@ -543,6 +550,11 @@ void Richards_LMH<dim>::run ()
 renew_timestep:
       std::cout << "Timestep " << time.n_step() << " t= "<<time.t()<<", dt= " << time.dt() << endl;
 
+      local_assembly.set_dt(time.dt(), time.t());
+      richards_data->set_time(time.t());
+
+      sol_last = solution;
+      sol_new = solution;
       iter=0;
       last_decrease=decrease=0.5;
       last_res_norm=100;
@@ -552,7 +564,7 @@ renew_timestep:
  line_search:
 //            sat_last=saturation;
 
-            local_assembly.set_dt(time.dt(), time.t());
+
 
             assemble_system (); // this also apply boundary conditions thus change solution
             //std::cout << "assembled, ";
@@ -603,14 +615,22 @@ renew_timestep:
             // this is very simple and ugly linesearch the aim is only
             // demonstrate that the equation have solution even for longer timesteps
             // so the adaptivity should not be used to overcome bed nonlinear solver
-/*
-            if (iter>0 && decrease < 1.1 0.9 && lambda > 0.00001 ) {
-                lambda *= 1.0 / 2.0;
-                cout << "lambda: "<< lambda << endl;
-                solution.block(0).sadd(0.0, lambda, head_new, (1-lambda), head_last);
+
+            cout<< iter<<" (res, decrease, lambda): "
+                <<res_norm <<" "
+                <<decrease <<" "
+                <<lambda
+                << endl;
+
+            if (res_norm < nonlin_tol) break; // ------------------------------------------------------
+
+            if (iter>0 && decrease*decrease > 1- c_1*lambda && lambda > 1e-32 ) {
+                lambda *= 0.5;
+
+                solution.sadd(0.0, lambda, sol_new, (1.0-lambda), sol_last);
 
                 goto line_search;
-            }*/
+            }
             //if (iter > 4) newton =true;
             // test convergency
             // we require at least one iteration
@@ -618,29 +638,28 @@ renew_timestep:
             // especialy with small timesteps, the error is hidden in the velocity
             // maybe we should check both the residuum before velocity recovery and after
 
-            cout<< iter<<" (r,dic,dr,ds,dh): "
-                <<res_norm <<" "
-                <<decrease <<" "
-                << nonlin_tol
-                << endl;
 
-            if (iter>0 && res_norm < nonlin_tol) break; // ------------------------------------------------------
 
-            if (iter > max_non_lin_iter /*|| (iter>10 && decrease > 0.9 && last_decrease > 0.9 )*/ ) {
+
+            if (iter > max_non_lin_iter ||
+                (iter>10 && decrease > 0.9 && last_decrease > 0.9 )
+                ) {
                 //cout << "!!! divergence of nonlinear solver" << endl;
 
-                solution=old_solution;
-                time.reinc_time(0.7);
-
-                goto renew_timestep;
+                if (time.reinc_time(0.3)) {
+                    solution=old_solution;
+                    goto renew_timestep;
+                } else if (iter >max_non_lin_iter) {
+                    cout << "DIVERGENCE OF SOLVER" <<endl;
+                    return;
+                }
             }
 
 
-
+            sol_last = solution;
             this->solve();
             //solution.print(cout);
-//            head_last=head_new;
-//            head_new=solution.block(head_b);
+            sol_new=solution;
 
             iter++;
             cum_iter++;
@@ -666,13 +685,7 @@ renew_timestep:
       cout << "time err est: " << err << endl;
 */
 
-      // adapt time step
-      double factor=1.0;
-      if (iter<5) factor=1.0 / 0.9;
-      else if (iter>13) factor=0.9;
-      time.scale_time_step(factor);
 
-      std::cout << "nonlin iter: "<< iter << " cum: "<<cum_iter<< endl;
 /*
       double final_res_norm;
       linear_system.eliminate_block(solution,vel_b);
@@ -686,8 +699,16 @@ renew_timestep:
 
 //      std::cout << endl;
 
+      // adapt time step
+      double factor=1.0;
+      if (iter<5) factor=1.0 / 0.9;
+      else if (iter>13) factor=0.9;
+      time.scale_time_step(factor);
+
+      std::cout << "nonlin iter: "<< iter << " cum: "<<cum_iter<< endl;
     }
   while (time.inc());
+
 }
 
 

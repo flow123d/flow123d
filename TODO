@@ -1,0 +1,52 @@
+25.11. -------------------
+Pro libovolne jemne dt a dz mam stale chybu 3.17 - odladit.
+
+22.11. ------------------
+- zkontrolovat vystup do Paraview
+- kvantitativni porovnani s s1d
+- lepsi postprocesing  pro splneni rovnice kontinuity:
+   1) residuum -> odlozeny zdroj
+   2) rozpocitani rezidua do toku a elementovych rychlosti
+
+- vypocet hranicnich toku a celkove bilance (postprocesovanych toku a saturace)
+- test nejake adaptivity
+
+
+teoreticke otazky:
+- jak velke je poruseni principu maxima
+- overit nezavislost na casovem kroku
+- 
+8.10. -------------------
+
+- vygenerovat nejaky vektor hranovych tlaku -> output
+  (poroblem jak vystupovat saturaci, ktera bude nezavisla ??
+   leda ji mit ve vypocetnim dofhandleru, ale mit matici jen pro vypocet tlaku - to se mi posledne nedarilo
+   zatim se na vystup pripocitavane sturace vykaslat
+  )
+
+
+2) zadavani parametru z externiho souboru (system parametru z deal.ii), moznost mit ruzne testovaci ulohy
+   a ukladat je
+3) pokusit se rozchodit adaptivitu ve MH kodu
+5) implementovat LMH:
+   - nejjednodussi nelinearni resic - linearizace
+   - konstantni vodivost na elementu
+   
+prubeh vypoctu:
+
+- sestaveni rovnice pro hranove tlaky 
+  (vodivost se pocita bud s prumeru tlaku, nebo jako prumer vodivosti na hranach)
+  + vypocet residua
+- residualni kriterium, test kovergence non lin solveru
+- lin. solver na hranove matici
+
+- rekonstrukce: rychlosti, elementovych tlaku a saturaci (jen pro ucely vystupu a estimatoru)
+   
+Tj. idealne DOF handler jen pro FE_Faces a RT, P0 pouzit jen v assemblaci.
+Pro vypocty lokalnich matic mit samostatnou tridu 
+cykly pres elementy budou v: assemblaci, rekonstrukci, estimatoru
+
+Pro vystup potrebuju DOF handler kde jsou: Rychlosti, elementove tlaky, elementove saturace, 
+postprocesovane P2 tlaky, hranove tlaky ?? 
+ 
+PROBLEM: rekonstruovane rychlosti nejsou rovny na hranach 

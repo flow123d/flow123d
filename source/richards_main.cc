@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <spatial_functions.hh>
 #include <richards_lmh.hh>
-#include <richards_bc.hh>
+//#include <richards_bc.hh>
 #include "output.hh"
 
 #define DIM 2
@@ -63,58 +63,99 @@ static const HydrologyParams silt_loam_GE3_params=
 class TestProblem{
 public:
     TestProblem();
+    void declare_params();
     void solve()
         { equation->run(); }
-    ~TestProblem()
-        { delete equation; }
+    ~TestProblem() {
+        delete equation;
+        delete data;
+    }
 private:
-    RichardsData<DIM> data;
+    RichardsData<DIM> *data;
     Triangulation<DIM>  coarse_tria;
     Richards_LMH<DIM> * equation;
+    ParameterHandler prm;
 };
 
+void TestProblem::declare_params () {
+
+    // space discretization
+    prm.declare_entry ("x_size", "1.0",
+                        Patterns::Double(),
+                        "X size of domain.");
+    prm.declare_entry ("z_size", "5.0",
+                        Patterns::Double(),
+                        "Z size of domain.");
+    prm.declare_entry ("hx", "1.0",
+                        Patterns::Double(),
+                        "X direction space step.");
+    prm.declare_entry ("hz", "0.01",
+                        Patterns::Double(),
+                        "Z direction space step.");
+
+    // time discretization
+    prm.declare_entry ("print_time_step", "0.01",
+                        Patterns::Double(),
+                        "Time step for filed output.");
+
+    prm.declare_entry ("t_init", "0.0",
+                        Patterns::Double(),
+                        "Initial time.");
+    prm.declare_entry ("t_end", "1.0",
+                                Patterns::Double(),
+                                "End time.");
+    prm.declare_entry ("dt_init", "0.0",
+                                Patterns::Double(),
+                                "Initial dt.");
+    prm.declare_entry ("dt_min", "0.0",
+                                Patterns::Double(),
+                                "Minimal dt.");
+    prm.declare_entry ("dt_max", "0.0",
+                                Patterns::Double(),
+                                "Maximal dt.");
+
+    // numerical parameters
+    prm.declare_entry ("nonlin_tol", "0.0001",
+                                Patterns::Double(),
+                                "Tolerance of nonlinear solver.");
+
+    prm.declare_entry ("nonlin_max_it", "20",
+                                Patterns::Integer(),
+                                "Max nonlin. iterationss.");
+
+    prm.declare_entry ("linesearch_c_1", "1.0E-4",
+                                Patterns::Double(),
+                                "Decrease parameter");
+    prm.declare_entry ("lin_rtol", "0.0001",
+                                Patterns::Double(),
+                                "Decrease parameter");
+
+    prm.declare_entry ("lin_atol", "1.0E-12",
+                                Patterns::Double(),
+                                "Decrease parameter");
+    prm.declare_entry ("lin_max_it", "1000",
+                                Patterns::Double(),
+                                "Decrease parameter");
+
+
+    // data
+    prm.declare_entry ("hetero_k_n_centers", "0",
+                                Patterns::Integer(),
+                                "Num of centers of K heterogenity.");
+
+
+    prm.read_input("input.txt");
+
+}
+
 TestProblem::TestProblem ()
-: data(h_params)
+
 {
   srand(100);
-  ParameterHandler prm;
 
+  declare_params();
+  data = new RichardsData<DIM>(h_params, prm);
 
-  prm.declare_entry ("x_size", "1.0",
-                      Patterns::Double(),
-                      "X size of domain.");
-  prm.declare_entry ("z_size", "5.0",
-                      Patterns::Double(),
-                      "Z size of domain.");
-  prm.declare_entry ("hx", "1.0",
-                      Patterns::Double(),
-                      "X direction space step.");
-  prm.declare_entry ("hz", "0.01",
-                      Patterns::Double(),
-                      "Z direction space step.");
-
-  prm.declare_entry ("print_time_step", "0.01",
-                      Patterns::Double(),
-                      "Time step for filed output.");
-
-  prm.declare_entry ("t_init", "0.0",
-                      Patterns::Double(),
-                      "Initial time.");
-  prm.declare_entry ("t_end", "1.0",
-                              Patterns::Double(),
-                              "End time.");
-  prm.declare_entry ("dt_init", "0.0",
-                              Patterns::Double(),
-                              "Initial dt.");
-  prm.declare_entry ("dt_min", "0.0",
-                              Patterns::Double(),
-                              "Minimal dt.");
-  prm.declare_entry ("dt_max", "0.0",
-                              Patterns::Double(),
-                              "Maximal dt.");
-
-
-  prm.read_input("input.txt");
 
   // set domain and coarse grid
   double size_x = prm.get_double("x_size"),
@@ -126,27 +167,20 @@ TestProblem::TestProblem ()
   double hx = prm.get_double("hx"),
          hz = prm.get_double("hz");
   std::vector<unsigned int> grid_steps;
-  grid_steps.push_back(ceil(size_x/hx));
-  grid_steps.push_back(ceil(size_z/hz));
+  grid_steps.push_back(ceil(fabs(size_x)/hx));
+  grid_steps.push_back(ceil(fabs(size_z)/hz));
 
   // colorize boudaries (x- 0,1; y- 2,3; z- 4,5) and materials (according to octants)
   GridGenerator::subdivided_hyper_rectangle (coarse_tria,grid_steps ,pa, pb,true);
   //coarse_tria.refine_global(3);
 
   equation = new Richards_LMH<DIM>(coarse_tria,prm,0);
-  cout << "k " <<endl;
 
-  data.add_bc(0,new BC2D(BC2D::Neuman,0)); // left
-  data.add_bc(1,new BC2D(BC2D::Neuman,0)); // right
-  //equation->add_bc(2,new BC2D(BC2D::Dirichlet,-150)); // bottom
-  data.add_bc(2,new BC2D(BC2D::Neuman,0)); // bottom
-  data.add_bc(3,new BC2D(BC2D::Dirichlet,1)); // top
-  //equation->add_bc(3,new BC2D(BC2D::Neuman,0)); // top
 
-  data.k_inverse = new KInverse<DIM> (0, pa, pb);
-  data.initial_value = new InitialValue<DIM>;
-  data.print_mat_table();
-  equation->set_data(&data);
+  //data.k_inverse = new KInverse<DIM> (0, pa, pb);
+  //data.initial_value = new InitialValue<DIM>;
+  //data->print_mat_table();
+  equation->set_data(data);
 }
 
 
