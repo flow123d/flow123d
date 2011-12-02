@@ -44,7 +44,7 @@ LD_LIBRARY_PATH+=${PETSC_DIR}/${PETSC_ARCH}/lib
 include $D/common/Make.global_options
 
 ACTUAL=$(shell pwd)
-INCLUDE += -I${ACTUAL}/include -I${BOOST_INCLUDE} -I${ACTUAL}/lib
+INCLUDE += -I${ACTUAL}/include -I${BOOST_INCLUDE} -I${ACTUAL}/lib -I${ACTUAL}
 flags= -Wno-unused -g
 
 # First get a list of files belonging to the project. Include files
