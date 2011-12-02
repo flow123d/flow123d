@@ -15,7 +15,7 @@ deal_II_dimension = 2
 target   = lib/richards-$(deal_II_dimension)d
 
 # The `debug-mode' variable works as in the small projects Makefile:
-debug-mode = on
+debug-mode = off
 
 # And so does the following variable. You will have to set it to
 # something more reasonable, of course.
@@ -106,7 +106,7 @@ flags += -Ddeal_II_dimension=$(deal_II_dimension)
 # files:
 lib/$(deal_II_dimension)d/%.g.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====debug=====$(MT)== $(<F)
-	$(CXX)  -std=c++0x -g3 -rdynamic  $(flags) -c $< -o $@
+	$(CXX)  -g3 -rdynamic  $(flags) -c $< -o $@
 lib/$(deal_II_dimension)d/%.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====optimized=$(MT)== $(<F)
 	$(CXX)  $(flags) -c $< -o $@

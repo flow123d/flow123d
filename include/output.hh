@@ -219,12 +219,12 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
         double anal_sol = local_assembly.richards_data->anal_sol->value(cell->barycenter());
         double error = local_assembly.get_output_el_head() - anal_sol;
 
-        double flux = (local_assembly.get_output_velocity() (2) + local_assembly.get_output_velocity() (3) ) / 2.0;
+        double flux = (local_assembly.get_output_velocity() (2) + local_assembly.get_output_velocity() (3) ) / 2.0 / x_size;
         double anal_flux =  local_assembly.richards_data->anal_flux->value(cell->barycenter());
         double flux_error = flux - anal_flux;
 
-        l2_error += cell->measure() * error * error;
-        l2_flux_error += cell->measure() * flux_error * flux_error;
+        l2_error += cell->measure() * error * error /x_size;
+        l2_flux_error += cell->measure() * flux_error * flux_error/x_size;
 
 
         local_output = 0;
@@ -236,13 +236,13 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
                 local_output(global_i) = local_assembly.get_output_velocity() (block_index.second);
                 break;
             case piezo_bl:
-                local_output(global_i) = anal_flux;//anal_sol;//local_assembly.get_output_el_phead();
+                local_output(global_i) = anal_sol;//local_assembly.get_output_el_phead();
                 break;
             case pressure_bl:
                 local_output(global_i) = local_assembly.get_output_el_head();
                 break;
             case saturation_bl:
-                local_output(global_i) = local_assembly.get_output_el_sat();
+                local_output(global_i) = anal_flux; //local_assembly.get_output_el_sat();
                 break;
             case estimator_bl:
                 local_output(global_i) = flux_error;

@@ -50,6 +50,9 @@ public:
 
     bool inc()
     {
+        bool is_end = time > end_time * (1 - 0.0000001);
+        if (is_end) return false;
+
         if (suggested_dt > 0.0) time_step=suggested_dt;
         suggested_dt=-1.0;
 
@@ -62,7 +65,7 @@ public:
         time+=time_step;
         step_number++;
 
-        return (time <= end_time * 1.000001);
+        return true;
     }
 
     bool reinc_time(double factor)

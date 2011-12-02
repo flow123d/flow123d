@@ -1,19 +1,19 @@
 # Listing of Parameters
 # ---------------------
 
-set x_size = 0.02
+set x_size = DH
 set z_size = -10
-set hx = 0.02
-set hz = 0.02
+set hx = DH
+set hz = DH
 
 
 set t_init = 0.0
 set t_end = 2.0
-set dt_init = 0.002
-set dt_min = 0.002
-set dt_max = 0.002
+set dt_init = DT
+set dt_min = DT
+set dt_max = DT
 
-set print_time_step = 0.01
+set print_time_step = 0.1
 
 set nonlin_max_it =20
 set nonlin_tol = 0.00001

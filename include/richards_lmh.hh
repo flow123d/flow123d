@@ -622,7 +622,7 @@ renew_timestep:
                 <<lambda
                 << endl;
 
-            if (res_norm < nonlin_tol) break; // ------------------------------------------------------
+            if (iter>0 && res_norm < nonlin_tol) break; // ------------------------------------------------------
 
             if (iter>0 && decrease*decrease > 1- c_1*lambda && lambda > 1e-32 ) {
                 lambda *= 0.5;
