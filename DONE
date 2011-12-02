@@ -1,3 +1,10 @@
+2.12. ----------------
+Paraview skript pro vypocet chyby mezi dvema VTK soubory na ruznych sitich.
+1.12. ------------
+- skript pro plot konvergencnich grafu
+- diky vhodne integraci vychazi kvadraticka konvergence pro tlak i pro rychlost
+
+
 29.11. ----------------------------
 - odladena konvergence tlaku i toku vuci analytickemu reseni
 
