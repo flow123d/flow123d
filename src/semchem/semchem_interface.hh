@@ -3,6 +3,7 @@
 
 #include "mesh/elements.h"
 #include "system/par_distribution.hh"
+#include <string.h>
 
 class Distribution;
 
@@ -50,6 +51,10 @@ class Semchem_interface
 		*/
 		void set_mesh_(Mesh *mesh);
 		/**
+		*	function to set  path to an outputfile for semchem-module.
+		*/
+		void set_fw_chem(std::string semchem_output_file); //(const char* semchem_output_file);
+		/**
 		*	It containes an information if the simulation of chemical reactions is switched on.
 		*/
 		bool semchem_on;
@@ -66,9 +71,9 @@ class Semchem_interface
 		*/
 		double ***concentration_matrix;
 		/**
-		*	It is a pointer on three dimensional matrix full of doubles.
+		*	It is name of an output file for semchem.
 		*/
-		FILE *fw_chem;
+		char *fw_chem;
 	private:
 		/**
 		*	It holds an information about the length of time step for chemical reaction simulation.

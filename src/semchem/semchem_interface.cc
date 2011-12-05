@@ -19,6 +19,19 @@ struct TS_che	*P_che;
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
 	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL)
 {
+
+  //temporary semchem output file name
+  std::string semchem_output_fname = IONameHandler::get_instance()->get_output_file_name("./semchem_output.out");
+  xprintf(Msg,"Semchem output file name is %s\n",semchem_output_fname.c_str());
+
+  //char *Semchem_output_file;
+  //= semchem_output_fname.c_str();
+  //Semchem_output_file = (char *)xmalloc(sizeof(char)*(semchem_output_fname.length() + 1));
+  //sprintf(Semchem_output_file,"%s",semchem_output_fname.c_str());
+  //strcpy(Semchem_output_file,semchem_output_fname.c_str());
+  //Semchem_output_file[semchem_output_fname.length()] = "\0";
+
+  this->set_fw_chem(semchem_output_fname); //DOES NOT WORK ((const char*)semchem_output_fname.c_str());
   this->set_chemistry_computation();
   if(semchem_on == true) ctiich();
   set_dual_porosity();
@@ -29,10 +42,10 @@ Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpeci
 
 /*Semchem_interface::~Semchem_interface(void)
 {
-	if(semchem_output != NULL)
+	if(fw_chem != NULL)
 	{
-		free(semchem_output);
-		semchem_output = NULL;
+		free(fw_chem);
+		fw_chem = NULL;
 	}
 	return;
 }*/
@@ -61,10 +74,12 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    int krok;
    int poc_krok;
    double celkova_molalita;
-   char vystupni_soubor[] = "./output/semchem_output.txt";
+   char *vystupni_soubor; //[] = "./output/semchem_output.txt";
    double **conc_mob_arr = conc[MOBILE];
    double **conc_immob_arr = conc[IMMOBILE];
    double pomoc, n;
+
+   vystupni_soubor = fw_chem;
    //==================================================================
    // ----------- ALOKACE POLE PRO KONCENTRACE Z FLOWA ----------------
    //==================================================================
@@ -201,5 +216,14 @@ void Semchem_interface::set_el_4_loc(int *el_for_loc)
 void Semchem_interface::set_mesh_(Mesh *mesh)
 {
 	mesh_ = mesh;
+	return;
+}
+
+void Semchem_interface::set_fw_chem(std::string semchem_output_file) //(const char* semchem_output_file)
+{
+	//fw_chem = (char*)xmalloc(sizeof((semchem_output_file)/sizeof(char)+1)*sizeof(char));
+	fw_chem = (char*)xmalloc(semchem_output_file.length()+1);
+	strcpy(fw_chem,semchem_output_file.c_str());
+	xprintf(Msg,"Output file for Semchem is %s\n",fw_chem);
 	return;
 }
