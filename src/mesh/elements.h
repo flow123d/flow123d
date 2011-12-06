@@ -113,7 +113,7 @@ public:
     //double tAddRHS, tAddDiag;
     
     // Results
-    double   vector[ 3 ];   // Vector quantity - velocity of flow
+//    double   vector[ 3 ];   // Vector quantity - velocity of flow
 //    double   v_length;  // Length of vector quantity
 //    double   scalar;    // Scalar quantity (piez. head or pressure)
 //    double   pscalar;   // As scalar but in previous time step

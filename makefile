@@ -70,9 +70,15 @@ bin/current_flow:
 	
 revnumber:
 	if which "svnversion" ;\
-	then echo "#define REVISION \"`svnversion`\"" >include/rev_num.h;\
-	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >include/rev_num.h;\
+	then echo "#define REVISION \"`svnversion`\"" >__tmp__ren_num.h;\
+	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >__tmp__ren_num.h;\
+	fi ;\
+	if test -r "include/rev_num.h" && diff "__tmp__ren_num.h" "include/rev_num.h" >/dev/null; \
+	then rm __tmp__ren_num.h; \
+	else mv -f __tmp__ren_num.h include/rev_num.h; \
 	fi
+	
+
 
 # Remove all generated files
 clean:

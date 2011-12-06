@@ -71,9 +71,9 @@ private:
     void make_element_scalar();
     void make_element_vector();
 
-    void make_element_vector_line(ElementFullIter);
-    void make_element_vector_triangle(ElementFullIter);
-    void make_element_vector_tetrahedron(ElementFullIter);
+    void make_element_vector_line(ElementFullIter, arma::vec3 &vec);
+    void make_element_vector_triangle(ElementFullIter, arma::vec3 &vec);
+    void make_element_vector_tetrahedron(ElementFullIter, arma::vec3 &vec);
 
     void make_sides_scalar();
     /**
@@ -104,21 +104,17 @@ private:
     OutputTime *output_writer;
     TimeMark::Type output_mark_type;
 
-    /** \brief Array for storing nodes scalar, node index is used as index of array */
+    /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by node indexes in mesh.*/
     std::vector<double> node_pressure;
-    /** \brief Array for storing elements scalar, element index is used as index of array */
+    /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
     std::vector<double> ele_pressure;
+    /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
+    std::vector<double> ele_piezo_head;
 
-    /** \brief Structure for storing elements vectors, used in register_elem_data  */
-    typedef std::vector< vector<double> > VectorFloatVector;
-    typedef struct OutVector {
-        VectorFloatVector   *vectors;
-        std::string              name;
-        std::string              unit;
-    }_OutVector;
-
-    /** \brief Vector for storing elements vectors */
-    struct OutVector *element_vectors;
+    /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
+    // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
+    // that we can pass there directly vector< arma:: vec3 >
+    std::vector< std::vector<double>  > ele_flux;
 
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;

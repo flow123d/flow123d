@@ -30,7 +30,7 @@
 
 #include <vector>
 
-#include <strings.h>
+#include <string>
 
 #include "system/system.hh"
 #include "xio.h"
