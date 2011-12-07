@@ -23,7 +23,7 @@
  * $LastChangedDate$
  *
  * @file
- * @brief Basic definitions of quadratures.
+ * @brief Basic definitions of numerical quadrature rules.
  *  @author Jan Stebel
  */
 
@@ -37,15 +37,16 @@ using namespace std;
 using namespace arma;
 
 /**
- * Base class for quadrature formulae in arbitrary dimensions.
+ * Base class for quadrature rules on simplices in arbitrary dimensions.
  * This class stores quadrature points and weights on the reference line,
- * triangle, tetrahedron etc.
+ * triangle or tetrahedron, respectively.
  */
 template<unsigned int dim>
 class Quadrature {
 public:
     /**
      * Constructor.
+     * @param n_quadrature_points number of quadrature points to be allocated
      */
     Quadrature(const unsigned int n_quadrature_points = 0);
 

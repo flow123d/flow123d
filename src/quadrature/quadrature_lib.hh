@@ -34,16 +34,15 @@
 
 
 /**
- * Gauss-Legendre quadrature of arbitrary order.
- *
- * The coefficients are computed by a function from <tt>Numerical Recipes</tt>.
+ * Symmetric Gauss-Legendre quadrature on a @p dim dimensional simplex.
+ * The coefficients are taken from Parallel Hierarchical Grid project.
  *
  */
 template<unsigned int dim>
 class QGauss : public Quadrature<dim> {
 public:
     /**
-     * Generate a formula of given order (exact for polynomials of degree @p order).
+     * Create a formula of given order (exact for polynomials of degree @p order).
      */
     QGauss(const unsigned int order);
 };

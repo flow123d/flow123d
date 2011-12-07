@@ -102,3 +102,6 @@ QGauss<dim>::QGauss(const unsigned int order)
 }
 
 
+template class QGauss<1>;
+template class QGauss<2>;
+template class QGauss<3>;
