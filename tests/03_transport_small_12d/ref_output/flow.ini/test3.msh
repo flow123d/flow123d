@@ -164,7 +164,7 @@ $NodeData
 1
 "pressure_nodes_[L]"
 1
-inf
+0
 3
 0
 1
@@ -231,7 +231,7 @@ $ElementData
 1
 "pressure_elements_[L]"
 1
-inf
+0
 3
 0
 1
@@ -337,7 +337,7 @@ $ElementData
 1
 "velocity_elements_[L/T]"
 1
-inf
+0
 3
 0
 3

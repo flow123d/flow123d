@@ -104,6 +104,11 @@ private:
     OutputTime *output_writer;
     TimeMark::Type output_mark_type;
 
+    /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by
+     *  more general scheme, where you can switch every output field on or off.
+     */
+    bool output_piezo_head;
+
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by node indexes in mesh.*/
     std::vector<double> node_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
@@ -124,3 +129,4 @@ private:
 
 
 #endif /* DARCY_FLOW_MH_OUTPUT_HH_ */
+

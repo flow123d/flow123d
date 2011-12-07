@@ -52,8 +52,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
     node_pressure.resize(mesh_->node_vector.size());
-    ele_piezo_head.resize(mesh_->n_elements());
-    //ele_flux.resize(mesh_->n_elements());
+    output_piezo_head=OptGetBool("Output","output_piezo_head","No");
+
+    if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
+
+
 
 
     // set output time marks
@@ -135,8 +138,10 @@ void DarcyFlowMHOutput::output()
                 ("pressure_elements","L",ele_pressure);
         //xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
 
-        /*result = output_writer->register_elem_data
-                ("piezo_head_elements","L",ele_piezo_head);*/
+        if (output_piezo_head) {
+            result = output_writer->register_elem_data
+                        ("piezo_head_elements","L",ele_piezo_head);
+        }
 
         result = output_writer->register_elem_data("velocity_elements", "L/T", ele_flux);
         //xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
@@ -147,7 +152,7 @@ void DarcyFlowMHOutput::output()
         // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
         // consider begining of the interval of actual result as the output time. Or use
         // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
-        /*if (time == TimeGovernor::inf_time) time = 0.0;*/
+        if (time == TimeGovernor::inf_time) time = 0.0;
         output_writer->write_data(time);
 
         output_internal_flow_data();
@@ -187,7 +192,7 @@ void DarcyFlowMHOutput::make_element_scalar() {
     unsigned int i = 0;
     FOR_ELEMENTS(mesh_,ele) {
         ele_pressure[i] = sol[ soi];
-        ele_piezo_head[i] = sol[soi ] + ele->centre[Mesh::z_coord];
+        if (output_piezo_head) ele_piezo_head[i] = sol[soi ] + ele->centre[Mesh::z_coord];
         i++; soi++;
     }
 }
