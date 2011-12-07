@@ -1,0 +1,15 @@
+\subsection{General Chemical Reactions}
+For a simulation of general chemical reactions as a part of reactive transport simulation, an application Semchem has been merged together with Flow123D. It enables to simulate following types of reactions:
+\begin{itemize}
+  \item Chemical equilibrium (solved using iterative Newtons method)
+    \subitem mathematical description $K^{(r)} = \prod_i c_i^{\alpha_i^{(r)}},$
+
+  \item Slow evolving chemical kinetics (solved using Runge-Kutta method)
+    \subitem mathematical description $\frac{dc_i}{dt} = -k^{(r)}\prod_j c_j^{\beta_j^{(r)}},$
+
+  \item Fast evolving chemical kinetics (discretized using implicit Eulerova method and solved using Newtons method)
+     \subitem mathematical description $\frac{c_i^{(T+1)} - c_i^{T}}{\Delta t} = -k^{(r)}\prod_j c_j^{\beta_j^{(r),(T+1)}},$
+  \item Radioactive decay can be simulated as a special case of first order reaction.
+\end{itemize}
+
+Further informations can be found in ``Snizeni poctu nelinearnich rovnic popisujicich chemicke reakce''.
