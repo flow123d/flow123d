@@ -35,18 +35,54 @@
 using namespace arma;
 
 
+/**
+ * Conforming Lagrangean finite element on @p dim dimensional simplex.
+ * The finite element functions are continuous across the interfaces.
+ */
 template <unsigned int dim, unsigned int degree>
-class FE_P : FiniteElement<dim>
+class FE_P : public FiniteElement<dim>
+{
+public:
+    /**
+     * Constructor.
+     */
+    FE_P();
+
+    /**
+     * Returns the @p ith basis function evaluated at the point @p p.
+     */
+    double basis_value(const unsigned int i, const vec::fixed<dim> &p) const;
+
+    /**
+     * Returns the gradient of the @p ith basis function at the point @p p.
+     */
+    vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+};
+
+/**
+ * Discontinuous Lagrangean finite element on @p dim dimensional simplex.
+ * No continuity of the finite element functions across the interfaces is
+ * imposed.
+ */
+template <unsigned int dim, unsigned int degree>
+class FE_P_disc : public FiniteElement<dim>
 {
 private:
-    static const bool _dof_continuity[];
-    static const FE_dof_object _dof_objs[];
-    static const unsigned int _dof_obj_ids[];
 public:
-    FE_P() : FiniteElement<dim>((dim==1)?(degree+1):((dim==2)?(degree+1)*(degree+2)/2:(degree+1)*(degree+2)*(degree+3)/6), _dof_continuity, _dof_objs, _dof_obj_ids) {};
+    /**
+     * Constructor.
+     */
+    FE_P_disc();
 
-    double shape_value(const unsigned int i, const vec::fixed<dim> &p) const;
-    vec::fixed<dim> shape_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+    /**
+     * Returns the @p ith basis function evaluated at the point @p p.
+     */
+    double basis_value(const unsigned int i, const vec::fixed<dim> &p) const;
+
+    /**
+     * Returns the gradient of the @p ith basis function at the point @p p.
+     */
+    vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
 };
 
 
@@ -57,23 +93,26 @@ public:
 
 // P0 constant element
 template<>
-const bool FE_P<1,0>::_dof_continuity[] = { false };
+FE_P<1,0>::FE_P()
+{
+    number_of_dofs = 1;
+
+    number_of_single_dofs[1] = 1;
+
+    unit_support_points.push_back(zeros<vec>(1));
+
+    compute_node_matrix();
+}
 
 template<>
-const FE_dof_object FE_P<1,0>::_dof_objs[] = { FE_OBJECT_LINE };
-
-template<>
-const unsigned int FE_P<1,0>::_dof_obj_ids[] = { 0 };
-
-template<>
-double FE_P<1,0>::shape_value(const unsigned int i, const vec::fixed<1> &p) const
+double FE_P<1,0>::basis_value(const unsigned int i, const vec::fixed<1> &p) const
 {
     ASSERT(i==0, "Index of shape function is out of range.");
     return 1;
 }
 
 template<>
-vec::fixed<1> FE_P<1,0>::shape_grad(const unsigned int i, const vec::fixed<1> &p) const
+vec::fixed<1> FE_P<1,0>::basis_grad(const unsigned int i, const vec::fixed<1> &p) const
 {
     ASSERT(i==0, "Index of shape function is out of range.");
     return zeros<vec>(1);
@@ -82,22 +121,25 @@ vec::fixed<1> FE_P<1,0>::shape_grad(const unsigned int i, const vec::fixed<1> &p
 
 // P1 linear element
 template<>
-const bool FE_P<1,1>::_dof_continuity[] = { true, true };
+FE_P<1,1>::FE_P()
+{
+    number_of_dofs = 2;
+
+    number_of_single_dofs[0] = 2;
+
+    unit_support_points.push_back(vec::fixed<1>("0"));
+    unit_support_points.push_back(vec::fixed<1>("1"));
+    compute_node_matrix();
+}
 
 template<>
-const FE_dof_object FE_P<1,1>::_dof_objs[] = { FE_OBJECT_POINT, FE_OBJECT_POINT };
-
-template<>
-const unsigned int FE_P<1,1>::_dof_obj_ids[] = { 0, 1 };
-
-template<>
-double FE_P<1,1>::shape_value(const unsigned int i, const vec::fixed<1> &p) const
+double FE_P<1,1>::basis_value(const unsigned int i, const vec::fixed<1> &p) const
 {
     ASSERT(i <= 1, "Index of shape function is out of range.");
     switch (i)
     {
     case 0:
-        return 1-p(0);
+        return 1;
         break;
     case 1:
         return p(0);
@@ -106,14 +148,14 @@ double FE_P<1,1>::shape_value(const unsigned int i, const vec::fixed<1> &p) cons
 }
 
 template<>
-vec::fixed<1> FE_P<1,1>::shape_grad(const unsigned int i, const vec::fixed<1> &p) const
+vec::fixed<1> FE_P<1,1>::basis_grad(const unsigned int i, const vec::fixed<1> &p) const
 {
     ASSERT(i <= 1, "Index of shape function is out of range.");
     static const vec grad = ones<vec>(1);
     switch (i)
     {
     case 0:
-        return -grad;
+        return vec::fixed<1>("0");
         break;
     case 1:
         return grad;
@@ -122,28 +164,74 @@ vec::fixed<1> FE_P<1,1>::shape_grad(const unsigned int i, const vec::fixed<1> &p
 }
 
 
+// P1 linear discontinuous element
+template<>
+FE_P_disc<1,1>::FE_P_disc()
+{
+    number_of_dofs = 2;
+
+    number_of_single_dofs[1] = 2;
+
+    unit_support_points.push_back(vec::fixed<1>("0"));
+    unit_support_points.push_back(vec::fixed<1>("1"));
+    compute_node_matrix();
+}
+
+template<>
+double FE_P_disc<1,1>::basis_value(const unsigned int i, const vec::fixed<1> &p) const
+{
+    ASSERT(i <= 1, "Index of shape function is out of range.");
+    switch (i)
+    {
+    case 0:
+        return 1;
+        break;
+    case 1:
+        return p(0);
+        break;
+    }
+}
+
+template<>
+vec::fixed<1> FE_P_disc<1,1>::basis_grad(const unsigned int i, const vec::fixed<1> &p) const
+{
+    ASSERT(i <= 1, "Index of shape function is out of range.");
+    static const vec grad = ones<vec>(1);
+    switch (i)
+    {
+    case 0:
+        return vec::fixed<1>("0");
+        break;
+    case 1:
+        return grad;
+        break;
+    }
+}
+
 
 /*** 2D finite elements ***/
 
 // P0 constant element
 template<>
-const bool FE_P<2,0>::_dof_continuity[] = { false };
+FE_P<2,0>::FE_P()
+{
+    number_of_dofs = 1;
+
+    number_of_single_dofs[2] = 1;
+
+    unit_support_points.push_back(vec2("0 0"));
+    compute_node_matrix();
+}
 
 template<>
-const FE_dof_object FE_P<2,0>::_dof_objs[] = { FE_OBJECT_TRIANGLE };
-
-template<>
-const unsigned int FE_P<2,0>::_dof_obj_ids[] = { 0 };
-
-template<>
-double FE_P<2,0>::shape_value(const unsigned int i, const vec2 &p) const
+double FE_P<2,0>::basis_value(const unsigned int i, const vec2 &p) const
 {
     ASSERT(i==0, "Index of shape function is out of range.");
     return 1;
 }
 
 template<>
-vec2 FE_P<2,0>::shape_grad(const unsigned int i, const vec2 &p) const
+vec2 FE_P<2,0>::basis_grad(const unsigned int i, const vec2 &p) const
 {
     ASSERT(i==0, "Index of shape function is out of range.");
     return zeros<vec>(2);
@@ -152,22 +240,26 @@ vec2 FE_P<2,0>::shape_grad(const unsigned int i, const vec2 &p) const
 
 // P1 linear element
 template<>
-const bool FE_P<2,1>::_dof_continuity[] = { true, true, true };
+FE_P<2,1>::FE_P()
+{
+    number_of_dofs = 3;
+
+    number_of_single_dofs[0] = 3;
+
+    unit_support_points.push_back(vec2("0 0"));
+    unit_support_points.push_back(vec2("1 0"));
+    unit_support_points.push_back(vec2("0 1"));
+    compute_node_matrix();
+}
 
 template<>
-const FE_dof_object FE_P<2,1>::_dof_objs[] = { FE_OBJECT_POINT, FE_OBJECT_POINT, FE_OBJECT_POINT };
-
-template<>
-const unsigned int FE_P<2,1>::_dof_obj_ids[] = { 0, 1, 2 };
-
-template<>
-double FE_P<2,1>::shape_value(const unsigned int i, const vec2 &p) const
+double FE_P<2,1>::basis_value(const unsigned int i, const vec2 &p) const
 {
     ASSERT(i <= 2, "Index of shape function is out of range.");
     switch (i)
     {
     case 0:
-        return 1-p(0)-p(1);
+        return 1;
         break;
     case 1:
         return p(0);
@@ -179,46 +271,98 @@ double FE_P<2,1>::shape_value(const unsigned int i, const vec2 &p) const
 }
 
 template<>
-vec2 FE_P<2,1>::shape_grad(const unsigned int i, const vec2 &p) const
+vec2 FE_P<2,1>::basis_grad(const unsigned int i, const vec2 &p) const
 {
     ASSERT(i <= 2, "Index of shape function is out of range.");
     switch (i)
     {
     case 0:
-        return "-1; -1";
+        return "0 0";
         break;
     case 1:
-        return "1; 0";
+        return "1 0";
         break;
     case 2:
-        return "0; 1";
+        return "0 1";
         break;
     }
 }
 
+
+// P1 linear discontinuous element
+template<>
+FE_P_disc<2,1>::FE_P_disc()
+{
+    number_of_dofs = 3;
+
+    number_of_single_dofs[2] = 3;
+
+    unit_support_points.push_back(vec2("0 0"));
+    unit_support_points.push_back(vec2("1 0"));
+    unit_support_points.push_back(vec2("0 1"));
+    compute_node_matrix();
+}
+
+template<>
+double FE_P_disc<2,1>::basis_value(const unsigned int i, const vec2 &p) const
+{
+    ASSERT(i <= 2, "Index of shape function is out of range.");
+    switch (i)
+    {
+    case 0:
+        return 1;
+        break;
+    case 1:
+        return p(0);
+        break;
+    case 2:
+        return p(1);
+        break;
+    }
+}
+
+template<>
+vec2 FE_P_disc<2,1>::basis_grad(const unsigned int i, const vec2 &p) const
+{
+    ASSERT(i <= 2, "Index of shape function is out of range.");
+    switch (i)
+    {
+    case 0:
+        return "0 0";
+        break;
+    case 1:
+        return "1 0";
+        break;
+    case 2:
+        return "0 1";
+        break;
+    }
+}
 
 
 /*** 3D finite elements ***/
 
 // P0 constant element
 template<>
-const bool FE_P<3,0>::_dof_continuity[] = { false };
+FE_P<3,0>::FE_P()
+{
+    number_of_dofs = 1;
+
+    number_of_single_dofs[3] = 1;
+
+    unit_support_points.push_back(vec3("0 0 0"));
+    compute_node_matrix();
+}
 
 template<>
-const FE_dof_object FE_P<3,0>::_dof_objs[] = { FE_OBJECT_TETRAHEDRON };
-
-template<>
-const unsigned int FE_P<3,0>::_dof_obj_ids[] = { 0 };
-
-template<>
-double FE_P<3,0>::shape_value(const unsigned int i, const vec3 &p) const
+double FE_P<3,0>::basis_value(const unsigned int i, const vec3 &p) const
 {
     ASSERT(i==0, "Index of shape function is out of range.");
     return 1;
 }
 
 template<>
-vec3 FE_P<3,0>::shape_grad(const unsigned int i, const vec3 &p) const
+vec3 FE_P<3,0>::basis_grad(const unsigned int i, const vec3 &p) const
 {
     ASSERT(i==0, "Index of shape function is out of range.");
     return zeros<vec>(3);
@@ -227,22 +371,27 @@ vec3 FE_P<3,0>::shape_grad(const unsigned int i, const vec3 &p) const
 
 // P1 linear element
 template<>
-const bool FE_P<3,1>::_dof_continuity[] = { true, true, true, true };
+FE_P<3,1>::FE_P()
+{
+    number_of_dofs = 4;
+
+    number_of_single_dofs[0] = 4;
+
+    unit_support_points.push_back(vec3("0 0 0"));
+    unit_support_points.push_back(vec3("1 0 0"));
+    unit_support_points.push_back(vec3("0 1 0"));
+    unit_support_points.push_back(vec3("0 0 1"));
+    compute_node_matrix();
+}
 
 template<>
-const FE_dof_object FE_P<3,1>::_dof_objs[] = { FE_OBJECT_POINT, FE_OBJECT_POINT, FE_OBJECT_POINT, FE_OBJECT_POINT };
-
-template<>
-const unsigned int FE_P<3,1>::_dof_obj_ids[] = { 0, 1, 2, 3 };
-
-template<>
-double FE_P<3,1>::shape_value(const unsigned int i, const vec3 &p) const
+double FE_P<3,1>::basis_value(const unsigned int i, const vec3 &p) const
 {
     ASSERT(i <= 3, "Index of shape function is out of range.");
     switch (i)
     {
     case 0:
-        return 1-p(0)-p(1)-p(2);
+        return 1;
         break;
     case 1:
         return p(0);
@@ -257,22 +406,80 @@ double FE_P<3,1>::shape_value(const unsigned int i, const vec3 &p) const
 }
 
 template<>
-vec3 FE_P<3,1>::shape_grad(const unsigned int i, const vec3 &p) const
+vec3 FE_P<3,1>::basis_grad(const unsigned int i, const vec3 &p) const
 {
     ASSERT(i <= 3, "Index of shape function is out of range.");
     switch (i)
     {
     case 0:
-        return "-1; -1; -1";
+        return "0 0 0";
         break;
     case 1:
-        return "1; 0; 0";
+        return "1 0 0";
         break;
     case 2:
-        return "0; 1; 0";
+        return "0 1 0";
         break;
     case 3:
-        return "0; 0; 1";
+        return "0 0 1";
+        break;
+    }
+}
+
+
+// P1 linear element
+template<>
+FE_P_disc<3,1>::FE_P_disc()
+{
+    number_of_dofs = 4;
+
+    number_of_single_dofs[3] = 4;
+
+    unit_support_points.push_back(vec3("0 0 0"));
+    unit_support_points.push_back(vec3("1 0 0"));
+    unit_support_points.push_back(vec3("0 1 0"));
+    unit_support_points.push_back(vec3("0 0 1"));
+    compute_node_matrix();
+}
+
+template<>
+double FE_P_disc<3,1>::basis_value(const unsigned int i, const vec3 &p) const
+{
+    ASSERT(i <= 3, "Index of shape function is out of range.");
+    switch (i)
+    {
+    case 0:
+        return 1;
+        break;
+    case 1:
+        return p(0);
+        break;
+    case 2:
+        return p(1);
+        break;
+    case 3:
+        return p(2);
+        break;
+    }
+}
+
+template<>
+vec3 FE_P_disc<3,1>::basis_grad(const unsigned int i, const vec3 &p) const
+{
+    ASSERT(i <= 3, "Index of shape function is out of range.");
+    switch (i)
+    {
+    case 0:
+        return "0 0 0";
+        break;
+    case 1:
+        return "1 0 0";
+        break;
+    case 2:
+        return "0 1 0";
+        break;
+    case 3:
+        return "0 0 1";
         break;
     }
 }

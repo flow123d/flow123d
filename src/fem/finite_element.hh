@@ -31,147 +31,302 @@
 #define FINITE_ELEMENT_HH_
 
 #include <armadillo>
+#include <map>
+#include <vector>
+#include "quadrature/quadrature.hh"
+#include <boost/assign/list_of.hpp>
 
-/*
- * Describes the type of the geometric entity to which the degrees of freedom are associated.
- * For example, in the case of the usual P1 Lagrangean finite element all degrees of freedom
- * are the values at the vertices of the line/triangle/tetrahedron and their corresponding FE_dof_object
- * is FE_OBJECT_POINT.
+using namespace std;
+
+/**
+ * Multiplicities describe groups of dofs whose order changes with
+ * the configuration (e.g. the rotation or orientation) of
+ * the geometrical entity relative to the actual cell.
+ *
+ * In each spatial dimension we accept the following dof multiplicities:
+ *
+ * 0) Point (1 configuration):
+ *    - single dofs
+ *
+ * 1) Line (2 possible configurations=orientations):
+ *    - single dofs
+ *    - pairs
+ *
+ * 2) Triangle (2 orientations and 3 rotations=6 configurations):
+ *    - single dofs
+ *    - pairs
+ *    - triples
+ *    - sextuples
+ *
+ * 3) Tetrahedron (1 configuration, since it is always the cell):
+ *    - single dofs
  */
-enum FE_dof_object
-{
-    /*
-     * Dof is associated to a vertex.
-     */
-    FE_OBJECT_POINT = 0,
-
-    /*
-     * Dof is associated to an internal point of a 1D edge.
-     */
-    FE_OBJECT_LINE = 1,
-
-    /*
-     * Dof is associated to an internal point of a 2D face.
-     */
-    FE_OBJECT_TRIANGLE = 2,
-
-    /*
-     * Dof is associated to an internal point of a 3D cell.
-     */
-    FE_OBJECT_TETRAHEDRON = 3
+enum DofMultiplicity {
+    DOF_SINGLE = 1, DOF_PAIR = 2, DOF_TRIPLE = 3, DOF_SEXTUPLE = 6
 };
 
-///*
-// * Describes the type of continuity at interfaces (vertices, edges, faces) of the functions
-// * constructed from the given finite element space at each cell.
-// */
-//typedef enum Conformity
-//{
-//    /*
-//     * Indicates incompatible continuities of the space.
-//     */
-//    unknown,
-//
-//    /*
-//     * Discontinuous finite element (no continuity at interfaces).
-//     */
-//    L2,
-//
-//    /*
-//     * Continuous finite element (continuity at interfaces).
-//     */
-//    H1
-//};
+const vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
+        DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
 
-template <unsigned int dim>
-class FiniteElement
-{
+/**
+ * Abstract class for the description of a general finite element on
+ * a reference simplex in @p dim dimensions.
+ *
+ * Description of dofs:
+ *
+ * The reference cell consists of lower dimensional entities (points,
+ * lines, triangles). Each dof is associated to one of these
+ * entities. This means that if the entity is shared by 2 or more
+ * neighbouring cells in the mesh then this dof is shared by the
+ * finite elements on all of these cells. If a dof is associated
+ * to the cell itself then it is not shared with neighbouring finite
+ * elements.
+ * The ordering of nodes in the entity may not be appropriate for the
+ * finite elements on the neighbouring cells, hence we need to
+ * describe how the order of dofs changes with the relative
+ * configuration of the entity with respect to the actual cell.
+ * For this reason we define the dof multiplicity which allows to
+ * group the dofs as described in \sa DofMultiplicity.
+ *
+ * Support points:
+ *
+ * Sometimes it is convenient to describe the function space using
+ * a basis (called the raw basis) that is different from the set of
+ * shape functions for the finite element (the actual basis). For
+ * this reason we define the support points which play the role of
+ * nodal functionals associated to the particular dofs. To convert
+ * between the two bases one can use the @p node_matrix, which is
+ * constructed by the method compute_node_matrix(). In the case of
+ * non-Lagrangean finite elements the dofs are not associated to
+ * nodal functionals but e.g. to derivatives or averages. For that
+ * reason we distinguish between the unit support points which are
+ * uniquely associated to the dofs and the generalized support
+ * points that are auxiliary for the calculation of the dof
+ * functionals.
+ *
+ *
+ */
+template<unsigned int dim>
+class FiniteElement {
 public:
 
-    FiniteElement(unsigned int _n_dofs, const bool *_dof_continuity, const FE_dof_object *_dof_objs, const unsigned int *_dof_obj_ids);
+    /**
+     * Constructor.
+     */
+    FiniteElement();
 
-    /*
-     * Returns the number of degrees of freedom needed by the finite element.
+    /**
+     * Returns the number of degrees of freedom needed by the finite
+     * element.
      */
     const unsigned int n_dofs();
 
-    /*
-     * Returns information on the conformity of the global function space.
+    /**
+     * Returns the number of single dofs/dof pairs/triples/sextuples
+     * that lie on a single geometric entity of the dimension
+     * @p object_dim.
      */
-    const bool dof_is_continuous(int dof);
+    const unsigned int n_object_dofs(unsigned int object_dim,
+            DofMultiplicity multiplicity);
 
-    /*
-     * Returns the type of the geometric object to which the @p dof is associated.
+    /**
+     * Calculates the value of the @p i-th raw basis function at the
+     * point @p p on the reference element.
      */
-    const FE_dof_object dof_object(int dof);
+    virtual double basis_value(const unsigned int i,
+            const arma::vec::fixed<dim> &p) const = 0;
 
-    /*
-     * Returns the number of the geometric entity (node, edge, face, cell) of the @p dof.
+    /**
+     * Calculates the gradient of the @p i-th raw basis function at the
+     * point @p p on the reference element. The gradient components
+     * are relative to the reference cell coordinate system.
      */
-    const unsigned int dof_object_id(int dof);
+    virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
+            const arma::vec::fixed<dim> &p) const = 0;
 
-    /*
-     * Calculates the value of the @p i-th shape function at the point @p p on the reference element
+    /**
+     * Initializes the @p node_matrix for computing the coefficients
+     * of the raw basis functions from values at support points.
+     * The method is implemented for the case of Langrangean finite
+     * element. In other cases it may be reimplemented.
      */
-    virtual double shape_value(const unsigned int i, const arma::vec::fixed<dim> &p) const = 0;
+    virtual void compute_node_matrix();
 
-    /*
-     * Calculates the gradient of the @p i-th shape function at the point @p p on the reference element.
-     * The gradient components are relative to the reference cell coordinate system.
+    /**
+     * Computes the shape function values and gradients on the actual cell
+     * and fills the FEValues structure.
      */
-    virtual arma::vec::fixed<dim> shape_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const = 0;
+    virtual void fill_fe_values(const Quadrature<dim> &q,
+            vector<arma::mat> &inv_jacobians, vector<arma::vec> &shape_values,
+            vector<arma::mat> &shape_grads);
+
+    /**
+     * For possible use in hp methods: Returns the maximum degree of
+     * space of polynomials contained in the finite element space.
+     */
+    virtual const unsigned int polynomial_order() const {
+        return order;
+    };
+
+    /**
+     * Returns either the generalized support points (if they are defined)
+     * or the unit support points.
+     */
+    const vector<arma::vec::fixed<dim> > &get_generalized_support_points();
 
 protected:
 
-    const unsigned int number_of_dofs;
+    /**
+     * Total number of degrees of freedom at one finite element.
+     */
+    unsigned int number_of_dofs;
 
-    const bool *dof_continuity;
+    /**
+     * Number of single dofs at one geometrical entity of the given
+     * dimension (point, line, triangle, tetrahedron).
+     */
+    unsigned int number_of_single_dofs[dim + 1];
 
-    const FE_dof_object *dof_objects;
+    /**
+     * Number of pairs of dofs at one geometrical entity of the given
+     * dimension (applicable to lines and triangles).
+     */
+    unsigned int number_of_pairs[dim + 1];
 
-    const unsigned int *dof_object_ids;
+    /**
+     * Number of triples of dofs associated to one triangle.
+     */
+    unsigned int number_of_triples[dim + 1];
 
+    /**
+     * Number of sextuples of dofs associated to one triangle.
+     */
+    unsigned int number_of_sextuples[dim + 1];
+
+    /**
+     * Polynomial order - to be possibly used in hp methods.
+     */
+    unsigned int order;
+
+    /**
+     * Matrix that determines the coefficients of the raw basis
+     * functions from the values at the support points.
+     */
+    arma::mat node_matrix;
+
+    /**
+     * Support points are points in the reference element where
+     * function values determine the dofs. In case of Lagrangean
+     * finite elements the dof values are precisely the function
+     * values at @p unit_support_points.
+     *
+     */
+    vector<arma::vec::fixed<dim> > unit_support_points;
+
+    /**
+     * In case of non-Lagrangean finite elements the meaning of the
+     * support points is different, hence we denote the structure
+     * as @p generalized_support_points.
+     */
+    vector<arma::vec::fixed<dim> > generalized_support_points;
 };
 
-
-
-
-
-
 template<unsigned int dim>
-FiniteElement<dim>::FiniteElement(unsigned int _n_dofs, const bool *_dof_continuity, const FE_dof_object *_dof_objs, const unsigned int *_dof_obj_ids) :
-        number_of_dofs(_n_dofs),
-        dof_continuity(_dof_continuity),
-        dof_objects(_dof_objs),
-        dof_object_ids(_dof_obj_ids)
-{}
+FiniteElement<dim>::FiniteElement() :
+        number_of_dofs(0)
+{
+    for (int i = 0; i <= dim; i++)
+    {
+        number_of_single_dofs[i] = 0;
+        number_of_pairs[i] = 0;
+        number_of_triples[i] = 0;
+        number_of_sextuples[i] = 0;
+    }
+}
 
-
-template<unsigned int dim> inline const unsigned int FiniteElement<dim>::n_dofs()
+template<unsigned int dim> inline
+const unsigned int FiniteElement<dim>::n_dofs()
 {
     return number_of_dofs;
 }
 
-
-template<unsigned int dim> inline const bool FiniteElement<dim>::dof_is_continuous(int dof)
+template<unsigned int dim> inline
+const unsigned int FiniteElement<dim>::n_object_dofs(
+        unsigned int object_dim, DofMultiplicity multiplicity)
 {
-    ASSERT(dof>=0 && dof<dim, "Dof number is out of range.");
-    return dof_continuity[dof];
+    ASSERT(object_dim >= 0 && object_dim <= dim,
+            "Object type number is out of range.");
+    switch (multiplicity)
+    {
+    case DOF_SINGLE:
+        return number_of_single_dofs[object_dim];
+    case DOF_PAIR:
+        return number_of_pairs[object_dim];
+    case DOF_TRIPLE:
+        return number_of_triples[object_dim];
+    case DOF_SEXTUPLE:
+        return number_of_sextuples[object_dim];
+    }
 }
 
-
-template<unsigned int dim> inline const FE_dof_object FiniteElement<dim>::dof_object(int dof)
+template<unsigned int dim> inline
+void FiniteElement<dim>::compute_node_matrix()
 {
-    ASSERT(dof>=0 && dof<dim, "Dof number is out of range.");
-    return dof_objects[dof];
+    ASSERT(get_generalized_support_points().size() == number_of_dofs,
+            "Invalid number of generalized support points.");
+
+    arma::mat M(number_of_dofs, number_of_dofs);
+
+    for (int i = 0; i < number_of_dofs; i++)
+    {
+        for (int j = 0; j < number_of_dofs; j++)
+        {
+            M(i, j) = basis_value(j, get_generalized_support_points()[i]);
+        }
+    }
+    node_matrix = arma::inv(M);
 }
 
-
-template<unsigned int dim> inline const unsigned int FiniteElement<dim>::dof_object_id(int dof)
+template<unsigned int dim> inline
+void FiniteElement<dim>::fill_fe_values(
+        const Quadrature<dim> &q, vector<arma::mat> &inv_jacobians,
+        vector<arma::vec> &shape_values, vector<arma::mat> &shape_grads)
 {
-    ASSERT(dof>=0 && dof<dim, "Dof number is out of range.");
-    return dof_object_ids[dof];
+    // shape values
+    arma::vec values(number_of_dofs);
+    for (int i = 0; i < q.size(); i++)
+    {
+        for (int j = 0; j < number_of_dofs; j++)
+        {
+            values(j) = basis_value(j, q.point(i));
+        }
+        shape_values[i] = node_matrix * values;
+    }
+
+    // shape gradients
+    arma::mat grads(number_of_dofs, dim);
+    grads.zeros();
+    for (int i = 0; i < q.size(); i++)
+    {
+        for (int j = 0; j < number_of_dofs; j++)
+        {
+            grads.row(j) = trans(basis_grad(j, q.point(i)));
+        }
+        shape_grads[i] = node_matrix * grads * arma::trans(inv_jacobians[i]);
+    }
 }
 
+template<unsigned int dim>
+const vector<arma::vec::fixed<dim> > &FiniteElement<dim>::get_generalized_support_points()
+{
+    if (generalized_support_points.size() > 0)
+    {
+        return generalized_support_points;
+    }
+    else
+    {
+        return unit_support_points;
+    }
+}
 
 #endif /* FINITE_ELEMENT_HH_ */
