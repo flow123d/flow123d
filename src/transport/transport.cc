@@ -269,6 +269,7 @@ void ConvectionTransport::subst_scales(char *line) {
 // READ INITIAL CONDITION
 //=============================================================================
 void ConvectionTransport::read_initial_condition() {
+        F_ENTRY;
 
         FILE	*in;		  // input file
 		char     line[ LINE_SIZE ]; // line of data file
@@ -285,12 +286,10 @@ void ConvectionTransport::read_initial_condition() {
 
 
 	    for (i = 0; i < n_concentrations; i++) {
-	    	//printf("%s\n",line);
 	    	xfgets( line, LINE_SIZE - 2, in );
+	    	DBGMSG("%s\n",line);
 	    	ASSERT(!(line == NULL),"NULL as argument of function parse_concentration_line()\n");
-	    	id    = atoi( xstrtok( line) );	// TODO: id musi byt >0 nebo >=0 ???
-	    	INPUT_CHECK(!( id < 0 ),"Id number of concentration must be > 0\n");
-	    	eid    = atoi( xstrtok( NULL) );
+	    	eid    = atoi( xstrtok( line) );
 	    	global_idx =row_4_el[mesh_->element.find_id(eid).index()];
 	    	if ( el_ds->is_local(global_idx) ) {
 	    		index = global_idx - el_ds->begin();
@@ -308,6 +307,7 @@ void ConvectionTransport::read_initial_condition() {
 // READ CONCENTRATION SOURCES
 //=============================================================================
 void ConvectionTransport::read_concentration_sources() {
+    F_ENTRY;
 
         FILE	*in;		  // input file
 		char     line[ LINE_SIZE ]; // line of data file
@@ -332,9 +332,7 @@ void ConvectionTransport::read_concentration_sources() {
 	    	//printf("%s\n",line);
 	    	xfgets( line, LINE_SIZE - 2, in );
 	    	ASSERT(!(line == NULL),"NULL as argument of function read_concentration_sources()\n");
-	    	id    = atoi( xstrtok( line) );	// TODO: id musi byt >0 nebo >=0 ???
-	    	INPUT_CHECK(!( id < 0 ),"Id number of concentration sources must be > 0\n");
-	    	eid    = atoi( xstrtok( NULL) );
+	    	eid    = atoi( xstrtok(line) );
 	    	global_idx =row_4_el[mesh_->element.find_id(eid).index()];
 	    	if ( el_ds->is_local(global_idx) ) {
 	    		index = global_idx - el_ds->begin();
