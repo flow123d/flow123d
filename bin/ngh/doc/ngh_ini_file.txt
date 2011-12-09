@@ -1,0 +1,95 @@
+STRUCTURE OF THE INI-FILE FOR THE NGH GENERATOR
+===============================================
+
+Note: All string values have maximal length MAXBUFF - 1 (=1023).
+
+Section: [Files]
+-----------------
+Description: Names of input and output files
+Keys:
+  =============================================================================
+  KEY NAME          | TYPE OF |  DESCRIPTION
+                    | VALUE   |
+  =============================================================================
+  mesh              | string  | Name of input file describing mesh.
+                    |         | 
+  -----------------------------------------------------------------------------
+  output            | string  | Name of output file for computed neighbours.
+                    |         | 
+  =============================================================================
+
+Section: [Run]
+-----------------
+Description: Parameters controlling computation
+Keys:
+  =============================================================================
+  KEY NAME          | TYPE OF |  DESCRIPTION
+                    | VALUE   |
+  =============================================================================
+  pause_after_run   | bool    | Determinate if program should wait for user
+                    |         | after finishing.
+  =============================================================================
+
+Section: [Computation]
+-----------------
+Description: Parameters determining types of neighbours for computation
+Keys:
+  =============================================================================
+  KEY NAME          | TYPE OF |  DESCRIPTION
+                    | VALUE   |
+  =============================================================================
+  bb                | bool    | Switching on/off computation of the
+                    |         | Boundary - boundary nghs (FEM connection)
+  =============================================================================
+  vb                | bool    | Switching on/off computation of the
+                    |         | Volume - boundary nghs (Compatible connection)
+  =============================================================================
+  vv                | bool    | Switching on/off computation of the
+                    |         | Volume - Volume nghs (Incompatible connection)
+  =============================================================================
+  ct_11             | compute | Type of computation of the vv neighbours
+                    |  type   | among 1D and 1D elements
+  =============================================================================
+  ct_22             | compute | Type of computation of the vv neighbours
+                    |  type   | among 2D and 2D elements
+  =============================================================================
+  ct_12             | compute | Type of computation of the vv neighbours
+                    |  type   | among 1D and 2D elements
+  =============================================================================
+  ct_13             | compute | Type of computation of the vv neighbours
+                    |  type   | among 1D and 3D elements
+  =============================================================================
+  ct_23             | compute | Type of computation of the vv neighbours
+                    |  type   | among 2D and 3D elements
+  =============================================================================
+
+Section: [Constants]
+-----------------
+Description: Constants, used during computation
+Keys:
+  =============================================================================
+  KEY NAME          | TYPE OF |  DESCRIPTION
+                    | VALUE   |
+  =============================================================================
+  epsilon           | double  | Setting precision of the computation
+                    |         | 
+  =============================================================================
+
+Type Of Value: bool
+-------------------
+Values: One of following six values can be used
+	1, true, yes
+	0, false, no
+
+
+Type Of Value: computetype
+-----------------
+Description: Parameter determining how will be neighbours computed among each 
+type of elements
+
+Values:
+	none - computation is switched off
+	ratio1 - returns value of the ratio among size of the elements and 
+		 size of the intersection. (0, 1> Only if intersection has same 
+		 dim as dimension of the element with lower dim. In other case 
+  		 it returns 1.

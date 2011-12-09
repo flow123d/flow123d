@@ -38,7 +38,7 @@
 
 #include "rev_num.h"
 /// named version of the program
-#define _VERSION_   "1.6.5"
+#define _VERSION_   "1.6.6"
 
 static void main_convert_to_output();
 
