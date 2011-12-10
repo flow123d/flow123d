@@ -1,5 +1,5 @@
 INI_FILES="uloha.ini"
 NPROC="1"
-FLOW_PARAMS="-o output"
+FLOW_PARAMS="-o output -ksp_atol 1.0e-20 -ksp_rtol 1.0e-20 -ksp_monitor"
 
 include ../all_tests.mk

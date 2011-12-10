@@ -102,7 +102,7 @@ void write_msh_topology(Output *output)
 void write_msh_ascii_data(Output *output, OutputData *out_data)
 {
     ofstream &file = output->get_base_file();
-    int id = 1;
+    long int id = 1;
 
     switch(out_data->type) {
     case OUT_VECTOR_INT_SCA:

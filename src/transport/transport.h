@@ -146,6 +146,7 @@ private:
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
 	void read_initial_condition(); //
+	void read_concentration_sources();
 
 	/**
 	 * Compose file name for boundary condition at given level.
@@ -161,6 +162,7 @@ private:
 	void transport_sorption(int elm_pos, MaterialDatabase::Iter mtr, int sbi); //
 	void compute_sorption(double conc_avg, vector<double> &sorp_coef, int sorp_type, double *concx, double *concx_sorb, double Nv,
 	        double N); //
+	void compute_concentration_sources(int sbi);
 
 //	void get_reaction(int i,oReaction *reaction); //
 	//void transport_output(struct Transport *transport, double time, int frame);
@@ -194,6 +196,14 @@ private:
             // only local part
             double ***conc;
             double ***pconc;
+
+            double **sources_density;
+            double **sources_sigma;
+            double **sources_conc;
+
+            double **sources_corr;
+
+            double **cumulative_corr;
 
             // global
 
@@ -256,6 +266,14 @@ private:
             //Vec *vconc_im; // immobile concentration vector
             //Vec *vconc_so; // sorbed concentration vector
             //Vec *vconc_im_so; // immobile sorbed concentration vector
+
+
+            Vec *vsources_density;
+            Vec *vsources_sigma;
+            Vec *vsources_conc;
+            Vec *vsources_corr;
+            Vec *vcumulative_corr;
+
 
             Vec *vconc_out; // concentration vector output (gathered)
 

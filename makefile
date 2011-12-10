@@ -70,9 +70,15 @@ bin/current_flow:
 	
 revnumber:
 	if which "svnversion" ;\
-	then echo "#define REVISION \"`svnversion`\"" >include/rev_num.h;\
-	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >include/rev_num.h;\
+	then echo "#define REVISION \"`svnversion`\"" >__tmp__ren_num.h;\
+	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >__tmp__ren_num.h;\
+	fi ;\
+	if test -r "include/rev_num.h" && diff "__tmp__ren_num.h" "include/rev_num.h" >/dev/null; \
+	then rm __tmp__ren_num.h; \
+	else mv -f __tmp__ren_num.h include/rev_num.h; \
 	fi
+	
+
 
 # Remove all generated files
 clean:
@@ -93,3 +99,40 @@ testall:
 # Create doxygen documentation
 online-doc:
 	make -C doc/doxy doc
+
+clean_tests:
+	make -C tests clean
+
+ngh:
+	make -C bin/ngh all
+
+bcd:
+	make -C bin/bcd all
+
+clean_util:
+	make -C bin/bcd clean
+	make -C bin/ngh clean
+
+lbuild=linux_build
+linux_package: clean clean_tests clean_util all bcd ngh
+	# copy bin
+	rm -rf $(lbuild)
+	mkdir -p $(lbuild)/bin/mpich
+	mpiexec=`cat bin/mpiexec |grep mpiexec |sed 's/ ".*$$//'|sed 's/"//g'`;\
+	cp "$${mpiexec}" $(lbuild)/bin/mpich/mpiexec
+	cp -r bin/flow123d bin/flow123d.sh bin/ndiff bin/tests bin/ngh/bin/ngh bin/bcd/bin/bcd $(lbuild)/bin
+	cp -r bin/paraview $(lbuild)/binS
+	# copy doc
+	mkdir $(lbuild)/doc
+	cp -r doc/articles doc/reference_manual/flow123d_doc.pdf doc/petsc_options_help $(lbuild)/doc
+	mkdir $(lbuild)/doc/ngh
+	mkdir $(lbuild)/doc/bcd
+	cp bin/ngh/doc/* $(lbuild)/doc/ngh
+	cp bin/bcd/doc/* $(lbuild)/doc/bcd
+	# copy tests
+	cp -r tests $(lbuild)
+
+linux_pack:
+	tar -cvzCf flow_build.tar.gz ./$(lbuild) 
+
+	

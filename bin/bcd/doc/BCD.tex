@@ -1,0 +1,276 @@
+
+\documentclass[a4paper]{article}
+
+%\usepackage{czech}
+\usepackage[cp1250]{inputenc}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\pagestyle{fancyplain}
+
+\begin{document}
+
+\Large
+\begin{flushleft}
+\textbf{BCD generator ini file format}
+
+
+\normalsize
+BCD generator version: 1.00 stable
+\vspace{20pt}
+
+Section: \textbf{\$Input}
+
+Keys:
+\end{flushleft}
+\vspace{-20pt}
+\small
+\begin{tabbing}
+=================================================\\
+Output\_digits	\quad 	\= TYPE OF \quad \= DEFAULT	\quad 	\=DESCRIPTION\kill
+KEY NAME	 			 				\> TYPE		 				\> DEFAULT	 				\>DESCRIPTION\\
+												\> OF VALUE				\> VALUE						\>\\
+=================================================\\
+\textit{Mesh\_file}	\> \textbf{string}	\> NULL		\>Name of file containig definition\\
+								 		\> 									\> 				\>of the mesh for the problem.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{Ngh\_file} 	\> \textbf{string} 	\> NULL		\>Name of file describing topology\\
+								 		\> 									\> 				\>of the mesh.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{N\_subst}		\> \textbf{int}			\> 1			\>Number of substances.\\
+------------------------------------------------------------------------------------------------------------------\\
+\end{tabbing}
+
+\normalsize
+
+\begin{flushleft}
+Section: \textbf{\$Output}
+
+Keys:
+\end{flushleft}
+\vspace{-20pt}
+\small
+\begin{tabbing}
+=================================================\\
+Output\_digits	\quad 	\= TYPE OF \quad \= DEFAULT	\quad 	\=DESCRIPTION\kill
+KEY NAME	 			 				\> TYPE		 				\> DEFAULT	 				\>DESCRIPTION\\
+												\> OF VALUE				\> VALUE						\>\\
+=================================================\\
+\textit{FBC\_file} 	\> \textbf{string}	\> NULL		\>Flow boundary condition\\
+										\> 									\> 				\>output file name.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{TBC\_file} 	\> \textbf{string} 	\> NULL		\>Transport boundary condition\\
+										\> 									\> 				\>output file name.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{TIC\_file}	\> \textbf{string}	\> NULL		\>Transport initial condition\\
+										\> 									\> 				\>output file name.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{MTR\_file}	\> \textbf{string}	\> NULL		\>Materials output file name.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{Output\_digits}	\> \textbf{int}	\> 12			\>Number of output digits in all output files.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{Accuracy}		\> \textbf{double}	\> 1E-12	\>Maximal spacing between element\\ 
+										\> 									\> 				\>boundary side nodes and closest defined\\ 
+										\> 									\> 				\>general plane equation.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{Write\_all\_BC}	\> \textbf{YES/NO}	\> NO	\>If set to YES, writes all boundary\\
+												\> 									\> 		\>conditions (also all the Neumann\\
+												\> 									\> 		\>homogenous conditions).\\
+------------------------------------------------------------------------------------------------------------------\\
+\end{tabbing}
+
+\normalsize
+
+\begin{flushleft}
+Section: \textbf{\$FBC} (flow boundary condition)
+
+
+\textit{con\_def\_type} \ $\left\langle type\_specific\_data\right\rangle$ \ \textit{bc\_type} \ $\left\langle bc\_specific\_data\right\rangle$ \ \textit{n\_tag} \ $\left\langle tags\right\rangle$
+\end{flushleft}
+
+
+
+\begin{flushleft}
+Section: \textbf{\$TBC} (transport boundary condition)
+
+\textit{con\_def\_type} \ $\left\langle type\_specific\_data\right\rangle$ \ \textit{ex} \ \textit{ey} \ \textit{ez} \ \textit{e1} \ \textit{n\_subst} \ \textit{subst\_list}
+
+\end{flushleft}
+
+
+
+\begin{flushleft}
+Section: \textbf{\$TIC} (transport initial condition)
+
+\textit{con\_def\_type} \ $\left\langle type\_specific\_data\right\rangle$ \ \textit{ex} \ \textit{ey} \ \textit{ez} \ \textit{e1} \ \textit{n\_subst} \ \textit{subst\_list}
+\end{flushleft}
+
+
+
+\begin{flushleft}
+where:
+\end{flushleft}
+\vspace{-20pt}
+\small
+\begin{tabbing}
+=================================================\\
+Output\_digits	\qquad \quad	\= TYPE OF \quad\qquad  	\=DESCRIPTION\kill
+PARAMETER	 			 				\> TYPE		 					\>DESCRIPTION\\
+NAME										\> OF VALUE					\>\\
+=================================================\\
+\textit{con\_def\_type} 	\> \textbf{int}						\>5 types of condition definition [0,1,2,3,4]. See\\
+													\> 												\>below for definitions of the types.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{bc\_type}					\> \textbf{int}						\>Boundary condition type [1;2;3]. See below\\
+													\> 												\>for definitions of the types.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{n\_tag} 					\> \textbf{int}						\>Number of tags.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{tags} 						\> \textbf{int[n\_tag]}	\>List of tags.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{n\_subst}					\> \textbf{int}						\>Number of substances.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{subst\_list}			\> \textbf{int[n\_subst]}\>List of substances.\\
+------------------------------------------------------------------------------------------------------------------\\
+\end{tabbing}
+
+\normalsize
+\vspace{-20pt}
+
+\begin{flushleft}
+Each condition overwrites previous one. The last defined is applied!!
+\end{flushleft}
+
+
+
+\begin{flushleft}
+\textbf{Types of boundary condition definitions} [\textit{con\_def\_type}]
+\end{flushleft}
+\vspace{-10pt}
+Defines where the boundary condition is set (different \textit{type\_specific\_data}).
+\vspace{-5pt}
+
+\begin{table}[ht]
+
+		\begin{tabular}{||c|l||}
+				\hline
+				Type				&	Description where the boundary condition is set\\\hline\hline
+				$0$					&	On all boundaries of area\\\hline
+				$1$					&	On listed element boundaries\\\hline
+				$2$					&	On element boundaries which nodes are closer to defined equation\\ 
+										& than a value of \textit{Accuracy} key\\\hline
+		  	$3$					&	On element boundaries which material ID corresponds to listed ID\\\hline
+		  	$4$					&	Both 2 and 3 types must be fulfilled together\\\hline
+		\end{tabular}
+\end{table}
+
+\begin{flushleft}
+\textbf{Types of initial condition definitions} [\textit{con\_def\_type}]
+\end{flushleft}
+
+\vspace{-10pt}
+Defines where the initial condition is set (different \textit{type\_specific\_data}).
+\vspace{-5pt}
+
+\begin{table}[ht]
+
+		\begin{tabular}{||c|l||}
+				\hline
+				Type				&	Description where the initial condition is set\\\hline\hline
+				$0$					&	On all elements of area\\\hline
+				$1$					&	On listed elements\\\hline
+				$2$					&	On elements which centre of gravity are in the half-space\\ 
+										& defined with equation\\\hline   %than a value of \textit{Accuracy} key\\\hline
+		  	$3$					&	On elements which material ID corresponds to listed ID\\\hline
+		  	$4$					&	Both 2 and 3 types must be fulfilled together\\\hline
+		\end{tabular}
+\end{table}
+
+\newpage
+
+\begin{flushleft}
+\textbf{Type specific data} $\left\langle type\_specific\_data\right\rangle$
+\end{flushleft}
+
+\textbf{type = 0}: \quad
+ $\left\langle type\_specific\_data\right\rangle$ = NULL
+
+\textbf{type = 1}: \quad
+ $\left\langle type\_specific\_data\right\rangle$ = \textit{n\_elem elm\_1\_id elm\_2\_id ... elm\_n\_id}
+
+\textbf{type = 2}: \quad
+ $\left\langle type\_specific\_data\right\rangle$ = \textit{bx by bz b1}
+
+\textbf{type = 3}: \quad
+ $\left\langle type\_specific\_data\right\rangle$ = \textit{mid}
+
+\textbf{type = 4}: \quad
+ $\left\langle type\_specific\_data\right\rangle$ = \textit{bx by bz b1 mid}
+
+%\newpage
+
+\begin{flushleft}
+\textbf{Types of boundary conditions} [\textit{bc\_type}]
+\end{flushleft}
+
+\vspace{-10pt}
+Defines where the initial condition is set (different \textit{bc\_specific\_data}).
+\vspace{-5pt}
+
+\begin{table}[ht]
+
+		\begin{tabular}{||c|l||}
+				\hline
+				Type				&	Description\\\hline\hline
+				$1$					&	Boundary condition of the Dirichlet's type\\\hline
+				$2$					&	Boundary condition of the Neumann's type\\\hline
+		  	$3$					&	Boundary condition of the Newton's type\\\hline
+		\end{tabular}
+\end{table}
+
+
+\begin{flushleft}
+\textbf{BC specific data} $\left\langle bc\_specific\_data\right\rangle$
+\end{flushleft}
+
+\textbf{bc\_type = 1}: \quad
+ $\left\langle bc\_specific\_data\right\rangle$ = \textit{ex ey ez e1}
+
+\textbf{bc\_type = 2}: \quad
+ $\left\langle bc\_specific\_data\right\rangle$ = \textit{ex ey ez e1}
+
+\textbf{bc\_type = 3}: \quad
+ $\left\langle bc\_specific\_data\right\rangle$ = \textit{sigma ex ey ez e1}
+
+
+\begin{flushleft}
+where:
+\end{flushleft}
+\vspace{-20pt}
+\small
+\begin{tabbing}
+=================================================\\
+Output\_digits	\qquad \quad	\= TYPE OF \quad\qquad  	\=DESCRIPTION\kill
+PARAMETER	 			 				\> TYPE		 					\>DESCRIPTION\\
+NAME										\> OF VALUE					\>\\
+=================================================\\
+\textit{n\_elm} 			\> \textbf{int}						\>Number of elements.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{elm\_n\_id} 	\> \textbf{int} 					\>ID of the n-element in the list.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{mid}	 				\> \textbf{int}						\>Material ID.\\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{sigma}	 			\> \textbf{double}				\>Newton's BC interchange coefficient.\\ % revidovat
+------------------------------------------------------------------------------------------------------------------\\
+\textit{bx by bz b1}	\> \textbf{double[4]}			\>Boundary equation coefficients. \\
+                      \>                        \> $b(x,y,z) = bx \cdot x + by \cdot y + bz \cdot z + b1$ \\
+------------------------------------------------------------------------------------------------------------------\\
+\textit{ex ey ez e1}	\> \textbf{double[4]}			\>Equation of the boundary condition rule. \\
+                      \>                        \> $e(x,y,z) = ex \cdot x + ey \cdot y + ez \cdot z + e1$ \\
+------------------------------------------------------------------------------------------------------------------\\
+\end{tabbing}
+
+\normalsize
+
+
+
+\end{document}

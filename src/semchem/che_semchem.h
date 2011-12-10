@@ -76,19 +76,6 @@
 #ifndef SKUPINA_REAKCE
 	#define SKUPINA_REAKCE
 #endif // SKUPINA_REAKCE
-
-/*------------------------------------------------------------------*/
-/*
-#ifndef SKUPINA_INTERTRANSFER
-	 #define SKUPINA_INTERTRANSFER
-#endif SKUPINA_INTERTRANSFER
-*/
-/*------------------------------------------------------------------*/
-/*
-#ifndef SKUPINA_CHEMIE
-	#define SKUPINA_CHEMIE
-#endif SKUPINA_CHEMIE
-*/
 /********************************************************************/
 #define MAXK1LM1         2      /* Max. pocet koeficientu v MELM    */
 #define MAXELKOEF       10      /* Max. pocet koeficientu v ELM     */
@@ -104,12 +91,6 @@
 // mh: kompiluju flow/tran
 #define PRG_NAME         "tran"
 /********************************************************************/
-//#ifdef SKUPINA_CHEMIE
-	//#include "chem2\\chemd.h"    // mh: toto bude potreba zmenit !!!!!!
-//#endif // SKUPINA_CHEMIE
-//#ifdef SKUPINA_REAKCE
-	//#include "semchem_interface.hh"
-//#endif // SKUPINA_REAKCE
 /********************************************************************/
 /*                      Definice globalnich promennych              */
 /********************************************************************/
@@ -271,10 +252,7 @@ struct S_elm                       // element
     int         ivrst;             /* cislo vrtvy                   */
     int         imatr;             /* cislo materialu               */
     		// sem je nactena hodnota z *.stm, je kopirovano do idpor (pro dvoji porozitu, jinak se nepouziva)
-    float       koef[ MAXELKOEF ]; /* koeficienty elementu          */  
-    		// koef[0,1,2] ... propustnosti
-     		// koef[3,4]  ...  aktivni a celkova porozita
-    		// koef[5]  .. index do P_matr (pro volnou hladinu), nepouziva se 
+    float       koef[ MAXELKOEF ]; /* koeficienty elementu          */
 /*------------------------------------------------------------------*/
 #ifdef SKUPINA_DUALPOROSITY
     int         idpor;             /* index S_DPOR                  */
@@ -304,13 +282,11 @@ struct S_elm                       // element
     TChemieElementuD    *Chem;
     double      *vslo;             /* slozky vlastnost              */
     double      *hslo;             /* koncentrace slozek horniny    */
-//    double      *sslo;             /* koncentrace slozek sorbovano  */
     double      *pslo;             /* koncentrace slozek plynny     */
  #ifdef SKUPINA_DUALPOROSITY
     TChemieElementuD    *Chem_por;
     double      *vslo_por;    /* slozky porove vlastnost  */
     double      *hslo_por;    /* koncentrace slozek porove horniny   */
-//    double      *sslo_por;    /* koncentrace slozek porove sorbovano */
     double      *pslo_por;    /* koncentrace slozek porove plynny    */
  #endif // SKUPINA_DUALPOROSITY
 #endif // SKUPINA_CHEMIE
@@ -560,10 +536,7 @@ void sumace( double );
 /********************************************************************/
 /*  Zapis vystupnich dat                                            */
 /********************************************************************/
-//void pists0( int, int );      /* Zapis souboru vtlac. roztoku    .TS0  */
-//void pists1( int, int );      /* Zapis souboru tezeneho roztoku  .TS1  */
 void pis_TS2( double );         /* Zapis souboru roztoku po vrst.  .TS2  */
-//void pisTS3( double );        /* Zapis souboru roztoku           .TS3  */
 #ifdef SKUPINA_DUALPOROSITY
 	int pisTS34( int, int, double ); /* Zapis vysledku do .TS3 nebo     .TS4  */
  #else //SKUPINA_DUALPOROSITY
@@ -574,12 +547,6 @@ int pisDF1( double, double, int ); /* Zapis vysledku do            .DF1  */
 int pisDF2( double, double, int ); /* Zapis vysledku do            .DF2  */
 // mh: (doplneno df3 na vystup koncentraci)
 int pisDF3( double, double, int ); /* Zapis vysledku do		  .DF3  */
-//void pists33( int, int );     /* Zapis souboru roztoku           .TS33 */
-//void pists4( int );           /* Zapis souboru horniny           .TS4  */
-//void pisjm0( int, double *, double *);    /*  Zapis souboru      .JM0  */
-//void pisjm1( int );           /* Zapis souboru                   .JM1  */
-//void pisjm2( int, double *);  /* Zapis souboru                   .JM2  */
-//void pishdv( void );          /* Zapis souboru diferenci vysek   .HDV  */
 void otevri_bin( int );
 void pis_bin( int, float * );
 void zavri_bin( void );
@@ -730,11 +697,10 @@ void ctiich_reakce(void);
 /********************************************************************/
 /*  copied from semchem_interface.hh to simplify structure of inclusions    */
 /********************************************************************/
-void che_nadpis__soubor(char *soubor);
 void che_outpocp_soubor(FILE *fw);
 void che_pocitej_soubor(char *soubor, int *poc_krok);
 void che_vypis_soubor(char *soubor);
 void che_presun_poc_p_(void);
 void che_vypis__soubor(char *soubor);
 
-#endif //belongs to BIGHEAD
+#endif

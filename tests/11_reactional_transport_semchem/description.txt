@@ -3,6 +3,7 @@ Test problem 11
 verification of:
 - chemical kinetics - Trichlorethen dechloration, 2*MnO4- + C2Cl3H -> 3*Cl- + 2*CO2 + 2*MnO2 + H+,
 - chemical equilibrium - H2O <-> H+ + OH-,
+-- concentration of OH- decreases to zero in one step, equivalent concentration decrease of H+ would be expected but there is also a contribution to H+ concentration from considered kinetic reaction and so it does not decrease so rapidly
 in combination with transport (column experiment).
 - radioactive decay described by decay chain with more branches,
 without combination with transport (zero pressure gradient).

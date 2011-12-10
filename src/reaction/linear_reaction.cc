@@ -62,7 +62,7 @@ Linear_reaction::~Linear_reaction()
 
 double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
 {
-	int index, rows, cols, dec_nr;
+	int index, rows, cols, dec_nr, prev_index;
 	char dec_name[30];
 
 	cout << "We are going to allocate reaction matrix" << endl;
@@ -70,16 +70,15 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 	for(rows = 0; rows < nr_of_species; rows++){
 		reaction_matrix[rows] = (double *)xmalloc(nr_of_species * sizeof(double));
 	}
-
 	for(rows = 0; rows < nr_of_species;rows++){
-		for(cols = 0; cols < nr_of_species; cols++)
-			if(cols == rows){
-				reaction_matrix[rows][cols] = 1.0;
-			}else{
-				reaction_matrix[rows][cols] = 0.0;
-			}
+	 for(cols = 0; cols < nr_of_species; cols++){
+		 if(rows == cols){
+		 	reaction_matrix[rows][cols] = 1.0;
+		 }else{
+			reaction_matrix[rows][cols] = 0.0;
+		 }
+	 }
 	}
-
 	//print_reaction_matrix();
 	return reaction_matrix;
 }
@@ -100,8 +99,8 @@ double **Linear_reaction::modify_reaction_matrix(void) //prepare the matrix, whi
 				rel_step = half_lives[cols]/time_step;
 			}
 			if(cols > 0){
-				reaction_matrix[prev_index][prev_index] -= pow(0.5,prev_rel_step);
-				reaction_matrix[prev_index][index] += pow(0.5,prev_rel_step);
+				reaction_matrix[prev_index][prev_index] = pow(0.5,prev_rel_step);
+				reaction_matrix[prev_index][index] += (1 - pow(0.5,prev_rel_step));
 			}
 			prev_rel_step = rel_step;
 			prev_index = index;
@@ -130,8 +129,8 @@ double **Linear_reaction::modify_reaction_matrix(int dec_nr) //prepare the matri
 		}
 		if(cols > 0){
 			bif_id = cols -1;
-			reaction_matrix[first_index][first_index] -= bifurcation[dec_nr][bif_id] * pow(0.5,prev_rel_step);
-			reaction_matrix[first_index][index] += bifurcation[dec_nr][bif_id] * pow(0.5,prev_rel_step);
+			reaction_matrix[first_index][first_index] = pow(0.5,prev_rel_step); //bifurcation[dec_nr][bif_id] * pow(0.5,prev_rel_step);
+			reaction_matrix[first_index][index] += (1 - pow(0.5,prev_rel_step)) * bifurcation[dec_nr][bif_id];
 		}
 		prev_rel_step = rel_step;
 	}
@@ -142,7 +141,7 @@ double **Linear_reaction::modify_reaction_matrix(int dec_nr) //prepare the matri
 double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 {
 	char dec_name[30];
-	int rows, cols, dec_nr, dec_name_nr = 1;
+	int rows, cols, dec_nr, dec_name_nr = 1, index, prev_index;
 
 	if(nr_of_decays > 0){
 		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);

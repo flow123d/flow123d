@@ -30,7 +30,7 @@
 
 #include <vector>
 
-#include <strings.h>
+#include <string>
 
 #include "system/system.hh"
 #include "system/math_fce.h"
@@ -75,8 +75,6 @@ Element::Element()
 
   material(NULL),
   side(NULL),
-  n_neighs_vv(0),
-  neigh_vv(NULL),
   n_neighs_vb(0),
   neigh_vb(NULL),
  //*start_conc,
@@ -108,21 +106,7 @@ Element::Element()
  e_row_count(0),
  e_col(NULL),
  e_edge_idx(NULL),
- e_val(NULL),
-
- v_length(0),
- scalar(0),
- pscalar(0),
- balance(0),
-
- scalar_it(0),
-// *conc_prev,
-// *conc_prev_immobile,
-// *conc_prev_sorb,
-// *conc_prev_immobile_sorb,
-
- aux(0),
- faux(0)
+ e_val(NULL)
 
 {
  centre.zeros();
@@ -299,7 +283,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
     struct Neighbour *ngh;
     ElementFullIter ele2 = ELEMENT_FULL_ITER_NULL(mesh);
 
-    ele->d_row_count = 1 + ele->n_neighs_vv; // diagonal allways + noncompatible neighbours
+    ele->d_row_count = 1 ;//+ ele->n_neighs_vv; // diagonal allways + noncompatible neighbours
     ele->d_col = (int*) xmalloc(ele->d_row_count * sizeof ( int));
     ele->d_el = (int*) xmalloc(ele->d_row_count * sizeof ( int));
     ele->d_val = (double*) xmalloc(ele->d_row_count * sizeof ( double));
@@ -318,7 +302,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
     iCol = 1;
 
     // "Noncompatible" neighbours
-
+/*
     FOR_ELM_NEIGHS_VV(ele, ngi) {
         ngh = ele->neigh_vv[ ngi ];
         // get neigbour element, and set appropriate column
@@ -339,7 +323,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
         ele->d_val[ iCol ] += ngh->sigma * ngh->geom_factor*measure;
 
         iCol++;
-    }
+    }*/
 }
 
 /**
