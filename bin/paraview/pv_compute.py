@@ -34,9 +34,12 @@ attribute=sys.argv[3]
 # create reader for legacy VTK files
 # coarse datacoarse_input
 
-coarse_sol = LegacyVTKReader(FileNames=coarse_input)
+#coarse_sol = LegacyVTKReader(FileNames=coarse_input)
+coarse_sol = XMLUnstructuredGridReader(FileName=coarse_input)
 # fine data
-fine_sol = LegacyVTKReader(FileNames=fine_input)
+#fine_sol = LegacyVTKReader(FileNames=fine_input)
+fine_sol = XMLUnstructuredGridReader(FileName=fine_input)
+
 
 # Interpolate from coarse mesh to the fine mesh
 # Input - values
