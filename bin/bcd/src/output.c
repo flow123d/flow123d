@@ -54,7 +54,7 @@ void print_TSO_file(struct Problem *problem)
 	fprintf(TSO,"$TransportSources\n");
 	fprintf(TSO,"%d\n",problem->n_elm);
 	FOR_ELEMENTS(ele){
-				fprintf(TSO,"%d\t%d\t",ele->id,ele->id);
+				fprintf(TSO,"%d\t",ele->id);
 				for(j=0;j<problem->n_subst;j++)
 					fprintf(TSO,form,0.0,0.0,0.0);
 				fprintf(TSO,"\n");
@@ -114,7 +114,7 @@ void print_TIC_file(struct Problem *problem)
 	fprintf(TIC,"$Concentrations\n");
 	fprintf(TIC,"%d\n",problem->n_elm);
 	FOR_ELEMENTS(ele){
-			fprintf(TIC,"%d\t%d",ele->id,ele->id);
+			fprintf(TIC,"%d",ele->id);
 			for(j=0;j<problem->n_subst;j++)
 				fprintf(TIC,form,ele->tic[j]);
 			fprintf(TIC,"\n");

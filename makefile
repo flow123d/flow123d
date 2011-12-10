@@ -121,7 +121,7 @@ linux_package: clean clean_tests clean_util all bcd ngh
 	mpiexec=`cat bin/mpiexec |grep mpiexec |sed 's/ ".*$$//'|sed 's/"//g'`;\
 	cp "$${mpiexec}" $(lbuild)/bin/mpich/mpiexec
 	cp -r bin/flow123d bin/flow123d.sh bin/ndiff bin/tests bin/ngh/bin/ngh bin/bcd/bin/bcd $(lbuild)/bin
-	cp -r bin/paraview $(lbuild)/binS
+	cp -r bin/paraview $(lbuild)/bin
 	# copy doc
 	mkdir $(lbuild)/doc
 	cp -r doc/articles doc/reference_manual/flow123d_doc.pdf doc/petsc_options_help $(lbuild)/doc
