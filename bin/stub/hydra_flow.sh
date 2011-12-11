@@ -24,11 +24,11 @@
 
 # Warning: This script is stub. Do not use it!
 
-# NPROC is defined in run_flow.sh and its number of procs used to compute
-# MPI_RUN is defined in run_flow.sh and its relative path to bin/mpiexec
-# EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
-# FLOW_PARAMS is defined in run_flow.sh
-# INI is name of inifile and its defined in run_flow.sh
+# NPROC is number of procs used to compute
+# MPI_RUN is relative path to bin/mpiexec
+# EXECUTABLE is relative path to bin/flow123d (.exe)
+# FLOW_PARAMS is list of parameters fo flow123d
+# INI is name of inifile
 
 # Some important files
 export LOCK_FILE="./lock"
@@ -45,7 +45,7 @@ cat << xxEOFxx > hydra_flow.qsub
 #$ -S /bin/bash
 #
 
-# What is it!?
+# Disable system rsh / ssh only
 export OMPI_MCA_plm_rsh_disable_qrsh=1
 
 # Execute Flow123d using mpirun
