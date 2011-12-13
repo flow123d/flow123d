@@ -1,4 +1,4 @@
-\subsection{General Chemical Reactions}
+\section{General Chemical Reactions}
 For a simulation of general chemical reactions as a part of reactive transport simulation, an application Semchem has been merged together with Flow123D. It enables to simulate following types of reactions:
 \begin{itemize}
   \item Chemical equilibrium (solved using iterative Newtons method)
@@ -12,4 +12,51 @@ For a simulation of general chemical reactions as a part of reactive transport s
   \item Radioactive decay can be simulated as a special case of first order reaction.
 \end{itemize}
 
-Further informations can be found in ``Snizeni poctu nelinearnich rovnic popisujicich chemicke reakce''.
+Mathematical description of general chemical reactions contains often nonlinear terms. That brings the need to solve set of nonlinear algebraic equation in every single time step. It can be very time demanding and that is the reason to look for ways how to reduce number of variables and nonlinear equations somehow.
+Semchem uses transformation of variables into so called `reaction rate` ($\zeta^r$). `Reaction rate` is an molar concentration ($m_i~[mol/m^3]$) of an exhausted reactant devided by appropriate stechiometric coeficient $a_i~[1]$. 
+\[
+  [m_i] = \frac{[n_i]}{[V]} = \frac{[m]}{[M_m][V]} = \frac{[\rho][V]}{[M_m][V]} = \frac{[\rho]}{[M_m]}\cdot[c_i],
+\]
+where $m$ without subscription denotes weight.
+
+Thanks to this approach it is possible to decrease the number of variables to the number of considered chemical reactions.
+
+Further is described how to decrease number of variables in descriptions of kinetic reactions (\ref{EQ:Sem_kinet}) and chemical equilibrium (\ref{EQ:Sem_EQ}).
+\begin{equation}
+  \label{EQ:Sem_kinet}
+  \frac{dm_j}{dt} = \displaystyle\sum\limits_r k^{(r)}a^{(r)}_j\prod_i m_i^{a_i^{(r)}} 
+\end{equation}
+Using implicit time discretisation of (\ref{EQ:Sem_kinet}) we get
+\begin{equation}
+  \label{EQ:Sem_kinet_diskret1}
+  m_j^{T+1} = m_{j}^{T} + \Delta t \sum_r a_j^{(r)}k^{(r)}\prod_i (m_i^{T + 1})^{a_i^{(r)}}.%\\
+\end{equation}
+Through replacement in (\ref{EQ:Sem_kinet_diskret1}) we obtain an equation (\ref{EQ:Sem_kinet_diskret}).
+\begin{equation}
+  \label{EQ:Sem_kinet_diskret}
+  m_j^{T+1} = m_{j}^T + \displaystyle\sum\limits_{r} a_j^{(r)}\zeta^{(r)} \\%\Rightarrow \zeta^{(r)} = \Delta t \cdot k^{(r)} \prod_{i} (c_i^{T + 1})^{\alpha_i^{(r)}}\\
+\end{equation}
+By a substitution of (\ref{EQ:Sem_kinet_diskret}) into (\ref{EQ:Sem_kinet_diskret1}), an equation (\ref{EQ:Sem_kinet_subst}) is created.
+\begin{equation}
+  \label{EQ:Sem_kinet_subst}
+  m_{j}^{T} + \displaystyle\sum\limits_s a_j^{(s)}\zeta^{(s)} = m_{j}^T + \Delta t \sum_r a_j^{(r)}k^{(r)}\prod_i \left(m_{i}^T + \sum_R a_i^{(R)}\zeta^{(R)}\right)^{a_i^{(r)}}%\\
+\end{equation}
+Substraction of $m_j^T$ from both sides of previous equation leads to a set of nonlinear equations ~(\ref{EQ:Sem_kinet_impl_soust}) with just as many variables as considered chemical reactions identified by indeces $(r)$.
+\begin{equation}
+  \label{EQ:Sem_kinet_impl_soust}
+  \zeta^{(s)} = \Delta t \cdot k^{(r)}\displaystyle\prod\limits_i \left(m_{i}^T + \sum_R a_i^{(R)}\zeta^{(R)}\right)^{a_i^{(r)}}
+\end{equation}
+(\ref{EQ:Sem_kinet_impl_soust}) can be modificated to (\ref{EQ:Sem_kinet_nelin_soust})
+\begin{equation}
+  \label{EQ:Sem_kinet_nelin_soust} 
+  \zeta^{(s)}\displaystyle\prod_i \left(m_{i}^T + \sum_r a_i^{(r)}\zeta^{(r)}\right)^{-a_i^{(r)}} = \Delta t \cdot k^{(r)}
+%   \end{array}
+\end{equation}
+which needs to be solved.
+
+Consider to have $N$ species taking part in chemical reactions. %$N_a$ of those species is aqueous (solved in water) and present in fully saturated rock matrix. 
+For chemical equilibriums the equation (\ref{EQ:Sem_EQ}) is obviously used for description. Letter $X_i$ denotes an activity of $i$-th chemical specie. 
+\begin{equation}
+  \label{EQ:Sem_EQ}
+  K^{(r)} = \displaystyle\prod\limits_{i = 1}^{N}{X_i^{(r)}}% = \prod_{i = 1}^{N_{a}}{(m_i^{T+1})^{a_{i}^{(r)}} (\gamma_i)^{a_i^{(r)}}}\cdot \prod_{i = N_{a} +1}^{N}(X_i)^{a_i^{(r)}}%\\
+\end{equation}
