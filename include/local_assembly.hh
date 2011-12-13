@@ -27,20 +27,103 @@
 
 using namespace dealii;
 
+/**
+ * Keep solution vector, z-coordinates of its support points and
+ * precomputed nonlinear functions.
+ */
+template <int dim>
+class Solution {
+public:
+    Solution(RichardsData<dim> *rd)
+    : richards_data(rd) {}
+
+    /**
+     * Compute z-coordinates of support points of solution values.
+     */
+    void reinit(DoFHandler<dim> &dh, bool save_old_solution) {
+        z_coord.reinit(dh.n_dofs());
+        phead.reinit(dh.n_dofs());
+        lambda.reinit(dh.n_dofs());
+        old_phead.reinit(dh.n_dofs());
+        capacity.reinit(dh.n_dofs());
+        conductivity.reinit(dh.n_dofs());
+        old_conductivity.reinit(dh.n_dofs());
+        saturation.reinit(dh.n_dofs());
+        old_saturation.reinit(dh.n_dofs());
+
+        typename DoFHandler<dim>::active_cell_iterator
+            cell = dh.begin_active(),
+            endc = dh.end();
+        std::vector<unsigned int> face_dof_indices(1);
+
+        for (; cell != endc; ++cell) {
+            for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
+                cell->face(face_no)->get_dof_indices(face_dof_indices);
+                z_coord(face_dof_indices[0]) = cell->face(face_no)->barycenter() [dim-1];
+            }
+        }
+    }
+
+    void revert() {
+        phead=old_phead;
+        saturation=old_saturation;
+        conductivity=old_conductivity;
+    }
+    /**
+     * Save old values and update the new.
+     */
+    void timestep_update(double dt) {
+        double p;
+        for(unsigned int i=0;i<phead.size();i++) {
+            old_phead(i) = phead(i);
+            old_conductivity(i) = conductivity(i);
+            old_saturation(i) = saturation(i);
+
+            p = pressure(i);
+            saturation(i)=richards_data->fq(p,capacity(i));
+            conductivity(i) = richards_data->fk(p);
+            lambda(i) = max(0.5, 1- capacity(i)/dt/conductivity(i));
+            //cout << "i l:" << i << " " << lambda(i) << endl;
+        }
+    }
+
+    void update() {
+        double p;
+        for(unsigned int i=0;i<phead.size();i++) {
+            p = pressure(i);
+            saturation(i)=richards_data->fq(p,capacity(i));
+            conductivity(i) = richards_data->fk(p);
+        }
+    }
+
+    inline double pressure(unsigned int i)
+        { return richards_data->pressure(phead(i), z_coord(i)); }
+
+    inline double old_pressure(unsigned int i)
+        { return richards_data->pressure(old_phead(i), z_coord(i)); }
+
+    Vector<double> phead;
+    Vector<double> old_phead;
+    Vector<double> lambda;
+    Vector<double> z_coord;
+    Vector<double> capacity;
+    Vector<double> conductivity;
+    Vector<double> old_conductivity;
+    Vector<double> saturation;
+    Vector<double> old_saturation;
+
+    RichardsData<dim> *richards_data;
+
+};
 
 template <int dim>
 class LocalAssembly {
 public:
     LocalAssembly(unsigned int order);
-    void set_vectors(const Vector<double> &sol,const  Vector<double> &old_sol)
-    {
-        solution=&sol;
-        old_solution=&old_sol;
-    }
 
-    void set_data(struct RichardsData<dim> * data)
+    void set_data(Solution<dim> *sol)
     {
-        richards_data=data;
+        solution = sol;
     }
 
     void set_dt(const double in_dt, const double in_t) {
@@ -61,7 +144,8 @@ public:
     double get_output_el_phead() {return output_el_phead;}
     double get_output_el_head() {return output_el_head;}
 
-    RichardsData<dim> *richards_data;
+    //RichardsData<dim> *richards_data;
+    Solution<dim> *solution;
 
 private:
     typename DoFHandler<dim>::active_cell_iterator dh_cell;
@@ -91,16 +175,15 @@ private:
                         inv_local_matrix_00; // Ct A- C - alpha_i alpha_j / alpha_tot (schur complement add)
     Vector<double> local_rhs_2, alphas, lumping_weights;
     Vector<double> local_velocity;
+    Vector<double> local_lambda; // Crank-Nicholson like time integator weights
+    Vector<double> local_old_solution;
+
     double output_el_phead;
     double output_el_head;
     double output_el_sat;
     double alphas_total;
 
     std::map<unsigned int, double> RT_boundary_values; // Dirichlet boundary values
-
-    const Vector<double> * solution;
-    const Vector<double> * old_solution;
-
 
     std::vector<unsigned int> local_dof_indices;
     //std::vector<unsigned int> face_dofs;
@@ -157,6 +240,8 @@ local_rhs_2(trace_fe.dofs_per_cell),
 alphas(velocity_fe.dofs_per_cell),
 lumping_weights(velocity_fe.dofs_per_cell),
 local_velocity(velocity_fe.dofs_per_cell),
+local_lambda(velocity_fe.dofs_per_cell),
+local_old_solution(velocity_fe.dofs_per_cell),
 
 
 density(1.0),
@@ -222,26 +307,29 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
     for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
         cell->face(face_no)->get_dof_indices(local_dof_indices);
         unsigned int i=face_no; // assume that local cell indices are counted as local faces
-        Point<dim> barycenter = cell->face(face_no)->barycenter();
+        unsigned int idx = local_dof_indices[0];
 
-        double trace_phead = (*solution)(local_dof_indices[0]);
-        double trace_pressure = richards_data->pressure( trace_phead, barycenter);
-        double trace_pressure_old = richards_data->pressure( (*old_solution)(local_dof_indices[0]) , barycenter);
+        double trace_phead = solution->phead(idx);
+        double trace_pressure = solution->pressure(idx);
 
-        //double sat=f.val();
-        double capacity;
-        //double capacity = 0.0;
-//        double sat_new = capacity* p.val(); //f.val();
-//        double sat_old = capacity* trace_pressure_old; //richards_data->fq(trace_pressure_old);
-        double sat_new = richards_data->fq(trace_pressure, capacity);
-        double sat_old = richards_data->fq(trace_pressure_old);
+        local_old_solution(i) = solution->old_phead(idx);
+        double trace_pressure_old = solution->old_pressure(idx);
 
-        //cout << "tph sn so c:" << trace_phead << " "<<sat_new<<" "<<sat_old<<" "<<capacity<<endl;
+        local_lambda(i) = solution->lambda(idx);
 
-        local_matrix_22(i, i) = lumping_weights(i) * element_volume / dt * capacity;
-        local_rhs_2(i) = lumping_weights(i) * element_volume / dt * (capacity * trace_phead - (sat_new - sat_old));
+        double capacity = solution->capacity(idx);
+        double sat_new = solution->saturation(idx);
+        double sat_old = solution->old_saturation(idx);
+        double con_i = solution->conductivity(idx);
+        double old_con_i = solution->old_conductivity(idx);
 
-        conductivity += lumping_weights(i) * richards_data->fk(trace_pressure);
+
+        //cout << "l k  c: " << local_lambda(i) << " " << con_i <<" "<<capacity<<endl;
+
+        local_matrix_22(i, i) = lumping_weights(i) * element_volume / dt * capacity / local_lambda(i);
+        local_rhs_2(i) = lumping_weights(i) * element_volume / dt * (capacity * trace_phead - (sat_new - sat_old)) / local_lambda(i);
+
+        conductivity += lumping_weights(i) * (local_lambda(i)*con_i + (1-local_lambda(i)) * old_con_i );
 /*
         cout << i << "(lw, ev, dt, capcap: " << capacity << "lm: " << local_matrix_22(i, i) << endl;
         cout << "rhs: " << local_rhs_2(i) << "con: " << conductivity << endl;
@@ -259,6 +347,7 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
         for (unsigned int j = 0; j < local_matrix_22.size(0); ++j) {
             inv_local_matrix_00(i, j) += -alphas(i) * alphas(j) / alphas_total;
             inv_local_matrix_00(i, j) *= conductivity;
+            local_rhs_2(i)-=(1/local_lambda(i) - 1) * inv_local_matrix_00(i, j) * local_old_solution(j);
         }
     }
     //inv_local_matrix_00.print_formatted(cout);
@@ -280,7 +369,7 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
 
 template <int dim>
 void LocalAssembly<dim>::make_A() {
-    richards_data->k_inverse.value_list(velocity_fe_values.get_quadrature_points(), k_inverse_values);
+    solution->richards_data->k_inverse.value_list(velocity_fe_values.get_quadrature_points(), k_inverse_values);
 
     // assembly velocity and cell pressure blocks
     // cycle over quadrature points
@@ -351,11 +440,11 @@ void LocalAssembly<dim>::apply_bc(std::map<unsigned int, double> &boundary_value
         unsigned int n_dofs = dh_cell->get_fe().n_dofs_per_face();
         Assert (  n_dofs== 1, ExcDimensionMismatch (n_dofs, 1) );
 
-        switch ( richards_data->bc_type(b_ind) ) {
+        switch ( solution->richards_data->bc_type(b_ind) ) {
              case RichardsData<dim>::Dirichlet:
              // use boundary values map to eliminate Dirichlet boundary trace pressures
              boundary_values[dh_cell->face(face_no)->dof_index(0)] =
-                     richards_data->bc_func(b_ind)->value(
+                     solution->richards_data->bc_func(b_ind)->value(
                                  dh_cell->face(face_no)->barycenter()
                              );
              //cout << "BC(z,s,v):" << dh_cell->face(face_no)->barycenter()[dim-1] << " "
@@ -396,29 +485,38 @@ void LocalAssembly<dim>::output_evaluate()
 
 
     Vector<double> trace_phead(trace_fe.dofs_per_cell);
+    Vector<double> weight_trace_phead(trace_fe.dofs_per_cell);
+
+    double conduct =0;
     for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
         dh_cell->face(face_no)->get_dof_indices(local_dof_indices);
-        trace_phead(face_no) = (*solution)(local_dof_indices[0]);
+        trace_phead(face_no) = solution->phead(local_dof_indices[0]);
         output_el_phead += trace_phead(face_no) * lumping_weights(face_no);
 
+        conduct += lumping_weights(face_no) * solution->conductivity(local_dof_indices[0]);
+        weight_trace_phead(face_no) =  trace_phead(face_no);
+                                      //+0.5 * solution->old_phead(local_dof_indices[0]);
+        //cout << "i f l:"<<local_dof_indices[0]<<" "<<face_no<<" "<<local_lambda(face_no)<<
+        //        " "<<trace_phead(face_no)<<" "<<weight_trace_phead(face_no)<<endl;
     }
-    output_el_head = richards_data->pressure(output_el_phead,dh_cell->barycenter());
+
+    output_el_head = solution->richards_data->pressure(output_el_phead,dh_cell->barycenter());
     //output_el_head = trace_phead(3);
     //cout << "head: " << dh_cell->barycenter()[dim-1] << " "
     //     << output_el_head << " " << output_el_phead << endl;
 
-    inv_local_matrix_00.vmult(local_velocity, trace_phead);
+    inv_local_matrix_00.vmult(local_velocity, weight_trace_phead);
+
 
 
     for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
         dh_cell->face(face_no)->get_dof_indices(local_dof_indices);
         unsigned int i=face_no; // assume that local cell indices are counted as local faces
-        Point<dim> barycenter = dh_cell->face(face_no)->barycenter();
 
-        double sat_old = richards_data->fq( richards_data->pressure( (*old_solution)(local_dof_indices[0]) , barycenter) );
-        double sat_new = richards_data->fq( richards_data->pressure( trace_phead(i) , barycenter) );
+        double sat_old = solution->old_saturation(local_dof_indices[0]);
+        double sat_new = solution->saturation(local_dof_indices[0]);
 
-        local_velocity(i)= -( element_volume*lumping_weights(i)* (sat_new - sat_old) / dt + local_velocity(i) ) * local_matrix_02(i,i); //
+        local_velocity(i)= -( element_volume*lumping_weights(i)* (sat_new - sat_old) / dt + local_velocity(i)*conduct/conductivity ) * local_matrix_02(i,i); //
         output_el_sat += lumping_weights(i) * sat_new;
     }
 

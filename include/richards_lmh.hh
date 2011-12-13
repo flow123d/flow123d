@@ -104,8 +104,7 @@ public:
     //! boundary without assigned BC are homogeneous Dirichlet, but rather leads to exception
 
 
-    void set_data(struct RichardsData<dim> *data)
-        { richards_data = data; local_assembly.set_data(data); }
+    void reinit(struct RichardsData<dim> *data);
 
     void solve();
 
@@ -144,8 +143,7 @@ private:
     DoFHandler<dim> dof_handler;
 
     /// linear algebra objects
-    Vector<double> solution, old_solution;
-    Vector<double> residual_source;
+//    Vector<double> residual_source;
     Vector<double> rhs, residual;
 
     SparsityPattern sparsity_pattern;
@@ -161,6 +159,7 @@ private:
 
 //    BCOutput<dim>    bc_out;
     RichardsData<dim> *richards_data;
+    Solution<dim>    *solution;
 
     LocalAssembly<dim> local_assembly;
     FieldOutput<dim> field_output;
@@ -190,11 +189,9 @@ Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandle
 
     max_non_lin_iter = prm.get_integer("nonlin_max_it");
     nonlin_tol = prm.get_double("nonlin_tol");
-    //theta=1. / 2.;  // 1 implicit, 0 explicit
-    // Crank Nicholson still makes problem with velocity oscilations
-    //
-    time_theta = 1; //0.5;
 
+
+    // setup triangulation and dof handler
     cout << "tria: " << endl;
     triangulation.copy_triangulation(coarse_tria);
 
@@ -217,34 +214,36 @@ Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandle
         << " total cells: " << triangulation.n_cells()
             << " dofs: " << dof_handler.n_dofs() << std::endl;
 
-//    component_to_block.assign(dim,vel_b);
-//    component_to_block.push_back(head_b);
-//    DoFRenumbering::component_wise (dof_handler);
-
-    //DoFTools::count_dofs_per_block (dof_handler, blocks);
-
-
-    //std::cout<< "blocks: ";
-    //copy(blocks.begin(), blocks.end(), ostream_iterator<int>( cout, " " ) );
-    //cout << std::endl;
-
-    matrix.reinit(sparsity_pattern);
-    rhs.reinit(dof_handler.n_dofs());
-
-    solution.reinit(rhs);
-    old_solution.reinit (rhs);
-    residual_source.reinit(rhs);
-    residual.reinit(rhs);
-    local_assembly.set_vectors(solution, old_solution);
-
     field_output.reinit(prm);
-
 }
+
 
 template <int dim>
 Richards_LMH<dim>::~Richards_LMH() {
 
 }
+
+/**
+ * Reinit by richards data.
+ */
+template <int dim>
+void Richards_LMH<dim>::reinit(struct RichardsData<dim> *data) {
+    // setup support classes
+    richards_data = data;
+    solution = new Solution<dim>(richards_data);
+    solution->reinit(dof_handler, false);
+    local_assembly.set_data(solution);
+
+
+    matrix.reinit(sparsity_pattern);
+    rhs.reinit(dof_handler.n_dofs());
+
+//    residual_source.reinit(rhs);
+    residual.reinit(rhs);
+
+
+}
+
 
 
 /**
@@ -357,7 +356,7 @@ void Richards_LMH<dim>::assemble_system() {
 
     MatrixTools::apply_boundary_values(boundary_values,
             matrix,
-            solution,
+            solution->phead,
             rhs);
 
 
@@ -464,14 +463,25 @@ void Richards_LMH<dim>::solve ()
   ReductionControl        solver_control (max_it, atol, rtol);
   solver_control.log_history(true);
   SolverCG<>              solver (solver_control);
+  static bool use_previous_sparsity=false;
 
+  //PreconditionSSOR<SparseMatrix<double> > precondition;
+  //precondition.initialize (matrix, 1.9);
+  SparseILU<double> precondition;
+  precondition.initialize(matrix,
+          SparseILU<double>::AdditionalData(
+                  0, //strengthen_diagonal
+                  0, //  extra_off_diagonals
+                  use_previous_sparsity,
+                  0 //    const SparsityPattern *    use_this_sparsity = 0
+          ));
+  use_previous_sparsity=true;
+  //cout << "nnz mat prec " << matrix.n_nonzero_elements() << " "<<precondition.n_nonzero_elements()<<endl;
 
-  PreconditionSSOR<SparseMatrix<double> > precondition;
-  precondition.initialize (matrix, .6);
 
   //matrix.print_formatted(cout);
   //rhs.print(cout);
-  solver.solve (matrix, solution, rhs,
+  solver.solve (matrix, solution->phead, rhs,
         precondition);
 
   cum_lin_iter += solver_control.last_step();
@@ -503,10 +513,11 @@ void Richards_LMH<dim>::run ()
         for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
             cell->face(face_no)->get_dof_indices(face_dofs);
 
-            solution(face_dofs[0])=richards_data->initial->value(cell->face(face_no)->barycenter());
+            solution->phead(face_dofs[0])=richards_data->initial->value(cell->face(face_no)->barycenter());
 
         }
     }
+    solution->timestep_update(time.dt());
 
 
 //    VectorType &system_rhs=linear_system->get_rhs();
@@ -534,7 +545,7 @@ void Richards_LMH<dim>::run ()
 
   local_assembly.set_dt(time.dt(), time.t());
 
-  field_output.output_fields(dof_handler, solution, time.t());
+  field_output.output_fields(dof_handler, solution->phead, time.t());
   time.inc();
 
   double lambda;
@@ -545,16 +556,16 @@ void Richards_LMH<dim>::run ()
   double c_1 = prm.get_double("linesearch_c_1");
 
   do {  // ---------------------------- Time loop
-      old_solution=solution;
-      grid_refine();
+      //grid_refine();
+      solution->timestep_update(time.dt());
 renew_timestep:
       std::cout << "Timestep " << time.n_step() << " t= "<<time.t()<<", dt= " << time.dt() << endl;
 
       local_assembly.set_dt(time.dt(), time.t());
       richards_data->set_time(time.t());
 
-      sol_last = solution;
-      sol_new = solution;
+      sol_last = solution->phead;
+      sol_new = solution->phead;
       iter=0;
       last_decrease=decrease=0.5;
       last_res_norm=100;
@@ -565,7 +576,7 @@ renew_timestep:
 //            sat_last=saturation;
 
 
-
+            solution->update();
             assemble_system (); // this also apply boundary conditions thus change solution
             //std::cout << "assembled, ";
 
@@ -575,10 +586,10 @@ renew_timestep:
             // but leads to error independent of timestep
             // possibly it is to hard to satify ???
             //linear_system.eliminate_block(solution,vel_b);
-            res_norm=matrix.residual(residual, solution, rhs);
+            res_norm=matrix.residual(residual, solution->phead, rhs);
             //cout << "residual: " << endl;
             //residual.print(cout);
-            res_norm*=time.dt();
+            //res_norm*=time.dt();
             //output_residuum();
 
             last_decrease=decrease;
@@ -627,7 +638,7 @@ renew_timestep:
             if (iter>0 && decrease*decrease > 1- c_1*lambda && lambda > 1e-32 ) {
                 lambda *= 0.5;
 
-                solution.sadd(0.0, lambda, sol_new, (1.0-lambda), sol_last);
+                solution->phead.sadd(0.0, lambda, sol_new, (1.0-lambda), sol_last);
 
                 goto line_search;
             }
@@ -647,7 +658,7 @@ renew_timestep:
                 //cout << "!!! divergence of nonlinear solver" << endl;
 
                 if (time.reinc_time(0.3)) {
-                    solution=old_solution;
+                    solution->revert();
                     goto renew_timestep;
                 } else if (iter >max_non_lin_iter) {
                     cout << "DIVERGENCE OF SOLVER" <<endl;
@@ -656,10 +667,10 @@ renew_timestep:
             }
 
 
-            sol_last = solution;
+            sol_last = solution->phead;
             this->solve();
             //solution.print(cout);
-            sol_new=solution;
+            sol_new=solution->phead;
 
             iter++;
             cum_iter++;
@@ -694,7 +705,7 @@ renew_timestep:
       residual.block(head_b)*=time.dt();
       saturation-= residual.block(head_b);
 */
-      field_output.output_fields(dof_handler, solution, time.t());
+      field_output.output_fields(dof_handler, solution->phead, time.t());
 //      output_residuum();
 
 //      std::cout << endl;

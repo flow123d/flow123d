@@ -5,7 +5,7 @@
 
 #set -x
 
-MAIN_DIR=conv_thin
+MAIN_DIR=conv_results
 mkdir $MAIN_DIR
 
 echo "time        dh         dt          p_err            q_err" >$MAIN_DIR/summary

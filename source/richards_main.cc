@@ -126,7 +126,7 @@ void TestProblem::declare_params () {
     prm.declare_entry ("linesearch_c_1", "1.0E-4",
                                 Patterns::Double(),
                                 "Decrease parameter");
-    prm.declare_entry ("lin_rtol", "0.0001",
+    prm.declare_entry ("lin_rtol", "0.01",
                                 Patterns::Double(),
                                 "Decrease parameter");
 
@@ -180,7 +180,7 @@ TestProblem::TestProblem ()
   //data.k_inverse = new KInverse<DIM> (0, pa, pb);
   //data.initial_value = new InitialValue<DIM>;
   //data->print_mat_table();
-  equation->set_data(data);
+  equation->reinit(data);
 }
 
 

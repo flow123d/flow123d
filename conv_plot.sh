@@ -1,17 +1,12 @@
 #!/bin/bash
 
-# script for printing 'summary' files produced by script convergency.sh
-# 'summary' has on each line dx, dt, pressure_error, flux_error
-#
-# this script produce four graphs for dependency of pressure/flux error on dx/dt
-# in each graph there are several lines for the second discretization parameter
-#set -x
+set -x
 
-in_file=summary
+in_file="$1"
 
 # get possible dt and dx values
-dt_values="`cat summary | grep -v "time" | sed "s/^2 //"| sed "s/[^ ]* //"|sed "s/ .*//"|sort -u `"
-dx_values="`cat summary | grep -v "time" | sed "s/^2 //"| sed "s/ .*//"|sort -u `"
+dt_values="`cat $in_file | grep -v "time" | sed "s/^2 //"| sed "s/[^ ]* //"|sed "s/ .*//"|sort -u `"
+dx_values="`cat $in_file | grep -v "time" | sed "s/^2 //"| sed "s/ .*//"|sort -u `"
 
 
 function plot_file {
@@ -42,9 +37,12 @@ function plot_file {
         dx=$x;dt=$t
       fi
       
-      q_err=`cat summary| grep "^2 $dx $dt" | sed "s/^2 [^ ]* [^ ]* [^ ]* //"`
-      p_err=`cat summary| grep "^2 $dx $dt" | sed "s/^2 [^ ]* [^ ]* //" | sed "s/ .*//"`
+      q_err=`cat $in_file | grep "^2 $dx $dt" | sed "s/^2 [^ ]* [^ ]* [^ ]* //"`
+      p_err=`cat $in_file | grep "^2 $dx $dt" | sed "s/^2 [^ ]* [^ ]* //" | sed "s/ .*//"`
       
+      if [ "$q_err" == "" ]; then q_err="0"; fi
+      if [ "$p_err" == "" ]; then p_err="0"; fi
+
       line+=" ${!out_var}"
     done
     echo $line >>$file_name
@@ -53,13 +51,13 @@ function plot_file {
 
 function make_plot_cmd {
   file_name=$1
-  x_axes_list=$2
+  y_axes_list=$2
 
   out="set title \"$file_name\";plot "
   i=2;
-  for dx in $x_axes_list
+  for dy in $y_axes_list
   do
-    out+="'$file_name' using 1:$i title '$dx', "
+    out+="'$file_name' using 1:$i title '$dy', "
     i=`expr $i + 1`
   done
   echo ${out} 0.001*x with lines, 0.01*x**2 with lines
@@ -71,14 +69,14 @@ plot_file "p_err_on_dx" "no_swap" "p_err"
 plot_file "q_err_on_dx" "no_swap" "q_err"
 
 
-p_dt_plot=`make_plot_cmd p_err_on_dt "$dt_values"`
-q_dt_plot=`make_plot_cmd q_err_on_dt "$dt_values"`
-p_dx_plot=`make_plot_cmd p_err_on_dx "$dx_values"`
-q_dx_plot=`make_plot_cmd q_err_on_dx "$dx_values"`
+p_dt_plot=`make_plot_cmd p_err_on_dt "$dx_values"`
+q_dt_plot=`make_plot_cmd q_err_on_dt "$dx_values"`
+p_dx_plot=`make_plot_cmd p_err_on_dx "$dt_values"`
+q_dx_plot=`make_plot_cmd q_err_on_dx "$dt_values"`
 
 gnuplot <<END
 set xr [0.001:0.5]
-set yr [0.0001:0.1]
+set yr [0.0000001:0.1]
 set logscale x
 set logscale y
 set style data linespoints

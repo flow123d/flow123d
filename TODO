@@ -1,5 +1,20 @@
-25.11. -------------------
-Pro libovolne jemne dt a dz mam stale chybu 3.17 - odladit.
+6.12. ---------------
+
+- pocitat chybu rychlosti v casech t/2 a testovat chybu bilance
+- vypocet chyby pomoci Gaussovy kvadratury n=3 (integruje presne do p=5)
+- interpolace do DQ1, DP2 a Q1
+- je kriterium pro zvetsovani lambda optimalni/robusni i pro jine site, kde rozdil casoveho a tokoveho clenu muze byt jiny ?
+- nastavit toleransi nelinearniho resice zavislou na dt, je mozne pouzit nizsi toleranci pri zapocitavani chyby ve vlhkosti?
+
+pro clanek:
+1) porovnani MH - LMH, demonstrace oscilaci na 1D infiltraci popr. 1D analytickem a na 2d neregularni siti (viz. clanek o LMH Richardsovi)
+2) overeni demonstrace CN metody:
+- 1d analyticke, grafy konvergence
+- 1d infiltrace
+- 2d infiltrace homogenni
+- 2d infiltrace nehomogenni
+
+
 
 22.11. ------------------
 - zkontrolovat vystup do Paraview

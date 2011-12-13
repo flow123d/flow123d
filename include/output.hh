@@ -216,11 +216,11 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
         local_assembly.reinit(sol_cell);
         local_assembly.output_evaluate();
 
-        double anal_sol = local_assembly.richards_data->anal_sol->value(cell->barycenter());
+        double anal_sol = local_assembly.solution->richards_data->anal_sol->value(cell->barycenter());
         double error = local_assembly.get_output_el_head() - anal_sol;
 
         double flux = (local_assembly.get_output_velocity() (2) + local_assembly.get_output_velocity() (3) ) / 2.0 / x_size;
-        double anal_flux =  local_assembly.richards_data->anal_flux->value(cell->barycenter());
+        double anal_flux =  local_assembly.solution->richards_data->anal_flux->value(cell->barycenter());
         double flux_error = flux - anal_flux;
 
         l2_error += cell->measure() * error * error /x_size;

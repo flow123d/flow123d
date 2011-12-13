@@ -271,6 +271,11 @@ public:
         return p_head - point[dim-1]*density*gravity;
     }
 
+    inline double pressure(double p_head, double z_coord)
+    {
+        return p_head - z_coord*density*gravity;
+    }
+
     BCType bc_type(unsigned int idx)
     {
         Assert( idx < MAX_NUM_OF_DEALII_BOUNDARIES, ExcMessage("invalid BC index.") );
