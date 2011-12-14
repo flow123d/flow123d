@@ -72,6 +72,12 @@
 #define NODE_FULL_ITER_NULL(_mesh_) \
     NodeFullIter(_mesh_->node_vector)
 
+/**
+ * Macro for conversion form Iter to FullIter for elements.
+ */
+#define ELEM_FULL_ITER(_mesh_,i) \
+    _mesh_->element.full_iter(i)
+
 
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
