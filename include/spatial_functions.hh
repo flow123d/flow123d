@@ -47,6 +47,10 @@ class RightHandSide : public Function<dim>
  *  BOUNDARY FUNCTIONS
  */
 
+
+/**
+ * Sliding analytical solution with ATan saturation. (pressure)
+ */
 template <int dim>
 class ASol_ATan : public Function<dim> {
 
@@ -59,6 +63,9 @@ class ASol_ATan : public Function<dim> {
     virtual ~ASol_ATan() {}
 };
 
+/**
+ * Sliding analytical solution with ATan saturation. (flux = -K * grad piezo_head), however piezo_head == p_head, zero gravity
+ */
 template <int dim>
 class AFlux_ATan : public Function<dim> {
 
@@ -266,12 +273,12 @@ public:
 
     }
 
-    inline double pressure(double p_head, Point<dim> point)
+    inline double pressure(const double p_head,const  Point<dim> &point)
     {
         return p_head - point[dim-1]*density*gravity;
     }
 
-    inline double pressure(double p_head, double z_coord)
+    inline double pressure(const double p_head,const double z_coord)
     {
         return p_head - z_coord*density*gravity;
     }

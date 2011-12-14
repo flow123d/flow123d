@@ -1,3 +1,9 @@
+14.12. ---------------
+- interpolace do DGP2 (monomial)
+  bad without information about velocity
+13.12. ---------------
+- interpolace do DGQ1
+- presna integrace chyby tlaku - stale kvadraticka konv.
 6.12. ----------------
 - Prostorove zavisly CN
 - kvadraticka konvergence v case i prostoru !!

@@ -70,21 +70,13 @@ public:
     ~FieldOutput();
 
 private:
-    enum block_index_names {
-        velocity_bl=0,
-        piezo_bl=1,
-        pressure_bl=2,
-        saturation_bl=3,
-        estimator_bl=4,
-        p_traces_bl=5
-    };
 
     unsigned int order;
 
-    FE_DGRaviartThomas<dim, dim> velocity_fe;
-    FE_DGQ<dim> pressure_trace_fe;
-    FE_DGQ<dim> pressure_fe;
-    FESystem<dim> fe;
+    //FE_DGRaviartThomas<dim, dim> velocity_fe;
+    //FE_DGQ<dim> pressure_trace_fe;
+    //FE_DGQ<dim> pressure_fe;
+    //FESystem<dim> fe;
     DoFHandler<dim> dh;
     BlockVector<double> out_vec;
     DataOut<dim> data_out;
@@ -105,10 +97,10 @@ private:
 template <int dim>
 FieldOutput<dim>::FieldOutput(Triangulation<dim> &tria, unsigned int p_order, LocalAssembly<dim> &la)
 : order(p_order),
-  velocity_fe(order),
-  pressure_trace_fe(order+2),
-  pressure_fe(order),
-  fe (velocity_fe,1,pressure_fe,4,pressure_trace_fe,1),
+  //velocity_fe(order),
+  //pressure_trace_fe(order+2),
+  //pressure_fe(order),
+  //fe (velocity_fe,1,pressure_fe,4,pressure_trace_fe,1),
   dh(tria),
 
   print_level(0),
@@ -128,10 +120,11 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     x_size=prm.get_double("x_size");
 
 
-
+    FESystem<dim> &fe = local_assembly.output_fe;
     dh.distribute_dofs(fe);
     DoFRenumbering::component_wise (dh);
-    blocks.resize(6);
+    cout << "b sizE:" << fe.n_blocks() << endl;
+    blocks.resize(fe.n_blocks());
 
     DoFTools::count_dofs_per_block (dh, blocks);
 
@@ -145,14 +138,18 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     data_out.attach_dof_handler (dh);
 
     std::vector<std::string> names(dim, "flux");
-    names.push_back("piezo_head");
-    names.push_back("head");
+
+    names.push_back("pressure_head");
     names.push_back("saturation");
-    names.push_back("estimator");
-    names.push_back("pressure_traces");
+    names.push_back("p_error");
+    names.push_back("q_error");
+
+    names.push_back("post_phead");
+    names.push_back("post_diff_phead");
 
     std::vector<DataComponentInterpretation::DataComponentInterpretation> component_interpretation(dim,
             DataComponentInterpretation::component_is_part_of_vector);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
@@ -192,7 +189,7 @@ void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double
   //AssertDimension(out_vec.block(p_traces_bl).size(),  solution_vector.size());
   //out_vec.block(p_traces_bl) = solution_vector;
 
-  data_out.build_patches (order+1);
+  data_out.build_patches (order+3);
   std::ofstream output (file_name.c_str());
   data_out.write_vtk (output);
 
@@ -205,9 +202,8 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
         cell = dh.begin_active(),
         endc = dh.end(),
         sol_cell = solution_dh.begin_active();
-    Vector<double> local_output(fe.dofs_per_cell);
-    std::vector<unsigned int> local_dof_indices(fe.dofs_per_cell);
-    std::pair<unsigned int,unsigned int> block_index;
+    Vector<double> local_output(local_assembly.output_fe.dofs_per_cell);
+    std::vector<unsigned int> local_dof_indices(local_assembly.output_fe.dofs_per_cell);
 
     double l2_error=0;
     double l2_flux_error = 0;
@@ -216,42 +212,12 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
         local_assembly.reinit(sol_cell);
         local_assembly.output_evaluate();
 
-        double anal_sol = local_assembly.solution->richards_data->anal_sol->value(cell->barycenter());
-        double error = local_assembly.get_output_el_head() - anal_sol;
+        l2_error += local_assembly.get_p_error() /x_size;
+        l2_flux_error += local_assembly.get_q_error() /x_size;
 
-        double flux = (local_assembly.get_output_velocity() (2) + local_assembly.get_output_velocity() (3) ) / 2.0 / x_size;
-        double anal_flux =  local_assembly.solution->richards_data->anal_flux->value(cell->barycenter());
-        double flux_error = flux - anal_flux;
-
-        l2_error += cell->measure() * error * error /x_size;
-        l2_flux_error += cell->measure() * flux_error * flux_error/x_size;
-
-
-        local_output = 0;
-        for(unsigned int global_i=0;global_i<fe.dofs_per_cell; global_i++) {
-            block_index=fe.system_to_block_index(global_i);
-            //cout << global_i << " " << block_index.first<< " " << block_index.second << endl;
-            switch (block_index.first) {
-            case velocity_bl:
-                local_output(global_i) = local_assembly.get_output_velocity() (block_index.second);
-                break;
-            case piezo_bl:
-                local_output(global_i) = anal_sol;//local_assembly.get_output_el_phead();
-                break;
-            case pressure_bl:
-                local_output(global_i) = local_assembly.get_output_el_head();
-                break;
-            case saturation_bl:
-                local_output(global_i) = anal_flux; //local_assembly.get_output_el_sat();
-                break;
-            case estimator_bl:
-                local_output(global_i) = flux_error;
-                break;
-            }
-        }
 
         cell->get_dof_indices(local_dof_indices);
-        out_vec.add(local_dof_indices, local_output);
+        out_vec.add(local_dof_indices, local_assembly.get_output_vector());
 
 
     }
