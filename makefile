@@ -133,6 +133,6 @@ linux_package: clean clean_tests clean_util all bcd ngh
 	cp -r tests $(lbuild)
 
 linux_pack:
-	tar -cvzCf flow_build.tar.gz ./$(lbuild) 
+	cd $(lbuild); tar -cvzf ../flow_build.tar.gz .
 
 	
