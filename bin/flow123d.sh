@@ -243,9 +243,9 @@ parse_arguments "$@"
 
 # If there is hostname specific script for running flow123d, then use run_flow()
 # function from this script, otherwise default run_flow() function will be used
-if [ -f "./config/${HOSTNAME/./_}.sh" ]
+if [ -f "${0%/*}/config/${HOSTNAME//./_}.sh" ]
 then
-. "./config/${HOSTNAME/./_}.sh"
+	. "${0%/*}/config/${HOSTNAME//./_}.sh"
 fi 
 
 # Run Flow123d
