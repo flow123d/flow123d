@@ -24,6 +24,11 @@
 # Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
 #
 
+# Relative path to mpiexec from the directory, where this script is placed
+MPIEXEC="./mpiexec"
+# Relative path to mpiexec binary from current/working directory
+MPIEXEC="${0%/*}/${MPIEXEC}"
+
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
 FLOW123D="./flow123d"
@@ -43,6 +48,7 @@ function print_help {
 	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOU seconds"
 	echo "    -m MEM          Flow123d can use only MEM bytes"
 	echo "    -n NICE         Run Flow123d with changed (lower) priority"
+	echo "    -p N            Run Flow123d using N parallel procces" 
 	echo "    -r OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
 	echo "    -s              Working directory will be current directory (default)"
 	echo "    -S              Working directory will be relative path to ini file"
@@ -68,7 +74,7 @@ function parse_arguments()
 	FLOW_OPT="-s"
 	
 	# Parse arguments with bash builtin command getopts
-	while getopts ":ht:m:n:r:sS" opt
+	while getopts ":ht:m:n:p:r:sS" opt
 	do
 		case ${opt} in
 		h)
@@ -83,6 +89,9 @@ function parse_arguments()
 			;;
 		n)
 			NICE="${OPTARG}"
+			;;
+		p)
+			NP="${OPTARG}"
 			;;
 		r)
 			OUT_FILE="${OPTARG}"
@@ -232,6 +241,12 @@ function run_flow()
 # Parse command-line arguments
 parse_arguments "$@"		
 
+# If there is hostname specific script for running flow123d, then use run_flow()
+# function from this script, otherwise default run_flow() function will be used
+if [ -f "./config/${HOSTNAME/./_}.sh" ]
+then
+. "./config/${HOSTNAME/./_}.sh"
+fi 
+
 # Run Flow123d
 run_flow
-
