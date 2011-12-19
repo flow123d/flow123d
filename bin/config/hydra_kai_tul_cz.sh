@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License along with this program; if not,
 # write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 #
-# $Id: hydra_kai_tul_cz.sh 834 2011-01-02 15:54:35Z jiri.hnidek $
-# $Revision: 834 $
-# $LastChangedBy: jiri.hnidek $
+# $Id$
+# $Revision$
+# $LastChangedBy$
 # $LastChangedDate: 2011-01-02 16:54:35 +0100 (ne, 02 I 2011) $
 #
 
