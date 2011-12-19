@@ -32,7 +32,7 @@
 #
 
 
-# Every test has to be finished in 60 seconds. Flow123d will be killed after
+# Every test has to be finished in 120 seconds. Flow123d will be killed after
 # 60 seconds. It prevents test to run in never ending loop, when development
 # version of Flow123d contains such error.
 #TIMEOUT=120
@@ -360,7 +360,7 @@ done
 # Print redirected stdout to stdout only in situation, when some error occurred
 if [ $EXIT_STATUS -gt 0 -a $EXIT_STATUS -lt 10 ]
 then
-	echo "Error in execution: ${FLOW123D_SH} -S ${INI_FILE} -- ${FLOW_PARAMS}"
+	echo "Error in execution: ${FLOW123D_SH} -S ${INI_FILE} ${FLOW_PARAMS}"
 	cat "${FLOW123D_OUTPUT}"
 fi
 
