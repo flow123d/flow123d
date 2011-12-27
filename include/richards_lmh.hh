@@ -144,7 +144,7 @@ private:
 
     /// linear algebra objects
 //    Vector<double> residual_source;
-    Vector<double> rhs, residual;
+    Vector<double> rhs;
 
     SparsityPattern sparsity_pattern;
     SparseMatrix<double> matrix;
@@ -239,7 +239,6 @@ void Richards_LMH<dim>::reinit(struct RichardsData<dim> *data) {
     rhs.reinit(dof_handler.n_dofs());
 
 //    residual_source.reinit(rhs);
-    residual.reinit(rhs);
 
 
 }
@@ -502,9 +501,17 @@ void Richards_LMH<dim>::solve ()
 template <int dim>
 void Richards_LMH<dim>::run ()
 {
-    // set initial condition
-    richards_data->set_time(time.t());
 
+    Vector<double> sol_last;//, sat_last;
+    Vector<double> sol_new;
+    double res_norm;
+    double last_res_norm;
+    double decrease, last_decrease;
+
+    richards_data->set_time(time.t());
+    local_assembly.set_dt(time.dt(), time.t());
+
+    // set initial condition
     std::vector<unsigned int> face_dofs(trace_fe.dofs_per_face);
     typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
 
@@ -517,35 +524,14 @@ void Richards_LMH<dim>::run ()
 
         }
     }
-    solution->timestep_update(time.dt());
 
+    solution->timestep_update(time.dt()); // update nonlinearities
+    field_output.output_fields(dof_handler, solution->phead, time.t(),false);
 
-//    VectorType &system_rhs=linear_system->get_rhs();
-//    MatrixType &system_matrix=linear_system->get_matrix();
-
-//    Vector<double> rhs_vel(solution.block(1).size());
-
-    Vector<double> sol_last;//, sat_last;
-    Vector<double> sol_new;
-
-//    SparseILU<double> preconditioner;
-
-    double res_norm;
-    double last_res_norm;
-    double decrease, last_decrease;
+    assemble_system(); // apply boundary conditions to initial condition in order to get true initial residum
 
 
 
-//  head_last.reinit(old_solution.block(head_b).size());
-//  head_new.reinit(old_solution.block(head_b).size());
-//  sat_last.reinit(old_solution.block(head_b).size());
-  // update saturation
-  //saturation=1.;
-  //old_saturation=1.;
-
-  local_assembly.set_dt(time.dt(), time.t());
-
-  field_output.output_fields(dof_handler, solution->phead, time.t());
   time.inc();
 
   double lambda;
@@ -564,19 +550,18 @@ renew_timestep:
       local_assembly.set_dt(time.dt(), time.t());
       richards_data->set_time(time.t());
 
-      sol_last = solution->phead;
-      sol_new = solution->phead;
       iter=0;
       last_decrease=decrease=0.5;
       last_res_norm=100;
       newton=false;
       do {
             lambda=1;
+
  line_search:
 //            sat_last=saturation;
 
 
-            solution->update();
+            solution->update(iter);
             assemble_system (); // this also apply boundary conditions thus change solution
             //std::cout << "assembled, ";
 
@@ -586,13 +571,14 @@ renew_timestep:
             // but leads to error independent of timestep
             // possibly it is to hard to satify ???
             //linear_system.eliminate_block(solution,vel_b);
-            res_norm=matrix.residual(residual, solution->phead, rhs);
+            res_norm=matrix.residual(solution->residual, solution->phead, rhs);
+            field_output.output_fields(dof_handler, solution->phead, time.t(), true);
             //cout << "residual: " << endl;
             //residual.print(cout);
-            //res_norm*=time.dt();
-            //output_residuum();
+            res_norm*= time.end_t()/time.dt();
 
-            last_decrease=decrease;
+
+
             decrease = (iter == 0? 100 : res_norm/last_res_norm);
 
 
@@ -635,13 +621,15 @@ renew_timestep:
 
             if (iter>0 && res_norm < nonlin_tol) break; // ------------------------------------------------------
 
-            if (iter>0 && decrease*decrease > 1- c_1*lambda && lambda > 1e-32 ) {
+            if (iter>3 && decrease*decrease > 1- c_1*lambda && lambda > 1e-3 ) {
                 lambda *= 0.5;
-
+                //cout<< "last:" << sol_last << endl;
+                //cout<< "new:" << sol_new << endl;
                 solution->phead.sadd(0.0, lambda, sol_new, (1.0-lambda), sol_last);
 
                 goto line_search;
             }
+
             //if (iter > 4) newton =true;
             // test convergency
             // we require at least one iteration
@@ -653,7 +641,7 @@ renew_timestep:
 
 
             if (iter > max_non_lin_iter ||
-                (iter>10 && decrease > 0.9 && last_decrease > 0.9 )
+                (iter>10 && decrease > 1.1 && last_decrease > 1.1 )
                 ) {
                 //cout << "!!! divergence of nonlinear solver" << endl;
 
@@ -665,6 +653,7 @@ renew_timestep:
                     return;
                 }
             }
+            last_decrease=decrease;
 
 
             sol_last = solution->phead;
@@ -705,7 +694,7 @@ renew_timestep:
       residual.block(head_b)*=time.dt();
       saturation-= residual.block(head_b);
 */
-      field_output.output_fields(dof_handler, solution->phead, time.t());
+      field_output.output_fields(dof_handler, solution->phead, time.t(),false);
 //      output_residuum();
 
 //      std::cout << endl;

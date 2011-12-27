@@ -1,3 +1,46 @@
+25.12. -----------------
+!! vskutku system poskytuje vice reseni jednak oscilujici a jednak to sparavne monotonni. 
+   k tomu spravnemu lze dojit napr postupnym menenim lambdy smerem od 1.0
+
+- pri relaxaci aktualizace lambdy je problem, ze na jejim tvaru vznikaji hrby. 
+  pri nelinearnich iteracich postupne putuje vlna z prava doleva ktera aktualizuje vodivost (pak mozna putuji
+  vlny i zpet ?)
+- pouziti snizene lambdy vede k pouziti nizssi vodivosti (z minuleho kroku) a tim i k zaseknuti vlny v nejakem miste
+  
+mozne reseni:
+1) vyresit dost presne rovnici s lambda 1 a pak provest homotopickou metodu
+   (otazka je jak se to pozna a i pak je problem s oscialcemi)
+2) pribezne interpolovat lambda mezi 1.0 a idealni aktualni hodnotou podle velikosti rezidua
+3) homotopicka metoda aplikovana na vodivost (menit charakteristickou funkci ?) pricist clen s vetsi vodivosti
+4) multilevel metoda
+
+
+
+
+Ruzne experimenty s orezavanim pro n=2, male dx
+- na orezavani to neni az tak citlive, pokud se orezava od bodu nasyceni (l=1) po 
+  zhruba polovinu of h s max. kapacitou
+
+- pokud je oriznuti dobre, nedochazi k principialnim oscilacim reseni, ale muze bt problem s konvergenci
+  pokud se stale meni lambda
+
+otazky:
+- jaky vliv ma dx
+- ma vliv na kvalitu reseni ma tvar orezu
+- jaky vliv ma zmena n
+- jak volit toleranci pro zmenu lambda ?
+- jaky je rozdil v iteracich oproti Eulerovi
+
+20.12. -----------------
+- provedene skalovaci vypocty jsou prakticky bezcenne
+- tolerance nelinearniho solveru musi byt dost mala, je malo citlivy na zmeny v gradientu tlaku
+  navic je toleranci treba vhodne preskalovat (viz. preskalovani Richardse do tvaru, kde nelinearity zavisi pouze 
+  na "n")
+- pri "vhodnem" prenasobeni cap/con pro vypocet lambda dostavam nadherne tlaky, ale stale ne uplne dobre rychlosti
+- otazka jak volit to prenasobeni, zavisi to ne jen na preskalovani rovnice , ale asi zejmena na dx
+15.12. ---------------
+-upravy pro snadne prepnuti do skutecneho Richardse
+- nekonvergence pri infiltraci do suche pudy
 14.12. ---------------
 - interpolace do DGP2 (monomial)
   bad without information about velocity

@@ -9,6 +9,7 @@
 #define	_SPATIAL_FUNCTIONS_HH
 
 #include <iostream>
+#include <math.h>
 
 #include <base/function.h>
 #include <base/tensor_function.h>
@@ -22,6 +23,7 @@
 #include "base/parameter_handler.h"
 using namespace fadbad;
 using namespace dealii;
+using namespace std;
 
 //*****************************************************************
 // FUNCTIONS
@@ -43,9 +45,54 @@ class RightHandSide : public Function<dim>
     virtual ~RightHandSide() {}
 };
 
+
+template <int dim>
+class ZLinear : public Function<dim>
+{
+  public:
+    ZLinear (ParameterHandler &prm, double bottom_val, double top_val) : Function<dim>(1) {
+
+        double x0 = - prm.get_double("z_size");
+        double x1 =0;
+        a1 = (bottom_val - top_val)/(x0-x1);
+        a0 = bottom_val - a1*x0;
+    }
+    virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
+    {
+        return (a1+1)*p[dim-1]+a0 ;
+    }
+    virtual ~ZLinear() {}
+
+  private:
+    double a0, a1;
+};
+
+
 /**
  *  BOUNDARY FUNCTIONS
  */
+
+template <int dim>
+class TLinear : public Function<dim>
+{
+  public:
+    TLinear (ParameterHandler &prm) : Function<dim>(1) {
+
+        a1 = 0.022;
+        a0 = -2.0;
+        limit= 0.2;
+
+    }
+    virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
+    {
+        //std::cout << "bc t " << this->get_time() << std::endl;
+        return min(limit,  this->get_time() * a1 + a0) + p[dim-1] ;
+    }
+    virtual ~TLinear() {}
+
+  private:
+    double a0, a1, limit;
+};
 
 
 /**
@@ -189,6 +236,9 @@ public:
     Function<dim> *anal_sol;
     Function<dim> *anal_flux;
 
+    double cap_max_;
+    double cap_arg_max_;
+    double lambda_cap_max_half;
 private:
     //! there should be whole BC descriptor object which returns
     //! BC objects for given index with checking, possibly returning None type of BC
@@ -197,24 +247,50 @@ private:
     //FQ_lin< B<double> > fq_diff;
     //FK_lin< B<double> > fk_diff;
 
-    FQ_analytical< B<double> > fq_diff;
-    FK_analytical< B<double> > fk_diff;
+    //FQ_analytical< B<double> > fq_diff;
+    //FK_analytical< B<double> > fk_diff;
+
+    HydrologyModel hydro_model;
 
     double density;
     double gravity;
 
+
+    bool no_exact_solution;
+
 public:
 
-    RichardsData(const HydrologyParams & h_params, ParameterHandler &prm):
+    RichardsData( ParameterHandler &prm):
     k_inverse(prm),
     initial(NULL),
     bc_segments(MAX_NUM_OF_DEALII_BOUNDARIES, std::pair<BCType, Function<dim> * >(None, (Function<dim> *)(NULL) ) ),
-    fq_diff(h_params),
+    hydro_model(prm),
+    //fq_diff(h_params),
     //fc(h_params),
-    fk_diff(h_params),
+    //fk_diff(h_params),
     density(1.0),
-    gravity(0.0)
+    gravity(1.0)
     {
+        cap_arg_max_=hydro_model.cap_arg_max();
+        fq(cap_arg_max_/1.5, lambda_cap_max_half);
+        lambda_cap_max_half/=fk(cap_arg_max_/1.5);
+        cout << "lh "<<lambda_cap_max_half <<endl;
+        fq(cap_arg_max_, cap_max_);
+
+
+        add_bc(0, Neuman, new ZeroFunction<dim>() ); // left
+        add_bc(1, Neuman, new ZeroFunction<dim>() ); // right
+        add_bc(3, Dirichlet, new TLinear<dim>(prm) ); // top
+        add_bc(2, Dirichlet, new ConstantFunction<dim>(-2) ); // bottom
+
+        initial = new ZLinear<dim>(prm, -1, -2);
+        anal_sol = new ZeroFunction<dim>();
+        anal_flux = new ZeroFunction<dim>();
+        no_exact_solution =true;
+
+        /*
+        // Analytical solution setting
+
         add_bc(0, Neuman, new ZeroFunction<dim>() ); // left
         add_bc(1, Neuman, new ZeroFunction<dim>() ); // right
         add_bc(2, Dirichlet, new ASol_ATan<dim>() ); // bottom
@@ -225,17 +301,21 @@ public:
         initial = new ASol_ATan<dim>();
         anal_sol = new ASol_ATan<dim>();
         anal_flux = new AFlux_ATan<dim>();
-
+*/
         //anal_sol = new ASol_lin<dim>();
         //initial = new ASol_lin<dim>();
 
-
+        print_mat_table();
     }
 
     ~RichardsData() {
         for(unsigned int i=0; i<MAX_NUM_OF_DEALII_BOUNDARIES;i++)
             if (bc_segments[i].second != NULL) delete bc_segments[i].second;
     }
+
+    inline double lambda(const double cap) const {return hydro_model.lambda(cap / cap_max_);}
+
+    bool has_exact_solution() { return ! no_exact_solution; }
 
     void add_bc(const unsigned int boundary_index, const BCType bt, Function<dim> * f)
     {
@@ -248,7 +328,8 @@ public:
     double fq(double h) {return fq(h,h);}
 
     double fq(const double h, double &dfdx) {
-      B<double> x(h), f(fq_diff(x));
+      B<double> x(h);
+      B<double> f( hydro_model.FQ(x) );
       f.diff(0,1);
       dfdx=x.d(0);
       return f.val();
@@ -257,7 +338,8 @@ public:
     double fk(double h) {return fk(h,h);}
 
     double fk(const double h, double &dfdx) {
-      B<double> x(h), f(fk_diff(x));
+      B<double> x(h);
+      B<double> f( hydro_model.FK(x) );
       f.diff(0,1);
       dfdx=x.d(0);
       return f.val();
@@ -297,10 +379,12 @@ public:
     }
 
     void print_mat_table() {
-        cout << "MATERIAL TABLE" <<
-        cout << "(h, sat, cond)" << endl;
-        for(double h = -50; h < 0.1; h+=0.1) {
-            cout << h << " " << fq(h) << " " << fk(h) << endl;
+        std::cout << "MATERIAL TABLE" <<
+        std::cout << "(h, sat, cond, lambda)" << std::endl;
+        double cap;
+        for(double e = -5; e < 2; e+=0.1) {
+            double h=-5*exp(e);
+            std::cout << h << " " << fq(h,cap) << " " << fk(h) << " "<<lambda(cap) <<std::endl;
         }
     }
 

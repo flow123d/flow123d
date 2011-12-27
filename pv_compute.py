@@ -45,26 +45,27 @@ coarse_on_fine = ResampleWithDataset( Source=fine_sol, Input=coarse_sol )
 
 # compute difference of 'head' attribute (field)
 diff = PythonCalculator( Input=[ coarse_on_fine, fine_sol ] )
-diff.ArrayName = 'diff_'+attribute;
-diff.Expression = "inputs[0].PointData['" + attribute + "'] - inputs[1].PointData['" + attribute + "']"
+diff.ArrayName = 'err_'+attribute;
+dif_subexpr = "inputs[0].PointData['" + attribute + "'] - inputs[1].PointData['" + attribute + "']"
+diff.Expression = "dot(" + dif_subexpr + "," + dif_subexpr + ")"
 
 # compute square of the difference
-calc = Calculator(diff)
-calc.AttributeMode = 'point_data'
-calc.Function = diff.ArrayName + '*' + diff.ArrayName
-calc.ResultArrayName = 'err_' + attribute;
+#calc = Calculator(diff)
+#calc.AttributeMode = 'point_data'
+#calc.Function = diff.ArrayName + '*' + diff.ArrayName
+#calc.ResultArrayName = 'err_' + attribute;
 
 #Integrate square of the difference
-iv = IntegrateVariables(calc)
+iv = IntegrateVariables(diff)
 
 # get output data from server
 iv_output=paraview.servermanager.Fetch(iv)
 
 # get Array with integrated value tuplets
-array=iv_output.GetPointData().GetArray( calc.ResultArrayName )
+array=iv_output.GetPointData().GetArray( diff.ArrayName )
 
 # first value in the tuplet is what we need
-print attribute + " L2 error: ", array.GetTuple(0)[0]
+print attribute + " L2 error: ", math.sqrt(array.GetTuple(0)[0])
 
 
 

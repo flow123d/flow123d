@@ -87,6 +87,7 @@ public:
     double t() { return time;}
     double dt() {return time_step;}
     int n_step() {return step_number;}
+    double end_t() {return end_time;}
 };
 
 #endif	/* _TIME__HH */

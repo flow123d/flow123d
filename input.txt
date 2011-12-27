@@ -2,21 +2,41 @@
 # ---------------------
 
 set x_size = 1
-set z_size = -10
+set z_size = 1
 set hx = 1
-set hz = 1
+set hz = 0.001
 
 
 set t_init = 0.0
-set t_end = 2.0
-set dt_init = 0.1
-set dt_min = 0.1
-set dt_max = 0.1
+set t_end = 2000
+set dt_init = 50
+set dt_min = 50
+set dt_max = 50
+set print_time_step = 50
 
-set print_time_step = 0.1
+# physic
 
-set nonlin_max_it =20
-set nonlin_tol = 0.00000001
+# hydro - academic porous media
+#set hydro_n = 1.14
+#set hydro_alfa = 0.1
+#set hydro_cut = 0.999
+#set hydro_qr = 0.01
+#set hydro_qs = 0.48
+#set hydro_ks = 2              # saturated conductivity  
+#set hydro_kk = 2              # conductivity at the cut point 
+
+## Knabner 1D
+set hydro_n = 2.0
+set hydro_alfa = 1.0
+set hydro_cut = 1.0
+set hydro_qr = 0.084
+set hydro_qs = 0.362
+set hydro_ks = 1.25E-5              # saturated conductivity  
+#set hydro_kk = 2              # conductivity at the cut point 
+
+
+set nonlin_max_it =200
+set nonlin_tol = 0.0000001
 
 # set lin_rtol = 0.0001
 # set lin_atol = 1.0E-6

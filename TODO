@@ -1,3 +1,20 @@
+15.12. ------------
+
+Potrebuju vypatrat jaka vlastnost hydro funkci dela binec v reziduu
+- kouknout na aktualni vysledky v paraview
+- spustit znova ...
+- 1) pouziti hladke saturace (bez orezu)
+  2) naopak zkusit zhladit vodivost
+
+- moznost interpolovat do Q1, P2, ...
+  i jina pole nez piezo vysky/tlaky
+- proc line search vede k narustu residua !!
+- jak tezke implementovat multilevel metodu - zmena dof handleru ?
+  ? interpolacni a restrikcni operatory ?
+
+- nelinearni system ma blbou vlastnost, ze reziduum bez provedeni lin. kroku je casto mensi nez 
+  po prvni linearni aproximaci, nepomohlo by system regularizovat nejakym clenem, ktery by postupne mizel 
+  (homotopocka metoda)
 
 6.12. ---------------
 

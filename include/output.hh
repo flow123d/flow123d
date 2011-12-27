@@ -65,7 +65,7 @@ class FieldOutput {
 public:
     FieldOutput(Triangulation<dim> &tria, unsigned int order, LocalAssembly<dim> &la);
     void reinit(ParameterHandler &prm);
-    void output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time);
+    void output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time, bool force);
     void update_fields(DoFHandler<dim> &solution_dh, double time);
     ~FieldOutput();
 
@@ -169,12 +169,12 @@ FieldOutput<dim>::~FieldOutput()
 
 
 template <int dim>
-void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time)
+void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time, bool force)
 {
 
 //  bc_out.output(time, dof_handler, sat_dh, solution, saturation);
 
-  if (time * 1.0000001 < print_time) return;
+  if (!force && time * 1.0000001 < print_time) return;
   std::cout << "PRINT time (" << print_level << "): " << time << std::endl;
   print_time += print_time_step;
 
@@ -221,7 +221,9 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
 
 
     }
-    cout << "Time: " << time << " L2 error: " << sqrt(l2_error) << " " << sqrt(l2_flux_error) << endl;
+    if ( local_assembly.solution->richards_data->has_exact_solution() ) {
+        cout << "Time: " << time << " L2 error: " << sqrt(l2_error) << " " << sqrt(l2_flux_error) << endl;
+    }
 }
 
 #endif /* OUTPUT_HH_ */

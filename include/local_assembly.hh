@@ -54,6 +54,7 @@ public:
         old_conductivity.reinit(dh.n_dofs());
         saturation.reinit(dh.n_dofs());
         old_saturation.reinit(dh.n_dofs());
+        residual.reinit(dh.n_dofs());
 
         typename DoFHandler<dim>::active_cell_iterator
             cell = dh.begin_active(),
@@ -72,32 +73,61 @@ public:
         phead=old_phead;
         saturation=old_saturation;
         conductivity=old_conductivity;
+
     }
     /**
      * Save old values and update the new.
      */
     void timestep_update(double dt) {
         double p;
+        dt_=dt;
         for(unsigned int i=0;i<phead.size();i++) {
             old_phead(i) = phead(i);
-            old_conductivity(i) = conductivity(i);
-            old_saturation(i) = saturation(i);
 
             p = pressure(i);
             saturation(i)=richards_data->fq(p,capacity(i));
             conductivity(i) = richards_data->fk(p);
-            lambda(i) = max(0.5, 1- capacity(i)/dt/conductivity(i));
+            lambda(i)=1.0;
+            //lambda(i)=max(0.5, 1- 0.002*capacity(i)/dt_/conductivity(i));
+
             //cout << "i l:" << i << " " << lambda(i) << endl;
+
+            old_conductivity(i) = richards_data->fk(lambda(i)*p + (1-lambda(i))*old_pressure(i));
+            old_saturation(i) = saturation(i);
         }
+        last_lmb_change=false;
     }
 
-    void update() {
-        double p;
+    void update(int it) {
+        double p, eps, lambda_new, cap, lambda_norm=0;
+
+        if (it<1) last_lmb_change=false;
+        if (it==1) last_lmb_change=true; // froce lambda update
+        int  n_lmb_change = 0;
         for(unsigned int i=0;i<phead.size();i++) {
             p = pressure(i);
             saturation(i)=richards_data->fq(p,capacity(i));
             conductivity(i) = richards_data->fk(p);
+            if (p>0) lambda_new=1;
+            else lambda_new = 1 - min(0.5, 0.5 * p / (richards_data->cap_arg_max_/3.0));
+            //lambda(i)=max(0.5, 1- 0.003*capacity(i)/dt_/conductivity(i));
+            /*
+                    if (true || last_lmb_change) {
+                lambda_new = 1-min(0.5, capacity(i)/conductivity(i) * 0.0002);//richards_data->lambda_cap_max_half);
+                //if (p>0) lambda_new=1;
+                //else lambda_new = 1 - min(0.5, 0.5 * p / (richards_data->cap_arg_max_/2));
+              //if (lambda_new > 0.999999999 && 1 - lambda(i) > 0.001) n_lmb_change++;
+
+                 //(1-eps) + eps*richards_data->lambda(p); //max(max(0.5, 1- 0.001*capacity(i)/dt_/conductivity(i)), lambda(i));
+            }*/
+            lambda_norm+= fabs(lambda_new-lambda(i));
+            eps = min(1.0,it/10.0);
+            lambda(i) = 1.0 *(1-eps) +eps*lambda_new;
+
+            old_conductivity(i) = richards_data->fk(lambda(i)*p + (1-lambda(i))*old_pressure(i));
         }
+        cout << "n lmb norm: " <<lambda_norm<< endl;
+        last_lmb_change= (lambda_norm > 5);
     }
 
     inline double pressure(unsigned int i)
@@ -115,8 +145,11 @@ public:
     Vector<double> old_conductivity;
     Vector<double> saturation;
     Vector<double> old_saturation;
+    Vector<double> residual;
 
     RichardsData<dim> *richards_data;
+    double dt_;
+    bool last_lmb_change;
 
 };
 
@@ -153,6 +186,7 @@ public:
 
     void reinit(typename DoFHandler<dim>::active_cell_iterator cell);
     void output_evaluate();
+    void set_lambda();
     double get_p_error() { return  output_vector( out_idx[p_error_bl][0] ); }
     double get_q_error() { return  output_vector( out_idx[q_error_bl][0] ); }
 
@@ -168,10 +202,10 @@ public:
 
     void make_interpolation(FE_DGQ<dim> &fe);
     void make_interpolation(FE_DGPMonomial<dim> &fe);
-    void out_interpolate_pressure(FE_DGQ<dim> &fe, Vector<double> &trace_phead);
-    void out_interpolate_pressure(FE_DGP<dim> &fe, Vector<double> &trace_phead) {};
-    void out_interpolate_pressure(FE_DGPMonomial<dim> &fe, Vector<double> &trace_phead);
-    void out_interpolate_pressure(FE_Q<dim> &fe, Vector<double> &trace_phead) {};
+    void out_interpolate(Vector<double> &trace_phead, unsigned int out_block);
+    //void out_interpolate_pressure(FE_DGP<dim> &fe, Vector<double> &trace_phead) {};
+    //void out_interpolate_pressure(FE_DGPMonomial<dim> &fe, Vector<double> &trace_phead);
+    //void out_interpolate_pressure(FE_Q<dim> &fe, Vector<double> &trace_phead) {};
 
     //RichardsData<dim> *richards_data;
     Solution<dim> *solution;
@@ -398,7 +432,7 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
         local_matrix_22(i, i) = lumping_weights(i) * element_volume / dt * capacity / local_lambda(i);
         local_rhs_2(i) = lumping_weights(i) * element_volume / dt * (capacity * trace_phead - (sat_new - sat_old)) / local_lambda(i);
 
-        conductivity += lumping_weights(i) * (local_lambda(i)*con_i + (1-local_lambda(i)) * old_con_i );
+        conductivity += lumping_weights(i) * (old_con_i );
 /*
         cout << i << "(lw, ev, dt, capcap: " << capacity << "lm: " << local_matrix_22(i, i) << endl;
         cout << "rhs: " << local_rhs_2(i) << "con: " << conductivity << endl;
@@ -558,6 +592,7 @@ void LocalAssembly<dim>::output_evaluate()
     Vector<double> trace_phead(trace_fe.dofs_per_cell);
     Vector<double> trace_head(trace_fe.dofs_per_cell);
     Vector<double> weight_trace_phead(trace_fe.dofs_per_cell);
+    Vector<double> trace_res(trace_fe.dofs_per_cell);
     Vector<double> local_velocity(velocity_fe.dofs_per_cell);
 
     double conduct =0;
@@ -565,7 +600,12 @@ void LocalAssembly<dim>::output_evaluate()
     for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
         unsigned int i=face_no;
         trace_phead(i) = solution->phead(local_dof_indices[i]);
-        weight_trace_phead(i) =  trace_phead(i);
+        //trace_res(i) = 2 - local_matrix_22(i,i)/inv_local_matrix_00(i,i);
+        //trace_res(i) = 1 - 0.0001*(solution->capacity(local_dof_indices[i])-solution->saturation(local_dof_indices[i])+solution->old_saturation(local_dof_indices[i]))
+        //        /dt/solution->conductivity(local_dof_indices[i]);
+        trace_res(i) = solution->lambda(local_dof_indices[i]);
+
+          weight_trace_phead(i) =  trace_phead(i);
         trace_head(i)= solution->richards_data->pressure(trace_phead(i), dh_cell->face(face_no)->barycenter() );
                                       //+0.5 * solution->old_phead(local_dof_indices[i]);
 
@@ -598,21 +638,33 @@ void LocalAssembly<dim>::output_evaluate()
 
     output_vector( out_idx[pressure_bl][0] ) = el_phead;
 
-    out_interpolate_pressure(post_pressure_fe, trace_head);
+    out_interpolate(trace_head, post_p_bl);
+    //trace_phead.add( -1.0, old_trace_phead);
+    out_interpolate(trace_res, post_p_diff_bl);
+
+
 
     //cout << "cond diff: " << dh_cell->barycenter()[dim-1] << " "
 
     //double anal_sol = solution->richards_data->anal_sol->value(dh_cell->barycenter());
     //double p_error = el_phead - anal_sol;
-    double p_error = compute_p_error();
-    output_vector( out_idx[p_error_bl][0] ) = p_error; //dh_cell->measure() * p_error * p_error;
+    if (solution->richards_data->has_exact_solution()) {
+        double p_error = compute_p_error();
+        output_vector(out_idx[p_error_bl][0]) = p_error; //dh_cell->measure() * p_error * p_error;
 
-    double flux = (local_velocity(2) + local_velocity(3) ) / 2.0;
-    double anal_flux =  solution->richards_data->anal_flux->value(dh_cell->barycenter());
-    double q_error = flux - anal_flux;
-    output_vector( out_idx[q_error_bl][0] ) = dh_cell->measure() * q_error * q_error;
+        double flux = (local_velocity(2) + local_velocity(3)) / 2.0;
+        double anal_flux = solution->richards_data->anal_flux->value(dh_cell->barycenter());
+        double q_error = flux - anal_flux;
+        output_vector(out_idx[q_error_bl][0]) = dh_cell->measure() * q_error * q_error;
+    }
+    output_vector(out_idx[p_error_bl][0]) = conduct;
+}
+
+template <int dim>
+void LocalAssembly<dim>::set_lambda() {
 
 }
+
 
 template <int dim>
 double LocalAssembly<dim>::compute_p_error() {
@@ -707,25 +759,18 @@ void LocalAssembly<dim>::make_interpolation(FE_DGQ<dim> &fe) {
 
 }
 
+/**
+ * Interpolation of pressure into post-processed FE space. However, it can be used also for interpolation of different fields.
+ */
 template <int dim>
-void LocalAssembly<dim>::out_interpolate_pressure(FE_DGQ<dim> &fe, Vector<double> &trace_phead) {
-
-
+void LocalAssembly<dim>::out_interpolate(Vector<double> &trace_phead, unsigned int out_block) {
     // compute interpolation through matrix
-    if (fe.get_degree() == 1) {
         for(unsigned int i = 0; i< post_pressure_fe.n_dofs_per_cell(); ++i) {
-            output_vector( out_idx[post_p_bl][i] )=0;
+            output_vector( out_idx[out_block][i] )=0;
             for(unsigned int j = 0; j < local_dof_indices.size(); ++j) {
-                output_vector(out_idx[post_p_bl][i]) += post_interpolation(i,j) * trace_phead(j);
+                output_vector(out_idx[out_block][i]) += post_interpolation(i,j) * trace_phead(j);
             }
-            Point<dim> vtx( dh_cell->vertex(i) );
-            output_vector(out_idx[post_p_diff_bl][i])= output_vector(out_idx[post_p_bl][i])
-                    - solution->richards_data->anal_sol->value( vtx );
         }
-
-    }
-
-    // compute error
 }
 
 /**
@@ -824,7 +869,7 @@ void LocalAssembly<dim>::make_interpolation(FE_DGPMonomial<dim> &fe) {
     }
 
 }
-
+/*
 template <int dim>
 void LocalAssembly<dim>::out_interpolate_pressure(FE_DGPMonomial<dim> &fe, Vector<double> &trace_phead) {
 
@@ -846,7 +891,7 @@ void LocalAssembly<dim>::out_interpolate_pressure(FE_DGPMonomial<dim> &fe, Vecto
 
     // compute error
 }
-
+*/
 
 
 #endif /* LOCAL_ASSEMBLY_HH_ */
