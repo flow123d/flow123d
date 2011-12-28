@@ -110,27 +110,37 @@ void TestProblem::declare_params () {
 
 
     // numerical parameters
-    prm.declare_entry ("nonlin_tol", "0.0001",
+    prm.declare_entry ("nlin_tol", "0.0001",
                                 Patterns::Double(),
                                 "Tolerance of nonlinear solver.");
+    prm.declare_entry ("nlin_tol_step_mult", "100",
+                                Patterns::Double(),
+                                "Multiple of final tolerance to perform homotopy step.");
+    prm.declare_entry ("nlin_tol_max_mult", "10",
+                                    Patterns::Double(),
+                                    "Multiple of step tolerance to limit length of homotopy step.");
 
-    prm.declare_entry ("nonlin_max_it", "20",
+    prm.declare_entry ("nlin_max_lambda", "0.2",
+                                Patterns::Double(),
+                                "Maximim step in homotopy parameter.");
+
+    prm.declare_entry ("nlin_max_it", "20",
                                 Patterns::Integer(),
                                 "Max nonlin. iterationss.");
 
-    prm.declare_entry ("linesearch_c_1", "1.0E-4",
+    prm.declare_entry ("nlin_alpha", "1.0E-4",
                                 Patterns::Double(),
                                 "Decrease parameter");
     prm.declare_entry ("lin_rtol", "0.01",
                                 Patterns::Double(),
-                                "Decrease parameter");
+                                "Relative tolerance of linear solver.");
 
     prm.declare_entry ("lin_atol", "1.0E-12",
                                 Patterns::Double(),
-                                "Decrease parameter");
+                                "Absolute tolerance of linear solver.");
     prm.declare_entry ("lin_max_it", "1000",
                                 Patterns::Double(),
-                                "Decrease parameter");
+                                "Max iteration in linear solver.");
 
 
     // data

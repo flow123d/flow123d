@@ -98,8 +98,9 @@ public:
         last_lmb_change=false;
     }
 
-    void update(int it) {
+    void update() {
         double p, eps, lambda_new, cap, lambda_norm=0;
+        int it;
 
         if (it<1) last_lmb_change=false;
         if (it==1) last_lmb_change=true; // froce lambda update
@@ -146,6 +147,8 @@ public:
     Vector<double> saturation;
     Vector<double> old_saturation;
     Vector<double> residual;
+
+    Vector<double> *phead_new; // temporary solution vector where to compute jacobian, functions ..
 
     RichardsData<dim> *richards_data;
     double dt_;

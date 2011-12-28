@@ -1,3 +1,9 @@
+28.12. ------------
+
+  pro s<1 pouzivat symetrickou verzi az pak nesymetrickou
+- do sestavovani matice zahrnout derivaci lambdy/thety
+- presnejsi nastavovani conv state a returny v nonlin solveru
+
 15.12. ------------
 
 Potrebuju vypatrat jaka vlastnost hydro funkci dela binec v reziduu
@@ -35,7 +41,6 @@ pro clanek:
 
 
 22.11. ------------------
-- zkontrolovat vystup do Paraview
 - kvantitativni porovnani s s1d
 - lepsi postprocesing  pro splneni rovnice kontinuity:
    1) residuum -> odlozeny zdroj
@@ -58,12 +63,8 @@ teoreticke otazky:
   )
 
 
-2) zadavani parametru z externiho souboru (system parametru z deal.ii), moznost mit ruzne testovaci ulohy
-   a ukladat je
+
 3) pokusit se rozchodit adaptivitu ve MH kodu
-5) implementovat LMH:
-   - nejjednodussi nelinearni resic - linearizace
-   - konstantni vodivost na elementu
    
 prubeh vypoctu:
 
