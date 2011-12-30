@@ -1,3 +1,7 @@
+30.12. ------------------
+* implementovana homotopy + Newton metoda
+* implementovan samostatny vypocet jakobianu, funkce a derivace podle homotopy parametru
+* otesovana kvalitativni spravnoist pro lambda =1 a symetricky jakobian
 25.12. -----------------
 !! vskutku system poskytuje vice reseni jednak oscilujici a jednak to sparavne monotonni. 
    k tomu spravnemu lze dojit napr postupnym menenim lambdy smerem od 1.0

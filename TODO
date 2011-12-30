@@ -1,3 +1,7 @@
+30.12. ------------
+* overit kvantitativni spravnost oproti predchozi funkcni verzi ( chyba reseni vuci referencnimu )
+* zkusit nesymetricky jakobian (lepsi konvergence ?)
+* zkusit lambda != 1 
 28.12. ------------
 
   pro s<1 pouzivat symetrickou verzi az pak nesymetrickou

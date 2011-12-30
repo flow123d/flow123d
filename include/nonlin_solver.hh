@@ -51,6 +51,7 @@ public:
     virtual void compute_jacobian(const VecType &x, double s, MatType &jac, bool symmetric) =0;
     virtual void compute_function(const VecType &x, double s, VecType &func) =0;
     virtual void compute_parameter_derivative(const VecType &x, double s, VecType &diff)=0;
+    virtual VecType &get_left_scaling()=0; // possibly scale system from left to keep it symmetric
     virtual VecType &get_solution_vector()=0;
     virtual MatType &get_matrix()=0;
     virtual VecType &get_function_vector()=0;
@@ -117,6 +118,7 @@ private:
     unsigned int cum_lin_iter, iter, cum_iter;
 
     bool converged_homotopy;
+    bool reuse_precondition_sparsity;
 
 };
 
@@ -139,6 +141,8 @@ HomotopyNewton::HomotopyNewton(ParameterHandler &prm) {
     cum_lin_iter=0;
     cum_iter=0;
 
+    reuse_precondition_sparsity=false;
+
 }
 
 void HomotopyNewton::set_system(NonlinSystemBase &sys)
@@ -151,15 +155,7 @@ void HomotopyNewton::set_system(NonlinSystemBase &sys)
 
     jac=&system->get_matrix();
 
-    // initalize preconditioner
-    precondition.initialize(*jac,
-        SparseILU<double>::AdditionalData(
-                0, //strengthen_diagonal
-                0, //  extra_off_diagonals
-                false, //use_previous_sparsity
-                0 //    const SparsityPattern *    use_this_sparsity = 0
-        ));
-
+    reuse_precondition_sparsity=false;
 
     // reinit auxiliary vectors
     s_diff.reinit(*solution);
@@ -183,12 +179,16 @@ HomotopyNewton::ConvergenceState HomotopyNewton::solve() {
     while ( !converged_homotopy  || f_norm > params.tol_final ) {
         if (!converged_homotopy && f_norm < params.tol_step) {
             homotopy_step();
-            if ( (1.0 - s_param) > params.tol_final ) {
+            if ( fabs(1.0 - s_param) < params.tol_final ) {
                 converged_homotopy=true;
                 s_param=1.0;
             }
+            cout << "  "<<setw(10) << iter<< setw(15) << f_norm << " H" << lambda << endl;
         }
-        else newton_step();
+        else {
+            newton_step();
+            cout << "  "<<setw(10) << iter<< setw(15) << f_norm << " N" << lambda << endl;
+        }
         iter++;
         if (iter > params.max_it) {
             conv_state = diverged_max_it;
@@ -201,34 +201,30 @@ HomotopyNewton::ConvergenceState HomotopyNewton::solve() {
 }
 
 void HomotopyNewton::homotopy_step() {
+
     system->compute_jacobian(*solution, s_param, *jac, true);
     system->compute_parameter_derivative(*solution, s_param, s_diff);
     solution_save=*solution;
     f_norm_save=f_norm;
 
+
     linear_solve(sol_step, s_diff);
     // TODO: check sucesssful linear solve
 
     // linesearch to get maximum step but keep f_norm < tol_max
-    double init_slope=jac->matrix_scalar_product(*func,sol_step);
-    if (init_slope < 0.0) {
-        lambda = min(1.0 - s_param, params.max_lambda);
-        solution->equ(1.0, solution_save, lambda, sol_step);
-        system->compute_function(*solution,s_param,*func);
-        f_norm=func->l2_norm();
-        goto theend;
-    }
 
-    lambda = (0.5 * params.tol_max * params.tol_max - 0.5 * f_norm * f_norm) / init_slope;
-    lambda = max(lambda, 1.0 - s_param);
-    lambda = max(lambda, params.max_lambda);
+
+
+    lambda = 1.0 - s_param;
+    lambda = min(lambda, params.max_lambda);
     while (true) {
      // compute F(sol - lambda * sol_step)
-     solution->equ(1.0, solution_save, lambda, sol_step);
+     solution->equ(1.0, solution_save, -lambda, sol_step);
      system->compute_function(*solution,s_param,*func);
      // TODO: check for solution in function domain
 
      f_norm=func->l2_norm();
+     cout << "h-step: " << lambda << " " <<f_norm << endl;
      if (.5*(f_norm)*(f_norm) < 0.5 * params.tol_max * params.tol_max) { /* Sufficient reduction */
          goto theend;
      }
@@ -245,8 +241,9 @@ void HomotopyNewton::newton_step() {
     // TODO: check for NaN in function value
 
     // use non-symmetric jacobian only for for converged homotopy
-    system->compute_jacobian(*solution, s_param, *jac, !converged_homotopy);
+    system->compute_jacobian(*solution, s_param, *jac, true);
     linear_solve(sol_step, *func);
+    //cout << "step: " << sol_step << endl;
     // TODO: check sucesssful linear solve
 
     line_search();
@@ -285,6 +282,7 @@ void HomotopyNewton::line_search() {
     solution->equ(1.0, solution_save, -lambda, sol_step);
     system->compute_function(*solution,s_param,*func);
     f_norm=func->l2_norm();
+    return;
     if (.5*(f_norm)*(f_norm) <= .5*f_norm_save*f_norm_save + params.alpha*init_slope) { /* Sufficient reduction */
         return;
     }
@@ -356,14 +354,7 @@ void HomotopyNewton::linear_solve(VecType &sol, VecType &rhs)
 {
 
 
-  // initalize preconditioner
-  precondition.initialize(*jac,
-      SparseILU<double>::AdditionalData(
-              0, //strengthen_diagonal
-              0, //  extra_off_diagonals
-              true, //use_previous_sparsity
-              0 //    const SparsityPattern *    use_this_sparsity = 0
-      ));
+
 
 
   //matrix.print_formatted(cout);
@@ -372,23 +363,61 @@ void HomotopyNewton::linear_solve(VecType &sol, VecType &rhs)
   ReductionControl        solver_control (params.lin_max_it, params.lin_atol, params.lin_rtol);
   solver_control.log_history(true);
 
-  if (converged_homotopy) {
+  if (false && converged_homotopy) {
       // precise jacobian can be non symetric
       SolverBicgstab<>        bcgs_solver (solver_control);
+
+      // initalize preconditioner
+      precondition.initialize(*jac,
+          SparseILU<double>::AdditionalData(
+                  0, //strengthen_diagonal
+                  0, //  extra_off_diagonals
+                  reuse_precondition_sparsity, //use_previous_sparsity
+                  0 //    const SparsityPattern *    use_this_sparsity = 0
+          ));
+      reuse_precondition_sparsity=true;
+
       bcgs_solver.solve (*jac, sol, rhs,
             precondition);
 
   } else {
       // assume symmetric jacobian
       SolverCG<>              cg_solver (solver_control);
+
+      // scale system from left and solve
+      VecType &scale_vec = system->get_left_scaling();
+      for(unsigned int row=0; row < rhs.size(); ++row) {
+          rhs(row)/=scale_vec(row);
+          for(MatType::iterator col_it = jac->begin(row);
+                  col_it != jac->end(row); ++col_it)
+              col_it->value()/= scale_vec(row);
+      }
+      // initalize preconditioner
+      precondition.initialize(*jac,
+          SparseILU<double>::AdditionalData(
+                  0, //strengthen_diagonal
+                  0, //  extra_off_diagonals
+                  reuse_precondition_sparsity, //use_previous_sparsity
+                  0 //    const SparsityPattern *    use_this_sparsity = 0
+          ));
+      reuse_precondition_sparsity=true;
+
       cg_solver.solve (*jac, sol, rhs,
             precondition);
+
+      // scale back from left
+      for(unsigned int row=0; row < rhs.size(); ++row) {
+          rhs(row)*=scale_vec(row);
+          for(MatType::iterator col_it = jac->begin(row);
+                  col_it != jac->end(row); ++col_it)
+              col_it->value()*= scale_vec(row);
+      }
   }
 
   cum_lin_iter += solver_control.last_step();
-//std::cout << "CG: " << solver_control.last_step() << ", res: "
-//        <<solver_control.last_value() << " cum lin it: " << cum_lin_iter
-//        << std::endl;
+/*std::cout << "CG: " << solver_control.last_step() << ", res: "
+        <<solver_control.last_value() << " cum lin it: " << cum_lin_iter
+        << std::endl;*/
 
   //solution.print(cout);
 }

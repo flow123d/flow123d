@@ -98,9 +98,9 @@ private:
     double  Kk;             // conductivity at the cut point
 
     // conductivity parameters
-    static const double Bpar = 0.5;
-    static const double Ppar =2;
-    static const double K_lower_limit = 1.0E-20;
+    const double Bpar;
+    const double Ppar;
+    const double K_lower_limit;
 
     // aux values
     double m;
@@ -113,7 +113,9 @@ private:
 
 };
 
-HydrologyModel:: HydrologyModel( ParameterHandler &prm ) {
+HydrologyModel:: HydrologyModel( ParameterHandler &prm )
+: Bpar(0.5), Ppar(2), K_lower_limit(1.0E-20)
+{
     n = prm.get_double("hydro_n");
     alpha = prm.get_double("hydro_alfa");
 

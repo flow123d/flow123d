@@ -114,6 +114,8 @@ public:
             {return matrix;}
     virtual VecType &get_function_vector()
             {return solution->residual;}
+    virtual VecType &get_left_scaling()
+            {return solution->lambda;}
 
 
 //    void solve();
@@ -125,7 +127,7 @@ public:
 private:
     //enum block_names {traces=0, saturation=1};
 
-    void assemble_system();
+    //void assemble_system();
     void grid_refine();
     //void compute_errors () const;
 
@@ -144,23 +146,11 @@ private:
 
     DoFHandler<dim> dof_handler;
 
-    /// linear algebra objects
-//    Vector<double> residual_source;
-//    Vector<double> rhs;
-
     SparsityPattern sparsity_pattern;
     SparseMatrix<double> matrix;
 
     ConstraintMatrix     constraints;
     std::map<unsigned int, double> boundary_values;
-
-    //! field vectors
-//    Vector<double> saturation;
-//    Vector<double> old_saturation;
-//    Vector<double> m_mat_crit;
-//    Vector<double> theta_diff;
-
-//    BCOutput<dim>    bc_out;
 
     HomotopyNewton  *nlin_solver;
     RichardsData<dim> *richards_data;
@@ -220,14 +210,15 @@ Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandle
 
     field_output.reinit(prm);
     nlin_solver = new HomotopyNewton(prm);
-
+    solution=NULL;
 
 }
 
 
 template <int dim>
 Richards_LMH<dim>::~Richards_LMH() {
-
+    if (solution != NULL) delete solution;
+    delete nlin_solver;
 }
 
 /**
@@ -327,10 +318,9 @@ template <int dim>
 void Richards_LMH<dim>::compute_jacobian(const VecType &x, double s, MatType &jac, bool symmetric)
 {
     std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
-    std::map<unsigned int, double> boundary_values;
 
     jac=0;
-    solution->update();
+    solution->update(s);
 
     // Main cycle over the cells.
     typename DoFHandler<dim>::active_cell_iterator
@@ -338,61 +328,51 @@ void Richards_LMH<dim>::compute_jacobian(const VecType &x, double s, MatType &ja
             endc = dof_handler.end();
     for (; cell != endc; ++cell) {
         local_assembly.reinit(cell);
-        local_assembly.apply_bc(boundary_values);
-/*
-        cout << "------------\n";
-        local_matrix.print_formatted(cout);
-        */
 
         cell->get_dof_indices(local_dof_indices);
-        matrix.add(local_dof_indices, local_assembly.get_matrix());
-//        rhs.add(local_dof_indices, local_assembly.get_rhs());
-
-
+        jac.add(local_dof_indices, local_assembly.get_matrix(symmetric));
     }
 
     // apply boundary values to solution vector
     for(map<unsigned int,double>::iterator iter = boundary_values.begin();
-        iter != boundary_values.end();
-        ++iter) {
-
-        solution->phead(iter->first) = iter->second;
+        iter != boundary_values.end(); ++iter) {
+        // reset matrix row
+        for(MatType::iterator col_it = jac.begin(iter->first);
+                col_it != jac.end(iter->first); ++col_it)
+            col_it->value()=0.0;
+        jac.diag_element(iter->first) = 1.0;
     }
-
-//    MatrixTools::apply_boundary_values(boundary_values,
-//            matrix,
-//            solution->phead,
-//            rhs);
-
+    //jac.print_formatted(cout);
 
 }
 
 template <int dim>
 void Richards_LMH<dim>::compute_function(const VecType &x, double s, VecType &func) {
-    std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
 
+    std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
     func=0;
-    solution->update();
+    solution->update(s);
+    //cout << "phead: " << solution->phead << endl;
+    //cout << "sat: " << solution->phead << endl;
+    //cout << "sat_old: " << solution->phead << endl;
 
     // Main cycle over the cells.
-    typename DoFHandler<dim>::active_cell_iterator
-        cell = dof_handler.begin_active(),
-            endc = dof_handler.end();
-    for (; cell != endc; ++cell) {
-        local_assembly.reinit(cell);
-        local_assembly.apply_bc(boundary_values);
+    for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+            cell != dof_handler.end(); ++cell) {
 
+        local_assembly.reinit(cell);
         cell->get_dof_indices(local_dof_indices);
-        func.add(local_dof_indices, local_assembly.get_rhs());
+        func.add(local_dof_indices, local_assembly.get_func());
 
     }
-    // apply boundary values to solution vector
-    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
-        iter != boundary_values.end();
-        ++iter) {
 
+    // set zero at Dirichlet boundary
+
+    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+        iter != boundary_values.end(); ++iter) {
         func(iter->first) = 0.0;
     }
+    //cout << "func: " << func << endl;
 
     // debugging residual output
     //field_output.output_fields(dof_handler, solution->phead, time.t(), true);
@@ -402,6 +382,25 @@ template <int dim>
 void Richards_LMH<dim>::compute_parameter_derivative(const VecType &x, double s, VecType &diff)
 {
 
+    std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
+    diff=0;
+    solution->update(s);
+
+    // Main cycle over the cells.
+    for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+            cell != dof_handler.end(); ++cell) {
+
+        local_assembly.reinit(cell);
+        cell->get_dof_indices(local_dof_indices);
+        diff.add(local_dof_indices, local_assembly.get_s_diff());
+
+    }
+
+    // set zero at Dirichlet boundary
+    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+        iter != boundary_values.end(); ++iter) {
+        diff(iter->first) = 0.0;
+    }
 }
 
 
@@ -414,12 +413,6 @@ void Richards_LMH<dim>::compute_parameter_derivative(const VecType &x, double s,
 template <int dim>
 void Richards_LMH<dim>::run ()
 {
-
-    Vector<double> sol_last;//, sat_last;
-    Vector<double> sol_new;
-    double res_norm;
-    double last_res_norm;
-    double decrease, last_decrease;
 
     richards_data->set_time(time.t());
     local_assembly.set_dt(time.dt(), time.t());
@@ -438,12 +431,9 @@ void Richards_LMH<dim>::run ()
         }
     }
 
+    solution->update(0.0);
     solution->timestep_update(time.dt()); // update nonlinearities
     field_output.output_fields(dof_handler, solution->phead, time.t(),false);
-
-    compute_jacobian(solution->phead, 0.0, matrix, true); // apply boundary conditions to initial condition in order to get true initial residum
-
-
 
     time.inc();
     nlin_solver->set_system(*this);
@@ -451,12 +441,25 @@ void Richards_LMH<dim>::run ()
 
   do {  // ---------------------------- Time loop
       //grid_refine();
-      solution->timestep_update(time.dt());
+
 renew_timestep:
       std::cout << "Timestep " << time.n_step() << " t= "<<time.t()<<", dt= " << time.dt() << endl;
 
+      solution->timestep_update(time.dt());
       local_assembly.set_dt(time.dt(), time.t());
       richards_data->set_time(time.t());
+
+      // get boundary values
+      for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+              cell != dof_handler.end(); ++cell) {
+          local_assembly.apply_bc(cell, boundary_values);
+      }
+      // apply boundary values to solution vector
+      for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+          iter != boundary_values.end();  ++iter) {
+          solution->phead(iter->first) = iter->second;
+      }
+
       // TODO: set nonlinear tolerance relative to time step
       //res_norm*= time.end_t()/time.dt();
 

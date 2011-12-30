@@ -124,6 +124,10 @@ void TestProblem::declare_params () {
                                 Patterns::Double(),
                                 "Maximim step in homotopy parameter.");
 
+    prm.declare_entry ("nlin_min_lambda", "0.2",
+                                Patterns::Double(),
+                                "Minimum (relative) linesearch parameter in Newton method.");
+
     prm.declare_entry ("nlin_max_it", "20",
                                 Patterns::Integer(),
                                 "Max nonlin. iterationss.");
