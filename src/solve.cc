@@ -92,7 +92,7 @@ void solver_init( struct Solver *solver) {
     }
 
     //! generic solver parameters
-    solver_accurancy=   OptGetDbl("Solver","Solver_accurancy","1.0e-7");
+    solver_accurancy=   OptGetDbl("Solver","Solver_accuracy","1.0e-7");
     solver->max_it=     OptGetInt("Solver", "max_it", "200" );
     solver->r_tol=      OptGetDbl("Solver", "r_tol", "-1" );
     if (solver->r_tol < 0) solver->r_tol=solver_accurancy;
