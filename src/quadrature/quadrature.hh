@@ -61,6 +61,11 @@ public:
     virtual ~Quadrature();
 
     /**
+     * Modify the number of quadrature points.
+     */
+    void resize(const unsigned int n_q_points);
+
+    /**
      * Number of quadrature points.
      */
     const unsigned int size() const;
@@ -76,6 +81,11 @@ public:
     const vector<vec::fixed<dim> > & get_points() const;
 
     /**
+     * Set individual quadrature point coordinates.
+     */
+    void set_point(const unsigned int i, const vec::fixed<dim> &p);
+
+    /**
      * Return the <tt>i</tt>th weight.
      */
     double weight(const unsigned int i) const;
@@ -84,6 +94,11 @@ public:
      * Return a reference to the whole array of weights.
      */
     const vector<double> & get_weights() const;
+
+    /**
+     * Set individual quadrature weight.
+     */
+    void set_weight(const unsigned int i, const double w);
 
 protected:
     /**
@@ -97,18 +112,15 @@ protected:
      * To be filled by the constructors of the derived classes.
      */
     vector<double> weights;
+
 };
 
 
 
 template<unsigned int dim>
-Quadrature<dim>::Quadrature(const unsigned int n_q) :
-        quadrature_points(0),
-        weights(n_q, 0)
+Quadrature<dim>::Quadrature(const unsigned int n_q)
 {
-    vec::fixed<dim> v;
-    v.fill(0);
-    quadrature_points.resize(n_q, v);
+    resize(n_q);
 }
 
 template<unsigned int dim>
@@ -116,6 +128,15 @@ Quadrature<dim>::Quadrature(const Quadrature<dim> &q) :
         quadrature_points(q.quadrature_points),
         weights(q.weights)
 {}
+
+template<unsigned int dim>
+void Quadrature<dim>::resize(const unsigned int n_q)
+{
+    vec::fixed<dim> v;
+    v.fill(0);
+    quadrature_points.resize(n_q, v);
+    weights.resize(n_q, 0);
+}
 
 template<unsigned int dim>
 inline const unsigned int Quadrature<dim>::size() const {
@@ -134,6 +155,12 @@ inline const vector<vec::fixed<dim> > & Quadrature<dim>::get_points() const {
 }
 
 template<unsigned int dim>
+inline void Quadrature<dim>::set_point(const unsigned int i, const vec::fixed<dim> &p)
+{
+    quadrature_points[i] = p;
+}
+
+template<unsigned int dim>
 inline double Quadrature<dim>::weight(const unsigned int i) const {
     return weights[i];
 }
@@ -141,6 +168,12 @@ inline double Quadrature<dim>::weight(const unsigned int i) const {
 template<unsigned int dim>
 inline const vector<double> & Quadrature<dim>::get_weights() const {
     return weights;
+}
+
+template<unsigned int dim>
+inline void Quadrature<dim>::set_weight(const unsigned int i, const double w)
+{
+    weights[i] = w;
 }
 
 template<unsigned int dim>

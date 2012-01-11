@@ -34,14 +34,89 @@
 
 using namespace arma;
 
+template<unsigned int degree, unsigned int dim>
+class PolynomialSpace
+{
+public:
+
+    PolynomialSpace();
+
+    const double basis_value(unsigned int i, const vec::fixed<dim> &p) const;
+
+    const vec::fixed<dim> basis_grad(unsigned int i, const vec::fixed<dim> &p) const;
+
+private:
+
+    /**
+     * Powers of x, y, z, ... in the i-th basis function are stored
+     * in powers[i].
+     */
+    vector<uvec::fixed<dim> > powers;
+
+};
+
+
+template<unsigned int degree, unsigned int dim>
+class DofDistribution
+{
+public:
+
+    DofDistribution();
+
+    /**
+     * Total number of degrees of freedom at one finite element.
+     */
+    unsigned int number_of_dofs;
+
+    /**
+     * Number of single dofs at one geometrical entity of the given
+     * dimension (point, line, triangle, tetrahedron).
+     */
+    unsigned int number_of_single_dofs[dim + 1];
+
+    /**
+     * Number of pairs of dofs at one geometrical entity of the given
+     * dimension (applicable to lines and triangles).
+     */
+    unsigned int number_of_pairs[dim + 1];
+
+    /**
+     * Number of triples of dofs associated to one triangle.
+     */
+    unsigned int number_of_triples[dim + 1];
+
+    /**
+     * Number of sextuples of dofs associated to one triangle.
+     */
+    unsigned int number_of_sextuples[dim + 1];
+
+    /**
+     * Support points are points in the reference element where
+     * function values determine the dofs. In case of Lagrangean
+     * finite elements the dof values are precisely the function
+     * values at @p unit_support_points.
+     *
+     */
+    vector<vec::fixed<dim> > unit_support_points;
+
+};
+
 
 /**
  * Conforming Lagrangean finite element on @p dim dimensional simplex.
  * The finite element functions are continuous across the interfaces.
  */
-template <unsigned int dim, unsigned int degree>
+template <unsigned int degree, unsigned int dim>
 class FE_P : public FiniteElement<dim>
 {
+    using FiniteElement<dim>::number_of_dofs;
+    using FiniteElement<dim>::number_of_single_dofs;
+    using FiniteElement<dim>::number_of_pairs;
+    using FiniteElement<dim>::number_of_triples;
+    using FiniteElement<dim>::number_of_sextuples;
+    using FiniteElement<dim>::unit_support_points;
+    using FiniteElement<dim>::compute_node_matrix;
+
 public:
     /**
      * Constructor.
@@ -57,17 +132,30 @@ public:
      * Returns the gradient of the @p ith basis function at the point @p p.
      */
     vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+
+private:
+
+    PolynomialSpace<degree,dim> poly_space;
+    DofDistribution<degree,dim> dof_distribution;
 };
+
 
 /**
  * Discontinuous Lagrangean finite element on @p dim dimensional simplex.
  * No continuity of the finite element functions across the interfaces is
  * imposed.
  */
-template <unsigned int dim, unsigned int degree>
+template <unsigned int degree, unsigned int dim>
 class FE_P_disc : public FiniteElement<dim>
 {
-private:
+    using FiniteElement<dim>::number_of_dofs;
+    using FiniteElement<dim>::number_of_single_dofs;
+    using FiniteElement<dim>::number_of_pairs;
+    using FiniteElement<dim>::number_of_triples;
+    using FiniteElement<dim>::number_of_sextuples;
+    using FiniteElement<dim>::unit_support_points;
+    using FiniteElement<dim>::compute_node_matrix;
+
 public:
     /**
      * Constructor.
@@ -83,7 +171,82 @@ public:
      * Returns the gradient of the @p ith basis function at the point @p p.
      */
     vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+
+private:
+
+    PolynomialSpace<degree,dim> poly_space;
+    DofDistribution<degree,dim> dof_distribution;
 };
+
+
+
+template<unsigned int degree, unsigned int dim>
+PolynomialSpace<degree,dim>::PolynomialSpace()
+{
+    uvec::fixed<dim> pows;
+    int i;
+
+    pows.zeros();
+
+    while (true)
+    {
+        powers.push_back(pows);
+
+        for (i=0; i<dim && pows[i] == degree; i++);
+        if (i == dim) break;
+
+        pows[i]++;
+        for (int j=0; j<i; pows[j] = 0, j++);
+    }
+}
+
+template<unsigned int degree, unsigned int dim>
+const double PolynomialSpace<degree,dim>::basis_value(unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(i<=powers.size(), "Index of basis function is out of range.");
+
+    double v = 1;
+
+    for (int j=0; j<dim; j++)
+        v *= pow(p[j], powers[i][j]);
+
+    return v;
+}
+
+
+template<unsigned int degree, unsigned int dim>
+const vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(i<=powers.size(), "Index of basis function is out of range.");
+
+    vec::fixed<dim> grad;
+
+    for (int j=0; j<dim; j++)
+    {
+        grad[j] = 1;
+        for (int k=0; k<dim; k++)
+        {
+            if (powers[i][j] == 0)
+            {
+                grad[j] = 0;
+                continue;
+            }
+            grad[j] *= pow(p[k], powers[i][j]-1);
+        }
+    }
+    return grad;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -93,35 +256,18 @@ public:
 
 // P0 constant element
 template<>
-FE_P<1,0>::FE_P()
+DofDistribution<0,1>::DofDistribution()
 {
     number_of_dofs = 1;
 
     number_of_single_dofs[1] = 1;
 
     unit_support_points.push_back(zeros<vec>(1));
-
-    compute_node_matrix();
 }
-
-template<>
-double FE_P<1,0>::basis_value(const unsigned int i, const vec::fixed<1> &p) const
-{
-    ASSERT(i==0, "Index of shape function is out of range.");
-    return 1;
-}
-
-template<>
-vec::fixed<1> FE_P<1,0>::basis_grad(const unsigned int i, const vec::fixed<1> &p) const
-{
-    ASSERT(i==0, "Index of shape function is out of range.");
-    return zeros<vec>(1);
-}
-
 
 // P1 linear element
 template<>
-FE_P<1,1>::FE_P()
+DofDistribution<1,1>::DofDistribution()
 {
     number_of_dofs = 2;
 
@@ -129,118 +275,25 @@ FE_P<1,1>::FE_P()
 
     unit_support_points.push_back(vec::fixed<1>("0"));
     unit_support_points.push_back(vec::fixed<1>("1"));
-    compute_node_matrix();
 }
-
-template<>
-double FE_P<1,1>::basis_value(const unsigned int i, const vec::fixed<1> &p) const
-{
-    ASSERT(i <= 1, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return 1;
-        break;
-    case 1:
-        return p(0);
-        break;
-    }
-}
-
-template<>
-vec::fixed<1> FE_P<1,1>::basis_grad(const unsigned int i, const vec::fixed<1> &p) const
-{
-    ASSERT(i <= 1, "Index of shape function is out of range.");
-    static const vec grad = ones<vec>(1);
-    switch (i)
-    {
-    case 0:
-        return vec::fixed<1>("0");
-        break;
-    case 1:
-        return grad;
-        break;
-    }
-}
-
-
-// P1 linear discontinuous element
-template<>
-FE_P_disc<1,1>::FE_P_disc()
-{
-    number_of_dofs = 2;
-
-    number_of_single_dofs[1] = 2;
-
-    unit_support_points.push_back(vec::fixed<1>("0"));
-    unit_support_points.push_back(vec::fixed<1>("1"));
-    compute_node_matrix();
-}
-
-template<>
-double FE_P_disc<1,1>::basis_value(const unsigned int i, const vec::fixed<1> &p) const
-{
-    ASSERT(i <= 1, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return 1;
-        break;
-    case 1:
-        return p(0);
-        break;
-    }
-}
-
-template<>
-vec::fixed<1> FE_P_disc<1,1>::basis_grad(const unsigned int i, const vec::fixed<1> &p) const
-{
-    ASSERT(i <= 1, "Index of shape function is out of range.");
-    static const vec grad = ones<vec>(1);
-    switch (i)
-    {
-    case 0:
-        return vec::fixed<1>("0");
-        break;
-    case 1:
-        return grad;
-        break;
-    }
-}
-
 
 /*** 2D finite elements ***/
 
 // P0 constant element
 template<>
-FE_P<2,0>::FE_P()
+DofDistribution<0,2>::DofDistribution()
 {
     number_of_dofs = 1;
 
     number_of_single_dofs[2] = 1;
 
     unit_support_points.push_back(vec2("0 0"));
-    compute_node_matrix();
-}
-
-template<>
-double FE_P<2,0>::basis_value(const unsigned int i, const vec2 &p) const
-{
-    ASSERT(i==0, "Index of shape function is out of range.");
-    return 1;
-}
-
-template<>
-vec2 FE_P<2,0>::basis_grad(const unsigned int i, const vec2 &p) const
-{
-    ASSERT(i==0, "Index of shape function is out of range.");
-    return zeros<vec>(2);
 }
 
 
 // P1 linear element
 template<>
-FE_P<2,1>::FE_P()
+DofDistribution<1,2>::DofDistribution()
 {
     number_of_dofs = 3;
 
@@ -249,129 +302,27 @@ FE_P<2,1>::FE_P()
     unit_support_points.push_back(vec2("0 0"));
     unit_support_points.push_back(vec2("1 0"));
     unit_support_points.push_back(vec2("0 1"));
-    compute_node_matrix();
 }
 
-template<>
-double FE_P<2,1>::basis_value(const unsigned int i, const vec2 &p) const
-{
-    ASSERT(i <= 2, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return 1;
-        break;
-    case 1:
-        return p(0);
-        break;
-    case 2:
-        return p(1);
-        break;
-    }
-}
-
-template<>
-vec2 FE_P<2,1>::basis_grad(const unsigned int i, const vec2 &p) const
-{
-    ASSERT(i <= 2, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return "0 0";
-        break;
-    case 1:
-        return "1 0";
-        break;
-    case 2:
-        return "0 1";
-        break;
-    }
-}
-
-
-// P1 linear discontinuous element
-template<>
-FE_P_disc<2,1>::FE_P_disc()
-{
-    number_of_dofs = 3;
-
-    number_of_single_dofs[2] = 3;
-
-    unit_support_points.push_back(vec2("0 0"));
-    unit_support_points.push_back(vec2("1 0"));
-    unit_support_points.push_back(vec2("0 1"));
-    compute_node_matrix();
-}
-
-template<>
-double FE_P_disc<2,1>::basis_value(const unsigned int i, const vec2 &p) const
-{
-    ASSERT(i <= 2, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return 1;
-        break;
-    case 1:
-        return p(0);
-        break;
-    case 2:
-        return p(1);
-        break;
-    }
-}
-
-template<>
-vec2 FE_P_disc<2,1>::basis_grad(const unsigned int i, const vec2 &p) const
-{
-    ASSERT(i <= 2, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return "0 0";
-        break;
-    case 1:
-        return "1 0";
-        break;
-    case 2:
-        return "0 1";
-        break;
-    }
-}
 
 
 /*** 3D finite elements ***/
 
 // P0 constant element
 template<>
-FE_P<3,0>::FE_P()
+DofDistribution<0,3>::DofDistribution()
 {
     number_of_dofs = 1;
 
     number_of_single_dofs[3] = 1;
 
     unit_support_points.push_back(vec3("0 0 0"));
-    compute_node_matrix();
-}
-
-template<>
-double FE_P<3,0>::basis_value(const unsigned int i, const vec3 &p) const
-{
-    ASSERT(i==0, "Index of shape function is out of range.");
-    return 1;
-}
-
-template<>
-vec3 FE_P<3,0>::basis_grad(const unsigned int i, const vec3 &p) const
-{
-    ASSERT(i==0, "Index of shape function is out of range.");
-    return zeros<vec>(3);
 }
 
 
 // P1 linear element
 template<>
-FE_P<3,1>::FE_P()
+DofDistribution<1,3>::DofDistribution()
 {
     number_of_dofs = 4;
 
@@ -381,108 +332,102 @@ FE_P<3,1>::FE_P()
     unit_support_points.push_back(vec3("1 0 0"));
     unit_support_points.push_back(vec3("0 1 0"));
     unit_support_points.push_back(vec3("0 0 1"));
+}
+
+
+
+
+
+
+
+
+
+
+
+template<unsigned int degree, unsigned int dim>
+FE_P<degree,dim>::FE_P()
+    : FiniteElement<dim>()
+{
+    for (int i=0; i<=dim; i++)
+    {
+        number_of_dofs += dof_distribution.number_of_single_dofs[i]
+                         +dof_distribution.number_of_pairs[i]
+                         +dof_distribution.number_of_triples[i]
+                         +dof_distribution.number_of_sextuples[i];
+
+        number_of_single_dofs[i] = dof_distribution.number_of_single_dofs[i];
+        number_of_pairs[i] = dof_distribution.number_of_pairs[i];
+        number_of_triples[i] = dof_distribution.number_of_triples[i];
+        number_of_sextuples[i] = dof_distribution.number_of_sextuples[i];
+    }
+
+    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
+        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
+
     compute_node_matrix();
 }
 
-template<>
-double FE_P<3,1>::basis_value(const unsigned int i, const vec3 &p) const
+template<unsigned int degree, unsigned int dim>
+double FE_P<degree,dim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
 {
-    ASSERT(i <= 3, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return 1;
-        break;
-    case 1:
-        return p(0);
-        break;
-    case 2:
-        return p(1);
-        break;
-    case 3:
-        return p(2);
-        break;
-    }
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_value(i, p);
 }
 
-template<>
-vec3 FE_P<3,1>::basis_grad(const unsigned int i, const vec3 &p) const
+template<unsigned int degree, unsigned int dim>
+vec::fixed<dim> FE_P<degree,dim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
 {
-    ASSERT(i <= 3, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return "0 0 0";
-        break;
-    case 1:
-        return "1 0 0";
-        break;
-    case 2:
-        return "0 1 0";
-        break;
-    case 3:
-        return "0 0 1";
-        break;
-    }
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_grad(i, p);
 }
 
 
-// P1 linear element
-template<>
-FE_P_disc<3,1>::FE_P_disc()
+
+
+
+
+
+
+
+
+
+
+
+
+
+template<unsigned int degree, unsigned int dim>
+FE_P_disc<degree,dim>::FE_P_disc()
+    : FiniteElement<dim>()
 {
-    number_of_dofs = 4;
+    for (int i=0; i<=dim; i++)
+        number_of_dofs += dof_distribution.number_of_single_dofs[i]
+                         +dof_distribution.number_of_pairs[i]
+                         +dof_distribution.number_of_triples[i]
+                         +dof_distribution.number_of_sextuples[i];
 
-    number_of_single_dofs[3] = 4;
+    number_of_single_dofs[dim] = number_of_dofs;
 
-    unit_support_points.push_back(vec3("0 0 0"));
-    unit_support_points.push_back(vec3("1 0 0"));
-    unit_support_points.push_back(vec3("0 1 0"));
-    unit_support_points.push_back(vec3("0 0 1"));
+    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
+        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
+
     compute_node_matrix();
 }
 
-template<>
-double FE_P_disc<3,1>::basis_value(const unsigned int i, const vec3 &p) const
+template<unsigned int degree, unsigned int dim>
+double FE_P_disc<degree,dim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
 {
-    ASSERT(i <= 3, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return 1;
-        break;
-    case 1:
-        return p(0);
-        break;
-    case 2:
-        return p(1);
-        break;
-    case 3:
-        return p(2);
-        break;
-    }
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_value(i, p);
 }
 
-template<>
-vec3 FE_P_disc<3,1>::basis_grad(const unsigned int i, const vec3 &p) const
+template<unsigned int degree, unsigned int dim>
+vec::fixed<dim> FE_P_disc<degree,dim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
 {
-    ASSERT(i <= 3, "Index of shape function is out of range.");
-    switch (i)
-    {
-    case 0:
-        return "0 0 0";
-        break;
-    case 1:
-        return "1 0 0";
-        break;
-    case 2:
-        return "0 1 0";
-        break;
-    case 3:
-        return "0 0 1";
-        break;
-    }
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_grad(i, p);
 }
+
+//template<> class PolynomialSpace<1,2>;
 
 
 

@@ -78,9 +78,9 @@ template<unsigned int dim> inline void DOFHandler<dim>::distribute_dofs(FiniteEl
         // TODO: For the moment we distribute only dofs associated to the cell
         //       In the future we want to distribute dofs on vertices, lines,
         //       and triangles as well.
-        object_dofs[dim][this] = new int[n_obj_dofs[dim]];
+        object_dofs[dim][cell] = new int[n_obj_dofs[dim]];
         for (int i=0; i<n_obj_dofs[dim]; i++)
-           object_dofs[dim][this][i] = next_free_dof++;
+           object_dofs[dim][cell][i] = next_free_dof++;
     }
 
 
@@ -131,7 +131,7 @@ template<unsigned int dim> void DOFHandler<dim>::get_dof_indices(const CellItera
     unsigned int offset, pid;
 
     for (int k=0; k<finite_element->n_object_dofs(dim,DOF_SINGLE); k++)
-            indices[k] = object_dofs[dim][this][k];
+            indices[k] = object_dofs[dim][cell][k];
 
 //    indices.clear();
 //

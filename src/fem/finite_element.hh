@@ -35,6 +35,7 @@
 #include <vector>
 #include "quadrature/quadrature.hh"
 #include <boost/assign/list_of.hpp>
+#include "fem/update_flags.hh"
 
 using namespace std;
 
@@ -69,6 +70,23 @@ const vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
         DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
 
 /**
+ * Structure for storing the precomputed finite element data.
+ */
+struct FEInternalData
+{
+    /**
+     * Precomputed values of basis functions at the quadrature points.
+     */
+    vector<arma::vec> basis_values;
+
+    /**
+     * Precomputed gradients of basis functions at the quadrature points.
+     */
+    vector<arma::mat > basis_grads;
+};
+
+
+/**
  * Abstract class for the description of a general finite element on
  * a reference simplex in @p dim dimensions.
  *
@@ -79,8 +97,7 @@ const vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
  * entities. This means that if the entity is shared by 2 or more
  * neighbouring cells in the mesh then this dof is shared by the
  * finite elements on all of these cells. If a dof is associated
- * to the cell itself then it is not shared with neighbouring finite
- * elements.
+ * to the cell itself then it is not shared with neighbouring cells.
  * The ordering of nodes in the entity may not be appropriate for the
  * finite elements on the neighbouring cells, hence we need to
  * describe how the order of dofs changes with the relative
@@ -153,12 +170,26 @@ public:
     virtual void compute_node_matrix();
 
     /**
+     * Calculates the data on the reference cell.
+     */
+    FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
+
+    /**
+     * Decides which additional quantities have to be computed
+     * for each cell.
+     */
+    UpdateFlags update_each(UpdateFlags flags);
+
+    /**
      * Computes the shape function values and gradients on the actual cell
      * and fills the FEValues structure.
      */
     virtual void fill_fe_values(const Quadrature<dim> &q,
-            vector<arma::mat> &inv_jacobians, vector<arma::vec> &shape_values,
-            vector<arma::mat> &shape_grads);
+            FEInternalData &data,
+            vector<arma::mat> &inv_jacobians,
+            vector<arma::vec> &shape_values,
+            vector<arma::mat> &shape_grads,
+            UpdateFlags flags);
 
     /**
      * For possible use in hp methods: Returns the maximum degree of
@@ -278,41 +309,83 @@ void FiniteElement<dim>::compute_node_matrix()
     arma::mat M(number_of_dofs, number_of_dofs);
 
     for (int i = 0; i < number_of_dofs; i++)
-    {
         for (int j = 0; j < number_of_dofs; j++)
+            M(j, i) = basis_value(j, get_generalized_support_points()[i]);
+    node_matrix = arma::inv(M);
+}
+
+template<unsigned int dim>
+FEInternalData *FiniteElement<dim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
+{
+    FEInternalData *data = new FEInternalData;
+
+    if ((flags & update_values) |
+        (flags & update_gradients))
+    {
+        compute_node_matrix();
+
+        if (flags & update_values)
         {
-            M(i, j) = basis_value(j, get_generalized_support_points()[i]);
+            arma::vec values(number_of_dofs);
+            data->basis_values.resize(q.size());
+            for (int i=0; i<q.size(); i++)
+            {
+                for (int j=0; j<number_of_dofs; j++)
+                    values[j] = basis_value(j, q.point(i));
+                data->basis_values[i] = node_matrix * values;
+            }
+        }
+
+        if (flags & update_gradients)
+        {
+            arma::mat grads(number_of_dofs, dim);
+            data->basis_grads.resize(q.size());
+            for (int i=0; i<q.size(); i++)
+            {
+                for (int j=0; j<number_of_dofs; j++)
+                    grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
+                data->basis_grads[i] = node_matrix * grads;
+            }
         }
     }
-    node_matrix = arma::inv(M);
+
+    return data;
+}
+
+template<unsigned int dim> inline
+UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
+{
+    UpdateFlags f = flags;
+
+    if (flags & update_gradients)
+        f |= update_inverse_jacobians;
+
+    return f;
 }
 
 template<unsigned int dim> inline
 void FiniteElement<dim>::fill_fe_values(
-        const Quadrature<dim> &q, vector<arma::mat> &inv_jacobians,
-        vector<arma::vec> &shape_values, vector<arma::mat> &shape_grads)
+        const Quadrature<dim> &q,
+        FEInternalData &data,
+        vector<arma::mat> &inv_jacobians,
+        vector<arma::vec> &shape_values,
+        vector<arma::mat> &shape_grads,
+        UpdateFlags flags)
 {
     // shape values
-    arma::vec values(number_of_dofs);
-    for (int i = 0; i < q.size(); i++)
+    if (flags & update_values)
     {
-        for (int j = 0; j < number_of_dofs; j++)
-        {
-            values(j) = basis_value(j, q.point(i));
-        }
-        shape_values[i] = node_matrix * values;
+        for (int i = 0; i < q.size(); i++)
+            shape_values[i] = data.basis_values[i];
     }
 
     // shape gradients
-    arma::mat grads(number_of_dofs, dim);
-    grads.zeros();
-    for (int i = 0; i < q.size(); i++)
+    if (flags & update_gradients)
     {
-        for (int j = 0; j < number_of_dofs; j++)
+        for (int i = 0; i < q.size(); i++)
         {
-            grads.row(j) = trans(basis_grad(j, q.point(i)));
+            shape_grads[i] = data.basis_grads[i] * arma::trans(inv_jacobians[i]);
         }
-        shape_grads[i] = node_matrix * grads * arma::trans(inv_jacobians[i]);
     }
 }
 

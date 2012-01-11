@@ -49,16 +49,21 @@ public:
      */
     MappingP1();
 
-    /**
-     * Calculates the mapping data and stores them in the provided
-     * structures.
-     */
+    MappingInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
+
+    UpdateFlags update_each(UpdateFlags flags);
+
     void fill_fe_values(const typename DOFHandler<dim>::CellIterator &cell,
                             const Quadrature<dim> &q,
-                            vector< mat::fixed<dim,spacedim> > &jacobians,
-                            vector<double> &JxW_values,
-                            vector< mat > &inverse_jacobians,
-                            vector< vec::fixed<spacedim> > &normal_vectors);
+                            MappingInternalData &data,
+                            FEValuesData<dim,spacedim> &fv_data);
+
+    void fill_fe_side_values(const typename DOFHandler<dim>::CellIterator &cell,
+                            const Side &side,
+                            const Quadrature<dim> &q,
+                            MappingInternalData &data,
+                            FEValuesData<dim,spacedim> &fv_data);
+
 
 private:
     /**
@@ -66,6 +71,7 @@ private:
      * computation of the Jacobian).
      */
     mat::fixed<dim,dim+1> grad;
+
 };
 
 
