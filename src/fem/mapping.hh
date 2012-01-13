@@ -60,15 +60,31 @@ template<> inline double determinant(const mat::fixed<1,2> &M)
     return sqrt(M(0,0)*M(0,0)+M(0,1)*M(0,1));
 }
 
+template<> inline double determinant(const mat::fixed<2,1> &M)
+{
+    return sqrt(M(0,0)*M(0,0)+M(1,0)*M(1,0));
+}
+
 template<> inline double determinant(const mat::fixed<1,3> &M)
 {
     return sqrt(M(0,0)*M(0,0)+M(0,1)*M(0,1)+M(0,2)*M(0,2));
+}
+
+template<> inline double determinant(const mat::fixed<3,1> &M)
+{
+    return sqrt(M(0,0)*M(0,0)+M(1,0)*M(1,0)+M(2,0)*M(2,0));
 }
 
 template<> inline double determinant(const mat::fixed<2,3> &M)
 {
     return sqrt((M(0,0)*M(0,0)+M(0,1)*M(0,1)+M(0,2)*M(0,2))*(M(1,0)*M(1,0)+M(1,1)*M(1,1)+M(1,2)*M(1,2))
                -(M(0,0)*M(1,0)+M(0,1)*M(1,1)+M(0,2)*M(1,2))*(M(0,0)*M(1,0)+M(0,1)*M(1,1)+M(0,2)*M(1,2)));
+}
+
+template<> inline double determinant(const mat::fixed<3,2> &M)
+{
+    return sqrt((M(0,0)*M(0,0)+M(1,0)*M(1,0)+M(2,0)*M(2,0))*(M(0,1)*M(0,1)+M(1,1)*M(1,1)+M(2,1)*M(2,1))
+               -(M(0,0)*M(0,1)+M(1,0)*M(1,1)+M(2,0)*M(2,1))*(M(0,0)*M(0,1)+M(1,0)*M(1,1)+M(2,0)*M(2,1)));
 }
 
 template<unsigned int n> inline double determinant(const mat::fixed<n,n> &M)
@@ -112,7 +128,7 @@ public:
      * Calculates the mapping data and stores them in the provided
      * structures.
      */
-    virtual void fill_fe_values(const typename DOFHandler<dim>::CellIterator &cell,
+    virtual void fill_fe_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                         const Quadrature<dim> &q,
                         MappingInternalData &data,
                         FEValuesData<dim,spacedim> &fv_data) = 0;
@@ -121,7 +137,7 @@ public:
      Calculates the mapping data related to a given side, namely the
      jacobian determinants and the normal vectors.
      */
-    virtual void fill_fe_side_values(const typename DOFHandler<dim>::CellIterator &cell,
+    virtual void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                             const Side &side,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
@@ -130,7 +146,7 @@ public:
     /**
      * Creates a cell dim-dimensional quadrature from side (dim-1)-dimensional quadrature.
      */
-    void transform_subquadrature(const typename DOFHandler<dim>::CellIterator &cell,
+    void transform_subquadrature(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                         Quadrature<dim> &q,
                         const Side &side,
                         const Quadrature<dim-1> &subq);
@@ -141,7 +157,7 @@ public:
 
 
 template<unsigned int dim, unsigned int spacedim> inline
-void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<dim>::CellIterator & cell,
+void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<dim,spacedim>::CellIterator & cell,
         Quadrature<dim> &q,
         const Side &side,
         const Quadrature<dim - 1> & subq)

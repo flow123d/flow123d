@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: quadrature.hh 1352 2011-09-23 14:14:47Z jan.stebel $
- * $Revision: 1352 $
- * $LastChangedBy: jan.stebel $
- * $LastChangedDate: 2011-09-23 16:14:47 +0200 (Fri, 23 Sep 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Discontinuous Galerkin method for equation of transport with dispersion.
@@ -35,6 +35,7 @@
 #include "solve.h"
 #include "petscmat.h"
 #include <armadillo>
+#include "fem/fe_rt.hh"
 
 
 TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database)
@@ -65,8 +66,8 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
      * Distribute DOFs.
      */
 
-    dof_handler2d = new DOFHandler<2>(mesh());
-    fe2d = new FE_P_disc<1,2>;
+    dof_handler2d = new DOFHandler<2,3>(mesh());
+    fe2d = new FE_P_disc<1,2,3>;
 
     dof_handler2d->distribute_dofs(*fe2d);
 
@@ -126,7 +127,7 @@ void TransportDG::output_data()
     ofstream f("transport_dg.dat");
     vec3 p;
 
-    for (DOFHandler<2>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
+    for (DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
     {
         if (cell->dim != 2) continue;
 
@@ -166,7 +167,7 @@ void TransportDG::assemble()
 
     QGauss<1> q1d(2);
     FESideValues<2,3> *fe_values_side[2];
-    DOFHandler<2>::CellIterator cell = dof_handler2d->begin_cell();
+    DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell();
 
     for (int sid=0; sid<2; sid++)
         fe_values_side[sid] = new FESideValues<2,3>(map, q1d, *fe2d, update_values | update_gradients | update_side_JxW_values | update_normal_vectors);
@@ -202,21 +203,46 @@ void TransportDG::assemble()
 
         ls->set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_matrix, local_rhs);
     }
+    
+    FE_RT0<2,3> fe_rt;
+    DOFHandler<2,3> dh_rt(mesh());
+    FESideValues<2,3> fv_rt(map, q1d, fe_rt, update_values | update_normal_vectors | update_side_JxW_values);
+    dh_rt.distribute_dofs(fe_rt);
 
     // assemble integral over sides
     for(EdgeFullIter edge = mesh().edge.begin(); edge!=mesh().edge.end(); ++edge)
     {
-        ASSERT(edge->n_sides <= 2, "Don't know how to treat an edge with more than 2 sides.");
-
         bool skip_edge = false;
+        int count_sides = 0;
         for (int sid=0; sid<edge->n_sides; sid++)
             if (edge->side[sid]->dim != 1 || mesh().element.full_iter(edge->side[sid]->element)->dim != 2)
             {
                 skip_edge = true;
                 break;
             }
+            else
+            {
+                count_sides++;
+            }
         if (skip_edge) continue;
-    
+
+        ASSERT(count_sides <= 2, "Don't know how to treat an edge with more than 2 sides.");
+        
+        // test of Raviart-Thomas element
+        cell = mesh().element.full_iter(edge->side[0]->element);
+        double flux;
+        for (int s=0; s<3; s++)
+        {
+            fv_rt.reinit(cell, cell->side[s]);
+            for (int k=0; k<3; k++)
+            {
+                flux = 0;
+                for (int i=0; i<q1d.size(); i++)
+                    flux += dot(fv_rt.shape_vector(k,i), fv_rt.normal_vector(i))*fv_rt.JxW(i);
+                printf("flux on cell %d side %d function %d = %e\n", cell.id(), s, k, flux);
+            }
+        }
+        
         for (int sid=0; sid<edge->n_sides; sid++)
         {
             cell = mesh().element.full_iter(edge->side[sid]->element);

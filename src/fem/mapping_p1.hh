@@ -53,12 +53,12 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags);
 
-    void fill_fe_values(const typename DOFHandler<dim>::CellIterator &cell,
+    void fill_fe_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
-    void fill_fe_side_values(const typename DOFHandler<dim>::CellIterator &cell,
+    void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                             const Side &side,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
@@ -70,7 +70,7 @@ private:
      * Auxiliary matrix of gradients of shape functions (used for
      * computation of the Jacobian).
      */
-    mat::fixed<dim,dim+1> grad;
+    mat::fixed<dim+1,dim> grad;
 
 };
 

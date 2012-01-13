@@ -38,6 +38,9 @@ TARGETS = $(BIN)/flow123d
 # List of object files of Flow123d
 FLOW123D_OBJS = \
 $(OBJS)/fem/dofhandler.o\
+$(OBJS)/fem/fe_values.o\
+$(OBJS)/fem/finite_element.o\
+$(OBJS)/fem/mapping_p1.o\
 \
 $(OBJS)/flow/local_matrix.o\
 $(OBJS)/flow/darcy_flow_mh.o\
@@ -73,6 +76,7 @@ $(OBJS)/system/sys_profiler.o\
 $(OBJS)/system/math_fce.o\
 \
 $(OBJS)/transport/transport.o\
+$(OBJS)/transport/transport_dg.o\
 $(OBJS)/transport/transport_operator_splitting.o\
 \
 $(OBJS)/equation.o\

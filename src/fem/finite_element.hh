@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: quadrature.hh 1352 2011-09-23 14:14:47Z jan.stebel $
- * $Revision: 1352 $
- * $LastChangedBy: jan.stebel $
- * $LastChangedDate: 2011-09-23 16:14:47 +0200 (Fri, 23 Sep 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Abstract class for description of finite elements.
@@ -33,11 +33,17 @@
 #include <armadillo>
 #include <map>
 #include <vector>
-#include "quadrature/quadrature.hh"
 #include <boost/assign/list_of.hpp>
 #include "fem/update_flags.hh"
 
-using namespace std;
+
+
+template<unsigned int dim, unsigned int spacedim> class FEValuesData;
+template<unsigned int dim> class Quadrature;
+
+
+
+
 
 /**
  * Multiplicities describe groups of dofs whose order changes with
@@ -83,6 +89,19 @@ struct FEInternalData
      * Precomputed gradients of basis functions at the quadrature points.
      */
     vector<arma::mat > basis_grads;
+
+
+    /**
+     * For vectorial finite elements:
+     * Precomputed values of basis functions at the quadrature points.
+     */
+    vector<vector<arma::vec> > basis_vectors;
+
+    /**
+     * For vectorial finite elements:
+     * Precomputed gradients of basis functions at the quadrature points.
+     */
+    vector<vector<arma::mat> > basis_grad_vectors;
 };
 
 
@@ -123,7 +142,7 @@ struct FEInternalData
  *
  *
  */
-template<unsigned int dim>
+template<unsigned int dim, unsigned int spacedim>
 class FiniteElement {
 public:
 
@@ -154,11 +173,28 @@ public:
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
+     * Variant of basis_value() for vectorial finite elements.
+     * Calculates the value @p i-th vector-valued raw basis function
+     * at the point @p p on the reference element.
+     */
+    virtual arma::vec::fixed<dim> basis_vector(const unsigned int i,
+            const arma::vec::fixed<dim> &p) const = 0;
+
+    /**
      * Calculates the gradient of the @p i-th raw basis function at the
      * point @p p on the reference element. The gradient components
      * are relative to the reference cell coordinate system.
      */
     virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
+            const arma::vec::fixed<dim> &p) const = 0;
+
+    /**
+     * Variant of basis_grad() for vectorial finite elements.
+     * Calculates the gradient of the @p i-th vector-valued raw basis
+     * function at the point @p p on the reference element. The gradient
+     * components are relative to the reference cell coordinate system.
+     */
+    virtual arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i,
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
@@ -172,13 +208,13 @@ public:
     /**
      * Calculates the data on the reference cell.
      */
-    FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
+    virtual FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
 
     /**
      * Decides which additional quantities have to be computed
      * for each cell.
      */
-    UpdateFlags update_each(UpdateFlags flags);
+    virtual UpdateFlags update_each(UpdateFlags flags);
 
     /**
      * Computes the shape function values and gradients on the actual cell
@@ -186,10 +222,7 @@ public:
      */
     virtual void fill_fe_values(const Quadrature<dim> &q,
             FEInternalData &data,
-            vector<arma::mat> &inv_jacobians,
-            vector<arma::vec> &shape_values,
-            vector<arma::mat> &shape_grads,
-            UpdateFlags flags);
+            FEValuesData<dim,spacedim> &fv_data);
 
     /**
      * For possible use in hp methods: Returns the maximum degree of
@@ -197,6 +230,14 @@ public:
      */
     virtual const unsigned int polynomial_order() const {
         return order;
+    };
+
+    /**
+     * Indicates whether the finite element function space is scalar
+     * or vectorial.
+     */
+    const bool is_scalar() const {
+        return is_scalar_fe;
     };
 
     /**
@@ -240,6 +281,11 @@ protected:
     unsigned int order;
 
     /**
+     * Indicator of scalar versus vectorial finite element.
+     */
+    bool is_scalar_fe;
+
+    /**
      * Matrix that determines the coefficients of the raw basis
      * functions from the values at the support points.
      */
@@ -262,144 +308,7 @@ protected:
     vector<arma::vec::fixed<dim> > generalized_support_points;
 };
 
-template<unsigned int dim>
-FiniteElement<dim>::FiniteElement() :
-        number_of_dofs(0)
-{
-    for (int i = 0; i <= dim; i++)
-    {
-        number_of_single_dofs[i] = 0;
-        number_of_pairs[i] = 0;
-        number_of_triples[i] = 0;
-        number_of_sextuples[i] = 0;
-    }
-}
 
-template<unsigned int dim> inline
-const unsigned int FiniteElement<dim>::n_dofs()
-{
-    return number_of_dofs;
-}
 
-template<unsigned int dim> inline
-const unsigned int FiniteElement<dim>::n_object_dofs(
-        unsigned int object_dim, DofMultiplicity multiplicity)
-{
-    ASSERT(object_dim >= 0 && object_dim <= dim,
-            "Object type number is out of range.");
-    switch (multiplicity)
-    {
-    case DOF_SINGLE:
-        return number_of_single_dofs[object_dim];
-    case DOF_PAIR:
-        return number_of_pairs[object_dim];
-    case DOF_TRIPLE:
-        return number_of_triples[object_dim];
-    case DOF_SEXTUPLE:
-        return number_of_sextuples[object_dim];
-    }
-}
-
-template<unsigned int dim> inline
-void FiniteElement<dim>::compute_node_matrix()
-{
-    ASSERT(get_generalized_support_points().size() == number_of_dofs,
-            "Invalid number of generalized support points.");
-
-    arma::mat M(number_of_dofs, number_of_dofs);
-
-    for (int i = 0; i < number_of_dofs; i++)
-        for (int j = 0; j < number_of_dofs; j++)
-            M(j, i) = basis_value(j, get_generalized_support_points()[i]);
-    node_matrix = arma::inv(M);
-}
-
-template<unsigned int dim>
-FEInternalData *FiniteElement<dim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
-{
-    FEInternalData *data = new FEInternalData;
-
-    if ((flags & update_values) |
-        (flags & update_gradients))
-    {
-        compute_node_matrix();
-
-        if (flags & update_values)
-        {
-            arma::vec values(number_of_dofs);
-            data->basis_values.resize(q.size());
-            for (int i=0; i<q.size(); i++)
-            {
-                for (int j=0; j<number_of_dofs; j++)
-                    values[j] = basis_value(j, q.point(i));
-                data->basis_values[i] = node_matrix * values;
-            }
-        }
-
-        if (flags & update_gradients)
-        {
-            arma::mat grads(number_of_dofs, dim);
-            data->basis_grads.resize(q.size());
-            for (int i=0; i<q.size(); i++)
-            {
-                for (int j=0; j<number_of_dofs; j++)
-                    grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
-                data->basis_grads[i] = node_matrix * grads;
-            }
-        }
-    }
-
-    return data;
-}
-
-template<unsigned int dim> inline
-UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
-{
-    UpdateFlags f = flags;
-
-    if (flags & update_gradients)
-        f |= update_inverse_jacobians;
-
-    return f;
-}
-
-template<unsigned int dim> inline
-void FiniteElement<dim>::fill_fe_values(
-        const Quadrature<dim> &q,
-        FEInternalData &data,
-        vector<arma::mat> &inv_jacobians,
-        vector<arma::vec> &shape_values,
-        vector<arma::mat> &shape_grads,
-        UpdateFlags flags)
-{
-    // shape values
-    if (flags & update_values)
-    {
-        for (int i = 0; i < q.size(); i++)
-            shape_values[i] = data.basis_values[i];
-    }
-
-    // shape gradients
-    if (flags & update_gradients)
-    {
-        for (int i = 0; i < q.size(); i++)
-        {
-            shape_grads[i] = data.basis_grads[i] * arma::trans(inv_jacobians[i]);
-        }
-    }
-}
-
-template<unsigned int dim>
-const vector<arma::vec::fixed<dim> > &FiniteElement<dim>::get_generalized_support_points()
-{
-    if (generalized_support_points.size() > 0)
-    {
-        return generalized_support_points;
-    }
-    else
-    {
-        return unit_support_points;
-    }
-}
 
 #endif /* FINITE_ELEMENT_HH_ */

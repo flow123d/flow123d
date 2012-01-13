@@ -34,7 +34,6 @@
 #include <vector>
 
 using namespace std;
-using namespace arma;
 
 /**
  * Base class for quadrature rules on simplices in arbitrary dimensions.
@@ -73,17 +72,17 @@ public:
     /**
      * Return the <tt>i</tt>th quadrature point.
      */
-    const vec::fixed<dim> & point(const unsigned int i) const;
+    const arma::vec::fixed<dim> & point(const unsigned int i) const;
 
     /**
      * Return a reference to the whole array of quadrature points.
      */
-    const vector<vec::fixed<dim> > & get_points() const;
+    const vector<arma::vec::fixed<dim> > & get_points() const;
 
     /**
      * Set individual quadrature point coordinates.
      */
-    void set_point(const unsigned int i, const vec::fixed<dim> &p);
+    void set_point(const unsigned int i, const arma::vec::fixed<dim> &p);
 
     /**
      * Return the <tt>i</tt>th weight.
@@ -105,7 +104,7 @@ protected:
      * List of quadrature points.
      * To be filled by the constructors of the derived classes.
      */
-    vector<vec::fixed<dim> > quadrature_points;
+    vector<arma::vec::fixed<dim> > quadrature_points;
 
     /**
      * List of weights to the quadrature points.
@@ -132,7 +131,7 @@ Quadrature<dim>::Quadrature(const Quadrature<dim> &q) :
 template<unsigned int dim>
 void Quadrature<dim>::resize(const unsigned int n_q)
 {
-    vec::fixed<dim> v;
+    arma::vec::fixed<dim> v;
     v.fill(0);
     quadrature_points.resize(n_q, v);
     weights.resize(n_q, 0);
@@ -144,18 +143,18 @@ inline const unsigned int Quadrature<dim>::size() const {
 }
 
 template<unsigned int dim>
-inline const vec::fixed<dim> & Quadrature<dim>::point(
+inline const arma::vec::fixed<dim> & Quadrature<dim>::point(
         const unsigned int i) const {
     return quadrature_points[i];
 }
 
 template<unsigned int dim>
-inline const vector<vec::fixed<dim> > & Quadrature<dim>::get_points() const {
+inline const vector<arma::vec::fixed<dim> > & Quadrature<dim>::get_points() const {
     return quadrature_points;
 }
 
 template<unsigned int dim>
-inline void Quadrature<dim>::set_point(const unsigned int i, const vec::fixed<dim> &p)
+inline void Quadrature<dim>::set_point(const unsigned int i, const arma::vec::fixed<dim> &p)
 {
     quadrature_points[i] = p;
 }

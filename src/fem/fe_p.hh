@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: quadrature.hh 1352 2011-09-23 14:14:47Z jan.stebel $
- * $Revision: 1352 $
- * $LastChangedBy: jan.stebel $
- * $LastChangedDate: 2011-09-23 16:14:47 +0200 (Fri, 23 Sep 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Definitions of basic Lagrangean finite elements with polynomial shape functions.
@@ -106,16 +106,17 @@ public:
  * Conforming Lagrangean finite element on @p dim dimensional simplex.
  * The finite element functions are continuous across the interfaces.
  */
-template <unsigned int degree, unsigned int dim>
-class FE_P : public FiniteElement<dim>
+template <unsigned int degree, unsigned int dim, unsigned int spacedim>
+class FE_P : public FiniteElement<dim,spacedim>
 {
-    using FiniteElement<dim>::number_of_dofs;
-    using FiniteElement<dim>::number_of_single_dofs;
-    using FiniteElement<dim>::number_of_pairs;
-    using FiniteElement<dim>::number_of_triples;
-    using FiniteElement<dim>::number_of_sextuples;
-    using FiniteElement<dim>::unit_support_points;
-    using FiniteElement<dim>::compute_node_matrix;
+    using FiniteElement<dim,spacedim>::number_of_dofs;
+    using FiniteElement<dim,spacedim>::number_of_single_dofs;
+    using FiniteElement<dim,spacedim>::number_of_pairs;
+    using FiniteElement<dim,spacedim>::number_of_triples;
+    using FiniteElement<dim,spacedim>::number_of_sextuples;
+    using FiniteElement<dim,spacedim>::unit_support_points;
+    using FiniteElement<dim,spacedim>::order;
+    using FiniteElement<dim,spacedim>::compute_node_matrix;
 
 public:
     /**
@@ -133,6 +134,16 @@ public:
      */
     vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
 
+    /**
+     * The vector variant of basis_value must be implemented but may not be used.
+     */
+    vec::fixed<dim> basis_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+
+    /**
+     * The vector variant of basis_grad must be implemented but may not be used.
+     */
+    mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+
 private:
 
     PolynomialSpace<degree,dim> poly_space;
@@ -145,16 +156,17 @@ private:
  * No continuity of the finite element functions across the interfaces is
  * imposed.
  */
-template <unsigned int degree, unsigned int dim>
-class FE_P_disc : public FiniteElement<dim>
+template <unsigned int degree, unsigned int dim, unsigned int spacedim>
+class FE_P_disc : public FiniteElement<dim,spacedim>
 {
-    using FiniteElement<dim>::number_of_dofs;
-    using FiniteElement<dim>::number_of_single_dofs;
-    using FiniteElement<dim>::number_of_pairs;
-    using FiniteElement<dim>::number_of_triples;
-    using FiniteElement<dim>::number_of_sextuples;
-    using FiniteElement<dim>::unit_support_points;
-    using FiniteElement<dim>::compute_node_matrix;
+    using FiniteElement<dim,spacedim>::number_of_dofs;
+    using FiniteElement<dim,spacedim>::number_of_single_dofs;
+    using FiniteElement<dim,spacedim>::number_of_pairs;
+    using FiniteElement<dim,spacedim>::number_of_triples;
+    using FiniteElement<dim,spacedim>::number_of_sextuples;
+    using FiniteElement<dim,spacedim>::unit_support_points;
+    using FiniteElement<dim,spacedim>::order;
+    using FiniteElement<dim,spacedim>::compute_node_matrix;
 
 public:
     /**
@@ -171,6 +183,16 @@ public:
      * Returns the gradient of the @p ith basis function at the point @p p.
      */
     vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+
+    /**
+     * The vector variant of basis_value must be implemented but may not be used.
+     */
+    vec::fixed<dim> basis_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+
+    /**
+     * The vector variant of basis_grad must be implemented but may not be used.
+     */
+    mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const;
 
 private:
 
@@ -235,6 +257,127 @@ const vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, co
         }
     }
     return grad;
+}
+
+
+
+
+
+
+
+
+
+
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+FE_P<degree,dim,spacedim>::FE_P()
+    : FiniteElement<dim,spacedim>()
+{
+    for (int i=0; i<=dim; i++)
+    {
+        number_of_dofs += dof_distribution.number_of_single_dofs[i]
+                         +dof_distribution.number_of_pairs[i]
+                         +dof_distribution.number_of_triples[i]
+                         +dof_distribution.number_of_sextuples[i];
+
+        number_of_single_dofs[i] = dof_distribution.number_of_single_dofs[i];
+        number_of_pairs[i] = dof_distribution.number_of_pairs[i];
+        number_of_triples[i] = dof_distribution.number_of_triples[i];
+        number_of_sextuples[i] = dof_distribution.number_of_sextuples[i];
+    }
+
+    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
+        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
+
+    order = degree;
+
+    compute_node_matrix();
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_value(i, p);
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_grad(i, p);
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_vector(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(false, "basis_vector() may not be called for scalar finite element.");
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+FE_P_disc<degree,dim,spacedim>::FE_P_disc()
+    : FiniteElement<dim,spacedim>()
+{
+    for (int i=0; i<=dim; i++)
+        number_of_dofs += dof_distribution.number_of_single_dofs[i]
+                         +dof_distribution.number_of_pairs[i]
+                         +dof_distribution.number_of_triples[i]
+                         +dof_distribution.number_of_sextuples[i];
+
+    number_of_single_dofs[dim] = number_of_dofs;
+
+    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
+        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
+
+    order = degree;
+
+    compute_node_matrix();
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_value(i, p);
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+    return poly_space.basis_grad(i, p);
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(false, "basis_vector() may not be called for scalar finite element.");
+}
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const
+{
+    ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
 }
 
 
@@ -335,99 +478,6 @@ DofDistribution<1,3>::DofDistribution()
 }
 
 
-
-
-
-
-
-
-
-
-
-template<unsigned int degree, unsigned int dim>
-FE_P<degree,dim>::FE_P()
-    : FiniteElement<dim>()
-{
-    for (int i=0; i<=dim; i++)
-    {
-        number_of_dofs += dof_distribution.number_of_single_dofs[i]
-                         +dof_distribution.number_of_pairs[i]
-                         +dof_distribution.number_of_triples[i]
-                         +dof_distribution.number_of_sextuples[i];
-
-        number_of_single_dofs[i] = dof_distribution.number_of_single_dofs[i];
-        number_of_pairs[i] = dof_distribution.number_of_pairs[i];
-        number_of_triples[i] = dof_distribution.number_of_triples[i];
-        number_of_sextuples[i] = dof_distribution.number_of_sextuples[i];
-    }
-
-    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
-        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
-
-    compute_node_matrix();
-}
-
-template<unsigned int degree, unsigned int dim>
-double FE_P<degree,dim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
-{
-    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_value(i, p);
-}
-
-template<unsigned int degree, unsigned int dim>
-vec::fixed<dim> FE_P<degree,dim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
-{
-    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_grad(i, p);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-template<unsigned int degree, unsigned int dim>
-FE_P_disc<degree,dim>::FE_P_disc()
-    : FiniteElement<dim>()
-{
-    for (int i=0; i<=dim; i++)
-        number_of_dofs += dof_distribution.number_of_single_dofs[i]
-                         +dof_distribution.number_of_pairs[i]
-                         +dof_distribution.number_of_triples[i]
-                         +dof_distribution.number_of_sextuples[i];
-
-    number_of_single_dofs[dim] = number_of_dofs;
-
-    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
-        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
-
-    compute_node_matrix();
-}
-
-template<unsigned int degree, unsigned int dim>
-double FE_P_disc<degree,dim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
-{
-    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_value(i, p);
-}
-
-template<unsigned int degree, unsigned int dim>
-vec::fixed<dim> FE_P_disc<degree,dim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
-{
-    ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_grad(i, p);
-}
-
-//template<> class PolynomialSpace<1,2>;
 
 
 

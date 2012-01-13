@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: quadrature.hh 1352 2011-09-23 14:14:47Z jan.stebel $
- * $Revision: 1352 $
- * $LastChangedBy: jan.stebel $
- * $LastChangedDate: 2011-09-23 16:14:47 +0200 (Fri, 23 Sep 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Declaration of class which handles the ordering of degrees of freedom (dof) and mappings between local and global dofs.
@@ -37,7 +37,7 @@
 
 using namespace std;
 
-template<unsigned int> class FiniteElement;
+template<unsigned int dim, unsigned int spacedim> class FiniteElement;
 class Mesh;
 
 /**
@@ -47,7 +47,7 @@ class Mesh;
  * The template parameter @p dim denotes the spatial dimension of
  * the reference finite element.
  */
-template<unsigned int dim>
+template<unsigned int dim, unsigned int spacedim>
 class DOFHandler {
 public:
 
@@ -72,7 +72,7 @@ public:
      * beginning of the global dof vector.
      *
      */
-    void distribute_dofs(FiniteElement<dim> &fe, const unsigned int offset = 0);
+    void distribute_dofs(FiniteElement<dim,spacedim> &fe, const unsigned int offset = 0);
 
     /**
      * Getter for the number of dofs at a single cell. This value
@@ -141,7 +141,7 @@ private:
      * Pointer to the finite element class for which the handler
      * distributes dofs.
      */
-    FiniteElement<dim> *finite_element;
+    FiniteElement<dim,spacedim> *finite_element;
 
     /*
      * Global numbers of dofs associated to nodes (object_dofs[0]),

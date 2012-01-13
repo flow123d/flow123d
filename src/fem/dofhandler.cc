@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: quadrature.hh 1352 2011-09-23 14:14:47Z jan.stebel $
- * $Revision: 1352 $
- * $LastChangedBy: jan.stebel $
- * $LastChangedDate: 2011-09-23 16:14:47 +0200 (Fri, 23 Sep 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Declaration of class which handles the ordering of degrees of freedom (dof) and mappings between local and global dofs.
@@ -42,7 +42,8 @@
 
 
 
-template<unsigned int dim> inline DOFHandler<dim>::DOFHandler(Mesh & _mesh)
+template<unsigned int dim, unsigned int spacedim> inline
+DOFHandler<dim,spacedim>::DOFHandler(Mesh & _mesh)
 : mesh(&_mesh),
   n_dofs(0),
   global_dof_offset(0),
@@ -52,7 +53,8 @@ template<unsigned int dim> inline DOFHandler<dim>::DOFHandler(Mesh & _mesh)
 
 
 
-template<unsigned int dim> inline void DOFHandler<dim>::distribute_dofs(FiniteElement<dim> & fe, const unsigned int offset)
+template<unsigned int dim, unsigned int spacedim> inline
+void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe, const unsigned int offset)
 {
     unsigned int next_free_dof = offset;
     unsigned int n_obj_dofs[dim+1];
@@ -112,20 +114,23 @@ template<unsigned int dim> inline void DOFHandler<dim>::distribute_dofs(FiniteEl
 
 
 
-template<unsigned int dim> inline const unsigned int DOFHandler<dim>::n_local_dofs()
+template<unsigned int dim, unsigned int spacedim> inline
+const unsigned int DOFHandler<dim,spacedim>::n_local_dofs()
 {
     return finite_element->n_dofs();
 }
 
 
 
-template<unsigned int dim> inline const unsigned int DOFHandler<dim>::n_global_dofs()
+template<unsigned int dim, unsigned int spacedim> inline
+const unsigned int DOFHandler<dim,spacedim>::n_global_dofs()
 {
     return n_dofs;
 }
 
 
-template<unsigned int dim> void DOFHandler<dim>::get_dof_indices(const CellIterator &cell, unsigned int indices[])
+template<unsigned int dim, unsigned int spacedim>
+void DOFHandler<dim,spacedim>::get_dof_indices(const CellIterator &cell, unsigned int indices[])
 {
     void *side;
     unsigned int offset, pid;
@@ -170,7 +175,8 @@ template<unsigned int dim> void DOFHandler<dim>::get_dof_indices(const CellItera
 //    }
 //}
 
-template<unsigned int dim> inline void DOFHandler<dim>::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[])
+template<unsigned int dim, unsigned int spacedim> inline
+void DOFHandler<dim,spacedim>::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[])
 {
     unsigned int indices[finite_element->n_dofs()];
 
@@ -179,7 +185,8 @@ template<unsigned int dim> inline void DOFHandler<dim>::get_dof_values(const Cel
 }
 
 
-template<unsigned int dim> inline const unsigned int DOFHandler<dim>::global_dof_id(const CellIterator &cell, const unsigned int local_dof_id)
+template<unsigned int dim, unsigned int spacedim> inline
+const unsigned int DOFHandler<dim,spacedim>::global_dof_id(const CellIterator &cell, const unsigned int local_dof_id)
 {
     ASSERT(local_dof_id<n_dofs, "Number of local dof is out of range.");
     unsigned int count_dofs = 0;
@@ -202,7 +209,8 @@ template<unsigned int dim> inline const unsigned int DOFHandler<dim>::global_dof
 
 
 
-template<unsigned int dim> inline typename DOFHandler<dim>::CellIterator DOFHandler<dim>::begin_cell() const
+template<unsigned int dim, unsigned int spacedim> inline
+typename DOFHandler<dim,spacedim>::CellIterator DOFHandler<dim,spacedim>::begin_cell() const
 {
     return mesh->element.begin();
 }
@@ -210,18 +218,20 @@ template<unsigned int dim> inline typename DOFHandler<dim>::CellIterator DOFHand
 
 
 
-template<unsigned int dim> inline typename DOFHandler<dim>::CellIterator DOFHandler<dim>::end_cell() const
+template<unsigned int dim, unsigned int spacedim> inline
+typename DOFHandler<dim,spacedim>::CellIterator DOFHandler<dim,spacedim>::end_cell() const
 {
     return mesh->element.end();
 }
 
-template<unsigned int dim> inline DOFHandler<dim>::~DOFHandler()
+template<unsigned int dim, unsigned int spacedim> inline
+DOFHandler<dim,spacedim>::~DOFHandler()
 {
     for (int dm=0; dm<=dim; dm++) object_dofs[dm].clear();
 }
 
 
-template class DOFHandler<1>;
-template class DOFHandler<2>;
-template class DOFHandler<3>;
+template class DOFHandler<1,3>;
+template class DOFHandler<2,3>;
+template class DOFHandler<3,3>;
 

@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: quadrature.hh 1352 2011-09-23 14:14:47Z jan.stebel $
- * $Revision: 1352 $
- * $LastChangedBy: jan.stebel $
- * $LastChangedDate: 2011-09-23 16:14:47 +0200 (Fri, 23 Sep 2011) $
+ * $Id$
+ * $Revision$
+ * $LastChangedBy$
+ * $LastChangedDate$
  *
  * @file
  * @brief Discontinuous Galerkin method for equation of transport with dispersion.
@@ -70,15 +70,13 @@ private:
      */
 	Vec flux_vector;
 
-	Vec solution;
-
 	LinSys *ls;
 
 	struct Solver *solver;
 
-	DOFHandler<2> *dof_handler2d;
+	DOFHandler<2,3> *dof_handler2d;
 
-	FiniteElement<2> *fe2d;
+	FiniteElement<2,3> *fe2d;
 
 
 };
