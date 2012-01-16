@@ -57,7 +57,7 @@ bin/mpiexec: makefile.in
 	else \
 	    echo "Can not guess mpiexec of PETSC configuration"; \
 	fi        
-	chmod u+x bin/mpiexec
+	chmod a+x bin/mpiexec
 
 bin/current_flow:
 	if [ -z "${MACHINE}" ]; then \
