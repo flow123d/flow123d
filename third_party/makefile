@@ -37,7 +37,8 @@ armadillo:
 	cd armadillo-1.1.92; \
 	export PETSC_DIR=${PETSC_DIR}; \
 	export PETSC_ARCH=${PETSC_ARCH}; \
-	cmake . -DCMAKE_PREFIX_PATH=../boost-1.42;\
+	export CMAKE_BLAS_LAPACK_DIR="${PETSC_DIR}/${PETSC_ARCH}/lib"; \
+	cmake . -DCMAKE_PREFIX_PATH="../boost-1.42";\
 	make
 
 fparser:
@@ -47,5 +48,6 @@ clean:
 	rm -f all
 	make -C metis-4.0 realclean
 	make -C armadillo-1.1.92 clean
+	rm armadillo-1.1.92/CMakeCache.txt
 	make -C fparser-4.4.3 clean
 	

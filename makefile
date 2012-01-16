@@ -27,10 +27,19 @@
 include makefile.in
 include makefile.include
 
+# 4 jobs is usualy enough and do not lead to swaping problems 
+MAKE_JOBS ?= 4
 
 all: bin/mpiexec revnumber bin/current_flow
 	make -C third_party all
 	make -j $(MAKE_JOBS) -C src all
+
+# timing of parallel builds (on Core 2 Duo, 4 GB ram)
+# N JOBS	O3	g,O0	
+# 1 		51s	46s
+# 2 		30s	26s
+# 4 		31s	27s
+# 8 		30s
 	
 bin/mpiexec: makefile.in
 	# TODO:
