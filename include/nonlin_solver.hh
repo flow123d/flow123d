@@ -40,6 +40,7 @@
 #include <lac/solver_cg.h>
 #include <lac/solver_bicgstab.h>
 #include <lac/precondition.h>
+#include <limits>
 
 using namespace dealii;
 
@@ -76,12 +77,14 @@ public:
         double alpha; // decrease factor for Newton method
         double max_lambda; // maximum step in homotopy parameter
         double min_lambda; // minimum lambda in Newton step relative to relative step length
+        bool check_jacobian_flag;
 
         // linear solver parameters
         double lin_rtol;
         double lin_atol;
         unsigned int lin_max_it;
 
+        bool use_homotopy;
     };
 
     HomotopyNewton( ParameterHandler &prm);
@@ -96,6 +99,7 @@ private:
     void homotopy_step();
     void line_search();
     void linear_solve(VecType &sol, VecType &rhs);
+    void check_jacobian();
 
 
     Params params;
@@ -115,16 +119,20 @@ private:
 
     SparseILU<double> precondition;
 
-    unsigned int cum_lin_iter, iter, cum_iter;
+    unsigned int cum_lin_iter, iter, cum_iter, sym_iter;
 
     bool converged_homotopy;
     bool reuse_precondition_sparsity;
+    bool symmetric_jac;
+
+
 
 };
 
 
 HomotopyNewton::HomotopyNewton(ParameterHandler &prm) {
 
+    params.use_homotopy = prm.get_bool("nlin_use_homotopy");
     params.tol_final = prm.get_double("nlin_tol");
     params.tol_step = params.tol_final * prm.get_double("nlin_tol_step_mult");
     params.tol_max= params.tol_step * prm.get_double("nlin_tol_max_mult");
@@ -134,10 +142,13 @@ HomotopyNewton::HomotopyNewton(ParameterHandler &prm) {
     params.alpha = prm.get_double("nlin_alpha");
     params.max_lambda = prm.get_double("nlin_max_lambda");
     params.min_lambda = prm.get_double("nlin_min_lambda");
+    params.check_jacobian_flag = prm.get_bool("nlin_check_jacobian");
 
     params.lin_rtol=prm.get_double("lin_rtol");
     params.lin_atol=prm.get_double("lin_atol");
     params.lin_max_it=prm.get_integer("lin_max_it");
+
+
     cum_lin_iter=0;
     cum_iter=0;
 
@@ -164,6 +175,9 @@ void HomotopyNewton::set_system(NonlinSystemBase &sys)
 
     cum_lin_iter=0;
     cum_iter=0;
+    symmetric_jac = false;
+
+
 }
 
 
@@ -171,25 +185,32 @@ HomotopyNewton::ConvergenceState HomotopyNewton::solve() {
 
     s_param=0.0;
     iter=0;
-    converged_homotopy=false;
+    converged_homotopy=!params.use_homotopy;
+    sym_iter=0;
 
     system->compute_function(*solution, s_param, *func);
     f_norm=func->l2_norm();
 
+    double f_norm_save;
+
     while ( !converged_homotopy  || f_norm > params.tol_final ) {
+
+        f_norm_save = f_norm;
         if (!converged_homotopy && f_norm < params.tol_step) {
             homotopy_step();
             if ( fabs(1.0 - s_param) < params.tol_final ) {
                 converged_homotopy=true;
                 s_param=1.0;
             }
-            cout << "  "<<setw(10) << iter<< setw(15) << f_norm << " H" << lambda << endl;
+            sym_iter=0;
+            cout << "  "<<setw(10) << iter<< setw(15) << f_norm << " H" << setw(8) << lambda << " d: " << f_norm/f_norm_save << endl;
         }
         else {
             newton_step();
-            cout << "  "<<setw(10) << iter<< setw(15) << f_norm << " N" << lambda << endl;
+            cout << "  "<<setw(10) << iter<< setw(15) << f_norm << " N" << setw(8) << lambda << " d: " << f_norm/f_norm_save << endl;
         }
         iter++;
+        cum_iter++;
         if (iter > params.max_it) {
             conv_state = diverged_max_it;
             return (conv_state);
@@ -202,7 +223,8 @@ HomotopyNewton::ConvergenceState HomotopyNewton::solve() {
 
 void HomotopyNewton::homotopy_step() {
 
-    system->compute_jacobian(*solution, s_param, *jac, true);
+    symmetric_jac = true;
+    system->compute_jacobian(*solution, s_param, *jac, symmetric_jac);
     system->compute_parameter_derivative(*solution, s_param, s_diff);
     solution_save=*solution;
     f_norm_save=f_norm;
@@ -214,18 +236,17 @@ void HomotopyNewton::homotopy_step() {
     // linesearch to get maximum step but keep f_norm < tol_max
 
 
-
     lambda = 1.0 - s_param;
     lambda = min(lambda, params.max_lambda);
     while (true) {
      // compute F(sol - lambda * sol_step)
      solution->equ(1.0, solution_save, -lambda, sol_step);
-     system->compute_function(*solution,s_param,*func);
+     system->compute_function(*solution,s_param+lambda,*func);
      // TODO: check for solution in function domain
 
      f_norm=func->l2_norm();
-     cout << "h-step: " << lambda << " " <<f_norm << endl;
-     if (.5*(f_norm)*(f_norm) < 0.5 * params.tol_max * params.tol_max) { /* Sufficient reduction */
+
+     if (f_norm < params.tol_max ) { /* Sufficient reduction */
          goto theend;
      }
      lambda*=0.5;
@@ -241,7 +262,16 @@ void HomotopyNewton::newton_step() {
     // TODO: check for NaN in function value
 
     // use non-symmetric jacobian only for for converged homotopy
-    system->compute_jacobian(*solution, s_param, *jac, true);
+
+    if (sym_iter<2) {
+        sym_iter++;
+        symmetric_jac = true;
+    } else {
+        symmetric_jac=false;
+    }
+    system->compute_jacobian(*solution, s_param, *jac, symmetric_jac);
+    if (converged_homotopy && params.check_jacobian_flag) check_jacobian();
+
     linear_solve(sol_step, *func);
     //cout << "step: " << sol_step << endl;
     // TODO: check sucesssful linear solve
@@ -272,8 +302,23 @@ void HomotopyNewton::line_search() {
     for(unsigned int i=0; i< solution->size();i++) ratio_max=max(sol_step(i)/(*solution)(i),ratio_max);
     double min_lambda = params.min_lambda / ratio_max;
 
-    // f(x) * M * sol_step = d/d_lambda (0.5 * f_norm *f_norm) at lambda=0
-    double init_slope=jac->matrix_scalar_product(*func,sol_step);
+    double init_slope;
+    if (symmetric_jac) {
+        const double eps = numeric_limits<double> :: epsilon() * 1024;
+        // for Picard iterations use numerical derivative
+        solution->equ(1.0, solution_save, -eps, sol_step);
+        system->compute_function(*solution,s_param,*func);
+        f_norm=func->l2_norm();
+        init_slope=0.5*(f_norm *f_norm - f_norm_save*f_norm_save)/eps;
+    } else {
+        // -f(x) * M * sol_step = d/d_lambda (0.5 * f(x-ls) * f(x-ls)) at lambda=0
+        init_slope=-jac->matrix_scalar_product(*func,sol_step);
+    }
+    if (init_slope >= 0.0) {
+        cout << "positive slope: " << -init_slope << endl;
+        // TODO: vetsinou se jedna o derivaci okolo nuly co s tim ?
+        // ? pocitat numericky ?
+    }
     if (init_slope > 0.0)  init_slope = -init_slope; // ??
     if (init_slope == 0.0) init_slope = -1.0;
 
@@ -282,7 +327,7 @@ void HomotopyNewton::line_search() {
     solution->equ(1.0, solution_save, -lambda, sol_step);
     system->compute_function(*solution,s_param,*func);
     f_norm=func->l2_norm();
-    return;
+
     if (.5*(f_norm)*(f_norm) <= .5*f_norm_save*f_norm_save + params.alpha*init_slope) { /* Sufficient reduction */
         return;
     }
@@ -352,18 +397,10 @@ void HomotopyNewton::line_search() {
 
 void HomotopyNewton::linear_solve(VecType &sol, VecType &rhs)
 {
-
-
-
-
-
-  //matrix.print_formatted(cout);
-  //rhs.print(cout);
-
   ReductionControl        solver_control (params.lin_max_it, params.lin_atol, params.lin_rtol);
   solver_control.log_history(true);
 
-  if (false && converged_homotopy) {
+  if (true || ! symmetric_jac) {
       // precise jacobian can be non symetric
       SolverBicgstab<>        bcgs_solver (solver_control);
 
@@ -377,6 +414,7 @@ void HomotopyNewton::linear_solve(VecType &sol, VecType &rhs)
           ));
       reuse_precondition_sparsity=true;
 
+      cout << "   " << "bcgs" << endl;
       bcgs_solver.solve (*jac, sol, rhs,
             precondition);
 
@@ -402,6 +440,7 @@ void HomotopyNewton::linear_solve(VecType &sol, VecType &rhs)
           ));
       reuse_precondition_sparsity=true;
 
+      cout << "   " << "cg" << endl;
       cg_solver.solve (*jac, sol, rhs,
             precondition);
 
@@ -422,5 +461,32 @@ void HomotopyNewton::linear_solve(VecType &sol, VecType &rhs)
   //solution.print(cout);
 }
 
+void HomotopyNewton::check_jacobian() {
+
+    //MatType num_jac(jac->get_sparsity_pattern());
+    solution_save=*solution;
+    VecType &func_save = sol_step;
+    func_save = *func;
+    const double dx = 1.0E-10; // * f_norm / sqrt(solution->size());
+    double diff, err=0;
+
+    for(unsigned int col = 0; col < solution->size(); col++ ) {
+        (*solution)(col)+=dx;
+        system->compute_function(*solution, s_param, *func);
+        for(unsigned int row= 0; row < solution->size(); row++) {
+            diff = ((*func)(row) - func_save(row) ) / dx;
+            if (fabs(diff) > 1.0E-20) {
+                //if ( fabs((*jac)(row,col) - diff) > 1.0E-5*fabs(diff) ) {
+                    //cout << "(" << row << ", " << col << ") " << (*jac)(row,col) <<" "<< diff << " " << (*jac)(row,col) - diff << endl;
+                //}
+
+                err+=  fabs((*jac)(row,col) - diff) * fabs((*jac)(row,col) - diff);
+            }
+        }
+        (*solution)(col)-=dx;
+    }
+    cout << "jac L2 elem rel error: " << sqrt(err)/jac->frobenius_norm() << endl;
+    *solution = solution_save;
+}
 
 #endif /* NONLIN_SOLVER_HH_ */

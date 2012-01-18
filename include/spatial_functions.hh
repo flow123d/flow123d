@@ -20,6 +20,7 @@
 //#include <richards_bc.hh>
 #include "FADBAD++/fadbad.h"
 #include "FADBAD++/badiff.h"
+#include "FADBAD++/fadiff.h"
 #include "base/parameter_handler.h"
 using namespace fadbad;
 using namespace dealii;
@@ -335,6 +336,14 @@ public:
       return f.val();
     }
 
+    double fqq(const double h) {
+        B< F<double> > x(h);
+        x.x().diff(0,2);
+        B< F<double> > f( hydro_model.FQ(x) );
+        f.diff(0,1);
+        return x.d(0).d(0);
+    }
+
     double fk(double h) {return fk(h,h);}
 
     double fk(const double h, double &dfdx) {
@@ -381,10 +390,10 @@ public:
     void print_mat_table() {
         std::cout << "MATERIAL TABLE" <<
         std::cout << "(h, sat, cond, lambda)" << std::endl;
-        double cap;
+        double cap=0,k_diff=0;
         for(double e = -5; e < 2; e+=0.1) {
             double h=-5*exp(e);
-            std::cout << h << " " << fq(h,cap) << " " << fk(h) << " "<<lambda(cap) <<std::endl;
+            std::cout << h << " " << fq(h,cap) << " " << cap << " "<< fk(h,k_diff) << " "<<k_diff <<" "<< fqq(h) <<std::endl;
         }
     }
 

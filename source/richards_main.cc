@@ -110,6 +110,7 @@ void TestProblem::declare_params () {
 
 
     // numerical parameters
+    prm.declare_entry("nlin_use_homotopy", "false", Patterns::Bool(),"Use Homotopy method for initial approximation.");
     prm.declare_entry ("nlin_tol", "0.0001",
                                 Patterns::Double(),
                                 "Tolerance of nonlinear solver.");
@@ -135,6 +136,11 @@ void TestProblem::declare_params () {
     prm.declare_entry ("nlin_alpha", "1.0E-4",
                                 Patterns::Double(),
                                 "Decrease parameter");
+
+    prm.declare_entry ("nlin_check_jacobian", "1.0E-4",
+                                Patterns::Bool(),
+                                "Check jacobian by finite diferences.");
+
     prm.declare_entry ("lin_rtol", "0.01",
                                 Patterns::Double(),
                                 "Relative tolerance of linear solver.");

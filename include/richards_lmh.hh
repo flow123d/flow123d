@@ -351,6 +351,7 @@ void Richards_LMH<dim>::compute_function(const VecType &x, double s, VecType &fu
 
     std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
     func=0;
+    solution->out_aux = 0;
     solution->update(s);
     //cout << "phead: " << solution->phead << endl;
     //cout << "sat: " << solution->phead << endl;
@@ -371,6 +372,10 @@ void Richards_LMH<dim>::compute_function(const VecType &x, double s, VecType &fu
     for(map<unsigned int,double>::iterator iter = boundary_values.begin();
         iter != boundary_values.end(); ++iter) {
         func(iter->first) = 0.0;
+        solution->out_aux(iter->first) = 0.0;
+    }
+    for(unsigned int i =0; i< func.size();i++) {
+        solution->out_aux(i)= max(fabs(func(i)) - 3*fabs(solution->out_aux(i)) , 0.0);
     }
     //cout << "func: " << func << endl;
 
@@ -431,13 +436,25 @@ void Richards_LMH<dim>::run ()
         }
     }
 
-    solution->update(0.0);
-    solution->timestep_update(time.dt()); // update nonlinearities
+    solution->update(0.0); // update nonlinearities
+    solution->timestep_update(time.dt());
     field_output.output_fields(dof_handler, solution->phead, time.t(),false);
 
     time.inc();
     nlin_solver->set_system(*this);
 
+    // get boundary values
+    for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+            cell != dof_handler.end(); ++cell) {
+        local_assembly.apply_bc(cell, boundary_values);
+    }
+    // apply boundary values to solution vector
+    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+        iter != boundary_values.end();  ++iter) {
+        solution->phead(iter->first) = iter->second;
+    }
+    compute_function(solution->phead,1.0, solution->residual);
+    solution->sat_diff = solution->residual;
 
   do {  // ---------------------------- Time loop
       //grid_refine();
@@ -445,7 +462,7 @@ void Richards_LMH<dim>::run ()
 renew_timestep:
       std::cout << "Timestep " << time.n_step() << " t= "<<time.t()<<", dt= " << time.dt() << endl;
 
-      solution->timestep_update(time.dt());
+      if (time.n_step() != 1) solution->timestep_update(time.dt());
       local_assembly.set_dt(time.dt(), time.t());
       richards_data->set_time(time.t());
 

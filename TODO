@@ -1,7 +1,52 @@
+TODO: clanek
+
+1) 
+- odvodit preskalovani  - > redukce parametru modelu
+
+2) oscilace MH:
+- demonstrovat oscilace a porovnani s LMH 
+- pouzit odvozeni z PANM pro MH 1D
+
+3) podrobne LMH schema a jeho modifikace pro O2 v case podle clanku
+? lze pri adaptivnim kroku + O2 schematu pozorovat oscilace (napr na analytickem reseni pokud bych
+ho resil na vetsi oblasti s vetsim casovym krokem), ktere bych byl schopen eliminovat ?
+
+* dodelat dynamicky casovy krok
+* dodelat vypocet spravne rychlosti (pres lambda)
+* dodelat vypocet variace rychlosti
+
+- testy konvergence O2 podle clanku na analytickem reseni
+- testy konvergence na 1D richardsovi:
+  - pro ruzne casove skaly a ruzna n: chyba v p, chyba v q, oscilace q, bilance (celkova)
+
+4) osetrene O2 schema: max, resp. zhlazeny orez - 
+moznosti;
+* otestovat funkcnost i pro zapornou diferenci saturace
+* pouzit shodu znamenka O1 a O2 schematu pro prijeti nebo zamitnuti kroku
+* garantovany estimator chyby ... scifi
+* pokud v taylorove rozvoji pouzivam prvnik K clenu pro aproximaci casove derivace, a K+1 clen je vetsi,
+  pak musim bud zvysit rad nebo zmensit krok
+
+* studium a porovnani s MOL, baliky pro integraci ODE; nejde primo pouzit pri prostorove adaptivite, a 
+  pokud chci kvalitni pole toku, ale pokud budou stabilne fungovat, muzu je prostudovat hloub a pouzit
+
+
+
+10.1. -------------
+- testovat hladky orez v casovem clenu, jak ten orez funguje v rychlosti
+- optimalizovat orez
+- optimalizace nelinearniho solveru
+- testy konvergence
+
 30.12. ------------
-* overit kvantitativni spravnost oproti predchozi funkcni verzi ( chyba reseni vuci referencnimu )
-* zkusit nesymetricky jakobian (lepsi konvergence ?)
-* zkusit lambda != 1 
+* potrebuji vhodne kriterium pro "dobrou aproximaci" tj. bez nezadoucich oscilaci
+  problem je v tom, ze pro make vodivosti je zhlazujici elipticky clen hodne slaby, snad by proto pomohlo mit 
+  tol_max radove okolo Ks ( otazka ja s tim jeste hraje dx)
+
+* newton s LS si s pocatecnim priblizenim take poradi, ale hure nez Pickard
+
+zkusit, zda by nebylo lepsi mit jako s_parametr neco jineho nez vysku posunuti
+* taky by mohlo pomoct regularizovat vodivost, 
 28.12. ------------
 
   pro s<1 pouzivat symetrickou verzi az pak nesymetrickou

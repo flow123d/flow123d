@@ -91,6 +91,9 @@ private:
     static const unsigned int n_output_components = dim + 4;
     double x_size;
 
+    double bc_flux_total, last_volume, volume, init_volume, cum_bc_flux;
+    std::ofstream bc_output;
+
 
 };
 
@@ -106,9 +109,11 @@ FieldOutput<dim>::FieldOutput(Triangulation<dim> &tria, unsigned int p_order, Lo
   print_level(0),
   print_time(0.0),
   print_time_step(0.1),
-  local_assembly(la)
+  local_assembly(la),
+  bc_output("bc_output.out")
 {
     cout << "fo construct " <<endl;
+
 
 }
 
@@ -145,7 +150,10 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     names.push_back("q_error");
 
     names.push_back("post_phead");
-    names.push_back("post_diff_phead");
+    names.push_back("post_old_phead");
+    names.push_back("residual");
+    names.push_back("post_lambda");
+    names.push_back("post_aux");
 
     std::vector<DataComponentInterpretation::DataComponentInterpretation> component_interpretation(dim,
             DataComponentInterpretation::component_is_part_of_vector);
@@ -155,8 +163,14 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
 
     data_out.add_data_vector(out_vec, names, DataOut<dim>::type_automatic, component_interpretation);
+
+    init_volume=-1;
+    cum_bc_flux=0;
 }
 
 template <int dim>
@@ -172,7 +186,20 @@ template <int dim>
 void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time, bool force)
 {
 
-//  bc_out.output(time, dof_handler, sat_dh, solution, saturation);
+  // update vector
+  update_fields(solution_dh, time);
+
+  // bc output
+  double error_local = (volume-last_volume) + bc_flux_total;
+  cum_bc_flux +=bc_flux_total;
+  double error = (volume - init_volume) + cum_bc_flux;
+  bc_output << setw(12) << time
+          << setw(12) << error/volume * 100
+          << setw(12) << error_local/(volume - last_volume) * 100
+          << setw(12) << bc_flux_total
+          << setw(12) << volume
+          << setw(12) << volume - last_volume<<endl;
+
 
   if (!force && time * 1.0000001 < print_time) return;
   std::cout << "PRINT time (" << print_level << "): " << time << std::endl;
@@ -184,8 +211,6 @@ void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double
   file_name = fns.str();
   print_level++;
 
-  // update vector
-  update_fields(solution_dh, time);
   //AssertDimension(out_vec.block(p_traces_bl).size(),  solution_vector.size());
   //out_vec.block(p_traces_bl) = solution_vector;
 
@@ -208,9 +233,13 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
     double l2_error=0;
     double l2_flux_error = 0;
     out_vec=0;
+    bc_flux_total =0;
+    last_volume=volume;
+    volume =0;
     for (; cell != endc; ++cell, ++sol_cell) {
         local_assembly.reinit(sol_cell);
-        local_assembly.output_evaluate();
+        local_assembly.output_evaluate(bc_flux_total, volume);
+
 
         l2_error += local_assembly.get_p_error() /x_size;
         l2_flux_error += local_assembly.get_q_error() /x_size;
@@ -220,7 +249,11 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
         out_vec.add(local_dof_indices, local_assembly.get_output_vector());
 
 
+
+
+
     }
+    if (init_volume < 0) init_volume = volume;
     if ( local_assembly.solution->richards_data->has_exact_solution() ) {
         cout << "Time: " << time << " L2 error: " << sqrt(l2_error) << " " << sqrt(l2_flux_error) << endl;
     }

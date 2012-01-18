@@ -4,7 +4,7 @@
 set x_size = 1
 set z_size = 1
 set hx = 1
-set hz = 0.01
+set hz = 0.001
 
 
 set t_init = 0.0
@@ -36,11 +36,16 @@ set hydro_ks = 1.25E-5              # saturated conductivity
 
 
 set nlin_max_it =200
-set nlin_tol = 0.0000001
-set nlin_tol_step_mult = 100 
-set nlin_tol_max_mult = 10
-set nlin_max_lambda= 0.5
-set nlin_alpha= 0.001
+
+set nlin_tol = 1e-8
+set nlin_tol_step_mult = 1e+20 
+set nlin_tol_max_mult = 2
+
+set nlin_max_lambda= 1.0
+set nlin_min_lambda=0.1
+
+set nlin_alpha= 0.0001
+set nlin_check_jacobian = false
 
 # set lin_rtol = 0.0001
 # set lin_atol = 1.0E-6

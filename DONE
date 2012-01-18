@@ -1,7 +1,64 @@
+18.1. -----------------------------------------
+Shrnuti dosavadnich poznatku:
+
+Pro O2 schema v case jsou dve zakladni schemata 1) integrace prave strany lichobeznikovym pravidlem (LP) 
+2) integrace pomoci prostredniho bodu (MP), pro linearni rovnice je to ekvivalentni
+
+* Problem oscilaci jak LP tak MP pri nasyceni je nejspis v tom, ze obe schemata nejsou L-stabilni, tj. pro 
+  linearni ODR s velkym zapornym koeficientem osciluji a prakticky stagnuji, misto aby rychle klesaly k nule. 
+  Prave pri saturaci to lze chapat tak, ze vodivost jde k nekonecnu.
+
+* Porovnani MP a LP na nelinearni ODR charakterizujici prubeh jednoho stupne volnosti v Richardsove rovnici (tj.
+  d/dt th(h) + K(h)(h-H) = 0
+  tedy pro tuto rovnici je MP pri saturaci mnohem mene stabilni nez LP.
+  Nicmene se nepodarilo reprodukovat oscilace jinde nez v saturovane zone.
+
+* LP schema lze chapat take jako lepsi paroximaci casove derivace vlhkosti
+
+* Pri PDR v 1D pozorujeme:
+  1) LP bez variabilni lambdy - oscilace jen v saturovane oblasi
+  2) LP s variabilni lambdou, snazime se aby aproximace casove derivace vlhkosti mela stejne znmenko jako pri Eulerove schematu 
+     - kvuli velkemu casovemu kroku (patrne) dochazi k prostorovemu posunuti zvonovych krivek ktere se v LP schematu odcitaji a aproximace 
+     derivace tak zacina oscilovat i mimo oblast saturace.
+     PRi penalizaci prostorovou zmenou lambdy dochazi:
+     - neoscilujicimu tlaku
+     - v pocatku simulace infiltrace je vyrazna chyba bilance (otazka zda neni chyba nekde v jejim vypoctu)
+     - talk ze zpozdi za presnym resenim (v pocatku)
+     - rychlost je vyrazne vyssi na vstupu, nez by mela byt
+     - nedari se proves volbu lambdy tak, zby se v aproximaci casove derivace saturace neobjevyli silne oscilace, ty se sice vyhladi  v rychlosti a talku diky integraci, 
+       ale nekdy mohou byt tak zavazne, ze se projevi i v rychlosti a pripadne zhrouti nelinearni solver, problem je ze pri takoveto volbe lambda zde neni zadny disipacni mechanizmus
+       ktery by ji zhlazoval, z tohoto hlediska je lepsi volit lambdu podle tlaku
+
+  3) MP - 
+
+13.1. ----------------------------------------
+- pro aproximaci difference vlhkosti pouzivam interpolaci mezi 
+  zpetnou diferenci (1. radu) a differenci 2. radu tak, aby vysledek mel stejne znamenko jako diference 1. radu
+  ( zatim vim ze je kladne, bude treba to testovat na ulohach s oboustrannou rychlosti )
+
+- neni jasne zda to bude fungovat v obecnych pripadech, ale vede to na perfektne stabilni schema
+- stale je problem, ze pro delsi casovy krok je difference 2. radu prilis velika (rezp. v integralu by asi byla OK pokud bych neorezaval)
+  z toho plyne ze je prilis velika a tlak se zpomaluje
+- kvuli orezum taky ztratim bilanci !!
+  
+10.1. ==============================
+- castecny uspech, lambda v casovem clenu vede na stabilni schema, testovano pouze s linearnim orezem
+- zustavaji oscilace v rychlosti, situace je lepsi pokud linearni orez zacina az dale od h=0, napr. na intervalu arg_cap_max/4 az arg_cap_max/2
+
+
+1.1. ---------------------
+Linearni lambda:
+- dela spatny tok, nemonotonni, to ma vliv na tvorbu hrbu v reseni
+- otazka je ja moc je to kvuli vyhodnoceni toku v koncovem case, ale monotonie by mel platit kazdopadne
+- Jsou vyrazne vlivy zlomu lembdy na rychlost!
+
+* drobne opravy v nonlin solveru
+
 30.12. ------------------
 * implementovana homotopy + Newton metoda
 * implementovan samostatny vypocet jakobianu, funkce a derivace podle homotopy parametru
 * otesovana kvalitativni spravnoist pro lambda =1 a symetricky jakobian
+* otestovan nesymetricky jakobian (lepsi konv)
 25.12. -----------------
 !! vskutku system poskytuje vice reseni jednak oscilujici a jednak to sparavne monotonni. 
    k tomu spravnemu lze dojit napr postupnym menenim lambdy smerem od 1.0
