@@ -454,7 +454,7 @@ void Richards_LMH<dim>::run ()
         solution->phead(iter->first) = iter->second;
     }
     compute_function(solution->phead,1.0, solution->residual);
-    solution->sat_diff = solution->residual;
+    //solution->sat_diff = solution->residual;
 
   do {  // ---------------------------- Time loop
       //grid_refine();

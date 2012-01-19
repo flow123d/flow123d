@@ -79,10 +79,10 @@ class TLinear : public Function<dim>
   public:
     TLinear (ParameterHandler &prm) : Function<dim>(1) {
 
-        a1 = 0.022;
+        double t_limit = 100;
         a0 = -2.0;
-        limit= 0.2;
-
+        limit= -0.5;
+        a1 = (limit-a0)/t_limit;
     }
     virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
     {

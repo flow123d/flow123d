@@ -190,6 +190,9 @@ void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double
   update_fields(solution_dh, time);
 
   // bc output
+  if (cum_bc_flux == 0) {
+      bc_output << " time   err%    loc_err%    bc_flux     volume      vol_diff" <<endl;
+  }
   double error_local = (volume-last_volume) + bc_flux_total;
   cum_bc_flux +=bc_flux_total;
   double error = (volume - init_volume) + cum_bc_flux;

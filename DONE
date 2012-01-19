@@ -1,4 +1,12 @@
 18.1. -----------------------------------------
+* implementovano prepinani mezi trapezoid/midpoint_approx/ midpoint
+* bilance OK pro vsechny tri 
+* v uvedenem poradi klesa stabilita, nejmene v tlaku osciluje trapezoid nejvice midpoint
+  a to i pri uloze bez nasyceni -> patrny problem dlouheho casoveho kroku a ne velkeho K (tedy L stability)
+  jeste: porovnat presne bilanci tri schemat, jak velke je Cap/K v krajnim bode ? skutecne nejde o L stabilitu ?
+
+
+18.1. -----------------------------------------
 Shrnuti dosavadnich poznatku:
 
 Pro O2 schema v case jsou dve zakladni schemata 1) integrace prave strany lichobeznikovym pravidlem (LP) 
