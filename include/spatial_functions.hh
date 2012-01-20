@@ -81,13 +81,13 @@ class TLinear : public Function<dim>
 
         double t_limit = 100;
         a0 = -2.0;
-        limit= -0.5;
+        limit= 0.2;
         a1 = (limit-a0)/t_limit;
     }
     virtual double value (const Point<dim>   &p, const unsigned int  component = 0) const
     {
         //std::cout << "bc t " << this->get_time() << std::endl;
-        return min(limit,  this->get_time() * a1 + a0) + p[dim-1] ;
+        return min(limit,  this->get_time() * a1 + a0) + p[dim-1];
     }
     virtual ~TLinear() {}
 
@@ -389,7 +389,7 @@ public:
 
     void print_mat_table() {
         std::cout << "MATERIAL TABLE" <<
-        std::cout << "(h, sat, cond, lambda)" << std::endl;
+        std::cout << "(h, sat, cap, con, con_diff, cap_diff)" << std::endl;
         double cap=0,k_diff=0;
         for(double e = -5; e < 2; e+=0.1) {
             double h=-5*exp(e);

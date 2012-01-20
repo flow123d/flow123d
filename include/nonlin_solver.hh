@@ -480,12 +480,12 @@ void HomotopyNewton::check_jacobian() {
                     //cout << "(" << row << ", " << col << ") " << (*jac)(row,col) <<" "<< diff << " " << (*jac)(row,col) - diff << endl;
                 //}
 
-                err+=  fabs((*jac)(row,col) - diff) * fabs((*jac)(row,col) - diff);
+                err =  max(err, fabs((*jac)(row,col) - diff) / max( fabs(diff),  fabs( (*jac)(row,col) ) ) );
             }
         }
         (*solution)(col)-=dx;
     }
-    cout << "jac L2 elem rel error: " << sqrt(err)/jac->frobenius_norm() << endl;
+    cout << "jac inf elem rel error: " << sqrt(err)/jac->frobenius_norm() << endl;
     *solution = solution_save;
 }
 

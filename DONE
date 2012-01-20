@@ -1,3 +1,22 @@
+19.1. -------------------
+
+trapezoidal + promenna lambda - i pro dlouhe casove kroky dava pomerne stabilni schema
+
+
+19.1. -------------------
+bilance nesedi protoze vazenim uzlovymi lambdami porusujeme bilanci stacionarnich toku na elementech, jedina moznost jak zachovat bilanci je
+mit elementove lambdy, nebo vazit primo tlaky pro vypocet toku.
+
+varianta vazit primo tlaky: zbezne testovana jako nestabilni, duvodem je ze tim ziskame hladky lambda-tlak
+a znej pak vice mene extrapolujeme novy tlak coz vede k nestabilitam.
+
+varianta vazit po elementach: 
+pro nesaturovany okrajovy tlak: horsi oscilace nez bez omezeni lambdy, ale bilance sedi
+
+
+18.1. ------------------
+!!! bilance naprosto nesedi pro rpostorove promennou lambdu
+
 18.1. -----------------------------------------
 * implementovano prepinani mezi trapezoid/midpoint_approx/ midpoint
 * bilance OK pro vsechny tri 

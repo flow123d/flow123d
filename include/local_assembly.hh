@@ -79,7 +79,8 @@ public:
             }
         }
 
-        cond_type = mid_point_approx;
+        cond_type = trapezoid;
+        //cond_type = mid_point;
     }
 
     void revert() {
@@ -104,9 +105,10 @@ public:
     void update(double s_param) {
         double p, p_scaled;
         double cap_crit;
-        double h_crit_1 = richards_data->cap_arg_max_/2;
-        double h_crit_0 = richards_data->cap_arg_max_ / 8;
-        richards_data->fq(h_crit_1,cap_crit);
+        double h_crit_1 = richards_data->cap_arg_max_/2 ;
+        double h_crit_0 = richards_data->cap_arg_max_/2 ;
+        richards_data->fq(h_crit_0,cap_crit);
+        cap_crit = cap_crit / richards_data->fk(h_crit_0);
 
 
 
@@ -134,9 +136,9 @@ public:
                 }
             } */
             // constant lambda
-            lambda(i)=0.5;
-            lambda_diff(i)=0;
-            lambda_s_diff(i)=0;
+            //lambda(i)=0.5;
+            //lambda_diff(i)=0;
+            //lambda_s_diff(i)=0;
 
 
             // linear time lambda
@@ -164,7 +166,8 @@ public:
 //            lambda(i) = 1.0/(1.0+time_lambda(i));
             time_lambda(i) =1;*/
 
-            /* lambda cap/cond
+            // lambda cap/cond
+            s_param = 1;
             double c_diff;
             double cond=richards_data->fk(p, c_diff);
             if (p>0) {
@@ -172,17 +175,19 @@ public:
                 lambda_diff(i)=0;
                 lambda_s_diff(i)=0;
             } else {
-                p_scaled = p / h_crit;
+                p_scaled = p / h_crit_0;
                 if (p_scaled > 1) {
                     lambda(i) = 1 - s_param * 0.5;
                     lambda_diff(i)=0;
                     lambda_s_diff(i)=-0.5;
                 } else {
-                    lambda(i) = 1 - s_param * 0.5 * (capacity(i)/cond) / (cap_over_k__crit);
-                    lambda_diff(i)= 0.0;//- s_param * 0.5 * (richards_data->fqq(p) /cond - capacity(i)/cond /cond * c_diff);
-                    lambda_s_diff(i)= - 0.5 * (capacity(i)/cond) / (cap_over_k__crit);
+                    lambda(i) = 1 - s_param * 0.5 * (capacity(i)/cond) / (cap_crit);
+                    lambda_diff(i)= - s_param * 0.5 * (richards_data->fqq(p) /cond - capacity(i)/cond /cond * c_diff) / (cap_crit);
+                    lambda_s_diff(i)= 0.0; //- 0.5 * (capacity(i)/cond) / (cap_over_k__crit);
                 }
-            }*/
+            }
+            //lambda(i)=0.5;
+            //lambda_diff(i) =0;
             /*
             double c_diff;
             double cond=richards_data->fk(p, c_diff);
@@ -253,7 +258,7 @@ public:
 
     inline double conduct_old(unsigned int i) {
         if (cond_type == trapezoid) {
-            return conductivity_new(i);
+            return conductivity_old(i);
         } else {
             return conductivity_midpoint(i);
         }
@@ -420,7 +425,7 @@ private:
 
     //const unsigned int z_component;
     //const double density, gravity;
-    double dt, time, out_cond;
+    double dt, time, out_cond, lambda_el;
 
     std::vector<Tensor < 2, dim> > k_inverse_values;
 
@@ -535,9 +540,8 @@ FullMatrix<double> &LocalAssembly<dim>::get_matrix(bool symmetry)
 
     for (unsigned int i = 0; i < local_matrix_22.size(0); ++i) {
         unsigned int idx = local_dof_indices[i];
-        cond_new+=lumping_weights(i)*solution->conduct_new(local_dof_indices[i]);
-        cond_old+=lumping_weights(i)*solution->conduct_old(local_dof_indices[i]);
-
+        cond_new+=lumping_weights(i)*solution->conduct_new(idx);
+        cond_old+=lumping_weights(i)*solution->conduct_old(idx);
 
         for (unsigned int j = 0; j < local_matrix_22.size(0); ++j) {
             grad_p_new(i) += inv_local_matrix_00(i,j) * local_phead(j);
@@ -546,17 +550,17 @@ FullMatrix<double> &LocalAssembly<dim>::get_matrix(bool symmetry)
 
         if (!symmetry) {
             if (solution->cond_type == solution->trapezoid) {
-                cond_diff(i)= lumping_weights(i) * solution->conduct_new_diff(idx);
-                velocit(i) = lambda(i) * grad_p_new(i);
+                cond_diff(i)= lambda_el * lumping_weights(i) * solution->conduct_new_diff(idx);
+                velocit(i) = grad_p_new(i);
             } else if (solution->cond_type == solution->mid_point_approx) {
-                cond_diff(i)= lumping_weights(i) * solution->conduct_new_diff(idx) * lambda(i)
+                cond_diff(i)= lumping_weights(i) * solution->conduct_new_diff(idx) * solution->lambda(idx)
                         + lambda_diff(i) * (solution->conduct_new(local_dof_indices[i]) - solution->conduct_old(local_dof_indices[i]));
-                velocit(i) = lambda(i) * grad_p_new(i) + (1-lambda(i)) * grad_p_old(i);
+                velocit(i) = lambda_el * grad_p_new(i) + (1-lambda_el) * grad_p_old(i);
 
             } else if (solution->cond_type == solution->mid_point) {
                 cond_diff(i)= lumping_weights(i) * solution->conduct_new_diff(idx) *
                         (solution->lambda_diff(idx)*(local_phead(i) - local_old_phead(i)) + lambda(i));
-                velocit(i) = lambda(i) * grad_p_new(i) + (1-lambda(i)) * grad_p_old(i);
+                velocit(i) = lambda_el * grad_p_new(i) + (1-lambda_el) * grad_p_old(i);
 
             }
 
@@ -566,14 +570,14 @@ FullMatrix<double> &LocalAssembly<dim>::get_matrix(bool symmetry)
     for (unsigned int i = 0; i < local_matrix_22.size(0); ++i) {
 
         for (unsigned int j = 0; j < local_matrix_22.size(0); ++j) {
-            local_matrix_22(i,j) = lambda(i) * cond_new * inv_local_matrix_00(i, j)
+            local_matrix_22(i,j) = cond_new * lambda_el * inv_local_matrix_00(i, j)
+                                   + lumping_weights(j)*solution->lambda_diff(local_dof_indices[j]) * (cond_new * grad_p_new(i) - cond_old * grad_p_old(i))
                                    +  cond_diff(j) * velocit(i);
         }
 
         unsigned int idx = local_dof_indices[i];
         local_matrix_22(i, i) +=
-                solution->capacity(idx) *lumping_weights(i) * element_volume / dt
-                + solution->lambda_diff(idx) * (cond_new * grad_p_new(i) - cond_old * grad_p_old(i));
+                solution->capacity(idx) *lumping_weights(i) * element_volume / dt;
     }
     //inv_local_matrix_00.print_formatted(cout);
     //alphas.print(cout);
@@ -632,9 +636,7 @@ void LocalAssembly<dim>::compute_steady_flux() {
     }
 
     for (unsigned int i = 0; i < local_matrix_22.size(0); ++i) {
-        double lambda = solution->lambda(local_dof_indices[i]);
-        steady_flux(i)= lambda * cond_new * local_phead(i) +
-                (1-lambda) * cond_old * local_old_phead(i);
+        steady_flux(i)= cond_new * lambda_el *local_phead(i) + cond_old * (1-lambda_el) * local_old_phead(i);
     }
 }
 
@@ -724,6 +726,11 @@ void LocalAssembly<dim>::reinit(typename DoFHandler<dim>::active_cell_iterator c
 
     lumping_weights = alphas;
     lumping_weights.scale(1 / alphas_total);
+
+    lambda_el=0;
+    for (unsigned int i = 0; i < local_matrix_00.size(0); ++i)
+        lambda_el+= lumping_weights(i)*solution->lambda(local_dof_indices[i]);
+    //cout << "lmb: " << lambda_el << endl;
 }
 
 template <int dim>
@@ -870,7 +877,7 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
         trace_res(i) = solution->residual(idx);
         trace_head(i)= solution->pressure(idx);
 
-        cond_diff(i) = element_volume*lumping_weights(i)*(solution->saturation(idx) - solution->old_saturation(idx) )/dt;
+        cond_diff(i) = solution->capacity(idx)/solution->conduct_new(idx)/dt;
         lambda(i) = solution->lambda(idx);//element_volume*lumping_weights(i)*solution->new_sat_diff(idx)/dt;
         el_phead    += trace_head(face_no) * lumping_weights(face_no);
 
