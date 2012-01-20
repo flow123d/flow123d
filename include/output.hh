@@ -91,7 +91,7 @@ private:
     static const unsigned int n_output_components = dim + 4;
     double x_size;
 
-    double bc_flux_total, last_volume, volume, init_volume, cum_bc_flux;
+    double bc_flux_total, last_volume, volume, init_volume, cum_bc_flux, head_var, q_var,norm_head_second_diff;
     std::ofstream bc_output;
 
 
@@ -205,7 +205,7 @@ void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double
 
 
   if (!force && time * 1.0000001 < print_time) return;
-  std::cout << "PRINT time (" << print_level << "): " << time << std::endl;
+  std::cout << "PRINT time (" << print_level << "): " << time << "    variations: "<< head_var << " " << q_var << " " << norm_head_second_diff << std::endl;
   print_time += print_time_step;
 
   // file name
@@ -233,15 +233,20 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
     Vector<double> local_output(local_assembly.output_fe.dofs_per_cell);
     std::vector<unsigned int> local_dof_indices(local_assembly.output_fe.dofs_per_cell);
 
+    local_assembly.solution->compute_head_second_diff();
+    norm_head_second_diff = local_assembly.solution->head_second_diff.l2_norm();
+
     double l2_error=0;
     double l2_flux_error = 0;
     out_vec=0;
     bc_flux_total =0;
     last_volume=volume;
     volume =0;
+    q_var=head_var =0;
     for (; cell != endc; ++cell, ++sol_cell) {
         local_assembly.reinit(sol_cell);
         local_assembly.output_evaluate(bc_flux_total, volume);
+        local_assembly.compute_add_variation(q_var, head_var);
 
 
         l2_error += local_assembly.get_p_error() /x_size;

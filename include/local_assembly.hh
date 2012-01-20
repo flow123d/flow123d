@@ -61,6 +61,8 @@ public:
         capacity.reinit(dh.n_dofs());
         old_saturation.reinit(dh.n_dofs());
         residual.reinit(dh.n_dofs());
+        head_diff.reinit(dh.n_dofs());
+        head_second_diff.reinit(dh.n_dofs());
 
         out_aux.reinit(dh.n_dofs());
         //sat_diff.reinit(dh.n_dofs());
@@ -79,6 +81,8 @@ public:
             }
         }
 
+        head_diff= 0;
+        dt_ =1;
         cond_type = trapezoid;
         //cond_type = mid_point;
     }
@@ -92,9 +96,11 @@ public:
      */
     void timestep_update(double dt) {
         double p;
+        dt_last = dt_;
         dt_=dt;
 
         for(unsigned int i=0;i<phead.size();i++) {
+            head_diff(i) = (phead(i) - old_phead(i)) /dt_;
             old_phead(i) = phead(i);
             old_saturation(i) = saturation(i);
             conductivity_old(i) = conductivity_new(i);
@@ -268,6 +274,12 @@ public:
         return conductivity_new_diff(i);
     }
 
+    void compute_head_second_diff() {
+        for(unsigned int i=0;i<phead.size();i++) {
+            head_second_diff(i) = ((phead(i) - old_phead(i)) /dt_ - head_diff(i) )/ (dt_ + dt_last) * (1.0/6 *dt_*dt_);
+        }
+    }
+
     Vector<double> z_coord;
     Vector<double> phead;
     Vector<double> old_phead;
@@ -280,13 +292,15 @@ public:
     Vector<double> capacity;
     Vector<double> old_saturation;
     Vector<double> residual;
+    Vector<double> head_diff;
+    Vector<double> head_second_diff;
     Vector<double> out_aux;
     //Vector<double> sat_diff;
     //Vector<double> time_lambda;
 
 
     RichardsData<dim> *richards_data;
-    double dt_;
+    double dt_, dt_last;
     bool last_lmb_change;
 
 
@@ -344,6 +358,7 @@ public:
 
     void reinit(typename DoFHandler<dim>::active_cell_iterator cell);
     void output_evaluate(double & bc_flux_total,double &volume_total);
+    void compute_add_variation(double &flux_var, double &head_var);
     void set_lambda();
     double get_p_error() { return  output_vector( out_idx[p_error_bl][0] ); }
     double get_q_error() { return  output_vector( out_idx[q_error_bl][0] ); }
@@ -864,7 +879,6 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
     Vector<double> trace_head(trace_fe.dofs_per_cell);
     Vector<double> weight_trace_phead(trace_fe.dofs_per_cell);
     Vector<double> trace_res(trace_fe.dofs_per_cell);
-    Vector<double> local_velocity(velocity_fe.dofs_per_cell);
 
     output_vector=0;
     double conductivity =0;
@@ -877,7 +891,8 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
         trace_res(i) = solution->residual(idx);
         trace_head(i)= solution->pressure(idx);
 
-        cond_diff(i) = solution->capacity(idx)/solution->conduct_new(idx)/dt;
+        cond_diff(i) = solution->head_second_diff(idx); //solution->capacity(idx)/solution->conduct_new(idx)/dt;
+
         lambda(i) = solution->lambda(idx);//element_volume*lumping_weights(i)*solution->new_sat_diff(idx)/dt;
         el_phead    += trace_head(face_no) * lumping_weights(face_no);
 
@@ -1155,6 +1170,28 @@ void LocalAssembly<dim>::make_interpolation(FE_DGPMonomial<dim> &fe) {
     }
 
 }
+
+/* Returns local variation of flux and pressure. I.e. sum of absolute value of differences in every direction of reference element. */
+// computes  approximation for second order term of Taylor expansion of h(t + dt)
+template <int dim>
+void LocalAssembly<dim>::compute_add_variation(double &flux_var, double &head_var) {
+    head_var += fabs(solution->pressure(local_dof_indices[0]) - solution->pressure(local_dof_indices[1]))
+            + fabs(solution->pressure(local_dof_indices[2]) - solution->pressure(local_dof_indices[3]));
+
+    Vector<double> face_area(4);
+
+    for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
+        trace_fe_face_values.reinit(dh_cell, face_no);
+        face_area(face_no) = 0;
+         // compute face area
+         for (unsigned int q = 0; q < face_quadrature_formula.size(); ++q) face_area(face_no)+= trace_fe_face_values.JxW(q);
+     }
+
+
+    flux_var += fabs(local_velocity(0)/face_area(0) - local_velocity(1)/face_area(1)) +
+            fabs(local_velocity(2)/face_area(2) - local_velocity(3)/face_area(3));
+}
+
 /*
 template <int dim>
 void LocalAssembly<dim>::out_interpolate_pressure(FE_DGPMonomial<dim> &fe, Vector<double> &trace_phead) {
