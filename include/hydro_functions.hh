@@ -8,14 +8,11 @@
 #ifndef _HYDRO_FUNCTIONS_HH
 #define	_HYDRO_FUNCTIONS_HH
 
-//#include "FADBAD++/fadbad.h"
-//#include "FADBAD++/badiff.h"
-//using namespace fadbad;
 #include <algorithm>
 #include <cmath>
 
-using namespace std;
-
+#include "base/parameter_handler.h"
+using namespace dealii;
 
 
 //class SoilModel {
@@ -41,19 +38,141 @@ using namespace std;
 // tento vzorec je stabilni:
 //
 /// k(h)=t(h)**(0.5)* (1- ((h)**n/(1+(h)**n)) **m)**2
-struct HydrologyParams {
-public:
 
-double  n;              // power parameter
-double  alfa;           // pressure head scaling
-double  Qr;             // residual water content
-double  Qs;             // saturated water content
-double  cut_fraction;   // fraction of Qs where to cut and rescale
+class HydrologyModel {
+public:
+    HydrologyModel( ParameterHandler &prm );
+
+    template <class T>
+    T FK(const T &h) const;
+
+    template <class T>
+    T FQ(const T &h) const;
+
+    /// Maximum point of capacity.
+    inline double cap_arg_max() const { return arg_cap_max; }
+
+    // function of normalized capacity (with maximum 1.0)
+    inline double lambda(double cap) const {
+
+        if (cap < 1.0/8) return 1;
+        if (cap > 1.0/2) return 0.5;
+        cap = ( cap - 1.0/8 ) /  (1.0/2 - 1.0/8);
+        double lmb= //1-4*square(h/arg_cap_max);
+                    0.5+0.5/
+                            (1.0+square(
+                                       1.0/(1.0- square(cap)) - 1.0
+                                      )
+                             );
+        return lmb;
+
+    }
+
+private:
+    inline double square(const double x) const
+        {return x*x;}
+
+    template <class T>
+    inline T Q_non_cut(const T &h) const
+    {
+        if (h > 0.0) return Qs;
+        else return Qr_nc + (Qs_nc - Qr_nc) * pow( 1 + pow(-alpha * h, n), -m);
+    }
+
+    template <class T>
+    inline T Q_non_cut_inv(const T &q) const
+    {
+        return  -pow( pow( (q - Qr_nc) / (Qs_nc - Qr_nc), -1/m ) -1, 1/n)/alpha;
+    }
+
+
+    // input parameters
+
+    double  n;              // power parameter
+    double  alpha;           // pressure head scaling
+    double  Qr;             // residual water content
+    double  Qs;             // saturated water content
+    double  cut_fraction;   // fraction of Qs where to cut and rescale
                         // water content and conductivity function
-double  Ks;             // saturated conductivity
-double  Kk;             // conductivity at the cut point
+    double  Ks;             // saturated conductivity
+    double  Kk;             // conductivity at the cut point
+
+    // conductivity parameters
+    const double Bpar;
+    const double Ppar;
+    const double K_lower_limit;
+
+    // aux values
+    double m;
+    double arg_cap_max, cap_max_; // position of capacity maximum
+    double Qs_nc;       // saturated value of continuation of cut water content function
+    double Qr_nc;       // residual value of continuation of cut water content function
+
+    double FFQr, FFQs;
+    double Hs;
 
 };
+
+HydrologyModel:: HydrologyModel( ParameterHandler &prm )
+: Bpar(0.5), Ppar(2), K_lower_limit(1.0E-20)
+{
+    n = prm.get_double("hydro_n");
+    alpha = prm.get_double("hydro_alfa");
+
+    cut_fraction = prm.get_double("hydro_cut");
+    Qr = prm.get_double("hydro_qr");
+    Qs = prm.get_double("hydro_qs");
+    Ks = prm.get_double("hydro_ks");
+    //Kk = prm.get_double("hydro_kk");
+
+
+    m = 1-1/n;
+    arg_cap_max= -alpha * pow(m, 1.0/n);
+
+    Qs_nc = Qs / cut_fraction;
+    Qr_nc = Qr; // no cut on residual part
+
+    // conductivity internal scaling
+    FFQr = 1.0;   // pow(1 - pow(Qeer,1/m),m);
+    double Qs_unscaled = (Qs - Qr_nc) / (Qs_nc - Qr_nc );
+    FFQs = pow(1 - pow(Qs_unscaled,1/m),m);
+
+
+    Hs = Q_non_cut_inv(Qs);
+
+
+}
+
+
+template <class T>
+T HydrologyModel::FK(const T& h) const
+{
+    T Kr,Q, Q_unscaled, Q_cut_unscaled, FFQ;
+
+      if (h < Hs) {
+            Q = FQ(h);
+            Q_unscaled = (Q - Qr_nc) / (Qs_nc - Qr_nc);
+            Q_cut_unscaled = (Q - Qr) / (Qs - Qr);
+
+            FFQ = pow(1 - pow(Q_unscaled,1/m),m);
+
+            Kr = Ks * pow(Q_cut_unscaled,Bpar)*pow((FFQr - FFQ)/(FFQr - FFQs),Ppar);
+    }
+    else Kr = Ks;
+
+    if (Kr < K_lower_limit) return K_lower_limit;
+    else return Kr;
+}
+
+
+template <class T>
+T HydrologyModel::FQ(const T& h) const
+{
+    if (h < 0.0) return Q_non_cut(h);
+    else return Qs;
+}
+
+/*
 
 //FK-------------------------------------------------------------
 template <class T>
@@ -89,20 +208,21 @@ FK<T> :: FK(const HydrologyParams &par)
         Qk=par.Qs;
         C1Qee = 1/(Qm - Qa);
         C2Qee = -Qa/(Qm - Qa);
-    if (par.cut_fraction >0.9999) {
-        Hr=-1000;
-        Hk=Hs=0;
-        return;
-    }
+//    if (par.cut_fraction >0.9999) {
+//        Hr=-1000;
+//        Hk=Hs=0;
+//        return;
+//    }
+                                                        // fraction =1
+        Qees = C1Qee * par.Qs + C2Qee;                  // 1
+        Qeek = min(C1Qee * Qk + C2Qee, Qees);           // 1
+        Qeer = min(C1Qee * par.Qr + C2Qee, Qeek);       // 0
 
-        Qees = C1Qee * par.Qs + C2Qee;
-        Qeek = min(C1Qee * Qk + C2Qee, Qees);
-        Qeer = min(C1Qee * par.Qr + C2Qee, Qeek);
-
-        Hr = -1/par.alfa*pow(pow(Qeer,-1/m)-1,1/par.n);
+        Hr = -1/par.alfa*pow(pow(Qeer,-1/m)-1,1/par.n); //
         Hs = -1/par.alfa*pow(pow(Qees,-1/m)-1,1/par.n);
         Hk = -1/par.alfa*pow(pow(Qeek,-1/m)-1,1/par.n);
 
+        cout << "K: Hr, Hs, Hk:" << Hr << " " << Hs << " " << Hk << endl;
 }
 
 template <class T>
@@ -152,11 +272,11 @@ FQ<T>::FQ(const HydrologyParams &par)
 {
     m = 1 - 1 / par.n;
 
-    if (par.cut_fraction >0.9999) {
-        Hr=-1000;
-        Hs=0;
-        return;
-    }
+//    if (par.cut_fraction >0.9999) {
+//        Hr=-1000;
+//        Hs=0;
+//        return;
+//    }
     Qm=par.Qs / par.cut_fraction;
     Qa=par.Qr;
 
@@ -164,6 +284,8 @@ FQ<T>::FQ(const HydrologyParams &par)
     Qees = (par.Qs - Qa)/ (Qm - Qa);
     Hr = -1 / par.alfa * pow( pow(Qeer,-1/m)-1, 1/par.n);
     Hs = -1 / par.alfa * pow( pow(Qees,-1/m)-1, 1/par.n);
+
+    cout << "Q: Hr, Hs:" << Hr << " " << Hs << " " << endl;
 }
 
 
@@ -256,26 +378,23 @@ double precision :: n,m,Qr,Qs,Qa,Qm,Alfa,Q,Qee
 end function FH_8
 */
 
-// Conductivity (inverse) for analytical solution
-template <class T>
-class FK_analytical
+// Conductivity for analytical solution
+
+class HydroModel_analytical
 {
-private:
+    HydroModel_analytical(ParameterHandler &prm) {};
+
 public:
-    FK_analytical(const HydrologyParams &par) {};
-    T operator()(const T&  h) {
+    template <class T>
+    T FK(const T &h) const
+    {
         if (h>=0.0) return ( 2.0 );
         return ( 2.0 / (1+h*h) );
     }
-};
 
-template <class T>
-class FQ_analytical
-{
-private:
-public:
-    FQ_analytical(const HydrologyParams &par) {};
-    T operator()(const T&  h) {
+    template <class T>
+    T FQ(const T &h) const
+    {
         static T pi_half =std::atan(1.0)*2;
         if (h>=0.0) return ( 2.0*pi_half*pi_half );
         T a_tan = atan(h);
@@ -283,28 +402,23 @@ public:
     }
 };
 
-// Conductivity (inverse) for analytical solution
-template <class T>
-class FK_lin
+
+class HydroModel_linear
 {
-private:
+    HydroModel_linear(ParameterHandler &prm) {};
+
 public:
-    FK_lin(const HydrologyParams &par) {};
-    T operator()(const T&  h) {
+    template <class T>
+    T FK(const T &h) const {
         return 1.0;
     }
-};
 
-template <class T>
-class FQ_lin
-{
-private:
-public:
-    FQ_lin(const HydrologyParams &par) {};
-    T operator()(const T&  h) {
+    template <class T>
+    T FQ(const T &h) const {
         return h;
     }
 };
+
 
 #endif	/* _HYDRO_FUNCTIONS_HH */
 

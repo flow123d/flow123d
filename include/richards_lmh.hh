@@ -63,10 +63,9 @@ using namespace dealii;
 #include <time.hh>
 #include <spatial_functions.hh>
 #include <hydro_functions.hh>
-//#include <richards_bc.hh>
-//#include <bc_output.hh>
 #include <output.hh>
 #include <local_assembly.hh>
+#include <nonlin_solver.hh>
 
 
 
@@ -97,26 +96,38 @@ using namespace dealii;
 
 
 template <int dim>
-class Richards_LMH : public Subscriptor {
+class Richards_LMH : public NonlinSystemBase {
 public:
     Richards_LMH(Triangulation<dim> &coarse_tria, ParameterHandler &prm, unsigned int order);
     //! Add boundary condition bc for the given boundary_index.
     //! boundary without assigned BC are homogeneous Dirichlet, but rather leads to exception
 
 
-    void set_data(struct RichardsData<dim> *data)
-        { richards_data = data; local_assembly.set_data(data); }
+    void reinit(struct RichardsData<dim> *data);
 
-    void solve();
+    virtual void compute_jacobian(const VecType &x, double s, MatType &jac, bool symmetric);
+    virtual void compute_function(const VecType &x, double s, VecType &func);
+    virtual void compute_parameter_derivative(const VecType &x, double s, VecType &diff);
+    virtual VecType &get_solution_vector()
+            { return solution->phead;}
+    virtual MatType &get_matrix()
+            {return matrix;}
+    virtual VecType &get_function_vector()
+            {return solution->residual;}
+    virtual VecType &get_left_scaling()
+            {return solution->lambda;}
+
+
+//    void solve();
 
     void run();
 
-    ~Richards_LMH();
+    virtual ~Richards_LMH();
 
 private:
     //enum block_names {traces=0, saturation=1};
 
-    void assemble_system();
+    //void assemble_system();
     void grid_refine();
     //void compute_errors () const;
 
@@ -126,14 +137,6 @@ private:
     SolverTime time;
 
     int order; // order of FE
-    double time_theta; // theta time method
-
-    int max_non_lin_iter;
-    double nonlin_tol;
-    bool newton;
-    unsigned int cum_lin_iter;
-
-//    std::vector<bool> velocity_component_mask;
 
     Triangulation<dim> triangulation;
 
@@ -143,24 +146,15 @@ private:
 
     DoFHandler<dim> dof_handler;
 
-    /// linear algebra objects
-    Vector<double> solution, old_solution;
-    Vector<double> residual_source;
-    Vector<double> rhs, residual;
-
     SparsityPattern sparsity_pattern;
     SparseMatrix<double> matrix;
 
     ConstraintMatrix     constraints;
+    std::map<unsigned int, double> boundary_values;
 
-    //! field vectors
-//    Vector<double> saturation;
-//    Vector<double> old_saturation;
-//    Vector<double> m_mat_crit;
-//    Vector<double> theta_diff;
-
-//    BCOutput<dim>    bc_out;
+    HomotopyNewton  *nlin_solver;
     RichardsData<dim> *richards_data;
+    Solution<dim>    *solution;
 
     LocalAssembly<dim> local_assembly;
     FieldOutput<dim> field_output;
@@ -188,13 +182,10 @@ Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandle
                 field_output(triangulation,order, local_assembly)
 {
 
-    max_non_lin_iter = prm.get_integer("nonlin_max_it");
-    nonlin_tol = prm.get_double("nonlin_tol");
-    //theta=1. / 2.;  // 1 implicit, 0 explicit
-    // Crank Nicholson still makes problem with velocity oscilations
-    //
-    time_theta = 1; //0.5;
 
+
+
+    // setup triangulation and dof handler
     cout << "tria: " << endl;
     triangulation.copy_triangulation(coarse_tria);
 
@@ -217,34 +208,34 @@ Richards_LMH<dim>::Richards_LMH (Triangulation<dim> &coarse_tria,ParameterHandle
         << " total cells: " << triangulation.n_cells()
             << " dofs: " << dof_handler.n_dofs() << std::endl;
 
-//    component_to_block.assign(dim,vel_b);
-//    component_to_block.push_back(head_b);
-//    DoFRenumbering::component_wise (dof_handler);
-
-    //DoFTools::count_dofs_per_block (dof_handler, blocks);
-
-
-    //std::cout<< "blocks: ";
-    //copy(blocks.begin(), blocks.end(), ostream_iterator<int>( cout, " " ) );
-    //cout << std::endl;
-
-    matrix.reinit(sparsity_pattern);
-    rhs.reinit(dof_handler.n_dofs());
-
-    solution.reinit(rhs);
-    old_solution.reinit (rhs);
-    residual_source.reinit(rhs);
-    residual.reinit(rhs);
-    local_assembly.set_vectors(solution, old_solution);
-
     field_output.reinit(prm);
+    nlin_solver = new HomotopyNewton(prm);
+    solution=NULL;
 
 }
+
 
 template <int dim>
 Richards_LMH<dim>::~Richards_LMH() {
-
+    if (solution != NULL) delete solution;
+    delete nlin_solver;
 }
+
+/**
+ * Reinit by richards data.
+ */
+template <int dim>
+void Richards_LMH<dim>::reinit(struct RichardsData<dim> *data) {
+    // setup support classes
+    richards_data = data;
+    solution = new Solution<dim>(richards_data);
+    solution->reinit(dof_handler, false);
+    local_assembly.set_data(solution);
+
+    matrix.reinit(sparsity_pattern);
+//    residual_source.reinit(rhs);
+}
+
 
 
 /**
@@ -323,18 +314,13 @@ void Richards_LMH<dim>::grid_refine()
 */
 }
 
-/**
- *  Assembly linear system of one iteration.
- */
-
 template <int dim>
-void Richards_LMH<dim>::assemble_system() {
+void Richards_LMH<dim>::compute_jacobian(const VecType &x, double s, MatType &jac, bool symmetric)
+{
     std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
-    std::map<unsigned int, double> boundary_values;
 
-    matrix=0;
-    rhs=0;
-    local_assembly.set_dt(time.dt(), time.t());
+    jac=0;
+    solution->update(s);
 
     // Main cycle over the cells.
     typename DoFHandler<dim>::active_cell_iterator
@@ -342,144 +328,84 @@ void Richards_LMH<dim>::assemble_system() {
             endc = dof_handler.end();
     for (; cell != endc; ++cell) {
         local_assembly.reinit(cell);
-        local_assembly.apply_bc(boundary_values);
-/*
-        cout << "------------\n";
-        local_matrix.print_formatted(cout);
-        */
 
         cell->get_dof_indices(local_dof_indices);
-        matrix.add(local_dof_indices, local_assembly.get_matrix());
-        rhs.add(local_dof_indices, local_assembly.get_rhs());
+        jac.add(local_dof_indices, local_assembly.get_matrix(symmetric));
+    }
 
+    // apply boundary values to solution vector
+    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+        iter != boundary_values.end(); ++iter) {
+        // reset matrix row
+        for(MatType::iterator col_it = jac.begin(iter->first);
+                col_it != jac.end(iter->first); ++col_it)
+            col_it->value()=0.0;
+        jac.diag_element(iter->first) = 1.0;
+    }
+    //jac.print_formatted(cout);
+
+}
+
+template <int dim>
+void Richards_LMH<dim>::compute_function(const VecType &x, double s, VecType &func) {
+
+    std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
+    func=0;
+    solution->out_aux = 0;
+    solution->update(s);
+    //cout << "phead: " << solution->phead << endl;
+    //cout << "sat: " << solution->phead << endl;
+    //cout << "sat_old: " << solution->phead << endl;
+
+    // Main cycle over the cells.
+    for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+            cell != dof_handler.end(); ++cell) {
+
+        local_assembly.reinit(cell);
+        cell->get_dof_indices(local_dof_indices);
+        func.add(local_dof_indices, local_assembly.get_func());
 
     }
 
-    MatrixTools::apply_boundary_values(boundary_values,
-            matrix,
-            solution,
-            rhs);
+    // set zero at Dirichlet boundary
 
+    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+        iter != boundary_values.end(); ++iter) {
+        func(iter->first) = 0.0;
+        solution->out_aux(iter->first) = 0.0;
+    }
+    for(unsigned int i =0; i< func.size();i++) {
+        solution->out_aux(i)= max(fabs(func(i)) - 3*fabs(solution->out_aux(i)) , 0.0);
+    }
+    //cout << "func: " << func << endl;
 
+    // debugging residual output
+    //field_output.output_fields(dof_handler, solution->phead, time.t(), true);
 }
 
-
-/**
- *  Output method
- */
-/*
-
 template <int dim>
-void Richards_LMH<dim>::output_results ()
+void Richards_LMH<dim>::compute_parameter_derivative(const VecType &x, double s, VecType &diff)
 {
-  std::vector<std::string> solution_names;
 
-  bc_out.output(time, dof_handler, sat_dh, solution, saturation);
+    std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
+    diff=0;
+    solution->update(s);
 
- //if (time.t() < print_time) return;
- cout << "PRINT time (" << print_step << "): " << time.t() << endl;
- print_time=time.t() + print_time_step;
- time.add_target_time(print_time);
+    // Main cycle over the cells.
+    for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+            cell != dof_handler.end(); ++cell) {
 
-  switch (dim)
-    {
-      case 2:
-            solution_names.push_back ("u");
-            solution_names.push_back ("v");
-            solution_names.push_back ("p");
-            solution_names.push_back ("lambda");
-            //solution_names.push_back ("r");
+        local_assembly.reinit(cell);
+        cell->get_dof_indices(local_dof_indices);
+        diff.add(local_dof_indices, local_assembly.get_s_diff());
 
-            break;
-
-      case 3:
-            solution_names.push_back ("u");
-            solution_names.push_back ("v");
-            solution_names.push_back ("w");
-            solution_names.push_back ("p");
-            solution_names.push_back ("lambda");
-//            solution_names.push_back ("S");
-
-            break;
-
-      default:
-            Assert (false, ExcNotImplemented());
     }
 
-  DataOut<dim> data_out;
-  data_out.attach_dof_handler (dof_handler);
-  data_out.add_data_vector (solution, solution_names);
-  data_out.build_patches (order+1);
-
-  std::ostringstream filename;
-  filename << "./output/solution-" << setfill('0')<<setw(3) << print_step << ".vtk";
-
-  std::ofstream output (filename.str().c_str());
-  data_out.write_vtk (output);
-
-  print_step++;
-}
-*/
-
-
-/**
- *  Output residuum and other numericaly important fields during given interval.
- *
- */
-/*
-
-template <int dim>
-void Richards_LMH<dim>::output_residuum()
-{
-  static int n_output=0;
-
-  std::vector<std::string> solution_names;
-  solution_names.push_back ("residuum");
-
-  DataOut<dim> data_out;
-  data_out.attach_dof_handler (sat_dh);
-  data_out.add_data_vector (residual.block(head_b), "residuum");
-  data_out.add_data_vector (old_saturation, "old_saturation");
-  data_out.add_data_vector (saturation, "saturation");
-  //data_out.add_data_vector (solution.block(head_b), "crit");
-  data_out.add_data_vector (m_mat_crit, "crit");
-  data_out.build_patches (order+1);
-
-  std::ostringstream filename;
-  filename << "./output/residuum-" << setfill('0')<<setw(3) << n_output << ".vtk";
-
-  std::ofstream output (filename.str().c_str());
-  data_out.write_vtk (output);
-
-  n_output++;
-}
-  */
-
-template <int dim>
-void Richards_LMH<dim>::solve ()
-{
-  double rtol=prm.get_double("lin_rtol");
-  double atol=prm.get_double("lin_atol");
-  int max_it=prm.get_integer("lin_max_it");
-  ReductionControl        solver_control (max_it, atol, rtol);
-  solver_control.log_history(true);
-  SolverCG<>              solver (solver_control);
-
-
-  PreconditionSSOR<SparseMatrix<double> > precondition;
-  precondition.initialize (matrix, .6);
-
-  //matrix.print_formatted(cout);
-  //rhs.print(cout);
-  solver.solve (matrix, solution, rhs,
-        precondition);
-
-  cum_lin_iter += solver_control.last_step();
-  std::cout << "CG: " << solver_control.last_step() << ", res: "
-        <<solver_control.last_value() << " cum lin it: " << cum_lin_iter
-        << std::endl;
-
-  //solution.print(cout);
+    // set zero at Dirichlet boundary
+    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+        iter != boundary_values.end(); ++iter) {
+        diff(iter->first) = 0.0;
+    }
 }
 
 
@@ -492,9 +418,11 @@ void Richards_LMH<dim>::solve ()
 template <int dim>
 void Richards_LMH<dim>::run ()
 {
-    // set initial condition
-    richards_data->set_time(time.t());
 
+    richards_data->set_time(time.t());
+    local_assembly.set_dt(time.dt(), time.t());
+
+    // set initial condition
     std::vector<unsigned int> face_dofs(trace_fe.dofs_per_face);
     typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
 
@@ -503,168 +431,99 @@ void Richards_LMH<dim>::run ()
         for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
             cell->face(face_no)->get_dof_indices(face_dofs);
 
-            solution(face_dofs[0])=richards_data->initial->value(cell->face(face_no)->barycenter());
+            solution->phead(face_dofs[0])=richards_data->initial->value(cell->face(face_no)->barycenter());
 
         }
     }
 
+    solution->update(0.0); // update nonlinearities
+    solution->timestep_update(time.dt());
+    field_output.output_fields(dof_handler, solution->phead, time.t(),false);
 
-//    VectorType &system_rhs=linear_system->get_rhs();
-//    MatrixType &system_matrix=linear_system->get_matrix();
+    time.inc();
+    nlin_solver->set_system(*this);
 
-//    Vector<double> rhs_vel(solution.block(1).size());
-
-    Vector<double> sol_last;//, sat_last;
-    Vector<double> sol_new;
-
-//    SparseILU<double> preconditioner;
-
-    double res_norm;
-    double last_res_norm;
-    double decrease, last_decrease;
-
-
-
-//  head_last.reinit(old_solution.block(head_b).size());
-//  head_new.reinit(old_solution.block(head_b).size());
-//  sat_last.reinit(old_solution.block(head_b).size());
-  // update saturation
-  //saturation=1.;
-  //old_saturation=1.;
-
-  local_assembly.set_dt(time.dt(), time.t());
-
-  field_output.output_fields(dof_handler, solution, time.t());
-  time.inc();
-
-  double lambda;
-  int iter;
-  int cum_iter=0;
-  cum_lin_iter = 0;
-
-  double c_1 = prm.get_double("linesearch_c_1");
+    // get boundary values
+    for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+            cell != dof_handler.end(); ++cell) {
+        local_assembly.apply_bc(cell, boundary_values);
+    }
+    // apply boundary values to solution vector
+    for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+        iter != boundary_values.end();  ++iter) {
+        solution->phead(iter->first) = iter->second;
+    }
+    compute_function(solution->phead,1.0, solution->residual);
+    //solution->sat_diff = solution->residual;
 
   do {  // ---------------------------- Time loop
-      old_solution=solution;
-      grid_refine();
+      //grid_refine();
+
 renew_timestep:
       std::cout << "Timestep " << time.n_step() << " t= "<<time.t()<<", dt= " << time.dt() << endl;
 
+      if (time.n_step() != 1) solution->timestep_update(time.dt());
       local_assembly.set_dt(time.dt(), time.t());
       richards_data->set_time(time.t());
 
-      sol_last = solution;
-      sol_new = solution;
-      iter=0;
-      last_decrease=decrease=0.5;
-      last_res_norm=100;
-      newton=false;
-      do {
-            lambda=1;
- line_search:
-//            sat_last=saturation;
+      // get boundary values
+      for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
+              cell != dof_handler.end(); ++cell) {
+          local_assembly.apply_bc(cell, boundary_values);
+      }
+      // apply boundary values to solution vector
+      for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+          iter != boundary_values.end();  ++iter) {
+          solution->phead(iter->first) = iter->second;
+      }
+
+      // TODO: set nonlinear tolerance relative to time step
+      //res_norm*= time.end_t()/time.dt();
 
 
+      HomotopyNewton::ConvergenceState state = nlin_solver->solve();
 
-            assemble_system (); // this also apply boundary conditions thus change solution
-            //std::cout << "assembled, ";
-
-
-            // we take water inbalance / dt as a residual
-            // this is harder to meet for shor timesteps, but
-            // but leads to error independent of timestep
-            // possibly it is to hard to satify ???
-            //linear_system.eliminate_block(solution,vel_b);
-            res_norm=matrix.residual(residual, solution, rhs);
-            //cout << "residual: " << endl;
-            //residual.print(cout);
-            res_norm*=time.dt();
-            //output_residuum();
-
-            last_decrease=decrease;
-            decrease = (iter == 0? 100 : res_norm/last_res_norm);
+      if (state < 0) {
+          // divergence
+          if (time.reinc_time(0.3)) {
+             solution->revert();
+             goto renew_timestep;
+         } else {
+             cout << "DIVERGENCE OF SOLVER" <<endl;
+             return;
+         }
+      }
 
 
-/*
-            {
-            // vypada to, ze posun cela by mohla lepe zachytit norma zmeny reseni - integral
-            Vector<double> diff(saturation);
-            Vector<double> diff_integral(triangulation.n_active_cells());
+      /**** SOME EXPERIMENTS WITH DT ADAPTIVITY
+                  {
+                  // vypada to, ze posun cela by mohla lepe zachytit norma zmeny reseni - integral
+                  Vector<double> diff(saturation);
+                  Vector<double> diff_integral(triangulation.n_active_cells());
 
-            VectorTools::integrate_difference(sat_dh, residual.block(head_b), ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
-            double res_diff=diff_integral.l2_norm();
+                  VectorTools::integrate_difference(sat_dh, residual.block(head_b), ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
+                  double res_diff=diff_integral.l2_norm();
 
-            diff=saturation; diff-=sat_last;
-            VectorTools::integrate_difference(sat_dh, diff, ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
-            double sat_diff=diff_integral.l2_norm();
+                  diff=saturation; diff-=sat_last;
+                  VectorTools::integrate_difference(sat_dh, diff, ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
+                  double sat_diff=diff_integral.l2_norm();
 
-            diff=solution.block(head_b); diff-=head_last;
-            VectorTools::integrate_difference(sat_dh, diff, ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
-            double head_diff=diff_integral.l2_norm();
+                  diff=solution.block(head_b); diff-=head_last;
+                  VectorTools::integrate_difference(sat_dh, diff, ZeroFunction<dim>(1),diff_integral ,QGauss<dim>(order+1),VectorTools::L2_norm);
+                  double head_diff=diff_integral.l2_norm();
 
-            cout<< "res norm "<<res_norm << " decrease: "<< decrease <<endl;
-            cout<< iter<<" (r,dic,dr,ds,dh): "
-                <<res_norm <<" "
-                <<decrease <<" "
-                <<res_diff <<" "
-                <<sat_diff <<" "
-                <<head_diff << " " << endl;
+                  cout<< "res norm "<<res_norm << " decrease: "<< decrease <<endl;
+                  cout<< iter<<" (r,dic,dr,ds,dh): "
+                      <<res_norm <<" "
+                      <<decrease <<" "
+                      <<res_diff <<" "
+                      <<sat_diff <<" "
+                      <<head_diff << " " << endl;
 
-            }
-*/
-            // this is very simple and ugly linesearch the aim is only
-            // demonstrate that the equation have solution even for longer timesteps
-            // so the adaptivity should not be used to overcome bed nonlinear solver
-
-            cout<< iter<<" (res, decrease, lambda): "
-                <<res_norm <<" "
-                <<decrease <<" "
-                <<lambda
-                << endl;
-
-            if (iter>0 && res_norm < nonlin_tol) break; // ------------------------------------------------------
-
-            if (iter>0 && decrease*decrease > 1- c_1*lambda && lambda > 1e-32 ) {
-                lambda *= 0.5;
-
-                solution.sadd(0.0, lambda, sol_new, (1.0-lambda), sol_last);
-
-                goto line_search;
-            }
-            //if (iter > 4) newton =true;
-            // test convergency
-            // we require at least one iteration
-            // if we only test the residuum, it is usualy very low at the beginning of infiltration
-            // especialy with small timesteps, the error is hidden in the velocity
-            // maybe we should check both the residuum before velocity recovery and after
+                  }
+      */
 
 
-
-
-            if (iter > max_non_lin_iter ||
-                (iter>10 && decrease > 0.9 && last_decrease > 0.9 )
-                ) {
-                //cout << "!!! divergence of nonlinear solver" << endl;
-
-                if (time.reinc_time(0.3)) {
-                    solution=old_solution;
-                    goto renew_timestep;
-                } else if (iter >max_non_lin_iter) {
-                    cout << "DIVERGENCE OF SOLVER" <<endl;
-                    return;
-                }
-            }
-
-
-            sol_last = solution;
-            this->solve();
-            //solution.print(cout);
-            sol_new=solution;
-
-            iter++;
-            cum_iter++;
-            last_res_norm=res_norm;
-      } while (1);
 
       // time error estimator
 /*
@@ -686,26 +545,15 @@ renew_timestep:
 */
 
 
-/*
-      double final_res_norm;
-      linear_system.eliminate_block(solution,vel_b);
-      final_res_norm=linear_system.residual(solution,residual);
-      cout << "final res: " << final_res_norm << endl;
-      residual.block(head_b)*=time.dt();
-      saturation-= residual.block(head_b);
-*/
-      field_output.output_fields(dof_handler, solution, time.t());
-//      output_residuum();
-
-//      std::cout << endl;
+      field_output.output_fields(dof_handler, solution->phead, time.t(),false);
 
       // adapt time step
       double factor=1.0;
-      if (iter<5) factor=1.0 / 0.9;
-      else if (iter>13) factor=0.9;
+      if (nlin_solver->get_iter()<5) factor=1.0 / 0.9;
+      else if (nlin_solver->get_iter()>13) factor=0.9;
       time.scale_time_step(factor);
 
-      std::cout << "nonlin iter: "<< iter << " cum: "<<cum_iter<< endl;
+      std::cout << "nonlin iter: "<< nlin_solver->get_iter() << " cum: "<< nlin_solver->get_cum_iter() << endl;
     }
   while (time.inc());
 

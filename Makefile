@@ -90,10 +90,10 @@ endif
 # link with and the flags to be passed to the compiler:
 ifeq ($(debug-mode),on)
   libraries = $(go-files) $(libs.g) 
-  flags     = $(CXXFLAGS.g)
+  flags     = $(CXXFLAGS.g) -g3 -rdynamic 
 else
   libraries = $(o-files) $(libs.o)
-  flags     = $(CXXFLAGS.o)
+  flags     = $(CXXFLAGS.o) -O3
 endif
 
 
@@ -106,10 +106,10 @@ flags += -Ddeal_II_dimension=$(deal_II_dimension)
 # files:
 lib/$(deal_II_dimension)d/%.g.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====debug=====$(MT)== $(<F)
-	$(CXX)  -g3 -rdynamic  $(flags) -c $< -o $@
+	$(CXX)   $(flags) -c $< -o $@
 lib/$(deal_II_dimension)d/%.$(OBJEXT) :
 	@echo =====waves=======$(deal_II_dimension)d====optimized=$(MT)== $(<F)
-	$(CXX)  $(flags) -c $< -o $@
+	$(CXX)  $(flags)  -c $< -o $@
 
 
 all: $(target)$(EXEEXT)
@@ -117,7 +117,7 @@ all: $(target)$(EXEEXT)
 # Next define how to link the executable
 $(target)$(EXEEXT) : $(libraries) Makefile
 	@echo =====waves=======$(deal_II_dimension)d==============$(MT)== Linking $(@F)
-	$(CXX) -g3 -rdynamic -o $@ $(libraries) $(LIBS) $(LDFLAGS)
+	$(CXX) $(flags) -o $@ $(libraries) $(LIBS) $(LDFLAGS)
 
 
 

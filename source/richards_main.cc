@@ -14,21 +14,7 @@
 
 #define DIM 2
 
-static const HydrologyParams h_params=
-{
-    1.14, //n
-    0.1, //alfa
-
-    0.01, //Qr
-    0.480,  //Qs;
-    //1.0,
-    0.999,
-    //0.99792, //cut_fraction;  simulation is very sensitive for cutting value
-
-    2,  // Ks;             // saturated conductivity
-    2   // Kk;             // conductivity at the cut point
-};
-
+/*
 // nasledujici data jsou z Genuchtenova clanku
 static const HydrologyParams sand_stone_params=
 {
@@ -55,7 +41,7 @@ static const HydrologyParams silt_loam_GE3_params=
     5.74E-7,  // Ks;             // saturated conductivity
     5.74E-7   // Kk;             // conductivity at the cut point
 };
-
+*/
 
 /**
  *  Simple test setting for the Richards equation.
@@ -113,29 +99,58 @@ void TestProblem::declare_params () {
     prm.declare_entry ("dt_max", "0.0",
                                 Patterns::Double(),
                                 "Maximal dt.");
+    // physical
+    prm.declare_entry("hydro_n","0.0",Patterns::Double(),"");
+    prm.declare_entry("hydro_alfa","0.0",Patterns::Double(),"");
+    prm.declare_entry("hydro_cut","0.0",Patterns::Double(),"");
+    prm.declare_entry("hydro_qr","0.0",Patterns::Double(),"");
+    prm.declare_entry("hydro_qs","0.0",Patterns::Double(),"");
+    prm.declare_entry("hydro_ks","0.0",Patterns::Double(),"");
+    prm.declare_entry("hydro_kk","0.0",Patterns::Double(),"");
+
 
     // numerical parameters
-    prm.declare_entry ("nonlin_tol", "0.0001",
+    prm.declare_entry("nlin_use_homotopy", "false", Patterns::Bool(),"Use Homotopy method for initial approximation.");
+    prm.declare_entry ("nlin_tol", "0.0001",
                                 Patterns::Double(),
                                 "Tolerance of nonlinear solver.");
+    prm.declare_entry ("nlin_tol_step_mult", "100",
+                                Patterns::Double(),
+                                "Multiple of final tolerance to perform homotopy step.");
+    prm.declare_entry ("nlin_tol_max_mult", "10",
+                                    Patterns::Double(),
+                                    "Multiple of step tolerance to limit length of homotopy step.");
 
-    prm.declare_entry ("nonlin_max_it", "20",
+    prm.declare_entry ("nlin_max_lambda", "0.2",
+                                Patterns::Double(),
+                                "Maximim step in homotopy parameter.");
+
+    prm.declare_entry ("nlin_min_lambda", "0.2",
+                                Patterns::Double(),
+                                "Minimum (relative) linesearch parameter in Newton method.");
+
+    prm.declare_entry ("nlin_max_it", "20",
                                 Patterns::Integer(),
                                 "Max nonlin. iterationss.");
 
-    prm.declare_entry ("linesearch_c_1", "1.0E-4",
-                                Patterns::Double(),
-                                "Decrease parameter");
-    prm.declare_entry ("lin_rtol", "0.0001",
+    prm.declare_entry ("nlin_alpha", "1.0E-4",
                                 Patterns::Double(),
                                 "Decrease parameter");
 
+    prm.declare_entry ("nlin_check_jacobian", "1.0E-4",
+                                Patterns::Bool(),
+                                "Check jacobian by finite diferences.");
+
+    prm.declare_entry ("lin_rtol", "0.01",
+                                Patterns::Double(),
+                                "Relative tolerance of linear solver.");
+
     prm.declare_entry ("lin_atol", "1.0E-12",
                                 Patterns::Double(),
-                                "Decrease parameter");
+                                "Absolute tolerance of linear solver.");
     prm.declare_entry ("lin_max_it", "1000",
                                 Patterns::Double(),
-                                "Decrease parameter");
+                                "Max iteration in linear solver.");
 
 
     // data
@@ -154,7 +169,17 @@ TestProblem::TestProblem ()
   srand(100);
 
   declare_params();
-  data = new RichardsData<DIM>(h_params, prm);
+  /*
+  HydrologyParams *hydro_data = new HydrologyParams;
+  hydro_data->n = prm.get_double("hydro_n");
+  hydro_data->alfa = prm.get_double("hydro_alfa");
+  hydro_data->cut_fraction = prm.get_double("hydro_cut");
+  hydro_data->Qr = prm.get_double("hydro_qr");
+  hydro_data->Qs = prm.get_double("hydro_qs");
+  hydro_data->Ks = prm.get_double("hydro_ks");
+  hydro_data->Kk = prm.get_double("hydro_kk");
+ */
+  data = new RichardsData<DIM>(prm);
 
 
   // set domain and coarse grid
@@ -180,7 +205,7 @@ TestProblem::TestProblem ()
   //data.k_inverse = new KInverse<DIM> (0, pa, pb);
   //data.initial_value = new InitialValue<DIM>;
   //data->print_mat_table();
-  equation->set_data(data);
+  equation->reinit(data);
 }
 
 

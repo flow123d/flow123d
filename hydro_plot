@@ -1,0 +1,47 @@
+
+set xr [-10:0.0]
+#set yr [0:1]
+#set logscale x
+#set logscale y
+set style data lines
+set key bottom right
+
+alpha=3
+n_val="2.0"  #"1.1 1.2 1.5 2.0 2.5 3.0"
+th(h,n) = h<0 ? (1+(-h)**n)**(-(1.0-1.0/n)) : 1
+
+cap(h,n) = h<0 ? ((1 + (-h)**n)**(-2 + 1/n)) * ((-h)**(n-1)) *(n-1) :0
+
+cmax(n)= -( ( 1.0-1.0/n)**(1.0/n) )
+
+cap_diff(h,n) = h<0?(1 + (-h)**n)**(-3 + 1/n) * (-h)**(-2 + 2*n) * (-1 + 2*n) * (-1 + n) + (1 + (-h)**n)**(-2. + 1./n) * (-h)**(-2 + n) * (-1) * (-1 + n)**2 :0
+
+k(h,n) = th(h,n)**(0.5) * ( 1 - ( 1 - th(h,n)**(1/(1-1/n)) )**(1-1/n))**2
+k1(h,n) = ((-h)**(n-1)) *(n-1) / ( 1-(-h)**(n-1) )**2
+#( ( 1 - ( 1 - th(h,n)**(1/(1-1/n)) )**(1-1/n))**2 )
+
+ap(h,n) = cap(h,n)/k(h,n) *k(cmax(n)/2,n)/cap(cmax(n)/2,n) *0.5
+cut1(x) = x<0 ? 0 : x>0.5 ? 0.5 : x
+cut(x)= (1-(1-2*cut1(x))**alpha)/2
+fx(h,n) = cut(ap(h,n))
+
+kk(h,n) = (k(h,n)/(2*th(h,n)) +2*(k(h,n)**0.5)*(1-th(h,n)**(1-1/n))*(-1/n) * th(h,n)**(1/(n-1)-1/4) )*cap(h,n)
+
+smooth_cut(h) = 1+1/(1+( 1/(1-abs(h)**2) -1 )**2)
+
+cap_k_frac_approx(h,n) = h<0 ? (n-1)*(-h)**(n-1) : 0
+
+#plot for [n in n_val]  '+' using ($1):(cap(-$1,n)/k(-$1,n) *k(cmax(n)/2,n)/cap(cmax(n)/2,n) * 0.5 ) title n,\
+#for [n in n_val] '+' using (-cmax(n)/2):(0.5) notitle with points,\
+#for [n in n_val] '+' using ($1):( ap(-$1,n) *0.5 / ap(cmax(n)/2,n) ) title n with lines,\
+#for [n in n_val] '+' using ($1):( fx(-$1,n) ) title "x" with lines
+
+n=1.1
+#plot '+' using ($1):(k(-$1,n)/kk(-$1,n)*(cap(cmax(n),n)/cap(-$1,n) -1))
+#plot '+' using ($1):(cap(-$1,n) / ( (n-1)* ($1)**(n-1)) )
+#plot '+' using ($1):(smooth_cut($1))
+#, '+' using ($1):(cap(-$1,n))
+
+plot  '+' using ($1):( cap($1,n)/k($1,n) ), '+' using ($1):( cap_k_frac_approx($1,n) ),  '+' using ($1):( k1($1,n) )
+
+#plot  '+' using ($1):( k($1,n) ), '+' using ($1):( th($1,n) )

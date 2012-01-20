@@ -65,26 +65,18 @@ class FieldOutput {
 public:
     FieldOutput(Triangulation<dim> &tria, unsigned int order, LocalAssembly<dim> &la);
     void reinit(ParameterHandler &prm);
-    void output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time);
+    void output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time, bool force);
     void update_fields(DoFHandler<dim> &solution_dh, double time);
     ~FieldOutput();
 
 private:
-    enum block_index_names {
-        velocity_bl=0,
-        piezo_bl=1,
-        pressure_bl=2,
-        saturation_bl=3,
-        estimator_bl=4,
-        p_traces_bl=5
-    };
 
     unsigned int order;
 
-    FE_DGRaviartThomas<dim, dim> velocity_fe;
-    FE_DGQ<dim> pressure_trace_fe;
-    FE_DGQ<dim> pressure_fe;
-    FESystem<dim> fe;
+    //FE_DGRaviartThomas<dim, dim> velocity_fe;
+    //FE_DGQ<dim> pressure_trace_fe;
+    //FE_DGQ<dim> pressure_fe;
+    //FESystem<dim> fe;
     DoFHandler<dim> dh;
     BlockVector<double> out_vec;
     DataOut<dim> data_out;
@@ -99,24 +91,29 @@ private:
     static const unsigned int n_output_components = dim + 4;
     double x_size;
 
+    double bc_flux_total, last_volume, volume, init_volume, cum_bc_flux, head_var, q_var,norm_head_second_diff;
+    std::ofstream bc_output;
+
 
 };
 
 template <int dim>
 FieldOutput<dim>::FieldOutput(Triangulation<dim> &tria, unsigned int p_order, LocalAssembly<dim> &la)
 : order(p_order),
-  velocity_fe(order),
-  pressure_trace_fe(order+2),
-  pressure_fe(order),
-  fe (velocity_fe,1,pressure_fe,4,pressure_trace_fe,1),
+  //velocity_fe(order),
+  //pressure_trace_fe(order+2),
+  //pressure_fe(order),
+  //fe (velocity_fe,1,pressure_fe,4,pressure_trace_fe,1),
   dh(tria),
 
   print_level(0),
   print_time(0.0),
   print_time_step(0.1),
-  local_assembly(la)
+  local_assembly(la),
+  bc_output("bc_output.out")
 {
     cout << "fo construct " <<endl;
+
 
 }
 
@@ -128,10 +125,11 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     x_size=prm.get_double("x_size");
 
 
-
+    FESystem<dim> &fe = local_assembly.output_fe;
     dh.distribute_dofs(fe);
     DoFRenumbering::component_wise (dh);
-    blocks.resize(6);
+    cout << "b sizE:" << fe.n_blocks() << endl;
+    blocks.resize(fe.n_blocks());
 
     DoFTools::count_dofs_per_block (dh, blocks);
 
@@ -145,11 +143,17 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     data_out.attach_dof_handler (dh);
 
     std::vector<std::string> names(dim, "flux");
-    names.push_back("piezo_head");
-    names.push_back("head");
+
+    names.push_back("pressure_head");
     names.push_back("saturation");
-    names.push_back("estimator");
-    names.push_back("pressure_traces");
+    names.push_back("p_error");
+    names.push_back("q_error");
+
+    names.push_back("post_phead");
+    names.push_back("post_old_phead");
+    names.push_back("residual");
+    names.push_back("post_lambda");
+    names.push_back("post_aux");
 
     std::vector<DataComponentInterpretation::DataComponentInterpretation> component_interpretation(dim,
             DataComponentInterpretation::component_is_part_of_vector);
@@ -158,8 +162,15 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
+    component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
 
     data_out.add_data_vector(out_vec, names, DataOut<dim>::type_automatic, component_interpretation);
+
+    init_volume=-1;
+    cum_bc_flux=0;
 }
 
 template <int dim>
@@ -172,13 +183,29 @@ FieldOutput<dim>::~FieldOutput()
 
 
 template <int dim>
-void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time)
+void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double> &solution_vector, double time, bool force)
 {
 
-//  bc_out.output(time, dof_handler, sat_dh, solution, saturation);
+  // update vector
+  update_fields(solution_dh, time);
 
-  if (time * 1.0000001 < print_time) return;
-  std::cout << "PRINT time (" << print_level << "): " << time << std::endl;
+  // bc output
+  if (cum_bc_flux == 0) {
+      bc_output << " time   err%    loc_err%    bc_flux     volume      vol_diff" <<endl;
+  }
+  double error_local = (volume-last_volume) + bc_flux_total;
+  cum_bc_flux +=bc_flux_total;
+  double error = (volume - init_volume) + cum_bc_flux;
+  bc_output << setw(12) << time
+          << setw(12) << error/volume * 100
+          << setw(12) << error_local/(volume - last_volume) * 100
+          << setw(12) << bc_flux_total
+          << setw(12) << volume
+          << setw(12) << volume - last_volume<<endl;
+
+
+  if (!force && time * 1.0000001 < print_time) return;
+  std::cout << "PRINT time (" << print_level << "): " << time << "    variations: "<< head_var << " " << q_var << " " << norm_head_second_diff << std::endl;
   print_time += print_time_step;
 
   // file name
@@ -187,12 +214,10 @@ void FieldOutput<dim>::output_fields(DoFHandler<dim> &solution_dh, Vector<double
   file_name = fns.str();
   print_level++;
 
-  // update vector
-  update_fields(solution_dh, time);
   //AssertDimension(out_vec.block(p_traces_bl).size(),  solution_vector.size());
   //out_vec.block(p_traces_bl) = solution_vector;
 
-  data_out.build_patches (order+1);
+  data_out.build_patches (order+3);
   std::ofstream output (file_name.c_str());
   data_out.write_vtk (output);
 
@@ -205,57 +230,41 @@ void FieldOutput<dim>::update_fields(DoFHandler<dim> &solution_dh, double time)
         cell = dh.begin_active(),
         endc = dh.end(),
         sol_cell = solution_dh.begin_active();
-    Vector<double> local_output(fe.dofs_per_cell);
-    std::vector<unsigned int> local_dof_indices(fe.dofs_per_cell);
-    std::pair<unsigned int,unsigned int> block_index;
+    Vector<double> local_output(local_assembly.output_fe.dofs_per_cell);
+    std::vector<unsigned int> local_dof_indices(local_assembly.output_fe.dofs_per_cell);
+
+    local_assembly.solution->compute_head_second_diff();
+    norm_head_second_diff = local_assembly.solution->head_second_diff.l2_norm();
 
     double l2_error=0;
     double l2_flux_error = 0;
     out_vec=0;
+    bc_flux_total =0;
+    last_volume=volume;
+    volume =0;
+    q_var=head_var =0;
     for (; cell != endc; ++cell, ++sol_cell) {
         local_assembly.reinit(sol_cell);
-        local_assembly.output_evaluate();
-
-        double anal_sol = local_assembly.richards_data->anal_sol->value(cell->barycenter());
-        double error = local_assembly.get_output_el_head() - anal_sol;
-
-        double flux = (local_assembly.get_output_velocity() (2) + local_assembly.get_output_velocity() (3) ) / 2.0 / x_size;
-        double anal_flux =  local_assembly.richards_data->anal_flux->value(cell->barycenter());
-        double flux_error = flux - anal_flux;
-
-        l2_error += cell->measure() * error * error /x_size;
-        l2_flux_error += cell->measure() * flux_error * flux_error/x_size;
+        local_assembly.output_evaluate(bc_flux_total, volume);
+        local_assembly.compute_add_variation(q_var, head_var);
 
 
-        local_output = 0;
-        for(unsigned int global_i=0;global_i<fe.dofs_per_cell; global_i++) {
-            block_index=fe.system_to_block_index(global_i);
-            //cout << global_i << " " << block_index.first<< " " << block_index.second << endl;
-            switch (block_index.first) {
-            case velocity_bl:
-                local_output(global_i) = local_assembly.get_output_velocity() (block_index.second);
-                break;
-            case piezo_bl:
-                local_output(global_i) = anal_sol;//local_assembly.get_output_el_phead();
-                break;
-            case pressure_bl:
-                local_output(global_i) = local_assembly.get_output_el_head();
-                break;
-            case saturation_bl:
-                local_output(global_i) = anal_flux; //local_assembly.get_output_el_sat();
-                break;
-            case estimator_bl:
-                local_output(global_i) = flux_error;
-                break;
-            }
-        }
+        l2_error += local_assembly.get_p_error() /x_size;
+        l2_flux_error += local_assembly.get_q_error() /x_size;
+
 
         cell->get_dof_indices(local_dof_indices);
-        out_vec.add(local_dof_indices, local_output);
+        out_vec.add(local_dof_indices, local_assembly.get_output_vector());
+
+
+
 
 
     }
-    cout << "Time: " << time << " L2 error: " << sqrt(l2_error) << " " << sqrt(l2_flux_error) << endl;
+    if (init_volume < 0) init_volume = volume;
+    if ( local_assembly.solution->richards_data->has_exact_solution() ) {
+        cout << "Time: " << time << " L2 error: " << sqrt(l2_error) << " " << sqrt(l2_flux_error) << endl;
+    }
 }
 
 #endif /* OUTPUT_HH_ */
