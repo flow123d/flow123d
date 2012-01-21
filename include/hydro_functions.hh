@@ -382,9 +382,12 @@ end function FH_8
 
 class HydroModel_analytical
 {
+public:
     HydroModel_analytical(ParameterHandler &prm) {};
 
-public:
+    /// Maximum point of capacity. (computed numericaly from eq. atan(x)*2x=1 )
+    inline double cap_arg_max() const { return -0.765378926665788882857; }
+
     template <class T>
     T FK(const T &h) const
     {
@@ -400,6 +403,8 @@ public:
         T a_tan = atan(h);
         return ( 2*pi_half*pi_half - a_tan*a_tan );
     }
+private:
+    double arg_cap_max;
 };
 
 

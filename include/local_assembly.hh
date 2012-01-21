@@ -187,13 +187,15 @@ public:
                     lambda_diff(i)=0;
                     lambda_s_diff(i)=-0.5;
                 } else {
-                    lambda(i) = 1 - s_param * 0.5 * (capacity(i)/cond) / (cap_crit);
-                    lambda_diff(i)= - s_param * 0.5 * (richards_data->fqq(p) /cond - capacity(i)/cond /cond * c_diff) / (cap_crit);
+                    lambda(i) = 1 - s_param * 0.5 * (capacity(i)/cond)/dt_;// / (cap_crit);
+                    lambda_diff(i)= - s_param * 0.5 * (richards_data->fqq(p) /cond - capacity(i)/cond /cond * c_diff)/dt_;// / (cap_crit);
                     lambda_s_diff(i)= 0.0; //- 0.5 * (capacity(i)/cond) / (cap_over_k__crit);
                 }
             }
-            //lambda(i)=0.5;
-            //lambda_diff(i) =0;
+            if ( lambda(i) < 0.5) {
+              lambda(i)=0.5;
+              lambda_diff(i) =0;
+            }
             /*
             double c_diff;
             double cond=richards_data->fk(p, c_diff);
@@ -360,7 +362,8 @@ public:
     void output_evaluate(double & bc_flux_total,double &volume_total);
     void compute_add_variation(double &flux_var, double &head_var);
     void set_lambda();
-    double get_p_error() { return  output_vector( out_idx[p_error_bl][0] ); }
+    double get_p_error() {
+        return  output_vector( out_idx[p_error_bl][0] ); }
     double get_q_error() { return  output_vector( out_idx[q_error_bl][0] ); }
 
     void make_A();
@@ -833,20 +836,22 @@ void LocalAssembly<dim>::apply_bc(typename DoFHandler<dim>::active_cell_iterator
         cell->face(face_no)->get_dof_indices(local_face_indices);
         unsigned int idx = local_face_indices[0];
 
+
         switch ( solution->richards_data->bc_type(b_ind) ) {
              case RichardsData<dim>::Dirichlet:
              // use boundary values map to eliminate Dirichlet boundary trace pressures
              boundary_values[idx] =
                      solution->richards_data->bc_func(b_ind)->value(
-                                 dh_cell->face(face_no)->barycenter()
+                                 cell->face(face_no)->barycenter()
                              );
-             /*cout << "BC(z,i,v):" << dh_cell->face(face_no)->barycenter()[dim-1] << " "
+
+             /*  cout << "BC(z,i,v):" << cell->face(face_no)->barycenter()[dim-1] << " "
                   << idx << " "
                   << solution->richards_data->bc_func(b_ind)->value(
                           dh_cell->face(face_no)->barycenter()
-                      )<<endl;*/
-
-
+                      )
+                      <<endl;
+            */
              break;
 
              case RichardsData<dim>::Neuman:
@@ -879,6 +884,7 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
     Vector<double> trace_head(trace_fe.dofs_per_cell);
     Vector<double> weight_trace_phead(trace_fe.dofs_per_cell);
     Vector<double> trace_res(trace_fe.dofs_per_cell);
+    Vector<double> aux(trace_fe.dofs_per_cell);
 
     output_vector=0;
     double conductivity =0;
@@ -891,7 +897,7 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
         trace_res(i) = solution->residual(idx);
         trace_head(i)= solution->pressure(idx);
 
-        cond_diff(i) = solution->head_second_diff(idx); //solution->capacity(idx)/solution->conduct_new(idx)/dt;
+        aux(i) = solution->richards_data->anal_flux->value(dh_cell->face(face_no)->barycenter());
 
         lambda(i) = solution->lambda(idx);//element_volume*lumping_weights(i)*solution->new_sat_diff(idx)/dt;
         el_phead    += trace_head(face_no) * lumping_weights(face_no);
@@ -907,7 +913,7 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
 
     //cout << "head: " << dh_cell->barycenter()[dim-1] << " "
     //     << output_el_head << " " << output_el_phead << endl;
-
+    if (solution->cond_type == solution->trapezoid) lambda_el  = 1.0;
     compute_steady_flux();
 
     for (unsigned int face_no = 0; face_no < GeometryInfo<dim>::faces_per_cell; ++face_no) {
@@ -933,14 +939,13 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
     }
 
     output_vector( out_idx[pressure_bl][0] ) = el_phead;
-    output_vector(out_idx[p_error_bl][0]) = conductivity;
 
     out_interpolate(trace_head, post_p_bl);
     //trace_phead.add( -1.0, old_trace_phead);
     out_interpolate(trace_res, post_residual);
 
     //get_func();
-    out_interpolate(cond_diff, post_aux);
+    out_interpolate(aux, post_aux);
 
     out_interpolate(lambda, post_lambda);
     out_interpolate(local_old_phead, post_old_p_bl);
@@ -951,14 +956,16 @@ void LocalAssembly<dim>::output_evaluate(double & bc_flux_total, double & volume
     //double p_error = el_phead - anal_sol;
     if (solution->richards_data->has_exact_solution()) {
         double p_error = compute_p_error();
+
         output_vector(out_idx[p_error_bl][0]) = p_error; //dh_cell->measure() * p_error * p_error;
 
-        double flux = (local_velocity(2) + local_velocity(3)) / 2.0;
-        double anal_flux = solution->richards_data->anal_flux->value(dh_cell->barycenter());
-        double q_error = flux - anal_flux;
-        output_vector(out_idx[q_error_bl][0]) = dh_cell->measure() * q_error * q_error;
+        //double flux = (local_velocity(2) + local_velocity(3)) / 2.0;
+        //double anal_flux = solution->richards_data->anal_flux->value(dh_cell->barycenter());
+        //double q_error = flux - anal_flux;
+        double q_error = compute_q_error();
+        output_vector(out_idx[q_error_bl][0]) = q_error; //dh_cell->measure() * q_error * q_error;
     }
-    output_vector(out_idx[p_error_bl][0]) = conductivity;
+
 }
 
 template <int dim>
@@ -967,6 +974,7 @@ void LocalAssembly<dim>::set_lambda() {
 }
 
 
+// L2 norm squared of pressure error over one element
 template <int dim>
 double LocalAssembly<dim>::compute_p_error() {
 
@@ -978,6 +986,7 @@ double LocalAssembly<dim>::compute_p_error() {
         for(unsigned int i=0; i< out_idx[post_p_bl].size(); ++i) {
             post_pressure += output_vector( out_idx[post_p_bl][i] ) * error_fe_values[scal_extr].value(i,q);
         }
+
         post_pressure = solution->richards_data->pressure( post_pressure, q_points[q] );
         double anal_sol = solution->richards_data->anal_sol->value( q_points[q] );
         double diff = post_pressure - anal_sol;
@@ -987,6 +996,7 @@ double LocalAssembly<dim>::compute_p_error() {
     return error;
 }
 
+// L2 norm squared of flux error over one element
 template <int dim>
 double LocalAssembly<dim>::compute_q_error() {
 

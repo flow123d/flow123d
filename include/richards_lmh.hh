@@ -419,7 +419,7 @@ template <int dim>
 void Richards_LMH<dim>::run ()
 {
 
-    richards_data->set_time(time.t());
+    richards_data->set_time(time.t(), time.dt());
     local_assembly.set_dt(time.dt(), time.t());
 
     // set initial condition
@@ -464,7 +464,9 @@ renew_timestep:
 
       if (time.n_step() != 1) solution->timestep_update(time.dt());
       local_assembly.set_dt(time.dt(), time.t());
-      richards_data->set_time(time.t());
+      richards_data->set_time(time.t(),
+                solution->cond_type==solution->trapezoid ? 0 : time.dt()
+              );
 
       // get boundary values
       for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();

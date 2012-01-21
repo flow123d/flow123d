@@ -2,17 +2,17 @@
 # ---------------------
 
 set x_size = 1
-set z_size = 1
+set z_size = -10
 set hx = 1
 set hz = DH
 
 
 set t_init = 0.0
-set t_end = 2000
+set t_end = 2
 set dt_init = DT
-set dt_min = 1e-6
+set dt_min = DT
 set dt_max = DT
-set print_time_step = 100
+set print_time_step = 0.1
 
 # physic
 
@@ -35,8 +35,17 @@ set hydro_ks = 1.25E-5              # saturated conductivity
 #set hydro_kk = 2              # conductivity at the cut point 
 
 
-set nonlin_max_it =200
-set nonlin_tol = 0.0001
+set nlin_max_it =200
+
+set nlin_tol = 1e-8
+set nlin_tol_step_mult = 1e+20 
+set nlin_tol_max_mult = 2
+
+set nlin_max_lambda= 1.0
+set nlin_min_lambda=0.01
+
+set nlin_alpha= 0.0001
+set nlin_check_jacobian = false
 
 # set lin_rtol = 0.0001
 # set lin_atol = 1.0E-6

@@ -245,13 +245,8 @@ private:
     //! BC objects for given index with checking, possibly returning None type of BC
     std::vector< std::pair<BCType, Function<dim> *> > bc_segments;
 
-    //FQ_lin< B<double> > fq_diff;
-    //FK_lin< B<double> > fk_diff;
-
-    //FQ_analytical< B<double> > fq_diff;
-    //FK_analytical< B<double> > fk_diff;
-
-    HydrologyModel hydro_model;
+    //HydrologyModel hydro_model;
+    HydroModel_analytical hydro_model;
 
     double density;
     double gravity;
@@ -269,8 +264,8 @@ public:
     //fq_diff(h_params),
     //fc(h_params),
     //fk_diff(h_params),
-    density(1.0),
-    gravity(1.0)
+    density(0.0),
+    gravity(0.0)
     {
         cap_arg_max_=hydro_model.cap_arg_max();
         fq(cap_arg_max_/1.5, lambda_cap_max_half);
@@ -278,7 +273,7 @@ public:
         cout << "lh "<<lambda_cap_max_half <<endl;
         fq(cap_arg_max_, cap_max_);
 
-
+/*
         add_bc(0, Neuman, new ZeroFunction<dim>() ); // left
         add_bc(1, Neuman, new ZeroFunction<dim>() ); // right
         add_bc(3, Dirichlet, new TLinear<dim>(prm) ); // top
@@ -288,8 +283,8 @@ public:
         anal_sol = new ZeroFunction<dim>();
         anal_flux = new ZeroFunction<dim>();
         no_exact_solution =true;
+*/
 
-        /*
         // Analytical solution setting
 
         add_bc(0, Neuman, new ZeroFunction<dim>() ); // left
@@ -302,7 +297,8 @@ public:
         initial = new ASol_ATan<dim>();
         anal_sol = new ASol_ATan<dim>();
         anal_flux = new AFlux_ATan<dim>();
-*/
+        no_exact_solution =false;
+
         //anal_sol = new ASol_lin<dim>();
         //initial = new ASol_lin<dim>();
 
@@ -314,7 +310,7 @@ public:
             if (bc_segments[i].second != NULL) delete bc_segments[i].second;
     }
 
-    inline double lambda(const double cap) const {return hydro_model.lambda(cap / cap_max_);}
+    //inline double lambda(const double cap) const {return hydro_model.lambda(cap / cap_max_);}
 
     bool has_exact_solution() { return ! no_exact_solution; }
 
@@ -336,6 +332,7 @@ public:
       return f.val();
     }
 
+    // move this into hydro model ?
     double fqq(const double h) {
         B< F<double> > x(h);
         x.x().diff(0,2);
@@ -354,11 +351,12 @@ public:
       return f.val();
     }
 
-    void set_time(double t) {
+    void set_time(double t, double dt) {
         k_inverse.set_time(t);
         initial->set_time(t);
         anal_sol->set_time(t);
-        anal_flux->set_time(t);
+        anal_flux->set_time(t-0.5*dt);
+        //anal_flux->set_time(t);
         for(unsigned int i=0; i<MAX_NUM_OF_DEALII_BOUNDARIES; i++)
             if (bc_segments[i].second != NULL) bc_segments[i].second->set_time(t);
 
