@@ -88,7 +88,7 @@ private:
     std::vector<unsigned int> blocks;
     LocalAssembly<dim> & local_assembly;
 
-    static const unsigned int n_output_components = dim + 4;
+    //static const unsigned int n_output_components = dim + 4;
     double x_size;
 
     double bc_flux_total, last_volume, volume, init_volume, cum_bc_flux, head_var, q_var,norm_head_second_diff;
@@ -142,7 +142,13 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
 
     data_out.attach_dof_handler (dh);
 
-    std::vector<std::string> names(dim, "flux");
+    std::vector<std::string> names;
+
+    names.push_back("flux");
+    names.push_back("flux");
+
+    names.push_back("half_flux");
+    names.push_back("half_flux");
 
     names.push_back("pressure_head");
     names.push_back("saturation");
@@ -155,7 +161,7 @@ void FieldOutput<dim>::reinit(ParameterHandler &prm)
     names.push_back("post_lambda");
     names.push_back("post_aux");
 
-    std::vector<DataComponentInterpretation::DataComponentInterpretation> component_interpretation(dim,
+    std::vector<DataComponentInterpretation::DataComponentInterpretation> component_interpretation(2*dim,
             DataComponentInterpretation::component_is_part_of_vector);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);
     component_interpretation .push_back(DataComponentInterpretation::component_is_scalar);

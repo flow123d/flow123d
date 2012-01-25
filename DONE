@@ -1,3 +1,27 @@
+24.1. --------------------
+trapezoid - s linearne orezavanou lambdou mezi critickym tlakem a bodem saturace v minulem kroku 
+- stabilizuje tlak i integral toku (tj. vazeny tok), nicmene se da ocekavat, ze tento tok nebude konvergovat kvadraticky
+  kvadraticky pro pekne rovnice konverguje tok pocitany v koncovem bode intervalu(colocation point), ale 
+  v nasem pripade je takto pocitany tok beznadejne oscilujici 
+
+23.1. --------------------
+Testovani  noveho midpoint, ktery by vyuzival derivaci v cilovem h (vyhodnoceni toku)
+
+novy midpoint je A stabilni i L stabilni, nicmene L stabilita nestaci pro degenerovane PDR:
+
+na prave strane totiz nestoji jen hodnota v danem bode, ta by byla ltacena degeneraci na leve strane
+(tj. obrovskou zapornou derivaci) k rovnovaznemu stavu, kde by byla prava strana nulova.
+
+Nicmene u PDR je i v rovnovaznem stavu na prave strane prostorova derivace, ktera muze byt nenulova.
+
+
+Problemy:
+1) problem je na intervalu, kde je capacita uz mala a tim padem nemuzeme dost presne spocitat derivaci v koncovem case
+   a zaroven tam jeste tok neni nulovy
+2) i pro body kde se nemeni saturace nemame lambda == 1 (melo by byt)
+
+3) z toho plyne ze striktni orazavani od bodu nove saturace neni dobre, 
+
 19.1. -------------------
 
 trapezoidal + promenna lambda - i pro dlouhe casove kroky dava pomerne stabilni schema

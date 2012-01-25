@@ -4,15 +4,15 @@
 set x_size = 1
 set z_size = 1
 set hx = 1
-set hz = 0.001
+set hz = 0.0002
 
 
 set t_init = 0.0
-set t_end = 2000
-set dt_init = 50
-set dt_min = 50
-set dt_max = 50
-set print_time_step = 50
+set t_end = 1000
+set dt_init = 0.1
+set dt_min = 0.1
+set dt_max = 0.1
+set print_time_step = 5
 
 # physic
 

@@ -351,11 +351,32 @@ void Richards_LMH<dim>::compute_function(const VecType &x, double s, VecType &fu
 
     std::vector<unsigned int> local_dof_indices(dof_handler.get_fe().dofs_per_cell);
     func=0;
-    solution->out_aux = 0;
+
+    //solution->out_aux = 0;
     solution->update(s);
     //cout << "phead: " << solution->phead << endl;
     //cout << "sat: " << solution->phead << endl;
     //cout << "sat_old: " << solution->phead << endl;
+
+    if (solution->cond_type == solution->mid_point_quad) {
+        // lambda cycle
+        solution->lambda_new=0;
+        solution->el_sum=0;
+        for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active(); cell != dof_handler.end(); ++cell) {
+
+            local_assembly.reinit(cell);
+            local_assembly.update_lambda();
+
+        }
+        for(map<unsigned int,double>::iterator iter = boundary_values.begin();
+            iter != boundary_values.end(); ++iter) {
+            solution->lambda_new(iter->first) = 0.0;
+            //solution->out_aux(iter->first) = 0.0;
+        }
+
+        //cout << solution->lambda_new;
+        solution->lambda_update();
+    }
 
     // Main cycle over the cells.
     for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();
@@ -372,11 +393,12 @@ void Richards_LMH<dim>::compute_function(const VecType &x, double s, VecType &fu
     for(map<unsigned int,double>::iterator iter = boundary_values.begin();
         iter != boundary_values.end(); ++iter) {
         func(iter->first) = 0.0;
-        solution->out_aux(iter->first) = 0.0;
+        //solution->out_aux(iter->first) = 0.0;
     }
+    /*
     for(unsigned int i =0; i< func.size();i++) {
         solution->out_aux(i)= max(fabs(func(i)) - 3*fabs(solution->out_aux(i)) , 0.0);
-    }
+    }*/
     //cout << "func: " << func << endl;
 
     // debugging residual output
@@ -419,7 +441,7 @@ template <int dim>
 void Richards_LMH<dim>::run ()
 {
 
-    richards_data->set_time(time.t());
+    richards_data->set_time(time.t(), time.dt());
     local_assembly.set_dt(time.dt(), time.t());
 
     // set initial condition
@@ -464,7 +486,9 @@ renew_timestep:
 
       if (time.n_step() != 1) solution->timestep_update(time.dt());
       local_assembly.set_dt(time.dt(), time.t());
-      richards_data->set_time(time.t());
+      richards_data->set_time(time.t(),
+                solution->cond_type==solution->trapezoid ? 0 : time.dt()
+              );
 
       // get boundary values
       for (typename DoFHandler<dim>::active_cell_iterator cell = dof_handler.begin_active();

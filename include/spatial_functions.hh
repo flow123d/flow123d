@@ -245,12 +245,6 @@ private:
     //! BC objects for given index with checking, possibly returning None type of BC
     std::vector< std::pair<BCType, Function<dim> *> > bc_segments;
 
-    //FQ_lin< B<double> > fq_diff;
-    //FK_lin< B<double> > fk_diff;
-
-    //FQ_analytical< B<double> > fq_diff;
-    //FK_analytical< B<double> > fk_diff;
-
     HydrologyModel hydro_model;
 
     double density;
@@ -314,7 +308,7 @@ public:
             if (bc_segments[i].second != NULL) delete bc_segments[i].second;
     }
 
-    inline double lambda(const double cap) const {return hydro_model.lambda(cap / cap_max_);}
+    //inline double lambda(const double cap) const {return hydro_model.lambda(cap / cap_max_);}
 
     bool has_exact_solution() { return ! no_exact_solution; }
 
@@ -336,6 +330,7 @@ public:
       return f.val();
     }
 
+    // move this into hydro model ?
     double fqq(const double h) {
         B< F<double> > x(h);
         x.x().diff(0,2);
@@ -354,11 +349,12 @@ public:
       return f.val();
     }
 
-    void set_time(double t) {
+    void set_time(double t, double dt) {
         k_inverse.set_time(t);
         initial->set_time(t);
         anal_sol->set_time(t);
-        anal_flux->set_time(t);
+        anal_flux->set_time(t-0.5*dt);
+        //anal_flux->set_time(t);
         for(unsigned int i=0; i<MAX_NUM_OF_DEALII_BOUNDARIES; i++)
             if (bc_segments[i].second != NULL) bc_segments[i].second->set_time(t);
 
