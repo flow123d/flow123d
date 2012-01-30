@@ -28,6 +28,7 @@
  */
 
 #include <string>
+#include <petsc.h>
 
 #include "system/xio.h"
 #include "io/output.h"
