@@ -7,7 +7,9 @@ from paraview.simple import *
 #
 #   pvpython pv_compute.py  <coarse_file> <fine_file> <field_name>
 #
-# TODO: allow calculation of several fields in one run
+# TODO: 
+# - allow calculation of several fields in one run
+# - distinguish PointData and CellData in python calculator automaticaly
 
 import sys
 import os 
@@ -40,34 +42,47 @@ coarse_sol = XMLUnstructuredGridReader(FileName=coarse_input)
 #fine_sol = LegacyVTKReader(FileNames=fine_input)
 fine_sol = XMLUnstructuredGridReader(FileName=fine_input)
 
+coarse_sol.UpdatePipeline()
+fine_sol.UpdatePipeline()
+
 
 # Interpolate from coarse mesh to the fine mesh
 # Input - values
 # Source - mesh
 coarse_on_fine = ResampleWithDataset( Source=fine_sol, Input=coarse_sol )
 
-# compute difference of 'head' attribute (field)
+
+# compute L2 error of difference 
 diff = PythonCalculator( Input=[ coarse_on_fine, fine_sol ] )
-diff.ArrayName = 'diff_'+attribute;
-diff.Expression = "inputs[0].PointData['" + attribute + "'] - inputs[1].PointData['" + attribute + "']"
+diff.ArrayName = 'err_'+attribute;
+dif_subexpr = "inputs[0].PointData['" + attribute + "'] - inputs[1].PointData['" + attribute + "']"
+diff.Expression = "dot(" + dif_subexpr + "," + dif_subexpr + ")"
+
+diff.UpdatePipeline()
 
 # compute square of the difference
-calc = Calculator(diff)
-calc.AttributeMode = 'point_data'
-calc.Function = diff.ArrayName + '*' + diff.ArrayName
-calc.ResultArrayName = 'err_' + attribute;
+#calc = Calculator(diff)
+#calc.AttributeMode = 'point_data'
+#calc.Function = diff.ArrayName + '*' + diff.ArrayName
+#calc.ResultArrayName = 'err_' + attribute;
+
 
 #Integrate square of the difference
-iv = IntegrateVariables(calc)
+iv = IntegrateVariables(diff)
+
+
 
 # get output data from server
 iv_output=paraview.servermanager.Fetch(iv)
 
+
 # get Array with integrated value tuplets
-array=iv_output.GetPointData().GetArray( calc.ResultArrayName )
+array=iv_output.GetPointData().GetArray( diff.ResultArrayName )
+
+
 
 # first value in the tuplet is what we need
-print attribute + " L2 error: ", array.GetTuple(0)[0]
+print attribute + " L2 error: ", math.sqrt(array.GetTuple(0)[0])
 
 
 
