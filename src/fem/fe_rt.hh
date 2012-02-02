@@ -51,7 +51,6 @@ class FE_RT0 : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::order;
     using FiniteElement<dim,spacedim>::is_scalar_fe;
     using FiniteElement<dim,spacedim>::node_matrix;
-    using FiniteElement<dim,spacedim>::compute_node_matrix;
 
 public:
     /**
@@ -119,9 +118,10 @@ public:
 
 template<unsigned int dim, unsigned int spacedim>
 FE_RT0<dim,spacedim>::FE_RT0()
-    : FiniteElement<dim,spacedim>()
 {
     vec::fixed<dim> sp;
+
+    this->init();
 
     number_of_dofs = dim+1;
     number_of_single_dofs[dim] = dim+1;
@@ -296,7 +296,7 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
         mat::fixed<dim,dim> shape_grads;
         vector<mat> grads;
 
-        data->basis_grads.resize(q.size());
+        data->basis_grad_vectors.resize(q.size());
         grads.resize(dim+1);
         for (int i=0; i<q.size(); i++)
         {
