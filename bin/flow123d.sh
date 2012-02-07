@@ -35,6 +35,9 @@ FLOW123D="./flow123d"
 # Relative path to Flow123d binary from current/working directory
 FLOW123D="${0%/*}/${FLOW123D}"
 
+# Default number of processes
+NP=0
+
 # Print help to this script
 function print_help {
 	echo "SYNTAX: flow123d.sh [OPTIONS] INI_FILE [\"FLOW_PARAMS\"]"

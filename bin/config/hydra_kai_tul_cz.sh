@@ -36,10 +36,11 @@ function run_flow()
 	export ERR_FILE="err.log"
 	export OUT_FILE="out.log"
 
-		
+	rm /tmp/${USER}-hydra_flow.qsub
+			
 # Copy following text to the file /tmp/firstname.surname-hydra_flow.qsub
 # ======================================================================
-cat << xxEOFxx > /tmp/${USERNAME}-hydra_flow.qsub
+cat << xxEOFxx > /tmp/${USER}-hydra_flow.qsub
 #!/bin/bash
 #
 #$ -cwd
@@ -57,11 +58,16 @@ export OMPI_MCA_plm_rsh_disable_qrsh=1
 xxEOFxx
 # ======================================================================
 
-		
-	# Add new PBS job to the queue
-	qsub -pe orte $NP /tmp/${USERNAME}-hydra_flow.qsub
-	
-	rm /tmp/${USERNAME}-hydra_flow.qsub
+	if [ -f /tmp/${USER}-hydra_flow.qsub ]
+	then    
+		# Add new PBS job to the queue
+		echo "qsub -pe orte $NP /tmp/${USER}-hydra_flow.qsub"
+		qsub -pe orte $NP /tmp/${USER}-hydra_flow.qsub
+		# Remove obsolete script
+		rm /tmp/${USER}-hydra_flow.qsub
+	else
+		exit 1
+	fi		
 	
 	exit 0
 }
