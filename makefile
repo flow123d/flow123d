@@ -24,15 +24,23 @@
 # Build itself takes place in ./src.
 #
 
-include makefile.in
-include makefile.include
+build/CMakeCache.txt:
+	if [ ! -d build ]; then mkdir build; fi
+	cd build; cmake ..
 
-# 4 jobs is usualy enough and do not lead to swaping problems 
-MAKE_JOBS ?= 4
+cmake: build/CMakeCache.txt
 
-all: bin/mpiexec revnumber bin/current_flow
-	make -C third_party all
-	make -j $(MAKE_JOBS) -C src all
+build: cmake
+	make -C build all
+
+FLOW_BIN=build/bin/flow123d
+MPIEXEC_BIN=build/bin/mpiexec
+
+install: build
+	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
+	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod u+x bin/mpiexec; fi
+
+all:  install
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	
@@ -41,61 +49,12 @@ all: bin/mpiexec revnumber bin/current_flow
 # 4 		31s	27s
 # 8 		30s
 	
-bin/mpiexec: makefile.in
-	# TODO:
-	# some time PETSC don't set MPIEXEC well
-	# then we should detect existence of PETSC_ARCH/bin/mpiexec
-	# last chance is to use system wide mpiexec
-	# or die
-	 
-	if which "${MPIEXEC}"; then \
-	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '"${MPIEXEC}" "$$@"' >> bin/mpiexec; \
-	elif [ -x "${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" ]; then \
-	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '"${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" "$$@"' >> bin/mpiexec; \
-	else \
-	    echo "Can not guess mpiexec of PETSC configuration"; \
-	fi        
-	chmod a+x bin/mpiexec
-
-bin/current_flow:
-	if [ -z "${MACHINE}" ]; then \
-		echo "Using default: current_flow"; \
-		echo '#!/bin/bash' > bin/current_flow; \
-		echo "\"`pwd`/bin/generic_flow.sh\"" >> bin/current_flow; \
-	else \
-		if [ -e "bin/stub/${MACHINE}_flow.sh" ]; then \
-			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/stub/${MACHINE}_flow.sh"' >> bin/current_flow; \
-		else \
-			echo "script for given MACHINE not found, using default"; \
-			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/stub/generic_flow.sh"' >> bin/current_flow; \
-		fi \
-	fi
-	chmod u+x bin/current_flow
-		#echo '"${PWD}/${BUILD_DIR}/bin/generic_flow.sh"' >> bin/current_flow; \
-	
-revnumber:
-	if which "svnversion" ;\
-	then echo "#define REVISION \"`svnversion`\"" >__tmp__ren_num.h;\
-	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >__tmp__ren_num.h;\
-	fi ;\
-	if test -r "include/rev_num.h" && diff "__tmp__ren_num.h" "include/rev_num.h" >/dev/null; \
-	then rm __tmp__ren_num.h; \
-	else mv -f __tmp__ren_num.h include/rev_num.h; \
-	fi
-	
-
-
 # Remove all generated files
-clean:
-	make -C src clean
-	make -C doc/doxy clean
-	make -C tests clean
-	rm -f bin/mpiexec
-	rm -f bin/current_flow
+clean: cmake
+	make -C build clean
+
+clean-all: 
+	rm -rf build
 
 # Make all tests	
 testall:

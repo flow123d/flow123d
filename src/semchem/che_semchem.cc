@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "semchem/che_semchem.h"
-#include "system/system.hh"
+//#include "system/system.hh"
 #define _R 0.008314
 #define VERZE "30-09-2005"
 #define vystupni_soubor "che_out.txt"
@@ -333,7 +333,7 @@ double che_gama_ (int i, double *zeta, int *error)
    double sqrtlI = 0.0;
 
    *error = 0;
-	if (G_prm.vypisy>4) printf("\nche_gama_:");//xprintf(Msg,"\nche_gama_:");
+	if (G_prm.vypisy>4) printf("\nche_gama_:");//printf(/*Msg,*/ "\nche_gama_:");
    if (che_I(zeta)<0.0)
    {
 	   printf ("che_I(zeta)=%f!\n", che_I(zeta));
@@ -343,7 +343,7 @@ double che_gama_ (int i, double *zeta, int *error)
    vystup = -P_lat[i].Q*P_lat[i].Q*G_prm.Afi*(sqrtlI/(1.0+G_prm.b*sqrtlI)+2.0/G_prm.b*log(1.0+G_prm.b*sqrtlI));
    vystup = exp(vystup);
 
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k.(che_gama_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k.(che_gama_)");
    return vystup;
 }
 
@@ -354,7 +354,7 @@ double che_dgama_ (int i, double *zeta, int smer, int *error)
 	double pom = 0.0;
 
    error = 0;
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_dgama_:");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_dgama_:");
    if (che_dI(smer)==0.0)
    {
 	   return 0.0;
@@ -368,19 +368,19 @@ double che_dgama_ (int i, double *zeta, int smer, int *error)
    sqrtlI = sqrt(fabs(che_I(zeta)));
    if (sqrtlI==0.0)
    {
-	   xprintf(Msg,"sqrtlI = 0.0, posouvam ve smeru: ");
+	   printf(/*Msg,*/ "sqrtlI = 0.0, posouvam ve smeru: ");
 		pom = zeta[smer];
       zeta[smer]+=DROBNY_POSUN;						// cislo vycucane z prstu
 	   sqrtlI = sqrt(fabs(che_I(zeta)));
       zeta[smer]=pom;
-	   xprintf(Msg,"sqrtlI = %f\n", sqrtlI);
+	   printf(/*Msg,*/ "sqrtlI = %f\n", sqrtlI);
       if (che_I(zeta)<0.0)
       {
          printf ("che_I(zeta)=%f, posouvam proti smeru: ", che_I(zeta));
          zeta[smer]-=DROBNY_POSUN;						// cislo vycucane z prstu
          sqrtlI = sqrt(fabs(che_I(zeta)));
          zeta[smer]=pom;
-         xprintf(Msg,"sqrtlI = %f\n", sqrtlI);
+         printf(/*Msg,*/ "sqrtlI = %f\n", sqrtlI);
       }
    }
    vystup = -P_lat[i].Q*P_lat[i].Q*G_prm.Afi*(sqrtlI/(1.0+G_prm.b*sqrtlI)+2.0/G_prm.b*log(1.0+G_prm.b*sqrtlI));
@@ -389,16 +389,16 @@ double che_dgama_ (int i, double *zeta, int smer, int *error)
    vystup*= (3.0+2.0*G_prm.b*sqrtlI)/(1.0+G_prm.b*sqrtlI)/(1.0+G_prm.b*sqrtlI);
    if (sqrtlI==0.0)
    {
-	   xprintf(Msg,"sqrtlI = 0.0: ");
+	   printf(/*Msg,*/ "sqrtlI = 0.0: ");
 		vystup *= 1.0e56;						// cislo vycucane z prstu
-	   xprintf(Msg,"vystup = %f\n", vystup);
+	   printf(/*Msg,*/ "vystup = %f\n", vystup);
    }
    else
    {
    	vystup/= 2.0*sqrtlI;
    }
    vystup*= che_dI(smer);
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k.(che_dgama_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k.(che_dgama_)");
 
    return vystup;
 }
@@ -412,10 +412,10 @@ double che_K1_( double *zeta, int rce, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)									// cislo vycucane z prstu
    {
-      xprintf(Msg,"k1 se moc spatne pocita, koncim!");
+      printf(/*Msg,*/ "k1 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"\n (che_K1_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_K1_)");
    if (P_che[rce].typ_reakce==2)
    {
 	   k1=0.0;
@@ -437,17 +437,17 @@ double che_K1_( double *zeta, int rce, int vnoreni)
             pom = zeta[rce];
             if (vnoreni < PUL_POCTU_VNORENI) 		// cislo vycucane z prstu
             {
-               xprintf(Msg,"k1 se spatne pocita, posouvam ve smeru: ");
+               printf(/*Msg,*/ "k1 se spatne pocita, posouvam ve smeru: ");
                zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
             {
-               xprintf(Msg,"k1 se spatne pocita, posouvam poprve proti smeru: ");
+               printf(/*Msg,*/ "k1 se spatne pocita, posouvam poprve proti smeru: ");
                zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
             }
             else
             {
-               xprintf(Msg,"k1 se spatne pocita, posouvam proti smeru: ");
+               printf(/*Msg,*/ "k1 se spatne pocita, posouvam proti smeru: ");
                zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             k1 = che_K1_(zeta, rce, vnoreni+1);
@@ -484,17 +484,17 @@ double che_K1_( double *zeta, int rce, int vnoreni)
             pom = zeta[rce];
             if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
             {
-               xprintf(Msg,"k1 se spatne pocita, posouvam ve smeru: ");
+               printf(/*Msg,*/ "k1 se spatne pocita, posouvam ve smeru: ");
                zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
             {
-               xprintf(Msg,"k1 se spatne pocita, posouvam poprve proti smeru: ");
+               printf(/*Msg,*/ "k1 se spatne pocita, posouvam poprve proti smeru: ");
                zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;// cislo vycucane z prstu
             }
             else
             {
-               xprintf(Msg,"k1 se spatne pocita, posouvam proti smeru: ");
+               printf(/*Msg,*/ "k1 se spatne pocita, posouvam proti smeru: ");
                zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             k1 = che_K1_(zeta, rce, vnoreni+1);
@@ -516,10 +516,10 @@ double che_K2_( double *zeta, int rce, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)					// cislo vycucane z prstu
    {
-      xprintf(Msg,"k2 se moc spatne pocita, koncim!");
+      printf(/*Msg,*/ "k2 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"\n (che_K2_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_K2_)");
    if (P_che[rce].typ_reakce!=0)
    {
    	return 1.0;
@@ -531,7 +531,7 @@ double che_K2_( double *zeta, int rce, int vnoreni)
       if (chybicka > 0)
 		{
       	// zaporna iontova sila!
-         xprintf(Msg,"Zaporna iontova sila - ");
+         printf(/*Msg,*/ "Zaporna iontova sila - ");
          chyba += 1;
       }
       if (chyba > 0)
@@ -540,17 +540,17 @@ double che_K2_( double *zeta, int rce, int vnoreni)
          pom = zeta[rce];
          if (vnoreni < PUL_POCTU_VNORENI)				// cislo vycucane z prstu
          {
-            xprintf(Msg,"k2 se spatne pocita, posouvam ve smeru: ");
+            printf(/*Msg,*/ "k2 se spatne pocita, posouvam ve smeru: ");
             zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
          }
          else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
          {
-            xprintf(Msg,"k2 se spatne pocita, posouvam poprve proti smeru: ");
+            printf(/*Msg,*/ "k2 se spatne pocita, posouvam poprve proti smeru: ");
             zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;		// cislo vycucane z prstu
          }
          else
          {
-            xprintf(Msg,"k2 se spatne pocita, posouvam proti smeru: ");
+            printf(/*Msg,*/ "k2 se spatne pocita, posouvam proti smeru: ");
             zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
          }
          k2 = che_K2_(zeta, rce, vnoreni+1);
@@ -596,7 +596,7 @@ double che_K_(int rce)
    double kk = 0.0;
    int chyba = 0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\n (che_K_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_K_)");
    if (P_che[rce].typ_reakce==2)
    {
 	   kk=P_che[rce].K;
@@ -611,7 +611,7 @@ double che_K_(int rce)
          if (chyba > 0)
          {
             // nula na zaporne cislo nebo zaporne cislo na necely exponent!
-			xprintf(Msg,"K se moc spatne pocita, koncim!");
+			printf(/*Msg,*/ "K se moc spatne pocita, koncim!");
             exit (222);
          }
       }
@@ -638,7 +638,7 @@ double che_K_(int rce)
 				if (chyba > 0)
             {
                // nula na zaporne cislo!
-               xprintf(Msg,"K se moc spatne pocita, koncim!");
+               printf(/*Msg,*/ "K se moc spatne pocita, koncim!");
                exit (222);
             }
          }
@@ -658,10 +658,10 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)					// cislo vycucane z prstu
    {
-      xprintf(Msg,"dk1 se moc spatne pocita, koncim!");
+      printf(/*Msg,*/ "dk1 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"\n (che_dK1_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_dK1_)");
    if (P_che[rce].typ_reakce==2)
    {
    	dk1 = 0.0;
@@ -685,17 +685,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam ve smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                }
                else
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam proti smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -718,17 +718,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                   pom = zeta[rce];
                   if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                   {
-                     xprintf(Msg,"dk1 se spatne pocita, posouvam ve smeru: ");
+                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
                      zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                   {
-                     xprintf(Msg,"dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
                      zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                   }
                   else
                   {
-                     xprintf(Msg,"dk1 se spatne pocita, posouvam proti smeru: ");
+                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
                      zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -746,17 +746,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam ve smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                }
                else
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam proti smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -789,17 +789,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                   pom = zeta[rce];
                   if (vnoreni < PUL_POCTU_VNORENI)		// cislo vycucane z prstu
                   {
-                     xprintf(Msg,"dk1 se spatne pocita, posouvam ve smeru: ");
+                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
                      zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                   {
-                     xprintf(Msg,"dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
                      zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                   }
                   else
                   {
-                     xprintf(Msg,"dk1 se spatne pocita, posouvam proti smeru: ");
+                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
                      zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -817,17 +817,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam ve smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)						// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else
                {
-                  xprintf(Msg,"dk1 se spatne pocita, posouvam proti smeru: ");
+                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -858,10 +858,10 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)									// cislo vycucane z prstu
    {
-      xprintf(Msg,"dk2 se moc spatne pocita, koncim!");
+      printf(/*Msg,*/ "dk2 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"\n (che_dK2_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_dK2_)");
    if (P_che[rce].typ_reakce) return 0.0;
    dk2=0.0;
    for (i=0; i<G_prm.pocet_latekvefazi; i++)
@@ -875,7 +875,7 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
             if (chybicka > 0)
             {
                // zaporna iontova sila!
-               xprintf(Msg,"Zaporna iontova sila - ");
+               printf(/*Msg,*/ "Zaporna iontova sila - ");
                chyba += 1;
             }
             if (chyba > 0)
@@ -884,17 +884,17 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)								// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk2 se spatne pocita, posouvam ve smeru: ");
+                  printf(/*Msg,*/ "dk2 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)						// cislo vycucane z prstu
                {
-                  xprintf(Msg,"dk2 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf(/*Msg,*/ "dk2 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else
                {
-                  xprintf(Msg,"dk2 se spatne pocita, posouvam proti smeru: ");
+                  printf(/*Msg,*/ "dk2 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk2 = che_dK2_(zeta, rce, smer, vnoreni+1);
@@ -909,7 +909,7 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
          if ((chybicka + chybicka2) > 0)
          {
             // zaporna iontova sila!
-            xprintf(Msg,"Zaporna iontova sila - ");
+            printf(/*Msg,*/ "Zaporna iontova sila - ");
             chyba += 1;
          }
          if (chyba > 0)
@@ -918,17 +918,17 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
             pom = zeta[rce];
             if (vnoreni < PUL_POCTU_VNORENI)								// cislo vycucane z prstu
             {
-               xprintf(Msg,"dk2 se spatne pocita, posouvam ve smeru: ");
+               printf(/*Msg,*/ "dk2 se spatne pocita, posouvam ve smeru: ");
                zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else if (vnoreni == PUL_POCTU_VNORENI)						// cislo vycucane z prstu
             {
-               xprintf(Msg,"dk2 se spatne pocita, posouvam poprve proti smeru: ");
+               printf(/*Msg,*/ "dk2 se spatne pocita, posouvam poprve proti smeru: ");
                zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else
             {
-               xprintf(Msg,"dk2 se spatne pocita, posouvam proti smeru: ");
+               printf(/*Msg,*/ "dk2 se spatne pocita, posouvam proti smeru: ");
                zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             dk2 = che_dK2_(zeta, rce, smer, vnoreni+1);
@@ -944,9 +944,9 @@ double che_hodnota_(double *zeta, int rce)
 {
 	double vystup = 0.0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_hodnota_:");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_hodnota_:");
 	vystup = che_K1_(zeta,rce,0)*che_K2_(zeta,rce,0);
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_hodnota_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_hodnota_)");
 
    return vystup;
 }
@@ -955,9 +955,9 @@ double che_derivace_(double *zeta, int rce, int smer)
 {
 	double vystup = 0.0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_derivace_:");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_derivace_:");
    vystup = che_K1_(zeta,rce,0)*che_dK2_(zeta,rce,smer,0)+che_K2_(zeta,rce,0)*che_dK1_(zeta,rce,smer,0);
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_derivace_)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_derivace_)");
 
    return vystup;
 }
@@ -977,7 +977,7 @@ void che_Jakobi(double *zeta, double *J, double *skala)
    int i = 0;
    int j =0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_Jakobi: ");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_Jakobi: ");
    for (i=0;i<G_prm.pocet_reakci_pro_matici;i++)
    {
 	   for (j=0;j<G_prm.pocet_reakci_pro_matici;j++)
@@ -985,7 +985,7 @@ void che_Jakobi(double *zeta, double *J, double *skala)
 		   J[i*G_prm.pocet_reakci_pro_matici+j]=che_derivace_(zeta,i,j)*skala[i];
       }
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (Jakobi)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (Jakobi)");
 }
 
 double che_abs_norma(double *x)
@@ -1034,60 +1034,60 @@ void che_odecti (double *x, double *y, double *z)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_odecti: ");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_odecti: ");
    for (i=0;i<G_prm.pocet_reakci_pro_matici;i++)
 	{
       z[i]=x[i]-y[i];
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_odecti)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_odecti)");
 }
 
 void che_nasob_ld (double x, double *y, double *z, int delka)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_nasob_ld: ");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_nasob_ld: ");
    for (i=0;i<delka;i++)
 	{
       z[i]=x*y[i];
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_nasob_ld)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_nasob_ld)");
 }
 
 void che_kombinuj4_ld (double x1, double *y1, double x2, double *y2, double x3, double *y3, double x4, double *y4, double *z, int delka)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_kombinuj4_ld: ");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_kombinuj4_ld: ");
    for (i=0;i<delka;i++)
 	{
       z[i]=x1*y1[i]+x2*y2[i]+x3*y3[i]+x4*y4[i];
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_kombinuj4_ld)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_kombinuj4_ld)");
 }
 
 void che_nuluj_ld (double *z, int delka)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_nuluj_ld: ");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_nuluj_ld: ");
    for (i=0;i<delka;i++)
 	{
       z[i]=0.0;
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_nuluj_ld)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_nuluj_ld)");
 }
 
 void che_kopiruj (double *y, double *z)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nkopiruj:");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nkopiruj:");
    for (i=0;i<G_prm.pocet_reakci_pro_matici;i++)
    {
       z[i]=y[i];
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (kopiruj)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (kopiruj)");
 }
 
 void che_zgaussproprg ( double *prstrana, int *hprvky, double *vysl )
@@ -1143,7 +1143,7 @@ int che_odecti_s_korekci_ld(double *x, double *y, double *z, int delka)
    double *z0 = NULL;
    FILE *fw = NULL;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_odecti_s_korekci_ld:");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_odecti_s_korekci_ld:");
    for (i=0;i<G_prm.pocet_latekvefazi;i++)
    {
       if (che_m(i,x) < 0.0)
@@ -1218,7 +1218,7 @@ int che_odecti_s_korekci_ld(double *x, double *y, double *z, int delka)
    }
    while (problem > 0);
 	che_kopiruj (z0, z);
-	if (G_prm.vypisy>4) xprintf(Msg,"O.K.(che_odecti_s_korekci_ld)");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "O.K.(che_odecti_s_korekci_ld)");
 
    free(z0);
    z0 = NULL;
@@ -1280,7 +1280,7 @@ double che_osklivost(double *zeta0, int *zapornych, int *nulovych, int *nejhorsi
    double hodnota = 0.0;
    double vysledek = 0.0;
 
-	if (G_prm.vypisy>4) xprintf(Msg,"\nche_osklivost: ");
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_osklivost: ");
 	vysledek = 0.0;
    *nejhorsi = -1;
    hodnota = 1.0;
@@ -1317,7 +1317,7 @@ double che_osklivost(double *zeta0, int *zapornych, int *nulovych, int *nejhorsi
 		//neznama promenna nulovych
 		vysledek = (1.0 * (*nulovych)) / G_prm.pocet_latekvefazi;
    }
-	if (G_prm.vypisy>4) xprintf(Msg,"o.k.(che_osklivost = %f)", vysledek);
+	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k.(che_osklivost = %f)", vysledek);
    return vysledek;
 }
 
@@ -1402,7 +1402,7 @@ int che_urci_zeta0(void)
    }
    if (osklivost0>0.0)
    {
-   	xprintf(Msg,"\nzeta0 se nepodarilo nastavit (osklivost je 1.0+(%f))", osklivost0-1.0);
+   	printf(/*Msg,*/ "\nzeta0 se nepodarilo nastavit (osklivost je 1.0+(%f))", osklivost0-1.0);
    }
    free(zeta0);
    zeta0 = NULL;
@@ -1665,7 +1665,7 @@ void che_spocitej_rychlosti(FILE *fw, double *rychlosti, double *poloha, double 
 	   	rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu] *= che_poww_ld(poloha[j],P_che[i].exponent[j],&chyba);
 	 if (G_prm.vypisy > 4)
 	 {
-	      xprintf(Msg,"\n  %d.  rychlost %d. kineticke reakce %10.24f, poloha = %f, exponent = %f\n", j, i, rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu], poloha[j], P_che[i].exponent[j]);
+	      printf(/*Msg,*/ "\n  %d.  rychlost %d. kineticke reakce %10.24f, poloha = %f, exponent = %f\n", j, i, rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu], poloha[j], P_che[i].exponent[j]);
 	 }
          if (chyba > 0)
          {
@@ -1721,7 +1721,7 @@ void che_zkrat_latku_o(FILE *fw, int kterou, double o_kolik, double *rychlosti)
       }
       if (reakce==-1)
       {
-         xprintf (Msg,"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - nelze uz zkratit spotrebu latky!");
+         printf(/*Msg,*/"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - nelze uz zkratit spotrebu latky!");
          //fclose(fw);
          exit(224);
       }
@@ -1761,7 +1761,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
    {
       return;
    }
-   if (G_prm.vypisy>4) xprintf(Msg,"\nche_pomala_kinetika: ");
+   if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_pomala_kinetika: ");
 
 //  TOHLE JE JEDEN KROK RUNGE-KUTTA - mel bych priprogramovat moznost rozdelit vypocet na vic kroku
 
@@ -1828,7 +1828,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
          poloha[j] = P_lat[j].m0;
          if (P_lat[j].m0<0.0)
          {
-            xprintf (Msg,"\nchemie: Vstup do pomalych kinetickych reakci obsahoval zapornou molalitu %d. latky-neprobehne vypocet!!", j+1);
+            printf(/*Msg,*/ "\nchemie: Vstup do pomalych kinetickych reakci obsahoval zapornou molalitu %d. latky-neprobehne vypocet!!", j+1);
             free(rychlosti);
 	    rychlosti = NULL;
             
@@ -1879,7 +1879,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
       {
          if (poloha2[j]<0.0)
          {
-            xprintf (Msg,"\nchemie: pri pomalych kinetickych reakcich dosla %d. latka (%f)\t", j+1, poloha2[j]);
+            printf(/*Msg,*/ "\nchemie: pri pomalych kinetickych reakcich dosla %d. latka (%f)\t", j+1, poloha2[j]);
             che_zkrat_latku_o(fw,j,-poloha2[j],rychlosti);
             che_spocitej_posunuti(posunuti, rychlosti);
             che_prepocitej_polohu(poloha2, poloha, posunuti);
@@ -1897,7 +1897,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
             }
             else
             {
-               xprintf (Msg,"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - pomale kineticke reakce nejsou dost pomale!\n%d.latka (%f)", j+1,P_lat[j].m0);
+               printf(/*Msg,*/ "\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - pomale kineticke reakce nejsou dost pomale!\n%d.latka (%f)", j+1,P_lat[j].m0);
                //fclose(fw);
                exit(224);
             }
@@ -1929,7 +1929,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
   poloha = NULL;
 //
    //fclose (fw);
-  	if (G_prm.vypisy>4) xprintf(Msg,"o.k. (che_pomala_kinetika)");
+  	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_pomala_kinetika)");
 }
 
 void che_vypocet_rovnovah (char *soubor)
@@ -1977,32 +1977,32 @@ void che_vypis_prm_lat_che ( void )
 {
    int i = 0;
    int j = 0;
-   xprintf(Msg,"\nPRM: ");
-   xprintf(Msg,"%d %d %d %d ", G_prm.pocet_latek,G_prm.pocet_latekvefazi,G_prm.celkovy_pocet_reakci,G_prm.pocet_reakci_pro_matici);
-   xprintf(Msg,"%f %f %f %f %f %f ",G_prm.T,G_prm.Afi,G_prm.b,G_prm.epsilon,G_prm.omega,G_prm.deltaT);
-   xprintf(Msg,"%d %d",G_prm.cas_kroku,G_prm.vypisy);
+   printf(/*Msg,*/ "\nPRM: ");
+   printf(/*Msg,*/ "%d %d %d %d ", G_prm.pocet_latek,G_prm.pocet_latekvefazi,G_prm.celkovy_pocet_reakci,G_prm.pocet_reakci_pro_matici);
+   printf(/*Msg,*/ "%f %f %f %f %f %f ",G_prm.T,G_prm.Afi,G_prm.b,G_prm.epsilon,G_prm.omega,G_prm.deltaT);
+   printf(/*Msg,*/ "%d %d",G_prm.cas_kroku,G_prm.vypisy);
 
-   xprintf(Msg,"\nLAT: ");
+   printf(/*Msg,*/ "\nLAT: ");
    for (i=0; i<G_prm.pocet_latek; i++)
    {
-       xprintf(Msg,"\n  (%d): ", i);
-       xprintf(Msg,"%d. %f %f %f %f %d %f",i,P_lat[i].m0,P_lat[i].m,P_lat[i].M,P_lat[i].dGf,P_lat[i].Q,P_lat[i].aktivita);
+       printf(/*Msg,*/ "\n  (%d): ", i);
+       printf(/*Msg,*/ "%d. %f %f %f %f %d %f",i,P_lat[i].m0,P_lat[i].m,P_lat[i].M,P_lat[i].dGf,P_lat[i].Q,P_lat[i].aktivita);
    }
 
-   xprintf(Msg,"\nCHE: ");
+   printf(/*Msg,*/ "\nCHE: ");
    for (i=0; i<G_prm.celkovy_pocet_reakci; i++)
    {
-       xprintf(Msg,"\n  (%d): ", i);
-       xprintf(Msg,"%d %f %d %f",i,P_che[i].K,P_che[i].typ_reakce,P_che[i].zeta0);
-       xprintf(Msg,"\n     stech. koef.: ");
+       printf(/*Msg,*/ "\n  (%d): ", i);
+       printf(/*Msg,*/ "%d %f %d %f",i,P_che[i].K,P_che[i].typ_reakce,P_che[i].zeta0);
+       printf(/*Msg,*/ "\n     stech. koef.: ");
       for (j = 0; j<G_prm.pocet_latek; j++)
       {
-          xprintf(Msg,"%d ", P_che[i].stech_koef_p[j]);
+          printf(/*Msg,*/ "%d ", P_che[i].stech_koef_p[j]);
       }
-       xprintf(Msg,"\n     exponenty:    ");
+       printf(/*Msg,*/ "\n     exponenty:    ");
       for (j = 0; j<G_prm.pocet_latekvefazi; j++)
       {
-          xprintf(Msg,"%f ", P_che[i].exponent[j]);
+          printf(/*Msg,*/ "%f ", P_che[i].exponent[j]);
       }
    }
 }
@@ -2012,17 +2012,17 @@ void che_vypis_prm_lat_che ( void )
 /********************************************************************/
 void che_uvolneni_P( void )
 {
-   xprintf(Msg, "Uvolneni che_ P_lat, P_che : " );
+   printf(/*Msg,*/  "Uvolneni che_ P_lat, P_che : " );
    if ( P_lat != NULL )
    {
       free( P_lat ); P_lat = NULL;
    }
-   xprintf(Msg, "O.k., " );
+   printf(/*Msg,*/  "O.k., " );
    if ( P_che != NULL )
    {
       free( P_che ); P_che = NULL;
    }
-   xprintf(Msg, "O.k.\n" );
+   printf(/*Msg,*/  "O.k.\n" );
 }
 
 /********************************************************************/
@@ -2038,567 +2038,4 @@ float che_poradi (int typ_reakce, double max, double K)
    {
       return (float) typ_reakce;
    }
-}
-// Cte CHEMIE-OBECNE ze souboru parametru .ich
-void ctiich_obecne( void )
-{
-	int	i;
-	const char *section = "Semchem_module";
-	char  buffer[ 1024 ];
-	char *pString;
-
-	G_prm.pocet_latekvefazi = OptGetInt("Transport", "N_substances", NULL );
-	if (G_prm.pocet_latekvefazi < 1){
-	  xprintf(Msg,"\nNumber of aqueous species must be higher then 1.");
-	  exit(133);
-	}
-/*------------------------------------------------------------------*/
-	G_prm.T = OptGetDbl(section,"Temperature","0.0");
-	if ( G_prm.T <= 0.0 )
-	{
-   	xprintf(Msg,"\nTeplota musi byt kladna!");
-      exit(133);
-   	}
-/*------------------------------------------------------------------*/
-	G_prm.TGf = OptGetDbl(section,"Temperature_Gf","-1.0");
-	if ( G_prm.TGf == -1.0 )
-   	{
-      G_prm.TGf = G_prm.T;
-   	}
-	if ( G_prm.T <= 0.0 )
-	{
-   	xprintf(Msg,"\nTeplota pro zadani dGf musi byt kladna!");
-      exit(133);
-   	}
-/*------------------------------------------------------------------*/
-	G_prm.epsilon = OptGetDbl(section,"Epsilon","0.0");
-	if ( G_prm.epsilon<= 0.0 )
-	{
-   	xprintf(Msg,"\nEpsilon musi byt kladne!");
-      exit(133);
-   	}
-/*------------------------------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(section, "Error_norm_type", "Absolute"));
-   if ( pString == NULL )
-   {
-      xprintf(Msg,"\nChybi typ normy!");
-      exit(133);
-   }
-   G_prm.abs_norma = -1;
-   if ( strcmp( buffer, "relative" ) == 0 ) G_prm.abs_norma = 0;
-   if ( strcmp( buffer, "Relative" ) == 0 ) G_prm.abs_norma = 0;
-   if ( strcmp( buffer, "rel" ) == 0 ) G_prm.abs_norma = 0;
-   if ( strcmp( buffer, "Rel" ) == 0 ) G_prm.abs_norma = 0;
-   if ( strcmp( buffer, "r" ) == 0 ) G_prm.abs_norma = 0;
-   if ( strcmp( buffer, "R" ) == 0 ) G_prm.abs_norma = 0;
-   if ( strcmp( buffer, "0" ) == 0 ) G_prm.abs_norma = 0;
-   if ( strcmp( buffer, "absolute" ) == 0 ) G_prm.abs_norma = 1;
-   if ( strcmp( buffer, "Absolute" ) == 0 ) G_prm.abs_norma = 1;
-   if ( strcmp( buffer, "abs" ) == 0 ) G_prm.abs_norma = 1;
-   if ( strcmp( buffer, "Abs" ) == 0 ) G_prm.abs_norma = 1;
-   if ( strcmp( buffer, "a" ) == 0 ) G_prm.abs_norma = 1;
-   if ( strcmp( buffer, "A" ) == 0 ) G_prm.abs_norma = 1;
-   if ( strcmp( buffer, "1" ) == 0 ) G_prm.abs_norma = 1;
-   if (G_prm.abs_norma == -1)
-   {
-      xprintf(Msg,"\nTyp normy neni platny!");
-      exit(133);
-   }
-   G_prm.omega = 1.0;
-/*------------------------------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(section,"Scaling","No"));
-   if ( pString == NULL )
-   {
-      xprintf(Msg,"\nChybi definice skalovani!");
-      exit(133);
-   }
-   G_prm.skaluj_matici = -1;
-   if ( strcmp( buffer, "N" ) == 0 ) G_prm.skaluj_matici = 0;
-   if ( strcmp( buffer, "Ne" ) == 0 ) G_prm.skaluj_matici = 0;
-   if ( strcmp( buffer, "No" ) == 0 ) G_prm.skaluj_matici = 0;
-   if ( strcmp( buffer, "0" ) == 0 ) G_prm.skaluj_matici = 0;
-   if ( strcmp( buffer, "A" ) == 0 ) G_prm.skaluj_matici = 1;
-   if ( strcmp( buffer, "Ano" ) == 0 ) G_prm.skaluj_matici = 1;
-   if ( strcmp( buffer, "Y" ) == 0 ) G_prm.skaluj_matici = 1;
-   if ( strcmp( buffer, "Yes" ) == 0 ) G_prm.skaluj_matici = 1;
-   if ( strcmp( buffer, "1" ) == 0 ) G_prm.skaluj_matici = 1;
-   if (G_prm.skaluj_matici == -1)
-   {
-      xprintf(Msg,"\nSkalovani matice neni platne!");
-      exit(133);
-   }
-/*-----------------------------------------------*/
-	G_prm.Afi = OptGetDbl(section,"Param_Afi","-1.0");
-	if ( G_prm.Afi < 0.0 )
-	{
-   	xprintf(Msg,"\nAfi musi byt nezaporne!");
-      exit(133);
-   }
-/*------------------------------------------------------------------*/
-	G_prm.b = OptGetDbl(section,"Param_b","0.0");
-	if ( G_prm.b <= 0.0 )
-	{
-   	xprintf(Msg,"\nb musi byt kladne!");
-      exit(133);
-   }
-/*------------------------------------------------------------------*/
-	G_prm.cas_kroku = OptGetInt(section,"Time_steps","0");
-	if ( G_prm.cas_kroku <= 0 )
-	{
-   	xprintf(Msg,"\nPocet casovych kroku musi byt kladny!");
-      exit(133);
-   }
-/*------------------------------------------------------------------*/
-	G_prm.vypisy = OptGetInt(section,"Output_precission","0");
-/*------------------------------------------------------------------*/
-	i = OptGetInt(section, "Number_of_further_species","0");
-	if ( i < 0 )
-	{
-   	xprintf(Msg,"\nPocet dalsich latek nesmi byt zaporny!");
-      exit(133);
-   }
-   G_prm.pocet_latek = i+G_prm.pocet_latekvefazi;
-   if (G_prm.pocet_latek>MAX_POC_LATEK)
-   {
-	   printf ("Celkovy pocet latek muze byt maximalne %d!\n", MAX_POC_LATEK);
-	   exit(121);
-   }
-/*------------------------------------------------------------------*/
-	G_prm.deleni_RK = OptGetInt(section,"Slow_kinetics_substeps","1");
-	if ( G_prm.deleni_RK < 1 )
-	{
-   	xprintf(Msg,"\nPocet kroku pomale kinetiky musi byt kladny!");
-      exit(133);
-   }
-}
-/********************************************************************/
-/*                      Cte LATKY_VE_FAZI ze souboru parametru .ich */
-/********************************************************************/
-void ctiich_latkyvefazi( void )
-{
-   char  buffer[1024];
-   int   i,j;
-   char  nazev[30], nazev1[30], *pom_buf;
-   const char *separators = " ,\t";
-   char *pString;
-
-// Alokace seznamu latek
-   P_lat = (TS_lat *)malloc( (G_prm.pocet_latek)*sizeof( TS_lat ) );
-   if ( P_lat == NULL )
-   {
-	   printf ("Malo pameti!\n");
-	   exit(0);
-   }
-// Nacteni obsahu seznamu latek
-/*-----------------------------------------------*/
-   sprintf( nazev, "Aqueous_species" );
-    {
-       for (j=0; j<G_prm.pocet_latekvefazi; j++)
-       {
-	  strcpy(P_lat[j].nazev,"");
-       }
-    }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dGf","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      pom_buf = NULL;
-   }
-   for (j=0; j<G_prm.pocet_latekvefazi; j++)
-   {
-      if ( pom_buf == NULL )
-      {
-         xprintf(Msg,"\nChybi dGf %d. latky ve fazi!", j+1);
-         exit(133);
-      }
-      P_lat[j].dGf = atof(pom_buf);
-	xprintf(Msg,"\n P_lat[%d].dGf %Lf\n",j,P_lat[j].dGf);
-      pom_buf = strtok( NULL, separators );
-   }
-   if ( pom_buf != NULL )
-   {
-      xprintf(Msg,"\nPrilis mnoho dGf pro latky ve fazi!");
-      exit(133);
-   }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dHf","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      for (j=0; j<G_prm.pocet_latekvefazi; j++)
-      {
-         P_lat[j].dHf = 0.0;
-      }
-      pom_buf = NULL;
-   }
-   else for (j=0; j<G_prm.pocet_latekvefazi; j++)
-   {
-      if ( pom_buf == NULL )
-      {
-         xprintf(Msg,"\nChybi dHf %d. latky ve fazi!", j+1);
-         exit(133);
-      }
-      P_lat[j].dHf = atof(pom_buf);
-      pom_buf = strtok( NULL, separators );
-   }
-   if ( pom_buf != NULL )
-   {
-      xprintf(Msg,"\nPrilis mnoho dHf pro latky ve fazi!");
-      exit(133);
-   }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"Molar_mass","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      pom_buf = NULL;
-   }
-      for (j=0; j<G_prm.pocet_latekvefazi; j++)
-      {
-         if ( pom_buf == NULL )
-         {
-            xprintf(Msg,"\nChybi molarni hmotnost %d. latky ve fazi!", j+1);
-            exit(133);
-         }
-		 P_lat[j].M = atof(pom_buf);
-         pom_buf = strtok( NULL, separators );
-      }
-      if ( pom_buf != NULL )
-      {
-         xprintf(Msg,"\nPrilis mnoho molarnich hmotnosti pro latky ve fazi!");
-         exit(133);
-      }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"El_charge","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      pom_buf = NULL;
-   }
-   for (j=0; j<G_prm.pocet_latekvefazi; j++)
-   {
-      if ( pom_buf == NULL )
-      {
-         xprintf(Msg,"\nChybi naboj %d. latky ve fazi!", j+1);
-         exit(133);
-      }
-      P_lat[j].Q = atoi(pom_buf);
-      pom_buf = strtok( NULL, separators );
-   }
-   if ( pom_buf != NULL )
-   {
-      xprintf(Msg,"\nPrilis mnoho naboju pro latky ve fazi!");
-      exit(133);
-   }
-/*-----------------------------------------------*/
-	  for (j=0; j<G_prm.pocet_latekvefazi; j++)
-	  {
-		 P_lat[j].typ_sorpce = 0; //Sorption has been suppressed in semchem module.
-	  }
-/*-----------------------------------------------*/
-}
-// Cte DALSI_LATKY ze souboru parametru .ini
-void ctiich_dalsilatky( void )
-{
-   char  buffer[1024];
-   int   j;
-   char  nazev[30], *pom_buf;
-   const char* separators = " ,\t";
-   char *pString = NULL;
-
-   if (G_prm.pocet_latekvefazi == 0)
-   {
-      return;
-   }
-// Nacteni obsahu seznamu latek
-   sprintf( nazev, "Further_species" );
-   pString = strcpy(buffer,OptGetStr(nazev,"Specie_name","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      for (j=G_prm.pocet_latekvefazi;j<G_prm.pocet_latek; j++)
-      {
-         sprintf( P_lat[j].nazev, "Dalsi_latka_%d", j+1-G_prm.pocet_latek );
-      }
-   }
-   else
-   {
-      for (j=G_prm.pocet_latekvefazi;j<G_prm.pocet_latek; j++)
-      {
-         if ( pom_buf == NULL )
-         {
-            xprintf(Msg,"\nChybi nazev %d. dalsi latky!", j+1-G_prm.pocet_latek);
-            exit(133);
-         }
-         strcpy (P_lat[j].nazev, pom_buf);
-         pom_buf = strtok( NULL, separators );
-      }
-      if ( pom_buf != NULL )
-      {
-         xprintf(Msg,"\nPrilis mnoho nazvu dalsich latek!");
-         exit(133);
-      }
-   }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dGf","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      pom_buf = NULL;
-   }
-   for (j=G_prm.pocet_latekvefazi;j<G_prm.pocet_latek; j++)
-   {
-      if ( pom_buf == NULL )
-      {
-         xprintf(Msg,"\nChybi dGf %d. dalsi latky!", j+1-G_prm.pocet_latek);
-         exit(133);
-      }
-      P_lat[j].dGf = atof(pom_buf);
-      pom_buf = strtok( NULL, separators );
-   }
-   if ( pom_buf != NULL )
-   {
-      xprintf(Msg,"\nPrilis mnoho dGf pro dalsi latky!");
-      exit(133);
-   }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dHf","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      for (j=G_prm.pocet_latekvefazi;j<G_prm.pocet_latek; j++)
-      {
-         P_lat[j].dHf = 0.0;
-      }
-      pom_buf = NULL;
-   }
-   else for (j=G_prm.pocet_latekvefazi;j<G_prm.pocet_latek; j++)
-   {
-      if ( pom_buf == NULL )
-      {
-         xprintf(Msg,"\nChybi dHf %d. dalsi latky!", j+1-G_prm.pocet_latek);
-         exit(133);
-      }
-      P_lat[j].dHf = atof(pom_buf);
-      pom_buf = strtok( NULL, separators );
-   }
-   if ( pom_buf != NULL )
-   {
-      xprintf(Msg,"\nPrilis mnoho dHf pro dalsi latky!");
-      exit(133);
-   }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"Molar_mass","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      pom_buf = NULL;
-   }
-   for (j=G_prm.pocet_latekvefazi;j<G_prm.pocet_latek; j++)
-   {
-      if ( pom_buf == NULL )
-      {
-         xprintf(Msg,"\nChybi molarni hmotnost %d. dalsi latky!", j+1-G_prm.pocet_latek);
-         exit(133);
-      }
-      P_lat[j].M = atof(pom_buf);
-      pom_buf = strtok( NULL, separators );
-   }
-   if ( pom_buf != NULL )
-   {
-      xprintf(Msg,"\nPrilis mnoho molarnich hmotnosti pro dalsi latky!");
-      exit(133);
-   }
-/*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"Activity","<NeplatnyNazev>"));
-   pom_buf = strtok( buffer, separators );
-   if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
-   {
-      pom_buf = NULL;
-   }
-   for (j=G_prm.pocet_latekvefazi;j<G_prm.pocet_latek; j++)
-   {
-      if ( pom_buf == NULL )
-      {
-         xprintf(Msg,"\nChybi aktivita %d. dalsi latky!", j+1-G_prm.pocet_latek);
-         exit(133);
-      }
-      P_lat[j].aktivita = atof(pom_buf);
-      pom_buf = strtok( NULL, separators );
-   }
-   if ( pom_buf != NULL )
-   {
-      xprintf(Msg,"\nPrilis mnoho aktivit pro dalsi latky!");
-      exit(133);
-   }
-}
-
-// Cte REAKCE ze souboru parametru .ich
-void ctiich_reakce( void )
-{
-   char  buffer[1024];
-   int   i,j;
-   char  nazev[30], *pom_buf;
-   const char* separators = " ,\t";
-   TS_che pom_che;
-   double max_poloc_rozp;
-
-// Zjisteni delky seznamu reakci
-   for ( i = 1;; ++i )
-   {
-      sprintf( nazev, "Reaction_%d", i );
-      strcpy(buffer,OptGetStr(nazev,"Reaction_type","<NeplatnyNazev>")); xprintf(Msg,"probehlo zjisteni typu reakce %d: %s\n",i, buffer);
-      if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 ) break;
-   }
-   G_prm.celkovy_pocet_reakci = i-1;
-	if ( i==1 )
-	{
-   	xprintf(Msg,"\nNeni definovana zadna reakce!");
-      exit(133);
-   }
-// Alokace seznamu reakci
-   P_che = (TS_che *)malloc( (G_prm.celkovy_pocet_reakci)*sizeof( TS_che ) );
-   if ( P_che == NULL )
-   {
-	   printf ("Malo pameti!\n");
-	   exit(0);
-   }
-// Nacteni obsahu seznamu reakci
-	G_prm.pocet_reakci_pro_matici = 0;
-   G_prm.pocet_rozpadu = 0;
-   G_prm.pocet_pom_kin = 0;
-   max_poloc_rozp = 0.0;
-   for (i=0; i<G_prm.celkovy_pocet_reakci; i++)
-   {
-      sprintf( nazev, "Reaction_%d", i+1 );
-      sprintf(P_che[i].nazev,"Reaction_%d",i+1);
-/*-----------------------------------------------*/
-      strcpy(buffer,OptGetStr(nazev,"Reaction_type","<NeplatnyTyp>"));
-      pom_buf = strtok( buffer, separators );
-      P_che[i].typ_reakce = -888;
-      if ( strcmp( pom_buf, "Radioactive_decay" ) == 0 ) P_che[i].typ_reakce = 4;
-      if ( strcmp( pom_buf, "radioactive_decay" ) == 0 ) P_che[i].typ_reakce = 4;
-      if ( strcmp( pom_buf, "Decay" ) == 0 ) P_che[i].typ_reakce = 4;
-      if ( strcmp( pom_buf, "decay" ) == 0 ) P_che[i].typ_reakce = 4;
-      if ( strcmp( pom_buf, "RD" ) == 0 ) P_che[i].typ_reakce = 4;
-      if ( strcmp( pom_buf, "rd" ) == 0 ) P_che[i].typ_reakce = 4;
-      if ( strcmp( pom_buf, "4" ) == 0 ) P_che[i].typ_reakce = 4;
-      if ( strcmp( pom_buf, "Slow_kinetics" ) == 0 ) P_che[i].typ_reakce = 3;
-      if ( strcmp( pom_buf, "slow_kinetics" ) == 0 ) P_che[i].typ_reakce = 3;
-      if ( strcmp( pom_buf, "3" ) == 0 ) P_che[i].typ_reakce = 3;
-      if ( strcmp( pom_buf, "Kinetics" ) == 0 ) P_che[i].typ_reakce = 1;
-      if ( strcmp( pom_buf, "kinetics" ) == 0 ) P_che[i].typ_reakce = 1;
-      if ( strcmp( pom_buf, "1" ) == 0 ) P_che[i].typ_reakce = 1;
-      if ( strcmp( pom_buf, "Equilibrium" ) == 0 ) P_che[i].typ_reakce = 0;
-      if ( strcmp( pom_buf, "equilibrium" ) == 0 ) P_che[i].typ_reakce = 0;
-      if ( strcmp( pom_buf, "0" ) == 0 ) P_che[i].typ_reakce = 0;
-      if (P_che[i].typ_reakce == -888)
-      {
-         xprintf(Msg,"\nThe type of reaction nr. %d is not valid!", i);
-         exit(133);
-      }
-      if (P_che[i].typ_reakce==0)
-      {
-         G_prm.pocet_rovnovah++;
-      }
-      if (P_che[i].typ_reakce==1)
-      {
-         G_prm.pocet_kinetik++;
-      }
-      if (P_che[i].typ_reakce==3)
-      {
-         G_prm.pocet_pom_kin++;
-      }
-      if (P_che[i].typ_reakce==4)
-      {
-         G_prm.pocet_rozpadu++;
-      }
-      G_prm.pocet_reakci_pro_matici = G_prm.pocet_rovnovah+G_prm.pocet_kinetik;
-/*------------------------------------------------------------------*/
-      strcpy(buffer,OptGetStr(nazev,"Stoichiometry",""));
-      pom_buf = strtok( buffer, separators );
-      for (j = 0; j<G_prm.pocet_latek; j++)
-      {
-         if ( pom_buf == NULL )
-         {
-            xprintf(Msg,"\nChybi %d. stechometricky koeficient v %d. rovnici!", j+1, i+1);
-            exit(133);
-         }
-		 P_che[i].stech_koef_p[j] = atoi( pom_buf );
-		 xprintf(Msg,"\nP_che[%d].stech_koef_p[%d]: %d",i,j,P_che[i].stech_koef_p[j]);
-         pom_buf = strtok( NULL, separators );
-      }
-      if ( pom_buf != NULL )
-      {
-         xprintf(Msg,"\nV %d. rovnici je prilis mnoho stechiometrickych koeficientu!", i+1);
-         exit(133);
-      }
-/*------------------------------------------------------------------*/
-      if ((P_che[i].typ_reakce==1)||(P_che[i].typ_reakce==3))
-      {
-         P_che[i].K = OptGetDbl(nazev,"Kinetic_constant","0.0");
-	 if(P_che[i].typ_reakce==1)xprintf(Msg,"\nKineticka konstanta v %d. rovnici ma hodnotu %f", i+1, P_che[i].K);
-         if ( P_che[i].K <= 0.0 )
-         {
-            xprintf(Msg,"\nKineticka konstanta v %d. rovnici neni kladna!", i+1);
-            exit(133);
-         }
-/*------------------------------------------------------------------*/
-	 strcpy(buffer,OptGetStr(nazev,"Order_of_reaction",""));
-         pom_buf = strtok( buffer, separators );
-         for (j = 0; j<G_prm.pocet_latek; j++)
-         {
-	    if(j >= G_prm.pocet_latekvefazi) ;//P_che[i].exponent[j] = 0.0;
-            else
-	    {
-		if( pom_buf == NULL )
-        	{
-               xprintf(Msg,"\nChybi %d. mocnina pro kinetiku %d. rovnice!", j+1, i+1);
-               exit(133);
-            	}
-            P_che[i].exponent[j] = atof( pom_buf );
-	    xprintf(Msg,"\nP_che[%d].exponent[%d]: %f",i,j,P_che[i].exponent[j]);
-            pom_buf = strtok( NULL, separators );
-           }
-	 }
-         if ( pom_buf != NULL )
-         {
-            xprintf(Msg,"\nV %d. rovnici je prilis mnoho exponentu pro kinetiku!", i+1);
-            exit(133);
-         }
-      }
-/*------------------------------------------------------------------*/
-      if (P_che[i].typ_reakce==0)
-      {
-	 P_che[i].K = OptGetDbl(nazev, "Equilibrium_constant","-1.0");
-      }
-/*------------------------------------------------------------------*/
-   }
-	if (G_prm.celkovy_pocet_reakci>1)
-   {
-      for (j=0; j<G_prm.celkovy_pocet_reakci; j++)
-      {
-         for (i=0; i<G_prm.celkovy_pocet_reakci-1; i++)
-         {
-            if (che_poradi(P_che[i].typ_reakce,max_poloc_rozp,P_che[i].K) > che_poradi(P_che[i+1].typ_reakce,max_poloc_rozp,P_che[i+1].K))
-            {
-            	pom_che = P_che[i];
-               P_che[i] = P_che[i+1];
-               P_che[i+1] = pom_che;
-            }
-         }
-      }
-   }
-}
-
-// Cte soubor parametru chemie .ICH
-void ctiich( void )
-{
-	xprintf(MsgLog, "Cteni parametru (%s): \n", G_prm.jmeno_ich );
-	ctiich_obecne(); xprintf(MsgLog,"probehla funkce ctiich_obecne()\n");
-	ctiich_latkyvefazi(); xprintf(MsgLog,"probehla funkce ctiich_latkyvefazi()\n");
-	ctiich_dalsilatky(); xprintf(MsgLog,"probehla funkce ctiich_dalsilatky()\n");
-	ctiich_reakce(); xprintf(MsgLog,"probehla funkce ctiich_reakce()\n");
-	xprintf(MsgLog, "O.K.\n" );
 }

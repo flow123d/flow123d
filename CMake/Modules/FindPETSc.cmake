@@ -19,6 +19,8 @@
 # Redistribution and use is allowed according to the terms of the BSD license.
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 #
+# Jan Brezina 2012: fixed for PETSc version >3.2 , DO NOT USE FOR PREVIOUS VERSIONS
+# previous versions have incompatible call to TDestroy
 
 function (petsc_get_version)
   if (EXISTS "${PETSC_DIR}/include/petscversion.h")
@@ -180,7 +182,7 @@ int main(int argc,char *argv[]) {
   ierr = PetscInitialize(&argc,&argv,0,help);CHKERRQ(ierr);
   ierr = TSCreate(PETSC_COMM_WORLD,&ts);CHKERRQ(ierr);
   ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
-  ierr = TSDestroy(ts);CHKERRQ(ierr);
+  ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = PetscFinalize();CHKERRQ(ierr);
   return 0;
 }

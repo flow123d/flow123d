@@ -37,6 +37,7 @@
 #include "io/read_ini.h"
 
 #include "rev_num.h"
+
 /// named version of the program
 #define _VERSION_   "1.6.6"
 
@@ -118,7 +119,12 @@ int main(int argc, char **argv) {
     START_TIMER("WHOLE PROGRAM");
 
     // Say Hello
-    xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", _VERSION_,REVISION);
+    
+    // make strings from macros in order to check type
+    string version(_VERSION_);
+    string revision(REVISION);
+    
+    xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", version.c_str(),revision.c_str());
     xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
 
     ProblemType type = (ProblemType) OptGetInt("Global", "Problem_type", NULL);

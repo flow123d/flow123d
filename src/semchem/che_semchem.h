@@ -609,7 +609,7 @@ void cesta_k_souboru_sestav( char *, char *, char * );
 /********************************************************************/
 /*  UTILITY pro sledovani verzi                                     */
 /********************************************************************/
-void main_verze( void );
+/*void main_verze( void );
 void ctimmf_verze( struct S_verze * );
 void vypocet_verze( struct S_verze * );
 void df_file_verze( struct S_verze * );
@@ -620,6 +620,7 @@ void s_vody_verze( struct S_verze * );
 void caskrok_verze( struct S_verze * );
 void win_tran_verze( struct S_verze * );
 void slozky_verze( struct S_verze * );
+*/
 /********************************************************************/
 /*  copied from che_head.h to simplify structure of inclusions      */
 /********************************************************************/
@@ -693,6 +694,9 @@ void ctiich_obecne(void);
 void ctiich_latkyvefazi(void);
 void ctiich_dalsilatky(void);
 void ctiich_reakce(void);
+float che_poradi (int typ_reakce, double max, double K);
+void che_pocitej_soubor(char *soubor, int *poc_krok);
+void che_presun_poc_p_(void);
 
 /********************************************************************/
 /*  copied from semchem_interface.hh to simplify structure of inclusions    */
@@ -702,5 +706,6 @@ void che_pocitej_soubor(char *soubor, int *poc_krok);
 void che_vypis_soubor(char *soubor);
 void che_presun_poc_p_(void);
 void che_vypis__soubor(char *soubor);
+
 
 #endif
