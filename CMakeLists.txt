@@ -70,7 +70,7 @@ if (NOT Armadillo_FOUND)
   #  PATHS ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92
   #)
   #include(${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/ArmadilloConfig.cmake) 
-#  add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92)
+  add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92)
   # TODO set Aramdilo_* variables
   SET(Armadillo_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/include")  
   SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/libarmadillo.a")  
