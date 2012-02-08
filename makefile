@@ -55,6 +55,7 @@ clean: cmake
 
 clean-all: 
 	rm -rf build
+	make -C third_party clean
 
 # Make all tests	
 testall:
