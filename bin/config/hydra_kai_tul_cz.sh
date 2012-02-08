@@ -36,7 +36,7 @@ function run_flow()
 	export ERR_FILE="err.log"
 	export OUT_FILE="out.log"
 
-	rm /tmp/${USER}-hydra_flow.qsub
+	rm -f /tmp/${USER}-hydra_flow.qsub
 			
 # Copy following text to the file /tmp/firstname.surname-hydra_flow.qsub
 # ======================================================================
@@ -52,7 +52,7 @@ cat << xxEOFxx > /tmp/${USER}-hydra_flow.qsub
 export OMPI_MCA_plm_rsh_disable_qrsh=1
 	
 # Execute Flow123d using mpiexec
-"$MPIEXEC" -np $NP "$FLOW123D" -S "$INI_FILE" $FLOW_PARAMS 2>${ERR_FILE} 1>${OUT_FILE}
+"$MPIEXEC" -np $NP "$FLOW123D" $FLOW_OPT "$INI_FILE" $FLOW_PARAMS 2>${ERR_FILE} 1>${OUT_FILE}
 	
 # End of hydra_flow.qsub
 xxEOFxx
