@@ -32,7 +32,6 @@ set(sources_lib_flow123d
     flow/local_matrix.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
-    flow/local_matrix.cc
 
     io/read_ini.cc
     io/output.cc
