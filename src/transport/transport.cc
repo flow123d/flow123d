@@ -289,6 +289,7 @@ void ConvectionTransport::read_initial_condition() {
 	    for (i = 0; i < n_concentrations; i++) {
 	    	xfgets( line, LINE_SIZE - 2, in );
 	    	DBGMSG("%s\n",line);
+	    	//printf("%s\t%d\n",line,n_concentrations);
 	    	ASSERT(!(line == NULL),"NULL as argument of function parse_concentration_line()\n");
 	    	eid    = atoi( xstrtok( line) );
 	    	global_idx =row_4_el[mesh_->element.find_id(eid).index()];
@@ -313,6 +314,18 @@ void ConvectionTransport::alloc_transport_vectors() {
     int i, j, sbi, n_subst, ph;
     ElementIter elm;
     n_subst = n_substances;
+
+
+
+     cumulative_corr = (double**) xmalloc(n_subst * sizeof(double*));
+     for (sbi = 0; sbi < n_subst; sbi++)
+         cumulative_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+     for (sbi = 0; sbi < n_subst; sbi++)
+         for (i = 0; i < el_ds->size(); i++)
+             cumulative_corr[sbi][i] = 0.0;
+
+
+
 
     conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));

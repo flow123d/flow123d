@@ -26,15 +26,12 @@ private:
     Vec *vsources_sigma;
     Vec *vsources_conc;
     Vec *vsources_corr;
- //   Vec *vcumulative_corr;
 
     double **sources_density;
     double **sources_sigma;
     double **sources_conc;
-
     double **sources_corr;
 
-    double **cumulative_corr;
 
 };
 

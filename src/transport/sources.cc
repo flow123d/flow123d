@@ -26,7 +26,10 @@
 //=============================================================================
 // TRANSPORT SOURCES CONSTRUCTOR
 //=============================================================================
-TransportSources::TransportSources(ConvectionTransport &convectiontransport){
+TransportSources::TransportSources(ConvectionTransport &transport)
+//:TransportSources(convectiontransport)
+{
+	convectiontransport = &transport;
 	alloc_sources_vectors();
 	read_concentration_sources();
 }
@@ -71,8 +74,10 @@ void TransportSources::read_concentration_sources() {
 }
 void TransportSources::alloc_sources_vectors() {
 
-    int i, j, sbi, ierr, rank, np;
-    int n_subst = convectiontransport->n_substances;
+    int i, j, sbi, ierr, rank, np, n_subst;
+
+
+    n_subst = convectiontransport->n_substances;
 
     MPI_Barrier(PETSC_COMM_WORLD);
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
