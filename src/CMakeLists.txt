@@ -57,6 +57,7 @@ set(libflow123d_SRCS
     sparse_graph.cc
     time_governor.cc
     transport.cc
+    sources.cc
     transport_operator_splitting.cc
     transport_operator_splitting.hh
     xio.cc

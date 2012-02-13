@@ -29,6 +29,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
 
 	convection = new ConvectionTransport(marks, *mesh_, *mat_base);
+	convection->test_concentration_sources(*convection);
 
 	// Chemistry initialization
 	decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());

@@ -32,7 +32,8 @@
 
 #include <petscmat.h>
 #include "equation.hh"
-
+#include "transport/sources.hh"
+#include "materials.hh"
 //#include "system/par_distribution.hh"
 //#include "mesh/mesh.h"
 //#include "reaction.h"
@@ -44,7 +45,8 @@ class Mesh;
 class Distribution;
 class TimeMarks;
 class MaterialDatabase;
-
+class TransportSources;
+class ConvectionTransport;
 
 //=============================================================================
 // TRANSPORT
@@ -65,7 +67,10 @@ class MaterialDatabase;
  */
 
 
+
+
 class ConvectionTransport : public EquationBase {
+	friend class TransportSources;
 public:
     /**
      * Constructor.
@@ -122,7 +127,8 @@ public:
 	 */
 	double ***get_out_conc();
     char    **get_substance_names();
-
+    TransportSources *transportsources;
+    void test_concentration_sources(ConvectionTransport&);
 
 private:
 
@@ -162,7 +168,7 @@ private:
 	void transport_sorption(int elm_pos, MaterialDatabase::Iter mtr, int sbi); //
 	void compute_sorption(double conc_avg, vector<double> &sorp_coef, int sorp_type, double *concx, double *concx_sorb, double Nv,
 	        double N); //
-	void compute_concentration_sources(int sbi);
+	//void compute_concentration_sources(int sbi);
 
 //	void get_reaction(int i,oReaction *reaction); //
 	//void transport_output(struct Transport *transport, double time, int frame);
@@ -196,12 +202,13 @@ private:
             // only local part
             double ***conc;
             double ***pconc;
-
+/*
             double **sources_density;
             double **sources_sigma;
             double **sources_conc;
 
             double **sources_corr;
+*/
 
             double **cumulative_corr;
 

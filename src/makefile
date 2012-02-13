@@ -69,6 +69,7 @@ $(OBJS)/system/sys_profiler.o\
 $(OBJS)/system/math_fce.o\
 \
 $(OBJS)/transport/transport.o\
+$(OBJS)/transport/sources.o\
 $(OBJS)/transport/transport_operator_splitting.o\
 \
 $(OBJS)/equation.o\
