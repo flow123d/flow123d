@@ -202,14 +202,6 @@ private:
             // only local part
             double ***conc;
             double ***pconc;
-/*
-            double **sources_density;
-            double **sources_sigma;
-            double **sources_conc;
-
-            double **sources_corr;
-*/
-
             double **cumulative_corr;
 
             // global
@@ -243,17 +235,6 @@ private:
             int sub_problem;	// 0-only transport,1-transport+dual porosity,
     							// 2-transport+sorption
     							// 3-transport+dual porosity+sorption
-    //REACTION
-            /*
-           oReaction *react;
-           int n_reaction;
-           */
-    //BTC
-    //        struct BTC		*btc;
-
-    //DECOVALEX
-    //        struct FSection *fsec;
-
     //PEPA
             int 	pepa; // It enables Pepa Chudoba's  crazy functions
             int 	type; // Type of crazy function
@@ -269,12 +250,6 @@ private:
 
             Vec *vconc; // concentration vector
             Vec *vpconc; // previous concentration vector
-
-            //Vec *vconc_im; // immobile concentration vector
-            //Vec *vconc_so; // sorbed concentration vector
-            //Vec *vconc_im_so; // immobile sorbed concentration vector
-
-
             Vec *vsources_density;
             Vec *vsources_sigma;
             Vec *vsources_conc;
@@ -294,21 +269,5 @@ private:
             int *row_4_el;
             int *el_4_loc;
             Distribution *el_ds;
-      // NEW OUTPUT
-      //      int frame;
-      //      double time;
-      //      int save_step;
-      //      int steps;
-
-      //      OutputTime *output_time;
-
 };
-
-
-//void alloc_transport(struct Problem *problem);
-
-
-
-
-
 #endif /* TRANSPORT_H_ */
