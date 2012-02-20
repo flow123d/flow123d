@@ -93,7 +93,7 @@ void TransportSources::alloc_sources_vectors() {
         sources_conc[sbi] = (double*) xmalloc(convectiontransport->el_ds->lsize() * sizeof(double));
         sources_corr[sbi] = (double*) xmalloc(convectiontransport->el_ds->lsize() * sizeof(double));
     }
-
+/*
     for (sbi = 0; sbi < n_subst; sbi++)
         for (i = 0; i < convectiontransport->el_ds->size(); i++){
             sources_density[sbi][i] = 0.0;
@@ -101,7 +101,7 @@ void TransportSources::alloc_sources_vectors() {
             sources_conc[sbi][i] = 0.0;
             sources_corr[sbi][i] = 0.0;
         }
-
+*/
     vsources_density = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vsources_sigma = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vsources_conc = (Vec*) xmalloc(n_subst * (sizeof(Vec)));

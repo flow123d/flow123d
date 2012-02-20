@@ -316,17 +316,17 @@ void ConvectionTransport::alloc_transport_vectors() {
     n_subst = n_substances;
 
 
+   // printf("%d\t\n",n_substances);
+   // getchar();
 
      cumulative_corr = (double**) xmalloc(n_subst * sizeof(double*));
      for (sbi = 0; sbi < n_subst; sbi++)
          cumulative_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+ /*
      for (sbi = 0; sbi < n_subst; sbi++)
          for (i = 0; i < el_ds->size(); i++)
              cumulative_corr[sbi][i] = 0.0;
-
-
-
-
+   */
     conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     out_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
