@@ -116,7 +116,6 @@ class FE_P : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::unit_support_points;
     using FiniteElement<dim,spacedim>::order;
-    using FiniteElement<dim,spacedim>::compute_node_matrix;
 
 public:
     /**
@@ -166,7 +165,6 @@ class FE_P_disc : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::unit_support_points;
     using FiniteElement<dim,spacedim>::order;
-    using FiniteElement<dim,spacedim>::compute_node_matrix;
 
 public:
     /**
@@ -209,16 +207,24 @@ PolynomialSpace<degree,dim>::PolynomialSpace()
     int i;
 
     pows.zeros();
+    i = 0;
 
     while (true)
     {
         powers.push_back(pows);
 
-        for (i=0; i<dim && pows[i] == degree; i++);
-        if (i == dim) break;
-
-        pows[i]++;
-        for (int j=0; j<i; pows[j] = 0, j++);
+        if (sum(pows) == degree)
+        {
+            while (pows[i] == 0) i++;
+            pows[i] = 0;
+            if (i == dim-1) break;
+            pows[i+1]++;
+            i = 0;
+        }
+        else
+        {
+            pows[i]++;
+        }
     }
 }
 
@@ -271,8 +277,9 @@ const vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, co
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 FE_P<degree,dim,spacedim>::FE_P()
-    : FiniteElement<dim,spacedim>()
 {
+    this->init();
+
     for (int i=0; i<=dim; i++)
     {
         number_of_dofs += dof_distribution.number_of_single_dofs[i]
@@ -291,7 +298,7 @@ FE_P<degree,dim,spacedim>::FE_P()
 
     order = degree;
 
-    compute_node_matrix();
+    this->compute_node_matrix();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -336,13 +343,10 @@ mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const unsigned 
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 FE_P_disc<degree,dim,spacedim>::FE_P_disc()
-    : FiniteElement<dim,spacedim>()
 {
-    for (int i=0; i<=dim; i++)
-        number_of_dofs += dof_distribution.number_of_single_dofs[i]
-                         +dof_distribution.number_of_pairs[i]
-                         +dof_distribution.number_of_triples[i]
-                         +dof_distribution.number_of_sextuples[i];
+    this->init();
+
+    number_of_dofs += dof_distribution.number_of_dofs;
 
     number_of_single_dofs[dim] = number_of_dofs;
 
@@ -351,7 +355,7 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
 
     order = degree;
 
-    compute_node_matrix();
+    this->compute_node_matrix();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>

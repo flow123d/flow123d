@@ -42,10 +42,16 @@ using namespace std;
 
 
 template<unsigned int dim, unsigned int spacedim>
-FiniteElement<dim,spacedim>::FiniteElement() :
-        number_of_dofs(0),
-        is_scalar_fe(true)
+FiniteElement<dim,spacedim>::FiniteElement()
 {
+    init();
+}
+
+template<unsigned int dim, unsigned int spacedim>
+void FiniteElement<dim,spacedim>::init()
+{
+    number_of_dofs = 0;
+    is_scalar_fe = true;
     for (int i = 0; i <= dim; i++)
     {
         number_of_single_dofs[i] = 0;

@@ -55,33 +55,24 @@
  * reference cell and which values will have to be updated for each
  * cell. Here, it is important to note that in many cases, the
  * FiniteElement will require additional updates from the Mapping. To
- * this end, several auxiliary functions have been implemented:
+ * this end, the following auxiliary functions have been implemented:
  *
- * FiniteElement::update_once(flags) and
- * FiniteElement::update_each(flags) determine the values required by
- * the FiniteElement once or on each cell. The same functions exist in Mapping.
+  * FiniteElement::update_each(flags) determine the values required by
+ * the FiniteElement on each cell. The same function exists in Mapping.
  *
- * Since the FiniteElement does not know if a value required from
- * Mapping should be computed once or for each cell,
  * FEValuesBase::compute_update_flags() is used to compute the union
  * of all values to be computed ever. It does this by first adding to
- * the flags set by the user all flags (once and each) added by the
- * FiniteElement. This new set of flags is then given to the Mapping
- * and all flags required there are added, again once and each.
+ * the flags set by the user all flags added by the FiniteElement.
+ * This new set of flags is then given to the Mapping and all flags
+ * required there are added.
  *
  * This union of all flags is given to Mapping::fill_fe_values() and
- * FiniteElement::fill_fe_values, where it is split again into the
- * information generated only once and the information that must be
- * updated on each cell.
+ * FiniteElement::fill_fe_values, where the quantities indicated by
+ * the flags are computed.
  *
  * The flags finally stored in FEValues then are the union of all the
  * flags required by the user, by FiniteElement and by Mapping, for
- * computation once or on each cell. Subsequent calls to the functions
- * @p update_once and @p update_each should just select among these
- * flags, but should not add new flags.
- *
- * The mechanism by which all this is accomplished is also discussed
- * on the page on @ref UpdateFlagsEssay.
+ * computation once or on each cell.
  */
 enum UpdateFlags
 {
@@ -126,9 +117,9 @@ enum UpdateFlags
                     * i.e. the weights of the
                     * quadrature rule multiplied
                     * with the determinant of the
-                    * Jacoian of the
+                    * Jacobian of the
                     * transformation from
-                    * reference to realcell.
+                    * reference to real cell.
                     */
       update_JxW_values                   = 0x0008,
                                        //! Normal vectors

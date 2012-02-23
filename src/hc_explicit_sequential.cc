@@ -33,6 +33,7 @@
 #include "flow/darcy_flow_mh_output.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "transport/transport.h"
+#include "transport/transport_dg.hh"
 #include "equation.hh"
 #include "time_marks.hh"
 #include "mesh/mesh.h"
@@ -85,7 +86,19 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
 
     // optionally setup transport objects
     if ( OptGetBool("Transport", "Transport_on", "no") ) {
-        transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database);
+        char *transport_type = OptGetStr("Transport", "Transport_type", "explicit");
+        if (strcmp(transport_type, "explicit") == 0)
+        {
+            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database);
+        }
+        else if (strcmp(transport_type, "implicit") == 0)
+        {
+            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database);
+        }
+        else
+        {
+            xprintf(PrgErr,"Value of parameter: [Transport] Transport_type is neither \"explicit\" nor \"implicit\".\n");
+        }
     } else {
         transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
     }

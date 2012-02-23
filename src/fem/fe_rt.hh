@@ -240,7 +240,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
         }
         else
         {
-            F(i,0) = sum(r)/(dim-1);
+            F(i,0) = sum(r)/(1.*dim-1);
         }
 
         /*
@@ -253,10 +253,18 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
          *
          */
 
-        for (int j=1; j<dim+1; j++)
+        if (dim == 1)
         {
-            r = basis_vector(i,generalized_support_points[j]);
-            F(i,j) = -r(j-1)/sqrt(1.*dim-1);
+            r = basis_vector(i,generalized_support_points[1]);
+            F(i,1) = -r(0);
+        }
+        else
+        {
+            for (int j=1; j<dim+1; j++)
+            {
+                r = basis_vector(i,generalized_support_points[j]);
+                F(i,j) = -r(j-1)/(1.*dim-1);
+            }
         }
     }
 

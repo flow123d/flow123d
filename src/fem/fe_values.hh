@@ -206,6 +206,11 @@ public:
      */
     const arma::vec::fixed<spacedim> normal_vector(unsigned int point_no);
 
+    /**
+     * Returns the number of quadrature points.
+     */
+    const unsigned int n_points();
+
 
 protected:
 

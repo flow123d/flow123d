@@ -87,6 +87,13 @@ public:
     const unsigned int n_global_dofs();
 
     /**
+     * Returns the number of the first global dof handled by this
+     * DOFHandler.
+     * @return
+     */
+    const unsigned int offset();
+
+    /**
      * Returns the global indices of dofs associated to the @p cell.
      */
     void get_dof_indices(const CellIterator &cell, unsigned int indices[]);

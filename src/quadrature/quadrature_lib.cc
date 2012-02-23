@@ -40,6 +40,9 @@
 #undef _F
 
 
+using namespace arma;
+
+
 template<unsigned int dim>
 QGauss<dim>::QGauss(const unsigned int order)
 {
@@ -69,11 +72,17 @@ QGauss<dim>::QGauss(const unsigned int order)
                 QUAD_3D_P9, QUAD_3D_P10,    QUAD_3D_P11,    QUAD_3D_P12,
                 QUAD_3D_P13,    QUAD_3D_P14
               };
+    static const double unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
     const pQUAD *q;
     int nquads;
+    vec::fixed<dim> p;
 
     switch (dim)
     {
+    case 0:
+        this->quadrature_points.push_back(p);
+        this->weights.push_back(1);
+        return;
     case 1:
         q = q1d;
         nquads = sizeof(q1d) / sizeof(pQUAD);
@@ -90,18 +99,22 @@ QGauss<dim>::QGauss(const unsigned int order)
 
     ASSERT(order < nquads, "Quadrature of given order is not implemented.");
 
-    vec::fixed<dim> p;
     for (int i=0; i<q[order]->npoints; i++)
     {
         for (int j=0; j<dim; j++)
             p(j) = q[order]->points[i*(dim+1)+j];
 
         this->quadrature_points.push_back(p);
-        this->weights.push_back(q[order]->weights[i]);
+        // The weights must be adjusted according to the volume of the unit cell:
+        // 1D cell: volume 1
+        // 2D cell: volume 1/2
+        // 3D cell: volume 1/6
+        this->weights.push_back(q[order]->weights[i]*unit_cell_volume[dim]);
     }
 }
 
 
+template class QGauss<0>;
 template class QGauss<1>;
 template class QGauss<2>;
 template class QGauss<3>;

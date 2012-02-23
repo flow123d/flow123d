@@ -128,6 +128,12 @@ const unsigned int DOFHandler<dim,spacedim>::n_global_dofs()
     return n_dofs;
 }
 
+template<unsigned int dim, unsigned int spacedim> inline
+const unsigned int DOFHandler<dim,spacedim>::offset()
+{
+    return global_dof_offset;
+}
+
 
 template<unsigned int dim, unsigned int spacedim>
 void DOFHandler<dim,spacedim>::get_dof_indices(const CellIterator &cell, unsigned int indices[])

@@ -276,18 +276,26 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
 
     if (fv_data.update_flags & update_side_JxW_values)
     {
-        mat::fixed<spacedim,dim> side_coords;
-        mat::fixed<spacedim,dim-1> side_jac;
+        double side_det;
+        if (dim == 1)
+        {
+            side_det = 1;
+        }
+        else
+        {
+            mat::fixed<spacedim,dim> side_coords;
+            mat::fixed<spacedim,dim-1> side_jac;
 
-        // calculation of side Jacobian
-        side_coords.zeros();
-        for (int n=0; n<dim; n++)
-            for (int c=0; c<spacedim; c++)
-                side_coords(c,n) = side.node[n]->point()[c];
-        side_jac = side_coords * grad.submat(0,0,dim-1,dim-2);
+            // calculation of side Jacobian
+            side_coords.zeros();
+            for (int n=0; n<dim; n++)
+                for (int c=0; c<spacedim; c++)
+                    side_coords(c,n) = side.node[n]->point()[c];
+            side_jac = side_coords * grad.submat(0,0,dim-1,dim-2);
 
-        // calculation of JxW
-        double side_det = fabs(determinant(side_jac));
+            // calculation of JxW
+            side_det = fabs(determinant(side_jac));
+        }
         for (int i=0; i<q.size(); i++)
             fv_data.JxW_values[i] = side_det*q.weight(i);
     }
@@ -295,7 +303,9 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
 
 
 
+template class MappingP1<1,3>;
 template class MappingP1<2,3>;
+template class MappingP1<3,3>;
 
 
 

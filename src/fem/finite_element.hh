@@ -152,6 +152,11 @@ public:
     FiniteElement();
 
     /**
+     * Clears all internal structures.
+     */
+    void init();
+
+    /**
      * Returns the number of degrees of freedom needed by the finite
      * element.
      */

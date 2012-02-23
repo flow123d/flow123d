@@ -179,6 +179,12 @@ const vec::fixed<spacedim> FEValuesBase<dim,spacedim>::normal_vector(unsigned in
     return data.normal_vectors[point_no];
 }
 
+template<unsigned int dim, unsigned int spacedim> inline
+const unsigned int FEValuesBase<dim,spacedim>::n_points()
+{
+    return quadrature->size();
+}
+
 
 
 
