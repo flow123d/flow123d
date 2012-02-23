@@ -22,100 +22,96 @@
 #
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-message(STATUS "Include directories: ${Flow123d_SOURCE_DIR}")
+#message(STATUS "Include directories: ${flow123d_includes}")
+#include_directories(${flow123d_includes})
 
-set(libflow123d_SRCS
+# select source files that compose whole flow123d library
+# todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
+# every library then can be testetd independently
+set(sources_lib_flow123d
+    flow/local_matrix.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
-    flow/local_matrix.cc
+
+    io/read_ini.cc
+    io/output.cc
+    io/output_vtk.cc
+    io/output_msh.cc
+    io/output_tmp.cc
+
+    mesh/msh_gmshreader.cc
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
-    mesh/ini_constants_mesh.cc
     mesh/mesh.cc
     mesh/neighbours.cc
     mesh/nodes.cc
     mesh/sides.cc
     mesh/topology.cc
+
     reaction/linear_reaction.cc
     semchem/semchem_interface.cc
+
     system/math_fce.cc
     system/par_distribution.cc
     system/sys_function_stack.cpp
     system/sys_profiler.cc
     system/system.cc
-    constantdb.cc
-    convert.cc
-    la_linsys.cc
-    la_schur.cc
+    system/xio.cc
+
+    transport/transport.cc
+    transport/transport_operator_splitting.cc
+
+    la/schur.cc
+    la/solve.cc
+    la/linsys.cc
+    la/sparse_graph.cc
+
+    equation.cc
+    time_marks.cc
     materials.cc
-    msh_gmshreader.cc
-    output.cc
-    problem.cc
-    read_ini.cc    
-    solve.cc
-    sparse_graph.cc
     time_governor.cc
-    transport.cc
-    transport_operator_splitting.cc
-    transport_operator_splitting.hh
-    xio.cc
+    hc_explicit_sequential.cc
+    field_p0.cc
 )
 
-set(libflow123d_C_SRCS
-    semchem/che_semchem.c
-    semchem/cti_ichnew.c
+
+# make separate library for Semchem (God save us!)
+set(sources_lib_semchem
+    semchem/che_semchem.cc
+    semchem/che_read.cc
+#    semchem/cti_ichnew.c
 )
 
-foreach(file ${libflow123d_C_SRCS})
+# this seems as converting *.c to *.cc for Semchem files
+# but this can be dengerous
+#foreach(file ${libflow123d_C_SRCS})
 #  set(libflow123d_SRCS ${libFlow123d_SRCS} ${file}c)
-  list(APPEND libflow123d_SRCS ${file}c)
-  configure_file(${file} ${file}c COPYONLY)
-endforeach(file)
+#  list(APPEND libflow123d_SRCS ${file}c)
+#  configure_file(${file} ${file}c COPYONLY)
+#endforeach(file)
 
 # add build targets
-link_directories(${Flow123dLinkDirectories})
-add_library(Flow123d ${libflow123d_SRCS})
-set_target_properties(Flow123d PROPERTIES
+#link_directories(${Flow123dLinkDirectories})
+
+# add tager for libflow123d
+add_library(flow123d_lib ${sources_lib_flow123d})
+target_link_libraries(flow123d_lib      ${Armadillo_LIBRARIES}     ${Boost_LIBRARY_DIRS}    ${PETSC_LIBRARIES} )
+set_target_properties(flow123d_lib PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
- 
-add_executable(flow123d main.cc)
-# creates soft link to machine dependent flow runner
-if(EXISTS ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh)
-  add_custom_command(TARGET flow123d POST_BUILD
-    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/current_flow 
-    COMMAND ln ARGS -s ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh ${CMAKE_BINARY_DIR}/bin/current_flow
-  )
-else(EXISTS ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh)
-  add_custom_command(TARGET flow123d POST_BUILD
-    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/current_flow 
-    COMMAND ln ARGS -s ${CMAKE_SOURCE_DIR}/bin/generic_flow.sh ${CMAKE_BINARY_DIR}/bin/current_flow
-  )
-endif(EXISTS ${CMAKE_SOURCE_DIR}/bin/${MACHINE}_flow.sh)
-set_source_files_properties(${CMAKE_BINARY_DIR}/bin/current_flow PROPERTIES GENERATED true SYMBOLIC true)
 
-#creates soft link to mpiexec
-if(EXISTS ${MPIEXEC})
-  add_custom_command(TARGET flow123d POST_BUILD
-    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/mpiexec
-    COMMAND ln ARGS -s ${MPIEXEC} ${CMAKE_BINARY_DIR}/bin/mpiexec
-  )
-  set_source_files_properties(${CMAKE_BINARY_DIR}/bin/mpiexec PROPERTIES GENERATED true SYMBOLIC true)
-elseif(EXISTS ${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec)
-  add_custom_command(TARGET flow123d POST_BUILD
-    COMMAND rm ARGS -f ${CMAKE_BINARY_DIR}/bin/mpiexec
-    COMMAND ln ARGS -s ${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec ${CMAKE_BINARY_DIR}/bin/mpiexec
-  )
-  set_source_files_properties(${CMAKE_BINARY_DIR}/bin/mpiexec PROPERTIES GENERATED true SYMBOLIC true)
-else()
-  message(WARNING "Softlink to mpiexec wasn't created.")
-endif()
+# add target for libsemchem
+add_library(semchem ${sources_lib_semchem})
+set_target_properties(semchem PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+)
+
+
+
+
+
+
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/bin/current_flow;${CMAKE_BINARY_DIR}/bin/mpiexec")
 
 
-target_link_libraries(flow123d ${PETSC_LIBRARIES} ${PARMETIS_LIBRARIES} Flow123d)
-set_target_properties(flow123d PROPERTIES
-   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
-   OBJECT_DIR ${PROJECT_BINARY_DIR}/build/obj
-)

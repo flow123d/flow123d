@@ -1,0 +1,20 @@
+PETSC_DIR=/share/apps/petsc-3.2-p6
+PETSC_ARCH=linux-gcc-dbg
+
+FLOW_CFLAGS=-O3
+
+### Configuration defines ###
+# Here you can set some compile-time options
+
+# Uncomment to get version withou runtime checking
+# this should be used only for production version
+# 
+USE_NODEBUG=-DNODEBUG
+
+# Uncomment to print all messages from all parallel MPI processes.
+# This only has effect with USE_PARALLEL 
+# USE_PRINTALL = -DMPI_PRINTALL
+
+MAKE_JOBS=4
+
+PREFIX=/share/apps/flow123d-trunk

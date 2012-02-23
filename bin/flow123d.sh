@@ -24,6 +24,11 @@
 # Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
 #
 
+# Relative path to mpiexec from the directory, where this script is placed
+MPIEXEC="./mpiexec"
+# Relative path to mpiexec binary from current/working directory
+MPIEXEC="${0%/*}/${MPIEXEC}"
+
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
 FLOW123D="./flow123d"
@@ -43,91 +48,105 @@ function print_help {
 	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOU seconds"
 	echo "    -m MEM          Flow123d can use only MEM bytes"
 	echo "    -n NICE         Run Flow123d with changed (lower) priority"
+	echo "    -p N            Run Flow123d using N parallel procces" 
 	echo "    -r OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
 	echo "    -s              Working directory will be current directory (default)"
 	echo "    -S              Working directory will be relative path to ini file"
 	echo ""
 	echo "RETURN VALUES:"
-	echo "    0               Flow123d exited normaly"
+	echo "    0               Flow123d process exited normaly"
 	echo "    10              Bad argument/option"
 	echo "    11              Flow123d can't be executed"
 	echo "    12              INI file doesn't exist"
 	echo "    13              Flow123d can't read INI file"
-	echo "    14              Flow123d was killed (TIMEOUT exceeded)"
-	echo "    15              Flow123d crashed"
+	echo "    14              Flow123d process was killed (TIMEOUT exceeded)"
+	echo "    15              Flow123d process crashed"
 	echo ""
 }
 
-# Make sure that INI_FILE is not set
-unset INI_FILE
+# Parse script arguments
+function parse_arguments()
+{
+	# Make sure that INI_FILE is not set
+	unset INI_FILE
 
-# Default behavior is to use -s parameter
-FLOW_OPT="-s"
-
-# Parse arguments with bash builtin command getopts
-while getopts ":ht:m:n:r:sS" opt
-do
-	case ${opt} in
-	h)
-		print_help
-		exit 0
-		;;
-	t)
-		TIMEOUT="${OPTARG}"
-		;;
-	m)
-		MEM="${OPTARG}"
-		;;
-	n)
-		NICE="${OPTARG}"
-		;;
-	r)
-		OUT_FILE="${OPTARG}"
-		;;
-	s)
-		FLOW_OPT="-s"
-		;;
-	S)
-		FLOW_OPT="-S"
-		;;
-	\?)
+	# Default number of processes
+	NP=1
+	
+	# Default behavior is to use -s parameter
+	FLOW_OPT="-s"
+	
+	# Parse arguments with bash builtin command getopts
+	while getopts ":ht:m:n:p:r:sS" opt
+	do
+		case ${opt} in
+		h)
+			print_help
+			exit 0
+			;;
+		t)
+			TIMEOUT="${OPTARG}"
+			;;
+		m)
+			MEM="${OPTARG}"
+			;;
+		n)
+			NICE="${OPTARG}"
+			;;
+		p)
+			NP="${OPTARG}"
+			;;
+		r)
+			OUT_FILE="${OPTARG}"
+			;;
+		s)
+			FLOW_OPT="-s"
+			;;
+		S)
+			FLOW_OPT="-S"
+			;;
+		\?)
+			echo ""
+			echo "Error: Invalid option: -$OPTARG"
+			echo ""
+			print_help
+			exit 10
+			;;
+		esac
+	done
+	
+	# Try to get remaining parameters as flow parameters
+	if [ $# -ge $OPTIND ]
+	then
+		# Shift options
+		shift `expr $OPTIND - 1`
+		# First parameter is .ini file
+		INI_FILE="${1}"
+		# Second parameter is flow parameters
+		FLOW_PARAMS="${2}"
+	fi
+	
+	# Was any ini file set?
+	if [ ! -n "${INI_FILE}" ]
+	then
 		echo ""
-		echo "Error: Invalid option: -$OPTARG"
+		echo "Error: No ini file"
 		echo ""
 		print_help
-		exit 10
-		;;
-	esac
-done
+		exit 12
+	fi
+}
 
-# Try to get remaining parameters as flow parameters
-if [ $# -ge $OPTIND ]
-then
-	# Shift options
-	shift `expr $OPTIND - 1`
-	# First parameter is .ini file
-	INI_FILE="${1}"
-	# Second parameter is flow parameters
-	FLOW_PARAMS="${2}"
-fi		
-
-# Check if Flow123d exists and it is executable file
-if ! [ -x "${FLOW123D}" ]
-then
-	echo "Error: can't execute ${FLOW123D}"
-	exit 11
-fi
-
-# Was any ini file set?
-if [ ! -n "${INI_FILE}" ]
-then
-	echo ""
-	echo "Error: No ini file"
-	echo ""
-	print_help
-	exit 12
-else
-
+# Default function that run flow123d
+function run_flow()
+{
+	# Check if Flow123d exists and it is executable file
+	if ! [ -x "${FLOW123D}" ]
+	then
+		echo "Error: can't execute ${FLOW123D}"
+		exit 11
+	fi
+	
 	# Check if it is possible to read ini file
 	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
 	then
@@ -155,7 +174,7 @@ else
 	then
 		FLOW123D_OUTPUT="${OUT_FILE}"
 		# Clear output file.
-		echo "" > "${FLOW123D_OUTPUT}"
+		echo -n "" > "${FLOW123D_OUTPUT}"
 	else
 		unset FLOW123D_OUTPUT
 	fi
@@ -181,7 +200,7 @@ else
 			TIMER=`expr ${TIMER} + 1`
 			sleep 1
 
-			# Is mpiexec and flow123d still running?
+			# Is flow123d process still running?
 			ps | gawk '{ print $1 }' | grep -q "${FLOW123D_PID}"
 			if [ $? -ne 0 ]
 			then
@@ -219,8 +238,18 @@ else
 		fi
 	fi
 	
-fi
+	exit 0
+}
 
-exit 0
+# Parse command-line arguments
+parse_arguments "$@"		
 
+# If there is hostname specific script for running flow123d, then use run_flow()
+# function from this script, otherwise default run_flow() function will be used
+if [ -f "${0%/*}/config/${HOSTNAME//./_}.sh" ]
+then
+	. "${0%/*}/config/${HOSTNAME//./_}.sh"
+fi 
 
+# Run Flow123d
+run_flow

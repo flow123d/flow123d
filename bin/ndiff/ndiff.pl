@@ -194,9 +194,10 @@ sub match {
 		if ($max < $machine_prec ) {next;}	# skip too small numbers
 		$adiff=abs($lfloat-$rfloat);
 		$abs_norm=max($abs_norm,$adiff);
-		$rdiff=$adiff/$max;
-		$rel_norm=max($rel_norm,$rdiff);
 		if ( $adiff < $abs_tol ) {next;}		
+		
+		$rdiff=$adiff/$max;
+		$rel_norm=max($rel_norm,$rdiff);		
 		if ( $rdiff < $rel_tol ) {next;}
 		
 		$num_of_diffs++;

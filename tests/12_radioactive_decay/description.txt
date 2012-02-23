@@ -1,6 +1,17 @@
 Test problem 12
 ---------------
+Both following tests are realized without combination with transport (zero pressure gradient).
 verification of:
 - first order reaction A->B determined by kinetic constant,
+-- 6 chemical species (A, B, .., F) are transported but just 2 of them take a part in considered first order kinetic reaction wich looks as follows
+--- D->F, appropriate kinetic constant is k = 0.277258872.
+--- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
+--- Transport boundary conditions does not matter because zero presure gradient is considered.
+--- Final concentrations of all isotopes except A, B, C, E do not change. Concentrations of D decreases to 0.003. Concentration of F increase to 0.85 in 20 time steps.
+
 - narrow radioctive decay chain without branches, A -> B -> C,
-without combination with transport (zero pressure gradient).
+-- 6 isotopes (A, B, .., F) are transported but just 3 of them are members of considered decay chain which looks as folows
+--- D->F->B
+--- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
+--- Transport boundary conditions does not matter because zero presure gradient is considered.
+--- Final concentrations of all isotopes except A, C, E do not change. Concentrations of D and B decrease to 0.004 and 0.012 respectively. Concentration of B increase to 0.1 in 20 time steps.

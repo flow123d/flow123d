@@ -26,13 +26,13 @@ testall: 01.tst 02.tst 03.tst 11.tst 12.tst 13.tst 14.tst
 
 # Rule to clean generated files in test directories
 clean:
-	make -C 01_steady_flow_123d clean
-	make -C 02_transport_12d clean
-	make -C 03_transport_small_12d clean
-	make -C 11_reactional_transport_semchem clean
-	make -C 12_radioactive_decay clean
-	make -C 13_edge_solute_mixing clean
-	make -C 14_trans_time_bc clean
+	for d in * ;\
+	do \
+	if [ -d "$${d}" ];\
+	then \
+		make -C "$${d}" clean;\
+	fi;\
+	done
 	
 
 # General rule to run test given only by number

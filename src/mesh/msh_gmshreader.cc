@@ -32,7 +32,7 @@
 
 #include "msh_gmshreader.h"
 #include "mesh/nodes.hh"
-#include "xio.h"
+#include "system/xio.h"
 
 GmshMeshReader::GmshMeshReader() {
     xprintf(Msg, " - GmshMeshReader()\n");

@@ -33,6 +33,9 @@
 #define DARCY_FLOW_MH_OUTPUT_HH_
 
 #include "mesh/mesh.h"
+#include <string>
+#include <vector>
+#include "io/output.h"
 
 class DarcyFlowMH;
 class OutputTime;
@@ -66,22 +69,22 @@ public:
 private:
     void make_side_flux();
     void make_element_scalar();
-    void make_element_scalar(double* scalars);
     void make_element_vector();
 
-    void make_element_vector_line(ElementFullIter);
-    void make_element_vector_triangle(ElementFullIter);
-    void make_element_vector_tetrahedron(ElementFullIter);
+    void make_element_vector_line(ElementFullIter, arma::vec3 &vec);
+    void make_element_vector_triangle(ElementFullIter, arma::vec3 &vec);
+    void make_element_vector_tetrahedron(ElementFullIter, arma::vec3 &vec);
 
     void make_sides_scalar();
     /**
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param(double* scalars);
+    void make_node_scalar_param(std::vector<double> &scalars);
     void make_node_scalar();
     void make_neighbour_flux();
     //void make_previous_scalar();
+    void output_internal_flow_data();
 
     /**
      * Calculate and output water balance over material subdomains and boudary fluxes.
@@ -101,25 +104,29 @@ private:
     OutputTime *output_writer;
     TimeMark::Type output_mark_type;
 
-    /** \brief Array for storing nodes scalar, node index is used as index of array */
-    double* node_scalars;
-    /** \brief Array for storing elements scalar, element index is used as index of array */
-    double* ele_scalars;
+    /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by
+     *  more general scheme, where you can switch every output field on or off.
+     */
+    bool output_piezo_head;
 
-    /** \brief Structure for storing elements vectors, used in register_elem_data  */
-    typedef std::vector< vector<double> > VectorFloatVector;
-    typedef struct OutVector {
-        VectorFloatVector   *vectors;
-        string              name;
-        string              unit;
-    }_OutVector;
+    /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by node indexes in mesh.*/
+    std::vector<double> node_pressure;
+    /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
+    std::vector<double> ele_pressure;
+    /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
+    std::vector<double> ele_piezo_head;
 
-    /** \brief Vector for storing elements vectors */
-    struct OutVector *element_vectors;
+    /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
+    // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
+    // that we can pass there directly vector< arma:: vec3 >
+    std::vector< std::vector<double>  > ele_flux;
 
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;
+    /// Raw data output file.
+    FILE *raw_output_file;
 };
 
 
 #endif /* DARCY_FLOW_MH_OUTPUT_HH_ */
+

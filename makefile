@@ -24,63 +24,38 @@
 # Build itself takes place in ./src.
 #
 
-include makefile.in
-include makefile.include
+build/CMakeCache.txt:
+	if [ ! -d build ]; then mkdir build; fi
+	cd build; cmake ..
 
+cmake: build/CMakeCache.txt
 
-all: bin/mpiexec revnumber bin/current_flow
-	make -C third_party all
-	make -j 4 -C src all
+build: cmake
+	make -C build all
+
+FLOW_BIN=build/bin/flow123d
+MPIEXEC_BIN=build/bin/mpiexec
+
+install: build
+	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
+	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod u+x bin/mpiexec; fi
+
+all:  install
+
+# timing of parallel builds (on Core 2 Duo, 4 GB ram)
+# N JOBS	O3	g,O0	
+# 1 		51s	46s
+# 2 		30s	26s
+# 4 		31s	27s
+# 8 		30s
 	
-bin/mpiexec: makefile.in
-	# TODO:
-	# some time PETSC don't set MPIEXEC well
-	# then we should detect existence of PETSC_ARCH/bin/mpiexec
-	# last chance is to use system wide mpiexec
-	# or die
-	 
-	if which "${MPIEXEC}"; then \
-	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '"${MPIEXEC}" "$$@"' >> bin/mpiexec; \
-	elif [ -x "${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" ]; then \
-	    echo '#!/bin/bash' > bin/mpiexec; \
-	    echo '"${PETSC_DIR}/${PETSC_ARCH}/bin/mpiexec" "$$@"' >> bin/mpiexec; \
-	else \
-	    echo "Can not guess mpiexec of PETSC configuration"; \
-	fi        
-	chmod u+x bin/mpiexec
-
-bin/current_flow:
-	if [ -z "${MACHINE}" ]; then \
-		echo "Using default: current_flow"; \
-		echo '#!/bin/bash' > bin/current_flow; \
-		echo "\"`pwd`/bin/generic_flow.sh\"" >> bin/current_flow; \
-	else \
-		if [ -e "bin/stub/${MACHINE}_flow.sh" ]; then \
-			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/stub/${MACHINE}_flow.sh"' >> bin/current_flow; \
-		else \
-			echo "script for given MACHINE not found, using default"; \
-			echo '#!/bin/bash' > bin/current_flow; \
-			echo '"`pwd`/bin/stub/generic_flow.sh"' >> bin/current_flow; \
-		fi \
-	fi
-	chmod u+x bin/current_flow
-		#echo '"${PWD}/${BUILD_DIR}/bin/generic_flow.sh"' >> bin/current_flow; \
-	
-revnumber:
-	if which "svnversion" ;\
-	then echo "#define REVISION \"`svnversion`\"" >include/rev_num.h;\
-	else echo "#define REVISION \"`bin/svnversion.sh`SH\"" >include/rev_num.h;\
-	fi
-
 # Remove all generated files
-clean:
-	make -C src clean
-	make -C doc/doxy clean
-	make -C tests clean
-	rm -f bin/mpiexec
-	rm -f bin/current_flow
+clean: cmake
+	make -C build clean
+
+clean-all: 
+	rm -rf build
+	make -C third_party clean
 
 # Make all tests	
 testall:
@@ -93,3 +68,40 @@ testall:
 # Create doxygen documentation
 online-doc:
 	make -C doc/doxy doc
+
+clean_tests:
+	make -C tests clean
+
+ngh:
+	make -C bin/ngh all
+
+bcd:
+	make -C bin/bcd all
+
+clean_util:
+	make -C bin/bcd clean
+	make -C bin/ngh clean
+
+lbuild=linux_build
+linux_package: clean clean_tests clean_util all bcd ngh
+	# copy bin
+	rm -rf $(lbuild)
+	mkdir -p $(lbuild)/bin/mpich
+	mpiexec=`cat bin/mpiexec |grep mpiexec |sed 's/ ".*$$//'|sed 's/"//g'`;\
+	cp "$${mpiexec}" $(lbuild)/bin/mpich/mpiexec
+	cp -r bin/flow123d bin/flow123d.sh bin/ndiff bin/tests bin/ngh/bin/ngh bin/bcd/bin/bcd $(lbuild)/bin
+	cp -r bin/paraview $(lbuild)/binS
+	# copy doc
+	mkdir $(lbuild)/doc
+	cp -r doc/articles doc/reference_manual/flow123d_doc.pdf doc/petsc_options_help $(lbuild)/doc
+	mkdir $(lbuild)/doc/ngh
+	mkdir $(lbuild)/doc/bcd
+	cp bin/ngh/doc/* $(lbuild)/doc/ngh
+	cp bin/bcd/doc/* $(lbuild)/doc/bcd
+	# copy tests
+	cp -r tests $(lbuild)
+
+linux_pack:
+	tar -cvzCf flow_build.tar.gz ./$(lbuild) 
+
+	

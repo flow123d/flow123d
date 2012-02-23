@@ -36,8 +36,9 @@
 #include "global_defs.h"
 #include "io/read_ini.h"
 #include "system/math_fce.h"
-#include "sys_function_stack.hh"
-#include "sys_profiler.hh"
+#include "system/sys_function_stack.hh"
+#include "system/sys_profiler.hh"
+#include "system/xio.h"
 
 // for a linux system we assume glibc library
 // with support of ISOC99 functions
@@ -184,6 +185,10 @@ public:
 	 */
 	string get_output_file_name(string file_name);
 	/*!
+	* @brief Returns value of output_dir variable.
+	*/
+	string get_output_dir();
+	/*!
 	 * @brief Add new item to place holder.
 	 *
 	 * IONameHandler placeholder is extended by adding a single new item. The item can be used in the name of the input or output file name.
@@ -235,10 +240,6 @@ private:
    * @brief initialization of placeholder standard pairs - the value of "-i" command line variable for "${INPUT}" if is set.
    */
   void initialize_placeholder();
-  /*!
-   * @brief Returns value of output_dir variable.
-   */
-  string get_output_dir();
   /*!
    * @brief Returns value of root_dir variable.
    */

@@ -14,14 +14,10 @@
 % You should have received a copy of the GNU General Public License along with this program; if not,
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
-\normalsize
-\subsection{Flow123D ini file format}
-
 In this section we briefly descripte every option you can use in global INI-file. Options marked
 (NOT IMPLEMENTED) are not implemented in current version, but probably will be reimplemented in near future.
-Options marked (NOT SUPPORTED) has not been tested since they are obsolete and will be replaced by similar functionality.
+Options marked (NOT SUPPORTED) has not been tested since they are obsolete and will be soon replaced by similar functionality.
 
- 
 \begin{initable}{Global}
  \key{Problem\_type} & \type{int} & NULL &
  Type of solved problem. Currently supported:\break %\br 
@@ -77,29 +73,30 @@ Options marked (NOT SUPPORTED) has not been tested since they are obsolete and w
 %\hline
 \key{Mesh} & \type{string} & NULL & 
 Name of file containig definition of the mesh
-for the problem.
+for the problem. (see Section \ref{mesh_file})
 \\
 \hline
 \key{Material} & \type{string} & NULL &
 Name of file with hydraulical properties of
-the elements.
+the elements. (see Section \ref{material_file})
 \\
 \hline
 \key{Boundary} & \type{string} & NULL &
-Name of file with boundary condition data.
+Name of file with boundary condition data. (see Section \ref{boundary_file})
 \\
 \hline
 \key{Neighbouring} & \type{string} & NULL &
-Name of file describing topology of the mesh.
+Name of file describing topology of the mesh. (see Section \ref{ngh_file})
 \\
 \hline
 \key{Initial} & \type{string} & NULL &
-Name of file with initial condition for preasure head [length].\\
+Name of file with initial condition for preasure head [length]. (see Section \ref{element_data_file})
+\\
 \hline
 \key{Sources} & \type{string} & NULL &
 Name of file with definition of fluid sources. 
 This is optional file, if this key is not
-defined, calculation goes on without sources.
+defined, calculation runs without sources. (see Section \ref{element_data_file})
 \\
 \hline
 \key{sources\_formula} & \type{string} & NULL &
@@ -108,9 +105,23 @@ See documentation of FParser library:
 \url{http://warp.povusers.org/FunctionParser/fparser.html\#literals}
 \end{initable}
 
+\begin{initable}{Run}
+%\key{Log\_file} & \type{string} & mixhyb.log &
+%Name of log file.
+%\\ 
+%\hline
+\key{Screen\_verbosity} & \type{int} & 0 &
+Nonzero value turn on a more verbose mode (more messages on screen), however everything is in the log file.
+\\
+\hline
+\key{Pause\_after\_run} & \type{YES/NO} & NO &
+Wait for Enter after end of progam in order to keep output screen open.
+\\
+\hline
+\end{initable}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-\pagebreak
+
 
 \begin{initable}{Transport}
  \key{Transport\_on} & \type{YES/NO} & NO & 
@@ -131,10 +142,17 @@ If set "YES" program include reactions too.
 \hline
 \key{Concentration} & \type{string} & NULL &
 Name of file with initial condition for concentrations of individual substances.
+(see Section \ref{element_data_file})
 \\ 
 \hline
 \key{Transport\_BCD} & \type{string} & NULL &
 Name of file with boundary condition for transport.
+(see Section \ref{transport_boundary_file})
+\\ 
+\hline
+\key{Sources} & \type{string} & {\it undefined} &
+Name of file with sources of species for transport.
+(see Section \ref{element_data_file})
 \\
 \hline
 \key{Transport\_out} & \type{string} & NULL &
@@ -158,6 +176,7 @@ Number of substances.
 \\
 \hline
 \key{Substances} & \type{string} & {\it undefined} &
+\label{KeySubstanceNames}
 Names of the substances separated by commas.
 \\ 
 \hline
@@ -186,20 +205,7 @@ time in the list. Filenames for individual time level are formed from BC filenam
  
 % \normalsize
  
-\begin{initable}{Run}
-%\key{Log\_file} & \type{string} & mixhyb.log &
-%Name of log file.
-%\\ 
-%\hline
-\key{Screen\_verbosity} & \type{int} & 0 &
-Nonzero value turn on a more verbose mode (more messages on screen), however everything is in the log file.
-\\
-\hline
-\key{Pause\_after\_run} & \type{YES/NO} & NO &
-Wait for Enter after end of progam in order to keep output screen open.
-\\
-\hline
-\end{initable}
+
  
 \begin{initable}{Solver}
 \key{Use\_last\_solution} & \type{YES/NO} & NO &
@@ -288,12 +294,16 @@ Maximum number of iteration of linear solver.
 %%  \hline\\
 %\end{initable}
 % Note: For aditional documentation see manual of the solver, (i) - isol manual
-\pagebreak
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5 
 
 \begin{initable}{Output}
 \key{Write\_output\_file} & \type{YES/NO} & NO &
 If set to "YES", writes output file.
+\\
+\hline
+\key{output\_piezo\_head} & \type{YES/NO} & NO &
+\label{KeyPiezoHead} 
+If set to ``YES'', output also piezometric head into flow output files.
 \\
 \hline
 \key{Output\_file} & \type{string} & NULL &
@@ -355,6 +365,7 @@ Type of output file\br
 %\\
 %\hline
 \key{Pos\_format} & \type{string} & ASCII &
+\label{KeyOutFormat}
 Output file format. One can use: ASCII, BIN, or VTK\_SERIAL\_ASCII
 \\
 \hline\\
@@ -363,7 +374,6 @@ Name of file for output of water boundary fluxes and balnace of sources over mat
 \\
 \hline
 \end{initable}
-Description: Options controling output file of the programm
 
 % \begin{initable}{Density}
 % \key{Density\_implicit} & \type{YES/NO} & NO &
@@ -385,7 +395,6 @@ Description: Options controling output file of the programm
 %\hline\\
 %\end{initable}
 
-\newpage
 \begin{initable}{Semchem\_module}
 \key{Compute\_reactions} & \type{Yes/No} & "No" &
 NO = transport without chemical reactions\br
@@ -503,7 +512,6 @@ Equilibrium constant defining i-th reaction.
 \hline
 \end{initable}
 
-\newpage
 \begin{initable}{Reaction\_module}
 \key{Compute\_decay} & \type{Yes/No} & "No" &
 It enables to switch on simulation of radioactive decay or first order reactions.
@@ -553,4 +561,5 @@ It containes a couple of indices of substances which are taking part in first or
 \hline
 \end{initable}
 
- 
+\vfill
+\pagebreak

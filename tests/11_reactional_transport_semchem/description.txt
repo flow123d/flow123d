@@ -3,6 +3,17 @@ Test problem 11
 verification of:
 - chemical kinetics - Trichlorethen dechloration, 2*MnO4- + C2Cl3H -> 3*Cl- + 2*CO2 + 2*MnO2 + H+,
 - chemical equilibrium - H2O <-> H+ + OH-,
-in combination with transport (column experiment).
+- both chemical reactions are simulated in combination with transport (column experiment).
+-- The difference between piezometric heads at both ends of the column is 2000m.
+-- Hydraulic permeability of the sand in column has a value 0.01 m*s^{-1}.
+-- 6 chemical species are transported and 5 of them are taking part in chemical reactions. The first one transported chemical specie A does not take part in reactions.
+--- Initial contitions look as folows A(0) = 0.01, MnO4-(0) = 0.02, C2Cl3H(0) = 0.03, H+(0) = 0.04, OH-(0) = 0.05, Cl-(0) = 0.06.
+--- Transport boundary conditions are A_b = 0.21, MnO4-_b = 0.12, C2Cl3H_b = 0.15, H+_b = 0.20, OH-_b = 0.10, Cl-_b = 0.14.
+-- Concentration of OH- decreases to zero in one step, equivalent concentration decrease of H+ would be expected but there is also a contribution to H+ concentration from considered kinetic reaction and so it does not decrease so rapidly. Concentrations of the other species do not change much.
+
 - radioactive decay described by decay chain with more branches,
-without combination with transport (zero pressure gradient).
+-- 8 isotopes (A, B, .., H) are transported and all of them are members of considered decay chain with branches (bifurcation) which looks as folows
+--- E->D, D->F, F->B, 0.2*B->A, 0.2*B->G, 0.6*B->H, A->G, H->G, G->C
+--- Initail conditions look as follows, A_0 = 0.01, B_0 = 0.02, C_0 = 0.03, D_0 = 0.04, E_0 = 0.05, F_0 = 0.06, G_0 = 0.07, H_0 = 0.08.
+--- Transport boundary conditions does not matter because zero presure gradient is considered.
+--- Final concentrations of all isotopes except C decrease to zero after 20 time steps, whereas C concentration grows to 0.36.

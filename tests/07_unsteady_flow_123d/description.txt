@@ -1,3 +1,5 @@
+NOT SUPPORTED BY VERSION 1.6.5
+
 Test problem 7 - THE MOST EASY UNSTEADY TEST
 ---------------------
 verification of:

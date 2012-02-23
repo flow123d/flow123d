@@ -34,7 +34,6 @@
 #include "sys_profiler.hh"
 #include "system/system.hh"
 #include "system/system.hh"
-#include <xio.h>
 #include <boost/format.hpp>
 
 
@@ -119,7 +118,7 @@ Profiler::~Profiler() {
 
         //create a file where the output will be written to
         FILE *out;
-        const char fileformat[] = "profiler_%d-%m-%y_%H:%M:%S.out";
+        const char fileformat[] = "profiler%y%m%d_%H.%M.%S.out";
         char filename[PATH_MAX];
         strftime(filename, sizeof (filename) - 1, fileformat, localtime(&start_time));
 

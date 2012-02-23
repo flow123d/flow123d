@@ -32,7 +32,7 @@
 #
 
 
-# Every test has to be finished in 60 seconds. Flow123d will be killed after
+# Every test has to be finished in 120 seconds. Flow123d will be killed after
 # 60 seconds. It prevents test to run in never ending loop, when development
 # version of Flow123d contains such error.
 #TIMEOUT=120
@@ -138,11 +138,51 @@ function copy_outputs {
 	fi
 }
 
+# Following function is used fot checking one output file
+function check_file {
+	
+	# Check, if function was called with right number of arguments
+	if [ $# -ge 3 ]
+	then
+		INI_FILE="${1}"
+		NP="${2}"
+		OUT_FILE="${3}"
+	else
+		echo " [Failed]"
+		echo "Error: $0 called with wrong number of arguments: $#"
+		return 1
+	fi
+	
+	# Print some debug information to the output of ndiff
+	echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE}" \
+	>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+	
+	echo "" >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+	
+	# Compare output file using ndiff
+	${NDIFF} \
+		"${REF_OUTPUT_DIR}/${INI_FILE}/${OUT_FILE}" \
+		"${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE}" \
+		>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
+	
+	# Check result of ndiff
+	if [ $? -eq 0 ]
+	then
+		echo -n "."
+		return 0
+	else
+		echo " [Failed]"
+		echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${OUT_FILE} is too different."
+		return 1
+	fi
+}
+
 # Following function is used for checking output files
 function check_outputs {
 
 	echo -n "Checking output files ."
 
+	# Check, if function was called with right number of arguments
 	if [ $# -ge 2 ]
 	then
 		INI_FILE="${1}"
@@ -185,28 +225,33 @@ function check_outputs {
 	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}"/`
 	do
 		# Does needed output file exist?
-		if [ -f "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
+		if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 		then
-			# Print some debug information to the output of ndiff
-			echo "ndiff: ${REF_OUTPUT_DIR}/${INI_FILE}/${file} ${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
-			>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-			
-			echo "" >> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-			
-			# Compare output file using ndiff
-			${NDIFF} \
-				"${REF_OUTPUT_DIR}/${INI_FILE}/${file}" \
-				"${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" \
-				>> "${TEST_RESULTS}/${INI_FILE}.${NP}/${NDIFF_OUTPUT}" 2>&1
-			
-			# Check result of ndiff
-			if [ $? -eq 0 ]
+			if [ -d "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 			then
-				echo -n "."
+				# If $file is directory, then check all files in this directory
+				subdir="${file}"
+				for subfile in `ls "${REF_OUTPUT_DIR}/${INI_FILE}/${subdir}/"`
+				do
+					if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${subdir}/${subfile}" ]
+					then
+						check_file "${INI_FILE}" "${NP}" "${subdir}/${subfile}"
+						if [ $? -ne 0 ]
+						then
+							return 1
+						fi
+					else
+						echo " [Failed]"
+						echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${subdir}/${subfile} doesn't exist"
+						return 1
+					fi
+				done
 			else
-				echo " [Failed]"
-				echo "Error: file ${TEST_RESULTS}/${INI_FILE}.${NP}/${file} is too different."
-				return 1
+				check_file ${INI_FILE} ${NP} ${file}
+				if [ $? -ne 0 ]
+				then
+					return 1
+				fi
 			fi
 		else
 			echo " [Failed]"
@@ -315,7 +360,7 @@ done
 # Print redirected stdout to stdout only in situation, when some error occurred
 if [ $EXIT_STATUS -gt 0 -a $EXIT_STATUS -lt 10 ]
 then
-	echo "Error in execution: ${FLOW123D_SH} -S ${INI_FILE} -- ${FLOW_PARAMS}"
+	echo "Error in execution: ${FLOW123D_SH} -S ${INI_FILE} ${FLOW_PARAMS}"
 	cat "${FLOW123D_OUTPUT}"
 fi
 

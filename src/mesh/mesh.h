@@ -84,6 +84,9 @@ class Mesh {
 private:
 
 public:
+    /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
+    enum {x_coord=0, y_coord=1, z_coord=2};
+
     Mesh();
 
     inline unsigned int n_elements() const {

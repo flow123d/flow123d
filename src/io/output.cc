@@ -28,8 +28,9 @@
  */
 
 #include <string>
+#include <petsc.h>
 
-#include "xio.h"
+#include "system/xio.h"
 #include "io/output.h"
 #include "io/output_vtk.h"
 #include "io/output_msh.h"
@@ -140,88 +141,6 @@ OutputData::OutputData(string data_name,
 
 OutputData::~OutputData()
 {
-}
-
-void Output::free_data_from_mesh(void)
-{
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
-    if(node_scalar != NULL) {
-        delete node_scalar->scalars;
-        delete node_scalar;
-    }
-
-    if(element_scalar != NULL) {
-        delete element_scalar->scalars;
-        delete element_scalar;
-    }
-
-    if(element_vector != NULL) {
-        delete element_vector->vectors;
-        delete element_vector;
-    }
-}
-
-void Output::get_data_from_mesh(void)
-{
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
-    NodeIter node;
-    ElementIter ele;
-
-    node_scalar = new OutScalar;
-    element_scalar = new OutScalar;
-    element_vector = new OutVector;
-
-    /* Fill temporary vector of node scalars */
-    node_scalar->scalars = new ScalarFloatVector;
-    node_scalar->name = "pressure_nodes";
-    node_scalar->unit = "L";
-    /* Generate vector for scalar data of nodes */
-    node_scalar->scalars->reserve(mesh->node_vector.size());   // reserver memory for vector
-    FOR_NODES(mesh, node ) {
-        node_scalar->scalars->push_back(node->scalar);
-    }
-
-    /* Fill vectors of element scalars and vectors */
-    element_scalar->scalars = new ScalarFloatVector;
-    element_scalar->name = "pressure_elements";
-    element_scalar->unit = "L";
-    element_vector->vectors = new VectorFloatVector;
-    element_vector->name = "velocity_elements";
-    element_vector->unit = "L/T";
-    /* Generate vectors for scalar and vector data of nodes */
-    element_scalar->scalars->reserve(mesh->n_elements());
-    element_vector->vectors->reserve(mesh->n_elements());
-    FOR_ELEMENTS(mesh, ele) {
-        /* Add scalar */
-        element_scalar->scalars->push_back(ele->scalar);
-        /* Add vector */
-        vector<double> vec;
-        vec.reserve(3);
-        vec.push_back(ele->vector[0]);
-        vec.push_back(ele->vector[1]);
-        vec.push_back(ele->vector[2]);
-        element_vector->vectors->push_back(vec);
-    }
-
-    register_node_data(node_scalar->name, node_scalar->unit, *node_scalar->scalars);
-    register_elem_data(element_scalar->name, element_scalar->unit, *element_scalar->scalars);
-    register_elem_data(element_vector->name, element_vector->unit, *element_vector->vectors);
 }
 
 /**

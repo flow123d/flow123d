@@ -18,3 +18,5 @@ USE_NODEBUG= -DNODEBUG
 # This activates a workaround for build sucessfuly with ATLAS.
 # It is safe to use this until one would use "asa" PETSC preconditioner.
 #ATLAS= -DHAVE_ATLAS_ONLY_BLAS
+
+MAKE_JOBS=2

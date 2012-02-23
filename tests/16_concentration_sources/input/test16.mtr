@@ -1,0 +1,16 @@
+$MaterialFormat
+1.0	0	8
+$EndMaterialFormat
+$Materials
+	1
+	7	21	1
+$EndMaterials
+$Sorption
+	7	0
+$EndSorption
+$DualPorosity
+	7	1	n_i	a_0
+$EndDualPorosity
+$Geometry
+	7	2	1
+$EndGeometry

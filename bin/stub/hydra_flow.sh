@@ -22,16 +22,22 @@
 # $LastChangedDate: 2011-01-02 16:54:35 +0100 (ne, 02 I 2011) $
 #
 
-#NPROC is defined in run_flow.sh and its number of procs used to compute
-#MPI_RUN is defined in run_flow.sh and its relative path to bin/mpiexec
-#EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
-#FLOW_PARAMS is defined in run_flow.sh
-# INI is name of inifile and its defined in run_flow.sh
-# SOURCE_DIR is path to test dir and is defined in run_flow.sh
+# Warning: This script is stub. Do not use it!
 
-cd "$SOURCE_DIR"
+# NPROC is number of procs used to compute
+# MPI_RUN is relative path to bin/mpiexec
+# EXECUTABLE is relative path to bin/flow123d (.exe)
+# FLOW_PARAMS is list of parameters fo flow123d
+# INI is name of inifile
 
-echo "
+# Some important files
+export LOCK_FILE="./lock"
+export ERR_FILE="err.log"
+export OUT_FILE="out.log"
+
+# Copy following text to the file hydra_flow.qsub
+# ===============================================
+cat << xxEOFxx > hydra_flow.qsub
 #!/bin/bash
 #
 #$ -cwd
@@ -39,25 +45,28 @@ echo "
 #$ -S /bin/bash
 #
 
-#NPROC is defined in run_flow.sh and its number of procs used to compute
-#MPI_RUN is defined in run_flow.sh and its relative path to bin/mpiexec
-#EXECUTABLE is defined in run_flow.sh and its relative path to bin/flow123d (.exe)
-#FLOW_PARAMS is defined in run_flow.sh
-# INI is name of inifile and its defined in run_flow.sh
-# SOURCE_DIR is path to test dir and is defined in run_flow.sh
-
-cd "$SOURCE_DIR"
- 
+# Disable system rsh / ssh only
 export OMPI_MCA_plm_rsh_disable_qrsh=1
-"$MPI_RUN" -np $NPROC "$EXECUTABLE" -S "$INI" $FLOW_PARAMS 2>err 1>out
-rm lock" >hydra_flow.qsub
 
-if test -e ./lock 
+# Execute Flow123d using mpirun
+"$MPI_RUN" -np $NPROC "$EXECUTABLE" -S "$INI" $FLOW_PARAMS 2>${ERR_FILE} 1>${OUT_FILE}
+
+# Delete lock file
+rm -f ${LOCK_FILE}
+
+# End of hydra_flow.qsub
+xxEOFxx
+# ===============================================
+
+# Test, if lock file exist
+if [ -e ${LOCK_FILE} ] 
 then
-  echo "Error: the working directory is locked by onother PBS job!"
-  exit 1
+	echo "Error: the working directory is locked by onother PBS job!"
+	exit 1
 else
-  touch lock
+	# Create new lock file
+	touch ${LOCK_FILE}
 fi
-chmod u+x hydra_flow.qsub
+
+# Add new PBS job to the queue
 qsub -pe orte $NPROC hydra_flow.qsub

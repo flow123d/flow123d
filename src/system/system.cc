@@ -36,14 +36,14 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include <petscsys.h>
 #include <petscerror.h>
 #include <petsc.h>
-#include <petscsys.h>
 
 #include "global_defs.h"
 #include "system/system.hh"
 #include "io/read_ini.h"
-#include "xio.h"
+#include "system/xio.h"
 
 #ifdef WINDOWS
   #include <direct.h>
@@ -618,7 +618,7 @@ void IONameHandler::initialize_root_dir() {
 	this->initialize_output_dir();
 }
 void IONameHandler::initialize_output_dir() {
-	PetscTruth flg;
+	PetscBool flg; //PetscBool instead of PetscTruth data type
 	char dir[PETSC_MAX_PATH_LEN];     /* directory name */
 
 	/* Initialize output directory path */
@@ -677,7 +677,7 @@ bool IONameHandler::add_placeholder_item(std::string key, std::string value) {
 }
 */
 void IONameHandler::initialize_placeholder() {
-	PetscTruth flg;
+	PetscBool flg; // PetscBool instead of PetscTruth data type
 	char dir[PETSC_MAX_PATH_LEN];     /* directory name */
 
 	/* Initialize input directory name */

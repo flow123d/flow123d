@@ -33,18 +33,31 @@
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "field_p0.hh"
+#include "system/system.hh"
+#include <vector>
 
 #include "io/output.h"
 
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
 : darcy_flow(flow), mesh_(&darcy_flow->mesh()),
-  balance_output_file(NULL)
+  ele_flux(mesh_->n_elements(),std::vector<double>(3,0.0)),
+  balance_output_file(NULL),raw_output_file(NULL)
 {
     // setup output
     string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
     DBGMSG("create output\n");
     output_writer = new OutputTime(mesh_, output_file);
+
+    // allocate output containers
+    ele_pressure.resize(mesh_->n_elements());
+    node_pressure.resize(mesh_->node_vector.size());
+    output_piezo_head=OptGetBool("Output","output_piezo_head","No");
+
+    if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
+
+
+
 
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
@@ -52,26 +65,26 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
     marks.add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), darcy_flow->time().end_time(), output_mark_type );
     DBGMSG("end create output\n");
 
-    ele_scalars = new double[mesh_->n_elements()];
-    node_scalars = new double[mesh_->node_vector.size()];
-    element_vectors = new OutVector();
 
     // temporary solution for balance output
     std::string balance_output_fname =
-            IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "balance_output", "\\"));
-    if (balance_output_fname!= "\\") {
-        balance_output_file = xfopen(balance_output_fname.c_str(), "wt");
+            IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "balance_output", "water_balance"));
+    balance_output_file = xfopen(balance_output_fname.c_str(), "wt");
+
+    // optionally open raw output file
+    std::string raw_output_fname=OptGetFileName("Output","raw_flow_output","//");
+    if (raw_output_fname!= "//") {
+        raw_output_fname=IONameHandler::get_instance()->get_output_file_name(raw_output_fname);
+        raw_output_file = xfopen(raw_output_fname.c_str(), "wt");
     }
 
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
-    delete [] node_scalars;
-    delete [] ele_scalars;
-    delete element_vectors;
-    delete output_writer;
+    if (output_writer != NULL) delete output_writer;
 
-    if (balance_output_file != NULL) fclose(balance_output_file);
+    if (balance_output_file != NULL) xfclose(balance_output_file);
+    if (raw_output_file != NULL) xfclose(raw_output_file);
 };
 
 //=============================================================================
@@ -101,53 +114,48 @@ void DarcyFlowMHOutput::postprocess() {
 
 void DarcyFlowMHOutput::output()
 {
-    std::string nodeName = "pressure_nodes";
-    std::string nodeUnit = "L";
-    std::string eleScalarName = "pressure_elements";
-    std::string eleScalarUnit = "L";
     std::string eleVectorName = "velocity_elements";
     std::string eleVectorUnit = "L/T";
 
     unsigned int result = 0;
 
     if (darcy_flow->time().is_current(output_mark_type)) {
-        make_element_scalar(ele_scalars);
 
         make_element_vector();
         make_sides_scalar();
 
-        make_node_scalar_param(node_scalars);
+        make_node_scalar_param(node_pressure);
 
-        make_neighbour_flux();
+        //make_neighbour_flux();
 
         water_balance();
 
-        result = output_writer->register_node_data(nodeName, nodeUnit, node_scalars, mesh_->node_vector.size());
+        result = output_writer->register_node_data
+                ("pressure_nodes","L", node_pressure);
         //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
 
-        result = output_writer->register_elem_data(eleScalarName, eleScalarUnit, ele_scalars, mesh_->n_elements());
+        result = output_writer->register_elem_data
+                ("pressure_elements","L",ele_pressure);
         //xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
 
-        element_vectors->vectors = new VectorFloatVector;
-
-        element_vectors->vectors->reserve(mesh_->n_elements());
-        FOR_ELEMENTS(mesh_, ele) {
-            /* Add vector */
-            vector<double> vec;
-            vec.reserve(3);
-            vec.push_back(ele->vector[0]);
-            vec.push_back(ele->vector[1]);
-            vec.push_back(ele->vector[2]);
-            element_vectors->vectors->push_back(vec);
+        if (output_piezo_head) {
+            result = output_writer->register_elem_data
+                        ("piezo_head_elements","L",ele_piezo_head);
         }
-        result = output_writer->register_elem_data(eleVectorName, eleVectorUnit, *element_vectors->vectors);
+
+        result = output_writer->register_elem_data("velocity_elements", "L/T", ele_flux);
         //xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
 
-        output_writer->write_data(darcy_flow->solved_time());
+        //double time  = min(darcy_flow->solved_time(), 1.0E200);
+        double time  = darcy_flow->solved_time();
 
-        if(element_vectors->vectors != NULL) {
-            delete element_vectors->vectors;
-        }
+        // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
+        // consider begining of the interval of actual result as the output time. Or use
+        // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
+        if (time == TimeGovernor::inf_time) time = 0.0;
+        output_writer->write_data(time);
+
+        output_internal_flow_data();
     }
 }
 
@@ -176,20 +184,25 @@ void DarcyFlowMHOutput::make_side_flux() {
 //=============================================================================
 
 void DarcyFlowMHOutput::make_element_scalar() {
-    int soi;
     unsigned int sol_size;
     double *sol;
 
-    soi = mesh_->n_sides;
     darcy_flow->get_solution_vector(sol, sol_size);
-    FOR_ELEMENTS(mesh_,ele) ele->scalar = sol[ soi++ ];
+    unsigned int soi = mesh_->n_sides;
+    unsigned int i = 0;
+    FOR_ELEMENTS(mesh_,ele) {
+        ele_pressure[i] = sol[ soi];
+        if (output_piezo_head) ele_piezo_head[i] = sol[soi ] + ele->centre[Mesh::z_coord];
+        i++; soi++;
+    }
 }
 
+/*
 void DarcyFlowMHOutput::make_element_scalar(double* scalars) {
     int soi;
     unsigned int sol_size;
     double *sol;
-    int ele_index = 0; //!< index of each element */
+    int ele_index = 0; //!< index of each element
 
     for (int i = 0; i < mesh_->n_elements(); i++){
         scalars[i] = 0.0;
@@ -204,113 +217,84 @@ void DarcyFlowMHOutput::make_element_scalar(double* scalars) {
         scalars[ele_index] = sol[ soi++ ];
     }
 }
+*/
 
 /****
  * compute Darcian velocity in centre of elements
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
-    //FILE *out;
+// TODO: remove ele->vector from the mesh, use arma::vec3 for calculating average velocity.
 
-    // upravy Ji -- pomocny tisk
-    //out = xfopen( "pomout2.txt", "wt" );
-    //xfprintf( out, "Pomocny tisk bazovych funkci po vypoctu\n\n");
-
+    int i=0;
     FOR_ELEMENTS(mesh_, ele) {
+        arma::vec3 flux_in_centre;
         switch (ele->type) {
         case LINE:
-            make_element_vector_line(ele);
+            make_element_vector_line(ele, flux_in_centre);
             break;
         case TRIANGLE:
-            make_element_vector_triangle(ele);
-            //xfprintf( out, "%d \n", ele->id);
-            //xfprintf( out, "Plocha %12.8f\n", ele->metrics);
-            //xfprintf( out, "Teziste\n");
-            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->centre[0], ele->centre[1], ele->centre[2]);
-            //xfprintf( out, "Bazove funkce\n");
-            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[0], ele->bas_beta[0], ele->bas_gama[0] );
-            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[1], ele->bas_beta[1], ele->bas_gama[1] );
-            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->bas_alfa[2], ele->bas_beta[2], ele->bas_gama[2] );
-            //xfprintf( out, " \n");
-            //xfprintf( out, "Pretoky\n");
-            //xfprintf( out, "%12.8f %12.8f %12.8f \n", ele->side[0]->flux, ele->side[1]->flux, ele->side[2]->flux);
-            //xfprintf( out, "Vektor v tezisti\n");
-            //xfprintf( out, "%12.8f %12.8f %12.8f \n",  ele->vector[0], ele->vector[1], ele->vector[2]);
-            //xfprintf( out, " \n");
-            //xfprintf( out, " \n\n");
+            make_element_vector_triangle(ele, flux_in_centre);
             break;
         case TETRAHEDRON:
-            make_element_vector_tetrahedron(ele);
+            make_element_vector_tetrahedron(ele, flux_in_centre);
             break;
         }
-        ele->v_length = vector_length(ele->vector);
+        for(int j=0;j<3;j++)
+            ele_flux[i][j]=flux_in_centre[j];
+        i++;
     }
-    //xfclose( out );
+
 }
+
 //=============================================================================
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_element_vector_line(ElementFullIter ele) {
+void DarcyFlowMHOutput::make_element_vector_line(ElementFullIter ele, arma::vec3 &vec) {
     double darcy_vel = (ele->side[1]->flux - ele->side[0]->flux) / 2.0 / ele->material->size;
 
     // normalize element vector [node 0, node 1]
-    ele->vector[ 0 ] = (ele->node[1]->getX() - ele->node[0]->getX());
-    ele->vector[ 1 ] = (ele->node[1]->getY() - ele->node[0]->getY());
-    ele->vector[ 2 ] = (ele->node[1]->getZ() - ele->node[0]->getZ());
-    normalize_vector(ele->vector);
-
-    ele->vector[ 0 ] *= darcy_vel;
-    ele->vector[ 1 ] *= darcy_vel;
-    ele->vector[ 2 ] *= darcy_vel;
-
+    vec = ele->node[1]->point() - ele->node[0]->point();
+    vec *= darcy_vel / arma::norm(vec, 2);
 }
 //=============================================================================
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele) {
+void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::vec3 &vec) {
     double bas[ 3 ][ 3 ];
-    double ex[ 3 ];
-    double ey[ 3 ];
-    double ez[ 3 ];
-    double tmp[ 3 ];
+
+
+
     double X[ 3 ];
-    double mid[3];
-    double u[3];
     int i, li;
 
     // begin -- upravy Ji. -- prepocet vektoru do teziste elementu
     // 23.2.2007
-    ex[ 0 ] = ele->node[1]->getX() - ele->node[0]->getX();
-    ex[ 1 ] = ele->node[1]->getY() - ele->node[0]->getY();
-    ex[ 2 ] = ele->node[1]->getZ() - ele->node[0]->getZ();
 
-    tmp[ 0 ] = ele->node[2]->getX() - ele->node[0]->getX();
-    tmp[ 1 ] = ele->node[2]->getY() - ele->node[0]->getY();
-    tmp[ 2 ] = ele->node[2]->getZ() - ele->node[0]->getZ();
-    vector_product(ex, tmp, ez);
-    normalize_vector(ex);
-    normalize_vector(ez);
-    vector_product(ez, ex, ey);
-    normalize_vector(ey);
+    // make rotated coordinate system with triangle in plane XY, origin in A and axes X == AB
+    arma::vec3 ex(ele->node[1]->point() - ele->node[0]->point());
+    ex /= norm(ex,2);
 
-    u[0] = ele->centre[0] - ele->node[0]->getX();
-    u[1] = ele->centre[1] - ele->node[0]->getY();
-    u[2] = ele->centre[2] - ele->node[0]->getZ();
-    mid[0] = scalar_product(ex, u);
-    mid[1] = scalar_product(ey, u);
-    mid[2] = scalar_product(ez, u);
+    arma::vec3 ac(ele->node[2]->point() - ele->node[0]->point());
+    arma::vec3 ez = cross(ex, ac);
+    ez /= norm(ez,2);
 
+    arma::vec3 ey = cross(ez,ex);
+    ey /= norm(ey, 2);
 
-    for (li = 0; li < 3; li++)
-        ele->vector[ li ] = 0;
+    // compute barycenter in new coordinate system
+    arma::vec3 u = ele->centre - ele->node[0]->point();
+
+    // compute flux form base functions
+    ac.zeros();
     for (i = 0; i < 3; i++) {
-        bas[ i ][ 0 ] = ele->bas_gama[ i ] * (mid[0] - ele->bas_alfa[ i ]);
-        bas[ i ][ 1 ] = ele->bas_gama[ i ] * (mid[1] - ele->bas_beta[ i ]);
+        bas[ i ][ 0 ] = ele->bas_gama[ i ] * (dot(u,ex) - ele->bas_alfa[ i ]);
+        bas[ i ][ 1 ] = ele->bas_gama[ i ] * (dot(u,ey) - ele->bas_beta[ i ]);
         bas[ i ][ 2 ] = 0;
         for (li = 0; li < 2; li++)
-            ele->vector[ li ] += ele->side[ i ]->flux * bas[ i ][ li ] / ele->material->size;
+            ac[ li ] += ele->side[ i ]->flux * bas[ i ][ li ] / ele->material->size;
     }
 
     /*for (li = 0; li < 3; li++){
@@ -323,30 +307,17 @@ void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele) {
             ele->vector[ li ] = X[ li ];
 
      */
-    X[0] = ele->vector[0] * ex[0] +
-            ele->vector[1] * ey[0] +
-            ele->vector[2] * ez[0];
-    X[1] = ele->vector[0] * ex[1] +
-            ele->vector[1] * ey[1] +
-            ele->vector[2] * ez[1];
-    X[2] = ele->vector[0] * ex[2] +
-            ele->vector[1] * ey[2] +
-            ele->vector[2] * ez[2];
-    for (li = 0; li < 3; li++)
-        ele->vector[ li ] = X[ li ];
-    // end -- upravy Ji. -- prepocet vektoru do teziste elementu
-
+    vec = ac[0] * ex + ac[1] * ey + ac[2] * ez;
 }
 //=============================================================================
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_element_vector_tetrahedron(ElementFullIter ele) {
+void DarcyFlowMHOutput::make_element_vector_tetrahedron(ElementFullIter ele, arma::vec3 &vec) {
     double bas[ 4 ][ 3 ];
     int i, li;
 
-    for (li = 0; li < 3; li++)
-        ele->vector[ li ] = 0;
+    vec.zeros();
     for (i = 0; i < 4; i++) {
         bas[ i ][ 0 ] = ele->bas_delta[ i ] * (ele->centre[ 0 ]
                 - ele->bas_alfa[ i ]);
@@ -355,7 +326,7 @@ void DarcyFlowMHOutput::make_element_vector_tetrahedron(ElementFullIter ele) {
         bas[ i ][ 2 ] = ele->bas_delta[ i ] * (ele->centre[ 2 ]
                 - ele->bas_gama[ i ]);
         for (li = 0; li < 3; li++)
-            ele->vector[ li ] += ele->side[ i ]->flux * bas[ i ][ li ];
+            vec[ li ] += ele->side[ i ]->flux * bas[ i ][ li ];
     }
 }
 //=============================================================================
@@ -393,7 +364,7 @@ void DarcyFlowMHOutput::make_sides_scalar() {
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_node_scalar_param(double* scalars) {
+void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     F_ENTRY_P("nodes"+mesh_->node_vector.size());
 
     double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
@@ -472,7 +443,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(double* scalars) {
                         ((node->getY() - ele->centre[ 1 ])*(node->getY() - ele->centre[ 1 ])) +
                         ((node->getZ() - ele->centre[ 2 ])*(node->getZ() - ele->centre[ 2 ]))
                 );
-                scalars[node_index] += ele->scalar *
+                scalars[node_index] += ele_pressure[ele.index()] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
@@ -513,7 +484,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(double* scalars) {
 }
 
 
-
+/*
 void DarcyFlowMHOutput::make_node_scalar() {
     int li;
     NodeIter nod;
@@ -588,6 +559,7 @@ void DarcyFlowMHOutput::make_node_scalar() {
     xfree(TED);
     xfree(TSD);
 }
+*/
 /*
 //=============================================================================
 //
@@ -620,18 +592,19 @@ void make_node_vector(Mesh* mesh)
 //=============================================================================
 // FILL TH "FLUX" FIELD FOR ALL VV NEIGHBOURS IN THE MESH
 //=============================================================================
-
+/*
 void DarcyFlowMHOutput::make_neighbour_flux() {
     struct Neighbour *ngh;
 
     FOR_NEIGHBOURS(mesh_, ngh) {
         if (ngh->type != VV_2E)
             continue;
+
         ngh->flux = ngh->sigma * ngh->geom_factor * (ngh->element[1]->scalar - ngh->element[0]->scalar);
         continue;
     }
 }
-
+*/
 
 //=============================================================================
 //
@@ -646,14 +619,28 @@ void DarcyFlowMHOutput::water_balance() {
     int c_water;
     struct Boundary *bcd;
     std::vector<double> *bcd_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
+    std::vector<double> *bcd_plus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
+    std::vector<double> *bcd_minus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
 
     fprintf(balance_output_file,"********************************\n");
     fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
+    fprintf(balance_output_file,"[total balnace]    [total outflow]     [total inflow]\n");
     FOR_BOUNDARIES(mesh_, bcd) (*bcd_balance)[bcd->group] += bcd->side->flux;
+    FOR_BOUNDARIES(mesh_, bcd)
+    	if(bcd->side->flux > 0)
+    		(*bcd_plus_balance)[bcd->group]+= bcd->side->flux;
+    FOR_BOUNDARIES(mesh_, bcd)
+     	if(bcd->side->flux < 0)
+     		(*bcd_minus_balance)[bcd->group]+= bcd->side->flux;
+
+
     for(int i=0; i < bcd_balance->size(); ++i)
-        fprintf(balance_output_file, "boundary #%d\t%g\n", mesh_->bcd_group_id(i).id(), (*bcd_balance)[i]);
+        fprintf(balance_output_file, "boundary #%d\t%g\t%g\t%g\n", mesh_->bcd_group_id(i).id(),
+                (*bcd_balance)[i],(*bcd_plus_balance)[i],(*bcd_minus_balance)[i]);
 
     delete bcd_balance;
+    delete bcd_plus_balance;
+    delete bcd_minus_balance;
 
     const FieldP0<double> *p_sources=darcy_flow->get_sources();
     if (p_sources != NULL) {
@@ -683,4 +670,43 @@ double calc_water_balance(Mesh* mesh, int c_water) {
     rc = 0.0;
 
     return rc;
+}
+
+/*
+ * Output of internal flow data.
+ */
+
+void DarcyFlowMHOutput::output_internal_flow_data()
+{
+    if (raw_output_file == NULL) return;
+
+    char dbl_fmt[ 16 ]= "%.8g ";
+    // header
+    xfprintf( raw_output_file, "$FlowField\nT=");
+    xfprintf( raw_output_file, dbl_fmt, darcy_flow->time().t());
+    xfprintf( raw_output_file, "\n%d\n", mesh_->n_elements() );
+
+    int i;
+    int cit = 0;
+    FOR_ELEMENTS( mesh_,  ele ) {
+        //xfprintf( raw_output_file, "%d ", cit);
+        xfprintf( raw_output_file, "%d ", ele.id());
+        xfprintf( raw_output_file, dbl_fmt, ele_pressure[cit]);
+        for (i = 0; i < 3; i++)
+            xfprintf( raw_output_file, dbl_fmt, ele_flux[cit][i]);
+
+        xfprintf( raw_output_file, " %d ", ele->n_sides);
+        for (i = 0; i < ele->n_sides; i++)
+            xfprintf( raw_output_file, dbl_fmt, ele->side[i]->scalar);
+        for (i = 0; i < ele->n_sides; i++)
+            xfprintf( raw_output_file, dbl_fmt, ele->side[i]->flux);
+
+        //xfprintf( raw_output_file, "%d ", ele->n_neighs_vv);
+        //for (i = 0; i < ele->n_neighs_vv; i++)
+        //    xfprintf( raw_output_file, "%d ", ele->neigh_vv[i]->id);
+
+        xfprintf( raw_output_file, "\n" );
+        cit ++;
+    }
+    xfprintf( raw_output_file, "$EndFlowField\n\n" );
 }
