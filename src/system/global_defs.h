@@ -85,33 +85,69 @@
  */
 #define INPUT_CHECK(i,...)   do { if (!(i))   xprintf(UsrErr,__VA_ARGS__); } while (0)
 
+/**
+ * Actually there are following debugging switches
+ * DEBUG_MESSAGES  - use various debugging messages introduced by DBGMSG
+ * DEBUG_ASSERTS - use assertion checks introduced by ASSERT
+ * DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
+ * DEBUG_FUNCTION_STACK  - use function stack introduced by F_ENTRY
+ *
+ * You can turn all off defining: NODEBUG
+ * or turn all on defining: DEBUG
+ */
+
 #ifdef NODEBUG
 
-#undef  DEBUG
-
-#define ASSERT(...)
-#define WARN_ASSERT(...)
-#define DBGMSG(...)
-#define DBGPRINT_INT(...)
+#undef  DEBUG_MESSAGES
+#undef  DEBUG_ASSERTS
+#undef  DEBUG_PROFILER
+#undef  DEBUG_FUNCTION_STACK
 
 
 #else
 
-#define DEBUG
+#ifdef DEBUG
 
-#define ASSERT(i,...)	do { if (!(i))	xprintf(PrgErr,__VA_ARGS__); } while (0)
+#define  DEBUG_MESSAGES
+#define  DEBUG_ASSERTS
+#define  DEBUG_PROFILER
+#define  DEBUG_FUNCTION_STACK
+#endif
+
+#endif
+
+
+#ifdef USE_ASSERTS
+
+#define ASSERT(i,...)   do { if (!(i))  xprintf(PrgErr,__VA_ARGS__); } while (0)
 #define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
-#define DBGMSG(...)	do { xprintf(MsgDbg,__VA_ARGS__); fflush(NULL); } while (0)
+
+#else
+
+#define ASSERT(...)
+#define WARN_ASSERT(...)
+
+#endif
+
+
+#ifdef USE_MESSAGES
+
+#define DBGMSG(...) do { xprintf(MsgDbg,__VA_ARGS__); fflush(NULL); } while (0)
 
 /// this is simple macro for debugging output of array of ints
 /// Use this with care !!!
 #define DBGPRINT_INT(name,size,idx) \
     do {\
         int i__;\
-        xprintf(Msg,	"%s (int array size=%d):\n",(name),(size));\
+        xprintf(Msg,    "%s (int array size=%d):\n",(name),(size));\
         for(i__=0;i__<(size);i__++) \
             xprintf(Msg,"i: %d int: %d\n",i__,(idx)[i__]); \
     } while (0)
+
+#else
+
+#define DBGMSG(...)
+#define DBGPRINT_INT(...)
 
 #endif
 

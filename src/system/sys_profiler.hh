@@ -263,6 +263,7 @@ public:
     void set_timer_subframes(string tag, int n_subframes);
 };
 
+// These helper macros are necessary due to use of _LINE_ variable in START_TIMER macro.
 #define _PASTE(a,b) a ## b
 #define PASTE(a,b) _PASTE(a, b)
 
@@ -275,14 +276,22 @@ public:
  * where it has been used. This is done to avoid variable name conflicts when
  * using the macro more than once in one block of code.
  */
+#ifdef DEBUG_PROFILER
 #define START_TIMER(tag) TimerFrame PASTE(timer_,__LINE__) = TimerFrame(tag)
+#else
+#define START_TIMER(tag)
+#endif
 
 /**
  * \def END_TIMER(tag)
  *
  * Ends a timer with specified tag.
  */
+#ifdef DEBUG_PROFILER
 #define END_TIMER(tag) TimerFrame::endTimer(tag)          // only if you want end on different place then end of function
+#else
+#define END_TIMER(tag)
+#endif
 
 /**
  * \def SET_TIMER_SUBFRAMES(tag, subframes)
@@ -290,7 +299,11 @@ public:
  * Sets specified amount of subframes (eg. iterations) for the given tag.
  * The specified timer tag must represent the currently active timer.
  */
+#ifdef DEBUG_PROFILER
 #define SET_TIMER_SUBFRAMES(tag, subframes) Profiler::instance->setTimerSubframes(tag, info)
+#else
+#define SET_TIMER_SUBFRAMES(tag,subfarmes)
+#endif
 
 /**
  *
