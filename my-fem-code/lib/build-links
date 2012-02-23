@@ -1,7 +1,0 @@
-#!/bin/bash
-
-ln -s ../../UMF/AMD/Lib/libamd.a
-ln -s ../../metis-4.0/libmetis.a
-ln -s ../../muparser/lib/libmuparser.a
-ln -s ../../UMF/UMFPACK/Lib/libumfpack.a
-ln -s ../../SuperLU_3.0/superlu_linux.a libsuperlu.a
