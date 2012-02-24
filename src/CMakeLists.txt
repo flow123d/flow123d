@@ -29,6 +29,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
 # every library then can be testetd independently
 set(sources_lib_flow123d
+    fem/dofhandler.cc
+    fem/fe_values.cc
+    fem/finite_element.cc
+    fem/mapping_p1.cc
+
     flow/local_matrix.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
@@ -49,6 +54,8 @@ set(sources_lib_flow123d
     mesh/sides.cc
     mesh/topology.cc
 
+    quadrature/quadrature_lib.cc
+
     reaction/linear_reaction.cc
     semchem/semchem_interface.cc
 
@@ -61,6 +68,7 @@ set(sources_lib_flow123d
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
+    transport/transport_dg.cc
 
     la/schur.cc
     la/solve.cc

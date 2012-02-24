@@ -32,7 +32,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
-#include "solve.h"
+#include "la/solve.h"
 #include "petscmat.h"
 #include <armadillo>
 #include "fem/fe_rt.hh"
@@ -853,7 +853,7 @@ void TransportDG::read_initial_condition()
 {
     FILE    *in;          // input file
     char     line[ LINE_SIZE ]; // line of data file
-    int sbi,index, id, eid, i,n_concentrations;
+    int sbi,index, eid, i,n_concentrations;
     double value;
 
     std::string concentration_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\"));
@@ -873,9 +873,7 @@ void TransportDG::read_initial_condition()
     {
         xfgets( line, LINE_SIZE - 2, in );
         ASSERT(!(line == NULL),"NULL as argument of function parse_concentration_line()\n");
-        id    = atoi( xstrtok( line) ); // TODO: id musi byt >0 nebo >=0 ???
-        INPUT_CHECK(!( id < 0 ),"Id number of concentration must be > 0\n");
-        eid   = atoi( xstrtok( NULL) );
+        eid   = atoi( xstrtok( line ) );
         ElementFullIter cell = mesh_->element.find_id(eid);
 
         switch (cell->dim)

@@ -31,7 +31,7 @@
 #define TRANSPORT_DG_HH_
 
 #include "transport_operator_splitting.hh"
-#include "la_linsys.hh"
+#include "la/linsys.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
