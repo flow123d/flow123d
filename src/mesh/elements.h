@@ -50,6 +50,9 @@ public:
     double element_area_triangle();
     double element_volume_tetrahedron();
     void calc_centre();
+    unsigned int n_sides_by_dim(int side_dim);
+    void *side_by_dim(int side_dim, unsigned int n);
+    Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
 
 
     // Data readed from mesh file
