@@ -259,7 +259,7 @@ const vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, co
                 grad[j] = 0;
                 continue;
             }
-            grad[j] *= pow(p[k], (int)powers[i][j]-1);
+            grad[j] *= pow(p[k], (int)(powers[i][j]-1));
         }
     }
     return grad;
