@@ -193,7 +193,7 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 
 double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-    if (reaction_matrix == NULL)   return NULL;
+
 
     int cols, rows, both;
 
@@ -402,16 +402,19 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
 
 void Linear_reaction::compute_one_step(void)
 {
+    if (reaction_matrix == NULL)   return;
+
+    START_TIMER("decay_step");
 	 //for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
-	  START_TIMER("decay_step");
-	 	 this->compute_reaction(concentration_matrix[MOBILE], loc_el);
+	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
 	    if (dual_porosity_on == true) {
 	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
 	    }
-	    END_TIMER("decay_step");
+
 	 }
+    END_TIMER("decay_step");
 	 return;
 }
 

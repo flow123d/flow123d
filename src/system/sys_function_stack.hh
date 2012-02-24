@@ -54,13 +54,7 @@
  * Just shortcut to both static output methods of the Trace class.
  */
 
-#ifdef NODEBUG
-
-#define F_STACK_SHOW(stream)
-#define F_ENTRY
-#define F_ENTRY_P(param_string)
-
-#else
+#ifdef DEBUG_FUNCTION_STACK
 
 /*
  *  __SOMETHING__ stands for name of local instance of the Trace class. That means that
@@ -69,6 +63,13 @@
 #define F_STACK_SHOW(stream) flow::Trace::stack_print(stream)
 #define F_ENTRY              flow::Trace __SOMETHING__( __FILE__, __func__, __LINE__ , "")
 #define F_ENTRY_P(param_string) flow::Trace __SOMETHING__( __FILE__, __func__, __LINE__ , param_string )
+
+
+#else
+
+#define F_STACK_SHOW(stream)
+#define F_ENTRY
+#define F_ENTRY_P(param_string)
 
 #endif
 
