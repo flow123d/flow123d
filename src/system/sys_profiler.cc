@@ -220,7 +220,6 @@ void Profiler::set_task_size(int size) {
 }
 
 void Profiler::start(string tag) {
-    F_ENTRY;
 
     /**
      * starts particular timing period:

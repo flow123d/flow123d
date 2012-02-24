@@ -288,7 +288,7 @@ public:
     /**
      *  Output the system in the Matlab format possibly with given ordering.
      *  Rather we shoud provide output operator <<, since it is more flexible.
-     * /
+     */
     void view(std::ostream output_stream, int * output_mapping = NULL);
 
     virtual ~LinSys();

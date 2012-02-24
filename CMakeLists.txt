@@ -123,14 +123,20 @@ include_directories(${flow123d_includes})
 # set appropriate compiler flags for debug/release compilation modes
 #add_definitions("-Wall")
 
-if(CMAKE_BUILD_TYPE STREQUAL "debug")
-  # debug mode
-  add_definitions("-g -O0")
-  add_definitions(-DDEBUG)
+if(CC_FLAGS) 
+  add_definitions(${CC_FLAGS})
+  set(CMAKE_EXE_LINKER_FLAGS ${CC_FLAGS})
 else()
-  # Release mode
-  add_definitions("-O3")
-  add_definitions(-DNDEBUG)
+  if(CMAKE_BUILD_TYPE STREQUAL "debug")
+    # debug mode
+    add_definitions("-g -O0")
+    set(CMAKE_EXE_LINKER_FLAGS "-g")
+    add_definitions(-DDEBUG)
+  else()
+    # Release mode
+    add_definitions("-O3")
+    add_definitions(-DNDEBUG)
+  endif()
 endif()
 ##############
 
