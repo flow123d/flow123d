@@ -175,7 +175,7 @@ void HC_ExplicitSequential::run_simulation()
         }
 
     }
-
+    xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
 }
 
 

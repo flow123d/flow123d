@@ -117,6 +117,7 @@ Profiler::~Profiler() {
         char enddest[BUFSIZ] = {0};
         strftime(enddest, sizeof (enddest) - 1, format, localtime(&end_time));
 
+#if DEBUG_PROFILER
         //create a file where the output will be written to
         FILE *out;
         const char fileformat[] = "profiler%y%m%d_%H.%M.%S.out";
@@ -165,7 +166,7 @@ Profiler::~Profiler() {
         }
 
         xfclose(out);
-
+#endif
     }
 }
 
