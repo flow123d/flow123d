@@ -24,9 +24,10 @@
 project(Flow123d CXX C)
 
 # CMake version required for pre-build this project
-MESSAGE(STATUS "cmake version: ${CMAKE_VERSION}")
 cmake_minimum_required(VERSION 2.6.4)
-cmake_policy(VERSION 2.8.4)
+if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
+  cmake_policy(VERSION 2.8.4)
+endif()
 
 
 # Set all module paths
