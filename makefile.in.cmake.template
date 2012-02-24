@@ -1,0 +1,31 @@
+
+### PETSC library ###################################################################
+# The Flow123 requires PETSC library (3.2.x), you have to set 
+# the location of PETSC and used PETSC architecture unless you
+# would to use system wide settings.
+# e.g.
+#set(PETSC_DIR "$ENV{HOME}/local/petsc")
+#set(PETSC_ARCH "linux-gcc-dbg")
+
+set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
+set(PETSC_ARCH "gcc_O3")
+
+### verbose mode ####
+# option to produce more verbose compiling
+# for the same result tou can call make with VERBOSE=1
+# e.g.
+# make VERBOSE=1 all
+
+#set(CMAKE_VERBOSE_MAKEFILE on)
+
+
+### Build configuration  ####
+# There are two predefined configurations: "debug" and "release"
+# "debug" set flags: "-g -pg -DDEBUG"
+# "release" set flags: "-O3 -DNODEBUG"
+#
+# you can override these settings through variable CC_FLAGS
+
+set(CMAKE_BUILD_TYPE debug)
+
+#set(CC_FLAGS "-O3 -DNODEBUG -pg ")

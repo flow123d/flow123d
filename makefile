@@ -53,9 +53,15 @@ all:  install
 clean: cmake
 	make -C build clean
 
+# try to remove all
 clean-all: 
 	rm -rf build
 	make -C third_party clean
+
+# remove everything that is not under version control 
+# BE EXTREMELY CAREFUL using this
+clean_all_svn:
+	bin/svnclean.sh
 
 # Make all tests	
 testall:

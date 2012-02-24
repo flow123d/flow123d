@@ -21,33 +21,33 @@
 # $LastChangedDate$
 #
 
-include ../makefile.in
+#include ../makefile.in
 
-all: armadillo fparser
+#all: armadillo fparser
 
 
-metis:
-	make -C metis-4.0
+#metis:
+#	make -C metis-4.0
 
 # use CMAKE_PREFIX_PETH to use our copy of boost
 #
 # unfortunately I didn't succeed with blas and lapack form PETSC ...
 # how to setup armadillo's cmake to use them
-armadillo:
-	cd armadillo-1.1.92; \
-	export PETSC_DIR=${PETSC_DIR}; \
-	export PETSC_ARCH=${PETSC_ARCH}; \
-	export CMAKE_BLAS_LAPACK_DIR="${PETSC_DIR}/${PETSC_ARCH}/lib"; \
-	cmake . -DCMAKE_PREFIX_PATH="../boost-1.42";\
-	make
+#armadillo:
+#	cd armadillo-1.1.92; \
+#	export PETSC_DIR=${PETSC_DIR}; \
+#	export PETSC_ARCH=${PETSC_ARCH}; \
+#	export CMAKE_BLAS_LAPACK_DIR="${PETSC_DIR}/${PETSC_ARCH}/lib"; \
+#	cmake . -DCMAKE_PREFIX_PATH="../boost-1.42";\
+#	make
 
-fparser:
-	make -C fparser-4.4.3
+#fparser:
+#	make -C fparser-4.4.3
 
 clean:
 	rm -f all
 	make -C metis-4.0 realclean
 	make -C armadillo-1.1.92 clean
-	rm armadillo-1.1.92/CMakeCache.txt
+	rm -rf armadillo-1.1.92/flow_build
 	make -C fparser-4.4.3 clean
 	

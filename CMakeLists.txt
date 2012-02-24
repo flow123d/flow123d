@@ -25,6 +25,7 @@ project(Flow123d CXX C)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.6.4)
+cmake_policy(VERSION 2.8.4)
 
 
 # Set all module paths
@@ -58,12 +59,18 @@ find_package(PARMETIS REQUIRED)
 
 
 # find boost or use our own
+
 find_package(Boost)
 if (NOT Boost_FOUND) 
   # just use our third_party directory
-  set(Boost_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-  set(Boost_LIBRARY_DIRS "")
-  message(STATUS "Using  our own Boost INCLUDE: ${Boost_INCLUDE_DIR} LIBS: ${Boost_LIBRARY_DIRS}")
+  set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
+  find_package(Boost)
+  if (NOT Boost_FOUND)
+    # force to use it 
+    set(Boost_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
+    set(Boost_LIBRARY_DIRS "")
+    message(STATUS "Force to use our subset of Boost INCLUDE: ${Boost_INCLUDE_DIR} LIBS: ${Boost_LIBRARY_DIRS}")
+  endif()
 endif()
 
 # find aramdillo or use our own
@@ -73,14 +80,21 @@ endif()
 find_package(Armadillo)
 if (NOT Armadillo_FOUND)
 
-  # THIS IS NOT CORRECT WAY TO BUILD Armadillo, BUT IT WORKS. DO NOT FOLLOW THIS.
-  execute_process(COMMAND ${CMAKE_COMMAND} .
-                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92)
-  execute_process(COMMAND make
-                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92)
+  # THIS IS NOT CORRECT WAY TO BUILD Armadillo, IT MERLY WORKS. DO NOT FOLLOW THIS.
+  # proper way should be: cmake, make, install Armadillo -> the last step should produce ArmadilloLibraryDepends.cmake
+  # which can be included here to get correct includes and libs variables
   
-  SET(Armadillo_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/include")  
-  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/libarmadillo.a")  
+  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build")
+  file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
+  execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH} -DBoost_DEBUG=1 -DBOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42 ..
+                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
+  execute_process(COMMAND make 
+                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
+  
+  SET(Armadillo_INCLUDE_DIRS 
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/include
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/include)  
+  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/libarmadillo.a")  
 endif()
 #find_package(GTest)
 #find_package(CppUnit)

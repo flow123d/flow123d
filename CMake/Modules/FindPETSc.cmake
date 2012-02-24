@@ -25,6 +25,7 @@
 function (petsc_get_version)
   if (EXISTS "${PETSC_DIR}/include/petscversion.h")
     file (STRINGS "${PETSC_DIR}/include/petscversion.h" vstrings REGEX "#define PETSC_VERSION_(RELEASE|MAJOR|MINOR|SUBMINOR|PATCH) ")
+    
     foreach (line ${vstrings})
       string (REGEX REPLACE " +" ";" fields ${line}) # break line into three fields (the first is always "#define")
       list (GET fields 1 var)
@@ -33,15 +34,31 @@ function (petsc_get_version)
       set (${var} ${val})         # Also in local scope so we have access below
     endforeach ()
     if (PETSC_VERSION_RELEASE)
-      set (PETSC_VERSION "${PETSC_VERSION_MAJOR}.${PETSC_VERSION_MINOR}.${PETSC_VERSION_SUBMINOR}p${PETSC_VERSION_PATCH}" PARENT_SCOPE)
+      set (PETSC_VERSION "${PETSC_VERSION_MAJOR}.${PETSC_VERSION_MINOR}.${PETSC_VERSION_SUBMINOR}p${PETSC_VERSION_PATCH}")
+      set (PETSC_VERISON "${PETSC_VERSION}" PARENT_SCOPE)
     else ()
       # make dev version compare higher than any patch level of a released version
-      set (PETSC_VERSION "${PETSC_VERSION_MAJOR}.${PETSC_VERSION_MINOR}.${PETSC_VERSION_SUBMINOR}.99" PARENT_SCOPE)
+      set (PETSC_VERSION "${PETSC_VERSION_MAJOR}.${PETSC_VERSION_MINOR}.${PETSC_VERSION_SUBMINOR}p99")
+      set (PETSC_VERISON "${PETSC_VERSION}" PARENT_SCOPE)
     endif ()
   else ()
     message (SEND_ERROR "PETSC_DIR can not be used, ${PETSC_DIR}/include/petscversion.h does not exist")
   endif ()
+
+  # hack for Flow123d
+  MESSAGE(STATUS "PETSC version: ${PETSC_VERSION}")
+  if ("${PETSC_VERSION}" VERSION_LESS 3.2.0p00)
+    MESSAGE(FATAL_ERROR "Wrong PETSC version, we need version 3.2.0pX")
+  endif()
+  if ("${PETSC_VERSION}" VERSION_GREATER 3.2.0p99)
+    MESSAGE(FATAL_ERROR "Wrong PETSC version, we need version 3.2.0pX")
+  endif()
+  MESSAGE(STATUS "PETSC version OK.")
+
 endfunction ()
+
+
+
 
 find_path (PETSC_DIR include/petsc.h
   HINTS ENV PETSC_DIR
