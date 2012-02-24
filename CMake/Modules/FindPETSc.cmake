@@ -247,7 +247,8 @@ int main(int argc,char *argv[]) {
   endif (petsc_works_minimal)
 
   # We do an out-of-source build so __FILE__ will be an absolute path, hence __INSDIR__ is superfluous
-  if (${PETSC_VERSION} VERSION_LESS 3.1)
+  MESSAGE(STATUS "petsc ver: ${PETSC_VERSION}")
+  if ("${PETSC_VERSION}" VERSION_LESS 3.1)
     set (PETSC_DEFINITIONS "-D__SDIR__=\"\"" CACHE STRING "PETSc definitions" FORCE)
   else ()
     set (PETSC_DEFINITIONS "-D__INSDIR__=" CACHE STRING "PETSc definitions" FORCE)
