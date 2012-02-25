@@ -31,7 +31,7 @@ build/CMakeCache.txt:
 cmake: build/CMakeCache.txt
 
 build: cmake
-	make -C build all
+	make -j 4 -C build all
 
 FLOW_BIN=build/bin/flow123d
 MPIEXEC_BIN=build/bin/mpiexec

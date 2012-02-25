@@ -236,7 +236,7 @@ const double PolynomialSpace<degree,dim>::basis_value(unsigned int i, const vec:
     double v = 1;
 
     for (int j=0; j<dim; j++)
-        v *= pow(p[j], powers[i][j]);
+        v *= pow(p[j], (int)(powers[i][j]) );
 
     return v;
 }
