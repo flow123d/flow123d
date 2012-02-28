@@ -8,15 +8,12 @@
 #include "transport/sources.hh"
 
 #include "system/system.hh"
-#include "system/math_fce.h"
+//#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "transport/transport.h"
-#include "io/output.h"
-#include "materials.hh"
+//#include "materials.hh"
 #include "io/read_ini.h"
-#include "ppfcs.h"
 #include "system/par_distribution.hh"
-#include "la/sparse_graph.hh"
 #include <iostream>
 #include <iomanip>
 #include <string>

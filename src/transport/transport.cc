@@ -50,20 +50,16 @@
 #include "io/output.h"
 #include "materials.hh"
 #include "io/read_ini.h"
-#include "ppfcs.h"
+//#include "ppfcs.h"
 //#include "btc.h" XX
 //#include "reaction.h" XX
 
 #include "system/par_distribution.hh"
 
 #include "la/sparse_graph.hh"
-//#include "semchem/semchem_interface.hh"
-//#include "reaction/linear_reaction.hh"
-//#include <string.h>
 #include <iostream>
 #include <iomanip>
 #include <string>
-//#include "materials.hh"
 
 // TODO: move partitioning into mesh_ and remove this include
 #include "flow/darcy_flow_mh.hh"
