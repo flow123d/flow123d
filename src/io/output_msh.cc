@@ -55,15 +55,12 @@ void write_msh_header(Output *output)
 void write_msh_geometry(Output *output)
 {
     Mesh* mesh = output->get_mesh();
-    NodeIter nod;
-    long int id = 1;
 
     // Write information about nodes
     output->get_base_file() << "$Nodes" << endl;
     output->get_base_file() <<  mesh->node_vector.size() << endl;
-    FOR_NODES(mesh,  nod ) {
-        output->get_base_file() << id << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
-        id++;
+    FOR_NODES(mesh, nod) {
+        output->get_base_file() << NODE_FULL_ITER(mesh, nod).index() + 1 << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
     }
     output->get_base_file() << "$EndNodes" << endl;
 }
@@ -76,8 +73,6 @@ void write_msh_geometry(Output *output)
 void write_msh_topology(Output *output)
 {
     Mesh* mesh = output->get_mesh();
-    ElementIter elm;
-    long int id = 1;
     int i;
 
     // Write information about elements
@@ -85,11 +80,11 @@ void write_msh_topology(Output *output)
     output->get_base_file() << mesh->n_elements() << endl;
     FOR_ELEMENTS(mesh, elm) {
         // element_id element_type 3_other_tags material region partition
-        output->get_base_file() << id << " " << elm->type << " 3 " << elm->mid << " " << elm->rid << " " << elm->pid;
+        output->get_base_file() << ELEM_FULL_ITER(mesh, elm).index() + 1 << " " << elm->type << " 3 " << elm->mid << " " << elm->rid << " " << elm->pid;
+
         FOR_ELEMENT_NODES(elm, i)
-            output->get_base_file() << " " << elm->node[i]->id;
+            output->get_base_file() << " " << NODE_FULL_ITER(mesh, elm->node[i]).index() + 1;
         output->get_base_file() << endl;
-        id++;
     }
     output->get_base_file() << "$EndElements" << endl;
 }

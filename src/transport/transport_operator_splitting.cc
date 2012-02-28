@@ -29,6 +29,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
 
 	convection = new ConvectionTransport(marks, *mesh_, *mat_base);
+	convection->test_concentration_sources(*convection);
 
 	// Chemistry initialization
 	decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
@@ -105,7 +106,7 @@ void TransportOperatorSplitting::update_solution() {
 	// TODO: update Semchem time step here!!
 	Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
-    xprintf( Msg, "t: %f (TOS)                  cfl_dt: %f ", convection->time().t(), convection->time().dt() );
+    xprintf( Msg, "t: %f (TOS)                  cfl_dt: %f ", convection->time().t(), convection->time().estimate_dt() );
     START_TIMER("transport_steps");
     int steps=0;
     while ( convection->time().lt(time_->t()) )

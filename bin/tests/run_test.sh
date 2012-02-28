@@ -100,6 +100,8 @@ N_PROC="$2"
 # The last parameter could contain additional flow parametres
 FLOW_PARAMS="$3"
 
+# set executable for awk text processor
+AWK="awk"
 
 # Following function is used to copy output files to test_results
 function copy_outputs {
@@ -315,7 +317,7 @@ do
 			sleep 1
 
 			# Is mpiexec and still running?
-			ps | gawk '{ print $1 }' | grep -q "${MPIEXEC_PID}"
+			ps | ${AWK} '{ print $1 }' | grep -q "${MPIEXEC_PID}"
 			if [ $? -ne 0 ]
 			then
 				# set up, that flow123d was finished in time

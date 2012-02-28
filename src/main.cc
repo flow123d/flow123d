@@ -39,7 +39,7 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _VERSION_   "1.6.6"
+#define _VERSION_   "1.7.0_dev"
 
 static void main_convert_to_output();
 
@@ -63,7 +63,8 @@ void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
     -S       Compute MH problem\n\
              Source files have to be in the same directory as ini file.\n\
     -i       String used to change the 'variable' ${INPUT} in the file path.\n\
-    -o       Absolute path to output directory.\n";
+    -o       Absolute path to output directory.\n\
+    -l file  Set base name of log files or turn logging off if no name is given.\n";
 
     xprintf(MsgLog, "Parsing program parameters ...\n");
 
@@ -109,6 +110,7 @@ int main(int argc, char **argv) {
     F_ENTRY;
 
     parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
+
 
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
