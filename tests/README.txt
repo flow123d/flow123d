@@ -38,8 +38,6 @@ include ../all_tests.mk
 You should also modify tests/makefile and add your tests to rule makeall.
 
 
-
-
 ****************************
 Where can I find outputs?***
 ****************************
