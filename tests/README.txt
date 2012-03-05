@@ -23,15 +23,16 @@ testall - run all tests specified by rule testall in tests/makefile
 How to add new test?***
 ***********************
 
-To add new test, add dir with test into tests/ . You have to add makefile, if you want to use makefile rules to run it, for example for tests 01_steady_flow_123d makefile should be like this :
+To add new test, add dir with test into tests/ . You have to add makefile, if
+you want to use makefile rules to run it, for example for tests
+01_steady_flow_123d makefile should be like this :
 
 
 INI_FILES="flow.ini"	// name of ini file
 NPROC="1"	// number(s) of procs
 FLOW_PARAMS=" -ksp_atol 1.0e-10 -ksp_rtol 1.0e-10 -ksp_monitor"	// aditional flow params
 
-test:
-	../run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS} 
+include ../all_tests.mk 
 
 
 You should also modify tests/makefile and add your tests to rule makeall.
