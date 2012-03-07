@@ -18,8 +18,15 @@
 #   - build ngh and bcd ?? rather include them into flow123d
 #   - clean and clean-all targets
 #   - doxygen target    
-
-
+#
+# * how to organize flow123d libraries? I want:
+#    1) each library should declare on which libraries it depends, but should not link against them (not contain them)
+#       this setting should by automatically used in final linking
+#    2) In particular third party libraries should not be part of any our library
+#   - This requires carefull understanding of target_link_libraries commad, may be that this command DO NOT actualy
+#     include library into library
+#   - in that case how to produce flow123_lib EXPLICITELY containing all flow sub-libraries
+#
 # Project name and language(s)
 project(Flow123d CXX C)
 
@@ -98,9 +105,10 @@ if (NOT Armadillo_FOUND)
     ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/include)  
   SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/libarmadillo.a")  
 endif()
-#find_package(GTest)
-#find_package(CppUnit)
+
 message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
+
+
 
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion REQUIRED)
@@ -112,9 +120,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 ################################################################### set includes and libraries paths
   
 set(flow123d_includes
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/include/mesh
-    ${CMAKE_SOURCE_DIR}/include/transport
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/flow
     ${CMAKE_SOURCE_DIR}/src/mesh
@@ -122,8 +127,10 @@ set(flow123d_includes
     ${CMAKE_SOURCE_DIR}/src/system
     ${CMAKE_SOURCE_DIR}/src/semchem
     ${CMAKE_SOURCE_DIR}/src/transport
+    ${CMAKE_SOURCE_DIR}/src/input
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
+    ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
@@ -158,9 +165,16 @@ endif()
 
 ############################################################33 process subdirectories
 
+# add json_sprit sources
+add_subdirectory( ${CMAKE_SOURCE_DIR}/third_party/json_spirit )
+
+# add fparser sources
 add_subdirectory(third_party/fparser-4.4.3)
+
+# add various our sources
 add_subdirectory(src)
 add_subdirectory(doc)
+add_subdirectory(test_units)
 
 #################################################################### add targets
 
@@ -193,7 +207,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
 ### add target for main binary
 add_executable(flow123d src/main.cc)
 # set libraries linked to main binary (order matter)
-target_link_libraries(flow123d   flow123d_lib semchem fparser)
+target_link_libraries(flow123d   flow123d_lib semchem)
 set_target_properties(flow123d PROPERTIES
    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
    #OBJECT_DIR ${PROJECT_BINARY_DIR}/build/obj

@@ -28,7 +28,17 @@ build/CMakeCache.txt:
 	if [ ! -d build ]; then mkdir build; fi
 	cd build; cmake ..
 
-cmake: build/CMakeCache.txt
+# This target builds links in directory test_units and its subdirectories 
+# to generated makefiles in the build directory. 
+# This way we can run tests from the source tree and do not have problems with deleted
+# current directory in shell if we are forced to use make clean-all.
+create_unit_test_links:
+	for f in  `find test_units/ -name CMakeLists.txt`; do ln -sf "$${PWD}/build/$${f%/*}/Makefile" "$${f%/*}/makefile";done
+
+
+# This target only configure the build process.
+# Useful for building unit tests without actually build whole program.
+cmake: build/CMakeCache.txt  create_unit_test_links
 
 build: cmake
 	make -j 4 -C build all

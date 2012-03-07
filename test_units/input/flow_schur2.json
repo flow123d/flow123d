@@ -1,0 +1,116 @@
+{
+	"flow_ini_version" 	: "1.0",
+	"comment"			: "verified by http://json.parser.online.fr/ to be VALID JSON",
+
+	"global" : {
+		"problem_type"	: 1,
+		"description"   : "test1",
+		"stop_time"	 	: 5, 
+		"save_step" 	: 0.1,
+		"density_steps" : 50,
+		"density_on"    : false
+	},
+
+	"density" : {
+		"density_max_iter"  : 21,
+		"density_implicit"  : 1,
+		"eps_iter"          : 1e-5,
+		"write_iterations"  : 0
+	},
+
+	"input" : {
+		"file_type"         : 1,
+		"mesh"              : "./input/test1.msh",
+		"material"          : "./input/test1.mtr",
+		"boundary"          : "./input/test1.fbc",
+		"neighbouring"      : "./input/test1.ngh"
+	},
+
+	"transport" : {
+		"transport_on"	  		    : false,
+		"sorption" 	  			    : false,
+		"dual_porosity"	  		    : false,
+		"concentration"	  		    : "test1.tic",
+		"transport_bcd"	  		    : "test1.tbc",
+		"transport_out"     	    : "transport.msh",
+		"transport_out_im"  	    : null,
+		"transport_out_sorp"        : null,
+		"transport_out_im_sorp"     : null,
+		"n_substances"      	    : 1,
+		"substances"	  		    : ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+		"substances_density_scales" :	[1, 1, 1]
+	},
+
+	"run" : {
+		"log_file"          : "pokus.log",
+		"screen_verbosity"  : 7,
+		"log_verbosity"     : 7,
+		"pause_after_run"   : false,
+		"checkpoints"       : -9999
+	},
+
+	"solver" : {
+		"keep_solver_files" : true,
+		"use_last_solution" : false,
+		"manual_solver_run" : false,
+		"use_control_file"  : false,
+		"control_file"      : "pokus.in",
+		"solver_accuracy"   : 1e-7,
+		"solver_name"       : "petsc",
+		"nschurs"			: 2
+	},
+
+	"output" : {
+		"pos_format" 			: "ascii",
+		"write_output_file" 	: true,
+		"output_file"       	: "./output/test1.pos",
+		"output_file_2"     	: "./output/test1.tmp",
+		"output_digits"     	: 12,
+		"output_file_type"  	: 1,
+		"write_ftrans_out" 		: false,
+		"cross_section" 		: false,
+		"cs_params" 			: [0.05, 2, 0, 0.05, 0, 0, 0.005],
+		"cs_results_run" 		: false,
+		"cs_results_final" 		: false,
+		"specify_elm_type" 		: false,
+		"output_elm_type" 		: 1,
+		"btc_elms" 				: 80,
+		"fcs_params" 			: [1, 0, 0, -11, 1],
+		"pos_set_view"      	: 1,
+		"pos_view_params"   	: [0, 0, 0, 0.8, 0.8, 0.8, 0.224, 0.224]
+	},
+
+	"constants" : {
+		"g"		  :9.81,
+		"rho"	  :1000
+	},
+
+	"sp" : {
+		"solver_accuracy"   :1e-7,
+		"it_meth"			:20,
+		"restart"			:10,
+		"max_it"			:500,
+		"pr_typ"			:40,
+		"drfl"				:1e-9,
+		"l_size"			:80  
+	},
+
+	"solver parameters" : {
+		"method" 	 	: "fgmres",
+		"restart"	 	: 20,
+		"max_it"	 	: 100,
+		"r_tol"	 		: 1e-19,
+		"a_tol" 	 	: 1e-11,
+		"stop_crit"		: "backerr",
+		"be_tol" 	 	: 1e-16,
+		"stop_test"		: 1,
+		"scaling"   	: "mc29_30",
+		"precond"   	: "ilu",
+		"sor_omega" 	: 1.0,
+		"ilu_cpiv"  	: 0,
+		"ilu_droptol"   : 1e-5,
+		"ilu_dskip" 	: 0,
+		"ilu_lfil" 		: -1,
+		"ilu_milu" 		: 0
+	}
+}
