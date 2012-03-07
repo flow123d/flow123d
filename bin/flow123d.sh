@@ -35,6 +35,8 @@ FLOW123D="./flow123d"
 # Relative path to Flow123d binary from current/working directory
 FLOW123D="${0%/*}/${FLOW123D}"
 
+AWK="awk"
+
 # Print help to this script
 function print_help {
 	echo "SYNTAX: flow123d.sh [OPTIONS] INI_FILE [\"FLOW_PARAMS\"]"
@@ -201,7 +203,7 @@ function run_flow()
 			sleep 1
 
 			# Is flow123d process still running?
-			ps | gawk '{ print $1 }' | grep -q "${FLOW123D_PID}"
+			ps | ${AWK} '{ print $1 }' | grep -q "${FLOW123D_PID}"
 			if [ $? -ne 0 ]
 			then
 				# set up, that flow123d was finished in time

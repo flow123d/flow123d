@@ -1,6 +1,0 @@
-#ifndef REV_NUM_H_
-#define REV_NUM_H_
-
-#define REVISION "${Flow123d_WC_REVISION}"
-
-#endif /* REV_NUM_H_ */

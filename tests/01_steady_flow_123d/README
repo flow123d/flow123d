@@ -11,3 +11,4 @@ verification of:
 - calculation of schur complements
 - PETSC cg solver
 - parallel sover using PCASM - overlaping domain decomposition
+- input/output of GMSH when intput mesh has nonstandard numbering of nodes (0,1,3,...)

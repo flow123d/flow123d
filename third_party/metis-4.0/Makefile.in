@@ -1,7 +1,7 @@
 
-include ../../../makefile.in
+#include ../../../makefile.in
 # Which compiler to use
-#CC = gcc
+CC = gcc
 
 # What optimization level to use
 OPTFLAGS = -O2 -DMETIS_BUILD

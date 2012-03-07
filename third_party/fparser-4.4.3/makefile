@@ -21,8 +21,8 @@
 # $LastChangedDate: 2011-05-04 16:24:17 +0200 (Wed, 04 May 2011) $
 #
 
-include ../../makefile.in
-include ../../makefile.include
+#include ../../makefile.in
+#include ../../makefile.include
 
 all: fparser.o fpoptimizer.o
 

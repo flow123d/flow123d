@@ -31,7 +31,7 @@ build/CMakeCache.txt:
 cmake: build/CMakeCache.txt
 
 build: cmake
-	make -C build all
+	make -j 4 -C build all
 
 FLOW_BIN=build/bin/flow123d
 MPIEXEC_BIN=build/bin/mpiexec
@@ -53,9 +53,15 @@ all:  install
 clean: cmake
 	make -C build clean
 
+# try to remove all
 clean-all: 
 	rm -rf build
 	make -C third_party clean
+
+# remove everything that is not under version control 
+# BE EXTREMELY CAREFUL using this
+clean_all_svn:
+	bin/svnclean.sh
 
 # Make all tests	
 testall:
@@ -90,7 +96,7 @@ linux_package: clean clean_tests clean_util all bcd ngh
 	mpiexec=`cat bin/mpiexec |grep mpiexec |sed 's/ ".*$$//'|sed 's/"//g'`;\
 	cp "$${mpiexec}" $(lbuild)/bin/mpich/mpiexec
 	cp -r bin/flow123d bin/flow123d.sh bin/ndiff bin/tests bin/ngh/bin/ngh bin/bcd/bin/bcd $(lbuild)/bin
-	cp -r bin/paraview $(lbuild)/binS
+	cp -r bin/paraview $(lbuild)/bin
 	# copy doc
 	mkdir $(lbuild)/doc
 	cp -r doc/articles doc/reference_manual/flow123d_doc.pdf doc/petsc_options_help $(lbuild)/doc
@@ -102,6 +108,6 @@ linux_package: clean clean_tests clean_util all bcd ngh
 	cp -r tests $(lbuild)
 
 linux_pack:
-	tar -cvzCf flow_build.tar.gz ./$(lbuild) 
+	cd $(lbuild); tar -cvzf ../flow_build.tar.gz .
 
 	
