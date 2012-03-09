@@ -38,7 +38,7 @@ MPIEXEC_BIN=build/bin/mpiexec
 
 install: build
 	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
-	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod u+x bin/mpiexec; fi
+	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod a+x bin/mpiexec; fi
 
 all:  install
 
