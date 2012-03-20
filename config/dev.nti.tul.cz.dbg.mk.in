@@ -17,3 +17,7 @@ set(PETSC_ARCH "linux-gnu-c-debug")
 #MAKE_JOBS=2
 
 set(CMAKE_BUILD_TYPE debug)
+
+set(CMAKE_C_COMPILER "/usr/bin/gcc44")
+
+set(CMAKE_CXX_COMPILER "/usr/bin/g++44")
