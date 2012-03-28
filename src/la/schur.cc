@@ -43,7 +43,8 @@
 #include <petscvec.h>
 #include <petscmat.h>
 
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
+#include "la/local_to_global_map.hh"
 #include "solve.h"
 #include "system/system.hh"
 #include "la/linsys.hh"
@@ -253,8 +254,10 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        const PetscInt *rangesAblock;
        VecGetOwnershipRanges(RHS1,&rangesAblock);
 
-       int *global_row_4_sub_row_new = new int[locSizeB];
-       int sub_size = (dynamic_cast<LinSys_MATIS*>(Orig))->get_subdomain_size();
+       Distribution new_ds(locSizeB);
+       boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row_new;
+       global_row_4_sub_row_new=boost::make_shared<LocalToGlobalMap>(new_ds);
+
        int indB = 0;
        int subInd, indglb;
        int myid;
@@ -268,24 +271,23 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
        ISGetIndices(IsB_sub, &IsBLocalIndices);
 
-       for (i = 0; i < locSizeB; i++)
+       for (unsigned int i = 0; i < locSizeB; i++)
        { 
 
-	  subInd = IsBLocalIndices[i];
+           subInd = IsBLocalIndices[i];
 
           indglb = Orig->subdomain_indices[subInd];
 
-	  // find processor of this value
-	  proc = Orig->vec_ds.get_proc(indglb);
+          // find processor of this value
+          proc = Orig->vec_ds.get_proc(indglb);
 
-	  //get shifted number
-	  shift = rangesAblock[proc+1]-1; 
-	  new_index = indglb - shift - 1;
+          //get shifted number
+          shift = rangesAblock[proc+1]-1;
+          new_index = indglb - shift - 1;
 
-	  global_row_4_sub_row_new[indB] = new_index; // vec_orig_last is returned
-	                                              // larger of one by PETSc
-	  indB = indB + 1;
-	  
+          global_row_4_sub_row_new->insert(new_index); // vec_orig_last is returned
+	                                                  // larger of one by PETSc
+          indB = indB + 1;
        }
 
        ISRestoreIndices(IsB_sub, &IsBLocalIndices);
@@ -298,12 +300,11 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
        VecGetArray( Sol2, &sol_array );
 
-       Compl = new LinSys_MATIS(locSizeB_vec, locSizeB, global_row_4_sub_row_new, &(sol_array[0]) );
+       Compl = new LinSys_MATIS( global_row_4_sub_row_new, &(sol_array[0]) );
        Compl->start_allocation();
 
        VecRestoreArray( Sol2, &sol_array );
 
-       delete[] global_row_4_sub_row_new;
     }
     else if (Orig->type == LinSys::MAT_MPIAIJ)
     {

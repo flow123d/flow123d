@@ -15,7 +15,7 @@
 #include "mesh/mesh.h"
 #include "reaction/linear_reaction.hh"
 #include "semchem/semchem_interface.hh"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include "io/output.h"
 
 

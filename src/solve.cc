@@ -38,7 +38,7 @@
 
 #include "system/system.hh"
 #include "xio.h"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include "solve.h"
 #include "la_linsys.hh"
 

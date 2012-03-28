@@ -29,7 +29,7 @@
  */
 
 #include "system/system.hh"
-#include "par_distribution.hh"
+#include "distribution.hh"
 
 /**
  * create a Distribution from local sizes (dim = np )
@@ -145,6 +145,7 @@ Distribution::Distribution(const SpecialDistribution type, unsigned int global_s
 Distribution::Distribution(const Distribution &distr)
 : communicator(distr.communicator)
 {
+    DBGMSG("coping distribution\n");
     num_of_procs=distr.num_of_procs;
     my_proc=distr.my_proc;
     starts=(int *)xmalloc((np()+1)*sizeof(int));

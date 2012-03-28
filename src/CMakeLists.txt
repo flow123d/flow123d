@@ -65,10 +65,7 @@ set(sources_lib_non_system
     transport/transport_dg.cc
     transport/sources.cc
 
-    la/schur.cc
-    la/solve.cc
-    la/linsys.cc
-    la/sparse_graph.cc
+
 
     equation.cc
     time_marks.cc
@@ -78,9 +75,17 @@ set(sources_lib_non_system
     field_p0.cc
 )
 
+set(sources_lib_la
+	la/distribution.cc
+	la/local_to_global_map.cc
+    la/schur.cc
+    la/solve.cc
+    la/linsys.cc
+    la/sparse_graph.cc
+)
+
 set(sources_lib_system
     system/math_fce.cc
-    system/par_distribution.cc
     system/sys_function_stack.cpp
     system/sys_profiler.cc
     system/system.cc
@@ -117,23 +122,27 @@ set(sources_lib_semchem
 
 
 # add individual libraries
-add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${PETSC_LIBRARIES})
 
+# system_lib
+add_library(system_lib ${sources_lib_system})
+target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARY_DIRS})
+
+# input_lib
 add_library(input_lib ${sources_lib_input})
 target_link_libraries(input_lib 
     system_lib json_spirit)
 
-add_library(non_system_lib ${sources_lib_non_system})
-target_link_libraries(non_system_lib 
-    input_lib system_lib fparser semchem
+# la_lib
+add_library(la_lib ${sources_lib_la})
+target_link_libraries(la_lib 
+    input_lib system_lib
     ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
 
-
-# add target for full library libflow123d (do not add third party libs it depends)
-add_library(flow123d_lib )
+# all remaining sources 
+add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    non_system_lib input_lib system_lib)
+    input_lib system_lib la_lib fparser semchem
+    ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

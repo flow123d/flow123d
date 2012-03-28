@@ -63,6 +63,40 @@
 
 /// @}
 
+/**
+ *  @brief counting reference pointer - shared_ptr
+ *
+ *  Allow global usage of shared_ptr. This is replacement of raw pointer to some type(e.g. Distribution *).
+ *  It uses counter for number of pointers pointing to the allocated chunk and call destructor and deallocation
+ *  when counter is zero. It introduce small memory overhead and time overhead on copy of pointers. Should be used
+ *  for objects with moderate number of instances especially if several objects has to share pointer to the same object
+ *  (Mesh, Distribution, LocalToGlobalMap) but there is no object naturally responsible for its deallocation or
+ *  such an object has shorter life then the object it has created.
+ *
+ *  Usage is as follows:
+ *
+ *  @code
+ *  boost::shared_ptr<Distribution> my_distr;
+ *  my_distr = boost::make_shared<Distribution>(.. parameters of constructor ..)
+ *
+ *  // use it as any other pointer
+ *  my_distr->lsize()
+ *
+ *  @endcode
+ *
+ *  Notes:
+ *  - Do not forget to specify boost::... to avoid possible conflict with std::shared_ptr if C++11 standard is used.
+ *  - The template make_shared could have problems to resolve particular constructor if the types of parameters do not match
+ *    exactly, use explicit type cast in such a case.
+ */
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
+
+
+//using boost::shared_ptr;
+//using boost::make_shared;
+
+
 /*! @brief Debugging macros.
  *
  *  The macro ASSERT has to be used for assertion tests. An error occures if

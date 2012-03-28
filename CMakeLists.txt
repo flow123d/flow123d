@@ -27,6 +27,12 @@
 #     include library into library
 #   - in that case how to produce flow123_lib EXPLICITELY containing all flow sub-libraries
 #
+
+# Include settings given by user first
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
+
+
 # Project name and language(s)
 project(Flow123d CXX C)
 
@@ -46,10 +52,6 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 #if (${CMAKE_BINARY_DIR} EQUAL ${CMAKE_SOURCE_DIR}) 
 #  set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 #endif()
-
-# include settings given by user
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
 
 ######################################################################### find libraries
 

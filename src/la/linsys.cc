@@ -30,6 +30,7 @@
  */
 
 #include <algorithm>
+#include <limits>
 #include <petscmat.h>
 #include "system/system.hh"
 #include "la/linsys.hh"
@@ -372,8 +373,8 @@ LinSys_MPIAIJ:: ~LinSys_MPIAIJ()
 
 //**********************************************************************************************
 
-LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int sz, int *global_row_4_sub_row, double *sol_array)
-: LinSys(vec_lsize, sol_array), subdomain_size(sz)
+LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row, double *sol_array)
+: LinSys(global_row_4_sub_row->get_distr()->lsize(), sol_array), lg_map(global_row_4_sub_row)
 {
     PetscErrorCode err;
 
@@ -381,15 +382,14 @@ LinSys_MATIS::LinSys_MATIS(unsigned int vec_lsize,  int sz, int *global_row_4_su
 
     //xprintf(Msg,"sub size %d \n",subdomain_size);
 
-    // ulozit global_row_4_sub_row
-    subdomain_indices = new int[subdomain_size];
-    for (i = 0;i < subdomain_size; i++) 
-    {
-       subdomain_indices[i] = global_row_4_sub_row[i];
-    }
-
     // vytvorit mapping v PETSc z global_row_4_sub_row
-    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, subdomain_size, subdomain_indices, PETSC_COPY_VALUES, &map_local_to_global);
+    // check possible index range of lg_map to fit into signed int type
+    if (lg_map->get_distr()->size() > numeric_limits<PetscInt>::max()) xprintf(Err,"Index range doesn't fit into signed int!");
+    err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,
+            lg_map->size(),
+            (const PetscInt*)(&(lg_map->get_map_vector()[0])),
+            PETSC_COPY_VALUES, &map_local_to_global);
+
     ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
     // initialize loc_rows array
@@ -408,7 +408,8 @@ void LinSys_MATIS::start_allocation()
          // reinit linear system
 
      }
-     err = MatCreateIS(PETSC_COMM_WORLD,  vec_ds.lsize(), vec_ds.lsize(), vec_ds.size(), vec_ds.size(), map_local_to_global, &matrix);
+     err = MatCreateIS(PETSC_COMM_WORLD,  vec_ds.lsize(), vec_ds.lsize(), vec_ds.size(), vec_ds.size(),
+             map_local_to_global, &matrix);
      ASSERT(err == 0,"Error in MatCreateIS.");
 
      err = MatISGetLocalMat(matrix, &local_matrix);

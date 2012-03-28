@@ -2,7 +2,7 @@
 	#define interfaceH
 
 #include "mesh/elements.h"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include <string.h>
 
 class Distribution;

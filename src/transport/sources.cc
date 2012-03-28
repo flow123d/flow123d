@@ -13,7 +13,7 @@
 #include "transport/transport.h"
 //#include "materials.hh"
 #include "io/read_ini.h"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include <iostream>
 #include <iomanip>
 #include <string>

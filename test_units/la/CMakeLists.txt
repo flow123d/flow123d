@@ -25,18 +25,14 @@
 
 
 
-add_custom_target( input_test )
-set(super_test "input_test")
-set(super_test_libs input_lib)
+add_custom_target( la_test )
+set(super_test "la_test")
+set(super_test_libs la_lib)
 
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for multiline raw strings
-    
-    define_test(input_type)
-    define_test(generic_node)
-    
-endif()
+
+define_mpi_test(local_to_global_map 2)
+define_mpi_test(local_to_global_map 3)
 
 
 

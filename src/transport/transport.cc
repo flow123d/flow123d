@@ -54,7 +54,7 @@
 //#include "btc.h" XX
 //#include "reaction.h" XX
 
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 
 #include "la/sparse_graph.hh"
 #include <iostream>

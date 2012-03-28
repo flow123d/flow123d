@@ -38,12 +38,13 @@
 #include "system/system.hh"
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "la/linsys.hh"
 #include "la/solve.h"
 #include "la/schur.hh"
 #include "la/sparse_graph.hh"
+#include "la/local_to_global_map.hh"
 #include "field_p0.hh"
 #include "flow/local_matrix.h"
 
@@ -454,8 +455,7 @@ void DarcyFlowMH_Steady::make_schur0() {
     if (schur0 == NULL) { // create Linear System for MH matrix
 
         if (solver->type == PETSC_MATIS_SOLVER) 
-            schur0 = new LinSys_MATIS( lsize, static_cast<int>( global_row_4_sub_row.size() ),
-                                       &(global_row_4_sub_row[0]) );
+            schur0 = new LinSys_MATIS( global_row_4_sub_row );
 	
         else
             schur0 = new LinSys_MPIAIJ(lsize);
@@ -497,11 +497,6 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
     if ( IA2 != NULL ) MatDestroy( &(IA2) );
 
     delete schur0;
-
-    if (solver->type == PETSC_MATIS_SOLVER) {
-        global_row_4_sub_row.clear( );
-    }
-
     delete solver;
 }
 
@@ -525,7 +520,10 @@ void DarcyFlowMH_Steady::make_schur1() {
     if      (schur0->type == LinSys::MAT_IS)
     {
        // create mapping for PETSc
-       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, side_ds->lsize(), side_id_4_loc, PETSC_COPY_VALUES, &map_side_local_to_global);
+
+       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,
+               side_ds->lsize(),
+               side_id_4_loc, PETSC_COPY_VALUES, &map_side_local_to_global);
        ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
        err = MatCreateIS(PETSC_COMM_WORLD,  side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA1);
@@ -820,6 +818,7 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     int np = edge_ds->np();
     int edge_shift[np], el_shift[np], side_shift[np];
     unsigned int rows_starts[np];
+
     int edge_n_id = mesh_->n_edges(),
             el_n_id = mesh_->element.size(),
             side_n_id = mesh_->n_sides;
@@ -858,7 +857,9 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     // make distribution of rows
     for (i = np - 1; i > 0; i--)
         rows_starts[i] -= rows_starts[i - 1];
-    rows_ds = new Distribution(rows_starts);
+
+
+    rows_ds = boost::make_shared<Distribution>(&(rows_starts[0]));
 }
 
 // ====================================================================================
@@ -1088,18 +1089,17 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     if (solver->type == PETSC_MATIS_SOLVER) {
         //xprintf(Msg,"Compute mapping of local subdomain rows to global rows.\n");
 
-        // initialize array
-        std::set<int> localDofSet;
+        global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);
 
+        //
         // ordering of dofs
         // for each subdomain:
         // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
-
         for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
             el = mesh_->element(el_4_loc[i_loc]);
             el_row = row_4_el[el_4_loc[i_loc]];
 
-            localDofSet.insert( el_row );
+            global_row_4_sub_row->insert( el_row );
 
             nsides = el->n_sides;
             for (i = 0; i < nsides; i++) {
@@ -1107,8 +1107,8 @@ void DarcyFlowMH_Steady::prepare_parallel() {
                 Edge *edg=el->side[i]->edge; 
 		        edge_row = row_4_edge[mesh_->edge.index(edg)];
 
-                localDofSet.insert( side_row );
-                localDofSet.insert( edge_row );
+		        global_row_4_sub_row->insert( side_row );
+		        global_row_4_sub_row->insert( edge_row );
 
 		// edge neighbouring overlap
 		//if (edg->neigh_vb != NULL) {
@@ -1120,21 +1120,10 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             for (i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
                 // mark this edge
                 edge_row = row_4_edge[mesh_->edge.index(el->neigh_vb[i_neigh]->edge)];
-                localDofSet.insert( edge_row );
+                global_row_4_sub_row->insert( edge_row );
             }
         }
-
-        // initialize mapping arrays in MATIS matrix
-        global_row_4_sub_row.resize( localDofSet.size(), -1 );
-        // copy set to vector
-        std::copy( localDofSet.begin(), localDofSet.end(), global_row_4_sub_row.begin() );
-
-        // check that the array was filled
-        ASSERT ( std::find( global_row_4_sub_row.begin(), global_row_4_sub_row.end(), -1 ) == global_row_4_sub_row.end(),
-                 "Array global_row_4_sub_row not filled properly." );
-
-        //debug print
-        //std::copy( global_row_4_sub_row.begin(), global_row_4_sub_row.end(), std::ostream_iterator<int>( std::cout, " " ) );
+        global_row_4_sub_row->finalize();
     }
 }
 

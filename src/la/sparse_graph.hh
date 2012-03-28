@@ -36,7 +36,7 @@
 #include <ostream>
 #include <petscmat.h>
 
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 using namespace std;
 
 

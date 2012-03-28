@@ -34,7 +34,7 @@
 #include "equation.hh"
 #include "transport/sources.hh"
 #include "materials.hh"
-//#include "system/par_distribution.hh"
+//#include "la/distribution.hh"
 //#include "mesh/mesh.h"
 //#include "reaction.h"
 

@@ -62,6 +62,7 @@ class Mesh;
 class SchurComplement;
 class Distribution;
 class SparseGraph;
+class LocalToGlobalMap;
 
 
 /**
@@ -178,7 +179,7 @@ protected:
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
 	Distribution *side_ds;          //< optimal distribution of elements
-	Distribution *rows_ds;          //< final distribution of rows of MH matrix
+	boost::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
 
 	int *el_4_loc;		        //< array of idexes of local elements (in ordering matching the optimal global)
 	int *row_4_el;		        //< element index to matrix row
@@ -189,7 +190,7 @@ protected:
 	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
 
 	// MATIS related arrays
-        std::vector<int> global_row_4_sub_row;           //< global dof index for subdomain index
+    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 	ISLocalToGlobalMapping map_side_local_to_global; //< PETSC mapping form local SIDE indices of subdomain to global indices
 
 	// gather of the solution

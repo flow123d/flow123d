@@ -48,7 +48,8 @@
 #include "private/matimpl.h"
 
 #include "la/schur.hh"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
+#include "la/local_to_global_map.hh"
 
 
 // **************************************************************
@@ -232,7 +233,7 @@ private:
 class LinSys_MATIS : public LinSys
 {
 public:
-    LinSys_MATIS(unsigned int lsize, int sz, int *global_row_4_sub_row, double *sol_array=NULL);
+    LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row, double *sol_array=NULL);
     virtual void start_allocation();
     virtual void preallocate_matrix();
     virtual void preallocate_values(int nrow,int *rows,int ncol,int *cols);
@@ -242,12 +243,13 @@ public:
     { return sub_scatter; }
     /// Get local subdomain size.
     inline int get_subdomain_size()
-    { return subdomain_size; }
+    { return lg_map->size(); }
   
     virtual ~LinSys_MATIS();
 
 private:
 
+    boost::shared_ptr<LocalToGlobalMap>   lg_map;
     ISLocalToGlobalMapping map_local_to_global; ///< PETSC mapping form local indexes of subdomain to global indexes
     int loc_rows_size;                          ///<
     int *loc_rows;                              ///< Small auxiliary array for translation of global indexes to local

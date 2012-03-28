@@ -37,7 +37,7 @@
 #include <petscviewer.h>
 
 #include "system/system.hh"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include "la/solve.h"
 #include "la/linsys.hh"
 
