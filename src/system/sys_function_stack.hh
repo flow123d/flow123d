@@ -32,9 +32,8 @@
 
 #include <cstdio>
 #include <iostream>
-#include <sstream>
 #include <string>
-#include <list>
+#include <vector>
 
 
 /**
@@ -73,6 +72,8 @@
 
 #endif
 
+#define MAX_STACK_DEPTH 127
+
 namespace flow
 {
     /**
@@ -84,19 +85,40 @@ namespace flow
      *  #F_ENTRY macro is nonempty only for the debugging version. For the release version, i.e. when NODEBUG
      *  is defined, #F_ENTRY is empty and produce no run-time overhead.
      *
+     *  Stack depth is limited to MAX_STACK_DEPTH entries. Additional entries will cause improper stack trace output,
+     *  but NOT program failure.
+     *
      */
     class Trace
     {
     public:
         /**
-         * Constructor, takes source filename and func_name of a function, and line numebr line_no
+         * Constructor, takes source filename and func_name of a function, and line number line_no
          * of the call of #F_ENTRY. Forms a message string and put it onto stack.
          */
         explicit Trace( const char * filename, const char * func_name, const int line_no , std::string param_string)
         {
-            std::ostringstream oss;
-            oss << "Tracepoint: " << filename << ", " << func_name << "(), line " << line_no << ", params: " << param_string;
-            program_stack.push_back( oss.str() );
+//BUFSIZE of 16 should be enough for integer to string conversion
+            #define BUFSIZE 16
+            static char charbuf[BUFSIZE] = {0,};
+
+            if ( stack_depth >= MAX_STACK_DEPTH )
+                return;
+
+            program_stack[stack_depth] = "Tracepoint: ";
+            program_stack[stack_depth].append(filename);
+            program_stack[stack_depth].append(", ");
+            program_stack[stack_depth].append(func_name);
+            program_stack[stack_depth].append("(), line ");
+
+            snprintf( charbuf, BUFSIZE-1, "%d", line_no );
+            program_stack[stack_depth].append( charbuf );
+
+            program_stack[stack_depth].append(", params: ");
+            program_stack[stack_depth].append(param_string);
+
+            stack_depth++;
+#undef BUFSIZE
         }
 
         /**
@@ -104,7 +126,8 @@ namespace flow
          */
         ~Trace()
         {
-            program_stack.pop_back();
+            if ( stack_depth > 0 )
+                stack_depth--;
         }
 
         /**
@@ -112,9 +135,9 @@ namespace flow
          */
         static void  stack_print( FILE * fw )
         {
-            fprintf( fw, "Stack trace, depth: %u\n", (unsigned int) program_stack.size());
-            for( std::list<std::string>::reverse_iterator psi=program_stack.rbegin(); psi!=program_stack.rend(); ++psi )
-                fprintf( fw, " %s\n", (*psi).c_str() );
+            fprintf( fw, "Stack trace, depth: %d\n", stack_depth );
+            for( int i = stack_depth-1; i >= 0 ; --i )
+                fprintf( fw, " %s\n", program_stack[i].c_str() );
         }
 
         /**
@@ -122,15 +145,16 @@ namespace flow
          */
         static void  stack_print( std::ostream * os )
         {
-            *os << "Stack trace, depth: " << program_stack.size() << std::endl;
-            for( std::list<std::string>::iterator psi=program_stack.begin(); psi!=program_stack.end(); ++psi )
-                *os << *psi << std::endl;
+            *os << "Stack trace, depth: " << stack_depth << std::endl;
+            for( int i = stack_depth-1; i >= 0 ; --i )
+                *os << program_stack[i] << std::endl;
         }
     private:
         /**
          * Static stack of trace messages.
          */
-        static std::list<std::string> program_stack;
+        static int stack_depth;
+        static std::vector<std::string> program_stack;
     };
 }
 

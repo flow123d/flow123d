@@ -30,12 +30,13 @@
  */
 
 #include <string>
-#include <list>
+#include <vector>
 
 #include "sys_function_stack.hh"
 
 namespace flow
 {
-///definition of global variable for stacktrace storage
-    std::list<std::string> Trace::program_stack;
+    ///definition of global variables for stacktrace storage
+    std::vector<std::string> Trace::program_stack(MAX_STACK_DEPTH,"");
+    int Trace::stack_depth = 0;
 }
