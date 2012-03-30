@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <sstream>
 
 #include <petscsys.h>
 #include <petscerror.h>
