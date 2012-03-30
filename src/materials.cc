@@ -27,6 +27,7 @@
  *
  */
 
+#include <string>
 #include "system/system.hh"
 #include <boost/algorithm/string/trim.hpp> // trim string leading and ending spaces
 #include <boost/algorithm/string/classification.hpp>
@@ -390,7 +391,7 @@ void MaterialDatabase::parse_and_add_material_line(char *line )
  */
 void MaterialDatabase::read_one_parameter_section(const string &section_name, const uint8_t offset_to_set)
 {
-    F_ENTRY_P(section_name);
+    F_ENTRY;
 
     FILE   *fin;   // input file
     char   line[ LINE_SIZE ],string[ LINE_SIZE ];   // line of data file

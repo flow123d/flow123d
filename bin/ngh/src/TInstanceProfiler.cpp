@@ -1,5 +1,4 @@
-
-#include <stdio.h>
+#include <cstdio>
 
 #include "TInstanceProfiler.h"
 #include "side.h"

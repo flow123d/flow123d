@@ -32,7 +32,6 @@
 
 #include <cstdio>
 #include <iostream>
-#include <string>
 #include <vector>
 
 
@@ -41,12 +40,6 @@
  *
  * Unless NODEBUG is defined, it creates instance of the Trace class, providing compile time information
  * about the place of usage.
- *
- * @def F_ENTRY_P( param_string )
- *
- * Allows include any C++ string into function call report.
- * TODO: Because macros can not be overloaded, this has to have different name then the previous one.
- * Moreover this is not type save. Consider use inline functions. But this leads to change from F_ENTRY to F_ENTRY().
  *
  * @def F_STACK_SHOW
  *
@@ -59,23 +52,30 @@
  *  __SOMETHING__ stands for name of local instance of the Trace class. That means that
  *  F_ENTRY macro can be used only once in each function (otherwise it is redeclaration error).
  */
-#define F_STACK_SHOW(stream) flow::Trace::stack_print(stream)
-#define F_ENTRY              flow::Trace __SOMETHING__( __FILE__, __func__, __LINE__ , "")
-#define F_ENTRY_P(param_string) flow::Trace __SOMETHING__( __FILE__, __func__, __LINE__ , param_string )
+//macros to convert number to quoted string using preprocessor
+#define TO_XSTR(s) TO_STR(s)
+#define TO_STR(s) #s
 
+// quoted strings in source are fused into one by preprocessor
+//__func__ can not be converted to quoted string and fused with preprocessor - it is created later (in compiler stage)
+#define F_ENTRY              flow::Trace __SOMETHING__( "Tracepoint: " __FILE__ ", ", __func__,  "(), line " TO_XSTR(__LINE__) "." )
+
+#define F_STACK_SHOW(stream) flow::Trace::stack_print(stream)
 
 #else
 
 #define F_STACK_SHOW(stream)
 #define F_ENTRY
-#define F_ENTRY_P(param_string)
 
 #endif
 
-#define MAX_STACK_DEPTH 127
-
 namespace flow
 {
+    struct Trace_helper {
+        const char * str_file;
+        const char * str_func;
+        const char * str_line;
+    };
     /**
      *  @brief This class provides function call stack.
      *
@@ -85,9 +85,6 @@ namespace flow
      *  #F_ENTRY macro is nonempty only for the debugging version. For the release version, i.e. when NODEBUG
      *  is defined, #F_ENTRY is empty and produce no run-time overhead.
      *
-     *  Stack depth is limited to MAX_STACK_DEPTH entries. Additional entries will cause improper stack trace output,
-     *  but NOT program failure.
-     *
      */
     class Trace
     {
@@ -96,29 +93,12 @@ namespace flow
          * Constructor, takes source filename and func_name of a function, and line number line_no
          * of the call of #F_ENTRY. Forms a message string and put it onto stack.
          */
-        explicit Trace( const char * filename, const char * func_name, const int line_no , std::string param_string)
+        explicit Trace( const char trace_str[], const char trace_str2[], const char trace_str3[])
         {
-//BUFSIZE of 16 should be enough for integer to string conversion
-            #define BUFSIZE 16
-            static char charbuf[BUFSIZE] = {0,};
-
-            if ( stack_depth >= MAX_STACK_DEPTH )
-                return;
-
-            program_stack[stack_depth] = "Tracepoint: ";
-            program_stack[stack_depth].append(filename);
-            program_stack[stack_depth].append(", ");
-            program_stack[stack_depth].append(func_name);
-            program_stack[stack_depth].append("(), line ");
-
-            snprintf( charbuf, BUFSIZE-1, "%d", line_no );
-            program_stack[stack_depth].append( charbuf );
-
-            program_stack[stack_depth].append(", params: ");
-            program_stack[stack_depth].append(param_string);
-
+            program_stack[stack_depth].str_file = trace_str;
+            program_stack[stack_depth].str_func = trace_str2;
+            program_stack[stack_depth].str_line = trace_str3;
             stack_depth++;
-#undef BUFSIZE
         }
 
         /**
@@ -126,7 +106,6 @@ namespace flow
          */
         ~Trace()
         {
-            if ( stack_depth > 0 )
                 stack_depth--;
         }
 
@@ -137,7 +116,7 @@ namespace flow
         {
             fprintf( fw, "Stack trace, depth: %d\n", stack_depth );
             for( int i = stack_depth-1; i >= 0 ; --i )
-                fprintf( fw, " %s\n", program_stack[i].c_str() );
+                fprintf( fw, " %s%s%s\n", program_stack[i].str_file, program_stack[i].str_func, program_stack[i].str_line );
         }
 
         /**
@@ -147,14 +126,14 @@ namespace flow
         {
             *os << "Stack trace, depth: " << stack_depth << std::endl;
             for( int i = stack_depth-1; i >= 0 ; --i )
-                *os << program_stack[i] << std::endl;
+                *os << program_stack[i].str_file << program_stack[i].str_func << program_stack[i].str_line << std::endl;
         }
     private:
         /**
          * Static stack of trace messages.
          */
         static int stack_depth;
-        static std::vector<std::string> program_stack;
+        static std::vector<Trace_helper> program_stack;
     };
 }
 

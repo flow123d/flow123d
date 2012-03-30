@@ -1,7 +1,7 @@
 #include "intersection.h"
 #include "matrix.h"
 #include "mathfce.h"
-#include "math.h"
+#include <cmath>
 #include <iostream>
 #include "polygon.h"
 #include "problem.h"

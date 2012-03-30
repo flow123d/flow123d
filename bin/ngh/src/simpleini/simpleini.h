@@ -216,7 +216,7 @@
 #include <map>
 #include <list>
 #include <algorithm>
-#include <stdio.h>
+#include <cstdio>
 
 #ifdef SI_SUPPORT_IOSTREAMS
 # include <iostream>
@@ -2570,7 +2570,7 @@ public:
 #define SI_Case     SI_GenericCase
 #define SI_NoCase   SI_GenericNoCase
 
-#include <wchar.h>
+#include <cwchar>
 #include "ConvertUTF.h"
 
 /**

@@ -1,8 +1,8 @@
 #ifndef problemH
 #define problemH
 
+#include <cstdio>
 #include "config.h"
-#include <stdio.h>
 #include "system.h"
 
 typedef enum ComputeTypes {
