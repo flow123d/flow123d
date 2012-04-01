@@ -6,7 +6,7 @@
  */
 
 #include <la/local_to_global_map.hh>
-#include <la/distribution.hh>
+#include <system/par_distribution.hh>
 
 
 LocalToGlobalMap::LocalToGlobalMap(const Distribution &any_distr)
