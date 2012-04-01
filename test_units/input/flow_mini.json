@@ -1,0 +1,29 @@
+{
+    "flow_ini_version"  : "1.0",
+    "comment"           : "verified by http://json.parser.online.fr/ to be VALID JSON",
+
+    "global" : {
+        "problem_type"  : 1,
+        "description"   : "test1",
+        "save_step"     : 0.1,
+        "density_on"    : false,
+        "nothing"       : null
+    },
+
+    "input" : {
+        "file_type"         : 1,
+        "mesh"              : "./input/test1.msh"
+    },
+
+    "constants" : {
+        "g"       :9.81,
+        "rho"     :1000
+    },
+
+    "sp" : {
+        "drfl"              :1e-009,
+        "l_size"            :80  
+    },
+    
+    "z_test_weird_array" : [ [0], { "a" : 1 }, 2, {}, [] ]
+}

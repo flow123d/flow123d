@@ -28,7 +28,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # select source files that compose whole flow123d library
 # todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
 # every library then can be testetd independently
-set(sources_lib_flow123d
+set(sources_lib_non_system
     fem/dofhandler.cc
     fem/fe_values.cc
     fem/finite_element.cc
@@ -38,12 +38,12 @@ set(sources_lib_flow123d
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
 
-    io/read_ini.cc
+    
     io/output.cc
     io/output_vtk.cc
     io/output_msh.cc
     io/output_tmp.cc
-
+    
     mesh/msh_gmshreader.cc
     mesh/boundaries.cc
     mesh/edges.cc
@@ -59,22 +59,13 @@ set(sources_lib_flow123d
     reaction/linear_reaction.cc
     semchem/semchem_interface.cc
 
-    system/math_fce.cc
-    system/par_distribution.cc
-    system/sys_function_stack.cpp
-    system/sys_profiler.cc
-    system/system.cc
-    system/xio.cc
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
     transport/sources.cc
 
-    la/schur.cc
-    la/solve.cc
-    la/linsys.cc
-    la/sparse_graph.cc
+
 
     equation.cc
     time_marks.cc
@@ -84,6 +75,27 @@ set(sources_lib_flow123d
     field_p0.cc
 )
 
+set(sources_lib_la
+    la/local_to_global_map.cc
+    la/schur.cc
+    la/solve.cc
+    la/linsys.cc
+    la/sparse_graph.cc
+)
+
+set(sources_lib_system
+    system/par_distribution.cc
+    system/math_fce.cc
+    system/sys_function_stack.cpp
+    system/sys_profiler.cc
+    system/system.cc
+    system/xio.cc
+    io/read_ini.cc
+)
+
+set(sources_lib_input
+    
+)
 
 # make separate library for Semchem (God save us!)
 set(sources_lib_semchem
@@ -103,11 +115,31 @@ set(sources_lib_semchem
 # add build targets
 #link_directories(${Flow123dLinkDirectories})
 
-# add tager for libflow123d
-add_library(flow123d_lib ${sources_lib_flow123d})
-target_link_libraries(flow123d_lib      ${Armadillo_LIBRARIES}     ${Boost_LIBRARY_DIRS}    ${PETSC_LIBRARIES} )
+
+# add individual libraries
+
+# system_lib
+add_library(system_lib ${sources_lib_system})
+target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARY_DIRS})
+
+# input_lib
+add_library(input_lib ${sources_lib_input})
+target_link_libraries(input_lib 
+    system_lib json_spirit)
+
+# la_lib
+add_library(la_lib ${sources_lib_la})
+target_link_libraries(la_lib 
+    input_lib system_lib
+    ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
+
+# all remaining sources 
+add_library(flow123d_lib ${sources_lib_non_system})
+target_link_libraries(flow123d_lib 
+    system_lib la_lib fparser semchem
+    ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
 set_target_properties(flow123d_lib PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
 
 # add target for libsemchem
@@ -115,6 +147,7 @@ add_library(semchem ${sources_lib_semchem})
 set_target_properties(semchem PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
+
 
 
 
