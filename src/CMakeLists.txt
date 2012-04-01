@@ -94,7 +94,7 @@ set(sources_lib_system
 )
 
 set(sources_lib_input
-    
+    input/input_type.cc
 )
 
 # make separate library for Semchem (God save us!)
