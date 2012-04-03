@@ -93,7 +93,7 @@ namespace flow
          * Constructor, takes source filename and func_name of a function, and line number line_no
          * of the call of #F_ENTRY. Forms a message string and put it onto stack.
          */
-        explicit Trace( const char trace_str[], const char trace_str2[], const char trace_str3[])
+        explicit Trace( const char * const trace_str, const char * const trace_str2, const char * const trace_str3 )
         {
             program_stack[stack_depth].str_file = trace_str;
             program_stack[stack_depth].str_func = trace_str2;
