@@ -29,7 +29,7 @@ all:  install
 FLOW_BIN=build/bin/flow123d
 MPIEXEC_BIN=build/bin/mpiexec
 
-install: build
+install: build_flow
 	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
 	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod a+x bin/mpiexec; fi
 
@@ -50,7 +50,7 @@ create_unit_test_links:
 # Useful for building unit tests without actually build whole program.
 cmake: build/CMakeCache.txt  create_unit_test_links
 
-build: cmake
+build_flow: cmake
 	make -j 4 -C build all
 
 
