@@ -203,7 +203,7 @@ double **Linear_reaction::modify_reaction_matrix_repeatedly(void)
 }
 
 void Linear_reaction::modify_reaction_matrix(Mat *R) //prepare the matrix, which describes reactions
-{/*
+{
 	int rows,cols;
 	double rel_step, prev_rel_step;
 	PetscScalar Hlp_kin, index, prev_index;
@@ -217,23 +217,17 @@ void Linear_reaction::modify_reaction_matrix(Mat *R) //prepare the matrix, which
 			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 			if(cols > 0){
 				Hlp_kin = (PetscScalar) time_step*log(2)/half_lives[cols-1];
-				//xprintf(Msg, "\ncols identifier is %d\n",cols);
-				//xprintf(Msg, "\nHlp_kin coef has the value %f an time_step is equal to %f, half-live is %f\n",Hlp_kin, time_step, half_lives[cols-1]);
-				MatSetValue(*R, prev_index, prev_index, Hlp_kin, INSERT_VALUES);
-				//MatSetValues(*R, 1, &prev_index, 1, &prev_index, &Hlp_kin, INSERT_VALUES);
-				//reaction_matrix[prev_index][prev_index] = pow(0.5,prev_rel_step);
+				MatSetValue(*R, prev_index, prev_index, ((-1.0) * Hlp_kin), INSERT_VALUES);
 				MatSetValue(*R, index, prev_index, Hlp_kin, INSERT_VALUES);
-				//MatSetValues(*R, 1, &index, 1, &prev_index, &Hlp_kin, INSERT_VALUES);
-				//reaction_matrix[prev_index][index] += (1 - pow(0.5,prev_rel_step));
 			}
 			prev_index = index;
 		}
-	}*/
+	}
 	return;
 }
 
 double **Linear_reaction::modify_reaction_matrix(Mat *R, int dec_nr) //prepare the matrix, which describes reactions, takes bifurcation in acount
-{/*
+{
 	int rows,cols, index, first_index, bif_id;
 	double rel_step, prev_rel_step;
 	PetscScalar Hlp_kin;
@@ -245,15 +239,16 @@ double **Linear_reaction::modify_reaction_matrix(Mat *R, int dec_nr) //prepare t
 
 	first_index = substance_ids[0]-1;
 	Hlp_kin = time_step*log(2)/half_lives[0];
-	MatSetValue(*R,first_index,first_index,Hlp_kin,INSERT_VALUES);
+	MatSetValue(*R,first_index,first_index,Hlp_kin,ADD_VALUES);
 	for(cols = 0; cols < nr_of_isotopes; cols++){
 		index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
-		if(cols > 0){
+		if(cols > 0)
+		{
 			bif_id = cols -1;
 			Hlp_kin = time_step*log(2)/half_lives[cols-1] * bifurcation[dec_nr][bif_id];
 			MatSetValue(*R, index, first_index, Hlp_kin, INSERT_VALUES);
 		}
-	}*/
+	}
 	return reaction_matrix;
 }
 
@@ -263,73 +258,54 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	Mat Nominator;
 	Mat Reaction_matrix;
 	Mat Pade_approximant;
+	PC Precond;
 	Mat Hlp;
 	Mat Hlp2;
+	Mat Identity;
 	Mat B;
 	PetscInt n, m = 2;
 	PetscScalar koef_hlp;
 	char dec_name[30];
 	int rows, cols, dec_nr, dec_name_nr = 1, index, prev_index;
-	PetscScalar *Hlp_mat;
+	PetscScalar Hlp_mat[1];
 	IS rperm, cperm;
 	MatFactorInfo matfact;
-
-	//create the matrix D
-	MatCreate(PETSC_COMM_SELF, &Denominator);
-	MatSetSizes(Denominator, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //nr_of_species should be probably multiplied by 2 (which is the value of m), but I do not know why
-	MatSetType(Denominator, MATAIJ);
-	MatZeroEntries(Denominator);
-
-	//create the matrix N
-	MatDuplicate(Denominator, MAT_COPY_VALUES, &Nominator);
-	/*MatCreate(PETSC_COMM_SELF, &Nominator);
-	MatSetSizes(Nominator, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
-	MatSetType(Nominator, MATAIJ);
-	MatZeroEntries(Nominator);*/
+	Vec tmp1; //contains the information about concentrations of all the species in one particular element
+	Vec tmp2; //the same as tmp1
+	const PetscScalar *Reaction_matrix_row;
+	PetscScalar *Array_helpfull;
 
 	//create the matrix Reaction_matrix
-	MatDuplicate(Denominator, MAT_COPY_VALUES, &Reaction_matrix);
-	/*MatCreate(PETSC_COMM_SELF, &Reaction_matrix);
+	MatCreate(PETSC_COMM_SELF, &Reaction_matrix);
 	MatSetSizes(Reaction_matrix, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
 	MatSetType(Reaction_matrix, MATAIJ);
-	MatZeroEntries(Reaction_matrix);*/
+	MatAssemblyBegin(Reaction_matrix, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(Reaction_matrix, MAT_FINAL_ASSEMBLY);
+
+	//create the matrix N
+	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Nominator);
+
+	//create the matrix D
+	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Denominator);
 
 	//create the matrix pade
-	MatDuplicate(Denominator, MAT_COPY_VALUES, &Pade_approximant);
-	/*MatCreateSeqDense(PETSC_COMM_SELF, nr_of_species, nr_of_species, PETSC_NULL, &Pade_approximant);
-	//MatCreate(PETSC_COMM_SELF, &Pade_approximant);
-	//MatSetSizes(Pade_approximant, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
-	//MatSetType(Pade_approximant, MATAIJ);
-	MatZeroEntries(Pade_approximant);*/
+	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Pade_approximant);
 	MatAssemblyBegin(Pade_approximant, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
+	//create Identity matrix
+	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Identity);
+	MatShift(Identity, 1.0);
+	MatAssemblyBegin(Identity, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(Identity, MAT_FINAL_ASSEMBLY);
+
 	//create the matrix Hlp
-	MatDuplicate(Denominator, MAT_COPY_VALUES, &Hlp);
-	/*MatCreate(PETSC_COMM_SELF, &Hlp);
-	MatSetSizes(Hlp, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
-	MatSetType(Hlp, MATAIJ);
-	MatZeroEntries(Hlp);*/
+	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Hlp);
 
 	//create the matrix Hlp2
-	MatDuplicate(Denominator, MAT_COPY_VALUES, &Hlp2);
-	/*MatCreate(PETSC_COMM_SELF, &Hlp2);
-	MatSetSizes(Hlp2, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
-	MatSetType(Hlp2, MATAIJ);
-	MatZeroEntries(Hlp2);*/
+	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Hlp2);
 
-	modify_reaction_matrix_repeatedly();
-	//here should be copied values from reaction_matrix array to Reaction_matrix
-	for(rows = 0; rows < nr_of_species; rows++)
-	{
-		for(cols = 0; cols < nr_of_species; cols++)
-		{
-			MatSetValue(Reaction_matrix, rows, cols, reaction_matrix[rows][cols], INSERT_VALUES);
-		}
-	}
-	//MatSetValue(Reaction_matrix, )
-
-	/*if(nr_of_decays > 0){
+	if(nr_of_decays > 0){
 		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
 		if(half_lives != NULL){
 			free(half_lives);
@@ -378,7 +354,7 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 			modify_reaction_matrix(&Reaction_matrix, 2);
 			dec_name_nr++;
 		}
-	}*/
+	}
 	MatAssemblyBegin(Reaction_matrix, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Reaction_matrix, MAT_FINAL_ASSEMBLY);
 	MatView(Reaction_matrix,PETSC_VIEWER_STDOUT_SELF);
@@ -390,7 +366,6 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatAssemblyBegin(Hlp,MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Hlp,MAT_FINAL_ASSEMBLY);
 	MatShift(Hlp, 1.0); //identity matrix
-	//MatCopy(Reaction_matrix, Hlp, DIFFERENT_NONZERO_PATTERN);
 	MatAssemblyBegin(Nominator, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Nominator, MAT_FINAL_ASSEMBLY);
 	for(rows = 0; rows <= nom_pol_deg; rows++)
@@ -399,7 +374,6 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 		xprintf(Msg,"\n koeficient has a value %f\n", koef_hlp);
 		//if(rows > 0)
 		MatAXPY(Nominator, koef_hlp, Hlp, DIFFERENT_NONZERO_PATTERN);
-		//else MatAXPY(N, koef_hlp, Hlp, SUBSET_NONZERO_PATTERN);
 		MatMatMult(Reaction_matrix,Hlp,MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Hlp2);
 		MatZeroEntries(Hlp);
 		MatCopy(Hlp2, Hlp, DIFFERENT_NONZERO_PATTERN);
@@ -411,12 +385,11 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatZeroEntries(Hlp);
 	MatZeroEntries(Hlp2);
 	MatShift(Hlp, 1.0); //identity matrix
-	//MatCopy(Reaction_matrix, Hlp, DIFFERENT_NONZERO_PATTERN);
 	MatAssemblyBegin(Denominator, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Denominator, MAT_FINAL_ASSEMBLY);
 	for(rows = 0; rows <= den_pol_deg; rows++)
 	{
-		koef_hlp = (-1.0) * faktorial(nom_pol_deg + den_pol_deg - rows) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(rows) * faktorial(den_pol_deg - rows));
+		koef_hlp = pow(-1.0,rows) * faktorial(nom_pol_deg + den_pol_deg - rows) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(rows) * faktorial(den_pol_deg - rows));
 		//if(rows > 0)
 		MatAXPY(Denominator, koef_hlp, Hlp, DIFFERENT_NONZERO_PATTERN);
 		//else MatAXPY(D, koef_hlp, Hlp, SUBSET_NONZERO_PATTERN);
@@ -425,9 +398,22 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 		MatCopy(Hlp2, Hlp, DIFFERENT_NONZERO_PATTERN);
 		MatZeroEntries(Hlp2);
 	}
-	//MatView(D,PETSC_VIEWER_STDOUT_WORLD);
+	MatView(Denominator, PETSC_VIEWER_STDOUT_WORLD);
 
-	//create the matrix B
+	//MatView(Pade_approximant,PETSC_VIEWER_STDOUT_WORLD);
+	PCCreate(PETSC_COMM_WORLD, &Precond);
+	PCSetType(Precond, PCLU);
+	PCSetOperators(Precond, Denominator, Denominator, DIFFERENT_NONZERO_PATTERN);
+	PCFactorSetMatOrderingType(Precond, MATORDERINGRCM);
+	PCSetUp(Precond);
+
+	//VecCreateSeqWithArray(PETSC_COM_SELF, nr_of_species, concentrations[rows], tmp1); //does not bellong here
+	VecCreate(PETSC_COMM_WORLD, &tmp1);
+	VecSetSizes(tmp1, PETSC_DECIDE, nr_of_species);
+	VecSetFromOptions(tmp1);
+	VecDuplicate(tmp1, &tmp2);
+	
+	/*/create the matrix B
 	MatCreateSeqDense(PETSC_COMM_SELF, nr_of_species, nr_of_species, PETSC_NULL, &B); //MatCreateSeqDense
 	//MatSetSizes(B, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //nr_of_species should be probably multiplied by 2 (which is the value of m), but I do not know why
 	//MatSetType(B, MATSEQAIJ);
@@ -441,39 +427,48 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatFactorInfoInitialize(&matfact);
 	MatGetOrdering(Denominator, MATORDERINGNATURAL, &rperm, &cperm);
 	MatLUFactor(Denominator, rperm, cperm, &matfact);
-	MatMatSolve(Denominator, B, Hlp2);//MatMatSolve(D, Hlp, Hlp2); //D^{-1} into Hlp2
+	MatMatSolve(Denominator, B, Hlp2);//MatMatSolve(D, Hlp, Hlp2); //D^{-1} into Hlp2*/
+	
 	MatZeroEntries(Hlp);
-	MatMatMult(Hlp2, Nominator , MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Hlp);
-	MatCreateTranspose(Hlp, &Pade_approximant);
 
-	//MatView(Pade_approximant,PETSC_VIEWER_STDOUT_WORLD);
+	/*MatMatMult(Hlp2, Nominator , MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Hlp);
+	MatCreateTranspose(Hlp, &Pade_approximant);*/
+
+	for(rows = 0; rows < nr_of_species; rows++){
+		MatGetColumnVector(Nominator, tmp1, rows);
+		//VecView(tmp1, PETSC_VIEWER_STDOUT_SELF);
+		PCApply(Precond, tmp1, tmp2);
+		PCView(Precond, PETSC_VIEWER_STDOUT_WORLD);
+		//VecView(tmp2, PETSC_VIEWER_STDOUT_SELF);
+		VecGetArray(tmp2, &Array_helpfull);
+		for(cols = 0; cols < nr_of_species; cols++)
+		{
+			MatSetValue(Pade_approximant, rows, cols, Array_helpfull[cols], ADD_VALUES);
+		}
+	}
+	MatAssemblyBegin(Pade_approximant, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
 	//pade assembled to reaction_matrix
-	//MatGetArray(Pade_approximant, &Hlp_mat);
 	for(rows = 0; rows < nr_of_species; rows++)
 	{
 		for(cols = 0; cols < nr_of_species; cols++)
 		{
-			//MatZeroEntries(Hlp_mat);
-			//reaction_matrix[rows][cols] = Hlp_mat[rows * nr_of_species + cols]; //values from pade approximant are assembled to reaction_matrix, here
 			MatGetValues(Pade_approximant, 1, &rows, 1, &cols, Hlp_mat); //&Hlp_mat[nr_of_species*rows + cols]);
-			reaction_matrix[rows][cols] = (double) (*Hlp_mat);
-			/*if(cols == (nr_of_species - 1))
-			{
-				PetscPrintf(PETSC_COMM_SELF,"%f\n", Hlp_mat[nr_of_species*rows + cols]);
-			}else{
-				PetscPrintf(PETSC_COMM_SELF,"%f", Hlp_mat[nr_of_species*rows + cols]);
-			}*/
+			reaction_matrix[rows][cols] = (double) (Hlp_mat[0]);
 		}
 	}
-	//MatRestoreArray(Pade_approximant, *Hlp_mat);
 
-	PetscPrintf(PETSC_COMM_SELF,"pade matrix looks as follows:\n");
+	/*PetscPrintf(PETSC_COMM_SELF,"pade matrix looks as follows:\n");
 	MatView(Pade_approximant,PETSC_VIEWER_STDOUT_WORLD);
 
-	print_reaction_matrix(); //for visual control of equality of reaction_matrix in comparison with pade aproximant
+	print_reaction_matrix(); //for visual control of equality of reaction_matrix in comparison with pade aproximant*/
 
-	MatDestroy(&B);
+	//MatDestroy(&B);
+	VecDestroy(&tmp1);
+	VecDestroy(&tmp2);
+	MatDestroy(&Identity);
+	PCDestroy(&Precond);
 	MatDestroy(&Denominator);
 	MatDestroy(&Nominator);
 	MatDestroy(&Reaction_matrix);

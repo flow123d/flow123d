@@ -11,7 +11,9 @@
 #define LINREACT
 
 #include <vector> ///< included to enable saving bifurcation
+#include "petscvec.h"
 #include "petscmat.h"
+#include "petscksp.h"
 class Mesh;
 class Distribution;
 
