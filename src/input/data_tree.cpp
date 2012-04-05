@@ -1,5 +1,6 @@
 #include <ostream>
 #include <string>
+#include "../system/system.hh"
 #include "data_tree.hpp"
 #include "Generic_node.hpp"
 #include "Record_node.hpp"
@@ -10,6 +11,12 @@
 
 namespace flow {
 
+/*!
+ * @brief State machine helper for filtering comments out of input JSON stream (string).
+ * @param in_char      Single input character from stream (string).
+ * @param out_string   String with filtered output.
+ * @param reset_state  Set reset_state to TRUE, when starting to filter new stream (string).
+ */
 void Data_tree::filter_stm( const char in_char, std::string & out_string, bool reset_state = false )
 {
     typedef enum {GO, GO_BSL, IN_QUOTE, IN_QUOTE_BSL, IN_COMMENT, IN_COMMENT_BSL} states;
@@ -20,6 +27,8 @@ void Data_tree::filter_stm( const char in_char, std::string & out_string, bool r
     {
         state = GO;
         return;
+    } else {
+        next_state = state; //Failsafe for 'uninitialized variable' when programmer makes mistake.
     }
 
     switch (state) {
@@ -94,8 +103,8 @@ void Data_tree::filter_stm( const char in_char, std::string & out_string, bool r
         }
         break;
     default:
-        cout << "WTF??? jsem jako prisel z neznameho stavu?" << endl; //TODO: lepsi vypis chyby
-        exit(1);
+        xprintf(PrgErr,"Previous state is unknown, should never happen.");
+        break;
     }
 
     state = next_state;
@@ -139,6 +148,10 @@ string Data_tree::flow_json_filter( const std::string& s )
 
 Data_tree::Data_tree( const std::string& s )
 {
+    //use json_spirit mValue (using map) and not Value (vector)
+    //vector is exponentially slower for large data
+    json_spirit::mValue json_root; //root of loaded JSON file (or stream)
+
     err_status = false;
 
     //load JSON from string
@@ -158,6 +171,10 @@ Data_tree::Data_tree( const std::string& s )
 
 Data_tree::Data_tree( std::istream& is )
 {
+    //use json_spirit mValue (using map) and not Value (vector)
+    //vector is exponentially slower for large data
+    json_spirit::mValue json_root; //root of loaded JSON file (or stream)
+
     err_status = false;
 
     //load JSON from string
@@ -179,49 +196,32 @@ Generic_node * Data_tree::new_node( const json_spirit::mValue json_node, Generic
 {
     Generic_node * gnp = NULL;
 
-    //TODO: Procistit debug vypisy, nebo debug vypis na vyzadani.
-
     switch (json_node.type()) {
-    case json_spirit::obj_type: {
-        //cout << "TYPE: record" << endl;
+    case json_spirit::obj_type:
         gnp = new Record_node(prev_node);
-    }
         break;
-    case json_spirit::array_type: {
-        //cout << "TYPE: array" << endl;
+    case json_spirit::array_type:
         gnp = new Vector_node(prev_node);
-    }
         break;
     case json_spirit::str_type: {
-        //cout << "TYPE: string: " << json_node.get_str() << endl;
-        string s = json_node.get_str();
-        gnp = new Value_node(prev_node, s);
-    }
+            string s = json_node.get_str();
+            gnp = new Value_node(prev_node, s);
+        }
         break;
-    case json_spirit::bool_type: {
-        //cout << "TYPE: bool: " << json_node.get_bool() << endl;
+    case json_spirit::bool_type:
         gnp = new Value_node(prev_node, json_node.get_bool());
-    }
         break;
-    case json_spirit::int_type: {
-        //cout << "TYPE: int: " << json_node.get_int() << endl;
+    case json_spirit::int_type:
         gnp = new Value_node(prev_node, json_node.get_int());
-    }
         break;
-    case json_spirit::real_type: {
-        //cout << "TYPE: real: " << json_node.get_real() << endl;
+    case json_spirit::real_type:
         gnp = new Value_node(prev_node, json_node.get_real());
-    }
         break;
-    case json_spirit::null_type: {
-        //cout << "TYPE: null" << endl;
+    case json_spirit::null_type:
         gnp = new Value_node(prev_node);
-    }
         break;
-    default: {
-        //TODO: vypis
-        cout << "TYPE: FUUU - neznamy typ json nodu" << endl;
-    }
+    default:
+        xprintf( PrgErr, "Unknown node type in original JSON tree." );
         break;
     }
 
@@ -231,8 +231,7 @@ Generic_node * Data_tree::new_node( const json_spirit::mValue json_node, Generic
 bool Data_tree::tree_build_recurse( json_spirit::mValue json_root, Generic_node & prev_node )
 {
     switch ( json_root.type() ) {
-    case json_spirit::obj_type:
-        {
+    case json_spirit::obj_type: {
             json_spirit::mObject::iterator it;
             Record_node & o_node = prev_node.as_record();
 
@@ -242,39 +241,31 @@ bool Data_tree::tree_build_recurse( json_spirit::mValue json_root, Generic_node 
                 o_node.insert_key( it->first, *gnp );
 
                 switch (it->second.type()) {
-                case json_spirit::obj_type: //object and array need recursive build
-                {
+                case json_spirit::obj_type: //Record need recursive build
                     //cout << "KEY: " << it->first << " ";
                     //cout << "Record: going deep..." << endl;
                     if (!tree_build_recurse(it->second, *gnp)) {
-                        //TODO: vypis
-                        cout << "recursive tree build failed at node: " << it->first << endl;
+                        xprintf( Warn, "Recursive tree build failed at node: %s \n", it->first.c_str() );
                         return false;
                     }
                     //cout << "Record: going up..." << endl;
-                }
-                break;
-                case json_spirit::array_type: //record and array need recursive build
-                {
+                    break;
+                case json_spirit::array_type: //Array need recursive build
                     //cout << "KEY: " << it->first << " ";
                     //cout << "Array: going deep..." << endl;
                     if (!tree_build_recurse(it->second, *gnp)) {
-                        //TODO: vypis
-                        cout << "recursive tree build failed at node: " << it->first << endl;
+                        xprintf( Warn, "Recursive tree build failed at node: %s \n", it->first.c_str() );
                         return false;
                     }
                     //cout << "Array: going up..." << endl;
-                }
-                break;
-                default:
-                    //cout << "KEY: " << it->first << " ";
-                break;
+                    break;
+                default: //Other types of nodes do not need special treatment.
+                    break;
                 }
             }
         }
         break;
-    case json_spirit::array_type:
-        {
+    case json_spirit::array_type: {
             Vector_node & v_node = prev_node.as_vector();
             for( unsigned int i = 0; i < json_root.get_array().size(); ++i )
             {
@@ -282,33 +273,26 @@ bool Data_tree::tree_build_recurse( json_spirit::mValue json_root, Generic_node 
                 v_node.insert_item( i, *gnp );
 
                 switch (json_root.get_array().at(i).type()) {
-                case json_spirit::obj_type: //record and array need recursive build
-                {
+                case json_spirit::obj_type: //Record need recursive build
                     //cout << "ID: " << i << " ";
                     //cout << "Record: going deep..." << endl;
                     if (!tree_build_recurse(json_root.get_array().at(i), *gnp)) {
-                        //TODO: vypis
-                        cout << "recursive tree build failed at ID: " << i << endl;
+                        xprintf( Warn, "Recursive tree build failed at ID: %u \n", i );
                         return false;
                     }
                     //cout << "Record: going up..." << endl;
-                }
-                break;
-                case json_spirit::array_type: //record and array need recursive build
-                {
+                    break;
+                case json_spirit::array_type: //Array need recursive build
                     //cout << "ID: " << i << " ";
                     //cout << "Array: going deep..." << endl;
                     if (!tree_build_recurse(json_root.get_array().at(i), *gnp)) {
-                        //TODO: vypis
-                        cout << "recursive tree build failed at ID: " << i << endl;
+                        xprintf( Warn, "Recursive tree build failed at ID: %u \n", i );
                         return false;
                     }
                     //cout << "Array: going up..." << endl;
-                }
-                break;
-                default:
-                    //cout << "ID: " << i << " ";
-                break;
+                    break;
+                default: //Other types of nodes do not need special treatment.
+                    break;
                 }
             }
         }
@@ -324,8 +308,7 @@ bool Data_tree::tree_build_recurse( json_spirit::mValue json_root, Generic_node 
     case json_spirit::null_type: //no need to recurse for scalar value
         break;
     default:
-        //TODO: vypis
-        cout << "WTF? unknown json_spirit node type..." << endl;
+        xprintf( PrgErr, "Unknown type of original JSON node." );
         return false;
         break;
     }
@@ -343,23 +326,16 @@ bool Data_tree::tree_build( const json_spirit::mValue json_root, Generic_node & 
     // [...,...,...]
     // {...}
 
-    switch ( json_root.type() ) {
+    switch (json_root.type()) {
     case json_spirit::obj_type:
-        {
-            //cout << "Nacten root=Record, OK." << endl;
-            return tree_build_recurse( json_root, head_node );
-        }
+        return tree_build_recurse(json_root, head_node);
         break;
     case json_spirit::array_type:
-        {
-            //TODO: vypis
-            cout << "Nacten root=Array - pro Flow to nemuze nastat (tzn. CHYBA)." << endl;
-            return false;
-        }
+        xprintf( Warn, "Top-level element in JSON data is ARRAY - NOT IMPLEMENTED.");
+        return false;
         break;
     default:
-        //TODO: vypis
-        cout << "WTF? JSON root neni ani obj_type, ani array_type..." << endl;
+        xprintf( Warn, "Top-level element in JSON data is not RECORD or ARRAY.");
         return false;
         break;
     }
@@ -369,7 +345,7 @@ bool Data_tree::tree_build( const json_spirit::mValue json_root, Generic_node & 
 
 ostream & operator<<(ostream & stream, Data_tree & tree )
 {
-    stream << json_spirit::write(tree.json_root);
+    stream << tree.node_head;
     return stream;
 }
 

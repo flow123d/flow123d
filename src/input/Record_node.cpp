@@ -7,7 +7,6 @@ Generic_node & Record_node::get_key(const string & key) {
 
     it = record_.find(key);
     if (it == record_.end()) {
-        //nenasli, vratime prazdnou
         return *empty_node_generic_;
     } else {
         return it->second;
@@ -19,7 +18,6 @@ Generic_node & Record_node::get_key(const string & key, Generic_node & default_t
 
     it = record_.find(key);
     if (it == record_.end()) {
-        //nenasli, vratime default
         return default_tree;
     } else {
         return it->second;
@@ -49,7 +47,6 @@ Generic_node & Record_node::get_key_check(const string & key, int & err_code) {
 
     it = record_.find(key);
     if (it == record_.end()) {
-        //nenasli, vratime default
         err_code = 1;
         return *empty_node_generic_;
     } else {
@@ -69,6 +66,7 @@ void Record_node::insert_key(const string & key, Generic_node & node) {
 }
 
 Record_node::~Record_node() {
+    //TODO deep destructor
 
 }
 

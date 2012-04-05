@@ -18,16 +18,15 @@ public:
     Record_node( Generic_node & prev_node ):Generic_node(type_record, prev_node) {}
 
     virtual Generic_node & get_item( const int id ) {
-        //pristup jako do vektoru, ale jsme v recordu => vzdy vrati prazdnou instanci
+        //Vector-like access to Record - return empty
         return *empty_node_generic_;
     }
     virtual Generic_node & get_item( const size_t id, Generic_node & default_tree ) {
-        //pristup jako do vektoru, ale jsme v recordu => vzdy vrati default
+        //Vector-like access to Record - return empty
         return default_tree;
     }
     virtual Generic_node & get_item_check( const size_t id, int & err_code ) {
-        //pristup jako do vektoru, ale jsme v recordu => vzdy vrati prazdnou instanci
-        //vyplni chybu
+        //Vector-like access to Record - return empty & error
         err_code = 1;
         return *empty_node_generic_;
     }
@@ -43,7 +42,7 @@ public:
 
     friend ostream & operator<<( ostream & stream, Record_node & node );
 
-    virtual ~Record_node();     //TODO deep destructor?
+    virtual ~Record_node();
 };
 
 }

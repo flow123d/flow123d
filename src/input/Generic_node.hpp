@@ -15,6 +15,7 @@ class Vector_node;
 class Value_node;
 
 /*
+ * TODO: PRELOZIT, DOKUMENTACE
 Kam to smeruje:
 
   Record         = cca MAP,        "klic"= record R , vektor V nebo skalar S
@@ -38,15 +39,15 @@ Moznosti ziskani skalarnich hodnot:
   get_*_check( & err_code ) - kdyz neni, vrati chybu a pokracuje
 
 Vytvareni novych nodu:
-  Generic_node()
-  Record_node()
-  Vector_node()
-  Value_node()(int)(double)(char*)(string)(bool)
+  Generic_node() (prev_node)
+  Record_node() (prev_node)
+  Vector_node() (prev_node)
+  Value_node()(int)(double)(char*)(string)(bool) + varianty s prev_node
 
 Moznosti vkladani hodnot:
   pro Record_node: void insert_key( "klic", & node ) - vlozi; pokud existuje, prepise
   pro Vector_node: void insert_item( index, & node ) - vlozi; pokud existuje, prepise
-  pro Value_node:  (int)(double)(char*)(string)(bool) set_value( ... ) - nastavi hodnotu a rovnou ji vrati
+  pro Value_node:  (int,double,char*,str,bool) set_value( ... ) - nastavi hodnotu a rovnou ji vrati
                    void  set_null()
 Finalni pouziti:
   root.get_key("output").get_key("step").get_int();
@@ -57,9 +58,20 @@ Finalni pouziti:
     //zde osetrim chybku
   }
 
-Pri chybe:
-  vytvorit ve stromu lehky record, ktery si uchova informace o chybe a vratit referenci na nej
-  (ted to vraci referenci na jediny tridni prazdny record)
+TODO:
+* Pri vkladani insert_key(...) & insert_item(...) nastavovat prev_node
+
+* Pri chybe:
+* anonymous_node (potomek generic_node)
+pamatuje posledni validni generic node ve stromu a ma zasobnik operaci co se po nem chtelo
+umi :
+1) vytvorit validni node vcetne nadrazenych nodu pri deklaraci:
+
+   anon_node=parent.get_key("key_not_on_input");
+   anon_node.get_key("some_key_1").declare(Bool, false, "Description");
+   anon_node.get_key("some_key_2").declare(Int, 1, "Description");
+
+2) vypisy chyb, pri cteni value bez default hodnoty
 
 */
 
@@ -97,9 +109,8 @@ protected:
     static Value_node   * empty_node_value_;   //prazdna instance
 
     //constructor s urcenim datoveho typu - pristupny pouze z potomku
-    // parametry z constructoru se samy priradi promennym objektu, az na tu referenci (nevim proc)
-    Generic_node( Value_type value_type_ ):prev_node_( *this ) {};
-    Generic_node( Value_type value_type_, Generic_node & prev_node ):prev_node_(prev_node) {};
+    Generic_node( const Value_type value_type ):value_type_(value_type),prev_node_( *this ) {};
+    Generic_node( const Value_type value_type, Generic_node & prev_node ):value_type_(value_type),prev_node_(prev_node) {};
 
 public:
     Generic_node():value_type_(type_generic),prev_node_(*this) {}

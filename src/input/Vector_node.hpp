@@ -10,27 +10,27 @@ namespace flow {
  *        that is heterogeneous vector of any JSON construct
  */
 class Vector_node : public Generic_node {
-    //vektor referenci nelze!
+    //Vector of references not allowed - need to use pointers.
     vector< Generic_node * >  value_array_;
 public:
     Vector_node ():Generic_node(type_vector)                                      {}
     Vector_node ( Generic_node & prev_node ):Generic_node(type_vector, prev_node) {}
 
-    //TODO: deep copy constructor?
+    //TODO: deep copy constructor - because of JSON REF
 
     virtual Generic_node & get_item( const size_t id );
     virtual Generic_node & get_item( const size_t id, Generic_node & default_tree );
     virtual Generic_node & get_item_check( const size_t id, int & err_code );
     virtual Generic_node & get_key( const string & key ) {
-        //pristup jako do recordu, ale jsme ve vektoru => vzdy vrati prazdnou instanci
+        //Record-like access to Vector => return empty
         return *empty_node_generic_;
     }
     virtual Generic_node & get_key( const string & key, Generic_node & default_tree ) {
-        //pristup jako do recordu, ale jsme ve vektoru => vzdy vrati default
+        //Record-like access to Vector => return default
         return default_tree;
     }
     virtual Generic_node & get_key_check( const string & key, int & err_code ) {
-        //pristup jako do recordu, ale jsme ve vektoru => vzdy vrati prazdnou instanci, s chybou
+        //Record-like access to Vector => return empty & error
         err_code = 1;
         return *empty_node_generic_;
     }
@@ -42,8 +42,8 @@ public:
     friend ostream & operator<<( ostream & stream, Vector_node & node );
 
     //TODO: Generic_node & operator[]( const int & id );
-    //get_vector pres template, aby se snazil dodat vse v konkretnim typu ??
-    //bool get_vector( vector<Generic_node> & ret_vector );
+    //TODO: templated get_vector - try to return whole vector of single type
+    //           bool get_vector( vector<Generic_node> & ret_vector );
     virtual ~Vector_node();
 };
 

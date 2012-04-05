@@ -1,22 +1,23 @@
 #include <string>
+#include "../system/system.hh"
 #include "Generic_node.hpp"
-#include "Record_node.hpp"
 #include "Vector_node.hpp"
+#include "Record_node.hpp"
 #include "Value_node.hpp"
 
 namespace flow {
 
-//inicializace class dat
-Record_node   * Generic_node::empty_node_record_  = new Record_node();  //prazdna instance
-Vector_node   * Generic_node::empty_node_vector_  = new Vector_node();  //prazdna instance
-Value_node    * Generic_node::empty_node_value_   = new Value_node();   //prazdna instance
-Generic_node  * Generic_node::empty_node_generic_ = new Generic_node(); //prazdna instance
-string          Generic_node::value_type_to_string[10];    //definice
-bool            Generic_node::value_type_to_string_filled = false; //definice
+//class data initialization
+Record_node   * Generic_node::empty_node_record_  = new Record_node();  //empty instance
+Vector_node   * Generic_node::empty_node_vector_  = new Vector_node();  //empty instance
+Value_node    * Generic_node::empty_node_value_   = new Value_node();   //empty instance
+Generic_node  * Generic_node::empty_node_generic_ = new Generic_node(); //empty instance
+string          Generic_node::value_type_to_string[10];    //translation array definition
+bool            Generic_node::value_type_to_string_filled = false; //lazy allocation helper definition
 
 const string & Generic_node::get_type_str( void ) const
 {
-    //lazy inicializace dat - az pri prvnim pouziti
+    //lazy data initialization - at the first use
     if ( !value_type_to_string_filled ) {
         value_type_to_string[type_generic] = "type_generic";
         value_type_to_string[type_string] = "type_string";
@@ -33,25 +34,25 @@ const string & Generic_node::get_type_str( void ) const
 
 Generic_node & Generic_node::get_item(const size_t id)
 {
-    //v generic nic nemuze byt, vracime prazdnou
+    //generic is always empty - return empty
     return *empty_node_generic_;
 }
 
 Generic_node & Generic_node::get_key(const string & key)
 {
-    //v generic nic nemuze byt, vracime prazdnou
+    //generic is always empty - return empty
     return *empty_node_generic_;
 }
 
 Generic_node & Generic_node::get_item(const size_t id, Generic_node & default_tree)
 {
-    //v generic nic nemuze byt, vracime default
+    //generic is always empty - return default
     return default_tree;
 }
 
 Generic_node & Generic_node::get_key(const string & key, Generic_node & default_tree)
 {
-    //v generic nic nemuze byt, vracime default
+    //generic is always empty - return default
     return default_tree;
 }
 
@@ -60,7 +61,7 @@ Record_node & Generic_node::as_record(void)
    if ( value_type_ == type_record ) {
        return * dynamic_cast < Record_node * > (this) ;
    } else {
-       //zkousime pristoupit jako k recordu, ale neni record - vrat empty
+       //wrong access as Record - return empty
        return *empty_node_record_;
    }
 }
@@ -70,7 +71,7 @@ Vector_node & Generic_node::as_vector(void)
     if ( value_type_ == type_vector ) {
         return * dynamic_cast < Vector_node * > (this);
     } else {
-        //zkousime pristoupit jako k vektoru, ale neni vektor - vrat empty
+        //wrong access as Vector - return empty
         return *empty_node_vector_;
     }
 }
@@ -81,27 +82,28 @@ Value_node & Generic_node::as_value(void)
             ( value_type_ == type_bool ) || ( value_type_ == type_null ) ) {
         return * dynamic_cast < Value_node * > (this);
     } else {
-        //zkousime pristoupit jako k value, ale neni value - vrat empty
+        //wrong access as Value - return empty
         return *empty_node_value_;
     }
 }
 
 ostream & operator<<(ostream & stream, Generic_node & node)
 {
-    switch (node.get_type()) {
+    switch (node.value_type_) {
     case type_string:
     case type_number:
     case type_bool:
     case type_null:
-        cout << node.as_value(); //spolecne pro vsechny skalarni hodnoty (dynamic cast)
+        stream << node.as_value(); //common for all scalar types (dynamic cast)
         break;
     case type_record:
-        cout << node.as_record(); //record vypis jako record (dynamic cast)
+        stream << node.as_record(); //Record print as Record (dynamic cast)
         break;
     case type_vector:
-        cout << node.as_vector(); //vector vypis jako vector (dynamic cast)
+        stream << node.as_vector(); //Vector print as Vector (dynamic cast)
         break;
     default:
+        stream << "Err: instance of Generic_node should not exist.";
         break;
     }
     return stream;
@@ -109,20 +111,20 @@ ostream & operator<<(ostream & stream, Generic_node & node)
 
 Generic_node & Generic_node::get_key_check(const string & key, int & err_code)
 {
-    //v generic nic nemuze byt, vracime prazdnou, s chybou
+    //generic is always empty - return empty and error
     err_code = 1;
     return *empty_node_generic_;
 }
 
 Generic_node & Generic_node::get_item_check(const size_t id, int & err_code)
 {
-    //v generic nic nemuze byt, vracime prazdnou, s chybou
+    //generic is always empty - return empty and error
     err_code = 1;
     return *empty_node_generic_;
 }
 
 bool Generic_node::get_bool(void) {
-    //TODO: fail
+    xprintf(PrgErr, "Can not get_bool() from Generic_node." );
     return false;
 }
 
@@ -136,7 +138,7 @@ bool Generic_node::get_bool_check(int & err_code) {
 }
 
 int Generic_node::get_int(void) {
-    //TODO: fail
+    xprintf(PrgErr, "Can not get_int() from Generic_node." );
     return 0;
 }
 
@@ -150,7 +152,7 @@ int Generic_node::get_int_check(int & err_code) {
 }
 
 float Generic_node::get_float(void) {
-    //TODO: fail
+    xprintf(PrgErr, "Can not get_float() from Generic_node." );
     return 0.0f;
 }
 
@@ -164,7 +166,7 @@ float Generic_node::get_float_check(int & err_code) {
 }
 
 double Generic_node::get_double(void) {
-    //TODO: fail
+    xprintf(PrgErr, "Can not get_double() from Generic_node." );
     return 0.0;
 }
 
@@ -178,7 +180,7 @@ double Generic_node::get_double_check(int & err_code) {
 }
 
 string Generic_node::get_string(void) {
-    //TODO:fail
+    xprintf(PrgErr, "Can not get_string() from Generic_node." );
     return "";
 }
 
@@ -192,8 +194,7 @@ string Generic_node::get_string_check(int & err_code) {
 }
 
 Generic_node::~Generic_node() {
-    //Tady nic.
-    //Dynamicka data jsou spolecna pro tridu, nesmi se dealokovat.
+    //The only dynamic data present in Generic_node are Class data - must not be deallocated.
 }
 
 }

@@ -30,36 +30,34 @@ public:
     Value_node( Generic_node & prev_node, string & str ):Generic_node(type_string, prev_node) { value_string_ = str; }
 
     virtual Generic_node & get_item( const int id ) {
-        //pristup jako do vektoru, ale jsme ve skalaru => vzdy vrati prazdnou instanci
+        //Vector-like access to Value - return empty
         return *empty_node_generic_;
     }
     virtual Generic_node & get_key( const string & key ) {
-        //pristup jako do recordu, ale jsme ve skalaru => vzdy vrati prazdnou instanci
+        //Record-like access to Value - return empty
         return *empty_node_generic_;
     }
     virtual Generic_node & get_key_check( const string & key, int & err_code ) {
-        //pristup jako do recordu, ale jsme ve skalaru => vzdy vrati prazdnou instanci
-        //s chybou
-        err_code = 0;
+        //Record-like access to Value - return empty & error
+        err_code = 1;
         return *empty_node_generic_;
     }
     virtual Generic_node & get_item( const size_t id, Generic_node & default_tree ) {
-        //pristup jako do vektoru, ale jsme ve skalaru => vzdy vrati prazdnou instanci
+        //Vector-like access to Value - return empty
         return *empty_node_generic_;
     }
     virtual Generic_node & get_key( const string & key, Generic_node & default_tree ) {
-        //pristup jako do recordu, ale jsme ve skalaru => vzdy vrati prazdnou instanci
+        //Record-like access to Value - return empty
         return *empty_node_generic_;
     }
     virtual Generic_node & get_item_check( const size_t id, int & err_code ) {
-        //pristup jako do vektoru, ale jsme ve skalaru => vzdy vrati prazdnou instanci
-        //s chybou
-        err_code = 0;
+        //Vector-like access to Value - return empty & error
+        err_code = 1;
         return *empty_node_generic_;
     }
 
     virtual Value_node & as_value( void ) { return (*this); }
-    friend ostream & operator<<( ostream & stream, const Value_node & node );
+    friend ostream & operator<<( ostream & stream, Value_node & node );
 
     int      set_value( int i )        { value_type_ = type_number; return value_number_ = i;}
     double   set_value( double lf )    { value_type_ = type_number; return value_number_ = lf; }
@@ -68,7 +66,6 @@ public:
     string & set_value( string & str ) { value_type_ = type_string; value_string_ = str; return value_string_; }
     void     set_null()                { value_type_ = type_null; }
 
-    //TODO: pokazde kontrolovat, zda je to skutecne Value_node, a ne jen pretypovany jiny?
     virtual bool get_bool( void );
     virtual bool get_bool( const bool & default_value );
     virtual bool get_bool_check( int & err_code );
@@ -92,6 +89,6 @@ public:
     virtual ~Value_node();
 };
 
-}
+}//end namespace
 
 #endif /* VALUE_NODE_HPP_ */

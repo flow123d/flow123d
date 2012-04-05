@@ -16,22 +16,15 @@
 namespace flow {
 
 /*!
- * @brief Represents whole tree of data, manages loading JSON file and building secondary
- *        node tree, that contains only references to loaded data.
+ * @brief Manages loading JSON file and building node tree,
+ *        that contains loaded data. Provides various access methods to loaded data.
  *
  */
 class Data_tree {
 protected:
-    //use json_spirit mValue (using map) and not Value (vector)
-    //vector is exponentially slower for large data
-    json_spirit::mValue json_root; //root of loaded JSON file (or stream)
     Record_node node_head;         //root of node hierarchy
-
 private:
-    //TODO: ma tam byt i default constructor???
-    //      a co copy constructor? Ma byt zablokovany? Ma vytvorit deep kopii?
-    //      Jestli jo, ma kopirovat oba stromy (JSON i Node), nebo jen Node?
-
+    //TODO: Copy constructor? (Deep copy?)
     Data_tree():err_status(false) {};
 
     Generic_node * new_node( const json_spirit::mValue json_node, Generic_node & prev_node );
@@ -47,12 +40,9 @@ public:
     Data_tree( const std::string& s ); //< build tree from JSON in string
     Data_tree( std::istream& is );     //< build tree from JSON in stream
 
-    //dump loaded JSON
-    void tree_dump_json( void ) { if ( !err_status ) { cout << json_spirit::write(json_root); } }
     friend ostream & operator<<( ostream & stream, Data_tree & tree );
 
     Generic_node & get_head() { return node_head; }
-
 };
 
 

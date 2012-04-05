@@ -2,7 +2,7 @@
 
 namespace flow {
 
-ostream & operator <<(ostream & stream, const Value_node & node)
+ostream & operator <<(ostream & stream, Value_node & node)
 {
     switch ( node.value_type_ ) {
     case type_string:
@@ -144,6 +144,8 @@ string Value_node::get_string_check(int & err_code) {
         return Generic_node::get_string_check(err_code);
 }
 
-Value_node::~Value_node() { }
+Value_node::~Value_node() {
+    //Empty.
+}
 
 }
