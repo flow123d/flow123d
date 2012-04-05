@@ -6,15 +6,15 @@
  *
  *  todo:
  *
- *  Check lower case and no whitespace in key strings.
+ *  - Check lower case and no whitespace in key strings.
+  *  - zakazat copy constructor v Record - testovat, ze nejde volat declare_key s Recordem mimo shared_ptr
+ *    ...
+ *  - dokumentace hotovych trid
+ *  - ? presun do *.cc
  *
- *  Jak zaridit, aby se v Recodr. declare_key a v konstruktoru Array, vytvareli kopie jen
- *  pro typy != Record.
+ *  - Selection
+ *  - AbstractRecord
  *
- *
- *  -# budu mit virtulani metodu clone(), ktera pro Record, AbstractRecord a Enum bude vracet kopii jejich shared pointeru
- *     pro ostatni provede skutecnou kopii
- *  -# tj. i vsechno predavani typu musi byt pres shared_ptr
  */
 
 #ifndef INPUTTYPE_HH_
@@ -47,11 +47,13 @@ enum FileType {
 
 class DefaultValue {
 public:
-    /// This enum says when the default value shoud be specified.
+    /// This enum says when the default value should be specified.
     enum DefaultType {
-        none,
-        read_time,
-        declaration
+        none,           ///< no specification of default value and presence of the key
+        read_time,      ///< default value will be given at read time
+        declaration,    ///< default value given at declaration time (can be overwritten at read time)
+        optional,       ///< no default value, optional key
+        obligatory      ///< no default value, obligatory key
     };
 
     /**
@@ -79,8 +81,8 @@ public:
     }
 
 
-    bool not_none() const
-    { return (type_ != none); }
+    bool given_value() const
+    { return (type_ == declaration || type_ == read_time); }
 
     const string & value() const
     { return (value_); }
@@ -206,7 +208,7 @@ protected:
         // catch call with shared_ptr to some other type
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
         // check if KeyType is derived from Scalar so that default value can be given.
-        if (boost::is_base_of<Scalar, KeyType>::value == false && default_value.not_none() ) {
+        if (boost::is_base_of<Scalar, KeyType>::value == false && default_value.given_value() ) {
             xprintf(Err, "Can not provide default value for non scalar type. Key: %s\n", key.c_str());
         }
 
@@ -226,6 +228,9 @@ protected:
             const KeyType &type,
             const DefaultValue &default_value, const string &description, const boost::true_type &)
     {
+        if (boost::is_same<Record,KeyType>()) {
+            xprintf(Err,"Complex type (Record, Selection, AbstractRecord) has to by passed as shared_ptr.\n");
+        }
         boost::shared_ptr<const KeyType> type_copy = boost::make_shared<KeyType>(type);
         declare_key_impl(key,type_copy, default_value, description, boost::false_type());
     }
@@ -267,21 +272,24 @@ public:
             stream << endl;
             stream << setw(pad) << ""
                    << "Record '" << type_name_ << "' with "<< keys.size() << " keys.";
-            write_description(stream, description_, pad) << endl;
-
+            write_description(stream, description_, pad);
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // keys
             for(keys_const_iterator it = keys.begin(); it!=keys.end(); ++it) {
                 stream << setw(pad + 4) << ""
                        << it->key_ << " = <" << it->default_.value() << "> is ";
                 it->type_->documentation( stream , false, pad +4 ); // short description of the type of the key
-                write_description(stream, it->description_, pad + 4); // description of the key on further lines
-                stream << endl;
+                write_description(stream, it->description_, pad + 6); // description of the key on further lines
+
             }
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
+            << " " << type_name_ << endl;
 
             // Full documentation of embedded record types.
             for(keys_const_iterator it = keys.begin(); it!=keys.end(); ++it) {
                 it->type_->documentation(stream, true, 0);
             }
+
         }
 
         return stream;
@@ -299,10 +307,20 @@ public:
         }
     }
 
-    //virtual const &TypeBase clone() const {
-    //    return
-    //}
+    int key_index(const string& key) const
+    {
+        KeyHash key_h = key_hash(key);
+        key_to_index_const_iter it = key_to_index.find(key_h);
+        if (it != key_to_index.end()) return it->second;
+        else
+            xprintf(Err, "Attempt to read key '%s', which is not declared within Record '%s'\n", key.c_str(), type_name_.c_str() );
+        return keys.size();
+    }
 
+    inline int size() {
+        ASSERT( keys.size() == key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", key_to_index.size(), keys.size());
+        return keys.size();
+    }
 
 private:
 
@@ -314,7 +332,7 @@ private:
      */
     typedef string KeyHash;
     /// Envelop around compile time hashing macro. To provide same hashing at runtime.
-    KeyHash key_hash(const string &str) {
+    KeyHash key_hash(const string &str) const {
         return (str);
     }
 
@@ -333,8 +351,9 @@ private:
         DefaultValue default_;
     };
 
-    /// Database of valid keys.
+    /// Database of valid keys
     std::map<KeyHash, unsigned int> key_to_index;
+    typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
 
     /// Keys in order as they where declared.
     std::vector<struct Key> keys;
@@ -359,12 +378,29 @@ private:
     boost::shared_ptr<const TypeBase> type_of_values_;
     unsigned int lower_bound_, upper_bound_;
 
+    template <class ValueType>
+    void set_type_impl(boost::shared_ptr<ValueType> type,  const boost::false_type &)
+    {
+        type_of_values_ = type;
+    }
+
+    template <class ValueType>
+    inline void set_type_impl(const ValueType &type,  const boost::true_type &)
+    {
+        if (boost::is_same<Record,ValueType>()) {
+            xprintf(Err,"Complex type (Record, Selection, AbstractRecord) has to by passed as shared_ptr.\n");
+        }
+        boost::shared_ptr<const ValueType> type_copy = boost::make_shared<ValueType>(type);
+        set_type_impl(type_copy, boost::false_type());
+    }
+
+
 public:
     template <class ValueType>
-    Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
+    inline Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
     : lower_bound_(min_size), upper_bound_(max_size)
     {
-        type_of_values_ = boost::make_shared<ValueType>(type);
+        set_type_impl(type, boost::is_base_of<TypeBase,ValueType>() );
     }
 
     template <class ValueType>
@@ -431,7 +467,9 @@ public:
     {}
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const {
+        if (extensive) return stream;
         stream << "Bool";
+        return stream;
     }
 };
 
