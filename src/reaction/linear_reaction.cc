@@ -266,7 +266,7 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	PetscInt n, m = 2;
 	PetscScalar koef_hlp;
 	char dec_name[30];
-	int rows, cols, dec_nr, dec_name_nr = 1, index, prev_index;
+	int rows, cols, dec_nr, dec_name_nr = 1, index, prev_index, i, j;
 	PetscScalar Hlp_mat[1];
 	IS rperm, cperm;
 	MatFactorInfo matfact;
@@ -360,43 +360,26 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatView(Reaction_matrix,PETSC_VIEWER_STDOUT_SELF);
 
 	//Computation of nominator in pade approximant follows
-	MatZeroEntries(Hlp);
-	MatZeroEntries(Hlp2);
 	MatZeroEntries(Nominator);
-	MatAssemblyBegin(Hlp,MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(Hlp,MAT_FINAL_ASSEMBLY);
-	MatShift(Hlp, 1.0); //identity matrix
 	MatAssemblyBegin(Nominator, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Nominator, MAT_FINAL_ASSEMBLY);
-	for(rows = 0; rows <= nom_pol_deg; rows++)
+	for(j = nom_pol_deg; j >= 0; j--)
 	{
-		koef_hlp = (PetscScalar) (faktorial(nom_pol_deg + den_pol_deg - rows) * faktorial(nom_pol_deg)) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(rows) * faktorial(nom_pol_deg - rows));
-		xprintf(Msg,"\n koeficient has a value %f\n", koef_hlp);
-		//if(rows > 0)
-		MatAXPY(Nominator, koef_hlp, Hlp, DIFFERENT_NONZERO_PATTERN);
-		MatMatMult(Reaction_matrix,Hlp,MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Hlp2);
-		MatZeroEntries(Hlp);
-		MatCopy(Hlp2, Hlp, DIFFERENT_NONZERO_PATTERN);
-		MatZeroEntries(Hlp2);
+		koef_hlp = (PetscScalar) (faktorial(nom_pol_deg + den_pol_deg - j) * faktorial(nom_pol_deg)) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(j) * faktorial(nom_pol_deg - j));
+		MatMatMult(Nominator, Reaction_matrix, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Nominator);
+		MatAXPY(Nominator, koef_hlp, Identity, DIFFERENT_NONZERO_PATTERN);
 	}
-	//MatView(N,PETSC_VIEWER_STDOUT_WORLD);
+	MatView(Nominator,PETSC_VIEWER_STDOUT_WORLD);
 
 	//Computation of denominator in pade approximant follows
-	MatZeroEntries(Hlp);
-	MatZeroEntries(Hlp2);
-	MatShift(Hlp, 1.0); //identity matrix
+	MatZeroEntries(Denominator);
 	MatAssemblyBegin(Denominator, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Denominator, MAT_FINAL_ASSEMBLY);
-	for(rows = 0; rows <= den_pol_deg; rows++)
+	for(i = den_pol_deg; i >= 0; i--)
 	{
-		koef_hlp = pow(-1.0,rows) * faktorial(nom_pol_deg + den_pol_deg - rows) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(rows) * faktorial(den_pol_deg - rows));
-		//if(rows > 0)
-		MatAXPY(Denominator, koef_hlp, Hlp, DIFFERENT_NONZERO_PATTERN);
-		//else MatAXPY(D, koef_hlp, Hlp, SUBSET_NONZERO_PATTERN);
-		MatMatMult(Reaction_matrix,Hlp,MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Hlp2);
-		MatZeroEntries(Hlp);
-		MatCopy(Hlp2, Hlp, DIFFERENT_NONZERO_PATTERN);
-		MatZeroEntries(Hlp2);
+		koef_hlp = (PetscScalar) pow(-1.0,i) * faktorial(nom_pol_deg + den_pol_deg - i) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(i) * faktorial(den_pol_deg - i));
+		MatMatMult(Denominator, Reaction_matrix, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Denominator);
+		MatAXPY(Denominator, koef_hlp, Identity, DIFFERENT_NONZERO_PATTERN);
 	}
 	MatView(Denominator, PETSC_VIEWER_STDOUT_WORLD);
 
@@ -404,6 +387,7 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	PCCreate(PETSC_COMM_WORLD, &Precond);
 	PCSetType(Precond, PCLU);
 	PCSetOperators(Precond, Denominator, Denominator, DIFFERENT_NONZERO_PATTERN);
+	//PCFactorSetMatOrderingType(Precond, MATORDERINGNATURAL);
 	PCFactorSetMatOrderingType(Precond, MATORDERINGRCM);
 	PCSetUp(Precond);
 
@@ -413,26 +397,7 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	VecSetFromOptions(tmp1);
 	VecDuplicate(tmp1, &tmp2);
 	
-	/*/create the matrix B
-	MatCreateSeqDense(PETSC_COMM_SELF, nr_of_species, nr_of_species, PETSC_NULL, &B); //MatCreateSeqDense
-	//MatSetSizes(B, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //nr_of_species should be probably multiplied by 2 (which is the value of m), but I do not know why
-	//MatSetType(B, MATSEQAIJ);
-	//MatSeqDenseSetPreallocation(B,PETSC_NULL);
-	MatZeroEntries(B);//MatZeroEntries(Hlp);
-	MatAssemblyBegin(B,MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(B,MAT_FINAL_ASSEMBLY);
-	//pade approximant
-	MatShift(B,1.0); //MatShift(Hlp,1.0); //It should result in identity matrix.
-	MatZeroEntries(Hlp2);
-	MatFactorInfoInitialize(&matfact);
-	MatGetOrdering(Denominator, MATORDERINGNATURAL, &rperm, &cperm);
-	MatLUFactor(Denominator, rperm, cperm, &matfact);
-	MatMatSolve(Denominator, B, Hlp2);//MatMatSolve(D, Hlp, Hlp2); //D^{-1} into Hlp2*/
-	
 	MatZeroEntries(Hlp);
-
-	/*MatMatMult(Hlp2, Nominator , MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Hlp);
-	MatCreateTranspose(Hlp, &Pade_approximant);*/
 
 	for(rows = 0; rows < nr_of_species; rows++){
 		MatGetColumnVector(Nominator, tmp1, rows);
