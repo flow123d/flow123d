@@ -838,4 +838,20 @@ Contains $N-1$ probabilities for individual branches of the bifurcation decay.
 They should sum to one.
 \end{recordtype}
 
+\begin{recordtype}{FoReact}{}
+\keyitem{kinetic\_konstant}{double}{0.0}
+Defines kinetic konstant which describes a simple reaction of the type A->B.
+\keyitem{substance\_ids}{array of integers}{empty}
+Contains $2$ identifiers of subsatnces (species) which are taking part in considered reaction.
+\end{recordtype}
 
+\begin{recordtype}{Simple reactions}{}
+\keyitem{decay\_chains}{array of Decay chains}{empty}
+Sequence of records describing decay chains under consideration.
+\keyitem{first\_order\_reactions}{array of FoReact}{empty}
+Sequence of records describing first order reactions under consideration.
+\keyitem{use\_pade\_approx}{bool}{no}
+Decide about the use of Pade approximant for an evaluation of the decay describing matrix exponential values.
+\keyitem{polynomial\_degrees}{array of int}{[2, 2]}
+This array containes two numbers defining degrees of matrix polynomials used in Pade approximant.
+\end{recordtype}
