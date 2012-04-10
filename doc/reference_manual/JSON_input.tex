@@ -715,7 +715,8 @@ Force output in prescribed times. Can be combined with regular otuptu given by \
 \keyitem{immobile\_sorbed\_p1}{output stream name}{default\_vtk\_ascii} 
 \end{recordtype}
 
-\begin{recordtype}{Reaction}{}
+\newpage
+% \begin{recordtype}{Reaction}{}
 % \key{Output\_precission} & \type{int} & 1 &
 %Number of decimal places written to output file created by Semchem\_module.
 %\\
@@ -824,34 +825,53 @@ Force output in prescribed times. Can be combined with regular otuptu given by \
 %\key{Equilibrium\_constant} & \type{double} & 0.0 &
 %Equilibrium constant defining i-th reaction.
 %
-\end{recordtype}
+% \end{recordtype}
 
 \begin{recordtype}{Decay chain}{}
 \keyitem{substance\_ids}{array of integers}{empty}
-Sequence of $N$ ids of transported substances describing the order of isotopes in the decay chain.
+Sequence of $N$ ids of transported substances defining isotopes contained in the decay chain under consideration.
+\keyitem{nr\_of\_children}{array of integers}{either empty or filled up with ones}
+Number of children of each vertex (belonging to one of isotopes) in a simple graph describing considered decay chain. (NOT USED, YET.)
+\keyitem{indices\_of\_children}{array of integers}{either emmpty or filled up with substance\_ids except the first one}
+Containes identifiers of children of vertex. Children are assigned to vertices throuh the use of numbers listed in nr\_of\_children. (NOT USED, YET.)
 \keyitem{half\_lives}{array of doubles}{empty}
-This array of $N-1$ half-lives of individual decays.
+This array containes $N-1$ half-lives belonging to isotopes contained in the array substance\_ids.
 If there are no bifurcation key specified, the decay chain is linear $1\to 2 \to 3$.
-If there is the bifurcation key, the decay chain is branched $1\to 2, 1\to 3$.
+If there is the bifurcation key, the decay chain is branched $1\to 2, 1\to 3$. (Temporary solution.)
 \keyitem{bifurcation}{array of double}{null optional}
-Contains $N-1$ probabilities for individual branches of the bifurcation decay.
+It should have as many items as the array indices\_of\_children ($N-1$). It defines relative part of parental contribution in the case of division of decay chain into more branches. (NOT USED, YET.)\newline
+Contains $N-1$ probabilities for individual branches of the bifurcation decay. (Temporary solution.)
 They should sum to one.
 \end{recordtype}
 
-\begin{recordtype}{FoReact}{}
+\begin{recordtype}{First order reactions}{}
+\keyitem{substance\_ids}{array\_of\_integers}{empty}
+Sequence of $K$ ids describing a set of consequtive kinetic reactions of the first order. It is meant to enable simulation of $A\rightarrow B\rightarrow C\rightarrow ...\rightarrow Z$ set of reactions easily. (NOT USED, YET.)
+\keyitem{kinetic\_constants}{array or doubles}{filled up with 0.0s}
+Sequence of $K-1$ doubles defining kinetic constants of partial reactions from the set defined in substance\_ids. (NOT USED, YET.)
+\keyitem{nr\_of\_children}{array of integer}{filled up with 1.0s}
+Number of children of each vertex (belonging to one of species) in a simple graph describing considered first order reactions. (NOT USED, YET.)
+\keyitem{indices\_of\_children}{array of integers}{either emmpty or filled up with substance\_ids except the first one}
+Containes identifiers of children of vertex. Children are assigned to vertices throuh the use of numbers listed in nr\_of\_children. (NOT USED, YET.)
+\keyitem{bifurcation}{array of double}{null optional}
+It should have as many items as the array indices\_of\_children ($K-1$). It defines relative part of parental contribution in the case of division of first order reactions describing graph into more branches. (NOT USED, YET.)
 \keyitem{kinetic\_konstant}{double}{0.0}
-Defines kinetic konstant which describes a simple reaction of the type A->B.
+Defines kinetic konstant which describes a simple reaction of the type $A\rightarrow B$.
 \keyitem{substance\_ids}{array of integers}{empty}
 Contains $2$ identifiers of subsatnces (species) which are taking part in considered reaction.
 \end{recordtype}
 
 \begin{recordtype}{Simple reactions}{}
 \keyitem{decay\_chains}{array of Decay chains}{empty}
-Sequence of records describing decay chains under consideration.
-\keyitem{first\_order\_reactions}{array of FoReact}{empty}
-Sequence of records describing first order reactions under consideration.
-\keyitem{use\_pade\_approx}{bool}{no}
-Decide about the use of Pade approximant for an evaluation of the decay describing matrix exponential values.
-\keyitem{polynomial\_degrees}{array of int}{[2, 2]}
-This array containes two numbers defining degrees of matrix polynomials used in Pade approximant.
+Sequence of records describing decay chains under consideration. (NOT USED, YET.)
+\keyitem{first\_order\_reactions}{array of first order reactions}{empty}
+Sequence of records describing first order reactions under consideration. (NOT USED, YET.)
+%\keyitem{use\_pade\_approx}{bool}{no}
+%Decide about the use of Pade approximant for an evaluation of the decay describing matrix exponential values.
+%\keyitem{polynomial\_degrees}{array of int}{[2, 2]}
+%This array containes two numbers defining degrees of matrix polynomials used in Pade approximant.
+\keyitem{pade\_nominator\_degree}{integer}{2}
+This number defines the degree of matrix polynomial appearing in nominator of Pade approximant of a matrix exponential.
+\keyitem{pade\_denominator\_degree}{integer}{2}
+This number defines the degree of matrix polynomial appearing in denominator of Pade approximant of a matrix exponential.
 \end{recordtype}
