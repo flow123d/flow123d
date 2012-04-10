@@ -6,7 +6,7 @@
 #include <cfloat>
 
 #include "../json_spirit/json_spirit.h"
-#include "../input.hpp" //jediny potrebny header, vse ostatni se includuje vevnitr
+#include "../input.hpp" //The only necessary header file.
 
 using namespace std;
 using namespace flow;
@@ -33,6 +33,10 @@ void minitest( const string & fname )
 
 int main()
 {
+    /*
+     * Test functionality of JSON-spirit library
+     */
+
     cout << "===== JSON direct =====" << endl;
 
     //read from stream
@@ -78,8 +82,10 @@ int main()
     cout << "ini-global-description: \"" << root.find("global")->second.get_obj().find("description")->second.get_str() << "\"" << endl;
     cout << "ini-global-description: \"" << root.find("global")->second.get_obj().find("description")->second.get_value<string>() << "\"" << endl;
 
-    //test Node library
-    cout << endl << "===== NODE LIBRARY =====" << endl;
+    /*
+     * Test functionality of Data-tree library
+     */
+    cout << endl << "===== DATA-TREE LIBRARY =====" << endl;
     {
         Data_tree * tree;
 
@@ -90,18 +96,11 @@ int main()
 
         cout << "Tree error: " << tree->err_status << endl;
 
-        cout << "JSON dump: ";
-        tree->tree_dump_json();
-        cout << endl;
-
-        cout << "JSON tree << dump :" << (*tree) << endl;
-
-        Generic_node & nodes = tree->get_head();
-
-        cout << "Node tree << dump:" << endl << nodes << endl;
+        cout << "Data tree << dump: " << *tree << endl;
+        cout << "Node tree << dump: " << tree->get_head() << endl;
 
         //non-existent node example
-/*
+
         Generic_node gnode;
         cout << endl << "Default demo:" << endl;
         int default_int = 12321;
@@ -109,35 +108,37 @@ int main()
         returned_int = gnode.get_key("foo").get_item(10).as_value().get_int(default_int);
         cout << "default_int=" << default_int << endl;
         cout << "returned_int=" << returned_int << endl;
-*/
+
         //access to instance as an ancestor
-/*
+
         Value_node vnode;
         Generic_node & gnode_r = vnode;
         Generic_node * gnode_p;
-        gnode_p = new Value_node;
+        gnode_p = new Value_node(123);
         cout << endl << "Access as ancestor demo:" << endl;
         cout << "gnode " << gnode << endl;
         cout << "vnode " << vnode << endl;
         cout << "gnode reference to vnode " << gnode_r << endl;
         cout << "gnode pointer to vnode " << (*gnode_p) << endl;
-*/
+
         delete tree;
     }
 
-    //test JSON FLOW extended format
+    /*
+     * Test JSON FLOW extended format
+     */
     cout << endl << "===== JSON FLOW extended format =====" << endl;
 
-    cout << "Test filtru komentaru:" << endl;
+    cout << "Test comment input filter:" << endl;
     minitest("src/test/comments.fjson");
 
-    cout << "Test carek:" << endl;
+    cout << "Test space separator:" << endl;
     minitest("src/test/carky.fjson");
 
-    cout << "Test rovnitek:" << endl;
+    cout << "Test EQ linked pairs:" << endl;
     minitest("src/test/dvojtecka-rovnitko.fjson");
 
-    cout << "Test uvozovek:" << endl;
+    cout << "Test optional quotes:" << endl;
     minitest("src/test/uvozovky.fjson");
 
     cout << "END." << endl << flush;
