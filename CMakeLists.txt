@@ -8,6 +8,13 @@
 #   this way we can drop third_party directory; however for particular configuration of armadillo or petsc ( using particular libraries) one still need manual
 #   installation of PETSc, so there should be posibility to indicate PETSC_DIR and PETSC_ARCH in makefile.in.cmake. But this file should be merly optional.
 # 
+# * use CMAKE_BUILD_TYPE instead of FLOW_BUILD_TYPE, have rules in main makefile to produce different configurations
+#   and have clearly defined CFLAGS and other settings for individual configurations 
+#
+# * allways use Debug configuration for targets in test_units
+#
+# * report compiler flags and used libraries in a summarizing table before own build
+#
 # * use CTest to perform unit tests
 # 
 # * use CPack to  make Windows and Linux packages
@@ -74,7 +81,8 @@ find_package(PARMETIS REQUIRED)
 find_package(Boost)
 if (NOT Boost_FOUND) 
   # just use our third_party directory
-  set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
+  #set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
+  set(BOOST_ROOT /home/jb/local/boost_1_49_0)
   find_package(Boost)
   if (NOT Boost_FOUND)
     # force to use it 
@@ -152,13 +160,16 @@ if(CC_FLAGS)
   add_definitions(${CC_FLAGS})
   set(CMAKE_EXE_LINKER_FLAGS ${CC_FLAGS})
 else()
-  if(CMAKE_BUILD_TYPE STREQUAL "debug")
+  message(STATUS "cbt: ${FLOW_BUILD_TYPE}" )
+  if(FLOW_BUILD_TYPE STREQUAL "debug")
     # debug mode
+    message(STATUS "debug configuration" ) 
     add_definitions("-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g")
     add_definitions(-DDEBUG)
-  else()
+  elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
+    message(STATUS "release configuration" )
     add_definitions("-O3")
     add_definitions(-DNDEBUG)
   endif()

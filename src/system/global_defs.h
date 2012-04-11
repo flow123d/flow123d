@@ -151,7 +151,7 @@
 #endif
 
 
-#ifdef USE_ASSERTS
+#ifdef DEBUG_ASSERTS
 
 #define ASSERT(i,...)   do { if (!(i))  xprintf(PrgErr,__VA_ARGS__); } while (0)
 #define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
@@ -164,7 +164,7 @@
 #endif
 
 
-#ifdef USE_MESSAGES
+#ifdef DEBUG_MESSAGES
 
 #define DBGMSG(...) do { xprintf(MsgDbg,__VA_ARGS__); fflush(NULL); } while (0)
 

@@ -34,6 +34,12 @@ using namespace Input::Type;
     Array arr_rec_shared_ptr( rec_2 );
 }
 
+TEST(InputTypeSelection, declare_selection) {
+using namespace Input::Type;
+
+
+}
+
 TEST(InputTypeRecord, declare_key_scalars) {
 using namespace Input::Type;
 
@@ -140,8 +146,8 @@ typedef x_enum XX;
 
 TEST(BoostTypeTraits, Enum) {
 
-
-    if (boost::is_integral<XX>::value == true ) cout << "true"; else cout << "false";
+    EXPECT_TRUE( boost::is_enum<XX>::value);
+    EXPECT_FALSE( boost::is_integral<XX>::value);
 
 
 

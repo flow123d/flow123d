@@ -32,9 +32,19 @@
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
 
+/**
+ * Macro to create a key object. The reason for this is twofold:
+ * 1) We may use it to implement compile time computed hashes for faster access to the data.
+ * 2) We can store line, function, filename where the key where used to
+ */
+#define KEY(name) #name
+
 namespace Input {
 namespace Type {
 
+// exceptions and error_info types
+//struct MissingKeyExcp : virtual FlowException {};
+//TYPEDEF_ERR_INFO( InputType, const Input::Type::TypeBase *);
 
 using std::string;
 
@@ -196,7 +206,7 @@ public:
 
 protected:
     /**
-     * Method for declaration of keys of scalar types with given default value.
+     * Final implementation of all decalre_key methods. Using just boost::shared_ptr for @p type.
      *
      */
     template <class KeyType>
@@ -223,6 +233,9 @@ protected:
         }
     }
 
+    /**
+     * Implementation for types given by reference - creates auxiliary shared_ptr.
+     */
     template <class KeyType>
     inline void declare_key_impl(const string &key,
             const KeyType &type,
@@ -237,7 +250,10 @@ protected:
 
 public:
     /**
-     * Version without given default value.
+     * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
+     * @p description. The parameter @p type has to be either boost::shared_ptr<TYPE> where TYPE is any of Record, AbstractRecord, and Selection, or @p type has to
+     * be reference to any other descendant of TypeBase. The reason is that in the first group are types with complex description and would not to have multiple instances
+     * of these types in the whole type hierarchy. This guarantees, that every Record, AbstractRecord, and Selection will be reported only once when documentation is printed out.
      */
     template <class KeyType>
     inline void declare_key(const string &key,
@@ -248,7 +264,7 @@ public:
     }
 
     /**
-     * Version without given default value.
+     * Same as previous method but without given default value (same as DefaultValue(DefaultValue::none) )
      */
     template <class KeyType>
     inline void declare_key(const string &key,
@@ -307,17 +323,26 @@ public:
         }
     }
 
-    int key_index(const string& key) const
+    /**
+     * Interface to mapping key -> index in record. Returns index (in continuous array) for given key. It throws
+     */
+    unsigned int key_index(const string& key) const
     {
         KeyHash key_h = key_hash(key);
         key_to_index_const_iter it = key_to_index.find(key_h);
         if (it != key_to_index.end()) return it->second;
         else
             xprintf(Err, "Attempt to read key '%s', which is not declared within Record '%s'\n", key.c_str(), type_name_.c_str() );
+
         return keys.size();
     }
 
-    inline int size() {
+    inline const TypeBase &get_sub_type(const unsigned int index) const {
+        return *(keys[index].type_);
+    }
+
+
+    inline int size() const {
         ASSERT( keys.size() == key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", key_to_index.size(), keys.size());
         return keys.size();
     }
@@ -421,6 +446,10 @@ public:
 
     virtual void  reset_doc_flags() const {
         type_of_values_->reset_doc_flags();
+    }
+
+    const TypeBase &get_sub_type() const {
+        return *type_of_values_;
     }
 
 };
