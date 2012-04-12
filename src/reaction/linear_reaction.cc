@@ -258,14 +258,14 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	Mat Nominator;
 	Mat Reaction_matrix;
 	Mat Pade_approximant;
-	Mat Identity;
 	MatFactorInfo matfact;
 	PC Precond;
 	IS rperm, cperm;
 	Vec tmp1; //contains the information about concentrations of all the species in one particular element
 	Vec tmp2; //the same as tmp1
 	PetscInt n, m = 2;
-	PetscScalar koef_hlp;
+	PetscScalar nominator_coef[nom_pol_deg];
+	PetscScalar denominator_coef[den_pol_deg];
 	PetscScalar Hlp_mat[1];
 	PetscScalar *Array_hlp;
 	const PetscScalar *Reaction_matrix_row;
@@ -289,12 +289,6 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Pade_approximant);
 	MatAssemblyBegin(Pade_approximant, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
-
-	//create Identity matrix
-	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Identity);
-	MatShift(Identity, 1.0);
-	MatAssemblyBegin(Identity, MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd(Identity, MAT_FINAL_ASSEMBLY);
 
 	if(nr_of_decays > 0){
 		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
@@ -356,10 +350,9 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatAssemblyEnd(Nominator, MAT_FINAL_ASSEMBLY);
 	for(j = nom_pol_deg; j >= 0; j--)
 	{
-		koef_hlp = (PetscScalar) (faktorial(nom_pol_deg + den_pol_deg - j) * faktorial(nom_pol_deg)) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(j) * faktorial(nom_pol_deg - j));
-		MatMatMult(Nominator, Reaction_matrix, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Nominator);
-		MatAXPY(Nominator, koef_hlp, Identity, DIFFERENT_NONZERO_PATTERN);
+		nominator_coef[j] = (PetscScalar) (faktorial(nom_pol_deg + den_pol_deg - j) * faktorial(nom_pol_deg)) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(j) * faktorial(nom_pol_deg - j));
 	}
+	evaluate_matrix_polynomial(&Nominator, Reaction_matrix, nominator_coef);
 	MatView(Nominator,PETSC_VIEWER_STDOUT_WORLD);
 
 	//Computation of denominator in pade approximant follows
@@ -368,13 +361,11 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatAssemblyEnd(Denominator, MAT_FINAL_ASSEMBLY);
 	for(i = den_pol_deg; i >= 0; i--)
 	{
-		koef_hlp = (PetscScalar) pow(-1.0,i) * faktorial(nom_pol_deg + den_pol_deg - i) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(i) * faktorial(den_pol_deg - i));
-		MatMatMult(Denominator, Reaction_matrix, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Denominator);
-		MatAXPY(Denominator, koef_hlp, Identity, DIFFERENT_NONZERO_PATTERN);
+		denominator_coef[i] = (PetscScalar) pow(-1.0,i) * faktorial(nom_pol_deg + den_pol_deg - i) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(i) * faktorial(den_pol_deg - i));
 	}
+	evaluate_matrix_polynomial(&Denominator, Reaction_matrix, denominator_coef);
 	MatView(Denominator, PETSC_VIEWER_STDOUT_WORLD);
 
-	//MatView(Pade_approximant,PETSC_VIEWER_STDOUT_WORLD);
 	PCCreate(PETSC_COMM_WORLD, &Precond);
 	PCSetType(Precond, PCLU);
 	PCSetOperators(Precond, Denominator, Denominator, DIFFERENT_NONZERO_PATTERN);
@@ -419,7 +410,6 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 
 	VecDestroy(&tmp1);
 	VecDestroy(&tmp2);
-	MatDestroy(&Identity);
 	PCDestroy(&Precond);
 	MatDestroy(&Denominator);
 	MatDestroy(&Nominator);
@@ -427,6 +417,29 @@ double **Linear_reaction::modify_reaction_matrix_using_pade(void)
 	MatDestroy(&Pade_approximant);
 
 	return reaction_matrix;
+}
+
+void Linear_reaction::evaluate_matrix_polynomial(Mat *Polynomial, Mat Reaction_matrix, PetscScalar *coef)
+{
+	Mat Identity;
+
+	//create Identity matrix
+	MatCreate(PETSC_COMM_SELF, &Identity);
+	MatSetSizes(Identity, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
+	MatSetType(Identity, MATAIJ);
+	MatAssemblyBegin(Identity, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(Identity, MAT_FINAL_ASSEMBLY);
+	MatShift(Identity, 1.0);
+
+	for(int i = den_pol_deg; i >= 0; i--)
+		{
+			MatMatMult(*Polynomial, Reaction_matrix, MAT_INITIAL_MATRIX, PETSC_DEFAULT, Polynomial);
+			MatAXPY(*Polynomial, coef[i], Identity, DIFFERENT_NONZERO_PATTERN);
+		}
+
+	MatDestroy(&Identity);
+
+	return;
 }
 
 double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix

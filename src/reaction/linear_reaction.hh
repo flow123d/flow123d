@@ -61,6 +61,10 @@ class Linear_reaction
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/
 		void set_time_step(double new_timestep);
+		/**
+		* This method enables to evaluate matrix polynomial of an matrix containing constant real values. Horner scheme is used to get the value.
+		*/
+		void evaluate_matrix_polynomial(Mat *Polynomial, Mat Reaction_matrix, PetscScalar *koef_hlp);
 	private:
 		/**
 		*	This method disables to use constructor without parameters.
