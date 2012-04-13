@@ -1,0 +1,55 @@
+simple test
+===========
+TEST(test_case_name, test_name) {
+  ...
+}
+
+fixture test (have prepared environment for each test)
+============
+
+class ClassTest {
+  SetUp() {...}
+  TearDown() {...}
+}
+
+TEST_F(ClassTest, test_name) {
+  ...
+}
+
+
+assert vs. expect
+=================
+ASSERT_EQ( expected, tested);	-- aborts test on failure
+EXPECT_EQ( expected, tested);	-- continues test on failure
+
+FAIL(); 		// generate fatal failure -- aborts test
+ADD_FAILURE(); 		// generate non-fatal failure -- test continues
+
+expect/assert macros
+====================
+EXPECT_TRUE( condition );
+EXPECT_FALSE( condition );
+
+EXPECT_EQ(expected, actual);	expected == actual
+EXPECT_NE(val1, val2); 		val1 != val2
+EXPECT_LT(val1, val2); 		val1 < val2
+EXPECT_LE(val1, val2); 		val1 <= val2
+EXPECT_GT(val1, val2); 		val1 > val2
+EXPECT_GE(val1, val2); 		val1 >= val2
+
+EXPECT_STREQ(expected_str, actual_str); 	the two C strings have the same content
+EXPECT_STRNE(str1, str2); 			the two C strings have different content
+EXPECT_STRCASEEQ(expected_str, actual_str); 	the two C strings have the same content, ignoring case
+EXPECT_STRCASENE(str1, str2);			the two C strings have different content, ignoring case
+
+EXPECT_FLOAT_EQ(expected, actual); 		the two float values are almost equal (relative error against 'expected', tolerance = 2 last bits)
+EXPECT_DOUBLE_EQ(expected, actual);		the two double values are almost equal
+EXPECT_NEAR(val1, val2, abs_error);		abs(val1 - val2) < abs_error
+
+checking exceptions and error messages
+======================================
+EXPECT_THROW(statement, exception_type); 	statement throws an exception of the given type
+EXPECT_ANY_THROW(statement); 			statement throws an exception of any type
+EXPECT_NO_THROW(statement); 			statement doesn't throw any exception 
+
+EXPECT_DEATH(statement, regex); 		statement crashes with error containing 'regex' (regular expresion)

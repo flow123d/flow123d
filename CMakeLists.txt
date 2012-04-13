@@ -19,6 +19,8 @@
 #   - clean and clean-all targets
 #   - doxygen target    
 #
+# - use compiler flags from PETSc as defaults ( different setting can make problems with optimization)
+#
 # * how to organize flow123d libraries? I want:
 #    1) each library should declare on which libraries it depends, but should not link against them (not contain them)
 #       this setting should by automatically used in final linking

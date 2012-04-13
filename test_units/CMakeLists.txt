@@ -13,13 +13,16 @@ set(CMAKE_CXX_FLAGS "-g")
 #################################
 # MACRO define_test
 #
-# for given class_name assume class_name_test.cpp source
-# and class_name_test binary
-# and class_name_test test target
+# Creates build targets for particular source file containing one test.
+#
+# For given parameter 'class_name', it assumes class_name_test.cpp source
+# and creates:
+# target 'class_name_test' which builds corresponding binary and run the test
+# target 'class_name_valgrind' which builds the binary and runs it under valgrind
 # use libraries in ${super_test_libs}
 #
-# I want to run tests from source dir, but since there is no portable way 
-# how to make link from source dir to Makefile generated in bulid dir 
+# We want to run tests from source dir, but since there is no portable way 
+# how to make link from source dir to Makefile generated in build dir 
 # I let main makefile to make such links.
 macro(define_test class_name)
   set(test_source "${class_name}_test.cpp")
@@ -50,7 +53,15 @@ macro(define_test class_name)
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
 endmacro()
 
-
+#################################
+# MACRO define_mpi_test
+#
+# Creates build targets for particular source file containing one test which should run in parallel.
+#
+# It has one more parameter for number of processors N. It provides similar targets as the macro 'define_test'
+# like: 'class_name_N_test' and 'class_name_N_valgrind' which builds the test binary and run it in parallel using bin/mpiexec
+# 
+# To get meaningful output from the parallel tests you should include <gtest_flow.hh> instead of <gtest/gtest.h>
 macro(define_mpi_test class_name n_proc)
   set(test_source "${class_name}_test.cpp")
   set(test_binary "${class_name}_test_bin")
