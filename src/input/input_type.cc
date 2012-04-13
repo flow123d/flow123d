@@ -9,9 +9,9 @@
 #include <input_type.hh>
 
 namespace Input {
+namespace Type {
 
+} // closing namespace Type
+} // closing namespace Input
 
-
-
-}
 

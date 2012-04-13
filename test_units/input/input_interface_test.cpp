@@ -5,12 +5,11 @@
  *      Author: jb
  *
  * TODO:
- *  - v konstruktoru Iterator<T> nepadat s chybou, ale vyhozovat vyjimku (konstuktor povolit volat jen z Record a Array
- *    vyjimku odchytavat v nich, aby byla nejaka informace ktereho klice se hlaska tyka !!
  *
  *  - klice nezadavat jako retezce ale pres makro KEY(nazev_klice) to
  *    umozni pocitani hashu pri kompilaci pripadne dalsi kejkle
- *  - implementovat deklaraci Selection
+ *  - implementovat deklaraci Selection (pouziti enum_macro zatim nevhodne, protoze to je nestabilni, leda casem vytvorit neco vlastniho)
+ *    zatim rucne vkladat enum klice do Selection/ AbstracRecord
  *  - implementovat cteni key<enum ..>
  *  - implementovat deklaraci AbstractRecord a jeho cteni jak key<Record> tak key<enum...>
  *  - implementovat Iterator<Record/Array>::operator->
@@ -22,7 +21,6 @@
  *
  */
 
-#define DEBUG
 
 #include <gtest/gtest.h>
 #include <vector>
