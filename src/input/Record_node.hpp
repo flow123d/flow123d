@@ -3,7 +3,6 @@
 
 #include <string>
 #include "Generic_node.hpp"
-#include "Keyconnector.hpp"
 
 namespace flow {
 
