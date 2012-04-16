@@ -6,8 +6,6 @@
 #
 # This makefile provides main rules for documentation
 
-#include ../../makefile.in
-
 doc: flow123d.doc 
 
 clean:
