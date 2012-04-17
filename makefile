@@ -64,8 +64,9 @@ clean: cmake
 	make -C build clean
 
 # try to remove all
-clean-all: 
+clean-all:
 	rm -rf build
+	rm -f third_party/armadillo-1.1.92/CMakeCache.txt
 	make -C third_party clean
 
 # remove everything that is not under version control 

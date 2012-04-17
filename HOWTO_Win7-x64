@@ -129,3 +129,11 @@ musel jsem pridat do PATH cestu C:\cygwin\bin (Ovladaci panely/System/Upresnit n
 
 cesta v makefile.in k petsc - PETSC_DIR - musi byt s normalnimi lomitky (slash) - napr.: c:/cygwin/home/Wojta/local/petsc-3.0.0-p12
 ---------------------------------------------
+(edit 17.4.2012)
+11: CMAKE
+    Funguje nejak divne: nedetekuje PETSc, prestoze jsou spravne zkompilovane
+    a nastavene, a bez problemu u nich probehne "make test".
+
+    Do makefile.in.cmake je nutne manualne nacpat nasledujici radek:
+    set (PETSC_EXECUTABLE_RUNS YES)
+---------------------------------------------

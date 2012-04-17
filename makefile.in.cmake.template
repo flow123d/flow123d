@@ -28,4 +28,7 @@ set(PETSC_ARCH "gcc_O3")
 
 set(CMAKE_BUILD_TYPE debug)
 
+# Uncomment this for CygWIN compiled PETSc (CMAKE fails to detect it properly)
+# set (PETSC_EXECUTABLE_RUNS YES)
+
 #set(CC_FLAGS "-O3 -DNODEBUG -pg ")
