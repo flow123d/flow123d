@@ -111,6 +111,8 @@ protected:
     virtual Generic_node & get_key( const string & key, Generic_node & default_tree );
     virtual Generic_node & get_key_check( const string & key, int & err_code );
 
+
+public:
     /* Can not implement as_* here, need to know full class declaration.
      * Forward declaration is not enough (does not know available methods etc.)
      */
@@ -118,7 +120,6 @@ protected:
     virtual Vector_node & as_vector( void );
     virtual Value_node & as_value( void );
 
-public:
     Value_type get_type( void ) const { return value_type_; } //get node type
     const string & get_type_str( void ) const;                //get node type as a string description
 

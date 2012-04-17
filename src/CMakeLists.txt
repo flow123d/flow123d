@@ -96,7 +96,6 @@ set(sources_lib_system
 set(sources_lib_input
     input/data_tree.cpp
     input/Generic_node.cpp
-    input/Keyconnector.cpp
     input/Record_node.cpp
     input/Value_node.cpp
     input/Vector_node.cpp
