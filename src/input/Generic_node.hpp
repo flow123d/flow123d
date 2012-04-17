@@ -61,6 +61,11 @@ TODO:
 * Pri vkladani insert_key(...) & insert_item(...) nastavovat prev_node
 * mazani nodu & hodnot...
 * get_parrent() (protected)
+* presunout as_record(), as_value() a as_vector() do protected a zabudovat dovnitr get_*() metod - vzdy kontrolovat
+  (nevadi, ze to bude pomalejsi, hlavni je, ze to bude jednodussi)
+* value_type_to_string predelat na vector<string>, testovat delku vektoru
+* gtest v test_units/input, make generic_node_test (generic_node_test.cpp)
+* smazat include json.h z data_tree.h
 
 Funkce data_tree:
     1) nacist JSON

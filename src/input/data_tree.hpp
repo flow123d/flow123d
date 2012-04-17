@@ -9,9 +9,7 @@
 #include "Vector_node.hpp"
 #include "Value_node.hpp"
 
-// TODO: try to remove this from header file, should be possible by forwar declaration
-#include "json_spirit.h"
-
+#include "json_spirit.h" //forward declaration? too many templates for me :-/
 
 namespace flow {
 
