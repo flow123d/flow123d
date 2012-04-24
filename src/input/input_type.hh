@@ -37,6 +37,8 @@
 
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 /**
  * Macro to create a key object. The reason for this is twofold:
@@ -71,7 +73,7 @@
 namespace Input {
 namespace Type {
 
-using std::string;
+using namespace std;
 
 // TODO: move FileType into Application and use also when opening the file and by IONAmeHandlar
 // (which in turn should be part of input interface)
@@ -261,7 +263,7 @@ class AbstractRecord : public TypeBase {
 class Record : public TypeBase {
 public:
     Record(const string & type_name, const string & description)
-    : type_name_(type_name), description_(description), made_extensive_doc(false)
+    : description_(description), type_name_(type_name), made_extensive_doc(false)
     {}
 
 protected:

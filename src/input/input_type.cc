@@ -6,7 +6,7 @@
  */
 
 
-#include <input_type.hh>
+#include "input_type.hh"
 
 namespace Input {
 namespace Type {
