@@ -49,7 +49,7 @@
 
 /**
  * Macro to simplify declaration of Record types. It declares local shared pointer @p var and initialize it
- * by new Record. The macro should be followed by parantheses with constructor parameters. Typical usage is:
+ * by new Record. The macro should be followed by parentheses with constructor parameters. Typical usage is:
  *
  * @code
  * MAKE_Input_Type_Record( transport_record )("TransportRecord", " Description of transport record.");
@@ -61,7 +61,7 @@
 /**
  * Macro to simplify declaration of Selection types. The first parameter is name of enum used as the template parameter the second
  * parameter of the macro is name of local shared pointer @p var to initialize by new Selection.
- * The macro should be followed by parantheses with constructor parameters. Typical usage is:
+ * The macro should be followed by parentheses with constructor parameters. Typical usage is:
  *
  * @code
  * MAKE_Input_Type_Selection( enum Colors, colors_selection )("Colors");
@@ -189,7 +189,7 @@ class SelectionBase;
  *
  * AbstractRecord<class T>
  *
- * Mimics polymorphysm of C++ classes. Data of this type can be used to initialize a variable of enum type T. The values of
+ * Mimics polymorphism of C++ classes. Data of this type can be used to initialize a variable of enum type T. The values of
  * this enum type are identified with particular Record types. These Records are like descendant of the AbstractRecord.
  */
 class TypeBase {
@@ -198,7 +198,7 @@ public:
      * Fundamental method for output documentation of Input Types.
      * It writes documentation into given stream @param stream. Parameter @param deep
      * indicates verbosity of produced documentation. With extensive==false, the description should
-     * be about two lines. This is primarly used for documentation of Record types where we first
+     * be about two lines. This is primarily used for documentation of Record types where we first
      * describe all keys of an Record with short descriptions and then call recursively extensive documentation
      * for sub types that was not fully described yet. Further we provide static function to reset
      * all flags marking state of documentation.
@@ -242,14 +242,14 @@ public:
     KeyHash key_hash(const string &str) const {
         return (str);
     }
+
+    virtual ~TypeBase( void ) {}
 };
 
 /**
  * For convenience we provide redirection operator for output documentation of Input:Type classes.
  */
-std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
-    return type.documentation(stream);
-}
+std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 class AbstractRecord : public TypeBase {
 

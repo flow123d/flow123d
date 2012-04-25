@@ -11,6 +11,10 @@
 namespace Input {
 namespace Type {
 
+std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
+    return type.documentation(stream);
+}
+
 } // closing namespace Type
 } // closing namespace Input
 
