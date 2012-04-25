@@ -55,14 +55,23 @@ Generic_node & Record_node::get_key_check(const string & key, int & err_code) {
     }
 }
 
-void Record_node::insert_key(const string & key, Generic_node & node) {
+void Record_node::delete_key(const string& key) {
     map<string, Generic_node &>::iterator it;
 
     it = record_.find(key);
     if (it != record_.end()) {
         record_.erase(it);
     }
+}
+
+void Record_node::insert_key_parent( const string & key, Generic_node & node, Generic_node * parent ) {
+    delete_key( key );
     record_.insert( pair<string,Generic_node&>(key,node) );
+    node.set_parent_node( parent );
+}
+
+void Record_node::insert_key(const string & key, Generic_node & node) {
+    insert_key_parent( key, node, this );
 }
 
 Record_node::~Record_node() {

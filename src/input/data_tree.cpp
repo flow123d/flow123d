@@ -9,6 +9,9 @@
 
 #include "json_spirit.h"
 
+#include "input_interface.hh"
+#include "input_type.hh"
+
 namespace flow {
 
 /*!
@@ -192,7 +195,7 @@ Data_tree::Data_tree( std::istream& is )
     }
 }
 
-Generic_node * Data_tree::new_node( const json_spirit::mValue json_node, Generic_node & prev_node )
+Generic_node * Data_tree::new_node( const json_spirit::mValue json_node, Generic_node * prev_node )
 {
     Generic_node * gnp = NULL;
 
@@ -237,7 +240,7 @@ bool Data_tree::tree_build_recurse( json_spirit::mValue json_root, Generic_node 
 
             for( it = json_root.get_obj().begin(); it != json_root.get_obj().end(); ++it )
             {
-                Generic_node * gnp = new_node(it->second, prev_node);
+                Generic_node * gnp = new_node(it->second, &prev_node);
                 o_node.insert_key( it->first, *gnp );
 
                 switch (it->second.type()) {
@@ -269,7 +272,7 @@ bool Data_tree::tree_build_recurse( json_spirit::mValue json_root, Generic_node 
             Vector_node & v_node = prev_node.as_vector();
             for( unsigned int i = 0; i < json_root.get_array().size(); ++i )
             {
-                Generic_node * gnp = new_node(json_root.get_array().at(i), prev_node);
+                Generic_node * gnp = new_node(json_root.get_array().at(i), & prev_node);
                 v_node.insert_item( i, *gnp );
 
                 switch (json_root.get_array().at(i).type()) {
@@ -339,6 +342,28 @@ bool Data_tree::tree_build( const json_spirit::mValue json_root, Generic_node & 
         return false;
         break;
     }
+
+    return true;
+}
+
+
+bool Data_tree::refs_scandel( Generic_node & head_node, vector< tree_ref > & vrefs ) {
+    return true;
+}
+
+bool Data_tree::refs_unpack( Generic_node & head_node, vector< tree_ref > & vrefs ) {
+    return true;
+}
+
+bool Data_tree::refs_process(Generic_node& head_node) {
+
+    vector< tree_ref > vrefs;
+
+    if ( !refs_scandel( head_node, vrefs ) )
+        return false;
+
+    if ( !refs_unpack( head_node, vrefs ) )
+        return false;
 
     return true;
 }

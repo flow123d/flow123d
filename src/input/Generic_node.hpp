@@ -58,19 +58,14 @@ Final usage:
   }
 
 TODO:
-* Pri vkladani insert_key(...) & insert_item(...) nastavovat prev_node
-* mazani nodu & hodnot...
-* get_parrent() (protected)
 * presunout as_record(), as_value() a as_vector() do protected a zabudovat dovnitr get_*() metod - vzdy kontrolovat
   (nevadi, ze to bude pomalejsi, hlavni je, ze to bude jednodussi)
 * value_type_to_string predelat na vector<string>, testovat delku vektoru
 * gtest v test_units/input, make generic_node_test (generic_node_test.cpp)
-* smazat include json.h z data_tree.h
 
-Funkce data_tree:
-    1) nacist JSON
-    2) rozbalit REF
-    3) s pomoci declaration_tree projit strom a vycistit ho - rovnou mazat nedeklarovane hodnoty
+Funkce data_tree pro Honzu:
+  Transformovat Record_node na Array_node
+  S pomoci declaration_tree projit strom a vycistit ho - rovnou mazat nedeklarovane hodnoty
 
 */
 
@@ -98,7 +93,7 @@ private:
     static bool    value_type_to_string_filled; //already initialized?
 protected:
     Value_type            value_type_;
-    Generic_node &        prev_node_;
+    Generic_node *        parent_node_;
 
     //class data
     static Generic_node * empty_node_generic_; //empty instance
@@ -106,16 +101,18 @@ protected:
     static Vector_node  * empty_node_vector_;  //empty instance
     static Value_node   * empty_node_value_;   //empty instance
 
-    Generic_node():value_type_(type_generic),prev_node_(*this) {}
-    Generic_node( Generic_node & prev_node ):value_type_(type_generic),prev_node_(prev_node) {}
+    Generic_node():value_type_(type_generic),parent_node_( NULL ) {}
+    Generic_node( Generic_node * prev_node ):value_type_(type_generic),parent_node_(prev_node) {}
     //Generic_node( Generic_node const & to_copy ); //copy constructor - implicit should be enough...
-    Generic_node( const Value_type value_type ):value_type_(value_type),prev_node_( *this ) {};
-    Generic_node( const Value_type value_type, Generic_node & prev_node ):value_type_(value_type),prev_node_(prev_node) {};
+    Generic_node( const Value_type value_type ):value_type_(value_type),parent_node_( NULL ) {};
+    Generic_node( const Value_type value_type, Generic_node * prev_node ):value_type_(value_type),parent_node_(prev_node) {};
 
     virtual Generic_node & get_key( const string & key );
     virtual Generic_node & get_key( const string & key, Generic_node & default_tree );
     virtual Generic_node & get_key_check( const string & key, int & err_code );
 
+    virtual void delete_id( const size_t id );
+    virtual void delete_key( const string & key );
 
 public:
     /* Can not implement as_* here, need to know full class declaration.
@@ -127,6 +124,9 @@ public:
 
     Value_type get_type( void ) const { return value_type_; } //get node type
     const string & get_type_str( void ) const;                //get node type as a string description
+
+    Generic_node & get_parent_node( void ) { return *parent_node_; }
+    void set_parent_node( Generic_node * node ) { parent_node_ = node; }
 
     virtual Generic_node & get_item( const size_t id );
     virtual Generic_node & get_item( const size_t id, Generic_node & default_tree );

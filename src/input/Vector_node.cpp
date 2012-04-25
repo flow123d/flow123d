@@ -51,45 +51,44 @@ ostream & operator <<(ostream & stream, Vector_node & node) {
     stream << "]";
     return stream;
 }
-
-void Vector_node::insert_item( const size_t id, Generic_node & node) {
+void Vector_node::insert_item_parent( const size_t id, Generic_node & node, Generic_node * parent ) {
     if (id < value_array_.size()) {
         value_array_.at(id) = &node;
+        node.set_parent_node( parent );
     } else {
         //have room?
         if ( value_array_.size() == value_array_.max_size())
             xprintf( PrgErr, "Memory allocation error." );
 
-        value_array_.push_back( &node );
+        value_array_.push_back(&node);
     }
 }
 
+void Vector_node::insert_item( const size_t id, Generic_node & node) {
+    insert_item_parent( id, node, this );
+}
+
+void Vector_node::delete_id(const size_t id) {
+    if (id < value_array_.size()) {
+        delete_node_unpacked( id );
+        value_array_.erase( value_array_.begin() + id );
+    }
+}
+
+void Vector_node::delete_node_unpacked( const size_t id )
+{
+    value_array_[id]->~Generic_node();
+    delete value_array_[id];
+    value_array_[id] = NULL;
+}
+
 Vector_node::~Vector_node() {
-    //call proper destructor for all types
     size_t size = value_array_.size();
     size_t i;
 
     for ( i = 0; i < size; ++i )
     {
-        switch ( value_array_[i]->get_type() ) {
-        case type_record:
-            dynamic_cast < Record_node * > (value_array_[i])->~Record_node();
-            break;
-        case type_vector:
-            dynamic_cast < Vector_node * > (value_array_[i])->~Vector_node();
-            break;
-        case type_null:
-        case type_bool:
-        case type_number:
-        case type_string:
-            dynamic_cast < Value_node * > (value_array_[i])->~Value_node();
-            break;
-        case type_generic:
-        default:
-        break;
-        }
-        delete value_array_[i];
-        value_array_[i] = NULL;
+        delete_node_unpacked( i );
     }
     value_array_.clear();
 }

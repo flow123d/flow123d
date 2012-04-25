@@ -14,7 +14,7 @@ class Record_node: public Generic_node {
     map< string, Generic_node & > record_;
 public:
     Record_node():Generic_node(type_record) {}
-    Record_node( Generic_node & prev_node ):Generic_node(type_record, prev_node) {}
+    Record_node( Generic_node * prev_node ):Generic_node(type_record, prev_node) {}
 
     virtual Generic_node & get_item( const int id ) {
         //Vector-like access to Record - return empty
@@ -32,6 +32,9 @@ public:
 
     //insert new pair of "key":any_node into record
     void insert_key( const string & key, Generic_node & node );
+    void insert_key_parent( const string & key, Generic_node & node, Generic_node * parent );
+    //delete node defined by "key"
+    virtual void delete_key(const string& key);
 
     virtual Generic_node & get_key( const string & key );
     virtual Generic_node & get_key( const string & key, Generic_node & default_tree );

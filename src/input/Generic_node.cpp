@@ -193,6 +193,14 @@ string Generic_node::get_string_check(int & err_code) {
     return "";
 }
 
+void Generic_node::delete_id(const size_t id) {
+    xprintf(PrgErr, "Can not delete_id(), not in Vector_node." );
+}
+
+void Generic_node::delete_key(const string& key) {
+    xprintf(PrgErr, "Can not delete_key(), not in Record_node." );
+}
+
 size_t Generic_node::get_array_size(void) {
     return 0;
 }

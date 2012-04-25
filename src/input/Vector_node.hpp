@@ -12,9 +12,12 @@ namespace flow {
 class Vector_node : public Generic_node {
     //Vector of references not allowed - need to use pointers.
     vector< Generic_node * >  value_array_;
+
+    void delete_node_unpacked( const size_t id );
+
 public:
     Vector_node ():Generic_node(type_vector)                                      {}
-    Vector_node ( Generic_node & prev_node ):Generic_node(type_vector, prev_node) {}
+    Vector_node ( Generic_node * prev_node ):Generic_node(type_vector, prev_node) {}
 
     //TODO: deep copy constructor - because of JSON REF
 
@@ -36,6 +39,8 @@ public:
     }
 
     void insert_item( const size_t id, Generic_node & node );
+    void insert_item_parent( const size_t id, Generic_node & node, Generic_node * parent );
+    virtual void delete_id(const size_t id);
     size_t get_size( void ) { return value_array_.size(); }
 
     virtual Vector_node & as_vector( void ) { return (*this); }

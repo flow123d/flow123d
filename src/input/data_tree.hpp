@@ -18,6 +18,11 @@ namespace flow {
  *        that contains loaded data. Provides various access methods to loaded data.
  *
  */
+struct tree_ref {
+    Generic_node * src;
+    Generic_node * dst;
+};
+
 class Data_tree {
 protected:
     Record_node node_head;         //root of node hierarchy
@@ -25,10 +30,15 @@ private:
     //TODO: Copy constructor? (Deep copy?)
     Data_tree():err_status(false) {};
 
-    Generic_node * new_node( const json_spirit::mValue json_node, Generic_node & prev_node );
+    Generic_node * new_node( const json_spirit::mValue json_node, Generic_node * prev_node );
     bool tree_build( const json_spirit::mValue json_root, Generic_node & head_node );
     bool tree_build_recurse( json_spirit::mValue json_root, Generic_node & node );
     void filter_stm( const char in_char, string & out_string, bool reset_state );
+
+    bool refs_process( Generic_node & head_node );
+    bool refs_scandel( Generic_node & head_node, vector< tree_ref > & vrefs );
+    bool refs_unpack( Generic_node & head_node, vector< tree_ref > & vrefs );
+
 public:
     bool err_status;
 
