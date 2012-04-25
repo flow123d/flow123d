@@ -132,6 +132,8 @@ public:
     virtual Generic_node & get_item( const size_t id, Generic_node & default_tree );
     virtual Generic_node & get_item_check( const size_t id, int & err_code );
 
+    virtual size_t get_array_size( void );
+
     /*
      * Acquiring of final scalar values
      * w/o default value: fail if not found and no implicit conversion possible
@@ -159,6 +161,9 @@ public:
     virtual string get_string( void );
     virtual string get_string( const string & default_value );
     virtual string get_string_check( int & err_code );
+
+    virtual bool is_null( void );
+    virtual bool not_null( void );
 
     // traverse recursively whole tree and print to stream
     friend ostream & operator<<( ostream & stream, Generic_node & node );

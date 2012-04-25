@@ -193,8 +193,21 @@ string Generic_node::get_string_check(int & err_code) {
     return "";
 }
 
+size_t Generic_node::get_array_size(void) {
+    return 0;
+}
+
+bool Generic_node::is_null(void) {
+    return true;
+}
+
+bool Generic_node::not_null(void) {
+    return false;
+}
+
 Generic_node::~Generic_node() {
     //The only dynamic data present in Generic_node are Class data - must not be deallocated.
 }
 
-}
+} //namespace
+

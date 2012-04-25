@@ -26,6 +26,8 @@
  * Not all readers has to use Storage for accessing the input data !!
  */
 
+//* proper Generic_node stub (all in stub is implemented with same data types)
+
 class Generic_node {
 public:
     const int get_int() const
@@ -37,14 +39,12 @@ public:
     const string get_string() const
         {return *( new string(""));} // memory leak
 
-    const Generic_node &get_item(const unsigned int index) const
+    const Generic_node &get_item(const size_t index) const
         {return *( new Generic_node() );} // memory leak
     bool not_null() const { return true;}
-    unsigned int size() const {return 1;}
+    bool is_null() const { return false;}
+    size_t get_array_size() const {return 1;}
 };
-
-
-
 
 namespace Input {
 namespace Interface {
@@ -213,7 +213,7 @@ public:
     * Returns end iterator common to all iterators inner types.
     */
    inline IteratorBase end() {
-       return IteratorBase(*storage_,storage_->size());
+       return IteratorBase(*storage_,storage_->get_array_size());
    }
 
    /**
