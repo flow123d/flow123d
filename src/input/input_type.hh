@@ -17,9 +17,8 @@
  *    ...
  *
  *  - dokumentace hotovych trid
- *  - ? presun do *.cc
+ *  - presun neinline metod do *.cc
  *
- *  - AbstractRecord
  *  - ? predelat DefaultValue na hierarchii trid (opet problem s error hlaskou) tkato by se to hlasilo pri kompilaci.
  */
 
@@ -262,9 +261,145 @@ class AbstractRecord : public TypeBase {
  */
 class Record : public TypeBase {
 public:
+    /**
+     *  Structure for description of one key in record.
+     *  The members dflt_type_ and default have reasonable meaning only for
+     *  type_ == Scalar
+     */
+    ///
+    struct Key {
+        unsigned int key_index;
+        string key_;
+        string description_;
+        boost::shared_ptr<const TypeBase> type_;
+        DefaultValue default_;
+    };
+
+    /**
+     * Public typedef of constant iterator into array of keys.
+     */
+    typedef std::vector<struct Key>::const_iterator KeyIter;
+
     Record(const string & type_name, const string & description)
     : description_(description), type_name_(type_name), made_extensive_doc(false)
     {}
+
+    /**
+     * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
+     * @p description. The parameter @p type has to be either boost::shared_ptr<TYPE> where TYPE is any of Record, AbstractRecord, and Selection, or @p type has to
+     * be reference to any other descendant of TypeBase. The reason is that in the first group are types with complex description and would not to have multiple instances
+     * of these types in the whole type hierarchy. This guarantees, that every Record, AbstractRecord, and Selection will be reported only once when documentation is printed out.
+     */
+    template <class KeyType>
+    inline void declare_key(const string &key,
+                            const KeyType &type,
+                            const DefaultValue &default_value, const string &description)
+    {
+        declare_key_impl(key,type, default_value, description, boost::is_base_of<TypeBase,KeyType>());
+    }
+
+    /**
+     * Same as previous method but without given default value (same as DefaultValue(DefaultValue::none) )
+     */
+    template <class KeyType>
+    inline void declare_key(const string &key,
+                            const KeyType &type,
+                            const string &description)
+    {
+        declare_key(key,type, DefaultValue(), description);
+    }
+
+    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const {
+
+        if (! extensive) {
+
+            // Short description
+            stream << "Record '" << type_name_ << "' with "<< keys.size() << " keys";
+        } else if ( ! made_extensive_doc) {
+
+            // Extensive description
+            made_extensive_doc=true;
+
+            // header
+            stream << endl;
+            stream << ""
+                   << "Record '" << type_name_ << "' with "<< keys.size() << " keys.";
+            write_description(stream, description_, pad);
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+            // keys
+            for(KeyIter it = keys.begin(); it!=keys.end(); ++it) {
+                stream << setw(pad + 4) << ""
+                       << it->key_ << " = <" << it->default_.value() << "> is ";
+                it->type_->documentation( stream , false, pad +4 ); // short description of the type of the key
+                write_description(stream, it->description_, pad + 4); // description of the key on further lines
+
+            }
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
+            << " " << type_name_ << endl;
+
+            // Full documentation of embedded record types.
+            for(KeyIter it = keys.begin(); it!=keys.end(); ++it) {
+                it->type_->documentation(stream, true, 0);
+            }
+
+        }
+
+        return stream;
+    }
+
+
+
+    /**
+     * Set made_extensive_doc = false for this Record and all its descendants.
+     */
+    virtual void  reset_doc_flags() {
+        made_extensive_doc=false;
+        for(KeyIter it = keys.begin(); it!=keys.end(); ++it) {
+            it->type_->reset_doc_flags();
+        }
+    }
+
+    /**
+     * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
+     *
+     * TODO: Throw exception instead of message, to report more precise error message at higher level.
+     *
+     */
+    inline unsigned int key_index(const string& key) const
+    {
+        KeyHash key_h = key_hash(key);
+        key_to_index_const_iter it = key_to_index.find(key_h);
+        if (it != key_to_index.end()) return it->second;
+        else
+            xprintf(Err, "Attempt to read key '%s', which is not declared within Record '%s'\n", key.c_str(), type_name_.c_str() );
+
+        return size();
+    }
+
+    /**
+     * Returns iterator to the key struct for given key string.
+     *
+     */
+    KeyIter key_iterator(const string& key) const
+    {
+        return begin() + key_index(key);
+    }
+
+    inline KeyIter begin() const
+    {
+        return keys.begin();
+    }
+
+    inline KeyIter end() const
+    {
+        return keys.end();
+    }
+
+    inline int size() const {
+        ASSERT( keys.size() == key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", key_to_index.size(), keys.size());
+        return keys.size();
+    }
+
 
 protected:
     /**
@@ -309,120 +444,7 @@ protected:
         declare_key_impl(key,type_copy, default_value, description, boost::false_type());
     }
 
-public:
-    /**
-     * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
-     * @p description. The parameter @p type has to be either boost::shared_ptr<TYPE> where TYPE is any of Record, AbstractRecord, and Selection, or @p type has to
-     * be reference to any other descendant of TypeBase. The reason is that in the first group are types with complex description and would not to have multiple instances
-     * of these types in the whole type hierarchy. This guarantees, that every Record, AbstractRecord, and Selection will be reported only once when documentation is printed out.
-     */
-    template <class KeyType>
-    inline void declare_key(const string &key,
-                            const KeyType &type,
-                            const DefaultValue &default_value, const string &description)
-    {
-        declare_key_impl(key,type, default_value, description, boost::is_base_of<TypeBase,KeyType>());
-    }
-
-    /**
-     * Same as previous method but without given default value (same as DefaultValue(DefaultValue::none) )
-     */
-    template <class KeyType>
-    inline void declare_key(const string &key,
-                            const KeyType &type,
-                            const string &description)
-    {
-        declare_key(key,type, DefaultValue(), description);
-    }
-
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const {
-
-        if (! extensive) {
-
-            // Short description
-            stream << "Record '" << type_name_ << "' with "<< keys.size() << " keys";
-        } else if ( ! made_extensive_doc) {
-
-            // Extensive description
-            made_extensive_doc=true;
-
-            // header
-            stream << endl;
-            stream << ""
-                   << "Record '" << type_name_ << "' with "<< keys.size() << " keys.";
-            write_description(stream, description_, pad);
-            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
-            // keys
-            for(keys_const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-                stream << setw(pad + 4) << ""
-                       << it->key_ << " = <" << it->default_.value() << "> is ";
-                it->type_->documentation( stream , false, pad +4 ); // short description of the type of the key
-                write_description(stream, it->description_, pad + 4); // description of the key on further lines
-
-            }
-            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
-            << " " << type_name_ << endl;
-
-            // Full documentation of embedded record types.
-            for(keys_const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-                it->type_->documentation(stream, true, 0);
-            }
-
-        }
-
-        return stream;
-    }
-
-
-
-    /**
-     * Set made_extensive_doc = false for this Record and all its descendants.
-     */
-    virtual void  reset_doc_flags() {
-        made_extensive_doc=false;
-        for(keys_const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-            it->type_->reset_doc_flags();
-        }
-    }
-
-    /**
-     * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
-     */
-    unsigned int key_index(const string& key) const
-    {
-        KeyHash key_h = key_hash(key);
-        key_to_index_const_iter it = key_to_index.find(key_h);
-        if (it != key_to_index.end()) return it->second;
-        else
-            xprintf(Err, "Attempt to read key '%s', which is not declared within Record '%s'\n", key.c_str(), type_name_.c_str() );
-
-        return keys.size();
-    }
-
-    inline const TypeBase &get_sub_type(const unsigned int index) const {
-        return *(keys[index].type_);
-    }
-
-
-    inline int size() const {
-        ASSERT( keys.size() == key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", key_to_index.size(), keys.size());
-        return keys.size();
-    }
-
 private:
-    /**
-     *  Structure for description of one key in record.
-     *  The members dflt_type_ and default have reasonable meaning only for
-     *  type_ == Scalar
-     */
-    ///
-    struct Key {
-        unsigned int key_index;
-        string key_;
-        string description_;
-        boost::shared_ptr<const TypeBase> type_;
-        DefaultValue default_;
-    };
 
     /// Database of valid keys
     std::map<KeyHash, unsigned int> key_to_index;
@@ -430,7 +452,7 @@ private:
 
     /// Keys in order as they where declared.
     std::vector<struct Key> keys;
-    typedef std::vector<struct Key>::const_iterator keys_const_iterator;
+
 
     /// Description of the whole record type.
     const string description_;

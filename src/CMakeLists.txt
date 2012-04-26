@@ -99,6 +99,8 @@ set(sources_lib_input
     input/Record_node.cpp
     input/Value_node.cpp
     input/Vector_node.cpp
+    input/input_type.cc
+    input/input_interface.cc
 )
 
 # make separate library for Semchem (God save us!)

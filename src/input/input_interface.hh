@@ -3,6 +3,12 @@
  *
  *  Created on: Mar 29, 2012
  *      Author: jb
+ *
+ *
+ *  todo:
+ *  - presun vhodnych casti do *.cc
+ *  - dokumentace
+ *
  */
 #include <vector>
 #include <string>
@@ -107,9 +113,9 @@ public:
      */
     template <class Ret>
     inline const Ret key(const string &key) const {
-        unsigned int key_index = record_type_->key_index(key);
         try {
-            return *(Iterator<Ret>(record_type_->get_sub_type(key_index), *storage_, key_index));
+            Type::Record::KeyIter key_it = record_type_->key_iterator(key);
+            return *(Iterator<Ret>( *(key_it->type_), *storage_, key_it->key_index));
         }
         catch (FlowException & e) {
             const Input::Type::TypeBase * key_type = *( boost::get_error_info<InputType_EI>(e) );
