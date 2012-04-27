@@ -107,10 +107,6 @@ protected:
     Generic_node( const Value_type value_type ):value_type_(value_type),parent_node_( NULL ) {};
     Generic_node( const Value_type value_type, Generic_node * prev_node ):value_type_(value_type),parent_node_(prev_node) {};
 
-    virtual Generic_node & get_key( const string & key );
-    virtual Generic_node & get_key( const string & key, Generic_node & default_tree );
-    virtual Generic_node & get_key_check( const string & key, int & err_code );
-
     virtual void delete_id( const size_t id );
     virtual void delete_key( const string & key );
 
@@ -127,6 +123,10 @@ public:
 
     Generic_node & get_parent_node( void ) { return *parent_node_; }
     void set_parent_node( Generic_node * node ) { parent_node_ = node; }
+
+    virtual Generic_node & get_key( const string & key );
+    virtual Generic_node & get_key( const string & key, Generic_node & default_tree );
+    virtual Generic_node & get_key_check( const string & key, int & err_code );
 
     virtual Generic_node & get_item( const size_t id );
     virtual Generic_node & get_item( const size_t id, Generic_node & default_tree );

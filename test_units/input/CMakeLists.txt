@@ -31,16 +31,13 @@ set(super_test_libs input_lib)
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for auto
+    set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for auto and multiline raw strings
     #define_test(enum_macro)
     
     define_test(input_reader)
     define_test(input_interface)
     define_test(input_type)
 
-    #set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for multiline raw strings
-    #define_test(generic_node)
-    
 endif()
 
 

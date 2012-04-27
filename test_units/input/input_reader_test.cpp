@@ -90,17 +90,15 @@ TEST(flow_json_parser_stream, trivial_pure) {
 
     ASSERT_TRUE( in_s.good() );
 
-    Data_tree * tree = new Data_tree(in_s);
-    ASSERT_FALSE( tree->err_status );
+    Data_tree tree(in_s);
+    ASSERT_FALSE( tree.err_status );
 
     stringstream ss1, ss2;
-    ss1 << *tree;
-    ss2 << tree->get_head();
+    ss1 << tree;
+    ss2 << tree.get_head();
 
     ASSERT_STREQ("{\"flow\":\"OK\"}", ss1.str().c_str());
     ASSERT_STREQ("{\"flow\":\"OK\"}", ss2.str().c_str());
-
-    delete tree;
 }
 
 TEST(flow_json_parser_stream, trivial_wrongdata) {
@@ -108,63 +106,50 @@ TEST(flow_json_parser_stream, trivial_wrongdata) {
     const string data("blahblah");
 
     istringstream in_s(data);
-
     ASSERT_TRUE( in_s.good() );
 
-    Data_tree * tree = new Data_tree(in_s);
-    ASSERT_TRUE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(in_s);
+    ASSERT_TRUE( tree.err_status );
 }
 
 TEST(flow_json_parser_stream, json_pure) {
     //read from stream, data from multiline string
     istringstream in_s(flow_mini_json);
     ASSERT_TRUE( in_s.good() );
-    Data_tree * tree = new Data_tree(in_s);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(in_s);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_stream, comments) {
     //read from stream, data from multiline string
     istringstream in_s(flow_json_comment_parser);
     ASSERT_TRUE( in_s.good() );
-    Data_tree * tree = new Data_tree(in_s);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(in_s);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_stream, colon_equal) {
     //read from stream, data from multiline string
     istringstream in_s(flow_json_colon_eq);
     ASSERT_TRUE( in_s.good() );
-    Data_tree * tree = new Data_tree(in_s);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(in_s);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_stream, quotes) {
     //read from stream, data from multiline string
     istringstream in_s(flow_json_quotes);
     ASSERT_TRUE( in_s.good() );
-    Data_tree * tree = new Data_tree(in_s);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(in_s);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_stream, whitespace_separator) {
     //read from stream, data from multiline string
     istringstream in_s(flow_json_whitespace_separator);
     ASSERT_TRUE( in_s.good() );
-    Data_tree * tree = new Data_tree(in_s);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(in_s);
+    ASSERT_FALSE( tree.err_status );
 }
 
 /*
@@ -174,67 +159,51 @@ TEST(flow_json_parser_string, trivial_pure) {
     //read from string
     const string data("{  \"flow\"  :  \"OK\"  }");
 
-    Data_tree * tree = new Data_tree(data);
-    ASSERT_FALSE( tree->err_status );
+    Data_tree tree(data);
+    ASSERT_FALSE( tree.err_status );
 
     stringstream ss1, ss2;
-    ss1 << *tree;
-    ss2 << tree->get_head();
+    ss1 << tree;
+    ss2 << tree.get_head();
 
     ASSERT_STREQ("{\"flow\":\"OK\"}", ss1.str().c_str());
     ASSERT_STREQ("{\"flow\":\"OK\"}", ss2.str().c_str());
-
-    delete tree;
 }
 
 TEST(flow_json_parser_string, trivial_wrongdata) {
     //read from string, data from string
-    const string data("blahblah");
-
-    Data_tree * tree = new Data_tree(data);
-    ASSERT_TRUE( tree->err_status );
-
-    delete tree;
+    Data_tree tree("blahblah");
+    ASSERT_TRUE( tree.err_status );
 }
 
 TEST(flow_json_parser_string, json_pure) {
     //read from string, data from multiline string
-    Data_tree * tree = new Data_tree(flow_mini_json);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(flow_mini_json);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_string, comments) {
     //read from string, data from multiline string
-    Data_tree * tree = new Data_tree(flow_json_comment_parser);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(flow_json_comment_parser);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_string, colon_equal) {
     //read from string, data from multiline string
-    Data_tree * tree = new Data_tree(flow_json_colon_eq);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(flow_json_colon_eq);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_string, quotes) {
     //read from string, data from multiline string
-    Data_tree * tree = new Data_tree(flow_json_quotes);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(flow_json_quotes);
+    ASSERT_FALSE( tree.err_status );
 }
 
 TEST(flow_json_parser_string, whitespace_separator) {
     //read from string, data from multiline string
-    Data_tree * tree = new Data_tree(flow_json_whitespace_separator);
-    ASSERT_FALSE( tree->err_status );
-
-    delete tree;
+    Data_tree tree(flow_json_whitespace_separator);
+    ASSERT_FALSE( tree.err_status );
 }
 
 /*
@@ -242,15 +211,72 @@ TEST(flow_json_parser_string, whitespace_separator) {
  */
 
 TEST(Node_lib, access_to_non_existent) {
+    //non-existent node example
+    const int default_int = 12321;
 
-    //TODO
+    Record_node rnode;
+    Generic_node & gnode_r = rnode;
+
+    //if does not exist, return dafault
+    ASSERT_EQ( default_int, gnode_r.get_key("foo").get_item(10).as_value().get_int(default_int) );
+
+
+    //if does not exist, return zero and errcode
+    int errcode;
+    ASSERT_EQ( 0, gnode_r.get_key("foo").get_item(10).as_value().get_int_check(errcode) );
+    ASSERT_NE( 0, errcode );
+
+    //if does not exist, die
+    ASSERT_DEATH( gnode_r.get_key("foo").get_item(10).as_value().get_int(), "Internal Error" );
 }
 
 TEST(Node_lib, access_as_ancestor) {
+    //access to instance as an ancestor
+    const int value(123);
 
-    //TODO
+    Value_node vnode(value);
+    Generic_node & gnode_r = vnode;
+    Generic_node * gnode_p = &vnode;
+
+    ASSERT_EQ( value, vnode.get_int() );
+    ASSERT_EQ( value, gnode_r.as_value().get_int() );
+    ASSERT_EQ( value, (*gnode_p).as_value().get_int() );
 }
 
+/*
+ * **********************************************************************************************************************
+ */
+/*
+TEST(data_tree_test, read) {
+    ifstream in_s(flow_mini_json);
+    Data_tree flow_tree(in_s);
+    in_s.close();
+
+    // check correct read
+    EXPECT_EQ( 0, flow_tree.err_status);
+
+    // check existing key
+    Generic_node & root_node = flow_tree.get_head();
+    EXPECT_EQ( "1.0", root_node.get_key("flow_ini_version").get_string());
+    // non-existing key with default value
+    EXPECT_EQ( "0.0", root_node.get_key("flow_ini_verssion").get_string("0.0"));
+
+    // non-existent key with check
+    int err;
+    root_node.get_key("flow_ini_verssion").get_string_check(err);
+    EXPECT_NE(0, err);
+
+    int default_int = 12321;
+    int returned_int;
+    returned_int = root_node.get_key("foo").get_item(10).as_value().get_int(default_int);
+    EXPECT_EQ(default_int, returned_int);
+
+    // report error for nonexistent key
+    EXPECT_DEATH(root_node.get_key("flow_ini_verssion").get_string(), "some error message\n");
+
+
+}
+*/
 /*
  * **********************************************************************************************************************
  */
