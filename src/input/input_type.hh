@@ -780,6 +780,12 @@ public:
         return stream;
     }
 
+    FileType get_file_type() const {
+        return type_;
+    }
+
+
+
 private:
     FileType    type_;
 };

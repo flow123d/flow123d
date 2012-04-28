@@ -6,8 +6,13 @@
  *
  *
  *  todo:
+ *  - in iterator make dereference method with given pointer to default value string
+ *  - key<Type>(key, default_value), otazka, zda defaultni hodnoty z deklarace neprirazovat az tady
+ *  - pouhy dotaz na existenci klice
  *  - presun vhodnych casti do *.cc
  *  - dokumentace
+ *  - deklarovat tridu Path a mit key<Path>, ktera bude produkovat uplne cesty, varianta je
+ *
  *
  */
 #include <vector>
@@ -370,6 +375,7 @@ public:
         index_++;
         return *this;
     }
+
     ///  * dereference operator
     inline OutputType operator *() const
     {

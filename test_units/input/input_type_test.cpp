@@ -175,6 +175,36 @@ using namespace Input::Type;
 
 }
 
+TEST(InputTypeRecord, iterating) {
+    using namespace Input::Type;
+
+    boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
+            "Information about one file for field data.");
+    {
+        output_record->declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::read_time),
+                "File for output stream.");
+        boost::shared_ptr<Integer> digits_type=boost::make_shared<Integer>((int)0, (int)8);
+        output_record->declare_key("digits",digits_type, DefaultValue("8"),
+                "Number of digits used for output double values into text output files.");
+        output_record->declare_key("compression", Bool(),
+                "Whether to use compression of output file.");
+        boost::shared_ptr<Double> time_type=boost::make_shared<Double>(0.0);
+        output_record->declare_key("start_time", time_type,
+                "Simulation time of first output.");
+        output_record->declare_key("data_description", String(),DefaultValue(),
+                "");
+    } // delete local variables
+
+    Record::KeyIter it = output_record->begin();
+    EXPECT_EQ( 0, it->key_index);
+    EXPECT_EQ("file", it->key_);
+    EXPECT_EQ("File for output stream.", it->description_);
+    EXPECT_EQ(typeid(FileName) , typeid(*(it->type_)));
+    EXPECT_EQ(output_file, static_cast<const FileName *>( &(*it->type_) )->get_file_type() );
+    it+=4;
+    EXPECT_EQ( "data_description", it->key_);
+    EXPECT_EQ( output_record->end(), it+1 );
+}
 /**
  * Test documentation output.
  */
