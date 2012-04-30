@@ -47,7 +47,7 @@ using namespace Input::Type;
 
     Record rec_1("record_type_1","desc");
     boost::shared_ptr<Record> rec_2 = boost::make_shared<Record>("record_type_2", "desc");
-
+    rec_2->finish();
 
     //MAKE_Input_Type_Record(tmp)("subrec_type", "desc");
     //EXPECT_DEATH( {Array arr_rec_ref( *tmp ); },
@@ -65,7 +65,8 @@ enum Colors {
     white=300,
     black=45,
     red,
-    green
+    green,
+    yellow
 };
 
 TEST(InputTypeSelection, construction) {
@@ -77,9 +78,21 @@ using namespace Input::Type;
     sel.add_value(white,"white","White color");
     sel.add_value(black,"black");
     sel.add_value(red,"red");
-    EXPECT_DEATH( {sel.add_value(green,"red");}, "Existing name in declaration");
-    EXPECT_DEATH( {sel.add_value(blue,"blue1");}, "Existing value in declaration");
+    EXPECT_DEATH( {sel.add_value(green,"red");}, "already exists in Selection:");
+    EXPECT_DEATH( {sel.add_value(blue,"blue1");}, "conflicts with value");
     sel.add_value(green,"green");
+    sel.finish();
+
+    // getter methods
+    EXPECT_TRUE( sel.has_name("blue") );
+    EXPECT_FALSE( sel.has_name("xblue") );
+    EXPECT_TRUE( sel.has_value(blue) );
+    EXPECT_TRUE( sel.has_value(black) );
+    EXPECT_FALSE( sel.has_value(yellow) );
+
+    EXPECT_EQ( 45, sel.name_to_value("black") );
+    EXPECT_THROW( {sel.name_to_value("xblack");}, SelectionKeyNotFound );
+
 
 }
 
@@ -109,8 +122,10 @@ using namespace Input::Type;
 
    rec.declare_key("data_description", String(),DefaultValue(),"");
 
+
+
    EXPECT_DEATH( { rec.declare_key("data_description", String(),"");},
-                "Redeclaration of key:");
+                "Re-declaration of the key:");
 
    EXPECT_DEATH( { DefaultValue d(DefaultValue::declaration);},
                 "Can not construct DefaultValue with type 'declaration' without providing the default value.");
@@ -122,8 +137,14 @@ using namespace Input::Type;
    MAKE_Input_Type_Selection(Colors, sel)("Color selection");
    sel->add_value(black, "black");
    sel->add_value(red, "red");
+   sel->finish();
 
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
+
+   // test correct finishing.
+   EXPECT_DEATH( {rec.documentation(cout);}, "Can not provide documentation of unfinished Record type: ");
+   rec.finish();
+   EXPECT_DEATH( {rec.declare_key("xx", String(),"");}, "in finished Record type:");
 
    //EXPECT_DEATH( { rec.declare_key("x", *sel, "desc.");},
    //             "Complex type .* shared_ptr.");
@@ -152,9 +173,9 @@ using namespace Input::Type;
 
 
     ASSERT_DEATH( {array_record.declare_key("some_key", Array( String() ), DefaultValue("10"), ""); },
-                  "Can not provide default value for non scalar type."
+                  "Default value for non scalar type in declaration of key:"
                  );
-
+    array_record.finish();
 }
 
 TEST(InputTypeRecord, declare_key_record) {
@@ -170,11 +191,14 @@ using namespace Input::Type;
     //              );
 
     boost::shared_ptr<Record> other_record=boost::make_shared<Record>("OtherRecord","desc");
+    other_record->finish();
+
     record_record->declare_key("sub_rec_1", other_record, "key desc");
 
-    // recursion
+    // direct recursion (indirect is forbidden)
     record_record->declare_key("sub_rec_2", record_record, "desc.");
 
+    record_record->finish();
 }
 
 TEST(InputTypeRecord, iterating) {
@@ -195,8 +219,10 @@ TEST(InputTypeRecord, iterating) {
                 "Simulation time of first output.");
         output_record->declare_key("data_description", String(),DefaultValue(),
                 "");
+        output_record->finish();
     } // delete local variables
 
+    // methods begin() and end(), basic work with iterators
     Record::KeyIter it = output_record->begin();
     EXPECT_EQ( 0, it->key_index);
     EXPECT_EQ("file", it->key_);
@@ -206,6 +232,16 @@ TEST(InputTypeRecord, iterating) {
     it+=4;
     EXPECT_EQ( "data_description", it->key_);
     EXPECT_EQ( output_record->end(), it+1 );
+    // method size()
+    EXPECT_EQ(5, output_record->size());
+    //method key_index
+    EXPECT_EQ(0,output_record->key_index("file"));
+    EXPECT_EQ(2,output_record->key_index("compression"));
+    EXPECT_THROW({output_record->key_index("x_file");}, KeyNotFound );
+    // method key_iterator
+    EXPECT_EQ(2,output_record->key_iterator("compression")->key_index);
+
+
 }
 
 TEST(InputTypeRecord, check_key_validity) {
@@ -214,13 +250,13 @@ TEST(InputTypeRecord, check_key_validity) {
     boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
             "Information about one file for field data.");
     EXPECT_DEATH( {output_record->declare_key("a b",Bool(),"desc."); },
-            "Invalid key identifier:"
+            "Invalid key identifier"
             );
     EXPECT_DEATH( {output_record->declare_key("AB",Bool(),"desc."); },
-            "Invalid key identifier:"
+            "Invalid key identifier"
             );
     EXPECT_DEATH( {output_record->declare_key("%$a",Bool(),"desc."); },
-            "Invalid key identifier:"
+            "Invalid key identifier"
             );
 
 }
@@ -245,6 +281,7 @@ boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord
             "Simulation time of first output.");
     output_record->declare_key("data_description", String(),DefaultValue(),
             "");
+    output_record->finish();
 } // delete local variables
 
 boost::shared_ptr<Record> array_record=boost::make_shared<Record>("RecordOfArrays",
@@ -259,6 +296,7 @@ boost::shared_ptr<Record> array_record=boost::make_shared<Record>("RecordOfArray
          "Desc. of array");
  array_record->declare_key("array_of_str_1", Array( String() ), DefaultValue(),
              "Desc. of array");
+ array_record->finish();
 }
 
 
@@ -270,10 +308,14 @@ boost::shared_ptr<Record> array_record=boost::make_shared<Record>("RecordOfArray
 
  {
      boost::shared_ptr<Record> other_record=boost::make_shared<Record>("OtherRecord","desc");
+     other_record->finish();
+
      record_record->declare_key("sub_rec_1", other_record, "key desc");
 
      // recursion
      record_record->declare_key("sub_rec_2", record_record, "Recursive key.");
+
+     record_record->finish();
  }
 
  MAKE_Input_Type_Selection(enum Colors, sel)("Colors");
@@ -283,6 +325,7 @@ boost::shared_ptr<Record> array_record=boost::make_shared<Record>("RecordOfArray
      sel->add_value(black,"black");
      sel->add_value(red,"red");
      sel->add_value(green,"green");
+     sel->finish();
  }
 
  Record main("MainRecord", "The main record of flow.");
@@ -291,6 +334,7 @@ boost::shared_ptr<Record> array_record=boost::make_shared<Record>("RecordOfArray
  main.declare_key("color", sel, "My favourite color.");
  main.declare_key("color1", sel, "My second favourite color.");
  main.declare_key("array_record", array_record, "no commment on array_record");
+ main.finish();
 
 
  main.documentation(cout, true);

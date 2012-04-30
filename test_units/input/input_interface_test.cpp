@@ -45,6 +45,7 @@ protected:
         sub_record->declare_key("some_double", Double(), "desc");
         sub_record->declare_key("some_bool", Bool(), "desc");
         sub_record->declare_key("some_string", String(), "desc");
+        sub_record->finish();
 
         main->declare_key("some_record", sub_record, "desc");
         main->declare_key("array_of_int", Array(Integer()), "desc");
@@ -53,6 +54,7 @@ protected:
         main->declare_key("some_double", Double(), "desc");
         main->declare_key("some_bool", Bool(), "desc");
         main->declare_key("some_string", String(), "desc");
+        main->finish();
 
         // read data storage tree
         this->storage = new Input::Interface::Storage();
