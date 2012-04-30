@@ -40,7 +40,7 @@
 #include "xio.h"
 #include "la/distribution.hh"
 #include "solve.h"
-#include "la_linsys.hh"
+//#include "la_linsys.hh"
 
 //#include "profiler.hh"
 

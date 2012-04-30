@@ -365,7 +365,7 @@ void DarcyFlowMHOutput::make_sides_scalar() {
 //=============================================================================
 
 void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
-    F_ENTRY_P("nodes"+mesh_->node_vector.size());
+    F_ENTRY;
 
     double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
 

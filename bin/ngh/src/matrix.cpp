@@ -1,8 +1,8 @@
+#include <cmath>
 #include "matrix.h"
 #include "mathfce.h"
 #include "system.h"
 #include "problem.h"
-#include <math.h>
 
 using namespace mathfce;
 

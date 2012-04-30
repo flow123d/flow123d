@@ -26,6 +26,14 @@
 
 all:  install
 
+FLOW_BIN=build/bin/flow123d
+MPIEXEC_BIN=build/bin/mpiexec
+
+install: build_flow
+	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
+	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod a+x bin/mpiexec; fi
+
+
 build/CMakeCache.txt:
 	if [ ! -d build ]; then mkdir build; fi
 	cd build; cmake ..
@@ -42,15 +50,9 @@ create_unit_test_links:
 # Useful for building unit tests without actually build whole program.
 cmake: build/CMakeCache.txt  create_unit_test_links
 
-build_target: cmake
+build_flow: cmake
 	make -C build all
 
-FLOW_BIN=build/bin/flow123d
-MPIEXEC_BIN=build/bin/mpiexec
-
-install: build_target
-	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
-	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod a+x bin/mpiexec; fi
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	

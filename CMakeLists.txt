@@ -26,6 +26,8 @@
 #   - clean and clean-all targets
 #   - doxygen target    
 #
+# - use compiler flags from PETSc as defaults ( different setting can make problems with optimization)
+#
 # * how to organize flow123d libraries? I want:
 #    1) each library should declare on which libraries it depends, but should not link against them (not contain them)
 #       this setting should by automatically used in final linking
@@ -81,8 +83,7 @@ find_package(PARMETIS REQUIRED)
 find_package(Boost)
 if (NOT Boost_FOUND) 
   # just use our third_party directory
-  #set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-  set(BOOST_ROOT /home/jb/local/boost_1_49_0)
+  set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
   find_package(Boost)
   if (NOT Boost_FOUND)
     # force to use it 

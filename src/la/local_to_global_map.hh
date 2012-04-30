@@ -13,6 +13,8 @@
 #include <set>
 #include <vector>
 
+#include "system.hh"
+
 class Distribution;
 
 /**

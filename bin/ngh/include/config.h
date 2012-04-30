@@ -13,9 +13,10 @@
 // //     #define _BSD_SOURCE
 // //       #include <stdio.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 //   // MAXPATH depends on filesystem, if following makes problems
 //   // "pathconf" approach form glibc should be used

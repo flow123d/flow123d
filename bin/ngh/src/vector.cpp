@@ -1,6 +1,6 @@
+#include <cmath>
 #include "point.h"
 #include "myvector.h"
-#include <math.h>
 #include "mathfce.h"
 
 using namespace mathfce;
