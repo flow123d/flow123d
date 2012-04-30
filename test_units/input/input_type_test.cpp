@@ -49,9 +49,10 @@ using namespace Input::Type;
     boost::shared_ptr<Record> rec_2 = boost::make_shared<Record>("record_type_2", "desc");
 
 
-    EXPECT_DEATH( {Array arr_rec_ref( Record("subrec_type", "desc") ); },
-                 "Complex type .* shared_ptr."
-                );
+    //MAKE_Input_Type_Record(tmp)("subrec_type", "desc");
+    //EXPECT_DEATH( {Array arr_rec_ref( *tmp ); },
+    //             "Complex type .* shared_ptr."
+    //            );
 
     Array arr_rec_shared_ptr( rec_2 );
 }
@@ -96,7 +97,7 @@ using namespace Input::Type;
    // - various default values
    static Record rec("SomeRecord", "desc.");
 
-   rec.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::read_time), "desc.");
+   rec.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional), "desc.");
 
    boost::shared_ptr<Integer> digits_type=boost::make_shared<Integer>((int)0, (int)8);
    rec.declare_key("digits",digits_type, DefaultValue("8"), "desc.");
@@ -124,8 +125,8 @@ using namespace Input::Type;
 
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
 
-   EXPECT_DEATH( { rec.declare_key("x", *sel, "desc.");},
-                "Complex type .* shared_ptr.");
+   //EXPECT_DEATH( { rec.declare_key("x", *sel, "desc.");},
+   //             "Complex type .* shared_ptr.");
 
    // should fail at compile time
    // output_record.declare_key("xx", 10, "desc");
@@ -163,9 +164,10 @@ using namespace Input::Type;
 
     boost::shared_ptr<Record> record_record=boost::make_shared<Record>("RecordOfRecords", "");
 
-    ASSERT_DEATH( {record_record->declare_key("sub_rec_1", Record("subrec_type", "desc") , "desc"); },
-                  "Complex type .* shared_ptr."
-                  );
+    // Test that Record has to be passed as shared_ptr
+    //ASSERT_DEATH( {record_record->declare_key("sub_rec_1", Record("subrec_type", "desc") , "desc"); },
+    //              "Complex type .* shared_ptr."
+    //              );
 
     boost::shared_ptr<Record> other_record=boost::make_shared<Record>("OtherRecord","desc");
     record_record->declare_key("sub_rec_1", other_record, "key desc");
@@ -181,7 +183,7 @@ TEST(InputTypeRecord, iterating) {
     boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
             "Information about one file for field data.");
     {
-        output_record->declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::read_time),
+        output_record->declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
                 "File for output stream.");
         boost::shared_ptr<Integer> digits_type=boost::make_shared<Integer>((int)0, (int)8);
         output_record->declare_key("digits",digits_type, DefaultValue("8"),
@@ -205,6 +207,23 @@ TEST(InputTypeRecord, iterating) {
     EXPECT_EQ( "data_description", it->key_);
     EXPECT_EQ( output_record->end(), it+1 );
 }
+
+TEST(InputTypeRecord, check_key_validity) {
+    using namespace Input::Type;
+
+    boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
+            "Information about one file for field data.");
+    EXPECT_DEATH( {output_record->declare_key("a b",Bool(),"desc."); },
+            "Invalid key identifier:"
+            );
+    EXPECT_DEATH( {output_record->declare_key("AB",Bool(),"desc."); },
+            "Invalid key identifier:"
+            );
+    EXPECT_DEATH( {output_record->declare_key("%$a",Bool(),"desc."); },
+            "Invalid key identifier:"
+            );
+
+}
 /**
  * Test documentation output.
  */
@@ -214,7 +233,7 @@ using namespace Input::Type;
 boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
         "Information about one file for field data.");
 {
-    output_record->declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::read_time),
+    output_record->declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
             "File for output stream.");
     boost::shared_ptr<Integer> digits_type=boost::make_shared<Integer>((int)0, (int)8);
     output_record->declare_key("digits",digits_type, DefaultValue("8"),
