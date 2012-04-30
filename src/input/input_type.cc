@@ -86,6 +86,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
 
 std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
+    if (! finished) xprintf(PrgErr, "Can not provide documentation of unfinished Record type: %s\n", type_name_.c_str());
 
     if (! extensive) {
 
@@ -130,6 +131,8 @@ void  Record::reset_doc_flags() const {
     }
 }
 
+string Record::type_name() const
+{ return type_name_;}
 
 /**********************************************************************************
  * implementation of Type::Array
@@ -151,6 +154,9 @@ void  Array::reset_doc_flags() const {
     type_of_values_->reset_doc_flags();
 }
 
+string Array::type_name() const
+{ return "array_of_" + type_of_values_->type_name();}
+
 /**********************************************************************************
  * implementation of Type::Scalar ... and descendants.
  */
@@ -163,17 +169,31 @@ std::ostream& Bool::documentation(std::ostream& stream, bool extensive, unsigned
     return stream;
 }
 
+ string Bool::type_name() const {
+    return "Bool";
+}
+
 std::ostream& Integer::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
     if (extensive) return stream;
     stream << "Integer in [" << lower_bound_ << ", " << upper_bound_ << "]";
     return stream;
 }
 
+ string Integer::type_name() const {
+    return "Integer";
+}
+
+
 std::ostream& Double::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
     if (extensive) return stream;
     stream << "Double in [" << lower_bound_ << ", " << upper_bound_ << "]";
     return stream;
 }
+
+ string Double::type_name() const {
+    return "Double";
+}
+
 
 std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
     if (extensive) return stream;
@@ -193,6 +213,16 @@ std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsi
     return stream;
 }
 
+ string FileName::type_name() const {
+    switch (type_) {
+    case input_file:
+        return "FileName_input";
+    case output_file:
+        return "FileName_output";
+    default:
+        return "FileName";
+    }
+}
 
 
 
@@ -202,6 +232,10 @@ std::ostream& String::documentation(std::ostream& stream, bool extensive, unsign
     if (extensive) return stream;
     stream << "String (generic)";
     return stream;
+}
+
+ string String::type_name() const {
+    return "String";
 }
 
 

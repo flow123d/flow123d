@@ -5,6 +5,10 @@
  *      Author: jb
  */
 
+
+#ifndef EXCEPTIONS_HH_
+#define EXCEPTIONS_HH_
+
 /**
  * @file Basic exceptions used in Flow123d.
  *
@@ -42,10 +46,6 @@ struct FlowException : virtual std::exception, virtual boost::exception { };
  * @endcode
  */
 #define TYPEDEF_ERR_INFO(tag, type)    typedef boost::error_info< struct tag, type > tag##_EI
-
-
-#ifndef EXCEPTIONS_HH_
-#define EXCEPTIONS_HH_
 
 
 

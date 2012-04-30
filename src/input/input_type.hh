@@ -6,17 +6,19 @@
  *
  *  todo:
  *
- *  - dokumentace hotovych trid
- *  - presun neinline metod do *.cc
+ *  - mozne rozdeleni na type.hh type_record_impl.hh type_selection_impl.hh type_impl.hh
+ *
+ *  - Doxygen doc
+ *
+ *  - projit vsechny tridy a zkontrolovat, zda poskytuji dostatecny pristup ke svemu obsahu.
  *
  *  - zavest dedeni Recordu (neco jako copy constructor), ale s tim, ze rodicovsky Record by si pamatoval sve potomky
  *    a tim bychom se zbavili AbstractRecordu -
  *    v kopii recordu by se mohly prepisovat klice (jak to zaridit, nemel by se z chyby udelat warning?
- *  - zavest uzavreni Recordu a Selection
+ *
  *  - zavest priznak pro record, ktery muze byt inicializovan z hodnoty jednoho klice (ten je treba zadat)
  *    a podobne pro pole.
  *    ...
- *  - rozmyslet ktere error messages predelat na exception
  *
  *
  *  - ?? predelat DefaultValue na hierarchii trid (opet problem s error hlaskou) tkato by se to hlasilo pri kompilaci.
@@ -30,6 +32,7 @@
 #define INPUTTYPE_HH_
 
 #include "system.hh"
+#include "system/exceptions.hh"
 #include <boost/type_traits.hpp>
 
 #include <limits>
@@ -79,6 +82,13 @@ namespace Input {
 namespace Type {
 
 using namespace std;
+
+
+struct KeyNotFound : virtual FlowException {};
+struct SelectionKeyNotFound : virtual FlowException {};
+TYPEDEF_ERR_INFO( KeyName, const string );
+TYPEDEF_ERR_INFO( RecordName, const string );
+TYPEDEF_ERR_INFO( SelectionName, const string );
 
 /**
  * @brief Possible file types.
@@ -199,7 +209,10 @@ class SelectionBase;
  */
 class TypeBase {
 public:
-
+    /**
+     * Default constructor. Set all types finished after construction.
+     */
+    TypeBase() : finished(true) {}
     /**
      * @brief Implementation of documentation printing mechanism.
      *
@@ -218,6 +231,13 @@ public:
      * This method turns these marks off for the whole type subtree.
      */
     virtual void  reset_doc_flags() const =0;
+
+    /// Returns true if the type is fully specified. In particular for Record and Selection, it returns true after @p finish() method is called.
+    inline bool is_finished() const
+    {return finished;}
+
+    /// Returns an identification of the type. Useful for error messages.
+    virtual string type_name() const  =0;
 
 protected:
     /**
@@ -243,7 +263,15 @@ protected:
      */
     bool is_valid_identifier(const string& key);
 
+    /// Empty virtual destructor.
     virtual ~TypeBase( void ) {}
+
+    /**
+     * Flag that is true for types with completed declaration. This provides nontrivial information only for Record and Selection.
+     */
+    bool finished;
+
+
 };
 
 /**
@@ -254,7 +282,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 /**
  *
- *
+ * TODO: access to type_name_ ??
  */
 class Record : public TypeBase {
 private:
@@ -287,7 +315,7 @@ public:
      */
     Record(const string & type_name, const string & description)
     : description_(description), type_name_(type_name), made_extensive_doc(false)
-    {}
+    {finished=false;}
 
     /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
@@ -300,8 +328,10 @@ public:
                             const KeyType &type,
                             const DefaultValue &default_value, const string &description)
     {
+        if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
+
         if (! is_valid_identifier(key)) {
-            xprintf(PrgErr, "Invalid key identifier: %s\n", key.c_str());
+            xprintf(PrgErr, "Invalid key identifier %s in declaration of Record type: %s\n", key.c_str(), type_name_.c_str());
         }
         declare_key_impl(key,type, default_value, description, boost::is_base_of<TypeBase,KeyType>());
     }
@@ -320,7 +350,7 @@ public:
     /**
      * Finish declaration of the Record type. Now further declarations can be added.
      */
-    void finish() {}
+    void finish() { finished = true; }
 
     /**
      * @brief Implements @p Type:TypeBase::documentation.
@@ -332,18 +362,19 @@ public:
      */
     virtual void  reset_doc_flags() const;
 
+    virtual string type_name() const;
+
     /**
      * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
-     *
-     * TODO: Throw exception instead of message, to report more precise error message at higher level.
      */
     inline unsigned int key_index(const string& key) const
     {
+        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name_.c_str());
         KeyHash key_h = key_hash(key);
         key_to_index_const_iter it = key_to_index.find(key_h);
         if (it != key_to_index.end()) return it->second;
         else
-            xprintf(Err, "Attempt to read key '%s', which is not declared within Record '%s'\n", key.c_str(), type_name_.c_str() );
+            throw KeyNotFound() << KeyName_EI(key) << RecordName_EI(type_name_);
 
         return size();
     }
@@ -354,20 +385,24 @@ public:
      */
     inline KeyIter key_iterator(const string& key) const
     {
+        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name_.c_str());
         return begin() + key_index(key);
     }
 
     inline KeyIter begin() const
     {
+        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name_.c_str());
         return keys.begin();
     }
 
     inline KeyIter end() const
     {
+        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name_.c_str());
         return keys.end();
     }
 
     inline int size() const {
+        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name_.c_str());
         ASSERT( keys.size() == key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", key_to_index.size(), keys.size());
         return keys.size();
     }
@@ -386,9 +421,12 @@ protected:
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
 
+        if ( (! type->is_finished()) &&  ( (void*)(type.get()) != (void*)(this) ) )
+            xprintf(PrgErr, "Unfinished type of declaring key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
+
         // If KeyType is not derived from Scalar, we check emptiness of the default value.
         if (boost::is_base_of<Scalar, KeyType>::value == false && default_value.has_value() ) {
-            xprintf(Err, "Can not provide default value for non scalar type. Key: %s\n", key.c_str());
+            xprintf(Err, "Default value for non scalar type in declaration of key: %s in Record type: %s \n", key.c_str(), type_name_.c_str() );
         }
 
         KeyHash key_h = key_hash(key);
@@ -398,7 +436,7 @@ protected:
            Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value};
            keys.push_back(tmp_key);
         } else {
-           xprintf(Err,"Redeclaration of key: %s\n", key.c_str());
+           xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
         }
     }
 
@@ -460,10 +498,14 @@ public:
     inline Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
     : lower_bound_(min_size), upper_bound_(max_size)
     {
+        ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
         /// ASSERT MESSAGE: "You have to use shared_ptr to declare key with types Record or Selection. For those classes we forbids copies."
         BOOST_STATIC_ASSERT( ( ! boost::is_same<Record,ValueType>::value &&  ! boost::is_base_of<SelectionBase, ValueType >::value) );
+
+        if ( ! type.is_finished())
+            xprintf(PrgErr, "Unfinished type '%s' used in declaration of Array.\n", type.type_name().c_str() );
 
         boost::shared_ptr<const ValueType> type_copy = boost::make_shared<ValueType>(type);
         type_of_values_ = type_copy;
@@ -478,6 +520,9 @@ public:
     Array(boost::shared_ptr<ValueType> type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
     : type_of_values_(type),lower_bound_(min_size), upper_bound_(max_size)
     {
+        if ( ! type->is_finished())
+            xprintf(PrgErr, "Unfinished type '%s' used in declaration of Array.\n", type->type_name().c_str() );
+
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType>::value) );
     }
@@ -493,6 +538,8 @@ public:
 
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
     virtual void  reset_doc_flags() const;
+
+    virtual string type_name() const;
 protected:
 
 
@@ -533,8 +580,8 @@ template <class Enum>
 class Selection : public SelectionBase {
 public:
     Selection(const string &name)
-    :name_(name), made_extensive_doc(false)
-    {}
+    :type_name_(name), made_extensive_doc(false)
+    { finished = false;}
 
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
@@ -542,17 +589,20 @@ public:
     void add_value(const Enum value, const std::string &key, const std::string &description = "") {
         F_ENTRY;
 
+        if (finished) xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name_.c_str());
         KeyHash key_h = key_hash(key);
         if (key_to_index_.find(key_h) != key_to_index_.end()) {
-            xprintf(Err,"Existing name in declaration of enum key, name: %s value: %d\n", key.c_str(), value);
+            xprintf(PrgErr,"Name '%s' already exists in Selection: %s\n", key.c_str(), type_name_.c_str());
             return;
         }
-        if (value_to_index_.find(value) != value_to_index_.end()) {
-            xprintf(Err,"Existing value in declaration of enum key, name: %s value: %d\n", key.c_str(), value);
+        value_to_index_const_iter it = value_to_index_.find(value);
+        if ( it  != value_to_index_.end()) {
+            xprintf(PrgErr,"Value %d of new name '%s' conflicts with value %d of previous name '%s' in Selection: '%s'.\n",
+                     value, key.c_str(), keys_[it->second].value, keys_[it->second].key_.c_str(), type_name_.c_str());
             return;
         }
 
-        unsigned int new_idx= size();
+        unsigned int new_idx= key_to_index_.size();
         key_to_index_.insert( std::make_pair(key_h, new_idx) );
         value_to_index_.insert( std::make_pair(value, new_idx) );
 
@@ -560,14 +610,18 @@ public:
         keys_.push_back(tmp_key);
     }
 
+    void finish() {finished=true;}
+
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const {
+        if (!finished)  xprintf(PrgErr, "Can not provide documentation of unfinished Selection type: %s\n", type_name_.c_str());
+
         if (!extensive) {
-            stream << "Selection '"<< name_ << "' of " << size() << " values.";
+            stream << "Selection '"<< type_name_ << "' of " << size() << " values.";
         }
         if (extensive && !made_extensive_doc) {
             made_extensive_doc=true;
 
-            stream << endl << "Selection '"<< name_ << "' of " << size() << " values." << endl;
+            stream << endl << "Selection '"<< type_name_ << "' of " << size() << " values." << endl;
             stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // keys
             for(keys_const_iterator it = keys_.begin(); it!=keys_.end(); ++it) {
@@ -577,22 +631,60 @@ public:
                 stream << endl;
             }
             stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
-                        << " " << name_ << endl;
+                        << " " << type_name_ << endl;
         }
         return stream;
     }
 
-    inline unsigned int size() const {
-        ASSERT( keys_.size() == key_to_index_.size(), "Sizes of Type:Selection doesn't match. (map: %d vec: %d)\n", key_to_index_.size(), keys_.size());
-        return keys_.size();
-    }
 
     virtual void  reset_doc_flags() const {
         made_extensive_doc=false;
     }
 
+    virtual string type_name() const {
+        return type_name_;
+    }
+
+    /***
+     * Converts name (on input) to the value. Throws if the name do not exist.
+     */
+    inline Enum name_to_value(const string &key)
+    {
+        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name_.c_str());
+        KeyHash key_h = key_hash(key);
+        key_to_index_const_iter it = key_to_index_.find(key_h);
+        if (it != key_to_index_.end()) return ( keys_[it->second].value );
+        else
+            throw SelectionKeyNotFound() << KeyName_EI(key) << SelectionName_EI(type_name_);
+
+     }
+
+    /**
+     * Just check if there is a particular name in the Selection.
+     */
+    inline bool has_name(const string &key) {
+        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name_.c_str());
+        KeyHash key_h = key_hash(key);
+        return  ( key_to_index_.find(key_h) != key_to_index_.end() ) ;
+    }
+
+    /***
+     *  Check if there is a particular value in the Selection.
+     */
+    inline bool has_value(Enum val) {
+        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name_.c_str());
+        return ( value_to_index_.find(val) != value_to_index_.end() );
+    }
+
+
+    inline unsigned int size() const {
+        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name_.c_str());
+        ASSERT( keys_.size() == key_to_index_.size(), "Sizes of Type:Selection doesn't match. (map: %d vec: %d)\n", key_to_index_.size(), keys_.size());
+        return keys_.size();
+    }
+
 private:
-    string name_;
+    string type_name_;
 
     struct Key {
         unsigned int key_index;
@@ -618,6 +710,7 @@ private:
      * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
      */
     mutable bool made_extensive_doc;
+
 };
 
 /**
@@ -629,6 +722,7 @@ public:
     {}
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual string type_name() const;
 };
 
 
@@ -661,6 +755,7 @@ public:
     }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual string type_name() const;
 private:
     int lower_bound_, upper_bound_;
 
@@ -697,6 +792,7 @@ public:
     }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual string type_name() const;
 private:
     double lower_bound_, upper_bound_;
 
@@ -710,6 +806,7 @@ private:
 class String : public Scalar {
 public:
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
+    virtual string type_name() const;
 };
 
 
@@ -723,6 +820,7 @@ public:
     {}
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual string type_name() const;
 
     FileType get_file_type() const {
         return type_;
