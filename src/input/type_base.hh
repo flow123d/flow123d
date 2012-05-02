@@ -180,7 +180,13 @@ public:
     {return finished;}
 
     /// Returns an identification of the type. Useful for error messages.
-    virtual const string &type_name() const  =0;
+    virtual string type_name() const  =0;
+
+    virtual bool operator==(const TypeBase &other) const
+        { return typeid(*this) == typeid(other); }
+
+    bool operator!=(const TypeBase & other) const
+        { return ! (*this == other); }
 
 protected:
     /**
@@ -204,7 +210,7 @@ protected:
      * Check that a @t key is valid identifier, i.e. consists only of valid characters, that are lower-case letters, digits and underscore,
      * we allow identifiers starting with a digit, but it is discouraged since it slows down parsing of the input file.
      */
-    bool is_valid_identifier(const string& key);
+    static bool is_valid_identifier(const string& key);
 
     /// Empty virtual destructor.
     virtual ~TypeBase( void ) {}
@@ -258,13 +264,23 @@ public:
     inline const TypeBase &get_sub_type() const
         { return *type_of_values_; }
 
+    /// Checks size of particular array.
+    inline bool match_size(unsigned int size)
+        { return size >=lower_bound_ && size<=upper_bound_; }
+
     /// @brief Implements @p Type::TypeBase::documentation.
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
 
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
     virtual void  reset_doc_flags() const;
 
-    virtual const string &type_name() const;
+    virtual string type_name() const;
+
+    virtual bool operator==(const TypeBase &other) const
+        { return  typeid(*this) == typeid(other) &&
+                  (*type_of_values_ == static_cast<const Array *>(&other)->get_sub_type() );
+        }
+
 protected:
 
 
@@ -294,7 +310,7 @@ public:
     {}
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
-    virtual const string &type_name() const;
+    virtual string type_name() const;
 };
 
 
@@ -327,7 +343,7 @@ public:
     }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
-    virtual const string &type_name() const;
+    virtual string type_name() const;
 private:
     int lower_bound_, upper_bound_;
 
@@ -364,7 +380,7 @@ public:
     }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
-    virtual const string &type_name() const;
+    virtual string type_name() const;
 private:
     double lower_bound_, upper_bound_;
 
@@ -378,7 +394,7 @@ private:
 class String : public Scalar {
 public:
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
-    virtual const string &type_name() const;
+    virtual string type_name() const;
 };
 
 
@@ -392,7 +408,13 @@ public:
     {}
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
-    virtual const string &type_name() const;
+    virtual string type_name() const;
+
+    virtual bool operator==(const TypeBase &other) const
+    { return  typeid(*this) == typeid(other) &&
+                     (type_== static_cast<const FileName *>(&other)->get_file_type() );
+    }
+
 
     FileType get_file_type() const {
         return type_;

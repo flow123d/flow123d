@@ -48,6 +48,18 @@ struct FlowException : virtual std::exception, virtual boost::exception { };
 #define TYPEDEF_ERR_INFO(tag, type)    typedef boost::error_info< struct tag, type > tag##_EI
 
 
+/**
+ * Assertion that results in an exception.
+ */
+/*
+#ifdef DEBUG_ASSERTS
 
+#define ASSERT_THROW( condition, exception ) \
+    (condition) ? : throw
 
+#else
+
+#define ASSERT_THROW( condition, exception )
+#endif
+*/
 #endif /* EXCEPTIONS_HH_ */

@@ -55,16 +55,22 @@ public:
     typedef std::vector<struct Key>::const_iterator KeyIter;
 
     /**
+     * Default constructor. Empty handle.
+     */
+    Record()
+    { finished=false; }
+
+    /**
      * Basic constructor. You has to provide @t type_name of the new declared Record type and
      * its @t description.
      */
-    Record(const string & type_name, const string & description);
+    Record(const string & type_name_in, const string & description);
 
     /**
      * Constructor to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
      * in the @p parent. You are free to overwrite copied keys, but you can not delete them.
      */
-    Record(AbstractRecord parent, const string & type_name, const string & description);
+    Record(AbstractRecord parent, const string & type_name_in, const string & description);
 
     /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
@@ -91,7 +97,7 @@ public:
 
         // We do not allow declaration with unfinished type. The only exception is internal "TYPE"
         // key defined by AbstractRecord.
-        if ( (! type.is_finished()) &&  (key != "TYPE"))
+        if ( ! type.is_finished() )
             xprintf(PrgErr, "Unfinished type of declaring key: %s in Record type: %s\n", key.c_str(), type_name().c_str() );
 
         // make our own copy of type object allocated at heap (could be expensive, but we don't care)
@@ -126,7 +132,13 @@ public:
      */
     virtual void  reset_doc_flags() const;
 
-    virtual const string &type_name() const;
+    virtual string type_name() const;
+
+    virtual bool operator==(const TypeBase &other) const
+    { return  typeid(*this) == typeid(other) &&
+                     (type_name() == static_cast<const Record *>(&other)->type_name() );
+    }
+
 
     /**
      * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
@@ -134,7 +146,6 @@ public:
     inline unsigned int key_index(const string& key) const
     {
         ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
-        ASSERT( data_.use_count() != 0 , "Empty Record proxy!");
         KeyHash key_h = key_hash(key);
         RecordData::key_to_index_const_iter it = data_->key_to_index.find(key_h);
         if (it != data_->key_to_index.end()) return it->second;
@@ -157,22 +168,17 @@ public:
     inline KeyIter begin() const
     {
         ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
-        ASSERT( data_.use_count() != 0 , "Empty Record proxy!");
-
         return data_->keys.begin();
     }
 
     inline KeyIter end() const
     {
         ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
-        ASSERT( data_.use_count() != 0 , "Empty Record proxy!");
-
         return data_->keys.end();
     }
 
     inline unsigned int size() const {
         ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
-        ASSERT( data_.use_count() != 0 , "Empty Record proxy!");
         ASSERT( data_->keys.size() == data_->key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", data_->key_to_index.size(), data_->keys.size());
         return data_->keys.size();
     }
@@ -185,7 +191,7 @@ protected:
      */
     class RecordData {
     public:
-        RecordData(const string & type_name, const string & description);
+        RecordData(const string & type_name_in, const string & description);
 
         void declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
@@ -249,8 +255,11 @@ public:
     : Record(type_name_in, description),
       child_data_( boost::make_shared<ChildData>( type_name_in + "_selection" ) )
     {
-        declare_key("TYPE", child_data_->selection_of_childs, DefaultValue(DefaultValue::obligatory),
-                     "Subrecord selection.");
+        // make our own copy of type object allocated at heap (could be expensive, but we don't care)
+        boost::shared_ptr< Selection<unsigned int> > type_copy = boost::make_shared< Selection<unsigned int> >(child_data_->selection_of_childs);
+
+        data_->declare_key("TYPE", type_copy, DefaultValue(DefaultValue::obligatory),
+                     "Sub-record selection.");
 
         finished=false;
     }

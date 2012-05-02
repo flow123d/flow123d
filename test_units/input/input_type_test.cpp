@@ -35,21 +35,79 @@ TEST(BoostTypeTraits, Enum) {
 };
 
 
+class PublicTypeBase : public Input::Type::TypeBase {
+public:
+    using Input::Type::TypeBase::key_hash;
+    using Input::Type::TypeBase::is_valid_identifier;
+};
+
+/**
+ * Test TypeBase class
+ */
+TEST(InputTypeTypeBase, static_methods) {
+    using namespace Input::Type;
+    // can call static methods
+    EXPECT_NE( PublicTypeBase::key_hash("Ahoj"), PublicTypeBase::key_hash("Cau") );
+    EXPECT_TRUE( PublicTypeBase::is_valid_identifier("00ahoj_0123456789"));
+    EXPECT_FALSE( PublicTypeBase::is_valid_identifier("Ahoj"));
+    EXPECT_FALSE( PublicTypeBase::is_valid_identifier("$%"));
+    EXPECT_FALSE( PublicTypeBase::is_valid_identifier("a h o j"));
+}
+
+
 /**
  * Test Array class.
  */
-TEST(InputTypeArray, construction) {
+TEST(InputTypeArray, all_methods) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    Array arr_int(Integer());
+    // construction
+    Array arr_int(Integer(),1,8);
     Array arr_arr_dbl( Array( Double() ));
 
     Record rec_2("record_type_2", "desc");
     rec_2.finish();
 
     Array arr_rec_shared_ptr( rec_2 );
+
+    Selection<int> sel("Singular set.");
+    sel.finish();
+
+    Array arr_of_sel( sel );
+
+    // get_sub_type
+    EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type());
+
+    // operator ==
+    EXPECT_NE( arr_int, Array( Double() ) );
+    EXPECT_EQ( arr_int, Array( Integer() ) );
+    EXPECT_NE( arr_int, rec_2 );
+
+    // match_size
+    EXPECT_TRUE( arr_int.match_size(1) );
+    EXPECT_TRUE( arr_int.match_size(3) );
+    EXPECT_TRUE( arr_int.match_size(8) );
+    EXPECT_FALSE( arr_int.match_size(9) );
+
+    // type_name()
+    EXPECT_EQ( arr_int.type_name(), Array(Integer()).type_name() );
+
 }
+
+/**
+ * Test all simple scalar types.
+ */
+TEST(InputTypeScalar, all_types) {
+using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    EXPECT_EQ( FileName(output_file), FileName(output_file) );
+    EXPECT_NE( FileName(output_file), FileName(input_file) );
+    EXPECT_NE( FileName(output_file), Integer() );
+    EXPECT_EQ( output_file, FileName(output_file).get_file_type() );
+}
+
 
 /**
  * Test Selection class.
@@ -67,25 +125,36 @@ TEST(InputTypeSelection, construction) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    Selection<enum Colors> sel("Colors");
-    sel.add_value(blue, "blue");
-    sel.add_value(white,"white","White color");
-    sel.add_value(black,"black");
-    sel.add_value(red,"red");
-    EXPECT_DEATH( {sel.add_value(green,"red");}, "already exists in Selection:");
-    EXPECT_DEATH( {sel.add_value(blue,"blue1");}, "conflicts with value");
-    sel.add_value(green,"green");
-    sel.finish();
+    Selection<enum Colors> *sel1= new Selection<enum Colors>("Colors");
+    Selection<enum Colors> sel2;
+    sel2=*sel1;
 
+
+    sel1->add_value(blue, "blue");
+    sel2.add_value(white,"white","White color");
+    sel1->add_value(black,"black");
+    sel2.add_value(red,"red");
+    EXPECT_DEATH( {sel1->add_value(green,"red");}, "already exists in Selection:");
+    EXPECT_DEATH( {sel2.add_value(green,"red");}, "already exists in Selection:");
+    EXPECT_DEATH( {sel1->add_value(blue,"blue1");}, "conflicts with value");
+    EXPECT_DEATH( {sel2.add_value(blue,"blue1");}, "conflicts with value");
+    delete sel1;
+
+    sel2.add_value(green,"green");
+    sel2.finish();
+    EXPECT_DEATH( {sel2.add_value(yellow,"y");}, "in finished Selection type:");
+
+    Selection<int> sel3;
+    EXPECT_DEATH( {sel3.add_value(1,"one");}, "to empty selection handle." );
     // getter methods
-    EXPECT_TRUE( sel.has_name("blue") );
-    EXPECT_FALSE( sel.has_name("xblue") );
-    EXPECT_TRUE( sel.has_value(blue) );
-    EXPECT_TRUE( sel.has_value(black) );
-    EXPECT_FALSE( sel.has_value(yellow) );
+    EXPECT_TRUE( sel2.has_name("blue") );
+    EXPECT_FALSE( sel2.has_name("xblue") );
+    EXPECT_TRUE( sel2.has_value(blue) );
+    EXPECT_TRUE( sel2.has_value(black) );
+    EXPECT_FALSE( sel2.has_value(yellow) );
 
-    EXPECT_EQ( 45, sel.name_to_value("black") );
-    EXPECT_THROW( {sel.name_to_value("xblack");}, SelectionKeyNotFound );
+    EXPECT_EQ( 45, sel2.name_to_value("black") );
+    EXPECT_THROW( {sel2.name_to_value("xblack");}, SelectionKeyNotFound );
 
 
     // Integer selection
@@ -96,6 +165,7 @@ using namespace Input::Type;
 
     EXPECT_EQ(10, int_sel.name_to_value("ten"));
 }
+
 
 /**
  * Test Record class.
@@ -248,21 +318,48 @@ TEST(InputTypeRecord, iterating) {
 }
 
 TEST(InputTypeRecord, check_key_validity) {
-    using namespace Input::Type;
+using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
+    Record output_record("OutputRecord",
             "Information about one file for field data.");
-    EXPECT_DEATH( {output_record->declare_key("a b",Bool(),"desc."); },
+    EXPECT_DEATH( {output_record.declare_key("a b",Bool(),"desc."); },
             "Invalid key identifier"
             );
-    EXPECT_DEATH( {output_record->declare_key("AB",Bool(),"desc."); },
+    EXPECT_DEATH( {output_record.declare_key("AB",Bool(),"desc."); },
             "Invalid key identifier"
             );
-    EXPECT_DEATH( {output_record->declare_key("%$a",Bool(),"desc."); },
+    EXPECT_DEATH( {output_record.declare_key("%$a",Bool(),"desc."); },
             "Invalid key identifier"
             );
 
 }
+
+
+/**
+ * Test Abstract Record.
+ */
+
+TEST(InputTypeAbstractRecord, inheritance) {
+using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    AbstractRecord a_rec("EqBase","Base of equation records.");
+    a_rec.declare_key("mesh", String(), DefaultValue(DefaultValue::obligatory), "Comp. mesh.");
+    a_rec.declare_key("a_val", String(), DefaultValue(DefaultValue::obligatory), "");
+    a_rec.finish();
+
+    Record b_rec(a_rec,"EqDarcy","");
+    b_rec.declare_key("b_val", Integer(), "");
+    b_rec.finish();
+
+    Record c_rec(a_rec,"EqTransp","");
+    c_rec.declare_key("c_val", Integer(), "");
+    c_rec.declare_key("a_val", Double(),"");
+    c_rec.finish();
+
+}
+
 /**
  * Test documentation output.
  */

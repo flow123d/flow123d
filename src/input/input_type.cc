@@ -84,37 +84,47 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  * implementation of Type::Record
  */
 
-Record::Record(const string & type_name, const string & description)
-: data_( boost::make_shared<RecordData>(description, type_name) )
+Record::Record(const string & type_name_in, const string & description)
+: data_( boost::make_shared<RecordData>(type_name_in, description) )
 
 {
     finished=false;
 }
 
-Record::Record( AbstractRecord parent, const string & type_name, const string & description)
-: data_( boost::make_shared<RecordData>(description, type_name) )
+Record::Record( AbstractRecord parent, const string & type_name_in, const string & description)
+: data_( boost::make_shared<RecordData>( type_name_in, description) )
 {
     finished=false;
+    if (! parent.is_finished())
+            xprintf(PrgErr, "Can not inherit Record '%s' from unfinished AbstractRecord.\n", type_name_in.c_str());
+
     parent.add_descendant(*this);
     // semi-deep copy
-    for(Record::KeyIter it=parent.begin(); it != parent.end(); ++it) {
-        //...
-    }
+    // We skip first 'TYPE' key.
+    for(Record::KeyIter it=parent.begin()+1; it != parent.end(); ++it) {
+        Key tmp_key=*it;
+        KeyHash key_h = key_hash(tmp_key.key_);
 
+        data_->key_to_index.insert( std::make_pair(key_h, data_->keys.size()) );
+        tmp_key.key_index=data_->keys.size();
+        tmp_key.derived = true;
+        data_->keys.push_back(tmp_key);
+    }
 }
 
-const string &Record::type_name() const
-{ return data_->type_name_;}
+string Record::type_name() const
+{
+    if (data_.use_count() == 0) return "empty_handle";
+    else return data_->type_name_;
+}
 
 void  Record::reset_doc_flags() const {
-    if (data_.use_count() == 0) xprintf(PrgErr, "Can not reset flags of an empty Record proxy.\n");
-    data_->reset_doc_flags();
+    if (data_.use_count() != 0) data_->reset_doc_flags();
 }
 
 std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
     if (! finished) xprintf(PrgErr, "Can not provide documentation of unfinished Record type: %s\n", type_name().c_str());
-    if (data_.use_count() == 0) xprintf(PrgErr, "Can not document an empty Record proxy.\n");
 
     return data_->documentation(stream, extensive, pad);
 }
@@ -123,9 +133,9 @@ std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsign
  * implementation of Type::Record::RecordData
  */
 
-Record::RecordData::RecordData(const string & type_name, const string & description)
+Record::RecordData::RecordData(const string & type_name_in, const string & description)
 :description_(description),
- type_name_(type_name),
+ type_name_(type_name_in),
  made_extensive_doc(false)
 {}
 
@@ -189,10 +199,12 @@ void Record::RecordData::declare_key(const string &key,
        Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false};
        keys.push_back(tmp_key);
     } else {
-       Key tmp_key = { it->second, key, description, type, default_value, false};
-       keys[ it->second ] = tmp_key;
-
-       xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
+       if (keys[it->second].derived) {
+           Key tmp_key = { it->second, key, description, type, default_value, false};
+           keys[ it->second ] = tmp_key;
+       } else {
+           xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
+       }
     }
 }
 
@@ -217,7 +229,7 @@ void  Array::reset_doc_flags() const {
     type_of_values_->reset_doc_flags();
 }
 
-const string &Array::type_name() const
+string Array::type_name() const
 { return "array_of_" + type_of_values_->type_name();}
 
 /**********************************************************************************
@@ -232,7 +244,7 @@ std::ostream& Bool::documentation(std::ostream& stream, bool extensive, unsigned
     return stream;
 }
 
-const string &Bool::type_name() const {
+string Bool::type_name() const {
     return "Bool";
 }
 
@@ -242,7 +254,7 @@ std::ostream& Integer::documentation(std::ostream& stream, bool extensive, unsig
     return stream;
 }
 
-const  string &Integer::type_name() const {
+string Integer::type_name() const {
     return "Integer";
 }
 
@@ -253,7 +265,7 @@ std::ostream& Double::documentation(std::ostream& stream, bool extensive, unsign
     return stream;
 }
 
-const string &Double::type_name() const {
+string Double::type_name() const {
     return "Double";
 }
 
@@ -276,7 +288,7 @@ std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsi
     return stream;
 }
 
-const string &FileName::type_name() const {
+string FileName::type_name() const {
     switch (type_) {
     case input_file:
         return "FileName_input";
@@ -297,7 +309,7 @@ std::ostream& String::documentation(std::ostream& stream, bool extensive, unsign
     return stream;
 }
 
-const string &String::type_name() const {
+string String::type_name() const {
     return "String";
 }
 

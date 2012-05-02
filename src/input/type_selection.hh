@@ -40,7 +40,20 @@ class SelectionBase: public Scalar {
  */
 template<class Enum>
 class Selection: public SelectionBase {
+private:
+    BOOST_STATIC_ASSERT( boost::is_integral<Enum>::value || boost::is_enum<Enum>::value );
 public:
+
+
+    /**
+     * Default constructor. Empty handle.
+     */
+    Selection()
+    {finished=false;}
+
+    /**
+     * Creates a handle pointing to the new SelectionData.
+     */
     Selection(const string &name) :
             data_(boost::make_shared<SelectionData>(name))
     {finished = false; }
@@ -49,6 +62,8 @@ public:
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
      */
     void add_value(const Enum value, const std::string &key, const std::string &description = "") {
+        if (data_.use_count() == 0)
+            xprintf(PrgErr, "Can not add key '%s' with value '%d' to empty selection handle.\n", key.c_str(), value);
         if (finished)
             xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
 
@@ -67,12 +82,19 @@ public:
     }
 
     virtual void reset_doc_flags() const {
-        data_->made_extensive_doc = false;
+        if (data_.use_count() != 0) data_->made_extensive_doc = false;
     }
 
-    virtual const string &type_name() const {
-        return data_->type_name_;
+    virtual string type_name() const {
+        if (data_.use_count() == 0) return "empty_selection_handle";
+        else return data_->type_name_;
     }
+
+    virtual bool operator==(const TypeBase &other) const
+    { return  typeid(*this) == typeid(other) &&
+                     (type_name() == static_cast<const Selection *>(&other)->type_name() );
+    }
+
 
     /***
      * Converts name (on input) to the value. Throws if the name do not exist.
