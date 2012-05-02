@@ -45,14 +45,8 @@ using namespace Input::Type;
     Array arr_int(Integer());
     Array arr_arr_dbl( Array( Double() ));
 
-    Record rec_1("record_type_1","desc");
-    boost::shared_ptr<Record> rec_2 = boost::make_shared<Record>("record_type_2", "desc");
-    rec_2->finish();
-
-    //MAKE_Input_Type_Record(tmp)("subrec_type", "desc");
-    //EXPECT_DEATH( {Array arr_rec_ref( *tmp ); },
-    //             "Complex type .* shared_ptr."
-    //            );
+    Record rec_2("record_type_2", "desc");
+    rec_2.finish();
 
     Array arr_rec_shared_ptr( rec_2 );
 }
@@ -94,6 +88,13 @@ using namespace Input::Type;
     EXPECT_THROW( {sel.name_to_value("xblack");}, SelectionKeyNotFound );
 
 
+    // Integer selection
+    Selection<int> int_sel("Integer selection");
+    int_sel.add_value(10, "ten");
+    int_sel.add_value(0,"zero");
+    int_sel.finish();
+
+    EXPECT_EQ(10, int_sel.name_to_value("ten"));
 }
 
 /**
@@ -112,12 +113,12 @@ using namespace Input::Type;
 
    rec.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional), "desc.");
 
-   boost::shared_ptr<Integer> digits_type=boost::make_shared<Integer>((int)0, (int)8);
+   Integer digits_type(0, 8);
    rec.declare_key("digits",digits_type, DefaultValue("8"), "desc.");
 
    rec.declare_key("compression", Bool(),"desc.");
 
-   boost::shared_ptr<Double> time_type=boost::make_shared<Double>(0.0);
+   Double time_type(0.0);
    rec.declare_key("start_time", time_type,"desc.");
 
    rec.declare_key("data_description", String(),DefaultValue(),"");
@@ -134,10 +135,10 @@ using namespace Input::Type;
        white, black, red
    };
 
-   MAKE_Input_Type_Selection(Colors, sel)("Color selection");
-   sel->add_value(black, "black");
-   sel->add_value(red, "red");
-   sel->finish();
+   Selection<Colors> sel("Color selection");
+   sel.add_value(black, "black");
+   sel.add_value(red, "red");
+   sel.finish();
 
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
 
@@ -164,7 +165,7 @@ using namespace Input::Type;
    static Record array_record("RecordOfArrays", "desc.");
 
    // array type passed through shared_ptr
-    boost::shared_ptr<Array> array_of_int = boost::make_shared<Array>(Integer(0), 5, 100 );
+    Array array_of_int(Integer(0), 5, 100 );
     array_record.declare_key("array_of_5_ints", array_of_int,"Some bizare array.");
 
     // array type passed by reference
@@ -183,47 +184,49 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 
-    boost::shared_ptr<Record> record_record=boost::make_shared<Record>("RecordOfRecords", "");
+    Record record_record("RecordOfRecords", "");
 
     // Test that Record has to be passed as shared_ptr
     //ASSERT_DEATH( {record_record->declare_key("sub_rec_1", Record("subrec_type", "desc") , "desc"); },
     //              "Complex type .* shared_ptr."
     //              );
 
-    boost::shared_ptr<Record> other_record=boost::make_shared<Record>("OtherRecord","desc");
-    other_record->finish();
+    Record other_record("OtherRecord","desc");
+    other_record.finish();
 
-    record_record->declare_key("sub_rec_1", other_record, "key desc");
+    record_record.declare_key("sub_rec_1", other_record, "key desc");
 
-    // direct recursion (indirect is forbidden)
-    record_record->declare_key("sub_rec_2", record_record, "desc.");
+    // recursion  -  forbidden
+    //record_record->declare_key("sub_rec_2", record_record, "desc.");
 
-    record_record->finish();
+    record_record.finish();
 }
 
 TEST(InputTypeRecord, iterating) {
     using namespace Input::Type;
 
-    boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
+    Record output_record("OutputRecord",
             "Information about one file for field data.");
     {
-        output_record->declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
+        output_record.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
                 "File for output stream.");
-        boost::shared_ptr<Integer> digits_type=boost::make_shared<Integer>((int)0, (int)8);
-        output_record->declare_key("digits",digits_type, DefaultValue("8"),
+
+        Integer digits_type((int)0, (int)8);
+        output_record.declare_key("digits",digits_type, DefaultValue("8"),
                 "Number of digits used for output double values into text output files.");
-        output_record->declare_key("compression", Bool(),
+        output_record.declare_key("compression", Bool(),
                 "Whether to use compression of output file.");
-        boost::shared_ptr<Double> time_type=boost::make_shared<Double>(0.0);
-        output_record->declare_key("start_time", time_type,
+
+        Double time_type(0.0);
+        output_record.declare_key("start_time", time_type,
                 "Simulation time of first output.");
-        output_record->declare_key("data_description", String(),DefaultValue(),
+        output_record.declare_key("data_description", String(),DefaultValue(),
                 "");
-        output_record->finish();
+        output_record.finish();
     } // delete local variables
 
     // methods begin() and end(), basic work with iterators
-    Record::KeyIter it = output_record->begin();
+    Record::KeyIter it = output_record.begin();
     EXPECT_EQ( 0, it->key_index);
     EXPECT_EQ("file", it->key_);
     EXPECT_EQ("File for output stream.", it->description_);
@@ -231,15 +234,15 @@ TEST(InputTypeRecord, iterating) {
     EXPECT_EQ(output_file, static_cast<const FileName *>( &(*it->type_) )->get_file_type() );
     it+=4;
     EXPECT_EQ( "data_description", it->key_);
-    EXPECT_EQ( output_record->end(), it+1 );
+    EXPECT_EQ( output_record.end(), it+1 );
     // method size()
-    EXPECT_EQ(5, output_record->size());
+    EXPECT_EQ(5, output_record.size());
     //method key_index
-    EXPECT_EQ(0,output_record->key_index("file"));
-    EXPECT_EQ(2,output_record->key_index("compression"));
-    EXPECT_THROW({output_record->key_index("x_file");}, KeyNotFound );
+    EXPECT_EQ(0,output_record.key_index("file"));
+    EXPECT_EQ(2,output_record.key_index("compression"));
+    EXPECT_THROW({output_record.key_index("x_file");}, KeyNotFound );
     // method key_iterator
-    EXPECT_EQ(2,output_record->key_iterator("compression")->key_index);
+    EXPECT_EQ(2,output_record.key_iterator("compression")->key_index);
 
 
 }
@@ -266,66 +269,67 @@ TEST(InputTypeRecord, check_key_validity) {
 TEST(InputTypeDocumentation, whole_tree) {
 using namespace Input::Type;
 
-boost::shared_ptr<Record> output_record=boost::make_shared<Record>("OutputRecord",
+Record output_record("OutputRecord",
         "Information about one file for field data.");
 {
-    output_record->declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
+    output_record.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
             "File for output stream.");
-    boost::shared_ptr<Integer> digits_type=boost::make_shared<Integer>((int)0, (int)8);
-    output_record->declare_key("digits",digits_type, DefaultValue("8"),
+
+    output_record.declare_key("digits",Integer(0,8), DefaultValue("8"),
             "Number of digits used for output double values into text output files.");
-    output_record->declare_key("compression", Bool(),
+    output_record.declare_key("compression", Bool(),
             "Whether to use compression of output file.");
-    boost::shared_ptr<Double> time_type=boost::make_shared<Double>(0.0);
-    output_record->declare_key("start_time", time_type,
+
+    output_record.declare_key("start_time", Double(0.0),
             "Simulation time of first output.");
-    output_record->declare_key("data_description", String(),DefaultValue(),
+    output_record.declare_key("data_description", String(),DefaultValue(),
             "");
-    output_record->finish();
+    output_record.finish();
 } // delete local variables
 
-boost::shared_ptr<Record> array_record=boost::make_shared<Record>("RecordOfArrays",
+Record array_record("RecordOfArrays",
          "Long description of record.\n"
          "Description could have more lines"
          );
 {
- boost::shared_ptr<Array> array_of_int = boost::make_shared<Array>(Integer(0), 5, 100 );
- array_record->declare_key("array_of_5_ints", array_of_int,
+ Array array_of_int(Integer(0), 5, 100 );
+
+ array_record.declare_key("array_of_5_ints", array_of_int,
          "Some bizare array.");
- array_record->declare_key("array_of_str", Array( String() ), DefaultValue(),
+ array_record.declare_key("array_of_str", Array( String() ), DefaultValue(),
          "Desc. of array");
- array_record->declare_key("array_of_str_1", Array( String() ), DefaultValue(),
+ array_record.declare_key("array_of_str_1", Array( String() ), DefaultValue(),
              "Desc. of array");
- array_record->finish();
+ array_record.finish();
 }
 
 
- boost::shared_ptr<Record> record_record= boost::make_shared<Record>("RecordOfRecords",
+ Record record_record("RecordOfRecords",
          "Long description of record.\n"
          "Description could have more lines"
          );
 
 
  {
-     boost::shared_ptr<Record> other_record=boost::make_shared<Record>("OtherRecord","desc");
-     other_record->finish();
+     Record other_record("OtherRecord","desc");
+     other_record.finish();
 
-     record_record->declare_key("sub_rec_1", other_record, "key desc");
+     record_record.declare_key("sub_rec_1", other_record, "key desc");
 
      // recursion
-     record_record->declare_key("sub_rec_2", record_record, "Recursive key.");
+     //record_record->declare_key("sub_rec_2", record_record, "Recursive key.");
 
-     record_record->finish();
+     record_record.finish();
  }
 
- MAKE_Input_Type_Selection(enum Colors, sel)("Colors");
+ Selection<enum Colors> sel("Colors");
  {
-     sel->add_value(blue, "blue");
-     sel->add_value(white,"white","White color");
-     sel->add_value(black,"black");
-     sel->add_value(red,"red");
-     sel->add_value(green,"green");
-     sel->finish();
+     sel.add_value(blue, "blue");
+     sel.add_value(white,"white","White color");
+     sel.add_value(black,"black");
+     sel.add_value(red,"red");
+     sel.add_value(green,"green");
+     sel.finish();
  }
 
  Record main("MainRecord", "The main record of flow.");

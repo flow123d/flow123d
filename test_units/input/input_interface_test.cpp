@@ -37,15 +37,15 @@ protected:
         using namespace Input::Type;
 
         // declare structure of input file
-        main = boost::make_shared<Record>("MainRecord","desc");
+        main = new Record("MainRecord","desc");
 
-        boost::shared_ptr<Record> sub_record = boost::make_shared<Record>("SubRecord","desc");
-        sub_record->declare_key("array_of_int", Array(Integer()), "desc");
-        sub_record->declare_key("some_integer", Integer(), "desc");
-        sub_record->declare_key("some_double", Double(), "desc");
-        sub_record->declare_key("some_bool", Bool(), "desc");
-        sub_record->declare_key("some_string", String(), "desc");
-        sub_record->finish();
+        Record sub_record("SubRecord","desc");
+        sub_record.declare_key("array_of_int", Array(Integer()), "desc");
+        sub_record.declare_key("some_integer", Integer(), "desc");
+        sub_record.declare_key("some_double", Double(), "desc");
+        sub_record.declare_key("some_bool", Bool(), "desc");
+        sub_record.declare_key("some_string", String(), "desc");
+        sub_record.finish();
 
         main->declare_key("some_record", sub_record, "desc");
         main->declare_key("array_of_int", Array(Integer()), "desc");
@@ -62,10 +62,11 @@ protected:
     }
 
     virtual void TearDown() {
-        main.reset(); // effectively lose all declarations
+        delete main;
+        delete storage;
     };
 
-    boost::shared_ptr< ::Input::Type::Record > main;
+    ::Input::Type::Record *main;
     ::Input::Interface::Storage * storage;
 };
 
