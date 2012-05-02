@@ -38,11 +38,9 @@ set(sources_lib_non_system
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
 
-    
     io/output.cc
     io/output_vtk.cc
     io/output_msh.cc
-    io/output_tmp.cc
     
     mesh/msh_gmshreader.cc
     mesh/boundaries.cc

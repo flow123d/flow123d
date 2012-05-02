@@ -30,34 +30,14 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
-#include "mesh/mesh.h"
-
 #include <vector>
 #include <string>
 #include <fstream>
 
-// TODO: move enums to classes
+#include "mesh/mesh.h"
 
-// FILE formats
-typedef enum {
-    GMSH_MSH_ASCII = 1,
-    GMSH_MSH_BIN = 2,
-    VTK_SERIAL_ASCII = 3,
-    VTK_PARALLEL_ASCII = 4
-} OutFileFormat;
-
-// Types of data, that could be written to output file
-typedef enum {
-    OUT_VECTOR_INT_SCA,
-    OUT_VECTOR_INT_VEC,
-    OUT_VECTOR_FLOAT_SCA,
-    OUT_VECTOR_FLOAT_VEC,
-    OUT_VECTOR_DOUBLE_SCA,
-    OUT_VECTOR_DOUBLE_VEC,
-    OUT_ARRAY_INT_SCA,
-    OUT_ARRAY_FLOAT_SCA,
-    OUT_ARRAY_DOUBLE_SCA
-} OutDataType;
+class OutputMSH;
+class OutputVTK;
 
 /**
  * Class of output data storing reference on data.
@@ -69,6 +49,19 @@ typedef enum {
 class OutputData {
 private:
 public:
+    // Types of data, that could be written to output file
+    typedef enum {
+        OUT_VECTOR_INT_SCA,
+        OUT_VECTOR_INT_VEC,
+        OUT_VECTOR_FLOAT_SCA,
+        OUT_VECTOR_FLOAT_VEC,
+        OUT_VECTOR_DOUBLE_SCA,
+        OUT_VECTOR_DOUBLE_VEC,
+        OUT_ARRAY_INT_SCA,
+        OUT_ARRAY_FLOAT_SCA,
+        OUT_ARRAY_DOUBLE_SCA
+    } OutDataType;
+
     string          *name;      ///< String with name of data
     string          *units;     ///< String with units
     void            *data;      ///< Pointer at own data
@@ -206,14 +199,9 @@ public:
     Output(Mesh *mesh, string filename);
 
     /**
-     * Convert string output format names into enum values.
-     */
-    OutFileFormat parse_output_format(char* format_name);
-
-    /**
      * \brief Destructor of the Output object.
      */
-    ~Output();
+    virtual ~Output();
 
     /**
      * \brief Register array of data on nodes.
@@ -285,15 +273,19 @@ public:
     template <typename _Data>
     int register_elem_data(std::string name, std::string unit, std::vector<_Data> &data);
 
+    int write_head(void);
+
+    int write_tail(void);
+
     /**
-     * \brief This function call pointer at _write_data(Output). It writes
-     * registered data to specified file format.
+     * \brief This method is virtual method. Each file format should include
+     * own method for writing data to output file.
      *
      * \return This function return result of pointer at output function.
      */
     int write_data(void);
 
-    // TODO: Move public getters to protected section
+    // TODO: Move public setters and getters to protected section
     std::vector<OutputData> *get_node_data(void) { return node_data; };
     std::vector<OutputData> *get_elem_data(void) { return elem_data; };
     ofstream& get_base_file(void) { return *base_file; };
@@ -301,23 +293,34 @@ public:
     ofstream& get_data_file(void) { return *data_file; };
     string& get_data_filename(void) { return *data_filename; };
     Mesh *get_mesh(void) { return mesh; };
-    char get_format_type(void) { return format_type; };
 
-    // TODO: Move public setters to protected section
     void set_data_file(ofstream *_data_file) { data_file = _data_file; };
+
+    typedef enum {
+        NONE = 0,
+        GMSH_MSH_ASCII = 1,
+        GMSH_MSH_BIN = 2,
+        VTK_SERIAL_ASCII = 3,
+        VTK_PARALLEL_ASCII = 4
+    } OutFileFormat;
+
+    OutFileFormat file_format;
+
+    OutputVTK *output_vtk;
+    OutputMSH *output_msh;
 
 protected:
     // Protected setters for descendant
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
     void set_base_file(ofstream *_base_file) { base_file = _base_file; };
     void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
-    void set_format_type(OutFileFormat _format_type) { format_type = _format_type; };
     void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
     void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
 
     Output() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
 
 private:
+
     struct OutScalar *node_scalar;      // Temporary solution
     struct OutScalar *element_scalar;   // Temporary solution
     struct OutVector *element_vector;   // Temporary solution
@@ -326,18 +329,9 @@ private:
     string          *base_filename;     ///< Name of base output file
     string          *data_filename;     ///< Name of data output file
     ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    OutFileFormat             format_type;        ///< Type of output
     Mesh            *mesh;
     OutputDataVec   *node_data;         ///< List of data on nodes
     OutputDataVec   *elem_data;         ///< List of data on elements
-
-    // TODO: tohle by se melo resit jinak. napr: Output by melo obsahovat
-    // abstraktni virtualni metodu write_data
-    // pak bychom meli potomky tridy Output pro jednotlive formaty vystupu,
-    // a ty by definovali vystup do patricneho formatu
-
-    // Internal API for file formats
-    int (*_write_data)(Output *output);
 };
 
 template <typename _Data>
@@ -453,6 +447,9 @@ int Output::register_elem_data(std::string name,
  * places to. See output_vtk.cc and output_msh.cc.
  */
 class OutputTime : public Output {
+protected:
+    OutputTime() {};
+
 public:
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
@@ -466,7 +463,7 @@ public:
      * \brief Destructor of OutputTime. It doesn't do anything, because all
      * necessary destructors will be called in destructor of Output
      */
-    ~OutputTime();
+    virtual ~OutputTime();
 
     /**
      * \brief This function register data on nodes.
@@ -551,20 +548,17 @@ public:
     int register_elem_data(std::string name, std::string unit, std::vector<_Data> &data);
 
     /**
-     * \brief This function call pointer at appropriate pointer at function,
-     * that write data to specific file format.
+     * \brief This is virtual method. Every file format should specify its own
+     * method for writing data to output file.
      *
      * \param[in] time  The output will be done for this time
      *
      * \return This function returns result of method _write_data().
      */
     int write_data(double time);
-private:
+
     int              current_step;      ///< Current step
-    // Internal API for file formats
-    int (*_write_data)(OutputTime *output, double time, int step);
-    int (*_write_head)(OutputTime *output);
-    int (*_write_tail)(OutputTime *output);
+
 };
 
 template <typename _Data>

@@ -30,30 +30,120 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
+#include "io/output.h"
+
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputMSH : protected Output {
+class OutputMSH {
 public:
     /**
      * \brief The constructor of this class
      */
-    OutputMSH();
+    OutputMSH(Output *_output);
+
+    /**
+     * \brief The constructor of this class
+     */
+    OutputMSH(OutputTime *_output_time);
 
     /**
      * \brief The destructor of this class
      */
     ~OutputMSH();
+
+    /**
+     * \brief This method writes data to the GMSH (.msh) file format. This method
+     * is used for static data
+     *
+     * \return      This function returns 1
+     */
+    int write_data(void);
+
+    /**
+     * \brief This method writes head of GMSH (.msh) file format
+     *
+     * \return      This function returns 1
+     */
+    int write_head(void);
+
+    /**
+     * \brief This method writes data to GMSH (.msh) file format for current step
+     *
+     * \param[in]   time        The time from start
+     *
+     * \return      This function returns 1
+     */
+    int write_data(double time);
+
+    /**
+     * \brief This method should write tail of GMSH (.msh) file format
+     *
+     * It is stupid file format. It doesn't write anything special at the end of
+     * the file
+     *
+     * \return      This function returns 1
+     */
+    int write_tail(void);
+
+protected:
+
+    OutputMSH() {}
+
 private:
+
+    /**
+     * \brief The pointer at Output
+     */
+    Output *output;
+
+    /**
+     * \brief The pointer at OutputTime
+     */
+    OutputTime *output_time;
+
+    /**
+     * \brief This function write header of GMSH (.msh) file format
+     */
+    void write_msh_header(void);
+
+    /**
+     * \brief This function writes geometry (position of nodes) to GMSH (.msh) file
+     * format
+     */
+    void write_msh_geometry(void);
+
+    /**
+     * \brief This function writes topology (connection of nodes) to the GMSH (.msh)
+     * file format
+     */
+    void write_msh_topology(void);
+
+    /**
+     * \brief This function writes ascii data to GMSH (.msh) output file.
+     *
+     * \param[in]   *out_data   The pointer at structure storing pointer at own data.
+     */
+    void write_msh_ascii_data(OutputData *out_data);
+
+
+    /**
+     * \brief This function write all data on nodes to output file. This function
+     * is used for static and dynamic data
+     *
+     * \param[in]   time        The time from start
+     * \param[in]   step        The number of steps from start
+     */
+    void write_msh_node_data(double time, int step);
+
+    /**
+     * \brief This function write all data on elements to output file. This
+     * function is used for static and dynamic data
+     *
+     * \param[in]   time        The time from start
+     * \param[in]   step        The number of steps from start
+     */
+    void write_msh_elem_data(double time, int step);
 };
-
-// TODO: make methods of OutputMSH from following functions
-
-// Static data
-int write_msh_data(Output *output);
-// Dynamic data
-int write_msh_head(OutputTime *output);
-int write_msh_time_data(OutputTime *output, double time, int step);
-int write_msh_tail(OutputTime *output);
 
 #endif /* OUTPUT_MSH_HH_ */
