@@ -103,7 +103,6 @@ protected:
 
     Generic_node():value_type_(type_generic),parent_node_( NULL ) {}
     Generic_node( Generic_node * prev_node ):value_type_(type_generic),parent_node_(prev_node) {}
-    //Generic_node( Generic_node const & to_copy ); //copy constructor - implicit should be enough...
     Generic_node( const Value_type value_type ):value_type_(value_type),parent_node_( NULL ) {};
     Generic_node( const Value_type value_type, Generic_node * prev_node ):value_type_(value_type),parent_node_(prev_node) {};
 
@@ -133,6 +132,7 @@ public:
     virtual Generic_node & get_item_check( const size_t id, int & err_code );
 
     virtual size_t get_array_size( void );
+    virtual size_t get_record_size( void );
 
     /*
      * Acquiring of final scalar values

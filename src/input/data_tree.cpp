@@ -206,10 +206,8 @@ Generic_node * Data_tree::new_node( const json_spirit::mValue json_node, Generic
     case json_spirit::array_type:
         gnp = new Vector_node(prev_node);
         break;
-    case json_spirit::str_type: {
-            string s = json_node.get_str();
-            gnp = new Value_node(prev_node, s);
-        }
+    case json_spirit::str_type:
+        gnp = new Value_node(prev_node, json_node.get_str());
         break;
     case json_spirit::bool_type:
         gnp = new Value_node(prev_node, json_node.get_bool());
@@ -241,7 +239,7 @@ bool Data_tree::tree_build_recurse( json_spirit::mValue json_root, Generic_node 
             for( it = json_root.get_obj().begin(); it != json_root.get_obj().end(); ++it )
             {
                 Generic_node * gnp = new_node(it->second, &prev_node);
-                o_node.insert_key( it->first, *gnp );
+                o_node.insert_key( it->first, gnp );
 
                 switch (it->second.type()) {
                 case json_spirit::obj_type: //Record need recursive build

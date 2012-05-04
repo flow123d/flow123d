@@ -205,6 +205,10 @@ size_t Generic_node::get_array_size(void) {
     return 0;
 }
 
+size_t Generic_node::get_record_size(void) {
+    return 0;
+}
+
 bool Generic_node::is_null(void) {
     return true;
 }

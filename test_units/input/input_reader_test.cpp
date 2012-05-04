@@ -82,6 +82,137 @@ TEST(json_spirit_test, read) {
  * **********************************************************************************************************************
  */
 
+TEST(Node_lib, access_to_non_existent) {
+    //non-existent node example
+    const int default_int = 12321;
+
+    Record_node rnode;
+    Generic_node & gnode_r = rnode;
+
+    //if does not exist, return dafault
+    ASSERT_EQ( default_int, gnode_r.get_key("foo").get_item(10).as_value().get_int(default_int) );
+
+
+    //if does not exist, return zero and errcode
+    int errcode;
+    ASSERT_EQ( 0, gnode_r.get_key("foo").get_item(10).as_value().get_int_check(errcode) );
+    ASSERT_NE( 0, errcode );
+
+    //if does not exist, die
+    ASSERT_DEATH( gnode_r.get_key("foo").get_item(10).as_value().get_int(), "Internal Error" );
+}
+
+TEST(Node_lib, access_as_ancestor) {
+    //access to instance as an ancestor
+    const int value(123);
+
+    Value_node vnode(value);
+    Generic_node & gnode_r = vnode;
+    Generic_node * gnode_p = &vnode;
+
+    ASSERT_EQ( value, vnode.get_int() );
+    ASSERT_EQ( value, gnode_r.as_value().get_int() );
+    ASSERT_EQ( value, (*gnode_p).as_value().get_int() );
+}
+
+TEST(Node_lib, copy_node_value) {
+    //try all to copy all node types, check independency
+    //value
+    //set first
+    const int int_def(123);
+    Value_node vnode(int_def);
+    ASSERT_EQ( type_number, vnode.get_type() );
+    ASSERT_EQ( int_def, vnode.get_int() );
+
+    //copy second
+    Value_node vnode2 = vnode;
+    ASSERT_EQ( type_number, vnode2.get_type() );
+    ASSERT_EQ( int_def, vnode2.get_int() );
+
+    //change first
+    const int int_def2(555);
+    const bool bool_def(true);
+    vnode.set_value(int_def2); //first change value
+    vnode.set_value(bool_def); //and than both value and type
+    ASSERT_EQ( type_bool, vnode.get_type() );
+    ASSERT_EQ( bool_def, vnode.get_bool() );
+    ASSERT_EQ( type_number, vnode2.get_type() );
+    ASSERT_EQ( int_def, vnode2.get_int() );
+}
+
+TEST(Node_lib, copy_node_record) {
+    //record - create record with one int
+    //set first
+    const int int_def(123);
+    Value_node vnode(int_def);
+    Record_node rnode;
+    ASSERT_EQ( type_number, vnode.get_type() );
+    ASSERT_EQ( int_def, vnode.get_int() );
+    ASSERT_EQ( type_record, rnode.get_type() );
+    ASSERT_EQ( 0, rnode.get_record_size() );
+
+    const string key_name("int");
+    rnode.insert_key( key_name , &vnode );
+    ASSERT_EQ( 1, rnode.get_record_size() );
+    ASSERT_EQ( type_number, rnode.get_key(key_name).get_type() );
+    ASSERT_EQ( int_def, rnode.get_key(key_name).as_value().get_int() );
+
+    //copy second
+    Record_node rnode2 = rnode;
+    ASSERT_EQ( 1, rnode2.get_record_size() );
+    ASSERT_EQ( type_number, rnode2.get_key(key_name).get_type() );
+    ASSERT_EQ( int_def, rnode2.get_key(key_name).as_value().get_int() );
+
+    //change first
+    const int int_def2(555);
+    const bool bool_def(true);
+    rnode.get_key(key_name).as_value().set_value(int_def2); //first change value
+    rnode.get_key(key_name).as_value().set_value(bool_def); //and than both value and type
+    ASSERT_EQ( type_bool, rnode.get_key(key_name).get_type() );
+    ASSERT_EQ( bool_def, rnode.get_key(key_name).as_value().get_bool() );
+    ASSERT_EQ( type_number, rnode2.get_key(key_name).get_type() );
+    ASSERT_EQ( int_def, rnode2.get_key(key_name).as_value().get_int() );
+}
+
+TEST(Node_lib, copy_node_vector) {
+    //vector - create vector with one int
+    //set first
+    const int int_def(123);
+    Value_node vnode(int_def);
+    Vector_node vecnode;
+    ASSERT_EQ( type_number, vnode.get_type() );
+    ASSERT_EQ( int_def, vnode.get_int() );
+    ASSERT_EQ( type_vector, vecnode.get_type() );
+    ASSERT_EQ( 0, vecnode.get_array_size() );
+
+//    vecnode.insert_item( 0 , vnode );
+//    ASSERT_EQ( 1, vecnode.get_array_size() );
+//    ASSERT_EQ( type_number, vecnode.get_item(0).get_type() );
+//    ASSERT_EQ( int_def, vecnode.get_item(0).as_value().get_int() );
+//
+//    //copy second
+//    Vector_node vecnode2 = vecnode;
+//    ASSERT_EQ( 1, vecnode2.get_array_size() );
+//    ASSERT_EQ( type_number, vecnode2.get_item(0).get_type() );
+//    cout << "1" << endl ;
+//    ASSERT_EQ( int_def, vecnode2.get_item(0).as_value().get_int() );
+//    cout << "2";
+//
+//    //change first
+//    const int int_def2(555);
+//    const bool bool_def(true);
+//    vecnode.get_item(0).as_value().set_value(int_def2); //first change value
+//    vecnode.get_item(0).as_value().set_value(bool_def); //and than both value and type
+//    ASSERT_EQ( type_bool, vecnode.get_item(0).get_type()  );
+//    ASSERT_EQ( bool_def, vecnode.get_item(0).as_value().get_bool() );
+//    ASSERT_EQ( type_number, vecnode2.get_item(0).get_type()  );
+//    ASSERT_EQ( int_def, vecnode2.get_item(0).as_value().get_int() );
+}
+
+/*
+ * **********************************************************************************************************************
+ */
+
 TEST(flow_json_parser_stream, trivial_pure) {
     //read from stream, data from string
     const string data("{  \"flow\"  :  \"OK\"  }");
@@ -155,6 +286,7 @@ TEST(flow_json_parser_stream, whitespace_separator) {
 /*
  * **********************************************************************************************************************
  */
+
 TEST(flow_json_parser_string, trivial_pure) {
     //read from string
     const string data("{  \"flow\"  :  \"OK\"  }");
@@ -204,43 +336,6 @@ TEST(flow_json_parser_string, whitespace_separator) {
     //read from string, data from multiline string
     Data_tree tree(flow_json_whitespace_separator);
     ASSERT_FALSE( tree.err_status );
-}
-
-/*
- * **********************************************************************************************************************
- */
-
-TEST(Node_lib, access_to_non_existent) {
-    //non-existent node example
-    const int default_int = 12321;
-
-    Record_node rnode;
-    Generic_node & gnode_r = rnode;
-
-    //if does not exist, return dafault
-    ASSERT_EQ( default_int, gnode_r.get_key("foo").get_item(10).as_value().get_int(default_int) );
-
-
-    //if does not exist, return zero and errcode
-    int errcode;
-    ASSERT_EQ( 0, gnode_r.get_key("foo").get_item(10).as_value().get_int_check(errcode) );
-    ASSERT_NE( 0, errcode );
-
-    //if does not exist, die
-    ASSERT_DEATH( gnode_r.get_key("foo").get_item(10).as_value().get_int(), "Internal Error" );
-}
-
-TEST(Node_lib, access_as_ancestor) {
-    //access to instance as an ancestor
-    const int value(123);
-
-    Value_node vnode(value);
-    Generic_node & gnode_r = vnode;
-    Generic_node * gnode_p = &vnode;
-
-    ASSERT_EQ( value, vnode.get_int() );
-    ASSERT_EQ( value, gnode_r.as_value().get_int() );
-    ASSERT_EQ( value, (*gnode_p).as_value().get_int() );
 }
 
 /*

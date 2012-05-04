@@ -18,18 +18,18 @@ class Value_node : public Generic_node {
 
 public:
     Value_node():Generic_node(type_null)                 {}
-    Value_node( bool b ):Generic_node(type_bool)         { value_bool_ = b;}
-    Value_node( int i ):Generic_node(type_number)        { value_number_ = i; }
-    Value_node( double lf ):Generic_node(type_number)    { value_number_ = lf; }
-    Value_node( char * str ):Generic_node(type_string)   { value_string_ = str; }
-    Value_node( string & str ):Generic_node(type_string) { value_string_ = str; }
+    Value_node( const bool b ):Generic_node(type_bool)         { value_bool_ = b;}
+    Value_node( const int i ):Generic_node(type_number)        { value_number_ = i; }
+    Value_node( const double lf ):Generic_node(type_number)    { value_number_ = lf; }
+    Value_node( const char * str ):Generic_node(type_string)   { value_string_ = str; }
+    Value_node( const string & str ):Generic_node(type_string) { value_string_ = str; }
 
     Value_node( Generic_node * prev_node ):Generic_node(type_null, prev_node)                 {}
-    Value_node( Generic_node * prev_node, bool b ):Generic_node(type_bool, prev_node)         { value_bool_ = b;}
-    Value_node( Generic_node * prev_node, int i ):Generic_node(type_number, prev_node)        { value_number_ = i; }
-    Value_node( Generic_node * prev_node, double lf ):Generic_node(type_number, prev_node)    { value_number_ = lf; }
-    Value_node( Generic_node * prev_node, char * str ):Generic_node(type_string, prev_node)   { value_string_ = str; }
-    Value_node( Generic_node * prev_node, string & str ):Generic_node(type_string, prev_node) { value_string_ = str; }
+    Value_node( Generic_node * prev_node, const bool b ):Generic_node(type_bool, prev_node)         { value_bool_ = b;}
+    Value_node( Generic_node * prev_node, const int i ):Generic_node(type_number, prev_node)        { value_number_ = i; }
+    Value_node( Generic_node * prev_node, const double lf ):Generic_node(type_number, prev_node)    { value_number_ = lf; }
+    Value_node( Generic_node * prev_node, const char * str ):Generic_node(type_string, prev_node)   { value_string_ = str; }
+    Value_node( Generic_node * prev_node, const string & str ):Generic_node(type_string, prev_node) { value_string_ = str; }
 
     virtual Generic_node & get_item( const int id ) {
         //Vector-like access to Value - return empty

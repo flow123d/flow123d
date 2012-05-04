@@ -18,8 +18,7 @@ class Vector_node : public Generic_node {
 public:
     Vector_node ():Generic_node(type_vector)                                      {}
     Vector_node ( Generic_node * prev_node ):Generic_node(type_vector, prev_node) {}
-
-    //TODO: deep copy constructor - because of JSON REF
+    Vector_node ( const Vector_node & to_copy );
 
     virtual Generic_node & get_item( const size_t id );
     virtual Generic_node & get_item( const size_t id, Generic_node & default_tree );
@@ -40,15 +39,12 @@ public:
 
     void insert_item( const size_t id, Generic_node & node );
     void insert_item_parent( const size_t id, Generic_node & node, Generic_node * parent );
-    virtual void delete_id(const size_t id);
-    size_t get_size( void ) { return value_array_.size(); }
+    virtual void delete_item(const size_t id);
+    virtual size_t get_array_size( void ) { return value_array_.size(); }
 
     virtual Vector_node & as_vector( void ) { return (*this); }
     friend ostream & operator<<( ostream & stream, Vector_node & node );
 
-    //TODO: Generic_node & operator[]( const int & id );
-    //TODO: templated get_vector - try to return whole vector of single type
-    //           bool get_vector( vector<Generic_node> & ret_vector );
     virtual ~Vector_node();
 };
 
