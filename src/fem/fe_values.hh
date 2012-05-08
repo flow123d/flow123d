@@ -131,11 +131,49 @@ public:
 
 };
 
+
+/**
+ * Abstract base class with certain methods independent of the template parameter @p dim.
+ */
+template<unsigned int spacedim>
+class FEValuesSpaceBase
+{
+public:
+    /**
+     * Return the value of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     */
+    virtual const double shape_value(const unsigned int function_no, const unsigned int point_no) = 0;
+
+    /**
+     * Return the gradient of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     */
+    virtual const arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) = 0;
+
+    /**
+     * Return the product of Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     */
+    virtual const double JxW(const unsigned int point_no) = 0;
+
+    /**
+     * Returns the normal vector to a side at given quadrature point.
+     */
+    virtual const arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) = 0;
+
+    /**
+     * Returns the number of shape functions.
+     */
+    virtual const unsigned int n_dofs() = 0;
+
+};
+
 /**
 * Base class for FEValues and FESideValues
 */
 template<unsigned int dim, unsigned int spacedim>
-class FEValuesBase
+class FEValuesBase : public FEValuesSpaceBase<spacedim>
 {
 public:
 
@@ -210,6 +248,11 @@ public:
      * Returns the number of quadrature points.
      */
     const unsigned int n_points();
+
+    /**
+     * Returns the number of shape functions.
+     */
+    const unsigned int n_dofs();
 
 
 protected:
@@ -325,6 +368,8 @@ private:
     const Quadrature<dim-1> *sub_quadrature;
 
 };
+
+
 
 
 

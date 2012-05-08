@@ -237,6 +237,7 @@ DOFHandler<dim,spacedim>::~DOFHandler()
 }
 
 
+template class DOFHandler<0,3>;
 template class DOFHandler<1,3>;
 template class DOFHandler<2,3>;
 template class DOFHandler<3,3>;

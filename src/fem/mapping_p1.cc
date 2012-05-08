@@ -277,7 +277,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
     if (fv_data.update_flags & update_side_JxW_values)
     {
         double side_det;
-        if (dim == 1)
+        if (dim <= 1)
         {
             side_det = 1;
         }
@@ -303,6 +303,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
 
 
 
+template class MappingP1<0,3>;
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;
 template class MappingP1<3,3>;

@@ -126,11 +126,11 @@ FE_RT0<dim,spacedim>::FE_RT0()
     number_of_dofs = dim+1;
     number_of_single_dofs[dim] = dim+1;
 
-    sp.fill(1./dim);
+    sp.fill(1./max(1.,(double)dim));
     generalized_support_points.push_back(sp);
     for (int i=0; i<dim; i++)
     {
-        sp.fill(1./dim);
+        sp.fill(1./max(1.,(double)dim));
         sp[i] = 0;
         generalized_support_points.push_back(sp);
     }
@@ -268,7 +268,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
         }
     }
 
-    node_matrix = pinv(F);
+    if (dim>0) node_matrix = pinv(F);
 }
 
 template<unsigned int dim, unsigned int spacedim>

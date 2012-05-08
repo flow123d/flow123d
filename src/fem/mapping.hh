@@ -65,6 +65,16 @@ template<> inline double determinant(const mat::fixed<2,1> &M)
     return sqrt(M(0,0)*M(0,0)+M(1,0)*M(1,0));
 }
 
+template<> inline double determinant(const mat::fixed<0,3> &M)
+{
+    return 0;
+}
+
+template<> inline double determinant(const mat::fixed<3,0> &M)
+{
+    return 0;
+}
+
 template<> inline double determinant(const mat::fixed<1,3> &M)
 {
     return sqrt(M(0,0)*M(0,0)+M(0,1)*M(0,1)+M(0,2)*M(0,2));

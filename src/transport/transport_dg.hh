@@ -103,10 +103,25 @@ private:
 	 * The DOF handler and FiniteElement objects of specified dimension
 	 * must be passed as arguments.
 	 * @param dh DOF handler.
+	 * @param dh_sub DOF handler for sides.
 	 * @param fe FiniteElement.
+	 * @param fe_sub FiniteElement for sides.
 	 */
 	template<unsigned int dim>
-	void assemble(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void assemble(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
+
+
+	/**
+	 * Assembles the boundary fluxes into the stiffness matrix.
+	 * The DOF handler and FiniteElement objects of specified dimension
+	 * must be passed as arguments.
+	 * @param dh DOF handler.
+	 * @param dh_sub DOF handler for sides.
+	 * @param fe FiniteElement.
+	 * @param fe_sub FiniteElement for sides.
+	 */
+	template<unsigned int dim>
+	void assemble_fluxes(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
 
 	/**
 	 * Assembles the r.h.s. components corresponding to the Dirichlet
@@ -135,18 +150,23 @@ private:
 	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity);
 
 	/**
-	 * Sets up some parameters of the DG method on a given edge.
-	 * @param edge          The edge.
-	 * @param n_points      Number of quadrature points.
-	 * @param K             Dispersivity tensor.
-	 * @param normal_vector Normal vector (assumed constant along the edge).
-	 * @param alpha         Penalty parameter that influences the continuity
-	 *                      of the solution (large value=more continuity)
-	 * @param advection     Coefficient of advection/transport (0=no advection).
-	 * @param gamma         Computed penalty parameter.
-	 * @param omega         Computed weights.
+	 * Sets up some parameters of the DG method for two sides of a neighbour.
+	 * @param n					The neighbour.
+	 * @param s1				Side 1.
+	 * @param s2				Side 2.
+	 * @param n_points			Number of quadrature points.
+	 * @param K					Dispersivity tensor.
+	 * @param normal_vector		Normal vector to side 0 of the neighbour
+	 * 							(assumed constant along the side).
+	 * @param alpha				Penalty parameter that influences the continuity
+	 * 							of the solution (large value=more continuity).
+	 * @param advection			Coefficient of advection/transport (0=no advection).
+	 * @param gamma				Computed penalty parameters.
+	 * @param omega				Computed weights.
+	 * @param transport_flux	Computed flux from side 1 to side 2.
 	 */
-	void set_DG_parameters(const Edge *edge,
+
+	void set_DG_parameters(const Neighbour *n,
 	        const int s1,
 	        const int s2,
 	        const unsigned int n_points,
@@ -157,6 +177,28 @@ private:
 	        double &gamma,
 	        double *omega,
 	        double &transport_flux);
+
+	/**
+	 * Sets up parameters of the DG method on a given boundary edge.
+	 * Assupmtion is that the edge consists of only 1 side.
+	 * @param edge				The edge.
+	 * @param n_points			Number of quadrature points.
+	 * @param K					Dispersivity tensor.
+	 * @param normal_vector		Normal vector (assumed constant along the edge).
+	 * @param alpha				Penalty parameter that influences the continuity
+	 * 							of the solution (large value=more continuity).
+	 * @param advection			Coefficient of advection/transport (0=no advection).
+	 * @param gamma				Computed penalty parameters.
+	 * @param omega				Computed weights.
+	 */
+	void set_DG_parameters_edge(const Edge *edge,
+	            const unsigned int n_points,
+	            const std::vector< vector<arma::mat33> > &K,
+	            const arma::vec3 &normal_vector,
+	            const double alpha,
+	            const double advection,
+	            double &gamma,
+	            double *omega);
 
 	/**
 	 * Generates the file name for the time-dependent boundary condition.
@@ -258,7 +300,7 @@ private:
 	/**
 	 * Array for storing the output solution data.
 	 */
-	vector<double*> output_solution;
+	vector<double*> output_solution, output_cell_solution;
 
 	/**
 	 * Class for handling the solution output.
@@ -284,6 +326,9 @@ private:
 	 * Penalty parameter.
 	 */
 	std::vector<double> gamma;
+
+	// coefficient affecting inter-element continuity due to dispersion
+	double alpha;
 
 
     // if flux through a boundary side is < -tol_flux_bc then the Dirichlet condition is applied
