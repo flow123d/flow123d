@@ -90,16 +90,22 @@ set(sources_lib_system
     system/sys_profiler.cc
     system/system.cc
     system/xio.cc
+    system/exceptions.cc
     io/read_ini.cc
 )
 
 set(sources_lib_input
-    input/data_tree.cpp
-    input/Generic_node.cpp
-    input/Record_node.cpp
-    input/Value_node.cpp
-    input/Vector_node.cpp
-    input/input_type.cc
+    #input/data_tree.cpp
+    #//input/Generic_node.cpp
+    #//input/Record_node.cpp
+    #//input/Value_node.cpp
+    #//input/Vector_node.cpp
+    
+    input/type_base.cc
+    input/type_record.cc
+    input/storage.cc
+    input/json_to_storage.cc
+    
     input/input_interface.cc
 )
 

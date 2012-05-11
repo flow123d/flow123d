@@ -9,6 +9,7 @@
 #define TEST_HAS_MAIN       // do not include main in this unit
 #include "gtest_flow.hh"
 
+#include "mpi.h"
 
 namespace testing {
 ///////////////////////////////////////
