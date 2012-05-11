@@ -39,6 +39,11 @@ struct ExceptionBase : virtual std::exception, virtual boost::exception
  */
 struct InputException : virtual ExceptionBase {};
 
+
+#define THROW(whole_exception_expr) \
+    BOOST_THROW_EXCEPTION( whole_exception_expr)
+
+
 /**
  * @brief Macro to simplify declaration of error_info types.
  *
