@@ -10,6 +10,9 @@
 
 #include "json_to_storage.hh"
 #include "input/comment_filter.hh"
+
+#include "json_spirit_error_position.h"
+
 namespace Input {
 using namespace std;
 using namespace internal;
@@ -26,18 +29,28 @@ JSONToStorage::JSONToStorage()
 void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
     namespace io = boost::iostreams;
 
+    F_ENTRY;
+
     io::filtering_istream filter_in;
 
     filter_in.push(uncommenting_filter());
     filter_in.push(in);
 
     JSONPath::Node node;
-    json_spirit::read_or_throw( filter_in, node);
+
+    try {
+        json_spirit::read_or_throw( filter_in, node);
+    } catch (json_spirit::Error_position &e ) {
+        THROW( ExcNotJSONFormat() << EI_JSONLine(e.line_) << EI_JSONColumn(e.column_) << EI_JSONReason(e.reason_));
+    }
 
     JSONPath root_path(node);
 
-    storage_ = make_storage(root_path, root_type_);
     root_type_ = &root_type;
+    storage_ = make_storage(root_path, root_type_);
+
+    ASSERT(  storage_ != NULL, "Internal error in JSON checker, NULL storage without exception.\n");
+
 }
 
 
@@ -208,6 +221,8 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *type)
 {
+    ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
+
     // first check reference
     string ref_address;
     if (p.get_ref_from_head(ref_address)) {
@@ -253,13 +268,34 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *record)
 {
     if (p.head()->type() == json_spirit::obj_type) {
+        const json_spirit::mObject & j_map = p.head()->get_obj();
+        json_spirit::mObject::const_iterator map_it;
+
+        StorageArray *storage_array = new StorageArray(record->size());
         // check individual keys
         for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-
+            if (p.down(it->key_) != NULL) {
+                // key on input => check & use it
+                storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
+                p.up();
+            } else {
+                // key not on input
+                if (it->default_.is_obligatory() ) {
+                    THROW( ExcInputError() << EI_Specification("Missing obligatory key '"+ it->key_ +"'.")
+                            << EI_ErrorAddress(p) << EI_InputType(record) );
+                }
+                // set null
+                storage_array->new_item(it->key_index, new StorageNull() );
+            }
         }
+
+        return storage_array;
+    } else {
+        THROW( ExcInputError() << EI_Specification("Wrong type, has to be Record.") << EI_ErrorAddress(p) << EI_InputType(record) );
     }
     // possibly construction of reduced record
 
+    return NULL;
 }
 
 
@@ -273,12 +309,26 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
 {
     if (p.head()->type() == json_spirit::array_type) {
         const json_spirit::mArray & j_array = p.head()->get_array();
-        if ( ! array->match_size( j_array.size() ) ) {
+        if ( array->match_size( j_array.size() ) ) {
+          // copy the array and check type of values
+          StorageArray *storage_array = new StorageArray(j_array.size());
+          for( unsigned int idx=0; idx < j_array.size(); idx++)  {
+              p.down(idx);
+              const Type::TypeBase &sub_type = array->get_sub_type();
+              storage_array->new_item(idx, make_storage(p, &sub_type) );
+              p.up();
+          }
+          return storage_array;
+
+        } else {
             THROW( ExcInputError() << EI_Specification("Do not fit into size limits of the Array.") << EI_ErrorAddress(p) << EI_InputType(array) );
         }
     } else {
+        // possibly construction of reduced array
         THROW( ExcInputError() << EI_Specification("Wrong type, has to be Array.") << EI_ErrorAddress(p) << EI_InputType(array) );
     }
+
+    return NULL;
 }
 
 
@@ -304,7 +354,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
     if (p.head()->type() == json_spirit::bool_type) {
         return new StorageBool( p.head()->get_bool() );
     } else {
-        xprintf(UsrErr,"The input value at address '%s' has to be of type Bool.\n", p.str().c_str());
+        THROW( ExcInputError() << EI_Specification("Wrong type, has to be Bool.") << EI_ErrorAddress(p) << EI_InputType(bool_type) );
     }
     return NULL;
 }
@@ -314,15 +364,26 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_type)
 {
     if (p.head()->type() == json_spirit::int_type) {
+        cout << "In integer\n" << std::endl;
+
         int value = p.head()->get_int();
+
+        cout << "In integer 1\n" << std::endl;
+
+        int_type->match(value);
+
+        cout << "In integer 2 \n" << std::endl;
+
         if (int_type->match(value)) {
             return new StorageInt( value );
         } else {
-            xprintf(UsrErr,"The input value at address '%s' has to be of type Int.\n", p.str().c_str());
+            cout << "In integer 3 \n" << std::endl;
+            THROW( ExcInputError() << EI_Specification("Value out of bounds.") << EI_ErrorAddress(p) << EI_InputType(int_type) );
         }
 
     } else {
-        xprintf(UsrErr,"The input value at address '%s' out of bounds.\n", p.str().c_str());
+        THROW( ExcInputError() << EI_Specification("Wrong type, has to be Int.") << EI_ErrorAddress(p) << EI_InputType(int_type) );
+
     }
     return NULL;
 }
@@ -331,13 +392,22 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *double_type)
 {
+    double value;
+
     if (p.head()->type() == json_spirit::real_type) {
-        double value = p.head()->get_real();
-        double_type->match(value);
+        value = p.head()->get_real();
+    } else if (p.head()->type() == json_spirit::int_type) {
+        value = p.head()->get_int();
+    } else {
+        THROW( ExcInputError() << EI_Specification("Wrong type, has to be Double.") << EI_ErrorAddress(p) << EI_InputType(double_type) );
+    }
+
+    if (double_type->match(value)) {
         return new StorageDouble( value );
     } else {
-        xprintf(UsrErr,"The input value at address '%s' has to be of type Double.\n", p.str().c_str());
+        THROW( ExcInputError() << EI_Specification("Value out of bounds.") << EI_ErrorAddress(p) << EI_InputType(double_type) );
     }
+
     return NULL;
 }
 
@@ -350,7 +420,8 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
         //double_type->match(value);        // possible parsing and modifications of special strings
         return new StorageString( value );
     } else {
-        xprintf(UsrErr,"The input value at address '%s' has to be of type String.\n", p.str().c_str());
+        THROW( ExcInputError() << EI_Specification("Wrong type, has to be String.") << EI_ErrorAddress(p) << EI_InputType(string_type) );
+
     }
     return NULL;
 }

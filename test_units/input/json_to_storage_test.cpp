@@ -5,6 +5,10 @@
  *      Author: jb
  */
 
+/**
+ * TODO: move EXPECT_THROW_WHAT_ into flow_test.hh
+ * TODO: test catching of errors in JSON file format.
+ */
 #include <gtest/gtest.h>
 
 #include "json_to_storage.hh"
@@ -152,17 +156,12 @@ TEST(JSONPath, errors) {
 
 
 class InputJSONToStorageTest : public testing::Test, public Input::JSONToStorage {
-
 protected:
 
     virtual void SetUp() {
     }
-
     virtual void TearDown() {
     };
-
-    ::Input::Type::Record *main;
-    ::Input::Interface::Storage * storage;
 };
 
 TEST_F(InputJSONToStorageTest, Integer) {
@@ -172,18 +171,184 @@ TEST_F(InputJSONToStorageTest, Integer) {
     {
         stringstream ss("5");
         read_stream(ss, int_type);
+
         EXPECT_EQ(5, storage_->get_int());
     }
 
     {
         stringstream ss("0");
-        EXPECT_DEATH( {read_stream(ss, int_type);} , "out of bounds.");
+        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "Value out of bounds.");
     }
 
     {
         stringstream ss("{}");
-        EXPECT_DEATH( {read_stream(ss, int_type);} , "has to be of type Int.");
+        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "Wrong type, has to be Int.");
     }
+}
+
+TEST_F(InputJSONToStorageTest, Double) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    Type::Double dbl_type(1.1,10.1);
+
+    {
+        stringstream ss("5.5");
+        read_stream(ss, dbl_type);
+
+        EXPECT_EQ(5.5, storage_->get_double());
+    }
+
+    {
+        stringstream ss("5");
+        read_stream(ss, dbl_type);
+
+        EXPECT_EQ(5, storage_->get_double());
+    }
+
+    {
+        stringstream ss("0");
+        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ExcInputError, "Value out of bounds.");
+    }
+
+    {
+        stringstream ss("{}");
+        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ExcInputError, "Wrong type, has to be Double.");
+    }
+}
+
+TEST_F(InputJSONToStorageTest, Selection) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    Type::Selection<int> sel_type("IntSelection");
+    sel_type.add_value(10,"ten","");
+    sel_type.add_value(1,"one","");
+    sel_type.finish();
+
+    {
+        stringstream ss("\"ten\"");
+        read_stream(ss, sel_type);
+
+        EXPECT_EQ(10, storage_->get_int());
+    }
+
+    {
+        stringstream ss("\"red\"");
+        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ExcInputError, "Wrong value of the Selection.");
+    }
+
+    {
+        stringstream ss("{}");
+        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ExcInputError, "Wrong type, value should be String .key of Selection.");
+    }
+}
+
+TEST_F(InputJSONToStorageTest, String) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    Type::String str_type;
+
+    {
+        F_ENTRY;
+        stringstream ss("\"Important message\"");
+        read_stream(ss, str_type);
+
+        EXPECT_EQ("Important message", storage_->get_string());
+    }
+
+    {
+        stringstream ss("{}");
+        EXPECT_THROW_WHAT( {read_stream(ss, str_type);} , ExcInputError, "Wrong type, has to be String.");
+    }
+}
+
+TEST_F(InputJSONToStorageTest, Bool) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    Type::Bool bool_type;
+
+    {
+        stringstream ss("true");
+        read_stream(ss, bool_type);
+
+        EXPECT_EQ(true, storage_->get_bool());
+    }
+
+    {
+        stringstream ss("{}");
+        EXPECT_THROW_WHAT( {read_stream(ss, bool_type);} , ExcInputError, "Wrong type, has to be Bool.");
+    }
+}
+
+TEST_F(InputJSONToStorageTest, Array) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    Type::Array darr_type( Type::Double(3.1,4.1), 2,4);
+
+    {
+        stringstream ss("[ 3.2, 4, 4.01 ]");
+        read_stream(ss, darr_type);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(3, storage_->get_array_size());
+        EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
+        EXPECT_EQ(4, storage_->get_item(1)->get_double() );
+    }
+
+    {
+        stringstream ss("[ 3.2 ]");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit into size limits of the Array.");
+    }
+
+    {
+        stringstream ss("{}");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Wrong type, has to be Array.");
+    }
+
+    {
+        stringstream ss("[ 3.2, {} ]");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Wrong type, has to be Double.");
+    }
+
+    {
+        stringstream ss("[ 3.0, 3.9 ]");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Value out of bounds.");
+    }
+
+}
+
+
+TEST_F(InputJSONToStorageTest, Record) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    static Type::Record rec_type( "SomeRec","desc.");
+    rec_type.declare_key("int_key", Type::Integer(0,5), Type::DefaultValue(Type::DefaultValue::obligatory), "");
+    rec_type.declare_key("str_key", Type::String(), "");
+    rec_type.finish();
+
+    {
+        stringstream ss("{ int_key=5 }");
+        read_stream(ss, rec_type);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ(5, storage_->get_item(0)->get_int() );
+        EXPECT_EQ(true, storage_->get_item(1)->is_null() );
+    }
+
+    {
+        stringstream ss("{ str_key=\"ahoj\" }");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Missing obligatory key 'int_key'.");
+    }
+
+    {
+        stringstream ss("[]");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Wrong type, has to be Record.");
+    }
+
+    {
+        stringstream ss("{ int_key=6 }");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Value out of bounds.");
+    }
+/*
+    {
+        stringstream ss("[ 3.0, 3.9 ]");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Value out of bounds.");
+    }
+*/
 }
 /*
     stringstream in_str(storage_input);

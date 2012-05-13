@@ -91,6 +91,9 @@ public:
     inline bool has_value() const
     { return (type_ == declaration); }
 
+    inline bool is_obligatory() const
+    { return (type_ == obligatory); }
+
     /**
      * Returns stored value. Possibly empty string.
      */

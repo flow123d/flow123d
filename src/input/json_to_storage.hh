@@ -9,6 +9,9 @@
  * - check cyclic references, drop const for json_spirit pointers and modify REF keys
  *   when dereferenced and modify it back when we return.
  *   (e.g.  add a new entry into map
+ * TODO:
+ *   Find deleting of a null pointer in json_spirit library. Possibly implement
+ *   output of true stack for GNU.
  */
 
 #ifndef JSON_TO_STORAGE_HH_
@@ -113,9 +116,15 @@ public:
     TYPEDEF_ERR_INFO(EI_File, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, JSONPath);
-    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::val << " at address: " << EI_ErrorAddress::val <<"\n"
+    DECLARE_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::val << " at address: " << EI_ErrorAddress::val <<"\n"
                                             << EI_Specification::val << "\n"
                                             << "Expected type:\n" << *EI_InputType::ref(_exc) );
+
+    TYPEDEF_ERR_INFO( EI_JSONLine, unsigned int);
+    TYPEDEF_ERR_INFO( EI_JSONColumn, unsigned int);
+    TYPEDEF_ERR_INFO( EI_JSONReason, string);
+    DECLARE_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at " << EI_JSONLine::val << ":" << EI_JSONColumn::val
+            << " ; reason: " << EI_JSONReason::val << "\n" );
 
     JSONToStorage();
     void read_stream(istream &in, const Type::TypeBase &root_type);
