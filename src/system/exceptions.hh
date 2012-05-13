@@ -15,7 +15,25 @@
  * We are using boost::exceptions .
  */
 
+#include <iostream>
+#include <cstdlib>
 #include <boost/exception/all.hpp>
+
+/**
+ * Macro for throwing with saving place of the throw.
+ * Usage:
+ * @code
+ *      THROW( ExcError() << EI_SomeValue(42) );
+ * @endcode
+ * EI_SomeValue is a error_info object for transfer of values form throw point to catch point. See EI<Tag,Type> class template.
+ */
+#define THROW(whole_exception_expr) \
+    BOOST_THROW_EXCEPTION( whole_exception_expr)
+
+
+namespace internal {
+    class ExcStream;
+}
 
 /**
  * Basic exception for Flow123d's exceptions. When deriving particular exceptions always use virtual inheritance:
@@ -23,12 +41,13 @@
  *      struct my_exception : virtual flow_excepiton {};
  * @endcode
  *
- * TODO: Implement rich error info.
+ * TODO: Implement different header for Internal and User errors.
+ * TODO: Implement stack output (GNU or ours)
  */
 struct ExceptionBase : virtual std::exception, virtual boost::exception
 {
     void print_exc_data(std::ostream &out) const;
-    virtual void print_info(std::ostream &out) const;
+    virtual void print_info(std::ostringstream &out) const;
     virtual const char * what () const throw ();
 };
 
@@ -40,8 +59,46 @@ struct ExceptionBase : virtual std::exception, virtual boost::exception
 struct InputException : virtual ExceptionBase {};
 
 
-#define THROW(whole_exception_expr) \
-    BOOST_THROW_EXCEPTION( whole_exception_expr)
+
+/**
+ * Macro for declaration of exceptions. You can use error info classes (EI<Tag,Type> ) and its modifiers to
+ * output relevant data.
+ * Example:
+ * @code
+ *      TYPEDEF_ERR_INFO( EI_Dim1Mismatch, int)
+ *      TYPEDEF_ERR_INFO( EI_Dim2Mismatch, int)
+ *      DeclareException( ExcDimensionMismatch, << "Dimensions dim1=" << EI_Dim1Missmatch::val << " and dim2=" << EI_Dim2Mismatch::val << " should be same.");
+ * @endcode
+ */
+#define DECLARE_EXCEPTION( ExcName, Format)                                 \
+struct ExcName : virtual ::ExceptionBase {                                  \
+     virtual void print_info(std::ostringstream &out) const {                     \
+         using namespace internal;                                          \
+         ::internal::ExcStream estream(out, *this);                         \
+         ExcName const &_exc=*this;                                               \
+         estream Format ;                                                   \
+         out << std::endl;                                                  \
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
+
+/**
+ * Same as previous but the exception is derived from InputException.
+ * This should be used for all exceptions due to wrong input from user.
+ */
+#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
+struct ExcName : virtual ::InputException {                                   \
+     virtual void print_info(std::ostream &out) const {                     \
+         using namespace internal;                                          \
+         ::internal::ExcStream estream(out, *this);                                     \
+         ExcName const &_exc=*this;                                               \
+         estream Format ;                                                   \
+         out << std::endl;                                                  \
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
 
 
 /**
@@ -55,6 +112,15 @@ struct InputException : virtual ExceptionBase {};
  * Notes (updates):
  * Tag is only for uniqueness, the only important is typedef name.
  * This macro also provides manipulators Tag_val and Tag_qval for simplifying formationg of error messages.
+ * When declaring an exception inside a class (may be practical if you want to pass the instance of the class through the exception),
+ * you have to add the class name to the EI_... names, e.g.
+ * @code
+ * class Class {
+ *      TYPEDEF_ERR_INFO(EI_Class, Class);                      // passing the Class itself
+ *      DECLACRE_EXCEPTION(ExcClass, << Class::EI_Class_val);   //
+ * }
+ * ostream & operator <<(ostream &, const & Class) ...          // of course you have to provide output operator for the Class
+ * @endcode
  *
  * @code
  * TYPEDEF_ERR_INFO( ErrorCode, int) // declares type ErrorCode_EI and ErrorCode
@@ -75,66 +141,107 @@ struct InputException : virtual ExceptionBase {};
  * @code
  *
  * DeclException( SomeFlowException , << "You can provide " << EI_VAL(ErrorCode) << " here.");
+ *
+ * TODO: static modifier is necessary if we define inside a class but this limits declaration of
+ * any exception that use the Tag to the same compilation unit !! Better solution ?
+ *
+ * TODO: have method that accepts an lambda function that can be used to extract particular value from stored object, something like:
+ *
+ * TYPEDEF_ER_INFO( EI_Value, type_info * )
+ * DECLARE_EXCEPTION( Exc, << EI_Value_val(*this, (_1)->name()) );
+ *
+ * This way we can print "NO_VALUE" if eoor_info is not passed to the exception, but if the value is given
+ * we can apply the lambda expression to extract name of an type_info object.
+ *
+ *
+ * I didn't foud a way how simplify output of more complex expressions like
+ *
+ * DECLARE_EXCEPTION(Exc, << NullOutputEnvelope( EI_Value::ptr(_exc) ? &( (*EI_Value::ptr(_exc))->name() ) : NULL ) );
+ *
+ * !!! DO NOT WORK SINCE you can not take address (& operator) of a result of some method.
+ * We need temporary variable, guessing that this can not be done without helper function, i.e. lambda function.
+ *
+ * There are several problems:
+ * 1) To get the pointer to the value, we need reference to the exception. In the case of EI<>::val manipulators
+ *    this information is provided from the ExcStream, but here the pointer appears inside an expression so we have to
+ *    provide the exception (_exc is local variable containing reference to current exception )
+ *
+ * 2) Say, we have a pointer PTR and EXPR(x) is an expression we want to evaluate. We want to
+ *    print out "NO_VALUE" if PTR == NULL or print result of EXPR(x) if it is not.
+ *    This can only be done by passing a lambda function. The boost::lambda is not sufficient since
+ *    it supports only very limited set of overloaded operators, namely there is no way how to get
+ *    members of a class. The only way is  C++11 standard which provides true lambda functions, but there
+ *    you have to provide type of parameters and thus we need EI_Value twice, like
+ *
+ *     EI_Value::expr( _exc, []( EI_Value::type &ref){return ref->name()} )
+ *
+ *    Which is longer previous expression.
+ *    I'm not sure if you need not to define also the resulting type, but I've seen some examples without it,
+ *    so possibly compiler can deduce it from parameters. The EI_Value::expr should be something like:
+ *
+ *    template<class Func>
+ *    EI_Value::expr( ExceptionBase &e, Func &f) { return NullOutputEnvelope( ptr(e) ? &( f(*ptr(e)) ) : NULL ); }
+ *
+ *
+ *
+ *
  */
-#define TYPEDEF_ERR_INFO(EI_Type, Type)                                                 \
-namespace internal {struct EI_Type##_TAG;}                                              \
-internal::ExcStream & EI_Type##_val(internal::ExcStream & es) {                         \
-    es.stream_ << internal::NullOutputEnvelope<Type>                                    \
-        ( boost::get_error_info< boost::error_info<internal::EI_Type##_TAG, Type > >(es.exc_), false );     \
-    return es;                                                                          \
-}                                                                                       \
-internal::ExcStream & EI_Type##_qval(internal::ExcStream & es) {                         \
-    es.stream_  << internal::NullOutputEnvelope<Type>                                    \
-        ( boost::get_error_info< boost::error_info<internal::EI_Type##_TAG, Type > >(es.exc_), true );     \
-    return es;                                                                          \
-}                                                                                       \
-\
-typedef boost::error_info< internal::EI_Type##_TAG, Type > EI_Type
-
-
 
 
 /**
- * Macro for declaration of exceptions.
- * Example:
- * @code
- *      TYPEDEF_ERR_INFO( EI_Dim1Mismatch, int)
- *      TYPEDEF_ERR_INFO( EI_Dim2Mismatch, int)
- *      DeclareException( ExcDimensionMismatch, << "Dimensions dim1=" << EI_Dim1Missmatch_val << " and dim2=" << EI_Dim2Mismatch_val << " should be same.");
- * @endcode
+ * This class should not be used directly but through macro TYPEDEF_ERR_INFO.
+ * It is derived from boost::error_info<tag, type> and similarly as its parent it
+ * is tailored for passing a value of type @p Type from the place of throw of an exception to
+ * the catch place. Compared to boost::error_info it provides manipulators @p val and @p qval
+ * which can by used in formating exception message to the ExcStream. The first manipulator evaluates to
+ * directly to the ouput of the stored value, while @p qval puts the output into single quotas.
+ *
+ * The static function @p ref can be used when you want to extract and output some particular information
+ * from the passed value. However, if no value is given at throw side this function simply aborts. There is
+ * probably no way how to make the check and still keep flexibility in manipulation with the result of @p ref
+ * function.
  */
-#define DECLARE_EXCEPTION( ExcName, Format)                                  \
-struct ExcName : virtual ExceptionBase {                                    \
-     virtual void print_info(std::ostream &out) const {                     \
-         using namespace internal;                                          \
-         ExcStream estream(out, *this);                                     \
-         estream Format ;                                                   \
-         out << std::endl;                                                  \
-     }                                                                      \
-     virtual ~ExcName() throw () {}                                         \
-}
+template<class Tag, class Type>
+class EI : public boost::error_info< Tag, Type > {
+public:
+    typedef typename boost::error_info< Tag, Type> ErrorInfo;
 
-/**
- * Same as previous but the exception is derived from InputException.
- * This should be used for all exceptions due to wrong input from user.
- */
-#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
-struct ExcName : virtual InputException {                                   \
-     virtual void print_info(std::ostream &out) const {                     \
-         using namespace internal;                                          \
-         ExcStream estream(out, *this);                                     \
-         estream Format ;                                                   \
-         out << std::endl;                                                  \
-     }                                                                      \
-     virtual ~ExcName() throw () {}                                         \
-}
+    EI(Type const & value) : ErrorInfo(value) {}
+    static internal::ExcStream & val(internal::ExcStream & es);
+    static internal::ExcStream & qval(internal::ExcStream & es);
 
+
+    static Type const & ref( ExceptionBase const &e)
+        {
+            Type const * val_ptr = boost::get_error_info< ErrorInfo > (e);
+            if (! val_ptr) {
+                // try to printout unfinished ErrStream
+                std::cerr << "------------------------------------------------------------------------------\n";
+                std::cerr << " Fatal Error - dereferencing null pointer when formating an exception message.\n";
+                std::cerr << "------------------------------------------------------------------------------\n";
+                std::cerr << "** Diagnosting Informations **\n";
+                std::cerr <<  boost::diagnostic_information_what( e );
+                abort();
+            }
+            return *val_ptr;
+        }
+    inline static Type const * ptr( ExceptionBase const &e)
+        { return boost::get_error_info< ErrorInfo > (e); }
+
+};
+
+
+
+#define TYPEDEF_ERR_INFO(EI_Type, Type)       typedef EI< struct EI_Type##_TAG, Type > EI_Type
 
 
 
 namespace internal {
 
-
+/***
+ * Helper class template. Together with its redirection operator it either outputs value pointed by pointer given to the constructor or
+ * , if the pointer is null, outputs string 'NO_VALUE'. If the optional parameter quoted is true, the value is printed in single quotation marks.
+ */
 template <class Type>
 class NullOutputEnvelope {
 public:
@@ -193,28 +300,36 @@ ExcStream & operator<<(ExcStream & estream, const T & x)
     return estream;
 }
 
+template < class Tag, class Type, class Func>
+internal::ExcStream & operator<<(internal::ExcStream & estream, typename EI<Tag, Type>::template lambda<Func> const & lambda_func)
+{
+    if (EI<Tag,Type>::get_value_ptr()) estream.stream_ << "NO_VALUE";
+    else estream.stream_ << lambda_func.func_(* EI<Tag,Type>::get_value_ptr());
+    return estream;
+}
 
-
-
-/*
-class ExceptionValue {
-public:
-    ExceptionValue(const FlowException &exc, bool quoted = false)
-    : exc_(exc), quoted_(quoted) {}
-
-    template <class Tag, class Type>
-    const NullOutputEnvelope<Type> & operator() ()
-    {
-        return NullOutputEnvelope<Type>( boost::get_error_info<Tag>(exc_), quoted_ );
-    }
-
-private:
-    const FlowException &exc_;
-    bool quoted_;
-};
-*/
 
 } // namespace internal
+
+/***********************************************************************
+ * Implementation of templated method
+ */
+
+template <class Tag, class Type>
+internal::ExcStream & EI<Tag, Type>::val(internal::ExcStream & es) {
+    es.stream_ << internal::NullOutputEnvelope<Type>
+        ( ptr(es.exc_), false );
+    return es;
+}
+
+template <class Tag, class Type>
+internal::ExcStream & EI<Tag, Type>::qval(internal::ExcStream & es) {
+    es.stream_  << internal::NullOutputEnvelope<Type>
+        ( ptr(es.exc_), true );
+    return es;
+}
+
+
 /**
  * Assertion that results in an exception.
  */

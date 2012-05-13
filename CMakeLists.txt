@@ -52,6 +52,9 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 endif()
 
 
+#if defined(__clang__)
+#define COMPILER_ID "Clang"
+
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
 list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")

@@ -17,29 +17,29 @@ void ExceptionBase::print_exc_data (std::ostream &out) const
 {
 }
 
-void ExceptionBase::print_info(std::ostream &out) const {
+void ExceptionBase::print_info(std::ostringstream &out) const {
     out << "No error message." << std::endl;
 }
 
 const char * ExceptionBase::what() const throw () {
+    // have preallocated some space for error message we want to return
+    // Is there any difference, if we move this into ExceptionBase ??
+    static std::string message(1024,' ');
+
     // Be sure that this function do not throw.
     try {
         std::ostringstream converter;
 
         converter << "--------------------------------------------------------" << std::endl;
-
-
+        converter << "Error: ";
         print_info(converter);
-  
         converter << "\n** Diagnosting info **\n" ;
         converter << boost::diagnostic_information_what( *this );
-        
         //    print_stack_trace (converter);
         converter << "--------------------------------------------------------" << std::endl;
 
-        // creates local string on stack, we hope that there is a space
-        // freed by stack unrolling
-        return converter.str().c_str();
+        message = converter.str();
+        return message.c_str();
 
     } catch (std::exception &exc) {
         std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Message is " << std::endl
