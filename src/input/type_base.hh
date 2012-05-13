@@ -32,11 +32,7 @@ namespace Type {
 using namespace std;
 
 
-struct KeyNotFound : virtual FlowException {};
-struct SelectionKeyNotFound : virtual FlowException {};
-TYPEDEF_ERR_INFO( KeyName, const string );
-TYPEDEF_ERR_INFO( RecordName, const string );
-TYPEDEF_ERR_INFO( SelectionName, const string );
+TYPEDEF_ERR_INFO( EI_KeyName, const string );
 
 /**
  * @brief Possible file types.
@@ -59,6 +55,8 @@ enum FileType {
  *
  * We prefer to use only default values specified at declaration since only those can by documented as part of
  * Record type specification.
+ *
+ * @ingroup input
  */
 class DefaultValue {
 public:
@@ -149,6 +147,8 @@ private:
  *
  * Mimics polymorphism of C++ classes. Data of this type can be used to initialize a variable of enum type T. The values of
  * this enum type are identified with particular Record types. These Records are like descendant of the AbstractRecord.
+ *
+ *  @ingroup input
  */
 class TypeBase {
 public:
@@ -233,7 +233,7 @@ class Record;
 class SelectionBase;
 
 /**
- *
+ * @ingroup input
  */
 class Array : public TypeBase {
 
@@ -265,7 +265,7 @@ public:
         { return *type_of_values_; }
 
     /// Checks size of particular array.
-    inline bool match_size(unsigned int size)
+    inline bool match_size(unsigned int size) const
         { return size >=lower_bound_ && size<=upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::documentation.
@@ -293,6 +293,8 @@ protected:
 
 /**
  * Base of scalar types.
+ *
+ *  @ingroup input
  */
 class Scalar : public TypeBase {
 public:
@@ -302,12 +304,14 @@ public:
 
 
 /**
- *
+ * @ingroup input
  */
 class Bool : public Scalar {
 public:
     Bool()
     {}
+
+
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;
@@ -315,7 +319,7 @@ public:
 
 
 /**
- *
+ * @ingroup input
  */
 class Integer : public Scalar {
 public:
@@ -323,12 +327,25 @@ public:
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
     {}
 
-    bool match(string &str) {
+    /**
+     * Returns true if the given integer value conforms to the Type::Integer bounds.
+     */
+    bool match(int value) const {
+        return ( value >=lower_bound_ && value <= upper_bound_);
+    }
+
+    /**
+     * Returns true if the given string can be converted to integer value conforming to the Type::Integer bounds.
+     */
+    bool match(const string &str) const {
         int value;
         return match(str, value);
     }
 
-    bool match(string &str, int &value) {
+    /**
+     * As before but also returns converted integer in @p value.
+     */
+    bool match(const string &str, int &value) const {
         std::istringstream stream(str);
         stream >> value;
         if (stream.good()) {
@@ -338,9 +355,6 @@ public:
         }
     }
 
-    bool match(int value) {
-        return ( value >=lower_bound_ && value <= upper_bound_);
-    }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;
@@ -351,7 +365,7 @@ private:
 
 
 /**
- *
+ * @ingroup input
  */
 class Double : public Scalar {
 public:
@@ -359,13 +373,25 @@ public:
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
     {}
 
+    /**
+     * Returns true if the given integer value conforms to the Type::Double bounds.
+     */
+    bool match(double value) const {
+        return ( value >=lower_bound_ && value <= upper_bound_);
+    }
 
-    bool match(string &str) {
+    /**
+     * Returns true if the given string can be converted to integer value conforming to the Type::Double bounds.
+     */
+    bool match(string &str) const {
         double value;
         return match(str, value);
     }
 
-    bool match(std::string &str, double &value) {
+    /**
+     * As before but also returns converted integer in @p value.
+     */
+    bool match(std::string &str, double &value) const {
         std::istringstream stream(str);
         stream >> value;
         if (stream.good()) {
@@ -373,10 +399,6 @@ public:
         } else {
             return false;
         }
-    }
-
-    bool match(double value) {
-        return ( value >=lower_bound_ && value <= upper_bound_);
     }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
@@ -390,6 +412,8 @@ private:
 
 /**
  * Just for consistency, but is essentialy same as Scalar.
+ *
+ * @ingroup input
  */
 class String : public Scalar {
 public:
@@ -399,7 +423,7 @@ public:
 
 
 /**
- *
+ * @ingroup input
  */
 class FileName : public String {
 public:

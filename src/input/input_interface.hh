@@ -23,6 +23,8 @@
 #include <boost/type_traits.hpp>
 
 #include "input_type.hh"
+#include "input/storage.hh"
+
 
 //#include "Generic_node.hpp"
 /**
@@ -37,39 +39,26 @@
  * Not all readers has to use Storage for accessing the input data !!
  */
 
-//* proper Generic_node stub (all in stub is implemented with same data types)
-
-class Generic_node {
-public:
-    const int get_int() const
-        {return 0;}
-    const double get_double() const
-        {return 0.0;}
-    const bool get_bool() const
-        {return false;}
-    const string get_string() const
-        {return *( new string(""));} // memory leak
-
-    const Generic_node &get_item(const size_t index) const
-        {return *( new Generic_node() );} // memory leak
-    bool not_null() const { return true;}
-    bool is_null() const { return false;}
-    size_t get_array_size() const {return 1;}
-};
 
 namespace Input {
 namespace Interface {
 
 // exceptions and error_info types
 
-struct TypeMismatchExcp : virtual FlowException {};
-TYPEDEF_ERR_INFO( InputType, const Input::Type::TypeBase *);
+TYPEDEF_ERR_INFO( EI_InputType, const Input::Type::TypeBase *);
+TYPEDEF_ERR_INFO( EI_RequiredType, const string );
+TYPEDEF_ERR_INFO( EI_CPPRequiredType, const string );
+TYPEDEF_ERR_INFO( EI_KeyName, const string);
+DECLARE_EXCEPTION( ExcTypeMismatch, << "In Input::Interface:\n"
+        << " can not make iterator with type " << EI_RequiredType::qval << "to get C++ type: " << EI_CPPRequiredType::qval
+        << "\n since the key " << EI_KeyName::qval << " or array was declared with Input::Type : " << *(EI_InputType::ref(_exc)) );
+
 
 
 
 using std::string;
 
-typedef Generic_node Storage;
+typedef StorageBase Storage;
 
 enum ErrorCode {
     no_error = 0,       ///< no error occured
@@ -122,14 +111,9 @@ public:
             Type::Record::KeyIter key_it = record_type_->key_iterator(key);
             return *(Iterator<Ret>( *(key_it->type_), *storage_, key_it->key_index));
         }
-        catch (FlowException & e) {
-            const Input::Type::TypeBase * key_type = *( boost::get_error_info<InputType_EI>(e) );
-            std::stringstream s_key;
-            s_key << *key_type;
-            std::stringstream s_record;
-            s_record << *record_type_;
-            xprintf(Err, "Error: Can not return value of C++ type '%s' from key '%s' of type '%s' in record type:\n %s",
-                    typeid(Ret).name(), key.c_str(), s_key.str().c_str(), s_record.str().c_str());
+        catch (ExcTypeMismatch & e) {
+            e << EI_CPPRequiredType(typeid(Ret).name()) << EI_KeyName(key);
+            throw e;
         }
 
     }
@@ -209,13 +193,15 @@ public:
        try {
            return Iterator<ValueType>(array_type_->get_sub_type(), *storage_, 0);
        }
-       catch (TypeMismatchExcp & e) {
-           const Input::Type::TypeBase * key_type = *( boost::get_error_info<InputType_EI>(e) );
+       catch (ExcTypeMismatch & e) {
+           const Input::Type::TypeBase * key_type = boost::get_error_info<EI_InputType>(e) ;
+           if (key_type != NULL) {
            std::stringstream s_key;
            s_key << *key_type;
 
            xprintf(Err, "Error: Can not get iterator pointing to C++ type '%s' from array of values of type:\n %s\n",
                    typeid(ValueType).name(), s_key.str().c_str());
+           }
        }
 
    }
@@ -363,7 +349,7 @@ public:
             type_ = static_cast< const InputType * >( &type );
         } else {
             //DBGMSG("type: '%s' input type: '%s'\n", typeid(type).name(), typeid(InputType).name() );
-            throw TypeMismatchExcp() << InputType_EI(&type) ;
+            THROW( ExcTypeMismatch() << EI_InputType( &type ) << EI_RequiredType( typeid(InputType).name() ) );
         }
     }
 
@@ -380,7 +366,7 @@ public:
     inline OutputType operator *() const
     {
         const Storage &s = storage_->get_item(index_);
-        if (s.not_null()) {
+        if (! s.is_null()) {
             return TypeDispatch<DispatchType>::value(s, *(type_));
         } else {
             // error no value

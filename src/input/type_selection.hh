@@ -8,6 +8,8 @@
 #ifndef TYPE_SELECTION_HH_
 #define TYPE_SELECTION_HH_
 
+#include "system/exceptions.hh"
+
 #include "system.hh"
 #include "type_base.hh"
 
@@ -20,6 +22,16 @@ using namespace std;
  * Base of Selection templates.
  */
 class SelectionBase: public Scalar {
+public:
+
+    /**
+     * Exceptions specific to this class.
+     */
+    TYPEDEF_ERR_INFO( EI_Selection, const SelectionBase * );
+    DECLARE_EXCEPTION( ExcSelectionKeyNotFound, << "Key " << EI_KeyName::qval <<" not found in Selection:\n" <<  *EI_Selection::ref(_exc) );
+
+
+    virtual int name_to_int(const string& name) const =0;
 };
 
 /**
@@ -37,12 +49,18 @@ class SelectionBase: public Scalar {
  * Then we can drop add_value method.
  *
  * Future shows, if this is not too restrictive. Maybe, it is more practical drop the template and use just plain ints for values.
+ *
+ * TODO: We can not guarantee full compatibility of the Selection with corresponding Enum type
+ *       the Selection can have fewer values since we can not get number of values in the Enum.
+ *       Therefore we either have to move under C++11, where enum classes may provide elementary
+ *       reflection or have Selection of simple ints.
  */
 template<class Enum>
 class Selection: public SelectionBase {
 private:
     BOOST_STATIC_ASSERT( boost::is_integral<Enum>::value || boost::is_enum<Enum>::value );
 public:
+
 
 
     /**
@@ -99,14 +117,14 @@ public:
     /***
      * Converts name (on input) to the value. Throws if the name do not exist.
      */
-    inline const Enum &name_to_value(const string &key) const {
+    virtual int name_to_int(const string &key) const {
         ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name().c_str());
         KeyHash key_h = key_hash(key);
         typename SelectionData::key_to_index_const_iter it = data_->key_to_index_.find(key_h);
         if (it != data_->key_to_index_.end())
             return (data_->keys_[it->second].value);
         else
-            throw SelectionKeyNotFound() << KeyName_EI(key) << SelectionName_EI(data_->type_name_);
+            throw ExcSelectionKeyNotFound() << EI_KeyName(key) << EI_Selection(this);
     }
 
     /**

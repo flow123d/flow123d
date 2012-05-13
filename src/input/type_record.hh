@@ -8,6 +8,8 @@
 #ifndef TYPE_RECORD_HH_
 #define TYPE_RECORD_HH_
 
+#include "system/exceptions.hh"
+
 #include "type_base.hh"
 #include "type_selection.hh"
 
@@ -35,6 +37,13 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 public:
+
+    /**
+     * Exceptions specific to this class.
+     */
+    TYPEDEF_ERR_INFO( EI_Record, Record );
+    DECLARE_EXCEPTION( ExcRecordKeyNotFound, << "Key " << EI_KeyName::qval <<" not found in Record:\n" <<  EI_Record::val );
+
     /**
      *  Structure for description of one key in record.
      *  The members dflt_type_ and default have reasonable meaning only for
@@ -67,10 +76,10 @@ public:
     Record(const string & type_name_in, const string & description);
 
     /**
-     * Constructor to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
+     * Method to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
      * in the @p parent. You are free to overwrite copied keys, but you can not delete them.
      */
-    Record(AbstractRecord parent, const string & type_name_in, const string & description);
+    void derive_from(AbstractRecord parent);
 
     /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
@@ -150,7 +159,7 @@ public:
         RecordData::key_to_index_const_iter it = data_->key_to_index.find(key_h);
         if (it != data_->key_to_index.end()) return it->second;
         else
-            throw KeyNotFound() << KeyName_EI(key) << RecordName_EI(data_->type_name_);
+            THROW( ExcRecordKeyNotFound() << EI_KeyName(key) << EI_Record(*this) );
 
         return size();
     }
@@ -175,6 +184,11 @@ public:
     {
         ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
         return data_->keys.end();
+    }
+
+    inline bool has_key(const string& key) const
+    {
+        return key_iterator(key) != end();
     }
 
     inline unsigned int size() const {
@@ -251,37 +265,40 @@ public:
      * Basic constructor. You has to provide @t type_name of the new declared Record type and
      * its @t description.
      */
-    AbstractRecord(const string & type_name_in, const string & description)
-    : Record(type_name_in, description),
-      child_data_( boost::make_shared<ChildData>( type_name_in + "_selection" ) )
-    {
-        // make our own copy of type object allocated at heap (could be expensive, but we don't care)
-        boost::shared_ptr< Selection<unsigned int> > type_copy = boost::make_shared< Selection<unsigned int> >(child_data_->selection_of_childs);
+    AbstractRecord(const string & type_name_in, const string & description);
 
-        data_->declare_key("TYPE", type_copy, DefaultValue(DefaultValue::obligatory),
-                     "Sub-record selection.");
+    /**
+     * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
+     * a Selection for list of descendants, since current interface do not expose this Selection. Then this method
+     * could be removed.
+     */
+    void no_more_descendants();
 
-        finished=false;
-    }
+    void add_descendant(const Record &subrec);
 
-    void add_descendant(const Record &subrec)
-    {
-        child_data_->selection_of_childs.add_value(child_data_->list_of_childs.size(), subrec.type_name() );
-        child_data_->list_of_childs.push_back(subrec);
-    }
+    /**
+     * @brief Implements @p Type:TypeBase::documentation.
+     */
+    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
 
-    const Record  &get_descendant(const string& name) const {
-        unsigned int idx;
+    /**
+     * Set made_extensive_doc = false for this Record and all its descendants.
+     */
+    virtual void  reset_doc_flags() const;
 
-        idx = child_data_->selection_of_childs.name_to_value(name);
-        ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
-        return child_data_->list_of_childs[idx];
-    }
+    const Record  &get_descendant(const string& name) const;
 
 protected:
     boost::shared_ptr<ChildData> child_data_;
 
 };
+
+
+/*********************************************************
+ * Implementation
+ */
+
+
 
 } // closing namespace Type
 } // closing namespace Input

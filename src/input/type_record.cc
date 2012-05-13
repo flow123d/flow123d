@@ -29,57 +29,6 @@ namespace Type {
 using namespace std;
 
 
-/*******************************************************************
- * implementation of DefaultValue
- */
-
-DefaultValue::DefaultValue()
-: value_(), type_(optional)
-{}
-
-DefaultValue::DefaultValue(const std::string & value)
-: value_(value), type_(declaration)
-{}
-
-DefaultValue::DefaultValue(enum DefaultType type)
-: value_(), type_(type)
-{
-    if (type == declaration) {
-        xprintf(Err, "Can not construct DefaultValue with type 'declaration' without providing the default value.\n");
-    }
-}
-
-
-/*******************************************************************
- * implementation of TypeBase
- */
-
-std::ostream& TypeBase::write_description(std::ostream& stream, const string& str, unsigned int pad) {
-    boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
-    boost::tokenizer<boost::char_separator<char> >::iterator tok;
-
-    // Up to first \n without padding.
-    stream << endl;
-
-        // For every \n add padding at beginning of the nex line.
-        for(tok = line_tokenizer.begin(); tok != line_tokenizer.end(); ++tok) {
-            stream << setw(pad) << "" << "# "
-                    << *tok << endl;
-        }
-    return stream;
-}
-
-bool TypeBase::is_valid_identifier(const string& key) {
-  namespace ba = boost::algorithm;
-  return ba::all( key, ba::is_lower() || ba::is_digit() || ba::is_any_of("_") );
-}
-
-
-std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
-    return type.documentation(stream);
-}
-
-
 /**********************************************************************************
  * implementation of Type::Record
  */
@@ -91,17 +40,17 @@ Record::Record(const string & type_name_in, const string & description)
     finished=false;
 }
 
-Record::Record( AbstractRecord parent, const string & type_name_in, const string & description)
-: data_( boost::make_shared<RecordData>( type_name_in, description) )
-{
-    finished=false;
-    if (! parent.is_finished())
-            xprintf(PrgErr, "Can not inherit Record '%s' from unfinished AbstractRecord.\n", type_name_in.c_str());
+
+void Record::derive_from(AbstractRecord parent) {
+
+    if (data_.use_count() == 0)
+            xprintf(PrgErr, "Can not inherit to empty Record handle.\n");
+    if (data_->keys.size() != 0)
+            xprintf(PrgErr, "Can not inherit into Record `%s`, it already has some keys declared\n.", type_name().c_str());
 
     parent.add_descendant(*this);
     // semi-deep copy
-    // We skip first 'TYPE' key.
-    for(Record::KeyIter it=parent.begin()+1; it != parent.end(); ++it) {
+    for(Record::KeyIter it=parent.begin(); it != parent.end(); ++it) {
         Key tmp_key=*it;
         KeyHash key_h = key_hash(tmp_key.key_);
 
@@ -208,113 +157,107 @@ void Record::RecordData::declare_key(const string &key,
     }
 }
 
-
-/**********************************************************************************
- * implementation of Type::Array
+/************************************************
+ * implementation of AbstractRecord
  */
 
+AbstractRecord::AbstractRecord(const string & type_name_in, const string & description)
+: Record(type_name_in, description),
+  child_data_( boost::make_shared<ChildData>( type_name_in + "_selection" ) )
+{
+    // make our own copy of type object allocated at heap (could be expensive, but we don't care)
+    boost::shared_ptr< Selection<unsigned int> > type_copy = boost::make_shared< Selection<unsigned int> >(child_data_->selection_of_childs);
 
-std::ostream& Array::documentation(std::ostream& stream, bool extensive, unsigned int pad) const {
-    if (extensive) {
-        type_of_values_->documentation(stream, true, pad);
-    } else {
-        stream << "Array, size limits: [" << lower_bound_ << ", " << upper_bound_ << "] of type: " << endl;
-        stream << setw(pad+4) << "";
-        type_of_values_->documentation(stream, false, pad+4);
-    }
-    return stream;
-}
+//    data_->declare_key("TYPE", type_copy, DefaultValue(DefaultValue::obligatory),
+//                 "Sub-record selection.");
 
-void  Array::reset_doc_flags() const {
-    type_of_values_->reset_doc_flags();
-}
-
-string Array::type_name() const
-{ return "array_of_" + type_of_values_->type_name();}
-
-/**********************************************************************************
- * implementation of Type::Scalar ... and descendants.
- */
-void  Scalar::reset_doc_flags() const
-{}
-
-std::ostream& Bool::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
-    stream << "Bool";
-    return stream;
-}
-
-string Bool::type_name() const {
-    return "Bool";
-}
-
-std::ostream& Integer::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
-    stream << "Integer in [" << lower_bound_ << ", " << upper_bound_ << "]";
-    return stream;
-}
-
-string Integer::type_name() const {
-    return "Integer";
+    finished=false;
 }
 
 
-std::ostream& Double::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
-    stream << "Double in [" << lower_bound_ << ", " << upper_bound_ << "]";
-    return stream;
+
+void AbstractRecord::add_descendant(const Record &subrec)
+{
+    if (!finished)
+        xprintf(PrgErr, "Can not add descendant to unfinished AbstractType.\n");
+
+    child_data_->selection_of_childs.add_value(child_data_->list_of_childs.size(), subrec.type_name());
+    child_data_->list_of_childs.push_back(subrec);
 }
 
-string Double::type_name() const {
-    return "Double";
+
+
+void AbstractRecord::no_more_descendants()
+{
+    if (child_data_.use_count() == 0)
+            xprintf(PrgErr, "Can not close empty AbstractRecord handle.\n");
+    child_data_->selection_of_childs.finish();
+
 }
 
 
-std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
 
-    stream << "FileName of ";
-    switch (type_) {
-    case input_file:
-        stream << "input file";
-        break;
-    case output_file:
-        stream << "output file";
-        break;
-    default:
-        stream << "file with unknown type";
-        break;
-    }
-    return stream;
-}
-
-string FileName::type_name() const {
-    switch (type_) {
-    case input_file:
-        return "FileName_input";
-    case output_file:
-        return "FileName_output";
-    default:
-        return "FileName";
+void  AbstractRecord::reset_doc_flags() const {
+    if (data_.use_count() != 0) {
+        data_->reset_doc_flags();
+        for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
+                    it!= child_data_->list_of_childs.end(); ++it)
+            it->reset_doc_flags();
     }
 }
 
 
 
+std::ostream& AbstractRecord::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
+{
+    if (! finished) xprintf(PrgErr, "Can not provide documentation of unfinished Record type: %s\n", type_name().c_str());
 
-std::ostream& String::documentation(std::ostream& stream, bool extensive, unsigned int pad) const {
+    if (! extensive) {
 
-    if (extensive) return stream;
-    stream << "String (generic)";
+        // Short description
+        stream << "AbstractRecord '" << type_name() << "' with "<< child_data_->list_of_childs.size() << " descendants.";
+    } else if ( ! data_->made_extensive_doc) {
+
+        // Extensive description
+        data_->made_extensive_doc=true;
+
+        // header
+        stream << endl;
+        stream << ""
+               << "AbstractRecord '" << type_name() << "' with "<< child_data_->list_of_childs.size() << " descendants.";
+        write_description(stream, data_->description_, pad);
+        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+        // descendants
+        for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
+                    it!= child_data_->list_of_childs.end(); ++it) {
+            it->documentation( stream , false, pad +4 ); // short description of the type of the key
+        }
+        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
+        << " " << type_name() << endl;
+
+        // Full documentation of embedded record types.
+        for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
+                    it!= child_data_->list_of_childs.end(); ++it) {
+            it->documentation(stream, true, 0);
+        }
+
+    }
+
     return stream;
 }
 
-string String::type_name() const {
-    return "String";
+
+
+
+const Record  & AbstractRecord::get_descendant(const string& name) const
+{
+    unsigned int idx;
+
+    ASSERT( finished, "Can not get descendant of unfinished AbstractType\n");
+    idx = child_data_->selection_of_childs.name_to_int(name);
+    ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
+    return child_data_->list_of_childs[idx];
 }
-
-
-
 
 
 
