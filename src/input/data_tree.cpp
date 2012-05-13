@@ -9,8 +9,7 @@
 
 #include "json_spirit.h"
 
-#include "input_interface.hh"
-#include "input_type.hh"
+//#include "input_type.hh"
 
 namespace flow {
 
@@ -372,4 +371,20 @@ ostream & operator<<(ostream & stream, Data_tree & tree )
     return stream;
 }
 
+/*
+Generic_node * json_to_storage(const JSONIter json_it , Type::TypeBase type_node, json_spirit_path current_path)
+{
+
+
+  if ( is_ref_json_node( json_it.node(), ref_node) ) {
+      json_spirit::mvalue refered_node= redirect_reference( current_path, ref_node);
+      return json_to_storage(refered_node, type_node, refered_node_path);
+  }
+
+  if (typeid(type_node) == typeid(Type::AbstracRecord)) {
+      json_to_storage(json_node, Type::AbstractRecord, )
+  }
 }
+*/
+
+} // end namespace
