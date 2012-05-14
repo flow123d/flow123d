@@ -148,6 +148,106 @@ void OutputVTK::write_vtk_topology(void)
     file << "</Cells>" << endl;
 }
 
+void OutputVTK::write_vtk_discont_geometry(void)
+{
+    Mesh *mesh = this->output->get_mesh();
+    ofstream &file = this->output->get_data_file();
+
+    NodeIter node;
+    int tmp, li;
+
+    /* Write Points begin*/
+    file << "<Points>" << endl;
+    /* Write DataArray begin */
+    file << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
+    /* Write own coordinates */
+    tmp = 0;
+    /* Set floating point precision */
+    this->output->get_data_file().precision(std::numeric_limits<double>::digits10);
+    FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            node = ele->node[li];
+
+            file << scientific << node->getX() << " ";
+            file << scientific << node->getY() << " ";
+            file << scientific << node->getZ() << " ";
+        }
+    }
+    /* Write DataArray end */
+    file << endl << "</DataArray>" << endl;
+    /* Write Points end*/
+    file << "</Points>" << endl;
+}
+
+void OutputVTK::write_vtk_discont_topology(void)
+{
+    //Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
+    Mesh *mesh = this->output->get_mesh();
+    ofstream &file = this->output->get_data_file();
+
+    Node* node;
+    ElementIter ele;
+    int li, tmp;
+
+    /* Write Cells begin*/
+    file << "<Cells>" << endl;
+    /* Write DataArray begin */
+    file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
+    /* Write own coordinates */
+    tmp = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            file << tmp << " ";   /* Write connectivity */
+            tmp++;
+        }
+    }
+    /* Write DataArray end */
+    file << endl << "</DataArray>" << endl;
+
+    /* Write DataArray begin */
+    file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
+    /* Write number of nodes for each element */
+    tmp = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        switch(ele->type) {
+        case LINE:
+            tmp += VTK_LINE_SIZE;
+            break;
+        case TRIANGLE:
+            tmp += VTK_TRIANGLE_SIZE;
+            break;
+        case TETRAHEDRON:
+            tmp += VTK_TETRA_SIZE;
+            break;
+        }
+        file << tmp << " ";
+    }
+    /* Write DataArray end */
+    file << endl << "</DataArray>" << endl;
+
+    /* Write DataArray begin */
+    file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
+    /* Write type of nodes for each element */
+    FOR_ELEMENTS(mesh, ele) {
+        switch(ele->type) {
+        case LINE:
+            file << (int)VTK_LINE << " ";
+            break;
+        case TRIANGLE:
+            file << (int)VTK_TRIANGLE << " ";
+            break;
+        case TETRAHEDRON:
+            file << (int)VTK_TETRA << " ";
+            break;
+        }
+    }
+    /* Write DataArray end */
+    file << endl << "</DataArray>" << endl;
+
+    /* Write Cells end*/
+    file << "</Cells>" << endl;
+}
+
 void OutputVTK::write_vtk_ascii_data(OutputData *data)
 {
     ofstream &file = this->output->get_data_file();
@@ -315,16 +415,37 @@ void OutputVTK::write_vtk_node_data(void)
     ofstream &file = this->output->get_data_file();
     std::vector<OutputData> *node_data = this->output->get_node_data();
 
-    /* Write PointData begin */
-    file << "<PointData ";
-    this->write_vtk_data_names(node_data);
-    file << ">" << endl;
+    if(node_data != NULL) {
+        /* Write PointData begin */
+        file << "<PointData ";
+        this->write_vtk_data_names(node_data);
+        file << ">" << endl;
 
-    /* Write own data */
-    this->write_vtk_data_ascii(node_data);
+        /* Write own data */
+        this->write_vtk_data_ascii(node_data);
 
-    /* Write PointData end */
-    file << "</PointData>" << endl;
+        /* Write PointData end */
+        file << "</PointData>" << endl;
+    }
+}
+
+void OutputVTK::write_vtk_corner_data(void)
+{
+    ofstream &file = this->output->get_data_file();
+    std::vector<OutputData> *corner_data = this->output->get_corner_data();
+
+    if(corner_data != NULL) {
+        /* Write PointData begin */
+        file << "<PointData ";
+        this->write_vtk_data_names(corner_data);
+        file << ">" << endl;
+
+        /* Write own data */
+        this->write_vtk_data_ascii(corner_data);
+
+        /* Write PointData end */
+        file << "</PointData>" << endl;
+    }
 }
 
 void OutputVTK::write_vtk_element_data(void)
@@ -332,16 +453,18 @@ void OutputVTK::write_vtk_element_data(void)
     ofstream &file = this->output->get_data_file();
     std::vector<OutputData> *elem_data = this->output->get_elem_data();
 
-    /* Write PointData begin */
-    file << "<CellData ";
-    this->write_vtk_data_names(elem_data);
-    file << ">" << endl;
+    if(elem_data != NULL) {
+        /* Write PointData begin */
+        file << "<CellData ";
+        this->write_vtk_data_names(elem_data);
+        file << ">" << endl;
 
-    /* Write own data */
-    this->write_vtk_data_ascii(elem_data);
+        /* Write own data */
+        this->write_vtk_data_ascii(elem_data);
 
-    /* Write PointData end */
-    file << "</CellData>" << endl;
+        /* Write PointData end */
+        file << "</CellData>" << endl;
+    }
 }
 
 void OutputVTK::write_vtk_vtu_tail(void)
@@ -360,23 +483,47 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write header */
     this->write_vtk_vtu_head();
 
-    /* Write Piece begin */
-    file << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+    if(this->output->file_format == Output::VTK_SERIAL_ASCII) {
 
-    /* Write VTK Geometry */
-    this->write_vtk_geometry();
+        /* Write Piece begin */
+        file << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
-    /* Write VTK Topology */
-    this->write_vtk_topology();
+        /* Write VTK Geometry */
+        this->write_vtk_geometry();
 
-    /* Write VTK scalar and vector data on nodes to the file */
-    this->write_vtk_node_data();
+        /* Write VTK Topology */
+        this->write_vtk_topology();
 
-    /* Write VTK data on elements */
-    this->write_vtk_element_data();
+        /* Write VTK scalar and vector data on nodes to the file */
+        this->write_vtk_node_data();
 
-    /* Write Piece end */
-    file << "</Piece>" << endl;
+        /* Write VTK data on elements */
+        this->write_vtk_element_data();
+
+        /* Write Piece end */
+        file << "</Piece>" << endl;
+    } else if(this->output->file_format == Output::VTK_DISCONT_ASCII) {
+
+        /* Write Piece begin */
+        file << "<Piece NumberOfPoints=\"" << this->output->get_corner_count() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+
+        /* Write VTK Geometry */
+        this->write_vtk_discont_geometry();
+
+        /* Write VTK Topology */
+        this->write_vtk_discont_topology();
+
+        /* TODO: Write VTK scalar and vector data on nodes to the file */
+
+        /* Write VTK scalar and vector data in corners to the file */
+        this->write_vtk_corner_data();
+
+        /* Write VTK data on elements */
+        this->write_vtk_element_data();
+
+        /* Write Piece end */
+        file << "</Piece>" << endl;
+    }
 
     /* Write tail */
     this->write_vtk_vtu_tail();
@@ -482,27 +629,29 @@ int OutputVTK::write_data(double time)
         xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__,
                 this->output_time->current_step, frame_file_name);
 
-        /* Write header */
-        this->write_vtk_vtu_head();
+        this->write_vtk_vtu();
 
-        /* Write Piece begin */
-        this->output_time->get_data_file() << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
-
-        /* Write VTK Geometry */
-        this->write_vtk_geometry();
-        /* Write VTK Topology */
-        this->write_vtk_topology();
-
-        /* Write VTK scalar and vector data on nodes */
-        this->write_vtk_node_data();
-        /* Write VTK scalar and vector data on elements */
-        this->write_vtk_element_data();
-
-        /* Write Piece end */
-        this->output_time->get_data_file() << "</Piece>" << endl;
-
-        /* Write tail */
-        this->write_vtk_vtu_tail();
+//        /* Write header */
+//        this->write_vtk_vtu_head();
+//
+//        /* Write Piece begin */
+//        this->output_time->get_data_file() << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+//
+//        /* Write VTK Geometry */
+//        this->write_vtk_geometry();
+//        /* Write VTK Topology */
+//        this->write_vtk_topology();
+//
+//        /* Write VTK scalar and vector data on nodes */
+//        this->write_vtk_node_data();
+//        /* Write VTK scalar and vector data on elements */
+//        this->write_vtk_element_data();
+//
+//        /* Write Piece end */
+//        this->output_time->get_data_file() << "</Piece>" << endl;
+//
+//        /* Write tail */
+//        this->write_vtk_vtu_tail();
 
         /* Close stream for file of current frame */
         data_file->close();
@@ -563,6 +712,9 @@ int OutputVTK::write_tail(void)
 OutputVTK::OutputVTK(Output *_output)
 {
     this->output = _output;
+    Mesh *mesh = this->output->get_mesh();
+    unsigned int li;
+
     this->write_head();
 }
 
@@ -570,6 +722,7 @@ OutputVTK::OutputVTK(OutputTime *_output_time)
 {
     this->output = _output_time;
     this->output_time = _output_time;
+
     this->write_head();
 }
 

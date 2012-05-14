@@ -136,6 +136,20 @@ private:
     void write_vtk_topology(void);
 
     /**
+     * \brief Write geometry (position of nodes) to the VTK file (.vtu)
+     *
+     * This method is used, when discontinuous data are saved to the .vtu file
+     */
+    void write_vtk_discont_geometry(void);
+
+    /**
+     * \brief Write topology (connection of nodes) to the VTK file (.vtu)
+     *
+     * This method is used, when discontinuous data are saved to the .vtu file
+     */
+    void write_vtk_discont_topology(void);
+
+    /**
      * \brief This function writes ascii data to VTK (.vtu) output file.
      *
      * \param[in]   *data   The pointer at structure storing pointer at own data.
@@ -176,6 +190,10 @@ private:
      */
     void write_vtk_node_data(void);
 
+    /**
+     * \brief Write data on corners to the VTK file (.vtu)
+     */
+    void write_vtk_corner_data(void);
     /**
      * \brief Write data on elements to the VTK file (.vtu)
      */

@@ -160,22 +160,39 @@ Output::Output(Mesh *_mesh, string fname)
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
     xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
+    // Get number of corners
+    unsigned int li;
+    this->corner_count = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            this->corner_count++;
+        }
+    }
+
     base_filename = new string(fname);
 
     mesh = _mesh;
     node_data = new OutputDataVec;
+    corner_data = new OutputDataVec;
     elem_data = new OutputDataVec;
 
     base_filename = new string(fname);
 
     char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
 
-    if(strcmp(format_name,"ASCII") == 0 || strcmp(format_name,"BIN") == 0) {
+    if(strcmp(format_name,"ASCII") == 0 || strcmp(format_name,"BIN") == 0)
+    {
         this->file_format = GMSH_MSH_ASCII;
         this->output_msh = new OutputMSH(this);
         this->output_vtk = NULL;
-    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 || strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
+    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 ||
+            strcmp(format_name, "VTK_PARALLEL_ASCII") == 0)
+    {
         this->file_format = VTK_SERIAL_ASCII;
+        this->output_msh = NULL;
+        this->output_vtk = new OutputVTK(this);
+    } else if(strcmp(format_name, "VTK_DISCONT_ASCII") == 0) {
+        this->file_format = VTK_DISCONT_ASCII;
         this->output_msh = NULL;
         this->output_vtk = new OutputVTK(this);
     } else {
@@ -208,6 +225,10 @@ Output::~Output()
     // Free all reference on node and element data
     if(node_data != NULL) {
         delete node_data;
+    }
+
+    if(corner_data != NULL) {
+        delete corner_data;
     }
 
     if(elem_data != NULL) {
@@ -245,6 +266,7 @@ int Output::write_tail(void)
     case GMSH_MSH_ASCII:
         return this->output_msh->write_tail();
     case VTK_SERIAL_ASCII:
+    case VTK_DISCONT_ASCII:
         return this->output_vtk->write_tail();
     default:
         return 0;
@@ -258,6 +280,7 @@ int Output::write_data()
     case GMSH_MSH_ASCII:
         return this->output_msh->write_data();
     case VTK_SERIAL_ASCII:
+    case VTK_DISCONT_ASCII:
         return this->output_vtk->write_data();
     default:
         return 0;
@@ -269,6 +292,7 @@ int Output::write_data()
 OutputTime::OutputTime(Mesh *_mesh, string fname)
 {
     std::vector<OutputData> *node_data;
+    std::vector<OutputData> *corner_data;
     std::vector<OutputData> *elem_data;
     Mesh *mesh = _mesh;
     ofstream *base_file;
@@ -280,17 +304,28 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
     xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
+    // Get number of corners
+    unsigned int li, count = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            count++;
+        }
+    }
+    this->set_corner_count(count);
+
     base_filename = new string(fname);
 
     current_step = 0;
 
     node_data = new OutputDataVec;
+    corner_data = new OutputDataVec;
     elem_data = new OutputDataVec;
 
     set_base_file(base_file);
     set_base_filename(base_filename);
     set_mesh(mesh);
     set_node_data(node_data);
+    set_corner_data(corner_data);
     set_elem_data(elem_data);
 
     char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
@@ -299,8 +334,13 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
         this->file_format = GMSH_MSH_ASCII;
         this->output_msh = new OutputMSH(this);
         this->output_vtk = NULL;
-    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 || strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
+    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 ||
+            strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
         this->file_format = VTK_SERIAL_ASCII;
+        this->output_msh = NULL;
+        this->output_vtk = new OutputVTK(this);
+    } else if(strcmp(format_name, "VTK_DISCONT_ASCII") == 0) {
+        this->file_format = VTK_DISCONT_ASCII;
         this->output_msh = NULL;
         this->output_vtk = new OutputVTK(this);
     } else {
@@ -326,6 +366,7 @@ int OutputTime::write_data(double time)
         this->current_step++;
         break;
     case VTK_SERIAL_ASCII:
+    case VTK_DISCONT_ASCII:
         ret = this->output_vtk->write_data(time);
         this->current_step++;
         break;

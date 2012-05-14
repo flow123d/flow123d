@@ -34,6 +34,7 @@
 #include <string>
 #include <fstream>
 
+#include "system/xio.h"
 #include "mesh/mesh.h"
 
 class OutputMSH;
@@ -287,12 +288,15 @@ public:
 
     // TODO: Move public setters and getters to protected section
     std::vector<OutputData> *get_node_data(void) { return node_data; };
+    std::vector<OutputData> *get_corner_data(void) { return corner_data; };
     std::vector<OutputData> *get_elem_data(void) { return elem_data; };
     ofstream& get_base_file(void) { return *base_file; };
     string& get_base_filename(void) { return *base_filename; };
     ofstream& get_data_file(void) { return *data_file; };
     string& get_data_filename(void) { return *data_filename; };
     Mesh *get_mesh(void) { return mesh; };
+    unsigned int get_corner_count(void) { return this->corner_count; }
+    void set_corner_count(unsigned int count) { this->corner_count = count; }
 
     void set_data_file(ofstream *_data_file) { data_file = _data_file; };
 
@@ -301,7 +305,8 @@ public:
         GMSH_MSH_ASCII = 1,
         GMSH_MSH_BIN = 2,
         VTK_SERIAL_ASCII = 3,
-        VTK_PARALLEL_ASCII = 4
+        VTK_PARALLEL_ASCII = 4,
+        VTK_DISCONT_ASCII = 5
     } OutFileFormat;
 
     OutFileFormat file_format;
@@ -315,6 +320,7 @@ protected:
     void set_base_file(ofstream *_base_file) { base_file = _base_file; };
     void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
     void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
+    void set_corner_data(std::vector<OutputData> *_corner_data) { corner_data = _corner_data; };
     void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
 
     Output() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
@@ -330,8 +336,14 @@ private:
     string          *data_filename;     ///< Name of data output file
     ofstream        *data_file;         ///< Data output stream (could be same as base_file)
     Mesh            *mesh;
-    OutputDataVec   *node_data;         ///< List of data on nodes
-    OutputDataVec   *elem_data;         ///< List of data on elements
+    OutputDataVec   *node_data;         ///< The list of data on nodes
+    OutputDataVec   *corner_data;       ///< The list of data on corners
+    OutputDataVec   *elem_data;         ///< The list of data on elements
+
+    /**
+     * \brief The total number of corners of all elements
+     */
+    unsigned int corner_count;
 };
 
 template <typename _Data>
@@ -487,6 +499,27 @@ public:
     int register_node_data(std::string name, std::string unit, _Data *data, unsigned int size);
 
     /**
+     * \brief This function register data on corners of triangles.
+     *
+     * This function will add reference on this array of data to the Output object.
+     * It is possible to call this function only once, when data are at the same
+     * address during time. It is possible to call this function for each step, when
+     * data are not at the same address, but name of the data has to be same.
+     * Own data will be written to the file, when write_data() method will be called.
+     *
+     * \param[in] name  The name of data
+     * \param[in] unit  The units of data
+     * \param[in] *data The pointer at data (array of int, float or double)
+     * \param[in] size  The size of array (number of values)
+     *
+     * \return This function returns 1, when data were registered. This function
+     * returns 0, when it wasn't able to register data (number of values isn't
+     * same as number of nodes).
+     */
+    template <typename _Data>
+    int register_corner_data(std::string name, std::string unit, _Data *data, unsigned int size);
+
+    /**
      * \brief This function register data on elements.
      *
      * This function will add reference on this array of data to the Output object.
@@ -527,6 +560,27 @@ public:
      */
     template <typename _Data>
     int register_node_data(std::string name, std::string unit, std::vector<_Data> &data);
+
+    /**
+     * \brief This function register data on corners of triangles.
+     *
+     * This function will add reference on this array of data to the Output object.
+     * It is possible to call this function only once, when data are at the same
+     * address during time. it is possible to call this function for each step, when
+     * data are not at the same address, but name of the data has to be same.
+     * Own data will be written to the file, when write_data() method will be called.
+     *
+     * \param[in] name  The name of data
+     * \param[in] unit  The units of data
+     * \param[in] *data The pointer at data (array of int, float or double)
+     * \param[in] size  The size of array (number of values)
+     *
+     * \return This function returns 1, when data were registered. This function
+     * returns 0, when it wasn't able to register data (number of values isn't
+     * same as number of nodes).
+     */
+    template <typename _Data>
+    int register_corner_data(std::string name, std::string unit, std::vector<_Data> &data);
 
     /**
      * \brief Register vector of data on elements.
@@ -599,6 +653,48 @@ int OutputTime::register_node_data(std::string name,
     if(found == 0) {
         OutputData *out_data = new OutputData(name, unit, data, size);
         node_data->push_back(*out_data);
+    }
+
+    return 1;
+
+}
+
+template <typename _Data>
+int OutputTime::register_corner_data(std::string name,
+        std::string unit,
+        _Data *data,
+        uint size)
+{
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    int found = 0;
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
+    /* TODO: It's not possible to check easily correct number of corners, so
+     * skipping for now. */
+
+    std::vector<OutputData> *corner_data = get_corner_data();
+    Mesh *mesh = get_mesh();
+
+    for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
+            od_iter != corner_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == name) {
+            od_iter->data = (void*)data;
+            found = 1;
+            break;
+        }
+    }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(name, unit, data, size);
+        corner_data->push_back(*out_data);
     }
 
     return 1;
@@ -688,7 +784,46 @@ int OutputTime::register_node_data(std::string name,
     }
 
     return 1;
+}
 
+template <typename _Data>
+int OutputTime::register_corner_data(std::string name,
+        std::string unit,
+        std::vector<_Data> &data)
+{
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    int found = 0;
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
+    /* TODO: It's not possible to check easily correct number of corners, so
+     * skipping for now. */
+
+    std::vector<OutputData> *corner_data = get_corner_data();
+    Mesh *mesh = get_mesh();
+
+    for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
+            od_iter != corner_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == name) {
+            od_iter->data = (void*)&data;
+            found = 1;
+            break;
+        }
+    }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(name, unit, data);
+        corner_data->push_back(*out_data);
+    }
+
+    return 1;
 }
 
 template <typename _Data>
