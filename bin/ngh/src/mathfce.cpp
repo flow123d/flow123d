@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include "mathfce.h"
 #include "problem.h"
 

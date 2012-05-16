@@ -31,6 +31,8 @@
 #define SYSTEM_H
 
 //#include <mpi>
+#include <cstdio>
+#include <string>
 
 
 #include "global_defs.h"
@@ -46,7 +48,6 @@
 #ifndef _BSD_SOURCE
    #define _BSD_SOURCE
 #endif
-#include <stdio.h>
 
 #define strcmpi strcasecmp
 #define PATH_SEP "/"

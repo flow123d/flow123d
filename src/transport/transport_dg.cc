@@ -123,15 +123,9 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     output_solution.resize(n_substances);
     for (int i=0; i<n_substances; i++)
     {
-        output_solution[i] = new double[mesh().node_vector.size()];
-        transport_output->register_node_data<double>(substance_names[i], "M/L^3", output_solution[i], mesh().node_vector.size());
+        output_solution[i] = new double[distr->size()];
+        transport_output->register_corner_data<double>(substance_names[i], "M/L^3", output_solution[i], distr->size());
     }
-    output_cell_solution.resize(n_substances);
-	for (int i=0; i<n_substances; i++)
-	{
-		output_cell_solution[i] = new double[mesh().element.size()];
-		transport_output->register_elem_data<double>(substance_names[i]+"_cell", "M/L^3", output_cell_solution[i], mesh().element.size());
-	}
 
 	// set time marks for writing the output
 	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
@@ -183,7 +177,7 @@ TransportDG::~TransportDG()
     for (int i=0; i<n_substances; i++)
     {
     	delete[] output_solution[i];
-    	delete[] output_cell_solution[i];
+//    	delete[] output_cell_solution[i];
     }
 
     gamma.clear();
@@ -319,94 +313,41 @@ void TransportDG::output_data()
 	VecScatterDestroy(&(output_scatter));
 	ISDestroy(&(is));
 
-    VecGetArray(solution_vec[0], &solution);
-
-    // interpolate solution to a continuous field and write to output file
-
+	// on the main processor fill the output array and save to file
     if (distr->myp() == 0)
     {
-		for (int i=0; i< n_nodes; i++)
+    	int id = 0, nid;
+
+    	VecGetArray(solution_vec[0], &solution);
+
+    	FOR_ELEMENTS(mesh_, elem)
 		{
-			count[i] = 0;
-			output_solution[0][i] = 0;
-		}
-		for (DOFHandler<1,3>::CellIterator cell = dof_handler1d->begin_cell(); cell != dof_handler1d->end_cell(); ++cell)
-		{
-			if (cell->dim != 1) continue;
-
-			dof_handler1d->get_dof_indices(cell, dof_indices);
-
-			for (int i=0; i<fe1d->n_dofs(); i++)
-			{
-				int nid = mesh_->node_vector.index(cell->node[i]);
-				count[nid]++;
-				output_solution[0][nid] += solution[dof_indices[i]];
-			}
-		}
-		for (DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
-		{
-			if (cell->dim != 2) continue;
-
-			dof_handler2d->get_dof_indices(cell, dof_indices);
-
-			for (int i=0; i<fe2d->n_dofs(); i++)
-			{
-				int nid = mesh_->node_vector.index(cell->node[i]);
-				count[nid]++;
-				output_solution[0][nid] += solution[dof_indices[i]];
-			}
-		}
-		for (DOFHandler<3,3>::CellIterator cell = dof_handler3d->begin_cell(); cell != dof_handler3d->end_cell(); ++cell)
-		{
-			if (cell->dim != 3) continue;
-
-			dof_handler3d->get_dof_indices(cell, dof_indices);
-
-			for (int i=0; i<fe3d->n_dofs(); i++)
-			{
-				int nid = mesh_->node_vector.index(cell->node[i]);
-				count[nid]++;
-				output_solution[0][nid] += solution[dof_indices[i]];
-			}
-		}
-
-		for (int i=0; i<n_nodes; i++)
-			if (count[i] > 1)
-				output_solution[0][i] /= count[i];
-
-		for (DOFHandler<1,3>::CellIterator cell = dof_handler1d->begin_cell(); cell != dof_handler1d->end_cell(); ++cell)
-		{
-			if (cell->dim != 1) continue;
-
-			dof_handler1d->get_dof_indices(cell, dof_indices);
-			output_cell_solution[0][cell.index()] = 0;
-
-			for (int i=0; i<fe1d->n_dofs(); i++)
-				output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe1d->n_dofs();
-		}
-		for (DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
-		{
-			if (cell->dim != 2) continue;
-
-			dof_handler2d->get_dof_indices(cell, dof_indices);
-			output_cell_solution[0][cell.index()] = 0;
-
-			for (int i=0; i<fe2d->n_dofs(); i++)
-				output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe2d->n_dofs();
-		}
-		for (DOFHandler<3,3>::CellIterator cell = dof_handler3d->begin_cell(); cell != dof_handler3d->end_cell(); ++cell)
-		{
-			if (cell->dim != 3) continue;
-
-			dof_handler3d->get_dof_indices(cell, dof_indices);
-			output_cell_solution[0][cell.index()] = 0;
-
-			for (int i=0; i<fe3d->n_dofs(); i++)
-				output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe3d->n_dofs();
+    		switch (elem->dim)
+    		{
+    		case 1:
+    			dof_handler1d->get_dof_indices(elem, dof_indices);
+    			break;
+    		case 2:
+    			dof_handler2d->get_dof_indices(elem, dof_indices);
+    			break;
+    		case 3:
+    			dof_handler3d->get_dof_indices(elem, dof_indices);
+    			break;
+    		default:
+    			break;
+    		}
+    		FOR_ELEMENT_NODES(elem, nid)
+    		{
+    			output_solution[0][id] = solution[dof_indices[nid]];
+    			id++;
+    		}
 		}
 
 		transport_output->write_data(time_->t());
     }
+
+    for (int i=0; i<n_substances; i++)
+    	VecDestroy(&solution_vec[i]);
 }
 
 

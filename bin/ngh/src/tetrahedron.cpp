@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 
 #include "config.h"
 #include "tetrahedron.h"

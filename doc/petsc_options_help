@@ -146,3 +146,36 @@ Matrix Options -------------------------------------------------
   -mat_view_socket: Send matrix to socket (can be read from matlab) (MatView)
   -mat_view_binary: Save matrix to file in binary format (MatView)
   -mat_view_draw: Draw the matrix nonzero structure (MatView)
+
+    HYPRE Parasails Options
+  -pc_hypre_parasails_nlevels <1>: Number of number of levels (None)
+  -pc_hypre_parasails_thresh <0.1>: Threshold (None)
+  -pc_hypre_parasails_filter <0.1>: filter (None)
+  -pc_hypre_parasails_loadbal <0>: Load balance (None)
+  -pc_hypre_parasails_logging: <FALSE> Print info to screen (None)
+  -pc_hypre_parasails_reuse: <FALSE> Reuse nonzero pattern in preconditioner (None)
+  -pc_hypre_parasails_sym <nonsymmetric> (choose one of) nonsymmetric SPD nonsymmetric,SPD (None)
+  
+    HYPRE Euclid Options
+  -pc_hypre_euclid_levels <1>: Number of levels of fill ILU(k) (None)
+  -pc_hypre_euclid_bj: <FALSE> Use block Jacobi ILU(k) (None)
+  -pc_hypre_euclid_print_statistics: <FALSE> Print statistics (None)
+  
+  ICC Options
+  -sub_pc_factor_in_place: <FALSE> Form factored matrix in the same memory as the matrix (PCFactorSetUseInPlace)
+  -sub_pc_factor_fill <1>: Expected non-zeros in factored matrix (PCFactorSetFill)
+  -sub_pc_factor_shift_type <POSITIVE_DEFINITE> (choose one of) NONE NONZERO POSITIVE_DEFINITE INBLOCKS (PCFactorSetShiftType)
+  -sub_pc_factor_shift_amount <1e-12>: Shift added to diagonal (PCFactorSetShiftAmount)
+  -sub_pc_factor_zeropivot <1e-12>: Pivot is considered zero if less than (PCFactorSetZeroPivot)
+  -sub_pc_factor_column_pivot <-2>: Column pivot tolerance (used only for some factorization) (PCFactorSetColumnPivot)
+  -sub_pc_factor_pivot_in_blocks: <FALSE> Pivot inside matrix dense blocks for BAIJ and SBAIJ (PCFactorSetPivotInBlocks)
+  -sub_pc_factor_reuse_fill: <FALSE> Use fill from previous factorization (PCFactorSetReuseFill)
+  -sub_pc_factor_reuse_ordering: <FALSE> Reuse ordering from previous factorization (PCFactorSetReuseOrdering)
+  -sub_pc_factor_mat_ordering_type <natural>: Reordering to reduce nonzeros in factored matrix (one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrderingType)
+  -sub_pc_factor_mat_solver_package <petsc>: Specific direct solver to use (MatGetFactor)
+  -sub_pc_factor_levels <0>: levels of fill (PCFactorSetLevels)
+
+
+  
+
+  

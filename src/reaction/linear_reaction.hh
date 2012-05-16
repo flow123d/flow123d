@@ -11,6 +11,9 @@
 #define LINREACT
 
 #include <vector> ///< included to enable saving bifurcation
+#include "petscvec.h"
+#include "petscmat.h"
+#include "petscksp.h"
 class Mesh;
 class Distribution;
 
@@ -58,6 +61,10 @@ class Linear_reaction
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/
 		void set_time_step(double new_timestep);
+		/**
+		* This method enables to evaluate matrix polynomial of an matrix containing constant real values. Horner scheme is used to get the value.
+		*/
+		void evaluate_matrix_polynomial(Mat *Polynomial, Mat Reaction_matrix, PetscScalar *koef_hlp);
 	private:
 		/**
 		*	This method disables to use constructor without parameters.
@@ -136,6 +143,18 @@ class Linear_reaction
 		*/
 		double **modify_reaction_matrix_repeatedly(void); ///< calls the function modify_reaction_matrix(..) so many times as many decays are defined
 		/**
+		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
+		*/
+		void modify_reaction_matrix(Mat *R);
+		/**
+		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched on.
+		*/
+		double **modify_reaction_matrix(Mat *R, int bifurcation); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched on
+		/**
+		*	Following method assambles reaction matrix using pade approximant instead of earlier repeatedly realized modifications.
+		*/
+		double **modify_reaction_matrix_using_pade(void);
+		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/
 		void print_reaction_matrix(void);
@@ -151,6 +170,10 @@ class Linear_reaction
 		*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
 		*/
 		void print_half_lives(int n_subst);
+		/**
+		*
+		*/
+		int faktorial(int k);
 		/**
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/
@@ -196,6 +219,18 @@ class Linear_reaction
 		*	Boolean which enables to turn on branching of considered decay chain.
 		*/
 		bool bifurcation_on;
+		/**
+		* 	Boolean which indicates the use of Pade approximant of the matrix exponential.
+		*/
+		bool matrix_exp_on;
+		/**
+		*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
+		*/
+		int nom_pol_deg;
+		/**
+		*	Integer which informs about the order of a polynomial term in denominator of Pade approximant rational term.
+		*/
+		int den_pol_deg;
 		/**
 		*	Holds the double describing time step for radioactive decay or first order reactions simulations.
 		*/

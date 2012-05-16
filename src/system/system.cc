@@ -28,13 +28,13 @@
  *
  */
 
-#include <string.h>
-#include <strings.h>
-#include <stdarg.h>
-#include <time.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdarg>
+#include <ctime>
+#include <cstdlib>
 #include <sys/stat.h>
-#include <errno.h>
+#include <cerrno>
+#include <sstream>
 
 #include <petscsys.h>
 #include <petscerror.h>

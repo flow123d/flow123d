@@ -32,63 +32,183 @@
 
 #include "io/output.h"
 
-// TODO: move enums to VTK class
-
-// VTK Element types
-typedef enum {
-    VTK_VERTEX = 1,
-    VTK_POLY_VERTEX = 2,
-    VTK_LINE = 3,
-    VTK_POLY_LINE = 4,
-    VTK_TRIANGLE = 5,
-    VTK_TRIANGLE_STRIP = 6,
-    VTK_POLYGON = 7,
-    VTK_PIXEL = 8,
-    VTK_QUAD = 9,
-    VTK_TETRA = 10,
-    VTK_VOXEL = 11,
-    VTK_HEXAHEDRON = 12,
-    VTK_WEDGE = 13,
-    VTK_PYRAMID = 14,
-    VTK_QUADRIC_EDGE = 21,
-    VTK_QUADRIC_TRIANGLE = 22,
-    VTK_QUADRIC_QUAD = 23,
-    VTK_QUADRIC_TETRA = 24,
-    VTK_QUADRIC_HEXAHEDRON = 25
-} VTKElemType;
-
-// VTK Element size (number of nodes)
-typedef enum {
-    VTK_LINE_SIZE = 2,
-    VTK_TRIANGLE_SIZE = 3,
-    VTK_TETRA_SIZE = 4
-} VTKElemSize;
-
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputVTK : protected Output {
+class OutputVTK {
+
 public:
     /**
-     * \brief The constructor of this class
+     * \brief The constructor of this class. The head of file is written, when
+     * constructor is called
      */
-    OutputVTK();
+    OutputVTK(Output *_output);
 
     /**
-     * \brief The destructor of this class
+     * \brief The constructor of this class. The head of file is written, when
+     * constructor is called
+     */
+    OutputVTK(OutputTime *_output_time);
+
+    /**
+     * \brief The destructor of this class. It writes tail of the file too.
      */
     ~OutputVTK();
+
+    /**
+     * \brief This function output data to serial VTK file format (single .vtu)
+     */
+    int write_data(void);
+
+    /**
+     * \brief This function write data to VTK (.pvd and .vtu) file format
+     * for specific time
+     *
+     * \param[in]   time        The time from start
+     */
+    int write_data(double time);
+
+    /**
+     * \brief This function writes header of VTK (.pvd) file format
+     */
+    int write_head(void);
+
+    /**
+     * \brief This function writes tail of VTK (.pvd) file format
+     */
+    int write_tail(void);
+
 private:
+
+    /**
+     * \brief The pointer at Output
+     */
+    Output *output;
+
+    /**
+     * \brief The pointer at OutputTime
+     */
+    OutputTime *output_time;
+
+    // VTK Element types
+    typedef enum {
+        VTK_VERTEX = 1,
+        VTK_POLY_VERTEX = 2,
+        VTK_LINE = 3,
+        VTK_POLY_LINE = 4,
+        VTK_TRIANGLE = 5,
+        VTK_TRIANGLE_STRIP = 6,
+        VTK_POLYGON = 7,
+        VTK_PIXEL = 8,
+        VTK_QUAD = 9,
+        VTK_TETRA = 10,
+        VTK_VOXEL = 11,
+        VTK_HEXAHEDRON = 12,
+        VTK_WEDGE = 13,
+        VTK_PYRAMID = 14,
+        VTK_QUADRIC_EDGE = 21,
+        VTK_QUADRIC_TRIANGLE = 22,
+        VTK_QUADRIC_QUAD = 23,
+        VTK_QUADRIC_TETRA = 24,
+        VTK_QUADRIC_HEXAHEDRON = 25
+    } VTKElemType;
+
+    // VTK Element size (number of nodes)
+    typedef enum {
+        VTK_LINE_SIZE = 2,
+        VTK_TRIANGLE_SIZE = 3,
+        VTK_TETRA_SIZE = 4
+    } VTKElemSize;
+
+    /**
+     * \brief Write header of VTK file (.vtu)
+     */
+    void write_vtk_vtu_head(void);
+
+    /**
+     * \brief Write geometry (position of nodes) to the VTK file (.vtu)
+     */
+    void write_vtk_geometry(void);
+
+    /**
+     * \brief Write topology (connection of nodes) to the VTK file (.vtu)
+     */
+    void write_vtk_topology(void);
+
+    /**
+     * \brief Write geometry (position of nodes) to the VTK file (.vtu)
+     *
+     * This method is used, when discontinuous data are saved to the .vtu file
+     */
+    void write_vtk_discont_geometry(void);
+
+    /**
+     * \brief Write topology (connection of nodes) to the VTK file (.vtu)
+     *
+     * This method is used, when discontinuous data are saved to the .vtu file
+     */
+    void write_vtk_discont_topology(void);
+
+    /**
+     * \brief This function writes ascii data to VTK (.vtu) output file.
+     *
+     * \param[in]   *data   The pointer at structure storing pointer at own data.
+     */
+    void write_vtk_ascii_data(OutputData *data);
+
+    /**
+     * \brief Write scalar data to the VTK file (.vtu)
+     *
+     * \param[in]   *data   The pointer at structure storing pointer at own data.
+     */
+    void write_vtk_scalar_ascii(OutputData *data);
+
+    /**
+     * \brief Write vector data to VTK file (.vtu)
+     *
+     * \param[in]   *data   The pointer at structure storing pointer at own data.
+     */
+    void write_vtk_vector_ascii(OutputData *data);
+
+    /**
+     * \brief Go through all vectors of scalars and vectors and call functions that
+     * write these data to VTK file (.vtu)
+     *
+     * \param[in]   *data   The pointer at vector of data
+     */
+    void write_vtk_data_ascii(std::vector<OutputData> *data);
+
+    /**
+     * \brief Write names of scalar and vector values to the VTK file (.vtu)
+     *
+     * \param[in]   *data   The pointer at vector of data
+     */
+    void write_vtk_data_names(vector<OutputData> *data);
+
+    /**
+     * \brief Write data on nodes to the VTK file (.vtu)
+     */
+    void write_vtk_node_data(void);
+
+    /**
+     * \brief Write data on corners to the VTK file (.vtu)
+     */
+    void write_vtk_corner_data(void);
+    /**
+     * \brief Write data on elements to the VTK file (.vtu)
+     */
+   void write_vtk_element_data(void);
+
+   /**
+    * \brief Write tail of VTK file (.vtu)
+    */
+   void write_vtk_vtu_tail(void);
+
+   /**
+    * \brief This function write all scalar and vector data on nodes and elements
+    * to the VTK file (.vtu)
+    */
+   void write_vtk_vtu(void);
 };
-
-// TODO: make methods of OutputVTK from following functions
-
-// Static data
-int write_vtk_vtu_data(Output *output);
-
-// Dynamic data
-int write_vtk_pvd_head(OutputTime *output);
-int write_vtk_pvd_data(OutputTime *output, double time, int step);
-int write_vtk_pvd_tail(OutputTime *output);
 
 #endif /* OUTPUT_VTK_HH_ */

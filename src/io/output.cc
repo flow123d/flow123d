@@ -143,34 +143,6 @@ OutputData::~OutputData()
 {
 }
 
-/**
- * \brief NULL function for not yet supported formats
- *
- * \param[in]   *output The pointer at output object.
- *
- * \return This function returns always 0.
- */
-int write_null_data(Output *output)
-{
-    xprintf(Msg, "This file format is not yet supported\n");
-
-    return 0;
-}
-
-int Output::write_data(void)
-{
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    return _write_data(this);
-}
-
 Output::Output(Mesh *_mesh, string fname)
 {
     int rank=0;
@@ -182,63 +154,54 @@ Output::Output(Mesh *_mesh, string fname)
         return;
     }
 
-    // TODO: Remove this. Output is off if no filename is given.
-    if( OptGetBool("Output", "Write_output_file", "no") == false ) {
-        base_filename = NULL;
-        base_file = NULL;
-        mesh = NULL;
-
-        return;
-    }
-
     base_file = new ofstream;
 
     base_file->open(fname.c_str());
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
     xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
+    // Get number of corners
+    unsigned int li;
+    this->corner_count = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            this->corner_count++;
+        }
+    }
+
     base_filename = new string(fname);
 
     mesh = _mesh;
     node_data = new OutputDataVec;
+    corner_data = new OutputDataVec;
     elem_data = new OutputDataVec;
 
-
-    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
-
-    switch(format_type) {
-    case VTK_SERIAL_ASCII:
-    case VTK_PARALLEL_ASCII:
-        _write_data = write_vtk_vtu_data;
-        break;
-    case GMSH_MSH_ASCII:
-    case GMSH_MSH_BIN:
-        _write_data = write_msh_data;
-        break;
-    default:
-        _write_data = write_null_data;
-        break;
-    }
-
     base_filename = new string(fname);
-}
 
-OutFileFormat Output::parse_output_format(char* format_name)
-{
-    if(strcmp(format_name,"ASCII") == 0) {
-        return GMSH_MSH_ASCII;
-    } else if(strcmp(format_name,"BIN") == 0) {
-        return GMSH_MSH_BIN;
-    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0) {
-        return VTK_SERIAL_ASCII;
-    } else if(strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
-        return VTK_PARALLEL_ASCII;
+    char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
+
+    if(strcmp(format_name,"ASCII") == 0 || strcmp(format_name,"BIN") == 0)
+    {
+        this->file_format = GMSH_MSH_ASCII;
+        this->output_msh = new OutputMSH(this);
+        this->output_vtk = NULL;
+    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 ||
+            strcmp(format_name, "VTK_PARALLEL_ASCII") == 0)
+    {
+        this->file_format = VTK_SERIAL_ASCII;
+        this->output_msh = NULL;
+        this->output_vtk = new OutputVTK(this);
+    } else if(strcmp(format_name, "VTK_DISCONT_ASCII") == 0) {
+        this->file_format = VTK_DISCONT_ASCII;
+        this->output_msh = NULL;
+        this->output_vtk = new OutputVTK(this);
     } else {
         xprintf(Warn,"Unknown output file format: %s.\n", format_name );
-        return (VTK_SERIAL_ASCII);
+        this->file_format = NONE;
+        this->output_msh = NULL;
+        this->output_vtk = NULL;
     }
 }
-
 
 Output::~Output()
 {
@@ -251,9 +214,21 @@ Output::~Output()
         return;
     }
 
+    if(this->output_msh != NULL) {
+        delete this->output_msh;
+    }
+
+    if(this->output_vtk != NULL) {
+        delete this->output_vtk;
+    }
+
     // Free all reference on node and element data
     if(node_data != NULL) {
         delete node_data;
+    }
+
+    if(corner_data != NULL) {
+        delete corner_data;
     }
 
     if(elem_data != NULL) {
@@ -272,90 +247,56 @@ Output::~Output()
     xprintf(MsgLog, "O.K.\n");
 }
 
-/**
- * \brief This is fake output function for not supported formats. It writes
- * only warning to the stdout and log file.
- *
- * \param[in] *output   The pointer at OutputTime function
- *
- * \return This function always return 0.
- */
-int write_null_head(OutputTime *output)
+int Output::write_head(void)
 {
-    xprintf(Msg, "This file format: %d is not yet supported\n", output->get_format_type());
-
-    return 0;
-}
-
-/**
- * \brief This is fake output function for not supported formats. It writes
- * only warning to the stdout and log file.
- *
- * \param[in] *output   The pointer at OutputTime function
- *
- * \return This function always return 0.
- */
-int write_null_time_data(OutputTime *output, double time, int step)
-{
-    xprintf(Msg, "This file format: %d is not yet supported\n", output->get_format_type());
-
-    return 0;
-}
-
-/**
- * \brief This is fake output function for not supported formats. It writes
- * only warning to the stdout and log file.
- *
- * \param[in] *output   The pointer at OutputTime function
- *
- * \return This function always return 0.
- */
-int write_null_tail(OutputTime *output)
-{
-    xprintf(Msg, "This file format: %d is not yet supported\n", output->get_format_type());
-
-    return 0;
-}
-
-int OutputTime::write_data(double time)
-{
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
+    switch(this->file_format) {
+    case GMSH_MSH_ASCII:
+        return this->output_msh->write_head();
+    case VTK_SERIAL_ASCII:
+        return this->output_vtk->write_head();
+    default:
         return 0;
     }
-    return _write_data(this, time, current_step++);
+    return 0;
+}
+
+int Output::write_tail(void)
+{
+    switch(this->file_format) {
+    case GMSH_MSH_ASCII:
+        return this->output_msh->write_tail();
+    case VTK_SERIAL_ASCII:
+    case VTK_DISCONT_ASCII:
+        return this->output_vtk->write_tail();
+    default:
+        return 0;
+    }
+    return 0;
+}
+
+int Output::write_data()
+{
+    switch(this->file_format) {
+    case GMSH_MSH_ASCII:
+        return this->output_msh->write_data();
+    case VTK_SERIAL_ASCII:
+    case VTK_DISCONT_ASCII:
+        return this->output_vtk->write_data();
+    default:
+        return 0;
+    }
+
+    return 0;
 }
 
 OutputTime::OutputTime(Mesh *_mesh, string fname)
 {
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
     std::vector<OutputData> *node_data;
+    std::vector<OutputData> *corner_data;
     std::vector<OutputData> *elem_data;
     Mesh *mesh = _mesh;
     ofstream *base_file;
     string *base_filename;
-    OutFileFormat format_type;
-
-    // TODO: Remove this. Output is off if no filename is given.
-    if( OptGetBool("Output", "Write_output_file", "no") == false ) {
-        base_filename = NULL;
-        base_file = NULL;
-        mesh = NULL;
-
-        return;
-    }
 
     base_file = new ofstream;
 
@@ -363,58 +304,75 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
     xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
 
+    // Get number of corners
+    unsigned int li, count = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            count++;
+        }
+    }
+    this->set_corner_count(count);
 
     base_filename = new string(fname);
 
     current_step = 0;
 
     node_data = new OutputDataVec;
+    corner_data = new OutputDataVec;
     elem_data = new OutputDataVec;
-
-    // TODO: remove in the future
-    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
 
     set_base_file(base_file);
     set_base_filename(base_filename);
     set_mesh(mesh);
     set_node_data(node_data);
+    set_corner_data(corner_data);
     set_elem_data(elem_data);
 
-    set_format_type(format_type);
+    char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
 
-    switch(format_type) {
-    case VTK_SERIAL_ASCII:
-    case VTK_PARALLEL_ASCII:
-        _write_head = write_vtk_pvd_head;
-        _write_data = write_vtk_pvd_data;
-        _write_tail = write_vtk_pvd_tail;
-        break;
-    case GMSH_MSH_ASCII:
-    case GMSH_MSH_BIN:
-        _write_head = write_msh_head;
-        _write_data = write_msh_time_data;
-        _write_tail = write_msh_tail;
-        break;
-    default:
-        _write_head = write_null_head;
-        _write_data = write_null_time_data;
-        _write_tail = write_null_tail;
-        break;
+    if(strcmp(format_name,"ASCII") == 0 || strcmp(format_name,"BIN") == 0) {
+        this->file_format = GMSH_MSH_ASCII;
+        this->output_msh = new OutputMSH(this);
+        this->output_vtk = NULL;
+    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 ||
+            strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
+        this->file_format = VTK_SERIAL_ASCII;
+        this->output_msh = NULL;
+        this->output_vtk = new OutputVTK(this);
+    } else if(strcmp(format_name, "VTK_DISCONT_ASCII") == 0) {
+        this->file_format = VTK_DISCONT_ASCII;
+        this->output_msh = NULL;
+        this->output_vtk = new OutputVTK(this);
+    } else {
+        xprintf(Warn,"Unknown output file format: %s.\n", format_name );
+        this->file_format = NONE;
+        this->output_msh = NULL;
+        this->output_vtk = NULL;
     }
 
-    _write_head(this);
 }
 
 OutputTime::~OutputTime(void)
 {
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+}
 
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
+int OutputTime::write_data(double time)
+{
+    int ret = 0;
+
+    switch(this->file_format) {
+    case GMSH_MSH_ASCII:
+        ret = this->output_msh->write_data(time);
+        this->current_step++;
+        break;
+    case VTK_SERIAL_ASCII:
+    case VTK_DISCONT_ASCII:
+        ret = this->output_vtk->write_data(time);
+        this->current_step++;
+        break;
+    default:
+        break;
     }
 
-    _write_tail(this);
+    return ret;
 }

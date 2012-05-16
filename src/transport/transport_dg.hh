@@ -367,11 +367,8 @@ private:
 	/// Solver for the linear algebraic system.
 	struct Solver *solver;
 
-	/// Vectors for storing the output solution data.
-//	Vec *output_vector, *output_cell_vector;
-
 	/// Array for storing the output solution data.
-	vector<double*> output_solution, output_cell_solution;
+	vector<double*> output_solution;
 
 	/// Class for handling the solution output.
 	OutputTime *transport_output;

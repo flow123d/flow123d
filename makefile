@@ -24,23 +24,36 @@
 # Build itself takes place in ./src.
 #
 
-build/CMakeCache.txt:
-	if [ ! -d build ]; then mkdir build; fi
-	cd build; cmake ..
-
-cmake: build/CMakeCache.txt
-
-build: cmake
-	make -j 4 -C build all
+all:  install
 
 FLOW_BIN=build/bin/flow123d
 MPIEXEC_BIN=build/bin/mpiexec
 
-install: build
+install: build_flow
 	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
-	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod u+x bin/mpiexec; fi
+	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod a+x bin/mpiexec; fi
 
-all:  install
+
+build/CMakeCache.txt:
+	if [ ! -d build ]; then mkdir build; fi
+	cd build; cmake ..
+
+# This target builds links in directory test_units and its subdirectories 
+# to generated makefiles in the build directory. 
+# This way we can run tests from the source tree and do not have problems with deleted
+# current directory in shell if we are forced to use make clean-all.
+create_unit_test_links:
+	for f in  `find test_units/ -name CMakeLists.txt`; do ln -sf "$${PWD}/build/$${f%/*}/Makefile" "$${f%/*}/makefile";done
+
+
+# This target only configure the build process.
+# Useful for building unit tests without actually build whole program.
+cmake: build/CMakeCache.txt  create_unit_test_links
+
+build_flow: cmake
+	make -j 4 -C build all
+
+
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	
@@ -56,6 +69,7 @@ clean: cmake
 # try to remove all
 clean-all: 
 	rm -rf build
+	for f in  `find test_units/ -name makefile`; do rm -f "$${f}";done
 	make -C third_party clean
 
 # remove everything that is not under version control 

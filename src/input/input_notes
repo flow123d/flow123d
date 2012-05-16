@@ -1,0 +1,57 @@
+Jirka TODO:
+
+* udelat z Generic node ciste abstraktni tridu, pouze privatni konstruktor (pokud vubec)
+* Cteni souboru, tvorbu stromu, kontrolu atd. bych zapouzdril 
+  do specialniho konstruktoru tridy Record_node. Nebo  udelat static  factory metodu pro nacteni stromu ze souboru
+  dealokovat pomocny JSON strom
+
+
+1) Je zadouci, aby nekde vznikaly instance tridy Generic_node? Pokud ne, asi by bylo vhodne aby obsahovala nejakou ciste virtualni metodu
+a tedy byla to abstraktni trida.Koukal jsem, kde se pouzivaji
+konstruktory Generic_node a vypada to, ze se volaji jen v konstruktorech potomku a to v konstruktor listu.
+
+2) 
+
+3) Vsechny ostatni konstruktory a pomocne metody udelat private nebo protected.
+
+4) Generic_node::value_type_to_string predelat na vector<string> a zrusit ten bool. Testovala by se delka vektoru, ktera by u statickych mela byt nulova.
+
+5) Trochu mi pripada, ze tam mame 2 nezavisle "virtualizacni" mechanismy:
+a) vsechny metody get_* jsou virtualni, tj. pokud je na vstupu nekde
+   json object, bude ve stromu Record_node a pokud budu mit ukazatel
+   typu Generic_node na tento objekt, tak se budou volat pretizene
+   metody z Record_node.
+b) mame tam metody as_record a pod. Ty provedou dynamic_cast a vraci
+   podle ulozeneho typu a vraci referenci na prislusneho potomka, tj
+   pokud bych mel metodu Record_node::jen_v_recordu(), ktera nebude
+   virtualni, tak muzu volat
+   get_key("nejaky_record").as_record().jen_v_recordu()
+
+V principu to nicemu nevadi, ale vlastne by nam mohl stacit ten druhy zpusob (vetsinou me sice nebude zajimat jestli volam get_key na recordu nebo ne, ale napr. pokud budu predavat cast stromu do konstruktoru EqauationBase, tak budu chtit, aby to bylo typu Record_node, takze potrebuju dynamic cast) Melo by to vyhodu v tom, ze bychom nemuseli deklarovat tolik pretizenych funkci
+
+Jinac pomoci dynamic castu se asi muzeme zbavit Value_type.
+
+
+6) Klicova vec ktera asi neni hotova jsou korektni chybove hlasky a ukonceni pokud chci nejakou hodnotu, nemam default a ona neni k dispozici.
+
+7) Vzdy jsi rikal, ze v tech paralelnich "nasich" strukturach jsou jenom odkazy do stromu json_spirit, koukam, ze to tak neni, ale vse se kopiruje. V tom pripade by asi melo jit puvodni strom a cely pomocny objekt Data_tree zrusit, jakmile je vytvoren nas strom. Je to tak?
+
+8) Uvital bych lepsi dokumentaci - v anglictine.
+=================================
+
+Klicovoym objektem je NodeRecord, tu bude mit vetsina trid, ktera budou inicializovana z json souboru. 
+Potrebujeme metody na:
+
+* Deklaraci klice (klic, typ, popis, default value)
+  typy: record, generic array (otazka zda povolit), array of (records, ints, doubles, strings), int, double, string, formula, input filename, output filename,
+  list of (...) (neindexovatelne ale iterovatelne pole - napr. z externich souboru)
+  idealne bude typ trida templatovana skutecnym typem, po ni chceme:
+  * vypsani v textove podobe (zavisi na metode jednotlivych typu nodu pro vypsani typu)
+  * porovnani typu (nesymetricke : " je formula string" .. ano, "je string formula" .. ne
+  * zjisteni zda obsah nodu odpovida typu .. opet delaji metody nodu 
+
+  otazka jak resit konflikt mazi nactenymi daty a deklaraci (co se tyce typu), bud budou deklarace obohacovat nacteny strom, nebo
+  mit dva stromy a teprve pri deklaraci nacitat data do interniho stromu z JSON stromu ctecky (melo by vyhodu pri napojovani na stromy dane jinymi cteckami, ktere nemusi ciste
+  data jednorazove)
+
+* 
