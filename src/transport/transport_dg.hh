@@ -32,10 +32,13 @@
 
 #include "transport_operator_splitting.hh"
 #include "la/linsys.hh"
-#include "fem/dofhandler.hh"
-#include "fem/finite_element.hh"
-#include "fem/fe_values.hh"
 
+
+class Distribution;
+template<unsigned int dim, unsigned int spacedim> class DOFHandler;
+template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
+template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+class TransportBC;
 
 
 /**
@@ -131,19 +134,13 @@ private:
 	void assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
 
 	/**
-	 * @brief Assembles the stiffness matrix for elements of dimension @p dim.
+	 * @brief Assembles the stiffness matrix.
 	 *
-	 * This routine just calls assemble_volume_integrals(), assemble_fluxes_boundary(), assemble_fluxes_element_element() and assemble_fluxes_element_side().
-	 * The DOFHandler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param dh_sub DOF handler for sides.
-	 * @param fe FiniteElement.
-	 * @param fe_sub FiniteElement for sides.
+	 * This routine just calls assemble_volume_integrals(), assemble_fluxes_boundary(),
+	 * assemble_fluxes_element_element() and assemble_fluxes_element_side() for each
+	 * space dimension.
 	 */
-	template<unsigned int dim>
-	void assemble_stiffness_matrix(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
-
+	void assemble_stiffness_matrix();
 
 	/**
 	 * @brief Assembles the volume integrals into the stiffness matrix.
@@ -287,18 +284,18 @@ private:
 	            double &gamma,
 	            double *omega);
 
-	/**
-	 * @brief Generates the file name for the time-dependent boundary condition.
-	 *
-	 * @param level
-	 * @return file name
-	 */
-	string make_bc_file_name(int level);
-
-	/**
-	 * @brief Reads the boundary condition.
-	 */
-	void read_bc_vector();
+//	/**
+//	 * @brief Generates the file name for the time-dependent boundary condition.
+//	 *
+//	 * @param level
+//	 * @return file name
+//	 */
+//	string make_bc_file_name(int level);
+//
+//	/**
+//	 * @brief Reads the boundary condition.
+//	 */
+//	void read_bc_vector();
 
 	/**
 	 * @brief Reads the initial condition.
@@ -343,18 +340,11 @@ private:
 	/// Time marks for writing the output.
 	TimeMark::Type output_mark_type;
 
-	/**
-	 * @brief Counter for the time level of the boundary condition.
-	 *
-	 * Value -1 means b.c. independent of time.
-	 */
-	unsigned int bc_time_level;
+	/// Reader of boundary conditions.
+	TransportBC *bc;
 
-	/// Boundary conditions for substance concentrations (parallel vector).
-	Vec *bcv;
-
-	/// Boundary conditions for substance concentrations (sequential array).
-	double **bc_values;
+	/// Distribution of the solution vectors to the processors.
+	Distribution *distr;
 
 	/// Vector of fluxes across element edges.
 	Vec flux_vector;
@@ -376,6 +366,9 @@ private:
 
 	/// Solver for the linear algebraic system.
 	struct Solver *solver;
+
+	/// Vectors for storing the output solution data.
+//	Vec *output_vector, *output_cell_vector;
 
 	/// Array for storing the output solution data.
 	vector<double*> output_solution, output_cell_solution;

@@ -68,6 +68,7 @@ set(sources_lib_flow123d
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
+    transport/transport_bc.cc
     transport/transport_dg.cc
     transport/sources.cc
 

@@ -27,20 +27,20 @@
  *  @author Jan Stebel
  */
 
+#include "petscmat.h"
+#include <armadillo>
+#include "xio.h"
 #include "transport/transport_dg.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
 #include "la/solve.h"
-#include "petscmat.h"
-#include <armadillo>
 #include "fem/fe_rt.hh"
 #include "io/output.h"
-#include "xio.h"
-#include <iostream>
-#include <iomanip>
 #include "mesh/boundaries.h"
+#include "system/par_distribution.hh"
+#include "transport/transport_bc.hh"
 
 
 TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database)
@@ -48,7 +48,6 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
           tol_flux_bc(1e-6),
           advection(1e0)
 {
-
     // set up time governor
     time_=new TimeGovernor(
             0.0,
@@ -92,62 +91,31 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
 	dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
 	mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
 
+	// distribute DOFs
+	dof_handler1d = new DOFHandler<1,3>(mesh());
+	dof_handler2d = new DOFHandler<2,3>(mesh());
+	dof_handler3d = new DOFHandler<3,3>(mesh());
+	fe1d = new FE_P_disc<1,1,3>;
+	fe2d = new FE_P_disc<1,2,3>;
+	fe3d = new FE_P_disc<1,3,3>;
+	dof_handler1d->distribute_dofs(*fe1d);
+	dof_handler2d->distribute_dofs(*fe2d, dof_handler1d->n_global_dofs());
+	dof_handler3d->distribute_dofs(*fe3d, dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs());
+
+	// distribute solution vectors on processors
+	distr = new Distribution(Distribution::Block, dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs() + dof_handler3d->n_global_dofs());
 
     /*
      * Read boundary conditions.
      */
-    bcv = new Vec[n_substances];
-    bc_values = new double*[n_substances];
-    for (int sbi=0; sbi<n_substances; sbi++)
-    {
-        bc_values[sbi] = new double[mesh_->n_boundaries()];
-        VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_boundaries(), bc_values[sbi], &bcv[sbi]);
-    }
-
-    // read times of time dependent boundary condition and check the input files
-
-    // bc marks do not influent choice of time step (not fixed_time type)
+    bc = new TransportBC(mesh_, n_substances);
     bc_mark_type_ = time_marks->type_bc_change() | equation_mark_type_;
-    std::vector<double> bc_times;
-    OptGetDblArray("Transport", "bc_times", "", bc_times);
-    FILE * f;
-    std::string fname;
-    if (bc_times.size() == 0) {
-        // only one boundary condition, check filename and read bc condition
-        bc_time_level = -1;
-        fname = make_bc_file_name(-1);
-        if ( !(f = xfopen(fname.c_str(), "rt")) ) {
-            xprintf(UsrErr,"Missing file: %s", fname.c_str());
-        }
-        xfclose(f);
-        read_bc_vector();
-    } else {
-        bc_time_level = 0;
-        // set initial bc to zero
-        for(unsigned int sbi=0; sbi < n_substances; ++sbi) VecZeroEntries(bcv[sbi]);
-        // check files for bc time levels and set TimeMarks
-        for(unsigned int i=0;i<bc_times.size();++i) {
-            fname = make_bc_file_name(i);
-            if ( !(f = xfopen(fname.c_str(), "rt")) ) {
-                xprintf(UsrErr,"Missing file: %s", fname.c_str());
-            }
-            xfclose(f);
-
-            time_marks->add(TimeMark(bc_times[i],bc_mark_type_));
-        }
+    if (bc->get_times().size() > 0)
+    {
+    	for (int i=0; i<bc->get_times().size(); i++)
+    		time_marks->add(TimeMark(bc->get_times()[i], bc_mark_type_));
     }
 
-
-    // distribute DOFs
-    dof_handler1d = new DOFHandler<1,3>(mesh());
-    dof_handler2d = new DOFHandler<2,3>(mesh());
-    dof_handler3d = new DOFHandler<3,3>(mesh());
-    fe1d = new FE_P_disc<1,1,3>;
-    fe2d = new FE_P_disc<1,2,3>;
-    fe3d = new FE_P_disc<1,3,3>;
-    dof_handler1d->distribute_dofs(*fe1d);
-    dof_handler2d->distribute_dofs(*fe2d, dof_handler1d->n_global_dofs());
-    dof_handler3d->distribute_dofs(*fe3d, dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs());
 
     // set up output class
     string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
@@ -170,8 +138,8 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type);
     
 
-    ls    = new LinSys_MPIAIJ(dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs() + dof_handler3d->n_global_dofs());
-    ls_dt = new LinSys_MPIAIJ(dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs() + dof_handler3d->n_global_dofs());
+    ls    = new LinSys_MPIAIJ(distr->lsize());
+    ls_dt = new LinSys_MPIAIJ(distr->lsize());
 
 
     // assemble mass matrix
@@ -188,9 +156,7 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
 
     // preallocate system matrix
     ls->start_allocation();
-    assemble_stiffness_matrix<1>(dof_handler1d, 0, fe1d, 0);
-    assemble_stiffness_matrix<2>(dof_handler2d, dof_handler1d, fe2d, fe1d);
-    assemble_stiffness_matrix<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
+    assemble_stiffness_matrix();
     set_boundary_conditions<1>(dof_handler1d, fe1d);
     set_boundary_conditions<2>(dof_handler2d, fe2d);
     set_boundary_conditions<3>(dof_handler3d, fe3d);
@@ -214,7 +180,11 @@ TransportDG::~TransportDG()
     delete solver;
     delete ls;
     delete ls_dt;
-    for (int i=0; i<n_substances; i++) { delete[] output_solution[i]; delete[] output_cell_solution[i]; }
+    for (int i=0; i<n_substances; i++)
+    {
+    	delete[] output_solution[i];
+    	delete[] output_cell_solution[i];
+    }
 
     gamma.clear();
     substance_names.clear();
@@ -228,21 +198,19 @@ void TransportDG::update_solution()
     time_->view();
     
     // assemble system matrix if velocity flux or boundary conditions changed
-    if (flux_changed || (bc_time_level != -1 && time_->is_current(bc_mark_type_)))
+    if (flux_changed || (bc->get_time_level() != -1 && time_->is_current(bc_mark_type_)))
     {
         flux_changed = false;
 
         // possibly read boundary conditions
-        if (bc_time_level != -1 && time_->is_current(bc_mark_type_)) read_bc_vector();
+        if (bc->get_time_level() != -1 && time_->is_current(bc_mark_type_)) bc->read();
 
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
         ls->start_add_assembly();
         MatZeroEntries(ls->get_matrix());
         VecSet(ls->get_rhs(), 0);
-        assemble_stiffness_matrix<1>(dof_handler1d, 0, fe1d, 0);
-        assemble_stiffness_matrix<2>(dof_handler2d, dof_handler1d, fe2d, fe1d);
-        assemble_stiffness_matrix<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
+        assemble_stiffness_matrix();
         set_boundary_conditions<1>(dof_handler1d, fe1d);
         set_boundary_conditions<2>(dof_handler2d, fe2d);
         set_boundary_conditions<3>(dof_handler3d, fe3d);
@@ -276,10 +244,13 @@ void TransportDG::update_solution()
      */
 
     MatCopy(stiffness_matrix, ls->get_matrix(), DIFFERENT_NONZERO_PATTERN);
+    // ls->get_matrix() = 1/dt*mass_matrix + ls->get_matrix()
     MatAXPY(ls->get_matrix(), 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
     Vec y;
     VecDuplicate(rhs, &y);
+    // y = mass_matrix*ls->get_solution()
     MatMult(mass_matrix, ls->get_solution(), y);
+    // ls->get_rhs() = 1/dt*y + rhs
     VecWAXPY(ls->get_rhs(), 1./time_->dt(), y, rhs);
 
     // solve
@@ -325,92 +296,117 @@ void TransportDG::output_data()
 
     if (!time_->is_current(output_mark_type)) return;
 
-    solution = ls->get_solution_array();
+
+    // gather the solution from all processors
+    IS is;
+	VecScatter output_scatter;
+	int row_ids[distr->size()];
+	Vec solution_vec[n_substances];
+
+	for (int i=0; i<n_substances; i++)
+		VecCreateSeq(PETSC_COMM_SELF, ls->size(), &solution_vec[i]);
+
+	for (int i=0; i<distr->size(); i++)
+		row_ids[i] = i;
+
+	ISCreateGeneral(PETSC_COMM_SELF, ls->size(), row_ids, PETSC_COPY_VALUES, &is); //WithArray
+	VecScatterCreate(ls->get_solution(), is, solution_vec[0], PETSC_NULL, &output_scatter);
+	for (int sbi = 0; sbi < n_substances; sbi++)
+	{
+		VecScatterBegin(output_scatter, ls->get_solution(), solution_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(output_scatter, ls->get_solution(), solution_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+	}
+	VecScatterDestroy(&(output_scatter));
+	ISDestroy(&(is));
+
+    VecGetArray(solution_vec[0], &solution);
 
     // interpolate solution to a continuous field and write to output file
 
-
-    for (int i=0; i< n_nodes; i++)
+    if (distr->myp() == 0)
     {
-        count[i] = 0;
-        output_solution[0][i] = 0;
+		for (int i=0; i< n_nodes; i++)
+		{
+			count[i] = 0;
+			output_solution[0][i] = 0;
+		}
+		for (DOFHandler<1,3>::CellIterator cell = dof_handler1d->begin_cell(); cell != dof_handler1d->end_cell(); ++cell)
+		{
+			if (cell->dim != 1) continue;
+
+			dof_handler1d->get_dof_indices(cell, dof_indices);
+
+			for (int i=0; i<fe1d->n_dofs(); i++)
+			{
+				int nid = mesh_->node_vector.index(cell->node[i]);
+				count[nid]++;
+				output_solution[0][nid] += solution[dof_indices[i]];
+			}
+		}
+		for (DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
+		{
+			if (cell->dim != 2) continue;
+
+			dof_handler2d->get_dof_indices(cell, dof_indices);
+
+			for (int i=0; i<fe2d->n_dofs(); i++)
+			{
+				int nid = mesh_->node_vector.index(cell->node[i]);
+				count[nid]++;
+				output_solution[0][nid] += solution[dof_indices[i]];
+			}
+		}
+		for (DOFHandler<3,3>::CellIterator cell = dof_handler3d->begin_cell(); cell != dof_handler3d->end_cell(); ++cell)
+		{
+			if (cell->dim != 3) continue;
+
+			dof_handler3d->get_dof_indices(cell, dof_indices);
+
+			for (int i=0; i<fe3d->n_dofs(); i++)
+			{
+				int nid = mesh_->node_vector.index(cell->node[i]);
+				count[nid]++;
+				output_solution[0][nid] += solution[dof_indices[i]];
+			}
+		}
+
+		for (int i=0; i<n_nodes; i++)
+			if (count[i] > 1)
+				output_solution[0][i] /= count[i];
+
+		for (DOFHandler<1,3>::CellIterator cell = dof_handler1d->begin_cell(); cell != dof_handler1d->end_cell(); ++cell)
+		{
+			if (cell->dim != 1) continue;
+
+			dof_handler1d->get_dof_indices(cell, dof_indices);
+			output_cell_solution[0][cell.index()] = 0;
+
+			for (int i=0; i<fe1d->n_dofs(); i++)
+				output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe1d->n_dofs();
+		}
+		for (DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
+		{
+			if (cell->dim != 2) continue;
+
+			dof_handler2d->get_dof_indices(cell, dof_indices);
+			output_cell_solution[0][cell.index()] = 0;
+
+			for (int i=0; i<fe2d->n_dofs(); i++)
+				output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe2d->n_dofs();
+		}
+		for (DOFHandler<3,3>::CellIterator cell = dof_handler3d->begin_cell(); cell != dof_handler3d->end_cell(); ++cell)
+		{
+			if (cell->dim != 3) continue;
+
+			dof_handler3d->get_dof_indices(cell, dof_indices);
+			output_cell_solution[0][cell.index()] = 0;
+
+			for (int i=0; i<fe3d->n_dofs(); i++)
+				output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe3d->n_dofs();
+		}
+
+		transport_output->write_data(time_->t());
     }
-    for (DOFHandler<1,3>::CellIterator cell = dof_handler1d->begin_cell(); cell != dof_handler1d->end_cell(); ++cell)
-    {
-        if (cell->dim != 1) continue;
-
-        dof_handler1d->get_dof_indices(cell, dof_indices);
-
-        for (int i=0; i<fe1d->n_dofs(); i++)
-        {
-            int nid = mesh_->node_vector.index(cell->node[i]);
-            count[nid]++;
-            output_solution[0][nid] += solution[dof_indices[i]];
-        }
-    }
-    for (DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
-    {
-        if (cell->dim != 2) continue;
-
-        dof_handler2d->get_dof_indices(cell, dof_indices);
-
-        for (int i=0; i<fe2d->n_dofs(); i++)
-        {
-            int nid = mesh_->node_vector.index(cell->node[i]);
-            count[nid]++;
-            output_solution[0][nid] += solution[dof_indices[i]];
-        }
-    }
-    for (DOFHandler<3,3>::CellIterator cell = dof_handler3d->begin_cell(); cell != dof_handler3d->end_cell(); ++cell)
-    {
-        if (cell->dim != 3) continue;
-
-        dof_handler3d->get_dof_indices(cell, dof_indices);
-
-        for (int i=0; i<fe3d->n_dofs(); i++)
-        {
-            int nid = mesh_->node_vector.index(cell->node[i]);
-            count[nid]++;
-            output_solution[0][nid] += solution[dof_indices[i]];
-        }
-    }
-
-    for (int i=0; i<n_nodes; i++)
-        if (count[i] > 1)
-            output_solution[0][i] /= count[i];
-
-    for (DOFHandler<1,3>::CellIterator cell = dof_handler1d->begin_cell(); cell != dof_handler1d->end_cell(); ++cell)
-    {
-        if (cell->dim != 1) continue;
-
-        dof_handler1d->get_dof_indices(cell, dof_indices);
-        output_cell_solution[0][cell.index()] = 0;
-
-        for (int i=0; i<fe1d->n_dofs(); i++)
-            output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe1d->n_dofs();
-    }
-    for (DOFHandler<2,3>::CellIterator cell = dof_handler2d->begin_cell(); cell != dof_handler2d->end_cell(); ++cell)
-    {
-        if (cell->dim != 2) continue;
-
-        dof_handler2d->get_dof_indices(cell, dof_indices);
-        output_cell_solution[0][cell.index()] = 0;
-
-        for (int i=0; i<fe2d->n_dofs(); i++)
-        	output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe2d->n_dofs();
-    }
-    for (DOFHandler<3,3>::CellIterator cell = dof_handler3d->begin_cell(); cell != dof_handler3d->end_cell(); ++cell)
-    {
-        if (cell->dim != 3) continue;
-
-        dof_handler3d->get_dof_indices(cell, dof_indices);
-        output_cell_solution[0][cell.index()] = 0;
-
-        for (int i=0; i<fe3d->n_dofs(); i++)
-        	output_cell_solution[0][cell.index()] += solution[dof_indices[i]]/fe3d->n_dofs();
-    }
-
-    transport_output->write_data(time_->t());
 }
 
 
@@ -439,13 +435,14 @@ void TransportDG::assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,
         // assemble the local stiffness and mass matrix
         for (int i=0; i<ndofs; i++)
         {
+        	local_rhs[i] = 0;
             for (int j=0; j<ndofs; j++)
             {
                 local_mass_matrix[i*ndofs+j] = 0;
+                if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
                 for (int k=0; k<q.size(); k++)
                     local_mass_matrix[i*ndofs+j] += cell->material->size*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
             }
-            local_rhs[i] = 0;
         }
 
         ls_dt->set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_mass_matrix, local_rhs);
@@ -455,17 +452,24 @@ void TransportDG::assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,
 
 
 
-
-
-
-template<unsigned int dim>
-void TransportDG::assemble_stiffness_matrix(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub)
+void TransportDG::assemble_stiffness_matrix()
 {
-	assemble_volume_integrals(dh, fe);
-    assemble_fluxes_boundary(dh, dh_sub, fe, fe_sub);
-    assemble_fluxes_element_element(dh, dh_sub, fe, fe_sub);
-    assemble_fluxes_element_side(dh, dh_sub, fe, fe_sub);
+	assemble_volume_integrals<1>(dof_handler1d, fe1d);
+	assemble_fluxes_boundary<1>(dof_handler1d, 0, fe1d, 0);
+	assemble_fluxes_element_element<1>(dof_handler1d, 0, fe1d, 0);
+	assemble_fluxes_element_side<1>(dof_handler1d, 0, fe1d, 0);
+
+	assemble_volume_integrals<2>(dof_handler2d, fe2d);
+	assemble_fluxes_boundary<2>(dof_handler2d, dof_handler1d, fe2d, fe1d);
+	assemble_fluxes_element_element<2>(dof_handler2d, dof_handler1d, fe2d, fe1d);
+	assemble_fluxes_element_side<2>(dof_handler2d, dof_handler1d, fe2d, fe1d);
+
+	assemble_volume_integrals<3>(dof_handler3d, fe3d);
+    assemble_fluxes_boundary<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
+    assemble_fluxes_element_element<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
+    assemble_fluxes_element_side<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
 }
+
 
 
 template<unsigned int dim>
@@ -504,6 +508,7 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
             for (int j=0; j<ndofs; j++)
             {
                 local_matrix[i*ndofs+j] = 0;
+                if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
                 for (int k=0; k<q.size(); k++)
                 {
                     local_matrix[i*ndofs+j] += (dot(K[k]*fe_values.shape_grad(j,k),fe_values.shape_grad(i,k))
@@ -593,10 +598,12 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 					for (int n=0; n<2; n++)
 					{
 						for (int i=0; i<fv_sb[sd[n]]->n_dofs(); i++)
+						{
 							for (int j=0; j<fv_sb[sd[m]]->n_dofs(); j++)
 							{
 								int index = i*fv_sb[sd[m]]->n_dofs()+j;
 								local_matrix[index] = 0;
+								if (side_dof_indices[sd[n]][i] < distr->begin() || side_dof_indices[sd[n]][i] > distr->end()) continue;
 								for (int k=0; k<side_q.size(); k++)
 								{
 									// flux due to transport (applied on interior edges)
@@ -610,6 +617,7 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 									local_matrix[index] += ((m==0)?-1.:1.)*dot(omega[1]*side_K[sd[n]][k]*fv_sb[sd[n]]->shape_grad(i,k),nv)*fv_sb[sd[m]]->shape_value(j,k)*fv_sb[0]->JxW(k);
 								}
 							}
+						}
 						ls->mat_set_values(fv_sb[sd[n]]->n_dofs(), (int *)side_dof_indices[sd[n]], fv_sb[sd[m]]->n_dofs(), (int *)side_dof_indices[sd[m]], local_matrix);
 					}
 				}
@@ -667,9 +675,11 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
 
         // fluxes and penalty
         for (int i=0; i<ndofs; i++)
+        {
             for (int j=0; j<ndofs; j++)
             {
                 local_matrix[i*ndofs+j] = 0;
+                if (side_dof_indices[i] < distr->begin() || side_dof_indices[i] > distr->end()) continue;
                 for (int k=0; k<side_q.size(); k++)
                 {
                     // penalty enforcing continuity across edges (applied on interior and Dirichlet edges)
@@ -677,6 +687,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
                         local_matrix[i*ndofs+j] += gamma_l*fe_values_side.shape_value(j,k)*fe_values_side.shape_value(i,k)*fe_values_side.JxW(k);
                 }
             }
+        }
         ls->mat_set_values(ndofs, (int *)side_dof_indices, ndofs, (int *)side_dof_indices, local_matrix);
     }
 }
@@ -739,6 +750,7 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 			{
 				int index = i*fv_sb[0]->n_dofs() + j;
 				local_matrix[index] = 0;
+				if (side_dof_indices[0][i] < distr->begin() || side_dof_indices[0][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
 					local_matrix[index] += advection/nb->element[0]->material->por_m*fabs(transport_flux)*fv_sb[0]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
@@ -750,6 +762,7 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 			{
 				int index = i*fv_sb[1]->n_dofs() + j;
 				local_matrix[index] = 0;
+				if (side_dof_indices[0][i] < distr->begin() || side_dof_indices[0][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
 					local_matrix[index] -= advection/nb->element[1]->material->por_m*fabs(transport_flux)*fv_sb[1]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
@@ -757,31 +770,30 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 		ls->mat_set_values(fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], local_matrix);
 
 		// set transmission condition for dim
-		if (transport_flux < 0)
+		for (int j=0; j<fv_sb[0]->n_dofs(); j++)
 		{
-			for (int j=0; j<fv_sb[0]->n_dofs(); j++)
+			for (int i=0; i<fv_sb[1]->n_dofs(); i++)
 			{
-				for (int i=0; i<fv_sb[1]->n_dofs(); i++)
-				{
-					int index = i*fv_sb[0]->n_dofs() + j;
-					local_matrix[index] = 0;
-					for (int k=0; k<side_q.size(); k++)
-						local_matrix[index] += advection/nb->element[0]->material->por_m*(transport_flux)*fv_sb[0]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
-				}
+				int index = i*fv_sb[0]->n_dofs() + j;
+				local_matrix[index] = 0;
+				if (side_dof_indices[1][i] < distr->begin() || side_dof_indices[1][i] > distr->end()) continue;
+				for (int k=0; k<side_q.size(); k++)
+					local_matrix[index] += advection/nb->element[0]->material->por_m*min(0.,transport_flux)*fv_sb[0]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
-			ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], local_matrix);
-			for (int j=0; j<fv_sb[1]->n_dofs(); j++)
-			{
-				for (int i=0; i<fv_sb[1]->n_dofs(); i++)
-				{
-					int index = i*fv_sb[1]->n_dofs() + j;
-					local_matrix[index] = 0;
-					for (int k=0; k<side_q.size(); k++)
-						local_matrix[index] -= advection/nb->element[1]->material->por_m*(transport_flux)*fv_sb[1]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
-				}
-			}
-			ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], local_matrix);
 		}
+		ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], local_matrix);
+		for (int j=0; j<fv_sb[1]->n_dofs(); j++)
+		{
+			for (int i=0; i<fv_sb[1]->n_dofs(); i++)
+			{
+				int index = i*fv_sb[1]->n_dofs() + j;
+				local_matrix[index] = 0;
+				if (side_dof_indices[1][i] < distr->begin() || side_dof_indices[1][i] > distr->end()) continue;
+				for (int k=0; k<side_q.size(); k++)
+					local_matrix[index] -= advection/nb->element[1]->material->por_m*min(0.,transport_flux)*fv_sb[1]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
+			}
+		}
+		ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], local_matrix);
     }
 
     for (int i=0; i<fe_values_side.size(); i++)
@@ -809,6 +821,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
     {
         cell = mesh_->element.full_iter(b->side->element);
         if (cell->dim != dim || b->side->flux >= -tol_flux_bc) continue;
+        if (b.id() < bc->distribution()->begin() || b.id() > bc->distribution()->end()) continue;
 
         fe_values_side.reinit(cell, b->side);
         dh->get_dof_indices(cell, side_dof_indices);
@@ -819,7 +832,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
             for (int k=0; k<side_q.size(); k++)
             {
                 local_rhs[i] += (
-                        +gamma[b.id()]*bc_values[0][b.id()]
+                        +gamma[b.id()]*bc->get_array(0)[b.id()-bc->distribution()->begin()]
 //                       -advection*0.5*min(b->side->flux,-tol_flux_bc)*bc_values[0][b.id()]
                                 )*fe_values_side.shape_value(i,k)*fe_values_side.JxW(k);
             }
@@ -1056,73 +1069,6 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
 
 
 
-
-
-
-
-std::string TransportDG::make_bc_file_name(int level)
-{
-
-    std::string bc_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport",
-            "Transport_BCD", "\\"));
-    if (level >= 0 ) {
-        std::stringstream name_str;
-        name_str << bc_fname << "_" << setfill('0') << setw(3) << level;
-        bc_fname = name_str.str();
-    }
-
-    return bc_fname;
-}
-
-
-void TransportDG::read_bc_vector()
-{
-    int sbi;
-
-    xprintf(Msg, "Transport_DG: Reading BC (level = %d)\n",bc_time_level);
-
-    int bcd_id, boundary_id, boundary_index;
-    double bcd_conc;
-    char line[LINE_SIZE]; // line of data file
-
-    // make bc filename
-
-    FILE *in = xfopen(make_bc_file_name(bc_time_level).c_str(), "rt");
-    skip_to(in, "$Transport_BCD");
-    xfgets(line, LINE_SIZE - 2, in);
-    int n_bcd = atoi(xstrtok(line));
-    for (int i_bcd = 0; i_bcd < n_bcd; i_bcd++) {
-        xfgets(line, LINE_SIZE - 2, in);
-        bcd_id = atoi(xstrtok(line)); // scratch transport bcd id
-        boundary_id = atoi(xstrtok(NULL));
-        //        DBGMSG("transp b. id: %d\n",boundary_id);
-        boundary_index = mesh_->boundary.find_id(boundary_id).index();
-        INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
-        for (sbi = 0; sbi < n_substances; sbi++) {
-            bcd_conc = atof(xstrtok(NULL));
-            VecSetValue(bcv[sbi], boundary_index, bcd_conc, INSERT_VALUES);
-        }
-    }
-    xfclose(in);
-    for (sbi = 0; sbi < n_substances; sbi++)
-        VecAssemblyBegin(bcv[sbi]);
-    //for (sbi = 0; sbi < n_substances; sbi++)
-    //    VecZeroEntries(bcvcorr[sbi]);
-    for (sbi = 0; sbi < n_substances; sbi++)
-        VecAssemblyEnd(bcv[sbi]);
-
-    // update source vectors
-    // TODO: rather use Lazy dependency
-//    if (bc_time_level != -1)
-//        for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
-//            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
-//        }
-
-    // VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
-    // getchar();
-    bc_time_level++;
-
-}
 
 
 void TransportDG::read_initial_condition()
