@@ -60,6 +60,7 @@ set(sources_lib_non_system
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
+    transport/transport_bc.cc
     transport/transport_dg.cc
     transport/sources.cc
 

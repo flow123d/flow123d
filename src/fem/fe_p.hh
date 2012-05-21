@@ -32,78 +32,120 @@
 
 #include "fem/finite_element.hh"
 
-using namespace arma;
 
+/**
+ * @brief Space of polynomial functions.
+ *
+ * This class serves for evaluation of the value and gradient
+ * of a polynomial of order @p degree in @p dim variables.
+ */
 template<unsigned int degree, unsigned int dim>
 class PolynomialSpace
 {
 public:
 
+	/**
+	 * @brief Constructor.
+	 *
+	 * Creates the coefficients of the basis.
+	 */
     PolynomialSpace();
 
-    const double basis_value(unsigned int i, const vec::fixed<dim> &p) const;
+    /**
+     * @brief Value of the @p i th basis function at point @p p.
+     * @param i Number of the basis function.
+     * @param p Point at which the function is evaluated.
+     */
+    const double basis_value(unsigned int i, const arma::vec::fixed<dim> &p) const;
 
-    const vec::fixed<dim> basis_grad(unsigned int i, const vec::fixed<dim> &p) const;
+    /**
+     * @brief Gradient of the @p i th basis function at point @p p.
+     * @param i Number of the basis function.
+     * @param p Point at which the function is evaluated.
+     */
+    const arma::vec::fixed<dim> basis_grad(unsigned int i, const arma::vec::fixed<dim> &p) const;
 
 private:
 
     /**
+     * @brief Coefficients of basis functions.
+     *
      * Powers of x, y, z, ... in the i-th basis function are stored
      * in powers[i].
      */
-    vector<uvec::fixed<dim> > powers;
+    vector<arma::uvec::fixed<dim> > powers;
 
 };
 
 
+
+/**
+ * @brief Distribution of dofs for polynomial finite elements.
+ *
+ * The class holds the information on the total number of dofs
+ * as well as the number of dofs associated to geometrical entities
+ * such as points, lines, triangles and tetrahedra.
+ * Moreover, some dofs are grouped to pairs, triples or sextuples
+ * which are invariant to rotation/reflection of the element.
+ *
+ * The coordinates of unit support points are provided.
+ * The values at support points uniquely determine the finite
+ * element function.
+ *
+ */
 template<unsigned int degree, unsigned int dim>
 class DofDistribution
 {
 public:
 
+	/**
+	 * @brief Constructor.
+	 *
+	 * Initializes all variables.
+	 */
     DofDistribution();
 
-    /**
-     * Total number of degrees of freedom at one finite element.
-     */
+    /// Total number of degrees of freedom at one finite element.
     unsigned int number_of_dofs;
 
     /**
-     * Number of single dofs at one geometrical entity of the given
+     * @brief Number of single dofs at one geometrical entity of the given
      * dimension (point, line, triangle, tetrahedron).
      */
     unsigned int number_of_single_dofs[dim + 1];
 
     /**
-     * Number of pairs of dofs at one geometrical entity of the given
+     * @brief Number of pairs of dofs at one geometrical entity of the given
      * dimension (applicable to lines and triangles).
      */
     unsigned int number_of_pairs[dim + 1];
 
     /**
-     * Number of triples of dofs associated to one triangle.
+     * @brief Number of triples of dofs associated to one triangle.
      */
     unsigned int number_of_triples[dim + 1];
 
     /**
-     * Number of sextuples of dofs associated to one triangle.
+     * @brief Number of sextuples of dofs associated to one triangle.
      */
     unsigned int number_of_sextuples[dim + 1];
 
     /**
+     * @brief Support points.
+     *
      * Support points are points in the reference element where
      * function values determine the dofs. In case of Lagrangean
      * finite elements the dof values are precisely the function
      * values at @p unit_support_points.
-     *
      */
-    vector<vec::fixed<dim> > unit_support_points;
+    vector<arma::vec::fixed<dim> > unit_support_points;
 
 };
 
 
 /**
- * Conforming Lagrangean finite element on @p dim dimensional simplex.
+ * @brief Conforming Lagrangean finite element on @p dim dimensional simplex.
+ *
  * The finite element functions are continuous across the interfaces.
  */
 template <unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -118,40 +160,46 @@ class FE_P : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::order;
 
 public:
-    /**
-     * Constructor.
-     */
+    /// Constructor.
     FE_P();
 
     /**
-     * Returns the @p ith basis function evaluated at the point @p p.
+     * @brief Returns the @p ith basis function evaluated at the point @p p.
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
-    double basis_value(const unsigned int i, const vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * Returns the gradient of the @p ith basis function at the point @p p.
+     * @brief Returns the gradient of the @p ith basis function at the point @p p.
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
-    vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * The vector variant of basis_value must be implemented but may not be used.
+     * @brief The vector variant of basis_value must be implemented but may not be used.
      */
-    vec::fixed<dim> basis_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * The vector variant of basis_grad must be implemented but may not be used.
+     * @brief The vector variant of basis_grad must be implemented but may not be used.
      */
-    mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
 private:
 
+    /// The auxiliary polynomial space.
     PolynomialSpace<degree,dim> poly_space;
+
+    /// The auxiliary dof distribution.
     DofDistribution<degree,dim> dof_distribution;
 };
 
 
 /**
- * Discontinuous Lagrangean finite element on @p dim dimensional simplex.
+ * @brief Discontinuous Lagrangean finite element on @p dim dimensional simplex.
+ *
  * No continuity of the finite element functions across the interfaces is
  * imposed.
  */
@@ -167,34 +215,40 @@ class FE_P_disc : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::order;
 
 public:
-    /**
-     * Constructor.
-     */
+
+    /// Constructor.
     FE_P_disc();
 
     /**
-     * Returns the @p ith basis function evaluated at the point @p p.
+     * @brief Returns the @p ith basis function evaluated at the point @p p.
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
-    double basis_value(const unsigned int i, const vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * Returns the gradient of the @p ith basis function at the point @p p.
+     * @brief Returns the gradient of the @p ith basis function at the point @p p.
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
-    vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * The vector variant of basis_value must be implemented but may not be used.
+     * @brief The vector variant of basis_value must be implemented but may not be used.
      */
-    vec::fixed<dim> basis_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * The vector variant of basis_grad must be implemented but may not be used.
+     * @brief The vector variant of basis_grad must be implemented but may not be used.
      */
-    mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
 private:
 
+    /// The auxiliary polynomial space.
     PolynomialSpace<degree,dim> poly_space;
+
+    /// The auxiliary dof distribution.
     DofDistribution<degree,dim> dof_distribution;
 };
 
@@ -203,7 +257,7 @@ private:
 template<unsigned int degree, unsigned int dim>
 PolynomialSpace<degree,dim>::PolynomialSpace()
 {
-    uvec::fixed<dim> pows;
+	arma::uvec::fixed<dim> pows;
     int i;
 
     pows.zeros();
@@ -229,25 +283,25 @@ PolynomialSpace<degree,dim>::PolynomialSpace()
 }
 
 template<unsigned int degree, unsigned int dim>
-const double PolynomialSpace<degree,dim>::basis_value(unsigned int i, const vec::fixed<dim> &p) const
+const double PolynomialSpace<degree,dim>::basis_value(unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i<=powers.size(), "Index of basis function is out of range.");
 
     double v = 1;
 
     for (int j=0; j<dim; j++)
-        v *= pow(p[j], (int)(powers[i][j]) );
+        v *= pow(p[j], powers[i][j]);
 
     return v;
 }
 
 
 template<unsigned int degree, unsigned int dim>
-const vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, const vec::fixed<dim> &p) const
+const arma::vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i<=powers.size(), "Index of basis function is out of range.");
 
-    vec::fixed<dim> grad;
+    arma::vec::fixed<dim> grad;
 
     for (int j=0; j<dim; j++)
     {
@@ -259,7 +313,7 @@ const vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, co
                 grad[j] = 0;
                 continue;
             }
-            grad[j] *= pow(p[k], (int)(powers[i][j]-1));
+            grad[j] *= pow(p[k], powers[i][j]-1);
         }
     }
     return grad;
@@ -302,27 +356,27 @@ FE_P<degree,dim,spacedim>::FE_P()
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
+double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_grad(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_vector(const unsigned int i, const vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_vector() may not be called for scalar finite element.");
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const
+arma::mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
 }
@@ -359,27 +413,27 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
+double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_grad(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_vector() may not be called for scalar finite element.");
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const
+arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
 }
@@ -395,7 +449,7 @@ mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsi
 
 
 
-
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /****** Template specializations ******/
 
@@ -409,7 +463,7 @@ DofDistribution<0,1>::DofDistribution()
 
     number_of_single_dofs[1] = 1;
 
-    unit_support_points.push_back(zeros<vec>(1));
+    unit_support_points.push_back(arma::zeros<arma::vec>(1));
 }
 
 // P1 linear element
@@ -420,8 +474,8 @@ DofDistribution<1,1>::DofDistribution()
 
     number_of_single_dofs[0] = 2;
 
-    unit_support_points.push_back(vec::fixed<1>("0"));
-    unit_support_points.push_back(vec::fixed<1>("1"));
+    unit_support_points.push_back(arma::vec::fixed<1>("0"));
+    unit_support_points.push_back(arma::vec::fixed<1>("1"));
 }
 
 /*** 2D finite elements ***/
@@ -434,7 +488,7 @@ DofDistribution<0,2>::DofDistribution()
 
     number_of_single_dofs[2] = 1;
 
-    unit_support_points.push_back(vec2("0 0"));
+    unit_support_points.push_back(arma::vec2("0 0"));
 }
 
 
@@ -446,9 +500,9 @@ DofDistribution<1,2>::DofDistribution()
 
     number_of_single_dofs[0] = 3;
 
-    unit_support_points.push_back(vec2("0 0"));
-    unit_support_points.push_back(vec2("1 0"));
-    unit_support_points.push_back(vec2("0 1"));
+    unit_support_points.push_back(arma::vec2("0 0"));
+    unit_support_points.push_back(arma::vec2("1 0"));
+    unit_support_points.push_back(arma::vec2("0 1"));
 }
 
 
@@ -463,7 +517,7 @@ DofDistribution<0,3>::DofDistribution()
 
     number_of_single_dofs[3] = 1;
 
-    unit_support_points.push_back(vec3("0 0 0"));
+    unit_support_points.push_back(arma::vec3("0 0 0"));
 }
 
 
@@ -475,12 +529,13 @@ DofDistribution<1,3>::DofDistribution()
 
     number_of_single_dofs[0] = 4;
 
-    unit_support_points.push_back(vec3("0 0 0"));
-    unit_support_points.push_back(vec3("1 0 0"));
-    unit_support_points.push_back(vec3("0 1 0"));
-    unit_support_points.push_back(vec3("0 0 1"));
+    unit_support_points.push_back(arma::vec3("0 0 0"));
+    unit_support_points.push_back(arma::vec3("1 0 0"));
+    unit_support_points.push_back(arma::vec3("0 1 0"));
+    unit_support_points.push_back(arma::vec3("0 0 1"));
 }
 
+#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 
 
