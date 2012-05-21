@@ -136,7 +136,7 @@ void TransportBC::read()
 	for (sbi = 0; sbi < n_substances; sbi++)
 		VecAssemblyEnd(bcv[sbi]);
 
-	bc_time_level++;
+	if (bc_time_level != -1) bc_time_level++;
 }
 
 string TransportBC::make_bc_file_name(int level)

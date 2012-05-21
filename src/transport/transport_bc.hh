@@ -38,20 +38,24 @@
 /**
  * @brief Reader class for transport boundary conditions.
  *
- * The class handles reading from files and storing the boundary conditions.
+ * The class handles reading from files and storing the transport boundary conditions.
  *
  */
 class TransportBC
 {
 public:
 
-	/// Constructor.
+	/**
+	 * @brief Constructor.
+	 * @param mesh The mesh.
+	 * @param n_subst Number of substances.
+	 */
 	TransportBC(Mesh *mesh, int n_subst);
 
 	/// Destructor.
 	~TransportBC();
 
-	/// Reads the boundary conditions for the next level.
+	/// Reads the boundary conditions for the next time level.
 	void read();
 
 	/**
@@ -72,6 +76,7 @@ public:
 	/// Returns the current time level.
 	int get_time_level();
 
+	/// Returns the distribution of @p bcv onto processors.
 	const Distribution *distribution();
 
 
@@ -86,7 +91,7 @@ private:
 	/// Boundary condition vector (each for one substance).
 	Vec *bcv;
 
-	/// Boundary condition array.
+	/// Boundary condition array (each for one substance).
 	double **bc;
 
 	/// The mesh.

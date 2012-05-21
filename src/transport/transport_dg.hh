@@ -66,10 +66,13 @@ class TransportBC;
  * @f}
  * The transfer of mass through fractures is described by the transmission conditions on @f$\Gamma^d_F@f$:
  * @f[
- * 		-\mathbf D^d\nabla c_i^d\cdot\mathbf n = \left\{\begin{array}{cl}0 &\mbox{ if }\mathbf v^d\cdot\mathbf n\ge 0\\\mathbf v^d\cdot\mathbf n(c_i^{d-1}-c_i^d) & \mbox{ if }\mathbf v^d\cdot\mathbf n<0\end{array}\right.,\qquad
- * 		F^{d-1} = \left\{\begin{array}{cl}\mathbf v^d\cdot\mathbf n(c_i^d-c_i^{d-1}) & \mbox{ if }\mathbf v^d\cdot\mathbf n\ge 0\\\mathbf v^d\cdot\mathbf n(c_i^{d-1}-c_i^d) & \mbox{ if }\mathbf v^d\cdot\mathbf n< 0\end{array}\right..
+ * 		-\mathbf D^d\nabla c_i^d\cdot\mathbf n = \sigma(c_i^d-c_i^{d-1}) + \left\{\begin{array}{cl}0 &\mbox{ if }\mathbf v^d\cdot\mathbf n\ge 0\\\mathbf v^d\cdot\mathbf n(c_i^{d-1}-c_i^d) & \mbox{ if }\mathbf v^d\cdot\mathbf n<0\end{array}\right.,\qquad
+ * 		F^{d-1} = (\sigma + |\mathbf v^d\cdot\mathbf n|)(c_i^d-c_i^{d-1}).
  * @f]
  * Here @f$\mathbf n@f$ stands for the unit outward normal vector to @f$\partial\Omega^d@f$.
+ * The coefficient @f$\sigma@f$ determines the transfer of mass through fractures due to diffusion.
+ *
+ * @ingroup transport_mod
  *
  */
 class TransportDG : public TransportBase
@@ -121,6 +124,14 @@ public:
 	~TransportDG();
 
 private:
+
+	/**
+	 * @brief Assembles the mass matrix.
+	 *
+	 * The routine just calls templated method assemble_mass_matrix() for each
+	 * space dimension.
+	 */
+	void assemble_mass_matrix();
 
 	/**
 	 * @brief Assembles the mass matrix for the given dimension.
@@ -192,8 +203,17 @@ private:
 	template<unsigned int dim>
 	void assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
 
+
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
+	 *
+	 * The routine just calls templated method set_boundary_condition() for each space dimension.
+	 */
+	void set_boundary_conditions();
+
+	/**
+	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
+	 * for a given space dimension.
 	 *
 	 * @param dh DOF handler.
      * @param fe FiniteElement.
@@ -284,18 +304,6 @@ private:
 	            double &gamma,
 	            double *omega);
 
-//	/**
-//	 * @brief Generates the file name for the time-dependent boundary condition.
-//	 *
-//	 * @param level
-//	 * @return file name
-//	 */
-//	string make_bc_file_name(int level);
-//
-//	/**
-//	 * @brief Reads the boundary condition.
-//	 */
-//	void read_bc_vector();
 
 	/**
 	 * @brief Reads the initial condition.
@@ -309,7 +317,8 @@ private:
 
 
 
-	// physical parameters
+	/// @name Physical parameters
+	// @{
 	/// Longitudal dispersivity.
 	double alphaL;
 
@@ -319,8 +328,8 @@ private:
 	/// Molecular diffusivity.
 	double Dm;
 
-	/// Tortuosity.
-	double tortuosity;
+	/// Coefficient of diffusive transfer.
+	double sigma;
 
 	/// Number of transported substances.
 	int n_substances;
@@ -333,21 +342,36 @@ private:
 
 	/// True if dual porosity is considered.
 	bool dual_porosity;
+	// @}
+
+
+	/// @name Parameters of the numerical method
+	// @{
+	/// Penalty parameters.
+	std::vector<double> gamma;
+
+	/// coefficient affecting inter-element continuity due to dispersion
+	double alpha;
+
+	/// coefficient of advection/transport (0=no advection)
+	const double advection;
+	// @}
+
+
+	/// @name Boundary conditions
+	// @{
 
 	/// Time marks for boundary conditions.
 	TimeMark::Type bc_mark_type_;
 
-	/// Time marks for writing the output.
-	TimeMark::Type output_mark_type;
-
 	/// Reader of boundary conditions.
 	TransportBC *bc;
 
-	/// Distribution of the solution vectors to the processors.
-	Distribution *distr;
+	// @}
 
-	/// Vector of fluxes across element edges.
-	Vec flux_vector;
+
+	/// @name Solution of algebraic system
+	// @{
 
 	/// Vector of right hand side.
 	Vec rhs;
@@ -358,6 +382,9 @@ private:
 	/// The mass matrix.
 	Mat mass_matrix;
 
+	/// Distribution of the solution vectors to the processors.
+	Distribution *distr;
+
 	/// Linear algebra system for the transport equation.
 	LinSys *ls;
 
@@ -367,11 +394,26 @@ private:
 	/// Solver for the linear algebraic system.
 	struct Solver *solver;
 
+	// @}
+
+
+	/// @name Output to file
+	// @{
+
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
 
 	/// Class for handling the solution output.
 	OutputTime *transport_output;
+
+	/// Time marks for writing the output.
+	TimeMark::Type output_mark_type;
+
+	// @}
+
+
+	/// @name Finite element objects
+	// @{
 
 	/// DOF handler for 1D problem.
 	DOFHandler<1,3> *dof_handler1d;
@@ -391,21 +433,19 @@ private:
 	/// Finite element for 3D.
 	FiniteElement<3,3> *fe3d;
 
+	// @}
 
-	/// Penalty parameters.
-	std::vector<double> gamma;
 
-	/// coefficient affecting inter-element continuity due to dispersion
-	double alpha;
-
-    /// if flux through a boundary side is < -tol_flux_bc then the Dirichlet condition is applied
-    const double tol_flux_bc;
-
-    /// coefficient of advection/transport (0=no advection)
-    const double advection;
+	/// @name Other
+	// @{
 
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
+
+	// / Vector of fluxes across element edges - so far not used.
+//	Vec flux_vector;
+
+    // @}
 };
 
 

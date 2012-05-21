@@ -35,6 +35,8 @@
 
 
 
+using namespace std;
+using namespace arma;
 
 
 
@@ -238,7 +240,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
                 fv_data.inverse_jacobians[i] = ijac;
 
             // calculation of normal vectors to the side
-            if (fv_data.update_flags & update_normal_vectors)
+            if ((fv_data.update_flags & update_normal_vectors))
             {
                 map<Node*, int> node_nums;
                 vec::fixed<dim> n_ref;
@@ -255,7 +257,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
                     n_ref.fill(1./sqrt(dim));
                     break;
                 default:
-                    n_ref[(index+dim-1)%dim] = -1;
+                    n_ref[(index+dim-1)%(dim==0?1:dim)] = -1;
                     break;
                 }
                 n_cell = trans(ijac)*n_ref;

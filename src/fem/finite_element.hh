@@ -46,6 +46,8 @@ template<unsigned int dim> class Quadrature;
 
 
 /**
+ * @brief Multiplicity of finite element dofs.
+ *
  * Multiplicities describe groups of dofs whose order changes with
  * the configuration (e.g. the rotation or orientation) of
  * the geometrical entity relative to the actual cell.
@@ -72,41 +74,43 @@ enum DofMultiplicity {
     DOF_SINGLE = 1, DOF_PAIR = 2, DOF_TRIPLE = 3, DOF_SEXTUPLE = 6
 };
 
-const vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
+const std::vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
         DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
 
 /**
- * Structure for storing the precomputed finite element data.
+ * @brief Structure for storing the precomputed finite element data.
  */
 struct FEInternalData
 {
     /**
-     * Precomputed values of basis functions at the quadrature points.
+     * @brief Precomputed values of basis functions at the quadrature points.
      */
-    vector<arma::vec> basis_values;
+    std::vector<arma::vec> basis_values;
 
     /**
-     * Precomputed gradients of basis functions at the quadrature points.
+     * @brief Precomputed gradients of basis functions at the quadrature points.
      */
-    vector<arma::mat > basis_grads;
+    std::vector<arma::mat > basis_grads;
 
 
     /**
+     * @brief Precomputed values of basis functions at the quadrature points.
+     *
+     * For vectorial finite elements.
+     */
+    std::vector<std::vector<arma::vec> > basis_vectors;
+
+    /**
+     * @brief Precomputed gradients of basis functions at the quadrature points.
+     *
      * For vectorial finite elements:
-     * Precomputed values of basis functions at the quadrature points.
      */
-    vector<vector<arma::vec> > basis_vectors;
-
-    /**
-     * For vectorial finite elements:
-     * Precomputed gradients of basis functions at the quadrature points.
-     */
-    vector<vector<arma::mat> > basis_grad_vectors;
+    std::vector<std::vector<arma::mat> > basis_grad_vectors;
 };
 
 
 /**
- * Abstract class for the description of a general finite element on
+ * @brief Abstract class for the description of a general finite element on
  * a reference simplex in @p dim dimensions.
  *
  * Description of dofs:
@@ -122,7 +126,7 @@ struct FEInternalData
  * describe how the order of dofs changes with the relative
  * configuration of the entity with respect to the actual cell.
  * For this reason we define the dof multiplicity which allows to
- * group the dofs as described in \sa DofMultiplicity.
+ * group the dofs as described in \ref DofMultiplicity.
  *
  * Support points:
  *
@@ -147,98 +151,129 @@ class FiniteElement {
 public:
 
     /**
-     * Constructor.
+     * @brief Constructor.
      */
     FiniteElement();
 
     /**
-     * Clears all internal structures.
+     * @brief Clears all internal structures.
      */
     void init();
 
     /**
-     * Returns the number of degrees of freedom needed by the finite
+     * @brief Returns the number of degrees of freedom needed by the finite
      * element.
      */
     const unsigned int n_dofs();
 
     /**
-     * Returns the number of single dofs/dof pairs/triples/sextuples
+     * @brief Returns the number of single dofs/dof pairs/triples/sextuples
      * that lie on a single geometric entity of the dimension
      * @p object_dim.
+     *
+     * @param object_dim Dimension of the geometric entity.
+     * @param multiplicity Multiplicity of dofs.
      */
     const unsigned int n_object_dofs(unsigned int object_dim,
             DofMultiplicity multiplicity);
 
     /**
-     * Calculates the value of the @p i-th raw basis function at the
+     * @brief Calculates the value of the @p i-th raw basis function at the
      * point @p p on the reference element.
+     *
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
     virtual double basis_value(const unsigned int i,
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
-     * Variant of basis_value() for vectorial finite elements.
+     * @brief Variant of basis_value() for vectorial finite elements.
+     *
      * Calculates the value @p i-th vector-valued raw basis function
      * at the point @p p on the reference element.
+     *
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
     virtual arma::vec::fixed<dim> basis_vector(const unsigned int i,
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
-     * Calculates the gradient of the @p i-th raw basis function at the
-     * point @p p on the reference element. The gradient components
+     * @brief Calculates the gradient of the @p i-th raw basis function at the
+     * point @p p on the reference element.
+     *
+     * The gradient components
      * are relative to the reference cell coordinate system.
+     *
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
     virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
-     * Variant of basis_grad() for vectorial finite elements.
+     * @brief Variant of basis_grad() for vectorial finite elements.
+     *
      * Calculates the gradient of the @p i-th vector-valued raw basis
      * function at the point @p p on the reference element. The gradient
      * components are relative to the reference cell coordinate system.
+     *
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
     virtual arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i,
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
-     * Initializes the @p node_matrix for computing the coefficients
+     * @brief Initializes the @p node_matrix for computing the coefficients
      * of the raw basis functions from values at support points.
+     *
      * The method is implemented for the case of Langrangean finite
      * element. In other cases it may be reimplemented.
      */
     virtual void compute_node_matrix();
 
     /**
-     * Calculates the data on the reference cell.
+     * @brief Calculates the data on the reference cell.
+     *
+     * @param q Quadrature rule.
+     * @param flags Update flags.
      */
     virtual FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
 
     /**
-     * Decides which additional quantities have to be computed
+     * @brief Decides which additional quantities have to be computed
      * for each cell.
+     *
+     * @param flags Computed update flags.
      */
     virtual UpdateFlags update_each(UpdateFlags flags);
 
     /**
-     * Computes the shape function values and gradients on the actual cell
+     * @brief Computes the shape function values and gradients on the actual cell
      * and fills the FEValues structure.
+     *
+     * @param q Quadrature rule.
+     * @param data Precomputed finite element data.
+     * @param fv_data Data to be computed.
      */
     virtual void fill_fe_values(const Quadrature<dim> &q,
             FEInternalData &data,
             FEValuesData<dim,spacedim> &fv_data);
 
     /**
-     * For possible use in hp methods: Returns the maximum degree of
+     * @brief Returns the maximum degree of
      * space of polynomials contained in the finite element space.
+     *
+     * For possible use in hp methods.
      */
     virtual const unsigned int polynomial_order() const {
         return order;
     };
 
     /**
-     * Indicates whether the finite element function space is scalar
+     * @brief Indicates whether the finite element function space is scalar
      * or vectorial.
      */
     const bool is_scalar() const {
@@ -246,71 +281,75 @@ public:
     };
 
     /**
-     * Returns either the generalized support points (if they are defined)
+     * @brief Returns either the generalized support points (if they are defined)
      * or the unit support points.
      */
-    const vector<arma::vec::fixed<dim> > &get_generalized_support_points();
+    const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
 
 protected:
 
     /**
-     * Total number of degrees of freedom at one finite element.
+     * @brief Total number of degrees of freedom at one finite element.
      */
     unsigned int number_of_dofs;
 
     /**
-     * Number of single dofs at one geometrical entity of the given
+     * @brief Number of single dofs at one geometrical entity of the given
      * dimension (point, line, triangle, tetrahedron).
      */
     unsigned int number_of_single_dofs[dim + 1];
 
     /**
-     * Number of pairs of dofs at one geometrical entity of the given
+     * @brief Number of pairs of dofs at one geometrical entity of the given
      * dimension (applicable to lines and triangles).
      */
     unsigned int number_of_pairs[dim + 1];
 
     /**
-     * Number of triples of dofs associated to one triangle.
+     * @brief Number of triples of dofs associated to one triangle.
      */
     unsigned int number_of_triples[dim + 1];
 
     /**
-     * Number of sextuples of dofs associated to one triangle.
+     * @brief Number of sextuples of dofs associated to one triangle.
      */
     unsigned int number_of_sextuples[dim + 1];
 
     /**
-     * Polynomial order - to be possibly used in hp methods.
+     * @brief Polynomial order - to be possibly used in hp methods.
      */
     unsigned int order;
 
     /**
-     * Indicator of scalar versus vectorial finite element.
+     * @brief Indicator of scalar versus vectorial finite element.
      */
     bool is_scalar_fe;
 
     /**
-     * Matrix that determines the coefficients of the raw basis
+     * @brief Matrix that determines the coefficients of the raw basis
      * functions from the values at the support points.
      */
     arma::mat node_matrix;
 
     /**
+     * @brief Support points for Lagrangean finite elements.
+     *
      * Support points are points in the reference element where
      * function values determine the dofs. In case of Lagrangean
      * finite elements the dof values are precisely the function
      * values at @p unit_support_points.
      *
      */
-    vector<arma::vec::fixed<dim> > unit_support_points;
+    std::vector<arma::vec::fixed<dim> > unit_support_points;
 
     /**
+     * @brief Support points for non-Lagrangean finite elements.
+     *
      * In case of non-Lagrangean finite elements the meaning of the
      * support points is different, hence we denote the structure
      * as @p generalized_support_points.
      */
-    vector<arma::vec::fixed<dim> > generalized_support_points;
+    std::vector<arma::vec::fixed<dim> > generalized_support_points;
 };
 
 

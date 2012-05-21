@@ -32,10 +32,11 @@
 
 #include "fem/finite_element.hh"
 
-using namespace arma;
 
 
 /**
+ * @brief Raviart-Thomas element of order 0.
+ *
  * The lowest order Raviart-Thomas finite element with linear basis functions
  * and continuous normal components across element sides.
  */
@@ -54,31 +55,37 @@ class FE_RT0 : public FiniteElement<dim,spacedim>
 
 public:
     /**
-     * Constructor.
+     * @brief Constructor.
      */
     FE_RT0();
 
     /**
-     * The scalar variant of basis_vector must be implemented but may not be used.
+     * @brief The scalar variant of basis_vector must be implemented but may not be used.
      */
-    double basis_value(const unsigned int i, const vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * The scalar variant of basis_grad_vector must be implemented but may not be used.
+     * @brief The scalar variant of basis_grad_vector must be implemented but may not be used.
      */
-    vec::fixed<dim> basis_grad(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * Returns the @p ith basis function evaluated at the point @p p.
+     * @brief Returns the @p ith basis function evaluated at the point @p p.
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
-    vec::fixed<dim> basis_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
-     * Returns the gradient of the @p ith basis function at the point @p p.
+     * @brief Returns the gradient of the @p ith basis function at the point @p p.
+     * @param i Number of the basis function.
+     * @param p Point of evaluation.
      */
-    mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const;
+    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
     /**
+     * @brief Computes the conversion matrix from internal basis to shape functions.
+     *
      * Initializes the @p node_matrix for computing the coefficients
      * of the raw basis functions from values at support points.
      * Since Raviart-Thomas element is not Lagrangean, the method has
@@ -87,19 +94,26 @@ public:
     void compute_node_matrix();
 
     /**
-     * Calculates the data on the reference cell.
+     * @brief Calculates the data on the reference cell.
+     *
+     * @param q Quadrature.
+     * @param flags Flags that indicate what quantities should be calculated.
      */
     FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
 
     /**
-     * Decides which additional quantities have to be computed
+     * @brief Decides which additional quantities have to be computed
      * for each cell.
      */
     UpdateFlags update_each(UpdateFlags flags);
 
     /**
-     * Computes the shape function values and gradients on the actual cell
+     * @brief Computes the shape function values and gradients on the actual cell
      * and fills the FEValues structure.
+     *
+     * @param q Quadrature.
+     * @param data The precomputed finite element data on the reference cell.
+     * @param fv_data The data to be computed.
      */
     virtual void fill_fe_values(const Quadrature<dim> &q,
             FEInternalData &data,
@@ -119,7 +133,7 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 FE_RT0<dim,spacedim>::FE_RT0()
 {
-    vec::fixed<dim> sp;
+	arma::vec::fixed<dim> sp;
 
     this->init();
 
@@ -143,23 +157,23 @@ FE_RT0<dim,spacedim>::FE_RT0()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-double FE_RT0<dim,spacedim>::basis_value(const unsigned int i, const vec::fixed<dim> &p) const
+double FE_RT0<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_value() may not be called for vectorial finite element.");
 }
 
 template<unsigned int dim, unsigned int spacedim>
-vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i, const vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_grad() may not be called for vectorial finite element.");
 }
 
 template<unsigned int dim, unsigned int spacedim>
-vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, const vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i<(dim+1)*dim, "Index of basis function is out of range.");
 
-    vec::fixed<dim> v;
+    arma::vec::fixed<dim> v;
     unsigned int comp = i/(dim+1);
     unsigned int offset = i%(dim+1);
     
@@ -178,11 +192,11 @@ vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, const v
 }
 
 template<unsigned int dim, unsigned int spacedim>
-mat::fixed<dim,dim> FE_RT0<dim,spacedim>::basis_grad_vector(const unsigned int i, const vec::fixed<dim> &p) const
+arma::mat::fixed<dim,dim> FE_RT0<dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(i<(dim+1)*dim, "Index of basis function is out of range.");
 
-    mat::fixed<dim,dim> m;
+    arma::mat::fixed<dim,dim> m;
     unsigned int comp = i/(dim+1);
     unsigned int offset = i%(dim+1);
 
@@ -199,8 +213,8 @@ mat::fixed<dim,dim> FE_RT0<dim,spacedim>::basis_grad_vector(const unsigned int i
 template<unsigned int dim, unsigned int spacedim>
 void FE_RT0<dim,spacedim>::compute_node_matrix()
 {
-    mat::fixed<dim*(dim+1),dim+1> F;
-    vec::fixed<dim> r;
+	arma::mat::fixed<dim*(dim+1),dim+1> F;
+	arma::vec::fixed<dim> r;
 
     /*
      * Node matrix helps creating the shape functions $\{b_k\}$ from
@@ -278,9 +292,9 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
 
     if (flags & update_values)
     {
-        mat::fixed<dim*(dim+1),dim> raw_values;
-        mat::fixed<dim+1,dim> shape_values;
-        vector<vec> values;
+    	arma::mat::fixed<dim*(dim+1),dim> raw_values;
+    	arma::mat::fixed<dim+1,dim> shape_values;
+        vector<arma::vec> values;
 
         data->basis_vectors.resize(q.size());
         values.resize(dim+1);
@@ -300,9 +314,9 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
 
     if (flags & update_gradients)
     {
-        mat::fixed<dim,dim> grad;
-        mat::fixed<dim,dim> shape_grads;
-        vector<mat> grads;
+    	arma::mat::fixed<dim,dim> grad;
+    	arma::mat::fixed<dim,dim> shape_grads;
+        vector<arma::mat> grads;
 
         data->basis_grad_vectors.resize(q.size());
         grads.resize(dim+1);
@@ -346,7 +360,7 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
     // shape values
     if (fv_data.update_flags & update_values)
     {
-        vector<vec::fixed<spacedim> > vectors;
+        vector<arma::vec::fixed<spacedim> > vectors;
         vectors.resize(dim+1);
         for (int i = 0; i < q.size(); i++)
         {
@@ -360,7 +374,7 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
     // shape gradients
     if (fv_data.update_flags & update_gradients)
     {
-        vector<mat::fixed<spacedim,spacedim> > grads;
+        vector<arma::mat::fixed<spacedim,spacedim> > grads;
         grads.resize(dim+1);
         for (int i = 0; i < q.size(); i++)
         {
