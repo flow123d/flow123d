@@ -6,6 +6,7 @@
  */
 
 /**
+ * TODO: test method get_root_interface
  * TODO: move EXPECT_THROW_WHAT_ into flow_test.hh
  * TODO: test catching of errors in JSON file format.
  */
@@ -163,6 +164,7 @@ protected:
     virtual void TearDown() {
     };
 };
+
 
 TEST_F(InputJSONToStorageTest, Integer) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -343,13 +345,88 @@ TEST_F(InputJSONToStorageTest, Record) {
         stringstream ss("{ int_key=6 }");
         EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Value out of bounds.");
     }
-/*
-    {
-        stringstream ss("[ 3.0, 3.9 ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Value out of bounds.");
-    }
-*/
 }
+
+TEST_F(InputJSONToStorageTest, AbstratRec) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    static Type::AbstractRecord a_rec("EqBase","Base of equation records.");
+    a_rec.declare_key("mesh", Type::String(), Type::DefaultValue(Type::DefaultValue::obligatory), "Comp. mesh.");
+    a_rec.declare_key("a_val", Type::String(), Type::DefaultValue(Type::DefaultValue::obligatory), "");
+    a_rec.finish();
+
+    static Type::Record b_rec("EqDarcy","");
+    b_rec.derive_from(a_rec);
+    b_rec.declare_key("b_val", Type::Integer(), "");
+    b_rec.finish();
+
+    EXPECT_EQ(true, b_rec.is_finished());
+
+    static Type::Record c_rec("EqTransp","");
+    c_rec.derive_from(a_rec);
+    c_rec.declare_key("c_val", Type::Integer(), "");
+    c_rec.declare_key("a_val", Type::Double(),"");
+    c_rec.finish();
+
+    a_rec.no_more_descendants();
+    EXPECT_EQ(true, b_rec.is_finished());
+    EXPECT_EQ(b_rec, a_rec.get_descendant("EqDarcy"));
+    EXPECT_EQ(true, a_rec.get_descendant("EqDarcy").is_finished());
+    EXPECT_EQ(Type::Double() , *( c_rec.key_iterator("a_val")->type_));
+    //cout << a_rec;
+
+
+    {   // Try one correct type
+        stringstream ss("{ TYPE=\"EqDarcy\", b_val=10, a_val=\"prime\", mesh=\"some.msh\" }");
+        read_stream(ss, a_rec);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(4, storage_->get_array_size());
+        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
+        EXPECT_EQ("prime", storage_->get_item(2)->get_string() );
+        EXPECT_EQ(10, storage_->get_item(3)->get_int() );
+    }
+
+    {   //Try other correct type
+        stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=5.5, mesh=\"some.msh\" }");
+        read_stream(ss, a_rec);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(4, storage_->get_array_size());
+        EXPECT_EQ(1, storage_->get_item(0)->get_int());
+        EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
+        EXPECT_EQ(5.5, storage_->get_item(2)->get_double() );
+        EXPECT_EQ(4, storage_->get_item(3)->get_int() );
+    }
+
+    {   // Wrong derived value type
+        stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Wrong type, has to be Double.");
+
+    }
+
+    {   // Missing TYPE
+        stringstream ss("{ c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Missing key 'TYPE' in AbstractRecord.");
+
+    }
+
+    {   // Wrong derived value type
+        stringstream ss("{ TYPE=\"EqTrans\", c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Wrong TYPE='EqTrans' of AbstractRecord.");
+
+    }
+
+    {   // Wrong derived value type
+        stringstream ss("[]");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Wrong type, has to be Record.");
+
+    }
+
+
+}
+
 /*
     stringstream in_str(storage_input);
     Input::Type::Record rec("SomeRecord", "");

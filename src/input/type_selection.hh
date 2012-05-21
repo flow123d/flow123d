@@ -67,35 +67,38 @@ public:
      * Default constructor. Empty handle.
      */
     Selection()
-    {finished=false;}
+    {}
 
     /**
      * Creates a handle pointing to the new SelectionData.
      */
     Selection(const string &name) :
             data_(boost::make_shared<SelectionData>(name))
-    {finished = false; }
+    {}
 
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
      */
     void add_value(const Enum value, const std::string &key, const std::string &description = "") {
-        if (data_.use_count() == 0)
-            xprintf(PrgErr, "Can not add key '%s' with value '%d' to empty selection handle.\n", key.c_str(), value);
-        if (finished)
+        empty_check();
+        if (is_finished())
             xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
 
         data_->add_value(value, key, description);
     }
 
     void finish() {
-        finished = true;
+        empty_check();
+        data_->finished = true;
+    }
+
+    virtual bool is_finished() const {
+        empty_check();
+        return data_->finished;
     }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive = false, unsigned int pad = 0) const {
-        if (!finished)
-            xprintf(PrgErr, "Can not provide documentation of unfinished Selection type: %s\n", type_name().c_str());
-
+        ASSERT( is_finished(), "Can not provide documentation of unfinished Selection type: %s\n", type_name().c_str());
         return data_->documentation(stream, extensive, pad);
     }
 
@@ -118,7 +121,7 @@ public:
      * Converts name (on input) to the value. Throws if the name do not exist.
      */
     virtual int name_to_int(const string &key) const {
-        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name().c_str());
+        finished_check();
         KeyHash key_h = key_hash(key);
         typename SelectionData::key_to_index_const_iter it = data_->key_to_index_.find(key_h);
         if (it != data_->key_to_index_.end())
@@ -131,7 +134,7 @@ public:
      * Just check if there is a particular name in the Selection.
      */
     inline bool has_name(const string &key) const {
-        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name().c_str());
+        finished_check();
         KeyHash key_h = key_hash(key);
         return (data_->key_to_index_.find(key_h) != data_->key_to_index_.end());
     }
@@ -140,22 +143,30 @@ public:
      *  Check if there is a particular value in the Selection.
      */
     inline bool has_value(const Enum &val) const {
-        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name().c_str());
+        finished_check();
         return (data_->value_to_index_.find(val) != data_->value_to_index_.end());
     }
 
     inline unsigned int size() const {
-        ASSERT( finished, "Asking for information of unfinished Selection type: %s\n", type_name().c_str());
+        finished_check();
         ASSERT( data_->keys_.size() == data_->key_to_index_.size(), "Sizes of Type:Selection doesn't match. (map: %d vec: %d)\n", data_->key_to_index_.size(), data_->keys_.size());
         return data_->keys_.size();
     }
 
 private:
 
+    inline void empty_check() const {
+        ASSERT( data_.use_count() != 0, "Empty Selection handle.\n");
+    }
+
+    inline void finished_check() const {
+        ASSERT( is_finished(), "Asking for information of unfinished Seleciton type: %s\n", type_name().c_str());
+    }
+
     class SelectionData {
     public:
         SelectionData(const string &name)
-        : type_name_(name), made_extensive_doc(false)
+        : type_name_(name), made_extensive_doc(false), finished(false)
         {}
 
         void add_value(const Enum value, const std::string &key, const std::string &description) {
@@ -233,6 +244,8 @@ private:
          * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
          */
         mutable bool made_extensive_doc;
+
+        bool finished;
     };
 
     boost::shared_ptr<SelectionData> data_;

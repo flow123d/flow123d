@@ -125,6 +125,19 @@ bool JSONPath::get_ref_from_head(string & ref_address)
     return true;
 }
 
+const JSONPath::Node * JSONPath::get_abstract_type_from_head() {
+    if (head()->type() != json_spirit::obj_type) return NULL;
+    const json_spirit::mObject &obj = head()->get_obj();
+    const Node * ptr = down("TYPE");
+    if (ptr != NULL) {
+        up();
+        return ptr;
+    } else {
+        return ptr;
+    }
+}
+
+
 /**
  * This moves path to given reference.
  *
@@ -301,7 +314,23 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
 
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecord *abstr_rec)
-{}
+{
+    if (p.head()->type() == json_spirit::obj_type) {
+        const JSONPath::Node * type_node = p.get_abstract_type_from_head();
+        if (type_node == NULL) {
+            THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec) );
+        } else {
+            try {
+                return make_storage(p, &( abstr_rec->get_descendant(type_node->get_str()) ));
+            } catch(Type::SelectionBase::ExcSelectionKeyNotFound &e) {
+
+                THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec) );
+            }
+        }
+    } else {
+        THROW( ExcInputError() << EI_Specification("Wrong type, has to be Record.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec) );
+    }
+}
 
 
 
@@ -364,20 +393,11 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_type)
 {
     if (p.head()->type() == json_spirit::int_type) {
-        cout << "In integer\n" << std::endl;
-
         int value = p.head()->get_int();
-
-        cout << "In integer 1\n" << std::endl;
-
         int_type->match(value);
-
-        cout << "In integer 2 \n" << std::endl;
-
         if (int_type->match(value)) {
             return new StorageInt( value );
         } else {
-            cout << "In integer 3 \n" << std::endl;
             THROW( ExcInputError() << EI_Specification("Value out of bounds.") << EI_ErrorAddress(p) << EI_InputType(int_type) );
         }
 

@@ -78,7 +78,8 @@ bool TypeBase::is_valid_identifier(const string& key) {
 
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
-    return type.documentation(stream);
+    type.reset_doc_flags();
+    return type.documentation(stream, true,0);
 }
 
 

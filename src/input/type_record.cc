@@ -36,15 +36,12 @@ using namespace std;
 Record::Record(const string & type_name_in, const string & description)
 : data_( boost::make_shared<RecordData>(type_name_in, description) )
 
-{
-    finished=false;
-}
+{}
 
 
 void Record::derive_from(AbstractRecord parent) {
 
-    if (data_.use_count() == 0)
-            xprintf(PrgErr, "Can not inherit to empty Record handle.\n");
+    empty_check();
     if (data_->keys.size() != 0)
             xprintf(PrgErr, "Can not inherit into Record `%s`, it already has some keys declared\n.", type_name().c_str());
 
@@ -73,8 +70,7 @@ void  Record::reset_doc_flags() const {
 
 std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
-    if (! finished) xprintf(PrgErr, "Can not provide documentation of unfinished Record type: %s\n", type_name().c_str());
-
+    finished_check();
     return data_->documentation(stream, extensive, pad);
 }
 
@@ -85,7 +81,8 @@ std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsign
 Record::RecordData::RecordData(const string & type_name_in, const string & description)
 :description_(description),
  type_name_(type_name_in),
- made_extensive_doc(false)
+ made_extensive_doc(false),
+ finished(false)
 {}
 
 std::ostream& Record::RecordData::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
@@ -165,23 +162,20 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 : Record(type_name_in, description),
   child_data_( boost::make_shared<ChildData>( type_name_in + "_selection" ) )
 {
-    // make our own copy of type object allocated at heap (could be expensive, but we don't care)
-    boost::shared_ptr< Selection<unsigned int> > type_copy = boost::make_shared< Selection<unsigned int> >(child_data_->selection_of_childs);
 
-//    data_->declare_key("TYPE", type_copy, DefaultValue(DefaultValue::obligatory),
-//                 "Sub-record selection.");
+    // declare very first item of any descendent
+    data_->declare_key("TYPE", child_data_->selection_of_childs, DefaultValue(DefaultValue::obligatory),
+                 "Sub-record selection.");
 
-    finished=false;
 }
 
 
 
 void AbstractRecord::add_descendant(const Record &subrec)
 {
-    if (!finished)
-        xprintf(PrgErr, "Can not add descendant to unfinished AbstractType.\n");
+    ASSERT( is_finished(), "Can not add descendant to unfinished AbstractType.\n");
 
-    child_data_->selection_of_childs.add_value(child_data_->list_of_childs.size(), subrec.type_name());
+    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
     child_data_->list_of_childs.push_back(subrec);
 }
 
@@ -191,7 +185,7 @@ void AbstractRecord::no_more_descendants()
 {
     if (child_data_.use_count() == 0)
             xprintf(PrgErr, "Can not close empty AbstractRecord handle.\n");
-    child_data_->selection_of_childs.finish();
+    child_data_->selection_of_childs->finish();
 
 }
 
@@ -210,7 +204,7 @@ void  AbstractRecord::reset_doc_flags() const {
 
 std::ostream& AbstractRecord::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
-    if (! finished) xprintf(PrgErr, "Can not provide documentation of unfinished Record type: %s\n", type_name().c_str());
+    ASSERT(is_finished(), "Can not provide documentation of unfinished Record type: %s\n", type_name().c_str());
 
     if (! extensive) {
 
@@ -230,7 +224,9 @@ std::ostream& AbstractRecord::documentation(std::ostream& stream, bool extensive
         // descendants
         for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
                     it!= child_data_->list_of_childs.end(); ++it) {
-            it->documentation( stream , false, pad +4 ); // short description of the type of the key
+            stream << setw(pad+4) << "";
+            it->documentation( stream , false, 0 ); // short description of the type of the key
+            stream << endl;
         }
         stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
         << " " << type_name() << endl;
@@ -253,11 +249,17 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 {
     unsigned int idx;
 
-    ASSERT( finished, "Can not get descendant of unfinished AbstractType\n");
-    idx = child_data_->selection_of_childs.name_to_int(name);
+    ASSERT( is_finished(), "Can not get descendant of unfinished AbstractType\n");
+    return get_descendant( child_data_->selection_of_childs->name_to_int(name) );
+}
+
+
+const Record  & AbstractRecord::get_descendant(unsigned int idx) const
+{
     ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
     return child_data_->list_of_childs[idx];
 }
+
 
 
 

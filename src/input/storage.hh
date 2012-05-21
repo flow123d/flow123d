@@ -48,6 +48,9 @@ public:
     virtual const StorageBase * get_item(const unsigned int index) const;
     virtual bool is_null() const =0;
     virtual unsigned int get_array_size() const;
+
+    virtual StorageBase *deep_copy()=0;
+
     virtual ~StorageBase();
 
 };
@@ -59,10 +62,12 @@ public:
 class StorageArray : public StorageBase {
 public:
     StorageArray(unsigned int size);
+    StorageArray(const StorageArray &); // deep copy for test purpose
     void new_item(unsigned int index, StorageBase* item);
     virtual const StorageBase * get_item(const unsigned int index) const;
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
+    virtual StorageBase *deep_copy();
     virtual ~StorageArray();
 private:
     /// Forbids default constructor to have array set to NULL.
@@ -76,6 +81,7 @@ public:
     StorageBool(bool value);
     virtual bool get_bool() const;
     virtual bool is_null() const;
+    virtual StorageBase *deep_copy();
     virtual ~StorageBool();
 private:
     bool value_;
@@ -86,6 +92,7 @@ public:
     StorageInt(int value);
     virtual int get_int() const;
     virtual bool is_null() const;
+    virtual StorageBase *deep_copy();
     virtual ~StorageInt();
 
 private:
@@ -97,6 +104,7 @@ public:
     StorageDouble(double value);
     virtual double get_double() const;
     virtual bool is_null() const;
+    virtual StorageBase *deep_copy();
     virtual ~StorageDouble();
 
 private:
@@ -108,6 +116,7 @@ public:
     StorageString(const string & value);
     virtual const string & get_string() const;
     virtual bool is_null() const;
+    virtual StorageBase *deep_copy();
     virtual ~StorageString();
 
 private:
@@ -116,6 +125,7 @@ private:
 
 class StorageNull : public StorageBase {
     virtual bool is_null() const;
+    virtual StorageBase *deep_copy();
     virtual ~StorageNull();
 
 };

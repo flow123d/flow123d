@@ -158,7 +158,7 @@ public:
     /**
      * Default constructor. Set all types finished after construction.
      */
-    TypeBase() : finished(true) {}
+    TypeBase() {}
     /**
      * @brief Implementation of documentation printing mechanism.
      *
@@ -179,8 +179,8 @@ public:
     virtual void  reset_doc_flags() const =0;
 
     /// Returns true if the type is fully specified. In particular for Record and Selection, it returns true after @p finish() method is called.
-    inline bool is_finished() const
-    {return finished;}
+    virtual bool is_finished() const
+    {return true;}
 
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  =0;
@@ -190,6 +190,9 @@ public:
 
     bool operator!=(const TypeBase & other) const
         { return ! (*this == other); }
+
+    /// Empty virtual destructor.
+    virtual ~TypeBase( void ) {}
 
 protected:
     /**
@@ -214,14 +217,6 @@ protected:
      * we allow identifiers starting with a digit, but it is discouraged since it slows down parsing of the input file.
      */
     static bool is_valid_identifier(const string& key);
-
-    /// Empty virtual destructor.
-    virtual ~TypeBase( void ) {}
-
-    /**
-     * Flag that is true for types with completed declaration. This provides nontrivial information only for Record and Selection.
-     */
-    bool finished;
 
 
 };

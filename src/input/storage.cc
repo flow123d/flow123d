@@ -74,7 +74,14 @@ StorageArray::StorageArray(unsigned int size)
         *it=NULL;
 }
 
+ StorageBase * StorageArray::deep_copy() {
+    StorageArray *copy = new StorageArray(this->get_array_size());
 
+    for(int i=0; i< array_.size(); i++)
+        if (array_[i] != NULL) copy->new_item(i, array_[i]->deep_copy() );
+
+    return copy;
+}
 
 void StorageArray::new_item(unsigned int index, StorageBase* item) {
     ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
@@ -129,6 +136,12 @@ bool StorageBool::is_null() const {
 }
 
 
+
+ StorageBase * StorageBool::deep_copy() {
+    return new StorageBool(value_);
+}
+
+
 StorageBool::~StorageBool()
 {}
 
@@ -154,6 +167,9 @@ bool StorageInt::is_null() const {
     return false;
 }
 
+ StorageBase * StorageInt::deep_copy() {
+    return new StorageInt(value_);
+}
 
 
 StorageInt::~StorageInt()
@@ -181,7 +197,9 @@ bool StorageDouble::is_null() const {
     return false;
 }
 
-
+ StorageBase * StorageDouble::deep_copy() {
+    return new StorageDouble(value_);
+}
 
 StorageDouble::~StorageDouble()
 {}
@@ -209,6 +227,10 @@ bool StorageString::is_null() const {
 }
 
 
+ StorageBase * StorageString::deep_copy() {
+    return new StorageString(value_);
+}
+
 
 StorageString::~StorageString()
 {}
@@ -221,6 +243,12 @@ StorageString::~StorageString()
 
 bool StorageNull::is_null() const {
     return true;
+}
+
+
+
+ StorageBase * StorageNull::deep_copy() {
+    return new StorageNull();
 }
 
 

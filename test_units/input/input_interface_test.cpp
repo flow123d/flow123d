@@ -36,8 +36,9 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
+        {
         // declare structure of input file
-        main = new Record("MainRecord","desc");
+        this->main = new Record("MainRecord","desc");
 
         Record sub_record("SubRecord","desc");
         sub_record.declare_key("array_of_int", Array(Integer()), "desc");
@@ -55,9 +56,45 @@ protected:
         main->declare_key("some_bool", Bool(), "desc");
         main->declare_key("some_string", String(), "desc");
         main->finish();
+        }
 
-        // read data storage tree
-        this->storage = new Input::Interface::Storage();
+        // construct some storage
+
+
+        {
+            using namespace Input;
+
+            StorageArray * sub_array_int = new StorageArray(2);
+            sub_array_int->new_item(0, new StorageInt(1));
+            sub_array_int->new_item(1, new StorageInt(2));
+
+            StorageArray * sub_rec = new StorageArray(5);
+            sub_rec->new_item(0, sub_array_int->deep_copy());
+            sub_rec->new_item(1, new StorageInt(123));
+            sub_rec->new_item(2, new StorageDouble(1.23));
+            sub_rec->new_item(3, new StorageBool(true));
+            sub_rec->new_item(4, new StorageString("123"));
+
+            StorageArray * sub_array_sub_rec = new StorageArray(2);
+            sub_array_sub_rec->new_item(0, sub_rec->deep_copy());
+            sub_array_sub_rec->new_item(1, sub_rec->deep_copy());
+
+            StorageArray * main_array = new StorageArray(7);
+            main_array->new_item(0, sub_rec->deep_copy());
+            main_array->new_item(1, sub_array_int->deep_copy());
+            main_array->new_item(2, sub_array_sub_rec->deep_copy());
+            main_array->new_item(3, new StorageInt(456));
+            main_array->new_item(4, new StorageDouble(4.56));
+            main_array->new_item(5, new StorageBool(false));
+            main_array->new_item(6, new StorageString("456"));
+
+            delete sub_array_int;
+            delete sub_rec;
+            delete sub_array_sub_rec;
+
+            this->storage = main_array;
+
+        }
 
     }
 
@@ -70,19 +107,27 @@ protected:
     ::Input::Interface::Storage * storage;
 };
 
-TEST_F(InputInterfaceTest, test_reading) {
+TEST_F(InputInterfaceTest, ReadFromRecord) {
     using namespace Input::Interface;
 
-    Record record(*storage, *main);
+    Record record(storage, *main);
 
     // read scalar keys
     int i;
         i = record.key<int>("some_integer");
+        EXPECT_EQ(456,i);
         i = record.key<char>("some_integer");
+        EXPECT_EQ((char)(456),i);
         i = record.key<short int>("some_integer");
+        EXPECT_EQ((short int)(456),i);
 
     double d = record.key<double>("some_double");
+           EXPECT_EQ(4.56, d);
            d = record.key<float>("some_double");
+           EXPECT_EQ((float)4.56, d);
+
+    EXPECT_EQ(true, record.has_key("some_double", d));
+    EXPECT_EQ(4.56, d);
 
     bool b = record.key<bool>("some_bool");
     string s = record.key<string>("some_string");
@@ -94,19 +139,45 @@ TEST_F(InputInterfaceTest, test_reading) {
     // read array key
     Array array = record.key<Array>("array_of_int");
 
-    // reading scalars form array
-    std::vector<int> vec_int;
-    //array.copy_to(vec_int);
+}
 
+struct Data {
+    bool b;
+    int i;
+    double d;
+    string s;
+};
+
+TEST_F(InputInterfaceTest, ReadFromArray) {
+    using namespace Input::Interface;
+
+    Record record(storage, *main);
+    Array array = record.key<Array>("array_of_int");
+
+    std::vector<int> vec_int;
+    // reading scalars form array - manually
     for(Iterator<int> it=array.begin<int>(); it != array.end(); ++it) vec_int.push_back(*it);
+    // using copy_to method template
+    array.copy_to(vec_int);
+
+
 
     array = record.key<Array>("array_of_sub_rec");
 
+    Data * data_array = new Data[array.size()];
+
     // can not use copy_to for this type !!!
-    for(Iterator<Record> it = array.begin<Record>(); it != array.end(); ++ it ) {
-        i = (*it).key<int>("some_integer");
+    int idx=0;
+    for(Iterator<Record> it = array.begin<Record>(); it != array.end(); ++it, ++idx ) {
+        data_array[idx].b = it->key<bool>("some_bool");
+        if (it->has_key("some_int", data_array[idx].i) ) {
+            xprintf(Msg, "OK.");
+        }
+        it->has_key("some_double", data_array[idx].d);
+        it->has_key("some_string", data_array[idx].s);
+
     }
 
-
-
+    delete[] data_array;
 }
+

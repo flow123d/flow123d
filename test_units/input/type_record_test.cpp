@@ -41,7 +41,7 @@ using namespace Input::Type;
 
    // errors during declaration
    Record rec_empty;
-   EXPECT_DEATH( {rec_empty.declare_key("xx", Integer(), "");}, "of an empty Record proxy.");
+   EXPECT_DEATH( {rec_empty.declare_key("xx", Integer(), "");}, "Empty Record handle.");
 
    Record rec_fin("xx","");
    rec_fin.finish();
@@ -71,7 +71,7 @@ using namespace Input::Type;
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
 
    // test correct finishing.
-   EXPECT_DEATH( {rec.documentation(cout);}, "Can not provide documentation of unfinished Record type: ");
+   EXPECT_DEATH( {rec.documentation(cout);}, "Asking for information of unfinished Record type");
 
    //EXPECT_DEATH( { rec.declare_key("x", *sel, "desc.");},
    //             "Complex type .* shared_ptr.");
@@ -191,6 +191,23 @@ using namespace Input::Type;
 
 }
 
+TEST(InputTypeRecord, RecordCopy) {
+using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    Record output_record("OutputRecord", "");
+    output_record.declare_key("file", FileName( output_file ), "");
+
+
+    Record copy_rec = output_record;
+
+    Integer digits_type((int)0, (int)8);
+    copy_rec.declare_key("digits",digits_type, "");
+    copy_rec.finish();
+
+    EXPECT_EQ( true, output_record.is_finished());
+    EXPECT_EQ( true, output_record.has_key("digits") );
+}
 
 /**
  * Test Abstract Record.
@@ -205,16 +222,23 @@ using namespace Input::Type;
     a_rec.declare_key("a_val", String(), DefaultValue(DefaultValue::obligatory), "");
     a_rec.finish();
 
+    EXPECT_EQ(0, a_rec.key_index("TYPE"));
+    EXPECT_EQ(Selection<unsigned int>("EqBase_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
+
+
     Record b_rec("EqDarcy","");
     b_rec.derive_from(a_rec);
     b_rec.declare_key("b_val", Integer(), "");
     b_rec.finish();
+    EXPECT_EQ(0, b_rec.key_index("TYPE"));
+    EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
 
     Record c_rec("EqTransp","");
     c_rec.derive_from(a_rec);
     c_rec.declare_key("c_val", Integer(), "");
     c_rec.declare_key("a_val", Double(),"");
     c_rec.finish();
+    EXPECT_EQ(0, c_rec.key_index("TYPE"));
 
     a_rec.no_more_descendants();
 

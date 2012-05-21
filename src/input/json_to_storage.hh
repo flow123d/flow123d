@@ -4,6 +4,12 @@
  *  Created on: May 7, 2012
  *      Author: jb
  *
+ * TODO:
+ *  EI_InputType - passing pointer is not save. The object can be deleted during stack unfolding.
+ *  Error_info can not be used for abstract types (of course), the only save way is to
+ *  use  boost::shared_ptr, so make the copy our self by make_shared and then only pass the pointer.
+ *
+ *  These problems can be eliminated, when all Type instances are static.
  *
  * TODO:
  * - check cyclic references, drop const for json_spirit pointers and modify REF keys
@@ -67,6 +73,9 @@ public:
      */
     void up();
 
+    /**
+     * Move to root node.
+     */
     void go_to_root();
 
     /**
@@ -86,8 +95,24 @@ public:
      * If yes, returns the string through reference @p ref_address.
      */
     bool get_ref_from_head(string & ref_address);
+
+    /**
+     * Looks for key 'TYPE' and possibly return its value Node.
+     */
+    const Node * get_abstract_type_from_head();
+
+    /**
+     * Creates a new JSONPath object given by  address string possibly relative to the current
+     * path.
+     */
     JSONPath find_ref_node(const string& ref_address);
+    /**
+     * Output to the given stream.
+     */
     void output(ostream &stream) const;
+    /**
+     * Returns string address of current position.
+     */
     string str();
 
 private:
@@ -123,7 +148,8 @@ public:
     TYPEDEF_ERR_INFO( EI_JSONLine, unsigned int);
     TYPEDEF_ERR_INFO( EI_JSONColumn, unsigned int);
     TYPEDEF_ERR_INFO( EI_JSONReason, string);
-    DECLARE_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at " << EI_JSONLine::val << ":" << EI_JSONColumn::val
+    DECLARE_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at line "
+            << EI_JSONLine::val << " : col " << EI_JSONColumn::val
             << " ; reason: " << EI_JSONReason::val << "\n" );
 
     JSONToStorage();
@@ -167,7 +193,8 @@ protected:
 template <class T>
 Interface::Iterator<T> JSONToStorage::get_root_interface() const
 {
-    return Interface::Iterator<T>( *root_type_, *storage_, 0);
+
+    return Interface::Iterator<T>( *root_type_, storage_, 0);
 }
 
 

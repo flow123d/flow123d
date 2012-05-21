@@ -66,8 +66,7 @@ public:
     /**
      * Default constructor. Empty handle.
      */
-    Record()
-    { finished=false; }
+    Record() {}
 
     /**
      * Basic constructor. You has to provide @t type_name of the new declared Record type and
@@ -94,8 +93,8 @@ public:
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
 
-        if (data_.use_count() == 0) xprintf(PrgErr, "Can not declare a new key `%s` of an empty Record proxy.\n", key.c_str());
-        if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name().c_str());
+        empty_check();
+        if (is_finished() ) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name().c_str());
 
         // If KeyType is not derived from Scalar, we check emptiness of the default value.
         if (boost::is_base_of<Scalar, KeyType>::value == false && default_value.has_value() )
@@ -129,7 +128,15 @@ public:
     /**
      * Finish declaration of the Record type. Now further declarations can be added.
      */
-    void finish() { finished = true; }
+    void finish() {
+        empty_check();
+        data_->finished = true;
+    }
+
+    virtual bool is_finished() const {
+        empty_check();
+        return data_->finished;
+    }
 
     /**
      * @brief Implements @p Type:TypeBase::documentation.
@@ -154,7 +161,7 @@ public:
      */
     inline unsigned int key_index(const string& key) const
     {
-        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
+        finished_check();
         KeyHash key_h = key_hash(key);
         RecordData::key_to_index_const_iter it = data_->key_to_index.find(key_h);
         if (it != data_->key_to_index.end()) return it->second;
@@ -164,25 +171,44 @@ public:
         return size();
     }
 
+
     /**
      * Returns iterator to the key struct for given key string.
      *
      */
     inline KeyIter key_iterator(const string& key) const
     {
-        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
+        finished_check();
         return begin() + key_index(key);
     }
 
+    /**
+     * Returns iterator to the key struct for given key string.
+     *
+     */
+    inline bool has_key_iterator(const string& key, KeyIter &it) const
+    {
+        finished_check();
+        KeyHash key_h = key_hash(key);
+        RecordData::key_to_index_const_iter data_it = data_->key_to_index.find(key_h);
+        if (data_it == data_->key_to_index.end()) {
+            return false;
+        } else {
+            it = begin()+data_it->second;
+            return true;
+        }
+    }
+
+
     inline KeyIter begin() const
     {
-        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
+        finished_check();
         return data_->keys.begin();
     }
 
     inline KeyIter end() const
     {
-        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
+        finished_check();
         return data_->keys.end();
     }
 
@@ -192,13 +218,21 @@ public:
     }
 
     inline unsigned int size() const {
-        ASSERT( finished, "Asking for information of unfinished Record type: %s\n", type_name().c_str());
+        finished_check();
         ASSERT( data_->keys.size() == data_->key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", data_->key_to_index.size(), data_->keys.size());
         return data_->keys.size();
     }
 
 
 protected:
+
+    inline void empty_check() const {
+        ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
+    }
+
+    inline void finished_check() const {
+        ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
+    }
 
     /**
      * Internal data class.
@@ -235,6 +269,8 @@ protected:
          */
         mutable bool made_extensive_doc;
 
+        bool finished;
+
     };
 
 
@@ -253,10 +289,10 @@ protected:
     class ChildData {
     public:
         ChildData(const string &name)
-        : selection_of_childs( name )
+        : selection_of_childs( boost::make_shared<Selection<unsigned int> > (name) )
         {}
 
-        Selection<unsigned int> selection_of_childs;
+        boost::shared_ptr< Selection<unsigned int> > selection_of_childs;
         vector< Record > list_of_childs;
     };
 
@@ -287,6 +323,9 @@ public:
     virtual void  reset_doc_flags() const;
 
     const Record  &get_descendant(const string& name) const;
+
+    const Record  &get_descendant(unsigned int idx) const;
+
 
 protected:
     boost::shared_ptr<ChildData> child_data_;

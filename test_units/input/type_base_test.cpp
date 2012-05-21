@@ -145,7 +145,7 @@ using namespace Input::Type;
     EXPECT_DEATH( {sel2.add_value(yellow,"y");}, "in finished Selection type:");
 
     Selection<int> sel3;
-    EXPECT_DEATH( {sel3.add_value(1,"one");}, "to empty selection handle." );
+    EXPECT_DEATH( {sel3.add_value(1,"one");}, "Empty Selection handle." );
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
