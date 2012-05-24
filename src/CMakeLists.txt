@@ -92,6 +92,7 @@ set(sources_lib_system
     system/xio.cc
     system/exceptions.cc
     io/read_ini.cc
+    system/file_path.cc
 )
 
 set(sources_lib_input
