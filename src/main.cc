@@ -32,6 +32,7 @@
 
 #include "system/system.hh"
 #include "hc_explicit_sequential.hh"
+#include "input/input_type.hh"
 
 #include "main.h"
 #include "io/read_ini.h"
@@ -99,6 +100,13 @@ void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
     }
 }
 
+Input::Type::Record declare_root_record() {
+    using namespace Input::Type;
+    Record main_rec("Root", "Root record of JSON input for Flow123d.");
+    main_rec.declare_key();
+
+}
+
 //=============================================================================
 
 /**
@@ -111,6 +119,7 @@ int main(int argc, char **argv) {
 
     parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
 
+    Input:Type::Record main_record_type declare_main_record();
 
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database

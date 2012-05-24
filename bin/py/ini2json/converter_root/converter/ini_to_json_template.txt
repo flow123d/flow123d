@@ -1,0 +1,132 @@
+// type signatures
+// bool 				- result is "yes" or "no"
+// enum( old_value>new_value, ...) 	- just string translator
+// double
+// string
+
+[Global]
+Problem_type	  = "/problem/primary_equation/TYPE=enum(0>error, 1>steady_mh, 2>unsteady_mh, 3>error, 4>unsteady_lmh)" !!!
+                   
+Description       = "/problem/description=string"
+Stop_time	  = "/problem/time_governor/end_time=double"		// 1
+Time_step	  = "/problem/time_governor/time_step=double"
+Save_step 	  = "/problem/Save_step=double"
+Density_step      = "/zz_not_supported/global/density_step=double"
+
+[Density]
+Density_max_iter  = "/zz_not_supported/density/density_max_iter=int"
+Density_implicit  = "/zz_not_supported/density/density_implicit=bool"
+Eps_iter          = "/zz_not_supported/density/eps_iter=int"
+Write_iterations  = "/zz_not_supported/density/write_iterations=bool"
+
+[Input]
+File_type         = "/zz_not_supported/input/file_type="
+Mesh              = "/problem/mesh/file=string"
+Material          = "/material=string"
+Boundary          = "/problem/primary_equation/boundary_file=string"
+Neighbouring      = "/problem/mesh/neighbouring=string"	// ./input/test3.ngh
+Initial	          	= "/problem/primary_equation/initial_file=string"
+Sources			="/problem/primary_equation/sources_file=string"
+sources_formula		="/problem/primary_equation/sources_formula=string"
+
+[Transport]
+Transport_on	  	= "/problem/secondary_equation=enum(false>NULL, true>NOTHING)" !!!
+Sorption 	  	= "/problem/secondary_equation/sorption_enable=bool" ZMENENO KVULI KONFLIKTU S MATERIALY
+Dual_porosity	  	= "/problem/secondary_equation/dual_porosity=bool"
+Reactions	  	= "/problem/secondary_equation/reactions=bool"
+Concentration	  	= "/problem/secondary_equation/initial_file=string"
+Transport_BCD	  	= "/problem/secondary_equation/boundary_file=string"
+Transport_out     	= "/system/output_streams/2/file=string"
+
+Transport_out_im     	= NULL
+Transport_out_sorp     	= NULL
+Transport_out_im_sorp  	= NULL
+N_substances      	= NULL !!!
+Substances	  	= "/problem/secondary_equation/substances=array of string" !!! kontrola velikosti vuci N_substances
+Substances_density_scales = "/zz_not_supported/transport/substances_density_scales=array of double"
+bc_times                = "/problem/secondary_equation/bc_times=array of int"
+
+[Run]
+Log_file          = NULL
+Screen_verbosity  = NULL
+Log_verbosity     = NULL
+Pause_after_run   = "/system/pause_after_run=bool"	
+Checkpoints       = NULL
+
+[Solver]
+Use_last_solution = NULL
+Keep_solver_files = NULL
+Manual_solver_run = NULL
+Use_control_file  = NULL
+Control_file      = NULL
+Solver_accuracy   = "/problem/primary_equation/solver/accuracy=double"
+Solver_name       = "/problem/primary_equation/solver/TYPE=string"
+Solver_params     = "/problem/primary_equation/solver/parameters=string"
+NSchurs		  = "/problem/primary_equation/n_schurs=int"
+max_it		  = "/problem/primary_equation/solver/max_it=int"
+
+
+
+[Output]
+Write_output_file = NULL
+Output_file       = "/system/output_streams/1/file=string"
+Output_file_2     = "/zz_not_supported/output/output_file_2=string"
+Output_digits     = NULL
+Output_file_type  = "/zz_not_supported/output/output_file_type=string"
+
+Write_ftrans_out = "/zz_not_supported/output/write_ftrans_out=string"
+
+Cross_section = "/zz_not_supported/output/cross_section="
+Cs_params = "/zz_not_supported/output/cs_params="
+Specify_elm_type = "/zz_not_supported/output/specify_elm_type="
+Output_elm_type = "/zz_not_supported/output/output_elm_type="
+
+BTC_elms = "/zz_not_supported/output/btc_elms="
+FCs_params = "/zz_not_supported/output/fcs_params="
+
+POS_format = "/system/output_streams/1/format=enum( ASCII>gmsh_ascii, VTK_SERIAL_ASCII>vtk_ascii)"	!!!
+
+POS_set_view      = "/zz_not_supported/output/pos_set_view="
+POS_view_params   = "/zz_not_supported/output/pos_view_params="
+
+balance_output = "/problem/primary_equation/balance_output=string"
+
+[Constants]
+g		  ="/zz_not_supported/constants/g="
+rho		  ="/zz_not_supported/constants/rho="
+
+[Solver parameters] // everithing to "/zz_not_supported/solver parameters/"
+
+method 	 	== "/zz_not_supported/solver parameters/method=" fgmres
+restart	 	= "/zz_not_supported/solver parameters/restart=" 20
+max_it	 	= "/zz_not_supported/solver parameters/max_it=" 1000
+r_tol	 	= "/zz_not_supported/solver parameters/r_tol=" 1e-19
+a_tol 	 	= "/zz_not_supported/solver parameters/a_tol=" 1e-11
+stop_crit	= "/zz_not_supported/solver parameters/stop_crit=" backerr
+be_tol 	 	= "/zz_not_supported/solver parameters/be_tol=" 1e-25
+stop_test	= "/zz_not_supported/solver parameters/stop_test=" 1
+scaling   	= "/zz_not_supported/solver parameters/scaling=" mc29_30
+precond   	= "/zz_not_supported/solver parameters/precond=" ilu
+sor_omega 	= "/zz_not_supported/solver parameters/sor_omega=" 1.0
+ilu_cpiv  	= "/zz_not_supported/solver parameters/ilu_cpiv=" 0
+ilu_droptol = "/zz_not_supported/solver parameters/ilu_droptol=" 1e-4
+ilu_dskip 	= "/zz_not_supported/solver parameters/ilu_dskip=" 10000
+ilu_lfil 	= "/zz_not_supported/solver parameters/ilu_lfil=" -1
+ilu_milu 	= "/zz_not_supported/solver parameters/ilu_milu=" 0
+
+
+[New keys]
+TYPE="/problem/TYPE=data(sequential_coupling)"
+name="/system/output_streams/1/name=data(flow_output_stream)"
+velocity_p0="/problem/primary_equation/output/velocity_p0=data(flow_output_stream)"
+pressure_p0="/problem/primary_equation/output/pressure_p0=data(flow_output_stream)"
+pressure_p1="/problem/primary_equation/output/pressure_p1=data(flow_output_stream)"
+
+name="/system/output_streams/2/name=data(transport_output_stream)"
+mobile_p0="/problem/secondary_equation/output/mobile_p0=data(transport_output_stream)"
+[Settings] //parameters needs to stay in this order
+Decay adress = "/problem/reactions/decays"
+Substances name = "Substances"
+Half life name = "Half_life"
+Bifurcations name = "Probability"
+Kinetic name = "Kinetic"
