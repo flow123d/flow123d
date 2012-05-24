@@ -28,7 +28,7 @@
 #include "input/input_type.hh"
 #include "input/input_interface.hh"
 #include "input/storage.hh"
-#include "json_spirit.h"
+#include "json_spirit/json_spirit.h"
 
 
 namespace Input {

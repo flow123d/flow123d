@@ -11,7 +11,7 @@
 #include "json_to_storage.hh"
 #include "input/comment_filter.hh"
 
-#include "json_spirit_error_position.h"
+#include "json_spirit/json_spirit_error_position.h"
 
 namespace Input {
 using namespace std;

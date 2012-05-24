@@ -21,6 +21,8 @@
 # $LastChangedDate$
 #
 
+add_subdirectory("input/json_spirit")
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #message(STATUS "Include directories: ${flow123d_includes}")
 #include_directories(${flow123d_includes})

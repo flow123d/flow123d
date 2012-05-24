@@ -182,8 +182,6 @@ endif()
 
 ############################################################33 process subdirectories
 
-# add json_sprit sources
-add_subdirectory( ${CMAKE_SOURCE_DIR}/third_party/json_spirit )
 
 # add fparser sources
 add_subdirectory(third_party/fparser-4.4.3)
