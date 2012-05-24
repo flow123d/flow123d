@@ -55,7 +55,7 @@
 
 
 namespace Input {
-namespace Interface {
+
 
 // exceptions and error_info types
 
@@ -159,7 +159,7 @@ public:
 
     /**
      * Same as previous, but with default value given now at read time instead at time of declaration. You must use this variant if the key is declared with
-     * @p DefaultValue type @p read_time.
+     * @p Default type @p read_time.
      */
     /*
     template <class Ret>
@@ -180,6 +180,7 @@ private:
 
 
 class AbstractRecord {
+public:
     AbstractRecord(const AbstractRecord &rec)
     : record_type_(rec.record_type_), storage_(rec.storage_)
     {}
@@ -210,7 +211,8 @@ class AbstractRecord {
      */
     Input::Type::Record type()
     {
-        record_type_.get_descendant("Co?");
+        unsigned int type_id = storage_->get_item(0)->get_int();
+        return record_type_.get_descendant(type_id);
     }
 
 
@@ -400,6 +402,17 @@ struct TypeDispatch<string> {
     static inline ReadType value(const Storage *s, const InputType&) { return s->get_string(); }
 };
 
+
+template<>
+struct TypeDispatch<AbstractRecord> {
+    typedef Input::Type::AbstractRecord InputType;
+    typedef AbstractRecord ReadType;
+    static inline ReadType value(const Storage *s, const InputType& t) { return AbstractRecord(s, t); }
+
+    static Record temporary_;
+};
+
+
 template<>
 struct TypeDispatch<Record> {
     typedef Input::Type::Record InputType;
@@ -418,7 +431,14 @@ struct TypeDispatch<Array> {
     static Array temporary_;
 };
 
+template<>
+struct TypeDispatch<FilePath> {
+    typedef Input::Type::FileName InputType;
+    typedef FilePath ReadType;
+    static inline ReadType value(const Storage *s, const InputType& t) { return FilePath(s->get_string(), t.get_file_type() ); }
 
+    static Array temporary_;
+};
 
 
 /**
@@ -438,14 +458,9 @@ public:
 
     static InputType type_check_and_convert(const Input::Type::TypeBase &type)
     {
-
-        DBGMSG("Converting from: %s to %s.\n", typeid(type).name(), typeid(InputType).name() );
         if ( typeid(type) == typeid(InputType)) {
-            DBGMSG("Success\n");
             return static_cast< const InputType & >( type );
         } else {
-            DBGMSG("Throw\n");
-            //DBGMSG("type: '%s' input type: '%s'\n", typeid(type).name(), typeid(InputType).name() );
             THROW( ExcTypeMismatch()
                     //<< EI_InputType( boost::make_shared<Input::Type::TypeBase>(type) )
                     << EI_RequiredType( typeid(InputType).name() ) );
@@ -518,7 +533,6 @@ private:
  * Implementation of Iterator<T>
  */
 
-} // closing nemaspace Read
 } // closing namespace Input
 
 #endif

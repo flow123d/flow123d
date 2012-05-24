@@ -21,22 +21,22 @@ using namespace Input::Type;
 
 
    // make auxiliary record and test declare_key for
-   // - various Scalar types (excluding Selection): Integer, Bool, Double, String, FileName
+   // - various Scalar types (excluding Selection): Integer, Bool, Double, String, FilePath
    // - various decalre_key templates: with/without default, shared_ptr/ reference
    // - various default values
    static Record rec("SomeRecord", "desc.");
 
-   rec.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional), "desc.");
+   rec.declare_key("file", FileName::output(), Default::optional(), "desc.");
 
    Integer digits_type(0, 8);
-   rec.declare_key("digits",digits_type, DefaultValue("8"), "desc.");
+   rec.declare_key("digits",digits_type, Default("8"), "desc.");
 
    rec.declare_key("compression", Bool(),"desc.");
 
    Double time_type(0.0);
    rec.declare_key("start_time", time_type,"desc.");
 
-   rec.declare_key("data_description", String(),DefaultValue(),"");
+   rec.declare_key("data_description", String(), Default::optional(),"");
 
 
    // errors during declaration
@@ -47,17 +47,13 @@ using namespace Input::Type;
    rec_fin.finish();
    EXPECT_DEATH( {rec_fin.declare_key("xx", String(),"");}, "in finished Record type:");
 
-   EXPECT_DEATH( {rec.declare_key("ar",Array(Integer()), DefaultValue("[0, 1]"), "");} , "Default value for non scalar type in declaration of key:");
+   EXPECT_DEATH( {rec.declare_key("ar",Array(Integer()), Default("[0, 1]"), "");} , "Default value for non scalar type in declaration of key:");
 
    Record rec_unfin("yy","");
    EXPECT_DEATH({rec.declare_key("yy", rec_unfin, ""); }, "Unfinished type of declaring key:");
 
    EXPECT_DEATH( { rec.declare_key("data_description", String(),"");},
                 "Re-declaration of the key:");
-
-   EXPECT_DEATH( { DefaultValue d(DefaultValue::declaration);},
-                "Can not construct DefaultValue with type 'declaration' without providing the default value.");
-
 
    enum Colors {
        white, black, red
@@ -71,7 +67,7 @@ using namespace Input::Type;
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
 
    // test correct finishing.
-   EXPECT_DEATH( {rec.documentation(cout);}, "Asking for information of unfinished Record type");
+   EXPECT_DEATH( {rec.size();}, "Asking for information of unfinished Record type");
 
    //EXPECT_DEATH( { rec.declare_key("x", *sel, "desc.");},
    //             "Complex type .* shared_ptr.");
@@ -95,11 +91,11 @@ using namespace Input::Type;
     array_record.declare_key("array_of_5_ints", array_of_int,"Some bizare array.");
 
     // array type passed by reference
-    array_record.declare_key("array_of_str", Array( String() ), DefaultValue(),"Desc. of array");
-    array_record.declare_key("array_of_str_1", Array( String() ), DefaultValue(), "Desc. of array");
+    array_record.declare_key("array_of_str", Array( String() ),"Desc. of array");
+    array_record.declare_key("array_of_str_1", Array( String() ), "Desc. of array");
 
 
-    ASSERT_DEATH( {array_record.declare_key("some_key", Array( String() ), DefaultValue("10"), ""); },
+    ASSERT_DEATH( {array_record.declare_key("some_key", Array( String() ), Default("10"), ""); },
                   "Default value for non scalar type in declaration of key:"
                  );
     array_record.finish();
@@ -134,11 +130,11 @@ TEST(InputTypeRecord, iterating) {
     Record output_record("OutputRecord",
             "Information about one file for field data.");
     {
-        output_record.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
+        output_record.declare_key("file", FileName::output(), Default::optional(),
                 "File for output stream.");
 
         Integer digits_type((int)0, (int)8);
-        output_record.declare_key("digits",digits_type, DefaultValue("8"),
+        output_record.declare_key("digits",digits_type, Default("8"),
                 "Number of digits used for output double values into text output files.");
         output_record.declare_key("compression", Bool(),
                 "Whether to use compression of output file.");
@@ -146,7 +142,7 @@ TEST(InputTypeRecord, iterating) {
         Double time_type(0.0);
         output_record.declare_key("start_time", time_type,
                 "Simulation time of first output.");
-        output_record.declare_key("data_description", String(),DefaultValue(),
+        output_record.declare_key("data_description", String(),
                 "");
         output_record.finish();
     } // delete local variables
@@ -157,7 +153,7 @@ TEST(InputTypeRecord, iterating) {
     EXPECT_EQ("file", it->key_);
     EXPECT_EQ("File for output stream.", it->description_);
     EXPECT_EQ(typeid(FileName) , typeid(*(it->type_)));
-    EXPECT_EQ(output_file, static_cast<const FileName *>( &(*it->type_) )->get_file_type() );
+    EXPECT_EQ(FilePath::output_file, static_cast<const FileName *>( &(*it->type_) )->get_file_type() );
     it+=4;
     EXPECT_EQ( "data_description", it->key_);
     EXPECT_EQ( output_record.end(), it+1 );
@@ -196,7 +192,7 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord", "");
-    output_record.declare_key("file", FileName( output_file ), "");
+    output_record.declare_key("file", FileName::output(), "");
 
 
     Record copy_rec = output_record;
@@ -218,8 +214,8 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     AbstractRecord a_rec("EqBase","Base of equation records.");
-    a_rec.declare_key("mesh", String(), DefaultValue(DefaultValue::obligatory), "Comp. mesh.");
-    a_rec.declare_key("a_val", String(), DefaultValue(DefaultValue::obligatory), "");
+    a_rec.declare_key("mesh", String(), Default::obligatory(), "Comp. mesh.");
+    a_rec.declare_key("a_val", String(), Default::obligatory(), "");
     a_rec.finish();
 
     EXPECT_EQ(0, a_rec.key_index("TYPE"));

@@ -102,10 +102,13 @@ TEST(InputTypeScalar, all_types) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    EXPECT_EQ( FileName(output_file), FileName(output_file) );
-    EXPECT_NE( FileName(output_file), FileName(input_file) );
-    EXPECT_NE( FileName(output_file), Integer() );
-    EXPECT_EQ( output_file, FileName(output_file).get_file_type() );
+    // test equivalence operator
+    EXPECT_EQ( FileName::output(), FileName::output() );
+    EXPECT_NE( FileName::output(), FileName::input() );
+    EXPECT_NE( FileName::output(), Integer() );
+
+    // test getter for file type
+    EXPECT_EQ( FilePath::output_file, FileName::output().get_file_type() );
 }
 
 
@@ -176,17 +179,17 @@ using namespace Input::Type;
 Record output_record("OutputRecord",
         "Information about one file for field data.");
 {
-    output_record.declare_key("file", FileName( output_file ), DefaultValue(DefaultValue::optional),
+    output_record.declare_key("file", FileName::output(), Default::optional(),
             "File for output stream.");
 
-    output_record.declare_key("digits",Integer(0,8), DefaultValue("8"),
+    output_record.declare_key("digits",Integer(0,8), Default("8"),
             "Number of digits used for output double values into text output files.");
     output_record.declare_key("compression", Bool(),
             "Whether to use compression of output file.");
 
     output_record.declare_key("start_time", Double(0.0),
             "Simulation time of first output.");
-    output_record.declare_key("data_description", String(),DefaultValue(),
+    output_record.declare_key("data_description", String(), Default::optional(),
             "");
     output_record.finish();
 } // delete local variables
@@ -200,9 +203,9 @@ Record array_record("RecordOfArrays",
 
  array_record.declare_key("array_of_5_ints", array_of_int,
          "Some bizare array.");
- array_record.declare_key("array_of_str", Array( String() ), DefaultValue(),
+ array_record.declare_key("array_of_str", Array( String() ), Default::optional(),
          "Desc. of array");
- array_record.declare_key("array_of_str_1", Array( String() ), DefaultValue(),
+ array_record.declare_key("array_of_str_1", Array( String() ), Default::optional(),
              "Desc. of array");
  array_record.finish();
 }

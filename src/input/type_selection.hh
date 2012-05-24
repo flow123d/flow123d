@@ -98,7 +98,7 @@ public:
     }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive = false, unsigned int pad = 0) const {
-        ASSERT( is_finished(), "Can not provide documentation of unfinished Selection type: %s\n", type_name().c_str());
+        if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
         return data_->documentation(stream, extensive, pad);
     }
 

@@ -32,24 +32,20 @@ using namespace std;
 
 
 /*******************************************************************
- * implementation of DefaultValue
+ * implementation of Default
  */
 
-DefaultValue::DefaultValue()
-: value_(), type_(optional)
+Default::Default()
+: value_(), type_(optional_type)
 {}
 
-DefaultValue::DefaultValue(const std::string & value)
+Default::Default(const std::string & value)
 : value_(value), type_(declaration)
 {}
 
-DefaultValue::DefaultValue(enum DefaultType type)
+Default::Default(enum DefaultType type)
 : value_(), type_(type)
-{
-    if (type == declaration) {
-        xprintf(Err, "Can not construct DefaultValue with type 'declaration' without providing the default value.\n");
-    }
-}
+{}
 
 
 /*******************************************************************
@@ -150,10 +146,10 @@ std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsi
 
     stream << "FileName of ";
     switch (type_) {
-    case input_file:
+    case ::FilePath::input_file:
         stream << "input file";
         break;
-    case output_file:
+    case ::FilePath::output_file:
         stream << "output file";
         break;
     default:
@@ -165,9 +161,9 @@ std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsi
 
 string FileName::type_name() const {
     switch (type_) {
-    case input_file:
+    case ::FilePath::input_file:
         return "FileName_input";
-    case output_file:
+    case ::FilePath::output_file:
         return "FileName_output";
     default:
         return "FileName";

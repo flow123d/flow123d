@@ -54,7 +54,7 @@ public:
         string key_;                                ///< Key identifier.
         string description_;                        ///< Key description in context of particular Record type.
         boost::shared_ptr<const TypeBase> type_;    ///< Type of the key.
-        DefaultValue default_;                      ///< DefaultValue, type and possibly value itself.
+        Default default_;                      ///< Default, type and possibly value itself.
         bool derived;                               ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
     };
 
@@ -88,7 +88,7 @@ public:
     template <class KeyType>
     void declare_key(const string &key,
                             const KeyType &type,
-                            const DefaultValue &default_value, const string &description)
+                            const Default &default_value, const string &description)
     {
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
@@ -115,14 +115,14 @@ public:
     }
 
     /**
-     * Same as previous method but without given default value (same as DefaultValue(DefaultValue::none) )
+     * Same as previous method but without given default value (same as Default(Default::none) )
      */
     template <class KeyType>
     void declare_key(const string &key,
                             const KeyType &type,
                             const string &description)
     {
-        declare_key(key,type, DefaultValue(), description);
+        declare_key(key,type, Default::optional(), description);
     }
 
     /**
@@ -243,7 +243,7 @@ protected:
 
         void declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
-                         const DefaultValue &default_value, const string &description);
+                         const Default &default_value, const string &description);
 
         std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
 

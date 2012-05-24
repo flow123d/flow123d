@@ -7,7 +7,7 @@ include_directories( ${GTEST_ROOT}/include ${CMAKE_SOURCE_DIR}/test_units)
 add_subdirectory( ${GTEST_ROOT} ${GTEST_ROOT})
 message(STATUS "Gtest tests allowed")
 
-set(flow_gtest_sources  ${CMAKE_SOURCE_DIR}/test_units/gtest_flow.cc)
+set(flow_gtest_sources  ${CMAKE_SOURCE_DIR}/test_units/gtest_mpi_output.cc)
 set(CMAKE_CXX_FLAGS "-g") 
 
 #################################

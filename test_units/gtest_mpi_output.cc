@@ -7,7 +7,7 @@
 
 #define TEST_USE_MPI        // include headers for MPI functions
 #define TEST_HAS_MAIN       // do not include main in this unit
-#include "gtest_flow.hh"
+#include "gtest_mpi_output.hh"
 
 #include "mpi.h"
 

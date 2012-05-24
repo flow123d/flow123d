@@ -15,6 +15,8 @@ using namespace std;
  */
 
 int StorageBase::get_int() const {
+    //cout << "Fatal Error at:" << std::endl;
+    //print(cout,0);
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("int") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -22,6 +24,8 @@ int StorageBase::get_int() const {
 
 
 double StorageBase::get_double() const {
+    //cout << "Fatal Error at:" << std::endl;
+    //print(cout,0);
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("double") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -29,6 +33,8 @@ double StorageBase::get_double() const {
 
 
 bool StorageBase::get_bool() const {
+    //cout << "Fatal Error at:" << std::endl;
+    //print(cout,0);
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("bool") << EI_StoredType( typeid(*this).name()) );
     return false;
 }
@@ -36,6 +42,8 @@ bool StorageBase::get_bool() const {
 
 
 const std::string & StorageBase::get_string() const {
+    //cout << "Fatal Error at:" << std::endl;
+    //print(cout,0);
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("string") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -43,6 +51,8 @@ const std::string & StorageBase::get_string() const {
 
 
 const StorageBase * StorageBase::get_item(const unsigned int index) const {
+    //cout << "Fatal Error at:" << std::endl;
+    //print(cout,0);
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("array") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -109,6 +119,12 @@ bool StorageArray::is_null() const {
 }
 
 
+void StorageArray::print(ostream &stream, int pad)  const {
+    stream << setw(pad) << "" << "array(" << this->get_array_size() << ")" << std::endl;
+    for(unsigned int i=0;i<get_array_size();++i) get_item(i)->print(stream, pad+2);
+}
+
+
 
 StorageArray::~StorageArray() {
     for( vector<StorageBase *>::iterator it = array_.begin(); it != array_.end(); ++it)
@@ -137,10 +153,13 @@ bool StorageBool::is_null() const {
 
 
 
- StorageBase * StorageBool::deep_copy() {
+StorageBase * StorageBool::deep_copy() {
     return new StorageBool(value_);
 }
 
+void StorageBool::print(ostream &stream, int pad) const {
+    stream << setw(pad) << "" <<  "bool(" << value_ << ")"<<std::endl;
+}
 
 StorageBool::~StorageBool()
 {}
@@ -169,6 +188,11 @@ bool StorageInt::is_null() const {
 
  StorageBase * StorageInt::deep_copy() {
     return new StorageInt(value_);
+}
+
+
+void StorageInt::print(ostream &stream, int pad) const {
+   stream << setw(pad) << "" <<  "int(" << value_ << ")"<<std::endl;
 }
 
 
@@ -201,6 +225,12 @@ bool StorageDouble::is_null() const {
     return new StorageDouble(value_);
 }
 
+
+void StorageDouble::print(ostream &stream, int pad) const {
+    stream << setw(pad) << "" <<  "double(" << value_ << ")"<<std::endl;
+}
+
+
 StorageDouble::~StorageDouble()
 {}
 
@@ -227,8 +257,13 @@ bool StorageString::is_null() const {
 }
 
 
- StorageBase * StorageString::deep_copy() {
+StorageBase * StorageString::deep_copy() {
     return new StorageString(value_);
+}
+
+
+void StorageString::print(ostream &stream, int pad) const {
+    stream << setw(pad) << "" << "string(" << value_ << ")"<<std::endl;
 }
 
 
@@ -251,6 +286,11 @@ bool StorageNull::is_null() const {
     return new StorageNull();
 }
 
+
+
+void StorageNull::print(ostream &stream, int pad) const{
+    stream << setw(pad) << "" << "null()"<<std::endl;
+}
 
 
 StorageNull::~StorageNull()

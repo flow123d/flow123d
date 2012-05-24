@@ -50,6 +50,7 @@ public:
     virtual unsigned int get_array_size() const;
 
     virtual StorageBase *deep_copy()=0;
+    virtual void print(ostream &stream, int pad=0) const =0;
 
     virtual ~StorageBase();
 
@@ -68,6 +69,7 @@ public:
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
+    virtual void print(ostream &stream, int pad=0) const;
     virtual ~StorageArray();
 private:
     /// Forbids default constructor to have array set to NULL.
@@ -82,6 +84,7 @@ public:
     virtual bool get_bool() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
+    virtual void print(ostream &stream, int pad=0) const;
     virtual ~StorageBool();
 private:
     bool value_;
@@ -93,6 +96,7 @@ public:
     virtual int get_int() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
+    virtual void print(ostream &stream, int pad=0) const;
     virtual ~StorageInt();
 
 private:
@@ -105,6 +109,7 @@ public:
     virtual double get_double() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
+    virtual void print(ostream &stream, int pad=0) const;
     virtual ~StorageDouble();
 
 private:
@@ -117,6 +122,7 @@ public:
     virtual const string & get_string() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
+    virtual void print(ostream &stream, int pad=0) const;
     virtual ~StorageString();
 
 private:
@@ -126,6 +132,7 @@ private:
 class StorageNull : public StorageBase {
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
+    virtual void print(ostream &stream, int pad=0) const;
     virtual ~StorageNull();
 
 };

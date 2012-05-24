@@ -22,7 +22,7 @@ using namespace internal;
  */
 
 JSONToStorage::JSONToStorage()
-:storage_(NULL), root_type_(NULL)
+:storage_(NULL), root_type_(NULL), envelope(NULL)
 {}
 
 
@@ -30,6 +30,11 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
     namespace io = boost::iostreams;
 
     F_ENTRY;
+
+    if (envelope != NULL) {
+        delete envelope;
+        envelope=NULL;
+    }
 
     io::filtering_istream filter_in;
 
@@ -48,6 +53,8 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
 
     root_type_ = &root_type;
     storage_ = make_storage(root_path, root_type_);
+    envelope =  new StorageArray(1);
+    envelope->new_item(0,storage_);
 
     ASSERT(  storage_ != NULL, "Internal error in JSON checker, NULL storage without exception.\n");
 

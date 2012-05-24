@@ -70,7 +70,7 @@ void  Record::reset_doc_flags() const {
 
 std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
-    finished_check();
+    if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
     return data_->documentation(stream, extensive, pad);
 }
 
@@ -136,7 +136,7 @@ void  Record::RecordData::reset_doc_flags() const {
 
 void Record::RecordData::declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
-                         const DefaultValue &default_value, const string &description)
+                         const Default &default_value, const string &description)
 {
     KeyHash key_h = key_hash(key);
     key_to_index_const_iter it = key_to_index.find(key_h);
@@ -164,7 +164,7 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 {
 
     // declare very first item of any descendent
-    data_->declare_key("TYPE", child_data_->selection_of_childs, DefaultValue(DefaultValue::obligatory),
+    data_->declare_key("TYPE", child_data_->selection_of_childs, Default::obligatory(),
                  "Sub-record selection.");
 
 }
@@ -204,7 +204,7 @@ void  AbstractRecord::reset_doc_flags() const {
 
 std::ostream& AbstractRecord::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
-    ASSERT(is_finished(), "Can not provide documentation of unfinished Record type: %s\n", type_name().c_str());
+    if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type:AbstractRecord!\n");
 
     if (! extensive) {
 

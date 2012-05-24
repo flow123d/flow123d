@@ -6,11 +6,11 @@
  */
 
 /**
- * TODO: test method get_root_interface
- * TODO: move EXPECT_THROW_WHAT_ into flow_test.hh
  * TODO: test catching of errors in JSON file format.
  */
+
 #include <gtest/gtest.h>
+#include <gtest_throw_what.hh>
 
 #include "json_to_storage.hh"
 
@@ -78,64 +78,6 @@ TEST(JSONPath, all) {
     EXPECT_EQ("ctyri",path.find_ref_node(ref).head()->get_str() );
 }
 
-// Returns an indented copy of stderr output for a death test.
-// This makes distinguishing death test output lines from regular log lines
-// much easier.
-static ::std::string FormatDeathTestOutput(const ::std::string& output) {
-  ::std::string ret;
-  for (size_t at = 0; ; ) {
-    const size_t line_end = output.find('\n', at);
-    ret += "[  DEATH   ] ";
-    if (line_end == ::std::string::npos) {
-      ret += output.substr(at);
-      break;
-    }
-    ret += output.substr(at, line_end + 1 - at);
-    at = line_end + 1;
-  }
-  return ret;
-}
-
-#define GTEST_TEST_THROW_WHAT_(statement, expected_exception, re_pattern, fail) \
-  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
-  if (::testing::internal::ConstCharPtr gtest_msg = "") { \
-    bool gtest_caught_expected = false; \
-    try { \
-      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
-    } \
-    catch (expected_exception const& exc) { \
-      gtest_caught_expected = true; \
-      char const * msg = exc.what();      \
-      const ::testing::internal::RE& gtest_regex = (re_pattern); \
-      if (msg == NULL || ! ::testing::internal::RE::PartialMatch(msg, gtest_regex ) ) { \
-          std::ostringstream buffer; \
-          buffer  << "    Result: throws but not with expected message.\n" \
-                  << "  Expected: "  << gtest_regex.pattern() << "\n" \
-                  << "Actual msg:\n" << FormatDeathTestOutput(std::string(msg)); \
-          buffer << std::endl; \
-          static std::string msg_buffer = buffer.str(); \
-          gtest_msg.value = msg_buffer.c_str(); \
-          goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
-      } \
-    } \
-    catch (...) { \
-      gtest_msg.value = \
-          "Expected: " #statement " throws an exception of type " \
-          #expected_exception ".\n  Actual: it throws a different type."; \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
-    } \
-    if (!gtest_caught_expected) { \
-      gtest_msg.value = \
-          "Expected: " #statement " throws an exception of type " \
-          #expected_exception ".\n  Actual: it throws nothing."; \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
-    } \
-  } else \
-    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
-      fail(gtest_msg.value)
-
-#define EXPECT_THROW_WHAT(statement, expected_exception, pattern) \
-  GTEST_TEST_THROW_WHAT_(statement, expected_exception, pattern,  GTEST_NONFATAL_FAILURE_)
 
 TEST(JSONPath, errors) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -164,7 +106,6 @@ protected:
     virtual void TearDown() {
     };
 };
-
 
 TEST_F(InputJSONToStorageTest, Integer) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -317,7 +258,7 @@ TEST_F(InputJSONToStorageTest, Array) {
 TEST_F(InputJSONToStorageTest, Record) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     static Type::Record rec_type( "SomeRec","desc.");
-    rec_type.declare_key("int_key", Type::Integer(0,5), Type::DefaultValue(Type::DefaultValue::obligatory), "");
+    rec_type.declare_key("int_key", Type::Integer(0,5), Type::Default::obligatory(), "");
     rec_type.declare_key("str_key", Type::String(), "");
     rec_type.finish();
 
@@ -351,8 +292,8 @@ TEST_F(InputJSONToStorageTest, AbstratRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     static Type::AbstractRecord a_rec("EqBase","Base of equation records.");
-    a_rec.declare_key("mesh", Type::String(), Type::DefaultValue(Type::DefaultValue::obligatory), "Comp. mesh.");
-    a_rec.declare_key("a_val", Type::String(), Type::DefaultValue(Type::DefaultValue::obligatory), "");
+    a_rec.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Comp. mesh.");
+    a_rec.declare_key("a_val", Type::String(), Type::Default::obligatory(), "");
     a_rec.finish();
 
     static Type::Record b_rec("EqDarcy","");
@@ -427,20 +368,20 @@ TEST_F(InputJSONToStorageTest, AbstratRec) {
 
 }
 
-/*
-    stringstream in_str(storage_input);
-    Input::Type::Record rec("SomeRecord", "");
+TEST(InputJSONToStorageTest_external, get_root_interface) {
+    static Input::Type::Record one_rec("One","");
+    one_rec.declare_key("one",Input::Type::Integer(),"");
+    one_rec.finish();
 
-    Input::Storage storage(in_str, rec);
+    stringstream ss("{ one=1 }");
+    JSONToStorage json_reader;
+    json_reader.read_stream(ss, one_rec);
+    Input::Interface::Record rec=json_reader.get_root_interface<Input::Interface::Record>();
+    EXPECT_EQ(1,rec.key<int>("one"));
+    //json_reader.get_storage()->print(cout);
 
-    EXPECT_FALSE( storage.get_item(0).get_bool());
-    EXPECT_EQ(1, storage.get_item(1).get_int());
-    EXPECT_EQ(2, storage.get_item(2).get_int());
-    EXPECT_EQ(3.3, storage.get_item(3).get_double());
-    EXPECT_EQ("ctyri", storage.get_item(4).get_string());
-    EXPECT_EQ(5, storage.get_item(5).get_array_size());
-    EXPECT_EQ(4, storage.get_item(5).get_item(3).get_int());
-*/
+}
+
 
 
 

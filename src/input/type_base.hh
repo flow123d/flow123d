@@ -11,7 +11,8 @@
 
 #include "system.hh"
 #include "system/exceptions.hh"
-#include <boost/type_traits.hpp>
+#include "system/file_path.hh"
+
 
 #include <limits>
 #include <ios>
@@ -26,30 +27,25 @@
 #include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 
+
+
+
 namespace Input {
+
 namespace Type {
+
+
 
 using namespace std;
 
 
+
 TYPEDEF_ERR_INFO( EI_KeyName, const string );
 
-/**
- * @brief Possible file types.
- *
- *  TODO: move this declaration into possible global class Application
- *  and use also when opening the file and by IONAmeHandlar (which should be part of Application, and used by
- *  Input::Interface::Path (todo)
- *
- */
-enum FileType {
-    input_file,
-    output_file
-};
 
 
 /**
- * @brief DefaultValue specifies default value of keys of a @p Record.
+ * @brief Default specifies default value of keys of a @p Record.
  *
  * It contains type of default value and possibly the value itself as a string.
  *
@@ -58,31 +54,51 @@ enum FileType {
  *
  * @ingroup input
  */
-class DefaultValue {
-public:
+class Default {
+private:
     /**
      * Possible types of default values.
      */
     enum DefaultType {
-        declaration,    ///< Default value given at declaration time.
-        optional,       ///< No default value, optional key. This is default type of the DefaultValue.
-        obligatory      ///< No default value, obligatory key.
+        declaration,        ///< Default value given at declaration time.
+        optional_type,      ///< No default value, optional key. This is default type of the Default.
+        obligatory_type     ///< No default value, obligatory key.
     };
+public:
 
-    /**
-     * Default constructor. Use type @t optional.
-     */
-    DefaultValue();
 
     /**
      * Constructor with given default value (at declaration time)
      */
-    DefaultValue(const std::string & value);
+    Default(const std::string & value);
 
     /**
-     * Constructor for other types then 'declaration'.
+     * Factory function to make an empty default value which is obligatory.
+     * This and following factory functions should be used instead of private constructors.
+     *
+     * Example of usage:
+     * @code
+     *      some_record.declare_key("some_key",Integer(),Default::obligatory(),"description");
+     * @endcode
      */
-    DefaultValue(enum DefaultType type);
+    static Default obligatory()
+    { return Default(obligatory_type); }
+
+    /**
+     * Factory function to make an empty default value which is optional.
+     * To get the value of such key from the input you have to use non-throwing variant of the method
+     * Input::Record::key, which returns the value through reference and allows checking presence of the key on the input.
+     *
+     * Example of usage:
+     * @code
+     *      some_record.declare_key("some_key",Integer(),Default::optional(),"description");
+     * @endcode
+     */
+    static Default optional()
+    { return Default(optional_type); }
+
+
+
 
     /**
      * Returns true if the default value should be specified at some time.
@@ -92,7 +108,10 @@ public:
     { return (type_ == declaration); }
 
     inline bool is_obligatory() const
-    { return (type_ == obligatory); }
+    { return (type_ == obligatory_type); }
+
+    inline bool is_optional() const
+    { return (type_ == optional_type); }
 
     /**
      * Returns stored value. Possibly empty string.
@@ -102,7 +121,18 @@ public:
 
 private:
     string value_;              ///< Stored value.
-    enum DefaultType type_;     ///< Type of the DefaultValue.
+    enum DefaultType type_;     ///< Type of the Default.
+
+    /**
+     * Forbids default constructor.
+     */
+    Default();
+
+    /**
+     * Constructor for other types then 'declaration'.
+     */
+    Default(enum DefaultType type);
+
 };
 
 
@@ -425,9 +455,18 @@ public:
  */
 class FileName : public String {
 public:
-    FileName(FileType type)
-    : type_(type)
-    {}
+
+    /**
+     * Factory function for declaring type FileName for input files.
+     */
+    static FileName input()
+    { return FileName(::FilePath::input_file); }
+
+    /**
+     * Factory function for declaring type FileName for input files.
+     */
+    static FileName output()
+    { return FileName(::FilePath::output_file); }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;
@@ -438,14 +477,24 @@ public:
     }
 
 
-    FileType get_file_type() const {
+
+    ::FilePath::FileType get_file_type() const {
         return type_;
     }
 
 
 
 private:
-    FileType    type_;
+    ::FilePath::FileType    type_;
+
+    /// Forbids default constructor.
+    FileName() {}
+
+    /// Forbids direct construction.
+    FileName(enum ::FilePath::FileType type)
+    : type_(type)
+    {}
+
 };
 
 } // closing namespace Type

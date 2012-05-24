@@ -26,7 +26,7 @@
  *    a podobne pro pole.
  *    ...
  *
- *  - ?? predelat DefaultValue na hierarchii trid (opet problem s error hlaskou) tkato by se to hlasilo pri kompilaci.
+ *  - ?? predelat Default na hierarchii trid (opet problem s error hlaskou) tkato by se to hlasilo pri kompilaci.
  *    ( snad lepe factory staticke funkce defalut("..."), default(), default_obligatory() )
  *
  *  - Allow non integral values to selection ??

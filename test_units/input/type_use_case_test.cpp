@@ -24,14 +24,14 @@ public:
 class EquationA : public Equation {
 public:
     static Input::Type::Record &get_input_type();
-    EquationA(Input::Interface::Record rec);
+    EquationA(Input::Record rec);
 };
 
 
 class EquationB : public Equation {
 public:
     static Input::Type::Record &get_input_type();
-    EquationB(Input::Interface::Record rec);
+    EquationB(Input::Record rec);
 };
 
 
@@ -41,8 +41,9 @@ public:
 class Application : public testing::Test{
 public:
     static Input::Type::Record &get_input_type();
-    inline Input::Interface::Record input()
-    { return *( json_reader.get_root_interface<Input::Interface::Record>() ); }
+
+    inline Input::Record input()
+    { return  json_reader.get_root_interface<Input::Record>(); }
     virtual void SetUp();
     virtual void TearDown();
 private:
@@ -51,11 +52,17 @@ private:
 };
 
 TEST_F(Application, init) {
-    using namespace Input::Interface;
+    using namespace Input;
+
+    FilePath::set_io_dirs("/root","variant", "/output");
 
     Array eq_arr = input().key<Array>("equations");
-    Iterator<Record> it = eq_arr.begin<Record>();
-    EquationA first_eq( *it );
+
+    Iterator<AbstractRecord> it = eq_arr.begin<AbstractRecord>();
+
+    Record x = *it;
+
+    EquationA first_eq( x );
 
     ++it;
 
@@ -73,7 +80,7 @@ Input::Type::AbstractRecord &Equation::get_input_type() {
     static AbstractRecord abstr_rec("AbstractEquation","Abstract input Record type for any equation.");
     if (! abstr_rec.is_finished() ) {
         // keys that will be derived by every equation, but their type can be overridden
-        abstr_rec.declare_key("mesh",FileName(input_file),DefaultValue(DefaultValue::obligatory),"");
+        abstr_rec.declare_key("mesh",FileName::input(),Default::obligatory(),"");
         abstr_rec.finish(); // finish declaration of keys to allow equations to derive keys
 
         // declare descendants, they automatically register themself to the abstract record
@@ -94,7 +101,7 @@ Input::Type::Record &EquationA::get_input_type() {
 
     if (! input_record.is_finished()) {
         input_record.derive_from( Equation::get_input_type() );
-        input_record.declare_key("parametr_a", Double(), "");
+        input_record.declare_key("parameter_a", Double(), "");
         input_record.finish();
     }
     return input_record;
@@ -102,9 +109,11 @@ Input::Type::Record &EquationA::get_input_type() {
 
 
 
-EquationA::EquationA(Input::Interface::Record rec) {
-    string mesh_file = rec.key<string>("mesh");
+EquationA::EquationA(Input::Record rec) {
+    string mesh_file = rec.key<FilePath>("mesh");
+    EXPECT_EQ("/root/some.msh", mesh_file);
     double param = rec.key<double>("parameter_a");
+    EXPECT_EQ(3.14, param);
 }
 
 
@@ -114,7 +123,7 @@ Input::Type::Record &EquationB::get_input_type() {
 
     if (! input_record.is_finished()) {
         input_record.derive_from( Equation::get_input_type() );
-        input_record.declare_key("parametr_b", Integer(), "");
+        input_record.declare_key("parameter_b", Integer(), "");
         input_record.finish();
     }
     return input_record;
@@ -122,9 +131,11 @@ Input::Type::Record &EquationB::get_input_type() {
 
 
 
-EquationB::EquationB(Input::Interface::Record rec) {
-    string mesh_file = rec.key<string>("mesh");
-    int param = rec.key<int>("parameter_a");
+EquationB::EquationB(Input::Record rec) {
+    string mesh_file = rec.key<FilePath>("mesh");
+    EXPECT_EQ("/root/some.msh", mesh_file);
+    int param = rec.key<int>("parameter_b");
+    EXPECT_EQ(314, param);
 }
 
 
@@ -136,7 +147,7 @@ Input::Type::Record &Application::get_input_type() {
     if (! input_record.is_finished()) {
         // Array of equations with types given by method of class Equation
         Array eq_array( Equation::get_input_type(), 1, 10 );
-        input_record.declare_key("equations", eq_array, DefaultValue( DefaultValue::obligatory), "");
+        input_record.declare_key("equations", eq_array, Default::obligatory(), "");
         input_record.finish();
     }
     return input_record;

@@ -153,9 +153,14 @@ public:
             << " ; reason: " << EI_JSONReason::val << "\n" );
 
     JSONToStorage();
+
     void read_stream(istream &in, const Type::TypeBase &root_type);
+
     template <class T>
-    Interface::Iterator<T> get_root_interface() const;
+    T get_root_interface() const;
+
+    const StorageBase *get_storage()
+    { return storage_;}
 
 protected:
     /**
@@ -177,6 +182,7 @@ protected:
 
 
     StorageBase *storage_;
+    StorageArray *envelope; // helper envelope for get_root_interface
     const Type::TypeBase *root_type_;
 };
 
@@ -191,14 +197,18 @@ protected:
  */
 
 template <class T>
-Interface::Iterator<T> JSONToStorage::get_root_interface() const
+T JSONToStorage::get_root_interface() const
 {
-
-    return Interface::Iterator<T>( *root_type_, storage_, 0);
+    return *(Iterator<T>( *root_type_, envelope, 0));
 }
 
 
 
 
 } // namespace Input
+
+class Some {
+
+};
+
 #endif /* JSON_TO_STORAGE_HH_ */
