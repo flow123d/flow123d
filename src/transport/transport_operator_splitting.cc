@@ -10,7 +10,7 @@
 #include "system/sys_vector.hh"
 #include <time_governor.hh>
 #include <materials.hh>
-#include "equation.hh"
+#include "coupling/equation.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
 #include "reaction/linear_reaction.hh"
@@ -81,6 +81,20 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
     delete Semchem_reactions;
     delete time_;
 }
+
+
+Input::Type::AbstractRecord &TransportOperatorSplitting::get_input_type()
+{
+    using namespace Input::Type;
+    static AbstractRecord rec("Transport", "Transport operator splitting abstract record.");
+
+    if (!rec.is_finished()) {
+        rec.finish();
+        rec.no_more_descendants();
+    }
+}
+
+
 
 void TransportOperatorSplitting::output_data(){
 

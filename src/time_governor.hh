@@ -35,6 +35,8 @@
 #include <algorithm>
 
 #include "system/system.hh"
+#include "input/input_type.hh"
+
 #include "time_marks.hh"
 
 /**
@@ -104,6 +106,8 @@ public:
     * Allow set TimeMarks. Use only this constructor for steady problems.
     */
    TimeGovernor(double init_time = inf_time);
+
+   static Input::Type::Record &get_input_type();
 
    /**
     * Set permanent constrain for time step.

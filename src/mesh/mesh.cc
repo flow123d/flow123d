@@ -32,6 +32,8 @@
 
 
 #include "system/system.hh"
+#include "input/input_type.hh"
+
 #include "mesh/mesh.h"
 
 // think about following dependencies
@@ -49,6 +51,28 @@
 
 void count_element_types(Mesh*);
 void read_node_list(Mesh*);
+
+
+Input::Type::Record BoundarySegment::get_input_type() {
+    using namespace Input::Type;
+
+    static Record rec("BoundarySegment","Record with specification of boundary segments,\n"
+            "i.e. subsets of the domain boundary where we prescribe one boundary condition.\n"
+            "Currently very GMSH oriented. (NOT IMPLEMENTED YET)");
+    if (!rec.is_finished()) {
+        rec.declare_key("physical_domains", Array(Integer(0)),
+                "Numbers of physical domains (submeshes) that forms a segment and that "
+                "will be removed from the computational mesh.");
+        rec.declare_key("elements", Array(Integer(0)),
+                        "Numbers of elements that forms a segment and that "
+                        "will be removed from the computational mesh.");
+        rec.declare_key("sides", Array( Array(Integer(0), 2,2) ),
+                        "Pairs [ element, local_side] specifying sides that are part of the boundary segment."
+                        "Sides are NOT removed from computation.");
+        rec.finish();
+    }
+    return rec;
+}
 
 Mesh::Mesh() {
     xprintf(Msg, " - Mesh()     - version with node_vector\n");
@@ -78,6 +102,23 @@ Mesh::Mesh() {
 //    concentration_hash = NULL;
 //    transport_bcd_hash = NULL;
 //    neighbour_hash = NULL;
+}
+
+
+Input::Type::Record Mesh::get_input_type() {
+    using namespace Input::Type;
+
+    static Record rec("Mesh","Record with mesh related data." );
+    if (!rec.is_finished()) {
+        rec.declare_key("mesh_file", FileName::input(), Default::obligatory(),
+                "Input file with mesh description.");
+        rec.declare_key("boundary_segmants", Array( BoundarySegment::get_input_type() ),
+                "Array with specification of boundary segments");
+        rec.declare_key("neighbouring", FileName::input(), Default::obligatory(),
+                "File with mesh connectivity data.");
+        rec.finish();
+    }
+    return rec;
 }
 
 

@@ -31,7 +31,7 @@
 #include <petsc.h>
 
 #include "system/system.hh"
-#include "hc_explicit_sequential.hh"
+#include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
 
 #include "main.h"
@@ -100,10 +100,23 @@ void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
     }
 }
 
-Input::Type::Record declare_root_record() {
+Input::Type::Record &declare_root_record() {
     using namespace Input::Type;
-    Record main_rec("Root", "Root record of JSON input for Flow123d.");
-    main_rec.declare_key();
+
+    // this should be part of a system class containing all support information
+    static Record system_rec("System", "Record with general support data.");
+    system_rec.declare_key("pause_after_run", Bool(), Default("false"),
+            "If true, the program will wait for key press before it terminates.");
+    system_rec.finish();
+
+
+    static Record main_rec("Root", "Root record of JSON input for Flow123d.");
+    main_rec.declare_key("system", system_rec, "");
+    main_rec.declare_key("material", FileName::input(),
+            "File with material information.");
+    main_rec.declare_key("problem", HC_ExplicitSequential::get_input_type(), Default::obligatory(),
+            "Simulation problem to be solved.");
+
 
 }
 
@@ -119,7 +132,7 @@ int main(int argc, char **argv) {
 
     parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
 
-    Input:Type::Record main_record_type declare_main_record();
+    Input::Type::Record main_record_type = declare_root_record();
 
     system_init(argc, argv); // Petsc, open log, read ini file
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database

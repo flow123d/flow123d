@@ -69,11 +69,12 @@ set(sources_lib_non_system
 
 
 
-    equation.cc
+    coupling/equation.cc
+    coupling/hc_explicit_sequential.cc
+
     time_marks.cc
     materials.cc
     time_governor.cc
-    hc_explicit_sequential.cc
     field_p0.cc
 )
 

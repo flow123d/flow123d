@@ -1,7 +1,7 @@
 #ifndef TRANSPORT_OPERATOR_SPLITTING_HH_
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
-#include "equation.hh"
+#include "coupling/equation.hh"
 #include "reaction/linear_reaction.hh"
 #include "semchem/semchem_interface.hh"
 #include <limits>
@@ -75,6 +75,7 @@ class TransportOperatorSplitting : public TransportBase {
 public:
 	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
     virtual ~TransportOperatorSplitting();
+    static Input::Type::AbstractRecord &get_input_type();
 
     virtual void set_velocity_field(Vec &velocity_vector);
 	virtual void update_solution();

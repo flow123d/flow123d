@@ -31,7 +31,7 @@
 #define TRANSPORT_H_
 
 #include <petscmat.h>
-#include "equation.hh"
+#include "coupling/equation.hh"
 #include "transport/sources.hh"
 #include "materials.hh"
 //#include "la/distribution.hh"

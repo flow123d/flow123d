@@ -32,6 +32,8 @@
 #define HC_EXPLICIT_SEQUENTIAL_HH_
 
 #include "main.h"
+#include "input/input_type.hh"
+#include "coupling/equation.hh"
 
 class DarcyFlowMH;
 class DarcyFlowMHOutput;
@@ -41,12 +43,25 @@ class EquationBase;
 class TransportBase;
 class MaterialDatabase;
 
+
+/**
+ * TODO: should be derived from EquationBase in order to chain couplings
+ */
+class CouplingBase {
+public:
+    static Input::Type::AbstractRecord &get_input_type();
+
+};
+
+
 /**
  * @brief Class for solution of steady or unsteady flow with sequentially coupled explicit transport.
  *
  */
-class HC_ExplicitSequential {
+class HC_ExplicitSequential : public CouplingBase {
 public:
+    static Input::Type::Record &get_input_type();
+
     HC_ExplicitSequential(ProblemType problem_type);
     void run_simulation();
     ~HC_ExplicitSequential();

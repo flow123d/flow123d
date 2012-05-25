@@ -40,6 +40,8 @@
 #include "mesh/neighbours.h"
 #include "mesh/boundaries.h"
 
+#include "input/input_type.hh"
+
 
 #define ELM  0
 #define BC  1
@@ -82,14 +84,20 @@
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
+
+class BoundarySegment {
+public:
+    static Input::Type::Record get_input_type();
+};
+
 //=============================================================================
 // STRUCTURE OF THE MESH
 //=============================================================================
 
 class Mesh {
-private:
-
 public:
+    static Input::Type::Record get_input_type();
+
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 

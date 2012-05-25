@@ -41,6 +41,31 @@
 #include "io/output.h"
 #include "main.h"
 
+#include "input/input_type.hh"
+
+
+Input::Type::AbstractRecord &CouplingBase::get_input_type() {
+    using namespace Input::Type;
+    static AbstractRecord rec("Problem",
+            "The root record of description of particular the problem to solve.");
+
+    if (! rec.is_finished()) {
+        rec.declare_key("description",String(),
+            "Short description of the solved problem.\n"
+            "Is displayed in the main log, and possibly in other text output files.");
+        rec.declare_key("mesh", Mesh::get_input_type(), Default::obligatory(),
+            "Computational mesh common to all equations.");
+            rec.finish();
+
+        HC_ExplicitSequential::get_input_type();
+
+        rec.no_more_descendants();
+    }
+
+    return rec;
+}
+
+
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
@@ -104,6 +129,26 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
     }
 
 }
+
+Input::Type::Record &HC_ExplicitSequential::get_input_type() {
+    using namespace Input::Type;
+    static Record rec("SequantialCoupling",
+            "Record with data for a general sequential coupling.\n");
+
+    if (! rec.is_finished() ) {
+        rec.derive_from( CouplingBase::get_input_type() );
+        rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+                "Simulation time frame and time step.");
+        rec.declare_key("primary_equation", DarcyFlowMH::get_input_type(), Default::obligatory(),
+                "Primary equation, have all data given.");
+        rec.declare_key("secondary_equation", TransportOperatorSplitting::get_input_type(), Default::obligatory(),
+                "The equation that depends (its data) on the result of the primary equation.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
 
 /**
  * TODO:

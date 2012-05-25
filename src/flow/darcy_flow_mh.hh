@@ -48,12 +48,14 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+#include "input/input_type.hh"
+
 #include <petscmat.h>
 #include "system/sys_vector.hh"
 #include "time_governor.hh"
 #include <field_p0.hh>
 #include <materials.hh>
-#include "equation.hh"
+#include "coupling/equation.hh"
 
 /// external types:
 class LinSys;
@@ -83,6 +85,8 @@ public:
     DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
     : EquationBase(marks, mesh, mat_base), sources(NULL)
     {}
+
+    static Input::Type::AbstractRecord &get_input_type();
 
     FieldP0<double>  * get_sources()
         { return sources; }

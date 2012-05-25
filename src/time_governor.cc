@@ -85,6 +85,26 @@ TimeGovernor::TimeGovernor(double init_time)
 
 {}
 
+
+Input::Type::Record &TimeGovernor::get_input_type() {
+    using namespace Input::Type;
+    static Record rec("TimeGovernor",
+            "Setting of the simulation time. (can be specific to one eqaution)");
+
+    if (! rec.is_finished() ) {
+        rec.declare_key("start_time", Double(), Default("0.0"),
+                "Start time of the simulation.");
+        rec.declare_key("end_time", Double(), Default::obligatory(),
+                "End time of the simulation.");
+        rec.declare_key("init_dt", Double(0.0), "Initial guess for the time step.");
+        rec.declare_key("min_dt", Double(0.0), "Hard lower limit for the time step.");
+        rec.declare_key("max_dt", Double(0.0), "Hard upper limit for the time step.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
 {
     ASSERT( min_dt >= 0.0,"Minimal time step has to be greater than ZERO\n");

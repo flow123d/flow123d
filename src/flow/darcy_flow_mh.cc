@@ -55,6 +55,22 @@
 #include <iostream>
 #include <iterator>
 
+
+Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
+{
+    using namespace Input::Type;
+    static AbstractRecord rec("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        rec.finish();
+        rec.no_more_descendants();
+    }
+}
+
+
+
+
+
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
 // - do it in parallel:
