@@ -8,11 +8,13 @@
 
 #include "system/exceptions.hh"
 #include <gtest/gtest.h>
+#include <gtest_throw_what.hh>
+
 #include <string>
 #include <iostream>
 #include <typeinfo>
 
-#include <boost/lambda/lambda.hpp>
+
 
 class SomeClass {
 
@@ -31,6 +33,7 @@ DECLARE_EXCEPTION(ExcClass, << "Class exception :" << EI_SomeClass::qval );
 
 
 
+// Test exception with EI_::qval
 TEST(Exceptions, String) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {
@@ -44,6 +47,7 @@ TEST(Exceptions, String) {
     }
 }
 
+// Test exception with EI_ without given value
 TEST(Exceptions, no_value) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {
@@ -57,6 +61,7 @@ TEST(Exceptions, no_value) {
     }
 }
 
+// Test exception with EI_::val
 TEST(Exceptions, Int) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {
@@ -71,7 +76,7 @@ TEST(Exceptions, Int) {
 }
 
 
-
+// Test EI_ for passing a general class.
 TEST(Exceptions, Class) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {
@@ -89,7 +94,7 @@ TEST(Exceptions, Class) {
 
 
 
-
+//------------------------------------------------------------------------
 namespace Inner {
 class SomeClass {
 public:
@@ -106,6 +111,8 @@ std::ostream & operator<<( std::ostream & stream, const SomeClass & sc)
 
 } // namespace Inner
 
+
+// Test exception and ErrorInfo declared inside class inside namespace.
 TEST(Exceptions, InnerClass) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {
@@ -121,6 +128,9 @@ TEST(Exceptions, InnerClass) {
     }
 }
 
+
+
+//------------------------------------------------------------------------
 class BlackBox {
 public:
     inline int eval() const {return 42;}
@@ -130,6 +140,7 @@ TYPEDEF_ERR_INFO( EI_BlackBox, BlackBox );
 DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "stored is value of type " << EI_BlackBox::ref(_exc).eval() );
 
 
+// Test calling a method to get error mesage form ErrorInfo object. Using EI_ref(_exc).
 TEST(Exceptions, GettingValue) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {
@@ -143,4 +154,17 @@ TEST(Exceptions, GettingValue) {
         std::cerr << e.what();
     }
 
+}
+
+
+
+//------------------------------------------------------------------------
+//Test InputException
+
+DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
+
+TEST(InputException, all) {
+
+
+    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
 }

@@ -110,7 +110,7 @@ set(sources_lib_input
     input/storage.cc
     input/json_to_storage.cc
     
-    input/input_interface.cc
+    input/interface.cc
 )
 
 # make separate library for Semchem (God save us!)

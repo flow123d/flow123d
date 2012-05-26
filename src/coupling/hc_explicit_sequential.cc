@@ -45,6 +45,7 @@
 
 
 Input::Type::AbstractRecord &CouplingBase::get_input_type() {
+    F_ENTRY;
     using namespace Input::Type;
     static AbstractRecord rec("Problem",
             "The root record of description of particular the problem to solve.");
@@ -53,6 +54,8 @@ Input::Type::AbstractRecord &CouplingBase::get_input_type() {
         rec.declare_key("description",String(),
             "Short description of the solved problem.\n"
             "Is displayed in the main log, and possibly in other text output files.");
+        rec.declare_key("material", FileName::input(),Default::obligatory(),
+                        "File with material information.");
         rec.declare_key("mesh", Mesh::get_input_type(), Default::obligatory(),
             "Computational mesh common to all equations.");
             rec.finish();
@@ -69,48 +72,50 @@ Input::Type::AbstractRecord &CouplingBase::get_input_type() {
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
-HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
+HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
-    type_=problem_type;
+    using namespace Input;
+
 
     // Initialize Time Marks
     main_time_marks = new TimeMarks();
 
     // Material Database
-    const string& material_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Material", NULL ));
-    material_database = new MaterialDatabase(material_file_name);
+    material_database = new MaterialDatabase( in_record.key<FilePath>("material") );
 
     // Read mesh
-    mesh = new Mesh();
-    const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
+    // TODO: Move whole mesh setup (in particular reading, or rather generating, neighborings)
+    mesh = new Mesh( in_record.key<Record>("mesh") );
     MeshReader* meshReader = new GmshMeshReader();
-    meshReader->read(mesh_file_name, mesh);
+    meshReader->read( in_record.key<Record>("mesh").key<FilePath>("mesh_file"), mesh);
+
     mesh->setup_topology();
     mesh->setup_materials(*material_database);
     Profiler::instance()->set_task_size(mesh->n_elements());
 
-    // setup water flow object
-    switch (problem_type) {
-        case STEADY_SATURATED:
+    // setup primary equation - water flow object
+    Input::AbstractRecord pe = in_record.key<AbstractRecord>("primary_equation");
+    if (pe.type() == DarcyFlowMH_Steady::get_input_type() ) {
             water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database);
-            break;
-        case UNSTEADY_SATURATED:
-            DBGMSG("Unsteady\n");
+
+    } else
+    if (pe.type() == DarcyFlowMH_Unsteady::get_input_type() ) {
             water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database);
-            break;
-        case UNSTEADY_SATURATED_LMH:
+    } else
+    if (pe.type() == DarcyFlowLMH_Unsteady::get_input_type() ) {
             water=new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database);
-            break;
-        default:
-            xprintf(Err,"Wrong problem type: %d",problem_type);
-            break;
+    } else {
+            xprintf(UsrErr,"Equation type not implemented.");
     }
     // object for water postprocessing and output
 
     water_output = new DarcyFlowMHOutput(water);
 
     // optionally setup transport objects
-    if ( OptGetBool("Transport", "Transport_on", "no") ) {
+
+    if ( in_record.has_key("secondary_equation") ) {
+        Input::AbstractRecord se = in_record.key<AbstractRecord>("secondary_equation");
+
         char *transport_type = OptGetStr("Transport", "Transport_type", "explicit");
         if (strcmp(transport_type, "explicit") == 0)
         {
@@ -124,6 +129,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
         {
             xprintf(PrgErr,"Value of parameter: [Transport] Transport_type is neither \"explicit\" nor \"implicit\".\n");
         }
+
     } else {
         transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
     }
@@ -131,8 +137,9 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
 }
 
 Input::Type::Record &HC_ExplicitSequential::get_input_type() {
+    F_ENTRY;
     using namespace Input::Type;
-    static Record rec("SequantialCoupling",
+    static Record rec("SequentialCoupling",
             "Record with data for a general sequential coupling.\n");
 
     if (! rec.is_finished() ) {
@@ -141,7 +148,7 @@ Input::Type::Record &HC_ExplicitSequential::get_input_type() {
                 "Simulation time frame and time step.");
         rec.declare_key("primary_equation", DarcyFlowMH::get_input_type(), Default::obligatory(),
                 "Primary equation, have all data given.");
-        rec.declare_key("secondary_equation", TransportOperatorSplitting::get_input_type(), Default::obligatory(),
+        rec.declare_key("secondary_equation", TransportOperatorSplitting::get_input_type(),
                 "The equation that depends (its data) on the result of the primary equation.");
         rec.finish();
     }

@@ -74,17 +74,10 @@ Input::Type::Record BoundarySegment::get_input_type() {
     return rec;
 }
 
-Mesh::Mesh() {
-    xprintf(Msg, " - Mesh()     - version with node_vector\n");
+Mesh::Mesh(Input::Record in_record)
+: in_record_(in_record) {
 
     n_materials = NDEF;
-//    concentration = NULL;
-//    l_concentration = NULL;
-//    transport_bcd = NULL;
-//    l_transport_bcd = NULL;
-    //	n_sources        = NDEF;
-    //	source           = NULL;
-    //	l_source         = NULL;
     n_sides = NDEF;
     side = NULL;
     l_side = NULL;
@@ -99,9 +92,8 @@ Mesh::Mesh() {
     n_triangles = 0;
     n_tetrahedras = 0;
 
-//    concentration_hash = NULL;
-//    transport_bcd_hash = NULL;
-//    neighbour_hash = NULL;
+
+
 }
 
 
@@ -197,7 +189,7 @@ void Mesh::setup_topology() {
     Mesh *mesh=this;
 
     /// initialize mesh topology (should be handled inside mesh object)
-    read_neighbour_list(mesh);
+    read_neighbour_list(mesh, in_record_.key<FilePath>("neighbouring") );
 
     make_side_list( mesh);
     make_edge_list(mesh);

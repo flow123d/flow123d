@@ -42,6 +42,7 @@
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
 
+
 // for a linux system we assume glibc library
 // with support of ISOC99 functions
 //#define _ISOC99_SOURCE
@@ -80,6 +81,8 @@ typedef struct SystemInfo {
 extern SystemInfo sys_info;
 
 void 	system_init( int &argc, char ** &argv);
+
+
 void    system_set_from_options();
 char * 	get_log_fname( void );
 char * 	get_log_file( void );

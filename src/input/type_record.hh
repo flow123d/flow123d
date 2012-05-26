@@ -42,7 +42,10 @@ public:
      * Exceptions specific to this class.
      */
     TYPEDEF_ERR_INFO( EI_Record, Record );
+    TYPEDEF_ERR_INFO( EI_RecordName, const string);
     DECLARE_EXCEPTION( ExcRecordKeyNotFound, << "Key " << EI_KeyName::qval <<" not found in Record:\n" <<  EI_Record::val );
+    DECLARE_EXCEPTION( ExcDeriveNonEmpty, << "Can not derive from Record " << EI_RecordName::qval << " into"
+            "non-empty Record:\n" << EI_Record::val );
 
     /**
      *  Structure for description of one key in record.

@@ -33,7 +33,7 @@ set(super_test_libs system_lib)
 if(CMAKE_COMPILER_IS_GNUCXX)
     #set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for auto and multiline raw strings
     
-    #define_test(exceptions)
+    define_test(exceptions)
     define_test(file_path)
 endif()
 

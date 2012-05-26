@@ -33,9 +33,14 @@
 #include "system/system.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
+#include "input/interface.hh"
+#include "input/json_to_storage.hh"
+
+#include <iostream>
+#include <fstream>
 
 #include "main.h"
-#include "io/read_ini.h"
+//#include "io/read_ini.h"
 
 #include "rev_num.h"
 
@@ -100,24 +105,24 @@ void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
     }
 }
 
-Input::Type::Record &declare_root_record() {
+Input::Type::Record &get_input_type() {
     using namespace Input::Type;
 
     // this should be part of a system class containing all support information
-    static Record system_rec("System", "Record with general support data.");
-    system_rec.declare_key("pause_after_run", Bool(), Default("false"),
-            "If true, the program will wait for key press before it terminates.");
-    system_rec.finish();
+    //static Record system_rec("System", "Record with general support data.");
+    //system_rec.finish();
 
 
     static Record main_rec("Root", "Root record of JSON input for Flow123d.");
-    main_rec.declare_key("system", system_rec, "");
-    main_rec.declare_key("material", FileName::input(),
-            "File with material information.");
-    main_rec.declare_key("problem", HC_ExplicitSequential::get_input_type(), Default::obligatory(),
+    //main_rec.declare_key("system", system_rec, "");
+
+    main_rec.declare_key("problem", CouplingBase::get_input_type(), Default::obligatory(),
             "Simulation problem to be solved.");
+    main_rec.declare_key("pause_after_run", Bool(), Default("false"),
+                "If true, the program will wait for key press before it terminates.");
+    main_rec.finish();
 
-
+    return main_rec;
 }
 
 //=============================================================================
@@ -126,17 +131,40 @@ Input::Type::Record &declare_root_record() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
+    using namespace Input;
     std::string ini_fname;
 
     F_ENTRY;
 
     parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
 
-    Input::Type::Record main_record_type = declare_root_record();
+    Input::Type::Record main_record_type = get_input_type();
 
     system_init(argc, argv); // Petsc, open log, read ini file
-    OptionsInit(ini_fname.c_str()); // Read options/ini file into database
-    system_set_from_options();
+    //OptionsInit(ini_fname.c_str()); // Read options/ini file into database
+
+    // todo: should use Boost::parameters, and move this to parse_cmd_line
+    char input_dir[PETSC_MAX_PATH_LEN];
+    char output_dir[PETSC_MAX_PATH_LEN];
+    PetscBool flg;
+
+    PetscOptionsGetString(PETSC_NULL,"-i",input_dir,PETSC_MAX_PATH_LEN,&flg);
+    if (! flg) input_dir[0]=0;
+
+    PetscOptionsGetString(PETSC_NULL,"-o",output_dir,PETSC_MAX_PATH_LEN,&flg);
+    if (! flg) output_dir[0]=0;
+
+    FilePath::set_io_dirs(".", string(input_dir), string(output_dir) );
+
+
+    Input::JSONToStorage json_reader;
+    std::ifstream in_stream(ini_fname.c_str());
+    json_reader.read_stream(in_stream, main_record_type );
+
+    Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+
+    sys_info.pause_after_run=i_rec.key<bool>("pause_after_run");
+
 
     Profiler::initialize(MPI_COMM_WORLD);
 
@@ -151,24 +179,18 @@ int main(int argc, char **argv) {
     xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", version.c_str(),revision.c_str());
     xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
 
-    ProblemType type = (ProblemType) OptGetInt("Global", "Problem_type", NULL);
-    switch (type) {
-    case CONVERT_TO_OUTPUT:
-        main_convert_to_output();
-        break;
-    case STEADY_SATURATED:
-    case UNSTEADY_SATURATED:
-    case UNSTEADY_SATURATED_LMH: {
-        HC_ExplicitSequential *problem = new HC_ExplicitSequential(type);
+    Input::AbstractRecord i_problem = i_rec.key<AbstractRecord>("problem");
+
+    if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
+        HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
         problem->run_simulation();
         delete problem;
-        break;
+
+    } else {
+        xprintf(UsrErr,"Problem type not implemented.");
     }
-    case PROBLEM_DENSITY:
-        // main_compute_mh_density(problem);
-        xprintf(UsrErr,"Density driven model not yet reimplemented.");
-        break;
-    }
+
+
 
     // Say Goodbye
     return xterminate(false);

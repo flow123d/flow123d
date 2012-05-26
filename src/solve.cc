@@ -158,6 +158,7 @@ void solve_system( struct Solver *solver, struct LinSys *system )
 	      	case ISOL:
 	      		SET_GENERIC_CALL;
 	      		RunExtern(solver,cmdline,&write_sys_isol, &read_sol_matlab);
+	      		break;
 	      	case MATLAB:
 	      		SET_MATLAB_CALL;
 	      		RunExtern(solver,cmdline,&write_sys_matlab,&read_sol_matlab);

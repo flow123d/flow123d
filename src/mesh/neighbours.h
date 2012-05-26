@@ -77,7 +77,7 @@ typedef struct Neighbour
 
 
 
-void read_neighbour_list(Mesh*);
+void read_neighbour_list(Mesh*, const string neighbour_file);
 
 #endif
 //-----------------------------------------------------------------------------

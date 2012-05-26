@@ -11,7 +11,7 @@
 
 #include <input/input_type.hh>
 #include <input/json_to_storage.hh>
-#include <input/input_interface.hh>
+#include <input/interface.hh>
 
 
 class Equation {

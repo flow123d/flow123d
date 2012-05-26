@@ -86,6 +86,7 @@ void read_boundary( struct Mesh *mesh )
                             break;
             default :
                 xprintf(UsrErr,"Unknown type of boundary condition - cond # %d, type %c\n", bcd_id, bcd->type );
+                break;
         }
 
         unsigned int where  = atoi( xstrtok( NULL) );

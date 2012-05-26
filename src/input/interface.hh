@@ -1,5 +1,5 @@
 /*
- * input_interface.hh
+ * interface.hh
  *
  *  Created on: Mar 29, 2012
  *      Author: jb
@@ -132,6 +132,10 @@ public:
             throw e;
         }
 
+    }
+
+    inline bool has_key(const string &key) const {
+        return record_type_.has_key(key);
     }
 
     /**

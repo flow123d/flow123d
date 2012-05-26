@@ -25,7 +25,7 @@
 #include <gtest_throw_what.hh>
 #include <vector>
 
-#include <input/input_interface.hh>
+#include <input/interface.hh>
 #include <input/input_type.hh>
 #include <input/type_record.hh>
 

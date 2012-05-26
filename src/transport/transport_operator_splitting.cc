@@ -92,6 +92,7 @@ Input::Type::AbstractRecord &TransportOperatorSplitting::get_input_type()
         rec.finish();
         rec.no_more_descendants();
     }
+    return rec;
 }
 
 

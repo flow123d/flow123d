@@ -49,7 +49,7 @@ static void neighbour_specs_vv_2e(struct Neighbour*);
 //=============================================================================
 // READ DATA OF ALL NEIGHBOURS
 //=============================================================================
-void read_neighbour_list(Mesh* mesh)
+void read_neighbour_list(Mesh* mesh, const string neighbour_file)
 {
 	FILE	*in;   // input file
 	char     line[ LINE_SIZE ];   // line of data file
@@ -57,8 +57,8 @@ void read_neighbour_list(Mesh* mesh)
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_neighbour_list()\n");
 	xprintf( Msg, "Reading neighbours...")/*orig verb 2*/;
-	const std::string& file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" ));
-	in = xfopen( file_name, "rt" );
+
+	in = xfopen( neighbour_file, "rt" );
 	skip_to( in, "$Neighbours" );
 	xfgets( line, LINE_SIZE - 2, in );
 	mesh->n_neighs = atoi( xstrtok( line) );

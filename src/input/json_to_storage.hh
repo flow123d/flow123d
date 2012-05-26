@@ -26,7 +26,7 @@
 
 
 #include "input/input_type.hh"
-#include "input/input_interface.hh"
+#include "input/interface.hh"
 #include "input/storage.hh"
 #include "json_spirit/json_spirit.h"
 
@@ -48,10 +48,10 @@ public:
     TYPEDEF_ERR_INFO(EI_RefAddress, JSONPath);
     TYPEDEF_ERR_INFO(EI_RefStr, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
-    DECLARE_EXCEPTION(ExcRefOfWrongType,
+    DECLARE_INPUT_EXCEPTION(ExcRefOfWrongType,
             << "Reference at address "
             << EI_ErrorAddress::qval << " has wrong type, should by string.");
-    DECLARE_EXCEPTION(ExcReferenceNotFound,
+    DECLARE_INPUT_EXCEPTION(ExcReferenceNotFound,
             << "Reference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
             << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
 
@@ -141,14 +141,14 @@ public:
     TYPEDEF_ERR_INFO(EI_File, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, JSONPath);
-    DECLARE_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::val << " at address: " << EI_ErrorAddress::val <<"\n"
+    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::val << " at address: " << EI_ErrorAddress::val <<"\n"
                                             << EI_Specification::val << "\n"
                                             << "Expected type:\n" << *EI_InputType::ref(_exc) );
 
     TYPEDEF_ERR_INFO( EI_JSONLine, unsigned int);
     TYPEDEF_ERR_INFO( EI_JSONColumn, unsigned int);
     TYPEDEF_ERR_INFO( EI_JSONReason, string);
-    DECLARE_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at line "
+    DECLARE_INPUT_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at line "
             << EI_JSONLine::val << " : col " << EI_JSONColumn::val
             << " ; reason: " << EI_JSONReason::val << "\n" );
 

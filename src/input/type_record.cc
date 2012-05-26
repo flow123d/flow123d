@@ -43,7 +43,7 @@ void Record::derive_from(AbstractRecord parent) {
 
     empty_check();
     if (data_->keys.size() != 0)
-            xprintf(PrgErr, "Can not inherit into Record `%s`, it already has some keys declared\n.", type_name().c_str());
+            THROW( ExcDeriveNonEmpty() << EI_RecordName(parent.type_name()) << EI_Record(*this) );
 
     parent.add_descendant(*this);
     // semi-deep copy

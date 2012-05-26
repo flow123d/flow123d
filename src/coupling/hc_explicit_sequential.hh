@@ -33,6 +33,8 @@
 
 #include "main.h"
 #include "input/input_type.hh"
+#include "input/interface.hh"
+
 #include "coupling/equation.hh"
 
 class DarcyFlowMH;
@@ -62,12 +64,11 @@ class HC_ExplicitSequential : public CouplingBase {
 public:
     static Input::Type::Record &get_input_type();
 
-    HC_ExplicitSequential(ProblemType problem_type);
+    HC_ExplicitSequential(Input::Record in_record);
     void run_simulation();
     ~HC_ExplicitSequential();
 
 private:
-    ProblemType type_;
 
     /// mesh common to darcy flow and transport
     Mesh *mesh;

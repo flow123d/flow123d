@@ -42,8 +42,10 @@
 
 #include "global_defs.h"
 #include "system/system.hh"
-#include "io/read_ini.h"
+//#include "io/read_ini.h"
 #include "system/xio.h"
+
+
 
 #ifdef WINDOWS
   #include <direct.h>
@@ -111,8 +113,8 @@ void system_init( int &argc, char ** &argv )
 
 void system_set_from_options()
 {
-    sys_info.verbosity=OptGetInt( "Run", "Screen_verbosity", "0" );
-    sys_info.pause_after_run=OptGetBool( "Run", "Pause_after_run", "no" );
+    //sys_info.verbosity = OptGetInt( "Run", "Screen_verbosity", "0" );
+
 }
 
 

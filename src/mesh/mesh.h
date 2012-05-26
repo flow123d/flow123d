@@ -41,6 +41,7 @@
 #include "mesh/boundaries.h"
 
 #include "input/input_type.hh"
+#include "input/interface.hh"
 
 
 #define ELM  0
@@ -98,10 +99,12 @@ class Mesh {
 public:
     static Input::Type::Record get_input_type();
 
+    Input::Record in_record_;
+
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 
-    Mesh();
+    Mesh(Input::Record in_record);
 
     inline unsigned int n_elements() const {
         return element.size();

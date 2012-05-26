@@ -63,8 +63,12 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
 
     if (!rec.is_finished()) {
         rec.finish();
+
+        DarcyFlowMH_Steady::get_input_type();
+
         rec.no_more_descendants();
     }
+    return rec;
 }
 
 
@@ -187,6 +191,21 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     solution_changed_for_scatter=true;
 
 }
+
+Input::Type::Record & DarcyFlowMH_Steady::get_input_type()
+{
+    using namespace Input::Type;
+    static Record rec("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(DarcyFlowMH::get_input_type());
+        rec.finish();
+    }
+    return rec;
+}
+
+
+
 
 //=============================================================================
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements

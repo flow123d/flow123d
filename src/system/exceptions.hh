@@ -19,6 +19,8 @@
 #include <cstdlib>
 #include <boost/exception/all.hpp>
 
+#include "system.hh"
+
 /**
  * Macro for throwing with saving place of the throw.
  * Usage:
@@ -56,7 +58,10 @@ struct ExceptionBase : virtual std::exception, virtual boost::exception
  *
  * TODO: Implement kind error messages for this case.
  */
-struct InputException : virtual ExceptionBase {};
+struct InputException : virtual ExceptionBase
+{
+    virtual const char * what () const throw ();
+};
 
 
 
@@ -89,7 +94,8 @@ struct ExcName : virtual ::ExceptionBase {                                  \
  */
 #define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
 struct ExcName : virtual ::InputException {                                   \
-     virtual void print_info(std::ostream &out) const {                     \
+     virtual void print_info(std::ostringstream &out) const {                     \
+         DBGMSG("");                                                        \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                                     \
          ExcName const &_exc=*this;                                               \
