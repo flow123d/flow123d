@@ -18,21 +18,6 @@ namespace Type {
 
 using namespace std;
 
-/**
- * Base of Selection templates.
- */
-class SelectionBase: public Scalar {
-public:
-
-    /**
-     * Exceptions specific to this class.
-     */
-    TYPEDEF_ERR_INFO( EI_Selection, const SelectionBase * );
-    DECLARE_EXCEPTION( ExcSelectionKeyNotFound, << "Key " << EI_KeyName::qval <<" not found in Selection:\n" <<  *EI_Selection::ref(_exc) );
-
-
-    virtual int name_to_int(const string& name) const =0;
-};
 
 /**
  * @brief Template for classes storing finite set of named values.
@@ -55,11 +40,15 @@ public:
  *       Therefore we either have to move under C++11, where enum classes may provide elementary
  *       reflection or have Selection of simple ints.
  */
-template<class Enum>
-class Selection: public SelectionBase {
-private:
-    BOOST_STATIC_ASSERT( boost::is_integral<Enum>::value || boost::is_enum<Enum>::value );
+
+class Selection : public Scalar {
 public:
+    /**
+     * Exceptions specific to this class.
+     */
+    TYPEDEF_ERR_INFO( EI_Selection, const Selection );
+    DECLARE_EXCEPTION( ExcSelectionKeyNotFound,
+            << "Key " << EI_KeyName::qval <<" not found in Selection:\n" <<  EI_Selection::val );
 
 
 
@@ -79,7 +68,7 @@ public:
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
      */
-    void add_value(const Enum value, const std::string &key, const std::string &description = "") {
+    void add_value(const int value, const std::string &key, const std::string &description = "") {
         empty_check();
         if (is_finished())
             xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
@@ -127,7 +116,7 @@ public:
         if (it != data_->key_to_index_.end())
             return (data_->keys_[it->second].value);
         else
-            throw ExcSelectionKeyNotFound() << EI_KeyName(key) << EI_Selection(this);
+            throw ExcSelectionKeyNotFound() << EI_KeyName(key) << EI_Selection(*this);
     }
 
     /**
@@ -142,7 +131,7 @@ public:
     /***
      *  Check if there is a particular value in the Selection.
      */
-    inline bool has_value(const Enum &val) const {
+    inline bool has_value(const int &val) const {
         finished_check();
         return (data_->value_to_index_.find(val) != data_->value_to_index_.end());
     }
@@ -151,6 +140,14 @@ public:
         finished_check();
         ASSERT( data_->keys_.size() == data_->key_to_index_.size(), "Sizes of Type:Selection doesn't match. (map: %d vec: %d)\n", data_->key_to_index_.size(), data_->keys_.size());
         return data_->keys_.size();
+    }
+
+    int from_default(const string &str) const {
+        try {
+            return name_to_int(str);
+        } catch (ExcSelectionKeyNotFound &e) {
+            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+        }
     }
 
 private:
@@ -169,7 +166,7 @@ private:
         : type_name_(name), made_extensive_doc(false), finished(false)
         {}
 
-        void add_value(const Enum value, const std::string &key, const std::string &description) {
+        void add_value(const int value, const std::string &key, const std::string &description) {
             F_ENTRY;
 
             KeyHash key_h = TypeBase::key_hash(key);
@@ -224,15 +221,15 @@ private:
             unsigned int key_index;
             string key_;
             string description_;
-            Enum value;
+            int value;
         };
         /// Map of valid keys to index.
         std::map<KeyHash, unsigned int> key_to_index_;
         typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
 
         /// Map of valid values to index.
-        typename std::map<Enum, unsigned int> value_to_index_;
-        typedef typename std::map<Enum, unsigned int>::const_iterator value_to_index_const_iter;
+        typename std::map<int, unsigned int> value_to_index_;
+        typedef typename std::map<int, unsigned int>::const_iterator value_to_index_const_iter;
 
         std::vector<Key> keys_;
         typedef typename std::vector<struct Key>::const_iterator keys_const_iterator;

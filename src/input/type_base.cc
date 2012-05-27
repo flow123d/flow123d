@@ -23,6 +23,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "type_base.hh"
+#include <boost/algorithm/string.hpp>
 
 
 namespace Input {
@@ -41,7 +42,9 @@ Default::Default()
 
 Default::Default(const std::string & value)
 : value_(value), type_(declaration)
-{}
+{
+    boost::algorithm::trim(value_);
+}
 
 Default::Default(enum DefaultType type)
 : value_(), type_(type)

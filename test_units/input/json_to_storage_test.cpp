@@ -160,7 +160,7 @@ TEST_F(InputJSONToStorageTest, Double) {
 
 TEST_F(InputJSONToStorageTest, Selection) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-    Type::Selection<int> sel_type("IntSelection");
+    Type::Selection sel_type("IntSelection");
     sel_type.add_value(10,"ten","");
     sel_type.add_value(1,"one","");
     sel_type.finish();
@@ -382,6 +382,34 @@ TEST(InputJSONToStorageTest_external, get_root_interface) {
 
 }
 
+TEST_F(InputJSONToStorageTest, default_values) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
+    static Type::Selection sel_type("tmp selection");
+    sel_type.add_value(1,"one");
+    sel_type.add_value(2,"two");
+    sel_type.finish();
+
+    static Type::Record rec_type( "SomeRec","desc.");
+    rec_type.declare_key("int_key", Type::Integer(0,5), Type::Default("4"), "");
+    rec_type.declare_key("bool_key", Type::Bool(), Type::Default("true"),"");
+    rec_type.declare_key("sel_key", sel_type, Type::Default("two"),"");
+    rec_type.declare_key("double_key", Type::Double(), Type::Default("1.23"),"");
+    rec_type.declare_key("str_key", Type::String(), Type::Default("ahoj"),"");
+    rec_type.finish();
+
+    {
+        stringstream ss("{ }");
+        read_stream(ss, rec_type);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(5, storage_->get_array_size());
+        EXPECT_EQ(4, storage_->get_item(0)->get_int() );
+        EXPECT_TRUE( storage_->get_item(1)->get_bool() );
+        EXPECT_EQ(2, storage_->get_item(2)->get_int() );
+        EXPECT_EQ(1.23, storage_->get_item(3)->get_double() );
+        EXPECT_EQ("ahoj", storage_->get_item(4)->get_string() );
+    }
+}
 
 

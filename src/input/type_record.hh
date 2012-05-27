@@ -44,7 +44,7 @@ public:
     TYPEDEF_ERR_INFO( EI_Record, Record );
     TYPEDEF_ERR_INFO( EI_RecordName, const string);
     DECLARE_EXCEPTION( ExcRecordKeyNotFound, << "Key " << EI_KeyName::qval <<" not found in Record:\n" <<  EI_Record::val );
-    DECLARE_EXCEPTION( ExcDeriveNonEmpty, << "Can not derive from Record " << EI_RecordName::qval << " into"
+    DECLARE_EXCEPTION( ExcDeriveNonEmpty, << "Can not derive from Record " << EI_RecordName::qval << " into "
             "non-empty Record:\n" << EI_Record::val );
 
     /**
@@ -110,6 +110,17 @@ public:
         // key defined by AbstractRecord.
         if ( ! type.is_finished() )
             xprintf(PrgErr, "Unfinished type of declaring key: %s in Record type: %s\n", key.c_str(), type_name().c_str() );
+
+        // check validity of possibly given default value
+        if (default_value.has_value()) {
+
+            try {
+                type.valid_default( default_value.value() );
+            } catch (ExcWrongDefault & e) {
+                e << EI_KeyName(key);
+                throw;
+            }
+        }
 
         // make our own copy of type object allocated at heap (could be expensive, but we don't care)
         boost::shared_ptr<const KeyType> type_copy = boost::make_shared<KeyType>(type);
@@ -292,10 +303,10 @@ protected:
     class ChildData {
     public:
         ChildData(const string &name)
-        : selection_of_childs( boost::make_shared<Selection<unsigned int> > (name) )
+        : selection_of_childs( boost::make_shared<Selection> (name) )
         {}
 
-        boost::shared_ptr< Selection<unsigned int> > selection_of_childs;
+        boost::shared_ptr< Selection> selection_of_childs;
         vector< Record > list_of_childs;
     };
 

@@ -25,10 +25,12 @@
 
 
 
+
+#include "json_spirit/json_spirit.h"
 #include "input/input_type.hh"
+
 #include "input/interface.hh"
 #include "input/storage.hh"
-#include "json_spirit/json_spirit.h"
 
 
 namespace Input {
@@ -173,11 +175,16 @@ protected:
     StorageBase * make_storage(JSONPath &p, const Type::Record *record);
     StorageBase * make_storage(JSONPath &p, const Type::AbstractRecord *abstr_rec);
     StorageBase * make_storage(JSONPath &p, const Type::Array *array);
-    StorageBase * make_storage(JSONPath &p, const Type::SelectionBase *selection);
+    StorageBase * make_storage(JSONPath &p, const Type::Selection *selection);
     StorageBase * make_storage(JSONPath &p, const Type::Bool *bool_type);
     StorageBase * make_storage(JSONPath &p, const Type::Integer *int_type);
     StorageBase * make_storage(JSONPath &p, const Type::Double *double_type);
     StorageBase * make_storage(JSONPath &p, const Type::String *string_type);
+
+    /**
+     * Dispatch according to @p type and create corresponding storage from the given string.
+     */
+    StorageBase * make_storage_from_default( const string &dflt_str, const Type::TypeBase *type);
 
 
 

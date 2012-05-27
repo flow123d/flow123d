@@ -7,6 +7,7 @@
 
 
 #include <gtest/gtest.h>
+#include <gtest_throw_what.hh>
 
 #include <input/input_type.hh>
 
@@ -56,6 +57,47 @@ TEST(InputTypeTypeBase, static_methods) {
 
 
 /**
+ * Test all simple scalar types.
+ */
+TEST(InputTypeScalar, all_types) {
+using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    // from_default methods
+    // Bool
+    EXPECT_TRUE( Bool().from_default("true") );
+    EXPECT_FALSE( Bool().from_default("false") );
+    EXPECT_THROW_WHAT( { Bool().from_default("yes"); }, ExcWrongDefault,
+            "Default value 'yes' do not match type: 'Bool';" );
+
+    // Integer
+    EXPECT_EQ(10, Integer().from_default("10") );
+    EXPECT_THROW_WHAT( { Integer(0,4).from_default("10"); }, ExcWrongDefault,
+            "Default value '10' do not match type: 'Integer';" );
+    EXPECT_THROW_WHAT( { Integer().from_default("yes"); }, ExcWrongDefault,
+            "Default value 'yes' do not match type: 'Integer';" );
+
+    // Double
+    EXPECT_EQ(3.14, Double().from_default("3.14") );
+    EXPECT_EQ(-5.67e-23, Double().from_default("-5.67E-23") );
+    EXPECT_THROW_WHAT( { Double(0,4.4).from_default("-1e-10"); }, ExcWrongDefault,
+            "Default value .* do not match type: 'Double';" );
+    EXPECT_THROW_WHAT( { Double().from_default("-3.6t5"); }, ExcWrongDefault,
+            "Default value .* do not match type: 'Double';" );
+
+
+    // test equivalence operator
+    EXPECT_EQ( FileName::output(), FileName::output() );
+    EXPECT_NE( FileName::output(), FileName::input() );
+    EXPECT_NE( FileName::output(), Integer() );
+
+    // test getter for file type
+    EXPECT_EQ( FilePath::output_file, FileName::output().get_file_type() );
+
+
+}
+
+/**
  * Test Array class.
  */
 TEST(InputTypeArray, all_methods) {
@@ -71,7 +113,7 @@ using namespace Input::Type;
 
     Array arr_rec_shared_ptr( rec_2 );
 
-    Selection<int> sel("Singular set.");
+    Selection sel("Singular set.");
     sel.finish();
 
     Array arr_of_sel( sel );
@@ -95,21 +137,7 @@ using namespace Input::Type;
 
 }
 
-/**
- * Test all simple scalar types.
- */
-TEST(InputTypeScalar, all_types) {
-using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    // test equivalence operator
-    EXPECT_EQ( FileName::output(), FileName::output() );
-    EXPECT_NE( FileName::output(), FileName::input() );
-    EXPECT_NE( FileName::output(), Integer() );
-
-    // test getter for file type
-    EXPECT_EQ( FilePath::output_file, FileName::output().get_file_type() );
-}
 
 
 /**
@@ -128,8 +156,8 @@ TEST(InputTypeSelection, construction) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    Selection<enum Colors> *sel1= new Selection<enum Colors>("Colors");
-    Selection<enum Colors> sel2;
+    Selection *sel1= new Selection("Colors");
+    Selection sel2;
     sel2=*sel1;
 
 
@@ -147,7 +175,7 @@ using namespace Input::Type;
     sel2.finish();
     EXPECT_DEATH( {sel2.add_value(yellow,"y");}, "in finished Selection type:");
 
-    Selection<int> sel3;
+    Selection sel3;
     EXPECT_DEATH( {sel3.add_value(1,"one");}, "Empty Selection handle." );
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
@@ -157,14 +185,25 @@ using namespace Input::Type;
     EXPECT_FALSE( sel2.has_value(yellow) );
 
     EXPECT_EQ( 45, sel2.name_to_int("black") );
-    EXPECT_THROW( {sel2.name_to_int("xblack");}, SelectionBase::ExcSelectionKeyNotFound );
+    EXPECT_THROW( {sel2.name_to_int("xblack");}, Selection::ExcSelectionKeyNotFound );
 
 
     // Integer selection
-    Selection<int> int_sel("Integer selection");
+    Selection int_sel("Integer selection");
     int_sel.add_value(10, "ten");
     int_sel.add_value(0,"zero");
     int_sel.finish();
+
+
+    // Selection defaults
+    EXPECT_EQ(10, int_sel.from_default("ten") );
+    EXPECT_EQ(0, int_sel.from_default("zero") );
+    EXPECT_THROW_WHAT( { int_sel.from_default("two"); }, ExcWrongDefault,
+            "Default value .* do not match type: 'Integer selection';" );
+    EXPECT_THROW_WHAT( { int_sel.from_default("10"); }, ExcWrongDefault,
+            "Default value .* do not match type: 'Integer selection';" );
+
+
 
     EXPECT_EQ(10, int_sel.name_to_int("ten"));
 }
@@ -229,7 +268,7 @@ Record array_record("RecordOfArrays",
      record_record.finish();
  }
 
- Selection<enum Colors> sel("Colors");
+ Selection sel("Colors");
  {
      sel.add_value(blue, "blue");
      sel.add_value(white,"white","White color");

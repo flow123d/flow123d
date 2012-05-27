@@ -7,6 +7,7 @@
 
 
 #include <gtest/gtest.h>
+#include "gtest_throw_what.hh"
 
 #include <input/type_record.hh>
 
@@ -55,11 +56,14 @@ using namespace Input::Type;
    EXPECT_DEATH( { rec.declare_key("data_description", String(),"");},
                 "Re-declaration of the key:");
 
+   EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),"");}, ExcWrongDefault,
+           "Default value .* do not match type: 'Double';");
+
    enum Colors {
        white, black, red
    };
 
-   Selection<Colors> sel("Color selection");
+   Selection sel("Color selection");
    sel.add_value(black, "black");
    sel.add_value(red, "red");
    sel.finish();
@@ -219,7 +223,7 @@ using namespace Input::Type;
     a_rec.finish();
 
     EXPECT_EQ(0, a_rec.key_index("TYPE"));
-    EXPECT_EQ(Selection<unsigned int>("EqBase_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
+    EXPECT_EQ(Selection("EqBase_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
 
 
     Record b_rec("EqDarcy","");
@@ -248,7 +252,8 @@ using namespace Input::Type;
     EXPECT_EQ( b_rec, a_rec.get_descendant("EqDarcy"));
     EXPECT_EQ( c_rec, a_rec.get_descendant("EqTransp"));
 
-    EXPECT_DEATH( {c_rec.derive_from(a_rec);} , "it already has some keys declared" );
+    EXPECT_THROW_WHAT( {c_rec.derive_from(a_rec);} , Record::ExcDeriveNonEmpty,
+            "Can not derive from Record .* into non-empty Record:" );
 
     AbstractRecord x_rec("ar","");
     Record y_rec("y_rec","");

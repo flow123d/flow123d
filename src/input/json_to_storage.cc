@@ -271,14 +271,15 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
     } else
     if (typeid(*type) == typeid(Type::Bool)) {
         return make_storage(p, static_cast<const Type::Bool *>(type) );
+    } else
+    if (typeid(*type) == typeid(Type::Selection)) {
+        return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) return make_storage(p, string_type );
 
-        const Type::SelectionBase * selection_type = dynamic_cast<const Type::SelectionBase*>(type);
-        if (selection_type != NULL ) return make_storage(p, selection_type );
-
-        // default error
+        // default -> error
+        xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
     }
 
 }
@@ -303,9 +304,13 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
                 if (it->default_.is_obligatory() ) {
                     THROW( ExcInputError() << EI_Specification("Missing obligatory key '"+ it->key_ +"'.")
                             << EI_ErrorAddress(p) << EI_InputType(record) );
+                } else if (it->default_.has_value() ) {
+                   storage_array->new_item(it->key_index,
+                           make_storage_from_default( it->default_.value(), it->type_.get() ) );
+                } else { // defalut - optional
+                    // set null
+                    storage_array->new_item(it->key_index, new StorageNull() );
                 }
-                // set null
-                storage_array->new_item(it->key_index, new StorageNull() );
             }
         }
 
@@ -329,7 +334,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
         } else {
             try {
                 return make_storage(p, &( abstr_rec->get_descendant(type_node->get_str()) ));
-            } catch(Type::SelectionBase::ExcSelectionKeyNotFound &e) {
+            } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
 
                 THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec) );
             }
@@ -369,13 +374,13 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::SelectionBase *selection)
+StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Selection *selection)
 {
     if (p.head()->type() == json_spirit::str_type) {
         try {
             int value = selection->name_to_int( p.head()->get_str() );
             return new StorageInt( value );
-        } catch (Type::SelectionBase::ExcSelectionKeyNotFound &exc) {
+        } catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
             THROW( ExcInputError() << EI_Specification("Wrong value of the Selection.") << EI_ErrorAddress(p) << EI_InputType(selection) );
         }
     }
@@ -451,6 +456,34 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
     }
     return NULL;
+}
+
+
+
+StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
+    try {
+        if (typeid(*type) == typeid(Type::Integer)) {
+            return new StorageInt( static_cast<const Type::Integer *>(type) ->from_default(dflt_str) );
+        } else
+        if (typeid(*type) == typeid(Type::Double)) {
+            return new StorageDouble( static_cast<const Type::Double *>(type) ->from_default(dflt_str) );
+        } else
+        if (typeid(*type) == typeid(Type::Bool)) {
+            return new StorageBool( static_cast<const Type::Bool *>(type) ->from_default(dflt_str) );
+        } else
+        if (typeid(*type) == typeid(Type::Selection)) {
+                return new StorageInt( static_cast<const Type::Selection *>(type) ->from_default(dflt_str) );
+        } else {
+            const Type::String * string_type = dynamic_cast<const Type::String *>(type);
+            if (string_type != NULL ) return new StorageString( string_type->from_default(dflt_str) );
+
+            // default error
+            xprintf(Err,"Can not store default value for type: %s\n", typeid(type).name());
+        }
+    } catch (Input::Type::ExcWrongDefault & e) {
+
+    }
+
 }
 
 

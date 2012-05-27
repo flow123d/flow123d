@@ -68,19 +68,14 @@ const char * InputException::what() const throw () {
 
     // Be sure that this function do not throw.
     try {
-
-        DBGMSG("\n");
         std::ostringstream converter;
 
         converter << "--------------------------------------------------------" << std::endl;
         converter << "User Error: ";
-        DBGMSG("\n");
         print_info(converter);
-        DBGMSG("\n");
         converter << "--------------------------------------------------------" << std::endl;
 
         message = converter.str();
-        DBGMSG("\n");
         return message.c_str();
 
     } catch (std::exception &exc) {

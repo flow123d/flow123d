@@ -42,6 +42,11 @@ using namespace std;
 
 TYPEDEF_ERR_INFO( EI_KeyName, const string );
 
+TYPEDEF_ERR_INFO( EI_DefaultStr, const string);
+TYPEDEF_ERR_INFO( EI_TypeName, const string);
+DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
+        << " do not match type: " << EI_TypeName::qval << ";\n"
+        << "During declaration of the key: " << EI_KeyName::qval );
 
 
 /**
@@ -224,6 +229,9 @@ public:
     /// Empty virtual destructor.
     virtual ~TypeBase( void ) {}
 
+    virtual void valid_default(const string &str) const
+    { }
+
 protected:
     /**
      * Write out a string with given padding of every new line.
@@ -339,7 +347,19 @@ public:
     Bool()
     {}
 
+    virtual void valid_default(const string &str) const
+    { from_default(str);}
 
+    bool from_default(const string &str) const {
+        if (str == "true" )  {
+            return true;
+        } else
+        if (str == "false") {
+            return false;
+        } else {
+            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+        }
+    }
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;
@@ -363,25 +383,23 @@ public:
     }
 
     /**
-     * Returns true if the given string can be converted to integer value conforming to the Type::Integer bounds.
-     */
-    bool match(const string &str) const {
-        int value;
-        return match(str, value);
-    }
-
-    /**
      * As before but also returns converted integer in @p value.
      */
-    bool match(const string &str, int &value) const {
+    int from_default(const string &str) const {
         std::istringstream stream(str);
+        int value;
         stream >> value;
-        if (stream.good()) {
-            return match(value);
+
+        if (stream && stream.eof() && match(value)) {
+            return value;
         } else {
-            return false;
+            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
         }
     }
+
+    virtual void valid_default(const string &str) const
+    { from_default(str);}
+
 
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
@@ -397,7 +415,7 @@ private:
  */
 class Double : public Scalar {
 public:
-    Double(double lower_bound=std::numeric_limits<double>::min(), double upper_bound=std::numeric_limits<double>::max())
+    Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
     {}
 
@@ -408,26 +426,25 @@ public:
         return ( value >=lower_bound_ && value <= upper_bound_);
     }
 
-    /**
-     * Returns true if the given string can be converted to integer value conforming to the Type::Double bounds.
-     */
-    bool match(string &str) const {
-        double value;
-        return match(str, value);
-    }
 
     /**
      * As before but also returns converted integer in @p value.
      */
-    bool match(std::string &str, double &value) const {
+    double from_default(const string &str) const {
         std::istringstream stream(str);
+        double value;
         stream >> value;
-        if (stream.good()) {
-            return match(value);
+
+        if (stream && stream.eof() && match(value)) {
+            return value;
         } else {
-            return false;
+            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
         }
     }
+
+    virtual void valid_default(const string &str) const
+    { from_default(str);}
+
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;
@@ -447,6 +464,15 @@ class String : public Scalar {
 public:
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
     virtual string type_name() const;
+
+    virtual void valid_default(const string &str) const
+    {from_default(str);}
+
+    /**
+     * Particular descendants can check validity of the string.
+     */
+    virtual string from_default(const string &str) const
+    {return str;}
 };
 
 
@@ -475,8 +501,6 @@ public:
     { return  typeid(*this) == typeid(other) &&
                      (type_== static_cast<const FileName *>(&other)->get_file_type() );
     }
-
-
 
     ::FilePath::FileType get_file_type() const {
         return type_;

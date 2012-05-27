@@ -95,7 +95,6 @@ struct ExcName : virtual ::ExceptionBase {                                  \
 #define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
 struct ExcName : virtual ::InputException {                                   \
      virtual void print_info(std::ostringstream &out) const {                     \
-         DBGMSG("");                                                        \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                                     \
          ExcName const &_exc=*this;                                               \

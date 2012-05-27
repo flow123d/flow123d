@@ -82,6 +82,7 @@ protected:
         main->declare_key("abstr_rec_2",*abstr_rec_ptr, "desc");
         main->declare_key("file_output", FileName::output(), "description");
         main->declare_key("file_input", FileName::input(), "description");
+        main->declare_key("optional_int", Integer(), "");
         main->finish();
         }
 
@@ -116,7 +117,7 @@ protected:
             desc_b->new_item(2,new StorageDouble(3.45));
 
 
-            StorageArray * main_array = new StorageArray(11);
+            StorageArray * main_array = new StorageArray(12);
             main_array->new_item(0, sub_rec->deep_copy());
             main_array->new_item(1, sub_array_int->deep_copy());
             main_array->new_item(2, sub_array_sub_rec->deep_copy());
@@ -128,6 +129,7 @@ protected:
             main_array->new_item(8, desc_b);
             main_array->new_item(9, new StorageString("output_subdir/output.vtk"));
             main_array->new_item(10, new StorageString("input/${INPUT}/input_subdir/input.in"));
+            main_array->new_item(11, new StorageNull());
 
             delete sub_array_int;
             delete sub_rec;
@@ -195,8 +197,15 @@ TEST_F(InputInterfaceTest, ReadFromRecord) {
     Array array = record.key<Array>("array_of_int");
     EXPECT_EQ(2, *( ++array.begin<int>()) );
 
+    DBGMSG( "int: %d\n",record.key<int>("optional_int") );
+/*
+    // check has_key methods
+    EXPECT_EQ(true, record.has_key("some_integer"));
+    EXPECT_EQ(false, record.has_key("optional_int"));
+
     EXPECT_THROW_WHAT( { record.key<int>("unknown_key");} , Input::Type::Record::ExcRecordKeyNotFound, "Key 'unknown_key' not found in Record");
     EXPECT_THROW_WHAT( { record.key<int>("some_bool");} , Input::ExcTypeMismatch , "can not make iterator with type");
+*/
 
 
 }
