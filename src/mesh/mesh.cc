@@ -189,7 +189,7 @@ void Mesh::setup_topology() {
     Mesh *mesh=this;
 
     /// initialize mesh topology (should be handled inside mesh object)
-    read_neighbour_list(mesh, in_record_.key<FilePath>("neighbouring") );
+    read_neighbour_list(mesh, in_record_.val<FilePath>("neighbouring") );
 
     make_side_list( mesh);
     make_edge_list(mesh);
@@ -215,7 +215,7 @@ void Mesh::setup_topology() {
     count_side_types(mesh);
     xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
 
-    read_boundary(mesh);
+
 
 }
 

@@ -39,20 +39,27 @@
 #include "io/output.h"
 
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
+
+
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 : darcy_flow(flow), mesh_(&darcy_flow->mesh()),
   ele_flux(mesh_->n_elements(),std::vector<double>(3,0.0)),
   balance_output_file(NULL),raw_output_file(NULL)
 {
+    F_ENTRY;
+    using namespace Input;
+
     // setup output
-    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
-    DBGMSG("create output\n");
-    output_writer = new OutputTime(mesh_, output_file);
+    output_writer = new OutputTime(mesh_, in_rec.val<FilePath>("stream") );
 
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
     node_pressure.resize(mesh_->node_vector.size());
-    output_piezo_head=OptGetBool("Output","output_piezo_head","No");
+
+    {
+    Iterator<FilePath> it = in_rec.find<FilePath>("piezo_head_p0");
+    output_piezo_head=bool(it);
+    }
 
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
@@ -62,22 +69,50 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time();
-    marks.add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), darcy_flow->time().end_time(), output_mark_type );
+    marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
+            darcy_flow->time().end_time(), output_mark_type );
     DBGMSG("end create output\n");
 
 
     // temporary solution for balance output
-    std::string balance_output_fname =
-            IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "balance_output", "water_balance"));
-    balance_output_file = xfopen(balance_output_fname.c_str(), "wt");
+    balance_output_file = xfopen( in_rec.val<FilePath>("balance"), "wt");
 
     // optionally open raw output file
-    std::string raw_output_fname=OptGetFileName("Output","raw_flow_output","//");
-    if (raw_output_fname!= "//") {
-        raw_output_fname=IONameHandler::get_instance()->get_output_file_name(raw_output_fname);
-        raw_output_file = xfopen(raw_output_fname.c_str(), "wt");
+    Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow");
+    if (it) {
+        raw_output_file = xfopen(*it, "wt");
     }
 
+}
+
+Input::Type::Record DarcyFlowMHOutput::get_input_type() {
+        using namespace Input::Type;
+        static Record rec("DarcyMHOutput", "Parameters of MH output.");
+
+        if (!rec.is_finished()) {
+
+            rec.declare_key("save_step", Double(0.0), Default("1.0"),
+                    "Regular step between MH outputs.");
+            rec.declare_key("stream",FileName::output(), Default::obligatory(),
+                    "Temporary key for one MH output stream.");
+            rec.declare_key("velocity_p0", FileName::output(),
+                    "Output stream for P0 approximation of the velocity field.");
+            rec.declare_key("pressure_p0", FileName::output(),
+                    "Output stream for P0 approximation of the pressure field.");
+            rec.declare_key("pressure_p1", FileName::output(),
+                    "Output stream for P1 approximation of the pressure field.");
+            rec.declare_key("piezo_head_p0", FileName::output(),
+                    "Output stream for P0 approximation of the piezometric head field.");
+
+            rec.declare_key("balance", FileName::output(), Default("water_balance"),
+                    "Output file for water balance table.");
+
+            rec.declare_key("raw_flow", FileName::output(),
+                    "Output file with raw data form MH module.");
+
+            rec.finish();
+        }
+        return rec;
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){

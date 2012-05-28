@@ -74,6 +74,7 @@ Input::Type::AbstractRecord &CouplingBase::get_input_type() {
  */
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
+    F_ENTRY;
     using namespace Input;
 
 
@@ -81,47 +82,47 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     main_time_marks = new TimeMarks();
 
     // Material Database
-    material_database = new MaterialDatabase( in_record.key<FilePath>("material") );
+    material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
 
     // Read mesh
     // TODO: Move whole mesh setup (in particular reading, or rather generating, neighborings)
-    mesh = new Mesh( in_record.key<Record>("mesh") );
+    mesh = new Mesh( in_record.val<Record>("mesh") );
     MeshReader* meshReader = new GmshMeshReader();
-    meshReader->read( in_record.key<Record>("mesh").key<FilePath>("mesh_file"), mesh);
+    meshReader->read( in_record.val<Record>("mesh").val<FilePath>("mesh_file"), mesh);
 
     mesh->setup_topology();
     mesh->setup_materials(*material_database);
     Profiler::instance()->set_task_size(mesh->n_elements());
 
     // setup primary equation - water flow object
-    Input::AbstractRecord pe = in_record.key<AbstractRecord>("primary_equation");
+    AbstractRecord pe = in_record.val<AbstractRecord>("primary_equation");
     if (pe.type() == DarcyFlowMH_Steady::get_input_type() ) {
-            water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database);
+            water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database, pe);
 
     } else
     if (pe.type() == DarcyFlowMH_Unsteady::get_input_type() ) {
-            water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database);
+            water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database, pe);
     } else
     if (pe.type() == DarcyFlowLMH_Unsteady::get_input_type() ) {
-            water=new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database);
+            water=new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database, pe);
     } else {
             xprintf(UsrErr,"Equation type not implemented.");
     }
     // object for water postprocessing and output
 
-    water_output = new DarcyFlowMHOutput(water);
+    AbstractRecord flow = in_record.val<AbstractRecord>("primary_equation");
+    water_output = new DarcyFlowMHOutput(water,Record(flow).val<Record>("output") );
 
     // optionally setup transport objects
-
-    if ( in_record.has_key("secondary_equation") ) {
-        Input::AbstractRecord se = in_record.key<AbstractRecord>("secondary_equation");
+    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
+    if (it) {
 
         char *transport_type = OptGetStr("Transport", "Transport_type", "explicit");
-        if (strcmp(transport_type, "explicit") == 0)
+        if (it->type() == TransportOperatorSplitting::get_input_type())
         {
             transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database);
         }
-        else if (strcmp(transport_type, "implicit") == 0)
+        else if (it->type() == TransportDG::get_input_type())
         {
             transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database);
         }

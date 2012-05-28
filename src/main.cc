@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
 
     Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
-    sys_info.pause_after_run=i_rec.key<bool>("pause_after_run");
+    sys_info.pause_after_run=i_rec.val<bool>("pause_after_run");
 
 
     Profiler::initialize(MPI_COMM_WORLD);
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
     xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", version.c_str(),revision.c_str());
     xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
 
-    Input::AbstractRecord i_problem = i_rec.key<AbstractRecord>("problem");
+    Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
 
     if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
         HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);

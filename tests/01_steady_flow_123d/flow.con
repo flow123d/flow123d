@@ -24,14 +24,15 @@
       n_schurs = 2, 
       output = {
         save_step = 0.1, 
+        stream = "flow.pvd",
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
         velocity_p0 = "flow_output_stream"
       }, 
       
       solver = {
-        TYPE = "petsc", 
-        accuracy = 1e-07
+        TYPE = "Petsc", 
+        a_tol = 1e-07
       }
     } 
     

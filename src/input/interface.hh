@@ -482,8 +482,9 @@ public:
      */
     inline OutputType *operator ->() const
     {
-        BOOST_STATIC_ASSERT( ( boost::is_base_of<Record, OutputType>::value ||
-                               boost::is_base_of<Array, OutputType>::value  ) );
+        BOOST_STATIC_ASSERT( ( boost::is_same<Record, OutputType>::value ||
+                               boost::is_same<AbstractRecord, OutputType>::value ||
+                               boost::is_same<Array, OutputType>::value  ) );
 
         // we have to make save temporary
         OutputType xx = this->operator*();

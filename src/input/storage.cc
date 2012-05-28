@@ -277,7 +277,6 @@ StorageString::~StorageString()
 
 
 bool StorageNull::is_null() const {
-    DBGMSG("is_null");
     return true;
 }
 

@@ -69,16 +69,27 @@ static void write_sys_isol( struct Solver *solver );
  *
  *  @param[in] solver already allocated structure to be initialized
  */
-void solver_init( struct Solver *solver) {
+void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     double solver_accurancy;
 
     F_ENTRY;
 	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
 
-	solver->name    = OptGetStr( "Solver", "Solver_name", "petsc" );
-   	solver_set_type(solver);
-   	solver->executable = OptGetStr( "Solver", "Solver_executable",solver->name);
-    solver->params  = OptGetStr( "Solver", "Solver_params", "" );
+	if (in_rec.type() == Solver::get_input_type_petsc() )  {
+	    solver->type = PETSC_SOLVER;
+	    //solver->params  = in_rec.find<string>("options");
+	} else
+	if (in_rec.type() == Solver::get_input_type_bddc() ) {
+	    solver->type = PETSC_MATIS_SOLVER;
+	} else {
+	    xprintf(UsrErr,"Unsupported solver: %s\n", in_rec.type().type_name().c_str());
+	}
+
+	solver->r_tol = Input::Record(in_rec).val<double>("r_tol");
+	solver->a_tol = Input::Record(in_rec).val<double>("a_tol");
+
+/*   	solver->executable = OptGetStr( "Solver", "Solver_executable",solver->name);
+
     solver->keep_files    = OptGetBool( "Solver", "Keep_solver_files", "no" );
     solver->manual_run     = OptGetBool( "Solver", "Manual_solver_run", "no" );
     solver->use_ctrl_file  = OptGetBool( "Solver", "Use_control_file", "no" );
@@ -100,8 +111,55 @@ void solver_init( struct Solver *solver) {
 	if (solver->type == ISOL) {
     	solver->isol_params=(ISOL_params *)malloc(sizeof(ISOL_params));
     	isol_params_init(solver->isol_params);
-    }
+    }*/
 }
+
+
+
+Input::Type::AbstractRecord & Solver::get_input_type() {
+    using namespace Input::Type;
+    static AbstractRecord rec("Solver", "Solver setting.");
+
+    if (!rec.is_finished()) {
+        rec.declare_key("a_tol", Double(0.0), Default("1.0e-9"),
+                "Absolute residual tolerance.");
+        rec.declare_key("r_tol", Double(0.0, 1.0), Default("1.0e-7"),
+                "Relative residual tolerance (to initial error).");
+        rec.declare_key("max_it", Integer(0), Default("10000"),
+                "Maximum number of outer iterations of the linear solver.");
+        rec.finish();
+
+        Solver::get_input_type_petsc();
+        Solver::get_input_type_bddc();
+
+        rec.no_more_descendants();
+    }
+    return rec;
+}
+
+Input::Type::Record & Solver::get_input_type_petsc() {
+    using namespace Input::Type;
+    static Record rec("Petsc", "Solver setting.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(Solver::get_input_type());
+        rec.declare_key("options", String(), "Options passed to the petsc instead of default setting.");
+        rec.finish();
+    }
+    return rec;
+}
+
+Input::Type::Record & Solver::get_input_type_bddc() {
+    using namespace Input::Type;
+    static Record rec("Bddc", "Solver setting.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(Solver::get_input_type());
+        rec.finish();
+    }
+    return rec;
+}
+
 
 //=============================================================================
 /*! @brief  Set solver type from its name.
@@ -121,7 +179,7 @@ void solver_set_type( Solver *solver )
     TEST_TYPE("gi8",GI8);
     TEST_TYPE("isol",ISOL);
     TEST_TYPE("matlab",MATLAB);
-    INPUT_CHECK(!(solver->type == UNKNOWN),"Unsupported solver: %s\n");
+
 }
 
 //=============================================================================
@@ -333,7 +391,9 @@ void solver_petsc(Solver *solver)
                   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
 	   }
 	}
-	petsc_str=OptGetStr("Solver","Solver_params",petsc_dflt_opt);
+	petsc_str="";
+	        //OptGetStr("Solver","Solver_params",petsc_dflt_opt);
+
 	xprintf(MsgVerb,"inserting petsc options: %s\n",petsc_str);
 	
 /**
@@ -345,7 +405,7 @@ void solver_petsc(Solver *solver)
  	 
 	 
 	PetscOptionsInsertString(petsc_str); // overwrites previous options values
-	xfree(petsc_str);
+	//xfree(petsc_str);
     
         MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
 

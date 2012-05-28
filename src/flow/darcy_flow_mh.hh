@@ -145,7 +145,7 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
+    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, Input::Record in_rec);
 
     static Input::Type::Record &get_input_type();
 
@@ -229,7 +229,7 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
+    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 protected:
     virtual void modify_system();
@@ -258,7 +258,7 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
+    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 protected:
     virtual void modify_system();

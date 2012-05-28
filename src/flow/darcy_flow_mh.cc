@@ -35,6 +35,7 @@
 #include "petscao.h"
 #include "petscerror.h"
 
+
 #include "system/system.hh"
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
@@ -48,6 +49,7 @@
 #include "field_p0.hh"
 #include "flow/local_matrix.h"
 
+#include "flow/darcy_flow_mh_output.hh"
 
 #include <limits>
 #include <set>
@@ -87,21 +89,24 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in, Input::Record in_rec)
 : DarcyFlowMH(marks, mesh_in, mat_base_in)
 
 {
+    using namespace Input;
+    F_ENTRY;
+
     int ierr;
 
     size = mesh_->n_elements() + mesh_->n_sides + mesh_->n_edges();
-    n_schur_compls = OptGetInt("Solver", "NSchurs", "2");
+    n_schur_compls = in_rec.val<int>("n_schurs");
     if ((unsigned int) n_schur_compls > 2) {
         xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
         n_schur_compls = 2;
     }
 
     solver = new (Solver);
-    solver_init(solver);
+    solver_init(solver, in_rec.val<AbstractRecord>("solver"));
 
     solution = NULL;
     schur0   = NULL;
@@ -110,16 +115,16 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     IA1      = NULL;
     IA2      = NULL;
 
-    string sources_fname=OptGetFileName("Input","Sources","//");
-    if (sources_fname!= "//") {
+    Iterator<FilePath> it = in_rec.find<FilePath>("sources_file");
+    if (it) {
         sources= new FieldP0<double>(mesh_);
-        sources->read_field(IONameHandler::get_instance()->get_input_file_name(sources_fname),string("$Sources"));
+        sources->read_field(*it,string("$Sources"));
     }
 
-    string sources_formula = OptGetStr("Input", "sources_formula","//");
-    if (sources_formula!= "//") {
+    Iterator<string> it_f = in_rec.find<string>("sources_formula");
+    if (it) {
         sources= new FieldP0<double>(mesh_);
-        sources->setup_from_function(sources_formula);
+        sources->setup_from_function(*it_f);
     }
 
     // time governor
@@ -134,6 +139,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     // calculation_mh  - precalculation of some values stored still in mesh_
     {
     struct Side *sde;
+
+    read_boundary(mesh_, in_rec.val<FilePath>("boundary_file") );
 
     FOR_SIDES(mesh_,sde) {
         calc_side_metrics(sde);
@@ -199,6 +206,18 @@ Input::Type::Record & DarcyFlowMH_Steady::get_input_type()
 
     if (!rec.is_finished()) {
         rec.derive_from(DarcyFlowMH::get_input_type());
+        rec.declare_key("n_schurs", Integer(0,2), Default("2"),
+                "Number of Schur complements to perform when solving MH sytem.");
+        rec.declare_key("sources_file", FileName::input(),
+                "File with water source field.");
+        rec.declare_key("sources_formula", String(),
+                "Formula to determine the source field.");
+        rec.declare_key("boundary_file", FileName::input(),Default::obligatory(),
+                "File with boundary conditions for MH solver.");
+        rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
+                "Linear solver for MH problem.");
+        rec.declare_key("output", DarcyFlowMHOutput::get_input_type(), Default::obligatory(),
+                "Parameters of output form MH module.");
         rec.finish();
     }
     return rec;
@@ -1190,8 +1209,8 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, Input::Record in_rec)
+    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
 
@@ -1286,8 +1305,8 @@ void DarcyFlowMH_Unsteady::modify_system()
 // ========================
 // unsteady
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, Input::Record in_rec)
+    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
     // time governor

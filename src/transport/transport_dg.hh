@@ -51,6 +51,8 @@ public:
      */
     TransportDG(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
 
+    static Input::Type::Record &get_input_type();
+
     /**
      * Computes solution in one time instant.
      */

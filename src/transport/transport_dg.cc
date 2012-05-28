@@ -63,7 +63,7 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     
     // set up solver
     solver = new Solver;
-    solver_init(solver);
+    //solver_init(solver);
 
 
 
@@ -188,6 +188,9 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     output_data();
 }
 
+
+Input::Type::Record & TransportDG::get_input_type()
+{}
 
 TransportDG::~TransportDG()
 {

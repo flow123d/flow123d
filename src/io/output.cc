@@ -183,6 +183,7 @@ Output::Output(Mesh *_mesh, string fname)
     }
 
     // TODO: Remove this. Output is off if no filename is given.
+    /*
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
@@ -190,6 +191,7 @@ Output::Output(Mesh *_mesh, string fname)
 
         return;
     }
+    */
 
     base_file = new ofstream;
 
@@ -204,7 +206,8 @@ Output::Output(Mesh *_mesh, string fname)
     elem_data = new OutputDataVec;
 
 
-    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
+    //format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
+    format_type = VTK_SERIAL_ASCII;
 
     switch(format_type) {
     case VTK_SERIAL_ASCII:
@@ -349,13 +352,14 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     OutFileFormat format_type;
 
     // TODO: Remove this. Output is off if no filename is given.
+    /*
     if( OptGetBool("Output", "Write_output_file", "no") == false ) {
         base_filename = NULL;
         base_file = NULL;
         mesh = NULL;
 
         return;
-    }
+    }*/
 
     base_file = new ofstream;
 
@@ -372,7 +376,8 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     elem_data = new OutputDataVec;
 
     // TODO: remove in the future
-    format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
+    //format_type =  parse_output_format( OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII") );
+    format_type = VTK_SERIAL_ASCII;
 
     set_base_file(base_file);
     set_base_filename(base_filename);

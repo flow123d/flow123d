@@ -72,7 +72,7 @@ public:
 #define NEWTON      3
 
 
-void read_boundary(Mesh*);
+void read_boundary(Mesh*, const string &boundary_filename);
 void boundary_calculation_mh(Mesh*);
 
 #endif
