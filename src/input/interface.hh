@@ -10,8 +10,7 @@
  *
  *  - rename: access.hh, RecordAccessor , ArrayAccessor, (otazka co s iteraotorem, je divne, kdyz
  *    visi v namespacu Input
- *  - in iterator make dereference method with given pointer to default value string
- *  - key<Type>(key, default_value), otazka, zda defaultni hodnoty z deklarace neprirazovat az tady
+
  *  - presun vhodnych casti do *.cc
  *  - dokumentace
  *  - implementace operator -> without alocation (shared_ptr), i.e. put Accesors into Iterators
@@ -40,41 +39,28 @@
 #include "input/storage.hh"
 
 
-//#include "Generic_node.hpp"
-/**
- * Object for storing data tree. One node can hold:
- * - int, double, bool
- * - pointer to string
- * - pointer to array of storages
- * - special state: NULL (no data), REF (reference to other place of storage tree - maybe in future, until then we copy everything),
- *   INCLUDE (have to read another file to provide the value, this may be possible only through particular readers)
- *   ...
- *
- * Not all readers has to use Storage for accessing the input data !!
- */
-
 
 namespace Input {
 
+using std::string;
 
 // exceptions and error_info types
 
-TYPEDEF_ERR_INFO( EI_InputType, boost::shared_ptr<Input::Type::TypeBase>);
+// throwed in Iterator<>
+TYPEDEF_ERR_INFO( EI_InputType, const string);
 TYPEDEF_ERR_INFO( EI_RequiredType, const string );
 TYPEDEF_ERR_INFO( EI_CPPRequiredType, const string );
 TYPEDEF_ERR_INFO( EI_KeyName, const string);
-DECLARE_EXCEPTION( ExcTypeMismatch, << "In Input::Interface:\n"
-        << " can not make iterator with type " << EI_RequiredType::qval << "to get C++ type: " << EI_CPPRequiredType::qval
-        << "\n since the key " << EI_KeyName::qval << " or array was declared with Input::Type : ";
-//        << *(EI_InputType::ref(_exc))
+DECLARE_EXCEPTION( ExcTypeMismatch, << "Key:" << EI_KeyName::qval
+        << ". Can not construct Iterator<T> with C++ type T=" << EI_CPPRequiredType::qval << ";\n"
+        << "can not convert Type: " << EI_InputType::qval << " to: " << EI_RequiredType::qval
         );
 
+// throwed in Record, Array, AbstractRecord
+TYPEDEF_ERR_INFO( EI_AccessorName, const string );
+DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_AccessorName::val << " from StorageNull.");
 
 
-
-using std::string;
-
-typedef StorageBase Storage;
 
 
 template <class T>
@@ -86,7 +72,7 @@ class Iterator;
  *
  * This class provides access to the data through string names -- key of the data fields.
  * It merge information form a @p Type::Record object, which describes valid keys and their types,
- * and reference into a Storage that provides access to actual values.
+ * and reference into a StorageBase that provides access to actual values.
  *
  *
  * Usage:
@@ -98,6 +84,7 @@ class Iterator;
  */
 class Record {
 
+
 public:
     Record(const Record &rec)
     : record_type_(rec.record_type_), storage_(rec.storage_)
@@ -106,14 +93,17 @@ public:
 
     /**
      * The only public constructor. It reads the file @p file_name, check the data structure against structure of @p record_type and
-     * creates internal Storage of the data that can be read through resulting object.
+     * creates internal StorageBase of the data that can be read through resulting object.
      *
-     * It takes Storage as a parameter instead of input stream until we know how to construct the Storage using data_tree class.
+     * It takes StorageBase as a parameter instead of input stream until we know how to construct the StorageBase using data_tree class.
      *
      */
-    Record(const Storage *store, const Type::Record type)
+    Record(const StorageBase *store, const Type::Record type)
     : record_type_(type), storage_(store)
-    {}
+    {
+        if (store->is_null())
+            THROW( ExcAccessorForNullStorage() << EI_AccessorName("Record") );
+    }
 
     /**
      * Returns value of given @p key if the declared key type (descendant of @p Input:Type:TypeBase) is convertible to the C++
@@ -122,59 +112,55 @@ public:
      * declared type do not match desired C++ type.
      */
     template <class Ret>
-    inline const Ret key(const string &key) const {
+    inline const Ret val(const string &key) const {
         try {
             Type::Record::KeyIter key_it = record_type_.key_iterator(key);
-            return *(Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index));
+
+            ASSERT(! key_it->default_.is_optional(),
+                    "The key %s is declared as optional, you have to use Record::find instead.\n", key.c_str());
+
+            Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
+            return *it;
+        }
+        // we catch all possible exceptions
+        catch (Type::Record::ExcRecordKeyNotFound & e) {
+            throw;
         }
         catch (ExcTypeMismatch & e) {
             e << EI_CPPRequiredType(typeid(Ret).name()) << EI_KeyName(key);
-            throw e;
+            throw;
         }
-
+        catch (ExcStorageTypeMismatch &e) {
+            throw;
+        }
+        catch (ExcAccessorForNullStorage &e) {
+            throw;
+        }
     }
 
-    inline bool has_key(const string &key) const {
-        return record_type_.has_key(key);
-    }
 
-    /**
-     * Same as previous, but the value is returned through reference. This can be less verbose since you
-     * need not to specify the template parameter. Further this method do not throw if the key is
-     * missing instead it returns false in such a case. On the other hand you can not chain these methods to
-     * get deeper into the input tree.
-     */
+
     template <class Ret>
-    inline bool has_key(const string &key, Ret &save_var) const {
+    inline Iterator<Ret> find(const string &key) const {
         try {
-            Type::Record::KeyIter key_it;
-            if ( record_type_.has_key_iterator(key, key_it) ) {
-                 save_var = *(Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index));
-                 return true;
-            } else {
-                return false;
-            }
-
-        } catch (ExcTypeMismatch & e) {
-            e << EI_CPPRequiredType(typeid(Ret).name()) << EI_KeyName(key);
-            throw e;
+            Type::Record::KeyIter key_it = record_type_.key_iterator(key);
+            return Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
         }
+        // we catch all possible exceptions
+        catch (Type::Record::ExcRecordKeyNotFound & e) {
+            throw;
+        }
+        catch (ExcTypeMismatch & e) {
+            e << EI_CPPRequiredType(typeid(Ret).name()) << EI_KeyName(key);
+            throw;
+        }
+
     }
 
-    /**
-     * Same as previous, but with default value given now at read time instead at time of declaration. You must use this variant if the key is declared with
-     * @p Default type @p read_time.
-     */
-    /*
-    template <class Ret>
-    Ret &key(const string &key, Ret  &default_value) const {
-        int key_index = record_type_.key_index(key);
-        ASSERT( key_index);
-    }*/
 
 private:
     Input::Type::Record record_type_ ;
-    const Storage *storage_;
+    const StorageBase *storage_;
 
 
 };
@@ -192,14 +178,17 @@ public:
 
     /**
      * The only public constructor. It reads the file @p file_name, check the data structure against structure of @p record_type and
-     * creates internal Storage of the data that can be read through resulting object.
+     * creates internal StorageBase of the data that can be read through resulting object.
      *
-     * It takes Storage as a parameter instead of input stream until we know how to construct the Storage using data_tree class.
+     * It takes StorageBase as a parameter instead of input stream until we know how to construct the StorageBase using data_tree class.
      *
      */
-    AbstractRecord(const Storage *store, const Type::AbstractRecord type)
+    AbstractRecord(const StorageBase *store, const Type::AbstractRecord type)
     : record_type_(type), storage_(store)
-    {}
+    {
+        if (store->is_null())
+            THROW( ExcAccessorForNullStorage() << EI_AccessorName("AbstractRecord") );
+    }
 
 
     operator Record()
@@ -222,7 +211,7 @@ public:
 
 private:
     Input::Type::AbstractRecord record_type_ ;
-    const Storage *storage_;
+    const StorageBase *storage_;
 
 };
 
@@ -233,7 +222,10 @@ private:
 
 class IteratorBase {
 public:
-    IteratorBase(const Storage *storage, const unsigned int index)
+
+
+
+    IteratorBase(const StorageBase *storage, const unsigned int index)
     : storage_(storage), index_(index)
     {}
     /// Comparison of two Iterators.
@@ -243,7 +235,7 @@ public:
     inline bool operator != (const IteratorBase &that) const
             { return ! ( *this == that ); }
 protected:
-    const Storage *storage_;
+    const StorageBase *storage_;
     unsigned int index_;
 };
 
@@ -266,9 +258,12 @@ public:
     : array_type_(ar.array_type_), storage_(ar.storage_)
     {}
 
-    Array(const Storage *store, const Type::Array type)
+    Array(const StorageBase *store, const Type::Array type)
     : array_type_(type), storage_(store)
-    {}
+    {
+        if (store->is_null())
+            THROW( ExcAccessorForNullStorage() << EI_AccessorName("Array") );
+    }
 
    /**
     * Returns iterator to the first element of input array. The template parameter is C++ type you want to
@@ -319,7 +314,7 @@ private:
     Input::Type::Array array_type_ ;
 
     /// Pointer to the corresponding array storage object.
-    const Storage *storage_;
+    const StorageBase *storage_;
 };
 
 
@@ -338,12 +333,7 @@ private:
  *
  */
 
-class FastRecord {
 
-};
-
-class Record;
-class Array;
 
 /**
  *  This is primary type dispatch template. OT has to be convertible to T.
@@ -381,21 +371,21 @@ template<>
 struct TypeDispatch<int> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
-    static inline ReadType value(const Storage *s, const InputType&) { return s->get_int(); }
+    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_int(); }
 };
 
 template<>
 struct TypeDispatch<bool> {
     typedef Input::Type::Bool InputType;
     typedef const bool ReadType;
-    static inline ReadType value(const Storage *s, const InputType&) { return s->get_bool(); }
+    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_bool(); }
 };
 
 template<>
 struct TypeDispatch<double> {
     typedef Input::Type::Double InputType;
     typedef const double ReadType;
-    static inline ReadType value(const Storage *s, const InputType&) { return s->get_double(); }
+    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_double(); }
 };
 
 
@@ -403,7 +393,7 @@ template<>
 struct TypeDispatch<string> {
     typedef Input::Type::String InputType;
     typedef const string ReadType;
-    static inline ReadType value(const Storage *s, const InputType&) { return s->get_string(); }
+    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_string(); }
 };
 
 
@@ -411,9 +401,8 @@ template<>
 struct TypeDispatch<AbstractRecord> {
     typedef Input::Type::AbstractRecord InputType;
     typedef AbstractRecord ReadType;
-    static inline ReadType value(const Storage *s, const InputType& t) { return AbstractRecord(s, t); }
+    static inline ReadType value(const StorageBase *s, const InputType& t) { return AbstractRecord(s, t); }
 
-    static Record temporary_;
 };
 
 
@@ -421,27 +410,24 @@ template<>
 struct TypeDispatch<Record> {
     typedef Input::Type::Record InputType;
     typedef Record ReadType;
-    static inline ReadType value(const Storage *s, const InputType& t) { return Record(s, t); }
+    static inline ReadType value(const StorageBase *s, const InputType& t) { return Record(s, t); }
 
-    static Record temporary_;
 };
 
 template<>
 struct TypeDispatch<Array> {
     typedef Input::Type::Array InputType;
     typedef Array ReadType;
-    static inline ReadType value(const Storage *s, const InputType& t) { return Array(s,t); }
+    static inline ReadType value(const StorageBase *s, const InputType& t) { return Array(s,t); }
 
-    static Array temporary_;
 };
 
 template<>
 struct TypeDispatch<FilePath> {
     typedef Input::Type::FileName InputType;
     typedef FilePath ReadType;
-    static inline ReadType value(const Storage *s, const InputType& t) { return FilePath(s->get_string(), t.get_file_type() ); }
+    static inline ReadType value(const StorageBase *s, const InputType& t) { return FilePath(s->get_string(), t.get_file_type() ); }
 
-    static Array temporary_;
 };
 
 
@@ -460,21 +446,12 @@ public:
     // Appropriate declaration type - descendant of Type::TypeBase
     typedef typename TypeDispatch<DispatchType>::InputType InputType;
 
-    static InputType type_check_and_convert(const Input::Type::TypeBase &type)
-    {
-        if ( typeid(type) == typeid(InputType)) {
-            return static_cast< const InputType & >( type );
-        } else {
-            THROW( ExcTypeMismatch()
-                    //<< EI_InputType( boost::make_shared<Input::Type::TypeBase>(type) )
-                    << EI_RequiredType( typeid(InputType).name() ) );
-        }
-    }
+
 
     /**
      * Constructor needs Type of data
      */
-    Iterator(const Input::Type::TypeBase &type,const Storage *storage, const unsigned int index)
+    Iterator(const Input::Type::TypeBase &type,const StorageBase *storage, const unsigned int index)
     : IteratorBase(storage, index), type_( type_check_and_convert(type))
     {}
 
@@ -493,12 +470,11 @@ public:
      */
     inline OutputType operator *() const
     {
-        const Storage *s = storage_->get_item(index_);
-        if (s && ! s->is_null()) {
-            return TypeDispatch<DispatchType>::value(s, type_);
-        } else {
-            // error no value
-        }
+        const StorageBase *s = storage_->get_item(index_);
+
+        ASSERT( s, "NULL pointer in storage!!! \n");
+
+        return TypeDispatch<DispatchType>::value(s, type_);
     }
 
     /**
@@ -515,12 +491,33 @@ public:
 
     }
 
+    /**
+     * Implicit conversion to bool. Returns true if iterator points to non-null storage.
+     */
+    inline operator bool() {
+        const StorageBase *s = storage_->get_item(index_);
+        return ( s && ! s->is_null() );
+    }
 
 
 private:
-    /// Iterator is not default constructable.
+    /// Iterator is not default constructible.
     Iterator();
 
+    /**
+     * Check that Type::TypeBase reference is in fact object of InputType
+     * and returns converted copy (note that Type declaration objects are only handles.
+     */
+    static InputType type_check_and_convert(const Input::Type::TypeBase &type)
+    {
+        if ( typeid(type) == typeid(InputType)) {
+            return static_cast< const InputType & >( type );
+        } else {
+            THROW( ExcTypeMismatch()
+                    << EI_InputType( type.type_name() )
+                    << EI_RequiredType( typeid(InputType).name() ) );
+        }
+    }
 
     InputType type_;
 

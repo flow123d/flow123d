@@ -377,7 +377,7 @@ TEST(InputJSONToStorageTest_external, get_root_interface) {
     JSONToStorage json_reader;
     json_reader.read_stream(ss, one_rec);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
-    EXPECT_EQ(1,rec.key<int>("one"));
+    EXPECT_EQ(1, *(rec.find<int>("one")) );
     //json_reader.get_storage()->print(cout);
 
 }

@@ -4,20 +4,7 @@
  *  Created on: Apr 4, 2012
  *      Author: jb
  *
- * TODO:
- *
- *  - klice nezadavat jako retezce ale pres makro KEY(nazev_klice) to
- *    umozni pocitani hashu pri kompilaci pripadne dalsi kejkle
- *  - implementovat deklaraci Selection (pouziti enum_macro zatim nevhodne, protoze to je nestabilni, leda casem vytvorit neco vlastniho)
- *    zatim rucne vkladat enum klice do Selection/ AbstracRecord
- *  - implementovat cteni key<enum ..>
- *  - implementovat deklaraci AbstractRecord a jeho cteni jak key<Record> tak key<enum...>
- *  - implementovat Iterator<Record/Array>::operator->
- *
- *
- *  - nevytvaret deklaraci Recordu a dalsich typu runtime, ale pri kompilaci
- *    tedy jako skutecnou hierarchii trid, to by umoznilo statickou kontrolu
- *    kompatibility typu v konstruktoru Iterator<T>
+
  *
  */
 
@@ -46,13 +33,13 @@ protected:
 
         desc_a_ptr = new Record("DescendantA","");
         desc_a_ptr->derive_from(*abstr_rec_ptr);
-        desc_a_ptr->declare_key("some_int", Integer(),"");
+        desc_a_ptr->declare_key("some_int", Integer(),Default("1"),"");
         desc_a_ptr->finish();
 
         desc_b_ptr = new Record("DescendantB","");
         desc_b_ptr->derive_from(*abstr_rec_ptr);
-        desc_b_ptr->declare_key("some_int", Integer(),"");
-        desc_b_ptr->declare_key("some_double", Double(),"");
+        desc_b_ptr->declare_key("some_int", Integer(),Default("2"),"");
+        desc_b_ptr->declare_key("some_double", Double(),Default::obligatory(),"");
         desc_b_ptr->finish();
 
         abstr_rec_ptr->no_more_descendants();
@@ -63,25 +50,25 @@ protected:
 
         Record sub_record("SubRecord","desc");
         sub_record.declare_key("array_of_int", Array(Integer()), "desc");
-        sub_record.declare_key("some_integer", Integer(), "desc");
+        sub_record.declare_key("some_integer", Integer(), Default::obligatory(), "desc");
         sub_record.declare_key("some_double", Double(), "desc");
-        sub_record.declare_key("some_bool", Bool(), "desc");
+        sub_record.declare_key("some_bool", Bool(), Default("true"), "desc");
         sub_record.declare_key("some_string", String(), "desc");
         sub_record.finish();
 
 
 
-        main->declare_key("some_record", sub_record, "desc");
-        main->declare_key("array_of_int", Array(Integer()), "desc");
-        main->declare_key("array_of_sub_rec", Array( sub_record ), "desc");
-        main->declare_key("some_integer", Integer(), "desc");
-        main->declare_key("some_double", Double(), "desc");
-        main->declare_key("some_bool", Bool(), "desc");
-        main->declare_key("some_string", String(), "desc");
-        main->declare_key("abstr_rec_1",*abstr_rec_ptr, "desc");
-        main->declare_key("abstr_rec_2",*abstr_rec_ptr, "desc");
-        main->declare_key("file_output", FileName::output(), "description");
-        main->declare_key("file_input", FileName::input(), "description");
+        main->declare_key("some_record", sub_record, Default::obligatory(), "desc");
+        main->declare_key("array_of_int", Array(Integer()),Default::obligatory(), "desc");
+        main->declare_key("array_of_sub_rec", Array( sub_record ),Default::obligatory(), "desc");
+        main->declare_key("some_integer", Integer(),Default::obligatory(), "desc");
+        main->declare_key("some_double", Double(),Default::obligatory(), "desc");
+        main->declare_key("some_bool", Bool(),Default::obligatory(), "desc");
+        main->declare_key("some_string", String(),Default::obligatory(), "desc");
+        main->declare_key("abstr_rec_1",*abstr_rec_ptr,Default::obligatory(), "desc");
+        main->declare_key("abstr_rec_2",*abstr_rec_ptr,Default::obligatory(), "desc");
+        main->declare_key("file_output", FileName::output(),Default::obligatory(), "description");
+        main->declare_key("file_input", FileName::input(),Default::obligatory(), "description");
         main->declare_key("optional_int", Integer(), "");
         main->finish();
         }
@@ -150,14 +137,14 @@ protected:
     };
 
     ::Input::Type::Record *main;
-    ::Input::Storage * storage;
+    ::Input::StorageBase * storage;
 
     ::Input::Type::Record *desc_a_ptr;
     ::Input::Type::Record *desc_b_ptr;
     ::Input::Type::AbstractRecord *abstr_rec_ptr;
 };
 
-TEST_F(InputInterfaceTest, ReadFromRecord) {
+TEST_F(InputInterfaceTest, RecordVal) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
@@ -165,50 +152,70 @@ TEST_F(InputInterfaceTest, ReadFromRecord) {
 
     // read scalar keys
     int i;
-        i = record.key<int>("some_integer");
+        i = record.val<int>("some_integer");
         EXPECT_EQ(456,i);
-        i = record.key<char>("some_integer");
+        i = record.val<char>("some_integer");
         EXPECT_EQ((char)(456),i);
-        i = record.key<short int>("some_integer");
+        i = record.val<short int>("some_integer");
         EXPECT_EQ((short int)(456),i);
 
-    double d = record.key<double>("some_double");
+    double d = record.val<double>("some_double");
            EXPECT_EQ(4.56, d);
-           d = record.key<float>("some_double");
+           d = record.val<float>("some_double");
            EXPECT_EQ((float)4.56, d);
 
-    EXPECT_EQ(true, record.has_key("some_double", d));
-    EXPECT_EQ(4.56, d);
+    //EXPECT_EQ(true, record.has_key("some_double", d));
+    //EXPECT_EQ(4.56, d);
 
-    EXPECT_FALSE( record.key<bool>("some_bool") );
+    EXPECT_FALSE( record.val<bool>("some_bool") );
 
-    EXPECT_EQ("456", record.key<string>("some_string") );
+    EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.key<FilePath>("file_output") );
-    EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.key<FilePath>("file_input") );
+    EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.val<FilePath>("file_output") );
+    EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 
 
     // read record
-    Record sub_record( record.key<Record>("some_record") );
-        i = sub_record.key<int>("some_integer");
+    Record sub_record( record.val<Record>("some_record") );
+        i = sub_record.val<int>("some_integer");
     EXPECT_EQ(123, i);
 
     // read array key
-    Array array = record.key<Array>("array_of_int");
+    Array array = record.val<Array>("array_of_int");
     EXPECT_EQ(2, *( ++array.begin<int>()) );
 
-    DBGMSG( "int: %d\n",record.key<int>("optional_int") );
-/*
-    // check has_key methods
-    EXPECT_EQ(true, record.has_key("some_integer"));
-    EXPECT_EQ(false, record.has_key("optional_int"));
+    EXPECT_THROW_WHAT( {record.val<string>("some_double");}, ExcTypeMismatch,
+            "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='Ss';");
+    EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
-    EXPECT_THROW_WHAT( { record.key<int>("unknown_key");} , Input::Type::Record::ExcRecordKeyNotFound, "Key 'unknown_key' not found in Record");
-    EXPECT_THROW_WHAT( { record.key<int>("some_bool");} , Input::ExcTypeMismatch , "can not make iterator with type");
-*/
-
+    EXPECT_DEATH( {record.val<int>("optional_int");}, "The key optional_int is declared as optional, you have to use Record::find instead.");
 
 }
+
+TEST_F(InputInterfaceTest, RecordFind) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    using namespace Input;
+
+    Record record(storage, *main);
+
+    // read scalar keys
+
+    Iterator<int> it = record.find<int>("some_integer");
+    EXPECT_TRUE(it);
+    EXPECT_EQ(456, *it);
+
+    it = record.find<int>("optional_int");
+    EXPECT_FALSE(it);
+
+    Iterator<Record> it_r = record.find<Record>("some_record");
+    EXPECT_EQ(123, it_r->val<int>("some_integer"));
+
+    EXPECT_THROW_WHAT( {record.find<string>("some_double");}, ExcTypeMismatch,
+            "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='Ss';");
+    EXPECT_THROW( {record.find<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
+
+}
+
 
 struct Data {
     bool b;
@@ -222,7 +229,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     using namespace Input;
 
     Record record(storage, *main);
-    Array array = record.key<Array>("array_of_int");
+    Array array = record.val<Array>("array_of_int");
 
     std::vector<int> vec_int;
     // reading scalars form array - manually
@@ -246,20 +253,21 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 
 
 
-    array = record.key<Array>("array_of_sub_rec");
+    array = record.val<Array>("array_of_sub_rec");
     Data * data_array = new Data[array.size()];
 
     // can not use copy_to for this type !!!
     int idx=0;
     for(Iterator<Record> it = array.begin<Record>(); it != array.end(); ++it, ++idx ) {
-        data_array[idx].b = it->key<bool>("some_bool");
-        if (it->has_key("some_int", data_array[idx].i) ) {
-            EXPECT_EQ(123,data_array[idx].i);
-        }
-        it->has_key("some_double", data_array[idx].d);
-        EXPECT_EQ(1.23, data_array[idx].d);
-        it->has_key("some_string", data_array[idx].s);
-        EXPECT_EQ("123", data_array[idx].s);
+        data_array[idx].b = it->val<bool>("some_bool");
+
+//        if (it->has_key("some_int", data_array[idx].i) ) {
+//            EXPECT_EQ(123,data_array[idx].i);
+ //       }
+ //       it->has_key("some_double", data_array[idx].d);
+ //       EXPECT_EQ(1.23, data_array[idx].d);
+ //       it->has_key("some_string", data_array[idx].s);
+ //       EXPECT_EQ("123", data_array[idx].s);
     }
 
 
@@ -273,32 +281,32 @@ TEST_F(InputInterfaceTest, ReadFromAbstract) {
     Record record(storage, *main);
 
     {
-        AbstractRecord a_rec = record.key<AbstractRecord>("abstr_rec_1");
+        AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_1");
         EXPECT_EQ(a_rec.type(), *( this->desc_a_ptr ));
         if (a_rec.type() == *( this->desc_a_ptr )) {
             Record rec( a_rec );
-            EXPECT_EQ(234, rec.key<int>("some_int") );
+            EXPECT_EQ(234, rec.val<int>("some_int") );
         } else
         if (a_rec.type() == *( this->desc_b_ptr )) {
             Record rec( a_rec );
-            EXPECT_EQ(345, rec.key<int>("some_int") );
-            EXPECT_EQ(3.45, rec.key<int>("some_double") );
+            EXPECT_EQ(345, rec.val<int>("some_int") );
+            EXPECT_EQ(3.45, rec.val<int>("some_double") );
         }
 
     }
 
 
     {
-        AbstractRecord a_rec = record.key<AbstractRecord>("abstr_rec_2");
+        AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_2");
         EXPECT_EQ(a_rec.type(), *( this->desc_b_ptr ));
         if (a_rec.type() == *( this->desc_a_ptr )) {
             Record rec( a_rec );
-            EXPECT_EQ(234, rec.key<int>("some_int") );
+            EXPECT_EQ(234, rec.val<int>("some_int") );
         } else
         if (a_rec.type() == *( this->desc_b_ptr )) {
             Record rec( a_rec );
-            EXPECT_EQ(345, rec.key<int>("some_int") );
-            EXPECT_EQ(3.45, rec.key<double>("some_double") );
+            EXPECT_EQ(345, rec.val<int>("some_int") );
+            EXPECT_EQ(3.45, rec.val<double>("some_double") );
         }
 
     }

@@ -56,7 +56,7 @@ TEST_F(Application, init) {
 
     FilePath::set_io_dirs("/root","variant", "/output");
 
-    Array eq_arr = input().key<Array>("equations");
+    Array eq_arr = input().val<Array>("equations");
 
     Iterator<AbstractRecord> it = eq_arr.begin<AbstractRecord>();
 
@@ -110,10 +110,14 @@ Input::Type::Record &EquationA::get_input_type() {
 
 
 EquationA::EquationA(Input::Record rec) {
-    string mesh_file = rec.key<FilePath>("mesh");
+    using namespace Input;
+
+    string mesh_file = rec.val<FilePath>("mesh");
     EXPECT_EQ("/root/some.msh", mesh_file);
-    double param = rec.key<double>("parameter_a");
-    EXPECT_EQ(3.14, param);
+
+    Iterator<double> it = rec.find<double>("parameter_a");
+    EXPECT_TRUE(it);
+    EXPECT_EQ(3.14, *it);
 }
 
 
@@ -123,7 +127,9 @@ Input::Type::Record &EquationB::get_input_type() {
 
     if (! input_record.is_finished()) {
         input_record.derive_from( Equation::get_input_type() );
-        input_record.declare_key("parameter_b", Integer(), "");
+        input_record.declare_key("parameter_b", Integer(), Default("111"), "");
+        input_record.declare_key("default_str", String(), Default("str value"), "" );
+        input_record.declare_key("substances", Array( String() ), Default::obligatory(), "" );
         input_record.finish();
     }
     return input_record;
@@ -132,10 +138,17 @@ Input::Type::Record &EquationB::get_input_type() {
 
 
 EquationB::EquationB(Input::Record rec) {
-    string mesh_file = rec.key<FilePath>("mesh");
+    using namespace Input;
+
+    string mesh_file = rec.val<FilePath>("mesh");
     EXPECT_EQ("/root/some.msh", mesh_file);
-    int param = rec.key<int>("parameter_b");
+    int param = rec.val<int>("parameter_b");
     EXPECT_EQ(314, param);
+
+    EXPECT_EQ("str value", rec.val<string>("default_str"));
+    EXPECT_TRUE( rec.find<string>("default_str"));
+
+    Array array( rec.val<Array>("substances") );
 }
 
 

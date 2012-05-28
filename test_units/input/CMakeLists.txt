@@ -34,14 +34,14 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for auto and multiline raw strings
     #define_test(enum_macro)
     
-    #define_test(type_base)
-    #define_test(type_record)
+    define_test(type_base)
+    define_test(type_record)
     
-    #define_test(storage)
-    #define_test(comment_filter)
+    define_test(storage)
+    define_test(comment_filter)
     define_test(json_to_storage)
-    #define_test(input_interface)
-    #define_test(type_use_case)
+    define_test(input_interface)
+    define_test(type_use_case)
 
 endif()
 

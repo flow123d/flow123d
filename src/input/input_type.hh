@@ -40,6 +40,11 @@
  *  This can provide some speedup for reading if it will be needed (probably not).
  *
  *
+ *   - nevytvaret deklaraci Recordu a dalsich typu runtime, ale pri kompilaci
+ *    tedy jako skutecnou hierarchii trid, to by umoznilo statickou kontrolu
+ *    kompatibility typu v konstruktoru Iterator<T>
+ *
+ *
  *
  */
 
