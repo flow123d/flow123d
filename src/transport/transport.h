@@ -34,6 +34,7 @@
 #include "coupling/equation.hh"
 #include "transport/sources.hh"
 #include "materials.hh"
+#include "input/interface.hh"
 //#include "la/distribution.hh"
 //#include "mesh/mesh.h"
 //#include "reaction.h"
@@ -75,7 +76,7 @@ public:
     /**
      * Constructor.
      */
-	ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
+	ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
 
 	/**
 	 * TODO: destructor
@@ -126,7 +127,7 @@ public:
 	 * TODO: Maybe this should be made by get_solution_vector, but here we have matrix of arrays.
 	 */
 	double ***get_out_conc();
-    char    **get_substance_names();
+    vector<string> &get_substance_names();
     TransportSources *transportsources;
     void test_concentration_sources(ConvectionTransport&);
 
@@ -151,7 +152,7 @@ private:
     void create_transport_matrix_mpi();
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
-	void read_initial_condition(); //
+	void read_initial_condition(string fname); //
 	void read_concentration_sources();
 
 	/**
@@ -212,7 +213,8 @@ private:
 
             double ***out_conc;
             int              n_substances;    // # substances transported by water
-            char            **substance_name;   // Names of substances
+            vector<string> substance_name;   // Names of substances
+            string bc_fname; // name of input file with boundary conditions
 
         	//Density
             bool density;			// Density Yes/NO
@@ -269,5 +271,6 @@ private:
             int *row_4_el;
             int *el_4_loc;
             Distribution *el_ds;
+
 };
 #endif /* TRANSPORT_H_ */

@@ -185,6 +185,11 @@ const unsigned int FEValuesBase<dim,spacedim>::n_points()
     return quadrature->size();
 }
 
+template<unsigned int dim, unsigned int spacedim> inline
+const unsigned int FEValuesBase<dim,spacedim>::n_dofs()
+{
+    return fe->n_dofs();
+}
 
 
 
@@ -285,10 +290,12 @@ void FESideValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellI
 
 
 
+template class FEValuesBase<0,3>;
 template class FEValuesBase<1,3>;
 template class FEValuesBase<2,3>;
 template class FEValuesBase<3,3>;
 
+template class FEValues<0,3>;
 template class FEValues<1,3>;
 template class FEValues<2,3>;
 template class FEValues<3,3>;

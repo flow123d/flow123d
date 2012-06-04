@@ -37,27 +37,63 @@
 
 
 /**
+ * @brief Affine mapping between reference and actual cell.
+ *
  * Class MappingP1 implements the affine transformation of
  * the reference cell onto the actual cell.
+ *
+ * @param dim Dimension of the cells.
+ * @param spacedim Dimension of the Euclidean space.
  */
 template<unsigned int dim, unsigned int spacedim>
 class MappingP1 : public Mapping<dim,spacedim>
 {
 public:
+
     /**
-     * Constructor.
+     * @brief Constructor.
      */
     MappingP1();
 
+    /**
+     * @brief Initializes the structures and computes static data.
+     *
+     * @param q Quadrature rule.
+     * @param flags Update flags.
+     * @return The computed mapping data.
+     */
     MappingInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
 
+    /**
+     * @brief Determines which additional quantities have to be computed.
+     *
+     * @param flags Update flags for required quantities.
+     * @return All necessary flags.
+     */
     UpdateFlags update_each(UpdateFlags flags);
 
+    /**
+     * @brief Calculates the mapping data on the actual cell.
+     *
+     * @param cell The actual cell.
+     * @param q Quadrature rule.
+     * @param data Precomputed mapping data.
+     * @param fv_data Data to be computed.
+     */
     void fill_fe_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
+    /**
+     * @brief Calculates the mapping data on a side of a cell.
+     *
+     * @param cell The actual cell.
+     * @param side The cell side.
+     * @param q The quadrature rule with points on the side.
+     * @param data Precomputed mapping data.
+     * @param fv_data Data to be computed.
+     */
     void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                             const Side &side,
                             const Quadrature<dim> &q,
@@ -66,11 +102,12 @@ public:
 
 
 private:
+
     /**
-     * Auxiliary matrix of gradients of shape functions (used for
+     * @brief Auxiliary matrix of gradients of shape functions (used for
      * computation of the Jacobian).
      */
-    mat::fixed<dim+1,dim> grad;
+    arma::mat::fixed<dim+1,dim> grad;
 
 };
 

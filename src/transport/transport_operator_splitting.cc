@@ -12,6 +12,7 @@
 #include <materials.hh>
 #include "coupling/equation.hh"
 #include "transport/transport.h"
+#include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
 #include "reaction/linear_reaction.hh"
 #include "semchem/semchem_interface.hh"
@@ -19,7 +20,40 @@
 #include "io/output.h"
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database )
+
+Input::Type::AbstractRecord & TransportBase::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("Transport", "Secondary equation for transport of substances.");
+
+	if (!rec.is_finished()) {
+		rec.declare_key("sorption", Bool(), Default("false"),
+						"Model of sorption.");
+		rec.declare_key("dual_porosity", Bool(), Default("false"),
+						"Dual porosity model.");
+		rec.declare_key("substances", Array(String()), Default::obligatory(),
+						"Names of transported substances.");
+		rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
+						"Input file with initial concentrations.");
+		rec.declare_key("boundary_file", FileName::input(), Default::obligatory(),
+						"Input file with boundary conditions.");
+		rec.declare_key("bc_times", Array(Double()), Default::obligatory(),
+				 	 	"Times for changing the boundary conditions.");
+//		rec.declare_key("output", ???,
+//						"Output stream for transport.");
+
+		rec.finish();
+
+		TransportOperatorSplitting::get_input_type();
+		TransportDG::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}
+
+
+TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
 : TransportBase(marks, init_mesh, material_database)
 {
 	Distribution *el_distribution;
@@ -28,7 +62,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
 
-	convection = new ConvectionTransport(marks, *mesh_, *mat_base);
+	convection = new ConvectionTransport(marks, *mesh_, *mat_base, in_rec);
 	convection->test_concentration_sources(*convection);
 
 	// Chemistry initialization
@@ -49,7 +83,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	// register output vectors from convection
 	double ***out_conc = convection->get_out_conc();
-	char    **substance_name = convection->get_substance_names();
+	vector<string> substance_name = convection->get_substance_names();
 
 	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
 	field_output = new OutputTime(mesh_, output_file);
@@ -63,7 +97,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
-         std::string subst_name = std::string(substance_name[subst_id]) + "_mobile";
+         std::string subst_name = substance_name[subst_id] + "_mobile";
          double *data = out_conc[MOBILE][subst_id];
          field_output->register_elem_data<double>(subst_name, "M/L^3", data , mesh_->n_elements());
     }
@@ -83,14 +117,16 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 }
 
 
-Input::Type::AbstractRecord &TransportOperatorSplitting::get_input_type()
+Input::Type::Record &TransportOperatorSplitting::get_input_type()
 {
     using namespace Input::Type;
-    static AbstractRecord rec("Transport", "Transport operator splitting abstract record.");
+    static Record rec("Transport_operator_splitting", "Transport operator splitting record.");
 
     if (!rec.is_finished()) {
+
+//    	rec.declare_key();
+
         rec.finish();
-        rec.no_more_descendants();
     }
     return rec;
 }

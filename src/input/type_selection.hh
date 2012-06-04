@@ -112,7 +112,7 @@ public:
     virtual int name_to_int(const string &key) const {
         finished_check();
         KeyHash key_h = key_hash(key);
-        typename SelectionData::key_to_index_const_iter it = data_->key_to_index_.find(key_h);
+        SelectionData::key_to_index_const_iter it = data_->key_to_index_.find(key_h);
         if (it != data_->key_to_index_.end())
             return (data_->keys_[it->second].value);
         else
@@ -228,11 +228,11 @@ private:
         typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
 
         /// Map of valid values to index.
-        typename std::map<int, unsigned int> value_to_index_;
-        typedef typename std::map<int, unsigned int>::const_iterator value_to_index_const_iter;
+        std::map<int, unsigned int> value_to_index_;
+        typedef std::map<int, unsigned int>::const_iterator value_to_index_const_iter;
 
         std::vector<Key> keys_;
-        typedef typename std::vector<struct Key>::const_iterator keys_const_iterator;
+        typedef std::vector<struct Key>::const_iterator keys_const_iterator;
 
         /**
          * This flag is set to true when documentation of the Record was called with extensive==true

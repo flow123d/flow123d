@@ -28,6 +28,8 @@ public:
     : EquationBase(marks, mesh, mat_base)
     {}
 
+    static Input::Type::AbstractRecord &get_input_type();
+
     /**
      * This method takes sequantial PETSc vector of side velocities and update
      * transport matrix. The ordering is same as ordering of sides in the mesh.
@@ -73,9 +75,9 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
+	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
     virtual ~TransportOperatorSplitting();
-    static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::Record &get_input_type();
 
     virtual void set_velocity_field(Vec &velocity_vector);
 	virtual void update_solution();

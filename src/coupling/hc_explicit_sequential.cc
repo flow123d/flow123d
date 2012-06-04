@@ -120,11 +120,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         char *transport_type = OptGetStr("Transport", "Transport_type", "explicit");
         if (it->type() == TransportOperatorSplitting::get_input_type())
         {
-            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database);
+            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database, *it);
         }
         else if (it->type() == TransportDG::get_input_type())
         {
-            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database);
+            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database, *it);
         }
         else
         {

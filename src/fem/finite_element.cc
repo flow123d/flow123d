@@ -180,6 +180,7 @@ const vector<arma::vec::fixed<dim> > &FiniteElement<dim,spacedim>::get_generaliz
 }
 
 
+template class FiniteElement<0,3>;
 template class FiniteElement<1,3>;
 template class FiniteElement<2,3>;
 template class FiniteElement<3,3>;

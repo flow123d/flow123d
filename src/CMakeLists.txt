@@ -44,7 +44,6 @@ set(sources_lib_non_system
     io/output.cc
     io/output_vtk.cc
     io/output_msh.cc
-    io/output_tmp.cc
     
     mesh/msh_gmshreader.cc
     mesh/boundaries.cc
@@ -64,6 +63,7 @@ set(sources_lib_non_system
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
+    transport/transport_bc.cc
     transport/transport_dg.cc
     transport/sources.cc
 

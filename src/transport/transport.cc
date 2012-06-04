@@ -65,7 +65,7 @@
 #include "flow/darcy_flow_mh.hh"
 
 
-ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database)
+ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
 : EquationBase(marks,init_mesh,material_database)
 {
     F_ENTRY;
@@ -82,15 +82,13 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     target_mark_type=this->mark_type();
     time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks, target_mark_type);
 
-    sorption = OptGetBool("Transport", "Sorption", "no");
-    dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
-    reaction_on = OptGetBool("Transport", "Reactions", "no");
+    sorption = in_rec.val<bool>("sorption");
+    dual_porosity = in_rec.val<bool>("dual_porosity");
+    reaction_on = in_rec.val<bool>("transport_reactions");
 
-    n_substances = OptGetInt("Transport", "N_substances", NULL );
+    in_rec.val<Input::Array>("substances").copy_to(substance_name);
+    n_substances = substance_name.size();
     INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
-    char * snames = OptGetStr("Transport", "Substances", "none");
-    subst_names(snames);
-    xfree(snames);
 
     pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
     type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
@@ -104,7 +102,7 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
     make_transport_partitioning();
     alloc_transport_vectors();
-    read_initial_condition();
+    read_initial_condition(in_rec.val<FilePath>("initial_file"));
    // read_concentration_sources();
 
     alloc_transport_structs_mpi();
@@ -114,9 +112,10 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     // bc marks do not influent choice of time step (not fixed_time type)
     bc_mark_type_ = time_marks->type_bc_change() | equation_mark_type_;
     std::vector<double> bc_times;
-    OptGetDblArray("Transport", "bc_times", "", bc_times);
+    in_rec.val<Input::Array>("bc_times").copy_to(bc_times);
     FILE * f;
     std::string fname;
+    bc_fname = in_rec.val<FilePath>("boundary_file");
     if (bc_times.size() == 0) {
         // only one boundary condition, check filename and read bc condition
         bc_time_level = -1;
@@ -233,24 +232,12 @@ double ***ConvectionTransport::get_out_conc(){
 	return out_conc;
 }
 
-char    **ConvectionTransport::get_substance_names(){
+vector<string> &ConvectionTransport::get_substance_names(){
 	return substance_name;
 }
 
 
 
-//=============================================================================
-//
-//=============================================================================
-//char ConvectionTransport::**subst_names(int n_subst, char *line) {
-void ConvectionTransport::subst_names(char *line) {
-    int sbi;
-
-    ASSERT(!( (n_substances < 1) || (line == NULL) ),"Bad parameter of function subst_names()\n");
-    substance_name = (char**) xmalloc(n_substances * sizeof(char*));
-    for (sbi = 0; sbi < n_substances; sbi++)
-        substance_name[sbi] = xstrcpy(strtok((sbi == 0 ? line : NULL), " \t,;"));
-}
 //=============================================================================
 //
 //=============================================================================
@@ -265,14 +252,13 @@ void ConvectionTransport::subst_scales(char *line) {
 //=============================================================================
 // READ INITIAL CONDITION
 //=============================================================================
-void ConvectionTransport::read_initial_condition() {
+void ConvectionTransport::read_initial_condition(string concentration_fname) {
         F_ENTRY;
 
         FILE	*in;		  // input file
 		char     line[ LINE_SIZE ]; // line of data file
 		unsigned int sbi,index, id, eid, i,n_concentrations, global_idx;
 
-        std::string concentration_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\"));
 		in = xfopen( concentration_fname, "rt" );
 
 		skip_to( in, "$Concentrations" );
@@ -520,15 +506,14 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
 std::string ConvectionTransport::make_bc_file_name(int level) {
 
-    std::string bc_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport",
-            "Transport_BCD", "\\"));
+	string fname;
     if (level >= 0 ) {
         std::stringstream name_str;
         name_str << bc_fname << "_" << setfill('0') << setw(3) << level;
-        bc_fname = name_str.str();
+        fname = name_str.str();
     }
 
-    return bc_fname;
+    return fname;
 }
 void ConvectionTransport::read_bc_vector() {
 

@@ -44,66 +44,81 @@ template<unsigned int dim> class Quadrature;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 
 
-using namespace arma;
-using namespace std;
 
 
 /**
- * Calculates determinant of a rectangular matrix.
+ * @brief Calculates determinant of a rectangular matrix.
  */
 template<class T>
 double determinant(const T &M);
 
 
-template<> inline double determinant(const mat::fixed<1,2> &M)
+template<> inline double determinant(const arma::mat::fixed<1,2> &M)
 {
     return sqrt(M(0,0)*M(0,0)+M(0,1)*M(0,1));
 }
 
-template<> inline double determinant(const mat::fixed<2,1> &M)
+template<> inline double determinant(const arma::mat::fixed<2,1> &M)
 {
     return sqrt(M(0,0)*M(0,0)+M(1,0)*M(1,0));
 }
 
-template<> inline double determinant(const mat::fixed<1,3> &M)
+template<> inline double determinant(const arma::mat::fixed<0,3> &M)
+{
+    return 0;
+}
+
+template<> inline double determinant(const arma::mat::fixed<3,0> &M)
+{
+    return 0;
+}
+
+template<> inline double determinant(const arma::mat::fixed<1,3> &M)
 {
     return sqrt(M(0,0)*M(0,0)+M(0,1)*M(0,1)+M(0,2)*M(0,2));
 }
 
-template<> inline double determinant(const mat::fixed<3,1> &M)
+template<> inline double determinant(const arma::mat::fixed<3,1> &M)
 {
     return sqrt(M(0,0)*M(0,0)+M(1,0)*M(1,0)+M(2,0)*M(2,0));
 }
 
-template<> inline double determinant(const mat::fixed<2,3> &M)
+template<> inline double determinant(const arma::mat::fixed<2,3> &M)
 {
     return sqrt((M(0,0)*M(0,0)+M(0,1)*M(0,1)+M(0,2)*M(0,2))*(M(1,0)*M(1,0)+M(1,1)*M(1,1)+M(1,2)*M(1,2))
                -(M(0,0)*M(1,0)+M(0,1)*M(1,1)+M(0,2)*M(1,2))*(M(0,0)*M(1,0)+M(0,1)*M(1,1)+M(0,2)*M(1,2)));
 }
 
-template<> inline double determinant(const mat::fixed<3,2> &M)
+template<> inline double determinant(const arma::mat::fixed<3,2> &M)
 {
     return sqrt((M(0,0)*M(0,0)+M(1,0)*M(1,0)+M(2,0)*M(2,0))*(M(0,1)*M(0,1)+M(1,1)*M(1,1)+M(2,1)*M(2,1))
                -(M(0,0)*M(0,1)+M(1,0)*M(1,1)+M(2,0)*M(2,1))*(M(0,0)*M(0,1)+M(1,0)*M(1,1)+M(2,0)*M(2,1)));
 }
 
-template<unsigned int n> inline double determinant(const mat::fixed<n,n> &M)
+template<unsigned int n> inline double determinant(const arma::mat::fixed<n,n> &M)
 {
     return det(M);
 }
 
 
+/**
+ * @brief Mapping data that can be precomputed on the actual cell.
+ *
+ * So far this involves only the (local) barycentric coordinates of quadrature points.
+ */
 struct MappingInternalData
 {
     /**
-     * Auxiliary array of barycentric coordinates of quadrature points.
+     * @brief Auxiliary array of barycentric coordinates of quadrature points.
      */
-    vector<vec> bar_coords;
+    std::vector<arma::vec> bar_coords;
 };
 
 
 
 /**
+ * @brief Abstract class for the mapping between reference and actual cell.
+ *
  * Class Mapping calculates data related to the mapping of the
  * reference cell to the actual cell, such as Jacobian and normal
  * vectors.
@@ -114,19 +129,30 @@ class Mapping
 public:
 
     /**
-     * Calculates the mapping data on the reference cell.
+     * @brief Calculates the mapping data on the reference cell.
+     *
+     * @param q Quadrature rule.
+     * @param flags Update flags.
      */
     virtual MappingInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags) = 0;
 
     /**
-     * Decides which additional quantities have to be computed
+     * @brief Decides which additional quantities have to be computed
      * for each cell.
+     *
+     * @param flags Flags of required quantities.
+     * @return Flags of all necessary quantities.
      */
     virtual UpdateFlags update_each(UpdateFlags flags) = 0;
 
     /**
-     * Calculates the mapping data and stores them in the provided
+     * @brief Calculates the mapping data and stores them in the provided
      * structures.
+     *
+     * @param cell The actual cell.
+     * @param q Quadrature rule.
+     * @param data Precomputed mapping data.
+     * @param fv_data Data to be computed.
      */
     virtual void fill_fe_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                         const Quadrature<dim> &q,
@@ -134,8 +160,14 @@ public:
                         FEValuesData<dim,spacedim> &fv_data) = 0;
 
     /**
-     Calculates the mapping data related to a given side, namely the
-     jacobian determinants and the normal vectors.
+     * @brief Calculates the mapping data related to a given side, namely the
+     * jacobian determinants and the normal vectors.
+     *
+     * @param cell The actual cell.
+     * @param side The cell side.
+     * @param q Quadrature rule.
+     * @param data Precomputed mapping data.
+     * @param fv_data Data to be computed.
      */
     virtual void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                             const Side &side,
@@ -144,13 +176,19 @@ public:
                             FEValuesData<dim,spacedim> &fv_data) = 0;
 
     /**
-     * Creates a cell dim-dimensional quadrature from side (dim-1)-dimensional quadrature.
+     * @brief Creates a cell dim-dimensional quadrature from side (dim-1)-dimensional quadrature.
+     *
+     * @param cell The actual cell.
+     * @param q Quadrature rule.
+     * @param side The cell side.
+     * @param subq The computed @p dim-1 dimensional sub-quadrature.
      */
     void transform_subquadrature(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
                         Quadrature<dim> &q,
                         const Side &side,
                         const Quadrature<dim-1> &subq);
 
+    /// Destructor.
     virtual ~Mapping() {};
 };
 
@@ -170,8 +208,8 @@ void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<di
     double lambda;
 
     // vectors of barycentric coordinates of quadrature points
-    vec::fixed<dim+1> el_bar_coords;
-    vec::fixed<dim> side_bar_coords;
+    arma::vec::fixed<dim+1> el_bar_coords;
+    arma::vec::fixed<dim> side_bar_coords;
 
     // number the element nodes
     for (int i=0; i<cell->n_nodes; i++)

@@ -32,7 +32,8 @@
 #define UPDATE_FLAGS_HH_
 
 /**
- * Enum type UpdateFlags indicates which quantities are to be
+ * \enum UpdateFlags
+ * @brief Enum type UpdateFlags indicates which quantities are to be
  * recomputed on each finite element cell.
  *
  * Selecting these flags in a restrictive way is crucial for the
@@ -57,17 +58,17 @@
  * FiniteElement will require additional updates from the Mapping. To
  * this end, the following auxiliary functions have been implemented:
  *
-  * FiniteElement::update_each(flags) determine the values required by
+  * FiniteElement::update_each() determine the values required by
  * the FiniteElement on each cell. The same function exists in Mapping.
  *
- * FEValuesBase::compute_update_flags() is used to compute the union
+ * FEValuesBase::update_each() is used to compute the union
  * of all values to be computed ever. It does this by first adding to
  * the flags set by the user all flags added by the FiniteElement.
  * This new set of flags is then given to the Mapping and all flags
  * required there are added.
  *
  * This union of all flags is given to Mapping::fill_fe_values() and
- * FiniteElement::fill_fe_values, where the quantities indicated by
+ * FiniteElement::fill_fe_values(), where the quantities indicated by
  * the flags are computed.
  *
  * The flags finally stored in FEValues then are the union of all the
@@ -91,7 +92,7 @@ enum UpdateFlags
                     * points on the unit cell, but
                     * they are different for more
                     * complicated elements, such
-                    * as FE_RaviartThomas
+                    * as Raviart-Thomas
                     * elements.
                     */
       update_values                       = 0x0001,
