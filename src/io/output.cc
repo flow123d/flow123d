@@ -191,10 +191,6 @@ Output::Output(Mesh *_mesh, string fname)
         this->file_format = VTK_SERIAL_ASCII;
         this->output_msh = NULL;
         this->output_vtk = new OutputVTK(this);
-    } else if(strcmp(format_name, "VTK_DISCONT_ASCII") == 0) {
-        this->file_format = VTK_DISCONT_ASCII;
-        this->output_msh = NULL;
-        this->output_vtk = new OutputVTK(this);
     } else {
         xprintf(Warn,"Unknown output file format: %s.\n", format_name );
         this->file_format = NONE;
@@ -266,7 +262,6 @@ int Output::write_tail(void)
     case GMSH_MSH_ASCII:
         return this->output_msh->write_tail();
     case VTK_SERIAL_ASCII:
-    case VTK_DISCONT_ASCII:
         return this->output_vtk->write_tail();
     default:
         return 0;
@@ -280,7 +275,6 @@ int Output::write_data()
     case GMSH_MSH_ASCII:
         return this->output_msh->write_data();
     case VTK_SERIAL_ASCII:
-    case VTK_DISCONT_ASCII:
         return this->output_vtk->write_data();
     default:
         return 0;
@@ -339,10 +333,6 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
         this->file_format = VTK_SERIAL_ASCII;
         this->output_msh = NULL;
         this->output_vtk = new OutputVTK(this);
-    } else if(strcmp(format_name, "VTK_DISCONT_ASCII") == 0) {
-        this->file_format = VTK_DISCONT_ASCII;
-        this->output_msh = NULL;
-        this->output_vtk = new OutputVTK(this);
     } else {
         xprintf(Warn,"Unknown output file format: %s.\n", format_name );
         this->file_format = NONE;
@@ -366,7 +356,6 @@ int OutputTime::write_data(double time)
         this->current_step++;
         break;
     case VTK_SERIAL_ASCII:
-    case VTK_DISCONT_ASCII:
         ret = this->output_vtk->write_data(time);
         this->current_step++;
         break;

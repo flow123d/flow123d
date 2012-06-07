@@ -150,6 +150,21 @@ private:
     void write_vtk_discont_topology(void);
 
     /**
+     * \brief This function writes ascii continuous data to VTK (.vtu) output file.
+     *
+     * \param[in]   *data   The pointer at structure storing pointer at own data.
+     */
+    void write_vtk_ascii_cont_data(OutputData *data);
+
+    /**
+     * \brief This function writes ascii continuous data to discontinuous mesh
+     * to VTK (.vtu) output file.
+     *
+     * \param[in]   *data   The pointer at structure storing pointer at own data.
+     */
+    void write_vtk_ascii_discont_data(OutputData *data);
+
+    /**
      * \brief This function writes ascii data to VTK (.vtu) output file.
      *
      * \param[in]   *data   The pointer at structure storing pointer at own data.
@@ -179,21 +194,24 @@ private:
     void write_vtk_data_ascii(std::vector<OutputData> *data);
 
     /**
-     * \brief Write names of scalar and vector values to the VTK file (.vtu)
+     * \brief Write names of scalar values to the VTK file (.vtu)
      *
      * \param[in]   *data   The pointer at vector of data
      */
-    void write_vtk_data_names(vector<OutputData> *data);
+    void write_vtk_scalar_data_names(vector<OutputData> *data);
+
+    /**
+     * \brief Write names of vector values to the VTK file (.vtu)
+     *
+     * \param[in]   *data   The pointer at vector of data
+     */
+    void write_vtk_vector_data_names(vector<OutputData> *data);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)
      */
     void write_vtk_node_data(void);
 
-    /**
-     * \brief Write data on corners to the VTK file (.vtu)
-     */
-    void write_vtk_corner_data(void);
     /**
      * \brief Write data on elements to the VTK file (.vtu)
      */
