@@ -63,7 +63,7 @@ To obtain PETSC configuration for the production version you can use e.g.
 > make test
 
 IMPORTANT NOTES:
-For some reasons if you let PETSc todownload and install its own MPICH it overrides your optimization flags for compiler.
+For some reasons if you let PETSc to download and install its own MPICH it overrides your optimization flags for compiler.
 Workaround is to edit file ${PETSC_DIR}/${PETSC_ARCH}/conf/petscvariables and modify variables XXXFLAGS_O back to 
 the values you wish.
 
@@ -78,20 +78,21 @@ Next we describe several additional configure options which can be useful.
 Alternatives and Troubleshooting
 ================================
 
+** WINDOWS: If you use a shell script for PETSC configuration under cygwin, always check if you use UNIX line ends.
+   It can be specified in the notepad of Windows 7.
 
-
-1) If you want only serial version of PETSc (and Flow123d)
+** If you want only serial version of PETSc (and Flow123d)
 add --with-mpi=0 to the configure command line.
 You can have several PETSC configuration using different PETSC_ARCH.
 
-2) By default PETSC will create dynamically linked libraries, which can be shared be more applications. But on some systems 
+** By default PETSC will create dynamically linked libraries, which can be shared be more applications. But on some systems 
 (in particular we have problems under Windows) this doesn't work, so one is forced to turn off dynamic linking by:
 
 --with-shared=0
 
-3) PETSC use BLAS and few LAPCAK functions for its local vector and matrix operations. The speed of BLAS and LAPACK have dramatic impact 
-   on the overall performance. There is a sophisicated implementation of BLAS called ATLAS. ATLAS performs extensive set of performance tests on
-   your hardware then make an optimized imlementation of  BLAS code for you. Accoring to our measurements the Flow123d is about two times faster
+** PETSC use BLAS and few LAPACK functions for its local vector and matrix operations. The speed of BLAS and LAPACK have dramatic impact 
+   on the overall performance. There is a sophisticated implementation of BLAS called ATLAS. ATLAS performs extensive set of performance tests on
+   your hardware then make an optimized implementation of  BLAS code for you. According to our measurements the Flow123d is about two times faster
    with ATLAS compared to usual --download-f-blas-lapack (on x86 architecture and usin GCC).
    
    In order to use ATLAS, download it from ... and follow their instructions. The key point is that you have to turn off the CPU throttling.
@@ -108,7 +109,7 @@ You can have several PETSC configuration using different PETSC_ARCH.
    as a part of Flow123d sources.
    See. HAVE_ATTLAS_ONLY_LAPACK in ./makefile.in
 
-4) PETSC provides interface to many usefull packages. You can install them 
+** PETSC provides interface to many usefull packages. You can install them 
 adding further configure options:
 --download-superlu=yes         # parallel direct solver
 --download-hypre=yes           # Boomer algebraic multigrid preconditioner, many preconditioners
