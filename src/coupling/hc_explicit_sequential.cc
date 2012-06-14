@@ -113,28 +113,29 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     AbstractRecord flow = in_record.val<AbstractRecord>("primary_equation");
     water_output = new DarcyFlowMHOutput(water,Record(flow).val<Record>("output") );
 
-    // optionally setup transport objects
-    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
-    if (it) {
+    // TODO: optionally setup transport objects
+//    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
+//    if (it) {
+//
+//        char *transport_type = OptGetStr("Transport", "Transport_type", "explicit");
+//        if (it->type() == TransportOperatorSplitting::get_input_type())
+//        {
+//            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database, *it);
+//        }
+//        else if (it->type() == TransportDG::get_input_type())
+//        {
+//            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database, *it);
+//        }
+//        else
+//        {
+//            xprintf(PrgErr,"Value of parameter: [Transport] Transport_type is neither \"explicit\" nor \"implicit\".\n");
+//        }
+//
+//    } else {
+//        transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
+//    }
 
-        char *transport_type = OptGetStr("Transport", "Transport_type", "explicit");
-        if (it->type() == TransportOperatorSplitting::get_input_type())
-        {
-            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database, *it);
-        }
-        else if (it->type() == TransportDG::get_input_type())
-        {
-            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database, *it);
-        }
-        else
-        {
-            xprintf(PrgErr,"Value of parameter: [Transport] Transport_type is neither \"explicit\" nor \"implicit\".\n");
-        }
-
-    } else {
-        transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
-    }
-
+    transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
 }
 
 Input::Type::Record &HC_ExplicitSequential::get_input_type() {

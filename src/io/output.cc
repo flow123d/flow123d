@@ -328,28 +328,10 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     set_corner_data(corner_data);
     set_elem_data(elem_data);
 
-    char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
-
-    if(strcmp(format_name,"ASCII") == 0 || strcmp(format_name,"BIN") == 0) {
-        this->file_format = GMSH_MSH_ASCII;
-        this->output_msh = new OutputMSH(this);
-        this->output_vtk = NULL;
-    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 ||
-            strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
-        this->file_format = VTK_SERIAL_ASCII;
-        this->output_msh = NULL;
-        this->output_vtk = new OutputVTK(this);
-    } else if(strcmp(format_name, "VTK_DISCONT_ASCII") == 0) {
-        this->file_format = VTK_DISCONT_ASCII;
-        this->output_msh = NULL;
-        this->output_vtk = new OutputVTK(this);
-    } else {
-        xprintf(Warn,"Unknown output file format: %s.\n", format_name );
-        this->file_format = NONE;
-        this->output_msh = NULL;
-        this->output_vtk = NULL;
-    }
-
+    // TODO: load this values from configuration file
+    this->file_format = VTK_SERIAL_ASCII;
+    this->output_msh = NULL;
+    this->output_vtk = new OutputVTK(this);
 }
 
 OutputTime::~OutputTime(void)
