@@ -285,6 +285,10 @@ int Output::write_data()
 
 OutputTime::OutputTime(Mesh *_mesh, string fname)
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank!=0) return;
+
     std::vector<OutputData> *node_data;
     std::vector<OutputData> *corner_data;
     std::vector<OutputData> *elem_data;
@@ -349,6 +353,10 @@ OutputTime::~OutputTime(void)
 int OutputTime::write_data(double time)
 {
     int ret = 0;
+
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank != 0 ) return 0;
 
     switch(this->file_format) {
     case GMSH_MSH_ASCII:
