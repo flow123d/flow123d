@@ -162,7 +162,7 @@ else()
   else()
     # Release mode
     add_definitions("-O3")
-    add_definitions(-DNDEBUG)
+    add_definitions(-DNODEBUG)
   endif()
 endif()
 ##############

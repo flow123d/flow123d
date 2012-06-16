@@ -24,6 +24,16 @@
  *
  * @file
  *
+ * Design:
+ * basically we provide only one macro START_FRAME that should
+ * - start local timer
+ * - create local variable to automatically end the timer at least at return point or end of the block
+ * - increase count
+ * - set global pointer to current timer frame (we use it to set subframes and monitor memory allocations)
+ *
+ * - when called for the first time:
+ *   - register to global Profiler class ( see if there is some frame of the same name with same parent)
+ *   - keep pointer to parent timer frame
  */
 
 
@@ -195,8 +205,17 @@ private:
     Profiler & operator=(Profiler const&); // assignment operator is private
 
     /**
+     * Stop all timers, synchronize all processes, collect
+     * profiling informations and write it to given stream.
+     *
      *  Pass through the profiling tree (collective over processors)
      *  Print cumulative times average, balance (max/min), count (denote differences)
+     *
+     */
+    void output(ostream &os);
+
+    /**
+     *  Calls output.
      *  Destroy all structures.
      */
     ~Profiler();

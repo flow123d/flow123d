@@ -10,7 +10,7 @@
 
 #define TEST_USE_PETSC
 
-#include <gtest_flow.hh>
+#include <gtest_mpi.hh>
 
 #include <la/local_to_global_map.hh>
 #include <la/distribution.hh>
