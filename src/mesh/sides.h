@@ -38,27 +38,24 @@ struct Problem;
 // STRUCTURE OF THE SIDE OF THE MESH
 //=============================================================================
 
-typedef struct Side {
+
+
+class Side {
+public:
     // Basic data
     int id; // Id # of side
     int type; // INTERNAL | EXTERNAL
-    int shape; // POINT, LINE, TRIANGLE
     int dim;
     // Topology of the mesh
     ElementIter element; // Pointer to element to which belonged
-    int lnum; // Local # of side in element
+    int lnum; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
-    int n_nodes; // # of nodes
     Node** node; // Pointers to sides's nodes
 
     struct Boundary *cond; // Boundary condition  - if prescribed
     struct Edge *edge; // Edge to wich belonged
     struct Neighbour *neigh_bv; // Neighbour, B-V type (comp.)
-    // List
-    struct Side *prev; // Previous side in the list
-    struct Side *next; // Next side in the list
     // Geometry
-    double metrics; // Length (area) of the side
     double normal[ 3 ]; // Vector of (generalized) normal
     double centre[ 3 ]; // Centre of side
     // Matrix
@@ -70,15 +67,24 @@ typedef struct Side {
     double scalar; // Scalar quantity (piez. head or pressure)
     double pscalar; // As scalar but in previous time step
     // Misc
-    int aux; // Auxiliary flag
-    double faux;
-} Side;
+    //int aux; // Auxiliary flag
+    //double faux;
+
+    Side();
+    double metric();
+    void reinit(ElementIter ele, unsigned int set_dim, int set_id, int set_lnum);
+    inline unsigned int n_nodes() const
+        {return dim+1;}
+
+
+private:
+    double length_line();
+    double area_triangle();
+};
 
 #define EXTERNAL    0
 #define INTERNAL    1
-#define S_POINT     0
-#define S_LINE      1
-#define S_TRIANGLE      2
+
 
 
 void make_side_list(Mesh*);

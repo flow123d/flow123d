@@ -247,7 +247,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
                 vec::fixed<spacedim> n_cell;
                 for (int i=0; i<cell->n_nodes; i++)
                     node_nums[cell->node[i]] = i;
-                for (int i=0; i<side.n_nodes; i++)
+                for (int i=0; i<side.n_nodes(); i++)
                     node_nums.erase(side.node[i]);
                 n_ref.zeros();
                 int index = node_nums.begin()->second;

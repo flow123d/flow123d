@@ -826,7 +826,7 @@ void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator ce
         {
             if (cell->side[sid]->dim != dim-1) continue;
             int num = dim*(dim+1)/2;
-            for (int i=0; i<cell->side[sid]->n_nodes; i++)
+            for (int i=0; i<cell->side[sid]->n_nodes(); i++)
                 num -= node_nums[cell->side[sid]->node[i]];
             velocity[k] += fv.shape_vector(num,k)*cell->side[sid]->flux;
         }
@@ -850,7 +850,7 @@ void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::Cell
         {
             if (cell->side[sid]->dim != dim-1) continue;
             int num = dim*(dim+1)/2;
-            for (int i=0; i<cell->side[sid]->n_nodes; i++)
+            for (int i=0; i<cell->side[sid]->n_nodes(); i++)
                 num -= node_nums[cell->side[sid]->node[i]];
             divergence[k] += trace(fv.shape_grad_vector(num,k))*cell->side[sid]->flux;
         }
@@ -906,8 +906,8 @@ void TransportDG::set_DG_parameters(const Neighbour *n,
     }
     else
     {
-        for (int i=0; i<s->n_nodes; i++)
-            for (int j=i+1; j<s->n_nodes; j++)
+        for (int i=0; i<s->n_nodes(); i++)
+            for (int j=i+1; j<s->n_nodes(); j++)
                 h = max(h, s->node[i]->distance(*s->node[j]));
     }
 
@@ -1011,8 +1011,8 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
     }
     else
     {
-        for (int i=0; i<side->n_nodes; i++)
-            for (int j=i+1; j<side->n_nodes; j++)
+        for (int i=0; i<side->n_nodes(); i++)
+            for (int j=i+1; j<side->n_nodes(); j++)
                 h = max(h, side->node[i]->distance(*side->node[j]));
     }
 

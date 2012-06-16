@@ -184,10 +184,10 @@ void boundary_calculation_mh( struct Mesh *mesh )
 				break;
 			case NEUMANN:
 				edg->f_val =  0.0;
-				edg->f_rhs = bcd->flux * bcd->side->metrics;
+				edg->f_rhs = bcd->flux * bcd->side->metric();
 				break;
 			case NEWTON:
-				edg->f_val = -1.0 * bcd->side->metrics*bcd->sigma;
+				edg->f_val = -1.0 * bcd->side->metric()*bcd->sigma;
 				edg->f_rhs = edg->f_val * bcd->scalar;
 				break;
 			default:

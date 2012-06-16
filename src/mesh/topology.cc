@@ -77,23 +77,28 @@ static int elements_common_sides_3D(ElementFullIter ,ElementFullIter ,int[]);
 //=============================================================================
 void element_to_side_both(Mesh* mesh)
 {
-	int li;
-
-	struct Side *sde;
-
-	xprintf( MsgVerb, "   Element to side and back... ")/*orig verb 5*/;
+    F_ENTRY;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-	sde = mesh->side;
-	FOR_ELEMENTS(mesh, ele ) {
-		FOR_ELEMENT_SIDES( ele, li ) {
-			ASSERT(!( sde == NULL ),"Inconsistency between number of elements and number of sides\n");
-			ele->side[ li ] = sde;
-			sde->element = ele;
-			sde->lnum    = li;
-			sde = sde->next;
-		}
+
+	// count sides
+    {
+        int n_sides = 0;
+        FOR_ELEMENTS(mesh, ele) n_sides+=ele->n_sides;
+        mesh->sides.resize(n_sides);
+        xprintf( Msg, "   Creating %d sides ...\n", n_sides);
+    }
+
+	{
+	    int i_side=0;
+
+	    FOR_ELEMENTS(mesh, ele ) {
+	        for(int i_lside=0; i_lside< ele->n_sides; i_lside++) {
+	            mesh->sides[i_side].reinit(ele, ele->dim-1, i_side , i_lside);
+	            ele->side[i_lside]=&( mesh->sides[i_side] );
+	            i_side++;
+	        }
+	    }
 	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
 //=============================================================================
 //
@@ -213,6 +218,7 @@ void neigh_vb_to_element_and_side(Mesh* mesh)
 //=============================================================================
 void neigh_bv_to_side(Mesh* mesh)
 {
+    F_ENTRY;
 	struct Neighbour *ngh;
 
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
@@ -346,6 +352,8 @@ void side_to_node_tetrahedron( ElementFullIter ele )
 //=============================================================================
 void node_to_element(Mesh* mesh)
 {
+    F_ENTRY;
+
 	int li;
 	NodeIter nod;
 	ElementIter ele;
@@ -691,23 +699,30 @@ void edge_to_side_both(Mesh* mesh)
 			sde->edge = edg;
 		}
 	}
-	// now the external ones
-	sde = mesh->side;
+
+	// now the external ones ( pair all remaining edges with external sides)
+	int i_side=0;
 	FOR_EDGES(mesh,  edg ) {
 		if( edg->n_sides != NDEF )
 			continue;
+		//cout << i_side << endl;
 		edg->n_sides = 1;
 		edg->side = (struct Side**) xmalloc( edg->n_sides *
 					sizeof( struct Side* ) );
-		while( sde->edge != NULL ) {
-			sde = sde->next;
-			INPUT_CHECK(!( sde == NULL ),"No next side during external edge initialization!");
+		while( mesh->sides[i_side].edge != NULL ) {
+			i_side++;
+			INPUT_CHECK( i_side < mesh->n_sides(), "No next side during external edge initialization!\n");
 		}
-		sde->edge = edg;
-		edg->side[ 0 ] = sde;
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+		mesh->sides[i_side].edge = edg;
 
+		edg->side[ 0 ] = &( mesh->sides[i_side] );
+		i_side++;
+	}
+
+    while( i_side < mesh->n_sides() && mesh->sides[i_side].edge != NULL ) i_side++;
+	ASSERT(i_side== mesh->n_sides(), "There are %d sides without edge.\n", mesh->n_sides() - i_side);
+
+    //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
 }
 //=============================================================================
 //
@@ -726,6 +741,7 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 			continue;
 		sde = ngh->side[ 1 ];
 		edg = sde->edge;
+		cout << edg << endl;
 		edg->neigh_vb = ngh;
 		ngh->edge = edg;
 	}

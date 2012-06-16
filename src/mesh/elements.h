@@ -32,6 +32,7 @@
 
 #include "mesh/nodes.hh"
 #include <materials.hh>
+#include "sides.h"
 
 struct Problem;
 class Mesh;

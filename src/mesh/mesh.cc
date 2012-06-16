@@ -54,16 +54,7 @@ Mesh::Mesh() {
     xprintf(Msg, " - Mesh()     - version with node_vector\n");
 
     n_materials = NDEF;
-//    concentration = NULL;
-//    l_concentration = NULL;
-//    transport_bcd = NULL;
-//    l_transport_bcd = NULL;
-    //	n_sources        = NDEF;
-    //	source           = NULL;
-    //	l_source         = NULL;
-    n_sides = NDEF;
-    side = NULL;
-    l_side = NULL;
+
     n_insides = NDEF;
     n_exsides = NDEF;
     n_neighs = NDEF;
@@ -86,17 +77,17 @@ Mesh::Mesh() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-    Mesh *mesh = this;
+    F_ENTRY;
 
     FOR_ELEMENTS(this, elm)
-    switch (elm->type) {
+    switch (elm->dim) {
         case 1:
             n_lines++;
             break;
         case 2:
             n_triangles++;
             break;
-        case 4:
+        case 3:
             n_tetrahedras++;
             break;
     }
@@ -153,29 +144,33 @@ int *max_entry() {
 }*/
 
 void Mesh::setup_topology() {
+    F_ENTRY;
     Mesh *mesh=this;
 
     /// initialize mesh topology (should be handled inside mesh object)
     read_neighbour_list(mesh);
 
-    make_side_list( mesh);
-    make_edge_list(mesh);
 
-    //    make_hashes(problem);
     count_element_types();
 
     // topology
     node_to_element(mesh);
     element_to_side_both(mesh);
+
     neigh_vv_to_element(mesh);
     //element_to_neigh_vv(mesh);
     neigh_vb_to_element_and_side(mesh);
     neigh_bv_to_side(mesh);
     element_to_neigh_vb(mesh);
-    side_shape_specific(mesh);
+
+    //side_shape_specific(mesh);
     side_to_node(mesh);
     neigh_bb_topology(mesh);
+
+    make_edge_list(mesh);
+
     neigh_bb_to_edge_both(mesh);
+
     edge_to_side_both(mesh);
     neigh_vb_to_edge_both(mesh);
     side_types(mesh);

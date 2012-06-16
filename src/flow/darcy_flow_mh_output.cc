@@ -188,7 +188,7 @@ void DarcyFlowMHOutput::make_element_scalar() {
     double *sol;
 
     darcy_flow->get_solution_vector(sol, sol_size);
-    unsigned int soi = mesh_->n_sides;
+    unsigned int soi = mesh_->n_sides();
     unsigned int i = 0;
     FOR_ELEMENTS(mesh_,ele) {
         ele_pressure[i] = sol[ soi];
@@ -339,7 +339,7 @@ void DarcyFlowMHOutput::make_sides_scalar() {
     unsigned int sol_size;
     struct Side *sde;
 
-    soi = mesh_->n_sides + mesh_->n_elements();
+    soi = mesh_->n_sides() + mesh_->n_elements();
     darcy_flow->get_solution_vector(sol, sol_size);
 
     FOR_EDGES(mesh_, edg) {
@@ -415,7 +415,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     }
     if (count_sides){
         FOR_SIDES(mesh_, side) {
-            for (int li = 0; li < side->n_nodes; li++) {
+            for (int li = 0; li < side->n_nodes(); li++) {
                 node = side->node[li];//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
                 dist = sqrt(
@@ -450,7 +450,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     }
     if (count_sides){
         FOR_SIDES(mesh_, side) {
-            for (int li = 0; li < side->n_nodes; li++) {
+            for (int li = 0; li < side->n_nodes(); li++) {
                 node = side->node[li];//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 

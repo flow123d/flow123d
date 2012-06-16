@@ -72,7 +72,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
 {
     int ierr;
 
-    size = mesh_->n_elements() + mesh_->n_sides + mesh_->n_edges();
+    size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = OptGetInt("Solver", "NSchurs", "2");
     if ((unsigned int) n_schur_compls > 2) {
         xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
@@ -114,9 +114,9 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     {
     struct Side *sde;
 
-    FOR_SIDES(mesh_,sde) {
-        calc_side_metrics(sde);
-    }
+    //FOR_SIDES(mesh_,sde) {
+    //    calc_side_metrics(sde);
+    //}
 
     edge_calculation_mh(mesh_);
     element_calculation_mh(mesh_);
@@ -823,7 +823,7 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     unsigned int rows_starts[np];
     int edge_n_id = mesh_->n_edges(),
             el_n_id = mesh_->element.size(),
-            side_n_id = mesh_->n_sides;
+            side_n_id = mesh_->n_sides();
 
     // compute shifts on every proc
     shift = 0; // in this var. we count new starts of arrays chunks
@@ -1028,10 +1028,10 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
     //DBGMSG("Compute side partitioning ...\n");
     //optimal side part; loc. sides; id-> new side numbering
-    Distribution init_side_ds(Distribution::Block, mesh_->n_sides);
+    Distribution init_side_ds(Distribution::Block, mesh_->n_sides());
     // partitioning of sides follows elements
     loc_part = new int[init_side_ds.lsize()];
-    id_4_old = new int[mesh_->n_sides];
+    id_4_old = new int[mesh_->n_sides()];
     {
         int is = 0, iel;
         loc_i = 0;
@@ -1049,7 +1049,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     // make trivial part
     //for(loc_i=0;loc_i<init_side_ds->lsize;loc_i++) loc_part[loc_i]=init_side_ds->myp;
 
-    id_maps(mesh_->n_sides, id_4_old, init_side_ds, loc_part, side_ds,
+    id_maps(mesh_->n_sides(), id_4_old, init_side_ds, loc_part, side_ds,
             side_id_4_loc, side_row_4_id);
     delete [] loc_part;
     delete [] id_4_old;

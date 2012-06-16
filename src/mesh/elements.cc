@@ -163,7 +163,7 @@ void calc_a_row(Mesh* mesh) {
 void calc_b_row(Mesh* mesh) {
     int last;
 
-    last = mesh->n_sides;
+    last = mesh->n_sides();
 
     FOR_ELEMENTS(mesh, ele) {
         ele->b_row = last++;
@@ -382,7 +382,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
 
     FOR_ELM_NEIGHS_VB(ele, ngi) {
         ngh = ele->neigh_vb[ ngi ];
-        ele->d_val[ D_DIAG ] -= ngh->sigma * ngh->side[1]->metrics;
+        ele->d_val[ D_DIAG ] -= ngh->sigma * ngh->side[1]->metric();
     }
     iCol = 1;
 
@@ -430,7 +430,7 @@ void make_block_e(ElementFullIter ele, Mesh *mesh) {
     FOR_ELM_NEIGHS_VB(ele, ngi) {
         ngh = ele->neigh_vb[ ngi ];
         ele->e_col[ ci ] = ngh->edge->c_row;
-        ele->e_val[ ci ] = ngh->sigma * ngh->side[1]->metrics; //DOPLNENO   * ngh->side[1]->metrics
+        ele->e_val[ ci ] = ngh->sigma * ngh->side[1]->metric(); //DOPLNENO   * ngh->side[1]->metrics
         ele->e_edge_idx[ci] = mesh->edge.index(ngh->edge);
         ci++;
     }
