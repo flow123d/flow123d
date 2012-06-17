@@ -239,7 +239,7 @@ void DarcyFlowMH_Steady::postprocess() {
         ele = mesh_->element(el_4_loc[i_loc]);
         FOR_ELEMENT_SIDES(ele,i) {
             side_rows[i] = side_row_4_id[ele->side[i]->id];
-            values[i] = -1.0 * ele->volume * sources->element_value(ele.index()) / ele->n_sides;
+            values[i] = -1.0 * ele->volume() * sources->element_value(ele.index()) / ele->n_sides;
         }
         VecSetValues(schur0->get_solution(), ele->n_sides, side_rows, values, ADD_VALUES);
     }
@@ -330,7 +330,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
         // set sources
         if (sources != NULL) {
-            ls->rhs_set_value(el_row, -1.0 * ele->volume * sources->element_value(ele.index()));
+            ls->rhs_set_value(el_row, -1.0 * ele->volume() * sources->element_value(ele.index()));
         }
 
         // D block: non-compatible conections and diagonal: element-element
@@ -1224,7 +1224,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
         // set initial condition
         local_sol[i_loc_row]=initial_pressure->element_value(ele.index());
         // set new diagonal
-        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure/time_->dt();
+        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure()/time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
@@ -1314,7 +1314,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
          FOR_ELEMENT_SIDES(ele,i) {
              edge_row = row_4_edge[mesh_->edge.index(ele->side[i]->edge)];
              // set new diagonal
-             VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume /time_->dt()/ele->n_sides,ADD_VALUES);
+             VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides,ADD_VALUES);
              // set initial condition
              VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides,ADD_VALUES);
          }
@@ -1386,7 +1386,7 @@ void DarcyFlowLMH_Unsteady::postprocess()
       FOR_EDGE_SIDES(edg,i) {
           ele=edg->side[i]->element;
           side_row=side_row_4_id[edg->side[i]->id];
-          time_coef=-ele->material->stor*ele->volume /time_->dt()/ele->n_sides;
+          time_coef=-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides;
           VecSetValue(schur0->get_solution(),side_row,time_coef*(new_pressure-old_pressure),ADD_VALUES);
       }
   }

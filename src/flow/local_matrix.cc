@@ -105,7 +105,7 @@ void local_matrix_triangle( ElementIter ele )
 			p[ 0 ] = polynom_value_triangle( poly, midpoint[ 0 ] );
 			p[ 1 ] = polynom_value_triangle( poly, midpoint[ 1 ] );
 			p[ 2 ] = polynom_value_triangle( poly, midpoint[ 2 ] );
-			loc[i][j] = gama[i] * gama[j] * ele->measure *
+			loc[i][j] = gama[i] * gama[j] * ele->measure() *
 					( p[0] + p[1] + p[2] ) / (3.0 * ele->material->size);
 			loc[j][i] = loc[i][j];
 		}
@@ -237,13 +237,13 @@ void local_matrix_line( ElementIter ele )
 	double 		val;
 	SmallMtx2 loc=(SmallMtx2)(ele->loc);
 
-	val= (* ele->a) * ele->measure / (3.0 * ele->material->size);
+	val= (* ele->a) * ele->measure() / (3.0 * ele->material->size);
 	loc[0][0] =  val;
 	loc[1][1] =  val;
 	loc[0][1] = - val / 2.0;
 	loc[1][0] = - val / 2.0;
 
-	ele->bas_alfa[0] = ele->bas_alfa[1] = -1.0 / ele->measure;
+	ele->bas_alfa[0] = ele->bas_alfa[1] = -1.0 / ele->measure();
 	ele->bas_beta[0] = 1.0;
 	ele->bas_beta[1] = 0.0;
 }
@@ -291,9 +291,9 @@ void basis_functions_tetrahedron( ElementIter ele, double alfa[], double beta[],
 		gama[ li ] = ele->node[ li ]->getZ();
 		pSid = ele->side[ li ];
 		delta[ li ] = 1.0 / ( pSid->metric() *
-			( pSid->normal[ 0 ] * pSid->centre[ 0 ] +
-			  pSid->normal[ 1 ] * pSid->centre[ 1 ] +
-			  pSid->normal[ 2 ] * pSid->centre[ 2 ] -
+			( pSid->normal[ 0 ] * pSid->centre()[ 0 ] +
+			  pSid->normal[ 1 ] * pSid->centre()[ 1 ] +
+			  pSid->normal[ 2 ] * pSid->centre()[ 2 ] -
 			  pSid->normal[ 0 ] * alfa[ li ] -
 			  pSid->normal[ 1 ] * beta[ li ] -
 			  pSid->normal[ 2 ] * gama[ li ] ) );
@@ -360,10 +360,10 @@ double polynom_integral_tetrahedron( ElementIter ele, double poly[] )
 	double t[ 3 ];
 
 	rc = 0.0;
-	v = ele->measure;
-	t[ 0 ] = ele->centre[ 0 ];
-	t[ 1 ] = ele->centre[ 1 ];
-	t[ 2 ] = ele->centre[ 2 ];
+	v = ele->measure();
+	t[ 0 ] = ele->centre()[ 0 ];
+	t[ 1 ] = ele->centre()[ 1 ];
+	t[ 2 ] = ele->centre()[ 2 ];
 	// Constant
 	rc += poly[ 0 ] * v;
 	// Term with x

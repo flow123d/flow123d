@@ -83,9 +83,7 @@ Element::Element()
   k(NULL),
   a(NULL),
   //stor(0),
-            // Geometrical properties
-  measure(0),
-  volume(0),
+
             // Parameters of the basis functions
  bas_alfa(NULL),
  bas_beta(NULL),
@@ -109,7 +107,6 @@ Element::Element()
  e_val(NULL)
 
 {
- centre.zeros();
 }
 
 /**
@@ -173,26 +170,26 @@ void calc_b_row(Mesh* mesh) {
 /**
  * SET THE "VOLUME" FIELD IN STRUCT ELEMENT
  */
-void Element::calc_volume() {
-    volume = measure * material->size; //UPDATE
-    //        ele->volume = ele->metrics * ele->size;	   // JB version
-    INPUT_CHECK(!(volume < NUM_ZERO),
-            "Volume of the element is nearly zero (volume= %g)\n", volume);
+double Element::volume() {
+    double volume = measure() * material->size;
+    //INPUT_CHECK(!(volume < NUM_ZERO),
+    //        "Volume of the element is nearly zero (volume= %g)\n", volume);
+    return volume;
 }
 
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
-void Element::calc_metrics() {
-    switch (type) {
-        case LINE:
-            measure = element_length_line();
+double Element::measure() {
+    switch (dim) {
+        case 1:
+            return element_length_line();
             break;
-        case TRIANGLE:
-            measure = element_area_triangle();
+        case 2:
+            return element_area_triangle();
             break;
-        case TETRAHEDRON:
-            measure = element_volume_tetrahedron();
+        case 3:
+            return element_volume_tetrahedron();
             break;
     }
 }
@@ -233,9 +230,10 @@ double Element::element_volume_tetrahedron() {
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
  */
 
-void Element::calc_centre() {
+arma::vec3 Element::centre() {
     int li;
 
+    arma::vec3 centre;
     centre.zeros();
 
     FOR_ELEMENT_NODES(this, li) {
@@ -243,7 +241,7 @@ void Element::calc_centre() {
     }
     centre /= (double) n_nodes;
     //DBGMSG("%d: %f %f %f\n",ele.id(),ele->centre[0],ele->centre[1],ele->centre[2]);
-
+    return centre;
 }
 
 /**
@@ -459,7 +457,7 @@ void block_A_stats(Mesh* mesh) {
             if (fabs(loc[i]) < a_abs_min) a_abs_min = fabs(loc[i]);
             if (fabs(loc[i]) > a_abs_max) a_abs_max = fabs(loc[i]);
             if (fabs(loc[i]) > 1e3)
-                xprintf(Msg, "Big number: eid:%d area %g\n", ele.id(), ele->measure);
+                xprintf(Msg, "Big number: eid:%d area %g\n", ele.id(), ele->measure());
         }
     }
 

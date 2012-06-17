@@ -45,12 +45,11 @@ class Element
 {
 public:
     Element();
-    void calc_metrics();
-    void calc_volume();
-    double element_length_line();
-    double element_area_triangle();
-    double element_volume_tetrahedron();
-    void calc_centre();
+
+    double measure();
+    double volume();
+    arma::vec3 centre();
+
     unsigned int n_sides_by_dim(int side_dim);
     void *side_by_dim(int side_dim, unsigned int n);
     Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
@@ -85,11 +84,6 @@ public:
                     // matrices a,k,loc are stored as vectors, and should be retyped
                     // if one needs double index access, see SmallMtxN types in math_fce.h
     //double   stor;          // Storativity
-    // Geometrical properties
-    double   measure;   // Metrics of the element (length, area, volume)
-    double   volume;        // Volume of the element
-    arma::vec3 centre;      // Centre of mass of element
-    //double centre[3];
     // Parameters of the basis functions
     double   *bas_alfa;      // Parameters alfa
     double   *bas_beta;      // Parameters beta
@@ -113,25 +107,13 @@ public:
     int *e_col;     // columns with nonzeros in E
     int *e_edge_idx;   // ids of compatible conected edeges
     double  *e_val;     // values of entries in E
-    // Time terms - diagonal in D block and additional RHS
-    //double tAddRHS, tAddDiag;
+
+protected:
+
+    double element_length_line();
+    double element_area_triangle();
+    double element_volume_tetrahedron();
     
-    // Results
-//    double   vector[ 3 ];   // Vector quantity - velocity of flow
-//    double   v_length;  // Length of vector quantity
-//    double   scalar;    // Scalar quantity (piez. head or pressure)
-//    double   pscalar;   // As scalar but in previous time step
-//    double   balance;   // Balance of flux
-
-//    double   scalar_it; // for density iteration
-    //double   *conc_prev;         // for density iteration
-    //double   *conc_prev_immobile;         // for density iteration
-    //double   *conc_prev_sorb;         // for density iteration
-    //double   *conc_prev_immobile_sorb;         // for density iteration
-
-    // Misc
-//    int     aux;       // Auxiliary flag
-//    double  faux;      // Auxiliary number
 };
 
 

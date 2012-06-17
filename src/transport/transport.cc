@@ -720,7 +720,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             if (elm->side[si]->cond == NULL) {
                 if (elm->side[si]->flux < 0.0) {
                     if (elm->side[si]->neigh_bv != NULL) { //comp model
-                        aij = -(elm->side[si]->flux / (elm->volume * elm->material->por_m));
+                        aij = -(elm->side[si]->flux / (elm->volume() * elm->material->por_m));
                         j = ELEMENT_FULL_ITER(mesh_, elm->side[si]->neigh_bv->element[0]).index();
                         new_j = row_4_el[j];
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
@@ -731,7 +731,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         if (edg->faux > ZERO)
                             FOR_EDGE_SIDES(edg,s)
                                 if ((edg->side[s]->id != elm->side[si]->id) && (edg->side[s]->flux > 0.0)) {
-                                    aij = -(elm->side[si]->flux * edg->side[s]->flux / (edg->faux * elm->volume
+                                    aij = -(elm->side[si]->flux * edg->side[s]->flux / (edg->faux * elm->volume()
                                             * elm->material->por_m));
                                     j = ELEMENT_FULL_ITER(mesh_, edg->side[s]->element).index();
                                     new_j = row_4_el[j];
@@ -740,10 +740,10 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     }
                 }
                 if (elm->side[si]->flux > 0.0)
-                    aii -= (elm->side[si]->flux / (elm->volume * elm->material->por_m));
+                    aii -= (elm->side[si]->flux / (elm->volume() * elm->material->por_m));
             } else {
                 if (elm->side[si]->flux < 0.0) {
-                    aij = -(elm->side[si]->flux / (elm->volume * elm->material->por_m));
+                    aij = -(elm->side[si]->flux / (elm->volume() * elm->material->por_m));
                     j = BOUNDARY_FULL_ITER(mesh_, elm->side[si]->cond).index();
                     MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
                     // vyresit BC matrix !!!!
@@ -752,20 +752,20 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
                 }
                 if (elm->side[si]->flux > 0.0)
-                    aii -= (elm->side[si]->flux / (elm->volume * elm->material->por_m));
+                    aii -= (elm->side[si]->flux / (elm->volume() * elm->material->por_m));
             } // end same dim     //ELEMENT_SIDES
 
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
             FOR_NEIGH_ELEMENTS(elm->neigh_vb[n],s)
                 if (elm.id() != ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->element[s]).id()) {
                     if (elm->neigh_vb[n]->side[s]->flux > 0.0) {
-                        aij = elm->neigh_vb[n]->side[s]->flux / (elm->volume * elm->material->por_m);
+                        aij = elm->neigh_vb[n]->side[s]->flux / (elm->volume() * elm->material->por_m);
                         j = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->element[s]).index();
                         new_j = row_4_el[j];
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                     }
                     if (elm->neigh_vb[n]->side[s]->flux < 0.0)
-                        aii += elm->neigh_vb[n]->side[s]->flux / (elm->volume * elm->material->por_m);
+                        aii += elm->neigh_vb[n]->side[s]->flux / (elm->volume() * elm->material->por_m);
                 } // end comp model
 	/*
         FOR_ELM_NEIGHS_VV(elm,n) { //non-comp model
@@ -776,13 +776,13 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 if (elm.id() != el2.id()) {
                     flux = ngh->sigma * ngh->geom_factor * (el2->scalar - elm->scalar);
                     if (flux > 0.0) {
-                        aij = flux / (elm->volume * elm->material->por_m); // -=
+                        aij = flux / (elm->volume() * elm->material->por_m); // -=
                         j = el2.index();
                         new_j = row_4_el[j];
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                     }
                     if (flux < 0.0)
-                        aii += flux / (elm->volume * elm->material->por_m);
+                        aii += flux / (elm->volume() * elm->material->por_m);
                 }
             }
         } // end non-comp model

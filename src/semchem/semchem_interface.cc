@@ -94,7 +94,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    switch (ppelm->dim) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = (ppelm->volume) * (ppelm->material->por_m); break;
+	  case 3 : pomoc = (ppelm->volume()) * (ppelm->material->por_m); break;
 	default:
 	  pomoc = 1.0;
    }
@@ -138,7 +138,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    switch (ppelm->dim) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = ppelm->volume * (ppelm->material->por_imm); break;
+	  case 3 : pomoc = ppelm->volume() * (ppelm->material->por_imm); break;
 	default:
 	  pomoc = 1.0;
     }

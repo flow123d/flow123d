@@ -57,7 +57,6 @@ public:
     struct Neighbour *neigh_bv; // Neighbour, B-V type (comp.)
     // Geometry
     double normal[ 3 ]; // Vector of (generalized) normal
-    double centre[ 3 ]; // Centre of side
     // Matrix
     int c_row; // # of row in block C
     int c_col; // # of col in block C
@@ -66,12 +65,12 @@ public:
     double flux; // Flux through side
     double scalar; // Scalar quantity (piez. head or pressure)
     double pscalar; // As scalar but in previous time step
-    // Misc
-    //int aux; // Auxiliary flag
-    //double faux;
+
 
     Side();
     double metric();
+    arma::vec3 centre(); // Centre of side
+
     void reinit(ElementIter ele, unsigned int set_dim, int set_id, int set_lnum);
     inline unsigned int n_nodes() const
         {return dim+1;}

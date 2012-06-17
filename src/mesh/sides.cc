@@ -203,7 +203,6 @@ void side_calculation_mh(Mesh* mesh) {
         calc_side_c_row(*sde);
         calc_side_c_val(*sde);
         calc_side_normal(*sde);
-        calc_side_centre(*sde);
 /*
         if (ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY)
             calc_side_rhs_dens(sde, problem, mesh);
@@ -339,9 +338,9 @@ void side_normal_line(Side *sde) {
     s[ 2 ] = sde->node[ 1 ]->getZ() - sde->node[ 0 ]->getZ();
     vector_product(s, en, sde->normal);
     normalize_vector(sde->normal);
-    in[ 0 ] = ele->centre[ 0 ] - sde->node[ 0 ]->getX();
-    in[ 1 ] = ele->centre[ 1 ] - sde->node[ 0 ]->getY();
-    in[ 2 ] = ele->centre[ 2 ] - sde->node[ 0 ]->getZ();
+    in[ 0 ] = ele->centre()[ 0 ] - sde->node[ 0 ]->getX();
+    in[ 1 ] = ele->centre()[ 1 ] - sde->node[ 0 ]->getY();
+    in[ 2 ] = ele->centre()[ 2 ] - sde->node[ 0 ]->getZ();
     if (scalar_product(sde->normal, in) > 0.0)
         scale_vector(sde->normal, -1.0);
 }
@@ -362,9 +361,9 @@ void side_normal_triangle(Side *sde) {
     v[ 2 ] = sde->node[ 2 ]->getZ() - sde->node[ 0 ]->getZ();
     vector_product(u, v, sde->normal);
     normalize_vector(sde->normal);
-    in[ 0 ] = ele->centre[ 0 ] - sde->node[ 0 ]->getX();
-    in[ 1 ] = ele->centre[ 1 ] - sde->node[ 0 ]->getY();
-    in[ 2 ] = ele->centre[ 2 ] - sde->node[ 0 ]->getZ();
+    in[ 0 ] = ele->centre()[ 0 ] - sde->node[ 0 ]->getX();
+    in[ 1 ] = ele->centre()[ 1 ] - sde->node[ 0 ]->getY();
+    in[ 2 ] = ele->centre()[ 2 ] - sde->node[ 0 ]->getZ();
     if (scalar_product(sde->normal, in) > 0.0)
         scale_vector(sde->normal, -1.0);
 }
@@ -391,7 +390,7 @@ void calc_side_rhs(Side &sde) {
 
     ele = sde.element;
     ASSERT(!(ele == NULL), "Element of the side %d not defined\n", sde.id);
-    ele->rhs[ sde.lnum ] += (ele->centre[ 2 ] - sde.centre[ 2 ]);
+    ele->rhs[ sde.lnum ] += (ele->centre()[ 2 ] - sde.centre()[ 2 ]);
     /*
      * prbably zero order approximation of :
      * Int_{El} z div Psi - Int_{Side} z Psi .dot. normal
@@ -468,51 +467,15 @@ void side_shape_specific(Mesh* mesh) {
 // CALCULATE CENTRE OF THE SIDE
 //=============================================================================
 
-void calc_side_centre(Side &sde) {
-    switch (sde.dim) {
-        case 0:
-            side_centre_point(&sde);
-            break;
-        case 1:
-            side_centre_line(&sde);
-            break;
-        case 2:
-            side_centre_triangle(&sde);
-            break;
-    }
-}
-//=============================================================================
-//
-//=============================================================================
+arma::vec3 Side::centre() {
+    arma::vec3 barycenter;
+    barycenter.zeros();
 
-void side_centre_point(Side *sde) {
-    sde->centre[ 0 ] = sde->node[ 0 ]->getX();
-    sde->centre[ 1 ] = sde->node[ 0 ]->getY();
-    sde->centre[ 2 ] = sde->node[ 0 ]->getZ();
-}
-//=============================================================================
-//
-//=============================================================================
+    for(unsigned int i=0; i < n_nodes() ; i++)
+        barycenter += node[ i ]->point();
 
-void side_centre_line(Side *sde) {
-    sde->centre[ 0 ] = (sde->node[ 0 ]->getX() + sde->node[ 1 ]->getX()) / 2.0;
-    sde->centre[ 1 ] = (sde->node[ 0 ]->getY() + sde->node[ 1 ]->getY()) / 2.0;
-    sde->centre[ 2 ] = (sde->node[ 0 ]->getZ() + sde->node[ 1 ]->getZ()) / 2.0;
-}
-//=============================================================================
-//
-//=============================================================================
-
-void side_centre_triangle(Side *sde) {
-    sde->centre[ 0 ] = (sde->node[ 0 ]->getX() +
-            sde->node[ 1 ]->getX() +
-            sde->node[ 2 ]->getX()) / 3.0;
-    sde->centre[ 1 ] = (sde->node[ 0 ]->getY() +
-            sde->node[ 1 ]->getY() +
-            sde->node[ 2 ]->getY()) / 3.0;
-    sde->centre[ 2 ] = (sde->node[ 0 ]->getZ() +
-            sde->node[ 1 ]->getZ() +
-            sde->node[ 2 ]->getZ()) / 3.0;
+    barycenter /= (double) n_nodes();
+    return barycenter;
 }
 //-----------------------------------------------------------------------------
 // vim: set cindent:

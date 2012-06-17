@@ -66,9 +66,6 @@ Mesh::Mesh() {
     n_triangles = 0;
     n_tetrahedras = 0;
 
-//    concentration_hash = NULL;
-//    transport_bcd_hash = NULL;
-//    neighbour_hash = NULL;
 }
 
 
@@ -92,56 +89,7 @@ void Mesh::count_element_types() {
             break;
     }
 }
-//=============================================================================
-// RETURN MAX NUMBER OF ENTRIES IN THE ROW
-//=============================================================================
-/*
-int *max_entry() {
 
-    int *max_size, size, i;
-//    ElementIter elm;
-
-    max_size = (int*) xmalloc(2 * sizeof (int));
-
-    max_size[0] = 0; // entries count
-    max_size[1] = 0; // row
-
-    FOR_ELEMENTS(elm) {
-        size = 0; // uloha se zapornymi zdroji =1
-
-        FOR_ELEMENT_SIDES(elm, si) { //same dim
-            if (elm->side[si]->cond != NULL) size++;
-            else
-                size += elm->side[ si ]->edge->n_sides - 1;
-            if (elm->side[si]->neigh_bv != NULL) size++; // comp model
-        } // end same dim
-
-
-        //   printf("SD id:%d,size:%d\n",elm->id,size);
-        //
-
-        FOR_ELM_NEIGHS_VB(elm, i) { // comp model
-            size += elm->neigh_vb[i]->n_elements - 1;
-            //     printf("VB id:%d,size:%d\n",elm->id,size);
-        } // end comp model
-
-
-        /*
-        if (elm->dim > 1)
-          FOR_NEIGHBOURS(ngh)
-            FOR_NEIGH_ELEMENTS(ngh,n)
-              if (ngh->element[n]->id == elm->id && n == 1)
-                size++;
-         */
-/*
-        size += elm->n_neighs_vv; // non-comp model
-
-        max_size[0] += size;
-        if (max_size[1] < size) max_size[1] = size;
-    }
-    // getchar();
-    return max_size;
-}*/
 
 void Mesh::setup_topology() {
     F_ENTRY;
@@ -190,99 +138,8 @@ void Mesh::setup_materials( MaterialDatabase &base)
                 "Reference to undefined material %d in element %d\n", ele->mid, ele.id() );
     }
     xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-
-    make_element_geometry();
 }
 
-/**
- * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
- */
-void Mesh::make_element_geometry() {
 
-    xprintf(Msg, "Calculating properties of elements... ")/*orig verb 2*/;
-
-    ASSERT(element.size() > 0, "Empty mesh.\n");
-
-    FOR_ELEMENTS(this, ele) {
-        //DBGMSG("\n ele: %d \n",ele.id());
-        //FOR_ELEMENTS(ele1) {
-        //    printf("%d(%d) ",ele1.id(),ele1->type);
-        //    ele1->bas_alfa[0]=1.0;
-       // }
-        ele->calc_metrics();
-        ele->calc_volume();
-        ele->calc_centre();
-    }
-
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
-}
-
-//=============================================================================
-// ID-POS TRANSLATOR
-//=============================================================================
-// TODO: should be method of water_linsys
-/*
-int id2pos(Mesh* mesh, int id, int* list, int type) {
-    int i, limit;
-
-    switch (type) {
-        case ELM:
-            limit = mesh->n_elements();
-            break;
-        case BC:
-            limit = mesh->n_boundaries();
-            break;
-        case NODE:
-            limit = mesh->node_vector.size();
-            break;
-    }
-
-    for (i = 0; i < limit; i++)
-        if (list[i] == id)
-            break;
-
-    if (type != BC)
-        return i;
-    else
-        return i + mesh->n_elements();
-}*/
-/*
-  for(i=0;i< ((type == ELM) ? mesh->n_elements() : mesh->n_boundaries );i++)
-        if(list[i] == id)
-                return (type == ELM) ? i : (i + mesh->n_elements());
- */
-//=============================================================================
-// MAKE ID-POS ELEMENT & BOUNDARY LIST
-//=============================================================================
-// TODO: should be private method of water_linsys
-/*
-void make_id2pos_list() {
-    F_ENTRY;
-
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    ElementIter elm;
-    NodeIter node;
-    int i, j, s;
-
-    mesh->epos_id = (int*) xmalloc(mesh->n_elements() * sizeof (int));
-    mesh->spos_id = (int*) xmalloc(mesh->n_boundaries() * sizeof (int));
-    mesh->npos_id = (int*) xmalloc(mesh->node_vector.size() * sizeof (int));
-
-    j = i = 0;
-
-    FOR_ELEMENTS(elm) {
-        mesh->epos_id[i++] = elm.id();
-        FOR_ELEMENT_SIDES(elm, s)
-        if (elm->side[s]->cond != NULL)
-            mesh->spos_id[j++] = elm->side[s]->id;
-    }
-    i = 0;
-
-    FOR_NODES( node ) {
-        mesh->npos_id[i++] = node->id;
-    }
-}
-*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:
