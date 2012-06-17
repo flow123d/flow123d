@@ -295,7 +295,7 @@ void *Element::side_by_dim(int side_dim, unsigned int n)
 /**
  * Return pointer to the @p node_id-th node of the side.
  */
-Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
+const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
 {
     if (side_dim == 0)
     {
@@ -315,7 +315,7 @@ Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
             {
                 if (count == side_id)
                 {
-                    return side[i]->node[node_id];
+                    return side[i]->node(node_id);
                 }
                 else
                 {

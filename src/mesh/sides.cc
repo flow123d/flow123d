@@ -47,18 +47,16 @@
 
 Side::Side() {
     element = NULL;
-    node = NULL;
     cond = NULL;
     edge = NULL;
 }
 
-void Side::reinit(ElementIter ele, int set_id, int set_lnum) {
+void Side::reinit(Mesh *m, ElementIter ele, int set_id, int set_lnum) {
+    mesh=m;
     element = ele;
     id = set_id;
     lnum = set_lnum;
 
-    if (node != NULL) delete [] node;
-    node = new Node*[n_nodes()];
 }
 
 
@@ -76,48 +74,20 @@ void Side::reinit(ElementIter ele, int set_id, int set_lnum) {
 double Side::metric() const {
     switch ( dim() ) {
         case 0:
-            return 1.0 * element->material->size; //UPDATE
-            break;
-        case 1:
-            return length_line() * element->material->size; //UPDATE
-            break;
-        case 2:
-            return  area_triangle();
-            break;
+            return 1.0 * element->material->size;
+        case 1: {
+            arma::vec3 diff = node(1)->point();
+            diff -= node(0)->point();
+            return arma::norm( diff , 2 ) * element->material->size;
+        }
+        case 2: {
+            arma::vec3 diff0 = node(1)->point() - node(0)->point();
+            arma::vec3 diff1 = node(2)->point() - node(0)->point();
+            return 0.5*arma::norm( arma::cross(diff0, diff1), 2);
+        }
     }
 }
-//=============================================================================
-//
-//=============================================================================
 
-double Side::length_line() const {
-    double rc, u[ 3 ];
-
-    u[ 0 ] = node[ 1 ]->getX() - node[ 0 ]->getX();
-    u[ 1 ] = node[ 1 ]->getY() - node[ 0 ]->getY();
-    u[ 2 ] = node[ 1 ]->getZ() - node[ 0 ]->getZ();
-    rc = sqrt(u[ 0 ] * u[ 0 ] + u[ 1 ] * u[ 1 ] + u[ 2 ] * u[ 2 ]);
-    return rc;
-}
-//=============================================================================
-//
-//=============================================================================
-
-double Side::area_triangle() const {
-    double u[ 3 ], v[ 3 ], n[ 3 ];
-    double rc;
-
-    u[ 0 ] = node[ 1 ]->getX() - node[ 0 ]->getX();
-    u[ 1 ] = node[ 1 ]->getY() - node[ 0 ]->getY();
-    u[ 2 ] = node[ 1 ]->getZ() - node[ 0 ]->getZ();
-    v[ 0 ] = node[ 2 ]->getX() - node[ 0 ]->getX();
-    v[ 1 ] = node[ 2 ]->getY() - node[ 0 ]->getY();
-    v[ 2 ] = node[ 2 ]->getZ() - node[ 0 ]->getZ();
-    vector_product(u, v, n);
-    rc = fabs(0.5 * sqrt(n[ 0 ] * n[ 0 ] + n[ 1 ] * n[ 1 ] +
-            n[ 2 ] * n[ 2 ]));
-    return rc;
-}
 //=============================================================================
 // CALCULATE NORMAL OF THE SIDE
 //=============================================================================
@@ -143,7 +113,7 @@ arma::vec3 Side::normal_point() const {
     normal -= ele->node[0] ->point();
 
     normal /=arma::norm(normal,2);
-    if ( node[ 0 ] == ele->node[ 0 ] )
+    if ( node( 0 ) == ele->node[ 0 ] )
         return -normal;
     else
         return normal;
@@ -161,10 +131,10 @@ arma::vec3 Side::normal_line() const {
     elem_normal /= norm( elem_normal, 2);
 
     // Now we can calculate the "normal" of our side
-    arma::vec3 side_normal = arma::cross( node[1]->point() - node[0]->point() , elem_normal );
+    arma::vec3 side_normal = arma::cross( node(1)->point() - node(0)->point() , elem_normal );
     side_normal /= norm( side_normal, 2);
 
-    if ( dot( side_normal, ele->centre() - node[0]->point() ) > 0.0)
+    if ( dot( side_normal, ele->centre() - node(0)->point() ) > 0.0)
         return -side_normal;
     else
         return side_normal;
@@ -177,14 +147,14 @@ arma::vec3 Side::normal_triangle() const {
     ElementIter ele=element;
     double u[ 3 ], v[ 3 ], in[ 3 ], normal[3];
 
-    arma::vec3 side_normal=arma::cross( node[1]->point() - node[0]->point(),
-                                        node[2]->point() - node[0]->point() );
+    arma::vec3 side_normal=arma::cross( node(1)->point() - node(0)->point(),
+                                        node(2)->point() - node(0)->point() );
     side_normal /= norm( side_normal, 2);
 
-    in[ 0 ] = ele->centre()[ 0 ] - node[ 0 ]->getX();
-    in[ 1 ] = ele->centre()[ 1 ] - node[ 0 ]->getY();
-    in[ 2 ] = ele->centre()[ 2 ] - node[ 0 ]->getZ();
-    if ( dot(side_normal, ele->centre() - node[0]->point() ) > 0.0)
+    in[ 0 ] = ele->centre()[ 0 ] - node( 0 )->getX();
+    in[ 1 ] = ele->centre()[ 1 ] - node( 0 )->getY();
+    in[ 2 ] = ele->centre()[ 2 ] - node( 0 )->getZ();
+    if ( dot(side_normal, ele->centre() - node(0)->point() ) > 0.0)
         return -side_normal;
     else
         return side_normal;
@@ -199,7 +169,7 @@ arma::vec3 Side::centre() const {
     barycenter.zeros();
 
     for(unsigned int i=0; i < n_nodes() ; i++)
-        barycenter += node[ i ]->point();
+        barycenter += node( i )->point();
 
     barycenter /= (double) n_nodes();
     return barycenter;

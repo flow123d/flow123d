@@ -57,14 +57,58 @@ Mesh::Mesh() {
 
     n_insides = NDEF;
     n_exsides = NDEF;
+
     n_neighs = NDEF;
     neighbour = NULL;
     l_neighbour = NULL;
 
-    // Hashes
+    // number of element of particular dimension
     n_lines = 0;
     n_triangles = 0;
     n_tetrahedras = 0;
+
+    // indices of side nodes in element node array
+    // Currently this is made ad libitum
+    // with some ordering here we can get sides with correct orientation.
+    // This speedup normal calculation.
+
+    side_nodes.resize(3); // three side dimensions
+    for(int i=0; i < 3; i++) {
+        side_nodes[i].resize(i+2); // number of sides
+        for(int j=0; j < i+2; j++)
+            side_nodes[i][j].resize(i+1);
+    }
+
+    side_nodes[0][0][0] = 0;
+    side_nodes[0][1][0] = 1;
+
+
+    side_nodes[1][0][0] = 0;
+    side_nodes[1][0][1] = 1;
+
+    side_nodes[1][1][0] = 1;
+    side_nodes[1][1][1] = 2;
+
+    side_nodes[1][2][0] = 2;
+    side_nodes[1][2][1] = 0;
+
+
+    side_nodes[2][0][0] = 1;
+    side_nodes[2][0][1] = 2;
+    side_nodes[2][0][2] = 3;
+
+    side_nodes[2][1][0] = 0;
+    side_nodes[2][1][1] = 2;
+    side_nodes[2][1][2] = 3;
+
+    side_nodes[2][2][0] = 0;
+    side_nodes[2][2][1] = 1;
+    side_nodes[2][2][2] = 3;
+
+    side_nodes[2][3][0] = 0;
+    side_nodes[2][3][1] = 1;
+    side_nodes[2][3][2] = 2;
+
 
 }
 
@@ -108,11 +152,10 @@ void Mesh::setup_topology() {
     neigh_vv_to_element(mesh);
     //element_to_neigh_vv(mesh);
     neigh_vb_to_element_and_side(mesh);
-    neigh_bv_to_side(mesh);
+    //neigh_bv_to_side(mesh);
     element_to_neigh_vb(mesh);
 
-    //side_shape_specific(mesh);
-    side_to_node(mesh);
+    //side_to_node(mesh);
     neigh_bb_topology(mesh);
 
     make_edge_list(mesh);
@@ -121,7 +164,6 @@ void Mesh::setup_topology() {
 
     edge_to_side_both(mesh);
     neigh_vb_to_edge_both(mesh);
-    side_types(mesh);
     count_side_types(mesh);
     xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
 

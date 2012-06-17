@@ -387,7 +387,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
 
     /** Iterators */
-    NodeIter node;
+    const Node * node;
     ElementIter ele;
     struct Side* side;
 
@@ -433,7 +433,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     if (count_sides){
         FOR_SIDES(mesh_, side) {
             for (int li = 0; li < side->n_nodes(); li++) {
-                node = side->node[li];//!< get Node pointer from element */
+                node = side->node(li);//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
                 dist = sqrt(
                         ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
@@ -468,7 +468,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     if (count_sides){
         FOR_SIDES(mesh_, side) {
             for (int li = 0; li < side->n_nodes(); li++) {
-                node = side->node[li];//!< get Node pointer from element */
+                node = side->node(li);//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
                 /**TODO - calculate it again or store it in prior pass*/

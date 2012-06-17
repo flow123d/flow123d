@@ -35,7 +35,7 @@
 #include <armadillo>
 #include <vector>
 #include "fem/dofhandler.hh"
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "fem/update_flags.hh"
 
 
@@ -200,10 +200,10 @@ void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<di
         const Side &side,
         const Quadrature<dim - 1> & subq)
 {
-    ASSERT(side.dim==dim-1, "Side dimension mismatch.");
+    ASSERT(side.dim()==dim-1, "Side dimension mismatch.");
     ASSERT(q.size()==subq.size(), "Quadrature size mismatch.");
 
-    map<Node*,int> elem_nodes;
+    map<const Node*,int> elem_nodes;
 
     double lambda;
 
@@ -230,7 +230,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<di
 
         // transform to element coordinates
         for (int i=0; i<dim; i++)
-            el_bar_coords((elem_nodes[side.node[i]]+dim)%(dim+1)) = side_bar_coords((i+dim-1)%dim);
+            el_bar_coords((elem_nodes[side.node(i)]+dim)%(dim+1)) = side_bar_coords((i+dim-1)%dim);
         q.set_point(k, el_bar_coords.subvec(0,dim-1));
         q.set_weight(k, subq.weight(k));
     }

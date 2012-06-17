@@ -41,7 +41,7 @@ static void element_to_side_both(Mesh*);
 static void neigh_vv_to_element(Mesh*);
 static void element_to_neigh_vv(Mesh*);
 static void neigh_vb_to_element_and_side(Mesh*);
-static void neigh_bv_to_side(Mesh *);
+//static void neigh_bv_to_side(Mesh *);
 static void element_to_neigh_vb(Mesh*);
 static void side_to_node(Mesh*);
 static void neigh_bb_topology(Mesh*);
@@ -93,7 +93,7 @@ void element_to_side_both(Mesh* mesh)
 
 	    FOR_ELEMENTS(mesh, ele ) {
 	        for(int i_lside=0; i_lside< ele->n_sides; i_lside++) {
-	            mesh->sides[i_side].reinit(ele,  i_side , i_lside);
+	            mesh->sides[i_side].reinit(mesh, ele,  i_side , i_lside);
 	            ele->side[i_lside]=&( mesh->sides[i_side] );
 	            i_side++;
 	        }
@@ -213,23 +213,7 @@ void neigh_vb_to_element_and_side(Mesh* mesh)
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
-//=============================================================================
-//
-//=============================================================================
-void neigh_bv_to_side(Mesh* mesh)
-{
-    F_ENTRY;
-	struct Neighbour *ngh;
 
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != VB_ES )
-			continue;
- //               ngh->side[1]->neigh_bv = ngh;
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
 //=============================================================================
 //
 //=============================================================================
@@ -261,89 +245,6 @@ void element_to_neigh_vb(Mesh* mesh)
 		    ele->neigh_vb[ ele->n_neighs_vb++ ] = ngh;
 		}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-//=============================================================================
-//
-//=============================================================================
-void side_to_node(Mesh* mesh)
-{
-	ElementIter ele;
-
-	xprintf( MsgVerb, "   Side to node... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_ELEMENTS(mesh,  ele )
-		switch( ele->type ) {
-			case LINE:
-				side_to_node_line( ele );
-				break;
-			case TRIANGLE:
-				side_to_node_triangle( ele );
-				break;
-			case TETRAHEDRON:
-				side_to_node_tetrahedron( ele );
-				break;
-		}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-//=============================================================================
-//
-//=============================================================================
-void side_to_node_line( ElementFullIter ele )
-{
-	struct Side *sde;
-
-    ASSERT(!( ele == NULL ),"element is NULL\n");
-
-	sde = ele->side[ 0 ];
-	sde->node[ 0 ] = ele->node[ 0 ];
-	sde = ele->side[ 1 ];
-	sde->node[ 0 ] = ele->node[ 1 ];
-}
-//=============================================================================
-//
-//=============================================================================
-void side_to_node_triangle( ElementFullIter ele )
-{
-	struct Side *sde;
-
-    ASSERT(!( ele == NULL ),"element is NULL\n");
-
-    sde = ele->side[ 0 ];
-	sde->node[ 0 ] = ele->node[ 0 ];
-	sde->node[ 1 ] = ele->node[ 1 ];
-	sde = ele->side[ 1 ];
-	sde->node[ 0 ] = ele->node[ 1 ];
-	sde->node[ 1 ] = ele->node[ 2 ];
-	sde = ele->side[ 2 ];
-	sde->node[ 0 ] = ele->node[ 2 ];
-	sde->node[ 1 ] = ele->node[ 0 ];
-}
-//=============================================================================
-//
-//=============================================================================
-void side_to_node_tetrahedron( ElementFullIter ele )
-{
-	struct Side *sde;
-
-    ASSERT(!( ele == NULL ),"element is NULL\n");
-
-    sde = ele->side[ 0 ];
-	sde->node[ 0 ] = ele->node[ 1 ];
-	sde->node[ 1 ] = ele->node[ 2 ];
-	sde->node[ 2 ] = ele->node[ 3 ];
-	sde = ele->side[ 1 ];
-	sde->node[ 0 ] = ele->node[ 0 ];
-	sde->node[ 1 ] = ele->node[ 2 ];
-	sde->node[ 2 ] = ele->node[ 3 ];
-	sde = ele->side[ 2 ];
-	sde->node[ 0 ] = ele->node[ 0 ];
-	sde->node[ 1 ] = ele->node[ 1 ];
-	sde->node[ 2 ] = ele->node[ 3 ];
-	sde = ele->side[ 3 ];
-	sde->node[ 0 ] = ele->node[ 0 ];
-	sde->node[ 1 ] = ele->node[ 1 ];
-	sde->node[ 2 ] = ele->node[ 2 ];
 }
 
 
@@ -386,46 +287,20 @@ void node_to_element(Mesh* mesh)
 		}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
-//=============================================================================
-//
-//=============================================================================
-void side_types(Mesh* mesh)
-{
-	struct Side *sde;
 
-	xprintf( MsgVerb, "   Side types... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-	FOR_SIDES(mesh,  sde )
-		sde->type = ( sde->edge->n_sides == 1 ? EXTERNAL : INTERNAL );
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
 //=============================================================================
 //
 //=============================================================================
 void count_side_types(Mesh* mesh)
 {
-	struct Side *sde;
-
-	xprintf( MsgVerb, "   Counting side types... ")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
+    struct Side *sde;
 
 	mesh->n_insides = 0;
 	mesh->n_exsides = 0;
 	FOR_SIDES(mesh,  sde )
-		switch( sde->type ) {
-			case INTERNAL:
-				mesh->n_insides++;
-				break;
-			case EXTERNAL:
-				mesh->n_exsides++;
-				break;
-			default:
-				xprintf(PrgErr,"Unknown type of side - %d in side %d\n",
-					   sde->type, sde->id );
-				break;
-		}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+		if (sde->is_external()) mesh->n_exsides++;
+		else mesh->n_insides++;
 }
 //=============================================================================
 //

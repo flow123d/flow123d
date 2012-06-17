@@ -242,13 +242,13 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
             // calculation of normal vectors to the side
             if ((fv_data.update_flags & update_normal_vectors))
             {
-                map<Node*, int> node_nums;
+                map<const Node*, int> node_nums;
                 vec::fixed<dim> n_ref;
                 vec::fixed<spacedim> n_cell;
                 for (int i=0; i<cell->n_nodes; i++)
                     node_nums[cell->node[i]] = i;
                 for (int i=0; i<side.n_nodes(); i++)
-                    node_nums.erase(side.node[i]);
+                    node_nums.erase(side.node(i));
                 n_ref.zeros();
                 int index = node_nums.begin()->second;
                 switch (index)
@@ -292,7 +292,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
             side_coords.zeros();
             for (int n=0; n<dim; n++)
                 for (int c=0; c<spacedim; c++)
-                    side_coords(c,n) = side.node[n]->point()[c];
+                    side_coords(c,n) = side.node(n)->point()[c];
             side_jac = side_coords * grad.submat(0,0,dim-1,dim-2);
 
             // calculation of JxW

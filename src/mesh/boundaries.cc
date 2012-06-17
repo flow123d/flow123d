@@ -114,7 +114,7 @@ void read_boundary( struct Mesh *mesh )
                 n_exterior=0;
                 FOR_ELEMENT_SIDES(ele, li) {
                     sde = ele->side[ li ];
-                    if ( sde->type == EXTERNAL ) {
+                    if ( sde->is_external() ) {
                         if (n_exterior > 0) {
                             xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
                             //BoundaryFullIter new_bcd = mesh->boundary.add_item();

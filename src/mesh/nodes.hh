@@ -66,11 +66,11 @@ public:
     /**
      * Old getter methods. OBSOLETE.
      */
-    inline double getX()
+    inline double getX() const
         { return coordinates[0];}
-    inline double getY()
+    inline double getY() const
         {return coordinates[1];}
-    inline double getZ()
+    inline double getZ() const
         {return coordinates[2];}
 
 

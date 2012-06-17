@@ -813,7 +813,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
 template<unsigned int dim>
 void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator cell, vector<vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
-    std::map<Node*, int> node_nums;
+    std::map<const Node*, int> node_nums;
     for (int i=0; i<cell->n_nodes; i++)
         node_nums[cell->node[i]] = i;
 
@@ -827,7 +827,7 @@ void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator ce
             if (cell->side[sid]->dim() != dim-1) continue;
             int num = dim*(dim+1)/2;
             for (int i=0; i<cell->side[sid]->n_nodes(); i++)
-                num -= node_nums[cell->side[sid]->node[i]];
+                num -= node_nums[cell->side[sid]->node(i)];
             velocity[k] += fv.shape_vector(num,k)*cell->side[sid]->flux;
         }
     }
@@ -837,7 +837,7 @@ void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator ce
 template<unsigned int dim>
 void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::CellIterator cell, vector<double> &divergence, FEValuesBase<dim,3> &fv)
 {
-    std::map<Node*, int> node_nums;
+    std::map<const Node*, int> node_nums;
     for (int i=0; i<cell->n_nodes; i++)
         node_nums[cell->node[i]] = i;
 
@@ -851,7 +851,7 @@ void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::Cell
             if (cell->side[sid]->dim() != dim-1) continue;
             int num = dim*(dim+1)/2;
             for (int i=0; i<cell->side[sid]->n_nodes(); i++)
-                num -= node_nums[cell->side[sid]->node[i]];
+                num -= node_nums[cell->side[sid]->node(i)];
             divergence[k] += trace(fv.shape_grad_vector(num,k))*cell->side[sid]->flux;
         }
     }
@@ -908,7 +908,7 @@ void TransportDG::set_DG_parameters(const Neighbour *n,
     {
         for (int i=0; i<s->n_nodes(); i++)
             for (int j=i+1; j<s->n_nodes(); j++)
-                h = max(h, s->node[i]->distance(*s->node[j]));
+                h = max(h, s->node(i)->distance(*s->node(j)));
     }
 
     // calculate the total in- and out-flux through the edge
@@ -1013,7 +1013,7 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
     {
         for (int i=0; i<side->n_nodes(); i++)
             for (int j=i+1; j<side->n_nodes(); j++)
-                h = max(h, side->node[i]->distance(*side->node[j]));
+                h = max(h, side->node(i)->distance( *side->node(j) ));
     }
 
     gamma = 0.5*advection*fabs(side->flux);

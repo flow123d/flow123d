@@ -146,33 +146,28 @@ public:
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
-    //struct Side *side; // First side
-    //struct Side *l_side; // Last side
-    //int n_edges; // # of edges
-    //struct Edge *edge; // First edge
-    //struct Edge *l_edge; // Last edge
-    int n_neighs; // # of neighbours
+
+    int n_neighs;
     struct Neighbour *neighbour; // First neighbour
     struct Neighbour *l_neighbour; // Last neighbour
-    // Hashes
-    //int max_edg_id;
-    //int max_side_id;
-    //int max_bou_id; // Highest id number of boundary
-    //int max_ngh_id; // Highest id number of neighbouring
 
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements
     int n_tetrahedras; // Number of tetrahedra elements
 
-
-//    struct Edge **edge_hash;
-//    struct Side **side_hash;
-//    struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index
+    // for every side dimension D = 0 .. 2
+    // for every element side 0 .. D+1
+    // for every side node 0 .. D
+    // index into element node array
+    vector< vector< vector<unsigned int> > > side_nodes;
 
 private:
     void count_element_types();
 
 };
+
+
+#include "mesh/side_impl.hh"
 
 /**
  * Provides for statement to iterate over the Elements of the Mesh.
