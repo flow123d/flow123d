@@ -44,6 +44,10 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
 endif()
 
+if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
+    # this is necessary due to some "bugs" in Armadillo
+    add_definitions(-Wno-uninitialized)
+endif()
 
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
@@ -99,8 +103,11 @@ if (NOT Armadillo_FOUND)
   
   set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build")
   file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH} -DBoost_DEBUG=1 -DBOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42 ..
-                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
+  execute_process(COMMAND ${CMAKE_COMMAND}
+      -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH} 
+      -DBoost_DEBUG=1 
+      -DBOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42 
+      .. WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   execute_process(COMMAND make 
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   
