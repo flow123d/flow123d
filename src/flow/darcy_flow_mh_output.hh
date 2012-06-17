@@ -66,6 +66,12 @@ public:
     /** \brief Calculate values for output.  **/
     void output();
 
+    /// temporary replacement for DofHandler accessor
+    static double side_flux(Side &side, double *seq_solution);
+
+    /// temporary replacement for DofHandler accessor
+    static double side_scalar(Side &side, double *seq_solution);
+
 private:
     void make_side_flux();
     void make_element_scalar();

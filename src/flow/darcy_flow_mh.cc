@@ -120,7 +120,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
 
     edge_calculation_mh(mesh_);
     element_calculation_mh(mesh_);
-    side_calculation_mh(mesh_);
+    //side_calculation_mh(mesh_);
     boundary_calculation_mh(mesh_);
     local_matrices_mh(mesh_);
     }
@@ -292,6 +292,7 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    struct Boundary *bcd;
 
     int el_row, side_row, edge_row;
     int tmp_rows[100];
@@ -300,6 +301,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     double f_val;
     double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
+    double loc_side_rhs[4];
     F_ENTRY;
 
     //DBGPRINT_INT("side_row_4_id",mesh->max_side_id+1,side_row_4_id);
@@ -309,24 +311,38 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
     SET_ARRAY_ZERO(zeros,1000);
     for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides;
+
         for (i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ele->side[i]->id];
             edge_row = edge_rows[i] = row_4_edge[mesh_->edge.index(ele->side[i]->edge)];
+            bcd=ele->side[i]->cond;
+
+            // gravity term on RHS
+            loc_side_rhs[i] = (ele->centre()[ 2 ] - ele->side[i]->centre()[ 2 ]);
+
             // set block C and C': side-edge, edge-side
-            ls->mat_set_value(side_row, edge_row, ele->side[i]->c_val);
-            ls->mat_set_value(edge_row, side_row, ele->side[i]->c_val);
+            double c_val = 1.0;
+
+            if (bcd && bcd->type == DIRICHLET) {
+                c_val = 0.0;
+                loc_side_rhs[i] -= bcd->scalar;
+            }
+            ls->mat_set_value(side_row, edge_row, c_val);
+            ls->mat_set_value(edge_row, side_row, c_val);
         }
+        ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
+
+
         // set block A: side-side on one element - block diagonal matrix
         ls->mat_set_values(nsides, side_rows, nsides, side_rows, ele->loc);
         // set block B, B': element-side, side-element
         ls->mat_set_values(1, &el_row, nsides, side_rows, minus_ones);
         ls->mat_set_values(nsides, side_rows, 1, &el_row, minus_ones);
-        // set RHS for sides - dirichlet BC; gravity term ?
-        // RHS for elements - neuman BC
-        ls->rhs_set_values(nsides, side_rows, ele->rhs);
+
 
         // set sources
         if (sources != NULL) {

@@ -32,10 +32,10 @@
 
 #include "mesh/nodes.hh"
 #include <materials.hh>
-#include "sides.h"
 
-struct Problem;
+
 class Mesh;
+class Side;
 struct MaterialDatabase;
 
 //=============================================================================
@@ -92,7 +92,7 @@ public:
     // Matrix
     double *loc;        // Local matrix
     double *loc_inv;    // Inverse of the local matrix
-    double  *rhs;       // Rhs - vector q1, gradients
+    //double  *rhs;       // Rhs - vector q1, gradients
 
     int  a_row;     // # of first row in the block A
     int      b_row;     // # of row in the block B

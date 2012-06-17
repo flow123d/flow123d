@@ -30,9 +30,10 @@
 #ifndef SIDES_H
 #define SIDES_H
 
-struct Side;
 class Mesh;
-struct Problem;
+
+#include <mesh_types.hh>
+#include <elements.h>
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH
@@ -45,7 +46,7 @@ public:
     // Basic data
     int id; // Id # of side
     int type; // INTERNAL | EXTERNAL
-    int dim;
+
     // Topology of the mesh
     ElementIter element; // Pointer to element to which belonged
     int lnum; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
@@ -53,35 +54,41 @@ public:
     Node** node; // Pointers to sides's nodes
 
     struct Boundary *cond; // Boundary condition  - if prescribed
-    struct Edge *edge; // Edge to wich belonged
-    struct Neighbour *neigh_bv; // Neighbour, B-V type (comp.)
+    struct Edge *edge; // Edge to which belonged
+    //struct Neighbour *neigh_bv; // Neighbour, B-V type (comp.)
     // Matrix
-    int c_row; // # of row in block C
-    int c_col; // # of col in block C
-    double c_val; // Value in block C
+    // int c_row; // # of row in block C
+    //int c_col; // # of col in block C
+    //double c_val; // Value in block C
     // Results
     double flux; // Flux through side
     double scalar; // Scalar quantity (piez. head or pressure)
-    double pscalar; // As scalar but in previous time step
+    //double pscalar; // As scalar but in previous time step
 
 
     Side();
-    double metric();
-    arma::vec3 centre(); // Centre of side
-    arma::vec3 normal(); // Vector of (generalized) normal
+    double metric() const;
+    arma::vec3 centre() const; // Centre of side
+    arma::vec3 normal() const; // Vector of (generalized) normal
 
-    void reinit(ElementIter ele, unsigned int set_dim, int set_id, int set_lnum);
-    inline unsigned int n_nodes() const
-        {return dim+1;}
+    void reinit(ElementIter ele,  int set_id, int set_lnum);
+
+    inline unsigned int n_nodes() const {
+        return dim()+1;
+    }
+
+    inline unsigned int dim() const {
+        return element->dim-1;
+    }
 
 
 private:
-    double length_line();
-    double area_triangle();
+    double length_line() const;
+    double area_triangle() const;
 
-    arma::vec3 normal_point();
-    arma::vec3 normal_line();
-    arma::vec3 normal_triangle();
+    arma::vec3 normal_point() const;
+    arma::vec3 normal_line() const;
+    arma::vec3 normal_triangle() const;
 };
 
 #define EXTERNAL    0
@@ -89,10 +96,6 @@ private:
 
 
 
-void make_side_list(Mesh*);
-void side_calculation_mh(Mesh *mesh);
-void calc_side_metrics(struct Side*);
-void side_shape_specific(Mesh*);
 
 #endif
 //-----------------------------------------------------------------------------

@@ -92,8 +92,6 @@ Element::Element()
             // Matrix
  loc(NULL),
  loc_inv(NULL),
- rhs(NULL),
-
  a_row(0),
  b_row(0),
  d_row_count(0),
@@ -131,8 +129,8 @@ void element_calculation_mh(Mesh* mesh) {
         }
         ele->a = ele->material->hydrodynamic_resistence;
 
-        calc_rhs(ele);
-        dirichlet_elm(ele);
+        //calc_rhs(ele);
+        //dirichlet_elm(ele);
         make_block_d(mesh, ele);
         make_block_e(ele, mesh);
     }
@@ -253,7 +251,7 @@ unsigned int Element::n_sides_by_dim(int side_dim)
 
     unsigned int n = 0;
     for (unsigned int i=0; i<n_sides; i++)
-        if (side[i]->dim == side_dim) n++;
+        if (side[i]->dim() == side_dim) n++;
     return n;
 }
 
@@ -278,7 +276,7 @@ void *Element::side_by_dim(int side_dim, unsigned int n)
         unsigned int count = 0;
         for (unsigned int i=0; i<n_sides; i++)
         {
-            if (side[i]->dim == side_dim)
+            if (side[i]->dim() == side_dim)
             {
                 if (count == n)
                 {
@@ -313,7 +311,7 @@ Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
         unsigned int count = 0;
         for (unsigned int i=0; i<n_sides; i++)
         {
-            if (side[i]->dim == side_dim)
+            if (side[i]->dim() == side_dim)
             {
                 if (count == side_id)
                 {
@@ -330,30 +328,7 @@ Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
 }
 
 
-/**
- * SET THE "RHS[]" FIELD IN STRUCT ELEMENT
- */
-void calc_rhs(ElementFullIter ele) {
-    int li;
 
-    FOR_ELEMENT_SIDES(ele, li) {
-        ele->rhs[ li ] = 0.0;
-    }
-}
-
-/**
- * CORRECT RHS IN CASE, WHEN DIRICHLET'S CONDITION IS GIVEN
- */
-void dirichlet_elm(ElementFullIter ele) {
-    int li;
-    struct Boundary *bcd;
-
-    FOR_ELEMENT_SIDES(ele, li) {
-        bcd = ele->side[ li ]->cond;
-        if (bcd == NULL) continue;
-        if (bcd->type == DIRICHLET) ele->rhs[ li ] -= bcd->scalar;
-    }
-}
 
 
 /**

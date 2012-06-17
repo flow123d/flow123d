@@ -603,7 +603,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
     // assemble boundary integral
     for (EdgeFullIter edge = mesh_->edge.begin(); edge != mesh_->edge.end(); ++edge)
     {
-        if (edge->n_sides != 1 || edge->side[0]->dim != dim-1) continue;
+        if (edge->n_sides != 1 || edge->side[0]->dim() != dim-1) continue;
 
         double elem_flux = 0;
         for (int i=0; i<edge->side[0]->element->n_sides; i++)
@@ -824,7 +824,7 @@ void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator ce
         velocity[k].zeros();
         for (int sid=0; sid<cell->n_sides; sid++)
         {
-            if (cell->side[sid]->dim != dim-1) continue;
+            if (cell->side[sid]->dim() != dim-1) continue;
             int num = dim*(dim+1)/2;
             for (int i=0; i<cell->side[sid]->n_nodes(); i++)
                 num -= node_nums[cell->side[sid]->node[i]];
@@ -848,7 +848,7 @@ void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::Cell
         divergence[k] = 0;
         for (int sid=0; sid<cell->n_sides; sid++)
         {
-            if (cell->side[sid]->dim != dim-1) continue;
+            if (cell->side[sid]->dim() != dim-1) continue;
             int num = dim*(dim+1)/2;
             for (int i=0; i<cell->side[sid]->n_nodes(); i++)
                 num -= node_nums[cell->side[sid]->node[i]];
@@ -900,7 +900,7 @@ void TransportDG::set_DG_parameters(const Neighbour *n,
     Side *s = (n->side[s1]==NULL)?n->side[s2]:n->side[s1];
 
     // calculate the side diameter
-    if (s->dim == 0)
+    if (s->dim() == 0)
     {
         h = 1;
     }
@@ -1005,7 +1005,7 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
     Side *side = edge->side[0];
 
     // calculate the side diameter
-    if (side->dim == 0)
+    if (side->dim() == 0)
     {
         h = 1;
     }

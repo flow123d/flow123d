@@ -205,7 +205,7 @@ void GmshMeshReader::element_allocation_independent(ElementFullIter ele) {
     ele->node = (Node**) xmalloc(ele->n_nodes * sizeof (Node*));
     ele->side = (struct Side**) xmalloc(ele->n_sides * sizeof ( struct Side*));
 
-    ele->rhs = (double*) xmalloc(ele->n_sides * sizeof ( double));
+    //ele->rhs = (double*) xmalloc(ele->n_sides * sizeof ( double));
     ele->bas_alfa = (double *) xmalloc(ele->n_sides * sizeof ( double));
     ele->bas_beta = (double *) xmalloc(ele->n_sides * sizeof ( double));
     ele->bas_gama = (double *) xmalloc(ele->n_sides * sizeof ( double));
@@ -217,7 +217,7 @@ void GmshMeshReader::element_allocation_independent(ElementFullIter ele) {
 
     FOR_ELEMENT_SIDES(ele, si) {
         ele->side[ si ] = NULL;
-        ele->rhs[ si ] = 0.0;
+        //ele->rhs[ si ] = 0.0;
         ele->bas_alfa[ si ] = 0.0;
         ele->bas_beta[ si ] = 0.0;
         ele->bas_gama[ si ] = 0.0;

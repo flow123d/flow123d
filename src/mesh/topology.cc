@@ -93,7 +93,7 @@ void element_to_side_both(Mesh* mesh)
 
 	    FOR_ELEMENTS(mesh, ele ) {
 	        for(int i_lside=0; i_lside< ele->n_sides; i_lside++) {
-	            mesh->sides[i_side].reinit(ele, ele->dim-1, i_side , i_lside);
+	            mesh->sides[i_side].reinit(ele,  i_side , i_lside);
 	            ele->side[i_lside]=&( mesh->sides[i_side] );
 	            i_side++;
 	        }
@@ -226,7 +226,7 @@ void neigh_bv_to_side(Mesh* mesh)
 	FOR_NEIGHBOURS(mesh,  ngh ) {
 		if( ngh->type != VB_ES )
 			continue;
-                ngh->side[1]->neigh_bv = ngh;
+ //               ngh->side[1]->neigh_bv = ngh;
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
@@ -682,7 +682,7 @@ void edge_to_side_both(Mesh* mesh)
 	struct Neighbour *ngh;
     int si;
 
-	xprintf( MsgVerb, "   Edge to side and back... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Edge to side and back... \n")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     // first, the internal sides
@@ -741,7 +741,6 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 			continue;
 		sde = ngh->side[ 1 ];
 		edg = sde->edge;
-		cout << edg << endl;
 		edg->neigh_vb = ngh;
 		ngh->edge = edg;
 	}

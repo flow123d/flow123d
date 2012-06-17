@@ -87,6 +87,20 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
     if (raw_output_file != NULL) xfclose(raw_output_file);
 };
 
+
+
+/// temporary replacement for DofHandler accessor
+double DarcyFlowMHOutput::side_flux(Side &side, double *seq_solution)
+{}
+
+/// temporary replacement for DofHandler accessor
+double DarcyFlowMHOutput::side_scalar(Side &side, double *seq_solution)
+{}
+
+
+
+
+
 //=============================================================================
 // CONVERT SOLUTION, CALCULATE BALANCES, ETC...
 //=============================================================================
@@ -350,6 +364,9 @@ void DarcyFlowMHOutput::make_sides_scalar() {
         soi++;
     }
 }
+
+
+
 //=============================================================================
 // pressure interpolation
 //
