@@ -291,12 +291,12 @@ void basis_functions_tetrahedron( ElementIter ele, double alfa[], double beta[],
 		gama[ li ] = ele->node[ li ]->getZ();
 		pSid = ele->side[ li ];
 		delta[ li ] = 1.0 / ( pSid->metric() *
-			( pSid->normal[ 0 ] * pSid->centre()[ 0 ] +
-			  pSid->normal[ 1 ] * pSid->centre()[ 1 ] +
-			  pSid->normal[ 2 ] * pSid->centre()[ 2 ] -
-			  pSid->normal[ 0 ] * alfa[ li ] -
-			  pSid->normal[ 1 ] * beta[ li ] -
-			  pSid->normal[ 2 ] * gama[ li ] ) );
+			( pSid->normal()[ 0 ] * pSid->centre()[ 0 ] +
+			  pSid->normal()[ 1 ] * pSid->centre()[ 1 ] +
+			  pSid->normal()[ 2 ] * pSid->centre()[ 2 ] -
+			  pSid->normal()[ 0 ] * alfa[ li ] -
+			  pSid->normal()[ 1 ] * beta[ li ] -
+			  pSid->normal()[ 2 ] * gama[ li ] ) );
 	}
 }
 //=============================================================================

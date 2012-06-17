@@ -55,8 +55,6 @@ public:
     struct Boundary *cond; // Boundary condition  - if prescribed
     struct Edge *edge; // Edge to wich belonged
     struct Neighbour *neigh_bv; // Neighbour, B-V type (comp.)
-    // Geometry
-    double normal[ 3 ]; // Vector of (generalized) normal
     // Matrix
     int c_row; // # of row in block C
     int c_col; // # of col in block C
@@ -70,6 +68,7 @@ public:
     Side();
     double metric();
     arma::vec3 centre(); // Centre of side
+    arma::vec3 normal(); // Vector of (generalized) normal
 
     void reinit(ElementIter ele, unsigned int set_dim, int set_id, int set_lnum);
     inline unsigned int n_nodes() const
@@ -79,6 +78,10 @@ public:
 private:
     double length_line();
     double area_triangle();
+
+    arma::vec3 normal_point();
+    arma::vec3 normal_line();
+    arma::vec3 normal_triangle();
 };
 
 #define EXTERNAL    0
