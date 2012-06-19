@@ -47,19 +47,19 @@ static void calc_a_row(Mesh*);
 static void calc_b_row(Mesh*);
 //static ElementIter new_element(void);
 //static void add_to_element_list(Mesh*, ElementIter);
-static void make_block_e(ElementFullIter, Mesh *mesh );
+//static void make_block_e(ElementFullIter, Mesh *mesh );
 //static void alloc_and_init_block_e(ElementIter );
-static char supported_element_type(int);
-static void element_type_specific(ElementFullIter );
-static void element_allocation_independent(ElementFullIter );
-static void make_block_d(Mesh *mesh, ElementFullIter );
-static void calc_rhs(ElementFullIter );
-static void calc_rhs_b(ElementFullIter );
-static void dirichlet_elm(ElementFullIter );
+//static char supported_element_type(int);
+//static void element_type_specific(ElementFullIter );
+//static void element_allocation_independent(ElementFullIter );
+//static void make_block_d(Mesh *mesh, ElementFullIter );
+//static void calc_rhs(ElementFullIter );
+//static void calc_rhs_b(ElementFullIter );
+//static void dirichlet_elm(ElementFullIter );
 
 static void parse_element_properties_line(char*);
-static void block_A_stats(Mesh*);
-static void diag_A_stats(Mesh*);
+//static void block_A_stats(Mesh*);
+//static void diag_A_stats(Mesh*);
 
 Element::Element()
 : type(0),
@@ -93,16 +93,7 @@ Element::Element()
  loc(NULL),
  loc_inv(NULL),
  a_row(0),
- b_row(0),
- d_row_count(0),
- d_col(NULL),
- d_val(NULL),
- d_el(NULL),
-
- e_row_count(0),
- e_col(NULL),
- e_edge_idx(NULL),
- e_val(NULL)
+ b_row(0)
 
 {
 }
@@ -131,8 +122,8 @@ void element_calculation_mh(Mesh* mesh) {
 
         //calc_rhs(ele);
         //dirichlet_elm(ele);
-        make_block_d(mesh, ele);
-        make_block_e(ele, mesh);
+        //make_block_d(mesh, ele);
+        //make_block_e(ele, mesh);
     }
     //block_A_stats( mesh );
     //diag_A_stats( mesh );
@@ -329,7 +320,7 @@ const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node
 
 
 
-
+#if 0
 
 /**
  * make_block_d(ElementFullIter ele)
@@ -387,6 +378,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
 /**
  * make_block_e(ElementFullIter ele)
  */
+/*
 void make_block_e(ElementFullIter ele, Mesh *mesh) {
     int ngi, ci;
     struct Neighbour *ngh;
@@ -407,7 +399,7 @@ void make_block_e(ElementFullIter ele, Mesh *mesh) {
         ele->e_edge_idx[ci] = mesh->edge.index(ngh->edge);
         ci++;
     }
-}
+}*/
 
 /**
  * gets max,min, abs max, abs min of all local matrices
@@ -471,6 +463,7 @@ void diag_A_stats(Mesh* mesh) {
     xprintf(MsgVerb, "Minimal value: %g\tMaximal value: %g\n", a_min, a_max)/*orig verb 6*/;
     xprintf(MsgVerb, "Minimal absolute value: %g\tMaximal absolute value: %g\n", a_abs_min, a_abs_max)/*orig verb 6*/;
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

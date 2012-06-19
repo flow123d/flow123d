@@ -97,16 +97,16 @@ public:
     int  a_row;     // # of first row in the block A
     int      b_row;     // # of row in the block B
 
-    int  d_row_count;   // # of nonzeros in row of the block D
-    int *d_col;     // columns with nonzeros in D
-    double  *d_val; // values of entries in D
-    int *d_el;      // ids of noncompatible conected elements (itself reference included)
+    //int  d_row_count;   // # of nonzeros in row of the block D
+    //int *d_col;     // columns with nonzeros in D
+    //double  *d_val; // values of entries in D
+    //int *d_el;      // ids of noncompatible conected elements (itself reference included)
 
 
-    int  e_row_count;   // # of nonzeros in row of the block E
-    int *e_col;     // columns with nonzeros in E
-    int *e_edge_idx;   // ids of compatible conected edeges
-    double  *e_val;     // values of entries in E
+    //int  e_row_count;   // # of nonzeros in row of the block E
+    //int *e_col;     // columns with nonzeros in E
+    //int *e_edge_idx;   // ids of compatible conected edeges
+    //double  *e_val;     // values of entries in E
 
 protected:
 
@@ -130,13 +130,13 @@ protected:
 
 #define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes;(j)++)
 #define FOR_ELEMENT_SIDES(i,j)  for(unsigned int j=0; j < (i)->n_sides; j++)
-#define FOR_ELM_NEIGHS_VV(i,j)  for((j)=0;(j)<(i)->n_neighs_vv;(j)++)
+//#define FOR_ELM_NEIGHS_VV(i,j)  for((j)=0;(j)<(i)->n_neighs_vv;(j)++)
 #define FOR_ELM_NEIGHS_VB(i,j)  for((j)=0;(j)<(i)->n_neighs_vb;(j)++)
 
-void read_element_list(Mesh*);
+//void read_element_list(Mesh*);
 void element_calculation_mh(Mesh*);
-void make_element_geometry();
-void element_calculation_unsteady(struct Problem*);
+//void make_element_geometry();
+//void element_calculation_unsteady(struct Problem*);
 
 //void read_element_properties(Mesh*);
 

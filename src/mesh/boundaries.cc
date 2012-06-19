@@ -161,6 +161,7 @@ void read_boundary( struct Mesh *mesh )
 // FILL EDGE PART OF MH MATRIX WHICH BELONGS TO BOUNDARIES
 //=============================================================================
 // TODO: be more sure that BC are applied well
+/*
 void boundary_calculation_mh( struct Mesh *mesh )
 {
 	struct Boundary *bcd;
@@ -195,7 +196,7 @@ void boundary_calculation_mh( struct Mesh *mesh )
 		}
 	}
 	xprintf( Msg, "O.K.\n");
-}
+}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:
 

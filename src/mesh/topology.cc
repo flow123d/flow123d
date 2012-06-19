@@ -413,7 +413,6 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 			continue;
 		sde = ngh->side[ 1 ];
 		edg = sde->edge();
-		edg->neigh_vb = ngh;
 		ngh->edge = edg;
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;

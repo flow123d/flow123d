@@ -42,12 +42,9 @@
 
 Edge::Edge()
 : n_sides(NDEF),
-  side(NULL),
-  neigh_vb(NULL),
-  //neigh_bb(NULL),
-  c_row(0),
-  f_val(0),
-  f_rhs(0)
+  side(NULL)
+  //f_val(0),
+  //f_rhs(0)
 {
 
 }
@@ -55,27 +52,5 @@ Edge::Edge()
 
 
 
-//=============================================================================
-// CALCULATE PROPERTIES OF ALL EDGES OF THE MESH
-//=============================================================================
-void edge_calculation_mh(Mesh* mesh)
-{
-	int edi;
-	struct Edge *edg;
-
-	xprintf( Msg, "Calculating properties of edges... ")/*orig verb 2*/;
-	ASSERT(!( mesh == NULL ),"NULL as argument of function edge_calculation_mh()\n");
-	edi = 0;
-	FOR_EDGES(mesh,  edg ) {
-		edg->c_row = mesh->n_sides() + mesh->n_elements() + edi;
-		edg->f_rhs=0.0;
-		if( edg->neigh_vb == NULL )
-			edg->f_val = 0.0;
-		else
-			edg->f_val = -1.0 * edg->neigh_vb->sigma * edg->side[0]->metric();
-		edi++;
-	}
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
-}
 //-----------------------------------------------------------------------------
 // vim: set cindent:

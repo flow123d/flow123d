@@ -120,10 +120,10 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     //    calc_side_metrics(sde);
     //}
 
-    edge_calculation_mh(mesh_);
+    //edge_calculation_mh(mesh_);
     element_calculation_mh(mesh_);
     //side_calculation_mh(mesh_);
-    boundary_calculation_mh(mesh_);
+    //boundary_calculation_mh(mesh_);
     local_matrices_mh(mesh_);
     }
 
@@ -299,12 +299,14 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     struct Boundary *bcd;
+    struct Neighbour *ngh;
 
     int el_row, side_row, edge_row;
     int tmp_rows[100];
     int i, i_loc, nsides, li, si;
     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
     double f_val;
+    double local_vb[4]; // 2x2 matrix
     double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
@@ -333,9 +335,19 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // set block C and C': side-edge, edge-side
             double c_val = 1.0;
 
-            if (bcd && bcd->type == DIRICHLET) {
-                c_val = 0.0;
-                loc_side_rhs[i] -= bcd->scalar;
+            if (bcd) {
+                if ( bcd->type == DIRICHLET ) {
+                    c_val = 0.0;
+                    loc_side_rhs[i] -= bcd->scalar;
+
+                    ls->rhs_set_value(edge_row, -bcd->scalar);
+                    ls->mat_set_value(edge_row, edge_row, -1.0);
+                } else if ( bcd->type == NEUMANN ) {
+                    ls->rhs_set_value(edge_row, bcd->flux * bcd->side->metric());
+                } else if ( bcd->type == NEWTON )  {
+                    ls->rhs_set_value(edge_row, -bcd->side->metric() * bcd->sigma * bcd->scalar);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->side->metric()*bcd->sigma );
+                }
             }
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
@@ -356,32 +368,47 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         }
 
         // D block: non-compatible conections and diagonal: element-element
-        for (i = 0; i < ele->d_row_count; i++)
-            tmp_rows[i] = row_4_el[ele->d_el[i]];
-        ls->mat_set_values(1, &el_row, ele->d_row_count, tmp_rows, ele->d_val);
-        // E',E block: compatible connections: element-edge
-        for (i = 0; i < ele->e_row_count; i++)
-            tmp_rows[i] = row_4_edge[ele->e_edge_idx[i]];
-        ls->mat_set_values(1, &el_row, ele->e_row_count, tmp_rows, ele->e_val);
-        ls->mat_set_values(ele->e_row_count, tmp_rows, 1, &el_row, ele->e_val);
+        //for (i = 0; i < ele->d_row_count; i++)
+        //    tmp_rows[i] = row_4_el[ele->d_el[i]];
+        ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
+
+        // D, E',E block: compatible connections: element-edge
+
+        for (i = 0; i < ele->n_neighs_vb; i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            ngh= ele->neigh_vb[i];
+            tmp_rows[0]=el_row;
+            tmp_rows[1]=row_4_edge[ mesh_->edge.index( ngh->edge ) ];
+
+            double value = ngh->sigma * ngh->side[1]->metric();
+
+            local_vb[0] = -value;   local_vb[1] = value;
+            local_vb[2] = value;    local_vb[3] = -value;
+
+            ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
+
+            if (n_schur_compls == 2) {
+                // for 2. Schur: N dim edge is conected with N dim element =>
+                // there are nz between N dim edge and N-1 dim edges of the element
+
+                ls->mat_set_values(nsides, edge_rows, 1, tmp_rows+1, zeros);
+                ls->mat_set_values(1, tmp_rows+1, nsides, edge_rows, zeros);
+
+                // save all global edge indices to higher positions
+                tmp_rows[2+i] = tmp_rows[1];
+            }
+        }
+
+
 
         // add virtual values for schur complement allocation
         switch (n_schur_compls) {
         case 2:
-            if (ele->d_row_count > 1) {
-                xprintf(Warn,"Can not use second Schur complement for problem with non-compatible connections.\n");
-                n_schur_compls = 1;
-            }
-            // for 2. Schur: N dim edge is conected with N dim element =>
-            // there are nz between N dim edge and N-1 dim edges of the element
-            ASSERT(ele->e_row_count*nsides<1000,"Too many values in E block.");
-            ls->mat_set_values(nsides, edge_rows, ele->e_row_count, tmp_rows,
-                    zeros);
-            ls->mat_set_values(ele->e_row_count, tmp_rows, nsides, edge_rows,
-                    zeros);
-            ASSERT(ele->e_row_count*ele->e_row_count<1000,"Too many values in E block.");
-            ls->mat_set_values(ele->e_row_count, tmp_rows, ele->e_row_count,
-                    tmp_rows, zeros);
+            ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
+            ls->mat_set_values(ele->n_neighs_vb, tmp_rows+2,
+                               ele->n_neighs_vb, tmp_rows+2, zeros);
+
         case 1: // included also for case 2
             // -(C')*(A-)*B block and its transpose conect edge with its elements
             ls->mat_set_values(1, &el_row, nsides, edge_rows, zeros);
@@ -396,14 +423,18 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     // }
     // set block F - diagonal: edge-edge from Newton BC
     // also Dirichlet BC
+    /*
     for (i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
         edge_row = row_4_edge[edge_4_loc[i_loc]];
         EdgeFullIter edg = mesh_->edge(edge_4_loc[i_loc]);
 
         //xprintf(Msg,"F: %d %f\n",old_4_new[edge_row],edg->f_val);
-        ls->mat_set_value(edge_row, edge_row, edg->f_val);
-        ls->rhs_set_value(edge_row, edg->f_rhs);
+        //ls->mat_set_value(edge_row, edge_row, edg->f_val);
+        //ls->rhs_set_value(edge_row, edg->f_rhs);
     }
+    */
+
+
 }
 
 
