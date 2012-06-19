@@ -156,9 +156,9 @@ void Mesh::setup_topology() {
     element_to_neigh_vb(mesh);
 
     //side_to_node(mesh);
-    neigh_bb_topology(mesh);
-    make_edge_list(mesh);
-    neigh_bb_to_edge_both(mesh);
+    //neigh_bb_topology(mesh);
+    //make_edge_list(mesh);
+    //neigh_bb_to_edge_both(mesh);
     edge_to_side_both(mesh);
 
     neigh_vb_to_edge_both(mesh);

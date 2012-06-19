@@ -298,6 +298,7 @@ void count_side_types(Mesh* mesh)
 		if (sde->is_external()) mesh->n_exsides++;
 		else mesh->n_insides++;
 }
+/*
 //=============================================================================
 //
 //=============================================================================
@@ -305,7 +306,7 @@ void neigh_bb_topology(Mesh* mesh)
 {
 	struct Neighbour *ngh;
 
-	xprintf( MsgVerb, "   Neighbour BB to element and side... ")/*orig verb 5*/;
+	xprintf( MsgVerb, "   Neighbour BB to element and side... ");
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     FOR_NEIGHBOURS(mesh,  ngh ) {
@@ -314,25 +315,9 @@ void neigh_bb_topology(Mesh* mesh)
 		neigh_bb_to_element( ngh, mesh );
 		neigh_bb_el_to_side( ngh );
 	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+	xprintf( MsgVerb, "O.K.\n");
 }
-//=============================================================================
-//
-//=============================================================================
-void neigh_bb_to_element(struct Neighbour* ngh, Mesh* mesh)
-{
-	int li;
-	ElementIter ele;
 
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-    ASSERT(!( ngh == NULL ),"Neighbor is NULL\n");
-
-	FOR_NEIGH_ELEMENTS( ngh, li ) {
-	    ele = mesh->element.find_id( ngh->eid[li] );
-	    INPUT_CHECK( NONULL(ele), "Reference to undefined element %d neighbor %d\n", ngh->eid[ li ], ngh->id );
-		ngh->element[ li ] = ele;
-	}
-}
 //=============================================================================
 //
 //=============================================================================
@@ -350,196 +335,8 @@ void neigh_bb_el_to_side( struct Neighbour *ngh )
 		ngh->side[ li ] = ele->side[ ngh->sid[ li ] ];
 	}
 }
-//=============================================================================
-// make sides references for edge ngh (same dim)
-//=============================================================================
-void neigh_bb_e_to_side(Mesh *mesh, struct Neighbour *ngh )
-{
-	int li, s[ 2 ];
-	ElementFullIter e0 = ELEMENT_FULL_ITER_NULL(mesh);
-    ElementFullIter e1 = ELEMENT_FULL_ITER_NULL(mesh);
+*/
 
-    ASSERT(!( ngh == NULL ),"Neighbour is NULL\n");
-
-    e0 = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
-    unsigned int e0_side;
-    FOR_NEIGH_ELEMENTS( ngh, li ) {
-        if (li == 0) continue;
-		e1 = ELEMENT_FULL_ITER(mesh, ngh->element[ li ]);
-		if( elements_common_sides( e0, e1, s ) == false )
-		       xprintf(UsrErr,"In neighbour %d elements %d and %d do not have common side\n",
-				  ngh->id, e0.id(), e1.id() );
-
-		// set ngh->side only for internal edges , i.e. at least neigh. 2 elements
-		if( li == 1 ) {
-			e0_side = s[ 0 ];
-			ngh->side[ 0 ] = e0->side[ s [ 0 ] ];
-		} else {
-			INPUT_CHECK( s[ 0 ] == e0_side ,"Elements of edge %d have two sides in common.", ngh->id);
-		}
-		ngh->side[ li ] = e1->side[ s [ 1 ] ];
-	}
-}
-//=============================================================================
-//
-//=============================================================================
-int elements_common_sides( ElementFullIter e0, ElementFullIter e1, int s[] )
-{
-	int rc;
-
-    ASSERT(!( (e0 == NULL) || (e1 == NULL) || (s == NULL) ),"NULL argument in elements_common_sides()\n");
-
-	s[ 0 ] = NDEF;
-	s[ 1 ] = NDEF;
-	if( e0->dim != e1->dim )
-		return false;
-	switch( e0->dim ) {
-		case 1:
-			rc = elements_common_sides_1D( e0, e1, s );
-			break;
-		case 2:
-			rc = elements_common_sides_2D( e0, e1, s );
-			break;
-		case 3:
-			rc = elements_common_sides_3D( e0, e1, s );
-			break;
-	}
-	return rc;
-}
-//=============================================================================
-//
-//=============================================================================
-int elements_common_sides_1D( ElementFullIter e0, ElementFullIter e1, int s[] )
-{
-    ASSERT(!( (e0 == NULL) || (e1 == NULL) || (s == NULL) ),"NULL argument!\n");
-
-    if( e0->node[ 0 ] == e1->node[ 0 ] ) {
-		s[ 0 ] = 0;
-		s[ 1 ] = 0;
-		return true;
-	}
-	if( e0->node[ 0 ] == e1->node[ 1 ] ) {
-		s[ 0 ] = 0;
-		s[ 1 ] = 1;
-		return true;
-	}
-	if( e0->node[ 1 ] == e1->node[ 0 ] ) {
-		s[ 0 ] = 1;
-		s[ 1 ] = 0;
-		return true;
-	}
-	if( e0->node[ 1 ] == e1->node[ 1 ] ) {
-		s[ 0 ] = 1;
-		s[ 1 ] = 1;
-		return true;
-	}
-	return false;
-}
-//=============================================================================
-//
-//=============================================================================
-int elements_common_sides_2D( ElementFullIter e0, ElementFullIter e1, int s[] )
-{
-	int i, j, cnt, ieq[ 2 ], jeq[ 2 ], a;
-
-    ASSERT(!( (e0 == NULL) || (e1 == NULL) || (s == NULL) ),"NULL argument!\n");
-
-    cnt = 0;
-	for( i = 0; i < 3; i++ )
-		for( j = 0; j < 3; j++ )
-			if( e0->node[ i ] == e1->node[ j ] ) {
-				if( cnt < 2 ) {
-					ieq[ cnt ] = i;
-					jeq[ cnt ] = j;
-				}
-				cnt++;
-			}
-	if( cnt != 2 )
-		return false;
-	// Order ieq[] and jeq[]
-	if( ieq[ 0 ] > ieq[ 1 ] ) {
-		a        = ieq[ 1 ];
-		ieq[ 1 ] = ieq[ 0 ];
-		ieq[ 0 ] = a;
-	}
-	if( jeq[ 0 ] > jeq[ 1 ] ) {
-		a        = jeq[ 1 ];
-		jeq[ 1 ] = jeq[ 0 ];
-		jeq[ 0 ] = a;
-	}
-	// This is little tricky, so short explanation:
-	// ieq[] is ordered, so there are three possible states:
-	// ieq[ 0 ]      ieq[ 1 ]      side in triangle
-	//   0              1		   0
-	//   0              2		   2
-	//   1              2		   1
-	// The same holds for jeq[], of course.
-	s[ 0 ] = ieq[ 0 ] == 1 ? 1 : ( ieq[ 1 ] == 1 ? 0 : 2 );
-	s[ 1 ] = jeq[ 0 ] == 1 ? 1 : ( jeq[ 1 ] == 1 ? 0 : 2 );
-	return true;
-}
-//=============================================================================
-//
-//=============================================================================
-int elements_common_sides_3D( ElementFullIter e0, ElementFullIter e1, int s[] )
-{
-	int i, j, cnt, ieq[ 3 ], jeq[ 3 ], a[ 4 ];
-
-    ASSERT(!( (e0 == NULL) || (e1 == NULL) || (s == NULL) ),"NULL argument!\n");
-
-    cnt = 0;
-	for( i = 0; i < 4; i++ )
-		for( j = 0; j < 4; j++ )
-			if( e0->node[ i ] == e1->node[ j ] ) {
-				if( cnt < 3 ) {
-					ieq[ cnt ] = i;
-					jeq[ cnt ] = j;
-				}
-				cnt++;
-			}
-	if( cnt != 3 )
-		return false;
-	// Number of side is the missing number from set {0,1,2,3}
-	// in arrays ieq[], jeq[]...
-	// First element
-	for( i = 0; i < 4; i++ )
-		a[ i ] = 1;
-	for( i = 0; i < 3; i++ )
-		a[ ieq[ i ] ] = 0;
-	for( i = 0; i < 4; i++ )
-		if( a[ i ] == 1 )
-			s[ 0 ] = i;
-	// Second element
-	for( i = 0; i < 4; i++ )
-		a[ i ] = 1;
-	for( i = 0; i < 3; i++ )
-		a[ jeq[ i ] ] = 0;
-	for( i = 0; i < 4; i++ )
-		if( a[ i ] == 1 )
-			s[ 1 ] = i;
-	return true;
-}
-//=============================================================================
-//
-//=============================================================================
-void neigh_bb_to_edge_both(Mesh* mesh)
-{
-	struct Neighbour *ngh;
-
-	xprintf( MsgVerb, "   Neighbour BB to edge and back... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    EdgeFullIter edg = mesh->edge.begin();
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != BB_E && ngh->type != BB_EL )
-			continue;
-		ngh->edge = edg;
-
-		++edg;
-		ASSERT( edg != mesh->edge.end() ,"Inconsistency between number of neighbours and number of edges\n");
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
 //=============================================================================
 //
 //=============================================================================
@@ -548,47 +345,54 @@ void edge_to_side_both(Mesh* mesh)
 	struct Side *sde;
 	struct Edge *edg;
 	struct Neighbour *ngh;
+	Element *ele;
     int si;
 
 	xprintf( MsgVerb, "   Edge to side and back... \n")/*orig verb 5*/;
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-    // first, the internal sides
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != BB_E && ngh->type != BB_EL )
-			continue;
-		edg = ngh->edge;
+    // count edges
+    unsigned int n_edges = mesh->n_sides();
+    FOR_NEIGHBOURS(mesh,  ngh )
+        if ( ngh->type == BB_EL ) n_edges -= ( ngh->n_elements - 1 );
+
+    // create edge vector
+    mesh->edge.resize(n_edges);
+    xprintf( MsgLog, "Created  %d edges.\n.", mesh->n_edges() );
+
+    // set edge, side connections
+    unsigned int i_edge=0;
+	FOR_NEIGHBOURS(mesh,  ngh ) if(  ngh->type == BB_EL ) {
+	    edg = &( mesh->edge[i_edge++] );
+
+        // init edge (can init all its data)
 		edg->n_sides = ngh->n_sides;
 		edg->side = (struct Side**) xmalloc( edg->n_sides *
 				sizeof( struct Side* ) );
 		FOR_NEIGH_SIDES( ngh, si ) {
-			sde = ngh->side[ si ];
+		    ele = mesh->element.find_id( ngh->eid[si] );
+			sde = ele->side[ ngh->sid[ si ] ];
 			edg->side[ si ] = sde;
 			sde->edge_ = edg;
 		}
 	}
 
 	// now the external ones ( pair all remaining edges with external sides)
-	int i_side=0;
-	FOR_EDGES(mesh,  edg ) {
-		if( edg->n_sides != NDEF )
-			continue;
-		//cout << i_side << endl;
-		edg->n_sides = 1;
-		edg->side = (struct Side**) xmalloc( edg->n_sides *
-					sizeof( struct Side* ) );
-		while( mesh->sides[i_side].edge() != NULL ) {
-			i_side++;
-			INPUT_CHECK( i_side < mesh->n_sides(), "No next side during external edge initialization!\n");
-		}
-		mesh->sides[i_side].edge_ = edg;
+	FOR_SIDES(mesh, sde)
+	    if ( sde->edge() == NULL ) {
+	        edg = &( mesh->edge[i_edge++] );
 
-		edg->side[ 0 ] = &( mesh->sides[i_side] );
-		i_side++;
-	}
+	        // make external edges and edges on neighborings.
+	        edg->n_sides = 1;
+	        edg->side = (struct Side**) xmalloc( edg->n_sides *
+	                    sizeof( struct Side* ) );
 
-    while( i_side < mesh->n_sides() && mesh->sides[i_side].edge() != NULL ) i_side++;
-	ASSERT(i_side== mesh->n_sides(), "There are %d sides without edge.\n", mesh->n_sides() - i_side);
+	        sde->edge_ = edg;
+	        edg->side[ 0 ] = &( *sde );
+
+	    }
+
+	ASSERT(i_edge == mesh->n_edges(), "Actual number of edges %d do not match size of its array.\n", i_edge);
 
     //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
 }
@@ -614,67 +418,6 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
-/*
-//=============================================================================
-//
-//=============================================================================
-void concentration_to_element(Mesh* mesh)
-{
-	struct Concentration *con;
-	ElementFullIter ele = ELEMENT_FULL_ITER_NULL;
 
-	xprintf( MsgVerb, "   Concentration to element... ");
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_CONCENTRATIONS( con ) {
-        ele = mesh->element.find_id( con->eid );
-		INPUT_CHECK( ele.is_valid(), "Reference to undefined element in concentration %d\n", con->id );
-		ele->start_conc = con;
-	}
-	xprintf( MsgVerb, "O.K.\n");
-}
-
-void transport_bcd_to_boundary(Mesh* mesh)
-{
-	struct Transport_bcd *tbc;
-	BoundaryFullIter bcd = BOUNDARY_NULL;
-
-	xprintf( MsgVerb, "   Transport boundary condition to boundary condition... ");
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_TRANSPORT_BCDS( tbc ) {
-		bcd = mesh->boundary.find_id( tbc->bid );
-        INPUT_CHECK( bcd.is_valid(), "Reference to undefined boundary condition in transport BCDs %d\n", tbc->id );
-		bcd->transport_bcd = tbc;
-	}
-	xprintf( MsgVerb, "O.K.\n");
-}*/
-//=============================================================================
-//
-//=============================================================================
-/*
-void initial_to_element(Mesh* mesh)
-{
-	struct Initial *icd;
-	ElementFullIter ele=ELEMENT_FULL_ITER_NULL;
-
-	xprintf( MsgVerb, "   Initial conditions to element... ")
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-    INPUT_CHECK(!(mesh->n_initials != mesh->n_elements()),"Different number of initial conditions and elements\n");
-
-    FOR_INITIALS( icd ) {
-        ele = mesh->element.find_id( icd->id );
-        INPUT_CHECK( NONULL(ele), "Reference to undefined element in initial condition %d\n", icd->id );
-
-        INPUT_CHECK(!(ele->n_sides != icd->n_sides),
-                "Different number of sides in the mesh and in the initial condition. Element %d\n", ele.id());
-        INPUT_CHECK(!(ele->n_neighs_vv != icd->n_neighs_vv),
-                "Different number of VV neighbours in the mesh and in the initial condition. Element %d\n", ele.id());
-        INPUT_CHECK(!(ele->initial != NULL),
-                "Element %d has more than one initial conditions\n", ele.id());
-        ele->initial = icd;
-    }
-	xprintf( MsgVerb, "O.K.\n")
-}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

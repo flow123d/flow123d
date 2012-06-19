@@ -31,13 +31,13 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 
-static struct Edge *new_edge(void);
-static void add_to_edge_list(Mesh*,struct Edge*);
-static void init_edge(struct Edge*);
-static int count_edges(Mesh*);
+//static struct Edge *new_edge(void);
+//static void add_to_edge_list(Mesh*,struct Edge*);
+//static void init_edge(struct Edge*);
+//static int count_edges(Mesh*);
 
-static int number_of_common_nodes_ss(struct Side*,struct Side*);
-static int number_of_common_nodes_se(struct Side*,ElementIter );
+//static int number_of_common_nodes_ss(struct Side*,struct Side*);
+//static int number_of_common_nodes_se(struct Side*,ElementIter );
 
 
 Edge::Edge()
@@ -53,72 +53,6 @@ Edge::Edge()
 }
 
 
-//=============================================================================
-// CREATE AND PREFILL LIST OF EDGES
-//=============================================================================
-void make_edge_list(Mesh* mesh)
-{
-    F_ENTRY;
-	int edi;
-	struct Edge *edg;
-
-	ASSERT(!( mesh == NULL ),"NULL as argument of function make_edge_list()\n");
-	xprintf( Msg, "Creating edges... ")/*orig verb 2*/;
-	mesh->edge.resize(count_edges( mesh ));
-
-	xprintf( MsgVerb, " O.K. %d edges created.", mesh->n_edges() )/*orig verb 4*/;
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
-}
-/*
-//=============================================================================
-//
-//=============================================================================
-int number_of_common_nodes_ss( struct Side *s0, struct Side *s1 )
-{
-	int i, j;
-	int ncn;
-
-	ASSERT(!( (s0 == NULL) || (s1 == NULL) ),"NULL argument Side\n");
-	ncn = 0;
-	FOR_SIDE_NODES( s0, i )
-		FOR_SIDE_NODES( s1, j )
-			if( s0->node[ i ] == s1->node[ j ] )
-				ncn++;
-	return ncn;
-}
-//=============================================================================
-//
-//=============================================================================
-int number_of_common_nodes_se( struct Side *sde, ElementIter ele )
-{
-	int i, j;
-	int ncn;
-
-	INPUT_CHECK(!( (sde == NULL) || (ele == NULL) ),"NULL argument\n");
-	ncn = 0;
-	FOR_SIDE_NODES( sde, i )
-		FOR_ELEMENT_NODES( ele, j )
-			if( sde->node[ i ] == ele->node[ j ] )
-				ncn++;
-	return ncn;
-}*/
-//=============================================================================
-//
-//=============================================================================
-int count_edges(Mesh* mesh)
-{
-	int rc;
-	struct Neighbour *ngh;
-
-	rc = mesh->n_sides();
-	//cout << "n_edges: " << rc << endl;
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type == BB_E || ngh->type == BB_EL )
-			rc -= ( ngh->n_elements - 1 );
-	}
-	//cout << "n_edges: " << rc << endl;
-	return rc;
-}
 
 
 //=============================================================================

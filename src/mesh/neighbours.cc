@@ -185,7 +185,7 @@ void neighbour_type_specific( struct Neighbour *ngh )
 {
 	switch( ngh->type ) {
 		case BB_E:
-		    xprintf(UsrErr, "Not supported - Neighboring of type (10) - of elements of same dimension without local side number!");
+		    xprintf(UsrErr, "Not supported - Neighboring of type (10) - of elements of same dimension without local side number!\n");
 			break;
 		case BB_EL:
 			neighbour_specs_bb_el( ngh );
@@ -194,7 +194,7 @@ void neighbour_type_specific( struct Neighbour *ngh )
 			neighbour_specs_vb_es( ngh );
 			break;
 		case VV_2E:
-			neighbour_specs_vv_2e( ngh );
+		    xprintf(UsrErr, "Not supported - Neighboring of type (30) - Noncompatible only elements!\n");
 			break;
 	}
 }
@@ -288,6 +288,7 @@ void neighbour_specs_vb_es( struct Neighbour *ngh )
 /**
  * volume - volume neighbouring of different dimensions (non-compatible)
  */
+/*
 void neighbour_specs_vv_2e( struct Neighbour *ngh )
 {
 	xstrtok( ngh->line);
@@ -303,6 +304,6 @@ void neighbour_specs_vv_2e( struct Neighbour *ngh )
 	ngh->element[ 1 ] = NULL;
 	xfree( ngh->line );
 	ngh->line = NULL;
-}
+}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

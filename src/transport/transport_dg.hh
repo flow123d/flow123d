@@ -252,9 +252,9 @@ private:
 	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity);
 
 	/**
-	 * @brief Sets up some parameters of the DG method for two sides of a neighbour.
+	 * @brief Sets up some parameters of the DG method for two sides of an edge.
 	 *
-	 * @param n					The neighbour.
+	 * @param edg					The edge.
 	 * @param s1				Side 1.
 	 * @param s2				Side 2.
 	 * @param n_points			Number of quadrature points.
@@ -269,7 +269,7 @@ private:
 	 * @param transport_flux	Computed flux from side 1 to side 2.
 	 */
 
-	void set_DG_parameters(const Neighbour *n,
+	void set_DG_parameters(const Edge *edg,
 	        const int s1,
 	        const int s2,
 	        const unsigned int n_points,
