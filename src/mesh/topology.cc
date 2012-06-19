@@ -571,7 +571,7 @@ void edge_to_side_both(Mesh* mesh)
 		FOR_NEIGH_SIDES( ngh, si ) {
 			sde = ngh->side[ si ];
 			edg->side[ si ] = sde;
-			sde->edge = edg;
+			sde->edge_ = edg;
 		}
 	}
 
@@ -584,17 +584,17 @@ void edge_to_side_both(Mesh* mesh)
 		edg->n_sides = 1;
 		edg->side = (struct Side**) xmalloc( edg->n_sides *
 					sizeof( struct Side* ) );
-		while( mesh->sides[i_side].edge != NULL ) {
+		while( mesh->sides[i_side].edge() != NULL ) {
 			i_side++;
 			INPUT_CHECK( i_side < mesh->n_sides(), "No next side during external edge initialization!\n");
 		}
-		mesh->sides[i_side].edge = edg;
+		mesh->sides[i_side].edge_ = edg;
 
 		edg->side[ 0 ] = &( mesh->sides[i_side] );
 		i_side++;
 	}
 
-    while( i_side < mesh->n_sides() && mesh->sides[i_side].edge != NULL ) i_side++;
+    while( i_side < mesh->n_sides() && mesh->sides[i_side].edge() != NULL ) i_side++;
 	ASSERT(i_side== mesh->n_sides(), "There are %d sides without edge.\n", mesh->n_sides() - i_side);
 
     //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
@@ -615,7 +615,7 @@ void neigh_vb_to_edge_both(Mesh* mesh)
 		if( ngh->type != VB_ES )
 			continue;
 		sde = ngh->side[ 1 ];
-		edg = sde->edge;
+		edg = sde->edge();
 		edg->neigh_vb = ngh;
 		ngh->edge = edg;
 	}

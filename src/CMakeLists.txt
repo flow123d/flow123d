@@ -35,6 +35,7 @@ set(sources_lib_non_system
     fem/mapping_p1.cc
 
     flow/local_matrix.cc
+    flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
 

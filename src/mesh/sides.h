@@ -31,6 +31,7 @@
 #define SIDES_H
 
 class Mesh;
+class Edge;
 
 #include <mesh_types.hh>
 
@@ -46,19 +47,16 @@ public:
     int id; // Id # of side
     //int type; // INTERNAL | EXTERNAL
 
-    // Topology of the mesh
-    ElementIter element; // Pointer to element to which belonged
-    int lnum; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
     //Node** node; // Pointers to sides's nodes
 
     struct Boundary *cond; // Boundary condition  - if prescribed
-    struct Edge *edge; // Edge to which belonged
+
     // Results
-    double flux; // Flux through side
-    double scalar; // Scalar quantity (piez. head or pressure)
+    //double flux; // Flux through side
+    //double scalar; // Scalar quantity (piez. head or pressure)
     //double pscalar; // As scalar but in previous time step
-    Mesh    *mesh;
+    struct Edge *edge_; // Edge to which belonged
 
 
     Side();
@@ -77,11 +75,27 @@ public:
 
     inline const Node * node(unsigned int i) const;
 
+    inline ElementFullIter element(); // unfortunately we can not have const here, since there are plenty of ELEMENT_FULL_ITER
+
+    inline const Mesh * mesh() const;
+
+    inline Edge * edge();  // unfortunately we can not have const here, we need to convert it to Full iterator
+
+    inline unsigned int el_idx() const;
+
+
 private:
 
     arma::vec3 normal_point() const;
     arma::vec3 normal_line() const;
     arma::vec3 normal_triangle() const;
+
+    // Topology of the mesh
+
+    Element * element_; // Pointer to element to which belonged
+    unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
+
+    Mesh    *mesh_;
 };
 
 #endif

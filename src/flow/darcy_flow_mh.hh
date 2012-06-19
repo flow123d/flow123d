@@ -54,6 +54,7 @@
 #include <field_p0.hh>
 #include <materials.hh>
 #include "equation.hh"
+#include "flow/mh_dofhandler.hh"
 
 /// external types:
 class LinSys;
@@ -89,6 +90,15 @@ public:
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }
 
+    const MH_DofHandler &get_mh_dofhandler() {
+        double *array;
+        unsigned int size;
+        get_solution_vector(array, size);
+
+        mh_dh.set_solution(array);
+       return mh_dh;
+    }
+
 protected:
     void setup_velocity_vector() {
         double *velocity_array;
@@ -108,6 +118,7 @@ protected:
     bool solution_changed_for_scatter;
     FieldP0<double> *sources;
     Vec velocity_vector;
+    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 };
 
 
@@ -144,9 +155,11 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
+
     /// postprocess velocity field (add sources)
     virtual void postprocess();
     ~DarcyFlowMH_Steady();
+
 
 protected:
     virtual void modify_system() {};
@@ -187,6 +200,8 @@ protected:
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
 	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
+
+
 
 	// MATIS related arrays
         std::vector<int> global_row_4_sub_row;           //< global dof index for subdomain index

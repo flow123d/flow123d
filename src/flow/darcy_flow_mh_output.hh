@@ -66,11 +66,6 @@ public:
     /** \brief Calculate values for output.  **/
     void output();
 
-    /// temporary replacement for DofHandler accessor
-    static double side_flux(Side &side, double *seq_solution);
-
-    /// temporary replacement for DofHandler accessor
-    static double side_scalar(Side &side, double *seq_solution);
 
 private:
     void make_side_flux();
@@ -109,6 +104,8 @@ private:
     Mesh *mesh_;
     OutputTime *output_writer;
     TimeMark::Type output_mark_type;
+
+
 
     /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by
      *  more general scheme, where you can switch every output field on or off.

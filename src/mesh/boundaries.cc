@@ -169,7 +169,7 @@ void boundary_calculation_mh( struct Mesh *mesh )
 	xprintf( Msg, "Calculating properties of boundaries... ");
 	ASSERT( NONULL(mesh) ,"NULL as argument of function boundary_calculation_mh()\n");
 	FOR_BOUNDARIES(mesh,  bcd ) {
-		edg=bcd->side->edge;
+		edg=bcd->side->edge();
 		// following code may not work if a BC is applied to an edge with neighbouring
 		// in such a case we need to add to the f_val, nevertheless the original code
 		// does not do it as well

@@ -46,16 +46,16 @@
 
 
 Side::Side() {
-    element = NULL;
+    element_ = NULL;
     cond = NULL;
-    edge = NULL;
+    edge_ = NULL;
 }
 
-void Side::reinit(Mesh *m, ElementIter ele, int set_id, int set_lnum) {
-    mesh=m;
-    element = ele;
+void Side::reinit(Mesh *mesh, ElementIter ele, int set_id, int set_lnum) {
+    mesh_=mesh;
+    element_ = ele;
     id = set_id;
-    lnum = set_lnum;
+    el_idx_ = set_lnum;
 
 }
 
@@ -74,11 +74,11 @@ void Side::reinit(Mesh *m, ElementIter ele, int set_id, int set_lnum) {
 double Side::metric() const {
     switch ( dim() ) {
         case 0:
-            return 1.0 * element->material->size;
+            return 1.0 * element_->material->size;
         case 1: {
             arma::vec3 diff = node(1)->point();
             diff -= node(0)->point();
-            return arma::norm( diff , 2 ) * element->material->size;
+            return arma::norm( diff , 2 ) * element_->material->size;
         }
         case 2: {
             arma::vec3 diff0 = node(1)->point() - node(0)->point();
@@ -107,7 +107,7 @@ arma::vec3 Side::normal() const {
 //=============================================================================
 
 arma::vec3 Side::normal_point() const {
-    ElementIter ele = element;
+    ElementIter ele = element_;
 
     arma::vec3 normal(ele->node[1]->point());
     normal -= ele->node[0] ->point();
@@ -123,7 +123,7 @@ arma::vec3 Side::normal_point() const {
 //=============================================================================
 
 arma::vec3 Side::normal_line() const {
-    ElementIter ele=element;
+    ElementIter ele=element_;
 
     // At first, we need vector of the normal of the element
     arma::vec3 elem_normal=arma::cross( ele->node[1]->point() - ele->node[0]->point(),
@@ -144,7 +144,7 @@ arma::vec3 Side::normal_line() const {
 //=============================================================================
 
 arma::vec3 Side::normal_triangle() const {
-    ElementIter ele=element;
+    ElementIter ele=element_;
     double u[ 3 ], v[ 3 ], in[ 3 ], normal[3];
 
     arma::vec3 side_normal=arma::cross( node(1)->point() - node(0)->point(),

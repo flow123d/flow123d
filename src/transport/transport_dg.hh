@@ -32,7 +32,7 @@
 
 #include "transport_operator_splitting.hh"
 #include "la/linsys.hh"
-
+#include "mh_dofhandler.hh"
 
 class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
@@ -111,7 +111,7 @@ public:
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
-	void set_velocity_field(Vec &velocity_vector);
+	virtual void set_velocity_field(const MH_DofHandler &dh);
 
 	/**
 	 * @brief Postprocesses the solution and writes to output file.
@@ -441,6 +441,8 @@ private:
 
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
+
+    const MH_DofHandler * mh_dh;
 
 	// / Vector of fluxes across element edges - so far not used.
 //	Vec flux_vector;
