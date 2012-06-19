@@ -54,7 +54,7 @@ Side::Side() {
 void Side::reinit(Mesh *mesh, ElementIter ele, int set_id, int set_lnum) {
     mesh_=mesh;
     element_ = ele;
-    id = set_id;
+    //id = set_id;
     el_idx_ = set_lnum;
 
 }

@@ -21,6 +21,10 @@ void MH_DofHandler::reinit(Mesh *mesh) {
 }
 
 
+unsigned int MH_DofHandler::side_dof(Side *side) const {
+    return elem_side_to_global[ side->element().index() ][ side->el_idx() ];
+}
+
 
 void MH_DofHandler::set_solution( double * solution) {
     ASSERT( solution != NULL, "Empty solution.\n");

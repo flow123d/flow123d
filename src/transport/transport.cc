@@ -732,7 +732,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         FOR_EDGE_SIDES(edg,s)
                             // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                             // These edges on these sides should have just one side
-                            if (edg->side[s]->id != elm->side[si]->id) {
+                            if (edg->side[s] != elm->side[si]) {
                                 flux2 = mh_dh->side_flux( *(edg->side[s]));
                                 if ( flux2 > 0.0 ) {
                                     aij = -(flux * flux2 / (edg->faux * elm->volume()

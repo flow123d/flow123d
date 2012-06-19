@@ -44,7 +44,7 @@ class Edge;
 class Side {
 public:
     // Basic data
-    int id; // Id # of side
+    //int id; // Id # of side
     //int type; // INTERNAL | EXTERNAL
 
 

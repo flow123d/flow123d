@@ -154,7 +154,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
             i = 0;
             FOR_ELEMENTS(mesh_, ele) {
                 FOR_ELEMENT_SIDES(ele,si) {
-                    loc_idx[i++] = side_row_4_id[ele->side[si]->id];
+                    loc_idx[i++] = side_row_4_id[ mh_dh.side_dof( ele->side[si] ) ];
                 }
             }
             FOR_ELEMENTS(mesh_, ele) {
@@ -242,7 +242,7 @@ void DarcyFlowMH_Steady::postprocess() {
     for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         ele = mesh_->element(el_4_loc[i_loc]);
         FOR_ELEMENT_SIDES(ele,i) {
-            side_rows[i] = side_row_4_id[ele->side[i]->id];
+            side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side[i] ) ];
             values[i] = -1.0 * ele->volume() * sources->element_value(ele.index()) / ele->n_sides;
         }
         VecSetValues(schur0->get_solution(), ele->n_sides, side_rows, values, ADD_VALUES);
@@ -323,7 +323,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         nsides = ele->n_sides;
 
         for (i = 0; i < nsides; i++) {
-            side_row = side_rows[i] = side_row_4_id[ele->side[i]->id];
+            side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side[i] ) ];
             edge_row = edge_rows[i] = row_4_edge[mesh_->edge.index(ele->side[i]->edge())];
             bcd=ele->side[i]->cond;
 
@@ -579,7 +579,7 @@ void DarcyFlowMH_Steady::make_schur1() {
 	   //}
 
            for (i = 0; i < nsides; i++)
-               side_rows[i] = ele->side[i]->id; // side ID
+               side_rows[i] = mh_dh.side_dof( ele->side[i] ); // side ID
                            // - rows_ds->begin(); // local side number
                            // + side_ds->begin(); // side row in IA1 matrix
            MatSetValues(IA1, nsides, side_rows, nsides, side_rows, ele->loc_inv,
@@ -612,7 +612,7 @@ void DarcyFlowMH_Steady::make_schur1() {
                }
            }
            for (i = 0; i < nsides; i++)
-               side_rows[i] = side_row_4_id[ele->side[i]->id] // side row in MH matrix
+               side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side[i]) ] // side row in MH matrix
                        - rows_ds->begin() // local side number
                        + side_ds->begin(); // side row in IA1 matrix
            MatSetValues(IA1, nsides, side_rows, nsides, side_rows, ele->loc_inv,
@@ -1065,7 +1065,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
                         row_4_el[mesh_->element.index(side->element())]);
             }
             // id array
-            id_4_old[is++] = side->id;
+            id_4_old[is++] = mh_dh.side_dof( &(*side) );
         }
     }
     // make trivial part
@@ -1126,7 +1126,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
             nsides = el->n_sides;
             for (i = 0; i < nsides; i++) {
-                side_row = side_row_4_id[el->side[i]->id];
+                side_row = side_row_4_id[ mh_dh.side_dof( el->side[i] ) ];
                 Edge *edg=el->side[i]->edge();
 		        edge_row = row_4_edge[mesh_->edge.index(edg)];
 
@@ -1407,7 +1407,7 @@ void DarcyFlowLMH_Unsteady::postprocess()
       old_pressure=loc_prev_sol[loc_edge_row];
       FOR_EDGE_SIDES(edg,i) {
           ele=edg->side[i]->element();
-          side_row=side_row_4_id[edg->side[i]->id];
+          side_row=side_row_4_id[ mh_dh.side_dof( edg->side[i] ) ];
           time_coef=-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides;
           VecSetValue(schur0->get_solution(),side_row,time_coef*(new_pressure-old_pressure),ADD_VALUES);
       }

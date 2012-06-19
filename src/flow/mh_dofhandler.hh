@@ -22,6 +22,8 @@ public:
 
     void set_solution( double * solution);
 
+    unsigned int side_dof(Side *side) const;
+
     /// temporary replacement for DofHandler accessor, flux through given side
     double side_flux(Side &side) const;
 
