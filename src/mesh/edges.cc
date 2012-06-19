@@ -44,7 +44,7 @@ Edge::Edge()
 : n_sides(NDEF),
   side(NULL),
   neigh_vb(NULL),
-  neigh_bb(NULL),
+  //neigh_bb(NULL),
   c_row(0),
   f_val(0),
   f_rhs(0)

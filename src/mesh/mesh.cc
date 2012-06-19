@@ -157,12 +157,10 @@ void Mesh::setup_topology() {
 
     //side_to_node(mesh);
     neigh_bb_topology(mesh);
-
     make_edge_list(mesh);
-
     neigh_bb_to_edge_both(mesh);
-
     edge_to_side_both(mesh);
+
     neigh_vb_to_edge_both(mesh);
     count_side_types(mesh);
     xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;

@@ -40,7 +40,7 @@ static void init_neighbour(struct Neighbour*);
 static void parse_neighbour_line(struct Neighbour*,char*);
 static char supported_neighbour_type(int);
 static void neighbour_type_specific(struct Neighbour*);
-static void neighbour_specs_bb_e(struct Neighbour*);
+//static void neighbour_specs_bb_e(struct Neighbour*);
 static void neighbour_specs_bb_el(struct Neighbour*);
 static void neighbour_specs_vb_es(struct Neighbour*);
 static void neighbour_specs_vv_2e(struct Neighbour*);
@@ -185,7 +185,7 @@ void neighbour_type_specific( struct Neighbour *ngh )
 {
 	switch( ngh->type ) {
 		case BB_E:
-			neighbour_specs_bb_e( ngh );
+		    xprintf(UsrErr, "Not supported - Neighboring of type (10) - of elements of same dimension without local side number!");
 			break;
 		case BB_EL:
 			neighbour_specs_bb_el( ngh );
@@ -202,6 +202,7 @@ void neighbour_type_specific( struct Neighbour *ngh )
  *  boundary - boundary neigbouring, given by list of neigbouring elements,
  *             sides are given implicitely by shared nodes
  */
+/*
 void neighbour_specs_bb_e( struct Neighbour *ngh )
 {
 	int ei;
@@ -222,7 +223,8 @@ void neighbour_specs_bb_e( struct Neighbour *ngh )
 		ngh->eid[ ei ] = atoi( xstrtok( NULL) );
 	xfree( ngh->line );
 	ngh->line = NULL;
-}
+}*/
+
 /**
  *  boundary - boundary neigbouring,
  *  given by list of neigbouring sides given by
@@ -254,6 +256,7 @@ void neighbour_specs_bb_el( struct Neighbour *ngh )
 	xfree( ngh->line );
 	ngh->line = NULL;
 }
+
 /**
  *  boundary - volume neighbouring of different dimensions (compatible)
  */

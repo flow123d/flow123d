@@ -44,12 +44,6 @@ class Edge;
 class Side {
 public:
     // Basic data
-    //int id; // Id # of side
-    //int type; // INTERNAL | EXTERNAL
-
-
-    //Node** node; // Pointers to sides's nodes
-
     struct Boundary *cond; // Boundary condition  - if prescribed
 
     // Results

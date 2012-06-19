@@ -44,8 +44,8 @@ static void neigh_vb_to_element_and_side(Mesh*);
 //static void neigh_bv_to_side(Mesh *);
 static void element_to_neigh_vb(Mesh*);
 static void side_to_node(Mesh*);
-static void neigh_bb_topology(Mesh*);
-static void neigh_bb_to_edge_both(Mesh*);
+//static void neigh_bb_topology(Mesh*);
+//static void neigh_bb_to_edge_both(Mesh*);
 static void edge_to_side_both(Mesh*);
 static void neigh_vb_to_edge_both(Mesh*);
 static void side_types(Mesh*);
@@ -56,11 +56,7 @@ static void side_to_node_triangle(ElementFullIter );
 static void side_to_node_tetrahedron(ElementFullIter );
 static void neigh_bb_to_element(struct Neighbour*,Mesh*);
 static void neigh_bb_el_to_side(struct Neighbour*);
-static void neigh_bb_e_to_side(Mesh *mesh, struct Neighbour*);
-//static void source_to_element_both(Mesh*);
-//static void concentration_to_element(Mesh*);
-//static void transport_bcd_to_boundary(Mesh*);
-//static void initial_to_element(Mesh*);
+//static void neigh_bb_e_to_side(Mesh *mesh, struct Neighbour*);
 static int elements_common_sides(ElementFullIter ,ElementFullIter ,int[]);
 static int elements_common_sides_1D(ElementFullIter ,ElementFullIter ,int[]);
 static int elements_common_sides_2D(ElementFullIter ,ElementFullIter ,int[]);
@@ -313,13 +309,10 @@ void neigh_bb_topology(Mesh* mesh)
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
     FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != BB_E && ngh->type != BB_EL )
+		if( ngh->type != BB_EL )
 			continue;
 		neigh_bb_to_element( ngh, mesh );
-		if( ngh->type == BB_EL )
-			neigh_bb_el_to_side( ngh );
-		else
-			neigh_bb_e_to_side( mesh, ngh );
+		neigh_bb_el_to_side( ngh );
 	}
 	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }
@@ -541,7 +534,7 @@ void neigh_bb_to_edge_both(Mesh* mesh)
 		if( ngh->type != BB_E && ngh->type != BB_EL )
 			continue;
 		ngh->edge = edg;
-		edg->neigh_bb = ngh;
+
 		++edg;
 		ASSERT( edg != mesh->edge.end() ,"Inconsistency between number of neighbours and number of edges\n");
 	}
