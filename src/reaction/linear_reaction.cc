@@ -10,6 +10,76 @@
 #include "mesh/mesh.h"
 
 
+/*Input::Type::AbstractRecord & Isotope::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("Isotope", "Definition of information about a single isotope.");
+
+	if (!rec.is_finished()) {
+		rec.declare_key("identifier", Int(), Default::obligatory(),
+						"Identifier of the isotope.");
+		rec.declare_key("half_life", Double(), Default::obligatory(),
+						"Half life parameter.");
+		rec.declare_key("next", Array(Int()), Default(NULL),
+						"Identifiers of childern in decay chain.");
+		rec.declare_key("bifurcation", Array(Double), Default(NULL),
+						"Fractions of division decay chain into branches.");
+		//rec.declare_key("kinetic constant", Double(), Default(1.0),
+		//				"Kinetic conxtant appropriate to described first order reaction.");
+
+		rec.finish();
+
+		//TransportOperatorSplitting::get_input_type();
+		//TransportDG::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}*/
+
+/*Input::Type::AbstractRecord & Reactant::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("Reactant", "Definition of information about the reactant of 1'st order reaction.");
+
+	if (!rec.is_finished()) {
+		rec.declare_key("identifier", Int(), Default::obligatory(),
+						"Identifier of the reactant of 1'st order reaction.");
+		rec.declare_key("next", Int(), Default(-1),
+						"Identifiers of the product of 1'st order reaction.");
+		rec.declare_key("kinetic constant", Double(), Default(1.0),
+						"Kinetic conxtant appropriate to described first order reaction.");
+
+		rec.finish();
+
+		//TransportOperatorSplitting::get_input_type();
+		//TransportDG::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}*/
+
+Input::Type::AbstractRecord &Linear_reaction::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("Reaction_module", "Secondary equation for simple chemical reactions.");
+
+	if (!rec.is_finished()) {
+		rec.declare_key("nr_of_decay_chains", Int(), Default(0),
+						"Number of decay chains under concideration.");
+		rec.declare_key("nr_of_FOR", Int(), Default(0),
+								"Number of first ordet reaction under concideration.");
+		rec.finish();
+
+		//TransportOperatorSplitting::get_input_type();
+		//TransportDG::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}
+
 using namespace std;
 
 Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)

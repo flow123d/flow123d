@@ -17,9 +17,73 @@
 class Mesh;
 class Distribution;
 
+/*
+* Decay chain member
+*/
+class Isotope
+{
+	public:
+	/*
+	* Static method for new input data types input
+	*/
+	static Input::Type::AbstractRecord &get_input_type();
+	/*
+	* constructor holding necessary parameters
+	*/
+	Isotope(int id, int *next, double halflive);
+	/*
+	* Integer holding identifier of transported chemical specie (isotope).
+	*/
+	int id;
+	/*
+	* Ids of ancestors of the particular isotope contained in considered decay chain.
+	*/
+	int *next;
+	/*
+	* Half-life belonging to considered isotope.
+	*/
+	double half_life;
+	/*
+	* Bifurcation. Fractions of division decay chain into branches.
+	*/
+	double *bifurcation;
+};
+
+/*
+* Member of first order reaction.
+*/
+class Reactant
+{
+	public:
+	/*
+	* Static method for new input data types input
+	*/
+	static Input::Type::AbstractRecord &get_input_type();
+	/*
+	* Constructor follows.
+	*/
+	Reactant(int id, int next, double kinetic_constant);
+	/*
+	* Integer holding identifier of transported chemical specie (isotope).
+	*/
+	int id;
+	/*
+	* Product of first order reaction identifier.
+	*/
+	int next;
+	/*
+	* Kinetic reaction rate constant.
+	*/
+	double kinetic_constant;
+};
+
 class Linear_reaction
 {
 	public:
+		/*
+	 	* Static method for new input data types input
+		*/
+		static Input::Type::AbstractRecord &get_input_type();
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
@@ -29,6 +93,10 @@ class Linear_reaction
 		*	Destructor.
 		*/
 		~Linear_reaction(void);
+		/*
+		* Static method for new input data types input
+		*/
+		static Input::Type::AbstractRecord &get_input_type();
 		/**
 		*	For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
@@ -243,6 +311,14 @@ class Linear_reaction
 		*	Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
 		*/
 		double ***concentration_matrix;
+		/*
+		* Array containing information about isotopes in considered decay chain.
+		*/
+		Isotope *isotopes;
+		/*
+		* Array containing information about first order reactions.
+		*/
+		Reactant *reactants;
 
 		/// Temporary space for saving original concentrations
 
