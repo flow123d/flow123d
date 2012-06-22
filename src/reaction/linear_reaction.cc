@@ -66,9 +66,9 @@ Input::Type::AbstractRecord &Linear_reaction::get_input_type()
 	static AbstractRecord rec("Reaction_module", "Secondary equation for simple chemical reactions.");
 
 	if (!rec.is_finished()) {
-		rec.declare_key("nr_of_decay_chains", Int(), Default(0),
+		rec.declare_key("nr_of_decay_chains", Integer(), Default(0),
 						"Number of decay chains under concideration.");
-		rec.declare_key("nr_of_FOR", Int(), Default(0),
+		rec.declare_key("nr_of_FOR", Integer(), Default(0),
 								"Number of first ordet reaction under concideration.");
 		rec.finish();
 

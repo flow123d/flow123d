@@ -76,6 +76,16 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
 find_package(PETSc REQUIRED)
+
+# check correct version
+MESSAGE(STATUS "HAVE PETSC version: ${PETSC_VERSION}")
+if ("${PETSC_VERSION}" VERSION_LESS 3.2.0p00)
+    MESSAGE(FATAL_ERROR "Wrong PETSC version, we need version 3.2.0pX")
+endif()
+if ("${PETSC_VERSION}" VERSION_GREATER 3.2.0p99)
+    MESSAGE(FATAL_ERROR "Wrong PETSC version, we need version 3.2.0pX")
+endif()
+
 find_package(PARMETIS REQUIRED)
 
 

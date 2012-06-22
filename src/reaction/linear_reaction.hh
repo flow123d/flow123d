@@ -17,6 +17,8 @@
 class Mesh;
 class Distribution;
 
+#include <input/input_type.hh>
+
 /*
 * Decay chain member
 */
@@ -93,10 +95,7 @@ class Linear_reaction
 		*	Destructor.
 		*/
 		~Linear_reaction(void);
-		/*
-		* Static method for new input data types input
-		*/
-		static Input::Type::AbstractRecord &get_input_type();
+
 		/**
 		*	For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
 		*/

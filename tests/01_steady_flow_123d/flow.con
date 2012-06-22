@@ -25,7 +25,7 @@
       output = {
         save_step = 0.1, 
         stream = "flow.pvd",
-        pressure_p0 = "flow_output_stream", 
+        pressure_p0 = {REF:"/darcy_flow_output"}, 
         pressure_p1 = "flow_output_stream", 
         velocity_p0 = "flow_output_stream"
       }, 
@@ -58,7 +58,11 @@
     pause_after_run = false
   }
   
-  
+darcy_flow_output = "./test1.pvd" 
+#{
+#        file = "./test1.msh", 
+#        format = "gmsh_ascii"
+#  }
   
   
   
