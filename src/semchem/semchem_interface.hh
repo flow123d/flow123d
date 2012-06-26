@@ -4,11 +4,12 @@
 #include "mesh/elements.h"
 #include "la/distribution.hh"
 #include <string.h>
+#include <./input/input_type.hh>
 
 class Distribution;
 
 
-Type enum type_of_reaction {"kinetics","slow_kinetics","equilibrium"};
+enum type_of_reaction{kinetics = 1, slow_kinetics, equilibrium};
 
 class Specie
 {

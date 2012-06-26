@@ -23,15 +23,15 @@ Input::Type::AbstractRecord & Specie::get_input_type()
 	static AbstractRecord rec("Isotope", "Definition of information about a single isotope.");
 
 	if (!rec.is_finished()) {
-		rec.declare_key("identifier", Int(), Default::obligatory(),
+		rec.declare_key("identifier", Integer(), Default::obligatory(),
 						"Identifier of the isotope.");
 		rec.declare_key("half_life", Double(), Default::obligatory(),
 						"Half life parameter.");
-		rec.declare_key("next", Array(Int()), Default(NULL),
+		/*rec.declare_key("next", Array(Integer()), Default(0),
 						"Identifiers of childern in decay chain.");
-		rec.declare_key("bifurcation", Array(Double), Default(NULL),
+		rec.declare_key("bifurcation", Array(Double), Default(0),
 						"Fractions of division decay chain into branches.");
-		/*rec.declare_key("kinetic constant", Double(), Default(1.0),
+		rec.declare_key("kinetic constant", Double(), Default(1.0),
 						"Kinetic conxtant appropriate to described first order reaction.");*/
 
 		rec.finish();
@@ -50,15 +50,15 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 	static AbstractRecord rec("Isotope", "Definition of information about a single isotope.");
 
 	if (!rec.is_finished()) {
-		rec.declare_key("identifier", Int(), Default::obligatory(),
+		rec.declare_key("identifier", Integer(), Default::obligatory(),
 						"Identifier of the isotope.");
 		rec.declare_key("half_life", Double(), Default::obligatory(),
 						"Half life parameter.");
-		rec.declare_key("next", Array(Int()), Default(NULL),
+		/*rec.declare_key("next", Array(Integer()), Default(0),
 						"Identifiers of childern in decay chain.");
-		rec.declare_key("bifurcation", Array(Double), Default(NULL),
+		rec.declare_key("bifurcation", Array(Double), Default(0),
 						"Fractions of division decay chain into branches.");
-		/*rec.declare_key("kinetic constant", Double(), Default(1.0),
+		rec.declare_key("kinetic constant", Double(), Default(1.0),
 						"Kinetic conxtant appropriate to described first order reaction.");*/
 
 		rec.finish();
@@ -77,21 +77,21 @@ Input::Type::AbstractRecord & Semchem_interface::get_input_type()
 	static AbstractRecord rec("Semchem_module", "Declares infos valid for all reactions.");
 
 	if (!rec.is_finished()) {
-		rec.declare_key("precision", Int(), Default(1),
+		rec.declare_key("precision", Integer(), Default::obligatory(), //(1),
 						"How accurate should the simulation be, decimal places(?).");
-		rec.declare_key("temperature", Double(), Default(298.0),
+		rec.declare_key("temperature", Double(), Default::obligatory(), //(298.0),
 						"Isothermal reaction, thermodynamic temperature.");
-		rec.declare_key("temp_Gf", Double(), Default(298.0),
+		rec.declare_key("temp_Gf", Double(), Default::obligatory(), //(298.0),
 						"Thermodynamic parameter.");
-		rec.declare_key("param_Afi", Double(), Default(0.391475),
+		rec.declare_key("param_Afi", Double(), Default::obligatory(), //(0.391475),
 						"Thermodynamic parameter.");
-		rec.declare_key("param_b", Double(), Default(1.2),
+		rec.declare_key("param_b", Double(), Default::obligatory(), //(1.2),
 						"Thermodynamic parameter.");
-		rec.declare_key("epsilon", Double(), Default(1.2),
+		rec.declare_key("epsilon", Double(), Default::obligatory(), //(1.2),
 						"Thermodynamic parameter.");
-		rec.declare_key("time_steps", Int(), Default(10),
+		rec.declare_key("time_steps", Integer(), Default::obligatory(), //(10),
 						"Simulation parameter.");
-		rec.declare_key("slow_kinetic_steps", Int(), Default(1),
+		rec.declare_key("slow_kinetic_steps", Integer(), Default::obligatory(), //(1),
 						"Simulation parameter.");
 
 		rec.finish();
