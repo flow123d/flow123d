@@ -30,35 +30,35 @@
 #ifndef SIDES_H
 #define SIDES_H
 
-class Mesh;
-class Edge;
 
+#include <armadillo>
 #include <mesh_types.hh>
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH
 //=============================================================================
 
-
+class Mesh;
 
 class Side {
 public:
     // Basic data
-    struct Boundary *cond; // Boundary condition  - if prescribed
+    //struct Boundary *cond; // Boundary condition  - if prescribed
 
     // Results
     //double flux; // Flux through side
     //double scalar; // Scalar quantity (piez. head or pressure)
     //double pscalar; // As scalar but in previous time step
-    struct Edge *edge_; // Edge to which belonged
+    //struct Edge *edge_; // Edge to which belonged
 
+    Side()
+    : element_(NULL), el_idx_(0)
+    {}
 
-    Side();
+    inline Side(ElementIter ele, unsigned int set_lnum);
     double metric() const;
     arma::vec3 centre() const; // Centre of side
     arma::vec3 normal() const; // Vector of (generalized) normal
-
-    void reinit(Mesh *mesh, ElementIter ele,  int set_id, int set_lnum);
 
     inline unsigned int n_nodes() const;
 
@@ -69,15 +69,22 @@ public:
 
     inline const Node * node(unsigned int i) const;
 
-    inline ElementFullIter element(); // unfortunately we can not have const here, since there are plenty of ELEMENT_FULL_ITER
+    inline ElementFullIter element() const; // unfortunately we can not have const here, since there are plenty of ELEMENT_FULL_ITER
 
-    inline const Mesh * mesh() const;
+    inline Mesh * mesh() const;
 
-    inline Edge * edge();  // unfortunately we can not have const here, we need to convert it to Full iterator
+    inline Edge * edge() const;  // unfortunately we can not have const here, we need to convert it to Full iterator
+
+    inline Boundary * cond() const;
 
     inline unsigned int el_idx() const;
 
+    inline bool valid() const;
 
+    inline void inc();
+
+    /// This is necessary by current DofHandler, should change this
+    inline void *make_ptr() const;
 private:
 
     arma::vec3 normal_point() const;
@@ -89,9 +96,48 @@ private:
     Element * element_; // Pointer to element to which belonged
     unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
-    Mesh    *mesh_;
+    //Mesh    *mesh_;
 };
 
+
+/*
+ * Iterator to a side.
+ */
+class SideIter {
+public:
+    SideIter()
+    {}
+
+    inline SideIter(const Side &side)
+    : side_(side)
+    {}
+
+    inline bool operator==(const SideIter &other) {
+        return (side_.element() == other.side_.element() ) && ( side_.el_idx() == other.side_.el_idx() );
+    }
+
+
+    inline bool operator!=(const SideIter &other) {
+        return !( *this == other);
+    }
+
+    ///  * dereference operator
+    inline const Side & operator *() const
+            { return side_; }
+
+    /// -> dereference operator
+    inline const Side * operator ->() const
+            { return &side_; }
+
+    /// prefix increment iterate only on local element
+    inline SideIter &operator ++ () {
+        side_.inc();
+        return (*this);
+    }
+
+private:
+    Side side_;
+};
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

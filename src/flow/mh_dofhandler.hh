@@ -13,6 +13,7 @@ using namespace std;
 
 class Mesh;
 class Side;
+class SideIter;
 
 /// temporary solution to provide access to results
 /// from DarcyFlowMH independent of mesh
@@ -22,13 +23,13 @@ public:
 
     void set_solution( double * solution);
 
-    unsigned int side_dof(Side *side) const;
+    unsigned int side_dof(const SideIter side) const;
 
     /// temporary replacement for DofHandler accessor, flux through given side
-    double side_flux(Side &side) const;
+    double side_flux(const Side &side) const;
 
     /// temporary replacement for DofHandler accessor, scalar (pressure) on edge of the side
-    double side_scalar(Side &side) const;
+    double side_scalar(const Side &side) const;
 
 protected:
     vector< vector<unsigned int> > elem_side_to_global;

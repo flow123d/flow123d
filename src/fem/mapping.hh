@@ -212,7 +212,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<di
     arma::vec::fixed<dim> side_bar_coords;
 
     // number the element nodes
-    for (int i=0; i<cell->n_nodes; i++)
+    for (int i=0; i<cell->n_nodes(); i++)
         elem_nodes[cell->node[i]] = i;
 
     for (int k=0; k<q.size(); k++)

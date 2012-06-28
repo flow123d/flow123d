@@ -90,7 +90,7 @@ void read_boundary( struct Mesh *mesh )
 
         unsigned int where  = atoi( xstrtok( NULL) );
         int eid, sid, n_exterior;
-        Side *sde;
+        SideIter sde;
 
         switch( where ) {
             case 2: // SIDE_EL - BC given by element and its local side number
@@ -99,10 +99,10 @@ void read_boundary( struct Mesh *mesh )
 
                 // find and set the side
                 ele = mesh->element.find_id( eid );
-                if( sid < 0 || sid >= ele->n_sides )
+                if( sid < 0 || sid >= ele->n_sides() )
                      xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", bcd_id, sid );
-                sde = ele->side[ sid ];
-                sde->cond=bcd;
+                sde = ele->side( sid );
+                ele->boundaries_[ sid ] = bcd;
                 bcd->side=sde;
 
                 break;
@@ -113,7 +113,7 @@ void read_boundary( struct Mesh *mesh )
                 ele = mesh->element.find_id( eid );
                 n_exterior=0;
                 FOR_ELEMENT_SIDES(ele, li) {
-                    sde = ele->side[ li ];
+                    sde = ele->side( li );
                     if ( sde->is_external() ) {
                         if (n_exterior > 0) {
                             xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
@@ -121,7 +121,7 @@ void read_boundary( struct Mesh *mesh )
                             //*new_bcd = *bcd;
                             //bcd=new_bcd;
                         }
-                        sde->cond=bcd;
+                        ele->boundaries_[ sid ] = bcd;
                         bcd->side=sde;
                         n_exterior++;
                     }

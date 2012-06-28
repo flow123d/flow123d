@@ -57,6 +57,7 @@ Mesh::Mesh() {
 
     n_insides = NDEF;
     n_exsides = NDEF;
+    n_sides_ = NDEF;
 
     n_neighs = NDEF;
     neighbour = NULL;
@@ -113,6 +114,16 @@ Mesh::Mesh() {
 }
 
 
+unsigned int Mesh::n_sides()
+{
+    if (n_sides_ == NDEF) {
+        n_sides_=0;
+        FOR_ELEMENTS(this, ele) n_sides_ += ele->n_sides();
+    }
+    return n_sides_;
+}
+
+
 //=============================================================================
 // COUNT ELEMENT TYPES
 //=============================================================================
@@ -147,15 +158,12 @@ void Mesh::setup_topology() {
 
     // topology
     node_to_element(mesh);
-    element_to_side_both(mesh);
 
     neigh_vv_to_element(mesh);
-    //element_to_neigh_vv(mesh);
     neigh_vb_to_element_and_side(mesh);
-    //neigh_bv_to_side(mesh);
     element_to_neigh_vb(mesh);
 
-    edge_to_side_both(mesh);
+    edge_to_side(mesh);
 
     neigh_vb_to_edge_both(mesh);
     count_side_types(mesh);

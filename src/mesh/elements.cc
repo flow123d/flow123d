@@ -36,6 +36,7 @@
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "elements.h"
+#include "element_impls.hh"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"
@@ -68,13 +69,13 @@ Element::Element()
   pid(0),
 
   dim(0),
-  n_sides(0),
 
-  n_nodes(0),
   node(NULL),
 
   material(NULL),
-  side(NULL),
+  edges_(NULL),
+  boundaries_(NULL),
+
   n_neighs_vb(0),
   neigh_vb(NULL),
  //*start_conc,
@@ -97,6 +98,8 @@ Element::Element()
 
 {
 }
+
+
 
 /**
  * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
@@ -139,7 +142,7 @@ void calc_a_row(Mesh* mesh) {
 
     FOR_ELEMENTS(mesh, ele) {
         ele->a_row = last;
-        last += ele->n_sides;
+        last += ele->n_sides();
     }
 }
 
@@ -228,7 +231,7 @@ arma::vec3 Element::centre() {
     FOR_ELEMENT_NODES(this, li) {
         centre += node[ li ]->point();
     }
-    centre /= (double) n_nodes;
+    centre /= (double) n_nodes();
     //DBGMSG("%d: %f %f %f\n",ele.id(),ele->centre[0],ele->centre[1],ele->centre[2]);
     return centre;
 }
@@ -241,14 +244,15 @@ unsigned int Element::n_sides_by_dim(int side_dim)
     if (side_dim == dim) return 1;
 
     unsigned int n = 0;
-    for (unsigned int i=0; i<n_sides; i++)
-        if (side[i]->dim() == side_dim) n++;
+    for (unsigned int i=0; i<n_sides(); i++)
+        if (side(i)->dim() == side_dim) n++;
     return n;
 }
 
 /**
  * Return pointer to @p nth side/node/element (depending on the dimension @p side_dim).
  */
+/*
 void *Element::side_by_dim(int side_dim, unsigned int n)
 {
     if (side_dim == 0)
@@ -265,13 +269,13 @@ void *Element::side_by_dim(int side_dim, unsigned int n)
     else
     {
         unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides; i++)
+        for (unsigned int i=0; i<n_sides(); i++)
         {
-            if (side[i]->dim() == side_dim)
+            if (side(i)->dim() == side_dim)
             {
                 if (count == n)
                 {
-                    return side[i];
+                    return side(i);
                 }
                 else
                 {
@@ -282,6 +286,7 @@ void *Element::side_by_dim(int side_dim, unsigned int n)
         xprintf(Warn, "Side not found.");
     }
 }
+*/
 
 /**
  * Return pointer to the @p node_id-th node of the side.
@@ -300,13 +305,13 @@ const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node
     else
     {
         unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides; i++)
+        for (unsigned int i=0; i<n_sides(); i++)
         {
-            if (side[i]->dim() == side_dim)
+            if (side(i)->dim() == side_dim)
             {
                 if (count == side_id)
                 {
-                    return side[i]->node(node_id);
+                    return side(i)->node(node_id);
                 }
                 else
                 {

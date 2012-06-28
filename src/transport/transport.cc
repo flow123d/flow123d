@@ -688,7 +688,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     /*
      FOR_ELEMENTS(elm)
      FOR_ELEMENT_SIDES(elm,i){
-     printf("id: %d side: %d flux:  %f\n",elm->id, i,elm->side[i]->flux);
+     printf("id: %d side: %d flux:  %f\n",elm->id, i,elm->side(i)->flux);
      getchar();
      }
 
@@ -703,41 +703,39 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
-    FOR_EDGES(mesh_, edg) { // calculate edge Qv
-        edg->faux = 0;
+    double flux, flux2, edg_flux;
 
-        FOR_EDGE_SIDES(edg,s) {
-            double flux = mh_dh->side_flux( *(edg->side[s]) );
-            if ( flux > 0)
-               edg->faux += flux;
-        }
+    vector<double> edge_flow(mesh_->n_edges(),0.0);
+    for(unsigned int i=0; i < mesh_->n_edges() ; i++) { // calculate edge Qv
+            flux = mh_dh->side_flux( *(mesh_->edge[i].side(s)) );
+            if ( flux > 0)  edge_flow[i]+= flux;
     }
 
     max_sum = 0.0;
     aii = 0.0;
     START_TIMER("matrix_assembly_mpi");
 
-    double flux, flux2;
     for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element(el_4_loc[loc_el]);
         new_i = row_4_el[elm.index()];
 
         FOR_ELEMENT_SIDES(elm,si) {
             // same dim
-            flux = mh_dh->side_flux( *(elm->side[si]) );
-            if (elm->side[si]->cond == NULL) {
+            flux = mh_dh->side_flux( *(elm->side(si)) );
+            if (elm->side(si)->cond() == NULL) {
                 if (flux < 0.0) {
-                    edg = elm->side[si]->edge();
-                    if (edg->faux > ZERO)
+                    edg = elm->side(si)->edge();
+                    edg_flux = edge_flow[ mesh_->edge.index( edg ) ];
+                    if ( edg_flux > ZERO)
                         FOR_EDGE_SIDES(edg,s)
                             // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                             // These edges on these sides should have just one side
-                            if (edg->side[s] != elm->side[si]) {
-                                flux2 = mh_dh->side_flux( *(edg->side[s]));
+                            if (edg->side(s) != elm->side(si)) {
+                                flux2 = mh_dh->side_flux( *(edg->side(s)));
                                 if ( flux2 > 0.0 ) {
-                                    aij = -(flux * flux2 / (edg->faux * elm->volume()
+                                    aij = -(flux * flux2 / ( edg_flux * elm->volume()
                                            * elm->material->por_m));
-                                    j = ELEMENT_FULL_ITER(mesh_, edg->side[s]->element()).index();
+                                    j = ELEMENT_FULL_ITER(mesh_, edg->side(s)->element()).index();
                                     new_j = row_4_el[j];
                                     MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                                 }
@@ -748,11 +746,11 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             } else {
                 if (flux < 0.0) {
                     aij = -(flux / (elm->volume() * elm->material->por_m));
-                    j = BOUNDARY_FULL_ITER(mesh_, elm->side[si]->cond).index();
+                    j = BOUNDARY_FULL_ITER(mesh_, elm->side(si)->cond() ).index();
                     MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
                     // vyresit BC matrix !!!!
                     //   printf("side in elm:%d value:%f\n ",elm->id,svector->val[j-1]);
-                    //   printf("%d\t%d\n",elm->id,id2pos(problem,elm->side[si]->id,problem->spos_id,BC));
+                    //   printf("%d\t%d\n",elm->id,id2pos(problem,elm->side(si)->id,problem->spos_id,BC));
 
                 }
                 if (flux > 0.0)
@@ -764,7 +762,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             FOR_NEIGH_ELEMENTS(elm->neigh_vb[n],s) {
                 el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->element[s]); // higher dim. el.
                 if (elm.id() != el2.id()) {
-                    flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side[s]) );
+                    flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side(s)) );
                     if (flux > 0.0) {
                         // volume source - out flow from higher dimension
                         aij = flux / (elm->volume() * elm->material->por_m);

@@ -257,8 +257,10 @@ void DarcyFlowMHOutput::make_element_vector() {
 
 void DarcyFlowMHOutput::make_element_vector_line(ElementFullIter ele, arma::vec3 &vec) {
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+    SideIter s1=ele->side(1);
+    SideIter s0=ele->side(0);
     double darcy_vel =
-            (dh.side_flux( *(ele->side[1]) ) - dh.side_flux( *(ele->side[0]) )) / 2.0 / ele->material->size;
+            (dh.side_flux( *s1 ) - dh.side_flux( *s0 )) / 2.0 / ele->material->size;
 
     // normalize element vector [node 0, node 1]
     vec = ele->node[1]->point() - ele->node[0]->point();
@@ -299,7 +301,7 @@ void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::
         bas[ i ][ 1 ] = ele->bas_gama[ i ] * (dot(u,ey) - ele->bas_beta[ i ]);
         bas[ i ][ 2 ] = 0;
         for (li = 0; li < 2; li++)
-            ac[ li ] += dh.side_flux( *(ele->side[ i ]) ) * bas[ i ][ li ] / ele->material->size;
+            ac[ li ] += dh.side_flux( *(ele->side( i ) ) ) * bas[ i ][ li ] / ele->material->size;
     }
 
     /*for (li = 0; li < 3; li++){
@@ -332,7 +334,7 @@ void DarcyFlowMHOutput::make_element_vector_tetrahedron(ElementFullIter ele, arm
         bas[ i ][ 2 ] = ele->bas_delta[ i ] * (ele->centre()[ 2 ]
                 - ele->bas_gama[ i ]);
         for (li = 0; li < 3; li++)
-            vec[ li ] += dh.side_flux( *(ele->side[ i ]) ) * bas[ i ][ li ];
+            vec[ li ] += dh.side_flux( *(ele->side( i ) ) ) * bas[ i ][ li ];
     }
 }
 //=============================================================================
@@ -381,7 +383,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     /** Iterators */
     const Node * node;
     ElementIter ele;
-    struct Side* side;
+    //struct Side* side;
 
     int n_nodes = mesh_->node_vector.size(); //!< number of nodes in the mesh */
     int node_index = 0; //!< index of each node */
@@ -411,7 +413,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     /**first pass - calculate sums (weights)*/
     if (count_elements){
         FOR_ELEMENTS(mesh_, ele)
-            for (int li = 0; li < ele->n_nodes; li++) {
+            for (int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li]; //!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
@@ -444,7 +446,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     /**second pass - calculate scalar  */
     if (count_elements){
         FOR_ELEMENTS(mesh_, ele)
-            for (int li = 0; li < ele->n_nodes; li++) {
+            for (int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li];//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
@@ -459,7 +461,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
     }
-    if (count_sides){
+    if (count_sides) {
         FOR_SIDES(mesh_, side) {
             for (int li = 0; li < side->n_nodes(); li++) {
                 node = side->node(li);//!< get Node pointer from element */
@@ -710,11 +712,11 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         for (i = 0; i < 3; i++)
             xfprintf( raw_output_file, dbl_fmt, ele_flux[cit][i]);
 
-        xfprintf( raw_output_file, " %d ", ele->n_sides);
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( raw_output_file, dbl_fmt, dh.side_scalar( *(ele->side[i]) ) );
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( raw_output_file, dbl_fmt, dh.side_flux( *(ele->side[i]) ) );
+        xfprintf( raw_output_file, " %d ", ele->n_sides());
+        for (i = 0; i < ele->n_sides(); i++)
+            xfprintf( raw_output_file, dbl_fmt, dh.side_scalar( *(ele->side(i) ) ) );
+        for (i = 0; i < ele->n_sides(); i++)
+            xfprintf( raw_output_file, dbl_fmt, dh.side_flux( *(ele->side(i) ) ) );
 
         //xfprintf( raw_output_file, "%d ", ele->n_neighs_vv);
         //for (i = 0; i < ele->n_neighs_vv; i++)

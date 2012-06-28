@@ -31,20 +31,12 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 
-//static struct Edge *new_edge(void);
-//static void add_to_edge_list(Mesh*,struct Edge*);
-//static void init_edge(struct Edge*);
-//static int count_edges(Mesh*);
-
-//static int number_of_common_nodes_ss(struct Side*,struct Side*);
-//static int number_of_common_nodes_se(struct Side*,ElementIter );
 
 
 Edge::Edge()
 : n_sides(NDEF),
-  side(NULL)
-  //f_val(0),
-  //f_rhs(0)
+  side_(NULL)
+
 {
 
 }

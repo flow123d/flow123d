@@ -116,7 +116,7 @@ void init_neighbour( struct Neighbour *ngh )
 	ngh->sigma        = 0.0;
 	ngh->geom_factor    = 0.0;
 	ngh->edge        = NULL;
-	ngh->side        = NULL;
+	ngh->side_        = NULL;
 	ngh->element     = NULL;
 	ngh->line	 = NULL;
 	ngh->prev	 = NULL;
@@ -243,11 +243,10 @@ void neighbour_specs_bb_el( struct Neighbour *ngh )
 	ngh->sid = (int*) xmalloc( ngh->n_elements * sizeof( int ) );
 	ngh->element = (ElementIter *) xmalloc( ngh->n_elements *
 			sizeof( ElementIter  ) );
-	ngh->side = (struct Side**) xmalloc( ngh->n_elements *
-			sizeof( struct Side* ) );
+	ngh->side_ = new SideIter [ ngh->n_elements ];
+
 	FOR_NEIGH_ELEMENTS( ngh, ei ) {
 		ngh->element[ ei ] = NULL;
-		ngh->side[ ei ] = NULL;
 	}
 	FOR_NEIGH_ELEMENTS( ngh, ei ) {
 		ngh->eid[ ei ] = atoi( xstrtok( NULL) );
@@ -269,7 +268,8 @@ void neighbour_specs_vb_es( struct Neighbour *ngh )
 	ngh->eid = (int*) xmalloc( ngh->n_elements * sizeof( int ) );
 	ngh->element = (ElementIter *) xmalloc( ngh->n_elements * sizeof( ElementIter  ) );
 	ngh->sid = (int*) xmalloc( ngh->n_sides * sizeof( int ) );
-	ngh->side = (struct Side**) xmalloc( ngh->n_sides *	sizeof( struct Side* ) );
+	ngh->side_ = new SideIter [ ngh->n_sides ];
+
 	ngh->eid[ 0 ] = atoi( xstrtok( NULL) );
 	ngh->eid[ 1 ] = atoi( xstrtok( NULL) );
 	ngh->sid[ 0 ] = NDEF;
@@ -277,8 +277,6 @@ void neighbour_specs_vb_es( struct Neighbour *ngh )
 	ngh->sigma = atof( xstrtok( NULL) );
 	ngh->element[ 0 ] = NULL;
 	ngh->element[ 1 ] = NULL;
-	ngh->side[ 0 ] = NULL;
-	ngh->side[ 1 ] = NULL;
 	xfree( ngh->line );
 	ngh->line = NULL;
 	// sid[ 0 ] (and side[ 0 ]) doesn't have defined value. I use sid[ 1 ] (and

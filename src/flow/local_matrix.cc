@@ -66,7 +66,7 @@ void local_matrices_mh(Mesh* mesh)
 void local_matrix( ElementIter ele )
 {
 	ASSERT(!( ele == NULL ),"NULL as argument of function local_matrix()\n");
-	ele->loc = (double *) xmalloc( ele->n_sides * ele->n_sides*sizeof(double));
+	ele->loc = (double *) xmalloc( ele->n_sides() * ele->n_sides()*sizeof(double));
 	switch( ele->type ) {
 		case LINE:
 			local_matrix_line( ele );
@@ -283,13 +283,13 @@ void local_matrix_tetrahedron( ElementIter ele )
 void basis_functions_tetrahedron( ElementIter ele, double alfa[], double beta[],double gama[], double delta[] )
 {
 	int li;
-	struct Side *pSid;
+	SideIter pSid;
 
 	for( li = 0; li < 4; li++ ) {
 		alfa[ li ] = ele->node[ li ]->getX();
 		beta[ li ] = ele->node[ li ]->getY();
 		gama[ li ] = ele->node[ li ]->getZ();
-		pSid = ele->side[ li ];
+		pSid = ele->side( li );
 		delta[ li ] = 1.0 / ( pSid->metric() *
 			( pSid->normal()[ 0 ] * pSid->centre()[ 0 ] +
 			  pSid->normal()[ 1 ] * pSid->centre()[ 1 ] +

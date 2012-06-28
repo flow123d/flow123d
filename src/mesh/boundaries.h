@@ -60,7 +60,7 @@ public:
 
     int      group;     // Group of condition
     // Topology of the mesh
-    struct Side *side;      // side, where prescribed
+    SideIter side;      // side, where prescribed
     struct Transport_bcd    *transport_bcd;  // transport boundary condition (REMOVE)
 
     // Misc

@@ -43,7 +43,7 @@ private:
     char supported_element_type(int);
     void parse_element_line(ElementVector&, char*, Mesh* mesh);
     void element_type_specific(ElementFullIter);
-    void element_allocation_independent(ElementFullIter);
+    void element_allocation_independent(Mesh * mesh, ElementFullIter);
 
 public:
     GmshMeshReader();

@@ -107,9 +107,7 @@ public:
         return edge.size();
     }
 
-    inline unsigned int n_sides() const {
-        return sides.size();
-    }
+    unsigned int n_sides();
     /**
      * Setup various links between mesh entities. Should be simplified.
      */
@@ -138,14 +136,13 @@ public:
     /// Vector of MH edges, this should not be part of the geometrical mesh
     EdgeVector edge;
 
-    vector<Side> sides;
-
     flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
     int n_materials; // # of materials
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
+    int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
     int n_neighs;
     struct Neighbour *neighbour; // First neighbour
@@ -168,6 +165,7 @@ private:
 
 
 #include "mesh/side_impl.hh"
+#include "element_impls.hh"
 
 /**
  * Provides for statement to iterate over the Elements of the Mesh.
@@ -218,10 +216,9 @@ for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
         __i !=_mesh_->edge.end(); \
         ++__i)
 
-#define FOR_SIDES(_mesh_,it) \
-    for( vector<Side>::iterator it=_mesh_->sides.begin(); \
-    it != _mesh_->sides.end(); \
-    ++it)
+#define FOR_SIDES(_mesh_, it) \
+    FOR_ELEMENTS(_mesh_, ele)  \
+        for(SideIter it = ele->side(0); it->el_idx() < ele->n_sides(); ++it)
 
 #define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 

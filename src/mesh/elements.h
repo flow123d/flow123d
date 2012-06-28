@@ -36,6 +36,7 @@
 
 class Mesh;
 class Side;
+class SideIter;
 struct MaterialDatabase;
 
 //=============================================================================
@@ -46,13 +47,18 @@ class Element
 public:
     Element();
 
+    unsigned int n_sides() const;    // Number of sides
+    unsigned int n_nodes() const; // Number of nodes
+
     double measure();
     double volume();
     arma::vec3 centre();
 
     unsigned int n_sides_by_dim(int side_dim);
-    void *side_by_dim(int side_dim, unsigned int n);
+    //void *side_by_dim(int side_dim, unsigned int n);
     const Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
+    inline SideIter side(const unsigned int loc_index);
+
 
 
     // Data readed from mesh file
@@ -63,20 +69,22 @@ public:
 
     // Type specific data
     int dim;        // 1 or 2 or 3
-    int n_sides;    // Number of sides
-
-    int    n_nodes; // Number of nodes
     Node** node;    // Element's nodes
 
     MaterialDatabase::Iter material; // Element's material
-    struct Side **side; // Element's sides
+    //struct Side **side_; // Element's sides
+    Edge **edges_; // Edges on sides
+    Boundary **boundaries_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
+                           // ?? deal.ii has this not only boundary iterators
+
+    Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
+
 //    int      n_neighs_vv;   // # of neighbours, V-V type (noncomp.)
 //    struct Neighbour **neigh_vv; // List og neighbours, V-V type (noncomp.)
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
-    //struct Concentration  *start_conc;    // Start concentration  - if prescribed
-    //int n_subst;        // Number of substances
+
     // Material properties
     double   *k;    // Tensor of hydraulic conductivity
     double   *a;    // Tensor of hydraulic resistance (k^(-1))
@@ -97,16 +105,6 @@ public:
     int  a_row;     // # of first row in the block A
     int      b_row;     // # of row in the block B
 
-    //int  d_row_count;   // # of nonzeros in row of the block D
-    //int *d_col;     // columns with nonzeros in D
-    //double  *d_val; // values of entries in D
-    //int *d_el;      // ids of noncompatible conected elements (itself reference included)
-
-
-    //int  e_row_count;   // # of nonzeros in row of the block E
-    //int *e_col;     // columns with nonzeros in E
-    //int *e_edge_idx;   // ids of compatible conected edeges
-    //double  *e_val;     // values of entries in E
 
 protected:
 
@@ -128,8 +126,8 @@ protected:
 #define PROP_H 2        //Height of 2D element
 #define PROP_V 3        //Volume of 3D element
 
-#define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes;(j)++)
-#define FOR_ELEMENT_SIDES(i,j)  for(unsigned int j=0; j < (i)->n_sides; j++)
+#define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes();(j)++)
+#define FOR_ELEMENT_SIDES(i,j)  for(unsigned int j=0; j < (i)->n_sides(); j++)
 //#define FOR_ELM_NEIGHS_VV(i,j)  for((j)=0;(j)<(i)->n_neighs_vv;(j)++)
 #define FOR_ELM_NEIGHS_VB(i,j)  for((j)=0;(j)<(i)->n_neighs_vb;(j)++)
 

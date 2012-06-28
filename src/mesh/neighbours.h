@@ -31,6 +31,7 @@
 #define MAKE_NEIGHBOURS_H
 
 #include "mesh/mesh_types.hh"
+#include "mesh/sides.h"
 
 struct Problem;
 class Mesh;
@@ -42,8 +43,13 @@ struct Edge;
 //=============================================================================
 // STRUCTURE OF THE NEIGHBOUR
 //=============================================================================
-typedef struct Neighbour
+class Neighbour
 {
+public:
+    inline SideIter side(const unsigned int i) {
+        return side_[i];
+    }
+
     int   id;           // Global id number
     int   type;         // Type
     int   n_sides;      // # of neighbouring sides
@@ -57,7 +63,10 @@ typedef struct Neighbour
     double  sigma;      // transition coefficient
     double geom_factor; // fraction of the lower dimension element for VV ngh
     struct Edge *edge;  // edge (set of neighbouring sides)
-    struct Side **side; // neighbouring sides
+
+
+    SideIter *side_; // neighbouring sides (THIS IS ONLY meaningfull member for VB )
+
     ElementIter *element;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
     char *line;     // Type specific part of line of the input file
@@ -67,7 +76,7 @@ typedef struct Neighbour
     // Misc
     int  aux;       // Auxiliary flag
     double   faux;      // Auxiliary number
-} Neighbour;
+};
 
 // Input neigbouring codes
 #define BB_E         10     // two elements of same dim specified by eid

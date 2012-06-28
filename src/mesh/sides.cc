@@ -38,26 +38,14 @@
 // following deps. should be removed
 #include "mesh/boundaries.h"
 #include "materials.hh"
-//#include "transport.h"
+
+
 
 
 //static void calc_side_rhs_dens(struct Side*, struct Problem*, Mesh*);
 
 
 
-Side::Side() {
-    element_ = NULL;
-    cond = NULL;
-    edge_ = NULL;
-}
-
-void Side::reinit(Mesh *mesh, ElementIter ele, int set_id, int set_lnum) {
-    mesh_=mesh;
-    element_ = ele;
-    //id = set_id;
-    el_idx_ = set_lnum;
-
-}
 
 
 

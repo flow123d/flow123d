@@ -137,7 +137,7 @@ void GmshMeshReader::parse_element_line(ElementVector &ele_vec, char *line, Mesh
 
     ele->type = type;
     element_type_specific(ele);
-    element_allocation_independent(ele);
+    element_allocation_independent(mesh,ele);
 
     //get number of tags (at least 2)
     n_tags = atoi(xstrtok(NULL));
@@ -156,7 +156,7 @@ void GmshMeshReader::parse_element_line(ElementVector &ele_vec, char *line, Mesh
             xstrtok(NULL);
     }
 
-    ele->node = (Node**) xmalloc(ele->n_nodes * sizeof (Node*));
+    ele->node = (Node**) xmalloc(ele->n_nodes() * sizeof (Node*));
 
     FOR_ELEMENT_NODES(ele, ni) {
         int nodeId = atoi(xstrtok(NULL));
@@ -176,18 +176,12 @@ void GmshMeshReader::element_type_specific(ElementFullIter ele) {
     switch (ele->type) {
         case LINE:
             ele->dim = 1;
-            ele->n_sides = 2;
-            ele->n_nodes = 2;
             break;
         case TRIANGLE:
             ele->dim = 2;
-            ele->n_sides = 3;
-            ele->n_nodes = 3;
             break;
         case TETRAHEDRON:
             ele->dim = 3;
-            ele->n_sides = 4;
-            ele->n_nodes = 4;
             break;
         default:
             xprintf(UsrErr, "Element %d is of the unsupported type %d\n", ele.id(), ele->type);
@@ -198,30 +192,33 @@ void GmshMeshReader::element_type_specific(ElementFullIter ele) {
  * ALLOCATION OF ARRAYS IN STRUCT ELEMENT WHOSE SIZE DEPENDS ONLY ON ELEMENT'S
  * TYPE, NOT ON TOPOLOGY OF THE MESH
  */
-void GmshMeshReader::element_allocation_independent(ElementFullIter ele) {
+void GmshMeshReader::element_allocation_independent(Mesh * mesh, ElementFullIter ele) {
     int si, ni;
 
     ASSERT(NONULL(ele), "NULL as argument of function element_allocation_independent()\n");
-    ele->node = (Node**) xmalloc(ele->n_nodes * sizeof (Node*));
-    ele->side = (struct Side**) xmalloc(ele->n_sides * sizeof ( struct Side*));
+    ele->node = (Node**) xmalloc(ele->n_nodes() * sizeof (Node*));
+    ele->edges_ = new Edge * [ele->n_sides()];
+    ele->boundaries_ = new Boundary * [ele->n_sides()];
+    ele->mesh_ = mesh;
 
     //ele->rhs = (double*) xmalloc(ele->n_sides * sizeof ( double));
-    ele->bas_alfa = (double *) xmalloc(ele->n_sides * sizeof ( double));
-    ele->bas_beta = (double *) xmalloc(ele->n_sides * sizeof ( double));
-    ele->bas_gama = (double *) xmalloc(ele->n_sides * sizeof ( double));
-    ele->bas_delta = (double *) xmalloc(ele->n_sides * sizeof ( double));
+    ele->bas_alfa = (double *) xmalloc(ele->n_sides() * sizeof ( double));
+    ele->bas_beta = (double *) xmalloc(ele->n_sides() * sizeof ( double));
+    ele->bas_gama = (double *) xmalloc(ele->n_sides() * sizeof ( double));
+    ele->bas_delta = (double *) xmalloc(ele->n_sides() * sizeof ( double));
 
     FOR_ELEMENT_NODES(ele, ni) {
         ele->node[ ni ] = NULL;
     }
 
     FOR_ELEMENT_SIDES(ele, si) {
-        ele->side[ si ] = NULL;
-        //ele->rhs[ si ] = 0.0;
         ele->bas_alfa[ si ] = 0.0;
         ele->bas_beta[ si ] = 0.0;
         ele->bas_gama[ si ] = 0.0;
         ele->bas_delta[ si ] = 0.0;
+
+        ele->edges_[ si ]=NULL;
+        ele->boundaries_[si] =NULL;
     }
 }
 
