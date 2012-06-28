@@ -97,152 +97,6 @@ void element_to_side_both(Mesh* mesh)
 	    }
 	}
 }*/
-//=============================================================================
-//
-//=============================================================================
-void neigh_vv_to_element(Mesh* mesh)
-{
-	int li, aux;
-	struct Neighbour *ngh;
-	ElementIter el;
-
-	xprintf( MsgVerb, "   Neighbour of vv2 type to element... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_NEIGHBOURS(mesh, ngh ) {
-		if( ngh->type != VV_2E )
-			continue;
-		if( ngh->eid[ 0 ] > ngh->eid[ 1 ] ) {
-			aux           = ngh->eid[ 1 ];
-			ngh->eid[ 1 ] = ngh->eid[ 0 ];
-			ngh->eid[ 0 ] = aux;
-		}
-		for( li = 0; li < 2; li++ ) {
-		    el = mesh->element.find_id( ngh->eid[li] );
-		    INPUT_CHECK( NONULL(el), "Reference to undefined element %d in neighbour %d\n", ngh->eid[ li ], ngh->id );
-			ngh->element[ li ] = el;
-		}
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-//=============================================================================
-//
-//=============================================================================
-/*
-void element_to_neigh_vv(Mesh* mesh)
-{
-	struct Neighbour *ngh;
-    ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh );
-
-	xprintf( MsgVerb, "   Element to neighbours of vv2 type... ");
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    // Counting the neighbours using the aux variable
-	FOR_ELEMENTS(mesh, ele )
-		ele->aux = 0;
-	FOR_NEIGHBOURS(mesh, ngh ) {
-		if( ngh->type != VV_2E )
-			continue;
-		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
-		ele->aux++;
-		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 1 ]);
-		ele->aux++;
-	}
-	// Allocation of the array
-	FOR_ELEMENTS(mesh,  ele ) {
-		ele->n_neighs_vv = ele->aux;
-		if( ele->n_neighs_vv > 0 )
-			ele->neigh_vv = (struct Neighbour**) xmalloc(
-				ele->n_neighs_vv * sizeof( struct Neighbour* ) );
-	}
-	// Fill the array
-	FOR_ELEMENTS(mesh,  ele )
-		ele->aux = 0;
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != VV_2E )
-			continue;
-		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
-		ele->neigh_vv[ ele->aux ] = ngh;
-                if (ele->aux > 0)
-                        if( ele->neigh_vv[ ele->aux - 1 ]->element[ 1 ] >
-                            ele->neigh_vv[ ele->aux ]->element[ 1 ] )
-                                xprintf(UsrErr,"The neighbouring elements of the element %d, ",
-                                        "have to be given in order from the lowest id to the highest one. ",
-                                        "Check the input file of the neighbours.", ele.id());
-		ele->aux++;
-		ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 1 ]);
-		ele->neigh_vv[ ele->aux ] = ngh;
-                if (ele->aux > 0)
-                        if( ele->neigh_vv[ ele->aux - 1 ]->element[ 1 ] >
-                            ele->neigh_vv[ ele->aux ]->element[ 1 ] )
-                                xprintf(UsrErr,"The neighbouring elements of the element %d, ",
-                                        "have to be given in order from the lowest id to the highest one. ",
-                                        "Check the input file of the neighbours.", ele.id());
-		ele->aux++;
-	}
-	xprintf( MsgVerb, "O.K.\n");
-}*/
-//=============================================================================
-//
-//=============================================================================
-void neigh_vb_to_element_and_side(Mesh* mesh)
-{
-	int li;
-	struct Neighbour *ngh;
-	ElementIter ele;
-
-	xprintf( MsgVerb, "   Neighbour of vb2 type to element... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != VB_ES )
-			continue;
-		for( li = 0; li < 2; li++ ) {
-            ele = mesh->element.find_id( ngh->eid[li] );
-            INPUT_CHECK( NONULL(ele), "Reference to undefined element %d in neighbour %d\n", ngh->eid[ li ], ngh->id );
-            ngh->element[ li ] = ele;
-		}
-		ele = ngh->element[ 1 ];
-		INPUT_CHECK(!( (ngh->sid[ 1 ] < 0) || (ngh->sid[ 1 ] >= ele->n_sides()) ),
-		        "Neighbour %d has nonsensual reference to side %d\n",
-				ngh->id, ngh->sid[ 1 ] );
-		ngh->side_[ 1 ] = ele->side( ngh->sid[ 1 ] );
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-
-//=============================================================================
-//
-//=============================================================================
-void element_to_neigh_vb(Mesh* mesh)
-{
-	struct Neighbour *ngh;
-	ElementIter ele;
-
-	xprintf( MsgVerb, "   Element to neighbours of vb2 type... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_ELEMENTS(mesh,ele) ele->n_neighs_vb =0;
-    // count vb neighs
-    FOR_NEIGHBOURS(mesh,  ngh )
-        if( ngh->type == VB_ES ) {
-            ele = ngh->element[ 0 ];
-            ele->n_neighs_vb++;
-        }
-	// Allocation of the array
-	FOR_ELEMENTS(mesh,  ele )
-		if( ele->n_neighs_vb > 0 ) {
-			ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb];
-			ele->n_neighs_vb=0;
-		}
-	// fill
-	FOR_NEIGHBOURS(mesh,  ngh )
-		if( ngh->type == VB_ES ) {
-		    ele = ngh->element[ 0 ];
-		    ele->neigh_vb[ ele->n_neighs_vb++ ] = ngh;
-		}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
 
 
 //=============================================================================
@@ -397,25 +251,182 @@ void edge_to_side(Mesh* mesh)
 
     //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
 }
+
+
+
+//=============================================================================
+//
+//=============================================================================
+void neigh_vb_to_element_and_side(Mesh* mesh)
+{
+    int li;
+    struct Neighbour *ngh;
+    ElementIter ele;
+
+    xprintf( MsgVerb, "   Neighbour of vb2 type to element... ")/*orig verb 5*/;
+    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
+
+    FOR_NEIGHBOURS(mesh,  ngh ) {
+        if( ngh->type != VB_ES )
+            continue;
+        for( li = 0; li < 2; li++ ) {
+            ele = mesh->element.find_id( ngh->eid[li] );
+            INPUT_CHECK( NONULL(ele), "Reference to undefined element %d in neighbour\n", ngh->eid[ li ]);
+            ngh->element_[ li ] = ele;
+        }
+        ele = ngh->element_[ 1 ];
+        INPUT_CHECK(!( (ngh->sid[ 1 ] < 0) || (ngh->sid[ 1 ] >= ele->n_sides()) ),
+                "Neighbour has nonsensual reference to side %d\n",
+                ngh->sid[ 1 ] );
+
+        ngh->edge_ = ele->side( ngh->sid[ 1 ] )->edge();
+    }
+    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+}
+
+//=============================================================================
+//
+//=============================================================================
+void element_to_neigh_vb(Mesh* mesh)
+{
+    struct Neighbour *ngh;
+    ElementIter ele;
+
+    xprintf( MsgVerb, "   Element to neighbours of vb2 type... ")/*orig verb 5*/;
+    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
+
+    FOR_ELEMENTS(mesh,ele) ele->n_neighs_vb =0;
+    // count vb neighs
+    FOR_NEIGHBOURS(mesh,  ngh )
+        if( ngh->type == VB_ES ) {
+            ele = ngh->element_[ 0 ];
+            ele->n_neighs_vb++;
+        }
+    // Allocation of the array
+    FOR_ELEMENTS(mesh,  ele )
+        if( ele->n_neighs_vb > 0 ) {
+            ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb];
+            ele->n_neighs_vb=0;
+        }
+    // fill
+    FOR_NEIGHBOURS(mesh,  ngh )
+        if( ngh->type == VB_ES ) {
+            ele = ngh->element_[ 0 ];
+            ele->neigh_vb[ ele->n_neighs_vb++ ] = &( *ngh );
+        }
+    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+}
+
 //=============================================================================
 //
 //=============================================================================
 void neigh_vb_to_edge_both(Mesh* mesh)
 {
-	struct Edge *edg;
-	struct Neighbour *ngh;
+/*    struct Edge *edg;
+    struct Neighbour *ngh;
 
-	xprintf( MsgVerb, "   Neighbour VB to edge and back... ")/*orig verb 5*/;
+    xprintf( MsgVerb, "   Neighbour VB to edge and back... ");
     ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
 
-	FOR_NEIGHBOURS(mesh,  ngh ) {
-		if( ngh->type != VB_ES )
-			continue;
-		edg = ngh->side( 1 )->edge();
-		ngh->edge = edg;
-	}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    FOR_NEIGHBOURS(mesh,  ngh ) {
+        if( ngh->type != VB_ES )
+            continue;
+        edg = ngh->side_[1]->edge();
+        ngh->edge_ = edg;
+    }
+    xprintf( MsgVerb, "O.K.\n");*/
 }
 
+
+
+
+#if 0
+//=============================================================================
+//
+//=============================================================================
+void neigh_vv_to_element(Mesh* mesh)
+{
+    int li, aux;
+    struct Neighbour *ngh;
+    ElementIter el;
+
+    xprintf( MsgVerb, "   Neighbour of vv2 type to element... ")/*orig verb 5*/;
+    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
+
+    FOR_NEIGHBOURS(mesh, ngh ) {
+        if( ngh->type != VV_2E )
+            continue;
+        if( ngh->eid[ 0 ] > ngh->eid[ 1 ] ) {
+            aux           = ngh->eid[ 1 ];
+            ngh->eid[ 1 ] = ngh->eid[ 0 ];
+            ngh->eid[ 0 ] = aux;
+        }
+        for( li = 0; li < 2; li++ ) {
+            el = mesh->element.find_id( ngh->eid[li] );
+            INPUT_CHECK( NONULL(el), "Reference to undefined element %d in neighbour\n", ngh->eid[ li ]);
+            ngh->element[ li ] = el;
+        }
+    }
+    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+}
+//=============================================================================
+//
+//=============================================================================
+/*
+void element_to_neigh_vv(Mesh* mesh)
+{
+    struct Neighbour *ngh;
+    ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh );
+
+    xprintf( MsgVerb, "   Element to neighbours of vv2 type... ");
+    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
+
+    // Counting the neighbours using the aux variable
+    FOR_ELEMENTS(mesh, ele )
+        ele->aux = 0;
+    FOR_NEIGHBOURS(mesh, ngh ) {
+        if( ngh->type != VV_2E )
+            continue;
+        ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
+        ele->aux++;
+        ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 1 ]);
+        ele->aux++;
+    }
+    // Allocation of the array
+    FOR_ELEMENTS(mesh,  ele ) {
+        ele->n_neighs_vv = ele->aux;
+        if( ele->n_neighs_vv > 0 )
+            ele->neigh_vv = (struct Neighbour**) xmalloc(
+                ele->n_neighs_vv * sizeof( struct Neighbour* ) );
+    }
+    // Fill the array
+    FOR_ELEMENTS(mesh,  ele )
+        ele->aux = 0;
+    FOR_NEIGHBOURS(mesh,  ngh ) {
+        if( ngh->type != VV_2E )
+            continue;
+        ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 0 ]);
+        ele->neigh_vv[ ele->aux ] = ngh;
+                if (ele->aux > 0)
+                        if( ele->neigh_vv[ ele->aux - 1 ]->element[ 1 ] >
+                            ele->neigh_vv[ ele->aux ]->element[ 1 ] )
+                                xprintf(UsrErr,"The neighbouring elements of the element %d, ",
+                                        "have to be given in order from the lowest id to the highest one. ",
+                                        "Check the input file of the neighbours.", ele.id());
+        ele->aux++;
+        ele = ELEMENT_FULL_ITER(mesh, ngh->element[ 1 ]);
+        ele->neigh_vv[ ele->aux ] = ngh;
+                if (ele->aux > 0)
+                        if( ele->neigh_vv[ ele->aux - 1 ]->element[ 1 ] >
+                            ele->neigh_vv[ ele->aux ]->element[ 1 ] )
+                                xprintf(UsrErr,"The neighbouring elements of the element %d, ",
+                                        "have to be given in order from the lowest id to the highest one. ",
+                                        "Check the input file of the neighbours.", ele.id());
+        ele->aux++;
+    }
+    xprintf( MsgVerb, "O.K.\n");
+}*/
+
+#endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

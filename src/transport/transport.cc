@@ -705,10 +705,14 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     double flux, flux2, edg_flux;
 
+
     vector<double> edge_flow(mesh_->n_edges(),0.0);
     for(unsigned int i=0; i < mesh_->n_edges() ; i++) { // calculate edge Qv
-            flux = mh_dh->side_flux( *(mesh_->edge[i].side(s)) );
+        Edge &edg = mesh_->edge[i];
+        for( int s=0; s < edg.n_sides; s++) {
+            flux = mh_dh->side_flux( *(edg.side(s)) );
             if ( flux > 0)  edge_flow[i]+= flux;
+        }
     }
 
     max_sum = 0.0;
@@ -759,14 +763,16 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         }  // end same dim     //ELEMENT_SIDES
 
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
-            FOR_NEIGH_ELEMENTS(elm->neigh_vb[n],s) {
-                el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->element[s]); // higher dim. el.
-                if (elm.id() != el2.id()) {
-                    flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side(s)) );
+            //FOR_NEIGH_ELEMENTS(elm->neigh_vb[n],s)
+            {
+                el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->side()->element() ); // higher dim. el.
+                ASSERT( el2 != elm, "Elm. same\n");
+                //if (elm.id() != el2.id()) {
+                    flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
                     if (flux > 0.0) {
                         // volume source - out flow from higher dimension
                         aij = flux / (elm->volume() * elm->material->por_m);
-                        j = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->element[s]).index();
+                        j = el2.index();
                         new_j = row_4_el[j];
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                         // out flow from higher dim. already accounted
@@ -783,7 +789,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
                     }
 
-                } // end comp model
+                //} // end comp model
             }
 	/*
         FOR_ELM_NEIGHS_VV(elm,n) { //non-comp model

@@ -31,14 +31,12 @@
 #define MAKE_NEIGHBOURS_H
 
 #include "mesh/mesh_types.hh"
-#include "mesh/sides.h"
 
-struct Problem;
-class Mesh;
+
+
 struct Element;
-struct Neighbour;
-struct Side;
 struct Edge;
+class SideIter;
 
 //=============================================================================
 // STRUCTURE OF THE NEIGHBOUR
@@ -46,36 +44,31 @@ struct Edge;
 class Neighbour
 {
 public:
-    inline SideIter side(const unsigned int i) {
-        return side_[i];
-    }
+    Neighbour();
 
-    int   id;           // Global id number
+    // side of the edge in higher dim. mesh
+    inline SideIter side();
+
+    // edge of lower dimensional mesh in VB neigh.
+    inline Edge *edge();
+
+    // element of higher dimension mesh in VB neigh.
+    inline ElementIter element();
+
     int   type;         // Type
     int   n_sides;      // # of neighbouring sides
     int   n_elements;   // # of neighbouring elements
-    //int   n_coefs;      // # of coefficients
+
     int  *sid;      // id numbers of neighbouring sides
     int  *eid;      // id numbers of neighbouring elements
-    double flux;           // flux for VV neigh. from e1 into e2 is negative
-                                // from e2 into e1 is positive
-    //double *coef;       // coefficients of neighbouring
     double  sigma;      // transition coefficient
-    double geom_factor; // fraction of the lower dimension element for VV ngh
-    struct Edge *edge;  // edge (set of neighbouring sides)
+    struct Edge *edge_;  // edge (set of neighbouring sides)
 
 
     SideIter *side_; // neighbouring sides (THIS IS ONLY meaningfull member for VB )
 
-    ElementIter *element;  // neighbouring elements
+    ElementIter *element_;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
-    char *line;     // Type specific part of line of the input file
-    // List
-    struct Neighbour *prev; // Previous neighbour in the list
-    struct Neighbour *next; // Next neighbour in the list
-    // Misc
-    int  aux;       // Auxiliary flag
-    double   faux;      // Auxiliary number
 };
 
 // Input neigbouring codes
@@ -86,7 +79,7 @@ public:
 
 
 
-void read_neighbour_list(Mesh*);
+//void read_neighbour_list(Mesh*);
 
 #endif
 //-----------------------------------------------------------------------------

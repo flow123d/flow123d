@@ -670,11 +670,11 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
         fe_values_vb = new FEValues<dim-1,3>(map_vb, side_q, *fe_sub, update_values | update_gradients | update_JxW_values | update_quadrature_points);
 
     // assemble integral over sides
-    for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
+    FOR_NEIGHBOURS(mesh_ , nb)
     {
         if (nb->n_sides < 2 ||
         	nb->type != VB_ES ||
-        	nb->element[0]->dim != dim-1) continue;
+        	nb->element()->dim != dim-1) continue;
 
         fv_sb.resize(nb->n_sides);
 
@@ -686,19 +686,19 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
             for (int sid=fe_values_side.size(); sid<nb->n_sides; sid++)
                 fe_values_side.push_back(new FESideValues<dim,3>(map, side_q, *fe, update_values | update_gradients | update_side_JxW_values | update_normal_vectors));
 
-		typename DOFHandler<dim-1,3>::CellIterator cell_sub = mesh_->element.full_iter(nb->element[0]);
+		typename DOFHandler<dim-1,3>::CellIterator cell_sub = mesh_->element.full_iter(nb->element());
 		dh_sub->get_dof_indices(cell_sub, side_dof_indices[0]);
 		fe_values_vb->reinit(cell_sub);
 		fv_sb[0] = fe_values_vb;
 
-		cell = mesh_->element.full_iter(nb->element[1]);
+		cell = nb->side()->element(); /// ?? How to undestand this?
 		dh->get_dof_indices(cell, side_dof_indices[1]);
-		fe_values_side[1]->reinit(cell, nb->side(1));
+		fe_values_side[1]->reinit(cell, nb->side());
 		fv_sb[1] = fe_values_side[1];
 
 
 		// flux from the higher dimension to the lower one
-		transport_flux = mh_dh->side_flux( *(nb->side(1)) );
+		transport_flux = mh_dh->side_flux( *(nb->side()) );
 
 		// set transmission condition for dim-1
 		for (int j=0; j<fv_sb[0]->n_dofs(); j++)
@@ -709,7 +709,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[0][i] < distr->begin() || side_dof_indices[0][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] += advection/nb->element[0]->material->por_m*(sigma+fabs(transport_flux))*fv_sb[0]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] += advection/nb->element()->material->por_m*(sigma+fabs(transport_flux))
+					                       *fv_sb[0]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], local_matrix);
@@ -721,7 +722,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[0][i] < distr->begin() || side_dof_indices[0][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] -= advection/nb->element[1]->material->por_m*(sigma+fabs(transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] -= advection/nb->side()->element()->material->por_m
+					              *(sigma+fabs(transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], local_matrix);
@@ -735,7 +737,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[1][i] < distr->begin() || side_dof_indices[1][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] += advection/nb->element[0]->material->por_m*(-sigma+min(0.,transport_flux))*fv_sb[0]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] += advection/nb->element()->material->por_m
+					          *(-sigma+min(0.,transport_flux))*fv_sb[0]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], local_matrix);
@@ -747,7 +750,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[1][i] < distr->begin() || side_dof_indices[1][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] -= advection/nb->element[1]->material->por_m*(-sigma+min(0.,transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] -= advection/nb->side()->element()->material->por_m
+					*(-sigma+min(0.,transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], local_matrix);

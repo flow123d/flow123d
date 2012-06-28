@@ -59,10 +59,6 @@ Mesh::Mesh() {
     n_exsides = NDEF;
     n_sides_ = NDEF;
 
-    n_neighs = NDEF;
-    neighbour = NULL;
-    l_neighbour = NULL;
-
     // number of element of particular dimension
     n_lines = 0;
     n_triangles = 0;
@@ -151,26 +147,102 @@ void Mesh::setup_topology() {
     Mesh *mesh=this;
 
     /// initialize mesh topology (should be handled inside mesh object)
-    read_neighbour_list(mesh);
-
 
     count_element_types();
 
     // topology
     node_to_element(mesh);
 
-    neigh_vv_to_element(mesh);
-    neigh_vb_to_element_and_side(mesh);
-    element_to_neigh_vb(mesh);
-
+    read_neighbours();
     edge_to_side(mesh);
 
+    neigh_vb_to_element_and_side(mesh);
+    element_to_neigh_vb(mesh);
     neigh_vb_to_edge_both(mesh);
+
     count_side_types(mesh);
     xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
 
     read_boundary(mesh);
 
+}
+
+
+void Mesh::read_neighbours() {
+    FILE    *in;   // input file
+    char     line[ LINE_SIZE ];   // line of data file
+    unsigned int id;
+
+    xprintf( Msg, "Reading neighbours...");
+    const std::string& file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" ));
+    in = xfopen( file_name, "rt" );
+    skip_to( in, "$Neighbours" );
+    xfgets( line, LINE_SIZE - 2, in );
+
+    unsigned int n_neighs = atoi( xstrtok( line) );
+    INPUT_CHECK( n_neighs > 0 ,"Number of neighbours  < 1 in read_neighbour_list()\n");
+    vb_neighbours_.resize( n_neighs );
+
+
+    FOR_NEIGHBOURS(this,  ngh ) {
+        xfgets( line, LINE_SIZE - 2, in );
+
+        id              = atoi( xstrtok( line) );
+        ngh->type            = atoi( xstrtok( NULL) );
+
+        switch( ngh->type ) {
+            case BB_E:
+                xprintf(UsrErr, "Not supported - Neighboring of type (10) - of elements of same dimension without local side number!\n");
+                break;
+            case BB_EL:
+                ngh->n_elements = atoi( xstrtok( NULL) );
+                INPUT_CHECK(!( ngh->n_elements < 2 ),"Neighbour %d has bad number of elements: %d\n", id, ngh->n_elements );
+                ngh->n_sides = ngh->n_elements;
+
+                ngh->eid = (int*) xmalloc( ngh->n_elements * sizeof( int ) );
+                ngh->sid = (int*) xmalloc( ngh->n_elements * sizeof( int ) );
+                ngh->element_ = (ElementIter *) xmalloc( ngh->n_elements *
+                        sizeof( ElementIter  ) );
+                ngh->side_ = new SideIter [ ngh->n_elements ];
+
+
+                for( int i = 0; i < ngh->n_sides; i++) {
+                    ngh->element_[ i ] = NULL;
+                    ngh->eid[ i ] = atoi( xstrtok( NULL) );
+                    ngh->sid[ i ] = atoi( xstrtok( NULL) );
+                }
+
+                break;
+            case VB_ES:
+                ngh->n_elements = 2;
+                ngh->n_sides = 2;
+                ngh->eid = (int*) xmalloc( ngh->n_elements * sizeof( int ) );
+                ngh->element_ = (ElementIter *) xmalloc( ngh->n_elements * sizeof( ElementIter  ) );
+                ngh->sid = (int*) xmalloc( ngh->n_sides * sizeof( int ) );
+                ngh->side_ = new SideIter [ ngh->n_sides ];
+
+                ngh->eid[ 0 ] = atoi( xstrtok( NULL) );
+                ngh->eid[ 1 ] = atoi( xstrtok( NULL) );
+                ngh->sid[ 0 ] = NDEF;
+                ngh->sid[ 1 ] = atoi( xstrtok( NULL) );
+                ngh->sigma = atof( xstrtok( NULL) );
+                //ngh->element[ 0 ] = NULL;
+                //ngh->element[ 1 ] = NULL;
+
+                // sid[ 0 ] (and side[ 0 ]) doesn't have defined value. I use sid[ 1 ] (and
+                // side[ 1 ]) instead to correspond with elm1. Using sid[ 0 ] for describing
+                // side of elm1 would be confusing and error-prone.
+                break;
+            case VV_2E:
+                xprintf(UsrErr, "Not supported - Neighboring of type (30) - Noncompatible only elements!\n");
+                break;
+            default:
+                xprintf(UsrErr,"Neighbour %d is of the unsupported type %d\n", id, ngh->type );
+                break;
+        }
+    }
+
+    //xprintf( Msg, " %d neighbours readed. ", n_vb_neighbours() );
 }
 
 void Mesh::setup_materials( MaterialDatabase &base)

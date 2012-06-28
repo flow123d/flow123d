@@ -9,6 +9,7 @@
 #define SIDE_IMPL_HH_
 
 #include "mesh/mesh.h"
+#include "mesh/edges.h"
 
 
 inline Side::Side(ElementIter ele, unsigned int set_lnum)

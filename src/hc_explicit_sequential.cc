@@ -60,7 +60,6 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
     const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
     MeshReader* meshReader = new GmshMeshReader();
     meshReader->read(mesh_file_name, mesh);
-    mesh->setup_topology();
     mesh->setup_materials(*material_database);
     Profiler::instance()->set_task_size(mesh->n_elements());
 

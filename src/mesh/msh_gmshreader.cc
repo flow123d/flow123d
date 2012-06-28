@@ -55,6 +55,8 @@ void GmshMeshReader::read(const std::string &fileName, Mesh* mesh) {
     read_elements(file, mesh);
 
     xfclose(file);
+
+    mesh->setup_topology();
 }
 
 /**

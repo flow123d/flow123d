@@ -108,10 +108,15 @@ public:
     }
 
     unsigned int n_sides();
+
+    inline unsigned int n_vb_neighbours() const {
+        return vb_neighbours_.size();
+    }
     /**
      * Setup various links between mesh entities. Should be simplified.
      */
     void setup_topology();
+    void read_neighbours();
 
     /**
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
@@ -138,15 +143,12 @@ public:
 
     flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
+    vector<Neighbour> vb_neighbours_;
     int n_materials; // # of materials
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
     int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
-
-    int n_neighs;
-    struct Neighbour *neighbour; // First neighbour
-    struct Neighbour *l_neighbour; // Last neighbour
 
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements
@@ -165,7 +167,8 @@ private:
 
 
 #include "mesh/side_impl.hh"
-#include "element_impls.hh"
+#include "mesh/element_impls.hh"
+#include "mesh/neighbours_impl.hh"
 
 /**
  * Provides for statement to iterate over the Elements of the Mesh.
@@ -223,7 +226,10 @@ for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
 #define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 
 
-#define FOR_NEIGHBOURS(_mesh_, i)   for((i)=_mesh_->neighbour;(i)!=NULL;(i)=(i)->next)
+#define FOR_NEIGHBOURS(_mesh_, it) \
+    for( std::vector<Neighbour>::iterator it = _mesh_->vb_neighbours_.begin(); \
+         (it)!= _mesh_->vb_neighbours_.end(); ++it)
+
 #define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
 #define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
 

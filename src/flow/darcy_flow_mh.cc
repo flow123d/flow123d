@@ -379,9 +379,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // current element pressure  and a connected edge pressure
             ngh= ele->neigh_vb[i];
             tmp_rows[0]=el_row;
-            tmp_rows[1]=row_4_edge[ mesh_->edge.index( ngh->edge ) ];
+            tmp_rows[1]=row_4_edge[ mesh_->edge.index( ngh->edge() ) ];
 
-            double value = ngh->sigma * ngh->side(1)->metric();
+            double value = ngh->sigma * ngh->side()->metric();
 
             local_vb[0] = -value;   local_vb[1] = value;
             local_vb[2] = value;    local_vb[3] = -value;
@@ -742,7 +742,7 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
             // include connections from lower dim. edge
             // to the higher dimension
             for (i_neigh = 0; i_neigh < ele->n_neighs_vb; i_neigh++) {
-                eid = mesh->edge.index(ele->neigh_vb[i_neigh]->edge);
+                eid = mesh->edge.index(ele->neigh_vb[i_neigh]->edge());
                 graph->set_edge(edg.index(), eid, e_weight);
                 graph->set_edge(eid, edg.index(), e_weight);
             }
@@ -791,9 +791,9 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_o
         // to the higher dimension
         if ( neigh_on ) {
             for(i_neigh=0; i_neigh < ele->n_neighs_vb; i_neigh++) {
-               n_s = ele->neigh_vb[i_neigh]->edge->n_sides;
+               n_s = ele->neigh_vb[i_neigh]->edge()->n_sides;
                for(i_s=0; i_s < n_s; i_s++) {
-                   e_idx=ELEMENT_FULL_ITER(mesh, ele->neigh_vb[i_neigh]->edge->side(i_s)->element()).index();
+                   e_idx=ELEMENT_FULL_ITER(mesh, ele->neigh_vb[i_neigh]->edge()->side(i_s)->element()).index();
                    graph->set_edge(ele.index(),e_idx);
                    graph->set_edge(e_idx,ele.index());
                }
@@ -1173,7 +1173,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
             for (i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
                 // mark this edge
-                edge_row = row_4_edge[mesh_->edge.index(el->neigh_vb[i_neigh]->edge)];
+                edge_row = row_4_edge[mesh_->edge.index(el->neigh_vb[i_neigh]->edge() )];
                 localDofSet.insert( edge_row );
             }
         }
