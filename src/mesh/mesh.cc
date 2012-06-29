@@ -141,17 +141,18 @@ void Mesh::count_element_types() {
     }
 }
 
-
+/**
+ *  Setup whole topology for read mesh.
+ */
 void Mesh::setup_topology() {
     F_ENTRY;
     Mesh *mesh=this;
 
-    /// initialize mesh topology (should be handled inside mesh object)
 
     count_element_types();
 
     // topology
-    node_to_element(mesh);
+    node_to_element();
 
     read_neighbours();
     edge_to_side();
@@ -159,12 +160,74 @@ void Mesh::setup_topology() {
     neigh_vb_to_element_and_side();
     element_to_neigh_vb();
 
-    count_side_types(mesh);
-    xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
+    count_side_types();
 
     read_boundary(mesh);
 
+    xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
+
+
+    // cleanup
+    neighbours_.clear();
 }
+
+
+/**
+ *   Creates back references from nodes to elements.
+ *
+ *   TODO: This is not necessary after the topology setup so
+ *   we should make that as an independent structure which can be easily deleted.
+ */
+void Mesh::node_to_element()
+{
+    F_ENTRY;
+
+    int li;
+    NodeIter nod;
+    ElementIter ele;
+
+    xprintf( MsgVerb, "   Node to element... ")/*orig verb 5*/;
+
+    // Set counter of elements in node to zero
+    FOR_NODES(this,  nod )
+        nod->n_elements = 0;
+    // Count elements
+    FOR_ELEMENTS(this,  ele )
+        FOR_ELEMENT_NODES( ele, li ) {
+            nod = ele->node[ li ];
+            (nod->n_elements)++;
+        }
+    // Allocate arrays
+    FOR_NODES(this,  nod ) {
+                if (nod->n_elements == 0)
+                        continue;
+            nod->element = (ElementIter *) xmalloc( nod->n_elements * sizeof( ElementIter ) );
+        nod->aux = 0;
+    }
+    // Set poiners in arrays
+    FOR_ELEMENTS(this,  ele )
+        FOR_ELEMENT_NODES( ele, li ) {
+            nod = ele->node[ li ];
+            nod->element[ nod->aux ] = ele;
+            (nod->aux)++;
+        }
+    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+}
+
+//=============================================================================
+//
+//=============================================================================
+void Mesh::count_side_types()
+{
+    struct Side *sde;
+
+    n_insides = 0;
+    n_exsides = 0;
+    FOR_SIDES(this,  sde )
+        if (sde->is_external()) n_exsides++;
+        else n_insides++;
+}
+
 
 
 void Mesh::read_neighbours() {

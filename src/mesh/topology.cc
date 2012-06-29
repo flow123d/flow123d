@@ -98,60 +98,7 @@ void element_to_side_both(Mesh* mesh)
 }*/
 
 
-//=============================================================================
-//
-//=============================================================================
-void node_to_element(Mesh* mesh)
-{
-    F_ENTRY;
 
-	int li;
-	NodeIter nod;
-	ElementIter ele;
-
-	xprintf( MsgVerb, "   Node to element... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-	// Set counter of elements in node to zero
-	FOR_NODES(mesh,  nod )
-		nod->n_elements = 0;
-	// Count elements
-	FOR_ELEMENTS(mesh,  ele )
-		FOR_ELEMENT_NODES( ele, li ) {
-			nod = ele->node[ li ];
-			(nod->n_elements)++;
-		}
-	// Allocate arrays
-	FOR_NODES(mesh,  nod ) {
-                if (nod->n_elements == 0)
-                        continue;
-       		nod->element = (ElementIter *) xmalloc( nod->n_elements * sizeof( ElementIter ) );
-		nod->aux = 0;
-	}
-	// Set poiners in arrays
-	FOR_ELEMENTS(mesh,  ele )
-		FOR_ELEMENT_NODES( ele, li ) {
-			nod = ele->node[ li ];
-			nod->element[ nod->aux ] = ele;
-			(nod->aux)++;
-		}
-	xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-
-//=============================================================================
-//
-//=============================================================================
-void count_side_types(Mesh* mesh)
-{
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-    struct Side *sde;
-
-	mesh->n_insides = 0;
-	mesh->n_exsides = 0;
-	FOR_SIDES(mesh,  sde )
-		if (sde->is_external()) mesh->n_exsides++;
-		else mesh->n_insides++;
-}
 /*
 //=============================================================================
 //
