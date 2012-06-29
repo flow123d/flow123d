@@ -47,7 +47,6 @@ static void side_to_node(Mesh*);
 //static void neigh_bb_topology(Mesh*);
 //static void neigh_bb_to_edge_both(Mesh*);
 static void edge_to_side(Mesh*);
-static void neigh_vb_to_edge_both(Mesh*);
 static void side_types(Mesh*);
 static void count_side_types(Mesh*);
 //static void boundary_to_side_both(Mesh*);
@@ -195,147 +194,10 @@ void neigh_bb_el_to_side( struct Neighbour *ngh )
 //=============================================================================
 //
 //=============================================================================
-void edge_to_side(Mesh* mesh)
-{
-    F_ENTRY;
-
-	//struct Side *sde;
-	struct Edge *edg;
-	struct Neighbour *ngh;
-	Element *ele;
-    int si;
-
-	xprintf( MsgVerb, "   Edge to side and back... \n")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    // count edges
-    unsigned int n_edges = mesh->n_sides();
-    FOR_NEIGHBOURS(mesh,  ngh )
-        if ( ngh->type == BB_EL ) n_edges -= ( ngh->n_elements - 1 );
-
-    // create edge vector
-    mesh->edge.resize(n_edges);
-    xprintf( MsgLog, "Created  %d edges.\n.", mesh->n_edges() );
-
-    // set edge, side connections
-    unsigned int i_edge=0;
-	FOR_NEIGHBOURS(mesh,  ngh ) if(  ngh->type == BB_EL ) {
-	    edg = &( mesh->edge[i_edge++] );
-
-        // init edge (can init all its data)
-		edg->n_sides = ngh->n_sides;
-		edg->side_ = new SideIter [edg->n_sides];
-
-		FOR_NEIGH_SIDES( ngh, si ) {
-		    ele = mesh->element.find_id( ngh->eid[si] );
-		    edg->side_[ si ] = ele->side( ngh->sid[ si ] );
-			ele->edges_[ ngh->sid[ si ] ] = edg;
-		}
-	}
-
-	// now the external ones ( pair all remaining edges with external sides)
-	FOR_SIDES(mesh, sde) {
-
-	    if ( sde->edge() == NULL ) {
-	        edg = &( mesh->edge[i_edge++] );
-
-	        // make external edges and edges on neighborings.
-	        edg->n_sides = 1;
-	        edg->side_ = new SideIter [ edg->n_sides ];
-	        edg->side_[ 0 ] = sde;
-
-	        sde->element()->edges_[sde->el_idx()] = edg;
-	    }
-	}
-	ASSERT(i_edge == mesh->n_edges(), "Actual number of edges %d do not match size of its array.\n", i_edge);
-
-    //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
-}
 
 
 
-//=============================================================================
-//
-//=============================================================================
-void neigh_vb_to_element_and_side(Mesh* mesh)
-{
-    int li;
-    struct Neighbour *ngh;
-    ElementIter ele;
 
-    xprintf( MsgVerb, "   Neighbour of vb2 type to element... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_NEIGHBOURS(mesh,  ngh ) {
-        if( ngh->type != VB_ES )
-            continue;
-        for( li = 0; li < 2; li++ ) {
-            ele = mesh->element.find_id( ngh->eid[li] );
-            INPUT_CHECK( NONULL(ele), "Reference to undefined element %d in neighbour\n", ngh->eid[ li ]);
-            ngh->element_[ li ] = ele;
-        }
-        ele = ngh->element_[ 1 ];
-        INPUT_CHECK(!( (ngh->sid[ 1 ] < 0) || (ngh->sid[ 1 ] >= ele->n_sides()) ),
-                "Neighbour has nonsensual reference to side %d\n",
-                ngh->sid[ 1 ] );
-
-        ngh->edge_ = ele->side( ngh->sid[ 1 ] )->edge();
-    }
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-
-//=============================================================================
-//
-//=============================================================================
-void element_to_neigh_vb(Mesh* mesh)
-{
-    struct Neighbour *ngh;
-    ElementIter ele;
-
-    xprintf( MsgVerb, "   Element to neighbours of vb2 type... ")/*orig verb 5*/;
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_ELEMENTS(mesh,ele) ele->n_neighs_vb =0;
-    // count vb neighs
-    FOR_NEIGHBOURS(mesh,  ngh )
-        if( ngh->type == VB_ES ) {
-            ele = ngh->element_[ 0 ];
-            ele->n_neighs_vb++;
-        }
-    // Allocation of the array
-    FOR_ELEMENTS(mesh,  ele )
-        if( ele->n_neighs_vb > 0 ) {
-            ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb];
-            ele->n_neighs_vb=0;
-        }
-    // fill
-    FOR_NEIGHBOURS(mesh,  ngh )
-        if( ngh->type == VB_ES ) {
-            ele = ngh->element_[ 0 ];
-            ele->neigh_vb[ ele->n_neighs_vb++ ] = &( *ngh );
-        }
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-
-//=============================================================================
-//
-//=============================================================================
-void neigh_vb_to_edge_both(Mesh* mesh)
-{
-/*    struct Edge *edg;
-    struct Neighbour *ngh;
-
-    xprintf( MsgVerb, "   Neighbour VB to edge and back... ");
-    ASSERT(!( mesh == NULL ),"Mesh is NULL\n");
-
-    FOR_NEIGHBOURS(mesh,  ngh ) {
-        if( ngh->type != VB_ES )
-            continue;
-        edg = ngh->side_[1]->edge();
-        ngh->edge_ = edg;
-    }
-    xprintf( MsgVerb, "O.K.\n");*/
-}
 
 
 

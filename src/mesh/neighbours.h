@@ -38,13 +38,34 @@ struct Element;
 struct Edge;
 class SideIter;
 
-//=============================================================================
-// STRUCTURE OF THE NEIGHBOUR
-//=============================================================================
+
+/*
+ *  Class for both types of input neigbours. Only temporary
+ */
+class Neighbour_both
+{
+public:
+    Neighbour_both();
+
+    int   type;         // Type
+    int   n_sides;      // # of neighbouring sides
+
+    int  *sid;      // id numbers of neighbouring sides
+    int  *eid;      // id numbers of neighbouring elements
+    double  sigma;      // transition coefficient
+};
+
+
+
+/**
+ * Class only for VB neighbouring.
+ */
 class Neighbour
 {
 public:
     Neighbour();
+
+    void reinit(ElementIter ele, Edge * edg, double sigma_in);
 
     // side of the edge in higher dim. mesh
     inline SideIter side();
@@ -55,20 +76,11 @@ public:
     // element of higher dimension mesh in VB neigh.
     inline ElementIter element();
 
-    int   type;         // Type
-    int   n_sides;      // # of neighbouring sides
-    int   n_elements;   // # of neighbouring elements
-
-    int  *sid;      // id numbers of neighbouring sides
-    int  *eid;      // id numbers of neighbouring elements
-    double  sigma;      // transition coefficient
-    struct Edge *edge_;  // edge (set of neighbouring sides)
-
-
-    SideIter *side_; // neighbouring sides (THIS IS ONLY meaningfull member for VB )
-
-    ElementIter *element_;  // neighbouring elements
+//private:
+    Edge *edge_;  // edge (set of neighbouring sides)
+    ElementIter element_;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
+    double sigma;
 };
 
 // Input neigbouring codes

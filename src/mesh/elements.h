@@ -47,6 +47,7 @@ class Element
 public:
     Element();
 
+    inline unsigned int index() const;
     unsigned int n_sides() const;    // Number of sides
     unsigned int n_nodes() const; // Number of nodes
 

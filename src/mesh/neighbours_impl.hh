@@ -14,7 +14,8 @@
 
     // side of the edge in higher dim. mesh
     inline SideIter Neighbour::side() {
-        ASSERT( edge_->n_sides == 1 , "VB neighbouring with more sides.\n");
+        ASSERT( edge_->n_sides == 1 , "VB neighbouring with %d sides.\n", edge_->n_sides);
+        //DBGMSG("VB neighbouring with %d sides.\n", edge_->n_sides);
         return edge_->side(0);
     }
 
@@ -25,7 +26,7 @@
 
     // element of higher dimension mesh in VB neigh.
     inline ElementIter Neighbour::element() {
-        return element_[0];
+        return element_;
     }
 
 #endif /* NEIGBOURS_IMPL_HH_ */

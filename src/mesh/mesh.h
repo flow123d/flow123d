@@ -161,7 +161,14 @@ public:
     vector< vector< vector<unsigned int> > > side_nodes;
 
 private:
+    void edge_to_side();
+    void neigh_vb_to_element_and_side();
+    void element_to_neigh_vb();
+
     void count_element_types();
+
+    unsigned int n_bb_neigh, n_vb_neigh;
+    vector<Neighbour_both> neighbours_;
 
 };
 

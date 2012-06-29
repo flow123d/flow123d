@@ -53,20 +53,28 @@ void read_neighbour_list(Mesh* mesh)
 //=============================================================================
 // INIT DATA OF NEIGHBOUR
 //=============================================================================
-Neighbour::Neighbour()
+Neighbour_both::Neighbour_both()
 {
 	type        = NDEF;
 	n_sides     = NDEF;
-	n_elements  = NDEF;
 	sid  	     = NULL;
 	eid         = NULL;
 
 	sigma        = 0.0;
-	edge_        = NULL;
-	side_        = NULL;
-	element_     = NULL;
-
 }
+
+
+Neighbour::Neighbour()
+: edge_(NULL)
+{}
+
+void Neighbour::reinit(ElementIter ele, Edge * edg, double sigma_in)
+{
+    element_=ele;
+    edge_=edg;
+    sigma = sigma_in;
+}
+
 
 
 /**

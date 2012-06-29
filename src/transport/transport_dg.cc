@@ -672,18 +672,18 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
     // assemble integral over sides
     FOR_NEIGHBOURS(mesh_ , nb)
     {
-        if (nb->n_sides < 2 ||
-        	nb->type != VB_ES ||
-        	nb->element()->dim != dim-1) continue;
+        if (nb->element()->dim != dim-1) continue;
 
-        fv_sb.resize(nb->n_sides);
+        /// TODO: remove symmetry, consider element in lower and edge (or side) on higher dim
+        int nb_sides = 2;   // = nb->n_sides;
+        fv_sb.resize(nb_sides);
 
-        if (side_dof_indices.size() < nb->n_sides)
-            for (int i=side_dof_indices.size(); i<nb->n_sides; i++)
+        if (side_dof_indices.size() < nb_sides)
+            for (int i=side_dof_indices.size(); i<nb_sides; i++)
                 side_dof_indices.push_back(new unsigned int[ndofs]);
 
-        if (fe_values_side.size() < nb->n_sides)
-            for (int sid=fe_values_side.size(); sid<nb->n_sides; sid++)
+        if (fe_values_side.size() < nb_sides)
+            for (int sid=fe_values_side.size(); sid<nb_sides; sid++)
                 fe_values_side.push_back(new FESideValues<dim,3>(map, side_q, *fe, update_values | update_gradients | update_side_JxW_values | update_normal_vectors));
 
 		typename DOFHandler<dim-1,3>::CellIterator cell_sub = mesh_->element.full_iter(nb->element());

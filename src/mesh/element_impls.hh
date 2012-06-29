@@ -11,6 +11,11 @@
 #include "sides.h"
 #include "side_impl.hh"
 
+inline unsigned int Element::index() const {
+    return mesh_->element.index( this );
+}
+
+
 inline unsigned int Element::n_nodes() const {
     return dim+1;
 }
