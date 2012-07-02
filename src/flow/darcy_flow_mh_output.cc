@@ -30,6 +30,7 @@
  *
  */
 
+#include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "field_p0.hh"
@@ -228,25 +229,24 @@ void DarcyFlowMHOutput::make_element_scalar(double* scalars) {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
-// TODO: remove ele->vector from the mesh, use arma::vec3 for calculating average velocity.
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+    MHFEValues fe_values;
 
-    int i=0;
+    int i_side=0;
     FOR_ELEMENTS(mesh_, ele) {
         arma::vec3 flux_in_centre;
-        switch (ele->type) {
-        case LINE:
-            make_element_vector_line(ele, flux_in_centre);
-            break;
-        case TRIANGLE:
-            make_element_vector_triangle(ele, flux_in_centre);
-            break;
-        case TETRAHEDRON:
-            make_element_vector_tetrahedron(ele, flux_in_centre);
-            break;
+        flux_in_centre.zeros();
+
+        fe_values.update(ele);
+
+        for (int li = 0; li < ele->n_sides(); li++) {
+            flux_in_centre += dh.side_flux( *(ele->side( li ) ) )
+                              * fe_values.RT0_value( ele, ele->centre(), li )
+                              / ele->material->size;
         }
-        for(int j=0;j<3;j++)
-            ele_flux[i][j]=flux_in_centre[j];
-        i++;
+
+        for(int j=0;j<3;j++) ele_flux[i_side][j]=flux_in_centre[j];
+        i_side++;
     }
 
 }
@@ -254,7 +254,7 @@ void DarcyFlowMHOutput::make_element_vector() {
 //=============================================================================
 //
 //=============================================================================
-
+/*
 void DarcyFlowMHOutput::make_element_vector_line(ElementFullIter ele, arma::vec3 &vec) {
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
     SideIter s1=ele->side(1);
@@ -265,11 +265,11 @@ void DarcyFlowMHOutput::make_element_vector_line(ElementFullIter ele, arma::vec3
     // normalize element vector [node 0, node 1]
     vec = ele->node[1]->point() - ele->node[0]->point();
     vec *= darcy_vel / arma::norm(vec, 2);
-}
+}*/
 //=============================================================================
 //
 //=============================================================================
-
+/*
 void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::vec3 &vec) {
 
     const MH_DofHandler & dh = darcy_flow->get_mh_dofhandler();
@@ -304,39 +304,13 @@ void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::
             ac[ li ] += dh.side_flux( *(ele->side( i ) ) ) * bas[ i ][ li ] / ele->material->size;
     }
 
-    /*for (li = 0; li < 3; li++){
-            A[ 0 ][ li ] = ex[ li ];
-            A[ 1 ][ li ] = ey[ li ];
-            A[ 2 ][ li ] = ez[ li ];
-    }
-    matrix_x_matrix(ele->vector, 1, 3, A, 3, 3, X);
-    for (li = 0; li < 3; li++)
-            ele->vector[ li ] = X[ li ];
-
-     */
     vec = ac[0] * ex + ac[1] * ey + ac[2] * ez;
-}
+}*/
 //=============================================================================
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_element_vector_tetrahedron(ElementFullIter ele, arma::vec3 &vec) {
-    const MH_DofHandler & dh = darcy_flow->get_mh_dofhandler();
-    double bas[ 4 ][ 3 ];
-    int i, li;
 
-    vec.zeros();
-    for (i = 0; i < 4; i++) {
-        bas[ i ][ 0 ] = ele->bas_delta[ i ] * (ele->centre()[ 0 ]
-                - ele->bas_alfa[ i ]);
-        bas[ i ][ 1 ] = ele->bas_delta[ i ] * (ele->centre()[ 1 ]
-                - ele->bas_beta[ i ]);
-        bas[ i ][ 2 ] = ele->bas_delta[ i ] * (ele->centre()[ 2 ]
-                - ele->bas_gama[ i ]);
-        for (li = 0; li < 3; li++)
-            vec[ li ] += dh.side_flux( *(ele->side( i ) ) ) * bas[ i ][ li ];
-    }
-}
 //=============================================================================
 // FILL TH "SCALAR" FIELD FOR ALL INTERNAL SIDES IN THE MESH
 //=============================================================================

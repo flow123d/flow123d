@@ -72,9 +72,9 @@ private:
     void make_element_scalar();
     void make_element_vector();
 
-    void make_element_vector_line(ElementFullIter, arma::vec3 &vec);
-    void make_element_vector_triangle(ElementFullIter, arma::vec3 &vec);
-    void make_element_vector_tetrahedron(ElementFullIter, arma::vec3 &vec);
+    //void make_element_vector_line(ElementFullIter, arma::vec3 &vec);
+    //void make_element_vector_triangle(ElementFullIter, arma::vec3 &vec);
+    //void make_element_vector_tetrahedron(ElementFullIter, arma::vec3 &vec);
 
     void make_sides_scalar();
     /**

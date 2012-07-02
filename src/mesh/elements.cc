@@ -77,24 +77,7 @@ Element::Element()
   boundaries_(NULL),
 
   n_neighs_vb(0),
-  neigh_vb(NULL),
- //*start_conc,
- //n_subst,
-            // Material properties
- // k(NULL),
-  //a(NULL),
-  //stor(0),
-
-            // Parameters of the basis functions
- bas_alfa(NULL),
- bas_beta(NULL),
- bas_gama(NULL),
- bas_delta(NULL),
-            // Matrix
- loc(NULL),
- loc_inv(NULL)
- //a_row(0)
- //b_row(0)
+  neigh_vb(NULL)
 
 {
 }

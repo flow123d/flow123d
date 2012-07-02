@@ -44,9 +44,9 @@
 #include "la/schur.hh"
 #include "la/sparse_graph.hh"
 #include "field_p0.hh"
-#include "flow/local_matrix.h"
 
 
+#include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 
 
@@ -112,12 +112,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     if (ierr)
         xprintf(Err, "Some error in MPI.\n");
 
-    // calculation_mh  - precalculation of some values stored still in mesh_
-    {
-    struct Side *sde;
-
-    local_matrices_mh(mesh_);
-    }
 
     mh_dh.reinit(mesh_);
 
@@ -290,6 +284,8 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    MHFEValues fe_values;
+
     struct Boundary *bcd;
     struct Neighbour *ngh;
 
@@ -315,6 +311,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides();
+        fe_values.update(ele);
 
         for (i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
@@ -348,7 +345,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
 
         // set block A: side-side on one element - block diagonal matrix
-        ls->mat_set_values(nsides, side_rows, nsides, side_rows, ele->loc);
+        ls->mat_set_values(nsides, side_rows, nsides, side_rows, fe_values.local_matrix() );
         // set block B, B': element-side, side-element
         ls->mat_set_values(1, &el_row, nsides, side_rows, minus_ones);
         ls->mat_set_values(nsides, side_rows, 1, &el_row, minus_ones);
@@ -559,6 +556,8 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 // TODO: reuse IA a Schurova doplnku
 void DarcyFlowMH_Steady::make_schur1() {
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    MHFEValues fe_values;
+
     int i_loc, nsides, i, side_rows[4], ierr, el_row;
     double det;
     PetscErrorCode err;
@@ -583,29 +582,14 @@ void DarcyFlowMH_Steady::make_schur1() {
            ele = mesh_->element(el_4_loc[i_loc]);
            el_row = row_4_el[el_4_loc[i_loc]];
            nsides = ele->n_sides();
-           if (ele->loc_inv == NULL) {
-               ele->loc_inv = (double *) malloc(nsides * nsides * sizeof(double));
-               det = MatrixInverse(ele->loc, ele->loc_inv, nsides);
-               if (fabs(det) < NUM_ZERO) {
-                   xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
-                   PrintSmallMatrix(ele->loc, nsides);
-                   xprintf(Err,"det: %30.18e \n",det);
-               }
-           }
-	   /* print the matrix */
-	   //int j;
-	   //xprintf(Msg,"Local element inverse: \n ");
-           //for (i = 0; i < nsides; i++) {
-           //   for (j = 0; j < nsides; j++) 
-	   //      xprintf(Msg, " %14.6f ", ele->loc_inv[i*nsides + j]);
-	   //   xprintf(Msg, " \n ");
-	   //}
+
+           fe_values.update( ele );
 
            for (i = 0; i < nsides; i++)
                side_rows[i] = mh_dh.side_dof( ele->side(i) ); // side ID
                            // - rows_ds->begin(); // local side number
                            // + side_ds->begin(); // side row in IA1 matrix
-           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, ele->loc_inv,
+           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
                         INSERT_VALUES);
        }
     }
@@ -625,20 +609,14 @@ void DarcyFlowMH_Steady::make_schur1() {
            ele = mesh_->element(el_4_loc[i_loc]);
            el_row = row_4_el[el_4_loc[i_loc]];
            nsides = ele->n_sides();
-           if (ele->loc_inv == NULL) {
-               ele->loc_inv = (double *) malloc(nsides * nsides * sizeof(double));
-               det = MatrixInverse(ele->loc, ele->loc_inv, nsides);
-               if (fabs(det) < NUM_ZERO) {
-                   xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
-                   PrintSmallMatrix(ele->loc, nsides);
-                   xprintf(Err,"det: %30.18e \n",det);
-               }
-           }
+
+           fe_values.update( ele );
+
            for (i = 0; i < nsides; i++)
                side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix
                        - rows_ds->begin() // local side number
                        + side_ds->begin(); // side row in IA1 matrix
-           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, ele->loc_inv,
+           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
                    INSERT_VALUES);
        }
     }

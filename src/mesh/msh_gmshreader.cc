@@ -203,22 +203,12 @@ void GmshMeshReader::element_allocation_independent(Mesh * mesh, ElementFullIter
     ele->boundaries_ = new Boundary * [ele->n_sides()];
     ele->mesh_ = mesh;
 
-    //ele->rhs = (double*) xmalloc(ele->n_sides * sizeof ( double));
-    ele->bas_alfa = (double *) xmalloc(ele->n_sides() * sizeof ( double));
-    ele->bas_beta = (double *) xmalloc(ele->n_sides() * sizeof ( double));
-    ele->bas_gama = (double *) xmalloc(ele->n_sides() * sizeof ( double));
-    ele->bas_delta = (double *) xmalloc(ele->n_sides() * sizeof ( double));
 
     FOR_ELEMENT_NODES(ele, ni) {
         ele->node[ ni ] = NULL;
     }
 
     FOR_ELEMENT_SIDES(ele, si) {
-        ele->bas_alfa[ si ] = 0.0;
-        ele->bas_beta[ si ] = 0.0;
-        ele->bas_gama[ si ] = 0.0;
-        ele->bas_delta[ si ] = 0.0;
-
         ele->edges_[ si ]=NULL;
         ele->boundaries_[si] =NULL;
     }

@@ -84,14 +84,10 @@ public:
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
-    // Parameters of the basis functions
-    double   *bas_alfa;      // Parameters alfa
-    double   *bas_beta;      // Parameters beta
-    double   *bas_gama;      // Parameters gama
-    double   *bas_delta;      // Parameters delta
+
     // Matrix
-    double *loc;        // Local matrix
-    double *loc_inv;    // Inverse of the local matrix
+    //double *loc;        // Local matrix
+    //double *loc_inv;    // Inverse of the local matrix
 
 
 protected:
