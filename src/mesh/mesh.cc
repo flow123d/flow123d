@@ -152,7 +152,7 @@ void Mesh::setup_topology() {
     count_element_types();
 
     // topology
-    node_to_element();
+    //node_to_element();
 
     read_neighbours();
     edge_to_side();
@@ -168,7 +168,11 @@ void Mesh::setup_topology() {
 
 
     // cleanup
-    neighbours_.clear();
+    {
+        vector<Neighbour_both> empty_vec;
+        neighbours_.swap(empty_vec);
+    }
+
 }
 
 
@@ -181,12 +185,12 @@ void Mesh::setup_topology() {
 void Mesh::node_to_element()
 {
     F_ENTRY;
-
+/*
     int li;
     NodeIter nod;
     ElementIter ele;
 
-    xprintf( MsgVerb, "   Node to element... ")/*orig verb 5*/;
+    xprintf( MsgVerb, "   Node to element... ");
 
     // Set counter of elements in node to zero
     FOR_NODES(this,  nod )
@@ -211,7 +215,7 @@ void Mesh::node_to_element()
             nod->element[ nod->aux ] = ele;
             (nod->aux)++;
         }
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    xprintf( MsgVerb, "O.K.\n");*/
 }
 
 //=============================================================================

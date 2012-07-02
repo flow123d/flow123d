@@ -80,19 +80,10 @@ public:
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
 
-//    int      n_neighs_vv;   // # of neighbours, V-V type (noncomp.)
-//    struct Neighbour **neigh_vv; // List og neighbours, V-V type (noncomp.)
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
-    // Material properties
-    double   *k;    // Tensor of hydraulic conductivity
-    double   *a;    // Tensor of hydraulic resistance (k^(-1))
-                    // --------------------------
-                    // matrices a,k,loc are stored as vectors, and should be retyped
-                    // if one needs double index access, see SmallMtxN types in math_fce.h
-    //double   stor;          // Storativity
     // Parameters of the basis functions
     double   *bas_alfa;      // Parameters alfa
     double   *bas_beta;      // Parameters beta
@@ -101,10 +92,6 @@ public:
     // Matrix
     double *loc;        // Local matrix
     double *loc_inv;    // Inverse of the local matrix
-    //double  *rhs;       // Rhs - vector q1, gradients
-
-    int  a_row;     // # of first row in the block A
-    int      b_row;     // # of row in the block B
 
 
 protected:

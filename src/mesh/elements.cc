@@ -81,8 +81,8 @@ Element::Element()
  //*start_conc,
  //n_subst,
             // Material properties
-  k(NULL),
-  a(NULL),
+ // k(NULL),
+  //a(NULL),
   //stor(0),
 
             // Parameters of the basis functions
@@ -92,72 +92,14 @@ Element::Element()
  bas_delta(NULL),
             // Matrix
  loc(NULL),
- loc_inv(NULL),
- a_row(0),
- b_row(0)
+ loc_inv(NULL)
+ //a_row(0)
+ //b_row(0)
 
 {
 }
 
 
-
-/**
- * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
- */
-void element_calculation_mh(Mesh* mesh) {
-
-    F_ENTRY;
-
-    ASSERT(NONULL(mesh), "No mesh for problem\n");
-    ASSERT(mesh->element.size() > 0, "Empty mesh.\n");
-
-    xprintf(Msg, "Calculating properties of elements... ")/*orig verb 2*/;
-
-    calc_a_row(mesh);
-    calc_b_row(mesh);
-
-    FOR_ELEMENTS(mesh, ele) {
-        if (ele->material->dimension != ele->dim) {
-            xprintf(Warn, "Dimension %d of material doesn't match dimension %d of element %d.\n",
-                    ele->material->dimension, ele->dim, ele.id());
-        }
-        ele->a = ele->material->hydrodynamic_resistence;
-
-        //calc_rhs(ele);
-        //dirichlet_elm(ele);
-        //make_block_d(mesh, ele);
-        //make_block_e(ele, mesh);
-    }
-    //block_A_stats( mesh );
-    //diag_A_stats( mesh );
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
-}
-
-
-/**
- * CALCULATE THE "A_ROW" FIELD IN STRUCT ELEMENT
- */
-void calc_a_row(Mesh* mesh) {
-    int last = 0;
-
-    FOR_ELEMENTS(mesh, ele) {
-        ele->a_row = last;
-        last += ele->n_sides();
-    }
-}
-
-/**
- * CALCULATE THE "B_ROW" FIELD IN STRUCT ELEMENT
- */
-void calc_b_row(Mesh* mesh) {
-    int last;
-
-    last = mesh->n_sides();
-
-    FOR_ELEMENTS(mesh, ele) {
-        ele->b_row = last++;
-    }
-}
 
 /**
  * SET THE "VOLUME" FIELD IN STRUCT ELEMENT

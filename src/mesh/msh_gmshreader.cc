@@ -87,7 +87,7 @@ void GmshMeshReader::read_nodes(FILE* in, Mesh* mesh) {
         double z = atof(xstrtok(NULL));
 
         NodeFullIter node = mesh->node_vector.add_item(id);
-        node->id = id;
+        //node->id = id;
         node->point()(0)=x;
         node->point()(1)=y;
         node->point()(2)=z;

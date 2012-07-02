@@ -79,6 +79,30 @@ void local_matrix( ElementIter ele )
 			break;
 	}
 }
+
+//=============================================================================
+// CALCULATE LOCAL MARIX FOR LINEAR ELEMENT
+//=============================================================================
+void local_matrix_line( ElementIter ele )
+{
+    double      val;
+    SmallMtx2 loc=(SmallMtx2)(ele->loc);
+
+    INPUT_CHECK( ele->material->dimension == ele->dim , "Dimension %d of material doesn't match dimension %d of element %d.\n");
+    SmallMtx1 resistance_tensor = (SmallMtx1)(ele->material->hydrodynamic_resistence);
+
+    val= (resistance_tensor[0][0]) * ele->measure() / (3.0 * ele->material->size);
+    loc[0][0] =  val;
+    loc[1][1] =  val;
+    loc[0][1] = - val / 2.0;
+    loc[1][0] = - val / 2.0;
+
+    ele->bas_alfa[0] = ele->bas_alfa[1] = -1.0 / ele->measure();
+    ele->bas_beta[0] = 1.0;
+    ele->bas_beta[1] = 0.0;
+}
+
+
 //=============================================================================
 // CALCULATE LOCAL MATRIX FOR TRIANGULAR ELEMENT
 //=============================================================================
@@ -94,6 +118,9 @@ void local_matrix_triangle( ElementIter ele )
 	double nod_coor[ 3 ][ 2 ]; // Coordinates of nodes;
 	SmallMtx3 loc=(SmallMtx3)(ele->loc);
 
+    INPUT_CHECK( ele->material->dimension == ele->dim , "Dimension %d of material doesn't match dimension %d of element %d.\n");
+	SmallMtx2 resistance_tensor = (SmallMtx2)(ele->material->hydrodynamic_resistence);
+
 	node_coordinates_triangle( ele, nod_coor );
    	side_midpoint_triangle( nod_coor, midpoint );
 	basis_functions_triangle( nod_coor, alfa, beta, gama );
@@ -101,7 +128,7 @@ void local_matrix_triangle( ElementIter ele )
 		for( j = i; j < 3; j++ ) {
 			calc_polynom_triangle( alfa[ i ], beta[ i ],
 			          	       alfa[ j ], beta[ j ],
-			          	     (SmallMtx2)(ele->a), poly );
+			          	     resistance_tensor, poly );
 			p[ 0 ] = polynom_value_triangle( poly, midpoint[ 0 ] );
 			p[ 1 ] = polynom_value_triangle( poly, midpoint[ 1 ] );
 			p[ 2 ] = polynom_value_triangle( poly, midpoint[ 2 ] );
@@ -116,9 +143,12 @@ void local_matrix_triangle( ElementIter ele )
         }
 	//check_local( ele );
 }
-//=============================================================================
-//
-//=============================================================================
+
+
+/*
+ * Computes coordinates of vertices of the triangle  in the local orthogonal system
+ * that has normalized vector  V0 to V1 as the first vector of the basis.
+ */
 void node_coordinates_triangle( ElementIter ele, double nod[ 3 ][ 2 ] )
 {
 	double u[ 3 ], v[ 3 ];	// vectors of sides 0 and 2
@@ -149,9 +179,11 @@ void node_coordinates_triangle( ElementIter ele, double nod[ 3 ][ 2 ] )
 	nod[ 2 ][ 0 ] = scalar_product( t, v );
 	nod[ 2 ][ 1 ] = scalar_product( b, v );
 }
-//=============================================================================
-// CALCULATE LOCAL MATRIX FOR TRIANGLE ELEMENT
-//=============================================================================
+
+
+/**
+ * Computes coordinates of the side midpoints in the local orthogonal coordinate system.
+ */
 void side_midpoint_triangle( double nod[ 3 ][ 2 ], double midpoint[ 3 ][ 2 ] )
 {
 	midpoint[ 0 ][ 0 ] = ( nod[ 0 ][ 0 ] + nod[ 1 ][ 0 ] ) / 2.0;
@@ -161,9 +193,12 @@ void side_midpoint_triangle( double nod[ 3 ][ 2 ], double midpoint[ 3 ][ 2 ] )
 	midpoint[ 2 ][ 0 ] = ( nod[ 2 ][ 0 ] + nod[ 0 ][ 0 ] ) / 2.0;
 	midpoint[ 2 ][ 1 ] = ( nod[ 2 ][ 1 ] + nod[ 0 ][ 1 ] ) / 2.0;
 }
-//=============================================================================
-// GENERATE BASIS FUNCTIONS
-//=============================================================================
+
+
+
+/*
+ * Computes coefficients of the RT basis functions.
+ */
 void basis_functions_triangle( double nod[ 3 ][ 2 ], double alfa[],
 		      	       double beta[], double gama[] )
 {
@@ -229,24 +264,7 @@ double polynom_value_triangle( double poly[], double point[] )
 	     poly[ 5 ] * point[ 1 ] * point[ 1 ];
 	return rc;
 }
-//=============================================================================
-// CALCULATE LOCAL MARIX FOR LINEAR ELEMENT
-//=============================================================================
-void local_matrix_line( ElementIter ele )
-{
-	double 		val;
-	SmallMtx2 loc=(SmallMtx2)(ele->loc);
 
-	val= (* ele->a) * ele->measure() / (3.0 * ele->material->size);
-	loc[0][0] =  val;
-	loc[1][1] =  val;
-	loc[0][1] = - val / 2.0;
-	loc[1][0] = - val / 2.0;
-
-	ele->bas_alfa[0] = ele->bas_alfa[1] = -1.0 / ele->measure();
-	ele->bas_beta[0] = 1.0;
-	ele->bas_beta[1] = 0.0;
-}
 //=============================================================================
 // CALCULATE LOCAL MARIX FOR SIMPLEX ELEMENT
 //=============================================================================
@@ -260,13 +278,16 @@ void local_matrix_tetrahedron( ElementIter ele )
 	int i, j;               // Loops' counters
 	SmallMtx4 loc=(SmallMtx4)(ele->loc);
 
+    INPUT_CHECK( ele->material->dimension == ele->dim , "Dimension %d of material doesn't match dimension %d of element %d.\n");
+    SmallMtx3 resistance_tensor = (SmallMtx3)(ele->material->hydrodynamic_resistence);
+
 	basis_functions_tetrahedron( ele, alfa, beta, gama, delta );
 	for( i = 0; i < 4; i++ )
 		for( j = i; j < 4; j++ ) {
 			calc_polynom_tetrahedron(
 					alfa[ i ], beta[ i ], gama[ i ],
 					alfa[ j ], beta[ j ], gama[ j ],
-					(SmallMtx3)(ele->a), poly );
+					resistance_tensor, poly );
 			loc[i][j] = delta[i] * delta[j] * polynom_integral_tetrahedron( ele, poly );
 			loc[j][i] = loc[i][j];
 		}

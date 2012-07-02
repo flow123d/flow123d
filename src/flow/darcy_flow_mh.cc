@@ -116,14 +116,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     {
     struct Side *sde;
 
-    //FOR_SIDES(mesh_,sde) {
-    //    calc_side_metrics(sde);
-    //}
-
-    //edge_calculation_mh(mesh_);
-    element_calculation_mh(mesh_);
-    //side_calculation_mh(mesh_);
-    //boundary_calculation_mh(mesh_);
     local_matrices_mh(mesh_);
     }
 
