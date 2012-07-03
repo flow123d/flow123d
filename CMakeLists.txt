@@ -65,15 +65,16 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-find_package(PETSc REQUIRED)
-find_package(PARMETIS REQUIRED)
+
+find_package(PETSc 3.2.0)
+find_package(PARMETIS)
 
 
 
 
 # find boost or use our own
-
-find_package(Boost)
+#
+find_package(Boost 1.42.0 )
 if (NOT Boost_FOUND) 
   # just use our third_party directory
   set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
@@ -183,14 +184,7 @@ add_subdirectory(test_units)
 #################################################################### add targets
 
 
-#### make a script which call correct mpiexec (taken from PETSC)
-# we can not use link, since mpiexec can be sript which reads its location from calling sequence
-add_custom_target(mpiexec_link
-    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DPETSC_MPIEXEC=${PETSC_MPIEXEC}
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_mpiexec.cmake)
 
-# ?? maybe we should use different statement, and possibly it is not neccessary at all
-#set_source_files_properties(${CMAKE_BINARY_DIR}/bin/mpiexec PROPERTIES GENERATED true)
 
 
 
@@ -207,29 +201,24 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
     HEADER_FILE_ONLY TRUE)
 
 
-
-### add target for main binary
-add_executable(flow123d src/main.cc)
-# set libraries linked to main binary (order matter)
-target_link_libraries(flow123d   flow123d_lib semchem)
-set_target_properties(flow123d PROPERTIES
-   RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
-   #OBJECT_DIR ${PROJECT_BINARY_DIR}/build/obj
-)
-# make mpiexec_link when executable is built
-add_dependencies(flow123d rev_num_always mpiexec_link)
-# explicitly say that source file depends on rev_num_always in order to have actual revision number
-set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
+if( PETSC_FOUND )
+#### make a script which call correct mpiexec (taken from PETSC)
+# we can not use link, since mpiexec can be sript which reads its location from calling sequence
+add_custom_target(mpiexec_link
+    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DPETSC_MPIEXEC=${PETSC_MPIEXEC}
+                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_mpiexec.cmake)
 
 
-##### test target - actualy not used
-#add_custom_target(benchmark-test 
-#    COMMAND make testbase
-#    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests
-#)
+  ### add target for flow123d binary
+  add_executable(flow123d src/main.cc)
+  target_link_libraries(flow123d   flow123d_lib semchem)     # set libraries linked to main binary (order matter)
+  add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+
+  # explicitly say that source file depends on rev_num_always in order to have actual revision number
+  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
+endif()
 
 
-
-#enable_testing()
-#add_subdirectory(test_units)
-#include(CTest)
+### add target for interpolation binary
+add_executable(interpolation src/interpolation/interpolation_main.cc)
+target_link_libraries(interpolation  new_mesh_lib ${Armadillo_LIBRARIES})
