@@ -132,9 +132,9 @@ target_link_libraries(input_lib
     system_lib json_spirit)
 
 # new_mesh_lib
-add_library(new_mesh_lib ${sources_lib_new_mesh})
-target_link_libraries(new_mesh_lib 
-    ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})    
+#add_library(new_mesh_lib ${sources_lib_new_mesh})
+#target_link_libraries(new_mesh_lib 
+#    ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})    
     
 # la_lib
 add_library(la_lib ${sources_lib_la})

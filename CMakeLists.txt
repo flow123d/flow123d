@@ -202,5 +202,5 @@ endif()
 
 
 ### add target for interpolation binary
-add_executable(interpolation src/interpolation/interpolation_main.cc)
-target_link_libraries(interpolation  new_mesh_lib ${Armadillo_LIBRARIES})
+# add_executable(interpolation src/interpolation/interpolation_main.cc)
+# target_link_libraries(interpolation  new_mesh_lib ${Armadillo_LIBRARIES})

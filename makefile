@@ -55,7 +55,7 @@ cmake: build/CMakeCache.txt  create_unit_test_links
 
 
 
-build_all: build_flow123d  build_interpolation  #ngh bcd
+build_all: build_flow123d  # build_interpolation  #ngh bcd
 
 flow123d:  build_flow123d  install
 
