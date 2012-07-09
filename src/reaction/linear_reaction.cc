@@ -60,20 +60,72 @@
 	return rec;
 }*/
 
-Input::Type::AbstractRecord &Linear_reaction::get_input_type()
+/*Input::Type::AbstractRecord & Decay::get_input_type()
 {
 	using namespace Input::Type;
-	static AbstractRecord rec("Reaction_module", "Secondary equation for simple chemical reactions.");
+	static AbstractRecord rec("decays", "Equation for reading information about radioactive decays.");
 
-	if (!rec.is_finished()) {
-		rec.declare_key("nr_of_decay_chains", Integer(), Default(0),
-						"Number of decay chains under concideration.");
-		rec.declare_key("nr_of_FOR", Integer(), Default(0),
-								"Number of first ordet reaction under concideration.");
+	if(!rec.is_finished()){
+		rec.declare_key("parental_atom", String(), Default::obligatory(),
+				"Identifier of an isotope.");
+		rec.declare_key("products", Array(Strings()), Default::obligatory(),
+				"Identifies isotopes which decays parental atom to.");
+		rec.declare_key("branching_ratios", Array(Double()), Default(),
+				"Decay chain branching percentage.");
 		rec.finish();
 
-		//TransportOperatorSplitting::get_input_type();
-		//TransportDG::get_input_type();
+		Decay::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}
+
+Input::Type::AbstractRecord & Kinetics::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("kinetics", "Equation for reading information about first order reactions.");
+
+	if(!rec.is_finished()){
+		rec.declare_key("parental_atom", String(), Default::obligatory(),
+				"Identifier of reactant.");
+		rec.declare_key("product", Array(Strings()), Default::obligatory(),
+				"Identifies the product of first order reaction.");
+		rec.finish();
+
+		Kinetics::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}*/
+
+Input::Type::AbstractRecord & Linear_reaction::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("reactions", "Equation for reading information about simple chemical reactions.");
+
+	if (!rec.is_finished()) {
+		rec.declare_key("substances", Array(String()), Default::obligatory(),
+								"Names of transported isotopes.");
+
+		/*rec.declare_key("half_lives", Array(Double()), Default(),
+				"Half lives of transported isotopes.");
+		rec.declare_key("decays", Array(Decays()), Default(),
+				"Description of particular decay chain substeps.");
+		rec.declare_key("kinetic_constants", Array(Double()), Default(),
+				"Kinetic constants describing first order reactions.");
+		rec.declare_key("kinetics", Array(Kinetics()), Default(),
+				"Description of particular first order reactions.");*/
+		rec.declare_key("matrix_exp_on", Bool(), Default("false"),
+				"Enables to use Pade approximant of matrix exponential.");
+		rec.declare_key("nom_pol_deg", Integer(), Default("2"),
+				"Polynomial degree of the nominator of Pade approximant.");
+		rec.declare_key("den_pol_deg", Integer(), Default("2"),
+				"Polynomial degree of the nominator of Pade approximant");
+		rec.finish();
+
+		Linear_reaction::get_input_type();
 
 		rec.no_more_descendants();
 	}
@@ -82,10 +134,16 @@ Input::Type::AbstractRecord &Linear_reaction::get_input_type()
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
 	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), dual_porosity_on(false), prev_conc(NULL), matrix_exp_on(false)
 {
-	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
+	using namespace Input;
+
+	nr_of_decays = in_rec.val<int>("nom_pol_deg");
+
+	cout << endl << "POCET ROZPADOVYCH RAD JE" << nr_of_decays << endl;
+
+	/*nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
 	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
 	nr_of_species = OptGetInt("Transport", "N_substances", "0");
 	matrix_exp_on = OptGetBool("Reaction_module","Matrix_exp_on","No");
@@ -115,7 +173,7 @@ Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, 
 		}else{
 			modify_reaction_matrix_repeatedly();
 		}
-	}
+	}*/
 }
 
 Linear_reaction::~Linear_reaction()

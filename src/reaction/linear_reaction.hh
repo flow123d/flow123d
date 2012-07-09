@@ -18,6 +18,7 @@ class Mesh;
 class Distribution;
 
 #include <input/input_type.hh>
+#include <input/interface.hh>
 
 /*
 * Decay chain member
@@ -90,7 +91,7 @@ class Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
 		/**
 		*	Destructor.
 		*/

@@ -65,10 +65,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	convection = new ConvectionTransport(marks, *mesh_, *mat_base, in_rec);
 	convection->test_concentration_sources(*convection);
 
+
+
 	// Chemistry initialization
-	decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
-	convection->get_par_info(el_4_loc, el_distribution);
-	decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), in_rec);
+	//convection->get_par_info(el_4_loc, el_distribution); //Temporarily commented.
+	//decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	Semchem_reactions->set_el_4_loc(el_4_loc);
 	Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
@@ -166,8 +168,8 @@ void TransportOperatorSplitting::update_solution() {
 	    // one internal step
 	    //xprintf( Msg, "Time : %f\n", convection->time().t() );
 	    convection->compute_one_step();
-	    // Calling linear reactions and Semchem
-	    decayRad->compute_one_step();
+	    // Calling linear reactions and Semchem, temporarily commented
+	    //decayRad->compute_one_step();
 	    Semchem_reactions->compute_one_step();
 	}
     END_TIMER("transport_steps");
