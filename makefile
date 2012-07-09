@@ -24,16 +24,20 @@
 # Build itself takes place in ./src.
 #
 
-all:  install
+all:  build_all install
 
-FLOW_BIN=build/bin/flow123d
-MPIEXEC_BIN=build/bin/mpiexec
+FLOW_BIN=flow123d
+INTERPOLATE_BIN=interpolation
+MPIEXEC_BIN=mpiexec
 
-install: build_flow
-	if [ -e  $(FLOW_BIN) ]; then rm -f bin/flow123d; cp $(FLOW_BIN) bin; fi
-	if [ -e  $(MPIEXEC_BIN) ]; then rm -f bin/mpiexec; cp $(MPIEXEC_BIN) bin; chmod a+x bin/mpiexec; fi
+# install all binaries form build tree to './bin' dir
+install: 
+	if [ -e  "build/$(INTERPOLATE_BIN)" ]; then rm -f bin/$(INTERPOLATE_BIN); cp "build/$(INTERPOLATE_BIN)" bin; fi
+	if [ -e  "build/$(FLOW_BIN)" ]; then rm -f bin/$(FLOW_BIN); cp "build/$(FLOW_BIN)" bin; fi
+	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; chmod a+x bin/mpiexec; fi
 
 
+# run first cmake
 build/CMakeCache.txt:
 	if [ ! -d build ]; then mkdir build; fi
 	cd build; cmake ..
@@ -45,14 +49,24 @@ build/CMakeCache.txt:
 create_unit_test_links:
 	for f in  `find test_units/ -name CMakeLists.txt`; do ln -sf "$${PWD}/build/$${f%/*}/Makefile" "$${f%/*}/makefile";done
 
-
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
 cmake: build/CMakeCache.txt  create_unit_test_links
 
-build_flow: cmake
-	make -j 4 -C build all
 
+
+build_all: build_flow123d  # build_interpolation  #ngh bcd
+
+flow123d:  build_flow123d  install
+
+build_flow123d: cmake
+	make -j 4 -C build flow123d
+
+	
+interpolation: build_interpolation install
+	
+build_interpolation: 
+	make -j 4 -C build interpolation
 
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
@@ -67,7 +81,10 @@ clean: cmake
 	make -C build clean
 
 # try to remove all
-clean-all: 
+clean-all: clean
+	rm -f bin/${FLOW_BIN}
+	rm -f bin/${MPIEXEC_BIN}
+	rm -f bin/${INTERPOLATE_BIN}
 	rm -rf build
 	for f in  `find test_units/ -name makefile`; do rm -f "$${f}";done
 	make -C third_party clean

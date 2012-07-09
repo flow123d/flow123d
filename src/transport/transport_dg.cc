@@ -29,7 +29,7 @@
 
 #include "petscmat.h"
 #include <armadillo>
-#include "xio.h"
+#include "system/xio.h"
 #include "transport/transport_dg.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
