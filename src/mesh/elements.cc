@@ -63,12 +63,8 @@ static void parse_element_properties_line(char*);
 //static void diag_A_stats(Mesh*);
 
 Element::Element()
-: type(0),
-  mid(0),
-  rid(0),
+: mid(0),
   pid(0),
-
-  dim(0),
 
   node(NULL),
 
@@ -77,7 +73,9 @@ Element::Element()
   boundaries_(NULL),
 
   n_neighs_vb(0),
-  neigh_vb(NULL)
+  neigh_vb(NULL),
+
+  dim_(0)
 
 {
 }
@@ -98,7 +96,7 @@ double Element::volume() {
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
 double Element::measure() {
-    switch (dim) {
+    switch (dim()) {
         case 1:
             return element_length_line();
             break;
@@ -166,7 +164,7 @@ arma::vec3 Element::centre() {
  */
 unsigned int Element::n_sides_by_dim(int side_dim)
 {
-    if (side_dim == dim) return 1;
+    if (side_dim == dim()) return 1;
 
     unsigned int n = 0;
     for (unsigned int i=0; i<n_sides(); i++)
@@ -222,7 +220,7 @@ const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node
     {
         return node[side_id];
     }
-    else if (side_dim == dim)
+    else if (side_dim == dim())
     {
         ASSERT(side_id==0, "Number of side is out of range.");
         return this->node[node_id];

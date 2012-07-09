@@ -22,7 +22,7 @@ inline Side::Side(ElementIter ele, unsigned int set_lnum)
     }
 
     inline unsigned int Side::dim() const {
-        return element_->dim-1;
+        return element_->dim()-1;
     }
 
     // returns true for all sides either on boundary or connected to vb neigboring

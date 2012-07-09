@@ -695,7 +695,7 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
         if (!edistr.is_local(edg.index()))
             continue;
 
-        e_weight = edge_dim_weights[edg->side(0)->element()->dim - 1];
+        e_weight = edge_dim_weights[edg->side(0)->element()->dim() - 1];
         // for all connected elements
         FOR_EDGE_SIDES( edg, li ) {
             ASSERT( edg->side(li)->valid(),"NULL side of edge.");

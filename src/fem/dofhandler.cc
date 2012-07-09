@@ -73,7 +73,7 @@ void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe,
     FOR_ELEMENTS(mesh,cell)
     {
         // skip cells of different dimension
-        if (cell->dim != dim) continue;
+        if (cell->dim() != dim) continue;
 
         // distribute dofs
         // TODO: For the moment we distribute only dofs associated to the cell

@@ -11,19 +11,25 @@
 #include "sides.h"
 #include "side_impl.hh"
 
+
+inline unsigned int Element::dim() const {
+    return dim_;
+}
+
+
 inline unsigned int Element::index() const {
     return mesh_->element.index( this );
 }
 
 
 inline unsigned int Element::n_nodes() const {
-    return dim+1;
+    return dim()+1;
 }
 
 
 
 inline unsigned int Element::n_sides() const {
-    return dim+1;
+    return dim()+1;
 }
 
 

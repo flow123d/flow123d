@@ -128,7 +128,7 @@ void Mesh::count_element_types() {
     F_ENTRY;
 
     FOR_ELEMENTS(this, elm)
-    switch (elm->dim) {
+    switch (elm->dim()) {
         case 1:
             n_lines++;
             break;

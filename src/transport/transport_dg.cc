@@ -325,7 +325,7 @@ void TransportDG::output_data()
 
     	FOR_ELEMENTS(mesh_, elem)
 		{
-    		switch (elem->dim)
+    		switch (elem->dim())
     		{
     		case 1:
     			dof_handler1d->get_dof_indices(elem, dof_indices);
@@ -377,7 +377,7 @@ void TransportDG::assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,
     // assemble integral over elements
     for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
     {
-        if (cell->dim != dim) continue;
+        if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
 
@@ -442,7 +442,7 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
 	// assemble integral over elements
     for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
     {
-        if (cell->dim != dim) continue;
+        if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
         fv_rt.reinit(cell);
@@ -500,7 +500,7 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
     // assemble integral over sides
     FOR_EDGES( mesh_, edg ) //for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
     {
-        if (edg->n_sides < 2 || edg->side(0)->element()->dim != dim) continue;
+        if (edg->n_sides < 2 || edg->side(0)->element()->dim()!= dim) continue;
 
         fv_sb.resize(edg->n_sides);
         side_K.resize(edg->n_sides);
@@ -672,7 +672,7 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
     // assemble integral over sides
     FOR_NEIGHBOURS(mesh_ , nb)
     {
-        if (nb->element()->dim != dim-1) continue;
+        if (nb->element()->dim()!= dim-1) continue;
 
         /// TODO: remove symmetry, consider element in lower and edge (or side) on higher dim
         int nb_sides = 2;   // = nb->n_sides;
@@ -788,7 +788,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
     {
         cell = mesh_->element.full_iter(b->side->element());
 
-        if (cell->dim != dim) continue;
+        if (cell->dim()!= dim) continue;
 
         // skip Neumann boundaries
         double elem_flux = 0;
@@ -1073,7 +1073,7 @@ void TransportDG::read_initial_condition()
         eid   = atoi( xstrtok( line ) );
         ElementFullIter cell = mesh_->element.find_id(eid);
 
-        switch (cell->dim)
+        switch (cell->dim())
         {
         case 1:
             dof_handler1d->get_dof_indices(cell, dof_indices);

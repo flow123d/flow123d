@@ -91,7 +91,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    //==================================================================
    n = (ppelm->material->por_m) / (1 - ppelm->material->por_m); //asi S/V jako zze splocha
 
-   switch (ppelm->dim) { //objem se snad na nic nepouzzi:va:
+   switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
 	  case 3 : pomoc = (ppelm->volume()) * (ppelm->material->por_m); break;
@@ -135,7 +135,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
     // ----------------- POTE PRO IMOBILNI PORY ------------------------
     //==================================================================
    if(porTyp == true) {
-   switch (ppelm->dim) { //objem se snad na nic nepouzzi:va:
+   switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
 	  case 3 : pomoc = ppelm->volume() * (ppelm->material->por_imm); break;

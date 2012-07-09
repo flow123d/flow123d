@@ -36,7 +36,7 @@ void MHFEValues::update(ElementFullIter ele) {
 
     ASSERT(!( ele == NULL ),"NULL as argument of function local_matrix()\n");
 
-    switch( ele->dim ) {
+    switch( ele->dim() ) {
         case 1:
             local_matrix_line( ele );
             break;
@@ -73,7 +73,7 @@ double * MHFEValues::inv_local_matrix() {
 
 
 arma::vec3 MHFEValues::RT0_value(ElementFullIter ele, arma::vec3 point, unsigned int face) {
-    switch( ele->dim ) {
+    switch( ele->dim() ) {
     case 1:
         {
             double sign = (face == 0)? -0.5 : 0.5;
@@ -129,7 +129,7 @@ void MHFEValues::local_matrix_line(ElementFullIter ele )
     double      val;
     SmallMtx2 loc=(SmallMtx2)(loc_matrix_);
 
-    INPUT_CHECK( ele->material->dimension == ele->dim , "Dimension %d of material doesn't match dimension %d of element %d.\n");
+    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     SmallMtx1 resistance_tensor = (SmallMtx1)(ele->material->hydrodynamic_resistence);
 
     val= (resistance_tensor[0][0]) * ele->measure() / (3.0 * ele->material->size);
@@ -159,7 +159,7 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele )
     double nod_coor[ 3 ][ 2 ]; // Coordinates of nodes;
     SmallMtx3 loc=(SmallMtx3)(loc_matrix_);
 
-    INPUT_CHECK( ele->material->dimension == ele->dim , "Dimension %d of material doesn't match dimension %d of element %d.\n");
+    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     SmallMtx2 resistance_tensor = (SmallMtx2)(ele->material->hydrodynamic_resistence);
 
     node_coordinates_triangle( ele, nod_coor );
@@ -319,7 +319,7 @@ void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele )
     int i, j;               // Loops' counters
     SmallMtx4 loc=(SmallMtx4)(loc_matrix_);
 
-    INPUT_CHECK( ele->material->dimension == ele->dim , "Dimension %d of material doesn't match dimension %d of element %d.\n");
+    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     SmallMtx3 resistance_tensor = (SmallMtx3)(ele->material->hydrodynamic_resistence);
 
     basis_functions_tetrahedron( ele, alfa, beta, gama, delta );

@@ -47,6 +47,7 @@ class Element
 public:
     Element();
 
+    inline unsigned int dim() const;
     inline unsigned int index() const;
     unsigned int n_sides() const;    // Number of sides
     unsigned int n_nodes() const; // Number of nodes
@@ -63,13 +64,11 @@ public:
 
 
     // Data readed from mesh file
-    int      type;      //
     int      mid;       // Id # of material
-    int      rid;       // Id # of region
+    //int      rid;       // Id # of region
     int      pid;       // Id # of mesh partition
 
     // Type specific data
-    int dim;        // 1 or 2 or 3
     Node** node;    // Element's nodes
 
     MaterialDatabase::Iter material; // Element's material
@@ -85,43 +84,26 @@ public:
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
 
-    // Matrix
-    //double *loc;        // Local matrix
-    //double *loc_inv;    // Inverse of the local matrix
-
 
 protected:
+
+    unsigned int dim_;
 
     double element_length_line();
     double element_area_triangle();
     double element_volume_tetrahedron();
     
+    friend class GmshMeshReader;
+
 };
 
 
-#define D_DIAG 0        // in D block diagonal is always at zero position in d_val,d_col
-
-#define xPOINT 0
-#define LINE 1
-#define TRIANGLE 2
-#define TETRAHEDRON 4
-
-#define PROP_S 1        //Area of 1D element
-#define PROP_H 2        //Height of 2D element
-#define PROP_V 3        //Volume of 3D element
-
 #define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes();(j)++)
 #define FOR_ELEMENT_SIDES(i,j)  for(unsigned int j=0; j < (i)->n_sides(); j++)
-//#define FOR_ELM_NEIGHS_VV(i,j)  for((j)=0;(j)<(i)->n_neighs_vv;(j)++)
 #define FOR_ELM_NEIGHS_VB(i,j)  for((j)=0;(j)<(i)->n_neighs_vb;(j)++)
 
-//void read_element_list(Mesh*);
-void element_calculation_mh(Mesh*);
-//void make_element_geometry();
-//void element_calculation_unsteady(struct Problem*);
-
-//void read_element_properties(Mesh*);
 
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:
+

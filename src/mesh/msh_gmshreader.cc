@@ -99,19 +99,6 @@ void GmshMeshReader::read_nodes(FILE* in, Mesh* mesh) {
 }
 
 /**
- * supported_element_type(int type)
- */
-char GmshMeshReader::supported_element_type(int type) {
-    switch (type) {
-        case LINE:
-        case TRIANGLE:
-        case TETRAHEDRON:
-            return true;
-    }
-    return false;
-}
-
-/**
  * PARSE ELEMENT LINE
  */
 void GmshMeshReader::parse_element_line(ElementVector &ele_vec, char *line, Mesh* mesh) {
@@ -128,37 +115,46 @@ void GmshMeshReader::parse_element_line(ElementVector &ele_vec, char *line, Mesh
 
     //DBGMSG("add el: %d", id);
     ElementFullIter ele(ele_vec.add_item(id));
+
     //get element type: supported:
     //	1 Line (2 nodes)
     //	2 Triangle (3 nodes)
     //	4 Tetrahedron (4 nodes)
-
     type = atoi(xstrtok(NULL));
-    if (supported_element_type(type) == false)
-        xprintf(UsrErr, "Element %d is of the unsupported type %d\n", id, type);
-
-    ele->type = type;
-    element_type_specific(ele);
-    element_allocation_independent(mesh,ele);
+    switch (type) {
+        case 1:
+            ele->dim_ = 1;
+            break;
+        case 2:
+            ele->dim_ = 2;
+            break;
+        case 4:
+            ele->dim_ = 3;
+            break;
+        default:
+            xprintf(UsrErr, "Element %d is of the unsupported type %d\n", ele.id(), type);
+    }
 
     //get number of tags (at least 2)
     n_tags = atoi(xstrtok(NULL));
     INPUT_CHECK(!(n_tags < 2), "At least two element tags have to be defined. Elm %d\n", id);
-
     //get tags 1 and 2
     ele->mid = atoi(xstrtok(NULL));
-    ele->rid = atoi(xstrtok(NULL));
-
+    int rid = atoi(xstrtok(NULL));
     //get remaining tags
-    if (n_tags > 2) {
-        ele->pid = atoi(xstrtok(NULL)); // chop partition number in the new GMSH format
+    if (n_tags > 2)  ele->pid = atoi(xstrtok(NULL)); // chop partition number in the new GMSH format
+    for (ti = 3; ti < n_tags; ti++) xstrtok(NULL);         //skip remaining tags
 
-        //skip remaining tags
-        for (ti = 3; ti < n_tags; ti++)
-            xstrtok(NULL);
+    // allocate element arrays
+    ele->node = new Node * [ele->n_nodes()];
+    ele->edges_ = new Edge * [ele->n_sides()];
+    ele->boundaries_ = new Boundary * [ele->n_sides()];
+    ele->mesh_ = mesh;
+
+    FOR_ELEMENT_SIDES(ele, si) {
+        ele->edges_[ si ]=NULL;
+        ele->boundaries_[si] =NULL;
     }
-
-    ele->node = (Node**) xmalloc(ele->n_nodes() * sizeof (Node*));
 
     FOR_ELEMENT_NODES(ele, ni) {
         int nodeId = atoi(xstrtok(NULL));
@@ -170,49 +166,6 @@ void GmshMeshReader::parse_element_line(ElementVector &ele_vec, char *line, Mesh
     }
 }
 
-/**
- * element_type_specific(ElementFullIter ele)
- */
-void GmshMeshReader::element_type_specific(ElementFullIter ele) {
-    ASSERT(NONULL(ele), "NULL as argument of function element_type_specific()\n");
-    switch (ele->type) {
-        case LINE:
-            ele->dim = 1;
-            break;
-        case TRIANGLE:
-            ele->dim = 2;
-            break;
-        case TETRAHEDRON:
-            ele->dim = 3;
-            break;
-        default:
-            xprintf(UsrErr, "Element %d is of the unsupported type %d\n", ele.id(), ele->type);
-    }
-}
-
-/**
- * ALLOCATION OF ARRAYS IN STRUCT ELEMENT WHOSE SIZE DEPENDS ONLY ON ELEMENT'S
- * TYPE, NOT ON TOPOLOGY OF THE MESH
- */
-void GmshMeshReader::element_allocation_independent(Mesh * mesh, ElementFullIter ele) {
-    int si, ni;
-
-    ASSERT(NONULL(ele), "NULL as argument of function element_allocation_independent()\n");
-    ele->node = (Node**) xmalloc(ele->n_nodes() * sizeof (Node*));
-    ele->edges_ = new Edge * [ele->n_sides()];
-    ele->boundaries_ = new Boundary * [ele->n_sides()];
-    ele->mesh_ = mesh;
-
-
-    FOR_ELEMENT_NODES(ele, ni) {
-        ele->node[ ni ] = NULL;
-    }
-
-    FOR_ELEMENT_SIDES(ele, si) {
-        ele->edges_[ si ]=NULL;
-        ele->boundaries_[si] =NULL;
-    }
-}
 
 /**
  * private method for reading of elements - in process of implementation
