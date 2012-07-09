@@ -74,14 +74,22 @@ find_package(PARMETIS)
 
 # find boost or use our own
 #
-find_package(Boost 1.42.0)
+find_package(Boost 1.42.0 EXACT)
 if (NOT Boost_FOUND) 
   message(STATUS "Try to use our essential Boost subset.")
+  unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
+  unset(Boost_LIBRARY_DIRS CACHE)
+  unset(Boost_LIB_VERSION CACHE)
+  unset(Boost_VERSION CACHE)  
+
   set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-  find_package(Boost)
+  find_package(Boost 1.42.0 EXACT REQUIRED)
+  
   # hint same Boost to armadillo 
-  set(Armadillo_Boost_Hint -D Boost_DEBUG=1 -D BOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
+  set(Armadillo_Boost_Hint  -D BOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
 endif()
+message(STATUS "Boost_INCLUDE_DIR = ${Boost_INCLUDE_DIR}")
+
 
 # find aramdillo or use our own
 # FindAramdillo returs:
@@ -119,7 +127,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 
 ################################################################### set includes and libraries paths
-  
+
 include_directories(
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
