@@ -24,6 +24,9 @@
 # This file can be included by makefiles from particular tests
 # to use general rules: "test" and "clean"
 
+update:
+	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS} update
+
 test:
 	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
