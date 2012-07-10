@@ -139,20 +139,16 @@ Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, 
 {
 	using namespace Input;
 
-	nr_of_decays = in_rec.val<int>("nom_pol_deg");
-
-	cout << endl << "POCET ROZPADOVYCH RAD JE" << nr_of_decays << endl;
-
 	/*nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
 	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
-	nr_of_species = OptGetInt("Transport", "N_substances", "0");
-	matrix_exp_on = OptGetBool("Reaction_module","Matrix_exp_on","No");
+	nr_of_species = OptGetInt("Transport", "N_substances", "0");*/
+	matrix_exp_on = in_rec.val<bool>("matrix_exp_on");//OptGetBool("Reaction_module","Matrix_exp_on","No");
 	if(matrix_exp_on == true)
 	{
-		nom_pol_deg = OptGetInt("Reaction_module","Nom_pol_deg","2");
-		den_pol_deg = OptGetInt("Reaction_module","Den_pol_deg","2");
+		nom_pol_deg = in_rec.val<int>("nom_pol_deg"); // =  OptGetInt("Reaction_module","Nom_pol_deg","2");
+		den_pol_deg = in_rec.val<int>("den_pol_deg"); //= OptGetInt("Reaction_module","Den_pol_deg","2");
 	}
-	//dual_porosity_on = dualPorosity;
+	/*/dual_porosity_on = dualPorosity;
 	set_dual_porosity();
 	set_mesh_(mesh);
 	set_nr_of_elements(mesh->n_elements());

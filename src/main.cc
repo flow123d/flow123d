@@ -190,7 +190,8 @@ int main(int argc, char **argv) {
         xprintf(UsrErr,"Problem type not implemented.");
     }
 
-
+    //int i_reactions = i_rec.val<int>("reactions");
+    //cout << endl << "JENOM PRVNI TEST CTENI: " << i_reactions << endl;
 
     // Say Goodbye
     return xterminate(false);
