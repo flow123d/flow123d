@@ -80,7 +80,7 @@ typedef struct SystemInfo {
 
 extern SystemInfo sys_info;
 
-void 	system_init( int &argc, char ** &argv);
+void 	system_init( int argc, char ** argv, const string& log_filename);
 
 
 void    system_set_from_options();

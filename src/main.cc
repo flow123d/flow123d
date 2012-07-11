@@ -38,6 +38,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
 
 #include "main.h"
 //#include "io/read_ini.h"
@@ -49,6 +51,74 @@
 
 static void main_convert_to_output();
 
+
+Application::Application(const int argc,  char ** argv)
+: main_input_dir_("."),
+  main_input_filename_(""),
+  log_filename_(""),
+  passed_argc_(0),
+  passed_argv_(0)
+{
+
+    // parse our own command line arguments, leave others for PETSc
+    parse_cmd_line(argc, argv);
+
+
+    system_init(passed_argc_, passed_argv_, log_filename_); // Petsc, open log, read ini file
+
+
+
+
+
+
+    Profiler::initialize(MPI_COMM_WORLD);
+    START_TIMER("WHOLE PROGRAM");
+
+    // Say Hello
+    // make strings from macros in order to check type
+    string version(_VERSION_);
+    string revision(REVISION);
+    xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", version.c_str(),revision.c_str());
+    xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
+
+    // read main input file
+    Input::JSONToStorage json_reader;
+    string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
+    DBGMSG("Reading file %s.\n", fname.c_str() );
+    std::ifstream in_stream(fname.c_str());
+    if (! in_stream) {
+        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
+    }
+
+    json_reader.read_stream(in_stream, get_input_type() );
+
+    {
+        using namespace Input;
+
+        // get main input record handle
+        Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+
+        sys_info.pause_after_run=i_rec.val<bool>("pause_after_run");
+        Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
+
+        // run simulation
+        if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
+            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
+            problem->run_simulation();
+            delete problem;
+
+        } else {
+            xprintf(UsrErr,"Problem type not implemented.");
+        }
+
+    }
+
+}
+
+
+
+
+
 /**
  * @brief Main flow initialization
  * @param[in] argc       command line argument count
@@ -59,9 +129,10 @@ static void main_convert_to_output();
  * TODO: this parsing function should be in main.cc
  *
  */
-void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
-    const char USAGE_MSG[] = "\
-    Wrong program parameters.\n\
+void Application::parse_cmd_line(const int argc, char ** argv) {
+    namespace po = boost::program_options;
+
+    const char USAGE_MSG[] = "\n\
     Usage: flow123d [options] ini_file\n\
     Options:\n\
     -s       Compute MH problem (Obsolete)\n\
@@ -72,40 +143,92 @@ void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
     -o       Absolute path to output directory.\n\
     -l file  Set base name of log files or turn logging off if no name is given.\n";
 
-    xprintf(MsgLog, "Parsing program parameters ...\n");
+    //xprintf(MsgLog, "Parsing program parameters ...\n");
 
-    // Check command line arguments
-    if ((argc >= 3) && (strlen(argv[1]) == 2) && (argv[1][0] == '-')) {
-        std::string ini_argument ( argv[2] );
-        std::string ini_dir;
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("solve,s", po::value< string >(), "Main input file to solve.")
+        ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
+        ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
+        ("log,l", po::value< string >(), "Set base name for log file. Turn logging off if no name is given.")
+        ("full_doc", "Produce full structure of the main input file.");
+    ;
+
+    // parse the command line
+    po::variables_map vm;
+    po::parsed_options parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).allow_unregistered().run();
+    po::store(parsed, vm);
+    po::notify(vm);
+
+    // get unknown options
+    vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+    passed_argc_ = to_pass_further.size();
+    passed_argv_ = new char * [passed_argc_];
+    for(int i=0; i < passed_argc_; i++) {
+        passed_argv_[i] = new char [to_pass_further[i].size()];
+        strcpy(passed_argv_[i], to_pass_further[i].c_str());
+    }
+
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        free_and_exit();
+    }
+
+    if (vm.count("full_doc")) {
+        cout << get_input_type() << "\n";
+        free_and_exit();
+    }
+
+    if (vm.count("solve")) {
+        string input_filename = vm["solve"].as<string>();
+
 
         // Try to find absolute or relative path in fname
-        int delim_pos=ini_argument.find_last_of(DIR_DELIMITER);
-        if (delim_pos < ini_argument.npos) {
+        int delim_pos=input_filename.find_last_of(DIR_DELIMITER);
+        if (delim_pos < input_filename.npos) {
             // It seems, that there is some path in fname ... separate it
-            ini_dir=ini_argument.substr(0,delim_pos);
-            ini_fname=ini_argument.substr(delim_pos+1); // till the end
+            main_input_dir_ =input_filename.substr(0,delim_pos);
+            main_input_filename_ =input_filename.substr(delim_pos+1); // till the end
         } else {
-            ini_dir=".";
-            ini_fname=ini_argument;
+            main_input_dir_ = ".";
+            main_input_filename_ = input_filename;
         }
 
-        switch (argv[ 1 ][ 1 ]) {
-            case 's':
-                ini_fname=ini_argument;
-                break;
-            case 'S':
-                xchdir(ini_dir.c_str());
-                break;
-            default:
-                //xprintf(UsrErr, USAGE_MSG);   // Caused crash of flow123d
-                xprintf(UsrErr,"%s", USAGE_MSG);
-        }
 
+    } else {
+        cout << "Usage error: The main input file has to be specified.\n\n";
+        cout << desc << "\n";
+        free_and_exit();
     }
+
+    string input_dir;
+    string output_dir;
+    if (vm.count("input_dir")) {
+        input_dir = vm["input_dir"].as<string>();
+    }
+    if (vm.count("output_dir")) {
+            output_dir = vm["output_dir"].as<string>();
+    }
+
+    // assumes working directory "."
+    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
+
+
+    if (vm.count("log_filename")) {
+        log_filename_ = vm["log"].as<string>();
+    } else {
+        log_filename_ = "\n";
+    }
+
+    // TODO: catch specific exceptions and output usage messages
 }
 
-Input::Type::Record &get_input_type() {
+
+
+
+Input::Type::Record &  Application::get_input_type() {
     using namespace Input::Type;
 
     // this should be part of a system class containing all support information
@@ -116,14 +239,23 @@ Input::Type::Record &get_input_type() {
     static Record main_rec("Root", "Root record of JSON input for Flow123d.");
     //main_rec.declare_key("system", system_rec, "");
 
-    main_rec.declare_key("problem", CouplingBase::get_input_type(), Default::obligatory(),
+    if (!main_rec.is_finished()) {
+        main_rec.declare_key("problem", CouplingBase::get_input_type(), Default::obligatory(),
             "Simulation problem to be solved.");
-    main_rec.declare_key("pause_after_run", Bool(), Default("false"),
+        main_rec.declare_key("pause_after_run", Bool(), Default("false"),
                 "If true, the program will wait for key press before it terminates.");
-    main_rec.finish();
+        main_rec.finish();
+    }
 
     return main_rec;
 }
+
+
+void Application::free_and_exit() {
+    xterminate(false);
+}
+
+
 
 //=============================================================================
 
@@ -135,64 +267,7 @@ int main(int argc, char **argv) {
     std::string ini_fname;
 
     F_ENTRY;
-
-    parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
-
-    Input::Type::Record main_record_type = get_input_type();
-
-    system_init(argc, argv); // Petsc, open log, read ini file
-    //OptionsInit(ini_fname.c_str()); // Read options/ini file into database
-
-    // todo: should use Boost::parameters, and move this to parse_cmd_line
-    char input_dir[PETSC_MAX_PATH_LEN];
-    char output_dir[PETSC_MAX_PATH_LEN];
-    PetscBool flg;
-
-    PetscOptionsGetString(PETSC_NULL,"-i",input_dir,PETSC_MAX_PATH_LEN,&flg);
-    if (! flg) input_dir[0]=0;
-
-    PetscOptionsGetString(PETSC_NULL,"-o",output_dir,PETSC_MAX_PATH_LEN,&flg);
-    if (! flg) output_dir[0]=0;
-
-    FilePath::set_io_dirs(".", string(input_dir), string(output_dir) );
-
-
-    Input::JSONToStorage json_reader;
-    std::ifstream in_stream(ini_fname.c_str());
-    json_reader.read_stream(in_stream, main_record_type );
-
-    Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
-
-    sys_info.pause_after_run=i_rec.val<bool>("pause_after_run");
-
-
-    Profiler::initialize(MPI_COMM_WORLD);
-
-    START_TIMER("WHOLE PROGRAM");
-
-    // Say Hello
-    
-    // make strings from macros in order to check type
-    string version(_VERSION_);
-    string revision(REVISION);
-    
-    xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", version.c_str(),revision.c_str());
-    xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
-
-    Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
-
-    if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
-        HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
-        problem->run_simulation();
-        delete problem;
-
-    } else {
-        xprintf(UsrErr,"Problem type not implemented.");
-    }
-
-    //int i_reactions = i_rec.val<int>("reactions");
-    //cout << endl << "JENOM PRVNI TEST CTENI: " << i_reactions << endl;
-
+    Application app(argc, argv);
     // Say Goodbye
     return xterminate(false);
 }

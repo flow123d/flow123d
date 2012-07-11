@@ -18,25 +18,29 @@ string FilePath::root_dir="";
 FilePath::FilePath(const string file_path, const  FileType ft) {
     ASSERT( output_dir != "", "Creating FileName object before set_io_dirs is called.\n");
     if (ft == input_file) {
-        abs_file_path = root_dir + "/" + file_path;
+        abs_file_path = root_dir + DIR_DELIMITER + file_path;
         substitute_value();
     } else if (ft == output_file) {
-        if (file_path[0] == '/') {
+        if (file_path[0] == DIR_DELIMITER) {
             THROW( ExcAbsOutputPath() << EI_Path( file_path ) );
         }
-        abs_file_path = output_dir + "/" + file_path;
+        abs_file_path = output_dir + DIR_DELIMITER + file_path;
         substitute_value();
     }
 }
 
 
 
-void FilePath::set_io_dirs(const string root,const string input,const string output) {
-    root_dir = root;
+void FilePath::set_io_dirs(const string working_dir, const string root_input_dir,const string input,const string output) {
+    // root directory
+    root_dir = root_input_dir;
 
-    if (output[0] == '/') output_dir = output;
-    else output_dir = root_dir + '/' + output;
+    // relative output dir is relative to working directory
+    // this is possibly independent of position of the main input file
+    if (output[0] == DIR_DELIMITER) output_dir = output;
+    else output_dir = working_dir + DIR_DELIMITER + output;
 
+    // the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);
 }
 

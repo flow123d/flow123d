@@ -105,6 +105,8 @@ if (NOT Boost_FOUND)
     message(STATUS "Force to use our subset of Boost INCLUDE: ${Boost_INCLUDE_DIR} LIBS: ${Boost_LIBRARY_DIRS}")
   endif()
 endif()
+set(Boost_LIBS -lboost_program_options)
+
 
 # find aramdillo or use our own
 # FindAramdillo returs:
@@ -232,7 +234,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
 ### add target for main binary
 add_executable(flow123d src/main.cc)
 # set libraries linked to main binary (order matter)
-target_link_libraries(flow123d   flow123d_lib semchem)
+target_link_libraries(flow123d   flow123d_lib semchem ${Boost_LIBS})
 set_target_properties(flow123d PROPERTIES
    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
    #OBJECT_DIR ${PROJECT_BINARY_DIR}/build/obj

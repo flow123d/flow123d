@@ -63,7 +63,7 @@ public:
     /**
      * Set current, input and output dir.
      */
-    static void set_io_dirs(const string current,const string input,const string output);
+    static void set_io_dirs(const string working_dir, const string root_input,const string input,const string output);
 
     /**
      * This class is implicitly convertible to string.
