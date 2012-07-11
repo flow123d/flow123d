@@ -290,7 +290,7 @@ const double PolynomialSpace<degree,dim>::basis_value(unsigned int i, const arma
     double v = 1;
 
     for (int j=0; j<dim; j++)
-        v *= pow(p[j], powers[i][j]);
+        v *= pow(p[j], (int) powers[i][j]);
 
     return v;
 }
@@ -313,7 +313,7 @@ const arma::vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int
                 grad[j] = 0;
                 continue;
             }
-            grad[j] *= pow(p[k], powers[i][j]-1);
+            grad[j] *= pow(p[k], (int) powers[i][j]-1);
         }
     }
     return grad;

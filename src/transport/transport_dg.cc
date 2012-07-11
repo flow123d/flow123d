@@ -29,7 +29,7 @@
 
 #include "petscmat.h"
 #include <armadillo>
-#include "xio.h"
+#include "system/xio.h"
 #include "transport/transport_dg.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
@@ -42,6 +42,8 @@
 #include "la/distribution.hh"
 #include "transport/transport_bc.hh"
 
+
+using namespace arma;
 
 using namespace arma;
 
@@ -1053,6 +1055,11 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
 
 	gamma += alpha/h*delta[0];
 }
+
+
+
+
+
 
 
 

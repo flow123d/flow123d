@@ -4,7 +4,12 @@
  *  Created on: Feb 9, 2012
  *      Author: jiri
  */
+
+#include <iostream>
+#include <iomanip>
+#include <string>
 #include <petscmat.h>
+
 #include "transport/sources.hh"
 
 #include "system/system.hh"
@@ -14,10 +19,7 @@
 //#include "materials.hh"
 #include "io/read_ini.h"
 #include "la/distribution.hh"
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include "xio.h"
+#include "system/xio.h"
 
 
 //=============================================================================

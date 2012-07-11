@@ -40,7 +40,6 @@ set(sources_lib_non_system
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
 
-    
     io/output.cc
     io/output_vtk.cc
     io/output_msh.cc
@@ -77,6 +76,11 @@ set(sources_lib_non_system
     time_governor.cc
     field_p0.cc
 )
+
+set(sources_lib_new_mesh
+    new_mesh/multi_mesh.cc
+    new_mesh/point.cc
+    )
 
 set(sources_lib_la
 	la/distribution.cc
@@ -143,6 +147,11 @@ add_library(input_lib ${sources_lib_input})
 target_link_libraries(input_lib 
     system_lib json_spirit)
 
+# new_mesh_lib
+#add_library(new_mesh_lib ${sources_lib_new_mesh})
+#target_link_libraries(new_mesh_lib 
+#    ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})    
+    
 # la_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 

@@ -15,7 +15,7 @@
 #include <string>
 #include <iomanip>
 
-#include "system.hh"
+#include "system/system.hh"
 
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>

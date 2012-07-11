@@ -2,6 +2,7 @@ Test problem 15
 ---------------------
 verification of:
 - unsteady flow (LMH) + transport
+- implicit transport with dispersion
 
 setting:
 

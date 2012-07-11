@@ -11,7 +11,7 @@
 #define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
 #define BOOST_MPL_LIMIT_VECTOR_SIZE 30
 #include <boost/mpl/vector.hpp>
-#include <finite_state_filter.hpp>
+#include "input/finite_state_filter.hpp"
 
 namespace Input {
 

@@ -63,12 +63,21 @@ public:
         OUT_ARRAY_DOUBLE_SCA
     } OutDataType;
 
+    // Types of reference data
+    typedef enum {
+        NODE_DATA,
+        CORNER_DATA,
+        ELEM_DATA
+    } RefType;
+
     string          *name;      ///< String with name of data
     string          *units;     ///< String with units
     void            *data;      ///< Pointer at own data
     OutDataType     type;       ///< Type values in vector
+    RefType         ref_type;   ///< Type of reference data
     int             comp_num;   ///< Number of components in vector
     int             num;        ///< Number of values in vector/array
+
 
     OutputData() {};            ///< Un-named constructor can't be called directly
 
@@ -305,8 +314,7 @@ public:
         GMSH_MSH_ASCII = 1,
         GMSH_MSH_BIN = 2,
         VTK_SERIAL_ASCII = 3,
-        VTK_PARALLEL_ASCII = 4,
-        VTK_DISCONT_ASCII = 5
+        VTK_PARALLEL_ASCII = 4
     } OutFileFormat;
 
     OutFileFormat file_format;
@@ -365,6 +373,7 @@ int Output::register_node_data(std::string name,
         int found = 0;
 
         OutputData *out_data = new OutputData(name, unit, data, size);
+        out_data->ref_type = OutputData::NODE_DATA;
         node_data->push_back(*out_data);
 
         return 1;
@@ -393,6 +402,7 @@ int Output::register_elem_data(std::string name,
         int found = 0;
 
         OutputData *out_data = new OutputData(name, unit, data, size);
+        out_data->ref_type = OutputData::ELEM_DATA;
         elem_data->push_back(*out_data);
 
         return 1;
@@ -418,6 +428,7 @@ int Output::register_node_data(std::string name,
 
     if(mesh->node_vector.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
+        out_data->ref_type = OutputData::NODE_DATA;
         node_data->push_back(*out_data);
         return 1;
     } else {
@@ -442,6 +453,7 @@ int Output::register_elem_data(std::string name,
 
     if(mesh->element.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
+        out_data->ref_type = OutputData::ELEM_DATA;
         elem_data->push_back(*out_data);
         return 1;
     } else {
@@ -652,6 +664,7 @@ int OutputTime::register_node_data(std::string name,
 
     if(found == 0) {
         OutputData *out_data = new OutputData(name, unit, data, size);
+        out_data->ref_type = OutputData::NODE_DATA;
         node_data->push_back(*out_data);
     }
 
@@ -694,6 +707,7 @@ int OutputTime::register_corner_data(std::string name,
 
     if(found == 0) {
         OutputData *out_data = new OutputData(name, unit, data, size);
+        out_data->ref_type = OutputData::CORNER_DATA;
         corner_data->push_back(*out_data);
     }
 
@@ -738,6 +752,7 @@ int OutputTime::register_elem_data(std::string name,
 
     if(found == 0) {
         OutputData *out_data = new OutputData(name, unit, data, size);
+        out_data->ref_type = OutputData::ELEM_DATA;
         elem_data->push_back(*out_data);
     }
 
@@ -780,6 +795,7 @@ int OutputTime::register_node_data(std::string name,
 
     if(found == 0) {
         OutputData *out_data = new OutputData(name, unit, data);
+        out_data->ref_type = OutputData::NODE_DATA;
         node_data->push_back(*out_data);
     }
 
@@ -820,6 +836,7 @@ int OutputTime::register_corner_data(std::string name,
 
     if(found == 0) {
         OutputData *out_data = new OutputData(name, unit, data);
+        out_data->ref_type = OutputData::CORNER_DATA;
         corner_data->push_back(*out_data);
     }
 
@@ -862,6 +879,7 @@ int OutputTime::register_elem_data(std::string name,
 
     if(found == 0) {
         OutputData *out_data = new OutputData(name, unit, data);
+        out_data->ref_type = OutputData::ELEM_DATA;
         elem_data->push_back(*out_data);
     }
     return 1;

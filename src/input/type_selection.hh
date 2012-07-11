@@ -10,7 +10,7 @@
 
 #include "system/exceptions.hh"
 
-#include "system.hh"
+#include "system/system.hh"
 #include "type_base.hh"
 
 namespace Input {

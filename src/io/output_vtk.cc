@@ -248,7 +248,7 @@ void OutputVTK::write_vtk_discont_topology(void)
     file << "</Cells>" << endl;
 }
 
-void OutputVTK::write_vtk_ascii_data(OutputData *data)
+void OutputVTK::write_vtk_ascii_cont_data(OutputData *data)
 {
     ofstream &file = this->output->get_data_file();
 
@@ -337,6 +337,136 @@ void OutputVTK::write_vtk_ascii_data(OutputData *data)
     }
 }
 
+void OutputVTK::write_vtk_ascii_discont_data(OutputData *data)
+{
+    ofstream &file = this->output->get_data_file();
+    Mesh *mesh = this->output->get_mesh();
+    Node* node;
+    int li, tmp = 0;
+
+    FOR_NODES(mesh, node) {
+        node->aux = tmp;   /* store index in the auxiliary variable */
+        tmp++;
+    }
+
+    switch(data->type) {
+    case OutputData::OUT_VECTOR_INT_SCA:
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                file << scientific << ((std::vector<int>*)data->data)->at(node->aux) << " ";
+            }
+        }
+        break;
+    case OutputData::OUT_VECTOR_INT_VEC:
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                std::vector<int> &vec = ((std::vector< vector<int> >*)data->data)->at(node->aux);
+                for (std::vector<int>::iterator item = vec.begin();
+                        item != vec.end();
+                        ++item) {
+                    file << scientific << *item << " ";
+                }
+                file << "  ";
+            }
+        }
+        break;
+    case OutputData::OUT_VECTOR_FLOAT_SCA:
+        file.precision(std::numeric_limits<float>::digits10);
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                file << scientific << ((std::vector<float>*)data->data)->at(node->aux) << " ";
+            }
+        }
+        break;
+    case OutputData::OUT_VECTOR_FLOAT_VEC:
+        file.precision(std::numeric_limits<float>::digits10);
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                std::vector<float> &vec = ((std::vector< vector<float> >*)data->data)->at(node->aux);
+                for (std::vector<float>::iterator item = vec.begin();
+                        item != vec.end();
+                        ++item) {
+                    file << scientific << *item << " ";
+                }
+                file << "  ";
+            }
+        }
+        break;
+    case OutputData::OUT_VECTOR_DOUBLE_SCA:
+        file.precision(std::numeric_limits<double>::digits10);
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                file << scientific << ((std::vector<double>*)data->data)->at(node->aux) << " ";
+            }
+        }
+        break;
+    case OutputData::OUT_VECTOR_DOUBLE_VEC:
+        file.precision(std::numeric_limits<double>::digits10);
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                std::vector<double> &vec = ((std::vector< vector<double> >*)data->data)->at(node->aux);
+                for (std::vector<double>::iterator item = vec.begin();
+                        item != vec.end();
+                        ++item) {
+                    file << scientific << *item << " ";
+                }
+                file << "  ";
+            }
+        }
+        break;
+    case OutputData::OUT_ARRAY_INT_SCA:
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                file << ((int*)data->data)[node->aux] << " ";
+            }
+        }
+        break;
+    case OutputData::OUT_ARRAY_FLOAT_SCA:
+        file.precision(std::numeric_limits<float>::digits10);
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                file << scientific << ((float*)data->data)[node->aux] << " ";
+            }
+        }
+        break;
+    case OutputData::OUT_ARRAY_DOUBLE_SCA:
+        file.precision(std::numeric_limits<double>::digits10);
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                node = ele->node[li];
+                file << scientific << ((double*)data->data)[node->aux] << " ";
+            }
+        }
+        break;
+    default:
+        xprintf(Err, "This type of data: %d is not supported by VTK file format\n", data->type);
+        break;
+    }
+}
+
+void OutputVTK::write_vtk_ascii_data(OutputData *data)
+{
+    /* Use write_vtk_ascii_discont_data only in situation, when there
+     * are some discontinuous data and it is necessary to write continuous
+     * data too */
+    if(this->output->get_corner_data() != NULL &&
+            this->output->get_corner_data()->empty()==false &&
+            data->ref_type == OutputData::NODE_DATA)
+    {
+        this->write_vtk_ascii_discont_data(data);
+    } else {
+        this->write_vtk_ascii_cont_data(data);
+    }
+}
+
 void OutputVTK::write_vtk_scalar_ascii(OutputData *data)
 {
     ofstream &file = this->output->get_data_file();
@@ -379,69 +509,78 @@ void OutputVTK::write_vtk_data_ascii(std::vector<OutputData> *data)
     }
 }
 
-void OutputVTK::write_vtk_data_names(vector<OutputData> *data)
+void OutputVTK::write_vtk_scalar_data_names(vector<OutputData> *data)
 {
     ofstream &file = this->output->get_data_file();
+    int tmp = 0;
 
     /* Write names of scalars */
-    file << "Scalars=\"";
     for(OutputDataVec::iterator dta = data->begin();
                 dta != data->end(); ++dta) {
         if(dta->getCompNum() == 1) {
             file << *dta->getName() << "_[" << *dta->getUnits() << "]";
-            if((dta+1) != data->end()) {
-                file << ",";
-            }
+            file << ",";
         }
     }
-    file << "\" ";
+}
+
+void OutputVTK::write_vtk_vector_data_names(vector<OutputData> *data)
+{
+    ofstream &file = this->output->get_data_file();
+    int tmp = 0;
 
     /* Write names of vectors */
-    file << "Vectors=\"";
     for(OutputDataVec::iterator dta = data->begin();
                 dta != data->end(); ++dta) {
         if(dta->getCompNum() == 3) {
             file << *dta->getName() << "_[" << *dta->getUnits() << "]";
-            if((dta+1) != data->end()) {
-                file << ",";
-            }
+            file << ",";
         }
     }
-    file << "\"";
 }
 
 void OutputVTK::write_vtk_node_data(void)
 {
     ofstream &file = this->output->get_data_file();
     std::vector<OutputData> *node_data = this->output->get_node_data();
-
-    if(node_data != NULL) {
-        /* Write PointData begin */
-        file << "<PointData ";
-        this->write_vtk_data_names(node_data);
-        file << ">" << endl;
-
-        /* Write own data */
-        this->write_vtk_data_ascii(node_data);
-
-        /* Write PointData end */
-        file << "</PointData>" << endl;
-    }
-}
-
-void OutputVTK::write_vtk_corner_data(void)
-{
-    ofstream &file = this->output->get_data_file();
     std::vector<OutputData> *corner_data = this->output->get_corner_data();
 
-    if(corner_data != NULL) {
-        /* Write PointData begin */
+    if((node_data != NULL && node_data->empty()==false) ||
+            (corner_data != NULL && corner_data->empty()==false)) {
+        /* Write <PointData begin */
         file << "<PointData ";
-        this->write_vtk_data_names(corner_data);
+
+        /* Write names of scalars */
+        file << "Scalars=\"";
+        if(node_data != NULL && node_data->empty()==false) {
+            this->write_vtk_scalar_data_names(node_data);
+        }
+        if(corner_data != NULL && corner_data->empty()==false) {
+            this->write_vtk_scalar_data_names(corner_data);
+        }
+        file << "\" ";
+
+        /* Write names of vectors */
+        file << "Vectors=\"";
+        if(node_data != NULL && node_data->empty()==false) {
+            this->write_vtk_vector_data_names(node_data);
+        }
+        if(corner_data != NULL && corner_data->empty()==false) {
+            this->write_vtk_vector_data_names(corner_data);
+        }
+        file << "\"";
+
+        /* Write right bracket of <PointData */
         file << ">" << endl;
 
         /* Write own data */
-        this->write_vtk_data_ascii(corner_data);
+        if(node_data != NULL) {
+            this->write_vtk_data_ascii(node_data);
+        }
+
+        if(corner_data != NULL) {
+            this->write_vtk_data_ascii(corner_data);
+        }
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -453,10 +592,17 @@ void OutputVTK::write_vtk_element_data(void)
     ofstream &file = this->output->get_data_file();
     std::vector<OutputData> *elem_data = this->output->get_elem_data();
 
-    if(elem_data != NULL) {
+    if(elem_data != NULL && elem_data->empty()==false) {
         /* Write PointData begin */
         file << "<CellData ";
-        this->write_vtk_data_names(elem_data);
+        /* Write names of scalars */
+        file << "Scalars=\"";
+        this->write_vtk_scalar_data_names(elem_data);
+        file << "\" ";
+
+        file << "Vectors=\"";
+        this->write_vtk_vector_data_names(elem_data);
+        file << "\"";
         file << ">" << endl;
 
         /* Write own data */
@@ -483,8 +629,10 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write header */
     this->write_vtk_vtu_head();
 
-    if(this->output->file_format == Output::VTK_SERIAL_ASCII) {
-
+    /* When there is no discontinuous data, then write classical vtu */
+    if(this->output->get_corner_data() != NULL &&
+            this->output->get_corner_data()->empty()==true)
+    {
         /* Write Piece begin */
         file << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
@@ -502,8 +650,8 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write Piece end */
         file << "</Piece>" << endl;
-    } else if(this->output->file_format == Output::VTK_DISCONT_ASCII) {
 
+    } else {
         /* Write Piece begin */
         file << "<Piece NumberOfPoints=\"" << this->output->get_corner_count() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
@@ -513,10 +661,11 @@ void OutputVTK::write_vtk_vtu(void)
         /* Write VTK Topology */
         this->write_vtk_discont_topology();
 
-        /* TODO: Write VTK scalar and vector data on nodes to the file */
+        /* Write VTK scalar and vector data on nodes to the file */
+        this->write_vtk_node_data();
 
         /* Write VTK scalar and vector data in corners to the file */
-        this->write_vtk_corner_data();
+        //this->write_vtk_corner_data();
 
         /* Write VTK data on elements */
         this->write_vtk_element_data();
@@ -630,28 +779,6 @@ int OutputVTK::write_data(double time)
                 this->output_time->current_step, frame_file_name);
 
         this->write_vtk_vtu();
-
-//        /* Write header */
-//        this->write_vtk_vtu_head();
-//
-//        /* Write Piece begin */
-//        this->output_time->get_data_file() << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
-//
-//        /* Write VTK Geometry */
-//        this->write_vtk_geometry();
-//        /* Write VTK Topology */
-//        this->write_vtk_topology();
-//
-//        /* Write VTK scalar and vector data on nodes */
-//        this->write_vtk_node_data();
-//        /* Write VTK scalar and vector data on elements */
-//        this->write_vtk_element_data();
-//
-//        /* Write Piece end */
-//        this->output_time->get_data_file() << "</Piece>" << endl;
-//
-//        /* Write tail */
-//        this->write_vtk_vtu_tail();
 
         /* Close stream for file of current frame */
         data_file->close();

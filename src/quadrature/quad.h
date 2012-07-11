@@ -36,16 +36,6 @@ typedef struct QUAD_ {
     SHORT id;			/* id (for use with reference count) */
 } QUAD;
 
-//typedef struct {
-//    SIMPLEX *e;			/* cache at element 'e' */
-//    FLOAT *data;		/* cached values */
-//} QUAD_CACHE;
-
-//typedef struct {
-//    QUAD_CACHE **caches;
-//    SHORT n;
-//} QUAD_CACHE_LIST;
-
 #define QUAD_DEFAULT	-1
 
 /* 1D quadrature rules */
@@ -217,89 +207,5 @@ extern QUAD QUAD_3D_P14_;
 #define Dup1111(w)	Dup111(w), Dup111(w), Dup111(w), Dup111(w)
 
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
-//
-//    void phgQuadFree(QUAD **quad);
-//
-//    void phgQuadReset(void);
-//    void phgQuadClearDofCache(void **clist, QUAD *quad, BOOLEAN final);
-//
-//    QUAD *phgQuadGetQuad1D(int order);
-//    QUAD *phgQuadGetQuad2D(int order);
-//    QUAD *phgQuadGetQuad3D(int order);
-//
-//    /* functions for caching basis functions and derivativesi or user functions
-//     * at quadrature points */
-//    const FLOAT *phgQuadGetFuncValues(GRID *g, SIMPLEX *e, int dim,
-//					DOF_USER_FUNC userfunc, QUAD *quad);
-//    const FLOAT *phgQuadGetBasisValues(SIMPLEX *e, DOF *u, int n, QUAD *quad);
-//    const FLOAT *phgQuadGetBasisGradient(SIMPLEX *e, DOF *u, int n, QUAD *quad);
-//    const FLOAT *phgQuadGetBasisCurl(SIMPLEX *e, DOF *u, int n, QUAD *quad);
-//    const FLOAT *phgQuadGetDofValues(SIMPLEX *e, DOF *u, QUAD *quad);
-//
-//    /*-------------------- 2D functions --------------------*/
-//    FLOAT phgQuadFaceDofDotBas(SIMPLEX *e, int face, DOF *u, DOF_PROJ proj,
-//				DOF *v, int n, int order);
-//    FLOAT phgQuadFaceDofDotDof(SIMPLEX *e, int face, DOF *u, DOF_PROJ proj,
-//				DOF *v, int order);
-//    FLOAT  *phgQuadFaceADofCrossDof(SIMPLEX *e, int face, DOF *A,
-//			          DOF *u, DOF_PROJ u_proj,
-//				  DOF *v, DOF_PROJ v_proj,
-//				  int order, FLOAT *reval);
-//    DOF *phgQuadFaceJumpN(DOF *u, DOF_PROJ proj, const char *name, int order,
-//				DOF *gn);
-//#define phgQuadFaceJump(u, proj, name, order) \
-//        phgQuadFaceJumpN(u, proj, name, order, NULL)
-//
-//    /*-------------------- 3D functions --------------------*/
-//    FLOAT phgQuadDofNormP(SIMPLEX *e, DOF *u, int order, int p);
-//
-//    FLOAT phgQuadDofDotDof(SIMPLEX *e, DOF *u, DOF *v, int order);
-///*
-//FLOAT phgQuadGradBasDotGradBas(SIMPLEX *e, DOF *u, int n, DOF *v, int m,
-//                                int order);
-//				*/
-//#define phgQuadGradBasDotGradBas(e, u, n, v, m, order) \
-//	phgQuadGradBasAGradBas(e, u, n, NULL, v, m, order)
-//    FLOAT phgQuadGradBasAGradBas(SIMPLEX *e, DOF *u, int n, DOF *A, DOF *v,
-//				 int m, int order);
-//    FLOAT *phgQuadDofTimesBas(SIMPLEX *e, DOF *u, DOF *v, int n, int order,
-//			      FLOAT *res);
-///*
-// * FLOAT phgQuadBasDotBas(SIMPLEX *e, DOF *u, int n, DOF *v, int m, int order); */
-//#define  phgQuadBasDotBas(e, u, n, v, m, order) \
-//	phgQuadBasABas(e, u, n, NULL, v, m, order)
-//    FLOAT phgQuadBasABas(SIMPLEX *e, DOF *u, int n, DOF *A, DOF *v, int m,
-//			 int order);
-///*FLOAT phgQuadCurlBasDotCurlBas(SIMPLEX *e, DOF *u, int n, DOF *v, int m,
-//		                 int order); */
-//#define phgQuadCurlBasDotCurlBas(e, u, n, v, m, order)  \
-//	phgQuadCurlBasACurlBas(e, u, n, NULL, v, m, order)
-//    FLOAT phgQuadCurlBasACurlBas(SIMPLEX *e, DOF *u, int n, DOF *A, DOF *v,
-//				 int m, int order);
-//    FLOAT phgQuadBasACurlBas(SIMPLEX *e, DOF *u, int n, DOF *A, DOF *v, int m,
-//                       int order);
-//    FLOAT phgQuadDofDotBas(SIMPLEX *e, DOF *u, DOF *v, int n, int order);
-//    FLOAT phgQuadDofABas(SIMPLEX *e, DOF *u, DOF *A, DOF *v, int m, int order);
-//    FLOAT phgQuadFuncDotBas(SIMPLEX *e, DOF_USER_FUNC userfunc, DOF *u, int n,
-//			    int order);
-//#define phgQuadDofDotGradBas(e, u, v, m, order) \
-//	phgQuadDofAGradBas(e, u, NULL, v, m, order)
-//    FLOAT phgQuadDofAGradBas(SIMPLEX *e, DOF *u, DOF *A, DOF *v, int m,
-//			     int order);
-//#define phgQuadDofDotCurlBas(e, u, v, m, order) \
-//	phgQuadDofACurlBas(e, u, NULL, v, m, order)
-//    FLOAT phgQuadDofACurlBas(SIMPLEX *e, DOF *u, DOF *A, DOF *v, int m,
-//			     int order);
-//    FLOAT *phgQuadDofDotCurlBas_(SIMPLEX *e, DOF *u, DOF *v, int m,
-//			     int order, FLOAT *res);
-//    FLOAT phgQuadGradBasDotBas(SIMPLEX *e, DOF *s, int m, DOF *v, int n,
-//			       int order);
-//
-//#ifdef __cplusplus
-//}
-//#endif
 #define PHG_QUAD_H
 #endif

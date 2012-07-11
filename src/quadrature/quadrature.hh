@@ -33,84 +33,79 @@
 #include <armadillo>
 #include <vector>
 
-using namespace std;
-
 /**
- * Base class for quadrature rules on simplices in arbitrary dimensions.
+ * @brief Base class for quadrature rules on simplices in arbitrary dimensions.
+ *
  * This class stores quadrature points and weights on the reference line,
  * triangle or tetrahedron, respectively.
+ * Quadrature rules are used for evaluation of integrals over elements.
+ * In particular, for a reference element @f$E@f$ we have:
+ * @f[
+ * 		\int_E f(x)\,dx \approx \sum_{i=1}^{N} w_i f(p_i),
+ * @f]
+ * where @f$\{w_i\}@f$, @f$\{p_i\}@f$ are the quadrature weights and the quadrature points,
+ * respectively.
  */
 template<unsigned int dim>
 class Quadrature {
 public:
     /**
-     * Constructor.
-     * @param n_quadrature_points number of quadrature points to be allocated
+     * @brief Constructor.
+     * @param n_quadrature_points Number of quadrature points to be allocated.
      */
     Quadrature(const unsigned int n_quadrature_points = 0);
 
-    /**
-     * Copy constructor.
-     */
+    /// Copy constructor.
     Quadrature(const Quadrature<dim> &q);
 
-    /**
-     * Virtual destructor.
-     */
+    /// Virtual destructor.
     virtual ~Quadrature();
 
     /**
-     * Modify the number of quadrature points.
+     * @brief Modify the number of quadrature points.
+     * @param n_q_points New number of quadrature points.
      */
     void resize(const unsigned int n_q_points);
 
-    /**
-     * Number of quadrature points.
-     */
+    /// Returns number of quadrature points.
     const unsigned int size() const;
 
-    /**
-     * Return the <tt>i</tt>th quadrature point.
-     */
+    /// Returns the <tt>i</tt>th quadrature point.
     const arma::vec::fixed<dim> & point(const unsigned int i) const;
 
-    /**
-     * Return a reference to the whole array of quadrature points.
-     */
-    const vector<arma::vec::fixed<dim> > & get_points() const;
+    /// Return a reference to the whole array of quadrature points.
+    const std::vector<arma::vec::fixed<dim> > & get_points() const;
 
     /**
-     * Set individual quadrature point coordinates.
+     * @brief Sets individual quadrature point coordinates.
+     * @param i Number of the quadrature point.
+     * @param p New coordinates.
      */
     void set_point(const unsigned int i, const arma::vec::fixed<dim> &p);
 
-    /**
-     * Return the <tt>i</tt>th weight.
-     */
+    /// Returns the <tt>i</tt>th weight.
     double weight(const unsigned int i) const;
 
-    /**
-     * Return a reference to the whole array of weights.
-     */
-    const vector<double> & get_weights() const;
+    /// Return a reference to the whole array of weights.
+    const std::vector<double> & get_weights() const;
 
-    /**
-     * Set individual quadrature weight.
-     */
+    /// Sets individual quadrature weight.
     void set_weight(const unsigned int i, const double w);
 
 protected:
     /**
-     * List of quadrature points.
+     * @brief List of quadrature points.
+     *
      * To be filled by the constructors of the derived classes.
      */
-    vector<arma::vec::fixed<dim> > quadrature_points;
+    std::vector<arma::vec::fixed<dim> > quadrature_points;
 
     /**
-     * List of weights to the quadrature points.
+     * @brief List of weights to the quadrature points.
+     *
      * To be filled by the constructors of the derived classes.
      */
-    vector<double> weights;
+    std::vector<double> weights;
 
 };
 
@@ -149,7 +144,7 @@ inline const arma::vec::fixed<dim> & Quadrature<dim>::point(
 }
 
 template<unsigned int dim>
-inline const vector<arma::vec::fixed<dim> > & Quadrature<dim>::get_points() const {
+inline const std::vector<arma::vec::fixed<dim> > & Quadrature<dim>::get_points() const {
     return quadrature_points;
 }
 
@@ -165,7 +160,7 @@ inline double Quadrature<dim>::weight(const unsigned int i) const {
 }
 
 template<unsigned int dim>
-inline const vector<double> & Quadrature<dim>::get_weights() const {
+inline const std::vector<double> & Quadrature<dim>::get_weights() const {
     return weights;
 }
 

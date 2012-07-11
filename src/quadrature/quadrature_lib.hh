@@ -34,6 +34,8 @@
 
 
 /**
+ * @brief Symmetric Gauss-Legendre quadrature formulae on simplices.
+ *
  * Symmetric Gauss-Legendre quadrature on a @p dim dimensional simplex.
  * The coefficients are taken from Parallel Hierarchical Grid project.
  *
@@ -42,7 +44,9 @@ template<unsigned int dim>
 class QGauss : public Quadrature<dim> {
 public:
     /**
-     * Create a formula of given order (exact for polynomials of degree @p order).
+     * @brief Create a formula of given order.
+     *
+     * The formula is exact for polynomials of degree @p order.
      */
     QGauss(const unsigned int order);
 };

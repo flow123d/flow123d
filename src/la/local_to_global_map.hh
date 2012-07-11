@@ -13,7 +13,7 @@
 #include <set>
 #include <vector>
 
-#include "system.hh"
+#include "system/system.hh"
 
 class Distribution;
 

@@ -516,6 +516,7 @@ void DarcyFlowMH_Steady::make_schur0() {
         schur0->set_symmetric();
         schur0->start_allocation();
         assembly_steady_mh_matrix(); // preallocation
+        VecZeroEntries(schur0->get_solution());
 
     }
 

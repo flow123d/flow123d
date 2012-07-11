@@ -2,7 +2,8 @@ Test problem 13
 ---------------------
 verification of:
 -edge mixing
--transport (convection)
+-explicit transport (convection)
+-implicit transport (convection, dispersion)
 -flow/transport interconnection
 
 

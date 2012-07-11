@@ -30,7 +30,7 @@
 
 #include <vector>
 #include <string>
-#include "system.hh"
+#include "system/system.hh"
 #include "system/exceptions.hh"
 
 #include <boost/type_traits.hpp>

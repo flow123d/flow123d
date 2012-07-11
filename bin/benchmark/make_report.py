@@ -15,7 +15,7 @@ class TimerInfo:
 
 
 #process the output of timers with following tags
-tagsToProcess = ["WHOLE PROGRAM","SOLVING MH SYSTEM","TRANSPORT"]
+tagsToProcess = ["WHOLE PROGRAM","SOLVING MH SYSTEM"]	#,"TRANSPORT"
 includeSubdirs = 1
 
 def main():
@@ -115,7 +115,111 @@ def main():
         outFile.write("\n")
 
     outFile.close()
+    
+    # T(p)
+    for timerTag in tagsToProcess:         
+        outFile = file(os.path.join(dir, 'graph.dat'), "w")
+        outFile.write("# n. proc".ljust(2))
+	for i in range(len(tagsToProcess)):  
+         outFile.write(tagsToProcess[i].rjust(longestTag+2))
+        outFile.write("\n")
+        for info in fileInfo:
+         outFile.write(str(info.proc).ljust(2))
+         #maxtime = 0.0
+         for timerTag in tagsToProcess: 
+          outFile.write(str(info.tags[timerTag]).rjust(longestTag+3))
+          #if info.tags[timerTag] > maxtime:
+          # maxtime = info.tags[timerTag]
+         outFile.write("\n")  
+        outFile.close()
+    for i in range(len(tagsToProcess)):    
+     outFile = file(os.path.join(dir, tagsToProcess[i]+".gps",), "w")
+     outFile.write("#!/usr/bin/gnuplot\n")
+      #outFile.write('set title "'+tagsToProcess[i]+'"\n')
+     outFile.write('set yrange [0:'+str()+']\n')	
+     #outFile.write('set xrange [1:2]\n') len(fileInfo) fileInfo.__len__()-1
+     outFile.write('set xrange ['+str(fileInfo[0].proc).rjust(0)+':'+str(fileInfo[len(fileInfo)-1].proc).rjust(0)+']\n')
+     outFile.write('set xtics 1, 1\n')
+     outFile.write('set mxtics 1\n') #linespoints boxes
+     outFile.write("plot '"+os.path.join(dir, "graph.dat")+"' using 1:"+str(i+2)+" title '"+tagsToProcess[i]+"' with linespoints\n")
+     outFile.write("pause -1")
+     outFile.close()
+     os.system("gnuplot '"+os.path.join(dir, tagsToProcess[i])+".gps'")
+     
+     
+     # E(p), size = const
+    for timerTag in tagsToProcess:         
+        outFile = file(os.path.join(dir, 'graphx.dat'), "w")
+        outFile.write("# n. proc".ljust(2))
+	for i in range(len(tagsToProcess)):  
+         outFile.write(tagsToProcess[i].rjust(longestTag+2))
+        outFile.write("\n")
+        
+     #   for info in fileInfo:
+     #    outFile.write(str(info.proc).ljust(2))
+       #  #maxtime = 0.0
+       #  for timerTag in tagsToProcess: 
+       #   outFile.write(str(info.tags[timerTag]).rjust(longestTag+3))
+          #if info.tags[timerTag] > maxtime:
+          # maxtime = info.tags[timerTag]
+       #  outFile.write("\n")  
+         
+    #for timerTag in tagsToProcess:
+    #for info in fileInfo:  
+    if constantProcNumber == 0:
+                #compute and write effectivities on the second line
+                minProcInfo = fileInfo[0]
+                for info in fileInfo:
+                    outFile.write(str(info.proc).ljust(2))
+                    for timerTag in tagsToProcess:
+                     if info.tags.has_key(timerTag) and minProcInfo.tags.has_key(timerTag):
+                        effectivity = ((minProcInfo.tags[timerTag] * minProcInfo.proc) / (info.tags[timerTag] * info.proc)) * (info.taskSize / minProcInfo.taskSize)
+                        outFile.write(str("%.2f" % effectivity).rjust(7))
+                        #outFile.write("\n")
+                     else:
+                        outFile.write("".rjust(7))
+                    outFile.write("\n")   
+    elif constantTaskSize == 0:
+                #compute and write effectivities on the second line
+                minTaskSizeInfo = fileInfo[0]
+                #for info in fileInfo:
+                for info in fileInfo:  
+                    outFile.write(str(info.proc).ljust(2))
+                    for timerTag in tagsToProcess:
+                     if info.tags.has_key(timerTag) and minProcInfo.tags.has_key(timerTag):
+                        effectivity = (minProcInfo.tags[timerTag] / info.tags[timerTag]) * (info.taskSize / minProcInfo.taskSize)
+                        outFile.write(str("%.2f" % effectivity).rjust(7))   
+                     else:
+                        outFile.write("".rjust(7))
+                    outFile.write("\n")   
+     
+    outFile.close()
+    for i in range(len(tagsToProcess)):    
+     outFile = file(os.path.join(dir, tagsToProcess[i]+".gpse",), "w")
+     outFile.write("#!/usr/bin/gnuplot\n")
+      #outFile.write('set title "'+tagsToProcess[i]+'"\n')
+     outFile.write('set yrange [0:'+str()+']\n')	
+     #outFile.write('set xrange [1:2]\n') len(fileInfo) fileInfo.__len__()-1
+     outFile.write('set xrange ['+str(fileInfo[0].proc).rjust(0)+':'+str(fileInfo[len(fileInfo)-1].proc).rjust(0)+']\n')
+     outFile.write('set xtics 1, 1\n')
+     outFile.write('set mxtics 1\n') #linespoints boxes
+     outFile.write("plot '"+os.path.join(dir, "graphx.dat")+"' using 1:"+str(i+2)+" title '"+tagsToProcess[i]+"' with linespoints\n")
+     outFile.write("pause -1")
+     outFile.close()
+     os.system("gnuplot '"+os.path.join(dir, tagsToProcess[i])+".gpse'")     
+          
+     
+     # E(p), size != const
+      
     sys.exit()
+    
+      #Create a title:                  > set title "Force-Deflection Data" 
+      #Put a label on the x-axis:       > set xlabel "Deflection (meters)"
+      #Put a label on the y-axis:       > set ylabel "Force (kN)"
+      #Change the x-axis range:         > set xrange [0.001:0.005]
+      #Change the y-axis range:         > set yrange [20:500]
+    
+    
 
 def processDir(dir, includeSubdirs, fileInfo):
 

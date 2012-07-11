@@ -319,7 +319,7 @@ void LinSys_MPIAIJ::preallocate_matrix()
      VecGetArray(off_vec,&off_array);
 
      for(i=0; i<vec_ds.lsize(); i++) {
-         on_nz[i]=(int)(on_array[i]+0.1);        // small fraction to ensure correct rounding
+         on_nz[i]=min((int)(on_array[i]+0.1),vec_ds.lsize());        // small fraction to ensure correct rounding
          off_nz[i]=(int)(off_array[i]+0.1);
      }
 

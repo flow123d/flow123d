@@ -9,7 +9,7 @@
 #define TYPE_BASE_HH_
 
 
-#include "system.hh"
+#include "system/system.hh"
 #include "system/exceptions.hh"
 #include "system/file_path.hh"
 

@@ -45,7 +45,7 @@ const std::string & StorageBase::get_string() const {
     //cout << "Fatal Error at:" << std::endl;
     //print(cout,0);
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("string") << EI_StoredType( typeid(*this).name()) );
-    return 0;
+    return 0;   // Return reference to temporary, but we throw anyway.
 }
 
 

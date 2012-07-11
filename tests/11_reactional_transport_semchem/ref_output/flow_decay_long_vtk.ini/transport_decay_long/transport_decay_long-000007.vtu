@@ -18,9 +18,7 @@
 10 10 10 
 </DataArray>
 </Cells>
-<PointData Scalars="" Vectors="">
-</PointData>
-<CellData Scalars="A_mobile_[M/L^3],B_mobile_[M/L^3],C_mobile_[M/L^3],D_mobile_[M/L^3],E_mobile_[M/L^3],F_mobile_[M/L^3],G_mobile_[M/L^3],H_mobile_[M/L^3]" Vectors="">
+<CellData Scalars="A_mobile_[M/L^3],B_mobile_[M/L^3],C_mobile_[M/L^3],D_mobile_[M/L^3],E_mobile_[M/L^3],F_mobile_[M/L^3],G_mobile_[M/L^3],H_mobile_[M/L^3]," Vectors="">
 <DataArray type="Float64" Name="A_mobile_[M/L^3]" format="ascii">
 8.187500000000000e-03 8.187499999999990e-03 8.187500000000000e-03 
 </DataArray>
