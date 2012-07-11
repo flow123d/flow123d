@@ -33,7 +33,7 @@
 #include "mesh/mesh.h"
 
 struct Boundary;
-struct Transport_bcd;
+
 
 /**
  * Setting boundary conditions should have two staps.
@@ -60,12 +60,8 @@ public:
 
     int      group;     // Group of condition
     // Topology of the mesh
-    struct Side *side;      // side, where prescribed
-    struct Transport_bcd    *transport_bcd;  // transport boundary condition (REMOVE)
+    SideIter side;      // side, where prescribed
 
-    // Misc
-    int  aux;       // Auxiliary flag
-    double   faux;      // Auxiliary number
 };
 #define DIRICHLET   1
 #define NEUMANN     2
@@ -73,7 +69,6 @@ public:
 
 
 void read_boundary(Mesh*);
-void boundary_calculation_mh(Mesh*);
 
 #endif
 //-----------------------------------------------------------------------------

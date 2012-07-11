@@ -15,20 +15,26 @@
 # You should have received a copy of the GNU General Public License along with this program; if not,
 # write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 #
-# $Id$
-# $Revision$
-# $LastChangedBy$
-# $LastChangedDate$
+# $Id: CMakeLists.txt 1567 2012-02-28 13:24:58Z jan.brezina $
+# $Revision: 1567 $
+# $LastChangedBy: jan.brezina $
+# $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-# This file can be included by makefiles from particular tests
-# to use general rules: "test" and "clean"
+#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-update:
-	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS} update
 
-test:
-	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
-clean:
-	rm -rf Results test_results; rm -f profiler_*; rm -f output/*; rm -f vystup.txt
+add_custom_target( system_test )
+set(super_test "system_test")
+set(super_test_libs system_lib)
+
+
+
+define_mpi_test(profiler 1)
+define_mpi_test(profiler 2)
+
+
+
+
+

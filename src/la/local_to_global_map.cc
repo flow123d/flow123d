@@ -22,12 +22,12 @@ LocalToGlobalMap::LocalToGlobalMap(boost::shared_ptr<Distribution> any_distr)
 {}
 
 void LocalToGlobalMap::insert(const unsigned int global_idx) {
-    ASSERT( global_indices_.size() == 0, "Insertion into the map after finalize.")
+    ASSERT( global_indices_.size() == 0, "Insertion into the map after finalize.");
     if (! distr_->is_local( global_idx ) ) nonlocal_indices_->insert( global_idx );
 }
 
 void LocalToGlobalMap::insert(const std::vector<unsigned int> &indices) {
-    ASSERT( global_indices_.size() == 0, "Insertion into the map after finalize.")
+    ASSERT( global_indices_.size() == 0, "Insertion into the map after finalize.");
     for(std::vector<unsigned int>::const_iterator it=indices.begin(); it != indices.end(); ++it)
         if (! distr_->is_local( *it ) ) nonlocal_indices_->insert( *it );
 }

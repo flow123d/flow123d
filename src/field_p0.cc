@@ -18,6 +18,7 @@ void FieldP0<double>::setup_from_function(const std::string &expr)
 
     data.resize(mesh->element.size());
     FOR_ELEMENTS(mesh,ele) {
-        data[ele.index()]=func.value(ele->centre);
+        arma::vec3 center(ele->centre());
+        data[ele.index()]=func.value( center ); // has to make explicit local copy
     }
 }

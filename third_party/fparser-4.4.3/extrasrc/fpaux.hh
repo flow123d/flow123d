@@ -35,9 +35,38 @@
 #include <complex>
 #endif
 
+
+
+
+
+
+
 #ifdef ONCE_FPARSER_H_
 namespace FUNCTIONPARSERTYPES
 {
+
+/*********************************************
+ * Forward declarations (necessary for clang++ compiler)
+ */
+
+    template<typename Value_t>
+    Value_t fp_log(const Value_t& x);
+
+    template<typename Value_t>
+    Value_t fp_exp(const Value_t& x);
+
+    template<typename Value_t>
+    bool isLongInteger(const Value_t& value);
+
+    template<typename Value_t>
+    long makeLongInteger(const Value_t& value);
+
+    template<typename Value_t>
+    bool isInteger(const Value_t& value);
+
+    template<typename Value_t>
+    Value_t fp_pow_base(const Value_t& x, const Value_t& y);
+
     template<typename>
     struct IsIntType
     {
@@ -217,18 +246,7 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_atan2(const Value_t& x, const Value_t& y)
     { return std::atan2(x, y); }
 
-#ifdef FP_SUPPORT_CBRT
-    template<typename Value_t>
-    inline Value_t fp_cbrt(const Value_t& x) { return std::tr1::cbrt(x); }
-#else
-    template<typename Value_t>
-    inline Value_t fp_cbrt(const Value_t& x)
-    {
-        return (x > Value_t() ?  fp_exp(fp_log( x) / Value_t(3)) :
-                x < Value_t() ? -fp_exp(fp_log(-x) / Value_t(3)) :
-                Value_t());
-    }
-#endif
+
 
     template<typename Value_t>
     inline Value_t fp_ceil(const Value_t& x) { return std::ceil(x); }
@@ -251,6 +269,20 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_mod(const Value_t& x, const Value_t& y)
     { return std::fmod(x, y); }
+
+#ifdef FP_SUPPORT_CBRT
+    template<typename Value_t>
+    inline Value_t fp_cbrt(const Value_t& x) { return std::tr1::cbrt(x); }
+#else
+    template<typename Value_t>
+    inline Value_t fp_cbrt(const Value_t& x)
+    {
+        return (x > Value_t() ?  fp_exp(fp_log( x) / Value_t(3)) :
+                x < Value_t() ? -fp_exp(fp_log(-x) / Value_t(3)) :
+                Value_t());
+    }
+#endif
+
 
     template<typename Value_t>
     inline Value_t fp_sin(const Value_t& x) { return std::sin(x); }

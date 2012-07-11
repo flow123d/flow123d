@@ -44,6 +44,10 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
 endif()
 
+if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
+    # this is necessary due to some "bugs" in Armadillo
+    add_definitions(-Wno-uninitialized)
+endif()
 
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
@@ -153,7 +157,7 @@ else()
   else()
     # Release mode
     add_definitions("-O3")
-    add_definitions(-DNDEBUG)
+    add_definitions(-DNODEBUG)
   endif()
 endif()
 ##############

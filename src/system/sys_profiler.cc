@@ -28,6 +28,9 @@
  *
  */
 
+#include <fstream>
+#include <iomanip>
+
 
 #include <sys/param.h>
 
@@ -63,6 +66,22 @@ Profiler::Profiler(MPI_Comm comm) {
 }
 
 Profiler::~Profiler() {
+#ifdef DEBUG_PROFILER
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler%y%m%d_%H.%M.%S.out", localtime(&start_time));
+    string full_fname = IONameHandler::get_instance()->get_output_file_name(filename);
+
+    ofstream os(full_fname.c_str());
+    output(os);
+    os.flush();
+#endif
+}
+
+
+
+void Profiler::output(ostream &os) {
+    const int column_space = 3;
+
 
     if (root) {
         root->forced_end(get_time()); //stop all running timers
@@ -116,58 +135,42 @@ Profiler::~Profiler() {
         char enddest[BUFSIZ] = {0};
         strftime(enddest, sizeof (enddest) - 1, format, localtime(&end_time));
 
-#ifdef DEBUG_PROFILER
-        //create a file where the output will be written to
-        FILE *out;
-        const char fileformat[] = "profiler%y%m%d_%H.%M.%S.out";
-        char filename[PATH_MAX];
-        strftime(filename, sizeof (filename) - 1, fileformat, localtime(&start_time));
 
-        const string& full_fname = IONameHandler::get_instance()->get_output_file_name(filename);
-        out = xfopen(full_fname, "w+");
+        //create a file where the output will be written to
+
 
         //print some information about the task at the beginning
-        xfprintf(out, "No. of processors: %i\n", size);
-        xfprintf(out, "Task size: %i\n", task_size);
-        xfprintf(out, "Start time: %s\n", startdest);
-        xfprintf(out, "End time: %s\n", enddest);
+        os << "No. of processors: " << size << endl;
+        os << "Task size: " << task_size << endl;
+        os << "Start time: " << startdest << endl;
+        os << "End time: " << enddest << endl;
 
-        xfprintf(out, "----------------------------------------------------\n");
+        os << setfill ('-') << setw (40) << "" << endl;
+        os.fill(' ');
 
-        string spaces = " ";
-        pad_string(&spaces, maxTagLength);
-        string calls = "calls";
-        pad_string(&calls, maxCallCountLength);
-        string time = "time";
-        pad_string(&time, maxTimeLength);
-        string minmax = "min/max";
-        pad_string(&minmax, maxMinMaxLength);
+        // header
+        os << left << setw(maxTagLength) << "tag tree" << setw(column_space) << ""
+           << setw(maxCallCountLength) << "calls" << setw(column_space) << ""
+           << setw(maxTimeLength) << "time" << setw(column_space) << ""
+           << setw(maxMinMaxLength) << "min/max" << setw(column_space) << ""
+           << "subframes" << endl;
 
-        xfprintf(out, "%s %s %s %s subframes\n", spaces.c_str(), calls.c_str(), time.c_str(), minmax.c_str());
+        //os << setfill ('-') << setw (40) << endl;
 
         for (int i = 0; i < timersInfo->size(); i++) {
             vector<string>* info = timersInfo->at(i);
 
-            string tag = info->at(0);
-            string calls = info->at(1);
-            string time = info->at(2);
-            string minMax = info->at(3);
-            string subframes = "";
+            os << left << setw(maxTagLength) << info->at(0)         << setw(column_space) << ""        // tag
+               << setw(maxCallCountLength) << info->at(1)   << setw(column_space) << ""       // calls
+               << setw(maxTimeLength) << info->at(2)        << setw(column_space) << ""       // time
+               << setw(maxMinMaxLength) << info->at(3)      << setw(column_space) << "";     // min/max
             if (info->size() > 4)
-                subframes = info->at(4);
-
-            pad_string(&tag, maxTagLength);
-            pad_string(&calls, maxCallCountLength);
-            pad_string(&time, maxTimeLength);
-            pad_string(&minMax, maxMinMaxLength);
-
-            xfprintf(out, "%s %s %s %s %s\n", tag.c_str(), calls.c_str(), time.c_str(), minMax.c_str(), subframes.c_str());
+               os << info->at(4);                           // subframes
+            os << endl;
         }
-
-        xfclose(out);
-#endif
     }
 }
+
 
 void Profiler::set_timer_subframes(string tag, int n_subframes) {
 

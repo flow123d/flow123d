@@ -51,7 +51,7 @@ public:
      * Default constructor.
      */
     Node()
-    : element(NULL)
+    //: element(NULL)
         {coordinates.zeros();}
 
     /**
@@ -60,17 +60,17 @@ public:
      * Possibly there could be also constructor from a vector.
      */
     Node(double x, double y, double z)
-    : element(NULL)
+    //: element(NULL)
         {coordinates(0)=x; coordinates(1)=y; coordinates(3)=z;}
 
     /**
      * Old getter methods. OBSOLETE.
      */
-    inline double getX()
+    inline double getX() const
         { return coordinates[0];}
-    inline double getY()
+    inline double getY() const
         {return coordinates[1];}
-    inline double getZ()
+    inline double getZ() const
         {return coordinates[2];}
 
 
@@ -104,21 +104,21 @@ public:
     // Old data - adepts to remove ...
     //--------------------------------------------------------------------------
 
-    int id; // this is used in old output TODO: remove after application new output
+    //int id; // this is used in old output TODO: remove after application new output
 
     // Topology
-    int n_elements; // # of elms connected by the node ( used only in transport )
-    ElementIter *element; // List of elements
+    // int n_elements; // # of elms connected by the node ( used only in transport )
+    // ElementIter *element; // List of elements
 
     // following  is used only by interpolation function
     // postprocess.c void make_node_scalar(Mesh* mesh)
     // which should be rewrittento be able interpolate arbitrary data
     // Results
-    double scalar; // Scalar quantity (pressure/piez. head)
+    //double scalar; // Scalar quantity (pressure/piez. head)
 
     // Misc
     int aux; // Auxiliary flag
-    double faux; // Auxiliary number
+    //double faux; // Auxiliary number
 };
 
 /**

@@ -424,7 +424,7 @@ public:
      * @param side The side of the cell.
      */
     void reinit(typename DOFHandler<dim,spacedim>::CellIterator &cell,
-                Side *side);
+                SideIter side);
 
 
 private:

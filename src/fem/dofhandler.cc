@@ -73,7 +73,7 @@ void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe,
     FOR_ELEMENTS(mesh,cell)
     {
         // skip cells of different dimension
-        if (cell->dim != dim) continue;
+        if (cell->dim() != dim) continue;
 
         // distribute dofs
         // TODO: For the moment we distribute only dofs associated to the cell
@@ -202,7 +202,10 @@ const unsigned int DOFHandler<dim,spacedim>::global_dof_id(const CellIterator &c
             int side_dof = count_dofs + cell->n_sides_by_dim(dm) - local_dof_id;
             if (side_dof > 0)
             {
-                return object_dofs[dm][cell->side_by_dim(dm,i)][side_dof];
+                // bad idea to use void * in the dof map
+                // we try to convert SideIter into an pointer
+                // nevertheless why we need void * for side, that dofs are on Element isn't it?
+                return object_dofs[dm][ cell->side(i)->make_ptr() ][side_dof];
             }
             else
             {
