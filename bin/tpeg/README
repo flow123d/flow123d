@@ -1,0 +1,67 @@
+TPeg is util for preparing data for Flow123d, in particular it allows generating files with boundary conditions
+from input YAML file that prescribes some BC on boundary physical domains, that are then removed from the mesh.
+
+For example input file see directory 'usage_example'.
+
+To build this program you need developement version of YAML library. 
+
+
+###############################################################################
+#####     Datove struktury projektu TPeg                                  #####
+###############################################################################
+
+************************
+***   BOUNDARYDATA   ***
+************************
+= Data okrajovych podminek jsou ulozeny do list<BoundaryData*>
+
+********************
+***   TERRAIN    ***
+********************
+= Body popisujici teren jsou ulozeny do list<vector<double>* >
+
+********************
+***   MESH       ***
+********************
+= Popis skupiny PHYSICAL je ulozen do list<Physical*>
+= Uzly jsou ulozeny do map<int, Node*>
+  - klic je label uzlu
+= Elementy jsou ulozeny do map<int, Element*>
+  - klic je label elementu
+
+********************
+***   MATERIAL   ***
+********************
+= Material pro danou skupinu je ulozen do map<int, map<char*, double>* >
+  - klic je label skupiny
+  = materialove parametry jsou ulozeny do map<char*, double>
+    - klic je nazev parametru
+(ulozena data jsou znacne omezena, ale staci pro tento projekt)
+
+********************
+***   NEIGBORS   ***
+********************
+= Sousedi jsou ulozeni do map<int, list< int* >* >
+  - klic je label elementu
+  = sousedi jsouulozeni do list< int* >
+    - soused je dan polem dvou int (eid, sid)
+      eid - label sousedniho elementu
+      sid - index steny sousedniho elementu 
+
+********************
+***   GROUPS     ***
+********************
+= Skupiny elementu s prislusnosti do stejne skupiny je ulozano do map<int, list<int>* >
+  - klic je label skupiny
+  = seznam elementu v dane skupine je ulozen do list<int>
+(Skupiny jsou vytvoreny jak pro PHYSICAL, tak i pro ELEMENT)
+
+********************
+***   BOUNDARY   ***
+********************
+= Okrajove podminky jsou ulozeny do list<Boundary*>
+
+###############################################################################
+#####     Konec souboru                                                   #####
+###############################################################################
+
