@@ -76,16 +76,20 @@ find_package(PARMETIS)
 #
 find_package(Boost 1.42.0 )
 if (NOT Boost_FOUND) 
-  # just use our third_party directory
+  message(STATUS "Try to use our essential Boost subset.")
+  unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
+  unset(Boost_LIBRARY_DIRS CACHE)
+  unset(Boost_LIB_VERSION CACHE)
+  unset(Boost_VERSION CACHE)  
+
   set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-  find_package(Boost)
-  if (NOT Boost_FOUND)
-    # force to use it 
-    set(Boost_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-    set(Boost_LIBRARY_DIRS "")
-    message(STATUS "Force to use our subset of Boost INCLUDE: ${Boost_INCLUDE_DIR} LIBS: ${Boost_LIBRARY_DIRS}")
-  endif()
+  find_package(Boost 1.42.0 EXACT REQUIRED)
+  
+  # hint same Boost to armadillo 
+  set(Armadillo_Boost_Hint  -D BOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
 endif()
+message(STATUS "Boost_INCLUDE_DIR = ${Boost_INCLUDE_DIR}")
+
 
 # find aramdillo or use our own
 # FindAramdillo returs:
@@ -97,10 +101,10 @@ if (NOT Armadillo_FOUND)
   # THIS IS NOT CORRECT WAY TO BUILD Armadillo, IT MERLY WORKS. DO NOT FOLLOW THIS.
   # proper way should be: cmake, make, install Armadillo -> the last step should produce ArmadilloLibraryDepends.cmake
   # which can be included here to get correct includes and libs variables
-  
+  message(STATUS "Build our own Armadillo.")
   set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build")
   file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH} -DBoost_DEBUG=1 -DBOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42 ..
+  execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH}  ${Armadillo_Boost_Hint} ..
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   execute_process(COMMAND make 
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
@@ -123,16 +127,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 
 ################################################################### set includes and libraries paths
-  
-set(flow123d_includes
+
+include_directories(
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/flow
-    ${CMAKE_SOURCE_DIR}/src/mesh
-    ${CMAKE_SOURCE_DIR}/src/reaction
-    ${CMAKE_SOURCE_DIR}/src/system
-    ${CMAKE_SOURCE_DIR}/src/semchem
-    ${CMAKE_SOURCE_DIR}/src/transport
-    ${CMAKE_SOURCE_DIR}/src/input
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit
@@ -140,16 +137,9 @@ set(flow123d_includes
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
 )
-#message(STATUS "Flow123d inc: ${flow123d_includes}")
-include_directories(${flow123d_includes})
-
-
-
-#message(STATUS "libs: ${flow123d_external_libraries}")
 
 ##############
 # set appropriate compiler flags for debug/release compilation modes
-#add_definitions("-Wall")
 
 if(CC_FLAGS) 
   add_definitions(${CC_FLAGS})
@@ -184,27 +174,23 @@ add_subdirectory(test_units)
 #################################################################### add targets
 
 
+if( PETSC_FOUND )
 
-
-
-
-#### create rev_num.h - file with revision number
-
-# a custom target - is always built -> call cmake script to generate rev_num.h
-add_custom_target(rev_num_always 
+  #### create rev_num.h - file with revision number
+  # a custom target - is always built -> call cmake script to generate rev_num.h
+  add_custom_target(rev_num_always 
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
                          -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_svn_rev_num.cmake)
 
-# rev_num.h is a generated file
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
+  # rev_num.h is a generated file
+  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
     PROPERTIES GENERATED TRUE
     HEADER_FILE_ONLY TRUE)
 
 
-if( PETSC_FOUND )
-#### make a script which call correct mpiexec (taken from PETSC)
-# we can not use link, since mpiexec can be sript which reads its location from calling sequence
-add_custom_target(mpiexec_link
+  #### make a script which call correct mpiexec (taken from PETSC)
+  # we can not use link, since mpiexec can be sript which reads its location from calling sequence
+  add_custom_target(mpiexec_link
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DPETSC_MPIEXEC=${PETSC_MPIEXEC}
                          -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_mpiexec.cmake)
 

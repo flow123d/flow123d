@@ -34,7 +34,7 @@ MPIEXEC_BIN=mpiexec
 install: 
 	if [ -e  "build/$(INTERPOLATE_BIN)" ]; then rm -f bin/$(INTERPOLATE_BIN); cp "build/$(INTERPOLATE_BIN)" bin; fi
 	if [ -e  "build/$(FLOW_BIN)" ]; then rm -f bin/$(FLOW_BIN); cp "build/$(FLOW_BIN)" bin; fi
-	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; fi
+	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; chmod a+x bin/mpiexec; fi
 
 
 # run first cmake
@@ -68,6 +68,19 @@ interpolation: build_interpolation install
 build_interpolation: 
 	make -j 4 -C build interpolation
 
+build_all: build_flow123d  # build_interpolation  #ngh bcd
+
+flow123d:  build_flow123d  install
+
+build_flow123d: cmake
+	make -j 4 -C build flow123d
+
+	
+interpolation: build_interpolation install
+	
+build_interpolation: 
+	make -j 4 -C build interpolation
+
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	
@@ -81,7 +94,10 @@ clean: cmake
 	make -C build clean
 
 # try to remove all
-clean-all: 
+clean-all: clean
+	rm -f bin/${FLOW_BIN}
+	rm -f bin/${MPIEXEC_BIN}
+	rm -f bin/${INTERPOLATE_BIN}
 	rm -rf build
 	for f in  `find test_units/ -name makefile`; do rm -f "$${f}";done
 	make -C third_party clean
