@@ -23,7 +23,29 @@
  * $LastChangedDate: 2011-01-08 18:58:15 +0100 (So, 08 led 2011) $
  *
  * @file
+ * 
+ * 
+ * TODO:
+ * 
+ * - remove dependence on petsc, have mpi_stub.hh as mpi replacement. 
+ * - optimize (map lookup, TimeFrame creation)
+ *   - use compile time hashes instead of tags
+ *   - have only one tag/hash map to Timer nodes, detect error when starting inappropriate tag (that is not child of current frame
+ *     this has to be done only once - use static variable to hold pointer to appropriate (validated) Timer
+ *   -    
+ * - allow memory profiling 
+ *   in our own new and xmalloc functions - register allocatied and deallocated memory to active Profiler frame.
+ * 
+ * Design:
+ * basically we provide only one macro START_FRAME that should
+ * - start local timer
+ * - create local variable to automatically end the timer at least at return point or end of the block
+ * - increase count
+ * - set global pointer to current timer frame (we use it to set subframes and monitor memory allocations)
  *
+ * - when called for the first time:
+ *   - register to global Profiler class ( see if there is some frame of the same name with same parent)
+ *   - keep pointer to parent timer frame
  */
 
 
@@ -195,8 +217,17 @@ private:
     Profiler & operator=(Profiler const&); // assignment operator is private
 
     /**
+     * Stop all timers, synchronize all processes, collect
+     * profiling informations and write it to given stream.
+     *
      *  Pass through the profiling tree (collective over processors)
      *  Print cumulative times average, balance (max/min), count (denote differences)
+     *
+     */
+    void output(ostream &os);
+
+    /**
+     *  Calls output.
      *  Destroy all structures.
      */
     ~Profiler();
