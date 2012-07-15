@@ -4,17 +4,15 @@
 
 
 if(EXISTS ${PETSC_MPIEXEC})
-  file(REMOVE ${CMAKE_BINARY_DIR}/mpiexec)
-  file(WRITE ${CMAKE_BINARY_DIR}/mpiexec "#!/bin/bash\n")
-  file(APPEND ${CMAKE_BINARY_DIR}/mpiexec "\"${PETSC_MPIEXEC}\" \"\$@\"")
+  set(MPIEXEC_PATH ${PETSC_MPIEXEC})
 else()
   if(COMMAND mpiexec)
     message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
-    file(REMOVE ${CMAKE_BINARY_DIR}/mpiexec)
-    file(WRITE ${CMAKE_BINARY_DIR}/mpiexec "#!/bin/bash\n")
-    file(APPEND ${CMAKE_BINARY_DIR}/mpiexec "mpiexec \"\$@\"")
+    set(MPIEXEC_PATH mpiexec)
   else()
     message(WARNING "Missing any mpiexec.")
   endif()
 endif()
+
+configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/mpiexec)
 

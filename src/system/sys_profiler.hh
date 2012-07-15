@@ -59,6 +59,8 @@
 #include <petsc.h>
 #include <string>
 
+#include <cstring>
+
 using namespace std;
 
 
@@ -117,6 +119,9 @@ private:
     Timer* parent_timer;
     vector<Timer*> child_timers;
 
+    size_t total_allocated_;
+    size_t total_deallocated_;
+
     void stop(double time);
 
 public:
@@ -164,6 +169,16 @@ public:
 
     vector<Timer*>* child_timers_list() {
         return &child_timers;
+    }
+
+
+    void add_to_total_allocated(const size_t size) {
+        total_allocated_ += size;
+    }
+
+
+    void add_to_total_deallocated(const size_t size) {
+        total_deallocated_ += size;
     }
 
     ~Timer();
@@ -292,6 +307,18 @@ public:
      * @param n_subframes - the number of subframes
      */
     void set_timer_subframes(string tag, int n_subframes);
+
+    /**
+     * Notification about allocation of given size.
+     * Increase total allocated memory in current profiler frame.
+     */
+    void notify_malloc(const size_t size );
+
+    /**
+     * Notification about freeing memory of given size.
+     * Increase total deallocated memory in current profiler frame.
+     */
+    void notify_free(const size_t size );
 };
 
 // These helper macros are necessary due to use of _LINE_ variable in START_TIMER macro.

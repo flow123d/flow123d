@@ -32,7 +32,7 @@ set(super_test_libs system_lib)
 
 
 define_mpi_test(profiler 1)
-define_mpi_test(profiler 2)
+#define_mpi_test(profiler 2)
 
 
 
