@@ -48,9 +48,19 @@ public:
     OutputMSH(OutputTime *_output_time);
 
     /**
+     * \brief The constructor of this class
+     */
+    OutputMSH(OutputTime *_output_time, const Input::Record &in_rec);
+
+    /**
      * \brief The destructor of this class
      */
     ~OutputMSH();
+
+    /**
+     * \brief The definition of input record for gmsh file format
+     */
+    static Input::Type::Record & get_input_type();
 
     /**
      * \brief This method writes data to the GMSH (.msh) file format. This method

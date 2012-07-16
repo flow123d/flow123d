@@ -50,7 +50,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     using namespace Input;
 
     // setup output
-    output_writer = new OutputTime(mesh_, in_rec.val<FilePath>("stream") );
+    output_writer = new OutputTime(mesh_, Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
@@ -93,8 +93,8 @@ Input::Type::Record DarcyFlowMHOutput::get_input_type() {
 
             rec.declare_key("save_step", Double(0.0), Default("1.0"),
                     "Regular step between MH outputs.");
-            rec.declare_key("stream",FileName::output(), Default::obligatory(),
-                    "Temporary key for one MH output stream.");
+            rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                    "Parameters of output stream.");
             rec.declare_key("velocity_p0", FileName::output(),
                     "Output stream for P0 approximation of the velocity field.");
             rec.declare_key("pressure_p0", FileName::output(),

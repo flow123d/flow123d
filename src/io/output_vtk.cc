@@ -845,6 +845,14 @@ OutputVTK::OutputVTK(Output *_output)
     this->write_head();
 }
 
+OutputVTK::OutputVTK(OutputTime *_output_time, const Input::Record &in_rec)
+{
+    this->output = _output_time;
+    this->output_time = _output_time;
+
+    this->write_head();
+}
+
 OutputVTK::OutputVTK(OutputTime *_output_time)
 {
     this->output = _output_time;
@@ -856,4 +864,27 @@ OutputVTK::OutputVTK(OutputTime *_output_time)
 OutputVTK::~OutputVTK()
 {
     this->write_tail();
+}
+
+Input::Type::Record & OutputVTK::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("OutputVTK", "Parameters of vtk output format.");
+
+	if (!rec.is_finished()) {
+
+		// The variant
+		rec.declare_key("variant", String(), Default("ascii"),
+				"Variant of output stream file format.");
+		// The parallel or serial variant
+		rec.declare_key("parallel", Bool(), Default("false"),
+				"Parallel or serial version of file format.");
+		// The compression
+		rec.declare_key("compression", String(), Default("none"),
+				"Compression used in output stream file format.");
+
+		rec.finish();
+	}
+
+	return rec;
 }

@@ -124,8 +124,8 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
 
 
     // set up output class
-    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
-    transport_output = new OutputTime(mesh_, output_file);
+    // TODO: Add corresponding record to the in_rec
+    transport_output = new OutputTime(mesh_, Input::Record(in_rec).val<Input::Record>("output_stream"));
     output_solution.resize(n_substances);
     for (int i=0; i<n_substances; i++)
     {
@@ -188,6 +188,8 @@ Input::Type::Record & TransportDG::get_input_type()
 				"Molecular diffusivity.");
 		rec.declare_key("dg_penalty", Double(0), Default("0"),
 				"Penalty parameter influencing the discontinuity of the solution.");
+        rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                "Parameters of output stream.");
 
 		rec.finish();
 	}

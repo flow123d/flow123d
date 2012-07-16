@@ -30,6 +30,8 @@
 #ifndef OUTPUT_VTK_HH_
 #define OUTPUT_VTK_HH_
 
+#include "input/interface.hh"
+
 #include "io/output.h"
 
 /**
@@ -48,12 +50,23 @@ public:
      * \brief The constructor of this class. The head of file is written, when
      * constructor is called
      */
+    OutputVTK(OutputTime *_output_time, const Input::Record &in_rec);
+
+    /**
+     * \brief The constructor of this class. The head of file is written, when
+     * constructor is called
+     */
     OutputVTK(OutputTime *_output_time);
 
     /**
      * \brief The destructor of this class. It writes tail of the file too.
      */
     ~OutputVTK();
+
+    /**
+     * \brief The definition of input record for vtk file format
+     */
+    static Input::Type::Record & get_input_type();
 
     /**
      * \brief This function output data to serial VTK file format (single .vtu)

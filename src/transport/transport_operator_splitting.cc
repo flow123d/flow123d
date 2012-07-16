@@ -80,15 +80,15 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
 
     time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type );
-	// TOdO: this has to be set after construction of transport matrix !!
+	// TODO: this has to be set after construction of transport matrix !!
 
 
 	// register output vectors from convection
 	double ***out_conc = convection->get_out_conc();
 	vector<string> substance_name = convection->get_substance_names();
 
-	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
-	field_output = new OutputTime(mesh_, output_file);
+	// TODO: Add corresponding record to the in_rec
+	field_output = new OutputTime(mesh_, Input::Record(in_rec).val<Input::Record>("output_stream"));
 
 	/*
     transport_out_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
@@ -126,7 +126,8 @@ Input::Type::Record &TransportOperatorSplitting::get_input_type()
 
     if (!rec.is_finished()) {
 
-//    	rec.declare_key();
+        rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                "Parameters of output stream.");
 
         rec.finish();
     }

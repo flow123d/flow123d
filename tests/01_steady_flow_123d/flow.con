@@ -1,5 +1,4 @@
 {
-   
   
   problem = {
     TYPE = "SequentialCoupling", 
@@ -17,14 +16,26 @@
     primary_equation = {
       TYPE = "Steady_MH", 
      
-      
-
       balance_output = "water_balance.out", 
       boundary_file = "${INPUT}/test1.fbc", 
       n_schurs = 2, 
       output = {
-        save_step = 0.1, 
-        stream = "flow.pvd",
+        save_step = 0.1,
+        output_stream = {
+          name = "flow_output_stream",
+          file = "flow123.pvd",
+          format = "vtk",
+          vtk_format = {
+            variant = "ascii",
+            compression = "none",
+            parallel = false
+          }
+#          file = "flow123.msh",
+#          format = "gmsh",
+#          gmsh_format = {
+#            variant = "ascii"
+#          }
+        },
         pressure_p0 = {REF:"/darcy_flow_output"}, 
         pressure_p1 = "flow_output_stream", 
         velocity_p0 = "flow_output_stream"
@@ -38,31 +49,33 @@
     
 
   },
+
+pause_after_run = false
   
-  system = {
-    output_streams = [
-      {
-        file = "./test1.msh", 
-        format = "gmsh_ascii", 
-        name = "flow_output_stream"
-      }, 
-      {
-        name = "transport_output_stream"
-      }
-    ], 
-    output_streams_save = [
-      {
-        file = "transport.msh"
-      }
-    ], 
-    pause_after_run = false
-  }
+#  system = {
+#    output_streams = [
+#      {
+#        file = "./test1.msh", 
+#        format = "gmsh", 
+#        name = "flow_output_stream"
+#      }, 
+#      {
+#        name = "transport_output_stream"
+#      }
+#    ], 
+#    output_streams_save = [
+#      {
+#        file = "transport.msh"
+#      }
+#    ], 
+#    pause_after_run = false
+#  }
   
 darcy_flow_output = "./test1.pvd" 
 #{
-#        file = "./test1.msh", 
-#        format = "gmsh_ascii"
-#  }
+#  file = "./test1.msh", 
+#  format = "gmsh"
+#}
   
   
   

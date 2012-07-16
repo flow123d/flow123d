@@ -35,6 +35,7 @@
 #include "io/output_vtk.h"
 #include "io/output_msh.h"
 #include "mesh/mesh.h"
+#include "input/interface.hh"
 
 
 OutputData::OutputData(string data_name,
@@ -180,25 +181,9 @@ Output::Output(Mesh *_mesh, string fname)
 
     // !!!! NEEDS new input
     // char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
-    char *format_name = "VTK_SERIAL_ASCII";
-
-    if(strcmp(format_name,"ASCII") == 0 || strcmp(format_name,"BIN") == 0)
-    {
-        this->file_format = GMSH_MSH_ASCII;
-        this->output_msh = new OutputMSH(this);
-        this->output_vtk = NULL;
-    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 ||
-            strcmp(format_name, "VTK_PARALLEL_ASCII") == 0)
-    {
-        this->file_format = VTK_SERIAL_ASCII;
-        this->output_msh = NULL;
-        this->output_vtk = new OutputVTK(this);
-    } else {
-        xprintf(Warn,"Unknown output file format: %s.\n", format_name );
-        this->file_format = NONE;
-        this->output_msh = NULL;
-        this->output_vtk = NULL;
-    }
+    this->file_format = VTK;
+    this->output_msh = NULL;
+    this->output_vtk = new OutputVTK(this);
 }
 
 Output::~Output()
@@ -248,9 +233,9 @@ Output::~Output()
 int Output::write_head(void)
 {
     switch(this->file_format) {
-    case GMSH_MSH_ASCII:
+    case GMSH:
         return this->output_msh->write_head();
-    case VTK_SERIAL_ASCII:
+    case VTK:
         return this->output_vtk->write_head();
     default:
         return 0;
@@ -261,9 +246,9 @@ int Output::write_head(void)
 int Output::write_tail(void)
 {
     switch(this->file_format) {
-    case GMSH_MSH_ASCII:
+    case GMSH:
         return this->output_msh->write_tail();
-    case VTK_SERIAL_ASCII:
+    case VTK:
         return this->output_vtk->write_tail();
     default:
         return 0;
@@ -274,9 +259,9 @@ int Output::write_tail(void)
 int Output::write_data()
 {
     switch(this->file_format) {
-    case GMSH_MSH_ASCII:
+    case GMSH:
         return this->output_msh->write_data();
-    case VTK_SERIAL_ASCII:
+    case VTK:
         return this->output_vtk->write_data();
     default:
         return 0;
@@ -285,7 +270,7 @@ int Output::write_data()
     return 0;
 }
 
-OutputTime::OutputTime(Mesh *_mesh, string fname)
+OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 {
     int rank=0;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -294,9 +279,12 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     std::vector<OutputData> *node_data;
     std::vector<OutputData> *corner_data;
     std::vector<OutputData> *elem_data;
+
     Mesh *mesh = _mesh;
     ofstream *base_file;
     string *base_filename;
+
+    string fname = in_rec.val<FilePath>("file");
 
     base_file = new ofstream;
 
@@ -328,30 +316,64 @@ OutputTime::OutputTime(Mesh *_mesh, string fname)
     set_corner_data(corner_data);
     set_elem_data(elem_data);
 
-    // !!!! NEEDS new input
-    // char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
-    char *format_name = "VTK_SERIAL_ASCII";
-
-    if(strcmp(format_name,"ASCII") == 0 || strcmp(format_name,"BIN") == 0) {
-        this->file_format = GMSH_MSH_ASCII;
-        this->output_msh = new OutputMSH(this);
-        this->output_vtk = NULL;
-    } else if(strcmp(format_name, "VTK_SERIAL_ASCII") == 0 ||
-            strcmp(format_name, "VTK_PARALLEL_ASCII") == 0) {
-        this->file_format = VTK_SERIAL_ASCII;
-        this->output_msh = NULL;
-        this->output_vtk = new OutputVTK(this);
+    string format = in_rec.val<string>("format");
+    if( format == "vtk" ) {
+    	this->file_format = VTK;
+    	this->output_msh = NULL;
+    	Input::Iterator<Input::Record> it = Input::Record(in_rec).find<Input::Record>("vtk_format");
+    	if(it) {
+    		this->output_vtk = new OutputVTK(this, *it);
+    	} else {
+    		this->output_vtk = new OutputVTK(this);
+    	}
+    } else if( format == "gmsh" ) {
+    	this->file_format = GMSH;
+    	Input::Iterator<Input::Record> it = Input::Record(in_rec).find<Input::Record>("gmsh_format");
+    	if(it) {
+    		this->output_msh = new OutputMSH(this, *it);
+    	} else {
+    		this->output_msh = new OutputMSH(this);
+    	}
+    	this->output_vtk = NULL;
     } else {
-        xprintf(Warn,"Unknown output file format: %s.\n", format_name );
-        this->file_format = NONE;
-        this->output_msh = NULL;
-        this->output_vtk = NULL;
+    	this->file_format = NONE;
+    	this->output_msh = NULL;
+    	this->output_vtk = NULL;
     }
 
 }
 
 OutputTime::~OutputTime(void)
 {
+}
+
+Input::Type::Record & OutputTime::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("OutputStrem", "Parameters of output.");
+
+	if (!rec.is_finished()) {
+
+		// The name
+		rec.declare_key("name", String(), Default::obligatory(),
+				"The name of this stream.");
+		// The stream
+		rec.declare_key("file", FileName::output(), Default::obligatory(),
+				"File path to the output stream.");
+		// The format
+		rec.declare_key("format", String(), Default("vtk"),
+				"File format of output stream.");
+		// Optional options of VTK file format
+		rec.declare_key("vtk_format", OutputVTK::get_input_type(), Default::optional(),
+				"Parameters of output VTK file format.");
+		// Optional options of GMSH file format
+		rec.declare_key("gmsh_format", OutputMSH::get_input_type(), Default::optional(),
+				"Parameters of output GMSH file format.");
+
+		rec.finish();
+	}
+
+	return rec;
 }
 
 int OutputTime::write_data(double time)
@@ -363,11 +385,11 @@ int OutputTime::write_data(double time)
     if (rank != 0 ) return 0;
 
     switch(this->file_format) {
-    case GMSH_MSH_ASCII:
+    case GMSH:
         ret = this->output_msh->write_data(time);
         this->current_step++;
         break;
-    case VTK_SERIAL_ASCII:
+    case VTK:
         ret = this->output_vtk->write_data(time);
         this->current_step++;
         break;

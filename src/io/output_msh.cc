@@ -294,7 +294,31 @@ OutputMSH::OutputMSH(OutputTime *_output_time)
     this->write_head();
 }
 
+OutputMSH::OutputMSH(OutputTime *_output_time, const Input::Record &in_rec)
+{
+    this->output = _output_time;
+    this->output_time = _output_time;
+    this->write_head();
+}
+
 OutputMSH::~OutputMSH()
 {
     this->write_tail();
+}
+
+Input::Type::Record & OutputMSH::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("OutputMSH", "Parameters of gmsh output format.");
+
+	if (!rec.is_finished()) {
+
+		// The variant
+		rec.declare_key("variant", String(), Default("ascii"),
+				"Variant of output stream file format.");
+
+		rec.finish();
+	}
+
+	return rec;
 }
