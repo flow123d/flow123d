@@ -109,14 +109,14 @@ void OutputVTK::write_vtk_topology(void)
     /* Write number of nodes for each element */
     tmp = 0;
     FOR_ELEMENTS(mesh, ele) {
-        switch(ele->type) {
-        case LINE:
+        switch(ele->dim()) {
+        case 1:
             tmp += VTK_LINE_SIZE;
             break;
-        case TRIANGLE:
+        case 2:
             tmp += VTK_TRIANGLE_SIZE;
             break;
-        case TETRAHEDRON:
+        case 3:
             tmp += VTK_TETRA_SIZE;
             break;
         }
@@ -129,14 +129,14 @@ void OutputVTK::write_vtk_topology(void)
     file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
     /* Write type of nodes for each element */
     FOR_ELEMENTS(mesh, ele) {
-        switch(ele->type) {
-        case LINE:
+        switch(ele->dim()) {
+        case 1:
             file << (int)VTK_LINE << " ";
             break;
-        case TRIANGLE:
+        case 2:
             file << (int)VTK_TRIANGLE << " ";
             break;
-        case TETRAHEDRON:
+        case 3:
             file << (int)VTK_TETRA << " ";
             break;
         }
@@ -209,14 +209,14 @@ void OutputVTK::write_vtk_discont_topology(void)
     /* Write number of nodes for each element */
     tmp = 0;
     FOR_ELEMENTS(mesh, ele) {
-        switch(ele->type) {
-        case LINE:
+        switch(ele->dim()) {
+        case 1:
             tmp += VTK_LINE_SIZE;
             break;
-        case TRIANGLE:
+        case 2:
             tmp += VTK_TRIANGLE_SIZE;
             break;
-        case TETRAHEDRON:
+        case 3:
             tmp += VTK_TETRA_SIZE;
             break;
         }
@@ -229,14 +229,14 @@ void OutputVTK::write_vtk_discont_topology(void)
     file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
     /* Write type of nodes for each element */
     FOR_ELEMENTS(mesh, ele) {
-        switch(ele->type) {
-        case LINE:
+        switch(ele->dim()) {
+        case 1:
             file << (int)VTK_LINE << " ";
             break;
-        case TRIANGLE:
+        case 2:
             file << (int)VTK_TRIANGLE << " ";
             break;
-        case TETRAHEDRON:
+        case 3:
             file << (int)VTK_TETRA << " ";
             break;
         }

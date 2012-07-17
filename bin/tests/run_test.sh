@@ -24,6 +24,17 @@
 # Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
 #
 
+# Syntax:
+#
+#       run_test.sh   "<list of input files>"  "<list of processors counts>" "parameters passed to flow" [update]
+#
+# 
+# For every input file and every processor count run Flow123d and compare result files against saved results.
+# If the parameter 'update' is given, the script do not raise an error if the result files do not match but rather
+# ask user to replace reference results.
+# 
+
+
 
 #
 # Note: This script assumes that Flow123d can contain any error. It means that
@@ -97,8 +108,13 @@ INI_FILES="$1"
 # Second parameter has to be number of processors to run on; eg: "1 2 3 4 5"
 N_PROC="$2"
 
-# The last parameter could contain additional flow parametres
+# The last parameter could contain additional flow parameters
 FLOW_PARAMS="$3"
+
+# If the parameter 'update' is given, the script do not raise an error if the result files do not match but rather
+# ask user to replace reference results.
+UPDATE_REFERENCE_RESULTS="$4"
+
 
 # set executable for awk text processor
 AWK="awk"
@@ -140,7 +156,19 @@ function copy_outputs {
 	fi
 }
 
-# Following function is used fot checking one output file
+# Takes reference directory as $1 and current test result directory as $2.
+# Updates all files and subdirs in $1 with corresponding files in $2.
+# Raise an error if the source file in $2 does not exist.
+function update_ref_results {
+    
+      target_dir=$1
+      source_dir=$2
+      find  $target_dir -name * -exec echo '{}'
+
+}  
+
+
+# Following function is used for checking one output file
 function check_file {
 	
 	# Check, if function was called with right number of arguments
@@ -221,6 +249,9 @@ function check_outputs {
 		echo "Error: directory with output files doesn't exist: ${TEST_RESULTS}/${INI_FILE}.${NP}"
 		return 1
 	fi
+	
+	# If an update should be performed 
+	NEED_UPDATE=
 
 	# For every file in reference directory try to find generated file
 	# and do ndiff
@@ -240,7 +271,12 @@ function check_outputs {
 						check_file "${INI_FILE}" "${NP}" "${subdir}/${subfile}"
 						if [ $? -ne 0 ]
 						then
-							return 1
+                                                        if [ "${UPDATE_REFERENCE_RESULTS}" == "update" ]
+                                                        then
+                                                            NEED_UPDATE=1
+                                                        else    
+                                                            return 1
+                                                        fi  
 						fi
 					else
 						echo " [Failed]"
@@ -252,7 +288,12 @@ function check_outputs {
 				check_file ${INI_FILE} ${NP} ${file}
 				if [ $? -ne 0 ]
 				then
-					return 1
+                                      if [ "${UPDATE_REFERENCE_RESULTS}" == "update" ]
+                                      then
+                                          NEED_UPDATE=1
+                                      else    
+                                          return 1
+                                      fi  
 				fi
 			fi
 		else
@@ -261,7 +302,18 @@ function check_outputs {
 			return 1
 		fi
 	done
+	
+	if [ -n "${NEED_UPDATE}" ]
+	then
+            echo "Do you want to update reference results? (y/n) [no]"
+            read UPDATE
+            if [ "UPDATE" == "y" ] 
+            then
+                update_ref_results ${REF_OUTPUT_DIR}/${INI_FILE} ${TEST_RESULTS}/${INI_FILE}.${NP}
+            fi
+	fi
 }
+
 
 
 # Check if Flow123d exists and it is executable file

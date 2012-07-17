@@ -6,6 +6,7 @@
 #include "semchem/semchem_interface.hh"
 #include <limits>
 #include "io/output.h"
+#include "flow/mh_dofhandler.hh"
 
 /// external types:
 //class LinSys;
@@ -25,7 +26,7 @@ class MaterialDatabase;
 class TransportBase : public EquationBase{
 public:
     TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-    : EquationBase(marks, mesh, mat_base)
+    : EquationBase(marks, mesh, mat_base), mh_dh(NULL)
     {}
 
     /**
@@ -34,8 +35,12 @@ public:
      *
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
      */
-    virtual void set_velocity_field(Vec &velocity_vector) =0;
+    virtual void set_velocity_field(const MH_DofHandler &dh) {
+        mh_dh=&dh;
+    }
     virtual void output_data() =0;
+
+    const MH_DofHandler *mh_dh;
 };
 
 
@@ -76,7 +81,7 @@ public:
 	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
     virtual ~TransportOperatorSplitting();
 
-    virtual void set_velocity_field(Vec &velocity_vector);
+    virtual void set_velocity_field(const MH_DofHandler &dh);
 	virtual void update_solution();
 	void read_simulation_step(double sim_step);
 	//virtual void compute_one_step();

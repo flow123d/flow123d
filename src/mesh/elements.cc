@@ -36,6 +36,7 @@
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "elements.h"
+#include "element_impls.hh"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"
@@ -47,152 +48,63 @@ static void calc_a_row(Mesh*);
 static void calc_b_row(Mesh*);
 //static ElementIter new_element(void);
 //static void add_to_element_list(Mesh*, ElementIter);
-static void make_block_e(ElementFullIter, Mesh *mesh );
+//static void make_block_e(ElementFullIter, Mesh *mesh );
 //static void alloc_and_init_block_e(ElementIter );
-static char supported_element_type(int);
-static void element_type_specific(ElementFullIter );
-static void element_allocation_independent(ElementFullIter );
-static void make_block_d(Mesh *mesh, ElementFullIter );
-static void calc_rhs(ElementFullIter );
-static void calc_rhs_b(ElementFullIter );
-static void dirichlet_elm(ElementFullIter );
+//static char supported_element_type(int);
+//static void element_type_specific(ElementFullIter );
+//static void element_allocation_independent(ElementFullIter );
+//static void make_block_d(Mesh *mesh, ElementFullIter );
+//static void calc_rhs(ElementFullIter );
+//static void calc_rhs_b(ElementFullIter );
+//static void dirichlet_elm(ElementFullIter );
 
 static void parse_element_properties_line(char*);
-static void block_A_stats(Mesh*);
-static void diag_A_stats(Mesh*);
+//static void block_A_stats(Mesh*);
+//static void diag_A_stats(Mesh*);
 
 Element::Element()
-: type(0),
-  mid(0),
-  rid(0),
+: mid(0),
   pid(0),
 
-  dim(0),
-  n_sides(0),
-
-  n_nodes(0),
   node(NULL),
 
   material(NULL),
-  side(NULL),
+  edges_(NULL),
+  boundaries_(NULL),
+
   n_neighs_vb(0),
   neigh_vb(NULL),
- //*start_conc,
- //n_subst,
-            // Material properties
-  k(NULL),
-  a(NULL),
-  //stor(0),
-            // Geometrical properties
-  measure(0),
-  volume(0),
-            // Parameters of the basis functions
- bas_alfa(NULL),
- bas_beta(NULL),
- bas_gama(NULL),
- bas_delta(NULL),
-            // Matrix
- loc(NULL),
- loc_inv(NULL),
- rhs(NULL),
 
- a_row(0),
- b_row(0),
- d_row_count(0),
- d_col(NULL),
- d_val(NULL),
- d_el(NULL),
-
- e_row_count(0),
- e_col(NULL),
- e_edge_idx(NULL),
- e_val(NULL)
+  dim_(0)
 
 {
- centre.zeros();
-}
-
-/**
- * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
- */
-void element_calculation_mh(Mesh* mesh) {
-
-    F_ENTRY;
-
-    ASSERT(NONULL(mesh), "No mesh for problem\n");
-    ASSERT(mesh->element.size() > 0, "Empty mesh.\n");
-
-    xprintf(Msg, "Calculating properties of elements... ")/*orig verb 2*/;
-
-    calc_a_row(mesh);
-    calc_b_row(mesh);
-
-    FOR_ELEMENTS(mesh, ele) {
-        if (ele->material->dimension != ele->dim) {
-            xprintf(Warn, "Dimension %d of material doesn't match dimension %d of element %d.\n",
-                    ele->material->dimension, ele->dim, ele.id());
-        }
-        ele->a = ele->material->hydrodynamic_resistence;
-
-        calc_rhs(ele);
-        dirichlet_elm(ele);
-        make_block_d(mesh, ele);
-        make_block_e(ele, mesh);
-    }
-    //block_A_stats( mesh );
-    //diag_A_stats( mesh );
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
 }
 
 
-/**
- * CALCULATE THE "A_ROW" FIELD IN STRUCT ELEMENT
- */
-void calc_a_row(Mesh* mesh) {
-    int last = 0;
-
-    FOR_ELEMENTS(mesh, ele) {
-        ele->a_row = last;
-        last += ele->n_sides;
-    }
-}
-
-/**
- * CALCULATE THE "B_ROW" FIELD IN STRUCT ELEMENT
- */
-void calc_b_row(Mesh* mesh) {
-    int last;
-
-    last = mesh->n_sides;
-
-    FOR_ELEMENTS(mesh, ele) {
-        ele->b_row = last++;
-    }
-}
 
 /**
  * SET THE "VOLUME" FIELD IN STRUCT ELEMENT
  */
-void Element::calc_volume() {
-    volume = measure * material->size; //UPDATE
-    //        ele->volume = ele->metrics * ele->size;	   // JB version
-    INPUT_CHECK(!(volume < NUM_ZERO),
-            "Volume of the element is nearly zero (volume= %g)\n", volume);
+double Element::volume() {
+    double volume = measure() * material->size;
+    //INPUT_CHECK(!(volume < NUM_ZERO),
+    //        "Volume of the element is nearly zero (volume= %g)\n", volume);
+    return volume;
 }
 
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
-void Element::calc_metrics() {
-    switch (type) {
-        case LINE:
-            measure = element_length_line();
+double Element::measure() {
+    switch (dim()) {
+        case 1:
+            return element_length_line();
             break;
-        case TRIANGLE:
-            measure = element_area_triangle();
+        case 2:
+            return element_area_triangle();
             break;
-        case TETRAHEDRON:
-            measure = element_volume_tetrahedron();
+        case 3:
+            return element_volume_tetrahedron();
             break;
     }
 }
@@ -233,17 +145,18 @@ double Element::element_volume_tetrahedron() {
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
  */
 
-void Element::calc_centre() {
+arma::vec3 Element::centre() {
     int li;
 
+    arma::vec3 centre;
     centre.zeros();
 
     FOR_ELEMENT_NODES(this, li) {
         centre += node[ li ]->point();
     }
-    centre /= (double) n_nodes;
+    centre /= (double) n_nodes();
     //DBGMSG("%d: %f %f %f\n",ele.id(),ele->centre[0],ele->centre[1],ele->centre[2]);
-
+    return centre;
 }
 
 /**
@@ -251,17 +164,18 @@ void Element::calc_centre() {
  */
 unsigned int Element::n_sides_by_dim(int side_dim)
 {
-    if (side_dim == dim) return 1;
+    if (side_dim == dim()) return 1;
 
     unsigned int n = 0;
-    for (unsigned int i=0; i<n_sides; i++)
-        if (side[i]->dim == side_dim) n++;
+    for (unsigned int i=0; i<n_sides(); i++)
+        if (side(i)->dim() == side_dim) n++;
     return n;
 }
 
 /**
  * Return pointer to @p nth side/node/element (depending on the dimension @p side_dim).
  */
+/*
 void *Element::side_by_dim(int side_dim, unsigned int n)
 {
     if (side_dim == 0)
@@ -278,13 +192,13 @@ void *Element::side_by_dim(int side_dim, unsigned int n)
     else
     {
         unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides; i++)
+        for (unsigned int i=0; i<n_sides(); i++)
         {
-            if (side[i]->dim == side_dim)
+            if (side(i)->dim() == side_dim)
             {
                 if (count == n)
                 {
-                    return side[i];
+                    return side(i);
                 }
                 else
                 {
@@ -295,17 +209,18 @@ void *Element::side_by_dim(int side_dim, unsigned int n)
         xprintf(Warn, "Side not found.");
     }
 }
+*/
 
 /**
  * Return pointer to the @p node_id-th node of the side.
  */
-Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
+const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
 {
     if (side_dim == 0)
     {
         return node[side_id];
     }
-    else if (side_dim == dim)
+    else if (side_dim == dim())
     {
         ASSERT(side_id==0, "Number of side is out of range.");
         return this->node[node_id];
@@ -313,13 +228,13 @@ Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
     else
     {
         unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides; i++)
+        for (unsigned int i=0; i<n_sides(); i++)
         {
-            if (side[i]->dim == side_dim)
+            if (side(i)->dim() == side_dim)
             {
                 if (count == side_id)
                 {
-                    return side[i]->node[node_id];
+                    return side(i)->node(node_id);
                 }
                 else
                 {
@@ -332,31 +247,8 @@ Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
 }
 
 
-/**
- * SET THE "RHS[]" FIELD IN STRUCT ELEMENT
- */
-void calc_rhs(ElementFullIter ele) {
-    int li;
 
-    FOR_ELEMENT_SIDES(ele, li) {
-        ele->rhs[ li ] = 0.0;
-    }
-}
-
-/**
- * CORRECT RHS IN CASE, WHEN DIRICHLET'S CONDITION IS GIVEN
- */
-void dirichlet_elm(ElementFullIter ele) {
-    int li;
-    struct Boundary *bcd;
-
-    FOR_ELEMENT_SIDES(ele, li) {
-        bcd = ele->side[ li ]->cond;
-        if (bcd == NULL) continue;
-        if (bcd->type == DIRICHLET) ele->rhs[ li ] -= bcd->scalar;
-    }
-}
-
+#if 0
 
 /**
  * make_block_d(ElementFullIter ele)
@@ -382,7 +274,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
 
     FOR_ELM_NEIGHS_VB(ele, ngi) {
         ngh = ele->neigh_vb[ ngi ];
-        ele->d_val[ D_DIAG ] -= ngh->sigma * ngh->side[1]->metrics;
+        ele->d_val[ D_DIAG ] -= ngh->sigma * ngh->side[1]->metric();
     }
     iCol = 1;
 
@@ -414,6 +306,7 @@ void make_block_d(Mesh *mesh, ElementFullIter ele) {
 /**
  * make_block_e(ElementFullIter ele)
  */
+/*
 void make_block_e(ElementFullIter ele, Mesh *mesh) {
     int ngi, ci;
     struct Neighbour *ngh;
@@ -430,11 +323,11 @@ void make_block_e(ElementFullIter ele, Mesh *mesh) {
     FOR_ELM_NEIGHS_VB(ele, ngi) {
         ngh = ele->neigh_vb[ ngi ];
         ele->e_col[ ci ] = ngh->edge->c_row;
-        ele->e_val[ ci ] = ngh->sigma * ngh->side[1]->metrics; //DOPLNENO   * ngh->side[1]->metrics
+        ele->e_val[ ci ] = ngh->sigma * ngh->side[1]->metric(); //DOPLNENO   * ngh->side[1]->metrics
         ele->e_edge_idx[ci] = mesh->edge.index(ngh->edge);
         ci++;
     }
-}
+}*/
 
 /**
  * gets max,min, abs max, abs min of all local matrices
@@ -459,7 +352,7 @@ void block_A_stats(Mesh* mesh) {
             if (fabs(loc[i]) < a_abs_min) a_abs_min = fabs(loc[i]);
             if (fabs(loc[i]) > a_abs_max) a_abs_max = fabs(loc[i]);
             if (fabs(loc[i]) > 1e3)
-                xprintf(Msg, "Big number: eid:%d area %g\n", ele.id(), ele->measure);
+                xprintf(Msg, "Big number: eid:%d area %g\n", ele.id(), ele->measure());
         }
     }
 
@@ -498,6 +391,7 @@ void diag_A_stats(Mesh* mesh) {
     xprintf(MsgVerb, "Minimal value: %g\tMaximal value: %g\n", a_min, a_max)/*orig verb 6*/;
     xprintf(MsgVerb, "Minimal absolute value: %g\tMaximal absolute value: %g\n", a_abs_min, a_abs_max)/*orig verb 6*/;
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

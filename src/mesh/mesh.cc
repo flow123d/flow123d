@@ -54,30 +54,69 @@ Mesh::Mesh() {
     xprintf(Msg, " - Mesh()     - version with node_vector\n");
 
     n_materials = NDEF;
-//    concentration = NULL;
-//    l_concentration = NULL;
-//    transport_bcd = NULL;
-//    l_transport_bcd = NULL;
-    //	n_sources        = NDEF;
-    //	source           = NULL;
-    //	l_source         = NULL;
-    n_sides = NDEF;
-    side = NULL;
-    l_side = NULL;
+
     n_insides = NDEF;
     n_exsides = NDEF;
-    n_neighs = NDEF;
-    neighbour = NULL;
-    l_neighbour = NULL;
+    n_sides_ = NDEF;
 
-    // Hashes
+    // number of element of particular dimension
     n_lines = 0;
     n_triangles = 0;
     n_tetrahedras = 0;
 
-//    concentration_hash = NULL;
-//    transport_bcd_hash = NULL;
-//    neighbour_hash = NULL;
+    // indices of side nodes in element node array
+    // Currently this is made ad libitum
+    // with some ordering here we can get sides with correct orientation.
+    // This speedup normal calculation.
+
+    side_nodes.resize(3); // three side dimensions
+    for(int i=0; i < 3; i++) {
+        side_nodes[i].resize(i+2); // number of sides
+        for(int j=0; j < i+2; j++)
+            side_nodes[i][j].resize(i+1);
+    }
+
+    side_nodes[0][0][0] = 0;
+    side_nodes[0][1][0] = 1;
+
+
+    side_nodes[1][0][0] = 0;
+    side_nodes[1][0][1] = 1;
+
+    side_nodes[1][1][0] = 1;
+    side_nodes[1][1][1] = 2;
+
+    side_nodes[1][2][0] = 2;
+    side_nodes[1][2][1] = 0;
+
+
+    side_nodes[2][0][0] = 1;
+    side_nodes[2][0][1] = 2;
+    side_nodes[2][0][2] = 3;
+
+    side_nodes[2][1][0] = 0;
+    side_nodes[2][1][1] = 2;
+    side_nodes[2][1][2] = 3;
+
+    side_nodes[2][2][0] = 0;
+    side_nodes[2][2][1] = 1;
+    side_nodes[2][2][2] = 3;
+
+    side_nodes[2][3][0] = 0;
+    side_nodes[2][3][1] = 1;
+    side_nodes[2][3][2] = 2;
+
+
+}
+
+
+unsigned int Mesh::n_sides()
+{
+    if (n_sides_ == NDEF) {
+        n_sides_=0;
+        FOR_ELEMENTS(this, ele) n_sides_ += ele->n_sides();
+    }
+    return n_sides_;
 }
 
 
@@ -86,105 +125,320 @@ Mesh::Mesh() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-    Mesh *mesh = this;
+    F_ENTRY;
 
     FOR_ELEMENTS(this, elm)
-    switch (elm->type) {
+    switch (elm->dim()) {
         case 1:
             n_lines++;
             break;
         case 2:
             n_triangles++;
             break;
-        case 4:
+        case 3:
             n_tetrahedras++;
             break;
     }
 }
-//=============================================================================
-// RETURN MAX NUMBER OF ENTRIES IN THE ROW
-//=============================================================================
-/*
-int *max_entry() {
 
-    int *max_size, size, i;
-//    ElementIter elm;
-
-    max_size = (int*) xmalloc(2 * sizeof (int));
-
-    max_size[0] = 0; // entries count
-    max_size[1] = 0; // row
-
-    FOR_ELEMENTS(elm) {
-        size = 0; // uloha se zapornymi zdroji =1
-
-        FOR_ELEMENT_SIDES(elm, si) { //same dim
-            if (elm->side[si]->cond != NULL) size++;
-            else
-                size += elm->side[ si ]->edge->n_sides - 1;
-            if (elm->side[si]->neigh_bv != NULL) size++; // comp model
-        } // end same dim
-
-
-        //   printf("SD id:%d,size:%d\n",elm->id,size);
-        //
-
-        FOR_ELM_NEIGHS_VB(elm, i) { // comp model
-            size += elm->neigh_vb[i]->n_elements - 1;
-            //     printf("VB id:%d,size:%d\n",elm->id,size);
-        } // end comp model
-
-
-        /*
-        if (elm->dim > 1)
-          FOR_NEIGHBOURS(ngh)
-            FOR_NEIGH_ELEMENTS(ngh,n)
-              if (ngh->element[n]->id == elm->id && n == 1)
-                size++;
-         */
-/*
-        size += elm->n_neighs_vv; // non-comp model
-
-        max_size[0] += size;
-        if (max_size[1] < size) max_size[1] = size;
-    }
-    // getchar();
-    return max_size;
-}*/
-
+/**
+ *  Setup whole topology for read mesh.
+ */
 void Mesh::setup_topology() {
+    F_ENTRY;
     Mesh *mesh=this;
 
-    /// initialize mesh topology (should be handled inside mesh object)
-    read_neighbour_list(mesh);
 
-    make_side_list( mesh);
-    make_edge_list(mesh);
-
-    //    make_hashes(problem);
     count_element_types();
 
     // topology
-    node_to_element(mesh);
-    element_to_side_both(mesh);
-    neigh_vv_to_element(mesh);
-    //element_to_neigh_vv(mesh);
-    neigh_vb_to_element_and_side(mesh);
-    neigh_bv_to_side(mesh);
-    element_to_neigh_vb(mesh);
-    side_shape_specific(mesh);
-    side_to_node(mesh);
-    neigh_bb_topology(mesh);
-    neigh_bb_to_edge_both(mesh);
-    edge_to_side_both(mesh);
-    neigh_vb_to_edge_both(mesh);
-    side_types(mesh);
-    count_side_types(mesh);
-    xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
+    //node_to_element();
+
+    read_neighbours();
+    edge_to_side();
+
+    neigh_vb_to_element_and_side();
+    element_to_neigh_vb();
+
+    count_side_types();
 
     read_boundary(mesh);
 
+    xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
+
+
+    // cleanup
+    {
+        vector<Neighbour_both> empty_vec;
+        neighbours_.swap(empty_vec);
+    }
+
 }
+
+
+/**
+ *   Creates back references from nodes to elements.
+ *
+ *   TODO: This is not necessary after the topology setup so
+ *   we should make that as an independent structure which can be easily deleted.
+ */
+void Mesh::node_to_element()
+{
+    F_ENTRY;
+/*
+    int li;
+    NodeIter nod;
+    ElementIter ele;
+
+    xprintf( MsgVerb, "   Node to element... ");
+
+    // Set counter of elements in node to zero
+    FOR_NODES(this,  nod )
+        nod->n_elements = 0;
+    // Count elements
+    FOR_ELEMENTS(this,  ele )
+        FOR_ELEMENT_NODES( ele, li ) {
+            nod = ele->node[ li ];
+            (nod->n_elements)++;
+        }
+    // Allocate arrays
+    FOR_NODES(this,  nod ) {
+                if (nod->n_elements == 0)
+                        continue;
+            nod->element = (ElementIter *) xmalloc( nod->n_elements * sizeof( ElementIter ) );
+        nod->aux = 0;
+    }
+    // Set poiners in arrays
+    FOR_ELEMENTS(this,  ele )
+        FOR_ELEMENT_NODES( ele, li ) {
+            nod = ele->node[ li ];
+            nod->element[ nod->aux ] = ele;
+            (nod->aux)++;
+        }
+    xprintf( MsgVerb, "O.K.\n");*/
+}
+
+//=============================================================================
+//
+//=============================================================================
+void Mesh::count_side_types()
+{
+    struct Side *sde;
+
+    n_insides = 0;
+    n_exsides = 0;
+    FOR_SIDES(this,  sde )
+        if (sde->is_external()) n_exsides++;
+        else n_insides++;
+}
+
+
+
+void Mesh::read_neighbours() {
+    FILE    *in;   // input file
+    char     line[ LINE_SIZE ];   // line of data file
+    unsigned int id;
+
+    xprintf( Msg, "Reading neighbours...");
+    const std::string& file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" ));
+    in = xfopen( file_name, "rt" );
+    skip_to( in, "$Neighbours" );
+    xfgets( line, LINE_SIZE - 2, in );
+
+    unsigned int n_neighs = atoi( xstrtok( line) );
+    INPUT_CHECK( n_neighs > 0 ,"Number of neighbours  < 1 in read_neighbour_list()\n");
+    neighbours_.resize( n_neighs );
+
+    n_bb_neigh = 0;
+    n_vb_neigh = 0;
+
+    for(vector<Neighbour_both>::iterator ngh= neighbours_.begin();
+            ngh != neighbours_.end(); ++ngh ) {
+        xfgets( line, LINE_SIZE - 2, in );
+
+        id              = atoi( xstrtok( line) );
+        ngh->type            = atoi( xstrtok( NULL) );
+
+        switch( ngh->type ) {
+            case BB_E:
+                xprintf(UsrErr, "Not supported - Neighboring of type (10) - of elements of same dimension without local side number!\n");
+                break;
+            case BB_EL:
+                n_bb_neigh++;
+                ngh->n_sides = atoi( xstrtok( NULL) );
+                INPUT_CHECK(!( ngh->n_sides < 2 ),"Neighbour %d has bad number of elements: %d\n", id, ngh->n_sides );
+
+                ngh->eid = new int [ngh->n_sides];
+                ngh->sid = new int [ngh->n_sides];
+
+                for( int i = 0; i < ngh->n_sides; i++) {
+                    ngh->eid[ i ] = atoi( xstrtok( NULL) );
+                    ngh->sid[ i ] = atoi( xstrtok( NULL) );
+                }
+
+                break;
+            case VB_ES:
+                n_vb_neigh++;
+                ngh->n_sides = 2;
+                ngh->eid = new int [ngh->n_sides];
+                ngh->sid = new int [ngh->n_sides];
+
+                ngh->eid[ 0 ] = atoi( xstrtok( NULL) );
+                ngh->eid[ 1 ] = atoi( xstrtok( NULL) );
+                ngh->sid[ 0 ] = NDEF;
+                ngh->sid[ 1 ] = atoi( xstrtok( NULL) );
+
+                ngh->sigma = atof( xstrtok( NULL) );
+                break;
+            case VV_2E:
+                xprintf(UsrErr, "Not supported - Neighboring of type (30) - Noncompatible only elements!\n");
+                break;
+            default:
+                xprintf(UsrErr,"Neighbour %d is of the unsupported type %d\n", id, ngh->type );
+                break;
+        }
+    }
+
+    //xprintf( Msg, " %d neighbours readed. ", n_vb_neighbours() );
+}
+
+
+
+void Mesh::edge_to_side()
+{
+    F_ENTRY;
+
+    struct Edge *edg;
+    Element *ele;
+
+    xprintf( MsgVerb, "   Edge to side and back... \n");
+
+    // count edges
+    unsigned int n_edges = n_sides();
+    for(vector<Neighbour_both>::iterator it= neighbours_.begin();
+        it != neighbours_.end(); ++it )
+        if ( it->type == BB_EL ) n_edges -= ( it->n_sides - 1 );
+
+    // create edge vector
+    edge.resize(n_edges);
+    xprintf( MsgLog, "Created  %d edges.\n.", n_edges );
+
+    // set edge, side connections
+    unsigned int i_edge=0;
+    for(vector<Neighbour_both>::iterator it= neighbours_.begin();
+            it != neighbours_.end(); ++it ) {
+
+        if ( it->type != BB_EL ) continue;
+
+        edg = &( edge[i_edge++] );
+
+        // init edge (can init all its data)
+        edg->n_sides = it->n_sides;
+        edg->side_ = new SideIter [edg->n_sides];
+
+        for(int si=0; si < it->n_sides; si++) {
+            ele = element.find_id( it->eid[si] );
+            edg->side_[ si ] = ele->side( it->sid[ si ] );
+            ele->edges_[ it->sid[ si ] ] = edg;
+        }
+    }
+
+    // now the external ones ( pair all remaining edges with external sides)
+    FOR_SIDES(this, sde) {
+        if ( sde->edge() == NULL ) {
+            edg = &( edge[i_edge++] );
+
+            // make external edges and edges on neighborings.
+            edg->n_sides = 1;
+            edg->side_ = new SideIter [ edg->n_sides ];
+            edg->side_[ 0 ] = sde;
+
+            sde->element()->edges_[sde->el_idx()] = edg;
+        }
+    }
+    ASSERT(i_edge == n_edges, "Actual number of edges %d do not match size of its array.\n", i_edge);
+
+    //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
+}
+
+
+
+/**
+ * Make
+ */
+void Mesh::neigh_vb_to_element_and_side()
+{
+
+    vb_neighbours_.resize( n_vb_neigh );
+
+    ElementIter ele_lower, ele_higher;
+    Edge *edg;
+
+    xprintf( MsgVerb, "   Creating %d VB neighbours... ", n_vb_neigh);
+
+    vector<Neighbour>::iterator new_ngh = vb_neighbours_.begin();
+
+    for(vector<Neighbour_both>::iterator ngh= neighbours_.begin(); ngh != neighbours_.end(); ++ngh ) {
+
+        if ( ngh->type != VB_ES ) continue;
+
+
+        ele_lower = element.find_id( ngh->eid[0]);
+        ele_higher = element.find_id( ngh->eid[1] );
+        edg = ele_higher->side( ngh->sid[ 1 ] )->edge();
+
+        ASSERT(edg->n_sides == 1, "Edge with %d\n", edg->n_sides);
+        ASSERT( ele_higher == edg->side(0)->element(),"Diff els.\n");
+        new_ngh->reinit(  ele_lower, edg , ngh->sigma);
+
+
+        //DBGMSG(" %d %d -> %d %d\n", ngh->eid[0], ngh->eid[1],
+        //        new_ngh->element()->index(),
+        //        new_ngh->side()->element()->index());
+
+        ++new_ngh;
+    }
+
+    ASSERT( new_ngh == vb_neighbours_.end(), "Some VB neigbourings wasn't set.\n");
+
+
+    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+}
+
+
+
+
+//=============================================================================
+//
+//=============================================================================
+void Mesh::element_to_neigh_vb()
+{
+
+    xprintf( MsgVerb, "   Element to neighbours of vb2 type... ")/*orig verb 5*/;
+
+    FOR_ELEMENTS(this,ele) ele->n_neighs_vb =0;
+
+    // count vb neighs per element
+    FOR_NEIGHBOURS(this,  ngh )  ngh->element_->n_neighs_vb++;
+
+    // Allocation of the array per element
+    FOR_ELEMENTS(this,  ele )
+        if( ele->n_neighs_vb > 0 ) {
+            ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb];
+            ele->n_neighs_vb=0;
+        }
+
+    // fill
+    ElementIter ele;
+    FOR_NEIGHBOURS(this,  ngh ) {
+        ele = ngh->element();
+        ele->neigh_vb[ ele->n_neighs_vb++ ] = &( *ngh );
+    }
+
+    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+}
+
+
 
 void Mesh::setup_materials( MaterialDatabase &base)
 {
@@ -195,99 +449,8 @@ void Mesh::setup_materials( MaterialDatabase &base)
                 "Reference to undefined material %d in element %d\n", ele->mid, ele.id() );
     }
     xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
-
-    make_element_geometry();
 }
 
-/**
- * CALCULATE PROPERTIES OF ALL ELEMENTS OF THE MESH
- */
-void Mesh::make_element_geometry() {
 
-    xprintf(Msg, "Calculating properties of elements... ")/*orig verb 2*/;
-
-    ASSERT(element.size() > 0, "Empty mesh.\n");
-
-    FOR_ELEMENTS(this, ele) {
-        //DBGMSG("\n ele: %d \n",ele.id());
-        //FOR_ELEMENTS(ele1) {
-        //    printf("%d(%d) ",ele1.id(),ele1->type);
-        //    ele1->bas_alfa[0]=1.0;
-       // }
-        ele->calc_metrics();
-        ele->calc_volume();
-        ele->calc_centre();
-    }
-
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
-}
-
-//=============================================================================
-// ID-POS TRANSLATOR
-//=============================================================================
-// TODO: should be method of water_linsys
-/*
-int id2pos(Mesh* mesh, int id, int* list, int type) {
-    int i, limit;
-
-    switch (type) {
-        case ELM:
-            limit = mesh->n_elements();
-            break;
-        case BC:
-            limit = mesh->n_boundaries();
-            break;
-        case NODE:
-            limit = mesh->node_vector.size();
-            break;
-    }
-
-    for (i = 0; i < limit; i++)
-        if (list[i] == id)
-            break;
-
-    if (type != BC)
-        return i;
-    else
-        return i + mesh->n_elements();
-}*/
-/*
-  for(i=0;i< ((type == ELM) ? mesh->n_elements() : mesh->n_boundaries );i++)
-        if(list[i] == id)
-                return (type == ELM) ? i : (i + mesh->n_elements());
- */
-//=============================================================================
-// MAKE ID-POS ELEMENT & BOUNDARY LIST
-//=============================================================================
-// TODO: should be private method of water_linsys
-/*
-void make_id2pos_list() {
-    F_ENTRY;
-
-    Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-
-    ElementIter elm;
-    NodeIter node;
-    int i, j, s;
-
-    mesh->epos_id = (int*) xmalloc(mesh->n_elements() * sizeof (int));
-    mesh->spos_id = (int*) xmalloc(mesh->n_boundaries() * sizeof (int));
-    mesh->npos_id = (int*) xmalloc(mesh->node_vector.size() * sizeof (int));
-
-    j = i = 0;
-
-    FOR_ELEMENTS(elm) {
-        mesh->epos_id[i++] = elm.id();
-        FOR_ELEMENT_SIDES(elm, s)
-        if (elm->side[s]->cond != NULL)
-            mesh->spos_id[j++] = elm->side[s]->id;
-    }
-    i = 0;
-
-    FOR_NODES( node ) {
-        mesh->npos_id[i++] = node->id;
-    }
-}
-*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

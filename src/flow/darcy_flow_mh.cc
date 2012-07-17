@@ -39,13 +39,15 @@
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "system/par_distribution.hh"
-#include "flow/darcy_flow_mh.hh"
 #include "la/linsys.hh"
 #include "la/solve.h"
 #include "la/schur.hh"
 #include "la/sparse_graph.hh"
 #include "field_p0.hh"
-#include "flow/local_matrix.h"
+
+
+#include "flow/mh_fe_values.hh"
+#include "flow/darcy_flow_mh.hh"
 
 
 #include <limits>
@@ -72,7 +74,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
 {
     int ierr;
 
-    size = mesh_->n_elements() + mesh_->n_sides + mesh_->n_edges();
+    size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = OptGetInt("Solver", "NSchurs", "2");
     if ((unsigned int) n_schur_compls > 2) {
         xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
@@ -110,20 +112,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     if (ierr)
         xprintf(Err, "Some error in MPI.\n");
 
-    // calculation_mh  - precalculation of some values stored still in mesh_
-    {
-    struct Side *sde;
 
-    FOR_SIDES(mesh_,sde) {
-        calc_side_metrics(sde);
-    }
-
-    edge_calculation_mh(mesh_);
-    element_calculation_mh(mesh_);
-    side_calculation_mh(mesh_);
-    boundary_calculation_mh(mesh_);
-    local_matrices_mh(mesh_);
-    }
+    mh_dh.reinit(mesh_);
 
     prepare_parallel();
 
@@ -150,7 +140,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
             i = 0;
             FOR_ELEMENTS(mesh_, ele) {
                 FOR_ELEMENT_SIDES(ele,si) {
-                    loc_idx[i++] = side_row_4_id[ele->side[si]->id];
+                    loc_idx[i++] = side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
                 }
             }
             FOR_ELEMENTS(mesh_, ele) {
@@ -238,10 +228,10 @@ void DarcyFlowMH_Steady::postprocess() {
     for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         ele = mesh_->element(el_4_loc[i_loc]);
         FOR_ELEMENT_SIDES(ele,i) {
-            side_rows[i] = side_row_4_id[ele->side[i]->id];
-            values[i] = -1.0 * ele->volume * sources->element_value(ele.index()) / ele->n_sides;
+            side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
+            values[i] = -1.0 * ele->volume() * sources->element_value(ele.index()) / ele->n_sides();
         }
-        VecSetValues(schur0->get_solution(), ele->n_sides, side_rows, values, ADD_VALUES);
+        VecSetValues(schur0->get_solution(), ele->n_sides(), side_rows, values, ADD_VALUES);
     }
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
@@ -273,6 +263,8 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 }
 
 
+
+
 // ===========================================================================================
 //
 //   MATRIX ASSEMBLY - we use abstract assembly routine, where  LS Mat/Vec SetValues
@@ -292,14 +284,20 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    MHFEValues fe_values;
+
+    struct Boundary *bcd;
+    struct Neighbour *ngh;
 
     int el_row, side_row, edge_row;
     int tmp_rows[100];
     int i, i_loc, nsides, li, si;
     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
     double f_val;
+    double local_vb[4]; // 2x2 matrix
     double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
+    double loc_side_rhs[4];
     F_ENTRY;
 
     //DBGPRINT_INT("side_row_4_id",mesh->max_side_id+1,side_row_4_id);
@@ -309,57 +307,97 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
     SET_ARRAY_ZERO(zeros,1000);
     for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
-        nsides = ele->n_sides;
+        nsides = ele->n_sides();
+        fe_values.update(ele);
+
         for (i = 0; i < nsides; i++) {
-            side_row = side_rows[i] = side_row_4_id[ele->side[i]->id];
-            edge_row = edge_rows[i] = row_4_edge[mesh_->edge.index(ele->side[i]->edge)];
+            side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
+            edge_row = edge_rows[i] = row_4_edge[mesh_->edge.index(ele->side(i)->edge())];
+            bcd=ele->side(i)->cond();
+
+            // gravity term on RHS
+            loc_side_rhs[i] = (ele->centre()[ 2 ] - ele->side(i)->centre()[ 2 ]);
+
             // set block C and C': side-edge, edge-side
-            ls->mat_set_value(side_row, edge_row, ele->side[i]->c_val);
-            ls->mat_set_value(edge_row, side_row, ele->side[i]->c_val);
+            double c_val = 1.0;
+
+            if (bcd) {
+                if ( bcd->type == DIRICHLET ) {
+                    c_val = 0.0;
+                    loc_side_rhs[i] -= bcd->scalar;
+
+                    ls->rhs_set_value(edge_row, -bcd->scalar);
+                    ls->mat_set_value(edge_row, edge_row, -1.0);
+                } else if ( bcd->type == NEUMANN ) {
+                    ls->rhs_set_value(edge_row, bcd->flux * bcd->side->metric());
+                } else if ( bcd->type == NEWTON )  {
+                    ls->rhs_set_value(edge_row, -bcd->side->metric() * bcd->sigma * bcd->scalar);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->side->metric()*bcd->sigma );
+                }
+            }
+            ls->mat_set_value(side_row, edge_row, c_val);
+            ls->mat_set_value(edge_row, side_row, c_val);
         }
+        ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
+
+
         // set block A: side-side on one element - block diagonal matrix
-        ls->mat_set_values(nsides, side_rows, nsides, side_rows, ele->loc);
+        ls->mat_set_values(nsides, side_rows, nsides, side_rows, fe_values.local_matrix() );
         // set block B, B': element-side, side-element
         ls->mat_set_values(1, &el_row, nsides, side_rows, minus_ones);
         ls->mat_set_values(nsides, side_rows, 1, &el_row, minus_ones);
-        // set RHS for sides - dirichlet BC; gravity term ?
-        // RHS for elements - neuman BC
-        ls->rhs_set_values(nsides, side_rows, ele->rhs);
+
 
         // set sources
         if (sources != NULL) {
-            ls->rhs_set_value(el_row, -1.0 * ele->volume * sources->element_value(ele.index()));
+            ls->rhs_set_value(el_row, -1.0 * ele->volume() * sources->element_value(ele.index()));
         }
 
         // D block: non-compatible conections and diagonal: element-element
-        for (i = 0; i < ele->d_row_count; i++)
-            tmp_rows[i] = row_4_el[ele->d_el[i]];
-        ls->mat_set_values(1, &el_row, ele->d_row_count, tmp_rows, ele->d_val);
-        // E',E block: compatible connections: element-edge
-        for (i = 0; i < ele->e_row_count; i++)
-            tmp_rows[i] = row_4_edge[ele->e_edge_idx[i]];
-        ls->mat_set_values(1, &el_row, ele->e_row_count, tmp_rows, ele->e_val);
-        ls->mat_set_values(ele->e_row_count, tmp_rows, 1, &el_row, ele->e_val);
+        //for (i = 0; i < ele->d_row_count; i++)
+        //    tmp_rows[i] = row_4_el[ele->d_el[i]];
+        ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
+
+        // D, E',E block: compatible connections: element-edge
+
+        for (i = 0; i < ele->n_neighs_vb; i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            ngh= ele->neigh_vb[i];
+            tmp_rows[0]=el_row;
+            tmp_rows[1]=row_4_edge[ mesh_->edge.index( ngh->edge() ) ];
+
+            double value = ngh->sigma * ngh->side()->metric();
+
+            local_vb[0] = -value;   local_vb[1] = value;
+            local_vb[2] = value;    local_vb[3] = -value;
+
+            ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
+
+            if (n_schur_compls == 2) {
+                // for 2. Schur: N dim edge is conected with N dim element =>
+                // there are nz between N dim edge and N-1 dim edges of the element
+
+                ls->mat_set_values(nsides, edge_rows, 1, tmp_rows+1, zeros);
+                ls->mat_set_values(1, tmp_rows+1, nsides, edge_rows, zeros);
+
+                // save all global edge indices to higher positions
+                tmp_rows[2+i] = tmp_rows[1];
+            }
+        }
+
+
 
         // add virtual values for schur complement allocation
         switch (n_schur_compls) {
         case 2:
-            if (ele->d_row_count > 1) {
-                xprintf(Warn,"Can not use second Schur complement for problem with non-compatible connections.\n");
-                n_schur_compls = 1;
-            }
-            // for 2. Schur: N dim edge is conected with N dim element =>
-            // there are nz between N dim edge and N-1 dim edges of the element
-            ASSERT(ele->e_row_count*nsides<1000,"Too many values in E block.");
-            ls->mat_set_values(nsides, edge_rows, ele->e_row_count, tmp_rows,
-                    zeros);
-            ls->mat_set_values(ele->e_row_count, tmp_rows, nsides, edge_rows,
-                    zeros);
-            ASSERT(ele->e_row_count*ele->e_row_count<1000,"Too many values in E block.");
-            ls->mat_set_values(ele->e_row_count, tmp_rows, ele->e_row_count,
-                    tmp_rows, zeros);
+            ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
+            ls->mat_set_values(ele->n_neighs_vb, tmp_rows+2,
+                               ele->n_neighs_vb, tmp_rows+2, zeros);
+
         case 1: // included also for case 2
             // -(C')*(A-)*B block and its transpose conect edge with its elements
             ls->mat_set_values(1, &el_row, nsides, edge_rows, zeros);
@@ -374,14 +412,18 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     // }
     // set block F - diagonal: edge-edge from Newton BC
     // also Dirichlet BC
+    /*
     for (i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
         edge_row = row_4_edge[edge_4_loc[i_loc]];
         EdgeFullIter edg = mesh_->edge(edge_4_loc[i_loc]);
 
         //xprintf(Msg,"F: %d %f\n",old_4_new[edge_row],edg->f_val);
-        ls->mat_set_value(edge_row, edge_row, edg->f_val);
-        ls->rhs_set_value(edge_row, edg->f_rhs);
+        //ls->mat_set_value(edge_row, edge_row, edg->f_val);
+        //ls->rhs_set_value(edge_row, edg->f_rhs);
     }
+    */
+
+
 }
 
 
@@ -427,14 +469,14 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
  // pro jeden element sousedi max s jednou edge a naopak takze musim spolehat jen na to co je
  // v e_col
  FOR_ELEMENTS( ele ) {
- for(i=0;i<ele->n_sides;i++) w_ls->nonzeros[ele->side[i]->edge->c_row]+=ele->e_row_count;
+ for(i=0;i<ele->n_sides;i++) w_ls->nonzeros[ele->side(i)->edge->c_row]+=ele->e_row_count;
  for(i=0;i<ele->e_row_count;i++) w_ls->nonzeros[ele->e_col[i]]+=ele->n_sides+ele->e_row_count-1;
  }
  }
  // -C'*A-*B block conect edge with its elements = n_sides nz
  // -C'*A-*C block conect all edges of every element = n_sides*(dim of sides +1)nz (not counting diagonal)
  FOR_EDGES ( edg ) {
- w_ls->nonzeros[row++] += edg->n_sides*(edg->side[0]->dim+1+1);
+ w_ls->nonzeros[row++] += edg->n_sides*(edg->side(0)->dim+1+1);
  }
  }
  }
@@ -514,6 +556,8 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 // TODO: reuse IA a Schurova doplnku
 void DarcyFlowMH_Steady::make_schur1() {
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    MHFEValues fe_values;
+
     int i_loc, nsides, i, side_rows[4], ierr, el_row;
     double det;
     PetscErrorCode err;
@@ -537,30 +581,15 @@ void DarcyFlowMH_Steady::make_schur1() {
        for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
            ele = mesh_->element(el_4_loc[i_loc]);
            el_row = row_4_el[el_4_loc[i_loc]];
-           nsides = ele->n_sides;
-           if (ele->loc_inv == NULL) {
-               ele->loc_inv = (double *) malloc(nsides * nsides * sizeof(double));
-               det = MatrixInverse(ele->loc, ele->loc_inv, nsides);
-               if (fabs(det) < NUM_ZERO) {
-                   xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
-                   PrintSmallMatrix(ele->loc, nsides);
-                   xprintf(Err,"det: %30.18e \n",det);
-               }
-           }
-	   /* print the matrix */
-	   //int j;
-	   //xprintf(Msg,"Local element inverse: \n ");
-           //for (i = 0; i < nsides; i++) {
-           //   for (j = 0; j < nsides; j++) 
-	   //      xprintf(Msg, " %14.6f ", ele->loc_inv[i*nsides + j]);
-	   //   xprintf(Msg, " \n ");
-	   //}
+           nsides = ele->n_sides();
+
+           fe_values.update( ele );
 
            for (i = 0; i < nsides; i++)
-               side_rows[i] = ele->side[i]->id; // side ID
+               side_rows[i] = mh_dh.side_dof( ele->side(i) ); // side ID
                            // - rows_ds->begin(); // local side number
                            // + side_ds->begin(); // side row in IA1 matrix
-           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, ele->loc_inv,
+           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
                         INSERT_VALUES);
        }
     }
@@ -579,21 +608,15 @@ void DarcyFlowMH_Steady::make_schur1() {
        for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
            ele = mesh_->element(el_4_loc[i_loc]);
            el_row = row_4_el[el_4_loc[i_loc]];
-           nsides = ele->n_sides;
-           if (ele->loc_inv == NULL) {
-               ele->loc_inv = (double *) malloc(nsides * nsides * sizeof(double));
-               det = MatrixInverse(ele->loc, ele->loc_inv, nsides);
-               if (fabs(det) < NUM_ZERO) {
-                   xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
-                   PrintSmallMatrix(ele->loc, nsides);
-                   xprintf(Err,"det: %30.18e \n",det);
-               }
-           }
+           nsides = ele->n_sides();
+
+           fe_values.update( ele );
+
            for (i = 0; i < nsides; i++)
-               side_rows[i] = side_row_4_id[ele->side[i]->id] // side row in MH matrix
+               side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix
                        - rows_ds->begin() // local side number
                        + side_ds->begin(); // side row in IA1 matrix
-           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, ele->loc_inv,
+           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
                    INSERT_VALUES);
        }
     }
@@ -672,16 +695,16 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
         if (!edistr.is_local(edg.index()))
             continue;
 
-        e_weight = edge_dim_weights[edg->side[0]->element->dim - 1];
+        e_weight = edge_dim_weights[edg->side(0)->element()->dim() - 1];
         // for all connected elements
         FOR_EDGE_SIDES( edg, li ) {
-            ASSERT(NONULL(edg->side[li]),"NULL side of edge.");
-            ele = edg->side[li]->element;
+            ASSERT( edg->side(li)->valid(),"NULL side of edge.");
+            ele = edg->side(li)->element();
             ASSERT(NONULL(ele),"NULL element of side.");
 
             // for sides of connected element, excluding edge itself
-            FOR_ELEMENT_SIDES( ele, si ) {
-                eid = mesh->edge.index(ele->side[si]->edge);
+            for(si=0; si<ele->n_sides(); si++) {
+                eid = mesh->edge.index(ele->side(si)->edge());
                 if (eid != edg.index())
                     graph->set_edge(edg.index(), eid, e_weight);
             }
@@ -689,7 +712,7 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
             // include connections from lower dim. edge
             // to the higher dimension
             for (i_neigh = 0; i_neigh < ele->n_neighs_vb; i_neigh++) {
-                eid = mesh->edge.index(ele->neigh_vb[i_neigh]->edge);
+                eid = mesh->edge.index(ele->neigh_vb[i_neigh]->edge());
                 graph->set_edge(edg.index(), eid, e_weight);
                 graph->set_edge(eid, edg.index(), e_weight);
             }
@@ -721,11 +744,11 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_o
 
         // for all connected elements
         FOR_ELEMENT_SIDES( ele, si ) {
-            edg = ele->side[si]->edge;
+            edg = ele->side(si)->edge();
 
             FOR_EDGE_SIDES( edg, li ) {
-                ASSERT(NONULL(edg->side[li]),"NULL side of edge.");
-                e_idx = ELEMENT_FULL_ITER(mesh, edg->side[li]->element).index();
+                ASSERT(edg->side(li)->valid(),"NULL side of edge.");
+                e_idx = ELEMENT_FULL_ITER(mesh, edg->side(li)->element()).index();
 
                 // for elements of connected elements, excluding element itself
                 if (e_idx != ele.index()) {
@@ -738,9 +761,9 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_o
         // to the higher dimension
         if ( neigh_on ) {
             for(i_neigh=0; i_neigh < ele->n_neighs_vb; i_neigh++) {
-               n_s = ele->neigh_vb[i_neigh]->edge->n_sides;
+               n_s = ele->neigh_vb[i_neigh]->edge()->n_sides;
                for(i_s=0; i_s < n_s; i_s++) {
-                   e_idx=ELEMENT_FULL_ITER(mesh, ele->neigh_vb[i_neigh]->edge->side[i_s]->element).index();
+                   e_idx=ELEMENT_FULL_ITER(mesh, ele->neigh_vb[i_neigh]->edge()->side(i_s)->element()).index();
                    graph->set_edge(ele.index(),e_idx);
                    graph->set_edge(e_idx,ele.index());
                }
@@ -823,7 +846,7 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     unsigned int rows_starts[np];
     int edge_n_id = mesh_->n_edges(),
             el_n_id = mesh_->element.size(),
-            side_n_id = mesh_->n_sides;
+            side_n_id = mesh_->n_sides();
 
     // compute shifts on every proc
     shift = 0; // in this var. we count new starts of arrays chunks
@@ -927,7 +950,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             loc_i = 0;
             FOR_EDGES(mesh_, edg ) {
                 // partition
-                e_idx = mesh_->element.index(edg->side[0]->element);
+                e_idx = mesh_->element.index(edg->side(0)->element());
                 //xprintf(Msg,"Index of edge: %d first element: %d \n",edgid,e_idx);
                 if (init_edge_ds.is_local(edg.index())) {
                     // find (new) proc of the first element of the edge
@@ -973,8 +996,8 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             }
             for(i_edg=0;i_edg < ;i_edg++) {
                 DBGMSG("edg: %d %d %d\n",
-                       i_edg,edg->side[0]->element->dim-1,loc_part[i_edg]);
-                int dim=edg->side[0]->element->dim - 1;
+                       i_edg,edg->side(0)->element->dim-1,loc_part[i_edg]);
+                int dim=edg->side(0)->element->dim - 1;
                 int part=loc_part[i_edg];
                 (stat[dim][part])++;
                 i_edg++;
@@ -1009,8 +1032,8 @@ void DarcyFlowMH_Steady::prepare_parallel() {
                 // partition
                 if (init_el_ds.is_local( el.index() )) {
                     // find (new) proc of the first edge of element
-                    //DBGMSG("%d %d %d %d\n",iel,loc_i,el->side[0]->edge->id,edge_row_4_id[el->side[0]->edge->id]);
-                    i_edg=mesh_->edge.index(el->side[0]->edge); // global index in old numbering
+                    //DBGMSG("%d %d %d %d\n",iel,loc_i,el->side(0)->edge->id,edge_row_4_id[el->side(0)->edge->id]);
+                    i_edg=mesh_->edge.index(el->side(0)->edge()); // global index in old numbering
                     loc_part[loc_i++] = edge_ds->get_proc(row_4_edge[i_edg]);
 
                 }
@@ -1028,10 +1051,10 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
     //DBGMSG("Compute side partitioning ...\n");
     //optimal side part; loc. sides; id-> new side numbering
-    Distribution init_side_ds(Distribution::Block, mesh_->n_sides);
+    Distribution init_side_ds(Distribution::Block, mesh_->n_sides());
     // partitioning of sides follows elements
     loc_part = new int[init_side_ds.lsize()];
-    id_4_old = new int[mesh_->n_sides];
+    id_4_old = new int[mesh_->n_sides()];
     {
         int is = 0, iel;
         loc_i = 0;
@@ -1040,16 +1063,16 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             if (init_side_ds.is_local(is)) {
                 // find (new) proc of the element of the side
                 loc_part[loc_i++] = el_ds->get_proc(
-                        row_4_el[mesh_->element.index(side->element)]);
+                        row_4_el[mesh_->element.index(side->element())]);
             }
             // id array
-            id_4_old[is++] = side->id;
+            id_4_old[is++] = mh_dh.side_dof( side );
         }
     }
     // make trivial part
     //for(loc_i=0;loc_i<init_side_ds->lsize;loc_i++) loc_part[loc_i]=init_side_ds->myp;
 
-    id_maps(mesh_->n_sides, id_4_old, init_side_ds, loc_part, side_ds,
+    id_maps(mesh_->n_sides(), id_4_old, init_side_ds, loc_part, side_ds,
             side_id_4_loc, side_row_4_id);
     delete [] loc_part;
     delete [] id_4_old;
@@ -1102,10 +1125,10 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
             localDofSet.insert( el_row );
 
-            nsides = el->n_sides;
+            nsides = el->n_sides();
             for (i = 0; i < nsides; i++) {
-                side_row = side_row_4_id[el->side[i]->id];
-                Edge *edg=el->side[i]->edge; 
+                side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
+                Edge *edg=el->side(i)->edge();
 		        edge_row = row_4_edge[mesh_->edge.index(edg)];
 
                 localDofSet.insert( side_row );
@@ -1120,7 +1143,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
             for (i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
                 // mark this edge
-                edge_row = row_4_edge[mesh_->edge.index(el->neigh_vb[i_neigh]->edge)];
+                edge_row = row_4_edge[mesh_->edge.index(el->neigh_vb[i_neigh]->edge() )];
                 localDofSet.insert( edge_row );
             }
         }
@@ -1224,7 +1247,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
         // set initial condition
         local_sol[i_loc_row]=initial_pressure->element_value(ele.index());
         // set new diagonal
-        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure/time_->dt();
+        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure()/time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
@@ -1312,11 +1335,11 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
          init_value=initial_pressure->element_value(ele.index());
 
          FOR_ELEMENT_SIDES(ele,i) {
-             edge_row = row_4_edge[mesh_->edge.index(ele->side[i]->edge)];
+             edge_row = row_4_edge[mesh_->edge.index(ele->side(i)->edge())];
              // set new diagonal
-             VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume /time_->dt()/ele->n_sides,ADD_VALUES);
+             VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides(),ADD_VALUES);
              // set initial condition
-             VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides,ADD_VALUES);
+             VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides(),ADD_VALUES);
          }
      }
      VecAssemblyBegin(new_diagonal);
@@ -1384,9 +1407,9 @@ void DarcyFlowLMH_Unsteady::postprocess()
       new_pressure=(schur0->get_solution_array())[loc_edge_row];
       old_pressure=loc_prev_sol[loc_edge_row];
       FOR_EDGE_SIDES(edg,i) {
-          ele=edg->side[i]->element;
-          side_row=side_row_4_id[edg->side[i]->id];
-          time_coef=-ele->material->stor*ele->volume /time_->dt()/ele->n_sides;
+          ele=edg->side(i)->element();
+          side_row=side_row_4_id[ mh_dh.side_dof( edg->side(i) ) ];
+          time_coef=-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides();
           VecSetValue(schur0->get_solution(),side_row,time_coef*(new_pressure-old_pressure),ADD_VALUES);
       }
   }

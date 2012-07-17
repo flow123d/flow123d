@@ -30,62 +30,114 @@
 #ifndef SIDES_H
 #define SIDES_H
 
-struct Side;
-class Mesh;
-struct Problem;
+
+#include <armadillo>
+#include <mesh_types.hh>
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH
 //=============================================================================
 
-typedef struct Side {
+class Mesh;
+
+class Side {
+public:
     // Basic data
-    int id; // Id # of side
-    int type; // INTERNAL | EXTERNAL
-    int shape; // POINT, LINE, TRIANGLE
-    int dim;
-    // Topology of the mesh
-    ElementIter element; // Pointer to element to which belonged
-    int lnum; // Local # of side in element
+    //struct Boundary *cond; // Boundary condition  - if prescribed
 
-    int n_nodes; // # of nodes
-    Node** node; // Pointers to sides's nodes
-
-    struct Boundary *cond; // Boundary condition  - if prescribed
-    struct Edge *edge; // Edge to wich belonged
-    struct Neighbour *neigh_bv; // Neighbour, B-V type (comp.)
-    // List
-    struct Side *prev; // Previous side in the list
-    struct Side *next; // Next side in the list
-    // Geometry
-    double metrics; // Length (area) of the side
-    double normal[ 3 ]; // Vector of (generalized) normal
-    double centre[ 3 ]; // Centre of side
-    // Matrix
-    int c_row; // # of row in block C
-    int c_col; // # of col in block C
-    double c_val; // Value in block C
     // Results
-    double flux; // Flux through side
-    double scalar; // Scalar quantity (piez. head or pressure)
-    double pscalar; // As scalar but in previous time step
-    // Misc
-    int aux; // Auxiliary flag
-    double faux;
-} Side;
+    //double flux; // Flux through side
+    //double scalar; // Scalar quantity (piez. head or pressure)
+    //double pscalar; // As scalar but in previous time step
+    //struct Edge *edge_; // Edge to which belonged
 
-#define EXTERNAL    0
-#define INTERNAL    1
-#define S_POINT     0
-#define S_LINE      1
-#define S_TRIANGLE      2
+    Side()
+    : element_(NULL), el_idx_(0)
+    {}
+
+    inline Side(ElementIter ele, unsigned int set_lnum);
+    double metric() const;
+    arma::vec3 centre() const; // Centre of side
+    arma::vec3 normal() const; // Vector of (generalized) normal
+
+    inline unsigned int n_nodes() const;
+
+    inline unsigned int dim() const;
+
+    // returns true for all sides either on boundary or connected to vb neigboring
+    inline bool is_external() const;
+
+    inline const Node * node(unsigned int i) const;
+
+    inline ElementFullIter element() const; // unfortunately we can not have const here, since there are plenty of ELEMENT_FULL_ITER
+
+    inline Mesh * mesh() const;
+
+    inline Edge * edge() const;  // unfortunately we can not have const here, we need to convert it to Full iterator
+
+    inline Boundary * cond() const;
+
+    inline unsigned int el_idx() const;
+
+    inline bool valid() const;
+
+    inline void inc();
+
+    /// This is necessary by current DofHandler, should change this
+    inline void *make_ptr() const;
+private:
+
+    arma::vec3 normal_point() const;
+    arma::vec3 normal_line() const;
+    arma::vec3 normal_triangle() const;
+
+    // Topology of the mesh
+
+    Element * element_; // Pointer to element to which belonged
+    unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
+
+    //Mesh    *mesh_;
+};
 
 
-void make_side_list(Mesh*);
-void side_calculation_mh(Mesh *mesh);
-void calc_side_metrics(struct Side*);
-void side_shape_specific(Mesh*);
+/*
+ * Iterator to a side.
+ */
+class SideIter {
+public:
+    SideIter()
+    {}
 
+    inline SideIter(const Side &side)
+    : side_(side)
+    {}
+
+    inline bool operator==(const SideIter &other) {
+        return (side_.element() == other.side_.element() ) && ( side_.el_idx() == other.side_.el_idx() );
+    }
+
+
+    inline bool operator!=(const SideIter &other) {
+        return !( *this == other);
+    }
+
+    ///  * dereference operator
+    inline const Side & operator *() const
+            { return side_; }
+
+    /// -> dereference operator
+    inline const Side * operator ->() const
+            { return &side_; }
+
+    /// prefix increment iterate only on local element
+    inline SideIter &operator ++ () {
+        side_.inc();
+        return (*this);
+    }
+
+private:
+    Side side_;
+};
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -44,6 +44,10 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
 endif()
 
+if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
+    # this is necessary due to some "bugs" in Armadillo
+    add_definitions(-Wno-uninitialized)
+endif()
 
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
@@ -65,9 +69,9 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-
-find_package(PETSc 3.2.0)
+find_package(PETSc 3.2.0 REQUIRED)
 find_package(PARMETIS)
+
 
 
 
@@ -130,6 +134,13 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/flow
+    ${CMAKE_SOURCE_DIR}/src/mesh
+    ${CMAKE_SOURCE_DIR}/src/reaction
+    ${CMAKE_SOURCE_DIR}/src/system
+    ${CMAKE_SOURCE_DIR}/src/semchem
+    ${CMAKE_SOURCE_DIR}/src/transport
+    ${CMAKE_SOURCE_DIR}/src/input
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit

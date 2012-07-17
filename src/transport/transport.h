@@ -34,9 +34,7 @@
 #include "equation.hh"
 #include "transport/sources.hh"
 #include "materials.hh"
-//#include "system/par_distribution.hh"
-//#include "mesh/mesh.h"
-//#include "reaction.h"
+#include "flow/mh_dofhandler.hh"
 
 
 struct BTC;
@@ -92,12 +90,12 @@ public:
 	 * Use new flow field vector for construction of convection matrix.
 	 * Updates CFL time step constrain.
 	 */
-	void set_flow_field_vector(Vec *vec);
+	void set_flow_field_vector(const MH_DofHandler &dh);
 
-	/**
-	 * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
-	 */
-	void set_target_time(double target_time);
+    /**
+     * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
+     */
+    void set_target_time(double target_time);
 
 	/**
 	 * Read time dependent boundary condition and update boundary source vectors.
@@ -128,6 +126,9 @@ public:
 	double ***get_out_conc();
     char    **get_substance_names();
     TransportSources *transportsources;
+
+    const MH_DofHandler *mh_dh;
+
     void test_concentration_sources(ConvectionTransport&);
 
 private:

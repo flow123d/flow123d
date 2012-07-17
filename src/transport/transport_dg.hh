@@ -32,7 +32,7 @@
 
 #include "transport_operator_splitting.hh"
 #include "la/linsys.hh"
-
+#include "mh_dofhandler.hh"
 
 class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
@@ -111,7 +111,7 @@ public:
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
-	void set_velocity_field(Vec &velocity_vector);
+	virtual void set_velocity_field(const MH_DofHandler &dh);
 
 	/**
 	 * @brief Postprocesses the solution and writes to output file.
@@ -252,9 +252,9 @@ private:
 	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity);
 
 	/**
-	 * @brief Sets up some parameters of the DG method for two sides of a neighbour.
+	 * @brief Sets up some parameters of the DG method for two sides of an edge.
 	 *
-	 * @param n					The neighbour.
+	 * @param edg					The edge.
 	 * @param s1				Side 1.
 	 * @param s2				Side 2.
 	 * @param n_points			Number of quadrature points.
@@ -269,7 +269,7 @@ private:
 	 * @param transport_flux	Computed flux from side 1 to side 2.
 	 */
 
-	void set_DG_parameters(const Neighbour *n,
+	void set_DG_parameters(const Edge *edg,
 	        const int s1,
 	        const int s2,
 	        const unsigned int n_points,
@@ -441,6 +441,8 @@ private:
 
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
+
+    const MH_DofHandler * mh_dh;
 
 	// / Vector of fluxes across element edges - so far not used.
 //	Vec flux_vector;
