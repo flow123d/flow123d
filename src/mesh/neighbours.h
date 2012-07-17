@@ -70,14 +70,14 @@ public:
     // side of the edge in higher dim. mesh
     inline SideIter side();
 
-    // edge of lower dimensional mesh in VB neigh.
+    // edge of higher dimensional mesh in VB neigh.
     inline Edge *edge();
 
-    // element of higher dimension mesh in VB neigh.
+    // element of lower dimension mesh in VB neigh.
     inline ElementIter element();
 
 //private:
-    Edge *edge_;  // edge (set of neighbouring sides)
+    Edge *edge_;  // edge
     ElementIter element_;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
     double sigma;

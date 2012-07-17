@@ -148,6 +148,7 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     	if (bc->get_times()[0] == 0.0) bc->read();
     }
 
+    // TODO: Move assembly of mass matrix to update_solution().
     // assemble mass matrix
     ls_dt->start_allocation();
     assemble_mass_matrix();
@@ -500,7 +501,9 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
     // assemble integral over sides
     FOR_EDGES( mesh_, edg ) //for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
     {
-        if (edg->n_sides < 2 || edg->side(0)->element()->dim()!= dim) continue;
+    	ASSERT(edg->side(0)->element()->dim() == dim, "Dimension mismatch.");
+
+        if (edg->n_sides < 2) continue;
 
         fv_sb.resize(edg->n_sides);
         side_K.resize(edg->n_sides);
@@ -531,17 +534,20 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 		{
 			for (int s2=s1+1; s2<edg->n_sides; s2++)
 			{
-				vec3 nv = ( ! edg->side(s1)->valid() )?(-fv_sb[s2]->normal_vector(0)):fv_sb[s1]->normal_vector(0);
+				// vec3 nv = ( ! edg->side(s1)->valid() )?(-fv_sb[s2]->normal_vector(0)):fv_sb[s1]->normal_vector(0);
+				ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
+				vec3 nv = fv_sb[s1]->normal_vector(0);
 
 				// set up the parameters for DG method
 				set_DG_parameters(edg, s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
 
-				if (edg->side(s1)->valid() && edg->side(s1)->cond() != 0) gamma[mesh_->boundary.full_iter(edg->side(s1)->cond()).id()] = gamma_l;
+				if (edg->side(s1)->cond() != 0) gamma[mesh_->boundary.full_iter(edg->side(s1)->cond()).id()] = gamma_l;
 
 				int sd[2];
 				sd[0] = s1;
 				sd[1] = s2;
 
+				// For selected pair of elements:
 				for (int m=0; m<2; m++)
 				{
 					for (int n=0; n<2; n++)
@@ -555,12 +561,12 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 								if (side_dof_indices[sd[n]][i] < distr->begin() || side_dof_indices[sd[n]][i] > distr->end()) continue;
 								for (int k=0; k<side_q.size(); k++)
 								{
-									// flux due to transport (applied on interior edges)
+									// flux due to transport (applied on interior edges) (average times jump)
 									local_matrix[index] -= (m==0?1:-1)*advection / edg->side(sd[m])->element()->material->por_m
 									                       *0.5*transport_flux
 									                       *fv_sb[sd[m]]->shape_value(j,k)*fv_sb[sd[n]]->shape_value(i,k)*fv_sb[0]->JxW(k);
 
-									// penalty enforcing continuity across edges (applied on interior and Dirichlet edges)
+									// penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
 									local_matrix[index] += (m==n?1:-1)*gamma_l*fv_sb[sd[m]]->shape_value(j,k)*fv_sb[sd[n]]->shape_value(i,k)*fv_sb[0]->JxW(k);
 
 									// terms due to diffusion
@@ -614,6 +620,8 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         	elem_flux += fabs( mh_dh->side_flux( *(edge->side(0)->element()->side(i)) ) );
 
         // skip Neumann boundaries
+        // Constant 1e-6 stabilizes switching Dirichlet to Neumann boundary condition.
+        // TODO: Define as a constant. Better determination of its magnitude. See also other places with same constant.
         if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -1e-6*elem_flux) continue;
 
         side_K.resize(edge->n_sides);
@@ -672,9 +680,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
     // assemble integral over sides
     FOR_NEIGHBOURS(mesh_ , nb)
     {
-        if (nb->element()->dim()!= dim-1) continue;
+        ASSERT(nb->element()->dim() == dim-1, "Element and side dimension mismatch.");
 
-        /// TODO: remove symmetry, consider element in lower and edge (or side) on higher dim
         int nb_sides = 2;   // = nb->n_sides;
         fv_sb.resize(nb_sides);
 
@@ -691,7 +698,7 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 		fe_values_vb->reinit(cell_sub);
 		fv_sb[0] = fe_values_vb;
 
-		cell = nb->side()->element(); /// ?? How to undestand this?
+		cell = nb->side()->element();
 		dh->get_dof_indices(cell, side_dof_indices[1]);
 		fe_values_side[1]->reinit(cell, nb->side());
 		fv_sb[1] = fe_values_side[1];
@@ -905,7 +912,9 @@ void TransportDG::set_DG_parameters(const Edge *edg,
     double delta[2];
     double h = 0;
     double fluxes[edg->n_sides];
-    SideIter s = ( ! edg->side(s1)->valid() ) ? edg->side(s2)  :  edg->side(s1);
+
+    ASSERT(edg->side(s1)->valid(), "Invalid side of an edge.");
+    SideIter s = edg->side(s1);
 
     // calculate the side diameter
     if (s->dim() == 0)
@@ -920,15 +929,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
     }
 
     // calculate the total in- and out-flux through the edge
-    if ( ! edg->side(0)->valid() )
-    {
-        fluxes[0] = - mh_dh->side_flux( *(edg->side(1)) );
-    }
-    else
-    {
-        fluxes[0] = mh_dh->side_flux( *(edg->side(0)) );
-    }
-    for (int i=1; i<edg->n_sides; i++) fluxes[i] = mh_dh->side_flux( *(edg->side(i)) );
+    for (int i=0; i<edg->n_sides; i++) fluxes[i] = mh_dh->side_flux( *(edg->side(i)) );
     double pflux = 0, nflux = 0;
     for (int i=0; i<edg->n_sides; i++)
     {

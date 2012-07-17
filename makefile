@@ -81,7 +81,7 @@ clean: cmake
 	make -C build clean
 
 # try to remove all
-clean-all: clean
+clean-all:
 	rm -f bin/${FLOW_BIN}
 	rm -f bin/${MPIEXEC_BIN}
 	rm -f bin/${INTERPOLATE_BIN}

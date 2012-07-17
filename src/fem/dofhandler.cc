@@ -193,6 +193,8 @@ void DOFHandler<dim,spacedim>::get_dof_values(const CellIterator &cell, const Ve
 template<unsigned int dim, unsigned int spacedim> inline
 const unsigned int DOFHandler<dim,spacedim>::global_dof_id(const CellIterator &cell, const unsigned int local_dof_id)
 {
+    // WARNING: This method does not work properly (see get_dof_indices()).
+    
     ASSERT(local_dof_id<n_dofs, "Number of local dof is out of range.");
     unsigned int count_dofs = 0;
     for (int dm=0; dm<=dim; dm++)

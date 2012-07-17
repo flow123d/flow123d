@@ -103,7 +103,7 @@ endmacro()
 add_subdirectory("input")
 add_subdirectory("la")
 add_subdirectory("system")
-add_subdirectory(system)
+
 
 #add_executable(ioNameHandlerTest system/io_name_handler.cc)
 #set_target_properties(ioNameHandlerTest PROPERTIES
