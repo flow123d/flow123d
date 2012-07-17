@@ -870,16 +870,21 @@ Input::Type::Record & OutputVTK::get_input_type()
 {
 	using namespace Input::Type;
 	static Record rec("OutputVTK", "Parameters of vtk output format.");
+	static Selection variant_selection("VTKVariant");
 
 	if (!rec.is_finished()) {
+	    variant_selection.add_value(0, "ascii", "Plain ascii output.");
+	    //variant_selection.add_value(1, "", "Plain ascii output.");
+	    variant_selection.finish();
 
+	    rec.derive_from(OutputTime::get_input_type_output_format());
 		// The variant
-		rec.declare_key("variant", String(), Default("ascii"),
+		rec.declare_key("variant", variant_selection, Default("ascii"),
 				"Variant of output stream file format.");
 		// The parallel or serial variant
 		rec.declare_key("parallel", Bool(), Default("false"),
 				"Parallel or serial version of file format.");
-		// The compression
+		// The compression ? rather just Bool ?
 		rec.declare_key("compression", String(), Default("none"),
 				"Compression used in output stream file format.");
 

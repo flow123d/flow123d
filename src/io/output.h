@@ -494,7 +494,9 @@ public:
      *
      * \return This method returns record for output stream
      */
+    static Input::Type::AbstractRecord & get_input_type_output_format();
     static Input::Type::Record & get_input_type();
+
 
     /**
      * \brief This function register data on nodes.

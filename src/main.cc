@@ -35,6 +35,7 @@
 #include "input/input_type.hh"
 #include "input/interface.hh"
 #include "input/json_to_storage.hh"
+#include "io/output.h"
 
 #include <iostream>
 #include <fstream>
@@ -244,6 +245,8 @@ Input::Type::Record &  Application::get_input_type() {
             "Simulation problem to be solved.");
         main_rec.declare_key("pause_after_run", Bool(), Default("false"),
                 "If true, the program will wait for key press before it terminates.");
+        main_rec.declare_key("output_streams", Array( OutputTime::get_input_type() ),
+                "Array of formated output streams to open.");
         main_rec.finish();
     }
 

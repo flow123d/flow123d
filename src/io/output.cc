@@ -347,20 +347,53 @@ OutputTime::~OutputTime(void)
 {
 }
 
+// following abstract record should be declared in an abstract parent class of OutpuVTK and OutputMSH
+Input::Type::AbstractRecord & OutputTime::get_input_type_output_format()
+{
+    using namespace Input::Type;
+    static AbstractRecord output_format("OutputFormat", "Format of output stream and possible parameters.");
+
+    if (!output_format.is_finished()) {
+        // complete declaration of  abstract record OutputFormat
+        output_format.finish();
+
+        OutputVTK::get_input_type();
+        OutputMSH::get_input_type();
+
+        output_format.no_more_descendants();
+    }
+
+    return output_format;
+}
+
+
 Input::Type::Record & OutputTime::get_input_type()
 {
 	using namespace Input::Type;
 	static Record rec("OutputStrem", "Parameters of output.");
+	// following abstract record should be declared in an abstract parent class of OutpuVTK and OutputMSH
+	static AbstractRecord output_format("OutputFormat", "Format of output stream and possible parameters.");
+
 
 	if (!rec.is_finished()) {
+	    // complete declaration of  abstract record OutputFormat
+	    output_format.finish();
+
+	    OutputVTK::get_input_type();
+        OutputMSH::get_input_type();
+
+        output_format.no_more_descendants();
 
 		// The name
 		rec.declare_key("name", String(), Default::obligatory(),
-				"The name of this stream.");
+				"The name of this stream. Used to reference the output stream.");
 		// The stream
 		rec.declare_key("file", FileName::output(), Default::obligatory(),
 				"File path to the output stream.");
 		// The format
+		// PROPOSED CHANGE: (NEED default constructable records)
+		// rec.declare_key("format", get_input_type_output_format(), "File format of output stream.");
+
 		rec.declare_key("format", String(), Default("vtk"),
 				"File format of output stream.");
 		// Optional options of VTK file format
