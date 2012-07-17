@@ -5,6 +5,9 @@
  *      Author: jiri
  */
 
+#include "system/system.hh"
+#include "io_namehandler.hh"
+
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
 #include "system/sys_vector.hh"

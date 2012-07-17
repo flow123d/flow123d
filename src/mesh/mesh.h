@@ -93,7 +93,7 @@ public:
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 
-    Mesh();
+    Mesh(string neigbour_fname, string bcd_fname);
 
     inline unsigned int n_elements() const {
         return element.size();
@@ -159,6 +159,9 @@ public:
     // for every side node 0 .. D
     // index into element node array
     vector< vector< vector<unsigned int> > > side_nodes;
+    
+    string neigh_fname_;
+    string bcd_fname_;
 
 private:
 

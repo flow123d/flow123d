@@ -50,9 +50,11 @@
 void count_element_types(Mesh*);
 void read_node_list(Mesh*);
 
-Mesh::Mesh() {
+Mesh::Mesh(string neighbour_fname, string bcd_fname) {
     xprintf(Msg, " - Mesh()     - version with node_vector\n");
 
+    neigh_fname_=neighbour_fname;
+    bcd_fname_=bcd_fname;
     n_materials = NDEF;
 
     n_insides = NDEF;
@@ -240,8 +242,8 @@ void Mesh::read_neighbours() {
     unsigned int id;
 
     xprintf( Msg, "Reading neighbours...");
-    const std::string& file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" ));
-    in = xfopen( file_name, "rt" );
+    
+    in = xfopen( neigh_fname_, "rt" );
     skip_to( in, "$Neighbours" );
     xfgets( line, LINE_SIZE - 2, in );
 

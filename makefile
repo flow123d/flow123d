@@ -59,28 +59,6 @@ build_all: build_flow123d  build_interpolation ngh bcd
 
 flow123d:  build_flow123d  install
 
-build_flow123d: cmake
-	make -j 4 -C build flow123d
-
-	
-interpolation: build_interpolation install
-	
-build_interpolation: 
-	make -j 4 -C build interpolation
-
-build_all: build_flow123d  # build_interpolation  #ngh bcd
-
-flow123d:  build_flow123d  install
-
-build_flow123d: cmake
-	make -j 4 -C build flow123d
-
-	
-interpolation: build_interpolation install
-	
-build_interpolation: 
-	make -j 4 -C build interpolation
-
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	
@@ -88,13 +66,24 @@ build_interpolation:
 # 2 		30s	26s
 # 4 		31s	27s
 # 8 		30s
+build_flow123d: cmake
+	make -j 4 -C build flow123d
+
+	
+interpolation: build_interpolation install
+	
+build_interpolation: 
+	make -j 4 -C build interpolation
+
+
+
 	
 # Remove all generated files
 clean: cmake
 	make -C build clean
 
 # try to remove all
-clean-all: clean
+clean-all:
 	rm -f bin/${FLOW_BIN}
 	rm -f bin/${MPIEXEC_BIN}
 	rm -f bin/${INTERPOLATE_BIN}

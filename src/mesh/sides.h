@@ -32,7 +32,7 @@
 
 
 #include <armadillo>
-#include <mesh_types.hh>
+#include "mesh/mesh_types.hh"
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH

@@ -54,9 +54,7 @@ Profiler::Profiler(MPI_Comm comm) {
     task_size = 0;
     id = 0;
     communicator = comm;
-    if (comm) {
-        MPI_Comm_rank(PETSC_COMM_WORLD, &(id));
-    }
+    MPI_Comm_rank(communicator, &(id));
 
     actual_node = root = new Timer("", NULL);
     root->start(0);
@@ -69,7 +67,7 @@ Profiler::~Profiler() {
 #ifdef DEBUG_PROFILER
     char filename[PATH_MAX];
     strftime(filename, sizeof (filename) - 1, "profiler%y%m%d_%H.%M.%S.out", localtime(&start_time));
-    string full_fname = IONameHandler::get_instance()->get_output_file_name(filename);
+    string full_fname = out_dir + string(filename);
 
     ofstream os(full_fname.c_str());
     output(os);

@@ -29,8 +29,10 @@
 
 
 #include <petsc.h>
+#include <sstream>
 
 #include "system/system.hh"
+#include "io_namehandler.hh"
 #include "hc_explicit_sequential.hh"
 
 #include "main.h"
@@ -111,12 +113,37 @@ int main(int argc, char **argv) {
 
     parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
 
+    // temporary moving PETSC stuff here from system.hh
+    // should be made better in JB_1.7.input
+    PetscErrorCode ierr;
+    ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
-    system_init(argc, argv); // Petsc, open log, read ini file
+    // determine logfile name or switch it off
+    PetscBool flg;
+    char file[PETSC_MAX_PATH_LEN];     /* log file name */
+    stringstream log_name;
+
+    PetscOptionsGetString(PETSC_NULL,"-l",file,PETSC_MAX_PATH_LEN,&flg);
+    if (flg == PETSC_TRUE) {
+        if (file[0] == '\n') {
+           // -l option without given name -> turn logging off
+        } else {
+           // given log name
+           log_name << string(file) <<  "." << sys_info.my_proc << ".log";
+
+        }
+    } else {
+        // use default name
+        log_name << "flow123."<< sys_info.my_proc << ".log";
+    }
+
+    
+    system_init(PETSC_COMM_WORLD, IONameHandler::get_instance()->get_output_file_name(log_name.str()) ); 
     OptionsInit(ini_fname.c_str()); // Read options/ini file into database
     system_set_from_options();
 
-    Profiler::initialize(MPI_COMM_WORLD);
+    
+    Profiler::initialize(MPI_COMM_WORLD, IONameHandler::get_instance()->get_output_file_name(""));
 
     START_TIMER("WHOLE PROGRAM");
 

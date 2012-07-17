@@ -28,6 +28,7 @@
  */
 
 #include <limits.h>
+#include <mpi.h>
 
 #include "system/xio.h"
 #include "io/output.h"
@@ -700,7 +701,7 @@ int OutputVTK::write_data(double time)
     DIR *dir;
     int i, j, ret;
     int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
@@ -794,7 +795,7 @@ int OutputVTK::write_data(double time)
 int OutputVTK::write_head(void)
 {
     int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
@@ -817,7 +818,7 @@ int OutputVTK::write_head(void)
 int OutputVTK::write_tail(void)
 {
     int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {

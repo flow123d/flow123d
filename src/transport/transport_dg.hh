@@ -32,7 +32,7 @@
 
 #include "transport_operator_splitting.hh"
 #include "la/linsys.hh"
-#include "mh_dofhandler.hh"
+#include "flow/mh_dofhandler.hh"
 
 class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;

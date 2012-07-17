@@ -73,8 +73,38 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 find_package(PETSc 3.2.0)
 find_package(PARMETIS)
 
+if (NOT PETSC_FOUND)
+# === Variables ===
+# This module will set the following variables per language in your project,
+# where <lang> is one of C, CXX, or Fortran:
+#   MPI_<lang>_FOUND           TRUE if FindMPI found MPI flags for <lang>
+#   MPI_<lang>_COMPILER        MPI Compiler wrapper for <lang>
+#   MPI_<lang>_COMPILE_FLAGS   Compilation flags for MPI programs
+#   MPI_<lang>_INCLUDE_PATH    Include path(s) for MPI header
+#   MPI_<lang>_LINK_FLAGS      Linking flags for MPI programs
+#   MPI_<lang>_LIBRARIES       All libraries to link MPI programs against
+# Additionally, FindMPI sets the following variables for running MPI
+# programs from the command line:
+#   MPIEXEC                    Executable for running MPI programs
+#   MPIEXEC_NUMPROC_FLAG       Flag to pass to MPIEXEC before giving
+#                              it the number of processors to run on
+#   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
+#                              before the executable to run.
+#   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
 
-
+  #find_package(MPI)
+  
+  if (NOT MPI_CXX_FOUND) 
+    set(mpiuni_sources    system/mpiuni/mpi.c)
+    set(MPIUNI_INCLUDES src/system/mpiuni)
+    add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+  else()
+    add_definitions(-DHAVE_MPI)
+  endif()
+  
+else()
+  add_definitions(-DHAVE_PETSC -DHAVE_MPI)
+endif()
 
 # find boost or use our own
 #
@@ -140,6 +170,7 @@ include_directories(
     ${PETSC_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
+    ${MPIUNI_INCLUDES}  
 )
 
 ##############
@@ -211,4 +242,4 @@ endif()
 
 ### add target for interpolation binary
 add_executable(interpolation src/interpolation/interpolation_main.cc)
-target_link_libraries(interpolation  new_mesh_lib ${Armadillo_LIBRARIES})
+target_link_libraries(interpolation  system_lib new_mesh_lib ${Armadillo_LIBRARIES})

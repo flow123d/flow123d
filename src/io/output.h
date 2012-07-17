@@ -33,6 +33,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <mpi.h>
 
 #include "system/xio.h"
 #include "mesh/mesh.h"
@@ -361,7 +362,7 @@ int Output::register_node_data(std::string name,
         uint size)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	/* It's possible now to do output to the file only in the first process */
 	if(rank!=0) {
@@ -390,7 +391,7 @@ int Output::register_elem_data(std::string name,
         uint size)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	/* It's possible now to do output to the file only in the first process */
 	if(rank!=0) {
@@ -418,7 +419,7 @@ int Output::register_node_data(std::string name,
         std::vector<_Data> &data)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	/* It's possible now to do output to the file only in the first process */
 	if(rank!=0) {
@@ -443,7 +444,7 @@ int Output::register_elem_data(std::string name,
         std::vector<_Data> &data)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	/* It's possible now to do output to the file only in the first process */
 	if(rank!=0) {
@@ -634,7 +635,7 @@ int OutputTime::register_node_data(std::string name,
         uint size)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	int found = 0;
 
 	/* It's possible now to do output to the file only in the first process */
@@ -679,7 +680,7 @@ int OutputTime::register_corner_data(std::string name,
         uint size)
 {
     int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int found = 0;
 
     /* It's possible now to do output to the file only in the first process */
@@ -722,7 +723,7 @@ int OutputTime::register_elem_data(std::string name,
         unsigned int size)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int found = 0;
 
 	/* It's possible now to do output to the file only in the first process */
@@ -765,7 +766,7 @@ int OutputTime::register_node_data(std::string name,
         std::vector<_Data> &data)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int found = 0;
 
 	/* It's possible now to do output to the file only in the first process */
@@ -808,7 +809,7 @@ int OutputTime::register_corner_data(std::string name,
         std::vector<_Data> &data)
 {
     int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int found = 0;
 
     /* It's possible now to do output to the file only in the first process */
@@ -849,7 +850,7 @@ int OutputTime::register_elem_data(std::string name,
         std::vector<_Data> &data)
 {
 	int rank=0;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int found = 0;
 
 	/* It's possible now to do output to the file only in the first process */

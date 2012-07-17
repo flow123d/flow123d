@@ -25,10 +25,15 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #message(STATUS "Include directories: ${flow123d_includes}")
 #include_directories(${flow123d_includes})
 
+
+
+
 # select source files that compose whole flow123d library
 # todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
 # every library then can be testetd independently
 set(sources_lib_non_system
+    
+    
     fem/dofhandler.cc
     fem/fe_values.cc
     fem/finite_element.cc
@@ -43,15 +48,6 @@ set(sources_lib_non_system
     io/output_vtk.cc
     io/output_msh.cc
     
-    mesh/msh_gmshreader.cc
-    mesh/boundaries.cc
-    mesh/edges.cc
-    mesh/elements.cc
-    mesh/mesh.cc
-    mesh/neighbours.cc
-    mesh/nodes.cc
-    mesh/sides.cc
-    mesh/topology.cc
 
     quadrature/quadrature_lib.cc
 
@@ -66,7 +62,7 @@ set(sources_lib_non_system
     transport/sources.cc
 
 
-
+    io_namehandler.cc
     equation.cc
     time_marks.cc
     materials.cc
@@ -76,6 +72,17 @@ set(sources_lib_non_system
 )
 
 set(sources_lib_new_mesh
+    mesh/msh_gmshreader.cc
+    
+    mesh/boundaries.cc
+    mesh/edges.cc
+    mesh/elements.cc
+    mesh/mesh.cc
+    mesh/neighbours.cc
+    mesh/nodes.cc
+    mesh/sides.cc
+    mesh/topology.cc
+
     new_mesh/multi_mesh.cc
     new_mesh/point.cc
     )
@@ -86,10 +93,13 @@ set(sources_lib_la
     la/solve.cc
     la/linsys.cc
     la/sparse_graph.cc
+    
+    # distribution is already part of 'la' in new branches
+    system/par_distribution.cc
 )
 
 set(sources_lib_system
-    system/par_distribution.cc
+    
     system/math_fce.cc
     system/sys_function_stack.cpp
     system/sys_profiler.cc
@@ -109,28 +119,20 @@ set(sources_lib_semchem
 #    semchem/cti_ichnew.c
 )
 
-# this seems as converting *.c to *.cc for Semchem files
-# but this can be dengerous
-#foreach(file ${libflow123d_C_SRCS})
-#  set(libflow123d_SRCS ${libFlow123d_SRCS} ${file}c)
-#  list(APPEND libflow123d_SRCS ${file}c)
-#  configure_file(${file} ${file}c COPYONLY)
-#endforeach(file)
-
-# add build targets
-#link_directories(${Flow123dLinkDirectories})
-
-
 # add individual libraries
+
+if (mpiuni_sources) 
+  add_library(mpiuni_lib ${mpiuni_sources})
+  set(MPIUNI_LIB mpiuni_lib)
+endif()
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARY_DIRS})
+target_link_libraries(system_lib ${MPIUNI_LIB} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARY_DIRS})
 
 # input_lib
 add_library(input_lib ${sources_lib_input})
-target_link_libraries(input_lib 
-    system_lib json_spirit)
+target_link_libraries(input_lib system_lib json_spirit)
 
 # new_mesh_lib
 add_library(new_mesh_lib ${sources_lib_new_mesh})
@@ -146,7 +148,7 @@ target_link_libraries(la_lib
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    system_lib la_lib fparser semchem
+    system_lib la_lib fparser semchem new_mesh_lib
     ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib

@@ -44,8 +44,9 @@
 #include <iostream>
 #include <time.h>
 #include <vector>
-#include <petsc.h>
 #include <string>
+
+#include <mpi.h>
 
 using namespace std;
 
@@ -187,6 +188,7 @@ private:
     MPI_Comm communicator;
     int id;
     int task_size;
+    string out_dir;
 
     map<string, Timer*> tag_map;
 
@@ -228,7 +230,7 @@ public:
     static Profiler* instance() {
         //singleton pattern implementation
         if (!_instance)
-            _instance = new Profiler(PETSC_COMM_WORLD);
+            _instance = new Profiler(MPI_COMM_WORLD);
 
         return _instance;
     }
@@ -246,9 +248,10 @@ public:
     /**
      * Initializes the Profiler with specific MPI communicator object
      */
-    static void initialize(MPI_Comm communicator) {
+    static void initialize(MPI_Comm communicator, string odir) {
         if (!_instance)
             _instance = new Profiler(communicator);
+        _instance->out_dir = odir;
     }
 
     /**

@@ -1,6 +1,8 @@
 //---------------------------------------------------------------------------
 
 #include "system/system.hh"
+#include "io_namehandler.hh"
+
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
 #include "transport/transport.h"

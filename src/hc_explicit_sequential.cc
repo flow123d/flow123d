@@ -28,6 +28,8 @@
  *  @author Jan Brezina
  */
 
+#include "io_namehandler.hh"
+
 #include "hc_explicit_sequential.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
@@ -56,7 +58,10 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
     material_database = new MaterialDatabase(material_file_name);
 
     // Read mesh
-    mesh = new Mesh();
+    const std::string& ngh_fname = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" ));
+    const std::string& bcd_fname = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Boundary", "\\" ));
+    mesh = new Mesh(ngh_fname, bcd_fname);
+    
     const string& mesh_file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Mesh", NULL));
     MeshReader* meshReader = new GmshMeshReader();
     meshReader->read(mesh_file_name, mesh);
