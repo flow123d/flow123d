@@ -501,9 +501,10 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
     // assemble integral over sides
     FOR_EDGES( mesh_, edg ) //for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
     {
-    	ASSERT(edg->side(0)->element()->dim() == dim, "Dimension mismatch.");
+        // We have to skip edges of wrong dimension
+    	//ASSERT_SIZES(edg->side(0)->element()->dim(), dim);
 
-        if (edg->n_sides < 2) continue;
+        if (edg->n_sides < 2 || edg->side(0)->element()->dim() != dim) continue;
 
         fv_sb.resize(edg->n_sides);
         side_K.resize(edg->n_sides);
@@ -680,7 +681,9 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
     // assemble integral over sides
     FOR_NEIGHBOURS(mesh_ , nb)
     {
-        ASSERT(nb->element()->dim() == dim-1, "Element and side dimension mismatch.");
+        // skip neighbours of different dimension
+        // ASSERT(nb->element()->dim() == dim-1, "Element and side dimension mismatch.");
+        if (nb->element()->dim() != dim-1) continue;
 
         int nb_sides = 2;   // = nb->n_sides;
         fv_sb.resize(nb_sides);
