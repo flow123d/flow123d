@@ -23,7 +23,19 @@
  * $LastChangedDate: 2011-01-08 18:58:15 +0100 (So, 08 led 2011) $
  *
  * @file
- *
+ * 
+ * 
+ * TODO:
+ * 
+ * - remove dependence on petsc, have mpi_stub.hh as mpi replacement. 
+ * - optimize (map lookup, TimeFrame creation)
+ *   - use compile time hashes instead of tags
+ *   - have only one tag/hash map to Timer nodes, detect error when starting inappropriate tag (that is not child of current frame
+ *     this has to be done only once - use static variable to hold pointer to appropriate (validated) Timer
+ *   -    
+ * - allow memory profiling 
+ *   in our own new and xmalloc functions - register allocatied and deallocated memory to active Profiler frame.
+ * 
  * Design:
  * basically we provide only one macro START_FRAME that should
  * - start local timer
@@ -47,6 +59,7 @@
 #include <string>
 
 #include <mpi.h>
+#include <cstring>
 
 using namespace std;
 
@@ -106,6 +119,9 @@ private:
     Timer* parent_timer;
     vector<Timer*> child_timers;
 
+    size_t total_allocated_;
+    size_t total_deallocated_;
+
     void stop(double time);
 
 public:
@@ -153,6 +169,16 @@ public:
 
     vector<Timer*>* child_timers_list() {
         return &child_timers;
+    }
+
+
+    void add_to_total_allocated(const size_t size) {
+        total_allocated_ += size;
+    }
+
+
+    void add_to_total_deallocated(const size_t size) {
+        total_deallocated_ += size;
     }
 
     ~Timer();
@@ -283,6 +309,18 @@ public:
      * @param n_subframes - the number of subframes
      */
     void set_timer_subframes(string tag, int n_subframes);
+
+    /**
+     * Notification about allocation of given size.
+     * Increase total allocated memory in current profiler frame.
+     */
+    void notify_malloc(const size_t size );
+
+    /**
+     * Notification about freeing memory of given size.
+     * Increase total deallocated memory in current profiler frame.
+     */
+    void notify_free(const size_t size );
 };
 
 // These helper macros are necessary due to use of _LINE_ variable in START_TIMER macro.

@@ -162,7 +162,6 @@ public:
     
     string neigh_fname_;
     string bcd_fname_;
-
 private:
 
     void node_to_element();

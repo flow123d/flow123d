@@ -1,5 +1,3 @@
-include ../../../makefile.in
-include ../../../makefile.include
 
 CINCLUDE=-I../include -I./simpleini
 
@@ -32,10 +30,10 @@ vector.o\
 vertex.o
 
 %.o: %.cpp
-	${CPP} -c ${CFLAGS} ${CINCLUDE} $<
+	${CXX} -c ${CFLAGS} ${CINCLUDE} $<
 
 all: ${OBJS}
-	${CPP} ${CFLAGS} -o ../bin/ngh ${OBJS} -lm 
+	${CXX} ${CFLAGS} -o ../bin/ngh ${OBJS} -lm 
 
 clean:
 	rm -f *.o

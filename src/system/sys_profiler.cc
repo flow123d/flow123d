@@ -170,6 +170,7 @@ void Profiler::output(ostream &os) {
 }
 
 
+
 void Profiler::set_timer_subframes(string tag, int n_subframes) {
 
     map<string, Timer*>::const_iterator i = tag_map.find(tag);
@@ -298,7 +299,26 @@ double Profiler::get_time() {
     return 1000 * ((double) (clock() - start_clock)) / CLOCKS_PER_SEC;
 }
 
-Timer::Timer(string tag, Timer* parent) {
+
+
+
+
+void Profiler::notify_malloc(const size_t size) {
+    actual_node->add_to_total_allocated(size);
+}
+
+
+
+void Profiler::notify_free(const size_t size) {
+    actual_node->add_to_total_deallocated(size);
+}
+
+
+
+
+Timer::Timer(string tag, Timer* parent)
+: total_allocated_(0), total_deallocated_(0)
+{
 
     timer_tag = tag;
     running = false;

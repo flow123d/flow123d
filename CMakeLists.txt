@@ -69,7 +69,6 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-
 find_package(PETSc 3.2.0)
 find_package(PARMETIS)
 
@@ -92,7 +91,7 @@ if (NOT PETSC_FOUND)
 #                              before the executable to run.
 #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
 
-  #find_package(MPI)
+  find_package(MPI)
   
   if (NOT MPI_CXX_FOUND) 
     set(mpiuni_sources    system/mpiuni/mpi.c)
@@ -105,6 +104,7 @@ if (NOT PETSC_FOUND)
 else()
   add_definitions(-DHAVE_PETSC -DHAVE_MPI)
 endif()
+
 
 # find boost or use our own
 #
@@ -170,6 +170,7 @@ include_directories(
     ${PETSC_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
+    ${MPI_CXX_INCLUDE_PATH}
     ${MPIUNI_INCLUDES}  
 )
 
@@ -225,9 +226,18 @@ if( PETSC_FOUND )
 
   #### make a script which call correct mpiexec (taken from PETSC)
   # we can not use link, since mpiexec can be sript which reads its location from calling sequence
-  add_custom_target(mpiexec_link
-    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DPETSC_MPIEXEC=${PETSC_MPIEXEC}
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_mpiexec.cmake)
+  if(EXISTS ${PETSC_MPIEXEC})
+      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
+  else()
+      if(COMMAND mpiexec)
+        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
+        set(MPIEXEC_PATH mpiexec)
+      else()
+        message(WARNING "Missing any mpiexec.")
+      endif()
+  endif()
+  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/mpiexec)
+  
 
 
   ### add target for flow123d binary
@@ -237,6 +247,8 @@ if( PETSC_FOUND )
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
+else()
+  message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
 
 

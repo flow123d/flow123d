@@ -71,13 +71,14 @@ macro(define_mpi_test class_name n_proc)
   # executable rule
   if(TARGET ${test_binary})
   else() 
-  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} ${flow_gtest_sources}) 
-  	target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
+  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} ${mpi_gtest_sources}) 
+  	target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+  	add_dependencies(${test_binary} mpiexec_link)      # make
   endif()	
 
   # rule to run the test
   add_custom_target(${test_name} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=no 
+      COMMAND ${CMAKE_BINARY_DIR}/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=no 
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       	      
@@ -86,7 +87,7 @@ macro(define_mpi_test class_name n_proc)
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/mpiexec -np ${n_proc} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=yes
+      COMMAND ${CMAKE_BINARY_DIR}/mpiexec -np ${n_proc} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=yes
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       
@@ -99,9 +100,11 @@ endmacro()
 
 ##############################
 # test subdirs
-add_subdirectory(input)
-add_subdirectory(la)
-add_subdirectory(system)
+add_subdirectory("input")
+add_subdirectory("la")
+add_subdirectory("system")
+
+
 
 #add_executable(ioNameHandlerTest system/io_name_handler.cc)
 #set_target_properties(ioNameHandlerTest PROPERTIES

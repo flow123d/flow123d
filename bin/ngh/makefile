@@ -1,3 +1,5 @@
+export CXX=g++
+export CFLAGS=-O3
 
 all:
 	make -C src all
