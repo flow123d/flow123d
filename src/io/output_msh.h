@@ -103,6 +103,14 @@ protected:
 private:
 
     /**
+     * \brief The declaration enumeration used for variant of GMSH file format
+     */
+    typedef enum Variant {
+    	VARIANT_ASCII  = 1,
+    	VARIANT_BINARY = 2
+    } Variant;
+
+    /**
      * \brief The pointer at Output
      */
     Output *output;

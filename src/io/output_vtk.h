@@ -92,6 +92,22 @@ public:
     int write_tail(void);
 
 private:
+    /**
+     * \brief The declaration enumeration used for variant of file VTK format
+     */
+    typedef enum Variant {
+    	VARIANT_ASCII  = 1,
+    	VARIANT_BINARY = 2
+    } Variant;
+
+    /**
+     * \brief The declaration of enumeration used for type of compression
+     * used in file format
+     */
+    typedef enum Compression {
+    	COMPRESSION_NONE = 1,
+    	COMPRESSION_GZIP = 2
+    } Compression;
 
     /**
      * \brief The pointer at Output

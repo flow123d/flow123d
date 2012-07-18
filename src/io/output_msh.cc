@@ -313,9 +313,15 @@ Input::Type::Record & OutputMSH::get_input_type()
 
 	if (!rec.is_finished()) {
 
+		//rec.derive_from(OutputTime::get_input_type_output_format());
+
 		// The variant
-		rec.declare_key("variant", String(), Default("ascii"),
-				"Variant of output stream file format.");
+		static Selection variant_sel("GMSH variant");
+	    variant_sel.add_value(OutputMSH::VARIANT_ASCII, "ascii",
+	    		"ASCII variant of GMSH file format");
+	    variant_sel.add_value(OutputMSH::VARIANT_BINARY, "binary",
+	    		"Binary variant of GMSH file format (not supported yet)");
+	    variant_sel.finish();
 
 		rec.finish();
 	}
