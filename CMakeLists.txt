@@ -97,6 +97,10 @@ if (NOT PETSC_FOUND)
     set(mpiuni_sources    system/mpiuni/mpi.c)
     set(MPIUNI_INCLUDES src/system/mpiuni)
     add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+    
+    # overwrite NOTFOUND status
+    set(MPI_CXX_LIBRARIES "")
+    set(MPI_CXX_INCLUDE_PATH "")
   else()
     add_definitions(-DHAVE_MPI)
   endif()
