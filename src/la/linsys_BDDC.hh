@@ -56,17 +56,15 @@ public:
                  const int matrixTypeInt = 0,
                  const int  numSubLoc = 1 );
 
-    void load_mesh( Mesh *mesh,
-                    Distribution *edge_ds,  
-                    Distribution *el_ds,        
-                    Distribution *side_ds,     
-                    Distribution *rows_ds,    
-                    int *el_4_loc,    
-                    int *row_4_el,     
-                    int *side_id_4_loc, 
-                    int *side_row_4_id, 
-                    int *edge_4_loc,   
-                    int *row_4_edge );
+    void load_mesh( const int nDim, const int numNodes, const int numDofs,
+                    const std::vector<int> & inet, 
+                    const std::vector<int> & nnet, 
+                    const std::vector<int> & nndf, 
+                    const std::vector<int> & isegn, 
+                    const std::vector<int> & isngn, 
+                    const std::vector<int> & isvgvn,
+                    const std::vector<double> & xyz,
+                    const int meshDim );
 
     void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals );
 
@@ -86,16 +84,11 @@ public:
 
 private:
 
-    void loadFlowMesh_( );
-
     void gatherSolution_( );
 
 private:
 
-    std::vector<double>               globalSolution_; //!< global solution in numbering for linear system
-    unsigned                          numDofs_;        //!< number of degrees of freedom on subdomain
-
-    std::vector<int>                  isngn_;
+    std::vector<int>                  isngn_;          //!< indices of subdomain nodes in global numbering
 
     typedef la::SystemSolveBddc       Solver_;
     Solver_ *                         solver_;         //!< OpenFTL solver

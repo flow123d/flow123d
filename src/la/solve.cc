@@ -70,7 +70,7 @@ static void write_sys_isol( struct Solver *solver );
  *  @param[in] solver already allocated structure to be initialized
  */
 void solver_init( struct Solver *solver) {
-    double solver_accurancy;
+    double solver_accuracy;
 
     F_ENTRY;
 	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
@@ -91,10 +91,10 @@ void solver_init( struct Solver *solver) {
     }
 
     //! generic solver parameters
-    solver_accurancy=   OptGetDbl("Solver","Solver_accurancy","1.0e-7");
+    solver_accuracy=   OptGetDbl("Solver","Solver_accuracy","1.0e-7");
     solver->max_it=     OptGetInt("Solver", "max_it", "200" );
     solver->r_tol=      OptGetDbl("Solver", "r_tol", "-1" );
-    if (solver->r_tol < 0) solver->r_tol=solver_accurancy;
+    if (solver->r_tol < 0) solver->r_tol=solver_accuracy;
     solver->a_tol=      OptGetDbl("Solver", "a_tol", "1.0e-9" );
 
 	if (solver->type == ISOL) {
@@ -116,7 +116,7 @@ void solver_set_type( Solver *solver )
     F_ENTRY;
     solver->type=UNKNOWN;
     TEST_TYPE("petsc",PETSC_SOLVER);
-    TEST_TYPE("petsc_matis",PETSC_MATIS_SOLVER);
+    //TEST_TYPE("petsc_matis",PETSC_MATIS_SOLVER);
     TEST_TYPE("bddcml",BDDCML_SOLVER);
     TEST_TYPE("si2",SI2);
     TEST_TYPE("gi8",GI8);

@@ -35,10 +35,7 @@
 // derived from base linsys
 #include "la/linsys.hh"
 
-// PETSc includes
-#include "petscmat.h"
-#include "petscvec.h"
-#include "petscksp.h"
+#include "system/par_distribution.hh"
 
 class LinSys_PETSC : public LinSys
 {
@@ -46,20 +43,17 @@ class LinSys_PETSC : public LinSys
 public:
 
     LinSys_PETSC( const unsigned lsize,
+                  Distribution * rows_ds,
                   double *sol_array = NULL,
                   const MPI_Comm comm = PETSC_COMM_WORLD ); 
 
-    void load_mesh( Mesh *mesh,
-                    Distribution *edge_ds,  
-                    Distribution *el_ds,        
-                    Distribution *side_ds,     
-                    Distribution *rows_ds,    
-                    int *el_4_loc,    
-                    int *row_4_el,     
-                    int *side_id_4_loc, 
-                    int *side_row_4_id, 
-                    int *edge_4_loc,   
-                    int *row_4_edge );
+    /**
+     * Returns whole Distribution class for distribution of the solution.
+     */
+    inline const Distribution* get_ds( )
+    { 
+        return rows_ds_; 
+    }
 
     const Mat &get_matrix()
     { 
@@ -131,6 +125,8 @@ private:
 
 private:
 
+    const Distribution * rows_ds_;   //!< final distribution of rows of MH matrix
+
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
     Vec     solution_;           //!< PETSc vector constructed with vb array.
@@ -142,7 +138,6 @@ private:
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
 
-    std::vector<double>  globalSolution_; //!< global solution in numbering for linear system
 };
 
 #endif /* LA_LINSYS_PETSC_HH_ */

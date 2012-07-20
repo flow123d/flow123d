@@ -135,8 +135,8 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type);
     
 
-    ls    = new LinSys_MPIAIJ(distr->lsize());
-    ls_dt = new LinSys_MPIAIJ(distr->lsize());
+    // LINSYS TODO: ls    = new LinSys_MPIAIJ(distr->lsize());
+    // LINSYS TODO: ls_dt = new LinSys_MPIAIJ(distr->lsize());
 
 
     // Read initial condition.
@@ -154,7 +154,7 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     assemble_mass_matrix();
     ls_dt->start_add_assembly();
     assemble_mass_matrix();
-    ls_dt->finalize();
+    // LINSYS TODO: ls_dt->finalize();
     mass_matrix = ls_dt->get_matrix();
 
     // save initial state
@@ -209,7 +209,7 @@ void TransportDG::update_solution()
         VecSet(ls->get_rhs(), 0);
         assemble_stiffness_matrix();
         set_boundary_conditions();
-        ls->finalize();
+        // LINSYS TODO: ls->finalize();
 
         if (stiffness_matrix == 0)
             MatConvert(ls->get_matrix(), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);

@@ -60,10 +60,20 @@
  *  can be provided until we have matrix as separate class.
  */
 
+#include "system/global_defs.h"
+#include "system/xio.h"
 #include "system/par_distribution.hh"
-#include "mesh/mesh.h"
+
 
 #include <mpi.h>
+
+#include <vector>
+
+// PETSc includes
+#include "petscmat.h"
+#include "petscvec.h"
+#include "petscksp.h"
+
 
 class LinSys
 {
@@ -96,25 +106,28 @@ public:
      *
      * @param comm - MPI communicator
      */
-    LinSys( MPI_Comm comm = MPI_COMM_WORLD )
-      : comm_( comm ), positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ),
+    LinSys( unsigned lsize, MPI_Comm comm = MPI_COMM_WORLD )
+      : lsize_(lsize), comm_( comm ), positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ),
         status_( NONE )
-    { };
+    { 
+        int lsizeInt = static_cast<int>( lsize );
+        int sizeInt;
+        MPI_Allreduce ( &lsizeInt, &sizeInt, 1, MPI_INT, MPI_SUM, comm_ );
+        size_ = static_cast<unsigned>( sizeInt );
+    };
 
     // Particular type of the linear system.
     LinSysType type;  //!< anyone can inquire my type
 
-    virtual void load_mesh( Mesh *mesh,
-                            Distribution *edge_ds,  
-                            Distribution *el_ds,        
-                            Distribution *side_ds,     
-                            Distribution *rows_ds,    
-                            int *el_4_loc,    
-                            int *row_4_el,     
-                            int *side_id_4_loc, 
-                            int *side_row_4_id, 
-                            int *edge_4_loc,   
-                            int *row_4_edge )
+    virtual void load_mesh( const int nDim, const int numNodes, const int numDofs,
+                            const std::vector<int> & inet, 
+                            const std::vector<int> & nnet, 
+                            const std::vector<int> & nndf, 
+                            const std::vector<int> & isegn, 
+                            const std::vector<int> & isngn, 
+                            const std::vector<int> & isvgvn,
+                            const std::vector<double> & xyz,
+                            const int meshDim )
     {
         ASSERT( false, "Function load_mesh is not implemented for linsys type %d \n.", this -> type );
     }
@@ -124,8 +137,7 @@ public:
      */
     inline unsigned int size()
     { 
-        ASSERT ( rows_ds_ != NULL, "Empty distribution." );
-        return rows_ds_-> size(); 
+        return size_; 
     }
 
     /**
@@ -134,16 +146,7 @@ public:
      */
     inline unsigned int vec_lsize()
     { 
-        ASSERT ( rows_ds_ != NULL, "Empty distribution." );
-        return rows_ds_ -> lsize(); 
-    }
-
-    /**
-     * Returns whole Distribution class for distribution of the solution.
-     */
-    inline const Distribution* get_ds( )
-    { 
-        return rows_ds_; 
+        return lsize_; 
     }
 
     /**
@@ -252,7 +255,7 @@ public:
      * Shortcut to assembly into matrix and RHS in one call.
      * This can also apply constrains at assembly time (only in add assembly regime).
      *
-     * Constrains can either be set before through add_constrain. Or by additional parameters if we
+     * Constrains can either be set before through add_constraint. Or by additional parameters if we
      * have only per element knowledge about boundary conditions.
      *
      */
@@ -268,7 +271,7 @@ public:
      * @param row - global number of row that should be eliminated.
      * @param value - solution value at the given row
      */
-    void add_constrain(int row, double value) {
+    void add_constraint(int row, double value) {
 
         constraints_.push_back( Constraint_( static_cast<unsigned>( row ), value ) );
     }
@@ -360,33 +363,15 @@ public:
         ASSERT( false, "Function view is not implemented for linsys type %d \n.", this -> type );
     }
 
-    ~LinSys()
+    virtual ~LinSys()
     { };
 
 protected:
-/*
-    void create_renumbering_( std::vector<unsigned> & indices ) 
-    {
-        ASSERT( mesh_ != NULL, " Mesh not loaded.");
-        unsigned size = rows_ds_->size( );
-        indices.reserve(size);
-        FOR_ELEMENTS(mesh_, ele) {
-            FOR_ELEMENT_SIDES(ele,si) {
-                indices.push_back( side_row_4_id_[ele->side[si]->id] );
-            }
-        }
-        FOR_ELEMENTS(mesh_, ele) {
-            indices.push_back( row_4_el_[ele.index()] );
-        }
-        FOR_EDGES(mesh_, edg) {
-            indices.push_back( row_4_edge_[edg.index()] );
-        }
-        ASSERT( indices.size() == size, "Size of array does not match number of fills.\n" );
-    }
-*/
-protected:
     MPI_Comm         comm_;
     SetValuesMode    status_;         //!< Set value status of the linear system.
+
+    const unsigned   lsize_;          //!< local number of matrix rows (non-overlapping division of rows)
+    unsigned          size_;          //!< global number of matrix rows, i.e. problem size
 
     bool             symmetric_;
     bool             positive_definite_;
@@ -394,20 +379,7 @@ protected:
 
     ConstraintVec_   constraints_;
 
-    Mesh *           mesh_;
-
-    Distribution *   rows_ds_;        //!< final distribution of rows of MH matrix
-    Distribution *   edge_ds_;        //!< optimal distribution of edges
-    Distribution *   el_ds_;          //!< optimal distribution of elements
-    Distribution *   side_ds_;        //!< optimal distribution of elements
-    
-    int *            el_4_loc_;       //!< array of idexes of local elements 
-                                      //!< (in ordering matching the optimal global)
-    int *            row_4_el_;       //!< element index to matrix row
-    int *            side_id_4_loc_;  //!< array of ids of local sides
-    int	*            side_row_4_id_;  //!< side id to matrix row
-    int *            edge_4_loc_;     //!< array of indexes of local edges
-    int	*            row_4_edge_;     //!< edge index to matrix row
+    std::vector<double>  globalSolution_; //!< global solution in numbering for linear system
 };
 
 #endif /* LA_LINSYS_HH_ */

@@ -42,16 +42,10 @@ LinSys_BDDC::LinSys_BDDC( const unsigned lsize,
                           const MPI_Comm comm, 
                           const int matrixTypeInt,
                           const int  numSubLoc )
-        : LinSys( comm )
+        : LinSys( lsize, comm )
 {
     // set type
     type = LinSys::BDDC;
-
-    int lsizeInt = static_cast<int>( lsize );
-    int numDofsInt;
-    MPI_Allreduce ( &lsizeInt, &numDofsInt, 1, MPI_INT, MPI_SUM, comm_ );
-
-    numDofs_ = static_cast<unsigned>( numDofsInt );
 
     la::SystemSolveBddc::MatrixType matrixType;
     switch ( matrixTypeInt ) {
@@ -71,7 +65,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned lsize,
             ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
     }
 
-    solver_ = new Solver_( numDofs_,
+    solver_ = new Solver_( size_,
                            numDofsSub,
                            matrixType,
                            comm, 
@@ -81,32 +75,22 @@ LinSys_BDDC::LinSys_BDDC( const unsigned lsize,
     type = LinSys::BDDC;
 }
 
-void LinSys_BDDC::load_mesh( Mesh *mesh,
-                             Distribution *edge_ds,  
-                             Distribution *el_ds,        
-                             Distribution *side_ds,     
-                             Distribution *rows_ds,    
-                             int *el_4_loc,    
-                             int *row_4_el,     
-                             int *side_id_4_loc, 
-                             int *side_row_4_id, 
-                             int *edge_4_loc,   
-                             int *row_4_edge )     
+void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDofs,
+                             const std::vector<int> & inet, 
+                             const std::vector<int> & nnet, 
+                             const std::vector<int> & nndf, 
+                             const std::vector<int> & isegn, 
+                             const std::vector<int> & isngn, 
+                             const std::vector<int> & isvgvn,
+                             const std::vector<double> & xyz,
+                             const int meshDim ) 
 {
-    mesh_          =  mesh;
-    edge_ds_       =  edge_ds;
-    el_ds_         =  el_ds;  
-    side_ds_       =  side_ds;
-    rows_ds_       =  rows_ds;
-    el_4_loc_      =  el_4_loc;    
-    row_4_el_      =  row_4_el;     
-    side_id_4_loc_ =  side_id_4_loc;
-    side_row_4_id_ =  side_row_4_id;
-    edge_4_loc_    =  edge_4_loc;   
-    row_4_edge_    =  row_4_edge;   
+    // simply pass the data to BDDCML solver
+    isngn_.resize(isngn.size());
+    std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
+    ASSERT( numDofs == size_, "Global problem size mismatch!" );
 
-    // load mesh right away
-    this -> loadFlowMesh_( );
+    solver_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, meshDim );
 }
 
 void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
@@ -193,135 +177,13 @@ void LinSys_BDDC::set_whole_solution( std::vector<double> & globalSolution )
 
 LinSys_BDDC::~LinSys_BDDC()
 { 
+    isngn_.clear(); 
     delete solver_; 
 };
-
-void LinSys_BDDC::loadFlowMesh_( )
-{
-    // initialize arrays
-    std::map<int,arma::vec3> localDofMap;
-    std::vector<int> inet;
-    std::vector<int> nnet;
-    std::vector<int> isegn;
-    for ( int i_loc = 0; i_loc < el_ds_->lsize(); i_loc++ ) {
-        // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
-        Element *el = mesh_->element(el_4_loc_[i_loc]);
-        int e_idx = ELEMENT_FULL_ITER( mesh_, el ).index();
-
-        isegn.push_back( e_idx );
-        int nne = 0;
-
-        FOR_ELEMENT_SIDES(el,si) {
-            // insert local side dof
-            int side_row = side_row_4_id_[el->side[si]->id];
-            arma::vec3 coord = (el->side[si])->centre;
-
-            localDofMap.insert( std::make_pair( side_row, coord ) );
-            inet.push_back( side_row );
-            nne++;
-        }
-
-        // insert local pressure dof
-        int el_row  = row_4_el_[ el_4_loc_[i_loc] ];
-        arma::vec3 coord = el->centre;
-        localDofMap.insert( std::make_pair( el_row, coord ) );
-        inet.push_back( el_row );
-        nne++;
-
-        FOR_ELEMENT_SIDES(el,si) {
-            Edge *edg=el->side[si]->edge; 
-
-            // insert local edge dof
-            int edge_row = row_4_edge_[mesh_->edge.index(el->side[si]->edge)];
-            arma::vec3 coord = (el->side[si])->centre;
-
-            localDofMap.insert( std::make_pair( edge_row, coord ) );
-            inet.push_back( edge_row );
-            nne++;
-        }
-
-        // insert dofs related to compatible connections
-        for ( int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
-            int edge_row = row_4_edge_[mesh_->edge.index(el->neigh_vb[i_neigh]->edge)];
-            arma::vec3 coord = ( el->neigh_vb[i_neigh]->edge->side[0] )->centre;
-
-            localDofMap.insert( std::make_pair( edge_row, coord ) );
-            inet.push_back( edge_row );
-            nne++;
-        }
-
-        nnet.push_back( nne );
-    }
-    //convert set of dofs to vectors
-    int numNodeSub = localDofMap.size();
-    isngn_.resize(  numNodeSub );
-    std::vector<double> xyz( numNodeSub * 3 ) ;
-    int ind = 0;
-    std::map<int,arma::vec3>::iterator itB = localDofMap.begin();
-    for ( ; itB != localDofMap.end(); ++itB ) {
-        isngn_[ind] = itB -> first;
-
-        arma::vec3 coord = itB -> second;
-        for ( int j = 0; j < 3; j++ ) {
-            xyz[ j*numNodeSub + ind ] = coord[j];
-        }
-
-        ind++;
-    }
-    localDofMap.clear();
-
-    // nndf is trivially one
-    std::vector<int> nndf( numNodeSub, 1 );
-
-    // prepare auxiliary map for renumbering nodes 
-    typedef std::map<int,int> Global2LocalMap_; //! type for storage of global to local map
-    Global2LocalMap_ global2LocalNodeMap;
-    for ( unsigned ind = 0; ind < isngn_.size(); ++ind ) {
-        global2LocalNodeMap.insert( std::make_pair( static_cast<unsigned>( isngn_[ind] ), ind ) );
-    }
-
-    //std::cout << "INET: \n";
-    //std::copy( inet.begin(), inet.end(), std::ostream_iterator<int>( std::cout, " " ) );
-    //std::cout << std::endl;
-    //std::cout << "ISNGN: \n";
-    //std::copy( isngn_.begin(), isngn_.end(), std::ostream_iterator<int>( std::cout, " " ) );
-    //std::cout << std::endl << std::flush;
-    //std::cout << "ISEGN: \n";
-    //std::copy( isegn.begin(), isegn.end(), std::ostream_iterator<int>( std::cout, " " ) );
-    //std::cout << std::endl << std::flush;
-    //MPI_Barrier( PETSC_COMM_WORLD );
-
-    // renumber nodes in the inet array to locals
-    int indInet = 0;
-    for ( int iEle = 0; iEle < isegn.size(); iEle++ ) {
-        int nne = nnet[ iEle ];
-        for ( unsigned ien = 0; ien < nne; ien++ ) {
-
-            int indGlob = inet[indInet];
-            // map it to local node
-            Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-            ASSERT( pos != global2LocalNodeMap.end(),
-                    "Cannot remap node index %d to local indices. \n ", indGlob );
-            int indLoc = static_cast<int> ( pos -> second );
-
-            // store the node
-            inet[ indInet++ ] = indLoc;
-        }
-    }
-
-    int numNodes    = numDofs_;
-    int numDofsInt  = numDofs_;
-    int spaceDim = 3; // TODO: what is the proper value here?
-    int meshDim  = 1; // TODO: what is the proper value here?
-
-    solver_ -> loadRawMesh( spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn_, isngn_, xyz, meshDim );
-}
 
 // construct global solution
 void LinSys_BDDC::gatherSolution_( )
 {
-    std::vector<double> sol_disordered( numDofs_ );
-    
     // download local solution
     std::vector<double> locSolution( isngn_.size() );
     solver_ -> giveSolution( isngn_, locSolution ); 
@@ -333,11 +195,12 @@ void LinSys_BDDC::gatherSolution_( )
     int nProc;
     MPI_Comm_size( comm_, &nProc );
 
+    globalSolution_.resize( size_ );
     if ( rank == 0 ) {
         // merge my own data
         for ( int i = 0; i < isngn_.size(); i++ ) {
             int ind = isngn_[i];
-            sol_disordered[ind] = locSolution[i];
+            globalSolution_[ind] = locSolution[i];
         }
         for ( int iProc = 1; iProc < nProc; iProc++ ) {
             // receive length
@@ -356,7 +219,7 @@ void LinSys_BDDC::gatherSolution_( )
             // merge data
             for ( int i = 0; i < length; i++ ) {
                 int ind = inds[i];
-                sol_disordered[ind] = locSolution[i];
+                globalSolution_[ind] = locSolution[i];
             }
         }
     }
@@ -368,20 +231,7 @@ void LinSys_BDDC::gatherSolution_( )
         ierr = MPI_Send( &(locSolution[0]), length, MPI_DOUBLE, 0, rank, comm_ ); 
     }
     // broadcast global solution from root
-    ierr = MPI_Bcast( &(sol_disordered[0]), sol_disordered.size(), MPI_DOUBLE, 0, comm_ );
-
-    //reorder solution
-    std::vector<unsigned> indices;
-    this->create_renumbering_( indices );
-    globalSolution_.resize( numDofs_ );
-    for ( int i = 0; i < numDofs_; i++ ) {
-        globalSolution_[i] = sol_disordered[indices[i]];
-    }
-
-    //if ( myp == 0 ) {
-    //    std::copy( solution_.begin(), solution_.end(), std::ostream_iterator<double>( std::cout, " " ) );
-    //    std::cout << std::endl;
-    //}
+    ierr = MPI_Bcast( &(globalSolution_[0]), globalSolution_.size(), MPI_DOUBLE, 0, comm_ );
 }
 
 

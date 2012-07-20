@@ -35,63 +35,38 @@
 #include <boost/bind.hpp>
 
 LinSys_PETSC::LinSys_PETSC( const unsigned lsize,
+                            Distribution * rows_ds,
                             double *sol_array,
                             const MPI_Comm comm ) 
-        : LinSys( comm )
+        : LinSys( lsize, comm ), rows_ds_(rows_ds)
 {
     // set type
     type = LinSys::PETSC;
 
-    PetscErrorCode ierr;
-
     // create PETSC vectors:
+    PetscErrorCode ierr;
     // rhs
-    v_rhs_= new double[ lsize + 1 ];
-    ierr = VecCreateMPIWithArray( comm_, lsize, PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
+    v_rhs_= new double[ rows_ds_->lsize() + 1 ];
+    ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     //ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
     // solution
     if (sol_array == NULL) {
-        v_solution_   = new double[ lsize + 1 ];
+        v_solution_   = new double[ rows_ds_->lsize() + 1 ];
         own_solution_ = true;
     }
     else {
         v_solution_ = sol_array;
         own_solution_ = false;
     }
-    ierr = VecCreateMPIWithArray( comm_, lsize, PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
-}
-
-void LinSys_PETSC::load_mesh( Mesh *mesh,
-                              Distribution *edge_ds,  
-                              Distribution *el_ds,        
-                              Distribution *side_ds,     
-                              Distribution *rows_ds,    
-                              int *el_4_loc,    
-                              int *row_4_el,     
-                              int *side_id_4_loc, 
-                              int *side_row_4_id, 
-                              int *edge_4_loc,   
-                              int *row_4_edge )     
-{
-    mesh_          =  mesh;
-    edge_ds_       =  edge_ds;
-    el_ds_         =  el_ds;  
-    side_ds_       =  side_ds;
-    rows_ds_       =  rows_ds;
-    el_4_loc_      =  el_4_loc;    
-    row_4_el_      =  row_4_el;     
-    side_id_4_loc_ =  side_id_4_loc;
-    side_row_4_id_ =  side_row_4_id;
-    edge_4_loc_    =  edge_4_loc;   
-    row_4_edge_    =  row_4_edge;   
+    ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
 }
 
 void LinSys_PETSC::start_allocation( )
 {
     PetscErrorCode ierr;
 
-    ierr = VecCreateMPI( comm_, rows_ds_->lsize( ), PETSC_DECIDE, &(on_vec_) ); CHKERRV( ierr ); 
+    ierr = VecCreateMPI( comm_, rows_ds_->lsize(), PETSC_DECIDE, &(on_vec_) ); CHKERRV( ierr ); 
     ierr = VecDuplicate( on_vec_, &(off_vec_) ); CHKERRV( ierr ); 
     status_ = ALLOCATE;
 }
@@ -426,11 +401,9 @@ void LinSys_PETSC::gatherSolution_( )
     //                LinSys_PETSC::PetscScalar2Double_( ) ) ;
     
     //reorder solution
-    std::vector<unsigned> indices;
-    this->create_renumbering_( indices );
     globalSolution_.resize( globalSize );
     for ( int i = 0; i < globalSize; i++ ) {
-        globalSolution_[i] = static_cast<double>( solutionGatheredArray[indices[i]] );
+        globalSolution_[i] = static_cast<double>( solutionGatheredArray[i] );
     }
 
     // release array

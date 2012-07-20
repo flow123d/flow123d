@@ -69,10 +69,18 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
+
 find_package(PETSc 3.2.0 REQUIRED)
 find_package(PARMETIS)
 
+
+# Our ouwn find module for BDDCML
+# TODO: extrac type of fortran decorations from 
+# make.inc or use CMake + module FortranCInterface in BDDCML
 find_package(BDDCML REQUIRED)
+add_definitions("-DAdd_")
+
+
 
 # find boost or use our own
 #
