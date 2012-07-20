@@ -1,20 +1,8 @@
-//
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-//                 Computational Structural Mechanics Lab
-//                         University of Cambridge
-//
-// This software is copyrighted and all rights are retained by the CSMLab. All
-// use, disclosure, and/or reproduction of any part not expressly authorized by
-// F Cirak is prohibited. (C) 2010.
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-
 //! @author Jakub Sistek
 //! @date   5/2011
 
-#ifndef corlib_systemsolvebddc_h
-#define corlib_systemsolvebddc_h
+#ifndef la_systemsolvebddc_h
+#define la_systemsolvebddc_h
 //------------------------------------------------------------------------------
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/vector.hpp>
@@ -22,17 +10,35 @@
 #include <vector>
 #include <set>
 #include <cmath>
-#include <corlib/Triplet.hpp>
-#include <corlib/Mesh.hpp>
+#include <la/Triplet.hpp>
+
+#include <system/global_defs.h>
+#include <system/xio.h>
 
 extern "C" { 
     #include <bddcml_interface_c.h>
 }
 
 //------------------------------------------------------------------------------
-namespace corlib{
+namespace la{
     class SystemSolveBddc;
     namespace ublas = boost::numeric::ublas;
+
+    namespace detail_{
+
+        template< typename NODE, typename MAPTYPE >
+        int getLocalNumber( NODE * np, MAPTYPE & map ) {
+
+            unsigned globalIndex = np -> giveId( );
+
+            typename MAPTYPE::iterator pos = map.find( globalIndex );
+            ASSERT( pos != map.end(),
+                                    "Cannot remap node index %d to local indices. \n ", globalIndex );
+            int localIndexInt = pos -> second;
+
+            return localIndexInt;
+        }
+    }
 
 }
 
@@ -55,7 +61,7 @@ namespace corlib{
  *                       and these can be accelerated and be more memory efficient by specifying proper matrixType
  *  solveSystem        - solves the system
  */
-class corlib::SystemSolveBddc
+class la::SystemSolveBddc
 {
 public:
     enum matrixTypeEnum { 
@@ -89,22 +95,6 @@ public:
     //! Destructor frees the BDDCML structures
     ~SystemSolveBddc();
 
-    //! Load data about mesh
-    //! number of space dimensions
-    //! mesh of subdomain
-    //! (optional) topological dimension of mesh, i.e. 2 for shells in 3D, default is nDim
-    template< typename MESH >
-    void loadMesh( const MESH     & meshPart,
-                   const unsigned meshDim = 0 );
-
-    //! Load data about grid
-    //! number of space dimensions
-    //! sub-grid 
-    //! (optional) topological dimension of mesh, i.e. 2 for shells in 3D, default is nDim
-    template< typename GRID >
-    void loadGrid( const GRID     & meshPart,
-                   const unsigned meshDim = 0 );
-
     //! Load raw data about mesh
     void loadRawMesh( const int nDim, const int numNodes, const int numDofs,
                       const std::vector<int> & inet, 
@@ -130,11 +120,11 @@ public:
     //! insert subvector to system rhs vector
     void insertToRhs( const SubVec_ & eForce, const VecUint_ & dofIndices );
 
-    //! insert a scalar to RHS
-    void insertValueToRhs( const double & entry, const unsigned & dofIndex );
-
     //! Outputs
     void writeMatrix(   std::ostream & out ) { triplet_.write( out ); }
+
+    //! Compatibility call which does absolutely nothing
+    void finishAssembly( ) { }
 
     //! Apply constraints
     //! Currently, scalar is not used in the function and it is kept only for compatibility with constraint functors.
@@ -142,7 +132,10 @@ public:
     void applyConstraints( ConstraintVec_ & constraints, const double factor, const double scalar );
 
     //! Set any DOF to zero
-    void fixDOF( const unsigned index, const double scalar );
+    //!
+    //! \param[in]  index   Global index of DOF to fix
+    //! \param[in]  scalar  Value to put on diagonal (default 1.)
+    void fixDOF( const unsigned index, const double scalar = 1. );
 
     //! Solve the system
     void solveSystem( double tol = 1.e-7,                        //!< tolerance on relative residual ||res||/||rhs||
@@ -153,8 +146,10 @@ public:
                                                                  //!<   1 - mild output, 
                                                                  //!<   2 - detailed output )
                       int  maxIt = 1000,                         //!< maximum number of iterations
-                      int  ndecrMax = 30 );                      //!< maximum number of iterations with non-decreasing residual 
+                      int  ndecrMax = 30,                        //!< maximum number of iterations with non-decreasing residual 
                                                                  //!< ( used to stop diverging process )
+                      bool use_adaptive = false                  //!< if adaptive constraints should be used by BDDCML
+                      );
 
     //! Get norm of right-hand side
     double normRhs( ) { return normRhs_; }
@@ -211,11 +206,8 @@ public:
     void destroySol( )    { sol_.clear( ); }
 
     //! Give access to the solution vector
-    template< typename IT1, typename IT2 >
-    void giveDofSolution( IT1 db, IT1 de, IT2 vb ) const;
-
-    //! Give access to the solution vector
-    void giveSolution( const VecUint_ & dofIndices, SubVec_ & result ) const;
+    template<typename VEC1,typename VEC2>
+    void giveSolution( const VEC1 & dofIndices, VEC2 & result ) const;
 
 private:
     const int  numDofs_;                   //!< number of total dofs
@@ -256,7 +248,7 @@ private:
     std::vector<int>     ifix_;            //!< indices of fixed boundary conditions - ( 0 for free variable, 1 for constrained dof )
     std::vector<double>  fixv_;            //!< values of fixed boundary conditions at places of ifix_ - values outside fixed dofs are ignored
 
-    corlib::Triplet<int,double>  triplet_; //!< matrix in triplet format
+    la::Triplet<int,double>  triplet_; //!< matrix in triplet format
     bool                 isMatAssembled_;  //!< true if matrix is assembled
 
     std::vector<double>  rhsVec_;          //!< vector with RHS values restricted to subdomain, i.e. values are repeated at shared nodes

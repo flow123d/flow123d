@@ -37,11 +37,6 @@ TARGETS = $(BIN)/flow123d
 
 # List of object files of Flow123d
 FLOW123D_OBJS = \
-$(OBJS)/fem/dofhandler.o\
-$(OBJS)/fem/fe_values.o\
-$(OBJS)/fem/finite_element.o\
-$(OBJS)/fem/mapping_p1.o\
-\
 $(OBJS)/flow/local_matrix.o\
 $(OBJS)/flow/darcy_flow_mh.o\
 $(OBJS)/flow/darcy_flow_mh_output.o\
@@ -62,8 +57,6 @@ $(OBJS)/mesh/boundaries.o\
 $(OBJS)/mesh/neighbours.o\
 ${OBJS}/mesh/topology.o\
 \
-$(OBJS)/quadrature/quadrature_lib.o\
-\
 $(OBJS)/reaction/linear_reaction.o\
 \
 $(OBJS)/semchem/che_semchem.o\
@@ -77,12 +70,11 @@ $(OBJS)/system/math_fce.o\
 $(OBJS)/system/xio.o\
 \
 $(OBJS)/transport/transport.o\
-$(OBJS)/transport/transport_dg.o\
 $(OBJS)/transport/transport_operator_splitting.o\
 \
-$(OBJS)/la/schur.o\
 $(OBJS)/la/solve.o\
-$(OBJS)/la/linsys.o\
+$(OBJS)/la/linsys_PETSC.o\
+$(OBJS)/la/linsys_BDDC.o\
 $(OBJS)/la/sparse_graph.o\
 \
 $(OBJS)/equation.o\
@@ -94,6 +86,7 @@ $(OBJS)/hc_explicit_sequential.o\
 $(OBJS)/field_p0.o
 
 
+#$(OBJS)/la/schur.o\
 #$(OBJS)/convert.o\
 #$(OBJS)/mesh/ini_constants_mesh.o\
 #$(OBJS)/constantdb.o\
@@ -110,9 +103,7 @@ SUB_DIRS = \
 system\
 mesh\
 io\
-quadrature\
 semchem\
-fem\
 flow\
 transport\
 reaction
@@ -166,9 +157,9 @@ ${BIN}/flow123d: ${FLOW123D_OBJS}
 clean: 
 	rm -f ${TARGETS}
 	rm -f ${OBJS}/*.o ${DEPS}/*.d
-	rm -f ${OBJS}/fem/*.o
 	rm -f ${OBJS}/flow/*.o
 	rm -f ${OBJS}/io/*.o
+	rm -f ${OBJS}/la/*.o
 	rm -f ${OBJS}/mesh/*.o
 	rm -f ${OBJS}/reaction/*.o 
 	rm -f ${OBJS}/semchem/*.o

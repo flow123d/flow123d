@@ -10,6 +10,11 @@
 set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
 set(PETSC_ARCH "gcc_O3")
 
+
+### BDDCML library #############################################################
+# tested with version 1.3
+set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-1.3")
+
 ### verbose mode ####
 # option to produce more verbose compiling
 # for the same result tou can call make with VERBOSE=1

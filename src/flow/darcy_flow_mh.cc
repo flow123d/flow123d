@@ -40,6 +40,7 @@
 #include "mesh/mesh.h"
 #include "system/par_distribution.hh"
 #include "la/linsys.hh"
+#include "la/linsys_PETSC.hh"
 #include "la/solve.h"
 #include "la/schur.hh"
 #include "la/sparse_graph.hh"
@@ -178,28 +179,34 @@ void DarcyFlowMH_Steady::update_solution() {
     xprintf(Msg, "t: %f (Darcy) dt: %f\n",time_->t(), time_->dt());
     modify_system(); // hack for unsteady model
 
-    switch (n_schur_compls) {
-    case 0: /* none */
-        solve_system(solver, schur0);
-        break;
-    case 1: /* first schur complement of A block */
-        make_schur1();
-        //solve_system(solver, schur1->get_system());
-        //schur1->resolve();
-        schur1->solve(solver);
-        break;
-    case 2: /* second schur complement of the max. dimension elements in B block */
-        make_schur1();
-        make_schur2();
+    int convergedReason = schur0 -> solve( );
+    DBGMSG( "Solved linear problem with converged reason %d \n", convergedReason );
+    ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+
+
+//    switch (n_schur_compls) {
+//    case 0: /* none */
+//        solve_system(solver, schur0);
+//        break;
+//    case 1: /* first schur complement of A block */
+//        make_schur1();
+//        //solve_system(solver, schur1->get_system());
+//        //schur1->resolve();
+//        schur1->solve(solver);
+//        break;
+//    case 2: /* second schur complement of the max. dimension elements in B block */
+//        make_schur1();
+//        make_schur2();
 
         //mat_count_off_proc_values(schur2->get_system()->get_matrix(),schur2->get_system()->get_solution());
-        solve_system(solver, schur2->get_system());
+//        solve_system(solver, schur2->get_system());
 
-        schur2->resolve();
-        schur1->resolve();
-        break;
-    }
-    postprocess();
+//       schur2->resolve();
+//        schur1->resolve();
+//        break;
+//   }
+
+    //this -> postprocess();
 
     //int rank;
     //MPI_Comm_rank( PETSC_COMM_WORLD, &rank );
@@ -242,17 +249,20 @@ void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_s
 {
     // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
     // and use its mechanism to manage dependency between vectors
-    if (solution_changed_for_scatter) {
-        // scatter solution to all procs
-        VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec,
-                INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
-                INSERT_VALUES, SCATTER_FORWARD);
-        solution_changed_for_scatter=false;
-    }
+    //if (solution_changed_for_scatter) {
+    //    // scatter solution to all procs
+    //    VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec,
+    //            INSERT_VALUES, SCATTER_FORWARD);
+    //    VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
+    //            INSERT_VALUES, SCATTER_FORWARD);
+    //    solution_changed_for_scatter=false;
+    //}
 
-    vec=solution;
-    vec_size = size;
+    if ( solution_.empty() ) solution_.resize( this->size, 0. );
+    schur0 -> get_whole_solution( solution_ );
+
+    vec=&(solution_[0]);
+    vec_size = solution_.size();
     ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
@@ -495,24 +505,28 @@ void DarcyFlowMH_Steady::make_schur0() {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
 
-        if (solver->type == PETSC_MATIS_SOLVER) 
-            schur0 = new LinSys_MATIS( lsize, static_cast<int>( global_row_4_sub_row.size() ),
-                                       &(global_row_4_sub_row[0]) );
-	
-        else
-            schur0 = new LinSys_MPIAIJ(lsize);
-        schur0->set_symmetric();
-        schur0->start_allocation();
-        assembly_steady_mh_matrix(); // preallocation
-        VecZeroEntries(schur0->get_solution());
+        if (solver->type == BDDCML_SOLVER) {
+            schur0 = new LinSys_BDDC( lsize, global_row_4_sub_row.size(), MPI_COMM_WORLD, 3, 1 );
+        }
+        else if (solver->type == PETSC_SOLVER) {
+            schur0 = new LinSys_PETSC( lsize, NULL, PETSC_COMM_WORLD );
+        }
+        schur0 -> load_mesh( mesh_, edge_ds, el_ds, side_ds, rows_ds, el_4_loc, row_4_el, side_id_4_loc, 
+                             side_row_4_id, edge_4_loc, row_4_edge );
 
+        if (solver->type == PETSC_SOLVER) {
+            schur0->set_symmetric();
+            schur0->start_allocation();
+            assembly_steady_mh_matrix(); // preallocation
+            VecZeroEntries(schur0->get_solution());
+            schur0->start_add_assembly(); // finish allocation and create matrix
+        }
     }
 
     END_TIMER("PREALLOCATION");
 
     START_TIMER("ASSEMBLY");
 
-    schur0->start_add_assembly(); // finish allocation and create matrix
     assembly_steady_mh_matrix(); // fill matrix
     schur0->finalize();
 
@@ -1161,6 +1175,25 @@ void DarcyFlowMH_Steady::prepare_parallel() {
         //std::copy( global_row_4_sub_row.begin(), global_row_4_sub_row.end(), std::ostream_iterator<int>( std::cout, " " ) );
     }
 }
+
+
+void DarcyFlowMH::create_full_numbering( std::vector<unsigned> & indices )  {
+        ASSERT( mesh_ != NULL, " Mesh not loaded.");
+        unsigned size = rows_ds->size( );
+        indices.reserve(size);
+        FOR_ELEMENTS(mesh_, ele) {
+            for (int i = 0; i < nsides; i++)
+                indices.push_back( side_row_4_id[ mh_dh.side_dof( el->side(i) ) ] );
+        }
+        FOR_ELEMENTS(mesh_, ele) {
+            indices.push_back( row_4_el_[ele.index()] );
+        }
+        FOR_EDGES(mesh_, edg) {
+            indices.push_back( row_4_edge_[edg.index()] );
+        }
+        ASSERT( indices.size() == size, "Size of array does not match number of fills.\n" );
+}
+
 
 void mat_count_off_proc_values(Mat m, Vec v) {
     int n,first,last;

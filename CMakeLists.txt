@@ -72,9 +72,7 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 find_package(PETSc 3.2.0 REQUIRED)
 find_package(PARMETIS)
 
-
-
-
+find_package(BDDCML REQUIRED)
 
 # find boost or use our own
 #
@@ -145,6 +143,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
+    ${BDDCML_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
 )

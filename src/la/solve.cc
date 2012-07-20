@@ -33,8 +33,8 @@
 
 #include <ctype.h>
 #include <strings.h>
-#include <petscksp.h>
-#include <petscviewer.h>
+//#include <petscksp.h>
+//#include <petscviewer.h>
 
 #include "system/system.hh"
 #include "system/par_distribution.hh"
@@ -48,7 +48,7 @@ static void RunExtern( struct Solver *solver,char *cmdline,void (*write_sys)(str
 static void clean_directory(void);
 
 // internal solvers
-static void solver_petsc(struct Solver *solver);
+//static void solver_petsc(struct Solver *solver);
 
 // drivers for external solvers
 // MATLAB
@@ -117,6 +117,7 @@ void solver_set_type( Solver *solver )
     solver->type=UNKNOWN;
     TEST_TYPE("petsc",PETSC_SOLVER);
     TEST_TYPE("petsc_matis",PETSC_MATIS_SOLVER);
+    TEST_TYPE("bddcml",BDDCML_SOLVER);
     TEST_TYPE("si2",SI2);
     TEST_TYPE("gi8",GI8);
     TEST_TYPE("isol",ISOL);
@@ -151,7 +152,7 @@ void solve_system( struct Solver *solver, struct LinSys *system )
 			// internal solvers
 	        case PETSC_SOLVER:
 	        case PETSC_MATIS_SOLVER:
-	        	solver_petsc( solver );
+//	        	solver_petsc( solver );
 	            break;
 	        // external solvers
 	      	case ISOL:
@@ -275,154 +276,154 @@ void clean_directory( void )
  * @}
  */
 
-void solver_petsc(Solver *solver)
-{
-	LinSys *sys=solver->LinSys;
-	KSP System;
-	KSPConvergedReason Reason;
-        //PetscViewer mat_view;
-	const char *petsc_dflt_opt;
-	char *petsc_str;
-	int nits;
-
-	F_ENTRY;
-
-	//LSView(sys);
-
-	if (solver->type == PETSC_MATIS_SOLVER) {
-           if (sys->ds().np() > 1) {
-
-	       // parallel setting
-              if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
-              else
-                  if (sys->is_symmetric())
-                     petsc_dflt_opt="-ksp_type minres -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
-	          else
-                     petsc_dflt_opt="-ksp_type bcgs -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
-
-	   } else {
-	       // serial setting
-              if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
-              else
-                  if (sys->is_symmetric())
-                     petsc_dflt_opt="-ksp_type minres -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
-	          else
-                     petsc_dflt_opt="-ksp_type bcgs -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
-	   }
-	}
-	else
-	{
-	   // -mat_no_inode ... inodes are usefull only for
-           //  vector problems e.g. MH without Schur complement reduction	
-           if (sys->ds().np() > 1) {
-	       // parallel setting
-              if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite -sub_pc_factor_fill 6.0";
-                  //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
-                  // -ksp_type preonly -pc_type lu 
-              else
-                  petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3";
-
-	   } else {
-	       // serial setting
-              if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
-              else
-                  petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
-	   }
-	}
-	petsc_str=OptGetStr("Solver","Solver_params",petsc_dflt_opt);
-	xprintf(MsgVerb,"inserting petsc options: %s\n",petsc_str);
-	
-/**
- *
- *  \input{Solver,petsc_options}
- *          PETSC options string, user can overwrite default choice of solver and preconditioner\n
- *          (see doc/petsc_help or flow123 -s ... -help)
- */
- 	 
-	 
-	PetscOptionsInsertString(petsc_str); // overwrites previous options values
-	xfree(petsc_str);
-    
-        MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
-
-
-    //    xprintf(Msg,"View KSP system\n");
-        //Mat matrixForPrint;
-        //PetscErrorCode ierr;
-        //PetscInt m, n;
-        //MatGetSize( sys->get_matrix(), &m, &n );
-
-        //ierr = MatCreate( PETSC_COMM_WORLD, &matrixForPrint ); CHKERRV( ierr ); 
-        //ierr = MatSetType( matrixForPrint, MATMPIAIJ ); CHKERRV( ierr ); 
-        //ierr = MatSetSizes( matrixForPrint, PETSC_DECIDE, PETSC_DECIDE, m, n ); 
-
-        //std::cout << "Size of the matrix is :" << m << ", " << n << std::endl;
-        //Vec auxIn, auxOut;
-        //for ( int i = 0; i < n; i++ ) {
-        //    // create auxiliary vector of unit matrix
-        //    ierr = MatGetVecs( sys->get_matrix(), &auxIn, &auxOut ); CHKERRV( ierr );
-
-        //    VecSetValue( auxIn, i, 1., INSERT_VALUES );
-        //    ierr = VecAssemblyBegin( auxIn ); CHKERRV( ierr ); 
-        //    ierr = VecAssemblyEnd(   auxIn ); CHKERRV( ierr ); 
- 
-        //    ierr = MatMult( sys->get_matrix(), auxIn, auxOut ); CHKERRV( ierr ); 
-
-        //    PetscInt low, high;
-        //    VecGetOwnershipRange( auxOut, &low, &high );
-        //    PetscInt locSize = high - low;
-
-        //    PetscScalar *values;
-        //    VecGetArray( auxOut, &values );
-
-        //    std::vector<PetscInt> rows;
-        //    std::vector<PetscInt> columns;
-        //    for ( int j = low; j < high; j++ ) {
-        //        rows.push_back( j );
-        //    }
-        //    columns.push_back( i );
-
-        //    MatSetValues( matrixForPrint, locSize, &(rows[0]), 1, &(columns[0]), values, INSERT_VALUES );
-
-        //    VecRestoreArray( auxOut, &values );
-        //    VecDestroy( auxIn );
-        //    VecDestroy( auxOut );
-        //}
-        //ierr = MatAssemblyBegin( matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
-        //ierr = MatAssemblyEnd(   matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
-
-
-        //PetscViewer matViewer;
-        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "matrix.m", &matViewer );
-        //PetscViewerSetFormat(matViewer,PETSC_VIEWER_ASCII_MATLAB);
-        //MatView( matrixForPrint, matViewer );
-        //MatDestroy( matrixForPrint );
-        //PetscViewerDestroy(matViewer);
-
-        //PetscViewer rhsViewer;
-        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "rhs.m", &rhsViewer );
-        //PetscViewerSetFormat(rhsViewer,PETSC_VIEWER_ASCII_MATLAB);
-        //VecView( sys->get_rhs(), rhsViewer );
-        //PetscViewerDestroy(rhsViewer);
-
-	KSPCreate(PETSC_COMM_WORLD,&System);
-	KSPSetOperators(System, sys->get_matrix(), sys->get_matrix(), DIFFERENT_NONZERO_PATTERN);
-	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
-	KSPSetFromOptions(System);
-	KSPSolve(System, sys->get_rhs(), sys->get_solution());
-	KSPGetConvergedReason(System,&Reason);
-	KSPGetIterationNumber(System,&nits);
-
-	// TODO: make solver part of LinSyt, and make gatter for num of it
-	xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", Reason, nits);
-    Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
-	KSPDestroy(&System);
-
-}
+//void solver_petsc(Solver *solver)
+//{
+//	LinSys *sys=solver->LinSys;
+//	KSP System;
+//	KSPConvergedReason Reason;
+//        //PetscViewer mat_view;
+//	const char *petsc_dflt_opt;
+//	char *petsc_str;
+//	int nits;
+//
+//	F_ENTRY;
+//
+//	//LSView(sys);
+//
+//	if (solver->type == PETSC_SOLVER) 
+//        //   if (sys->ds().np() > 1) {
+//
+//	//       // parallel setting
+//        //      if (sys->is_positive_definite())
+//        //          petsc_dflt_opt="-ksp_type cg -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+//        //      else
+//        //          if (sys->is_symmetric())
+//        //             petsc_dflt_opt="-ksp_type minres -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+//	//          else
+//        //             petsc_dflt_opt="-ksp_type bcgs -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+//
+//	//   } else {
+//	//       // serial setting
+//        //      if (sys->is_positive_definite())
+//        //          petsc_dflt_opt="-ksp_type cg -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+//        //      else
+//        //          if (sys->is_symmetric())
+//        //             petsc_dflt_opt="-ksp_type minres -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+//	//          else
+//        //             petsc_dflt_opt="-ksp_type bcgs -pc_type nn -nn_coarse_pc_factor_mat_solver_package mumps -is_localD_pc_factor_mat_solver_package mumps -is_localN_pc_factor_mat_solver_package mumps";
+//	//   }
+//	//}
+//	//else
+//	{
+//	   // -mat_no_inode ... inodes are usefull only for
+//           //  vector problems e.g. MH without Schur complement reduction	
+//           if ((sys->get_ds())->np() > 1) {
+//	       // parallel setting
+//              if (sys->is_positive_definite())
+//                  petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite -sub_pc_factor_fill 6.0";
+//                  //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
+//                  // -ksp_type preonly -pc_type lu 
+//              else
+//                  petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3";
+//
+//	   } else {
+//	       // serial setting
+//              if (sys->is_positive_definite())
+//                  petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
+//              else
+//                  petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
+//	   }
+//	}
+//	petsc_str=OptGetStr("Solver","Solver_params",petsc_dflt_opt);
+//	xprintf(MsgVerb,"inserting petsc options: %s\n",petsc_str);
+//	
+///**
+// *
+// *  \input{Solver,petsc_options}
+// *          PETSC options string, user can overwrite default choice of solver and preconditioner\n
+// *          (see doc/petsc_help or flow123 -s ... -help)
+// */
+// 	 
+//	 
+//	PetscOptionsInsertString(petsc_str); // overwrites previous options values
+//	xfree(petsc_str);
+//    
+//        MatSetOption(sys->get_matrix(), MAT_USE_INODES, PETSC_FALSE);
+//
+//
+//    //    xprintf(Msg,"View KSP system\n");
+//        //Mat matrixForPrint;
+//        //PetscErrorCode ierr;
+//        //PetscInt m, n;
+//        //MatGetSize( sys->get_matrix(), &m, &n );
+//
+//        //ierr = MatCreate( PETSC_COMM_WORLD, &matrixForPrint ); CHKERRV( ierr ); 
+//        //ierr = MatSetType( matrixForPrint, MATMPIAIJ ); CHKERRV( ierr ); 
+//        //ierr = MatSetSizes( matrixForPrint, PETSC_DECIDE, PETSC_DECIDE, m, n ); 
+//
+//        //std::cout << "Size of the matrix is :" << m << ", " << n << std::endl;
+//        //Vec auxIn, auxOut;
+//        //for ( int i = 0; i < n; i++ ) {
+//        //    // create auxiliary vector of unit matrix
+//        //    ierr = MatGetVecs( sys->get_matrix(), &auxIn, &auxOut ); CHKERRV( ierr );
+//
+//        //    VecSetValue( auxIn, i, 1., INSERT_VALUES );
+//        //    ierr = VecAssemblyBegin( auxIn ); CHKERRV( ierr ); 
+//        //    ierr = VecAssemblyEnd(   auxIn ); CHKERRV( ierr ); 
+// 
+//        //    ierr = MatMult( sys->get_matrix(), auxIn, auxOut ); CHKERRV( ierr ); 
+//
+//        //    PetscInt low, high;
+//        //    VecGetOwnershipRange( auxOut, &low, &high );
+//        //    PetscInt locSize = high - low;
+//
+//        //    PetscScalar *values;
+//        //    VecGetArray( auxOut, &values );
+//
+//        //    std::vector<PetscInt> rows;
+//        //    std::vector<PetscInt> columns;
+//        //    for ( int j = low; j < high; j++ ) {
+//        //        rows.push_back( j );
+//        //    }
+//        //    columns.push_back( i );
+//
+//        //    MatSetValues( matrixForPrint, locSize, &(rows[0]), 1, &(columns[0]), values, INSERT_VALUES );
+//
+//        //    VecRestoreArray( auxOut, &values );
+//        //    VecDestroy( auxIn );
+//        //    VecDestroy( auxOut );
+//        //}
+//        //ierr = MatAssemblyBegin( matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
+//        //ierr = MatAssemblyEnd(   matrixForPrint, MAT_FINAL_ASSEMBLY ); CHKERRV( ierr ); 
+//
+//
+//        //PetscViewer matViewer;
+//        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "matrix.m", &matViewer );
+//        //PetscViewerSetFormat(matViewer,PETSC_VIEWER_ASCII_MATLAB);
+//        //MatView( matrixForPrint, matViewer );
+//        //MatDestroy( matrixForPrint );
+//        //PetscViewerDestroy(matViewer);
+//
+//        //PetscViewer rhsViewer;
+//        //PetscViewerASCIIOpen( PETSC_COMM_WORLD, "rhs.m", &rhsViewer );
+//        //PetscViewerSetFormat(rhsViewer,PETSC_VIEWER_ASCII_MATLAB);
+//        //VecView( sys->get_rhs(), rhsViewer );
+//        //PetscViewerDestroy(rhsViewer);
+//
+//	KSPCreate(PETSC_COMM_WORLD,&System);
+//	KSPSetOperators(System, sys->get_matrix(), sys->get_matrix(), DIFFERENT_NONZERO_PATTERN);
+//	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
+//	KSPSetFromOptions(System);
+//	KSPSolve(System, sys->get_rhs(), sys->get_solution());
+//	KSPGetConvergedReason(System,&Reason);
+//	KSPGetIterationNumber(System,&nits);
+//
+//	// TODO: make solver part of LinSyt, and make gatter for num of it
+//	xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", Reason, nits);
+//    Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
+//	KSPDestroy(&System);
+//
+//}
 
 //=============================================================================
 //=============================================================================
@@ -577,12 +578,17 @@ void read_sol_matlab( struct Solver *solver )
 
 	in = xfopen( "solution.dat", "rt" );
 	int loc_row=0;
+        std::vector<double> solution(sys->size());
 	for( mi = 0; mi < sys->size(); mi++ )
 	{
         xfscanf( in, "%lf", value );
-        if (sys->ds().is_local(mi)) *(sys->get_solution_array() + loc_row)=value;
+
+        solution[mi] = value;
+
 	}
 	xfclose( in );
+
+        sys -> set_whole_solution( solution );
 }
 
 //-----------------------------------------------------------------------------
