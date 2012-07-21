@@ -140,7 +140,7 @@ set(sources_lib_semchem
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARY_DIRS})
+target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
 
 # input_lib
 add_library(input_lib ${sources_lib_input})

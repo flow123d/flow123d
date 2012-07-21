@@ -41,6 +41,9 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
 
+if (NOT EXTERNAL_PROJECT_DIR)
+    set(EXTERNAL_PROJECT_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external_projects)
+endif()    
 
 # Project name and language(s)
 project(Flow123d CXX C)
@@ -59,53 +62,89 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
 list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
-#in_source builds should buitd in ./build subdirectory
-# this doesn;t work :-(
-#if (${CMAKE_BINARY_DIR} EQUAL ${CMAKE_SOURCE_DIR}) 
-#  set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
-#endif()
-
 ######################################################################### find libraries
-
-# We are looking for PETSC, f succed this module set:
-#  PETSC_FOUND        - system has PETSc
-#  PETSC_INCLUDES     - the PETSc include directories
-#  PETSC_LIBRARIES    - Link these to use PETSc
-#  PETSC_COMPILER     - Compiler used by PETSc, helpful to find a compatible MPI
-#  PETSC_DEFINITIONS  - Compiler switches for using PETSc
-#  PETSC_MPIEXEC      - Executable for running MPI programs
-#  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-
-find_package(PETSc 3.2.0)
-find_package(PARMETIS)
-
-
-
-
+#
 # find boost or use our own
 #
-find_package(Boost 1.42.0 EXACT)
+# - Try to find Boost include dirs and libraries
+#
+# NOTE: Take note of the Boost_ADDITIONAL_VERSIONS variable below.
+# Due to Boost naming conventions and limitations in CMake this find
+# module is NOT future safe with respect to Boost version numbers,
+# and may break.
+#
+# Input variables:
+#
+#   Boost_USE_MULTITHREADED      Can be set to OFF to use the non-multithreaded
+#   Boost_USE_STATIC_LIBS        Can be set to ON to force the use of the static
+#   Boost_NO_SYSTEM_PATHS        Set to TRUE to suppress searching in system (or other locations outside of BOOST_ROOT or BOOST_INCLUDEDIR).
+#   Boost_USE_STATIC_RUNTIME     If enabled, searches for boost libraries linked against a static C++ standard library
+#   Boost_USE_DEBUG_PYTHON       
+#   Boost_USE_STLPORT            If enabled, searches for boost libraries compiled against the STLPort standard
+#   Boost_USE_STLPORT_DEPRECATED_NATIVE_IOSTREAMS    If enabled, searches for boost libraries compiled against the deprecated STLPort "native iostreams" feature ('n' ABI tag).
+#   Boost_ADDITIONAL_VERSIONS    A list of version numbers to use for searching
+#   Boost_DEBUG                  Set this to TRUE to enable debugging output
+#   Boost_DETAILED_FAILURE_MSG   FindBoost doesn't output detailed information
+#   Boost_COMPILER               Set this to the compiler suffix used by Boost
+#   Boost_THREADAPI                When building boost.thread, sometimes the name of the library contains an additional "pthread" or "win32"
+#   Boost_REALPATH               Resolves symbolic links for discovered boost libraries
+#
+#
+#   BOOST_ROOT or BOOSTROOT      The preferred installation prefix for searching for
+#                                back on the system paths, set Boost_NO_SYSTEM_PATHS
+#   BOOST_INCLUDEDIR             Set this to the include directory of Boost, if the
+#   BOOST_LIBRARYDIR             Set this to the lib directory of Boost, if the
+#
+# Variables defined by this module:
+#
+#   Boost_FOUND                         System has Boost, this means the include dir was
+#   Boost_INCLUDE_DIRS                  Boost include directories: not cached
+#   Boost_INCLUDE_DIR                   This is almost the same as above, but this one is cached and may be modified by advanced users
+#   Boost_LIBRARIES                     Link to these to use the Boost libraries that you
+#   Boost_LIBRARY_DIRS                  The path to where the Boost library files are.
+#   Boost_VERSION                       The version number of the boost libraries that
+#   Boost_LIB_VERSION                   The version number in filename form as
+#   Boost_MAJOR_VERSION                 major version number of boost
+#   Boost_MINOR_VERSION                 minor version number of boost
+#   Boost_SUBMINOR_VERSION              subminor version number of boost
+#   Boost_LIB_DIAGNOSTIC_DEFINITIONS    [WIN32 Only] You can call
+#   Boost_${COMPONENT}_FOUND            True IF the Boost library "component" was found.
+#   Boost_${COMPONENT}_LIBRARY          Contains the libraries for the specified Boost
+
+set(Boost_USE_STATIC_LIBS       ON)
+set(Boost_USE_MULTITHREADED     OFF)
+set(Boost_USE_STATIC_RUNTIME    OFF)
+set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost)  
+set(REQUIRED_Boost_COMPONENTS program_options serialization)
+
+set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+find_package(Boost 1.42.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+
 if (NOT Boost_FOUND) 
-  message(STATUS "Try to use our essential Boost subset.")
+  message(STATUS "Try to install our own Boost.")
+
+  
+  include(InstallBoost)  
+  
   unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
   unset(Boost_LIBRARY_DIRS CACHE)
   unset(Boost_LIB_VERSION CACHE)
-  unset(Boost_VERSION CACHE)  
-
-  set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-  find_package(Boost 1.42.0 EXACT REQUIRED)
-  
-  # hint same Boost to armadillo 
-  set(Armadillo_Boost_Hint  -D BOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
+  unset(Boost_VERSION CACHE)    
+  find_package( Boost 1.42.0 REQUIRED COMPONENTS ${REQUIRED_Boost_COMPONENTS}  )
+   
 endif()
-set(Boost_LIBS -lboost_program_options)
-message(STATUS "Boost_INCLUDE_DIR = ${Boost_INCLUDE_DIR}")
+message(STATUS "boost root: ${BOOST_ROOT}")
 
+   
 
 # find aramdillo or use our own
 # FindAramdillo returs:
 # Aramdillo_INCLUDE_DIRS
 # Armadillo_LIBRARIES
+
+# hint same Boost to armadillo 
+set(Armadillo_Boost_Hint  -D BOOST_ROOT=${BOOST_ROOT})
+
 find_package(Armadillo)
 if (NOT Armadillo_FOUND)
 
@@ -128,6 +167,18 @@ endif()
 
 message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
 
+
+# We are looking for PETSC, f succed this module set:
+#  PETSC_FOUND        - system has PETSc
+#  PETSC_INCLUDES     - the PETSc include directories
+#  PETSC_LIBRARIES    - Link these to use PETSc
+#  PETSC_COMPILER     - Compiler used by PETSc, helpful to find a compatible MPI
+#  PETSC_DEFINITIONS  - Compiler switches for using PETSc
+#  PETSC_MPIEXEC      - Executable for running MPI programs
+#  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
+
+find_package(PETSc 3.2.0)
+find_package(PARMETIS)
 
 
 # check for subversion and prepare generating of file with revision info.
