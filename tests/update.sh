@@ -6,10 +6,12 @@
 #  Recursively updates all files in <dir_to_update> by corresponding files in <source_dir>
 #  Reports an error if the file or irectory in <source_dir> doesn't exist.
 
+#set -x
+
 function update_dir {
   
-  target_dir=$1
-  source_dir=$2
+  local target_dir=$1
+  local source_dir=$2
   
   for item in `ls ${target_dir}/`
   do
@@ -24,7 +26,7 @@ function update_dir {
     else
       if [ ! -e "${source_dir}/${item}" ]
       then
-        echo "Missing file in test result."
+        echo "Missing file '${source_dir}/${item}' in test result."
         return 1
       fi
       
