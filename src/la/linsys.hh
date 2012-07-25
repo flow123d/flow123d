@@ -106,14 +106,30 @@ public:
      *
      * @param comm - MPI communicator
      */
-    LinSys( unsigned lsize, MPI_Comm comm = MPI_COMM_WORLD )
-      : lsize_(lsize), comm_( comm ), positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ),
-        status_( NONE )
+    LinSys( unsigned lsize, 
+            Distribution * rows_ds,
+            double *sol_array = NULL,
+            MPI_Comm comm = MPI_COMM_WORLD )
+      : lsize_(lsize), rows_ds_(rows_ds), comm_( comm ), 
+        positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ), status_( NONE )
     { 
         int lsizeInt = static_cast<int>( lsize );
         int sizeInt;
         MPI_Allreduce ( &lsizeInt, &sizeInt, 1, MPI_INT, MPI_SUM, comm_ );
         size_ = static_cast<unsigned>( sizeInt );
+
+        // create PETSc solution
+        if (sol_array == NULL) {
+            v_solution_   = new double[ rows_ds_->lsize() + 1 ];
+            own_solution_ = true;
+        }
+        else {
+            v_solution_ = sol_array;
+            own_solution_ = false;
+        }
+        PetscErrorCode ierr;
+        ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
+
     };
 
     // Particular type of the linear system.
@@ -168,18 +184,19 @@ public:
     /**
      *  Returns PETSC vector with solution. Underlying array can be provided on construction.
      */
-    virtual const Vec &get_solution()
-    {
-        ASSERT( false, "Function get_solution is not implemented for linsys type %d \n.", this -> type );
+    const Vec &get_solution()
+    { 
+        return solution_; 
     }
 
     /**
      *  Returns PETSC subarray with solution. Underlying array can be provided on construction.
      */
-    virtual double *get_solution_array()
-    {
-        ASSERT( false, "Function get_solution_array is not implemented for linsys type %d \n.", this -> type );
+    double *get_solution_array()
+    { 
+        return v_solution_; 
     }
+
     
     /**
      * Returns whole solution vector.
@@ -363,8 +380,12 @@ public:
         ASSERT( false, "Function view is not implemented for linsys type %d \n.", this -> type );
     }
 
-    virtual ~LinSys()
-    { };
+    ~LinSys()
+    { 
+       PetscErrorCode ierr;
+       ierr = VecDestroy(&solution_); CHKERRV( ierr );
+       if ( own_solution_ ) delete[] v_solution_;
+    };
 
 protected:
     MPI_Comm         comm_;
@@ -373,9 +394,15 @@ protected:
     const unsigned   lsize_;          //!< local number of matrix rows (non-overlapping division of rows)
     unsigned          size_;          //!< global number of matrix rows, i.e. problem size
 
+    const Distribution * rows_ds_;   //!< final distribution of rows of MH matrix
+
     bool             symmetric_;
     bool             positive_definite_;
     bool             spd_via_symmetric_general_;
+
+    Vec      solution_;          //!< PETSc vector constructed with vb array.
+    double  *v_solution_;        //!< local solution array pointing into Vec solution_
+    bool     own_solution_;      //!< Indicates if the solution array has been allocated by this class
 
     ConstraintVec_   constraints_;
 

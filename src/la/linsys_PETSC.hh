@@ -65,16 +65,6 @@ public:
         return rhs_; 
     }
 
-    const Vec &get_solution()
-    { 
-        return solution_; 
-    }
-
-    double *get_solution_array()
-    { 
-        return v_solution_; 
-    }
-
     void start_allocation();
 
     void start_add_assembly();
@@ -125,15 +115,10 @@ private:
 
 private:
 
-    const Distribution * rows_ds_;   //!< final distribution of rows of MH matrix
-
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
-    Vec     solution_;           //!< PETSc vector constructed with vb array.
 
     double  *v_rhs_;             //!< local RHS array pointing to Vec rhs_
-    double  *v_solution_;        //!< local solution array pointing into Vec solution_
-    bool     own_solution_;      //!< Indicates if the solution array has been allocated by this class
 
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.

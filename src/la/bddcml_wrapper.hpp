@@ -1,8 +1,8 @@
 //! @author Jakub Sistek
 //! @date   5/2011
 
-#ifndef la_systemsolvebddc_h
-#define la_systemsolvebddc_h
+#ifndef la_bddcml_wrapper_h
+#define la_bddcml_wrapper_h
 //------------------------------------------------------------------------------
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/vector.hpp>
@@ -10,7 +10,7 @@
 #include <vector>
 #include <set>
 #include <cmath>
-#include <la/Triplet.hpp>
+#include <la/matrix_coo.hpp>
 
 #include <system/global_defs.h>
 #include <system/xio.h>
@@ -21,7 +21,7 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 namespace la{
-    class SystemSolveBddc;
+    class BddcmlWrapper;
     namespace ublas = boost::numeric::ublas;
 
     namespace detail_{
@@ -48,10 +48,10 @@ namespace la{
  *  by multilevel BDDC implementation in BDDCML solver. 
  *
  *  The class uses assembly of the matrix into 
- *  the triplet format implemented in Triplet.hpp file.
+ *  the coordinate matrix format implemented in matrix_coo.hpp file.
  *
- *  prepareMatAssembly - (optional) - reserves memory for sparse triplet
- *  insertToMatrix     - called many times, inserts values into triplet
+ *  prepareMatAssembly - (optional) - reserves memory for sparse coordinate matrix
+ *  insertToMatrix     - called many times, inserts values into coordinate matrix
  *  insertToRhs        - called many times, inserts values into RHS.
  *                       If matrix is created and assembled, structure of the vector is deduced from it. 
  *                       Otherwise, it is created as empty.
@@ -61,7 +61,7 @@ namespace la{
  *                       and these can be accelerated and be more memory efficient by specifying proper matrixType
  *  solveSystem        - solves the system
  */
-class la::SystemSolveBddc
+class la::BddcmlWrapper
 {
 public:
     enum matrixTypeEnum { 
@@ -86,14 +86,14 @@ public:
     //! (optional) type of matrix,
     //! (optional) communicator ( MPI_COMM_WORLD is the default ),
     //! (optional) number of subdomains ( if not given, use number of processes ),
-    SystemSolveBddc( const unsigned numDofs,
-                     const unsigned numDofsSub,
-                     const MatrixType matrixType = GENERAL,
-                     const MPI_Comm comm = MPI_COMM_WORLD, 
-                     int numSubLoc = 1 );
+    BddcmlWrapper( const unsigned numDofs,
+                   const unsigned numDofsSub,
+                   const MatrixType matrixType = GENERAL,
+                   const MPI_Comm comm = MPI_COMM_WORLD, 
+                   int numSubLoc = 1 );
 
     //! Destructor frees the BDDCML structures
-    ~SystemSolveBddc();
+    ~BddcmlWrapper();
 
     //! Load raw data about mesh
     void loadRawMesh( const int nDim, const int numNodes, const int numDofs,
@@ -106,22 +106,22 @@ public:
                       const std::vector<double> & xyz,
                       const int meshDim = 0 );
 
-    //! Prepare assembly of matrix - reserve space in underlying triplet object
+    //! Prepare assembly of matrix - reserve space in underlying coordinate matrix object
     void prepareMatAssembly( unsigned numElements, unsigned elMatSize );
 
-    //! insert submatrix to system matrix - into triplet object
+    //! insert submatrix to system matrix - into coordinate matrix object
     void insertToMatrix( const SubMat_ & eStiff, 
                          const VecUint_ & rowIndices,
                          const VecUint_ & colIndices );
 
-    //! Finalize assembly of matrix triplet
+    //! Finalize assembly of matrix
     void finishMatAssembly( );
 
     //! insert subvector to system rhs vector
     void insertToRhs( const SubVec_ & eForce, const VecUint_ & dofIndices );
 
     //! Outputs
-    void writeMatrix(   std::ostream & out ) { triplet_.write( out ); }
+    void writeMatrix(   std::ostream & out ) { coo_.write( out ); }
 
     //! Compatibility call which does absolutely nothing
     void finishAssembly( ) { }
@@ -169,9 +169,9 @@ public:
     //! Fill matrix with zeros
     void clearMatrix( ) { 
         // remember length
-        unsigned length = triplet_.nnz( );
-        triplet_.clear( ); 
-        triplet_.prepareAssembly( length );
+        unsigned length = coo_.nnz( );
+        coo_.clear( ); 
+        coo_.prepareAssembly( length );
     }
     //! Fill RHS with zeros
     void clearRhs( )    { 
@@ -193,7 +193,7 @@ public:
 
     //! Destroy matrix
     void destroyMatrix( ) { 
-        triplet_.clear( ); 
+        coo_.clear( ); 
     }
     //! Destroy RHS
     void destroyRhs( )    { rhsVec_.clear( ); }
@@ -248,7 +248,7 @@ private:
     std::vector<int>     ifix_;            //!< indices of fixed boundary conditions - ( 0 for free variable, 1 for constrained dof )
     std::vector<double>  fixv_;            //!< values of fixed boundary conditions at places of ifix_ - values outside fixed dofs are ignored
 
-    la::Triplet<int,double>  triplet_; //!< matrix in triplet format
+    la::MatrixCoo<int,double>  coo_;       //!< matrix in coordinate format (COO)
     bool                 isMatAssembled_;  //!< true if matrix is assembled
 
     std::vector<double>  rhsVec_;          //!< vector with RHS values restricted to subdomain, i.e. values are repeated at shared nodes
@@ -269,7 +269,7 @@ private:
 
 //-----------------------------------------------------------------------------
 
-#include "SystemSolveBddc.ipp"
+#include "bddcml_wrapper.ipp"
 
 //-----------------------------------------------------------------------------
 

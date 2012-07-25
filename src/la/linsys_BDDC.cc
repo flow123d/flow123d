@@ -31,41 +31,43 @@
 
 #include <mpi.h>
 
-// need OpenFTL BDDC wrapper
-#include "la/SystemSolveBddc.hpp"
+// need BDDCML wrapper
+#include "la/bddcml_wrapper.hpp"
 
 #include "la/linsys_BDDC.hh"
 
 
 LinSys_BDDC::LinSys_BDDC( const unsigned lsize,
                           const unsigned numDofsSub,
-                          const MPI_Comm comm, 
+                          Distribution * rows_ds,
+                          double *sol_array,
+                          const MPI_Comm comm,
                           const int matrixTypeInt,
                           const int  numSubLoc )
-        : LinSys( lsize, comm )
+        : LinSys( lsize, rows_ds, sol_array, comm )
 {
     // set type
     type = LinSys::BDDC;
 
-    la::SystemSolveBddc::MatrixType matrixType;
+    la::BddcmlWrapper::MatrixType matrixType;
     switch ( matrixTypeInt ) {
         case 0:
-            matrixType = la::SystemSolveBddc::GENERAL;
+            matrixType = la::BddcmlWrapper::GENERAL;
             break;
         case 1:
-            matrixType = la::SystemSolveBddc::SPD;
+            matrixType = la::BddcmlWrapper::SPD;
             break;
         case 2:
-            matrixType = la::SystemSolveBddc::SYMMETRICGENERAL;
+            matrixType = la::BddcmlWrapper::SYMMETRICGENERAL;
             break;
         case 3:
-            matrixType = la::SystemSolveBddc::SPD_VIA_SYMMETRICGENERAL;
+            matrixType = la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL;
             break;
         default:
             ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
     }
 
-    solver_ = new Solver_( size_,
+    bddcml_ = new Bddcml_( size_,
                            numDofsSub,
                            matrixType,
                            comm, 
@@ -73,6 +75,16 @@ LinSys_BDDC::LinSys_BDDC( const unsigned lsize,
 
     // set type
     type = LinSys::BDDC;
+
+    // prepare space for local solution
+    locSolution_.resize( numDofsSub );
+
+    // identify it with PETSc vector
+    PetscErrorCode ierr;
+    PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
+    ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
+    CHKERRV( ierr );
+
 }
 
 void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDofs,
@@ -90,7 +102,47 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
     ASSERT( numDofs == size_, "Global problem size mismatch!" );
 
-    solver_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, meshDim );
+    bddcml_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, meshDim );
+
+
+    // create a map for BDDCML to PETSc vector
+    PetscErrorCode ierr;
+
+    // local index set
+    PetscInt numDofsSubInt = static_cast<int>( isngn_.size( ) );
+    std::vector<PetscInt> idx( isngn_ );
+
+    //std::cout << "IDX: \n";
+    //std::copy( idx.begin(), idx.end(), std::ostream_iterator<PetscInt>( std::cout, " " ) );
+    
+    ISLocalToGlobalMapping subdomainMapping;
+    ierr = ISLocalToGlobalMappingCreate( comm_, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
+    
+    IS subdomainIndexSet;
+    IS from;
+    ierr = ISCreateStride( PETSC_COMM_SELF, numDofsSubInt, 0, 1, &subdomainIndexSet ); 
+    ierr = ISLocalToGlobalMappingApplyIS( subdomainMapping, subdomainIndexSet, &from ); 
+
+    //ierr = ISCreateGeneral( comm_, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
+    //ISView( subdomainIndexSet, PETSC_VIEWER_STDOUT_WORLD);
+    
+
+    // create scatter from parallel PETSc vector to local indices of subdomain
+    ierr = VecScatterCreate( solution_, from, locSolVec_, subdomainIndexSet, &VSpetscToSubScatter_ ); CHKERRV( ierr );
+    ierr = ISDestroy( &subdomainIndexSet ); CHKERRV( ierr );
+    ierr = ISDestroy( &from ); CHKERRV( ierr );
+
+    //VecScatterView(VSpetscToSubScatter_,PETSC_VIEWER_STDOUT_SELF);
+    
+    double * locSolVecArray;
+    ierr = VecGetArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
+    std::copy( locSolution_.begin(), locSolution_.end(), locSolVecArray );
+    ierr = VecRestoreArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
+
+    // scatter local solutions back to global one
+    VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
+    VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
+
 }
 
 void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
@@ -110,7 +162,7 @@ void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, doub
         }
     }
 
-    solver_ -> insertToMatrix( mat, myRows, myCols );
+    bddcml_ -> insertToMatrix( mat, myRows, myCols );
 } 
 
 void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
@@ -126,17 +178,17 @@ void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
         vec( i ) = vals[i];
     }
 
-    solver_ -> insertToRhs( vec, myRows );
+    bddcml_ -> insertToRhs( vec, myRows );
 }
 
 void LinSys_BDDC::finish_assembly( )
 {
-    solver_ -> finishMatAssembly( );
+    bddcml_ -> finishMatAssembly( );
 }
 
 void LinSys_BDDC::apply_constrains( double scalar )
 {
-    solver_ -> applyConstraints( constraints_, 1., scalar );
+    bddcml_ -> applyConstraints( constraints_, 1., scalar );
 }
 
 int LinSys_BDDC::solve( )
@@ -153,13 +205,25 @@ int LinSys_BDDC::solve( )
                                                 //!< ( used to stop diverging process )
     bool                use_adaptive   = false; //!< should adaptive BDDC be used?
 
-    solver_ -> solveSystem( tol, numLevels, numSubAtLevels, verboseLevel, maxIt, ndecrMax, use_adaptive );
+    bddcml_ -> solveSystem( tol, numLevels, numSubAtLevels, verboseLevel, maxIt, ndecrMax, use_adaptive );
 
-    DBGMSG("BDDCML converged reason: %d ( 0 means OK ) \n", solver_ -> giveConvergedReason() );
-    DBGMSG("BDDCML converged in %d iterations. \n", solver_ -> giveNumIterations() );
-    DBGMSG("BDDCML estimated condition number is %f \n", solver_ -> giveCondNumber() );
+    DBGMSG("BDDCML converged reason: %d ( 0 means OK ) \n", bddcml_ -> giveConvergedReason() );
+    DBGMSG("BDDCML converged in %d iterations. \n", bddcml_ -> giveNumIterations() );
+    DBGMSG("BDDCML estimated condition number is %f \n", bddcml_ -> giveCondNumber() );
 
-    return solver_ -> giveConvergedReason();
+    // download local solution
+    bddcml_ -> giveSolution( isngn_, locSolution_ ); 
+    return bddcml_ -> giveConvergedReason();
+
+    double * locSolVecArray;
+    PetscErrorCode ierr;
+    ierr = VecGetArray( locSolVec_, &locSolVecArray ); 
+    std::copy( locSolution_.begin(), locSolution_.end(), locSolVecArray );
+    ierr = VecRestoreArray( locSolVec_, &locSolVecArray ); 
+
+    // scatter local solutions back to global one
+    VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
+    VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
 }
 
 void LinSys_BDDC::get_whole_solution( std::vector<double> & globalSolution )
@@ -178,15 +242,19 @@ void LinSys_BDDC::set_whole_solution( std::vector<double> & globalSolution )
 LinSys_BDDC::~LinSys_BDDC()
 { 
     isngn_.clear(); 
-    delete solver_; 
+    locSolution_.clear(); 
+
+    PetscErrorCode ierr;
+    ierr = VecDestroy( &locSolVec_ ); CHKERRV( ierr );
+
+    ierr = VecScatterDestroy( &VSpetscToSubScatter_ ); CHKERRV( ierr );
+
+    delete bddcml_; 
 };
 
 // construct global solution
 void LinSys_BDDC::gatherSolution_( )
 {
-    // download local solution
-    std::vector<double> locSolution( isngn_.size() );
-    solver_ -> giveSolution( isngn_, locSolution ); 
     int ierr;
 
     // merge solution on root
@@ -196,11 +264,12 @@ void LinSys_BDDC::gatherSolution_( )
     MPI_Comm_size( comm_, &nProc );
 
     globalSolution_.resize( size_ );
+    std::vector<double> locSolutionNeib;
     if ( rank == 0 ) {
         // merge my own data
         for ( int i = 0; i < isngn_.size(); i++ ) {
             int ind = isngn_[i];
-            globalSolution_[ind] = locSolution[i];
+            globalSolution_[ind] = locSolution_[i];
         }
         for ( int iProc = 1; iProc < nProc; iProc++ ) {
             // receive length
@@ -213,13 +282,13 @@ void LinSys_BDDC::gatherSolution_( )
             ierr = MPI_Recv( &(inds[0]), length, MPI_INT, iProc, iProc, comm_, &status ); 
 
             // receive local solution
-            locSolution.resize( length );
-            ierr = MPI_Recv( &(locSolution[0]), length, MPI_DOUBLE, iProc, iProc, comm_, &status ); 
+            locSolutionNeib.resize( length );
+            ierr = MPI_Recv( &(locSolutionNeib[0]), length, MPI_DOUBLE, iProc, iProc, comm_, &status ); 
 
             // merge data
             for ( int i = 0; i < length; i++ ) {
                 int ind = inds[i];
-                globalSolution_[ind] = locSolution[i];
+                globalSolution_[ind] = locSolutionNeib[i];
             }
         }
     }
@@ -228,7 +297,7 @@ void LinSys_BDDC::gatherSolution_( )
         int length = isngn_.size();
         ierr = MPI_Send( &length,                1, MPI_INT,    0, rank, comm_ ); 
         ierr = MPI_Send( &(isngn_[0]),      length, MPI_INT,    0, rank, comm_ ); 
-        ierr = MPI_Send( &(locSolution[0]), length, MPI_DOUBLE, 0, rank, comm_ ); 
+        ierr = MPI_Send( &(locSolution_[0]), length, MPI_DOUBLE, 0, rank, comm_ ); 
     }
     // broadcast global solution from root
     ierr = MPI_Bcast( &(globalSolution_[0]), globalSolution_.size(), MPI_DOUBLE, 0, comm_ );

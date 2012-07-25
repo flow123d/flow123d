@@ -38,7 +38,7 @@ LinSys_PETSC::LinSys_PETSC( const unsigned lsize,
                             Distribution * rows_ds,
                             double *sol_array,
                             const MPI_Comm comm ) 
-        : LinSys( lsize, comm ), rows_ds_(rows_ds)
+        : LinSys( lsize, rows_ds, sol_array, comm )
 {
     // set type
     type = LinSys::PETSC;
@@ -49,17 +49,6 @@ LinSys_PETSC::LinSys_PETSC( const unsigned lsize,
     v_rhs_= new double[ rows_ds_->lsize() + 1 ];
     ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     //ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
-
-    // solution
-    if (sol_array == NULL) {
-        v_solution_   = new double[ rows_ds_->lsize() + 1 ];
-        own_solution_ = true;
-    }
-    else {
-        v_solution_ = sol_array;
-        own_solution_ = false;
-    }
-    ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
 }
 
 void LinSys_PETSC::start_allocation( )
@@ -367,10 +356,8 @@ LinSys_PETSC::~LinSys_PETSC( )
 
     ierr = MatDestroy(&matrix_); CHKERRV( ierr );
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
-    ierr = VecDestroy(&solution_); CHKERRV( ierr );
 
     delete[] v_rhs_;
-    if ( own_solution_ ) delete[] v_solution_;
 }
 
 void LinSys_PETSC::gatherSolution_( )

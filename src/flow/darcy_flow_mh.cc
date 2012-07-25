@@ -513,7 +513,7 @@ void DarcyFlowMH_Steady::make_schur0() {
     if (schur0 == NULL) { // create Linear System for MH matrix
 
         if (solver->type == BDDCML_SOLVER) {
-            schur0 = new LinSys_BDDC( lsize, global_row_4_sub_row.size(), MPI_COMM_WORLD, 3, 1 );
+            schur0 = new LinSys_BDDC( lsize, global_row_4_sub_row.size(), rows_ds, NULL, MPI_COMM_WORLD, 3, 1 );
         }
         else if (solver->type == PETSC_SOLVER) {
             schur0 = new LinSys_PETSC( lsize, rows_ds, NULL, PETSC_COMM_WORLD );
@@ -686,7 +686,7 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 
     delete schur0;
 
-    if (solver->type == PETSC_MATIS_SOLVER) {
+    if (solver->type == BDDCML_SOLVER) {
         global_row_4_sub_row.clear( );
     }
     solver_indices_.clear();  
@@ -1056,7 +1056,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     F_ENTRY;
     MPI_Barrier(PETSC_COMM_WORLD);
 
-    if (solver->type == PETSC_MATIS_SOLVER) {
+    if (solver->type == BDDCML_SOLVER) {
         xprintf(Msg,"Compute optimal partitioning of elements.\n");
 
         // prepare dual graph
@@ -1258,7 +1258,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     */
 
     // prepare global_row_4_sub_row
-    if (solver->type == PETSC_MATIS_SOLVER) {
+    if (solver->type == BDDCML_SOLVER) {
         //xprintf(Msg,"Compute mapping of local subdomain rows to global rows.\n");
 
         // initialize array

@@ -1,11 +1,8 @@
-//! @author Jakub Sistek, Thomas Rueberg
-//! @date   6/2011
-
-#ifndef la_triplet_h
-#define la_triplet_h
+#ifndef la_matrix_coo_h
+#define la_matrix_coo_h
 
 #define ALLOWED_MEM_OVERHEAD 2.e+6 // entries, this corresponds to 32 MB of 
-                                   //  overhead in <int, int, double> triplet
+                                   //  overhead in <int, int, double> matrixCoo
 //------------------------------------------------------------------------------
 #include <vector>
 #include <cassert>
@@ -17,19 +14,19 @@
 //------------------------------------------------------------------------------
 namespace la{
     template< typename INDT, typename VALT >
-    class Triplet;
+    class MatrixCoo;
 }
 
 //------------------------------------------------------------------------------
 /** \brief Temporary storage for a sparse matrix 
- *  \details This object stores and handles the so-called triplets, i.e., 
+ *  \details This object stores and handles matrix in coordinate format, i.e., 
  *  <row_index,col_index,value>-combinations for each matrix entry of a sparse matrix.
  *  Functionalities are:
  *  - preparing assembly of elements - allocating proper space to all elements 
  *    in unassembled form
  *  - inserting an element - it is user's responsibility not to insert zeros
  *  - finishing assembly of elements - this is the core routine which 
- *    - sorts triplets, merges entries with the same pair of indices, 
+ *    - sorts triples, merges entries with the same pair of indices, 
  *      truncates the array to assembled size
  *  - 'zeroing' a row and setting its diagonal entry to a given value
  *  - query of number of entries - this counts also zeros if they were inserted
@@ -38,31 +35,16 @@ namespace la{
  *    solver libraries
  *  - computing inf norm
  *  - cleanup and writing
- *
- *  Triplet first allocates memory for unassembled matrix, which is then 
- *  sorted once and triplets with same coordinates are merged.
- *  This is generally faster then inserting elements to the proper places 
- *  each time, but can require considerably more memory,
- *  needed at one time of this computation. 
- *  This memory is released after the assembly. 
- *  If memory is not a concern, this object should be preferred. Should this code 
- *  crash on allocation, the other approach does the job instead.
- *  The approach with putting entries directly to proper positions was implemented 
- *  in an eariler version of Triplet.hpp in this repository ( until revision 2877 ).
- *
- *  The object supports the interface of previous version. However, for optimal 
- *  performance, one should use the prepareAssembly() and finishAssembly() routines
- *  around insert().
  */
 template< typename INDT, typename VALT >
-class la::Triplet
+class la::MatrixCoo
 {
 public:
     typedef INDT         IndexType;
     typedef VALT         ValueType;
 
 public:
-    Triplet( unsigned nRows = 0, unsigned nCols = 0 ) 
+    MatrixCoo( unsigned nRows = 0, unsigned nCols = 0 ) 
       : nRows_( nRows ),
         nCols_( nCols ),
         sorted_ ( false )
@@ -70,19 +52,19 @@ public:
         sortedSize_ = 0; 
     } 
 
-    ~Triplet( ) { 
-        tripletVec_.clear();
+    ~MatrixCoo( ) { 
+        matrixCooVec_.clear();
     }
 
     //! Return number of non-zeros
-    IndexType nnz() const { return tripletVec_.size(); }
+    IndexType nnz() const { return matrixCooVec_.size(); }
 
-    //! Prepare triplet for assembly - allocate buffer for UNASSEMBLED entries
+    //! Prepare matrix for assembly - allocate buffer for UNASSEMBLED entries
     //! serial copies of element matrices to memory
     //! length = numElements * size( elementMatrix )
     void prepareAssembly( const IndexType length )
     {
-        tripletVec_.reserve( length );
+        matrixCooVec_.reserve( length );
 
         return;
     }
@@ -93,49 +75,49 @@ public:
         // combine index pair
         IndexPair_ ip( i, j );
 
-        // combine triplet
-        Triplet_ trip( ip, value );
+        // combine triples
+        Triple_ trip( ip, value );
 
         // insert it to buffer in any case
-        tripletVec_.push_back( trip );
+        matrixCooVec_.push_back( trip );
 
         sorted_ = false;
 
         // resort if number of new unsorted entries excess a critical value
-        if ( (tripletVec_.size() - sortedSize_) > ALLOWED_MEM_OVERHEAD ) {
+        if ( (matrixCooVec_.size() - sortedSize_) > ALLOWED_MEM_OVERHEAD ) {
             //std::cout << " Performing resorting due to the critical value ..." << std::endl;
             this -> finishAssembly();
         }
 
         return;
     }
-    //! Finalize triplet assembly - build the assembled input and truncate triplet
+    //! Finalize matrix assembly - build the assembled input and truncate matrix
     void finishAssembly( )
     {
         // sort entries to make sure
-        std::sort( tripletVec_.begin( ), tripletVec_.end( ), TripletLessThan_( ) );
+        std::sort( matrixCooVec_.begin( ), matrixCooVec_.end( ), TripleLessThan_( ) );
 
-        // combine the sorted triplet into one vector
-        typename TripletVec_::const_iterator itGlobale = tripletVec_.end();
+        // combine the sorted matrix into one vector
+        typename MatrixCooVec_::const_iterator itGlobale = matrixCooVec_.end();
     
-        typename TripletVec_::const_iterator itSelectb = tripletVec_.begin();
-        typename TripletVec_::const_iterator itSelecte = itSelectb;
+        typename MatrixCooVec_::const_iterator itSelectb = matrixCooVec_.begin();
+        typename MatrixCooVec_::const_iterator itSelecte = itSelectb;
 
-        Triplet_ tmpTriplet;
+        Triple_ tmpTriple;
 
-        typename TripletVec_::iterator itStore = tripletVec_.begin();
+        typename MatrixCooVec_::iterator itStore = matrixCooVec_.begin();
 
         // for each pair of indices
         while (itSelectb != itGlobale) {
 
             // find any change in indices
-            itSelecte = std::upper_bound( itSelectb, itGlobale, *itSelectb, TripletLessThan_( ) );
+            itSelecte = std::upper_bound( itSelectb, itGlobale, *itSelectb, TripleLessThan_( ) );
 
             // sum values in the range
-            tmpTriplet = combineTriplets_ ( itSelectb, itSelecte );
+            tmpTriple = combineTriples_ ( itSelectb, itSelecte );
 
             // store new  
-            *itStore = tmpTriplet;
+            *itStore = tmpTriple;
             itStore++;
 
             // shift ranges
@@ -143,10 +125,10 @@ public:
         }
 
         // determine number of nonzeros in assembled matrix
-        unsigned nnz = std::distance( tripletVec_.begin( ),  itStore);
+        unsigned nnz = std::distance( matrixCooVec_.begin( ),  itStore);
 
         // truncate the vector from the end
-        tripletVec_.resize( nnz );
+        matrixCooVec_.resize( nnz );
 
         // mark the amount of sorted entries
         sortedSize_ = nnz;
@@ -166,8 +148,8 @@ public:
         }
 
         // run through all entries
-        typename TripletVec_::const_iterator iter  = tripletVec_.begin();
-        typename TripletVec_::const_iterator itere = tripletVec_.end();
+        typename MatrixCooVec_::const_iterator iter  = matrixCooVec_.begin();
+        typename MatrixCooVec_::const_iterator itere = matrixCooVec_.end();
 
         for ( ; iter != itere; ++iter ) {
 
@@ -195,9 +177,9 @@ public:
     //! Get specific entry
     void getEntry( IndexType index, IndexType & row, IndexType & col, ValueType & val )
     {
-        row = tripletVec_[ index ].first.first;
-        col = tripletVec_[ index ].first.second;
-        val = tripletVec_[ index ].second;
+        row = matrixCooVec_[ index ].first.first;
+        col = matrixCooVec_[ index ].first.second;
+        val = matrixCooVec_[ index ].second;
     }
 
     //! Zero a row and set diagonal to scalar 
@@ -210,20 +192,20 @@ public:
         }
 
         // erasing iterator
-        typename TripletVec_::iterator  tripEraseIter;
-        typename TripletVec_::iterator  tripEraseIterE;
+        typename MatrixCooVec_::iterator  tripEraseIter;
+        typename MatrixCooVec_::iterator  tripEraseIterE;
 
-        // find constrained row in triplets and set iterator there
-        tripEraseIter = std::lower_bound ( tripletVec_.begin(), tripletVec_.end(), 
-                                           row, TripletRowIndexLessThan_( ) );
+        // find constrained row in matrix and set iterator there
+        tripEraseIter = std::lower_bound ( matrixCooVec_.begin(), matrixCooVec_.end(), 
+                                           row, TripleRowIndexLessThan_( ) );
 
         // find last entry at the row
-        tripEraseIterE = std::upper_bound( tripEraseIter, tripletVec_.end(), 
-                                           *tripEraseIter,  TripletRowLessThan_( ) );
+        tripEraseIterE = std::upper_bound( tripEraseIter, matrixCooVec_.end(), 
+                                           *tripEraseIter,  TripleRowLessThan_( ) );
 
         // find diagonal
-        typename TripletVec_::iterator tripEraseIterDiag;
-        tripEraseIterDiag = std::find_if( tripEraseIter, tripEraseIterE, TripletDiagEntry_( ) ); 
+        typename MatrixCooVec_::iterator tripEraseIterDiag;
+        tripEraseIterDiag = std::find_if( tripEraseIter, tripEraseIterE, TripleDiagEntry_( ) ); 
 
         // set row entries to zero
         for ( ; tripEraseIter != tripEraseIterE; ++tripEraseIter ) {
@@ -231,7 +213,7 @@ public:
         }
 
         // put value from constraint on diagonal
-        Triplet_ tmpTrip = std::make_pair( std::make_pair ( row, row ), factor );
+        Triple_ tmpTrip = std::make_pair( std::make_pair ( row, row ), factor );
 
         if ( tripEraseIterDiag != tripEraseIterE ) {
             // diagonal entry already present
@@ -239,7 +221,7 @@ public:
         }
         else {
             // nothing on diagonal, add it
-            tripletVec_.push_back( tmpTrip );
+            matrixCooVec_.push_back( tmpTrip );
             sorted_ = false;
         }
     }
@@ -258,12 +240,12 @@ public:
 
         // iterate over all elements and fill the nonzero, 
         // column index, and row pointer arrys
-        typename TripletVec_::const_iterator tvIter = tripletVec_.begin();
-        typename TripletVec_::const_iterator tvEnd  = tripletVec_.end();
+        typename MatrixCooVec_::const_iterator tvIter = matrixCooVec_.begin();
+        typename MatrixCooVec_::const_iterator tvEnd  = matrixCooVec_.end();
 
         // reserve space 
-        colIndices.reserve(tripletVec_.size());
-        values.reserve(tripletVec_.size());
+        colIndices.reserve(matrixCooVec_.size());
+        values.reserve(matrixCooVec_.size());
 
         unsigned nr = this -> deduceNumRows_( );
         rowPtrs.reserve( nr + 1 );
@@ -302,13 +284,13 @@ public:
 
         // iterate over all elements and fill the nonzero, 
         // column index, and row index arrys
-        typename TripletVec_::const_iterator tvIter = tripletVec_.begin();
-        typename TripletVec_::const_iterator tvEnd  = tripletVec_.end();
+        typename MatrixCooVec_::const_iterator tvIter = matrixCooVec_.begin();
+        typename MatrixCooVec_::const_iterator tvEnd  = matrixCooVec_.end();
 
         // reserve space 
-        colIndices.reserve(tripletVec_.size());
-        rowIndices.reserve(tripletVec_.size());
-        values.reserve(tripletVec_.size());
+        colIndices.reserve(matrixCooVec_.size());
+        rowIndices.reserve(matrixCooVec_.size());
+        values.reserve(matrixCooVec_.size());
 
         for ( ; tvIter != tvEnd; ++tvIter ) {
             const IndexType row = (*tvIter).first.first  ;
@@ -326,9 +308,9 @@ public:
     //! destroy all contents
     void clear() 
     {
-        tripletVec_.clear();
+        matrixCooVec_.clear();
         // force deallocation of the vector
-        TripletVec_().swap( tripletVec_ ); 
+        MatrixCooVec_().swap( matrixCooVec_ ); 
         return;
     }
 
@@ -336,8 +318,8 @@ public:
     void erase() 
     {
         // erasing iterator
-        typename TripletVec_::iterator  tripEraseIter  = tripletVec_.begin( );
-        typename TripletVec_::iterator  tripEraseIterE = tripletVec_.end( );
+        typename MatrixCooVec_::iterator  tripEraseIter  = matrixCooVec_.begin( );
+        typename MatrixCooVec_::iterator  tripEraseIterE = matrixCooVec_.end( );
 
         // loop to erase values
         for ( ; tripEraseIter != tripEraseIterE; ++tripEraseIter ) {
@@ -354,8 +336,8 @@ public:
         if ( not sorted_ ) {
             this -> finishAssembly( );
         }
-        typename TripletVec_::const_iterator tvIter = tripletVec_.begin();
-        typename TripletVec_::const_iterator tvEnd  = tripletVec_.end();
+        typename MatrixCooVec_::const_iterator tvIter = matrixCooVec_.begin();
+        typename MatrixCooVec_::const_iterator tvEnd  = matrixCooVec_.end();
         for ( ; tvIter != tvEnd; ++tvIter ) {
             const IndexType row = (*tvIter).first.first;
             const IndexType col = (*tvIter).first.second;
@@ -369,7 +351,7 @@ public:
     }
 
     //----------------------------------------------------------------------------
-    //! Compute maximal row sum (infinity-norm) of a matrix in triplet format. 
+    //! Compute maximal row sum (infinity-norm) of a matrix in coordinate format. 
     double infNorm() 
     {
         // sort entries to make sure
@@ -378,8 +360,8 @@ public:
         }
         unsigned nr = this -> deduceNumRows_( );
         std::vector<double> rowSums( nr, 0.0 );
-        typename TripletVec_::const_iterator  iter = tripletVec_.begin();
-        typename TripletVec_::const_iterator  last = tripletVec_.end();  
+        typename MatrixCooVec_::const_iterator  iter = matrixCooVec_.begin();
+        typename MatrixCooVec_::const_iterator  last = matrixCooVec_.end();  
         for ( ; iter != last; ++iter ) {
             const IndexType iRow = (*iter).first.first;
             rowSums[ iRow ] += std::fabs( (*iter).second );
@@ -399,8 +381,8 @@ public:
 
         ValueType sumOfSquares = 0.0;
 
-        typename TripletVec_::const_iterator  iter = tripletVec_.begin();
-        typename TripletVec_::const_iterator  last = tripletVec_.end();  
+        typename MatrixCooVec_::const_iterator  iter = matrixCooVec_.begin();
+        typename MatrixCooVec_::const_iterator  last = matrixCooVec_.end();  
         for ( ; iter != last; ++iter ) {
 
             ValueType val = (*iter).second;
@@ -420,8 +402,8 @@ public:
 
         ValueType val;
         // initialize maximum and minimum
-        if ( tripletVec_.size() > 0 ) {
-            val = std::fabs( tripletVec_[0].second ); 
+        if ( matrixCooVec_.size() > 0 ) {
+            val = std::fabs( matrixCooVec_[0].second ); 
         }
         else {
             val = 0.0;
@@ -429,13 +411,13 @@ public:
         ValueType maxVal = val;
         ValueType minVal = val;
         IndexType row, col;
-        for ( IndexType i = 1; i < static_cast<IndexType>( tripletVec_.size() ); i++ ) {
+        for ( IndexType i = 1; i < static_cast<IndexType>( matrixCooVec_.size() ); i++ ) {
 
-            row = tripletVec_[i].first.first;
-            col = tripletVec_[i].first.second;
+            row = matrixCooVec_[i].first.first;
+            col = matrixCooVec_[i].first.second;
 
             if ( row == col ) {
-                val = std::fabs( tripletVec_[i].second ); 
+                val = std::fabs( matrixCooVec_[i].second ); 
 
                 // update maximum
                 if ( val > maxVal ) {
@@ -458,16 +440,16 @@ public:
 
 private:
     typedef std::pair<IndexType, IndexType>    IndexPair_;   //!< pair of indices
-    typedef std::pair<IndexPair_,ValueType>    Triplet_;     //!< triplet
-    typedef std::vector<Triplet_>              TripletVec_;  //!< vector of triplets
-    TripletVec_                                tripletVec_;  //!< matrix in triplet <i,j, values>
+    typedef std::pair<IndexPair_,ValueType>    Triple_;      //!< triple
+    typedef std::vector<Triple_>               MatrixCooVec_;//!< vector of triples
+    MatrixCooVec_                              matrixCooVec_;//!< matrix in coordinate format <i,j, values>
 
     IndexType                                  nRows_;       //!< number of rows of matrix
     IndexType                                  nCols_;       //!< number of columns of matrix
 
     unsigned                                   sortedSize_;  //!< number of sorted entries
 
-    bool                                       sorted_;      //!< state variable - is triplet sorted?
+    bool                                       sorted_;      //!< state variable - is matrix sorted?
 
     //--------------------------------------------------------------------------
     // private functions
@@ -484,7 +466,7 @@ private:
         }
         else { 
             // deduce number of rows from  sorted matrix
-            nr = (*tripletVec_.rbegin()).first.first + 1;
+            nr = (*matrixCooVec_.rbegin()).first.first + 1;
         }
 
         return nr;
@@ -492,54 +474,54 @@ private:
 
     
     //! returns true if the index pair of the first entry is smaller than of the second entry
-    struct TripletLessThan_ : std::binary_function< Triplet_, Triplet_, bool > 
+    struct TripleLessThan_ : std::binary_function< Triple_, Triple_, bool > 
     {
-        bool operator() ( Triplet_ firstTriplet, Triplet_ secondTriplet) {
+        bool operator() ( Triple_ firstTriple, Triple_ secondTriple) {
         
-            IndexPair_ firstTripletIndxPair  = firstTriplet.first;
-            IndexPair_ secondTripletIndxPair = secondTriplet.first;
+            IndexPair_ firstTripleIndxPair  = firstTriple.first;
+            IndexPair_ secondTripleIndxPair = secondTriple.first;
 
-            return (firstTripletIndxPair < secondTripletIndxPair);
+            return (firstTripleIndxPair < secondTripleIndxPair);
         }
     };
 
     //! returns true if the first entry has smaller ROW index than the second one
-    struct TripletRowLessThan_ : std::binary_function< Triplet_, Triplet_, bool > 
+    struct TripleRowLessThan_ : std::binary_function< Triple_, Triple_, bool > 
     {
-        bool operator() ( Triplet_ firstTriplet, Triplet_ secondTriplet) {
+        bool operator() ( Triple_ firstTriple, Triple_ secondTriple) {
         
-            IndexType firstRowIndex  = firstTriplet.first.first;
-            IndexType secondRowIndex = secondTriplet.first.first;
+            IndexType firstRowIndex  = firstTriple.first.first;
+            IndexType secondRowIndex = secondTriple.first.first;
 
             return (firstRowIndex < secondRowIndex);
         }
     };
 
     //! returns true if the row of an entry is smaller than a prescribed index
-    struct TripletRowIndexLessThan_ 
+    struct TripleRowIndexLessThan_ 
     {
-        bool operator() ( Triplet_ triplet, IndexType row ) {
+        bool operator() ( Triple_ triple, IndexType row ) {
         
-            IndexType tripletRowIndex  = triplet.first.first;
+            IndexType tripleRowIndex  = triple.first.first;
 
-            return (tripletRowIndex < row);
+            return (tripleRowIndex < row);
         }
     };
 
     //! returns true if the entry is on diagonal, i.e. row == column
-    struct TripletDiagEntry_ 
+    struct TripleDiagEntry_ 
     {
-        bool operator() ( Triplet_ triplet ) {
+        bool operator() ( Triple_ triple ) {
         
-            IndexType tripletRowIndex  = triplet.first.first;
-            IndexType tripletColIndex  = triplet.first.second;
+            IndexType tripleRowIndex  = triple.first.first;
+            IndexType tripleColIndex  = triple.first.second;
 
-            return (tripletRowIndex == tripletColIndex);
+            return (tripleRowIndex == tripleColIndex);
         }
     };
 
-    //! merge range of triplets by addition
-    Triplet_ combineTriplets_ ( typename TripletVec_::const_iterator itb, typename TripletVec_::const_iterator ite ) {
+    //! merge range of triples by addition
+    Triple_ combineTriples_ ( typename MatrixCooVec_::const_iterator itb, typename MatrixCooVec_::const_iterator ite ) {
 
         IndexPair_ tmpPair = (*itb).first;
         ValueType val = 0.0;
@@ -548,9 +530,9 @@ private:
             val += (*itb).second;
         }
 
-        Triplet_ combinedTriplet = std::make_pair(tmpPair, val); 
+        Triple_ combinedTriple = std::make_pair(tmpPair, val); 
     
-        return combinedTriplet;
+        return combinedTriple;
 
     }
 };

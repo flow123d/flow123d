@@ -42,7 +42,7 @@
 #include <boost/numeric/ublas/vector.hpp>
 
 namespace la{
-    class SystemSolveBddc; 
+    class BddcmlWrapper; 
 };
 
 class LinSys_BDDC : public LinSys
@@ -52,7 +52,9 @@ public:
 
     LinSys_BDDC( const unsigned lsize,
                  const unsigned numDofsSub,
-                 const MPI_Comm comm = MPI_COMM_WORLD, 
+                 Distribution * rows_ds,
+                 double *sol_array = NULL,
+                 const MPI_Comm comm = MPI_COMM_WORLD,
                  const int matrixTypeInt = 0,
                  const int  numSubLoc = 1 );
 
@@ -89,10 +91,12 @@ private:
 private:
 
     std::vector<int>                  isngn_;          //!< indices of subdomain nodes in global numbering
+    std::vector<double>               locSolution_;    //!< subdomain solution
+    Vec                               locSolVec_;      //!< local solution PETSc vector - sequential
+    VecScatter                        VSpetscToSubScatter_; //!< scatter from solution_ to locSolVec_
 
-    typedef la::SystemSolveBddc       Solver_;
-    Solver_ *                         solver_;         //!< OpenFTL solver
-
+    typedef la::BddcmlWrapper         Bddcml_;
+    Bddcml_ *                         bddcml_;         //!< OpenFTL solver
 };
 
 #endif /* LA_LINSYS_BDDC_HH_ */

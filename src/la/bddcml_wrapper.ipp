@@ -1,14 +1,14 @@
 //! @author Jakub Sistek
-//! @date   5/2011
+//! @date   7/2012
 
 //------------------------------------------------------------------------------
 /** Constructor for the BDDCML solver object
  */
-la::SystemSolveBddc::SystemSolveBddc( const unsigned numDofs,
-                                      const unsigned numDofsSub,
-                                      const MatrixType matrixType, 
-                                      const MPI_Comm comm,
-                                      int numSubLoc )
+la::BddcmlWrapper::BddcmlWrapper( const unsigned numDofs,
+                                  const unsigned numDofsSub,
+                                  const MatrixType matrixType, 
+                                  const MPI_Comm comm,
+                                  int numSubLoc )
   : numDofs_( static_cast<int>( numDofs ) ),
     numDofsSub_( static_cast<int>( numDofsSub ) ),
     matrixType_( matrixType ),
@@ -41,7 +41,7 @@ la::SystemSolveBddc::SystemSolveBddc( const unsigned numDofs,
 //------------------------------------------------------------------------------
 /** Destructor frees the BDDC solver structures
  */
-la::SystemSolveBddc::~SystemSolveBddc()
+la::BddcmlWrapper::~BddcmlWrapper()
 {
     // clear RHS
     rhsVec_.clear();
@@ -66,7 +66,7 @@ la::SystemSolveBddc::~SystemSolveBddc()
     global2LocalDofMap_.clear();
 
     // clear triplet
-    triplet_.clear();
+    coo_.clear();
 
 }
 
@@ -75,15 +75,15 @@ la::SystemSolveBddc::~SystemSolveBddc()
  * where these are not Mesh or Grid objects, user can create own raw description
  * to exploit the flexibility of mesh format underlaying BDDCML.
  */
-void la::SystemSolveBddc::loadRawMesh( const int nDim, const int numNodes, const int numDofs,
-                                           const std::vector<int> & inet, 
-                                           const std::vector<int> & nnet, 
-                                           const std::vector<int> & nndf, 
-                                           const std::vector<int> & isegn, 
-                                           const std::vector<int> & isngn, 
-                                           const std::vector<int> & isvgvn,
-                                           const std::vector<double> & xyz,
-                                           const int meshDim )
+void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const int numDofs,
+                                     const std::vector<int> & inet, 
+                                     const std::vector<int> & nnet, 
+                                     const std::vector<int> & nndf, 
+                                     const std::vector<int> & isegn, 
+                                     const std::vector<int> & isngn, 
+                                     const std::vector<int> & isvgvn,
+                                     const std::vector<double> & xyz,
+                                     const int meshDim )
 {
     // space dimension
     nDim_ = nDim;
@@ -164,26 +164,26 @@ void la::SystemSolveBddc::loadRawMesh( const int nDim, const int numNodes, const
 //------------------------------------------------------------------------------
 /** Routine for preparing MATRIX assembly. It reserves memory in triplet.
  */
-void la::SystemSolveBddc::prepareMatAssembly( unsigned numElements, unsigned elMatSize )
+void la::BddcmlWrapper::prepareMatAssembly( unsigned numElements, unsigned elMatSize )
 {
     unsigned length = numElements * elMatSize;
-    triplet_.prepareAssembly( length );
+    coo_.prepareAssembly( length );
 
     return;
 }
 //------------------------------------------------------------------------------
 /** Insert element stiffness matrix into global system matrix
  */
-void la::SystemSolveBddc::insertToMatrix( const SubMat_  & subMat, 
-                                              const VecUint_ & rowIndices,
-                                              const VecUint_ & colIndices )
+void la::BddcmlWrapper::insertToMatrix( const SubMat_  & subMat, 
+                                        const VecUint_ & rowIndices,
+                                        const VecUint_ & colIndices )
 {
     // copy dense matrix into triplet
     for ( unsigned i = 0; i < rowIndices.size(); i++) {
         for ( unsigned j = 0; j < colIndices.size(); j++) {
 
             // insert value
-            triplet_.insert( rowIndices[i], colIndices[j], subMat(i,j) );
+            coo_.insert( rowIndices[i], colIndices[j], subMat(i,j) );
         }
     }
 
@@ -196,13 +196,13 @@ void la::SystemSolveBddc::insertToMatrix( const SubMat_  & subMat,
 //------------------------------------------------------------------------------
 /** Routine for triplet finalization.
  */
-void la::SystemSolveBddc::finishMatAssembly( )
+void la::BddcmlWrapper::finishMatAssembly( )
 {
     // do nothing if already called
     if ( isMatAssembled_ ) return;
 
     // finish assembly of triplet
-    triplet_.finishAssembly( );
+    coo_.finishAssembly( );
 
     // set flag
     isMatAssembled_ = true;
@@ -212,8 +212,8 @@ void la::SystemSolveBddc::finishMatAssembly( )
 //------------------------------------------------------------------------------
 /** Insert subvector to the system's RHS vector
  */
-void la::SystemSolveBddc::insertToRhs( const SubVec_  & subVec, 
-                                           const VecUint_ & dofIndices )
+void la::BddcmlWrapper::insertToRhs( const SubVec_  & subVec, 
+                                     const VecUint_ & dofIndices )
 {
     for ( unsigned i = 0; i < dofIndices.size( ); i ++ ) {
 
@@ -234,8 +234,8 @@ void la::SystemSolveBddc::insertToRhs( const SubVec_  & subVec,
  *  Since BDDCML handles constraints, just fill proper BC arrays.
  *  Scalar is not used, it is kept for compatibility with constraint functors.
  */
-void la::SystemSolveBddc::applyConstraints( ConstraintVec_ & constraints,
-                                                const double factor, const double scalar ) 
+void la::BddcmlWrapper::applyConstraints( ConstraintVec_ & constraints,
+                                          const double factor, const double scalar ) 
 {
     // Constraint iterators
     ConstraintVec_::const_iterator cIter = constraints.begin( );
@@ -261,7 +261,7 @@ void la::SystemSolveBddc::applyConstraints( ConstraintVec_ & constraints,
 //------------------------------------------------------------------------------
 /** Simply set the dof with index 'index' to zero
  */
-void la::SystemSolveBddc::fixDOF( const unsigned index, const double scalar )
+void la::BddcmlWrapper::fixDOF( const unsigned index, const double scalar )
 {
     std::vector< std::pair<unsigned,double> > thisConstraint;
     thisConstraint.push_back( std::make_pair( index, 0. ) );
@@ -272,8 +272,8 @@ void la::SystemSolveBddc::fixDOF( const unsigned index, const double scalar )
 //------------------------------------------------------------------------------
 /** Solve the system by BDDCML
  */
-void la::SystemSolveBddc::solveSystem( double tol, int  numLevels, std::vector<int> *  numSubAtLevels, 
-                                           int verboseLevel, int  maxIt, int  ndecrMax, bool use_adaptive )
+void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int> *  numSubAtLevels, 
+                                     int verboseLevel, int  maxIt, int  ndecrMax, bool use_adaptive )
 {
 
     // check that mesh was loaded 
@@ -355,8 +355,8 @@ void la::SystemSolveBddc::solveSystem( double tol, int  numLevels, std::vector<i
 
     // copy out arrays from triplet
     this -> finishMatAssembly();
-    triplet_.extractArrays( i_sparse, j_sparse, a_sparse, onlyUpperTriangle );
-    triplet_.clear();
+    coo_.extractArrays( i_sparse, j_sparse, a_sparse, onlyUpperTriangle );
+    coo_.clear();
 
     // map global row and column indices to local subdomain indices
     int indRow    = -1;
@@ -482,8 +482,8 @@ void la::SystemSolveBddc::solveSystem( double tol, int  numLevels, std::vector<i
 
 //------------------------------------------------------------------------------
 template<typename VEC1,typename VEC2>
-void la::SystemSolveBddc::giveSolution( const VEC1 & dofIndices,
-                                        VEC2 & result ) const
+void la::BddcmlWrapper::giveSolution( const VEC1 & dofIndices,
+                                      VEC2 & result ) const
 {
     // simply get the dof solutions by using the local indices
     typename VEC1::const_iterator dofIter = dofIndices.begin();
