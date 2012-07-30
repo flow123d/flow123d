@@ -24,15 +24,15 @@
         output_stream = {
           name = "flow_output_stream",
           file = "flow123.pvd",
-          format = "vtk",
-          vtk_format = {
+          format = {
+            TYPE = "vtk",
             variant = "ascii",
             compression = "none",
             parallel = false
           }
 #          file = "flow123.msh",
-#          format = "gmsh",
-#          gmsh_format = {
+#          format = {
+#            TYPE = "gmsh",
 #            variant = "ascii"
 #          }
         },

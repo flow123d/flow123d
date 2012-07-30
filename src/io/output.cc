@@ -182,8 +182,7 @@ Output::Output(Mesh *_mesh, string fname)
     // !!!! NEEDS new input
     // char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
     this->file_format = VTK;
-    this->output_msh = NULL;
-    this->output_vtk = new OutputVTK(this);
+    this->output_format = new OutputVTK(this);
 }
 
 Output::~Output()
@@ -197,12 +196,8 @@ Output::~Output()
         return;
     }
 
-    if(this->output_msh != NULL) {
-        delete this->output_msh;
-    }
-
-    if(this->output_vtk != NULL) {
-        delete this->output_vtk;
+    if(this->output_format != NULL) {
+        delete this->output_format;
     }
 
     // Free all reference on node and element data
@@ -232,41 +227,25 @@ Output::~Output()
 
 int Output::write_head(void)
 {
-    switch(this->file_format) {
-    case GMSH:
-        return this->output_msh->write_head();
-    case VTK:
-        return this->output_vtk->write_head();
-    default:
-        return 0;
+	if(this->output_format != NULL) {
+        return this->output_format->write_head();
     }
     return 0;
 }
 
 int Output::write_tail(void)
 {
-    switch(this->file_format) {
-    case GMSH:
-        return this->output_msh->write_tail();
-    case VTK:
-        return this->output_vtk->write_tail();
-    default:
-        return 0;
+	if(this->output_format != NULL) {
+        return this->output_format->write_tail();
     }
     return 0;
 }
 
 int Output::write_data()
 {
-    switch(this->file_format) {
-    case GMSH:
-        return this->output_msh->write_data();
-    case VTK:
-        return this->output_vtk->write_data();
-    default:
-        return 0;
+	if(this->output_format != NULL) {
+        return this->output_format->write_data();
     }
-
     return 0;
 }
 
@@ -316,29 +295,18 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     set_corner_data(corner_data);
     set_elem_data(elem_data);
 
-    string format = in_rec.val<string>("format");
-    if( format == "vtk" ) {
-    	this->file_format = VTK;
-    	this->output_msh = NULL;
-    	Input::Iterator<Input::Record> it = Input::Record(in_rec).find<Input::Record>("vtk_format");
-    	if(it) {
-    		this->output_vtk = new OutputVTK(this, *it);
-    	} else {
-    		this->output_vtk = new OutputVTK(this);
-    	}
-    } else if( format == "gmsh" ) {
-    	this->file_format = GMSH;
-    	Input::Iterator<Input::Record> it = Input::Record(in_rec).find<Input::Record>("gmsh_format");
-    	if(it) {
-    		this->output_msh = new OutputMSH(this, *it);
-    	} else {
-    		this->output_msh = new OutputMSH(this);
-    	}
-    	this->output_vtk = NULL;
+    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
+    if(format) {
+		if((*format).type() == OutputVTK::get_input_type()) {
+			this->output_format = new OutputVTK(this, *format);
+		} else if ( (*format).type() == OutputMSH::get_input_type()) {
+			this->output_format = new OutputMSH(this, *format);
+		} else {
+			xprintf(Warn, "Unsupported file format, using default VTK\n");
+			this->output_format = new OutputVTK(this);
+		}
     } else {
-    	this->file_format = NONE;
-    	this->output_msh = NULL;
-    	this->output_vtk = NULL;
+    	this->output_format = new OutputVTK(this);
     }
 
 }
@@ -346,28 +314,6 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 OutputTime::~OutputTime(void)
 {
 }
-
-// following abstract record should be declared in an abstract parent class of
-// OutpuVTK and OutputMSH
-Input::Type::AbstractRecord & OutputTime::get_input_type_output_format()
-{
-    using namespace Input::Type;
-    static AbstractRecord output_format("OutputFormat",
-    		"Format of output stream and possible parameters.");
-
-    if (!output_format.is_finished()) {
-        // complete declaration of  abstract record OutputFormat
-        output_format.finish();
-
-        OutputVTK::get_input_type();
-        OutputMSH::get_input_type();
-
-        output_format.no_more_descendants();
-    }
-
-    return output_format;
-}
-
 
 Input::Type::Record & OutputTime::get_input_type()
 {
@@ -382,34 +328,9 @@ Input::Type::Record & OutputTime::get_input_type()
 		// The stream
 		rec.declare_key("file", FileName::output(), Default::obligatory(),
 				"File path to the output stream.");
-
-		// PROPOSED CHANGE: (NEED default constructable records)
-
-		// following abstract record should be declared in an abstract
-		// parent class of OutpuVTK and OutputMSH
-		static AbstractRecord output_format("OutputFormat",
-				"Format of output stream and possible parameters.");
-
-	    // complete declaration of  abstract record OutputFormat
-	    output_format.finish();
-
-	    OutputVTK::get_input_type();
-        OutputMSH::get_input_type();
-
-        output_format.no_more_descendants();
-		//rec.declare_key("format", get_input_type_output_format(), Default("vtk"),
-		//		"File format of output stream.");
-
 		// The format
-		rec.declare_key("format", String(), Default("vtk"),
-				"File format of output stream.");
-
-		// Optional options of VTK file format
-		rec.declare_key("vtk_format", OutputVTK::get_input_type(), Default::optional(),
-				"Parameters of output VTK file format.");
-		// Optional options of GMSH file format
-		rec.declare_key("gmsh_format", OutputMSH::get_input_type(), Default::optional(),
-				"Parameters of output GMSH file format.");
+		rec.declare_key("format", OutputFormat::get_input_type(), Default::optional(),
+				"Format of output stream and possible parameters.");
 
 		rec.finish();
 	}
@@ -425,18 +346,30 @@ int OutputTime::write_data(double time)
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank != 0 ) return 0;
 
-    switch(this->file_format) {
-    case GMSH:
-        ret = this->output_msh->write_data(time);
-        this->current_step++;
-        break;
-    case VTK:
-        ret = this->output_vtk->write_data(time);
-        this->current_step++;
-        break;
-    default:
-        break;
+    if(this->output_format != NULL) {
+    	ret = this->output_format->write_data(time);
+    	this->current_step++;
     }
 
     return ret;
 }
+
+Input::Type::AbstractRecord& OutputFormat::get_input_type()
+{
+    static Input::Type::AbstractRecord output_format("OutputFormat",
+    		"Format of output stream and possible parameters.");
+
+    if (!output_format.is_finished()) {
+        // Complete declaration of  abstract record OutputFormat
+        output_format.finish();
+
+        // List of possible descendants
+        OutputVTK::get_input_type();
+        OutputMSH::get_input_type();
+
+        output_format.no_more_descendants();
+    }
+
+    return output_format;
+}
+

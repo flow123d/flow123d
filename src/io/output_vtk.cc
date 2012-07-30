@@ -869,11 +869,12 @@ OutputVTK::~OutputVTK()
 Input::Type::Record & OutputVTK::get_input_type()
 {
 	using namespace Input::Type;
-	static Record rec("OutputVTK", "Parameters of vtk output format.");
+	static Record rec("vtk", "Parameters of vtk output format.");
 
 	if (!rec.is_finished()) {
 
-	    //rec.derive_from(OutputTime::get_input_type_output_format());
+		// It is derived from abstract class
+		rec.derive_from(OutputFormat::get_input_type());
 
 		// The variant
 		static Selection variant_sel("VTK variant (ascii or binary)");
@@ -900,7 +901,6 @@ Input::Type::Record & OutputVTK::get_input_type()
 
 		rec.declare_key("compression", compression_sel, Default("none"),
 				"Compression used in output stream file format.");
-
 
 		rec.finish();
 	}

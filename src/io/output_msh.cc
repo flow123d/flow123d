@@ -309,11 +309,12 @@ OutputMSH::~OutputMSH()
 Input::Type::Record & OutputMSH::get_input_type()
 {
 	using namespace Input::Type;
-	static Record rec("OutputMSH", "Parameters of gmsh output format.");
+	static Record rec("gmsh", "Parameters of gmsh output format.");
 
 	if (!rec.is_finished()) {
 
-		//rec.derive_from(OutputTime::get_input_type_output_format());
+		// It is derived from abstract class
+		rec.derive_from(OutputFormat::get_input_type());
 
 		// The variant
 		static Selection variant_sel("GMSH variant");

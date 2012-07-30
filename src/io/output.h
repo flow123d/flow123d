@@ -39,8 +39,7 @@
 
 #include "input/interface.hh"
 
-class OutputMSH;
-class OutputVTK;
+class OutputFormat;
 
 /**
  * Class of output data storing reference on data.
@@ -319,8 +318,7 @@ public:
 
     OutFileFormat file_format;
 
-    OutputVTK *output_vtk;
-    OutputMSH *output_msh;
+    OutputFormat *output_format;
 
 protected:
     // Protected setters for descendant
@@ -494,7 +492,6 @@ public:
      *
      * \return This method returns record for output stream
      */
-    static Input::Type::AbstractRecord & get_input_type_output_format();
     static Input::Type::Record & get_input_type();
 
 
@@ -894,5 +891,20 @@ int OutputTime::register_elem_data(std::string name,
     return 1;
 
 }
+
+/**
+ * \brief The class used as parent of class of file formats
+ */
+class OutputFormat {
+public:
+	OutputFormat() {}
+    virtual ~OutputFormat() {}
+	virtual int write_data(void) { return 0; }
+	virtual int write_data(double time) { return 0; }
+	virtual int write_head(void) { return 0; }
+	virtual int write_tail(void) { return 0; }
+
+	static Input::Type::AbstractRecord &get_input_type();
+};
 
 #endif

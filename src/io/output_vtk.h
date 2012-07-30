@@ -37,7 +37,7 @@
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputVTK {
+class OutputVTK : public OutputFormat {
 
 public:
     /**

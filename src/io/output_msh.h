@@ -35,7 +35,7 @@
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputMSH {
+class OutputMSH : public OutputFormat {
 public:
     /**
      * \brief The constructor of this class
