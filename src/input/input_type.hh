@@ -5,7 +5,7 @@
  *      Author: jb
  *
  *  todo:
- *  - remove TYPE key from abstract record
+
  *  - type_use_case_test, + demonstrace vystupu dokumentace
  *  - match metody pro Scalarni typy + converze z default hodnot
  *

@@ -29,7 +29,7 @@
 #include "json_spirit/json_spirit.h"
 #include "input/input_type.hh"
 
-#include "input/interface.hh"
+#include "input/accessors.hh"
 #include "input/storage.hh"
 
 
@@ -38,7 +38,14 @@ namespace Input {
 
 
 /**
- * This class represents an address in the JSON file.
+ * @brief Class used by JSONToStorage class to iterate over the JSON tree provided by json_spirit library.
+ *
+ * This class keeps whole path from the root of the JSON tree to the current node. We store nodes along path in \p nodes_
+ * and address of the node in \p path_.
+ *
+ * The class also contains methods for processing of special keys 'REF' and 'TYPE'. The reference is record with only one key
+ * 'REF' with a string value that contains address of the reference. The string with the address is extracted by \p JSONToStorage::get_ref_from_head
+ * then the JSONPath corresponding to the address is provided by method \p JSONtoStorage::find_ref_node.
  */
 class JSONPath {
 public:
@@ -128,15 +135,34 @@ private:
 
 };
 
+/**
+ * Output operator for JSONPath. Mainly for debugging purposes and error messages.
+ */
 std::ostream& operator<<(std::ostream& stream, const JSONPath& path);
 
 
 /**
+ *  @brief Reader for (slightly) modified JSON files.
  *
+ *  This class implements a reader of modified JSON file format. The modifications include
+ *  shell-like comments (using hash '#' character), this is implemented in comment_filter.hh,  optional quoting of
+ *  keys in JSON objects that do not contain spaces, and possibility to use '=' instead of ':'. So you can write:
+ @code
+     { key1="text", key2=2, "key 3"=4 }
+ @endcode
+ *  Note, however, that our input interface allows only C identifiers for keys. The reader use json_spirit library
+ *  (based on Spirit parser from Boost) with slightly modified grammar.
+ *
+ *  The input file is at first read and parsed by json_spirit. Then JSONToStorage pass through tree with parsed data along
+ *  with passing through declaration tree. The input data are check against declaration and stored in the Storage tree.
+ *
+ *  Accessor to the root record is provided by JSONToStorage::get_root_interface<T> method template.
+ *
+ *  @ingroup input
  */
 class JSONToStorage {
 public:
-    /**
+    /*
      * Exceptions.
      */
     TYPEDEF_ERR_INFO(EI_InputType, Type::TypeBase const *);
@@ -154,21 +180,37 @@ public:
             << EI_JSONLine::val << " : col " << EI_JSONColumn::val
             << " ; reason: " << EI_JSONReason::val << "\n" );
 
+    /**
+     * Default constructor. Do nothing.
+     */
     JSONToStorage();
 
+    /**
+     * This method actually reads the given stream \p in, checks the data just read against the declaration tree given by \p root_type, and
+     * store the data into private storage tree using \p StorageBase classes.
+     */
     void read_stream(istream &in, const Type::TypeBase &root_type);
 
+    /**
+     * Returns the root accessor. The template type \p T should correspond
+     * to the kind of the input type at root of the declaration tree.
+     */
     template <class T>
     T get_root_interface() const;
 
-    const StorageBase *get_storage()
-    { return storage_;}
 
 protected:
     /**
+     * Getter for root of the storage tree.
+     */
+    const StorageBase *get_storage()
+    { return storage_;}
+
+
+    /**
      * Check correctness of the input given by json_spirit node at head() of JSONPath @p p
      * against type specification @p type. Die on input error (and return NULL).
-     * For correct input store values into storage and return pointer to root of created storage tree.
+     * For correct input, creates the storage tree and returns pointer to its root node.
      */
     StorageBase * make_storage(JSONPath &p, const Type::TypeBase *type);
 

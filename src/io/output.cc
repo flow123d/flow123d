@@ -35,7 +35,7 @@
 #include "io/output_vtk.h"
 #include "io/output_msh.h"
 #include "mesh/mesh.h"
-#include "input/interface.hh"
+#include "input/accessors.hh"
 
 
 OutputData::OutputData(string data_name,

@@ -32,23 +32,6 @@ namespace Type {
 using namespace std;
 
 
-/*******************************************************************
- * implementation of Default
- */
-
-Default::Default()
-: value_(), type_(optional_type)
-{}
-
-Default::Default(const std::string & value)
-: value_(value), type_(declaration)
-{
-    boost::algorithm::trim(value_);
-}
-
-Default::Default(enum DefaultType type)
-: value_(), type_(type)
-{}
 
 
 /*******************************************************************

@@ -33,7 +33,7 @@
 #include "system/system.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
-#include "input/interface.hh"
+#include "input/accessors.hh"
 #include "input/json_to_storage.hh"
 #include "io/output.h"
 

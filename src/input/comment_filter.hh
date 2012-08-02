@@ -24,11 +24,17 @@ namespace io = boost::iostreams;
  *
  * We assume, that json parser use backslash as an escape character, so we also have to escape any special meaning
  * of the next character, but we keep backslash on the place.
+ * 
+ * Don't ask me for syntactic bloat. This struct has to define \p transition_table of the FSM. Access to the rules is
+ * provided by methods derived from \p io::finite_state_machine. Then the FSM is  used to implement filter. 
  */
 struct uncommenting_fsm : public io::finite_state_machine<uncommenting_fsm> {
     BOOST_IOSTREAMS_FSM(uncommenting_fsm) // Define skip and push.
     typedef uncommenting_fsm self;
 
+    /**
+     * Declaration of all states of FSM.
+     */
     static const int no_comment         = initial_state;
     static const int no_comment_bsl     = initial_state + 1;
     static const int in_quote           = initial_state + 2;
@@ -38,7 +44,13 @@ struct uncommenting_fsm : public io::finite_state_machine<uncommenting_fsm> {
     static const int in_comment_bsl_eol_n     = initial_state + 6;
     static const int in_comment_bsl_eol_r     = initial_state + 7;
 
+    /**
+     * Declaration of rules of the FSM.
+     */ 
     typedef boost::mpl::vector<
+    // format of the table:
+    //            actual state, input character set, next state, output i.e. pass or skip input character
+    
                 row<no_comment,   is<'\\'>,     no_comment_bsl, &self::push>,   // push backslash and any following character
                 row<no_comment,   is<'#'>,      in_comment,     &self::skip>,
                 row<no_comment,   is<'"'>,      in_quote,       &self::push>,
@@ -76,6 +88,9 @@ struct uncommenting_fsm : public io::finite_state_machine<uncommenting_fsm> {
             > transition_table;
 };
 
+/**
+ * Declare an io filter based on FSM for filtering comments.
+ */
 typedef io::finite_state_filter<uncommenting_fsm> uncommenting_filter;
 
 

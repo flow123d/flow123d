@@ -18,7 +18,7 @@ class Mesh;
 class Distribution;
 
 #include <input/input_type.hh>
-#include <input/interface.hh>
+#include <input/accessors.hh>
 
 /*
 * Decay chain member

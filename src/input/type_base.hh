@@ -38,8 +38,9 @@ namespace Type {
 
 using namespace std;
 
-
-
+/**
+ * Declaration of common exceptions and error info types.
+ */
 TYPEDEF_ERR_INFO( EI_KeyName, const string );
 
 TYPEDEF_ERR_INFO( EI_DefaultStr, const string);
@@ -49,144 +50,15 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
         << "During declaration of the key: " << EI_KeyName::qval );
 
 
-/**
- * @brief Default specifies default value of keys of a @p Record.
- *
- * It contains type of default value and possibly the value itself as a string.
- *
- * We prefer to use only default values specified at declaration since only those can by documented as part of
- * Record type specification.
- *
- * @ingroup input
- */
-class Default {
-private:
-    /**
-     * Possible types of default values.
-     */
-    enum DefaultType {
-        declaration,        ///< Default value given at declaration time.
-        optional_type,      ///< No default value, optional key. This is default type of the Default.
-        obligatory_type     ///< No default value, obligatory key.
-    };
-public:
-
-
-    /**
-     * Constructor with given default value (at declaration time)
-     */
-    Default(const std::string & value);
-
-    /**
-     * Factory function to make an empty default value which is obligatory.
-     * This and following factory functions should be used instead of private constructors.
-     *
-     * Example of usage:
-     * @code
-     *      some_record.declare_key("some_key",Integer(),Default::obligatory(),"description");
-     * @endcode
-     */
-    static Default obligatory()
-    { return Default(obligatory_type); }
-
-    /**
-     * Factory function to make an empty default value which is optional.
-     * To get the value of such key from the input you have to use non-throwing variant of the method
-     * Input::Record::key, which returns the value through reference and allows checking presence of the key on the input.
-     *
-     * Example of usage:
-     * @code
-     *      some_record.declare_key("some_key",Integer(),Default::optional(),"description");
-     * @endcode
-     */
-    static Default optional()
-    { return Default(optional_type); }
-
-
-
-
-    /**
-     * Returns true if the default value should be specified at some time.
-     * Currently, we support only default values given at declaration.
-     */
-    inline bool has_value() const
-    { return (type_ == declaration); }
-
-    inline bool is_obligatory() const
-    { return (type_ == obligatory_type); }
-
-    inline bool is_optional() const
-    { return (type_ == optional_type); }
-
-    /**
-     * Returns stored value. Possibly empty string.
-     */
-    inline const string & value() const
-    { return (value_); }
-
-private:
-    string value_;              ///< Stored value.
-    enum DefaultType type_;     ///< Type of the Default.
-
-    /**
-     * Forbids default constructor.
-     */
-    Default();
-
-    /**
-     * Constructor for other types then 'declaration'.
-     */
-    Default(enum DefaultType type);
-
-};
-
 
 
 /**
- * @brief Base of classes for documentation and specification of input data.
+ * @brief Base of classes for declaring structure of the input data.
  *
- * The main purpose of this class and its descendants is documentation and specification of the whole input tree.
- * It includes as the documentation of input structure for developers as documentation for users. Every class in the hierarchy
- * derived from @p TypeBase in the namespace @p Input::Type serves for description of types of input data (independently
- * on input file format). These types somehow follows C++ types: bool, int, double, string, enum, array, class since they are
- * intended to initialize these C++ data structures. In this analogy, declaration of descendants of @p TypeBase is like
- * specification of C++ language and instances of these types are like declarations of particular compound types -- classes
- * and arrays in C++ language.
+ *  Provides methods common to all types. Namely, the type name, finished status (nontrivial only for types with complex initialization - Record, AbstractRecosd, Selection)
+ *  and output of the documentation.
  *
- * Basic scalar types
- *
- * The basic scalar types are String, Bool, Integer, Double, FileName. First four types directly corresponds to
- * C++ types. Individual instances of String and Bool are identical. On the other hand, instances of Integer and Double
- * can differ in interval of valid values. Finally, type FileName is  by @p filetype.
- *
- * Nontrivial scalar type is @p Selection<T>. It is template where @p T should be enum type that will be initialized from
- * data of this type. The Selection<T> object identify possible values of the enum type @p T with strings that should correspond to
- * names of the values. Unfortunately there is no way to get names of an enum type as strings so this information
- * has to be provided through method @p add_value.  Every @p Selection<T> object has particular name and description.
- * Description of individual values is optional.
- *
- * Array type
- *
- * Record type
- *
- * One instance of @p Input::Type::Record is like one class definition. You specify its members calling the method @p declare_key.
- * The keys should be valid C++ keywords. Every key represents a value of arbitrary type.
- *
- * Every class X that wants to initialize itself from the input should provide a static method  which returns
- * @p shared_ptr to the record used to initialize the class X. The shared pointer should be stored in a static
- * variable so that the record description is created only once for all instances of the class X.
- *
- * Types that are simple to initialize by calling their constructor (Array, Scalar) are cloned when used as a subtype in
- * Record::declare_key or Array::Array. On the other hand some other types have nontrivial initialization
- * (Record, AbstractRecord, Selection<T>). The latter group is not cloned on copy operations but rather use
- * shared_ptr to guarantee life time of the instance.
- *
- * AbstractRecord<class T>
- *
- * Mimics polymorphism of C++ classes. Data of this type can be used to initialize a variable of enum type T. The values of
- * this enum type are identified with particular Record types. These Records are like descendant of the AbstractRecord.
- *
- *  @ingroup input
+ *  @ingroup input_types
  */
 class TypeBase {
 public:
@@ -220,15 +92,24 @@ public:
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  =0;
 
+    /**
+     * Comparison of types. It compares kind of type (Intteger, Double, String, REcord, ..), for complex types
+     * it also compares names. For arrays compare subtypes.
+     */
     virtual bool operator==(const TypeBase &other) const
         { return typeid(*this) == typeid(other); }
 
+    /// Comparison of types.
     bool operator!=(const TypeBase & other) const
         { return ! (*this == other); }
 
     /// Empty virtual destructor.
     virtual ~TypeBase( void ) {}
 
+    /**
+     * For types that can be initialized from a default string, this method check
+     * validity of the default string. For invalid string an exception is thrown.
+     */
     virtual void valid_default(const string &str) const
     { }
 
@@ -251,7 +132,7 @@ protected:
     }
 
     /**
-     * Check that a @t key is valid identifier, i.e. consists only of valid characters, that are lower-case letters, digits and underscore,
+     * Check that a @p key is valid identifier, i.e. consists only of valid characters, that are lower-case letters, digits and underscore,
      * we allow identifiers starting with a digit, but it is discouraged since it slows down parsing of the input file.
      */
     static bool is_valid_identifier(const string& key);
@@ -260,7 +141,7 @@ protected:
 };
 
 /**
- * For convenience we provide redirection operator for output documentation of Input:Type classes.
+ * For convenience we provide also redirection operator for output documentation of Input:Type classes.
  */
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
@@ -269,14 +150,17 @@ class Record;
 class SelectionBase;
 
 /**
- * @ingroup input
+ * @brief Class for declaration of inputs sequences.
+ *
+ *
+ * @ingroup input_types
  */
 class Array : public TypeBase {
 
 public:
     /**
-     * Constructor with a @t type of array items given as pure reference. In this case @t type has to by descendant of @t TypeBase different from
-     * 'complex' types @t Record and @ Selection<T>. You can also specify minimum and maximum size of the array.
+     * Constructor with a @p type of array items given as pure reference. In this case \p type has to by descendant of \p TypeBase different from
+     * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
      */
     template <class ValueType>
     inline Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
@@ -296,6 +180,7 @@ public:
     }
 
 
+
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const
         { return *type_of_values_; }
@@ -310,8 +195,10 @@ public:
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
     virtual void  reset_doc_flags() const;
 
+    /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     virtual string type_name() const;
 
+    /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     virtual bool operator==(const TypeBase &other) const
         { return  typeid(*this) == typeid(other) &&
                   (*type_of_values_ == static_cast<const Array *>(&other)->get_sub_type() );
@@ -319,18 +206,17 @@ public:
 
 protected:
 
-
-
     boost::shared_ptr<const TypeBase> type_of_values_;
     unsigned int lower_bound_, upper_bound_;
+
 };
 
 
 
 /**
- * Base of scalar types.
+ * @brief Base of all scalar types.
  *
- *  @ingroup input
+ *  @ingroup input_types
  */
 class Scalar : public TypeBase {
 public:
@@ -340,7 +226,11 @@ public:
 
 
 /**
- * @ingroup input
+ * @brief Class for declaration of the input of type Bool.
+ *
+ * String names of boolean values are \p 'true' and \p 'false'.
+ *
+ * @ingroup input_types
  */
 class Bool : public Scalar {
 public:
@@ -367,7 +257,11 @@ public:
 
 
 /**
- * @ingroup input
+ * @brief Class for declaration of the integral input data.
+ *
+ * The data are stored in an \p signed \p int variable. You can specify bounds for the valid input data.
+ *
+ * @ingroup input_types
  */
 class Integer : public Scalar {
 public:
@@ -397,6 +291,7 @@ public:
         }
     }
 
+    /// Implements  @p Type::TypeBase::valid_defaults.
     virtual void valid_default(const string &str) const
     { from_default(str);}
 
@@ -411,7 +306,11 @@ private:
 
 
 /**
- * @ingroup input
+ * @brief Class for declaration of the input data that are floating point numbers.
+ *
+ * The data are stored in an \p double variable. You can specify bounds for the valid input data.
+ *
+ * @ingroup input_types
  */
 class Double : public Scalar {
 public:
@@ -442,6 +341,7 @@ public:
         }
     }
 
+    /// Implements  @p Type::TypeBase::valid_defaults.
     virtual void valid_default(const string &str) const
     { from_default(str);}
 
@@ -456,9 +356,9 @@ private:
 
 
 /**
- * Just for consistency, but is essentialy same as Scalar.
+ * Just for consistency, but is essentially same as Scalar.
  *
- * @ingroup input
+ * @ingroup input_types
  */
 class String : public Scalar {
 public:
@@ -477,7 +377,11 @@ public:
 
 
 /**
- * @ingroup input
+ * @brief Class for declaration of the input data that are file names.
+ *
+ * We strictly distinguish filenames for input and output files.
+ *
+ * @ingroup input_types
  */
 class FileName : public String {
 public:
@@ -502,6 +406,9 @@ public:
                      (type_== static_cast<const FileName *>(&other)->get_file_type() );
     }
 
+    /**
+     * Returns type of the file input/output.
+     */
     ::FilePath::FileType get_file_type() const {
         return type_;
     }

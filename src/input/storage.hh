@@ -37,7 +37,19 @@ DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "Storage type mismatch. You want va
 
 
 /**
- * This class specifies interface to a data storage (and currently implements it by json_spirit library).
+ * @brief Base class for nodes of a data storage tree.
+ *
+ * This class as well as its descendants is meant for internal usage only as part of the implementation of the input interface.
+ *
+ * The leave nodes of the data storage tree can be of types \p StorageBool, \p StorageInt, \p StorageDouble, and StorageNull.
+ * The branching nodes of the tree are of type StorageArray. The data storage tree serves to store data with structure described
+ * by Input::Type classes. Therefore it provides no way to ask for the type of stored data and an exception \p ExcStorageTypeMismatch
+ * is thrown if you use
+ * getter that do not match actual type of the node. Moreover, the tree can be only created using bottom-up approach and than can
+ * not be modified ( this can change if we want to use same storage for buffered reading of large data). However, we provide a method for
+ * deep copy of any subtree.
+ *
+ * @ingroup input
  */
 class StorageBase {
 public:
@@ -58,7 +70,7 @@ public:
 
 /**
  * Simple array of heterogeneous values. The values are inserted as pointers
- * (no copies) that is possibly dangerous, but this is only internal class.
+ * (no copies) that is possibly dangerous, but don't care as the Storage is meant for internal usage only.
  */
 class StorageArray : public StorageBase {
 public:

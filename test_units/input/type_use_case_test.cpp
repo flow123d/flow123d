@@ -11,7 +11,7 @@
 
 #include <input/input_type.hh>
 #include <input/json_to_storage.hh>
-#include <input/interface.hh>
+#include <input/accessors.hh>
 
 
 class Equation {
@@ -54,7 +54,7 @@ private:
 TEST_F(Application, init) {
     using namespace Input;
 
-    FilePath::set_io_dirs("/root","variant", "/output");
+    FilePath::set_io_dirs("/root","/root","variant", "/output");
 
     Array eq_arr = input().val<Array>("equations");
 

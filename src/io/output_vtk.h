@@ -30,7 +30,7 @@
 #ifndef OUTPUT_VTK_HH_
 #define OUTPUT_VTK_HH_
 
-#include "input/interface.hh"
+#include "input/accessors.hh"
 
 #include "io/output.h"
 

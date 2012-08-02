@@ -128,6 +128,8 @@
  *
  * You can turn all off defining: NODEBUG
  * or turn all on defining: DEBUG
+ *
+ * DEBUG overrides NODEBUG
  */
 
 #ifdef NODEBUG
@@ -137,8 +139,8 @@
 #undef  DEBUG_PROFILER
 #undef  DEBUG_FUNCTION_STACK
 
+#endif
 
-#else
 
 #ifdef DEBUG
 
@@ -146,7 +148,6 @@
 #define  DEBUG_ASSERTS
 #define  DEBUG_PROFILER
 #define  DEBUG_FUNCTION_STACK
-#endif
 
 #endif
 

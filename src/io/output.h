@@ -37,7 +37,7 @@
 #include "system/xio.h"
 #include "mesh/mesh.h"
 
-#include "input/interface.hh"
+#include "input/accessors.hh"
 
 class OutputFormat;
 

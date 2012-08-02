@@ -103,18 +103,14 @@ set(sources_lib_system
 )
 
 set(sources_lib_input
-    #input/data_tree.cpp
-    #//input/Generic_node.cpp
-    #//input/Record_node.cpp
-    #//input/Value_node.cpp
-    #//input/Vector_node.cpp
-    
+  
     input/type_base.cc
     input/type_record.cc
+    input/type_selection.cc
     input/storage.cc
     input/json_to_storage.cc
     
-    input/interface.cc
+    input/accessors.cc
 )
 
 # make separate library for Semchem (God save us!)

@@ -41,7 +41,7 @@
  */
 
 #include "input/input_type.hh"
-#include "input/interface.hh"
+#include "input/accessors.hh"
 #include "la/linsys.hh"
 
 #ifndef SOLVE_H

@@ -12,7 +12,7 @@
 #include <gtest/gtest.h>
 #include <gtest_throw_what.hh>
 
-#include "json_to_storage.hh"
+#include "input/json_to_storage.hh"
 
 using namespace std;
 

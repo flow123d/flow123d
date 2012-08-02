@@ -16,41 +16,45 @@
 namespace Input {
 namespace Type {
 
-using namespace std;
+using std::string;
+
 
 
 /**
  * @brief Template for classes storing finite set of named values.
  *
- * The primary purpose of this class is initialization of enum variables. In such a case
- * the template parameter @p Enum is the particular enum type. However, any type
- * that can be used as a key in std::map (comparable, copy and default constructable) can be used here.
- * In order to by type safe this class has to be templated by actual enum to which
- * the input value could be converted.
+ * The primary purpose of this class is initialization of enum variables. Since C++ provides no reflection,
+ * in particular no access to enum identifiers as strings, you has to construct the Selection object consistent with an enum you want to initialize.
  *
- * This template assumes that Enum is an enum type or enum class type (in C++11).
+ * Similarly to Type::Record and Type::AbstractRecord the Selection class is only proxy to the actual data.
  *
- * It would be nice to have specialization that could be constructed from enum types produced by CppEnumMacro.
- * Then we can drop add_value method.
+ * Usage:
+ @code
+    enum Colors { blue, white };
+
+    Selection colors("Colors");
+    colors.add_value(blue, "blue");
+    colors.add_value(white,"white","White color"); // with optional item description
+    colors.finish();
+ @endcode
  *
- * Future shows, if this is not too restrictive. Maybe, it is more practical drop the template and use just plain ints for values.
  *
  * TODO: We can not guarantee full compatibility of the Selection with corresponding Enum type
  *       the Selection can have fewer values since we can not get number of values in the Enum.
  *       Therefore we either have to move under C++11, where enum classes may provide elementary
  *       reflection or have Selection of simple ints.
+ *
+ * @ingroup input_types
  */
 
 class Selection : public Scalar {
 public:
-    /**
+    /*
      * Exceptions specific to this class.
      */
     TYPEDEF_ERR_INFO( EI_Selection, const Selection );
     DECLARE_EXCEPTION( ExcSelectionKeyNotFound,
             << "Key " << EI_KeyName::qval <<" not found in Selection:\n" <<  EI_Selection::val );
-
-
 
     /**
      * Default constructor. Empty handle.
@@ -68,154 +72,71 @@ public:
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
      */
-    void add_value(const int value, const std::string &key, const std::string &description = "") {
-        empty_check();
-        if (is_finished())
-            xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
+    void add_value(const int value, const std::string &key, const std::string &description = "");
 
-        data_->add_value(value, key, description);
-    }
-
-    void finish() {
-        empty_check();
-        data_->finished = true;
-    }
-
-    virtual bool is_finished() const {
-        empty_check();
-        return data_->finished;
-    }
-
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive = false, unsigned int pad = 0) const {
-        if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
-        return data_->documentation(stream, extensive, pad);
-    }
-
-    virtual void reset_doc_flags() const {
-        if (data_.use_count() != 0) data_->made_extensive_doc = false;
-    }
-
-    virtual string type_name() const {
-        if (data_.use_count() == 0) return "empty_selection_handle";
-        else return data_->type_name_;
-    }
-
-    virtual bool operator==(const TypeBase &other) const
-    { return  typeid(*this) == typeid(other) &&
-                     (type_name() == static_cast<const Selection *>(&other)->type_name() );
-    }
-
-
-    /***
-     * Converts name (on input) to the value. Throws if the name do not exist.
+    /**
+     * Close the Selection, no more values can be added.
      */
-    virtual int name_to_int(const string &key) const {
-        finished_check();
-        KeyHash key_h = key_hash(key);
-        SelectionData::key_to_index_const_iter it = data_->key_to_index_.find(key_h);
-        if (it != data_->key_to_index_.end())
-            return (data_->keys_[it->second].value);
-        else
-            throw ExcSelectionKeyNotFound() << EI_KeyName(key) << EI_Selection(*this);
-    }
+    void finish();
+
+    /// Implements \p TypeBase::is_finished
+    virtual bool is_finished() const;
+
+    /// Implements \p TypeBase::documentation
+    virtual std::ostream& documentation(std::ostream& stream, bool extensive = false, unsigned int pad = 0) const;
+
+    /// Implements \p TypeBase::reset_doc_flags
+    virtual void reset_doc_flags() const;
+
+    /// Implements \p TypeBase::type_name
+    virtual string type_name() const;
+
+    /// Implements \p TypeBase::operator==  compare also Selection names.
+    virtual bool operator==(const TypeBase &other) const;
+
+    /**
+     * Converts given value name \p key to the value. Throws exception if the value name does not exist.
+     */
+    int name_to_int(const string &key) const;
+
+    /**
+     * Same as \p Selection::name_to_int, but throws different exception, when string comes from default value.
+     */
+    int from_default(const string &str) const;
 
     /**
      * Just check if there is a particular name in the Selection.
      */
-    inline bool has_name(const string &key) const {
-        finished_check();
-        KeyHash key_h = key_hash(key);
-        return (data_->key_to_index_.find(key_h) != data_->key_to_index_.end());
-    }
+    inline bool has_name(const string &key) const;
 
-    /***
+    /**
      *  Check if there is a particular value in the Selection.
      */
-    inline bool has_value(const int &val) const {
-        finished_check();
-        return (data_->value_to_index_.find(val) != data_->value_to_index_.end());
-    }
+    inline bool has_value(const int &val) const;
 
-    inline unsigned int size() const {
-        finished_check();
-        ASSERT( data_->keys_.size() == data_->key_to_index_.size(), "Sizes of Type:Selection doesn't match. (map: %d vec: %d)\n", data_->key_to_index_.size(), data_->keys_.size());
-        return data_->keys_.size();
-    }
+    /**
+     * Returns number of values in the Selection.
+     */
+    inline unsigned int size() const;
 
-    int from_default(const string &str) const {
-        try {
-            return name_to_int(str);
-        } catch (ExcSelectionKeyNotFound &e) {
-            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-        }
-    }
 
 private:
 
-    inline void empty_check() const {
-        ASSERT( data_.use_count() != 0, "Empty Selection handle.\n");
-    }
+    /**
+     * Assertion for empty Selection handle.
+     */
+    inline void empty_check() const;
 
-    inline void finished_check() const {
-        ASSERT( is_finished(), "Asking for information of unfinished Seleciton type: %s\n", type_name().c_str());
-    }
+    /**
+     * Assertion for finished Selection (methods are called in correct order).
+     */
+    inline void finished_check() const;
 
+    /**
+     * Actual Selection data.
+     */
     class SelectionData {
     public:
-        SelectionData(const string &name)
-        : type_name_(name), made_extensive_doc(false), finished(false)
-        {}
-
-        void add_value(const int value, const std::string &key, const std::string &description) {
-            F_ENTRY;
-
-            KeyHash key_h = TypeBase::key_hash(key);
-            if (key_to_index_.find(key_h) != key_to_index_.end()) {
-                xprintf(PrgErr, "Name '%s' already exists in Selection: %s\n", key.c_str(), type_name_.c_str());
-                return;
-            }
-            value_to_index_const_iter it = value_to_index_.find(value);
-            if (it != value_to_index_.end()) {
-                xprintf(
-                        PrgErr, "Value %d of new name '%s' conflicts with value %d of previous name '%s' in Selection: '%s'.\n", value, key.c_str(), keys_[it->second].value, keys_[it->second].key_.c_str(), type_name_.c_str());
-                return;
-            }
-
-            unsigned int new_idx = key_to_index_.size();
-            key_to_index_.insert(std::make_pair(key_h, new_idx));
-            value_to_index_.insert(std::make_pair(value, new_idx));
-
-            Key tmp_key = { new_idx, key, description, value };
-            keys_.push_back(tmp_key);
-        }
-
-        std::ostream& documentation(std::ostream& stream, bool extensive, unsigned int pad) const
-        {
-
-            if (!extensive) {
-                stream << "Selection '" << type_name_ << "' of " << keys_.size() << " values.";
-            }
-            if (extensive && !made_extensive_doc) {
-                made_extensive_doc = true;
-
-                stream << endl << "Selection '" << type_name_ << "' of " << keys_.size() << " values." << endl;
-                stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
-                // keys
-                for (keys_const_iterator it = keys_.begin(); it != keys_.end(); ++it) {
-                    stream << setw(4) << "" << it->key_ << " = " << it->value;
-                    if (it->description_ != "")
-                        stream << " (" << it->description_ << ")";
-                    stream << endl;
-                }
-                stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name_ << endl;
-            }
-            return stream;
-        }
-
-
-
-
-        string type_name_;
 
         struct Key {
             unsigned int key_index;
@@ -223,14 +144,28 @@ private:
             string description_;
             int value;
         };
-        /// Map of valid keys to index.
+
+        SelectionData(const string &name)
+        : type_name_(name), made_extensive_doc(false), finished(false)
+        {}
+
+        void add_value(const int value, const std::string &key, const std::string &description);
+
+        std::ostream& documentation(std::ostream& stream, bool extensive, unsigned int pad) const;
+
+
+        /// Name of the Selection.
+        string type_name_;
+
+        /// Map : valid value name to index.
         std::map<KeyHash, unsigned int> key_to_index_;
         typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
 
-        /// Map of valid values to index.
+        /// Map : valid value to index.
         std::map<int, unsigned int> value_to_index_;
         typedef std::map<int, unsigned int>::const_iterator value_to_index_const_iter;
 
+        /// Vector of values of the Selection
         std::vector<Key> keys_;
         typedef std::vector<struct Key>::const_iterator keys_const_iterator;
 
@@ -242,11 +177,56 @@ private:
          */
         mutable bool made_extensive_doc;
 
+        /// Indicator of finished Selection.
         bool finished;
     };
 
+    /// Handle to actual Selection data.
     boost::shared_ptr<SelectionData> data_;
 };
+
+
+
+
+
+/******************************************************************************
+ * Implementation of inline methods.
+ */
+
+inline bool Selection::has_name(const string &key) const {
+    finished_check();
+    KeyHash key_h = key_hash(key);
+    return (data_->key_to_index_.find(key_h) != data_->key_to_index_.end());
+}
+
+
+
+inline bool Selection::has_value(const int &val) const {
+    finished_check();
+    return (data_->value_to_index_.find(val) != data_->value_to_index_.end());
+}
+
+
+
+inline unsigned int Selection::size() const {
+    finished_check();
+    ASSERT( data_->keys_.size() == data_->key_to_index_.size(), "Sizes of Type:Selection doesn't match. (map: %d vec: %d)\n", data_->key_to_index_.size(), data_->keys_.size());
+    return data_->keys_.size();
+}
+
+
+
+inline void Selection::empty_check() const {
+    ASSERT( data_.use_count() != 0, "Empty Selection handle.\n");
+}
+
+
+
+inline void Selection::finished_check() const {
+    ASSERT( is_finished(), "Asking for information of unfinished Seleciton type: %s\n", type_name().c_str());
+}
+
+
 
 } // closing namespace Type
 } // closing namespace Input

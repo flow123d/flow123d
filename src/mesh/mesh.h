@@ -41,7 +41,7 @@
 #include "mesh/boundaries.h"
 
 #include "input/input_type.hh"
-#include "input/interface.hh"
+#include "input/accessors.hh"
 
 
 #define ELM  0

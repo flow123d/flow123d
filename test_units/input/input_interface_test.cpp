@@ -12,7 +12,7 @@
 #include <gtest_throw_what.hh>
 #include <vector>
 
-#include <input/interface.hh>
+#include <input/accessors.hh>
 #include <input/input_type.hh>
 #include <input/type_record.hh>
 
@@ -26,7 +26,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("/json_root_dir","variant_input","/output_root");
+        FilePath::set_io_dirs("/json_root_dir","/json_root_dir","variant_input","/output_root");
 
         abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
         abstr_rec_ptr->finish();
@@ -188,7 +188,9 @@ TEST_F(InputInterfaceTest, RecordVal) {
             "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='Ss';");
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
+#ifdef DEBUG_ASSERTS
     EXPECT_DEATH( {record.val<int>("optional_int");}, "The key optional_int is declared as optional, you have to use Record::find instead.");
+#endif
 
 }
 

@@ -169,14 +169,16 @@ using namespace Input::Type;
     EXPECT_DEATH( {sel2.add_value(green,"red");}, "already exists in Selection:");
     EXPECT_DEATH( {sel1->add_value(blue,"blue1");}, "conflicts with value");
     EXPECT_DEATH( {sel2.add_value(blue,"blue1");}, "conflicts with value");
-    delete sel1;
+
 
     sel2.add_value(green,"green");
     sel2.finish();
     EXPECT_DEATH( {sel2.add_value(yellow,"y");}, "in finished Selection type:");
 
     Selection sel3;
+#ifdef DEBUG_ASSERTS
     EXPECT_DEATH( {sel3.add_value(1,"one");}, "Empty Selection handle." );
+#endif
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
@@ -204,8 +206,9 @@ using namespace Input::Type;
             "Default value .* do not match type: 'Integer selection';" );
 
 
-
     EXPECT_EQ(10, int_sel.name_to_int("ten"));
+
+    delete sel1;
 }
 
 

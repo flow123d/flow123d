@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#include "storage.hh"
+#include "input/storage.hh"
 
 namespace Input {
 using namespace std;
@@ -102,7 +102,8 @@ void StorageArray::new_item(unsigned int index, StorageBase* item) {
 
 
 const StorageBase * StorageArray::get_item(const unsigned int index) const {
-    ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
+    if ( index >= array_.size() )
+        xprintf(Err, "Index %d out of array of size: %d", index, array_.size());
     return array_[index];
 }
 

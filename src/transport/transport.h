@@ -34,7 +34,7 @@
 #include "coupling/equation.hh"
 #include "transport/sources.hh"
 #include "materials.hh"
-#include "input/interface.hh"
+#include "input/accessors.hh"
 //#include "la/distribution.hh"
 //#include "mesh/mesh.h"
 //#include "reaction.h"

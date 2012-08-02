@@ -42,7 +42,10 @@ using namespace Input::Type;
 
    // errors during declaration
    Record rec_empty;
+
+#ifdef DEBUG_ASSERTS
    EXPECT_DEATH( {rec_empty.declare_key("xx", Integer(), "");}, "Empty Record handle.");
+#endif
 
    Record rec_fin("xx","");
    rec_fin.finish();
@@ -71,7 +74,9 @@ using namespace Input::Type;
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
 
    // test correct finishing.
+#ifdef DEBUG_ASSERTS
    EXPECT_DEATH( {rec.size();}, "Asking for information of unfinished Record type");
+#endif
 
    //EXPECT_DEATH( { rec.declare_key("x", *sel, "desc.");},
    //             "Complex type .* shared_ptr.");
@@ -257,7 +262,10 @@ using namespace Input::Type;
 
     AbstractRecord x_rec("ar","");
     Record y_rec("y_rec","");
+
+#ifdef DEBUG_ASSERTS
     EXPECT_DEATH( {y_rec.derive_from(x_rec);} , "Can not add descendant to unfinished AbstractType." );
+#endif
 }
 
 

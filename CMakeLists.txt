@@ -12,6 +12,7 @@
 #   and have clearly defined CFLAGS and other settings for individual configurations 
 #
 # * allways use Debug configuration for targets in test_units
+#   WHY? Rather make unit_tests working for both debug and release configurations
 #
 # * report compiler flags and used libraries in a summarizing table before own build
 #

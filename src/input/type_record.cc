@@ -28,6 +28,24 @@ namespace Type {
 
 using namespace std;
 
+/*******************************************************************
+ * implementation of Default
+ */
+
+Default::Default()
+: value_(), type_(no_default_optional_type)
+{}
+
+Default::Default(const std::string & value)
+: value_(value), type_(default_at_declaration)
+{
+    boost::algorithm::trim(value_);
+}
+
+Default::Default(enum DefaultType type)
+: value_(), type_(type)
+{}
+
 
 /**********************************************************************************
  * implementation of Type::Record
@@ -37,6 +55,7 @@ Record::Record(const string & type_name_in, const string & description)
 : data_( boost::make_shared<RecordData>(type_name_in, description) )
 
 {}
+
 
 
 void Record::derive_from(AbstractRecord parent) {
@@ -58,21 +77,50 @@ void Record::derive_from(AbstractRecord parent) {
     }
 }
 
-string Record::type_name() const
-{
-    if (data_.use_count() == 0) return "empty_handle";
-    else return data_->type_name_;
+
+
+void Record::finish() {
+    empty_check();
+    data_->finished = true;
 }
 
-void  Record::reset_doc_flags() const {
-    if (data_.use_count() != 0) data_->reset_doc_flags();
+
+
+bool Record::is_finished() const {
+    empty_check();
+    return data_->finished;
 }
+
+
 
 std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
     if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
     return data_->documentation(stream, extensive, pad);
 }
+
+
+
+string Record::type_name() const
+{
+    if (data_.use_count() == 0) return "empty_handle";
+    else return data_->type_name_;
+}
+
+
+
+void  Record::reset_doc_flags() const {
+    if (data_.use_count() != 0) data_->reset_doc_flags();
+}
+
+
+
+bool Record::operator==(const TypeBase &other) const
+{ return  typeid(*this) == typeid(other) &&
+                 (type_name() == static_cast<const Record *>(&other)->type_name() );
+}
+
+
 
 /**********************************************************************************
  * implementation of Type::Record::RecordData
@@ -84,6 +132,8 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
  made_extensive_doc(false),
  finished(false)
 {}
+
+
 
 std::ostream& Record::RecordData::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
 {
@@ -124,6 +174,8 @@ std::ostream& Record::RecordData::documentation(std::ostream& stream, bool exten
     return stream;
 }
 
+
+
 void  Record::RecordData::reset_doc_flags() const {
     made_extensive_doc=false;
     for(KeyIter it = keys.begin(); it!=keys.end(); ++it) {
@@ -153,6 +205,9 @@ void Record::RecordData::declare_key(const string &key,
        }
     }
 }
+
+
+
 
 /************************************************
  * implementation of AbstractRecord
@@ -252,6 +307,7 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
     ASSERT( is_finished(), "Can not get descendant of unfinished AbstractType\n");
     return get_descendant( child_data_->selection_of_childs->name_to_int(name) );
 }
+
 
 
 const Record  & AbstractRecord::get_descendant(unsigned int idx) const

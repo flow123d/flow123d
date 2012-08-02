@@ -38,7 +38,7 @@
 #include "io/output.h"
 
 #include "input/input_type.hh"
-#include "input/interface.hh"
+#include "input/accessors.hh"
 
 
 class DarcyFlowMH;
