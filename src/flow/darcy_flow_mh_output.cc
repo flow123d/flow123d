@@ -75,10 +75,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
 
     // temporary solution for balance output
-    balance_output_file = xfopen( in_rec.val<FilePath>("balance"), "wt");
+    balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
     // optionally open raw output file
-    Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow");
+    Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
     if (it) {
         raw_output_file = xfopen(*it, "wt");
     }
@@ -104,10 +104,10 @@ Input::Type::Record DarcyFlowMHOutput::get_input_type() {
             rec.declare_key("piezo_head_p0", FileName::output(),
                     "Output stream for P0 approximation of the piezometric head field.");
 
-            rec.declare_key("balance", FileName::output(), Default("water_balance"),
+            rec.declare_key("balance_output", FileName::output(), Default("water_balance"),
                     "Output file for water balance table.");
 
-            rec.declare_key("raw_flow", FileName::output(),
+            rec.declare_key("raw_flow_output", FileName::output(), Default::optional(),
                     "Output file with raw data form MH module.");
 
             rec.finish();

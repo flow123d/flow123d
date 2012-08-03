@@ -36,6 +36,7 @@
 #include "system/system.hh"
 #include <boost/format.hpp>
 
+#include "system/file_path.hh"
 
 Profiler* Profiler::_instance = NULL;
 map<string, TimerFrame*> TimerFrame::_frames;
@@ -123,7 +124,7 @@ Profiler::~Profiler() {
         char filename[PATH_MAX];
         strftime(filename, sizeof (filename) - 1, fileformat, localtime(&start_time));
 
-        const string& full_fname = IONameHandler::get_instance()->get_output_file_name(filename);
+        const string& full_fname = FilePath(string(filename), FilePath::output_file);
         out = xfopen(full_fname, "w+");
 
         //print some information about the task at the beginning

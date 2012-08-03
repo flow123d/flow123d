@@ -34,12 +34,10 @@
 #include "transport/transport_operator_splitting.hh"
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
-#include "equation.hh"
 #include "time_marks.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-#include "io/output.h"
-#include "main.h"
+
 
 #include "input/input_type.hh"
 

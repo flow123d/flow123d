@@ -301,7 +301,7 @@ do
 		TIMER="0"
 
 		# Flow123d runs with changed priority (19 is the lowest priority)
-		"${MPIEXEC}" -np ${NP} "${FLOW123D_SH}" -n 10 -t ${TIMEOUT} -r "${FLOW123D_OUTPUT}" -S "${INI_FILE}" "${FLOW_PARAMS}" &
+		"${MPIEXEC}" -np ${NP} "${FLOW123D_SH}" -n 10 -t ${TIMEOUT} -r "${FLOW123D_OUTPUT}" -s "${INI_FILE}" "${FLOW_PARAMS}" &
 		# Get PID of mpiexec
 		MPIEXEC_PID=$!
 
@@ -362,7 +362,7 @@ done
 # Print redirected stdout to stdout only in situation, when some error occurred
 if [ $EXIT_STATUS -gt 0 -a $EXIT_STATUS -lt 10 ]
 then
-	echo "Error in execution: ${FLOW123D_SH} -S ${INI_FILE} ${FLOW_PARAMS}"
+	echo "Error in execution: ${FLOW123D_SH} -s ${INI_FILE} ${FLOW_PARAMS}"
 	cat "${FLOW123D_OUTPUT}"
 fi
 
