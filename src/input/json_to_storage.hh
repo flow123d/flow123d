@@ -165,13 +165,16 @@ public:
     /*
      * Exceptions.
      */
-    TYPEDEF_ERR_INFO(EI_InputType, Type::TypeBase const *);
+    // unfortunately following is not safe:
+    // TYPEDEF_ERR_INFO(EI_InputType, Type::TypeBase const *);
+
+    TYPEDEF_ERR_INFO(EI_InputType, string );
     TYPEDEF_ERR_INFO(EI_File, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, JSONPath);
     DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::val << " at address: " << EI_ErrorAddress::val <<"\n"
                                             << EI_Specification::val << "\n"
-                                            << "Expected type:\n" << *EI_InputType::ref(_exc) );
+                                            << "Expected type:\n" << EI_InputType::val );
 
     TYPEDEF_ERR_INFO( EI_JSONLine, unsigned int);
     TYPEDEF_ERR_INFO( EI_JSONColumn, unsigned int);

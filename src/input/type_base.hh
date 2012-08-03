@@ -93,6 +93,11 @@ public:
     virtual string type_name() const  =0;
 
     /**
+     * Returns string with Type extensive documentation.
+     */
+    string desc() const;
+
+    /**
      * Comparison of types. It compares kind of type (Intteger, Double, String, REcord, ..), for complex types
      * it also compares names. For arrays compare subtypes.
      */
@@ -152,6 +157,15 @@ class SelectionBase;
 /**
  * @brief Class for declaration of inputs sequences.
  *
+ * The type is fully specified after its constructor is called. All elements of the Array has same type, however you
+ * can use elements of AbstractRecord.
+ *
+ * If you not disallow Array size 1, the input reader will try to convert any other type
+ * on input into array with one element, e.g.
+ @code
+     int_array=1        # is equivalent to
+     int_array=[ 1 ]
+ @endcode
  *
  * @ingroup input_types
  */
@@ -199,10 +213,14 @@ public:
     virtual string type_name() const;
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
-    virtual bool operator==(const TypeBase &other) const
-        { return  typeid(*this) == typeid(other) &&
-                  (*type_of_values_ == static_cast<const Array *>(&other)->get_sub_type() );
-        }
+    virtual bool operator==(const TypeBase &other) const;
+
+    /**
+     *  Default values for an array creates array containing one element
+     *  that is initialized by given default value. So this method check
+     *  if the default value is valid for the sub type of the array.
+     */
+    virtual void valid_default(const string &str) const;
 
 protected:
 
@@ -237,19 +255,9 @@ public:
     Bool()
     {}
 
-    virtual void valid_default(const string &str) const
-    { from_default(str);}
+    virtual void valid_default(const string &str) const;
 
-    bool from_default(const string &str) const {
-        if (str == "true" )  {
-            return true;
-        } else
-        if (str == "false") {
-            return false;
-        } else {
-            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-        }
-    }
+    bool from_default(const string &str) const;
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;
@@ -272,30 +280,15 @@ public:
     /**
      * Returns true if the given integer value conforms to the Type::Integer bounds.
      */
-    bool match(int value) const {
-        return ( value >=lower_bound_ && value <= upper_bound_);
-    }
+    bool match(int value) const;
 
     /**
      * As before but also returns converted integer in @p value.
      */
-    int from_default(const string &str) const {
-        std::istringstream stream(str);
-        int value;
-        stream >> value;
-
-        if (stream && stream.eof() && match(value)) {
-            return value;
-        } else {
-            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-        }
-    }
+    int from_default(const string &str) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual void valid_default(const string &str) const
-    { from_default(str);}
-
-
+    virtual void valid_default(const string &str) const;
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;
@@ -321,30 +314,15 @@ public:
     /**
      * Returns true if the given integer value conforms to the Type::Double bounds.
      */
-    bool match(double value) const {
-        return ( value >=lower_bound_ && value <= upper_bound_);
-    }
-
+    bool match(double value) const;
 
     /**
      * As before but also returns converted integer in @p value.
      */
-    double from_default(const string &str) const {
-        std::istringstream stream(str);
-        double value;
-        stream >> value;
-
-        if (stream && stream.eof() && match(value)) {
-            return value;
-        } else {
-            THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-        }
-    }
+    double from_default(const string &str) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual void valid_default(const string &str) const
-    { from_default(str);}
-
+    virtual void valid_default(const string &str) const;
 
     virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
     virtual string type_name() const;

@@ -42,8 +42,8 @@ Default::Default(const std::string & value)
     boost::algorithm::trim(value_);
 }
 
-Default::Default(enum DefaultType type)
-: value_(), type_(type)
+Default::Default(enum DefaultType type, const std::string & value)
+: value_(value), type_(type)
 {}
 
 
@@ -56,6 +56,13 @@ Record::Record(const string & type_name_in, const string & description)
 
 {}
 
+
+
+void Record::allow_auto_conversion(const string &from_key) {
+    empty_check();
+    ASSERT(data_->auto_conversion_key == -1, "Can not use key %s for auto conversion, the key is already set.", from_key.c_str());
+    data_->auto_conversion_key = key_index(from_key);
+}
 
 
 void Record::derive_from(AbstractRecord parent) {
@@ -82,6 +89,15 @@ void Record::derive_from(AbstractRecord parent) {
 void Record::finish() {
     empty_check();
     data_->finished = true;
+
+    if (data_->auto_conversion_key != -1 ) {
+        // check that all other keys have default values
+        for(KeyIter it=begin(); it != end(); ++it) {
+            if (! it->default_.has_value_at_declaration() && it->key_index != data_->auto_conversion_key)
+                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other key: '%s' has no default value.\n",
+                        auto_conversion_key_iter()->key_.c_str(), it->key_.c_str());
+        }
+    }
 }
 
 
@@ -109,6 +125,17 @@ string Record::type_name() const
 
 
 
+void Record::valid_default(const string &str) const
+{
+    empty_check();
+    if (data_->auto_conversion_key >=0) {
+        this->auto_conversion_key_iter()->type_->valid_default(str);
+    } else {
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
+    }
+}
+
+
 void  Record::reset_doc_flags() const {
     if (data_.use_count() != 0) data_->reset_doc_flags();
 }
@@ -121,6 +148,12 @@ bool Record::operator==(const TypeBase &other) const
 }
 
 
+Record::KeyIter Record::auto_conversion_key_iter() const {
+    empty_check();
+    if (data_->auto_conversion_key >= 0) return begin() + data_->auto_conversion_key;
+    else return end();
+}
+
 
 /**********************************************************************************
  * implementation of Type::Record::RecordData
@@ -130,7 +163,8 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 :description_(description),
  type_name_(type_name_in),
  made_extensive_doc(false),
- finished(false)
+ finished(false),
+ auto_conversion_key(-1)    // auto conversion turned off
 {}
 
 

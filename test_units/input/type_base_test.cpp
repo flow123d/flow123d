@@ -135,6 +135,12 @@ using namespace Input::Type;
     // type_name()
     EXPECT_EQ( arr_int.type_name(), Array(Integer()).type_name() );
 
+    // valid default
+    // no death
+    arr_int.valid_default("100");
+    EXPECT_THROW_WHAT( {arr_int.valid_default("1.5");}, ExcWrongDefault,
+            "Default value '1.5' do not match type:" );
+
 }
 
 

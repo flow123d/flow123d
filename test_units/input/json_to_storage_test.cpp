@@ -252,6 +252,25 @@ TEST_F(InputJSONToStorageTest, Array) {
         EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Value out of bounds.");
     }
 
+    // test automatic conversion
+    {
+        Type::Array darr_type( Type::Double(3.1,4.1));
+        stringstream ss("3.2");
+        read_stream(ss, darr_type);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(1, storage_->get_array_size());
+        EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
+
+        stringstream ss1("{ key=3.2}");
+        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "Wrong type, has to be Double.");
+    }
+
+    // test auto conversion failed
+    {
+        stringstream ss("3.2");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "Wrong type, has to be Array. Automatic conversion not allowed.");
+    }
 }
 
 
@@ -286,6 +305,37 @@ TEST_F(InputJSONToStorageTest, Record) {
         stringstream ss("{ int_key=6 }");
         EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Value out of bounds.");
     }
+
+    // test auto conversion
+    {
+
+        static Type::Record sub_rec( "SubRecord", "");
+        sub_rec.declare_key("bool_key", Type::Bool(), Type::Default("false"), "");
+        sub_rec.declare_key("int_key", Type::Integer(),  "");
+        sub_rec.allow_auto_conversion("int_key");
+        sub_rec.finish();
+
+        stringstream ss("123");
+        read_stream(ss, sub_rec);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_FALSE( storage_->get_item(0)->get_bool() );
+        EXPECT_EQ(123, storage_->get_item(1)->get_int() );
+
+        stringstream ss1("1.23");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "Wrong type, has to be Int.");
+    }
+
+    {
+        static Type::Record sub_rec( "SubRecord", "");
+        sub_rec.finish();
+
+        stringstream ss1("1.23");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "Wrong type, has to be Record.");
+    }
+
+
 }
 
 TEST_F(InputJSONToStorageTest, AbstratRec) {
@@ -396,6 +446,15 @@ TEST_F(InputJSONToStorageTest, default_values) {
     rec_type.declare_key("sel_key", sel_type, Type::Default("two"),"");
     rec_type.declare_key("double_key", Type::Double(), Type::Default("1.23"),"");
     rec_type.declare_key("str_key", Type::String(), Type::Default("ahoj"),"");
+    rec_type.declare_key("array_key", Type::Array( Type::Integer() ), Type::Default("123"), "");
+
+    static Type::Record sub_rec( "SubRecord", "");
+    sub_rec.declare_key("bool_key", Type::Bool(), Type::Default("false"), "");
+    sub_rec.declare_key("int_key", Type::Integer(),  "");
+    sub_rec.allow_auto_conversion("int_key");
+    sub_rec.finish();
+
+    rec_type.declare_key("rec_key", sub_rec, Type::Default("321"), "");
     rec_type.finish();
 
     {
@@ -403,12 +462,15 @@ TEST_F(InputJSONToStorageTest, default_values) {
         read_stream(ss, rec_type);
 
         EXPECT_NE((void *)NULL, storage_);
-        EXPECT_EQ(5, storage_->get_array_size());
+        EXPECT_EQ(7, storage_->get_array_size());
         EXPECT_EQ(4, storage_->get_item(0)->get_int() );
         EXPECT_TRUE( storage_->get_item(1)->get_bool() );
         EXPECT_EQ(2, storage_->get_item(2)->get_int() );
         EXPECT_EQ(1.23, storage_->get_item(3)->get_double() );
         EXPECT_EQ("ahoj", storage_->get_item(4)->get_string() );
+        EXPECT_EQ(123 , storage_->get_item(5)->get_item(0)->get_int() );
+        EXPECT_FALSE( storage_->get_item(6)->get_item(0)->get_bool() );
+        EXPECT_EQ(321 , storage_->get_item(6)->get_item(1)->get_int() );
     }
 }
 

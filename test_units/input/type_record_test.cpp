@@ -51,7 +51,6 @@ using namespace Input::Type;
    rec_fin.finish();
    EXPECT_DEATH( {rec_fin.declare_key("xx", String(),"");}, "in finished Record type:");
 
-   EXPECT_DEATH( {rec.declare_key("ar",Array(Integer()), Default("[0, 1]"), "");} , "Default value for non scalar type in declaration of key:");
 
    Record rec_unfin("yy","");
    EXPECT_DEATH({rec.declare_key("yy", rec_unfin, ""); }, "Unfinished type of declaring key:");
@@ -78,14 +77,19 @@ using namespace Input::Type;
    EXPECT_DEATH( {rec.size();}, "Asking for information of unfinished Record type");
 #endif
 
-   //EXPECT_DEATH( { rec.declare_key("x", *sel, "desc.");},
-   //             "Complex type .* shared_ptr.");
 
-   // should fail at compile time
-   // output_record.declare_key("xx", 10, "desc");
+   // test documentation of deafult_at_read_time
+   {
+       Record rec("Rec", "");
+       rec.declare_key("int_key", Integer(), Default::read_time("Default value provided at read time.\n"), "");
+       rec.finish();
 
-   //boost::shared_ptr<int> int_ptr = boost::make_shared<int>(8);
-   //output_record.declare_key("xx", int_ptr, "desc");
+       stringstream out;
+       out << rec;
+       EXPECT_EQ("Record 'Rec' with 1 keys\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <Default value provided at read time.\n> is Integer in [-2147483648, 2147483647]\n---------- Rec\n",
+                 out.str());
+   }
+
 }
 
 TEST(InputTypeRecord, declare_key_arrays) {
@@ -104,11 +108,48 @@ using namespace Input::Type;
     array_record.declare_key("array_of_str_1", Array( String() ), "Desc. of array");
 
 
-    ASSERT_DEATH( {array_record.declare_key("some_key", Array( String() ), Default("10"), ""); },
-                  "Default value for non scalar type in declaration of key:"
+    // allow default values for an array
+    array_record.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
+    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
+                  "Default value 'ahoj' do not match type: 'Integer';"
+                 );
+    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); }, ExcWrongDefault,
+                  "Default value '3.2' do not match type: 'array_of_Double';"
                  );
     array_record.finish();
 }
+
+TEST(InputTypeRecord, allow_convertible) {
+using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    {
+    static Record sub_rec( "SubRecord", "");
+    sub_rec.declare_key("bool_key", Bool(), Default("false"), "");
+    sub_rec.declare_key("int_key", Integer(),  "");
+    sub_rec.allow_auto_conversion("int_key");
+    sub_rec.finish();
+
+    EXPECT_EQ(1, sub_rec.auto_conversion_key_iter()->key_index );
+    }
+
+    {
+    static Record sub_rec( "SubRecord", "");
+    sub_rec.declare_key("bool_key", Bool(), "");
+    sub_rec.declare_key("int_key", Integer(),  "");
+    sub_rec.allow_auto_conversion("int_key");
+    EXPECT_DEATH( {sub_rec.finish();}, "Finishing Record auto convertible from the key 'int_key', but other key: 'bool_key' has no default value.");
+    }
+
+    {
+    static Record sub_rec( "SubRecord", "");
+    sub_rec.finish();
+
+    EXPECT_EQ( sub_rec.end(), sub_rec.auto_conversion_key_iter() );
+    }
+
+}
+
 
 TEST(InputTypeRecord, declare_key_record) {
 using namespace Input::Type;
@@ -125,7 +166,18 @@ using namespace Input::Type;
     Record other_record("OtherRecord","desc");
     other_record.finish();
 
+    static Record sub_rec( "SubRecord", "");
+    sub_rec.declare_key("bool_key", Bool(), Default("false"), "");
+    sub_rec.declare_key("int_key", Integer(),  "");
+    sub_rec.allow_auto_conversion("int_key");
+    sub_rec.finish();
+
     record_record.declare_key("sub_rec_1", other_record, "key desc");
+    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); }, ExcWrongDefault,
+            "Default value '2.3' do not match type: 'OtherRecord';" );
+    record_record.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
+    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); } , ExcWrongDefault,
+            "Default value '2.3' do not match type: 'Integer';" );
 
     // recursion  -  forbidden
     //record_record->declare_key("sub_rec_2", record_record, "desc.");

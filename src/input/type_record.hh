@@ -82,7 +82,7 @@ public:
      * @endcode
      */
     static Default read_time(const std::string & description)
-    { return Default(default_at_read_time); }
+    { return Default(default_at_read_time, description); }
 
 
     /**
@@ -111,13 +111,18 @@ public:
     { return Default(no_default_optional_type); }
 
 
+    /**
+     * Returns true if the default value is or will be available when someone tries to read the value.
+     */
+    inline bool has_value_at_read_time() const
+    { return (type_ == default_at_read_time); }
 
     /**
      * Returns true if the default value is or will be available when someone tries to read the value.
-     * Currently, we support only default values given at declaration.
      */
-    inline bool has_value() const
+    inline bool has_value_at_declaration() const
     { return (type_ == default_at_declaration); }
+
 
     /**
      * Returns true if the key is obligatory and thus must be specified on input. No default value is given.
@@ -149,7 +154,7 @@ private:
     /**
      * Constructor for other types then 'declaration'.
      */
-    Default(enum DefaultType type);
+    Default(enum DefaultType type, const string &value = "");
 
 };
 
@@ -214,6 +219,16 @@ public:
     void derive_from(AbstractRecord parent);
 
     /**
+     * Allows shorter input of the Record providing only value of the \p from_key given as the parameter.
+     * All other keys of the Record must have default values specified at declaration. This is checked when the
+     * \p finish method is called.
+     *
+     * If the input reader come across the Record in declaration tree, but there is not 'record-like' input, it
+     * save default values into storage tree and tries to match the input with the type of the \p from_key.
+     */
+    void allow_auto_conversion(const string &from_key);
+
+    /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
      * @p description. The parameter @p type has to be any of descendants of TypeBase.
      *
@@ -241,6 +256,7 @@ public:
      */
     virtual bool is_finished() const;
 
+
     /**
      * @brief Implements @p Type:TypeBase::documentation.
      */
@@ -254,11 +270,19 @@ public:
     /// Record type name getter.
     virtual string type_name() const;
 
+    /**
+     * The default string can initialize an Record if the record is auto-convertible
+     * and the string is valid default value for the auto conversion key.
+     */
+    virtual void valid_default(const string &str) const;
+
     /// Class comparison and Record type name comparision.
     virtual bool operator==(const TypeBase &other) const;
 
     /**
      * Interface to mapping key -> index in record. Returns index (in continuous array) for given key.
+     *
+     * Works also for unfinished Record.
      */
     inline unsigned int key_index(const string& key) const;
 
@@ -266,6 +290,12 @@ public:
      * Returns iterator to the key struct for given key string.
      */
     inline KeyIter key_iterator(const string& key) const;
+
+    /**
+     * Returns iterator to auto-conversion key (see Record::allow_auto_conversion), or end() if the auto conversion
+     * is not allowed.
+     */
+    KeyIter auto_conversion_key_iter() const;
 
     /**
      * Returns iterator to the key struct for given key string.
@@ -340,6 +370,8 @@ protected:
         mutable bool made_extensive_doc;
 
         bool finished;
+
+        int auto_conversion_key;
 
     };
 
@@ -480,8 +512,8 @@ void Record::declare_key(const string &key,
     if (is_finished() ) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name().c_str());
 
     // If KeyType is not derived from Scalar, we check emptiness of the default value.
-    if (boost::is_base_of<Scalar, KeyType>::value == false && default_value.has_value() )
-        xprintf(Err, "Default value for non scalar type in declaration of key: %s in Record type: %s \n", key.c_str(), type_name().c_str() );
+    //if (boost::is_same<Record, KeyType>::value && typedefault_value.has_value() )
+    //    xprintf(Err, "Default value for non scalar type in declaration of key: %s in Record type: %s \n", key.c_str(), type_name().c_str() );
 
     if (! is_valid_identifier(key))
         xprintf(PrgErr, "Invalid key identifier %s in declaration of Record type: %s\n", key.c_str(), type_name().c_str());
@@ -492,7 +524,7 @@ void Record::declare_key(const string &key,
         xprintf(PrgErr, "Unfinished type of declaring key: %s in Record type: %s\n", key.c_str(), type_name().c_str() );
 
     // check validity of possibly given default value
-    if (default_value.has_value()) {
+    if ( default_value.has_value_at_declaration() ) {
 
         try {
             type.valid_default( default_value.value() );
@@ -522,7 +554,6 @@ void Record::declare_key(const string &key,
 
 inline unsigned int Record::key_index(const string& key) const
 {
-    finished_check();
     KeyHash key_h = key_hash(key);
     RecordData::key_to_index_const_iter it = data_->key_to_index.find(key_h);
     if (it != data_->key_to_index.end()) return it->second;

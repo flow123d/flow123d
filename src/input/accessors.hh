@@ -122,6 +122,9 @@ public:
      * class type given as the template parameter. If the key has no defined value
      * (either from input or a declared default value) it throws an exception. It throws also, if the
      * declared type do not match desired C++ type.
+     *
+     * This method can be used only for keys which are obligatory or has default value given at declaration.
+     * The optional keys and those with default value at read time must use method \p find.
      */
     template <class Ret>
     inline const Ret val(const string &key) const;
@@ -129,6 +132,7 @@ public:
 
     /**
      * Returns iterator to the key if it exists or NULL Iterator if it doesn't.
+     * This method must be used for keys which are optional or has default value provided at read time.
      */
     template <class Ret>
     inline Iterator<Ret> find(const string &key) const;

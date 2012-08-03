@@ -53,14 +53,28 @@ std::ostream& TypeBase::write_description(std::ostream& stream, const string& st
     return stream;
 }
 
+
+
 bool TypeBase::is_valid_identifier(const string& key) {
   namespace ba = boost::algorithm;
   return ba::all( key, ba::is_lower() || ba::is_digit() || ba::is_any_of("_") );
 }
 
 
+
+string TypeBase::desc() const {
+    stringstream ss;
+    reset_doc_flags();
+    documentation(ss, false, 0);
+    documentation(ss, true, 0);
+    return ss.str();
+}
+
+
+
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
     type.reset_doc_flags();
+    type.documentation(stream, false, 0);
     return type.documentation(stream, true,0);
 }
 
@@ -72,6 +86,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
 
 
 std::ostream& Array::documentation(std::ostream& stream, bool extensive, unsigned int pad) const {
+
     if (extensive) {
         type_of_values_->documentation(stream, true, pad);
     } else {
@@ -82,12 +97,37 @@ std::ostream& Array::documentation(std::ostream& stream, bool extensive, unsigne
     return stream;
 }
 
+
+
 void  Array::reset_doc_flags() const {
     type_of_values_->reset_doc_flags();
 }
 
-string Array::type_name() const
-{ return "array_of_" + type_of_values_->type_name();}
+
+
+string Array::type_name() const {
+    return "array_of_" + type_of_values_->type_name();
+}
+
+
+
+bool Array::operator==(const TypeBase &other) const    {
+    return  typeid(*this) == typeid(other) &&
+              (*type_of_values_ == static_cast<const Array *>(&other)->get_sub_type() );
+}
+
+
+
+void Array::valid_default(const string &str) const {
+    if ( this->match_size( 1 ) ) {
+        get_sub_type().valid_default( str );
+    } else {
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+    }
+}
+
+
+
 
 /**********************************************************************************
  * implementation of Type::Scalar ... and descendants.
@@ -95,15 +135,69 @@ string Array::type_name() const
 void  Scalar::reset_doc_flags() const
 {}
 
+/**********************************************************************************
+ * implementation of Type::Bool
+ */
+
+void Bool::valid_default(const string &str) const {
+    from_default(str);
+}
+
+
+
+bool Bool::from_default(const string &str) const {
+    if (str == "true" )  {
+        return true;
+    } else
+    if (str == "false") {
+        return false;
+    } else {
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+    }
+}
+
+
 std::ostream& Bool::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
     if (extensive) return stream;
     stream << "Bool";
     return stream;
 }
 
+
+
 string Bool::type_name() const {
     return "Bool";
 }
+
+
+/**********************************************************************************
+ * implementation of Type::Integer
+ */
+
+bool Integer::match(int value) const {
+    return ( value >=lower_bound_ && value <= upper_bound_);
+}
+
+
+
+int Integer::from_default(const string &str) const {
+    std::istringstream stream(str);
+    int value;
+    stream >> value;
+
+    if (stream && stream.eof() && match(value)) {
+        return value;
+    } else {
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+    }
+}
+
+
+
+void Integer::valid_default(const string &str) const
+{ from_default(str);}
+
+
 
 std::ostream& Integer::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
     if (extensive) return stream;
@@ -111,9 +205,40 @@ std::ostream& Integer::documentation(std::ostream& stream, bool extensive, unsig
     return stream;
 }
 
+
+
 string Integer::type_name() const {
     return "Integer";
 }
+
+
+/**********************************************************************************
+ * implementation of Type::Double
+ */
+
+bool Double::match(double value) const {
+    return ( value >=lower_bound_ && value <= upper_bound_);
+}
+
+
+
+double Double::from_default(const string &str) const {
+    std::istringstream stream(str);
+    double value;
+    stream >> value;
+
+    if (stream && stream.eof() && match(value)) {
+        return value;
+    } else {
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+    }
+}
+
+
+
+void Double::valid_default(const string &str) const
+{ from_default(str);}
+
 
 
 std::ostream& Double::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
@@ -122,10 +247,16 @@ std::ostream& Double::documentation(std::ostream& stream, bool extensive, unsign
     return stream;
 }
 
+
+
 string Double::type_name() const {
     return "Double";
 }
 
+
+/**********************************************************************************
+ * implementation of Type::FileName
+ */
 
 std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
     if (extensive) return stream;
@@ -145,6 +276,8 @@ std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsi
     return stream;
 }
 
+
+
 string FileName::type_name() const {
     switch (type_) {
     case ::FilePath::input_file:
@@ -157,6 +290,9 @@ string FileName::type_name() const {
 }
 
 
+/**********************************************************************************
+ * implementation of Type::String
+ */
 
 
 std::ostream& String::documentation(std::ostream& stream, bool extensive, unsigned int pad) const {
@@ -165,6 +301,8 @@ std::ostream& String::documentation(std::ostream& stream, bool extensive, unsign
     stream << "String (generic)";
     return stream;
 }
+
+
 
 string String::type_name() const {
     return "String";
