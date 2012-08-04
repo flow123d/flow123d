@@ -145,6 +145,7 @@ if (NOT Boost_FOUND)
   
   # we try to erease from the cache everything that can cause failure of the second find_package
   # however just unsetting Boost_INCLUDE_DIR should be enough
+  
    
   unset(Boost_FOUND CACHE) 
   unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
