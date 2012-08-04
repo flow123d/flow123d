@@ -118,19 +118,54 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost)  
 set(REQUIRED_Boost_COMPONENTS program_options serialization)
 
-set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+set(Boost_DEBUG TRUE)
+# For some mysterious reason, the second find_package fails to find
+# components of boost in our own build, if we hint BOOST_ROOT of our build to the
+# first find_package.
+#
+# The root of the error is in FindBoost, when it calls find_library for individual components.
+# Success scenario:
+# 1) First find_package didn't found Boost (in system direcotries)
+# 2) we install our Boost
+# 3) the second find_package calls find_library to find boost components and succed
+#
+# Fail scenario:
+# 1) First find_package didn't found Boost (we set BOOST_ROOT to the empty target directory of the external project)
+# 2) we install our Boost
+# 3) the second find_package calls find_library to find boost components and fail
+#    the parameters of the find_library are exactly same as in the previous case.
+#
+#set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
 find_package(Boost 1.42.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
 
-  
   include(InstallBoost)  
   
+  # we try to erease from the cache everything that can cause failure of the second find_package
+  # however just unsetting Boost_INCLUDE_DIR should be enough
+   
+  unset(Boost_FOUND CACHE) 
   unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
   unset(Boost_LIBRARY_DIRS CACHE)
   unset(Boost_LIB_VERSION CACHE)
-  unset(Boost_VERSION CACHE)    
+  unset(Boost_VERSION CACHE)
+  unset(Boost_VERSION CACHE)
+  foreach(COMPONENT ${REQUIRED_Boost_COMPONENTS})
+      string(TOUPPER ${COMPONENT} COMPONENT)
+      message(STATUS "release: ${Boost_${COMPONENT}_LIBRARY_RELEASE}")
+
+      unset(Boost_${COMPONENT}_FOUND CACHE)
+      unset(Boost_${COMPONENT}_LIBRARY CACHE)
+      unset(Boost_${COMPONENT}_LIBRARY_DEBUG CACHE)
+      unset(Boost_${COMPONENT}_LIBRARY_RELEASE CACHE)
+      
+      message(STATUS "release: ${Boost_${COMPONENT}_LIBRARY_RELEASE}")
+      
+  endforeach(COMPONENT)
+  
+  set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})    
   find_package( Boost 1.42.0 REQUIRED COMPONENTS ${REQUIRED_Boost_COMPONENTS}  )
    
 endif()
