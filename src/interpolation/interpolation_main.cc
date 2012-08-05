@@ -27,11 +27,25 @@
 
 //#include "system/sys_profiler.hh"
 #include "system/system.hh"
-#include "new_mesh/mesh.hh"
-//#include "system/system.hh"
+#include "mesh/msh_gmshreader.h"
+//#include "new_mesh/mesh.hh"
+#include "mesh/mesh.h"
+#include "new_mesh/octree.hh"
 
 
 int main(int argc, char **argv) {
 
-  
+	const std::string& file_name = "../tests/01_steady_flow_123d/input/test1.msh";
+
+	MeshReader* meshReader = new GmshMeshReader();
+
+	const std::string& ngh_fname = "../tests/01_steady_flow_123d/input/test1.ngh";
+	const std::string& bcd_fname = "../tests/01_steady_flow_123d/input/test1.fbc";
+	Mesh* mesh = new Mesh(ngh_fname, bcd_fname);
+	meshReader->read(file_name, mesh);
+	Octree* octree = new Octree(mesh);
+
+	xprintf(Msg, " - interpolation_main executed\n");
+
+	getchar();
 }
