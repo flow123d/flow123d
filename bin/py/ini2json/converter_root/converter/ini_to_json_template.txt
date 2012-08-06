@@ -98,8 +98,7 @@ raw_flow_output = "/problem/primary_equation/output/raw_flow_output=string"
 g		  ="/zz_not_supported/constants/g="
 rho		  ="/zz_not_supported/constants/rho="
 
-[Solver parameters] // everithing to "/zz_not_supported/solver parameters/"
-
+[Solver parameters] 
 method 	 	== "/zz_not_supported/solver parameters/method=" fgmres
 restart	 	= "/zz_not_supported/solver parameters/restart=" 20
 max_it	 	= "/zz_not_supported/solver parameters/max_it=" 1000
@@ -120,19 +119,27 @@ ilu_milu 	= "/zz_not_supported/solver parameters/ilu_milu=" 0
 
 [New keys]
 TYPE="/problem/TYPE=data(SequentialCoupling)"
-name="/system/output_streams/1/name=data(flow_output_stream)"
-variant="/system/output_streams/1/format/variant=data(ascii)"
+TYPE_t="/problem/secondary_equation/TYPE=data(TransportOperatorSplitting)"
 // file_output_stream = "/problem/primary_equation/output/output_stream/file=data(test1.pvd)"
 
 
 flow_output_stream = "/problem/primary_equation/output/output_stream/REF=data(/system/output_streams/0)",
+name="/system/output_streams/1/name=data(flow_output_stream)"
+variant="/system/output_streams/1/format/variant=data(ascii)"
+
 piezo_head_p0 = "/problem/primary_equation/output/piezo_head_p0=data(flow_output_stream)",
 velocity_p0="/problem/primary_equation/output/velocity_p0=data(flow_output_stream)"
 pressure_p0="/problem/primary_equation/output/pressure_p0=data(flow_output_stream)"
 pressure_p1="/problem/primary_equation/output/pressure_p1=data(flow_output_stream)"
 
+flow_output_stream = "/problem/secondary_equation/output/output_stream/REF=data(/system/output_streams/1)",
+
 name="/system/output_streams/2/name=data(transport_output_stream)"
+variant="/system/output_streams/2/format/variant=data(ascii)"
+trans_output_type="/system/output_streams/2/format/TYPE/REF=data(/system/output_streams/0/format/TYPE)"
 mobile_p0="/problem/secondary_equation/output/mobile_p0=data(transport_output_stream)"
+
+
 [Settings] //parameters needs to stay in this order
 Decay adress = "/problem/reactions/decays"
 Substances name = "Substances"

@@ -87,6 +87,9 @@ public:
      */
     TransportDG(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
 
+    /**
+     * @brief Declare input record type for the equation TransportDG.
+     */
     static Input::Type::Record &get_input_type();
 
     /**

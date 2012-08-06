@@ -106,19 +106,16 @@ public:
     bool get_ref_from_head(string & ref_address);
 
     /**
-     * Looks for key 'TYPE' and possibly return its value Node.
-     */
-    const Node * get_abstract_type_from_head();
-
-    /**
      * Creates a new JSONPath object given by  address string possibly relative to the current
      * path.
      */
     JSONPath find_ref_node(const string& ref_address);
+
     /**
      * Output to the given stream.
      */
     void output(ostream &stream) const;
+
     /**
      * Returns string address of current position.
      */

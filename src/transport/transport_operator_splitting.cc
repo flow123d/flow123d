@@ -37,10 +37,10 @@ Input::Type::AbstractRecord & TransportBase::get_input_type()
 						"Input file with initial concentrations.");
 		rec.declare_key("boundary_file", FileName::input(), Default::obligatory(),
 						"Input file with boundary conditions.");
-		rec.declare_key("bc_times", Array(Double()), Default::obligatory(),
+		rec.declare_key("bc_times", Array(Double()), Default::optional(),
 				 	 	"Times for changing the boundary conditions.");
-//		rec.declare_key("output", ???,
-//						"Output stream for transport.");
+        rec.declare_key("output", TransportBase::get_input_type_output_record(), Default::obligatory(),
+                "Parameters of output stream.");
 
 		rec.finish();
 
@@ -50,6 +50,32 @@ Input::Type::AbstractRecord & TransportBase::get_input_type()
 		rec.no_more_descendants();
 	}
 	return rec;
+}
+
+
+
+Input::Type::Record & TransportBase::get_input_type_output_record()
+{
+    using namespace Input::Type;
+    static Record out_rec("TransportOutput", "Output setting for transport equations.");
+
+    if (!out_rec.is_finished()) {
+        out_rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                "Parameters of output stream.");
+
+        out_rec.declare_key("conc_mobile_p0", String(),
+                        "Name of output stream for P0 approximation of the concentration in mobile phase.");
+        out_rec.declare_key("conc_immobile_p0", String(),
+                                "Name of output stream for P0 approximation of the concentration in immobile phase.");
+        out_rec.declare_key("conc_mobile_sorbed_p0", String(),
+                                "Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.");
+        out_rec.declare_key("conc_immobile_sorbed_p0", String(),
+                                "Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
+
+        out_rec.finish();
+
+    }
+    return out_rec;
 }
 
 
@@ -122,12 +148,14 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 Input::Type::Record &TransportOperatorSplitting::get_input_type()
 {
     using namespace Input::Type;
-    static Record rec("Transport_operator_splitting", "Transport operator splitting record.");
+    static Record rec("TransportOperatorSplitting",
+            "Explicit FVM transport (no diffusion)\n"
+            "coupled with reaction and sorption model (ODE per element)\n"
+            " via. operator splitting.");
 
     if (!rec.is_finished()) {
+        rec.derive_from(TransportBase::get_input_type());
 
-        rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-                "Parameters of output stream.");
 
         rec.finish();
     }

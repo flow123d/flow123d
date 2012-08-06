@@ -93,47 +93,42 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     Profiler::instance()->set_task_size(mesh->n_elements());
 
     // setup primary equation - water flow object
-    AbstractRecord pe = in_record.val<AbstractRecord>("primary_equation");
-    if (pe.type() == DarcyFlowMH_Steady::get_input_type() ) {
-            water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database, pe);
+    AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
+    if (prim_eq.type() == DarcyFlowMH_Steady::get_input_type() ) {
+            water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database, prim_eq);
 
     } else
-    if (pe.type() == DarcyFlowMH_Unsteady::get_input_type() ) {
-            water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database, pe);
+    if (prim_eq.type() == DarcyFlowMH_Unsteady::get_input_type() ) {
+            water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
     } else
-    if (pe.type() == DarcyFlowLMH_Unsteady::get_input_type() ) {
-            water=new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database, pe);
+    if (prim_eq.type() == DarcyFlowLMH_Unsteady::get_input_type() ) {
+            water=new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
     } else {
             xprintf(UsrErr,"Equation type not implemented.");
     }
-    // object for water postprocessing and output
 
-    AbstractRecord flow = in_record.val<AbstractRecord>("primary_equation");
-    water_output = new DarcyFlowMHOutput(water,Record(flow).val<Record>("output") );
+    // object for water postprocessing and output
+    water_output = new DarcyFlowMHOutput(water,Record(prim_eq).val<Record>("output") );
 
     // TODO: optionally setup transport objects
-//    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
-//    if (it) {
-//
-//        char *transport_type = OptGetStr("Transport", "Transport_type", "explicit");
-//        if (it->type() == TransportOperatorSplitting::get_input_type())
-//        {
-//            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database, *it);
-//        }
-//        else if (it->type() == TransportDG::get_input_type())
-//        {
-//            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database, *it);
-//        }
-//        else
-//        {
-//            xprintf(PrgErr,"Value of parameter: [Transport] Transport_type is neither \"explicit\" nor \"implicit\".\n");
-//        }
-//
-//    } else {
-//        transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
-//    }
+    Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
+    if (it) {
+        if (it->type() == TransportOperatorSplitting::get_input_type())
+        {
+            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database, *it);
+        }
+        else if (it->type() == TransportDG::get_input_type())
+        {
+            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database, *it);
+        }
+        else
+        {
+            xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecordout of set of descendants.\n");
+        }
 
-    transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
+    } else {
+        transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
+    }
 }
 
 Input::Type::Record &HC_ExplicitSequential::get_input_type() {
@@ -148,8 +143,8 @@ Input::Type::Record &HC_ExplicitSequential::get_input_type() {
                 "Simulation time frame and time step.");
         rec.declare_key("primary_equation", DarcyFlowMH::get_input_type(), Default::obligatory(),
                 "Primary equation, have all data given.");
-        rec.declare_key("secondary_equation", TransportOperatorSplitting::get_input_type(),
-                "The equation that depends (its data) on the result of the primary equation.");
+        rec.declare_key("secondary_equation", TransportBase::get_input_type(),
+                "The equation that depends (the velocity field) on the result of the primary equation.");
         rec.finish();
     }
     return rec;

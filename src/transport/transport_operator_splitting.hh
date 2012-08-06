@@ -29,6 +29,7 @@ public:
     {}
 
     static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::Record & get_input_type_output_record();
 
     /**
      * This method takes sequantial PETSc vector of side velocities and update
@@ -77,6 +78,15 @@ class TransportOperatorSplitting : public TransportBase {
 public:
 	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
     virtual ~TransportOperatorSplitting();
+
+    /**
+     * @brief Declare input record type for the equation TransportOperatorSplittiong.
+     *
+     * TODO: The question is if this should be a general coupling class
+     * (e.g. allow coupling TranportDG with reactions even if it is not good idea for numerical reasons.)
+     * To make this a coupling class we should modify all main input files for transport problems.
+     *
+     */
     static Input::Type::Record &get_input_type();
 
     virtual void set_velocity_field(Vec &velocity_vector);

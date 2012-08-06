@@ -132,28 +132,10 @@ bool JSONPath::get_ref_from_head(string & ref_address)
     return true;
 }
 
-const JSONPath::Node * JSONPath::get_abstract_type_from_head() {
-    if (head()->type() != json_spirit::obj_type) return NULL;
-    const json_spirit::mObject &obj = head()->get_obj();
-    const Node * ptr = down("TYPE");
-    if (ptr != NULL) {
-        up();
-        return ptr;
-    } else {
-        return ptr;
-    }
-}
-
-
 
 /**
- * This moves path to given reference.
+ * This returns path to reference given by address in ref_address.
  *
- * TODO:
- * << operator
- * better error messages, we need both starting path and current path
- *
- * use boost::spirit to parse address and make semantic actions.
  */
 JSONPath JSONPath::find_ref_node(const string& ref_address)
 {
@@ -205,6 +187,8 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
     return ref_path;
 }
 
+
+
 void JSONPath::output(ostream &stream) const {
     if (level() == 0) {
         stream << "/";
@@ -240,6 +224,7 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
  * Implementation of private part of JSONToStorage - make_storage dispatch
  */
 
+
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *type)
 {
     ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
@@ -251,6 +236,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
 
         // dereference and take data from there
         JSONPath ref_path = p.find_ref_node(ref_address);
+        cout << ref_path << endl;
         return make_storage( ref_path, type );
     }
 
@@ -364,12 +350,16 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecord *abstr_rec)
 {
     if (p.head()->type() == json_spirit::obj_type) {
-        const JSONPath::Node * type_node = p.get_abstract_type_from_head();
-        if (type_node == NULL) {
+
+        JSONPath type_path(p);
+        if ( type_path.down("TYPE") == NULL) {
             THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
         } else {
             try {
-                return make_storage(p, &( abstr_rec->get_descendant(type_node->get_str()) ));
+                // convert to base type to force type dispatch and reference chatching
+                const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
+                unsigned int descendant_index = make_storage(type_path, type_of_type )->get_int();
+                return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
             } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
 
                 THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );

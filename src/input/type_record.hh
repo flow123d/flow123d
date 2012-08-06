@@ -472,16 +472,20 @@ public:
     virtual void  reset_doc_flags() const;
 
     /**
-     * Return reference to the inherited Record with given name.
+     * Returns reference to the inherited Record with given name.
      */
     const Record  &get_descendant(const string& name) const;
 
     /**
-     * Return reference to the inherited Record with given index (indexed in the same order
+     * Returns reference to the inherited Record with given index (indexed in the same order
      * as they are derived).
      */
     const Record  &get_descendant(unsigned int idx) const;
 
+    /**
+     * Returns reference to Selection type of the implicit key TYPE.
+     */
+    const Selection &get_type_selection() const;
 
 protected:
     /// Actual data of the AbstractRecord.

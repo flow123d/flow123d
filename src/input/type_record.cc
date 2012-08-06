@@ -336,8 +336,7 @@ std::ostream& AbstractRecord::documentation(std::ostream& stream, bool extensive
 
 const Record  & AbstractRecord::get_descendant(const string& name) const
 {
-    unsigned int idx;
-
+    ASSERT(child_data_.use_count() != 0, "Wrong use of an empty AbstractRecord.");
     ASSERT( is_finished(), "Can not get descendant of unfinished AbstractType\n");
     return get_descendant( child_data_->selection_of_childs->name_to_int(name) );
 }
@@ -346,10 +345,18 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 {
+    ASSERT(child_data_.use_count() != 0, "Wrong use of an empty AbstractRecord.");
+
     ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
     return child_data_->list_of_childs[idx];
 }
 
+
+const Selection  & AbstractRecord::get_type_selection() const
+{
+    ASSERT(child_data_.use_count() != 0, "Wrong use of an empty AbstractRecord.");
+    return * child_data_->selection_of_childs;
+}
 
 
 

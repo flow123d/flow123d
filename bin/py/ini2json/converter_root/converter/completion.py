@@ -158,7 +158,7 @@ def read_template(template, d_in, warn, comm, dbg):
                     sections = new_adress.split('/')
                     
                     if (section == 'Transport' and transport_on==False
-                                and pair[0] != 'Transport_on'):
+                                               and pair[0] != 'Transport_on'):
                         sections[2] += "_save" 
                     if (section == 'New keys' and transport_on==False
                                 and pair[0] == 'mobile_p0'):
@@ -439,16 +439,13 @@ def value_type (val, val_type):
         i = 0
         while(i<len(pars)):
             par = pars[i].split('>')
-            print "sub:",par[0], par[1], val
             if(str(par[0].strip())==str(val)):
                 val = par[1].strip()
                 break
             i += 1
     if(val_type.startswith('array of')):
-        print "error place: ", val, val_type    
         sub_type=val_type[8:].strip()
         for sub_val in val:
-            print "error place: ", sub_val, sub_type        
             sub_val = value_type(sub_val, sub_type)
         
     if(val_type.startswith('data')):
@@ -459,38 +456,34 @@ def value_type (val, val_type):
 
 def update_data (value, sections, d_out):
     """
-    Inserts new data into main output object.
+    Inserts new data into main output object. Recursive.
 
     :param lat: value
     :type lat: unknown
-    :param lat: sections
+    :param lat: sections - array of keys in address of the new position in the output JSON tree,
+                           since addresses are absolute, section[0] is always empty and first key is in sections[1]
     :type lat: Array
     :param: d_out
     :type: Array
     :return: output data
     :rtype: Array
     """
-    len_a = len(sections)
-    if(len_a == 2):
-        d_out[sections[1]] = value
-    if(len_a >= 3):
-        if ((sections[1] in d_out) == False):
-            d_out[sections[1]] = {} 
-        if(len_a==3):
-            d_out[sections[1]][sections[2]] = value
-    if(len_a >= 4):
-        if ((sections[2] in d_out[sections[1]]) == False):
-            d_out[sections[1]][sections[2]] = {} 
-        if(len_a==4):
-            d_out[sections[1]][sections[2]][sections[3]] = value
-    if(len_a >= 5):
-        if ((sections[3] in d_out[sections[1]][sections[2]]) == False):
-            d_out[sections[1]][sections[2]][sections[3]] = {} 
-        if(len_a==5):
-            d_out[sections[1]][sections[2]][sections[3]][sections[4]] = value
-    if(len_a >= 6):
-        if ((sections[4] in d_out[sections[1]][sections[2]][sections[3]]) == False):
-            d_out[sections[1]][sections[2]][sections[3]][sections[4]] = {} 
-        if(len_a==6):
-            d_out[sections[1]][sections[2]][sections[3]][sections[4]][sections[5]] = value
+    
+   
+    
+    # remove empty key at first position
+    if (sections[0] == ""):
+        sections.pop(0);
+    
+    # dont know why, but some times sections has only one empty key, ignore them  
+    if (len(sections) == 0):
+        return d_out
+    if (len(sections) == 1):
+        d_out[sections[0]] = value
+    else:
+        key=sections.pop(0)
+        if ((key in d_out) == False):
+              d_out[ key ] = {}
+        update_data(value, sections, d_out[ key ] )
+
     return d_out
