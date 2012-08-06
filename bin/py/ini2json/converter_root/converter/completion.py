@@ -7,6 +7,7 @@ Created on 15.4.2012
 import materials as mtr #@UnresolvedImport
 
 import json
+import re
 
 import sys, os 
 
@@ -64,8 +65,14 @@ def complete (adr, res, warn, comm, dbg, alt, mat):
                 print "Decay will not be computed." 
             if(mat != ''):
                 d_out = mtr.start(d_out, mat, input_file.name)
-            data = json.dumps(d_out, sort_keys=True, indent=2)
-            data = array_check(data, alt) #searching for arrays of pairs, also deletion of quation marks
+            
+            
+            
+            new_out = objects_to_arrays( d_out )                        # convert numerical keys to array items
+            data = json.dumps(new_out, sort_keys=True, indent=2)        
+            data = human_json(data)                                            # humanized json
+
+            #data = array_check(data, alt) #searching for arrays of pairs, also deletion of quation marks
             output_file.write(data)
             #input_file.close()   
             output_file.close()  
@@ -81,7 +88,7 @@ def read_template(template, d_in, warn, comm, dbg):
 
     :param lat: template
     :type lat: array
-    :param lat: d_in
+    :param lat: d_in     input file converted to JSON tree
     :type lat: array
     :param lat: warn
     :type lat: bool
@@ -101,7 +108,10 @@ def read_template(template, d_in, warn, comm, dbg):
     transport_on = False
     substances = 2
     
+    line_no=0
     for line in template:
+        line_no= line_no + 1
+        #print 'template line: ', line_no
         line = line.strip()
         if(len(line)<=3):   #empty lines
             continue
@@ -129,7 +139,7 @@ def read_template(template, d_in, warn, comm, dbg):
                     if (section == 'New keys'):
                         value = ''
                     else:
-                        value = d_in[section][pair[0]]
+                        value = d_in[section][pair[0]]          # the value in original file
                 except KeyError:
                     if (warn == True):
                         #print section +"/"+pair[0]+" not found."
@@ -140,7 +150,7 @@ def read_template(template, d_in, warn, comm, dbg):
                             transport_on = True
                             continue
                         else :
-                            value = 'null'
+                            value = None
                     if (pair[0] == 'Substances'):#substances exception
                         value = value[0:substances]
                     new_adress = pair[1][pair[1].find('"')+1:len(pair[1])]
@@ -153,6 +163,7 @@ def read_template(template, d_in, warn, comm, dbg):
                     if (section == 'New keys' and transport_on==False
                                 and pair[0] == 'mobile_p0'):
                         sections[2] += "_save" 
+                    # print "error place: ", value, val_type    
                     value = value_type(value, val_type)
                     d_out = update_data(value, sections, d_out)
                     if (dbg == True):
@@ -161,18 +172,81 @@ def read_template(template, d_in, warn, comm, dbg):
                         print '         ' + spaces + 'new adress: ' + new_adress
                         print '         ' + spaces + 'value: ' + str(value)
                     if(comm == True):
-                        pair[0] += '_comment'
                         try: 
-                            value = d_in[section][pair[0]]
+                            value = d_in[section][pair[0] + '_comment']
                         except KeyError:
                             value = ''
                         if(value != ''):
-                            sections[len(sections)-1] += '_comment'
+                            sections[len(sections)-1] = 'COMMENT_' + pair[0]
                             d_out = update_data(value, sections, d_out)
     return d_out
 
+    
+def objects_to_arrays(d_out):
+    """
+    convert record with numerical keys to arrays
+    recursive
+    returns the new tree
 
+    :param lat: d_out     output JSON tree
+    :type lat: array
+    """
+    #print d_out
+    
+    if (type(d_out) == list):
+        new_tree = []
+        for item in d_out:
+              new_tree.append( objects_to_arrays( item ) )
+    
+        #print new_tree
+        return new_tree
+        
+    if (type(d_out) == dict):
+        
+        only_ints=True
+        for key, value in d_out.iteritems():
+            
+            try:
+              ret = int( key )
+            except ValueError:
+              only_ints=False
+              break
+        
+        if ( only_ints ):
+            # convert to array
+            new_tree=[]
+            for key, value in d_out.iteritems():
+                index = int( key ) - 1
+                assert index >= 0 
+                
+                while ( len(new_tree) < index + 1  ):
+                    new_tree.append(None)
+                    
+                new_tree[index] = objects_to_arrays( value )
+            return new_tree
+        else:
+            # just recursive calls
+            new_tree=d_out
+            for key, value in new_tree.iteritems():
+                new_tree[key] = objects_to_arrays( value )
+            
+            return new_tree
+            
+    else:
+        #print new_tree
+        return d_out
 
+        
+
+def human_json(json_output_string):
+    """
+      replace "key" : 
+      by key =  
+    """
+    nicer_keys = re.sub(r'"([a-zA-Z0-9_]*)" *: *',r'\1 = ',json_output_string)
+    return nicer_keys
+        
+        
 def decays (res, data):
     """
     Inserts decay data into json file.
@@ -365,10 +439,18 @@ def value_type (val, val_type):
         i = 0
         while(i<len(pars)):
             par = pars[i].split('>')
+            print "sub:",par[0], par[1], val
             if(str(par[0].strip())==str(val)):
                 val = par[1].strip()
                 break
             i += 1
+    if(val_type.startswith('array of')):
+        print "error place: ", val, val_type    
+        sub_type=val_type[8:].strip()
+        for sub_val in val:
+            print "error place: ", sub_val, sub_type        
+            sub_val = value_type(sub_val, sub_type)
+        
     if(val_type.startswith('data')):
         val = val_type[val_type.find('(')+1:val_type.find(')')]
     return val

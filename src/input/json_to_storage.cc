@@ -254,6 +254,10 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
         return make_storage( ref_path, type );
     }
 
+    // return Null storage if there is null on the current location
+    if (p.head()->type() == json_spirit::null_type)
+        return new StorageNull();
+
     // dispatch types
     if (typeid(*type) == typeid(Type::Record)) {
         return make_storage(p, static_cast<const Type::Record *>(type) );
@@ -290,7 +294,11 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
 {
     if (p.head()->type() == json_spirit::obj_type) {
         const json_spirit::mObject & j_map = p.head()->get_obj();
-        json_spirit::mObject::const_iterator map_it;
+        // json_spirit::mObject::const_iterator map_it;
+
+        // cout << "rec:" << endl;
+        // for( map_it = j_map.begin(); map_it != j_map.end(); ++map_it)
+        //    cout << map_it->first << endl;
 
         StorageArray *storage_array = new StorageArray(record->size());
         // check individual keys
@@ -317,6 +325,10 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
         return storage_array;
 
     } else {
+        stringstream ss;
+        ss << p;
+        xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
+
         Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
         if ( auto_key_it != record->end() ) {
             // try auto conversion

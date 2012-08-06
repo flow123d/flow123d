@@ -112,9 +112,9 @@ def read_data (text):
     global comment
     if(len(pair) > 1):
         comment_index = pair[1].find("//")
-        if(len(pair[1][comment_index+2:])==0):
-            comment_index = -1
-            pair[1] = pair[1][0:comment_index-1]
+        #if(len(pair[1][comment_index+2:])==0):    # seems to try catch case of empty comment
+        #    comment_index = -1
+        #    pair[1] = pair[1][0:comment_index-1]
         if(comment_index>=0):
             #comment = "\t# " + pair[1][comment_index+2:]
             comment = ",\n" + tabs() + '"' + pair[0].strip()+'_comment" : ' + '"' + pair[1][comment_index+2:] + '"'

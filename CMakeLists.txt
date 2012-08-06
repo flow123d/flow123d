@@ -118,7 +118,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost)  
 set(REQUIRED_Boost_COMPONENTS program_options serialization)
 
-set(Boost_DEBUG TRUE)
+#set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
 # first find_package.

@@ -163,7 +163,7 @@ namespace json_spirit
     String_type get_str_( typename String_type::const_iterator begin, 
                        typename String_type::const_iterator end )
     {
-        assert( end - begin >= 2 );
+        // assert( end - begin >= 2 );
 
         typedef typename String_type::const_iterator Iter_type;
 
