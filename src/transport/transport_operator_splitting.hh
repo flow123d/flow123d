@@ -2,7 +2,8 @@
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
 #include "equation.hh"
-#include "reaction/linear_reaction.hh"
+//#include "reaction/linear_reaction.hh"
+#include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
 #include <limits>
 #include "io/output.h"
@@ -96,7 +97,7 @@ protected:
 private:
 
     ConvectionTransport *convection;
-    Linear_reaction *decayRad;
+    Reaction *decayRad; //Linear_reaction *decayRad;
     Semchem_interface *Semchem_reactions;
     //int steps;
     OutputTime *field_output;

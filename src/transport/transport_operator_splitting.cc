@@ -26,6 +26,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 {
 	Distribution *el_distribution;
 	int *el_4_loc;
+	bool matrix_exp_on;
 
     double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
     double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
@@ -34,7 +35,11 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	convection->test_concentration_sources(*convection);
 
 	// Chemistry initialization
-	decayRad = new Linear_reaction(marks, init_mesh, material_database); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
+	matrix_exp_on = OptGetBool("Reaction_module","Matrix_exp_on","No");
+	if(matrix_exp_on == true)
+		decayRad = (Pade_approximant *) new Pade_approximant(marks, init_mesh, material_database);
+	else
+		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	convection->get_par_info(el_4_loc, el_distribution);
 	decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
