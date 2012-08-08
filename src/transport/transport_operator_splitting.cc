@@ -13,7 +13,9 @@
 #include "equation.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
-#include "reaction/linear_reaction.hh"
+//#include "reaction/reaction.hh"
+//#include "reaction/linear_reaction.hh"
+#include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
 #include "system/par_distribution.hh"
 #include "io/output.h"
@@ -32,7 +34,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	convection->test_concentration_sources(*convection);
 
 	// Chemistry initialization
-	decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
+	decayRad = new Linear_reaction(marks, init_mesh, material_database); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	convection->get_par_info(el_4_loc, el_distribution);
 	decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);

@@ -55,7 +55,9 @@ set(sources_lib_non_system
 
     quadrature/quadrature_lib.cc
 
+    reaction/reaction.cc
     reaction/linear_reaction.cc
+    reaction/pade_approximant.cc
     semchem/semchem_interface.cc
 
 
