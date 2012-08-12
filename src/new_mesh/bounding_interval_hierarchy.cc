@@ -28,7 +28,6 @@
 #include "system/system.hh"
 #include "system/sys_vector.hh"
 #include "new_mesh/bounding_interval_hierarchy.hh"
-#include "new_mesh/bih_node.hh"
 #include <typeinfo>
 
 BoundingIntevalHierachy::BoundingIntevalHierachy(Mesh* mesh) {
