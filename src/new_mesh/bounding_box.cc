@@ -17,7 +17,7 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: box_element.cc 1567 2012-02-28 13:24:58Z jan.brezina $
+ * $Id: bounding_box.cc 1567 2012-02-28 13:24:58Z jan.brezina $
  * $Revision: 1567 $
  * $LastChangedBy: jan.brezina $
  * $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
@@ -26,31 +26,42 @@
  */
 
 #include "system/system.hh"
-#include "new_mesh/box_element.hh"
+#include "new_mesh/bounding_box.hh"
+#include "new_mesh/bounding_interval_hierarchy.hh"
 
-BoxElement::BoxElement(int id, arma::vec3 minCoor, arma::vec3 maxCoor)
-{
-	elementId = id;
-	minCoordinates = minCoor;
-	maxCoordinates = maxCoor;
+
+BoundingBox::BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor) {
+	elementId_ = 0;
+	minCoordinates_ = minCoor;
+	maxCoordinates_ = maxCoor;
 }
 
-int BoxElement::getId()
-{
-	return elementId;
+BoundingBox::BoundingBox(int id, arma::vec3 minCoor, arma::vec3 maxCoor) {
+	elementId_ = id;
+	minCoordinates_ = minCoor;
+	maxCoordinates_ = maxCoor;
 }
 
-double BoxElement::getMinCoor(int coor)
-{
-	return minCoordinates(coor);
+int BoundingBox::getId() {
+	return elementId_;
 }
 
-double BoxElement::getMaxCoor(int coor)
-{
-	return maxCoordinates(coor);
+arma::vec3 BoundingBox::get_min() {
+	return minCoordinates_;
 }
 
-double BoxElement::getCenterCoor(int coor)
-{
-	return (maxCoordinates(coor) + minCoordinates(coor)) / 2;
+arma::vec3 BoundingBox::get_max() {
+	return maxCoordinates_;
+}
+
+arma::vec3 BoundingBox::get_center() {
+	return (maxCoordinates_ + minCoordinates_) / 2;
+}
+
+bool BoundingBox::contains_point(arma::vec3 &point) {
+	for (int i=0; i<BoundingIntevalHierachy::dimension; i++) {
+		if ((point(i) < minCoordinates_(i)) | (point(i) > maxCoordinates_(i))) return false;
+	}
+
+	return true;
 }

@@ -85,8 +85,8 @@ set(sources_lib_new_mesh
 
     new_mesh/multi_mesh.cc
     new_mesh/point.cc
-    new_mesh/octree.cc
-    new_mesh/box_element.cc
+    new_mesh/bounding_interval_hierarchy.cc
+    new_mesh/bounding_box.cc
     )
 
 set(sources_lib_la

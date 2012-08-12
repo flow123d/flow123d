@@ -17,7 +17,7 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id: box_element.hh 1567 2012-02-28 13:24:58Z jan.brezina $
+ * $Id: bounding_box.hh 1567 2012-02-28 13:24:58Z jan.brezina $
  * $Revision: 1567 $
  * $LastChangedBy: jan.brezina $
  * $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
@@ -31,18 +31,56 @@
 #include "system/system.hh"
 #include <armadillo>
 
-class BoxElement {
+/**
+ * Contains data of bounding box.
+ * Used for areas and elements.
+ */
+class BoundingBox {
 public:
-    BoxElement(int id, arma::vec3 minCoor, arma::vec3 maxCoor);
+
+	/**
+	 * Constructor.
+	 *
+	 * Set class members
+	 * @param minCoor Set value to minCoordinates_
+	 * @param maxCoor Set value to maxCoordinates_
+	 */
+	BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor);
+
+	/**
+	 * Constructor.
+	 *
+	 * Set class members
+	 * @param id Set value to id_
+	 * @param minCoor Set value to minCoordinates_
+	 * @param maxCoor Set value to maxCoordinates_
+	 */
+	BoundingBox(int id, arma::vec3 minCoor, arma::vec3 maxCoor);
+
+	/// get id of element
     int getId();
-    double getMinCoor(int coor);
-    double getMaxCoor(int coor);
-    double getCenterCoor(int coor);
+    /// get minimal coordinates of bounding box
+    arma::vec3 get_min();
+    /// get maximal coordinates of bounding box
+    arma::vec3 get_max();
+    /// get center coordinates of bounding box
+    arma::vec3 get_center();
+
+    /**
+     * Detects if box element contains point
+     *
+     * @param point Testing point
+     * @return True if box element contains point
+     */
+    bool contains_point(arma::vec3 &point);
 
 private:
-    arma::vec3 minCoordinates;
-    arma::vec3 maxCoordinates;
-    int elementId;
+    /// minimal coordinates of bounding box
+    arma::vec3 minCoordinates_;
+    /// maximal coordinates of bounding box
+    arma::vec3 maxCoordinates_;
+    /// id of element
+    int elementId_;
 };
 
 #endif /* BOX_ELEMENT_HH_ */
