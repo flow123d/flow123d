@@ -36,6 +36,7 @@
 
 #include "system/system.hh"
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 
 #include "time_marks.hh"
 
@@ -81,13 +82,12 @@ public:
     /**
      * Constructor - constructor for unsteady solvers
      *
-     * @param init_time - initial time (the solution stands on the initial value before this time)
-     * @param end_time - final time of the particular equation
+     * @param Input::Record accessor to input data
      * @param marks - reference to TimeMarks object which will be used for fixed times
      * @param fixed_time_mask - TimeMark mask used to select fixed times from all time marks
      *
      */
-   TimeGovernor(const double init_time, const  double end_time,
+   TimeGovernor(const Input::Record &input,
                 TimeMarks &marks,
                 const TimeMark::Type fixed_time_mask = 0x0);
 
@@ -106,6 +106,11 @@ public:
     * Allow set TimeMarks. Use only this constructor for steady problems.
     */
    TimeGovernor(double init_time = inf_time);
+
+   /**
+    * Steady time governor.
+    */
+   TimeGovernor(TimeMarks &marks);
 
    static Input::Type::Record &get_input_type();
 

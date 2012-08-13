@@ -128,7 +128,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     }
 
     // time governor
-    time_=new TimeGovernor(-1, TimeGovernor::inf_time, *time_marks);
+    time_=new TimeGovernor(marks);
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -1216,11 +1216,11 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
     delete time_; // delete steady TG
 
     // time governor
-    time_=new TimeGovernor(
-            0.0,
-            OptGetDbl("Global", "Stop_time", "1.0"),
-            *time_marks
-            );
+    //time_=new TimeGovernor(
+    //        0.0,
+    //        OptGetDbl("Global", "Stop_time", "1.0"),
+    //        *time_marks
+    //        );
 
     time_->set_permanent_constrain(
             OptGetDbl("Global", "Time_step", "1.0"),
@@ -1311,11 +1311,11 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
 {
     delete time_; // delete steady TG
     // time governor
-    time_=new TimeGovernor(
-            0.0,
-            OptGetDbl("Global", "Stop_time", "1.0"),
-            *time_marks
-            );
+    //time_=new TimeGovernor(
+    //        0.0,
+    //        OptGetDbl("Global", "Stop_time", "1.0"),
+    //        *time_marks
+    //        );
 
     time_->set_permanent_constrain(
             OptGetDbl("Global", "Time_step", "1.0"),

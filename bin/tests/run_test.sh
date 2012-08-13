@@ -285,6 +285,7 @@ do
 	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
 	then
 		echo "Error: can't read ${INI_FILE}"
+		EXIT_STATUS=1
 		continue 1
 	fi
 

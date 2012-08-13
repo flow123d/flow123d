@@ -42,31 +42,54 @@ const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
  * TODO:
  * TimeGovernor should be constructed from JSON object.
  */
-TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMarks &marks,const TimeMark::Type fixed_time_mask)
+TimeGovernor::TimeGovernor(const Input::Record &input, TimeMarks &marks, const TimeMark::Type fixed_time_mask)
 : time_level(0),
-  time(init_time),
-  end_of_fixed_dt_interval(time),
-  end_time_(end_time),
   time_step(time_step_lower_bound),
   last_time_step(time_step_lower_bound),
   fixed_dt(0.0),
   dt_changed(true),
-  time_step_constrain(end_time_ - time),
   max_time_step(inf_time),
   min_time_step(time_step_lower_bound),
   time_marks(&marks),
   fixed_time_mark_mask(fixed_time_mask | time_marks->type_fixed_time())
 {
+    time  =  input.val<double>("start_time");
+    end_of_fixed_dt_interval=time;
+    end_time_  =  input.val<double>("end_time");
+    time_step_constrain = end_time_ - time;
 
-    if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
+
+    if (end_time_ != inf_time)  max_time_step=end_time_ - time;
 
     time_step=max_time_step;
 
-    time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
+    time_marks->add( TimeMark(time, fixed_time_mark_mask) );
     time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
 
     last_time_step=0.0;
 }
+
+
+// this is get directly form darcy flow staedy,
+// TODO: think about generalization
+TimeGovernor::TimeGovernor(TimeMarks &marks)
+: time_level(0),
+  time(-1.0),
+  end_of_fixed_dt_interval(time),
+  end_time_(inf_time),
+  time_step(inf_time),
+  last_time_step(0.0),
+  fixed_dt(0.0),
+  dt_changed(true),
+  time_step_constrain(inf_time),
+  max_time_step(inf_time),
+  min_time_step(time_step_lower_bound),
+  time_marks(& marks),
+  fixed_time_mark_mask(0x0)
+
+{}
+
+
 
 TimeGovernor::TimeGovernor(double init_time)
 : time_level(0),

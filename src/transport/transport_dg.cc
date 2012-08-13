@@ -52,11 +52,11 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
           advection(1e0)
 {
     // set up time governor
-    time_=new TimeGovernor(
-            0.0,
-            OptGetDbl("Global", "Stop_time", "1.0"),
-            *time_marks
-            );
+    //time_=new TimeGovernor(
+    //        0.0,
+    //        OptGetDbl("Global", "Stop_time", "1.0"),
+    //        *time_marks
+    //        );
 
     time_->set_permanent_constrain(
             OptGetDbl("Global", "Time_step", "1.0"),

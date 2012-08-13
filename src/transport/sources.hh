@@ -25,7 +25,7 @@ public:
 	/**
 	 * Constructor
 	 */
-	TransportSources(ConvectionTransport &convection);//(ConvectionTransport &convection, int n_subst);
+	TransportSources(const string &sources_fname, ConvectionTransport &convection);//(ConvectionTransport &convection, int n_subst);
 	/**
 	 * Initial allocating method
 	 */
@@ -33,7 +33,7 @@ public:
 	/**
 	 * Input data reading method
 	 */
-	void read_concentration_sources();
+	void read_concentration_sources(const string &sources_fname);
 	/**
 	 * Main computation method
 	 */

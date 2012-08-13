@@ -57,8 +57,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     node_pressure.resize(mesh_->node_vector.size());
 
     {
-    Iterator<FilePath> it = in_rec.find<FilePath>("piezo_head_p0");
-    output_piezo_head=bool(it);
+        Iterator<string> it = in_rec.find<string>("piezo_head_p0");
+        output_piezo_head=bool(it);
+
+        DBGMSG("piezo set: %d \n", output_piezo_head);
     }
 
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
@@ -79,7 +81,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
     // optionally open raw output file
     Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
+
     if (it) {
+        cout << "raw out: " << string(*it) << endl;
         raw_output_file = xfopen(*it, "wt");
     }
 
@@ -95,13 +99,13 @@ Input::Type::Record DarcyFlowMHOutput::get_input_type() {
                     "Regular step between MH outputs.");
             rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
                     "Parameters of output stream.");
-            rec.declare_key("velocity_p0", FileName::output(),
+            rec.declare_key("velocity_p0", String(),
                     "Output stream for P0 approximation of the velocity field.");
-            rec.declare_key("pressure_p0", FileName::output(),
+            rec.declare_key("pressure_p0", String(),
                     "Output stream for P0 approximation of the pressure field.");
-            rec.declare_key("pressure_p1", FileName::output(),
+            rec.declare_key("pressure_p1", String(),
                     "Output stream for P1 approximation of the pressure field.");
-            rec.declare_key("piezo_head_p0", FileName::output(),
+            rec.declare_key("piezo_head_p0", String(),
                     "Output stream for P0 approximation of the piezometric head field.");
 
             rec.declare_key("balance_output", FileName::output(), Default("water_balance"),

@@ -129,7 +129,6 @@ public:
 	double ***get_out_conc();
     vector<string> &get_substance_names();
     TransportSources *transportsources;
-    void test_concentration_sources(ConvectionTransport&);
 
 private:
 

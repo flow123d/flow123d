@@ -63,6 +63,7 @@
 
 // TODO: move partitioning into mesh_ and remove this include
 #include "flow/darcy_flow_mh.hh"
+#include "input/accessors.hh"
 
 
 ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
@@ -78,20 +79,21 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     write_iterations = OptGetBool("Density", "Write_iterations", "no");
     dens_step = OptGetInt("Density", "Density_steps", "1");
     */
-    double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
+
+    //double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
     target_mark_type=this->mark_type();
-    time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks, target_mark_type);
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, target_mark_type);
 
     sorption = in_rec.val<bool>("sorption");
     dual_porosity = in_rec.val<bool>("dual_porosity");
-    reaction_on = in_rec.val<bool>("transport_reactions");
+    // reaction_on = in_rec.val<bool>("transport_reactions");
 
     in_rec.val<Input::Array>("substances").copy_to(substance_name);
     n_substances = substance_name.size();
     INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
 
-    pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
-    type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
+    // pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
+    // type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
 
     sub_problem = 0;
     if (dual_porosity == true)
@@ -112,26 +114,33 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     // bc marks do not influent choice of time step (not fixed_time type)
     bc_mark_type_ = time_marks->type_bc_change() | equation_mark_type_;
     std::vector<double> bc_times;
-    in_rec.val<Input::Array>("bc_times").copy_to(bc_times);
+
+
     FILE * f;
-    std::string fname;
+    string fname;
     bc_fname = in_rec.val<FilePath>("boundary_file");
-    if (bc_times.size() == 0) {
+    DBGMSG("bc file: %s\n ", bc_fname.c_str());
+    Input::Iterator<Input::Array> it = in_rec.find<Input::Array>("bc_times");
+    if ( ! it ) {
         // only one boundary condition, check filename and read bc condition
         bc_time_level = -1;
         fname = make_bc_file_name(-1);
+        DBGMSG("bc file: %s\n ", fname.c_str());
         if ( !(f = xfopen(fname.c_str(), "rt")) ) {
             xprintf(UsrErr,"Missing file: %s", fname.c_str());
         }
         xfclose(f);
         read_bc_vector();
     } else {
+        it->copy_to(bc_times);
+
         bc_time_level = 0;
         // set initial bc to zero
         for(unsigned int sbi=0; sbi < n_substances; ++sbi) VecZeroEntries(bcv[sbi]);
         // check files for bc time levels and set TimeMarks
         for(unsigned int i=0;i<bc_times.size();++i) {
             fname = make_bc_file_name(i);
+            DBGMSG("bc file_: %s\n ", fname.c_str());
             if ( !(f = xfopen(fname.c_str(), "rt")) ) {
                 xprintf(UsrErr,"Missing file: %s", fname.c_str());
             }
@@ -157,7 +166,18 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     n_reaction = 0;
 */
 
+    Input::Iterator<FilePath> sources_it = in_rec.find<FilePath>("sources");
+    if (sources_it) {
+        transportsources = new TransportSources( string(* sources_it), * this);
+    } else {
+        transportsources = NULL;
+    }
+
+
+
     output_vector_gather();
+
+
 }
 
 
@@ -270,7 +290,7 @@ void ConvectionTransport::read_initial_condition(string concentration_fname) {
 
 	    for (i = 0; i < n_concentrations; i++) {
 	    	xfgets( line, LINE_SIZE - 2, in );
-	    	DBGMSG("%s\n",line);
+	    	// DBGMSG("%s\n",line);
 	    	//printf("%s\t%d\n",line,n_concentrations);
 	    	ASSERT(!(line == NULL),"NULL as argument of function parse_concentration_line()\n");
 	    	eid    = atoi( xstrtok( line) );
@@ -506,14 +526,13 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
 std::string ConvectionTransport::make_bc_file_name(int level) {
 
-	string fname;
     if (level >= 0 ) {
         std::stringstream name_str;
         name_str << bc_fname << "_" << setfill('0') << setw(3) << level;
-        fname = name_str.str();
+        return name_str.str();
+    } else {
+        return bc_fname;
     }
-
-    return fname;
 }
 void ConvectionTransport::read_bc_vector() {
 
@@ -1276,22 +1295,6 @@ int *ConvectionTransport::get_el_4_loc(){
 
 int ConvectionTransport::get_n_substances() {
 	return n_substances;
-}
-
-void ConvectionTransport::test_concentration_sources(ConvectionTransport &convectiontransport) {
-/*
-    FILE	*in;		  // input file
-	char     line[ LINE_SIZE ]; // line of data file
-	const char *p;
-	int sbi,index, id, eid, i,n_sources, global_idx;
-*/
-    std::string concentration_sources_fname = OptGetFileName("Transport", "Sources", "\\");
-    if (concentration_sources_fname == "\\") {
-    	transportsources = NULL;
-        return;
-    }
-
-    transportsources = new TransportSources(convectiontransport);
 }
 
 

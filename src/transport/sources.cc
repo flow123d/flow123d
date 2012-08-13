@@ -25,25 +25,25 @@
 //=============================================================================
 // TRANSPORT SOURCES CONSTRUCTOR
 //=============================================================================
-TransportSources::TransportSources(ConvectionTransport &transport)
+TransportSources::TransportSources(const string &sources_fname, ConvectionTransport &transport)
 {
 	convectiontransport = &transport;
 	alloc_sources_vectors();
-	read_concentration_sources();
+	read_concentration_sources(sources_fname);
 }
 
 //=============================================================================
 // READ CONCENTRATION SOURCES
 //=============================================================================
-void TransportSources::read_concentration_sources() {
+void TransportSources::read_concentration_sources(const string &sources_fname) {
     F_ENTRY;
 
         FILE	*in;		  // input file
 		char     line[ LINE_SIZE ]; // line of data file
 		int sbi,index, eid, i,n_sources, global_idx;
 
-        std::string concentration_sources_fname = OptGetFileName("Transport", "Sources", "\\");
-		in = xfopen( IONameHandler::get_instance()->get_input_file_name(concentration_sources_fname), "rt" );
+
+		in = xfopen( sources_fname, "rt" );
 		skip_to( in, "$TransportSources" );
 		xfgets( line, LINE_SIZE - 2, in );
 		n_sources = atoi( xstrtok( line) );
