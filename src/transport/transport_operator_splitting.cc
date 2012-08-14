@@ -14,7 +14,8 @@
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
-#include "reaction/linear_reaction.hh"
+//#include "reaction/linear_reaction.hh"
+#include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
 #include "la/distribution.hh"
 #include "io/output.h"
@@ -110,7 +111,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	    // todo LinReact type dispatch
 
-	    decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), * reactions_it);
+	    //decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), * reactions_it);
+	if(in_rec.val<bool>("matrix_exp_on")== true)
+		decayRad = (Pade_approximant *) new Pade_approximant(marks, init_mesh, material_database, in_rec);
+	else
+		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database, in_rec); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
+	// decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), in_rec);
 	    //convection->get_par_info(el_4_loc, el_distribution); //Temporarily commented.
 	    //decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	    Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
@@ -174,7 +180,6 @@ Input::Type::Record &TransportOperatorSplitting::get_input_type()
         rec.derive_from(TransportBase::get_input_type());
         rec.declare_key("reactions", Linear_reaction::get_input_type(), Default::optional(),
                 "Initialization of per element reactions.");
-
 
         rec.finish();
     }

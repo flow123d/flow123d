@@ -44,7 +44,7 @@ Input::Type::AbstractRecord & Specie::get_input_type()
 	return rec;
 }
 
-Input::Type::AbstractRecord & Reaction::get_input_type()
+Input::Type::AbstractRecord & General_reaction::get_input_type()
 {
 	using namespace Input::Type;
 	static AbstractRecord rec("Isotope", "Definition of information about a single isotope.");

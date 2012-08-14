@@ -60,116 +60,46 @@
 	return rec;
 }*/
 
-/*Input::Type::AbstractRecord & Decay::get_input_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("decays", "Equation for reading information about radioactive decays.");
-
-	if(!rec.is_finished()){
-		rec.declare_key("parental_atom", String(), Default::obligatory(),
-				"Identifier of an isotope.");
-		rec.declare_key("products", Array(Strings()), Default::obligatory(),
-				"Identifies isotopes which decays parental atom to.");
-		rec.declare_key("branching_ratios", Array(Double()), Default(),
-				"Decay chain branching percentage.");
-		rec.finish();
-
-		Decay::get_input_type();
-
-		rec.no_more_descendants();
-	}
-	return rec;
-}
-
-Input::Type::AbstractRecord & Kinetics::get_input_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("kinetics", "Equation for reading information about first order reactions.");
-
-	if(!rec.is_finished()){
-		rec.declare_key("parental_atom", String(), Default::obligatory(),
-				"Identifier of reactant.");
-		rec.declare_key("product", Array(Strings()), Default::obligatory(),
-				"Identifies the product of first order reaction.");
-		rec.finish();
-
-		Kinetics::get_input_type();
-
-		rec.no_more_descendants();
-	}
-	return rec;
-}*/
-
 Input::Type::AbstractRecord & Linear_reaction::get_input_type()
 {
 	using namespace Input::Type;
-	static AbstractRecord rec("reactions", "Equation for reading information about simple chemical reactions.");
+	static AbstractRecord rec("Linear_reactions", "Information for a decision about the way to simulate radioactive decay.");
 
 	if (!rec.is_finished()) {
-		rec.declare_key("substances", Array(String()), Default::obligatory(),
+		/*rec.declare_key("substances", Array(String()), Default::obligatory(),
 								"Names of transported isotopes.");
-
-		/*rec.declare_key("half_lives", Array(Double()), Default(),
+		rec.declare_key("half_lives", Array(Double()), Default::optional(),
 				"Half lives of transported isotopes.");
-		rec.declare_key("decays", Array(Decays()), Default(),
+		rec.declare_key("decays", Array(Decay()), Default::optional(),
 				"Description of particular decay chain substeps.");
-		rec.declare_key("kinetic_constants", Array(Double()), Default(),
+		rec.declare_key("kinetic_constants", Array(Double()), Default::optional(),
 				"Kinetic constants describing first order reactions.");
-		rec.declare_key("kinetics", Array(Kinetics()), Default(),
+		rec.declare_key("kinetics", Array(Kinetics()), Default::optional(),
 				"Description of particular first order reactions.");*/
 		rec.declare_key("matrix_exp_on", Bool(), Default("false"),
 				"Enables to use Pade approximant of matrix exponential.");
-		rec.declare_key("nom_pol_deg", Integer(), Default("2"),
+		/*rec.declare_key("nom_pol_deg", Integer(), Default("2"),
 				"Polynomial degree of the nominator of Pade approximant.");
 		rec.declare_key("den_pol_deg", Integer(), Default("2"),
-				"Polynomial degree of the nominator of Pade approximant");
+				"Polynomial degree of the nominator of Pade approximant");*/
 		rec.finish();
 
-		Linear_reaction::get_input_type();
+		//Linear_reaction::get_input_type();
 
-		rec.no_more_descendants();
+		//rec.no_more_descendants();
 	}
 	return rec;
 }
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), dual_porosity_on(false), prev_conc(NULL), matrix_exp_on(false)
+//Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+//	: Reaction(marks, init_mesh, material_database), half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false)
+Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+	: Reaction(marks, init_mesh, material_database, in_rec), half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), prev_conc(NULL), matrix_exp_on(false)
 {
-	using namespace Input;
-
-	/*nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
-	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
-	nr_of_species = OptGetInt("Transport", "N_substances", "0");*/
-	matrix_exp_on = in_rec.val<bool>("matrix_exp_on");//OptGetBool("Reaction_module","Matrix_exp_on","No");
-	if(matrix_exp_on == true)
-	{
-		nom_pol_deg = in_rec.val<int>("nom_pol_deg"); // =  OptGetInt("Reaction_module","Nom_pol_deg","2");
-		den_pol_deg = in_rec.val<int>("den_pol_deg"); //= OptGetInt("Reaction_module","Den_pol_deg","2");
-	}
-	/*/dual_porosity_on = dualPorosity;
-	set_dual_porosity();
-	set_mesh_(mesh);
-	set_nr_of_elements(mesh->n_elements());
-	cout << "number of FoR is "<< nr_of_FoR << endl;
-	cout << "number of decays is " << nr_of_decays << endl;
-	cout << "number of species is " << nr_of_species << endl;
-	if(prev_conc != NULL){
-		free(prev_conc);
-		prev_conc = NULL;
-	}
-	prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
-	if(timeStep > 1e-12) this->set_time_step(timeStep); else this->set_time_step(0.5);
-	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
-		allocate_reaction_matrix();
-		if(matrix_exp_on == true)
-		{
-			modify_reaction_matrix_using_pade();
-		}else{
-			modify_reaction_matrix_repeatedly();
-		}
-	}*/
+	//nr_of_isotopes = OptGetInt("Reaction_module","Nr_of_isotopes","0");
+	allocate_reaction_matrix();
 }
 
 Linear_reaction::~Linear_reaction()
@@ -201,7 +131,7 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 	char dec_name[30];
 
 	cout << "We are going to allocate reaction matrix" << endl;
-	reaction_matrix = (double **)xmalloc(nr_of_species * sizeof(double*));//allocation section
+	if(reaction_matrix == NULL)reaction_matrix = (double **)xmalloc(nr_of_species * sizeof(double*));//allocation section
 	for(rows = 0; rows < nr_of_species; rows++){
 		reaction_matrix[rows] = (double *)xmalloc(nr_of_species * sizeof(double));
 	}
@@ -775,6 +705,23 @@ void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
     return;
 }
 
+void Linear_reaction::set_time_step(double new_timestep){
+	time_step = new_timestep;
+	release_reaction_matrix();
+	allocate_reaction_matrix();
+	modify_reaction_matrix_repeatedly();
+	return;
+}
+
+void Linear_reaction::set_time_step(void)
+{
+	time_step = OptGetDbl("Global","Save_step","1.0");
+	release_reaction_matrix();
+	allocate_reaction_matrix();
+	modify_reaction_matrix_repeatedly();
+	return;
+}
+
 void Linear_reaction::compute_one_step(void)
 {
     if (reaction_matrix == NULL)   return;
@@ -791,49 +738,6 @@ void Linear_reaction::compute_one_step(void)
 	 }
     END_TIMER("decay_step");
 	 return;
-}
-
-void Linear_reaction::set_nr_of_species(int n_substances)
-{
-	this->nr_of_species = n_substances;
-	return;
-}
-
-void Linear_reaction::set_nr_of_elements(int nrOfElements)
-{
-	this->nr_of_elements = nrOfElements;
-	return;
-}
-
-void Linear_reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc)
-{
-	concentration_matrix = ConcentrationMatrix;
-	distribution = conc_distr;
-	return;
-}
-
-void Linear_reaction::set_time_step(double new_timestep){
-	time_step = new_timestep;
-	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
-		release_reaction_matrix();
-		allocate_reaction_matrix();
-		if(matrix_exp_on == false)
-		{
-			modify_reaction_matrix_repeatedly();
-		}else{
-			modify_reaction_matrix_using_pade();
-		}
-	}
-	return;
-}
-int Linear_reaction::get_nr_of_decays(void){return nr_of_decays;} // two simple inlinefunction returning private variables
-int Linear_reaction::get_nr_of_FoR(void){return nr_of_FoR;}
-void Linear_reaction::set_mesh_(Mesh *mesh_in){mesh = mesh_in; return;}
-
-void Linear_reaction::set_dual_porosity()
-{
-	this->dual_porosity_on = OptGetBool("Transport", "Dual_porosity", "no");
-	return;
 }
 
 void Linear_reaction::release_reaction_matrix(void)
@@ -854,44 +758,8 @@ void Linear_reaction::release_reaction_matrix(void)
 	}
 }
 
-double Linear_reaction::get_time_step(void)
-{
-	return time_step;
-}
-
 void Linear_reaction::set_nr_of_isotopes(int Nr_of_isotopes)
 {
 	nr_of_isotopes = Nr_of_isotopes;
 	return;
-}
-
-void Linear_reaction::set_nr_of_decays(void)
-{
-	nr_of_decays = OptGetInt("Reaction_module","Nr_of_decay_chains","0");
-	return;
-}
-
-void Linear_reaction::set_nr_of_FoR(void)
-{
-	nr_of_FoR = OptGetInt("Reaction_module","Nr_of_FoR","0");
-	return;
-}
-
-int Linear_reaction::faktorial(int k)
-{
-	int faktor = 1;
-
-	if(k < 0)
-	{
-		//an error message should be placed here
-		return 0;
-	}
-
-	while(k > 1)
-	{
-		faktor *= k;
-		k--;
-	}
-	//xprintf(Msg,"\n Koeficient has a value %d.\n",faktor);
-	return faktor;
 }

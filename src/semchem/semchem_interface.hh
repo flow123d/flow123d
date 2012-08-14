@@ -49,7 +49,7 @@ class Specie
 	double activity;
 };
 
-class Reaction
+class General_reaction
 {
 	public:
 	/*
@@ -59,7 +59,7 @@ class Reaction
 	/*
 	 * Constructor.
 	 */
-	Reaction();
+	General_reaction();
 	private:
 	/*
 	* Specification of type of reaction.

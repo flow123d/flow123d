@@ -10,77 +10,20 @@
 #ifndef LINREACT
 #define LINREACT
 
-#include <vector> ///< included to enable saving bifurcation
-#include "petscvec.h"
-#include "petscmat.h"
-#include "petscksp.h"
-class Mesh;
-class Distribution;
+#include <vector>
+#include "reaction/reaction.hh"
+//#include <vector> ///< included to enable saving bifurcation
+//#include "petscvec.h"
+//#include "petscmat.h"
+//#include "petscksp.h"
+//class Mesh;
+//class Distribution;
 
+//class Linear_reaction: public Reaction
 #include <input/input_type.hh>
 #include <input/accessors.hh>
 
-/*
-* Decay chain member
-*/
-class Isotope
-{
-	public:
-	/*
-	* Static method for new input data types input
-	*/
-	static Input::Type::AbstractRecord &get_input_type();
-	/*
-	* constructor holding necessary parameters
-	*/
-	Isotope(int id, int *next, double halflive);
-	/*
-	* Integer holding identifier of transported chemical specie (isotope).
-	*/
-	int id;
-	/*
-	* Ids of ancestors of the particular isotope contained in considered decay chain.
-	*/
-	int *next;
-	/*
-	* Half-life belonging to considered isotope.
-	*/
-	double half_life;
-	/*
-	* Bifurcation. Fractions of division decay chain into branches.
-	*/
-	double *bifurcation;
-};
-
-/*
-* Member of first order reaction.
-*/
-class Reactant
-{
-	public:
-	/*
-	* Static method for new input data types input
-	*/
-	static Input::Type::AbstractRecord &get_input_type();
-	/*
-	* Constructor follows.
-	*/
-	Reactant(int id, int next, double kinetic_constant);
-	/*
-	* Integer holding identifier of transported chemical specie (isotope).
-	*/
-	int id;
-	/*
-	* Product of first order reaction identifier.
-	*/
-	int next;
-	/*
-	* Kinetic reaction rate constant.
-	*/
-	double kinetic_constant;
-};
-
-class Linear_reaction
+class Linear_reaction: public Reaction
 {
 	public:
 		/*
@@ -91,7 +34,8 @@ class Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+//		Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
 		/**
 		*	Destructor.
 		*/
@@ -106,34 +50,19 @@ class Linear_reaction
 		*/
 		void compute_one_step(void);
 		/**
-		*	It returns a number of decays defined in input-file.
-		*/
-		int get_nr_of_decays(void);
-		/**
-		*	It returns a number of first order reactions defined in input-file.
-		*/
-		int get_nr_of_FoR(void);
-		/**
-		* 	It returns current time step used for first order reactions.
-		*/
-		double get_time_step(void);
-		/**
-		*	It enables to set a number of transported species to set a size of reaction matrix.
-		*/
-		void set_nr_of_species(int n_substances);
-		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		void set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
-		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/
 		void set_time_step(double new_timestep);
 		/**
+		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
+		*/
+		void set_time_step(void);
+		/**
 		* This method enables to evaluate matrix polynomial of an matrix containing constant real values. Horner scheme is used to get the value.
 		*/
 		void evaluate_matrix_polynomial(Mat *Polynomial, Mat Reaction_matrix, PetscScalar *koef_hlp);
-	private:
+		
+	protected:
 		/**
 		*	This method disables to use constructor without parameters.
 		*/
@@ -150,14 +79,6 @@ class Linear_reaction
 		*	This method sets number of isotopes for the case of first order reaction. The value should be always 2.
 		*/
 		void set_nr_of_isotopes(int Nr_of_isotopes);
-		/**
-		*	This method reads from ini-file an information how many radioactive decays are under consideration.
-		*/
-		void set_nr_of_decays(void);
-		/**
-		*	This method reads from ini-file an information how many first order reactions are under consideration.
-		*/
-		void set_nr_of_FoR(void);
 		/**
 		*	This method reads a sequence of (nr_of_isotopes - 1) halflives belonging to separate decay chain step. This information is placed in ini-file in a block starting with a string section.
 		*/
@@ -183,19 +104,7 @@ class Linear_reaction
 		*/
 		void set_kinetic_constants(char *section, int reaction_nr);
 		/**
-		*	This method enables to change total number of elements contained in mesh.
-		*/
-		void set_nr_of_elements(int nrOfElements);
-		/**
-		*	This method transfer pointer to mesh between a transport and reactive part of a program.
-		*/
-		void set_mesh_(Mesh *mesh);
-		/**
 		*
-		*/
-		void set_dual_porosity(void);
-		/**
-		*	This method prepares a memory for storing of reaction matrix.
 		*/
 		double **allocate_reaction_matrix(void);
 		/**
@@ -256,25 +165,9 @@ class Linear_reaction
 		*/
 		int *substance_ids;
 		/**
-		*	Contains number of transported chemical species.
-		*/
-		int nr_of_species;
-		/**
 		*	Informs about the number of isotopes in a current decay chain.
 		*/
 		int nr_of_isotopes;
-		/**
-		*	Informs how many decay chains are under consideration. It means a number of [Decay_i] sections in ini-file.
-		*/
-		int nr_of_decays;
-		/**
-		*	Informs how many firts order reactions of the type A -> B are under consideration. It is a number of [FoReaction_i] in ini-file.
-		*/
-		int nr_of_FoR;
-		/**
-		*	Boolean which enables to compute reactions also in immobile pores.
-		*/
-		bool dual_porosity_on;
 		/**
 		*	Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
 		*/
@@ -314,11 +207,11 @@ class Linear_reaction
 		/*
 		* Array containing information about isotopes in considered decay chain.
 		*/
-		Isotope *isotopes;
+		Decay *isotopes;
 		/*
 		* Array containing information about first order reactions.
 		*/
-		Reactant *reactants;
+		Kinetics *reactants;
 
 		/// Temporary space for saving original concentrations
 
