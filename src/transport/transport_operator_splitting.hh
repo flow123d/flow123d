@@ -2,8 +2,7 @@
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
 #include "coupling/equation.hh"
-#include "reaction/linear_reaction.hh"
-#include "semchem/semchem_interface.hh"
+
 #include <limits>
 #include "io/output.h"
 
@@ -14,8 +13,13 @@ class Mesh;
 //class SchurComplement;
 //class Distribution;
 //class SparseGraph;
+
+class Linear_reaction;
+class Semchem_interface;
 class ConvectionTransport;
 class MaterialDatabase;
+
+
 /**
  * @brief Specification of transport model interface.
  *

@@ -2,14 +2,17 @@
 #include <cstring>
 #include <stdlib.h>
 #include <math.h>
+
 #include "reaction/reaction.hh"
+#include "reaction/linear_reaction.hh"
+
 #include "system/system.hh"
 #include "materials.hh"
 #include "transport/transport.h"
 //#include "system/par_distribution.hh"
 #include "mesh/mesh.h"
 
-Input::Type::AbstractRecord & Decay::get_input_type()
+Input::Type::Record & Reaction::get_one_decay_type()
 {
 	using namespace Input::Type;
 	static AbstractRecord rec("decays", "Equation for reading information about radioactive decays.");
@@ -17,6 +20,11 @@ Input::Type::AbstractRecord & Decay::get_input_type()
 	if(!rec.is_finished()){
 		rec.declare_key("parental_atom", String(), Default::obligatory(),
 				"Identifier of an isotope.");
+        rec.declare_key("half_life", Double(), Default::optional(),
+                "Half life of the parent substance.");
+        rec.declare_key("kinetic", Double(), Default::optional(),
+                "Kinetic constants describing first order reactions.");
+
 		rec.declare_key("products", Array(String()), Default::obligatory(),
 				"Identifies isotopes which decays parental atom to.");
 		rec.declare_key("branching_ratios", Array(Double()), Default::optional(),
@@ -57,19 +65,17 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 	if (!rec.is_finished()) {
 		rec.declare_key("substances", Array(String()), Default::obligatory(),
 								"Names of transported chemical species.");
-		rec.declare_key("half_lives", Array(Double()), Default::optional(),
-				"Half lives of transported isotopes.");
-		rec.declare_key("decays", Array(Decay()), Default::optional(),
+		rec.declare_key("decays", Array( Reaction::get_one_decay_type() ), Default::optional(),
 				"Description of particular decay chain substeps.");
 		rec.declare_key("kinetic_constants", Array(Double()), Default::optional(),
 				"Kinetic constants describing first order reactions.");
-		rec.declare_key("kinetics", Array(Kinetics()), Default::optional(),
-				"Description of particular first order reactions.");
+		//rec.declare_key("kinetics", Array(Kinetics()), Default::optional(),
+		//		"Description of particular first order reactions.");
 		rec.finish();
 
-		//Reaction::get_input_type();
+		Linear_reaction::get_input_type();
 
-		//rec.no_more_descendants();
+		rec.no_more_descendants();
 	}
 	return rec;
 }

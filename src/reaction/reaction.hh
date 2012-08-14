@@ -79,7 +79,9 @@ class Reaction: public EquationBase
 		/*
 		 * Static method for new input data types input
 		 */
-		static Input::Type::AbstractRecord &get_input_type();
+		static Input::Type::AbstractRecord & get_input_type();
+
+		static Input::Type::Record & get_one_decay_type();
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description

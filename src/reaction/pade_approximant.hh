@@ -11,6 +11,8 @@
 #include "petscvec.h"
 #include "petscmat.h"
 #include "petscksp.h"
+
+#include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 
 class Pade_approximant: public Linear_reaction

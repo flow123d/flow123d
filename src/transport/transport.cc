@@ -92,6 +92,7 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     n_substances = substance_name.size();
     INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
 
+    pepa=false;
     // pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
     // type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
 
@@ -594,40 +595,45 @@ void ConvectionTransport::compute_one_step() {
 
     // possibly read boundary conditions
 
-    if (bc_time_level != -1 && time_->is_current(bc_mark_type_)) read_bc_vector();
+    if (bc_time_level != -1 && time_->is_current(bc_mark_type_))
+        read_bc_vector();
 
     // proceed to actually computed time
     time_->next_time();
 
     for (sbi = 0; sbi < n_substances; sbi++) {
-                // one step in MOBILE phase
-    		if(transportsources != NULL){
-    			transportsources->compute_concentration_sources(sbi);
-    			VecAXPBYPCZ(vcumulative_corr[sbi],1.0,time_->dt(),0.0,bcvcorr[sbi],transportsources->vsources_corr[sbi]);
-    		}
-    		else
-    			VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
+        // one step in MOBILE phase
+        if (transportsources != NULL) {
+            transportsources->compute_concentration_sources(sbi);
+            VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi], transportsources->vsources_corr[sbi]);
+        } else {
+            VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
+        }
 
-                MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
-                VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
+        VecView(vpconc[sbi],PETSC_VIEWER_STDOUT_SELF);
 
-                if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
-                    // cycle over local elements only in any order
-                    for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-                        material = (mesh_->element(el_4_loc[loc_el])) -> material;
+        MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
+        VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
 
-                        if (dual_porosity == true)
-                            transport_dual_porosity(loc_el, material, sbi);
-                        if (sorption == true)
-                            transport_sorption(loc_el, material, sbi);
-                        /*
-                         if (reaction_on == true)
-                         transport_reaction(trans, loc_el, material, sbi);
+        VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
 
-                         */
-                    }
-                // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
+        if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
+            // cycle over local elements only in any order
+            for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+                material = (mesh_->element(el_4_loc[loc_el]))->material;
+
+                if (dual_porosity == true)
+                    transport_dual_porosity(loc_el, material, sbi);
+                if (sorption == true)
+                    transport_sorption(loc_el, material, sbi);
+
+                // if (reaction_on == true)
+                //    transport_reaction(trans, loc_el, material, sbi);
+
+
             }
+        // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
+    }
 }
 
 

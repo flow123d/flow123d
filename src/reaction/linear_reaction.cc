@@ -2,6 +2,8 @@
 #include <cstring>
 #include <stdlib.h>
 #include <math.h>
+
+#include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "system/system.hh"
 #include "materials.hh"
@@ -60,12 +62,13 @@
 	return rec;
 }*/
 
-Input::Type::AbstractRecord & Linear_reaction::get_input_type()
+Input::Type::Record & Linear_reaction::get_input_type()
 {
 	using namespace Input::Type;
-	static AbstractRecord rec("Linear_reactions", "Information for a decision about the way to simulate radioactive decay.");
+	static Record rec("Linear_reactions", "Information for a decision about the way to simulate radioactive decay.");
 
 	if (!rec.is_finished()) {
+	    rec.derive_from( Reaction::get_input_type() );
 		/*rec.declare_key("substances", Array(String()), Default::obligatory(),
 								"Names of transported isotopes.");
 		rec.declare_key("half_lives", Array(Double()), Default::optional(),

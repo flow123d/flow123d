@@ -11,17 +11,19 @@
 #define LINREACT
 
 #include <vector>
-#include "reaction/reaction.hh"
+//#include "reaction/reaction.hh"
 //#include <vector> ///< included to enable saving bifurcation
 //#include "petscvec.h"
 //#include "petscmat.h"
 //#include "petscksp.h"
-//class Mesh;
-//class Distribution;
 
 //class Linear_reaction: public Reaction
 #include <input/input_type.hh>
 #include <input/accessors.hh>
+
+class Mesh;
+class Distribution;
+class Reaction;
 
 class Linear_reaction: public Reaction
 {
@@ -29,7 +31,7 @@ class Linear_reaction: public Reaction
 		/*
 	 	* Static method for new input data types input
 		*/
-		static Input::Type::AbstractRecord &get_input_type();
+		static Input::Type::Record &get_input_type();
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
@@ -147,10 +149,6 @@ class Linear_reaction: public Reaction
 		*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
 		*/
 		void print_half_lives(int n_subst);
-		/**
-		*
-		*/
-		int faktorial(int k);
 		/**
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/

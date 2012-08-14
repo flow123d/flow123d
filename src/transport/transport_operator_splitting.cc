@@ -14,9 +14,13 @@
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
-//#include "reaction/linear_reaction.hh"
+
+#include "reaction/reaction.hh"
+#include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
+
 #include "semchem/semchem_interface.hh"
+
 #include "la/distribution.hh"
 #include "io/output.h"
 
@@ -37,20 +41,20 @@ Input::Type::AbstractRecord & TransportBase::get_input_type()
 
 	    // input data
 	    rec.declare_key("sorption", Bool(), Default("false"),
-						"Model of sorption.");
+						                "Model of sorption.");
 		rec.declare_key("dual_porosity", Bool(), Default("false"),
-						"Dual porosity model.");
+						                "Dual porosity model.");
 
 		rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
-						"Input file with initial concentrations.");
+						                "Input file with initial concentrations.");
 		rec.declare_key("boundary_file", FileName::input(), Default::obligatory(),
-						"Input file with boundary conditions.");
+						                "Input file with boundary conditions.");
 		rec.declare_key("bc_times", Array(Double()), Default::optional(),
-				 	 	"Times for changing the boundary conditions.");
+				 	 	                "Times for changing the boundary conditions.");
 		rec.declare_key("sources", FileName::input(), Default::optional(),
-		                        "File with data for the source term in the transport equation.");
+		                                "File with data for the source term in the transport equation.");
         rec.declare_key("output", TransportBase::get_input_type_output_record(), Default::obligatory(),
-                "Parameters of output stream.");
+                                        "Parameters of output stream.");
 
 		rec.finish();
 
@@ -178,7 +182,7 @@ Input::Type::Record &TransportOperatorSplitting::get_input_type()
 
     if (!rec.is_finished()) {
         rec.derive_from(TransportBase::get_input_type());
-        rec.declare_key("reactions", Linear_reaction::get_input_type(), Default::optional(),
+        rec.declare_key("reactions", Reaction::get_input_type(), Default::optional(),
                 "Initialization of per element reactions.");
 
         rec.finish();

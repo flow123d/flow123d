@@ -64,6 +64,7 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
     static AbstractRecord rec("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.");
 
     if (!rec.is_finished()) {
+        // ... may declare some keys
         rec.finish();
 
         DarcyFlowMH_Steady::get_input_type();
