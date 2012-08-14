@@ -434,6 +434,7 @@ def value_type (val, val_type):
     if(val_type=='int'):
         val = int( float(val))
     if(val_type.startswith('enum')):
+        
         parameters = val_type[val_type.find('(')+1:val_type.find(')')]
         pars = parameters.split(',')
         i = 0
@@ -484,6 +485,8 @@ def update_data (value, sections, d_out):
         key=sections.pop(0)
         if ((key in d_out) == False):
               d_out[ key ] = {}
-        update_data(value, sections, d_out[ key ] )
+        if ( d_out[key] is not None) :
+              update_data(value, sections, d_out[ key ] )
 
     return d_out
+    

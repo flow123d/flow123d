@@ -1,4 +1,5 @@
 {
+  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
     description = "test1", 
@@ -16,6 +17,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
+        piezo_head_p0 = "flow_output_stream", 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
         raw_flow_output = "./raw_output.txt", 
@@ -41,7 +43,6 @@
       ]
     }, 
     time = {
-      COMMENT_Stop_time = "1275", 
       end_time = 5.0
     }
   }, 
@@ -56,6 +57,12 @@
         name = "flow_output_stream"
       }, 
       {
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
         name = "transport_output_stream"
       }
     ], 

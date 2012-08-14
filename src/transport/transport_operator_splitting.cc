@@ -35,12 +35,12 @@ Input::Type::AbstractRecord & TransportBase::get_input_type()
 
 	if (!rec.is_finished()) {
 	    rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-	                    "Time governot setting for the transport model.");
+	                    "Time governor setting for the transport model.");
         rec.declare_key("substances", Array(String()), Default::obligatory(),
                         "Names of transported substances.");
 
 	    // input data
-	    rec.declare_key("sorption", Bool(), Default("false"),
+	    rec.declare_key("sorption_enable", Bool(), Default("false"),
 						                "Model of sorption.");
 		rec.declare_key("dual_porosity", Bool(), Default("false"),
 						                "Dual porosity model.");

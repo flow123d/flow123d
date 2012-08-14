@@ -40,8 +40,8 @@
       }, 
       sorption_enable = true, 
       substances = [
-        "age,", 
-        "U235,"
+        "age", 
+        "U235"
       ], 
       time = {
         REF = "../../time"

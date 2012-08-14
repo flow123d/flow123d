@@ -93,7 +93,7 @@ POS_view_params   = "/zz_not_supported/output/pos_view_params="
 
 balance_output = "/problem/primary_equation/output/balance_output=string"
 raw_flow_output = "/problem/primary_equation/output/raw_flow_output=string"
-output_piezo_head = "/problem/primary_equation/output/piezo_head_p0=enum( yes>flow_output_stream, no>null )"
+output_piezo_head = "/problem/primary_equation/output/piezo_head_p0=enum( True>flow_output_stream, False>null )"
 
 [Constants]
 g		  ="/zz_not_supported/constants/g="

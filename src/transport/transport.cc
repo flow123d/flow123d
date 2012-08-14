@@ -84,9 +84,10 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     target_mark_type=this->mark_type();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, target_mark_type);
 
-    sorption = in_rec.val<bool>("sorption");
+    sorption = in_rec.val<bool>("sorption_enable");
     dual_porosity = in_rec.val<bool>("dual_porosity");
     // reaction_on = in_rec.val<bool>("transport_reactions");
+
 
     in_rec.val<Input::Array>("substances").copy_to(substance_name);
     n_substances = substance_name.size();
@@ -610,10 +611,10 @@ void ConvectionTransport::compute_one_step() {
             VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
         }
 
-        VecView(vpconc[sbi],PETSC_VIEWER_STDOUT_SELF);
+        //VecView(vpconc[sbi],PETSC_VIEWER_STDOUT_SELF);
 
         MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
-        VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
+        //VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
 
         VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
 
