@@ -30,6 +30,10 @@ FLOW_BIN=flow123d
 INTERPOLATE_BIN=interpolation
 MPIEXEC_BIN=mpiexec
 
+ifndef N_JOBS
+  N_JOBS=4
+endif  
+
 # install all binaries form build tree to './bin' dir
 install: 
 	if [ -e  "build/$(INTERPOLATE_BIN)" ]; then rm -f bin/$(INTERPOLATE_BIN); cp "build/$(INTERPOLATE_BIN)" bin; fi
@@ -60,13 +64,13 @@ build_all: build_flow123d  # build_interpolation  #ngh bcd
 flow123d:  build_flow123d  install
 
 build_flow123d: cmake
-	make -j 4 -C build flow123d
+	make -j $(N_JOBS) -C build flow123d
 
 	
 interpolation: build_interpolation install
 	
 build_interpolation: 
-	make -j 4 -C build interpolation
+	make -j $(N_JOBS) -C build interpolation
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	
