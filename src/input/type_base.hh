@@ -354,14 +354,15 @@ public:
     virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
     virtual string type_name() const;
 
-    virtual void valid_default(const string &str) const
-    {from_default(str);}
+    virtual void valid_default(const string &str) const;
+
+    string from_default(const string &str) const;
+
 
     /**
      * Particular descendants can check validity of the string.
      */
-    virtual string from_default(const string &str) const
-    {return str;}
+    virtual bool match(const string &value) const;
 };
 
 
@@ -394,6 +395,10 @@ public:
     { return  typeid(*this) == typeid(other) &&
                      (type_== static_cast<const FileName *>(&other)->get_file_type() );
     }
+
+    /// Checks relative output paths.
+    virtual bool match(const string &str) const;
+
 
     /**
      * Returns type of the file input/output.

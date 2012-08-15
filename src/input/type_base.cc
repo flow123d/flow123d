@@ -297,6 +297,12 @@ string FileName::type_name() const {
 }
 
 
+
+bool FileName::match(const string &str) const {
+    return (type_ == ::FilePath::input_file) || (str[0] != DIR_DELIMITER); // output files can not be absolute
+}
+
+
 /**********************************************************************************
  * implementation of Type::String
  */
@@ -317,6 +323,25 @@ string String::type_name() const {
 
 
 
+
+void String::valid_default(const string &str) const {
+    if (! match(str)) {
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+    }
+}
+
+
+
+string String::from_default(const string &str) const {
+    valid_default(str);
+    return str;
+}
+
+
+
+bool String::match(const string &str) const {
+    return true;
+}
 
 
 

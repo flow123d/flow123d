@@ -509,8 +509,11 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 {
     if (p.head()->type() == json_spirit::str_type) {
         string value = p.head()->get_str();
-        //double_type->match(value);        // possible parsing and modifications of special strings
-        return new StorageString( value );
+        if (string_type->match(value))
+            return new StorageString( value );
+        else
+            THROW( ExcInputError() << EI_Specification("Output file can not be given by absolute path: '" + value + "'")
+                            << EI_ErrorAddress(p) << EI_JSON_Type("") << EI_InputType(string_type->desc()) );
     } else {
         THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found type: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(string_type->desc()) );

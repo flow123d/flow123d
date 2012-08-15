@@ -20,30 +20,25 @@ using namespace std;
 
 
 /**
- * Dedicated class for storing path to files. It performs some modification of path to input and output files.
+ * @brief Dedicated class for storing path to input and output files.
  *
+ * FilePath objects are constructed from given absolute or relative path to the file and its type (input or output).
+ * Before you create any instance of the class you have to call static method @p set_io_dirs to set:
+ * - working directory of the program (when it was started)
+ * - root input directory, i.e. directory of the main input file (given by -s parameter)
+ * - input directory, used to replace ${INPUT} placeholder (given by -i parameter)
+ * - output directory, where all output files should be placed (given by -o parameter)
  *
- * IONameHandler stores items formed by the combination of a key value and a mapped value.
- * The pairs are used to substitution in paths of the input and output files.
- *
- * If program is running with "-i" switch the "${INPUT}" variable in the given filename is substituted by the value immediately following this switch.
- * If program is running with "-o" switch all output file paths are prefixed by the value immediately following this switch (instead of root directory flow.ini file)
- *
- *
- * @par Another example usage:
- * @code
- * IONameHandler &io_name_handler = *(IONameHandler::get_instance());
- * io_name_handler.get_input_file_name("relative/path/with/${INPUT}/var/mesh.msh");
- * @endcode
  */
 
 class FilePath {
 public:
 
-    //TYPEDEF_ERR_INFO( EI_ErrorAddress, Input::JSONPath);
-    TYPEDEF_ERR_INFO( EI_Path, string);
-    DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << "at address: ??"  );
 
+    TYPEDEF_ERR_INFO( EI_Path, string);
+    DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << "for an output file."  );
+
+    /// Possible types of file.
     enum FileType {
         input_file,
         output_file
@@ -52,16 +47,24 @@ public:
 
 
     /**
-     * Translates the given absolute or relative path to a file @p file_path.
-     * - For relative input path prepend directory of main input file.
-     * - For every input file substitutes ${INPUT} place holder by the input directory given at command line.
+     * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.
+     *
+     * For input files:
+     * - For relative path prepend absolute path of the directory of the main input file (root directory).
+     * - Replace ${INPUT} place holder with the input directory given at command line.
+     *
+     * For output files:
      * - Forbids absolute output paths.
-     * - For relative output path prepends it by output direcotry given at the command line.
+     * - For relative output path prepends it by the output directory given at the command line.
      */
     FilePath(const string file_path, const  FileType ft);
 
     /**
-     * Set current, input and output dir.
+     * Set:
+     * - working directory (used only if the output directory is relative)
+     * - root directory (of the main input file)
+     * - input directory to replace ${INPUT} placeholder
+     * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
     static void set_io_dirs(const string working_dir, const string root_input,const string input,const string output);
 
@@ -75,6 +78,7 @@ public:
      * @brief Add new item to place holder.
      *
      * Placeholder is extended by adding a single new item. The item can be used in the name of the input or output file name.
+     * Currently, the only supported placeholder is ${INPUT}.
      *
      * @par Example usage:
      * @code
@@ -88,9 +92,13 @@ public:
 
 
 private:
+    /**
+     * Substitutes placeholders in @p abs_file_path.
+     */
     void substitute_value();
 
 
+    /// Final absolute path to the file.
     string abs_file_path;
 
     /// dictionary of placeholders
@@ -98,6 +106,7 @@ private:
 
     /// Prefix path for output files.
     static string output_dir;
+
     /// Prefix path for input files (directory of the main input file).
     static string root_dir;
 };
