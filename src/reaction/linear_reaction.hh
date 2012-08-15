@@ -11,13 +11,6 @@
 #define LINREACT
 
 #include <vector>
-//#include "reaction/reaction.hh"
-//#include <vector> ///< included to enable saving bifurcation
-//#include "petscvec.h"
-//#include "petscmat.h"
-//#include "petscksp.h"
-
-//class Linear_reaction: public Reaction
 #include <input/input_type.hh>
 #include <input/accessors.hh>
 
@@ -32,19 +25,22 @@ class Linear_reaction: public Reaction
 	 	* Static method for new input data types input
 		*/
 		static Input::Type::Record &get_input_type();
+		/*
+	 	* Static method gets information about particular decay step
+		*/
+		static Input::Type::Record & get_one_decay_substep();
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
-//		Linear_reaction(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec);
 		/**
 		*	Destructor.
 		*/
 		~Linear_reaction(void);
 
 		/**
-		*	For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
+		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
 		double **compute_reaction(double **concentrations, int loc_el);
 		/**
@@ -62,8 +58,6 @@ class Linear_reaction: public Reaction
 		/**
 		* This method enables to evaluate matrix polynomial of an matrix containing constant real values. Horner scheme is used to get the value.
 		*/
-		void evaluate_matrix_polynomial(Mat *Polynomial, Mat Reaction_matrix, PetscScalar *koef_hlp);
-		
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
@@ -84,7 +78,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method reads a sequence of (nr_of_isotopes - 1) halflives belonging to separate decay chain step. This information is placed in ini-file in a block starting with a string section.
 		*/
-		double *set_half_lives(char *section);
+		double *set_half_lives(Input::Record in_rec);
 		/**
 		*	This method reads form ini-file an information for construction of a matrix describing bifurcation of every single decay chain on one row of the reaction matrix. Informations about bifurcation are placed in a block starting with a string section. dec_nr identifies which one decay chain is handled and which row of twodimensional bifurcation matrix (double **array)should be affected.
 		*/
@@ -122,18 +116,6 @@ class Linear_reaction: public Reaction
 		*/
 		double **modify_reaction_matrix_repeatedly(void); ///< calls the function modify_reaction_matrix(..) so many times as many decays are defined
 		/**
-		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
-		*/
-		void modify_reaction_matrix(Mat *R);
-		/**
-		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched on.
-		*/
-		double **modify_reaction_matrix(Mat *R, int bifurcation); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched on
-		/**
-		*	Following method assambles reaction matrix using pade approximant instead of earlier repeatedly realized modifications.
-		*/
-		double **modify_reaction_matrix_using_pade(void);
-		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/
 		void print_reaction_matrix(void);
@@ -153,7 +135,6 @@ class Linear_reaction: public Reaction
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/
 		double **reaction_matrix;
-		//std::vector<double> half_lives; ///< alternative to following row
 		/**
 		*	Sequence of (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes.
 		*/
@@ -182,45 +163,6 @@ class Linear_reaction: public Reaction
 		* 	Boolean which indicates the use of Pade approximant of the matrix exponential.
 		*/
 		bool matrix_exp_on;
-		/**
-		*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
-		*/
-		int nom_pol_deg;
-		/**
-		*	Integer which informs about the order of a polynomial term in denominator of Pade approximant rational term.
-		*/
-		int den_pol_deg;
-		/**
-		*	Holds the double describing time step for radioactive decay or first order reactions simulations.
-		*/
-		double time_step;
-		/**
-		*	Containes information about total number of elements.
-		*/
-		int nr_of_elements;
-		/**
-		*	Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
-		*/
-		double ***concentration_matrix;
-		/*
-		* Array containing information about isotopes in considered decay chain.
-		*/
-		Decay *isotopes;
-		/*
-		* Array containing information about first order reactions.
-		*/
-		Kinetics *reactants;
-
-		/// Temporary space for saving original concentrations
-
-		/**
-		*
-		*/
-		Mesh *mesh;
-		/**
-		*	Pointer to reference to distribution of elements between processors.
-		*/
-		Distribution *distribution;
 		/**
 		*	Pointer to reference previous concentration array used in compute_reaction().
 		*/

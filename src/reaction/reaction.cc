@@ -12,51 +12,6 @@
 //#include "system/par_distribution.hh"
 #include "mesh/mesh.h"
 
-Input::Type::Record & Reaction::get_one_decay_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("decays", "Equation for reading information about radioactive decays.");
-
-	if(!rec.is_finished()){
-		rec.declare_key("parental_atom", String(), Default::obligatory(),
-				"Identifier of an isotope.");
-        rec.declare_key("half_life", Double(), Default::optional(),
-                "Half life of the parent substance.");
-        rec.declare_key("kinetic", Double(), Default::optional(),
-                "Kinetic constants describing first order reactions.");
-
-		rec.declare_key("products", Array(String()), Default::obligatory(),
-				"Identifies isotopes which decays parental atom to.");
-		rec.declare_key("branching_ratios", Array(Double()), Default::optional(),
-				"Decay chain branching percentage.");
-		rec.finish();
-
-		//Decay::get_input_type();
-
-		//rec.no_more_descendants();
-	}
-	return rec;
-}
-
-Input::Type::AbstractRecord & Kinetics::get_input_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("kinetics", "Equation for reading information about first order reactions.");
-
-	if(!rec.is_finished()){
-		rec.declare_key("parental_atom", String(), Default::obligatory(),
-				"Identifier of reactant.");
-		rec.declare_key("product", Array(String()), Default::obligatory(),
-				"Identifies the product of first order reaction.");
-		rec.finish();
-
-		Kinetics::get_input_type();
-
-		rec.no_more_descendants();
-	}
-	return rec;
-}
-
 Input::Type::AbstractRecord & Reaction::get_input_type()
 {
 	using namespace Input::Type;
@@ -65,12 +20,10 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 	if (!rec.is_finished()) {
 		rec.declare_key("substances", Array(String()), Default::obligatory(),
 								"Names of transported chemical species.");
-		rec.declare_key("decays", Array( Reaction::get_one_decay_type() ), Default::optional(),
+		rec.declare_key("decays", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
 				"Description of particular decay chain substeps.");
 		rec.declare_key("kinetic_constants", Array(Double()), Default::optional(),
 				"Kinetic constants describing first order reactions.");
-		//rec.declare_key("kinetics", Array(Kinetics()), Default::optional(),
-		//		"Description of particular first order reactions.");
 		rec.finish();
 
 		Linear_reaction::get_input_type();
@@ -88,7 +41,7 @@ Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material
 	nr_of_decays = sizeof(in_rec.find<Input::AbstractRecord>("decays"));//OptGetInt("Reaction_module","Nr_of_decay_chains","0"); //sizeof(decays)/sizeof(Decay)
 	nr_of_FoR = sizeof(in_rec.find<Input::AbstractRecord>("kinetics"));//OptGetInt("Reaction_module","Nr_of_FoR","0");// sizeof(kinetics)/sizeof(Kinetics)
 	//following parameter can be higher than number of isotopes
-	nr_of_species = 6; // sizeof(in_rec.val<String>("substances"));//OptGetInt("Transport", "N_substances", "0");// sizeof(substances)
+	nr_of_species = 8; //sizeof(in_rec.val<Input::String>("substances"));//OptGetInt("Transport", "N_substances", "0");// sizeof(substances)
 
 	this->dual_porosity_on = in_rec.val<bool>("dual_porosity");
 	//set_dual_porosity();

@@ -14,6 +14,7 @@ class Mesh;
 //class Distribution;
 //class SparseGraph;
 
+class Reaction;
 class Linear_reaction;
 class Semchem_interface;
 class ConvectionTransport;
@@ -108,7 +109,7 @@ protected:
 private:
 
     ConvectionTransport *convection;
-    Linear_reaction *decayRad;
+    Reaction *decayRad;
     Semchem_interface *Semchem_reactions;
     //int steps;
     OutputTime *field_output;

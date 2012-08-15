@@ -15,63 +15,7 @@
 //class Mesh;
 class Distribution;
 
-/*const int Linear_react = 0;
-const int Linear_react_Pade = 1;
-const int General_react_Semch = 2;*/
-
 enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch};
-
-/*
-* Decay
-*/
-class Decay
-{
-	public:
-	/*
-	* Static method for new input data types input
-	*/
-	static Input::Type::AbstractRecord &get_input_type();
-	/*
-	* constructor holding necessary parameters
-	*/
-	Decay(void);
-	/*
-	* Name of the parental atom which stays at the beginnig of one decay chain step.
-	*/
-	char *parental_atom;
-	/*
-	* Names of ancestors of the particular isotope contained in considered decay chain.
-	*/
-	char **products;
-	/*
-	 * Bifurcation. Fractions of division decay chain into branches.
-	*/
-	double *branching_ratios;
-};
-
-/*
-* Member of first order reaction.
-*/
-class Kinetics
-{
-	public:
-	/*
-	* Static method for new input data types input
-	*/
-	static Input::Type::AbstractRecord &get_input_type();
-	/*
-	* Constructor follows.
-	*/
-	Kinetics(void);
-	/*
-	* Name of the reactant under consideration.
-	*/
-	char *parental_atom;
-	/*
-	* Name of the product of first order reaction identifier.
-	*/
-	char *product;
-};
 
 class Reaction: public EquationBase
 {
@@ -80,7 +24,9 @@ class Reaction: public EquationBase
 		 * Static method for new input data types input
 		 */
 		static Input::Type::AbstractRecord & get_input_type();
-
+		/*
+		 * Static method for new input data types input
+		*/
 		static Input::Type::Record & get_one_decay_type();
         /**
          *  Constructor with parameter for initialization of a new declared class member
@@ -127,9 +73,7 @@ class Reaction: public EquationBase
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
 		virtual void set_time_step(void);
-		/**
-		* Two virtual methods to be implemented in ancestors.
-		*/
+		//
 		void update_solution(void);
 		void choose_next_time(void);
 		void set_time_step_constrain(double dt);
@@ -201,17 +145,9 @@ class Reaction: public EquationBase
 		*/
 		double *prev_conc;
 		/**
-		*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
-		*/
-		int nom_pol_deg;
-		/**
-		*	Integer which informs about the order of a polynomial term in denominator of Pade approximant rational term.
-		*/
-		int den_pol_deg;
-		/**
 		* Number of further species in Semchem, which can never be exhausted.
 		*/
-		int nr_of_further_species;
+		//int nr_of_further_species;
 };
 
 #endif
