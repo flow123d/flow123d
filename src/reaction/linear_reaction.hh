@@ -78,7 +78,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method reads a sequence of (nr_of_isotopes - 1) halflives belonging to separate decay chain step. This information is placed in ini-file in a block starting with a string section.
 		*/
-		double *set_half_lives(Input::Record in_rec);
+		double *set_half_lives(char *decname);//(Input::Record in_rec);
 		/**
 		*	This method reads form ini-file an information for construction of a matrix describing bifurcation of every single decay chain on one row of the reaction matrix. Informations about bifurcation are placed in a block starting with a string section. dec_nr identifies which one decay chain is handled and which row of twodimensional bifurcation matrix (double **array)should be affected.
 		*/

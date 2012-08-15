@@ -243,11 +243,11 @@ double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) 
 	return concentrations;
 }
 
-double *Linear_reaction::set_half_lives(Input::Record in_rec)
+double *Linear_reaction::set_half_lives(char *decname)//(Input::Record in_rec)
 {
 	char  buffer[1024];
 	char *pom_buf;
-	int i,j;
+	int i,j = 0;
 	//const char *separators = " ,\t";
 
 	if(half_lives != NULL){
@@ -263,17 +263,17 @@ double *Linear_reaction::set_half_lives(Input::Record in_rec)
 	 //pom_buf = strtok( buffer, separators );
 
 	//nutno projit pole rozpadu a ptat se prubezne na polocasy
-	Input::Iterator<Input::Array> j = in_rec.find<Input::Array>(Linear_reaction::get_one_decay_substep());
-	 for (j = 0; j.end(); ++j){
+	//Input::Iterator<Input::Array> j = in_rec.find<Input::Array>(Linear_reaction::get_one_decay_substep());
+	 //for (j = 0; j.end(); ++j){
 		//if ( pom_buf == NULL )
 		{
 			xprintf(Msg,"\nHalf-life of %d-th isotope is missing.", j+1);
 		}
 	    //half_lives[j] = atof(pom_buf);
-		half_lives[j] =
+		//half_lives[j] =
 	    xprintf(Msg,"\n %d-th isotopes half-live is %f",j,half_lives[j]);
 	    //pom_buf = strtok( NULL, separators );
-	 }
+	 //}
 	 /*if ( pom_buf != NULL )
 	 {
 	    xprintf(Msg,"\nMore parameters then (isotopes -1) has been given. %d", 0);
