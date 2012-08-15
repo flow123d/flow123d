@@ -55,6 +55,7 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
 endif()
 
+message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
 
 #if defined(__clang__)
 #define COMPILER_ID "Clang"
@@ -242,6 +243,8 @@ include_directories(
 
 ##############
 # set appropriate compiler flags for debug/release compilation modes
+message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
+
 
 if(CC_FLAGS) 
   add_definitions(${CC_FLAGS})

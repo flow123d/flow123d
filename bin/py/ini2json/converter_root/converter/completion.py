@@ -127,8 +127,8 @@ def read_template(template, d_in, warn, comm, dbg):
         if(len(pair)>1):
             pair[1] = pair[1].strip()
             if pair[1].startswith('NULL'): #useless values
-                if (pair[0] == 'N_substances'):#substances exception
-                    substances = d_in[section][pair[0]]
+                #if (pair[0] == 'N_substances'):#substances exception
+                #    substances = d_in[section][pair[0]]
                 if (dbg == True):
                     #print section + '/' + pair[0] + ' was deleted.'
                     print 'DELETED: ' + spaces + section + '/' + pair[0]

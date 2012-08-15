@@ -123,7 +123,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     }
 
     Iterator<string> it_f = in_rec.find<string>("sources_formula");
-    if (it) {
+    if (it_f) {
         sources= new FieldP0<double>(mesh_);
         sources->setup_from_function(*it_f);
     }
