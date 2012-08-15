@@ -155,15 +155,12 @@ if (NOT Boost_FOUND)
   unset(Boost_VERSION CACHE)
   foreach(COMPONENT ${REQUIRED_Boost_COMPONENTS})
       string(TOUPPER ${COMPONENT} COMPONENT)
-      message(STATUS "release: ${Boost_${COMPONENT}_LIBRARY_RELEASE}")
 
       unset(Boost_${COMPONENT}_FOUND CACHE)
       unset(Boost_${COMPONENT}_LIBRARY CACHE)
       unset(Boost_${COMPONENT}_LIBRARY_DEBUG CACHE)
       unset(Boost_${COMPONENT}_LIBRARY_RELEASE CACHE)
-      
-      message(STATUS "release: ${Boost_${COMPONENT}_LIBRARY_RELEASE}")
-      
+            
   endforeach(COMPONENT)
   
   set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})    
@@ -182,6 +179,12 @@ message(STATUS "boost root: ${BOOST_ROOT}")
 # hint same Boost to armadillo 
 set(Armadillo_Boost_Hint  -D BOOST_ROOT=${BOOST_ROOT})
 
+#set(our_Armadillo_version 1.1.92)
+#set(our_Armadillo_lib libarmadillo.a)
+
+set(our_Armadillo_version 3.2.4)
+set(our_Armadillo_lib libarmadillo.so)
+
 find_package(Armadillo)
 if (NOT Armadillo_FOUND)
 
@@ -189,7 +192,7 @@ if (NOT Armadillo_FOUND)
   # proper way should be: cmake, make, install Armadillo -> the last step should produce ArmadilloLibraryDepends.cmake
   # which can be included here to get correct includes and libs variables
   message(STATUS "Build our own Armadillo.")
-  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build")
+  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build")
   file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH}  ${Armadillo_Boost_Hint} ..
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
@@ -197,9 +200,9 @@ if (NOT Armadillo_FOUND)
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   
   SET(Armadillo_INCLUDE_DIRS 
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/include
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/include)  
-  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/libarmadillo.a")  
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/include
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/include)  
+  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/${our_Armadillo_lib}")  
 endif()
 
 message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")

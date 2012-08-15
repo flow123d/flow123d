@@ -49,5 +49,6 @@ clean:
 	make -C metis-4.0 realclean
 	#make -C armadillo-1.1.92 clean
 	rm -rf armadillo-1.1.92/flow_build
+	rm -rf armadillo-3.2.4/flow_build
 	make -C fparser-4.4.3 clean
 	

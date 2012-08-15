@@ -39,3 +39,5 @@ execute_process(COMMAND ${MAKE_EXECUTABLE} Boost
 
 
 file (REMOVE ${cmakelists_fname})
+
+message(STATUS "BOOST build done")
