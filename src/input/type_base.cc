@@ -65,8 +65,7 @@ bool TypeBase::is_valid_identifier(const string& key) {
 string TypeBase::desc() const {
     stringstream ss;
     reset_doc_flags();
-    documentation(ss, false, 0);
-    documentation(ss, true, 0);
+    documentation(ss);
     return ss.str();
 }
 
@@ -74,8 +73,7 @@ string TypeBase::desc() const {
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
     type.reset_doc_flags();
-    type.documentation(stream, false, 0);
-    return type.documentation(stream, true,0);
+    return type.documentation(stream);
 }
 
 
@@ -85,16 +83,25 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  */
 
 
-std::ostream& Array::documentation(std::ostream& stream, bool extensive, unsigned int pad) const {
+std::ostream& Array::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const {
 
-    if (extensive) {
-        type_of_values_->documentation(stream, true, pad);
-    } else {
-        stream << "Array, size limits: [" << lower_bound_ << ", " << upper_bound_ << "] of type: " << endl;
-        stream << setw(pad+4) << "";
-        type_of_values_->documentation(stream, false, pad+4);
-    }
-    return stream;
+        switch (extensive) {
+        case record_key:
+            stream << "Array, size limits: [" << lower_bound_ << ", " << upper_bound_ << "] of type: " << endl;
+            stream << setw(pad+4) << "";
+            type_of_values_->documentation(stream, record_key, pad+4);
+            break;
+        case full_after_record:
+            type_of_values_->documentation(stream, full_after_record, pad+4);
+            break;
+        case full_along:
+            stream << "Array, size limits: [" << lower_bound_ << ", " << upper_bound_ << "] of type: " << endl;
+            stream << setw(pad+4) << "";
+            type_of_values_->documentation(stream, record_key, pad+4);
+            break;
+        }
+
+        return stream;
 }
 
 
@@ -157,8 +164,8 @@ bool Bool::from_default(const string &str) const {
 }
 
 
-std::ostream& Bool::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
+std::ostream& Bool::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
+    if (extensive == full_after_record) return stream;
     stream << "Bool";
     return stream;
 }
@@ -199,8 +206,8 @@ void Integer::valid_default(const string &str) const
 
 
 
-std::ostream& Integer::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
+std::ostream& Integer::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
+    if (extensive == full_after_record) return stream;
     stream << "Integer in [" << lower_bound_ << ", " << upper_bound_ << "]";
     return stream;
 }
@@ -241,8 +248,8 @@ void Double::valid_default(const string &str) const
 
 
 
-std::ostream& Double::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
+std::ostream& Double::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
+    if (extensive == full_after_record) return stream;
     stream << "Double in [" << lower_bound_ << ", " << upper_bound_ << "]";
     return stream;
 }
@@ -258,8 +265,8 @@ string Double::type_name() const {
  * implementation of Type::FileName
  */
 
-std::ostream& FileName::documentation(std::ostream& stream, bool extensive, unsigned int pad)  const {
-    if (extensive) return stream;
+std::ostream& FileName::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
+    if (extensive == full_after_record) return stream;
 
     stream << "FileName of ";
     switch (type_) {
@@ -295,9 +302,9 @@ string FileName::type_name() const {
  */
 
 
-std::ostream& String::documentation(std::ostream& stream, bool extensive, unsigned int pad) const {
+std::ostream& String::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const {
 
-    if (extensive) return stream;
+    if (extensive == full_after_record) return stream;
     stream << "String (generic)";
     return stream;
 }

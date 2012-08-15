@@ -211,6 +211,25 @@ private:
  * In either case correspondence between resulting type (i.e. type of elements of the container or type of the Iterator)
  * and the type of the data in the Array is checked only once.
  *
+ * Example of usage:
+ * @code
+ * Input::Array decay_array = in_rec.val<Input::Array>("decays");       // get accessor to an array stored under key 'decays'
+ * int size = decay_array.size();                                       // get size of the actual arrya in the input (possibly for allocation)
+ *
+ * for(Input::Iterator<Input::Record> it = decay_array.begin<Input::Record>()   // pass through the array, that is array of records
+ *          ; it != dacay_array.end(); ++it) {
+ *
+ *     Input::Iterator<double> it_hl = it->find<double>("half_life");   // check existence of an optional key
+ *     if (it_hl) {
+ *          double hl = *it_hl;
+ *     } else {
+ *          // use some other value, or turn-off the decay
+ *     }
+ *     Input::Array products = it->val<Input::Array>("products");       // read an obligatory key, theat conatins an array
+ *     // ... process the array 'products'
+ * }
+ * @endcode
+ *
  * @ingroup input_accessors
  */
 class Array {

@@ -36,7 +36,7 @@ bool Selection::is_finished() const {
 
 
 
-std::ostream& Selection::documentation(std::ostream& stream, bool extensive, unsigned int pad) const {
+std::ostream& Selection::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const {
     if (!is_finished())
         xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
     return data_->documentation(stream, extensive, pad);
@@ -113,14 +113,15 @@ void Selection::SelectionData::add_value(const int value, const std::string &key
 
 
 
-std::ostream& Selection::SelectionData::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
+std::ostream& Selection::SelectionData::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const
 {
 
-    if (!extensive) {
+    if (extensive == record_key) {
         stream << "Selection '" << type_name_ << "' of " << keys_.size() << " values.";
-    }
-    if (extensive && !made_extensive_doc) {
+    } else
+    if (! made_extensive_doc) {
         made_extensive_doc = true;
+        pad=0;
 
         stream << endl << "Selection '" << type_name_ << "' of " << keys_.size() << " values." << endl;
         stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
@@ -133,6 +134,7 @@ std::ostream& Selection::SelectionData::documentation(std::ostream& stream, bool
         }
         stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name_ << endl;
     }
+
     return stream;
 }
 

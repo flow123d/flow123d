@@ -81,12 +81,12 @@ using namespace Input::Type;
    // test documentation of deafult_at_read_time
    {
        Record rec("Rec", "");
-       rec.declare_key("int_key", Integer(), Default::read_time("Default value provided at read time.\n"), "");
+       rec.declare_key("int_key", Integer(), Default::read_time("Default value provided at read time."), "");
        rec.finish();
 
        stringstream out;
        out << rec;
-       EXPECT_EQ("Record 'Rec' with 1 keys\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <Default value provided at read time.\n> is Integer in [-2147483648, 2147483647]\n---------- Rec\n",
+       EXPECT_EQ("\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <Default value provided at read time.> is Integer in [-2147483648, 2147483647]\n---------- Rec\n",
                  out.str());
    }
 
@@ -280,7 +280,7 @@ using namespace Input::Type;
     a_rec.finish();
 
     EXPECT_EQ(0, a_rec.key_index("TYPE"));
-    EXPECT_EQ(Selection("EqBase_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
+    EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
 
 
     Record b_rec("EqDarcy","");

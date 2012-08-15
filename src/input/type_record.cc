@@ -109,7 +109,7 @@ bool Record::is_finished() const {
 
 
 
-std::ostream& Record::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
+std::ostream& Record::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const
 {
     if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
     return data_->documentation(stream, extensive, pad);
@@ -169,40 +169,60 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 
 
 
-std::ostream& Record::RecordData::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
+std::ostream& Record::RecordData::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const
 {
 
-    if (! extensive) {
-
+    switch (extensive) {
+    case record_key:
         // Short description
         stream << "Record '" << type_name_ << "' with "<< keys.size() << " keys";
-    } else if ( ! made_extensive_doc) {
+        break;
+    case full_after_record:
+        // Detailed with recursion
+        if (!made_extensive_doc) {
 
-        // Extensive description
-        made_extensive_doc=true;
+            // Extensive description
+            made_extensive_doc = true;
+            pad=0;
+
+            // header
+            stream << endl;
+            stream << "" << "Record '" << type_name_ << "' with " << keys.size() << " keys.";
+            write_description(stream, description_, pad);
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+            // keys
+            for (KeyIter it = keys.begin(); it != keys.end(); ++it) {
+                stream << setw(pad + 4) << "" << it->key_ << " = <" << it->default_.value() << "> is ";
+                it->type_->documentation(stream, record_key, pad + 4); // short description of the type of the key
+                write_description(stream, it->description_, pad + 4); // description of the key on further lines
+
+            }
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name_ << endl;
+
+            // Full documentation of embedded record types.
+            for (KeyIter it = keys.begin(); it != keys.end(); ++it) {
+                it->type_->documentation(stream, full_after_record, 0);
+            }
+
+        }
+        break;
+    case full_along:
+        pad=0;
 
         // header
         stream << endl;
-        stream << ""
-               << "Record '" << type_name_ << "' with "<< keys.size() << " keys.";
+        stream << "" << "Record '" << type_name_ << "' with " << keys.size() << " keys.";
         write_description(stream, description_, pad);
         stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
         // keys
-        for(KeyIter it = keys.begin(); it!=keys.end(); ++it) {
-            stream << setw(pad + 4) << ""
-                   << it->key_ << " = <" << it->default_.value() << "> is ";
-            it->type_->documentation( stream , false, pad +4 ); // short description of the type of the key
+        for (KeyIter it = keys.begin(); it != keys.end(); ++it) {
+            stream << setw(pad + 4) << "" << it->key_ << " = <" << it->default_.value() << "> is ";
+            it->type_->documentation(stream, record_key, pad + 4); // short description of the type of the key
             write_description(stream, it->description_, pad + 4); // description of the key on further lines
 
         }
-        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
-        << " " << type_name_ << endl;
-
-        // Full documentation of embedded record types.
-        for(KeyIter it = keys.begin(); it!=keys.end(); ++it) {
-            it->type_->documentation(stream, true, 0);
-        }
-
+        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name_ << endl;
+        break;
     }
 
     return stream;
@@ -249,7 +269,7 @@ void Record::RecordData::declare_key(const string &key,
 
 AbstractRecord::AbstractRecord(const string & type_name_in, const string & description)
 : Record(type_name_in, description),
-  child_data_( boost::make_shared<ChildData>( type_name_in + "_selection" ) )
+  child_data_( boost::make_shared<ChildData>( type_name_in + "_TYPE_selection" ) )
 {
 
     // declare very first item of any descendent
@@ -291,43 +311,64 @@ void  AbstractRecord::reset_doc_flags() const {
 
 
 
-std::ostream& AbstractRecord::documentation(std::ostream& stream, bool extensive, unsigned int pad) const
+std::ostream& AbstractRecord::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const
 {
     if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type:AbstractRecord!\n");
 
-    if (! extensive) {
-
+    switch (extensive) {
+    case record_key:
         // Short description
         stream << "AbstractRecord '" << type_name() << "' with "<< child_data_->list_of_childs.size() << " descendants.";
-    } else if ( ! data_->made_extensive_doc) {
+        break;
+    case full_after_record:
+        if (!data_->made_extensive_doc) {
 
+            // Extensive description
+            data_->made_extensive_doc = true;
+            pad=0;
+
+            // header
+            stream << endl;
+            stream << "" << "AbstractRecord '" << type_name() << "' with " << child_data_->list_of_childs.size() << " descendants.";
+            write_description(stream, data_->description_, pad);
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+            // descendants
+            for (vector<Record>::const_iterator it = child_data_->list_of_childs.begin(); it != child_data_->list_of_childs.end();
+                    ++it) {
+                stream << setw(pad + 4) << "";
+                it->documentation(stream, record_key, 0); // short description of the type of the key
+                stream << endl;
+            }
+            stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name() << endl;
+
+            // Full documentation of embedded record types.
+            for (vector<Record>::const_iterator it = child_data_->list_of_childs.begin(); it != child_data_->list_of_childs.end();
+                    ++it) {
+                it->documentation(stream, full_after_record, 0);
+            }
+
+        }
+        break;
+    case full_along:
         // Extensive description
-        data_->made_extensive_doc=true;
+        data_->made_extensive_doc = true;
+        pad=0;
 
         // header
         stream << endl;
-        stream << ""
-               << "AbstractRecord '" << type_name() << "' with "<< child_data_->list_of_childs.size() << " descendants.";
+        stream << "" << "AbstractRecord '" << type_name() << "' with " << child_data_->list_of_childs.size() << " descendants.";
         write_description(stream, data_->description_, pad);
         stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
         // descendants
-        for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
-                    it!= child_data_->list_of_childs.end(); ++it) {
-            stream << setw(pad+4) << "";
-            it->documentation( stream , false, 0 ); // short description of the type of the key
+        for (vector<Record>::const_iterator it = child_data_->list_of_childs.begin(); it != child_data_->list_of_childs.end();
+                ++it) {
+            stream << setw(pad + 4) << "";
+            it->documentation(stream, record_key, 0); // short description of the type of the key
             stream << endl;
         }
-        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ')
-        << " " << type_name() << endl;
-
-        // Full documentation of embedded record types.
-        for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
-                    it!= child_data_->list_of_childs.end(); ++it) {
-            it->documentation(stream, true, 0);
-        }
-
+        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name() << endl;
+        break;
     }
-
     return stream;
 }
 

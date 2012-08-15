@@ -130,6 +130,7 @@ private:
     vector< pair<int, string> > path_;
     vector<const Node *> nodes_;
 
+
 };
 
 /**
@@ -165,13 +166,16 @@ public:
     // unfortunately following is not safe:
     // TYPEDEF_ERR_INFO(EI_InputType, Type::TypeBase const *);
 
+    /// General exception during conversion from JSON tree to storage.
     TYPEDEF_ERR_INFO(EI_InputType, string );
     TYPEDEF_ERR_INFO(EI_File, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
+    TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, JSONPath);
     DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::val << " at address: " << EI_ErrorAddress::val <<"\n"
-                                            << EI_Specification::val << "\n"
+                                            << EI_Specification::val << EI_JSON_Type::qval << "\n"
                                             << "Expected type:\n" << EI_InputType::val );
+
 
     TYPEDEF_ERR_INFO( EI_JSONLine, unsigned int);
     TYPEDEF_ERR_INFO( EI_JSONColumn, unsigned int);
@@ -217,6 +221,8 @@ protected:
     StorageBase * make_storage(JSONPath &p, const Type::Record *record);
     StorageBase * make_storage(JSONPath &p, const Type::AbstractRecord *abstr_rec);
     StorageBase * make_storage(JSONPath &p, const Type::Array *array);
+
+    StorageBase * make_selection_storage_without_catch(JSONPath &p, const Type::Selection *selection);
     StorageBase * make_storage(JSONPath &p, const Type::Selection *selection);
     StorageBase * make_storage(JSONPath &p, const Type::Bool *bool_type);
     StorageBase * make_storage(JSONPath &p, const Type::Integer *int_type);
@@ -230,9 +236,22 @@ protected:
 
 
 
+    /// helper envelope for get_root_interface
+    StorageArray *envelope;
+
+    /// Storage of the read and checked input data
     StorageBase *storage_;
-    StorageArray *envelope; // helper envelope for get_root_interface
+
+    /// Root of the declaration tree of the data in the storage.
     const Type::TypeBase *root_type_;
+
+    /**
+     * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
+     * Initialized in constructor.
+     *
+     */
+    vector<string> json_type_names;
+
 };
 
 

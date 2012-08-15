@@ -296,5 +296,5 @@ Record array_record("RecordOfArrays",
  main.finish();
 
 
- main.documentation(cout, true);
+ main.documentation(cout, TypeBase::full_after_record);
 }

@@ -62,6 +62,12 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  */
 class TypeBase {
 public:
+    /// Possible types of documentation output
+    enum DocType {
+        record_key,             ///<    Short type description as part of key description.
+        full_after_record,      ///<    Detail description of complex types after the record.
+        full_along              ///<    Detail description of the type itself as part of the error messages (no descendants).
+    };
     /**
      * Default constructor. Set all types finished after construction.
      */
@@ -69,15 +75,20 @@ public:
     /**
      * @brief Implementation of documentation printing mechanism.
      *
-     * It writes documentation into given stream @p stream. With @p extensive==false, it should print the description
-     * about two lines long, while for @p extensive==true it outputs full documentation.
+     * It writes documentation into given stream @p stream. With @p extensive==0, it should print the description
+     * about two lines long, while for @p extensive>0 it outputs full documentation. For value 1 it do not
+     * output documentation of subtypes, while for value 2 it calls decumentations of subtypes recursively.
+     *
      * This is primarily used for documentation of Record types where we first
      * describe all keys of an Record with short descriptions and then we call recursively extensive documentation
      * for sub types that was not fully described yet. Further, we provide method @p reset_doc_flags to reset
      * all flags marking the already printed documentations. Parameter @p pad is used for correct indentation.
      *
+     * TODO: Make specialized class for output of the declaration tree into various output formats.
+     * Search the tree by BFS instead of DFS (current implementation).
+     *
      */
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const = 0;
+    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const = 0;
 
     /**
      * In order to output documentation of complex types only once, we mark types that have printed their documentation.
@@ -204,7 +215,7 @@ public:
         { return size >=lower_bound_ && size<=upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::documentation.
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
+    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
 
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
     virtual void  reset_doc_flags() const;
@@ -259,7 +270,7 @@ public:
 
     bool from_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 };
 
@@ -290,7 +301,7 @@ public:
     /// Implements  @p Type::TypeBase::valid_defaults.
     virtual void valid_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
     int lower_bound_, upper_bound_;
@@ -324,7 +335,7 @@ public:
     /// Implements  @p Type::TypeBase::valid_defaults.
     virtual void valid_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
     double lower_bound_, upper_bound_;
@@ -340,7 +351,7 @@ private:
  */
 class String : public Scalar {
 public:
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0) const;
+    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
     virtual string type_name() const;
 
     virtual void valid_default(const string &str) const
@@ -376,7 +387,7 @@ public:
     static FileName output()
     { return FileName(::FilePath::output_file); }
 
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive=false, unsigned int pad=0)  const;
+    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 
     virtual bool operator==(const TypeBase &other) const

@@ -39,12 +39,13 @@ Input::Type::Record & Linear_reaction::get_input_type()
 
 	if (!rec.is_finished()) {
 	    rec.derive_from( Reaction::get_input_type() );
+        rec.declare_key("decays", Array( get_one_decay_substep() ), Default::obligatory(),
+                "Description of particular decay chain substeps.");
+
 		/*rec.declare_key("substances", Array(String()), Default::obligatory(),
 								"Names of transported isotopes.");
 		rec.declare_key("half_lives", Array(Double()), Default::optional(),
 				"Half lives of transported isotopes.");
-		rec.declare_key("decays", Array(Decay()), Default::optional(),
-				"Description of particular decay chain substeps.");
 		rec.declare_key("kinetic_constants", Array(Double()), Default::optional(),
 				"Kinetic constants describing first order reactions.");
 		rec.declare_key("kinetics", Array(Kinetics()), Default::optional(),
@@ -263,8 +264,22 @@ double *Linear_reaction::set_half_lives(char *decname)//(Input::Record in_rec)
 	 //pom_buf = strtok( buffer, separators );
 
 	//nutno projit pole rozpadu a ptat se prubezne na polocasy
-	//Input::Iterator<Input::Array> j = in_rec.find<Input::Array>(Linear_reaction::get_one_decay_substep());
-	 //for (j = 0; j.end(); ++j){
+	//Input::Array decay_array = in_rec.val<Input::Array>("decays");
+	// int size = decay_array.size();
+	// int i=0;
+	 //for (Input::Iterator<Input::Record> it = decay_array.begin<Input::Record>(); it != dacay_array.end(); ++it, ++i) {
+	 //  half_lives[i] = it->val<double>("half_life")  /// pouzit find
+	 /// Input::Iterator<double> it_hl = it->find<double>("half_life");
+	///  if (it_hl) {
+    //	        half_lives[i] = *it_hl;
+	//   } else {
+	//        it_hl = it->find<double>("kinetic");
+	//        if (it_hl) {
+	//        } else {
+	//           error
+	//        }
+
+
 		//if ( pom_buf == NULL )
 		{
 			xprintf(Msg,"\nHalf-life of %d-th isotope is missing.", j+1);

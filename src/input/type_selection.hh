@@ -83,7 +83,7 @@ public:
     virtual bool is_finished() const;
 
     /// Implements \p TypeBase::documentation
-    virtual std::ostream& documentation(std::ostream& stream, bool extensive = false, unsigned int pad = 0) const;
+    virtual std::ostream& documentation(std::ostream& stream, DocType extensive = full_along, unsigned int pad = 0) const;
 
     /// Implements \p TypeBase::reset_doc_flags
     virtual void reset_doc_flags() const;
@@ -151,7 +151,7 @@ private:
 
         void add_value(const int value, const std::string &key, const std::string &description);
 
-        std::ostream& documentation(std::ostream& stream, bool extensive, unsigned int pad) const;
+        std::ostream& documentation(std::ostream& stream, DocType extensive , unsigned int pad) const;
 
 
         /// Name of the Selection.
