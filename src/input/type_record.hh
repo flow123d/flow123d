@@ -487,6 +487,15 @@ public:
      */
     const Selection &get_type_selection() const;
 
+
+    /**
+     * This method intentionally have no implementation to
+     * prevents deriving an AbstractRecord form other AbstractRecord.
+     * In such a case the linker should report an undefined reference.
+     */
+    void derive_from(AbstractRecord parent);
+
+
 protected:
     /// Actual data of the AbstractRecord.
     boost::shared_ptr<ChildData> child_data_;
@@ -497,6 +506,8 @@ protected:
     void add_descendant(const Record &subrec);
 
     friend class Record;
+
+
 };
 
 

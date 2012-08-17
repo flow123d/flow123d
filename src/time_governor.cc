@@ -30,6 +30,7 @@
 #include "system/system.hh"
 #include "time_governor.hh"
 #include "time_marks.hh"
+#include "input/accessors.hh"
 
 #include <limits>
 
@@ -65,6 +66,15 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMarks &marks, const T
 
     time_marks->add( TimeMark(time, fixed_time_mark_mask) );
     time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
+
+    Input::Iterator<double> it = input.find<double>("init_dt");
+    if (it) {
+        time_step = *it;
+        max_time_step = time_step;
+        min_time_step = time_step;
+    }
+    max_time_step = input.val<double>("max_dt", max_time_step);
+    min_time_step = input.val<double>("min_dt", min_time_step);
 
     last_time_step=0.0;
 }
@@ -119,13 +129,18 @@ Input::Type::Record &TimeGovernor::get_input_type() {
                 "Start time of the simulation.");
         rec.declare_key("end_time", Double(), Default::obligatory(),
                 "End time of the simulation.");
-        rec.declare_key("init_dt", Double(0.0), "Initial guess for the time step.");
-        rec.declare_key("min_dt", Double(0.0), "Hard lower limit for the time step.");
-        rec.declare_key("max_dt", Double(0.0), "Hard upper limit for the time step.");
+        rec.declare_key("init_dt", Double(0.0), Default::optional(),
+                                    "Initial guess for the time step. The time step is fixed if "
+                                    "hard time step limits are not set.");
+        rec.declare_key("min_dt", Double(0.0), Default::read_time("Machine precision or 'init_dt' if specified"),
+                                    "Hard lower limit for the time step.");
+        rec.declare_key("max_dt", Double(0.0), Default::read_time("Whole time of the simulation or 'init_dt' if specified"),
+                                    "Hard upper limit for the time step.");
         rec.finish();
     }
     return rec;
 }
+
 
 
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
@@ -136,6 +151,8 @@ void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
     min_time_step=max(min_dt, time_step_lower_bound);
     max_time_step=min(max_dt, end_time_-time);
 }
+
+
 
 void TimeGovernor::set_constrain(double dt_constrain)
 {
@@ -174,6 +191,8 @@ double TimeGovernor::estimate_dt() const {
 
     return step_estimate;
 }
+
+
 
 void TimeGovernor::next_time()
 {

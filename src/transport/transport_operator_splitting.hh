@@ -6,6 +6,7 @@
 #include <limits>
 #include "io/output.h"
 
+
 /// external types:
 //class LinSys;
 //struct Solver;
@@ -29,8 +30,8 @@ class MaterialDatabase;
  */
 class TransportBase : public EquationBase{
 public:
-    TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-    : EquationBase(marks, mesh, mat_base)
+    TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
+    : EquationBase(marks, mesh, mat_base, in_rec )
     {}
 
     static Input::Type::AbstractRecord &get_input_type();
@@ -54,7 +55,7 @@ public:
 class TransportNothing : public TransportBase {
 public:
     TransportNothing(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : TransportBase(marks, mesh_in, mat_base_in)
+    : TransportBase(marks, mesh_in, mat_base_in, Input::Record() )
     {
         // make module solved for ever
         time_=new TimeGovernor();

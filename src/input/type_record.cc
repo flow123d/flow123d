@@ -33,7 +33,7 @@ using namespace std;
  */
 
 Default::Default()
-: value_(), type_(no_default_optional_type)
+: value_("OPTIONAL"), type_(no_default_optional_type)
 {}
 
 Default::Default(const std::string & value)
@@ -44,7 +44,10 @@ Default::Default(const std::string & value)
 
 Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
-{}
+{
+    if (type_ == no_default_obligatory_type) value_="OBLIGATORY";
+    if (type_ == no_default_optional_type) value_="OPTIONAL";
+}
 
 
 /**********************************************************************************

@@ -67,7 +67,7 @@
 
 
 ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: EquationBase(marks,init_mesh,material_database)
+: EquationBase(marks,init_mesh,material_database, in_rec )
 {
     F_ENTRY;
 
@@ -170,7 +170,8 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
 
     Input::Iterator<FilePath> sources_it = in_rec.find<FilePath>("sources");
     if (sources_it) {
-        transportsources = new TransportSources( string(* sources_it), * this);
+        transportsources = new TransportSources( n_substances, *el_ds );
+        transportsources->read_concentration_sources( string(* sources_it), row_4_el, mesh_);
     } else {
         transportsources = NULL;
     }
@@ -605,8 +606,9 @@ void ConvectionTransport::compute_one_step() {
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase
         if (transportsources != NULL) {
-            transportsources->compute_concentration_sources(sbi);
-            VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi], transportsources->vsources_corr[sbi]);
+            VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi],
+                    transportsources->compute_concentration_sources(sbi, conc[MOBILE][sbi] )
+                    );
         } else {
             VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
         }

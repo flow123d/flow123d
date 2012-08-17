@@ -139,30 +139,34 @@ def read_template(template, d_in, warn, comm, dbg):
                     if (section == 'New keys'):
                         value = ''
                     else:
+                        
                         value = d_in[section][pair[0]]          # the value in original file
+                        print section, pair[0], value
                 except KeyError:
+                    value=None
                     if (warn == True):
                         #print section +"/"+pair[0]+" not found."
                         print 'NOT FOUND: ' + section + '/' + pair[0]
-                else:
-                    if (pair[0] == 'Transport_on'):
-                        if (value == True):#transport exception
-                            transport_on = True
-                            continue
-                        else :
-                            value = None
-                    if (pair[0] == 'Substances'):#substances exception
-                        value = value[0:substances]
-                    new_adress = pair[1][pair[1].find('"')+1:len(pair[1])]
-                    val_type = pair[2][0:pair[2].find('"')]
-                    sections = new_adress.split('/')
+
+                if (pair[0] == 'Transport_on'):
+                    if (value == True):#transport exception
+                        transport_on = True
+                        continue
+                    else :
+                        value = None
+                        
+                if (pair[0] == 'Substances' and value is not None):#substances exception
+                    value = value[0:substances]
                     
-                    if (section == 'Transport' and transport_on==False
-                                               and pair[0] != 'Transport_on'):
-                        sections[2] += "_save" 
-                    if (section == 'New keys' and transport_on==False
-                                and pair[0] == 'mobile_p0'):
-                        sections[2] += "_save" 
+                new_adress = pair[1][pair[1].find('"')+1:len(pair[1])]
+                val_type = pair[2][0:pair[2].find('"')]
+                sections = new_adress.split('/')
+                
+                # turn off whole section if Transport is off
+                if (transport_on==False and len(sections)>1 and sections[2]=="secondary_equation"):
+                    sections[2] += "_save" 
+                                    
+                if (value is not None):
                     # print "error place: ", value, val_type    
                     value = value_type(value, val_type)
                     d_out = update_data(value, sections, d_out)

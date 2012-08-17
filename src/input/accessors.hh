@@ -101,8 +101,18 @@ template <class T> class Iterator;
  */
 class Record {
 
-
 public:
+    /**
+     * Default constructor creates an accessor to an empty storage.
+     */
+    Record()
+    : record_type_("DummyType",""), storage_( NULL )
+    {
+            record_type_.finish();
+    }
+
+
+
     /**
      * Copy constructor.
      */
@@ -124,11 +134,19 @@ public:
      * declared type do not match desired C++ type.
      *
      * This method can be used only for keys which are obligatory or has default value given at declaration.
-     * The optional keys and those with default value at read time must use method \p find.
+     * The optional keys must use method @p find. Keys with default value at read time must use
+     * the overloaded variant of method @p val or the method @p find
+     *
      */
     template <class Ret>
     inline const Ret val(const string &key) const;
 
+    /**
+     * Same as the previous, but you can specify default value @p default_val that is used if the key is not specified at the input.
+     * This method can be used only for keys declared with Default::reat_time().
+     */
+    template <class Ret>
+    inline const Ret val(const string &key, const Ret default_val) const;
 
     /**
      * Returns iterator to the key if it exists or NULL Iterator if it doesn't.

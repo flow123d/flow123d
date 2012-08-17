@@ -21,8 +21,9 @@ inline const Ret Record::val(const string &key) const {
     try {
         Type::Record::KeyIter key_it = record_type_.key_iterator(key);
 
-        ASSERT(! key_it->default_.is_optional(),
-                "The key %s is declared as optional, you have to use Record::find instead.\n", key.c_str());
+        ASSERT( key_it->default_.is_obligatory() || key_it->default_.has_value_at_declaration(),
+                "The key %s is declared as optional or with default value at read time,"
+                " you have to use Record::find instead.\n", key.c_str());
 
         Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
         return *it;
@@ -43,6 +44,38 @@ inline const Ret Record::val(const string &key) const {
     }
 }
 
+
+
+template <class Ret>
+inline const Ret Record::val(const string &key, const Ret default_val ) const {
+    try {
+        Type::Record::KeyIter key_it = record_type_.key_iterator(key);
+
+        ASSERT( key_it->default_.has_value_at_read_time(),
+                "The key %s is not declared with default value at read time,"
+                " you have to use Record::val or Record::find instead.\n", key.c_str());
+
+        Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
+        if (it)
+            return *it;
+        else
+            return default_val;
+    }
+    // we catch all possible exceptions
+    catch (Type::Record::ExcRecordKeyNotFound & e) {
+        throw;
+    }
+    catch (ExcTypeMismatch & e) {
+        e << EI_CPPRequiredType(typeid(Ret).name()) << EI_KeyName(key);
+        throw;
+    }
+    catch (ExcStorageTypeMismatch &e) {
+        throw;
+    }
+    catch (ExcAccessorForNullStorage &e) {
+        throw;
+    }
+}
 
 
 

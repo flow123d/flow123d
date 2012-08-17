@@ -41,14 +41,14 @@
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "transport/transport_bc.hh"
-
+#include "input/accessors.hh"
 
 using namespace arma;
 
 using namespace arma;
 
 TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
-        : TransportBase(marks, init_mesh, material_database),
+        : TransportBase(marks, init_mesh, material_database, in_rec),
           advection(1e0)
 {
     // set up time governor

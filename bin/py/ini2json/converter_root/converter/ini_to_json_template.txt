@@ -11,7 +11,7 @@ Problem_type	  = "/problem/primary_equation/TYPE=enum(0>error, 1>Steady_MH, 2>Un
                    
 Description       = "/problem/description=string"
 Stop_time	  = "/problem/time/end_time=double"		// 1
-Time_step	  = "/problem/time/time_step=double"
+Time_step	  = "/problem/time/init_dt=double"
 Save_step 	  = "/problem/save_step=double"
 Density_step      = "/zz_not_supported/global/density_step=double"
 
@@ -120,15 +120,16 @@ ilu_milu 	= "/zz_not_supported/solver parameters/ilu_milu=" 0
 
 [New keys]
 TYPE="/problem/TYPE=data(SequentialCoupling)"
-TYPE_t="/problem/secondary_equation/TYPE=data(TransportOperatorSplitting)"
-// file_output_stream = "/problem/primary_equation/output/output_stream/file=data(test1.pvd)"
-time_transport="/problem/secondary_equation/time/REF=data(../../time)"
 
-
+time_flow="/problem/primary_equation/time/REF=data(../../time)"
 flow_output_stream = "/problem/primary_equation/output/output_stream/REF=data(/system/output_streams/0)",
 name="/system/output_streams/1/name=data(flow_output_stream)"
 variant="/system/output_streams/1/format/variant=data(ascii)"
+flow_save_step = "/problem/primary_equation/output/save_step/REF=data(/problem/save_step)",
 
+TYPE_t="/problem/secondary_equation/TYPE=data(TransportOperatorSplitting)"
+// file_output_stream = "/problem/primary_equation/output/output_stream/file=data(test1.pvd)"
+time_transport="/problem/secondary_equation/time/REF=data(../../time)"
 //piezo_head_p0 = "/problem/primary_equation/output/piezo_head_p0=data(flow_output_stream)",
 velocity_p0="/problem/primary_equation/output/velocity_p0=data(flow_output_stream)"
 pressure_p0="/problem/primary_equation/output/pressure_p0=data(flow_output_stream)"

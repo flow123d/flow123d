@@ -35,10 +35,14 @@
 #include <algorithm>
 
 #include "system/system.hh"
-#include "input/input_type.hh"
-#include "input/accessors.hh"
-
 #include "time_marks.hh"
+
+namespace Input {
+    class Record;
+    namespace Type {
+        class Record;
+    }
+}
 
 /**
  * @brief

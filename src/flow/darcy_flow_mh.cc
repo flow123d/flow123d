@@ -48,6 +48,7 @@
 #include "la/local_to_global_map.hh"
 #include "field_p0.hh"
 #include "flow/local_matrix.h"
+#include "system/file_path.hh"
 
 #include "flow/darcy_flow_mh_output.hh"
 
@@ -64,10 +65,25 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
     static AbstractRecord rec("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.");
 
     if (!rec.is_finished()) {
-        // ... may declare some keys
+        // declare keys common to all DarcyFlow classes
+
+        rec.declare_key("n_schurs", Integer(0,2), Default("2"),
+                "Number of Schur complements to perform when solving MH sytem.");
+        rec.declare_key("sources_file", FileName::input(),
+                "File with water source field.");
+        rec.declare_key("sources_formula", String(),
+                "Formula to determine the source field.");
+        rec.declare_key("boundary_file", FileName::input(),Default::obligatory(),
+                "File with boundary conditions for MH solver.");
+        rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
+                "Linear solver for MH problem.");
+        rec.declare_key("output", DarcyFlowMHOutput::get_input_type(), Default::obligatory(),
+                "Parameters of output form MH module.");
         rec.finish();
 
         DarcyFlowMH_Steady::get_input_type();
+        DarcyFlowMH_Unsteady::get_input_type();
+        DarcyFlowLMH_Unsteady::get_input_type();
 
         rec.no_more_descendants();
     }
@@ -90,8 +106,8 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in, Input::Record in_rec)
-: DarcyFlowMH(marks, mesh_in, mat_base_in)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
+: DarcyFlowMH(marks, mesh_in, mat_base_in, in_rec)
 
 {
     using namespace Input;
@@ -207,18 +223,6 @@ Input::Type::Record & DarcyFlowMH_Steady::get_input_type()
 
     if (!rec.is_finished()) {
         rec.derive_from(DarcyFlowMH::get_input_type());
-        rec.declare_key("n_schurs", Integer(0,2), Default("2"),
-                "Number of Schur complements to perform when solving MH sytem.");
-        rec.declare_key("sources_file", FileName::input(),
-                "File with water source field.");
-        rec.declare_key("sources_formula", String(),
-                "Formula to determine the source field.");
-        rec.declare_key("boundary_file", FileName::input(),Default::obligatory(),
-                "File with boundary conditions for MH solver.");
-        rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
-                "Linear solver for MH problem.");
-        rec.declare_key("output", DarcyFlowMHOutput::get_input_type(), Default::obligatory(),
-                "Parameters of output form MH module.");
         rec.finish();
     }
     return rec;
@@ -1211,11 +1215,12 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, Input::Record in_rec)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
     : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
 
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
     // time governor
     //time_=new TimeGovernor(
     //        0.0,
@@ -1223,15 +1228,28 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
     //        *time_marks
     //        );
 
-    time_->set_permanent_constrain(
-            OptGetDbl("Global", "Time_step", "1.0"),
-            OptGetDbl("Global", "Time_step", "1.0")
-            );
     time_->fix_dt_until_mark();
     setup_time_term();
 
 
 }
+
+Input::Type::Record & DarcyFlowMH_Unsteady::get_input_type()
+{
+    using namespace Input::Type;
+    static Record rec("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(DarcyFlowMH::get_input_type());
+        rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+                                "Time governor setting for the unsteady Darcy flow model.");
+        rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
+                                        "File with initial condition for the pressure.");
+        rec.finish();
+    }
+    return rec;
+}
+
 
 void DarcyFlowMH_Unsteady::setup_time_term() {
 
@@ -1241,13 +1259,10 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
 
     // read inital condition
-
-    string file_name=IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Initial", "\\" ));
-    INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
     VecZeroEntries(schur0->get_solution());
 
     FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-    initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
+    initial_pressure->read_field( input_record_.val<FilePath>("initial_file") ,string("$PressureHead"));
     double *local_sol=schur0->get_solution_array();
 
     PetscScalar *local_diagonal;
@@ -1307,10 +1322,12 @@ void DarcyFlowMH_Unsteady::modify_system()
 // ========================
 // unsteady
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, Input::Record in_rec)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, const  Input::Record in_rec)
     : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
+
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
     // time governor
     //time_=new TimeGovernor(
     //        0.0,
@@ -1318,14 +1335,31 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
     //        *time_marks
     //        );
 
-    time_->set_permanent_constrain(
-            OptGetDbl("Global", "Time_step", "1.0"),
-            OptGetDbl("Global", "Time_step", "1.0")
-            );
     time_->fix_dt_until_mark();
     setup_time_term();
 
 }
+
+
+
+Input::Type::Record & DarcyFlowLMH_Unsteady::get_input_type()
+{
+    using namespace Input::Type;
+    static Record rec("Unsteady_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(DarcyFlowMH::get_input_type());
+        rec.declare_key("time",         TimeGovernor::get_input_type(), Default::obligatory(),
+                                        "Time governor setting for the unsteady Darcy flow model.");
+        rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
+                                        "File with initial condition for the pressure.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
+
 void DarcyFlowLMH_Unsteady::setup_time_term()
 {
     // have created full steady linear system
@@ -1334,12 +1368,9 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
      MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
 
      // read inital condition
-
-     string file_name=IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Initial", "\\" ));
-     INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
      VecZeroEntries(schur0->get_solution());
      FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-     initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
+     initial_pressure->read_field( input_record_.val<FilePath>("initial_file") ,string("$PressureHead"));
 
      VecDuplicate(steady_diagonal,& new_diagonal);
 

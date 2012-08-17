@@ -32,18 +32,16 @@
 #define EQUATION_HH_
 
 
-#include <petscmat.h>
+#include <limits>
 #include "time_governor.hh"
 #include "time_marks.hh"
-#include <limits>
-
-#include "system/system.hh"
+#include "input/accessors.hh"
 
 class Mesh;
 class MaterialDatabase;
-class TimeGovernor;
-
-
+namespace Input {
+    class Record;
+}
 
 /**
  * Class EquationBase is abstract base class for a general time dependent model. This class should provide general interface
@@ -68,7 +66,7 @@ public:
     /**
      * Common initialization constructor.
      */
-    EquationBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base);
+    EquationBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec);
 
     /**
      * Require virtual destructor also for child classes.
@@ -166,6 +164,7 @@ protected:
     TimeMarks * const time_marks;
     TimeGovernor *time_;
     TimeMark::Type equation_mark_type_;
+    Input::Record input_record_;
 };
 
 /**
@@ -174,9 +173,7 @@ protected:
 class EquationNothing : public EquationBase {
 
 public:
-    EquationNothing(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-    : EquationBase(marks, mesh, mat_base)
-    {}
+    EquationNothing(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base);
 
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
         vector = NULL;

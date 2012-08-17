@@ -251,10 +251,6 @@ private:
 
             Vec *vconc; // concentration vector
             Vec *vpconc; // previous concentration vector
-            Vec *vsources_density;
-            Vec *vsources_sigma;
-            Vec *vsources_conc;
-            Vec *vsources_corr;
             Vec *vcumulative_corr;
 
 

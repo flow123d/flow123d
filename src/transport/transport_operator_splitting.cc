@@ -100,7 +100,7 @@ Input::Type::Record & TransportBase::get_input_type_output_record()
 
 
 TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: TransportBase(marks, init_mesh, material_database)
+: TransportBase(marks, init_mesh, material_database, in_rec)
 {
 	Distribution *el_distribution;
 	int *el_4_loc;

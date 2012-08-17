@@ -82,8 +82,8 @@ class LocalToGlobalMap;
 
 class DarcyFlowMH : public EquationBase {
 public:
-    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-    : EquationBase(marks, mesh, mat_base), sources(NULL)
+    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
+    : EquationBase(marks, mesh, mat_base, in_rec), sources(NULL)
     {}
 
     static Input::Type::AbstractRecord &get_input_type();
@@ -145,7 +145,7 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, Input::Record in_rec);
+    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
 
     static Input::Type::Record &get_input_type();
 
@@ -229,8 +229,10 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, Input::Record in_rec);
+    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
+
+    static Input::Type::Record &get_input_type();
 protected:
     virtual void modify_system();
     void setup_time_term();
@@ -258,8 +260,10 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, Input::Record in_rec);
+    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
+
+    static Input::Type::Record &get_input_type();
 protected:
     virtual void modify_system();
     void setup_time_term();

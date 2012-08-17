@@ -8,9 +8,11 @@
 #ifndef SOURCES_HH_
 #define SOURCES_HH_
 
-class ConvectionTransport;
-#include "transport/transport.h"
+#include <string>
+#include "la/distribution.hh"
 
+using namespace std;
+class Mesh;
 
 /**
  * Class TransportSources is separating class for Newman/Newtons sources.
@@ -20,26 +22,30 @@ class ConvectionTransport;
 
 class TransportSources
 {
-	friend class ConvectionTransport;
 public:
 	/**
 	 * Constructor
 	 */
-	TransportSources(const string &sources_fname, ConvectionTransport &convection);//(ConvectionTransport &convection, int n_subst);
+	TransportSources(unsigned int n_subst, const  Distribution &el_distr);
 	/**
 	 * Initial allocating method
 	 */
 	void alloc_sources_vectors();
+
 	/**
 	 * Input data reading method
 	 */
-	void read_concentration_sources(const string &sources_fname);
+	void read_concentration_sources(const string &sources_fname,  int *row_4_el, Mesh *mesh);
+
 	/**
 	 * Main computation method
 	 */
-	void compute_concentration_sources(int sbi);
+	Vec compute_concentration_sources(unsigned int subst_i, double *conc );
 private:
-	ConvectionTransport *convectiontransport;
+
+	unsigned int n_subst_;
+	Distribution el_distr_;
+
 	/**
 	 * Input data fields
 	 */
@@ -49,14 +55,8 @@ private:
 	/**
 	 * Correction vector
 	 */
-    double **sources_corr;
-	/**
-	 * Encapsulation structures for data
-	 */
-    Vec *vsources_density;
-    Vec *vsources_sigma;
-    Vec *vsources_conc;
-    Vec *vsources_corr;
+    double *sources_corr;
+    Vec v_sources_corr;
 };
 
 

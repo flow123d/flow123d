@@ -12,6 +12,8 @@
 //#include "system/par_distribution.hh"
 #include "mesh/mesh.h"
 
+#include "input/accessors.hh"
+
 Input::Type::AbstractRecord & Reaction::get_input_type()
 {
 	using namespace Input::Type;
@@ -36,7 +38,7 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 using namespace std;
 
 Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: EquationBase(marks, init_mesh, material_database), dual_porosity_on(false), prev_conc(NULL)
+	: EquationBase(marks, init_mesh, material_database, Input::Record() ), dual_porosity_on(false), prev_conc(NULL)
 {
 	Input::Array decay_array = in_rec.val<Input::Array>("decays"); //Input::Array decay_array = in_rec.find<Input::Array>("decays");
 	nr_of_decays = decay_array.size();
