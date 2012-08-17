@@ -22,8 +22,8 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 								"Names of transported chemical species.");
 		rec.declare_key("decays", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
 				"Description of particular decay chain substeps.");
-		rec.declare_key("kinetic_constants", Array(Double()), Default::optional(),
-				"Kinetic constants describing first order reactions.");
+		rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
+				"Description of general chemical reactions.");
 		rec.finish();
 
 		Linear_reaction::get_input_type();
@@ -38,13 +38,35 @@ using namespace std;
 Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
 	: EquationBase(marks, init_mesh, material_database), dual_porosity_on(false), prev_conc(NULL)
 {
-	nr_of_decays = sizeof(in_rec.find<Input::AbstractRecord>("decays"));//OptGetInt("Reaction_module","Nr_of_decay_chains","0"); //sizeof(decays)/sizeof(Decay)
-	nr_of_FoR = sizeof(in_rec.find<Input::AbstractRecord>("kinetics"));//OptGetInt("Reaction_module","Nr_of_FoR","0");// sizeof(kinetics)/sizeof(Kinetics)
-	//following parameter can be higher than number of isotopes
-	nr_of_species = 8; //sizeof(in_rec.val<Input::String>("substances"));//OptGetInt("Transport", "N_substances", "0");// sizeof(substances)
+	Input::Array decay_array = in_rec.val<Input::Array>("decays"); //Input::Array decay_array = in_rec.find<Input::Array>("decays");
+	nr_of_decays = decay_array.size();
+	//Input::Iterator<Input::Array> dec_it = in_rec.find<Input::Array>("decays");
+	//Asi nebude treba rozlisovat kineticke reakce a rozpady
+	/*nr_of_decays = 0;
+	nr_of_FoR = 0;
+	int i = 0;
+	for(Input::Iterator<Input::Array> dec_it = decay_array.find<Input::Array>("decays"); dec_it != decay_array.end(); ++dec_it)
+	{
+		i++;
+		Input::Iterator<double> it_hl = it->find<double>("half_life");
+		if (it_hl) {
+		    nr_of_decays++;
+		} else {
+		    it_hl = it->find<double>("kinetic");
+		    if (it_hl) {
+		   	   nr_of_FoR++;
+		    } else {
+		       xprintf(Msg, "You did not specify either the half life nor kinetic konstant for %d substep of decay chain.\n", i);
+		       exit(1);
+		    }
+		}
+	}*/
 
+	Input::Array subst_array = in_rec.val<Input::Array>("substance_names"); //Number of all the substances contained in groundwater.
+	nr_of_species = subst_array.size();
+
+	//proverit nize uvedene predani dat
 	this->dual_porosity_on = in_rec.val<bool>("dual_porosity");
-	//set_dual_porosity();
 	this->time_step = in_rec.val<double>("time_step");
 	set_nr_of_elements(mesh_->n_elements());
 	if(prev_conc != NULL){
@@ -69,39 +91,11 @@ Reaction::~Reaction()
 double **Reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
     cout << "double **Reaction::compute_reaction(double **concentrations, int loc_el) needs to be re-implemented in ancestors." << endl;
-	/*int cols, rows, both;
-
-	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
-		for(cols = 0; cols < nr_of_species; cols++){
-		prev_conc[cols] = concentrations[cols][loc_el];
-		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
-		concentrations[cols][loc_el] = 0.0;
-		}
-        for(rows = 0; rows <nr_of_species; rows++){
-            for(cols = 0; cols <nr_of_species; cols++){
-                concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
-            }
-            //xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
-        }
-	}*/
 	return concentrations;
 }
 
 void Reaction::compute_one_step(void)
 {
-    /*if (reaction_matrix == NULL)   return;
-
-    START_TIMER("decay_step");
-	 //for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
-	 {
-	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
-	    if (dual_porosity_on == true) {
-	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
-	    }
-
-	 }
-    END_TIMER("decay_step");*/
 	cout << "Reaction::compute_one_step() needs to be re-implemented in ancestors." << endl;
 	 return;
 }
@@ -127,28 +121,20 @@ void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribut
 
 void Reaction::set_time_step(double new_timestep){
 	time_step = new_timestep;
-	/*if((nr_of_decays > 0) || (nr_of_FoR > 0)){
-		release_reaction_matrix();
-		allocate_reaction_matrix();
-		if(matrix_exp_on == false)
-		{
-			modify_reaction_matrix_repeatedly();
-		}
-	}*/
 	return;
 }
 
-void Reaction::set_time_step(void)
+void Reaction::set_time_step(Input::Record in_rec)
 {
-	time_step = OptGetDbl("Global","Save_step","1.0");
+	time_step = in_rec.val<double>("time_step");
 	return;
 }
 
 //void Reaction::set_mesh_(Mesh *mesh_in){mesh = mesh_in; return;}
 
-void Reaction::set_dual_porosity()
+void Reaction::set_dual_porosity(Input::Record in_rec)//obsolete function
 {
-	//this->dual_porosity_on = OptGetBool("Transport", "Dual_porosity", "no");
+	this->dual_porosity_on = in_rec.val<bool>("dual_porosity"); //OptGetBool("Transport", "Dual_porosity", "no");
 	return;
 }
 

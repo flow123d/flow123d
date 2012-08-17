@@ -66,7 +66,7 @@ $(OBJS)/quadrature/quadrature_lib.o\
 \
 $(OBJS)/reaction/reaction.o\
 $(OBJS)/reaction/linear_reaction.o\
-$(OBJS)/reaction/pade_approximant.o\
+#$(OBJS)/reaction/pade_approximant.o
 \
 $(OBJS)/semchem/che_semchem.o\
 $(OBJS)/semchem/semchem_interface.o\

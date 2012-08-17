@@ -72,7 +72,7 @@ class Reaction: public EquationBase
 		/**
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
-		virtual void set_time_step(void);
+		virtual void set_time_step(Input::Record in_rec);
 		//
 		void update_solution(void);
 		void choose_next_time(void);
@@ -93,17 +93,17 @@ class Reaction: public EquationBase
 		*/
 		void set_mesh_(Mesh *mesh);
 		/**
-		*
+		* Obsolete function.
 		*/
-		void set_dual_porosity(void);
+		void set_dual_porosity(Input::Record in_rec);
 		/**
 		*	This method reads from ini-file an information how many radioactive decays are under consideration.
 		*/
-		void set_nr_of_decays(void);
+		//void set_nr_of_decays(void); //Osbolete function.
 		/**
 		*	This method reads from ini-file an information how many first order reactions are under consideration.
 		*/
-		void set_nr_of_FoR(void);
+		//void set_nr_of_FoR(void); //Obsolete function
 		/**
 		*	Enables to compute factorial k!.
 		*/
@@ -131,7 +131,7 @@ class Reaction: public EquationBase
 		/**
 		*	Informs how many firts order reactions of the type A -> B are under consideration. It is a number of [FoReaction_i] in ini-file.
 		*/
-		int nr_of_FoR;
+		//int nr_of_FoR; //Obsolete variable.
 		/**
 		*	Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
 		*/

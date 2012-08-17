@@ -17,7 +17,7 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
+//#include "reaction/pade_approximant.hh"
 
 #include "semchem/semchem_interface.hh"
 
@@ -116,9 +116,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	    // todo LinReact type dispatch
 
 	    //decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), * reactions_it);
-	if(in_rec.val<bool>("matrix_exp_on")== true)
-		decayRad = (Pade_approximant *) new Pade_approximant(marks, init_mesh, material_database, in_rec);
-	else
+	//if(in_rec.val<bool>("matrix_exp_on")== true)
+		//decayRad = (Pade_approximant *) new Pade_approximant(marks, init_mesh, material_database, in_rec);
+	//else
 		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database, in_rec); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	// decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), in_rec);
 	    //convection->get_par_info(el_4_loc, el_distribution); //Temporarily commented.

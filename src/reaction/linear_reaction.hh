@@ -50,11 +50,11 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/
-		void set_time_step(double new_timestep);
+		void set_time_step(double new_timestep, Input::Record in_rec);
 		/**
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
-		void set_time_step(void);
+		void set_time_step(Input::Record in_rec);
 		/**
 		* This method enables to evaluate matrix polynomial of an matrix containing constant real values. Horner scheme is used to get the value.
 		*/
@@ -66,7 +66,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method reads a sequence of numbers defining an order of substances in decay chain. The string section defines where too look for indices inside of ini-file, whereas n_subst is a number of isotopes in described decay chain.
 		*/
-		int *set_indeces(char *section, int n_subst);
+		int **set_indices(Input::Record in_rec);
 		/**
 		*	This method reads an information about a number of isotopes in a decay chain described inside of ini-file in section given as an argument. This method is used for radioactive decay simulation.
 		*/
@@ -78,15 +78,15 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method reads a sequence of (nr_of_isotopes - 1) halflives belonging to separate decay chain step. This information is placed in ini-file in a block starting with a string section.
 		*/
-		double *set_half_lives(char *decname);//(Input::Record in_rec);
+		double *set_half_lives(Input::Record in_rec);
 		/**
 		*	This method reads form ini-file an information for construction of a matrix describing bifurcation of every single decay chain on one row of the reaction matrix. Informations about bifurcation are placed in a block starting with a string section. dec_nr identifies which one decay chain is handled and which row of twodimensional bifurcation matrix (double **array)should be affected.
 		*/
-		void set_bifurcation(char *section, int dec_nr);
+		void set_bifurcation(Input::Record in_rec);
 		/**
 		*	This method reads from ini-file an information if the bifurcation for a current decay chain is switched on in a block starting with a string section. Initialy bifurcation is switched of.
 		*/
-		void set_bifurcation_on(char *section);
+		void set_bifurcation_on(int dec_nr, Input::Record in_rec);
 		/**
 		*	This method reads from ini-file an information if first order reactions simulation is switched on.
 		*/
@@ -98,7 +98,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method reads from ini-file an information and prepares a vector (onedimensional double *array) containing kinetic constants of every single first order reactions. Those informations are placed in a block with a string section at the beginning. From those constants half-lives belonging to first order reactions are computed.
 		*/
-		void set_kinetic_constants(char *section, int reaction_nr);
+		//void set_kinetic_constants(char *section, int reaction_nr); //Obsolete function
 		/**
 		*
 		*/
@@ -106,7 +106,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
 		*/
-		double **modify_reaction_matrix(void);
+		double **modify_reaction_matrix(Input::Record in_rec);
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched on.
 		*/
@@ -114,7 +114,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method calls modify_reaction_matrix(...) for every single decay and first order reaction.
 		*/
-		double **modify_reaction_matrix_repeatedly(void); ///< calls the function modify_reaction_matrix(..) so many times as many decays are defined
+		double **modify_reaction_matrix_repeatedly(Input::Record in_rec); ///< calls the function modify_reaction_matrix(..) so many times as many decays are defined
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/
@@ -142,7 +142,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	Sequence of integers describing an order of isotopes in decay chain or first order reaction.
 		*/
-		int *substance_ids;
+		int **substance_ids;
 		/**
 		*	Informs about the number of isotopes in a current decay chain.
 		*/
