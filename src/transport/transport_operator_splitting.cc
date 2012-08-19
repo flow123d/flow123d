@@ -51,7 +51,7 @@ Input::Type::AbstractRecord & TransportBase::get_input_type()
 						                "Input file with boundary conditions.");
 		rec.declare_key("bc_times", Array(Double()), Default::optional(),
 				 	 	                "Times for changing the boundary conditions.");
-		rec.declare_key("sources", FileName::input(), Default::optional(),
+		rec.declare_key("sources_file", FileName::input(), Default::optional(),
 		                                "File with data for the source term in the transport equation.");
         rec.declare_key("output", TransportBase::get_input_type_output_record(), Default::obligatory(),
                                         "Parameters of output stream.");

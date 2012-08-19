@@ -178,6 +178,16 @@ private:
 class AbstractRecord {
 public:
     /**
+     * Default constructor creates an accessor to an empty storage.
+     */
+    AbstractRecord()
+    : record_type_("DummyType",""), storage_( NULL )
+    {
+            record_type_.finish();
+            record_type_.no_more_descendants();
+    }
+
+    /**
      * Copy constructor.
      */
     AbstractRecord(const AbstractRecord &rec)
@@ -252,6 +262,13 @@ private:
  */
 class Array {
 public:
+    /**
+     * Default constructor, empty accessor.
+     */
+    Array()
+    : array_type_(Type::Bool()), storage_( NULL )
+    {}
+
     /**
      * Copy constructor.
      */
@@ -389,16 +406,26 @@ protected:
  * This class behaves like iterator to type @p T (the template parameter), but in fact it is
  * iterator into input storage and also into tree of declarations through Input::Type classes.
  *
+ * This class provides only limited functionality of iterators, namely prefix advance operator ++(),
+ * dereference operator * (), dereference operator -> (), comparison operators == and != and implicit conversion to
+ * bool (false in the case of the 'null' iterator).
+ *
+ *
  * @ingroup input_accessors
  */
 template <class T>
 class Iterator : public IteratorBase {
 public:
-    /// Appropriate Dispatch helper class that contains things that depends on T.
+    /// Converts C++ type @p T (template parameter) to 'DispatchType' from smaller set of types.
     typedef typename internal::TD<T>::OT DispatchType;
-    /// Appropriate type actually given be dispatcher.
+    /**
+     * For small set of C++ types and accessor classes Record, AbstractRecord, and Array,
+     * returns type of value given by dereference of the iterator (just add const to C++ types).
+     */
     typedef typename internal::TypeDispatch<DispatchType>::ReadType OutputType;
-    /// Appropriate declaration type - descendant of Type::TypeBase
+    /**
+     * A descendant of Input::Type::TypeBase that is appropriate to template parameter @p T.
+     */
     typedef typename internal::TypeDispatch<DispatchType>::InputType InputType;
 
 
@@ -438,6 +465,13 @@ private:
     /// Input type declaration.
     InputType type_;
 
+    /**
+     * temporary for -> operator, necessary only for T == DispatchType == OutputType
+     * == any accessor: Record, AbstractRecord, Array
+     *
+     * for other types this is just an int.
+     */
+    mutable typename internal::TypeDispatch<DispatchType>::TmpType   temporary_value_;
 };
 
 
@@ -462,6 +496,7 @@ template<>
 struct TypeDispatch<int> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
+    typedef int TmpType;
     static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_int(); }
 };
 
@@ -469,6 +504,7 @@ template<>
 struct TypeDispatch<bool> {
     typedef Input::Type::Bool InputType;
     typedef const bool ReadType;
+    typedef int TmpType;
     static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_bool(); }
 };
 
@@ -476,6 +512,7 @@ template<>
 struct TypeDispatch<double> {
     typedef Input::Type::Double InputType;
     typedef const double ReadType;
+    typedef int TmpType;
     static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_double(); }
 };
 
@@ -484,6 +521,7 @@ template<>
 struct TypeDispatch<string> {
     typedef Input::Type::String InputType;
     typedef const string ReadType;
+    typedef int TmpType;
     static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_string(); }
 };
 
@@ -492,6 +530,7 @@ template<>
 struct TypeDispatch<AbstractRecord> {
     typedef Input::Type::AbstractRecord InputType;
     typedef AbstractRecord ReadType;
+    typedef AbstractRecord TmpType;
     static inline ReadType value(const StorageBase *s, const InputType& t) { return AbstractRecord(s, t); }
 
 };
@@ -501,6 +540,7 @@ template<>
 struct TypeDispatch<Record> {
     typedef Input::Type::Record InputType;
     typedef Record ReadType;
+    typedef Record TmpType;
     static inline ReadType value(const StorageBase *s, const InputType& t) { return Record(s, t); }
 
 };
@@ -509,6 +549,7 @@ template<>
 struct TypeDispatch<Array> {
     typedef Input::Type::Array InputType;
     typedef Array ReadType;
+    typedef Array TmpType;
     static inline ReadType value(const StorageBase *s, const InputType& t) { return Array(s,t); }
 
 };
@@ -517,6 +558,7 @@ template<>
 struct TypeDispatch<FilePath> {
     typedef Input::Type::FileName InputType;
     typedef FilePath ReadType;
+    typedef int TmpType;
     static inline ReadType value(const StorageBase *s, const InputType& t) { return FilePath(s->get_string(), t.get_file_type() ); }
 
 };

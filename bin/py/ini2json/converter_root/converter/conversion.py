@@ -120,13 +120,18 @@ def read_data (text):
             comment = ",\n" + tabs() + '"' + pair[0].strip()+'_comment" : ' + '"' + pair[1][comment_index+2:] + '"'
             pair[1] = pair[1][0:comment_index]
         pair[1] = pair[1].strip()
-        pair[1] = pair[1].replace('""','')
+        # pair[1] = pair[1].replace('""','')
         result = "\"" + pair[0].strip() + "\" : "
         pair[1] = change_words(pair[1])
         pair[1] = pair[1].replace("\t", " ")
         data_type = which_type(pair[1])
         if(data_type == 0):
-            result += "\"" + pair[1] + "\"" #string
+            if ( len(pair[1])>0 and pair[1][0] == '\"') :
+                str_val = pair[1][1:]
+                str_val = str_val[0:str_val.find('\"')-1];
+            else :
+                str_val = pair[1]
+            result += "\"" + str_val + "\"" #string
         if(data_type == 1):
             #result += str(float(pair[1])+0) #int + deleting insignificant numbers
             try:
@@ -212,6 +217,8 @@ def which_type (value):
         float(value)
         return 1 #float or int
     except ValueError:
+        if ( len(value)>0 and value[0] == '\"') :
+            return 0
         if((value == "true") or (value == "false")):
             return 2 #boolean
         if(value.lower() == "null"):

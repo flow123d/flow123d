@@ -127,8 +127,8 @@ def read_template(template, d_in, warn, comm, dbg):
         if(len(pair)>1):
             pair[1] = pair[1].strip()
             if pair[1].startswith('NULL'): #useless values
-                #if (pair[0] == 'N_substances'):#substances exception
-                #    substances = d_in[section][pair[0]]
+                if (pair[0] == 'N_substances'): #substances exception
+                    n_substances = d_in[section][pair[0]]
                 if (dbg == True):
                     #print section + '/' + pair[0] + ' was deleted.'
                     print 'DELETED: ' + spaces + section + '/' + pair[0]
@@ -141,7 +141,7 @@ def read_template(template, d_in, warn, comm, dbg):
                     else:
                         
                         value = d_in[section][pair[0]]          # the value in original file
-                        print section, pair[0], value
+                       # print section, pair[0], value
                 except KeyError:
                     value=None
                     if (warn == True):
@@ -156,7 +156,9 @@ def read_template(template, d_in, warn, comm, dbg):
                         value = None
                         
                 if (pair[0] == 'Substances' and value is not None):#substances exception
-                    value = value[0:substances]
+                    if (value is not list):
+                        value = [ value ]
+                    value = value[0:n_substances]
                     
                 new_adress = pair[1][pair[1].find('"')+1:len(pair[1])]
                 val_type = pair[2][0:pair[2].find('"')]

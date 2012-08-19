@@ -38,6 +38,7 @@ Dual_porosity	  	= "/problem/secondary_equation/dual_porosity=bool"
 Reactions	  	= "/problem/secondary_equation/reactions=bool"
 Concentration	  	= "/problem/secondary_equation/initial_file=string"
 Transport_BCD	  	= "/problem/secondary_equation/boundary_file=string"
+Sources                 = "/problem/secondary_equation/sources_file=string"
 Transport_out     	= "/system/output_streams/2/file=string"
 
 Transport_out_im     	= NULL

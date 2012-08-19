@@ -93,7 +93,7 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     n_substances = substance_name.size();
     INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
 
-    pepa=false;
+    pepa=false; reaction_on = false;
     // pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
     // type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
 
@@ -121,7 +121,7 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     FILE * f;
     string fname;
     bc_fname = in_rec.val<FilePath>("boundary_file");
-    DBGMSG("bc file: %s\n ", bc_fname.c_str());
+    DBGMSG("bc file: %s\n", bc_fname.c_str());
     Input::Iterator<Input::Array> it = in_rec.find<Input::Array>("bc_times");
     if ( ! it ) {
         // only one boundary condition, check filename and read bc condition
@@ -168,7 +168,8 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     n_reaction = 0;
 */
 
-    Input::Iterator<FilePath> sources_it = in_rec.find<FilePath>("sources");
+    Input::Iterator<FilePath> sources_it = in_rec.find<FilePath>("sources_file");
+
     if (sources_it) {
         transportsources = new TransportSources( n_substances, *el_ds );
         transportsources->read_concentration_sources( string(* sources_it), row_4_el, mesh_);
@@ -645,8 +646,10 @@ void ConvectionTransport::set_target_time(double target_time)
 //    DBGMSG("CFL dt: %f tt: %f\n",cfl_max_step, target_time);
     time_->marks().add(TimeMark(target_time, target_mark_type));
     time_->set_constrain(cfl_max_step);
+    DBGMSG("pre fix dt: %f\n",time_->estimate_dt());
+
     time_->fix_dt_until_mark();
-//    DBGMSG("post fix dt: %f\n",time_->estimate_dt());
+    DBGMSG("post fix dt: %f\n",time_->estimate_dt());
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix
@@ -804,6 +807,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         if (fabs(aii) > max_sum)
             max_sum = fabs(aii);
+        DBGMSG(" aii: %g ms: %g\n", aii, max_sum);
         aii = 0.0;
         //   i++;
     } // END ELEMENTS
@@ -811,6 +815,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     double glob_max_sum;
 
     MPI_Allreduce(&max_sum,&glob_max_sum,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD);
+    DBGMSG("mat max: %g\n", glob_max_sum);
     cfl_max_step = 1 / glob_max_sum;
     //time_step = 0.9 / glob_max_sum;
     

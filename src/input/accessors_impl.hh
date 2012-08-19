@@ -187,8 +187,8 @@ inline typename Iterator<T>::OutputType * Iterator<T>::operator ->() const {
                     || boost::is_same < Array, OutputType > ::value));
 
     // we have to make save temporary
-    OutputType xx = this->operator*();
-    return boost::make_shared < OutputType > (xx).get();
+    temporary_value_ = this->operator*();
+    return &(temporary_value_);
 
 }
 

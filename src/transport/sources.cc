@@ -50,9 +50,9 @@ void TransportSources::alloc_sources_vectors() {
     double *ptr = (double *) sources_conc + 1;
 
     for (sbi = 0; sbi < n_subst_; sbi++){
-        sources_density[sbi] = ptr++;
-        sources_sigma[sbi] = ptr++;
-        sources_conc[sbi] = ptr++;
+        sources_density[sbi] = ptr; ptr += el_distr_.lsize();
+        sources_sigma[sbi] = ptr; ptr += el_distr_.lsize();
+        sources_conc[sbi] = ptr; ptr += el_distr_.lsize();
     }
 
     sources_corr = new double[el_distr_.lsize()];
@@ -134,11 +134,16 @@ Vec TransportSources::compute_concentration_sources(unsigned int subst_i, double
 
     double conc_diff;
     for (int i_loc = 0; i_loc < el_distr_.lsize(); i_loc++) {
+
         conc_diff = sources_conc[subst_i][i_loc] - conc[i_loc];
         if ( conc_diff > 0.0)
             sources_corr[i_loc] = sources_density[subst_i][i_loc] + conc_diff * sources_sigma[subst_i][i_loc];
         else
             sources_corr[i_loc] = sources_density[subst_i][i_loc];
+
+       // cout << i_loc << " c:" << conc[i_loc] << " sc:" << sources_conc[subst_i][i_loc] << " sd:"
+       //      << sources_density[subst_i][i_loc] << " ss:" << sources_sigma[subst_i][i_loc] << " cr:"
+       //      << sources_corr[i_loc] << endl;
     }
 
     return v_sources_corr;

@@ -326,11 +326,18 @@ public:
 
 protected:
 
+    /**
+     * Assertion for non-empty Type::Record handle.
+     */
     inline void empty_check() const {
         ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
     }
 
+    /**
+     * Assertion for finished Type::Record.
+     */
     inline void finished_check() const {
+        empty_check();
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
@@ -582,6 +589,7 @@ inline unsigned int Record::key_index(const string& key) const
 
 inline Record::KeyIter Record::key_iterator(const string& key) const
 {
+
     finished_check();
     return begin() + key_index(key);
 }

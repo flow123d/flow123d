@@ -41,13 +41,15 @@
 # Include settings given by user first
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
+message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
 
 if (NOT EXTERNAL_PROJECT_DIR)
     set(EXTERNAL_PROJECT_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external_projects)
 endif()    
-
+message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
 # Project name and language(s)
 project(Flow123d CXX C)
+message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.6.4)
@@ -243,14 +245,14 @@ include_directories(
 
 ##############
 # set appropriate compiler flags for debug/release compilation modes
-message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
+message(STATUS "build type: ${FLOW_BUILD_TYPE} ${FLOW_CC_FLAGS}")
 
 
-if(CC_FLAGS) 
-  add_definitions(${CC_FLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS ${CC_FLAGS})
+if(FLOW_CC_FLAGS) 
+  add_definitions(${FLOW_CC_FLAGS})
+  set(CMAKE_EXE_LINKER_FLAGS ${FLOW_CC_FLAGS})
 else()
-  if(CMAKE_BUILD_TYPE STREQUAL "debug")
+  if(FLOW_BUILD_TYPE STREQUAL "debug")
     # debug mode
     add_definitions("-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g")
