@@ -807,7 +807,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         if (fabs(aii) > max_sum)
             max_sum = fabs(aii);
-        DBGMSG(" aii: %g ms: %g\n", aii, max_sum);
+        // DBGMSG(" aii: %g ms: %g\n", aii, max_sum);
         aii = 0.0;
         //   i++;
     } // END ELEMENTS
@@ -815,7 +815,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     double glob_max_sum;
 
     MPI_Allreduce(&max_sum,&glob_max_sum,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD);
-    DBGMSG("mat max: %g\n", glob_max_sum);
+    // DBGMSG("mat max: %g\n", glob_max_sum);
     cfl_max_step = 1 / glob_max_sum;
     //time_step = 0.9 / glob_max_sum;
     

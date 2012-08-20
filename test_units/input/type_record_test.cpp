@@ -78,7 +78,7 @@ using namespace Input::Type;
 #endif
 
 
-   // test documentation of deafult_at_read_time
+   // test documentation of default_at_read_time
    {
        Record rec("Rec", "");
        rec.declare_key("int_key", Integer(), Default::read_time("Default value provided at read time."), "");
@@ -87,6 +87,30 @@ using namespace Input::Type;
        stringstream out;
        out << rec;
        EXPECT_EQ("\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <Default value provided at read time.> is Integer in [-2147483648, 2147483647]\n---------- Rec\n",
+                 out.str());
+   }
+
+   {
+       // test documentation of OPTIONAL keys
+       Record rec("Rec", "");
+       rec.declare_key("int_key", Integer(), Default::optional(), "Doc");
+       rec.finish();
+
+       stringstream out;
+       out << rec;
+       EXPECT_EQ("\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <OPTIONAL> is Integer in [-2147483648, 2147483647]\n    # Doc\n---------- Rec\n",
+                 out.str());
+   }
+
+   {
+       // test documentation of OPTIONAL keys
+       Record rec("Rec", "");
+       rec.declare_key("int_key", Integer(), Default::obligatory(), "Doc");
+       rec.finish();
+
+       stringstream out;
+       out << rec;
+       EXPECT_EQ("\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <OBLIGATORY> is Integer in [-2147483648, 2147483647]\n    # Doc\n---------- Rec\n",
                  out.str());
    }
 

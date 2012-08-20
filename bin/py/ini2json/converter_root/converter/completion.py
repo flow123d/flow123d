@@ -156,7 +156,7 @@ def read_template(template, d_in, warn, comm, dbg):
                         value = None
                         
                 if (pair[0] == 'Substances' and value is not None):#substances exception
-                    if (value is not list):
+                    if (type(value) is not list):
                         value = [ value ]
                     value = value[0:n_substances]
                     
@@ -452,8 +452,11 @@ def value_type (val, val_type):
             i += 1
     if(val_type.startswith('array of')):
         sub_type=val_type[8:].strip()
-        for sub_val in val:
-            sub_val = value_type(sub_val, sub_type)
+        if ( type(val) is list ) :
+            for sub_val in val:
+                sub_val = value_type(sub_val, sub_type)
+        else:
+            val = [ val ]
         
     if(val_type.startswith('data')):
         val = val_type[val_type.find('(')+1:val_type.find(')')]

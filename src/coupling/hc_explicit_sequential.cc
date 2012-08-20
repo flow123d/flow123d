@@ -139,7 +139,7 @@ Input::Type::Record &HC_ExplicitSequential::get_input_type() {
 
     if (! rec.is_finished() ) {
         rec.derive_from( CouplingBase::get_input_type() );
-        rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+        rec.declare_key("time", TimeGovernor::get_input_type(), Default::optional(),
                 "Simulation time frame and time step.");
         rec.declare_key("primary_equation", DarcyFlowMH::get_input_type(), Default::obligatory(),
                 "Primary equation, have all data given.");
