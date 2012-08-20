@@ -39,7 +39,7 @@ Input::Type::Record & Linear_reaction::get_input_type()
 
 	if (!rec.is_finished()) {
 	    rec.derive_from( Reaction::get_input_type() );
-        rec.declare_key("decays", Array( get_one_decay_substep() ), Default::obligatory(),
+        /*rec.declare_key("decays", Array( get_one_decay_substep() ), Default::obligatory(),
                 "Description of particular decay chain substeps.");
 
 		/*rec.declare_key("substances", Array(String()), Default::obligatory(),
@@ -507,9 +507,9 @@ void Linear_reaction::set_bifurcation(Input::Record in_rec) // (int index, Input
 			}*/
 	    	//nasledujici radek by mel byt podmineny velikosti pole produktuu
 			//kdyz bude 1, tak bysem mel dát do radku bifurkaci jednicku, viz par radku nize
-	    	if(bif_array.size() > 1)
+	    	if(bif_array.size() > 0)
 	    	{
-
+	    		bifurcation[dec_nr].resize(bif_array.size());
 		    	bif_array.copy_to(bifurcation[dec_nr]); //atof(pom_buf); //control_sum += bifurcation[dec_nr][j];
 			}else{
 	    		bifurcation[dec_nr].resize(1);

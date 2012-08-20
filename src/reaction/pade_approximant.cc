@@ -149,7 +149,7 @@ void Pade_approximant::modify_reaction_matrix(void) //prepare the matrix, which 
 		xprintf(Msg,"\nPointer to the Reaction matrix is NULL.\n");
 		return;
 	}
-	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
+	if(nr_of_decays > 0){
 		for(cols = 0; cols < nr_of_isotopes; cols++){
 			index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
 			if(cols > 0){
@@ -258,7 +258,7 @@ double **Pade_approximant::modify_reaction_matrix_repeatedly(void)
 			dec_name_nr++;
 		}
 	}
-	if(nr_of_FoR > 0){
+	/*if(nr_of_FoR > 0){
 		xprintf(Msg,"\nNumber of first order reactions is %d\n",nr_of_FoR);
 		//half_lives.resize(nr_of_FoR); //does not function at all
 		if(half_lives != NULL){
@@ -276,7 +276,7 @@ double **Pade_approximant::modify_reaction_matrix_repeatedly(void)
 			modify_reaction_matrix(2);
 			dec_name_nr++;
 		}
-	}
+	}*/
 	MatAssemblyBegin(Reaction_matrix, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Reaction_matrix, MAT_FINAL_ASSEMBLY);
 	MatView(Reaction_matrix,PETSC_VIEWER_STDOUT_SELF);
@@ -385,7 +385,7 @@ double **Pade_approximant::compute_reaction(double **concentrations, int loc_el)
 
     int cols, rows, both;
 
-	if((nr_of_decays > 0) || (nr_of_FoR > 0)){
+	if(nr_of_decays > 0){
 		for(cols = 0; cols < nr_of_species; cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
 		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
@@ -564,7 +564,7 @@ void Pade_approximant::set_bifurcation(char *section, int dec_nr)
 	return;
 }
 
-void Pade_approximant::set_kinetic_constants(char *section, int react_nr)
+/*void Pade_approximant::set_kinetic_constants(char *section, int react_nr)
 {
 	char  buffer[1024];
 	char *pom_buf;
@@ -586,7 +586,7 @@ void Pade_approximant::set_kinetic_constants(char *section, int react_nr)
     	half_lives[react_nr] = log(2) / kinetic_constant[react_nr];
  	 //}
     return;
-}
+}*/
 
 void Pade_approximant::set_time_step(void)
 {
