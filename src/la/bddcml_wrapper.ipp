@@ -404,6 +404,11 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     // download local solution
     int lsol = sol_.size();
 
+    // user constraints are not used
+    std::vector<double> userConstraints(1,0.);
+    int lUserConstraints1 = 0;
+    int lUserConstraints2 = 0;
+
     // upload local data to the solver
     bddcml_upload_subdomain_data( &numElem_, &numNodes_, &numDofsInt, &nDim_, &meshDim_, 
                                   &iSub, &numElemSub_, &numNodesSub_, &numDofsSubInt, 
@@ -413,7 +418,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
                                   &(ifix_[0]),&lifix, &(fixv_[0]),&lfixv, 
                                   &(rhsVec_[0]),&lrhsVec, &isRhsCompleteInt,
                                   &(sol_[0]), &lsol,
-                                  &matrixTypeInt, &(i_sparse[0]), &(j_sparse[0]), &(a_sparse[0]), &la, &isMatAssembledInt );
+                                  &matrixTypeInt, &(i_sparse[0]), &(j_sparse[0]), &(a_sparse[0]), &la, &isMatAssembledInt,
+                                  &(userConstraints[0]),&lUserConstraints1,&lUserConstraints2 );
     i_sparse.clear();
     j_sparse.clear();
     a_sparse.clear();
@@ -424,6 +430,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int use_defaults_int          = 0;
     int parallel_division_int     = 0;
     int use_arithmetic_int        = 1;
+    int use_user_constraints_int  = 0;
     int use_adaptive_int;
     if ( use_adaptive ) {
         use_adaptive_int = 1;
@@ -434,7 +441,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     // setup multilevel BDDC preconditioner
     bddcml_setup_preconditioner( & matrixTypeInt, & use_defaults_int, 
-                                 & parallel_division_int, & use_arithmetic_int, & use_adaptive_int );
+                                 & parallel_division_int, & use_arithmetic_int, & use_adaptive_int, & use_user_constraints_int );
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     double normSquaredLoc = 0.;

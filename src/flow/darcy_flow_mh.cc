@@ -57,6 +57,7 @@
 #include <vector>
 #include <iostream>
 #include <iterator>
+#include <algorithm>
 
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
@@ -519,7 +520,6 @@ void DarcyFlowMH_Steady::make_schur0() {
             schur0 = new LinSys_PETSC( lsize, rows_ds, NULL, PETSC_COMM_WORLD );
         }
 
-
         if (solver->type == BDDCML_SOLVER) {
            // prepare mesh for BDDCML
            // initialize arrays
@@ -527,10 +527,18 @@ void DarcyFlowMH_Steady::make_schur0() {
            std::vector<int> inet;
            std::vector<int> nnet;
            std::vector<int> isegn;
+
+           // maximal and minimal dimension of elements
+           int elDimMax = 1;
+           int elDimMin = 3;
            for ( int i_loc = 0; i_loc < el_ds->lsize(); i_loc++ ) {
                // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
                ElementFullIter el = mesh_->element(el_4_loc[i_loc]);
                int e_idx = el.index();
+
+               int elDim = el->dim();
+               elDimMax = std::max( elDimMax, elDim );
+               elDimMin = std::min( elDimMin, elDim );
 
                isegn.push_back( e_idx );
                int nne = 0;
@@ -635,8 +643,9 @@ void DarcyFlowMH_Steady::make_schur0() {
 
            int numNodes    = size;
            int numDofsInt  = size;
-           int spaceDim = 3; // TODO: what is the proper value here?
-           int meshDim  = 1; // TODO: what is the proper value here?
+           int spaceDim    = 3;    // TODO: what is the proper value here?
+           int meshDim     = elDimMax; 
+           //std::cout << "I have identified following dimensions: max " << elDimMax << ", min " << elDimMin << std::endl;
 
            schur0 -> load_mesh( spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, meshDim );
            //schur0 -> load_mesh( mesh_, edge_ds, el_ds, side_ds, rows_ds, el_4_loc, row_4_el, side_id_4_loc, 
