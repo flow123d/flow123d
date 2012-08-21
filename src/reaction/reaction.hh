@@ -79,6 +79,10 @@ class Reaction: public EquationBase
 		void set_time_step_constrain(double dt);
 		void get_parallel_solution_vector(Vec &vc);
 		void get_solution_vector(double* &vector, unsigned int &size);
+		/**
+		* Temporary function instead of overtyping Reaction descendant to Linear_reaction.
+		*/
+		//virtual double **modify_reaction_matrix(Input::Record in_rec);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

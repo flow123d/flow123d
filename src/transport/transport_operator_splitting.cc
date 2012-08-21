@@ -111,6 +111,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
+		xprintf(Msg,"\nReactions are defined in con-file.\n");
 	    // Chemistry initialization
 
 	    // todo LinReact type dispatch
@@ -122,7 +123,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database, in_rec); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	// decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), in_rec);
 	    //convection->get_par_info(el_4_loc, el_distribution); //Temporarily commented.
-	    //decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+		decayRad->modify_reaction_matrix(in_rec);
+	    decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	    Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	    Semchem_reactions->set_el_4_loc(el_4_loc);
 	    Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);

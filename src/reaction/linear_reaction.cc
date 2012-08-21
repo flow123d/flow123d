@@ -66,8 +66,16 @@ using namespace std;
 Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
 	: Reaction(marks, init_mesh, material_database, in_rec), half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), prev_conc(NULL), matrix_exp_on(false)
 {
+	set_indices(in_rec);	//It needs to be called separetelly, earlier.
+	set_half_lives(in_rec);
+	set_bifurcation(in_rec);
+	Input::Array names_array = in_rec.val<Input::Array>("substances");
+	nr_of_species = names_array.size();
+	Input::Array dec_array = in_rec.val<Input::Array>("decays");
+	nr_of_decays = dec_array.size();
 	//nr_of_isotopes = OptGetInt("Reaction_module","Nr_of_isotopes","0");
 	allocate_reaction_matrix();
+	set_time_step(0.5);
 }
 
 Linear_reaction::~Linear_reaction()
@@ -147,139 +155,69 @@ double **Linear_reaction::modify_reaction_matrix(Input::Record in_rec) //prepare
 			}
 			reaction_matrix[index_par][index_par] = pow(0.5,rel_step);
 
-			//pole indexu potomku - provedeno v set_indices(Input::Record)
 			Input::Array prod_array = dec_it->val<Input::Array>("products");
-			//index_child->resize(prod_array.size());
-			//porovnat prvky pole substances substance_names a urcit indexy
-			//cyklus pres pole potomku
+
 			int i = 0;
 			for(Input::Iterator<Input::Array> prod_it = prod_array.begin<Input::Array>(); prod_it != prod_array.end(); ++prod_it, ++i)
 			{
 				//bif_id = cols;
 					reaction_matrix[index_par][substance_ids[dec_nr][i]] += (1 - pow(0.5,rel_step)) * bifurcation[dec_nr][substance_ids[dec_nr][i]];
 			}
-			/*if(cols > 0){
-				//reaction_matrix[prev_index][prev_index] = pow(0.5,prev_rel_step);
-				if(bifurcation_on)
-				{
-					bif_id = cols - 1;
-					//for(int dec_nr; dec < nr_of_decay, dec++)
-					{
-						reaction_matrix[first_index][index] += (1 - pow(0.5,prev_rel_step)) * bifurcation[dec_nr][bif_id];
-					}
-				}else{
-					reaction_matrix[prev_index][index] += (1 - pow(0.5,prev_rel_step));
-				}
-			}*/
-			//cols++;
-			//prev_rel_step = rel_step;
-			//if(!bifurcation_on)
-			//prev_index = index;
 		}
 	}
 	print_reaction_matrix();//just for control print
 	return reaction_matrix;
 }
 
-/*double **Linear_reaction::modify_reaction_matrix(int dec_nr) //prepare the matrix, which describes reactions, takes bifurcation in acount
+double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are supposed to be known
 {
-	int rows,cols, index, first_index, bif_id;
+	int rows,cols, index_par, bif_id;
+	int *index_child;
 	double rel_step, prev_rel_step;
+
+	half_lives = (double *)xmalloc(nr_of_decays * sizeof(double));
+	bifurcation.resize(nr_of_decays);
 
 	if(reaction_matrix == NULL){
 		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
 		return NULL;
 	}
 
-	first_index = substance_ids[0]-1;
-	for(cols = 0; cols < nr_of_isotopes; cols++){
-		index = substance_ids[cols] - 1; // because indecees in input file run from one whereas indeces in C++ run from ZERO
-		if(cols < (nr_of_isotopes -1)){
-			rel_step = time_step/half_lives[cols];
+	if(nr_of_decays > 0){
+		//pole rozpadu nemuze byt pouzito
+		for(int dec_nr = 0; dec_nr < nr_of_decays; dec_nr++)
+		{
+			index_par = substance_ids[dec_nr][0];
+
+			if(cols < (nr_of_isotopes - 1)){
+				rel_step = time_step/half_lives[dec_nr];
+			}
+			reaction_matrix[index_par][index_par] = pow(0.5,rel_step);
+
+			int nr_of_indices = sizeof(*(substance_ids[dec_nr]))/sizeof(double);
+			for(int i = 0; i < nr_of_indices; ++i)
+			{
+					reaction_matrix[index_par][substance_ids[dec_nr][i]] += (1 - pow(0.5,rel_step)) * bifurcation[dec_nr][substance_ids[dec_nr][i]];
+			}
 		}
-		if(cols > 0){
-			bif_id = cols -1;
-			reaction_matrix[first_index][first_index] = pow(0.5,prev_rel_step); //bifurcation[dec_nr][bif_id] * pow(0.5,prev_rel_step);
-			reaction_matrix[first_index][index] += (1 - pow(0.5,prev_rel_step)) * bifurcation[dec_nr][bif_id];
-		}
-		prev_rel_step = rel_step;
 	}
 	print_reaction_matrix();//just for control print
 	return reaction_matrix;
-}*/
-
-/*double **Linear_reaction::modify_reaction_matrix_repeatedly(Input::Record in_rec)
-{
-	char dec_name[30];
-	int rows, cols, dec_nr, dec_name_nr = 1, index, prev_index;
-	//Input::Array dec_arr = in_rec.find<Input::Array>("decays");
-	//tady bude iterator
-
-	if(nr_of_decays > 0){
-		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
-		if(half_lives != NULL){
-					free(half_lives);
-					half_lives = NULL;
-		}
-		half_lives = (double *)xmalloc(nr_of_decays * sizeof(double));
-		bifurcation.resize(nr_of_decays);
-		for(dec_nr = 0; dec_nr < nr_of_decays; dec_nr++){
-			sprintf(dec_name,"Decay_%d", dec_name_nr);
-			nr_of_isotopes = OptGetInt(dec_name,"Nr_of_isotopes","0");
-			set_half_lives(in_rec);
-			set_indeces(dec_name, nr_of_isotopes);
-			print_indeces(nr_of_isotopes); //just a control
-			print_half_lives(nr_of_isotopes); //just a control
-			//bifurcation_on = OptGetBool(dec_name,"Bifurcation_on","no");
-			if(bifurcation_on == true){
-				set_bifurcation(dec_name, dec_nr);
-				modify_reaction_matrix(dec_nr);
-			}else{
-				modify_reaction_matrix();
-			}
-			dec_name_nr++;
-		}
-	}*/
-	/*if(nr_of_FoR > 0){
-		xprintf(Msg,"\nNumber of first order reactions is %d\n",nr_of_FoR);
-		//half_lives.resize(nr_of_FoR); //does not function at all
-		if(half_lives != NULL){
-			free(half_lives);
-			half_lives = NULL;
-		}
-		half_lives = (double *)xmalloc(nr_of_FoR * sizeof(double));
-		for(dec_nr = 0; dec_nr < nr_of_FoR; dec_nr++){
-			sprintf(dec_name,"FoReact_%d", dec_name_nr);
-			set_nr_of_isotopes(2);
-			set_indeces(dec_name, 2);
-			set_kinetic_constants(dec_name, dec_nr);//instead of this line, here should be palced computation of halflives using kinetic constants
-			print_indeces(nr_of_isotopes); //just a control
-			print_half_lives(2); //just a control
-			//modify_reaction_matrix(2);
-			modify_reaction_matrix();
-			dec_name_nr++;
-		}
-	}
-	return reaction_matrix;
-}*/
+}
 
 double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-
-
     int cols, rows, both;
 
 	if(nr_of_decays > 0){
 		for(cols = 0; cols < nr_of_species; cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
-		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
 		concentrations[cols][loc_el] = 0.0;
 		}
         for(rows = 0; rows <nr_of_species; rows++){
             for(cols = 0; cols <nr_of_species; cols++){
                 concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
             }
-            //xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
         }
 	}
 	return concentrations;
@@ -305,7 +243,6 @@ double *Linear_reaction::set_half_lives(Input::Record in_rec)
 
 	for (Input::Iterator<Input::Record> it = decay_array.begin<Input::Record>(); it != decay_array.end(); ++it)
 	{
-	 //  half_lives[i] = it->val<double>("half_life")  /// pouzit find
 	  Input::Iterator<double> it_hl = it->find<double>("half_life");
 	  if (it_hl) {
            half_lives[i] = *it_hl;
@@ -358,15 +295,13 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 		substance_ids = (int **)xmalloc(nr_of_decays*sizeof(int*));
 	}
 
-	Input::Array names_array = in_rec.val<Input::Array>("substance_names");
+	Input::Array names_array = in_rec.val<Input::Array>("substances");
 	Input::Array decay_array = in_rec.val<Input::Array>("decays");
 
 	int dec_nr = 0;
 	for(Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it)
 	{
 		string parent_name = dec_it->val<string>("parent");
-		//dec_it->val<char>("parent").copy_to(parent_name);
-		//dec_it->copy_to(parent_name);
 		Input::Array bif_array = dec_it->val<Input::Array>("products");
 
 		if(bif_array.size() > 0)
@@ -398,8 +333,6 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 		int prod_pos = 0;
 		for(Input::Iterator<string> bif_it = bif_array.begin<string>(); bif_it != bif_array.end(); ++bif_it, ++prod_pos)
 		{
-			//string child_name;
-			//bif_it->copy_to(child_name);
 			int pos = -1;
 			i = 0;
 			for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
@@ -420,23 +353,6 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 
 		dec_nr++;
 	}
-	//potreba porovnavat retezce v transportu s retezci v rozpadech a z toho zjistit index latky v transportu
-	/*strcpy(buffer,OptGetStr(section,"Substance_ids",NULL));
-	pom_buf = strtok( buffer, separators );
-	for (j=0; j< nr_of_substances; j++)
-	{
-	  if ( pom_buf == NULL )
-	  {
-	    xprintf(Msg,"\nIndex for %d-th substance in %s is missing.", j+1, section);
-	  }
-	    substance_ids[j] = atoi(pom_buf);
-	    pom_buf = strtok( NULL, separators );
-	 }
-	 if ( pom_buf != NULL )
-	 {
-	    xprintf(Msg,"\nMore parameters then substances has been given in %s.", section);
-	 }*/
-
 	 return substance_ids;
 }
 
@@ -481,33 +397,17 @@ void Linear_reaction::print_reaction_matrix(void)
 
 void Linear_reaction::set_bifurcation(Input::Record in_rec) // (int index, Input::Record in_rec)
 {
-	//char  buffer[1024];
-	//char *pom_buf;
-	//int n_subst = in_rec.val<int>("n_substances");
-	//const char *separators = " ,\t";
-	//double control_sum = 0.0;
 
-	Input::Array decay_array = in_rec.val<Input::Array>("decays"); //Input::Array decay_array = in_rec.find<Input::Array>("decays");
-	//nr_of_decays = decay_array.size();
+	Input::Array decay_array = in_rec.val<Input::Array>("decays");
 
 		int dec_nr = 0;
 		for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it)
 		{
-			//Input::Array bif_array = dec_it.val<Input::Array>("branch_ratios");
-			//Input::Iterator<Input::Array> bif_array = dec_it->find<Input::Array>("branch_ratios");
 			Input::Array bif_array = dec_it->val<Input::Array>("branch_ratios");
 			int nr_of_prod = bif_array.size();
-			bifurcation[dec_nr].resize(nr_of_prod + 1); //tohle je velikost pole produktuu
-			//Input::Iterator<double> it_hl = it->find<double>("half_life"); //vzor
-			/*if (bif_array)
-			{
-				;
-			}else{
-				xprintf(Msg,"\nBifurcation parameters of %d-th decay substep is missing.", dec_nr);
-			}*/
-	    	//nasledujici radek by mel byt podmineny velikosti pole produktuu
+			bifurcation[dec_nr].resize(nr_of_prod + 1);
 			//kdyz bude 1, tak bysem mel dát do radku bifurkaci jednicku, viz par radku nize
-	    	if(bif_array.size() > 0)
+	    	if(bif_array.size() > 1)
 	    	{
 	    		bifurcation[dec_nr].resize(bif_array.size());
 		    	bif_array.copy_to(bifurcation[dec_nr]); //atof(pom_buf); //control_sum += bifurcation[dec_nr][j];
@@ -519,31 +419,6 @@ void Linear_reaction::set_bifurcation(Input::Record in_rec) // (int index, Input
 		}
 	return;
 }
-
-//Obsolete function.
-/*void Linear_reaction::set_kinetic_constants(char *section, int react_nr)
-{
-	char  buffer[1024];
-	char *pom_buf;
-	//int j;
-	const char *separators = " ,\t";
-
-	kinetic_constant.resize(nr_of_FoR);
-	strcpy(buffer,OptGetStr(section,"Kinetic_constant",NULL));
-	if(buffer == NULL) return;
-	pom_buf = strtok( buffer, separators );
-	//for (j=0; j< (nr_of_FoR); j++){
-		if ( pom_buf == NULL )
-		{
-			xprintf(Msg,"\nKinetic constant belonging to %d-th reactions is missing.", react_nr+1);
-		}
-    	kinetic_constant[react_nr] = atof(pom_buf);
-    	xprintf(Msg,"\nKinetic constant for %d-th reaction is %f",react_nr,kinetic_constant[react_nr]);
-    	pom_buf = strtok( NULL, separators );
-    	half_lives[react_nr] = log(2) / kinetic_constant[react_nr];
- 	 //}
-    return;
-}*/
 
 void Linear_reaction::set_time_step(double new_timestep, Input::Record in_rec)
 {
@@ -563,12 +438,20 @@ void Linear_reaction::set_time_step(Input::Record in_rec)
 	return;
 }
 
+void Linear_reaction::set_time_step(double new_timestep)
+{
+	time_step = new_timestep;
+	release_reaction_matrix();
+	allocate_reaction_matrix();
+	modify_reaction_matrix(); //_repeatedly(in_rec);
+	return;
+}
+
 void Linear_reaction::compute_one_step(void)
 {
     if (reaction_matrix == NULL)   return;
 
     START_TIMER("decay_step");
-	 //for (int loc_el = 0; loc_el < distribution->lsize(distribution->myp()); loc_el++)
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);

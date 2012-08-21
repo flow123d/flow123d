@@ -55,6 +55,12 @@ class Linear_reaction: public Reaction
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
 		void set_time_step(Input::Record in_rec);
+		void set_time_step(double time_step);
+		/**
+		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
+		*/
+		double **modify_reaction_matrix(Input::Record in_rec);
+		double **modify_reaction_matrix(void);
 		/**
 		* This method enables to evaluate matrix polynomial of an matrix containing constant real values. Horner scheme is used to get the value.
 		*/
@@ -103,10 +109,6 @@ class Linear_reaction: public Reaction
 		*
 		*/
 		double **allocate_reaction_matrix(void);
-		/**
-		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
-		*/
-		double **modify_reaction_matrix(Input::Record in_rec);
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched on.
 		*/

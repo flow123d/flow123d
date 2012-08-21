@@ -186,3 +186,8 @@ void Reaction::set_time_step_constrain(double dt)
 {
 	cout << "Reaction::choose_time_step_constrain(double dt) is not implemented." << endl;
 }
+
+/*double **Linear_reaction::modify_reaction_matrix(Input::Record in_rec) //prepare the matrix, which describes reactions
+{
+	return 0;
+}*/

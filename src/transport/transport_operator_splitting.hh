@@ -110,7 +110,7 @@ protected:
 private:
 
     ConvectionTransport *convection;
-    Reaction *decayRad;
+    Linear_reaction *decayRad;
     Semchem_interface *Semchem_reactions;
     //int steps;
     OutputTime *field_output;
