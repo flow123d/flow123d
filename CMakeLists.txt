@@ -199,7 +199,7 @@ if (NOT Armadillo_FOUND)
   file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH}  ${Armadillo_Boost_Hint} ..
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND make 
+  execute_process(COMMAND make VERBOSE=1 
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   
   SET(Armadillo_INCLUDE_DIRS 

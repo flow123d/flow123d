@@ -50,5 +50,6 @@ clean:
 	#make -C armadillo-1.1.92 clean
 	rm -rf armadillo-1.1.92/flow_build
 	rm -rf armadillo-3.2.4/flow_build
+	rm -f armadillo-3.2.4/include/armadillo_bits/config.hpp
 	make -C fparser-4.4.3 clean
 	

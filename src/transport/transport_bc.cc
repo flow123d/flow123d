@@ -56,11 +56,14 @@ TransportBC::TransportBC(Mesh *mesh, int n_subst, const Input::Record &in_rec)
 
 	fname = in_rec.val<FilePath>("boundary_file");
 
-	in_rec.val<Input::Array>("bc_times").copy_to(bc_times);
+	Input::Iterator<Input::Array> bc_it = in_rec.find<Input::Array>("bc_times");
+	if (bc_it) bc_it->copy_to(bc_times);
+
 	FILE * f;
 	string fn;
 
 	if (bc_times.size() == 0) {
+	    DBGMSG("one bc file \n");
 		// only one boundary condition, check filename and read bc condition
 		bc_time_level = -1;
 		fn = make_bc_file_name(-1);

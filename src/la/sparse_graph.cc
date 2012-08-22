@@ -187,10 +187,10 @@ void SparseGraph::finalize()
    std::sort(edges, edges + size);
 
    allocate_sparse_graph(vtx_distr.lsize() + 1, size+1);
-   adj = (int *) xmalloc( (size+1) * sizeof(int) );
+/*   adj = (int *) xmalloc( (size+1) * sizeof(int) );
    rows = (int *) xmalloc( (vtx_distr.lsize() + 1) * sizeof(int) );
    adj_weights = (int *) xmalloc( (size+1) * sizeof(int) );
-   
+*/
    rows[0]=0;
 
    if (size != 0) {

@@ -489,7 +489,8 @@ def update_data (value, sections, d_out):
     if (len(sections) == 0):
         return d_out
     if (len(sections) == 1):
-        d_out[sections[0]] = value
+        if (not (sections[0] in d_out)): 
+            d_out[sections[0]] = value
     else:
         key=sections.pop(0)
         if ((key in d_out) == False):

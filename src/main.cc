@@ -63,14 +63,7 @@ Application::Application(const int argc,  char ** argv)
 
     // parse our own command line arguments, leave others for PETSc
     parse_cmd_line(argc, argv);
-
-
     system_init(passed_argc_, passed_argv_, log_filename_); // Petsc, open log, read ini file
-
-
-
-
-
 
     Profiler::initialize(MPI_COMM_WORLD);
     START_TIMER("WHOLE PROGRAM");
@@ -166,11 +159,16 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // get unknown options
     vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
     passed_argc_ = to_pass_further.size();
-    passed_argv_ = new char * [passed_argc_];
+    passed_argv_ = new char * [passed_argc_+1];
+
+    // first copy the program executable in argv[0]
+    int arg_i=0;
+    if (argc > 0) passed_argv_[arg_i++] = xstrcpy( argv[0] );
+
     for(int i=0; i < passed_argc_; i++) {
-        passed_argv_[i] = new char [to_pass_further[i].size()];
-        strcpy(passed_argv_[i], to_pass_further[i].c_str());
+        passed_argv_[arg_i++] = xstrcpy( to_pass_further[i].c_str() );
     }
+    passed_argc_ = arg_i;
 
     if (vm.count("help")) {
         cout << desc << "\n";

@@ -106,8 +106,9 @@ template<unsigned int n> inline double determinant(const arma::mat::fixed<n,n> &
  *
  * So far this involves only the (local) barycentric coordinates of quadrature points.
  */
-struct MappingInternalData
+class MappingInternalData
 {
+public:
     /**
      * @brief Auxiliary array of barycentric coordinates of quadrature points.
      */

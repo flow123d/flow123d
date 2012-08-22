@@ -33,6 +33,7 @@ sources_formula		="/problem/primary_equation/sources_formula=string"
 
 [Transport]
 Transport_on	  	= "/problem/secondary_equation=enum(false>NULL, true>NOTHING)" !!!
+Transport_type          = "/problem/secondary_equation/TYPE=enum(implicit>AdvectionDiffusion_DG)"
 Sorption 	  	= "/problem/secondary_equation/sorption_enable=bool" ZMENENO KVULI KONFLIKTU S MATERIALY
 Dual_porosity	  	= "/problem/secondary_equation/dual_porosity=bool"
 Reactions	  	= "/problem/secondary_equation/reactions=bool"

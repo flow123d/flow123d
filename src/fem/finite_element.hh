@@ -80,8 +80,9 @@ const std::vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
 /**
  * @brief Structure for storing the precomputed finite element data.
  */
-struct FEInternalData
+class FEInternalData
 {
+public:
     /**
      * @brief Precomputed values of basis functions at the quadrature points.
      */

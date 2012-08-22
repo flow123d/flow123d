@@ -77,7 +77,7 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
 
 	if (in_rec.type() == Solver::get_input_type_petsc() )  {
 	    solver->type = PETSC_SOLVER;
-	    //solver->params  = in_rec.find<string>("options");
+	    solver->params  = Input::Record(in_rec).val<string>("options");
 	} else
 	if (in_rec.type() == Solver::get_input_type_bddc() ) {
 	    solver->type = PETSC_MATIS_SOLVER;
@@ -143,7 +143,7 @@ Input::Type::Record & Solver::get_input_type_petsc() {
 
     if (!rec.is_finished()) {
         rec.derive_from(Solver::get_input_type());
-        rec.declare_key("options", String(), "Options passed to the petsc instead of default setting.");
+        rec.declare_key("options", String(), Default(""),  "Options passed to the petsc instead of default setting.");
         rec.finish();
     }
     return rec;
@@ -196,7 +196,7 @@ void solver_set_type( Solver *solver )
 void solve_system( struct Solver *solver, struct LinSys *system )
 {
 /// set command line for external solvers
-#define SET_GENERIC_CALL sprintf( cmdline, "%s %s",solver->executable,solver->params)
+#define SET_GENERIC_CALL sprintf( cmdline, "%s %s",solver->executable,solver->params.c_str())
 #define SET_MATLAB_CALL sprintf( cmdline, "matlab -r solve" )
 
 	char cmdline[ 1024 ];
@@ -340,7 +340,7 @@ void solver_petsc(Solver *solver)
 	KSPConvergedReason Reason;
         //PetscViewer mat_view;
 	const char *petsc_dflt_opt;
-	char *petsc_str;
+	const char *petsc_str;
 	int nits;
 
 	F_ENTRY;
@@ -391,18 +391,12 @@ void solver_petsc(Solver *solver)
                   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
 	   }
 	}
-	petsc_str="";
+
+	if (solver->params == "") petsc_str=petsc_dflt_opt;
+	else petsc_str=solver->params.c_str();
 	        //OptGetStr("Solver","Solver_params",petsc_dflt_opt);
 
-	xprintf(MsgVerb,"inserting petsc options: %s\n",petsc_str);
-	
-/**
- *
- *  \input{Solver,petsc_options}
- *          PETSC options string, user can overwrite default choice of solver and preconditioner\n
- *          (see doc/petsc_help or flow123 -s ... -help)
- */
- 	 
+	xprintf(MsgVerb,"inserting petsc options: %s\n", petsc_str );
 	 
 	PetscOptionsInsertString(petsc_str); // overwrites previous options values
 	//xfree(petsc_str);

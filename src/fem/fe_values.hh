@@ -197,6 +197,13 @@ public:
      */
     FEValuesBase();
 
+
+    /**
+     * Correct deallocation of objects created by 'initialize' methods.
+     */
+    virtual ~FEValuesBase();
+
+
     /**
      * @brief Allocates space for computed data.
      *
@@ -415,7 +422,7 @@ public:
              UpdateFlags flags);
 
     /// Destructor.
-    ~FESideValues();
+    virtual ~FESideValues();
 
     /**
      * @brief Update cell-dependent data (gradients, Jacobians etc.)

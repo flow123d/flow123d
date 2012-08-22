@@ -106,7 +106,7 @@ public:
 	char	manual_run;		//!< Run solver manualy ?
 	char	use_ctrl_file;	//!< User provided control file ?
 	const char	*ctrl_file;		//!< Name of control file
-	char    *params; 		//!< Solver's comamnd line parameters
+	string  params; 		//!< Solver's comamnd line parameters
 	char    keep_files;   	//!< Keep or remove solver files?
 	int     use_last_sol;   //!< Use last known solution? (should be in water module)
 
