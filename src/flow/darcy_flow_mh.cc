@@ -511,6 +511,14 @@ void DarcyFlowMH_Steady::make_schur0() {
 
     START_TIMER("PREALLOCATION");
 
+    xprintf(Msg,"****************** problem statistics \n");
+    xprintf(Msg,"edges: %d \n",mesh_->n_edges());
+    xprintf(Msg,"sides: %d \n",mesh_->n_sides());
+    xprintf(Msg,"elements: %d \n",mesh_->n_elements());
+    xprintf(Msg,"************************************* \n");
+    xprintf(Msg,"problem size: %d \n",this->size);
+    xprintf(Msg,"****************** problem statistics \n");
+
     if (schur0 == NULL) { // create Linear System for MH matrix
 
         if (solver->type == BDDCML_SOLVER) {
