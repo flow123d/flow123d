@@ -174,41 +174,7 @@ message(STATUS "boost root: ${BOOST_ROOT}")
 
    
 
-# find aramdillo or use our own
-# FindAramdillo returs:
-# Aramdillo_INCLUDE_DIRS
-# Armadillo_LIBRARIES
 
-# hint same Boost to armadillo 
-set(Armadillo_Boost_Hint  -D BOOST_ROOT=${BOOST_ROOT})
-
-#set(our_Armadillo_version 1.1.92)
-#set(our_Armadillo_lib libarmadillo.a)
-
-set(our_Armadillo_version 3.2.4)
-set(our_Armadillo_lib libarmadillo.so)
-
-find_package(Armadillo)
-if (NOT Armadillo_FOUND)
-
-  # THIS IS NOT CORRECT WAY TO BUILD Armadillo, IT MERLY WORKS. DO NOT FOLLOW THIS.
-  # proper way should be: cmake, make, install Armadillo -> the last step should produce ArmadilloLibraryDepends.cmake
-  # which can be included here to get correct includes and libs variables
-  message(STATUS "Build our own Armadillo.")
-  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build")
-  file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH}  ${Armadillo_Boost_Hint} ..
-                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND make VERBOSE=1 
-                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  
-  SET(Armadillo_INCLUDE_DIRS 
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/include
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/include)  
-  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/${our_Armadillo_lib}")  
-endif()
-
-message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
 
 
 # We are looking for PETSC, f succed this module set:
@@ -223,6 +189,55 @@ message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
 find_package(PETSc 3.2.0)
 find_package(PARMETIS)
 
+# find aramdillo or use our own
+# FindAramdillo returs:
+# Aramdillo_INCLUDE_DIRS
+# Armadillo_LIBRARIES
+
+# hint same Boost to armadillo 
+set(Armadillo_Boost_Hint  -D BOOST_ROOT=${BOOST_ROOT})
+
+#set(our_Armadillo_version 1.1.92)
+#set(our_Armadillo_lib libarmadillo.a)
+
+set(our_Armadillo_version 3.2.4)
+set(our_Armadillo_lib libarmadillo.a)
+
+find_package(Armadillo)
+if (NOT Armadillo_FOUND)
+
+  # THIS IS NOT CORRECT WAY TO BUILD Armadillo, IT MERLY WORKS. DO NOT FOLLOW THIS.
+  # proper way should be: cmake, make, install Armadillo -> the last step should produce ArmadilloLibraryDepends.cmake
+  # which can be included here to get correct includes and libs variables
+  message(STATUS "Build our own Armadillo.")
+  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build")
+  
+  # check PETSC fblas and flapack
+  find_file(PETSC_BLAS libfblas.a PATH  ${PETSC_DIR}/${PETSC_ARCH}/lib)
+  find_file(PETSC_LAPACK libflapack.a PATH  ${PETSC_DIR}/${PETSC_ARCH}/lib)
+  if ( PETSC_BLAS AND PETSC_LAPACK )
+      set(PETSC_LAPACK "-DLAPACK_LIBRARY=${PETSC_LAPACK}")
+      set(PETSC_BLAS "-DBLAS_LIBRARY=${PETSC_BLAS}")
+  else()
+      # if fblas or flapack is not presented in PETSC let armadillo to find its own BLAS and LAPACK
+      set(PETSC_LAPACK "")
+      set(PETSC_BLAS "")
+  endif()    
+  
+  file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
+  message(STATUS "BLAS_LIBRARY: ${PETSC_BLAS}" "LAPACK_LIBRARY: ${PETSC_LAPACK}")
+  execute_process(COMMAND ${CMAKE_COMMAND} ${PETSC_BLAS} ${PETSC_LAPACK} ${Armadillo_Boost_Hint} ..
+                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
+  execute_process(COMMAND make VERBOSE=1 
+                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
+  
+  SET(Armadillo_INCLUDE_DIRS 
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/include
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/include)  
+  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/${our_Armadillo_lib}")  
+endif()
+
+message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
 
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion REQUIRED)
@@ -302,7 +317,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d   flow123d_lib semchem ${Boost_LIBS})     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  ${Armadillo_LIBRARIES} flow123d_lib semchem ${Boost_LIBS})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
