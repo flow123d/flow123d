@@ -206,3 +206,8 @@ int Reaction::find_index(Input::Array names_array, string bif_it)
 
 	return pos;
 }
+
+void Reaction::set_names(std::vector<string> &Names)
+{
+	names = Names;
+}

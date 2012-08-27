@@ -83,6 +83,14 @@ class Reaction: public EquationBase
 		* Temporary function instead of overtyping Reaction descendant to Linear_reaction.
 		*/
 		//virtual double **modify_reaction_matrix(Input::Record in_rec);
+		/**
+		*  Sets the & to substance names
+		*/
+		void set_names(std::vector<string> &Names);
+		/**
+		* Names belonging to substances.
+		*/
+		vector<string> names;
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

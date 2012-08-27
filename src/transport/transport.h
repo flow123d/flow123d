@@ -187,7 +187,7 @@ private:
 	void subst_names(char *line); //
 	void subst_scales(char *line); //
 
-	void get_names(string* array);
+	//void get_names(string* array);
 
 	bool is_convection_matrix_scaled;
 

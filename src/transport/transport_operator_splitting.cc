@@ -123,7 +123,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database, *reactions_it); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	// decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), in_rec);
 	    //convection->get_par_info(el_4_loc, el_distribution); //Temporarily commented.
-		convection->get_names(decayRad->names);
+		decayRad->set_names(convection->get_substance_names());
 		decayRad->modify_reaction_matrix(in_rec);
 	    decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 

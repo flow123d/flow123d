@@ -61,10 +61,6 @@ class Linear_reaction: public Reaction
 		*/
 		double **modify_reaction_matrix(Input::Record in_rec);
 		double **modify_reaction_matrix(void);
-		/**
-		* Names belonging to substances.
-		*/
-		string *names;
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

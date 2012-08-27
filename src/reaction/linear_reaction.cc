@@ -491,3 +491,4 @@ void Linear_reaction::set_nr_of_isotopes(int Nr_of_isotopes)
 	nr_of_isotopes = Nr_of_isotopes;
 	return;
 }
+
