@@ -17,7 +17,7 @@ class Specie
 	/*
 	* Static method for new input data types input
 	*/
-	static Input::Type::AbstractRecord &get_input_type();
+	static Input::Type::Record &get_input_type();
 	/*
 	* Constructor.
 	*/
@@ -55,7 +55,7 @@ class General_reaction
 	/*
 	* Static method for new input data types input
 	*/
-	static Input::Type::AbstractRecord &get_input_type();
+	static Input::Type::Record &get_input_type();
 	/*
 	 * Constructor.
 	 */

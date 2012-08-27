@@ -35,12 +35,13 @@ Input::Type::Record & Linear_reaction::get_one_decay_substep()
 Input::Type::Record & Linear_reaction::get_input_type()
 {
 	using namespace Input::Type;
-	static Record rec("Linear_reactions", "Information for a decision about the way to simulate radioactive decay.");
+	static Record rec("LinearReactions", "Information for a decision about the way to simulate radioactive decay.");
 
 	if (!rec.is_finished()) {
 	    rec.derive_from( Reaction::get_input_type() );
-        /*rec.declare_key("decays", Array( get_one_decay_substep() ), Default::obligatory(),
+        rec.declare_key("decays", Array( Linear_reaction::get_one_decay_substep() ), Default::obligatory(),
                 "Description of particular decay chain substeps.");
+
 
 		/*rec.declare_key("substances", Array(String()), Default::obligatory(),
 								"Names of transported isotopes.");

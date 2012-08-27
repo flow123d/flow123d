@@ -1,5 +1,7 @@
 //---------------------------------------------------------------------------
 
+#include "reaction/reaction.hh"
+
 #include "system/system.hh"
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
@@ -17,10 +19,10 @@ struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
 
-Input::Type::AbstractRecord & Specie::get_input_type()
+Input::Type::Record & Specie::get_input_type()
 {
 	using namespace Input::Type;
-	static AbstractRecord rec("Isotope", "Definition of information about a single isotope.");
+	static Record rec("Isotope", "Definition of information about a single isotope.");
 
 	if (!rec.is_finished()) {
 		rec.declare_key("identifier", Integer(), Default::obligatory(),
@@ -35,21 +37,21 @@ Input::Type::AbstractRecord & Specie::get_input_type()
 						"Kinetic conxtant appropriate to described first order reaction.");*/
 
 		rec.finish();
-
-		//TransportOperatorSplitting::get_input_type();
-		//TransportDG::get_input_type();
-
-		rec.no_more_descendants();
 	}
 	return rec;
 }
 
-Input::Type::AbstractRecord & General_reaction::get_input_type()
+Input::Type::Record & General_reaction::get_input_type()
 {
 	using namespace Input::Type;
-	static AbstractRecord rec("Isotope", "Definition of information about a single isotope.");
+	static Record rec("Isotope", "Definition of information about a single isotope.");
 
 	if (!rec.is_finished()) {
+	    rec.derive_from(Reaction::get_input_type());
+
+        //rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
+        //        "Description of general chemical reactions.");
+
 		rec.declare_key("identifier", Integer(), Default::obligatory(),
 						"Identifier of the isotope.");
 		rec.declare_key("half_life", Double(), Default::obligatory(),
@@ -62,11 +64,6 @@ Input::Type::AbstractRecord & General_reaction::get_input_type()
 						"Kinetic conxtant appropriate to described first order reaction.");*/
 
 		rec.finish();
-
-		//TransportOperatorSplitting::get_input_type();
-		//TransportDG::get_input_type();
-
-		rec.no_more_descendants();
 	}
 	return rec;
 }

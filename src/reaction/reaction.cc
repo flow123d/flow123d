@@ -5,6 +5,7 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
+#include "semchem/semchem_interface.hh"
 
 #include "system/system.hh"
 #include "materials.hh"
@@ -22,13 +23,11 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 	if (!rec.is_finished()) {
 		rec.declare_key("substances", Array(String()), Default::obligatory(),
 								"Names of transported chemical species.");
-		rec.declare_key("decays", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
-				"Description of particular decay chain substeps.");
-		rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
-				"Description of general chemical reactions.");
+
 		rec.finish();
 
 		Linear_reaction::get_input_type();
+		General_reaction::get_input_type();
 
 		rec.no_more_descendants();
 	}
