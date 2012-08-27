@@ -150,7 +150,9 @@ if (NOT Armadillo_FOUND)
   SET(Armadillo_INCLUDE_DIRS 
     ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/include
     ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/include)  
-  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/libarmadillo.a")  
+  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/libarmadillo.a" ${ARMA_LIBS})  
+  
+  message(STATUS "arma libs: ${ARMA_LIBS}")
 endif()
 
 message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
