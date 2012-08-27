@@ -1311,4 +1311,10 @@ int ConvectionTransport::get_n_substances() {
 	return n_substances;
 }
 
+void ConvectionTransport::get_names(string *array)//(vector<string> array)
+{
+	array->resize(substance_name.size());
+	substance_name.toArray(array);
 
+	return;
+}

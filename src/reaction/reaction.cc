@@ -190,3 +190,19 @@ void Reaction::set_time_step_constrain(double dt)
 {
 	return 0;
 }*/
+
+int Reaction::find_index(Input::Array names_array, string bif_it)
+{
+	int pos = -1;
+	int i = 0;
+
+	for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
+	{
+		if(bif_it.compare(*name_it) == 0) //if (strcmp(*name_it, *child_name) == 0)
+		{
+	        pos = i;
+		}
+	}
+
+	return pos;
+}

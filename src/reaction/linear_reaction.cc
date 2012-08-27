@@ -313,7 +313,7 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 			exit(1);
 		}
 
-		int pos = -1;
+		/*int pos = -1;
 		i = 0;
 		for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
 		{
@@ -322,7 +322,8 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 			{
 			        pos = i;
 			}
-		}
+		}*/
+		int pos = find_index(names_array, parent_name);
 		if(pos > -1)
 		{
 			substance_ids[dec_nr][0] = pos;
@@ -334,15 +335,17 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 		int prod_pos = 0;
 		for(Input::Iterator<string> bif_it = bif_array.begin<string>(); bif_it != bif_array.end(); ++bif_it, ++prod_pos)
 		{
-			int pos = -1;
+			/*int pos = -1;
 			i = 0;
+
 			for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
 			{
 				if((*bif_it).compare(*name_it) == 0) //if (strcmp(*name_it, *child_name) == 0)
 				{
 			        pos = i;
 				}
-			}
+			}*/
+			int pos = find_index(names_array, *bif_it);
 			if(pos > -1)
 			{
 				substance_ids[dec_nr][prod_pos] = pos;

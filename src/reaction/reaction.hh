@@ -113,6 +113,10 @@ class Reaction: public EquationBase
 		*/
 		int faktorial(int k);
 		/**
+		*	Finds a position of a string in specified array.
+		*/
+		int find_index(Input::Array names, string name);
+		/**
 		*	Contains number of transported chemical species.
 		*/
 		int nr_of_species;
