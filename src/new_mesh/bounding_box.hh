@@ -48,15 +48,12 @@ public:
 	BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor);
 
 	/**
-	 * Constructor.
+	 * Set id of element
+	 * NOT USED this method!
 	 *
-	 * Set class members
-	 * @param id Set value to id_
-	 * @param minCoor Set value to minCoordinates_
-	 * @param maxCoor Set value to maxCoordinates_
+	 * @param id Element id for set
 	 */
-	BoundingBox(int id, arma::vec3 minCoor, arma::vec3 maxCoor);
-
+	void setId(int id);
 	/// get id of element
     int getId();
     /// get minimal coordinates of bounding box
@@ -73,6 +70,8 @@ public:
      * @return True if box element contains point
      */
     bool contains_point(arma::vec3 &point);
+
+    bool intersection(BoundingBox &b2);
 
 private:
     /// minimal coordinates of bounding box

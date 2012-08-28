@@ -31,19 +31,16 @@
 
 
 BoundingBox::BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor) {
-	elementId_ = 0;
-	minCoordinates_ = minCoor;
-	maxCoordinates_ = maxCoor;
-}
-
-BoundingBox::BoundingBox(int id, arma::vec3 minCoor, arma::vec3 maxCoor) {
-	elementId_ = id;
 	minCoordinates_ = minCoor;
 	maxCoordinates_ = maxCoor;
 }
 
 int BoundingBox::getId() {
 	return elementId_;
+}
+
+void BoundingBox::setId(int id) {
+	elementId_ = id;
 }
 
 arma::vec3 BoundingBox::get_min() {
@@ -63,5 +60,12 @@ bool BoundingBox::contains_point(arma::vec3 &point) {
 		if ((point(i) < minCoordinates_(i)) | (point(i) > maxCoordinates_(i))) return false;
 	}
 
+	return true;
+}
+
+bool BoundingBox::intersection(BoundingBox &b2) {
+	for (int i=0; i<BoundingIntevalHierachy::dimension; i++) {
+		if ((minCoordinates_(i) > b2.get_max()(i)) | (maxCoordinates_(i) < b2.get_min()(i))) return false;
+	}
 	return true;
 }

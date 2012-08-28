@@ -31,24 +31,29 @@
 //#include "new_mesh/mesh.hh"
 #include "mesh/mesh.h"
 #include "new_mesh/bounding_interval_hierarchy.hh"
+#include "new_mesh/ngh/include/triangle.h"
+#include "new_mesh/ngh/include/polygon.h"
 #include <armadillo>
 
 
 int main(int argc, char **argv) {
 
-	const std::string& file_name = "../tests/01_steady_flow_123d/input/test1.msh";
+	const std::string& file_name = "../tests/11_reactional_transport_semchem/input/sit_trans.msh";
 
 	MeshReader* meshReader = new GmshMeshReader();
 
-	const std::string& ngh_fname = "../tests/01_steady_flow_123d/input/test1.ngh";
-	const std::string& bcd_fname = "../tests/01_steady_flow_123d/input/test1.fbc";
+	const std::string& ngh_fname = "../tests/11_reactional_transport_semchem/input/sit_trans.ngh";
+	const std::string& bcd_fname = "../tests/11_reactional_transport_semchem/input/sit_trans.fbc";
 	Mesh* mesh = new Mesh(ngh_fname, bcd_fname);
 	meshReader->read(file_name, mesh);
 	BoundingIntevalHierachy* bihTree = new BoundingIntevalHierachy(mesh);
 
-	arma::vec3 point = arma::vec3("0.45 0.46 0.47");
+	TPoint* pointA = new TPoint(0.15, 0.26, 0.37);
+	TPoint* pointB = new TPoint(0.28, 1.42, 0.49);
+	TPoint* pointC = new TPoint(1.46, 0.47, 1.41);
+	TTriangle* triangle = new TTriangle(pointA, pointB, pointC);
 	std::vector<BoundingBox *> searchedElements;
-	bihTree->get_element(point, searchedElements);
+	bihTree->find_elements(*triangle, searchedElements);
 
 	xprintf(Msg, " - searched elements ids: ");
 
@@ -56,9 +61,27 @@ int main(int argc, char **argv) {
 	{
 		BoundingBox* b = *tmp;
 
-		if (b->contains_point(point)) xprintf(Msg, "%d ", b->getId());
+		xprintf(Msg, "%d ", b->getId());
 	}
 	xprintf(Msg, "\n");
+
+	/*TPoint* point1 = new TPoint( 1.0, 1.0, 1.0);
+	TPoint* point2 = new TPoint( 2.0, 6.0, 3.0);
+	TPoint* point3 = new TPoint( 2.0, 2.0, 1.0);
+	TPoint* point4 = new TPoint(-1.0, 3.0, 3.0);
+	TPoint* point5 = new TPoint(-1.0, 5.0, 4.0);
+	TPoint* point6 = new TPoint( 3.0, 4.0, 1.5);
+	TPoint* point7 = new TPoint( 0.0, 7.0, 4.5);
+	TPolygon* pol = new TPolygon();
+	pol->Add(point1);
+	pol->Add(point2);
+	pol->Add(point3);
+	pol->Add(point4);
+	pol->Add(point5);
+	pol->Add(point6);
+	pol->Add(point7);
+	pol->Write();
+	xprintf(Msg, "Polygon: %f\n", pol->GetArea());*/
 
 	xprintf(Msg, " - interpolation_main executed\n");
 

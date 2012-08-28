@@ -28,6 +28,9 @@
 #include "system/system.hh"
 #include "system/sys_vector.hh"
 #include "new_mesh/bounding_interval_hierarchy.hh"
+#include "new_mesh/ngh/include/tetrahedron.h"
+#include "new_mesh/ngh/include/point.h"
+#include "new_mesh/ngh/include/intersection.h"
 #include <typeinfo>
 
 BoundingIntevalHierachy::BoundingIntevalHierachy(Mesh* mesh) {
@@ -86,7 +89,8 @@ void BoundingIntevalHierachy::element_boxes() {
 				maxCoor(j) = std::max(maxCoor(j), node->point()(j));
 			}
 		}
-		BoundingBox* boxElement = new BoundingBox(id, minCoor, maxCoor);
+		BoundingBox* boxElement = new BoundingBox(minCoor, maxCoor);
+		boxElement->setId(id);
 		elements_.push_back(boxElement);
 	}
 }
@@ -116,6 +120,41 @@ int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<Bounding
 		if (child_[0]->contains_point(point)) return child_[0]->get_element(point, searchedElements);
 		else if (child_[1]->contains_point(point)) return child_[1]->get_element(point, searchedElements);
 		else return -1;
+	}
+}
+
+void BoundingIntevalHierachy::find_elements(TTriangle &triangle, std::vector<BoundingBox *> &searchedElements)
+{
+	BoundingBox* boundingBox = triangle.get_bounding_box();
+
+	if (leaf_) {
+		for (std::vector<BoundingBox *>::iterator tmp = elements_.begin(); tmp!=elements_.end(); tmp++)
+		{
+			BoundingBox* b = *tmp;
+
+			if (b->intersection(*boundingBox)) {
+				Element* e = mesh_->element.find_id(b->getId());
+				if (e->n_nodes() == 4) {
+					TPoint* point0 = new TPoint(e->node[0]->getX(), e->node[0]->getY(), e->node[0]->getZ());
+					TPoint* point1 = new TPoint(e->node[1]->getX(), e->node[1]->getY(), e->node[1]->getZ());
+					TPoint* point2 = new TPoint(e->node[2]->getX(), e->node[2]->getY(), e->node[2]->getZ());
+					TPoint* point3 = new TPoint(e->node[3]->getX(), e->node[3]->getY(), e->node[3]->getZ());
+					TTetrahedron* tetrahedron = new TTetrahedron(point0, point1, point2, point3);
+					TIntersectionType it;
+					double area;
+					/*for (int i=0; i<e->n_nodes(); i++) {
+						Node* n = e->node[i];
+						xprintf(Msg, "Node %d [%f %f %f]\n", (i+1), n->getX(), n->getY(), n->getZ());
+					}*/
+					GetIntersection(triangle, *tetrahedron, it, area);
+					xprintf(Msg, "Area: %f\n", area);
+				}
+				searchedElements.push_back(b);
+			}
+		}
+	} else {
+		if (child_[0]->boundingBox_->intersection(*boundingBox)) child_[0]->find_elements(triangle, searchedElements);
+		if (child_[1]->boundingBox_->intersection(*boundingBox)) child_[1]->find_elements(triangle, searchedElements);
 	}
 }
 

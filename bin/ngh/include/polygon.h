@@ -17,7 +17,6 @@ private:
     TPoint center;
     bool area_is_actual;
     bool center_is_actual;
-    bool vertex_order_is_actual;
 
     std::vector<TVertex*> verteces;
 
@@ -25,7 +24,14 @@ private:
 
     void ComputeCenter();
     void ComputeArea();
-    void TestVertexOrder();
+
+    /**
+     * Find position of new vertex
+     *
+     * @param Vx New vertex
+     * @return position of new vertex
+     */
+    int InsertPosition(const TVertex& Vx);
 
 public:
     TPolygon();
@@ -34,6 +40,7 @@ public:
     friend std::ostream & operator <<(std::ostream&, const TPolygon&);
 
     void Add(const TPoint&);
+    void Write();
     double GetArea();
     TPoint GetCenter();
 

@@ -87,6 +87,20 @@ set(sources_lib_new_mesh
     new_mesh/point.cc
     new_mesh/bounding_interval_hierarchy.cc
     new_mesh/bounding_box.cc
+    
+    new_mesh/ngh/src/abscissa.cpp
+    new_mesh/ngh/src/bisector.cpp
+    new_mesh/ngh/src/intersection.cpp
+    new_mesh/ngh/src/mathfce.cpp
+    new_mesh/ngh/src/matrix.cpp
+    new_mesh/ngh/src/plain.cpp
+    new_mesh/ngh/src/point.cpp
+    new_mesh/ngh/src/polygon.cpp
+    new_mesh/ngh/src/system.cpp
+    new_mesh/ngh/src/tetrahedron.cpp
+    new_mesh/ngh/src/triangle.cpp
+    new_mesh/ngh/src/vector.cpp
+    new_mesh/ngh/src/vertex.cpp
     )
 
 set(sources_lib_la

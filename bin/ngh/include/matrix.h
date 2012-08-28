@@ -2,6 +2,7 @@
 #define matrixH
 
 #include <iostream>
+#include <armadillo>
 
 typedef enum {
     no_solution,

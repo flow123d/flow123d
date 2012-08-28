@@ -31,6 +31,7 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 #include "new_mesh/bounding_box.hh"
+#include "new_mesh/ngh/include/triangle.h"
 #include <armadillo>
 #include <algorithm>
 
@@ -48,26 +49,21 @@ public:
     BoundingIntevalHierachy(Mesh* mesh);
 
 	/**
-	 * Constructor
-	 *
-	 * Set class members and call functions which create children of node
-	 * @param mesh Mesh is used for creation the tree
-	 * @param minCoordinates Minimal coordinates of BoxElement
-	 * @param maxCoordinates Maximal coordinates of BoxElement
-	 * @param elementSize Count of elements in parent node
-	 * @param splitCoor Coordination of splitting parent area
-	 * @param depth Depth of node in tree.
-	 */
-	BoundingIntevalHierachy(Mesh* mesh, arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
-
-	/**
 	 * Gets suspect elements which can contain point
 	 *
-	 * @param point Point which is tested if id contained in elements
+	 * @param point Point which is tested if is contained in elements
 	 * @param searchedElements vector of suspect elements
 	 * @return Negative value if point is outside the area, zero if point is inside
 	 */
     int get_element(arma::vec3 &point, std::vector<BoundingBox *> &searchedElements);
+
+	/**
+	 * Gets elements which can have intersection with triangle
+	 *
+	 * @param triangle Triangle which is tested if has intersection
+	 * @param searchedElements vector of suspect elements
+	 */
+    void find_elements(TTriangle &triangle, std::vector<BoundingBox *> &searchedElements);
 
     /**
      * Add element into elements_ member
@@ -83,12 +79,6 @@ public:
 	 */
     int get_element_count();
 
-    /**
-     * Method checks count of elements in area.
-     * If count is greater than area_element_limit splits area and distributes elements to subareas.
-     */
-    void split_distribute();
-
 private:
 
     /// limit of elements in area, if count of elements is lesser than value splitting is stopped
@@ -97,6 +87,25 @@ private:
     static const unsigned int child_count = 2;
     /// count of elements of which is selected median - value must be even
     static const unsigned int area_median_count = 9;
+
+	/**
+	 * Constructor
+	 *
+	 * Set class members and call functions which create children of node
+	 * @param mesh Mesh is used for creation the tree
+	 * @param minCoordinates Minimal coordinates of BoxElement
+	 * @param maxCoordinates Maximal coordinates of BoxElement
+	 * @param elementSize Count of elements in parent node
+	 * @param splitCoor Coordination of splitting parent area
+	 * @param depth Depth of node in tree.
+	 */
+	BoundingIntevalHierachy(Mesh* mesh, arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
+
+    /**
+     * Method checks count of elements in area.
+     * If count is greater than area_element_limit splits area and distributes elements to subareas.
+     */
+    void split_distribute();
 
     /// split area into two subareas by median
     void split_area();
