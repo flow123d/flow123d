@@ -33,7 +33,7 @@ class Linear_reaction: public Reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec);//, vector<string> &Names);
+		Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
 		/**
 		*	Destructor.
 		*/
@@ -102,6 +102,10 @@ class Linear_reaction: public Reaction
 		*	This method reads from ini-file an information if a radioactive decay simulation is switched on.
 		*/
 		void set_decay_on(void);
+		/**
+		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
+		*/
+		void prepare_inputs(Input::Record in_rec);
 		/**
 		*	This method reads from ini-file an information and prepares a vector (onedimensional double *array) containing kinetic constants of every single first order reactions. Those informations are placed in a block with a string section at the beginning. From those constants half-lives belonging to first order reactions are computed.
 		*/

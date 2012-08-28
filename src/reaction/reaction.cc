@@ -36,7 +36,7 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 
 using namespace std;
 
-Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//, vector<string> &Names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
 	: EquationBase(marks, init_mesh, material_database, in_rec), dual_porosity_on(false), prev_conc(NULL)
 {
 	Input::Array decay_array = in_rec.val<Input::Array>("decays"); //Input::Array decay_array = in_rec.find<Input::Array>("decays");
@@ -65,7 +65,7 @@ Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material
 
 	//Input::Array subst_array = in_rec.val<Input::Array>("substance_names"); //Number of all the substances contained in groundwater.
 	//set_names(Names);
-	nr_of_species = names.size(); //subst_array.size();
+	nr_of_species = names_.size(); //subst_array.size();
 
 	//proverit nize uvedene predani dat
 	//this->dual_porosity_on = in_rec.val<bool>("dual_porosity");
@@ -192,14 +192,14 @@ void Reaction::set_time_step_constrain(double dt)
 	return 0;
 }*/
 
-int Reaction::find_index(Input::Array names_array, string bif_it)
+int Reaction::find_index(string bif_it)
 {
 	int pos = -1;
 	int i = 0;
 
-	for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
+	for(int k = 0; k < names_.size() && pos == -1; k++, i++)//Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
 	{
-		if(bif_it.compare(*name_it) == 0) //if (strcmp(*name_it, *child_name) == 0)
+		if(bif_it.compare(names_[i]) == 0) //if (strcmp(*name_it, *child_name) == 0)
 		{
 	        pos = i;
 		}
@@ -208,8 +208,8 @@ int Reaction::find_index(Input::Array names_array, string bif_it)
 	return pos;
 }
 
-void Reaction::set_names(std::vector<string> &Names)
+void Reaction::set_names(std::vector<string> &names)
 {
-	names = Names;
+	names_ = names;
 	return;
 }

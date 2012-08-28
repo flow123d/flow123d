@@ -32,7 +32,7 @@ class Reaction: public EquationBase
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec);//, std::vector<string> &Names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, std::vector<string> &names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
 		/**
 		*	Destructor.
 		*/
@@ -86,15 +86,11 @@ class Reaction: public EquationBase
 		/**
 		*  Sets the & to substance names
 		*/
-		void set_names(std::vector<string> &Names);
+		void set_names(std::vector<string> &names);
 		/**
 		* Function for setting dual porosity.
 		*/
 		void set_dual_porosity(bool dual_porosity_on);//(Input::Record in_rec);
-		/**
-		* Names belonging to substances.
-		*/
-		vector<string> names;
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
@@ -123,7 +119,7 @@ class Reaction: public EquationBase
 		/**
 		*	Finds a position of a string in specified array.
 		*/
-		int find_index(Input::Array names, string name);
+		int find_index(std::string name);
 		/**
 		*	Contains number of transported chemical species.
 		*/
@@ -164,6 +160,10 @@ class Reaction: public EquationBase
 		* Number of further species in Semchem, which can never be exhausted.
 		*/
 		//int nr_of_further_species;
+		/**
+		* Names belonging to substances.
+		*/
+		vector<string> names_;
 };
 
 #endif

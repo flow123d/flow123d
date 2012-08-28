@@ -120,14 +120,14 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	//if(in_rec.val<bool>("matrix_exp_on")== true)
 		//decayRad = (Pade_approximant *) new Pade_approximant(marks, init_mesh, material_database, in_rec);
 	//else
-		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database, *reactions_it); //, convection->get_substance_names()); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
+		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database, *reactions_it, convection->get_substance_names()); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
 	// decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), in_rec);
 	    //convection->get_par_info(el_4_loc, el_distribution); //Temporarily commented.
 		decayRad->set_nr_of_species(convection->get_n_substances());
 		decayRad->allocate_reaction_matrix();
 		decayRad->set_names(convection->get_substance_names());
 		decayRad->set_dual_porosity(convection->get_dual_porosity());
-		decayRad->modify_reaction_matrix(*reactions_it);
+		decayRad->modify_reaction_matrix();
 	    decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
 /*
