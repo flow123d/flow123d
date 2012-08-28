@@ -36,8 +36,8 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 
 using namespace std;
 
-Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: EquationBase(marks, init_mesh, material_database, Input::Record() ), dual_porosity_on(false), prev_conc(NULL)
+Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//, vector<string> &Names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+	: EquationBase(marks, init_mesh, material_database, in_rec), dual_porosity_on(false), prev_conc(NULL)
 {
 	Input::Array decay_array = in_rec.val<Input::Array>("decays"); //Input::Array decay_array = in_rec.find<Input::Array>("decays");
 	nr_of_decays = decay_array.size();
@@ -63,12 +63,13 @@ Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material
 		}
 	}*/
 
-	Input::Array subst_array = in_rec.val<Input::Array>("substance_names"); //Number of all the substances contained in groundwater.
-	nr_of_species = subst_array.size();
+	//Input::Array subst_array = in_rec.val<Input::Array>("substance_names"); //Number of all the substances contained in groundwater.
+	//set_names(Names);
+	nr_of_species = names.size(); //subst_array.size();
 
 	//proverit nize uvedene predani dat
-	this->dual_porosity_on = in_rec.val<bool>("dual_porosity");
-	this->time_step = in_rec.val<double>("time_step");
+	//this->dual_porosity_on = in_rec.val<bool>("dual_porosity");
+	//this->time_step = in_rec.val<double>("time_step");
 	set_nr_of_elements(mesh_->n_elements());
 	if(prev_conc != NULL){
 		free(prev_conc);
@@ -133,9 +134,9 @@ void Reaction::set_time_step(Input::Record in_rec)
 
 //void Reaction::set_mesh_(Mesh *mesh_in){mesh = mesh_in; return;}
 
-void Reaction::set_dual_porosity(Input::Record in_rec)//obsolete function
+void Reaction::set_dual_porosity(bool dual_porosity_on)//obsolete function
 {
-	this->dual_porosity_on = in_rec.val<bool>("dual_porosity"); //OptGetBool("Transport", "Dual_porosity", "no");
+	this->dual_porosity_on = dual_porosity_on; //in_rec.val<bool>("dual_porosity"); //OptGetBool("Transport", "Dual_porosity", "no");
 	return;
 }
 
@@ -210,4 +211,5 @@ int Reaction::find_index(Input::Array names_array, string bif_it)
 void Reaction::set_names(std::vector<string> &Names)
 {
 	names = Names;
+	return;
 }

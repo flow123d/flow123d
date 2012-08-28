@@ -129,9 +129,6 @@ public:
 	double ***get_out_conc();
     vector<string> &get_substance_names();
     TransportSources *transportsources;
-
-	void get_names(vector<string> array);
-
 private:
 
 

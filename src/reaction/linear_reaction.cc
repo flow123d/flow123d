@@ -64,14 +64,14 @@ Input::Type::Record & Linear_reaction::get_input_type()
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//, vector<string> &Names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
 	: Reaction(marks, init_mesh, material_database, in_rec), half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), prev_conc(NULL), matrix_exp_on(false)
 {
 	set_indices(in_rec);	//It needs to be called separetelly, earlier.
 	set_half_lives(in_rec);
 	set_bifurcation(in_rec);
-	Input::Array names_array = in_rec.val<Input::Array>("substances");
-	nr_of_species = names_array.size();
+	//Input::Array names_array = in_rec.val<Input::Array>("substances");
+	//nr_of_species = names_array.size();
 	Input::Array dec_array = in_rec.val<Input::Array>("decays");
 	nr_of_decays = dec_array.size();
 	//nr_of_isotopes = OptGetInt("Reaction_module","Nr_of_isotopes","0");
@@ -296,7 +296,7 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 		substance_ids = (int **)xmalloc(nr_of_decays*sizeof(int*));
 	}
 
-	Input::Array names_array = in_rec.val<Input::Array>("substances");
+	Input::Array names_array = in_rec.val<Input::Array>("substances"); //
 	Input::Array decay_array = in_rec.val<Input::Array>("decays");
 
 	int dec_nr = 0;
@@ -313,7 +313,7 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 			exit(1);
 		}
 
-		/*int pos = -1;
+		int pos = -1;
 		i = 0;
 		for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
 		{
@@ -322,8 +322,8 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 			{
 			        pos = i;
 			}
-		}*/
-		int pos = find_index(names_array, parent_name);
+		}
+		//int pos = find_index(names_array, parent_name);
 		if(pos > -1)
 		{
 			substance_ids[dec_nr][0] = pos;
@@ -335,7 +335,7 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 		int prod_pos = 0;
 		for(Input::Iterator<string> bif_it = bif_array.begin<string>(); bif_it != bif_array.end(); ++bif_it, ++prod_pos)
 		{
-			/*int pos = -1;
+			int pos = -1;
 			i = 0;
 
 			for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
@@ -344,8 +344,8 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 				{
 			        pos = i;
 				}
-			}*/
-			int pos = find_index(names_array, *bif_it);
+			}
+			//int pos = find_index(names_array, bif_it);
 			if(pos > -1)
 			{
 				substance_ids[dec_nr][prod_pos] = pos;

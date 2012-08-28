@@ -105,7 +105,7 @@
               "G",
               "H"
             ],
-            branching_ratios = [
+            branch_ratios = [
               0.2,
               0.2,
               0.6

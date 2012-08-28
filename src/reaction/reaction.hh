@@ -32,7 +32,7 @@ class Reaction: public EquationBase
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec);//, std::vector<string> &Names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
 		/**
 		*	Destructor.
 		*/
@@ -88,6 +88,10 @@ class Reaction: public EquationBase
 		*/
 		void set_names(std::vector<string> &Names);
 		/**
+		* Function for setting dual porosity.
+		*/
+		void set_dual_porosity(bool dual_porosity_on);//(Input::Record in_rec);
+		/**
 		* Names belonging to substances.
 		*/
 		vector<string> names;
@@ -104,10 +108,6 @@ class Reaction: public EquationBase
 		*	This method transfer pointer to mesh between a transport and reactive part of a program.
 		*/
 		void set_mesh_(Mesh *mesh);
-		/**
-		* Obsolete function.
-		*/
-		void set_dual_porosity(Input::Record in_rec);
 		/**
 		*	This method reads from ini-file an information how many radioactive decays are under consideration.
 		*/
