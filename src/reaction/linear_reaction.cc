@@ -67,15 +67,21 @@ using namespace std;
 Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec)//, vector<string> &Names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
 	: Reaction(marks, init_mesh, material_database, in_rec), half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), prev_conc(NULL), matrix_exp_on(false)
 {
-	set_indices(in_rec);	//It needs to be called separetelly, earlier.
-	set_half_lives(in_rec);
-	set_bifurcation(in_rec);
+
 	//Input::Array names_array = in_rec.val<Input::Array>("substances");
 	//nr_of_species = names_array.size();
+	//xprintf(Msg,"nr_of_species is %d\n",nr_of_species);
 	Input::Array dec_array = in_rec.val<Input::Array>("decays");
 	nr_of_decays = dec_array.size();
-	//nr_of_isotopes = OptGetInt("Reaction_module","Nr_of_isotopes","0");
-	allocate_reaction_matrix();
+	nr_of_isotopes = nr_of_decays + 1;//temporary solution
+	print_half_lives(nr_of_decays);
+	//xprintf(Msg,"\n1. Linear_reaction constructor runs.\n");
+	set_indices(in_rec);	//It needs to be called separetelly, earlier.
+	//xprintf(Msg,"\n2. Linear_reaction constructor runs.\n");
+	set_half_lives(in_rec);
+	xprintf(Msg,"\n3. Linear_reaction constructor runs.\n");
+	set_bifurcation(in_rec); //this probably fails
+	xprintf(Msg,"\n4. Linear_reaction constructor runs.\n");
 	set_time_step(0.5);
 }
 
@@ -195,7 +201,7 @@ double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are 
 			}
 			reaction_matrix[index_par][index_par] = pow(0.5,rel_step);
 
-			int nr_of_indices = sizeof(*(substance_ids[dec_nr]))/sizeof(double);
+			int nr_of_indices = sizeof(*(substance_ids[dec_nr]))/sizeof(int);//(double);
 			for(int i = 0; i < nr_of_indices; ++i)
 			{
 					reaction_matrix[index_par][substance_ids[dec_nr][i]] += (1 - pow(0.5,rel_step)) * bifurcation[dec_nr][substance_ids[dec_nr][i]];
@@ -233,6 +239,7 @@ double *Linear_reaction::set_half_lives(Input::Record in_rec)
 
 	Input::Array decay_array = in_rec.val<Input::Array>("decays");
 	int size = decay_array.size();
+	//nr_of_isotopes = size;
 
 	if(half_lives != NULL){
 			free(half_lives);
@@ -313,7 +320,7 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 			exit(1);
 		}
 
-		int pos = -1;
+		/*int pos = -1;
 		i = 0;
 		for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
 		{
@@ -322,8 +329,8 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 			{
 			        pos = i;
 			}
-		}
-		//int pos = find_index(names_array, parent_name);
+		}*/
+		int pos = find_index(names_array, parent_name);
 		if(pos > -1)
 		{
 			substance_ids[dec_nr][0] = pos;
@@ -335,7 +342,7 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 		int prod_pos = 0;
 		for(Input::Iterator<string> bif_it = bif_array.begin<string>(); bif_it != bif_array.end(); ++bif_it, ++prod_pos)
 		{
-			int pos = -1;
+			/*int pos = -1;
 			i = 0;
 
 			for(Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
@@ -344,8 +351,8 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 				{
 			        pos = i;
 				}
-			}
-			//int pos = find_index(names_array, bif_it);
+			}*/
+			int pos = find_index(names_array, *bif_it);
 			if(pos > -1)
 			{
 				substance_ids[dec_nr][prod_pos] = pos;
@@ -354,13 +361,13 @@ int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of
 				exit(1);
 			}
 		}
-
+		//print_indices(dec_nr, nr_of_species);
 		dec_nr++;
 	}
 	 return substance_ids;
 }
 
-void Linear_reaction::print_indeces(int nr_of_substances)
+void Linear_reaction::print_indices(int dec_nr, int nr_of_substances)
 {
 	int i;
 
@@ -371,8 +378,8 @@ void Linear_reaction::print_indeces(int nr_of_substances)
 		xprintf(Msg,"\nOrder of substences is defined by %d indeces:", nr_of_isotopes);
 		for(i = 0; i < nr_of_substances ; i++)
 		{
-			if(i < (nr_of_substances  - 1)) xprintf(Msg," %d,",substance_ids[i]);
-			if(i == (nr_of_substances  - 1)) xprintf(Msg," %d\n",substance_ids[i]);
+			if(i < (nr_of_substances  - 1)) xprintf(Msg," %d,",substance_ids[dec_nr][i]);
+			if(i == (nr_of_substances  - 1)) xprintf(Msg," %d\n",substance_ids[dec_nr][i]);
 		}
 	}
 	return;
@@ -403,20 +410,23 @@ void Linear_reaction::set_bifurcation(Input::Record in_rec) // (int index, Input
 {
 
 	Input::Array decay_array = in_rec.val<Input::Array>("decays");
+	xprintf(Msg,"decay_array created\n");
 
 		int dec_nr = 0;
 		for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it)
 		{
+			xprintf(Msg,"decay_iterator\n");
 			Input::Array bif_array = dec_it->val<Input::Array>("branch_ratios");
 			int nr_of_prod = bif_array.size();
+			xprintf(Msg,"Nr_of_products is %d\n",nr_of_prod);
 			bifurcation[dec_nr].resize(nr_of_prod + 1);
 			//kdyz bude 1, tak bysem mel dát do radku bifurkaci jednicku, viz par radku nize
-	    	if(bif_array.size() > 1)
+	    	if(nr_of_prod > 1)
 	    	{
-	    		bifurcation[dec_nr].resize(bif_array.size());
+	    		//bifurcation[dec_nr].resize(bif_array.size());
 		    	bif_array.copy_to(bifurcation[dec_nr]); //atof(pom_buf); //control_sum += bifurcation[dec_nr][j];
 			}else{
-	    		bifurcation[dec_nr].resize(1);
+	    		//bifurcation[dec_nr].resize(1);
 	    		bifurcation[dec_nr][0]= 1.0;
 	    	}
 	    	dec_nr++;

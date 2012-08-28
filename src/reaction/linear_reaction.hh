@@ -59,6 +59,10 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
 		*/
+		/**
+		*
+		*/
+		double **allocate_reaction_matrix(void);
 		double **modify_reaction_matrix(Input::Record in_rec);
 		double **modify_reaction_matrix(void);
 	protected:
@@ -103,10 +107,6 @@ class Linear_reaction: public Reaction
 		*/
 		//void set_kinetic_constants(char *section, int reaction_nr); //Obsolete function
 		/**
-		*
-		*/
-		double **allocate_reaction_matrix(void);
-		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched on.
 		*/
 		double **modify_reaction_matrix(int bifurcation); ///< it is used for reaction matrix modification in cases when a bifurcation for a current decay chain is switched on
@@ -121,7 +121,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	For printing nr_of_isotopes identifies of isotopes in a current decay chain.
 		*/
-		void print_indeces(int n_subst);
+		void print_indices(int dec_nr, int n_subst);
 		/**
 		* Following method releases reaction matrix to make it possible to set a new time step for chemistry.
 		*/
