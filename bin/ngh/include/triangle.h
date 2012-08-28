@@ -4,7 +4,6 @@
 #include "point.h"
 #include "plain.h"
 #include "abscissa.h"
-#include "new_mesh/bounding_box.hh"
 
 class TTriangle {
 private:
@@ -21,14 +20,11 @@ private:
 
     TPlain* pl;
 
-    BoundingBox* boundingBox;
-
     double area;
 
     int generateId();
 
     void ComputeArea();
-    void compute_bounding_box();
 
 public:
     TTriangle();
@@ -48,7 +44,6 @@ public:
     double GetMax(int) const;
 
     double GetArea();
-    BoundingBox* get_bounding_box();
 
     bool IsInner(const TPoint&) const;
 
