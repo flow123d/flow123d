@@ -184,6 +184,11 @@ public:
     inline bool is_positive_definite()
     { return positive_definite; }
 
+    /// TODO: In fact we want to know if the matrix is already preallocated
+    /// However to do this we need explicit finalisation of preallocating cycle.
+    inline bool is_new() {
+        return ( status == NONE );
+    }
 
     /// Output the system in the Matlab format possibly with given ordering.
     void view(std::ostream output_stream, int * output_mapping = NULL);

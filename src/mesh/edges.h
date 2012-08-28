@@ -40,27 +40,17 @@ class Edge
 public:
     /// Minimalistic default constructor.
     Edge();
+    inline SideIter side(const unsigned int i) const {
+        return side_[i];
+    }
 
-    // Basic
-    //int  id;        // Id # of the edge
     // Topology of the mesh
     int  n_sides;   // # of sides of edge
-    struct Side **side; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
-    struct Neighbour *neigh_vb; // "Compatible" neighbouring
-    struct Neighbour *neigh_bb; // ??? this is what
-    // Matrix
-    int  c_row;     // # of row in block C (and E and F) (MH)
-    double  f_val;      // diagonal value  in block F
-    double  f_rhs;      // rhs value
-    // Misc
-    int      aux;       // Auxiliary flag
-    double   faux;      // Auxiliary number
+    struct SideIter *side_; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
 };
 
 #define FOR_EDGE_SIDES(i,j) for((j)=0;(j)<(i)->n_sides;(j)++)
 
-void make_edge_list(Mesh*);
-void edge_calculation_mh(Mesh*);
 
 #endif
 //-----------------------------------------------------------------------------

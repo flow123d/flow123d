@@ -30,6 +30,7 @@
  *
  */
 
+#include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "field_p0.hh"
@@ -126,13 +127,17 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
     if (raw_output_file != NULL) xfclose(raw_output_file);
 };
 
+
+
+
+
 //=============================================================================
 // CONVERT SOLUTION, CALCULATE BALANCES, ETC...
 //=============================================================================
 
 void DarcyFlowMHOutput::postprocess() {
 
-    make_side_flux();
+    //make_side_flux();
 
     /*  writes scalar values to mesh - cannot be moved to output!
      *  all other methods are moved to output
@@ -161,7 +166,7 @@ void DarcyFlowMHOutput::output()
     if (darcy_flow->time().is_current(output_mark_type)) {
 
         make_element_vector();
-        make_sides_scalar();
+        //make_sides_scalar();
 
         make_node_scalar_param(node_pressure);
 
@@ -201,7 +206,7 @@ void DarcyFlowMHOutput::output()
 //=============================================================================
 // FILL TH "FLUX" FIELD FOR ALL SIDES IN THE MESH
 //=============================================================================
-
+/*
 void DarcyFlowMHOutput::make_side_flux() {
     int li, soi;
     unsigned int sol_size;
@@ -217,7 +222,7 @@ void DarcyFlowMHOutput::make_side_flux() {
             //if( fabs( sde->flux ) < ZERO )
             //  sde->flux = 0.0;
         }
-}
+}*/
 //=============================================================================
 // FILL TH "SCALAR" FIELD FOR ALL ELEMENTS IN THE MESH
 //=============================================================================
@@ -227,11 +232,11 @@ void DarcyFlowMHOutput::make_element_scalar() {
     double *sol;
 
     darcy_flow->get_solution_vector(sol, sol_size);
-    unsigned int soi = mesh_->n_sides;
+    unsigned int soi = mesh_->n_sides();
     unsigned int i = 0;
     FOR_ELEMENTS(mesh_,ele) {
         ele_pressure[i] = sol[ soi];
-        if (output_piezo_head) ele_piezo_head[i] = sol[soi ] + ele->centre[Mesh::z_coord];
+        if (output_piezo_head) ele_piezo_head[i] = sol[soi ] + ele->centre()[Mesh::z_coord];
         i++; soi++;
     }
 }
@@ -263,25 +268,24 @@ void DarcyFlowMHOutput::make_element_scalar(double* scalars) {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
-// TODO: remove ele->vector from the mesh, use arma::vec3 for calculating average velocity.
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+    MHFEValues fe_values;
 
-    int i=0;
+    int i_side=0;
     FOR_ELEMENTS(mesh_, ele) {
         arma::vec3 flux_in_centre;
-        switch (ele->type) {
-        case LINE:
-            make_element_vector_line(ele, flux_in_centre);
-            break;
-        case TRIANGLE:
-            make_element_vector_triangle(ele, flux_in_centre);
-            break;
-        case TETRAHEDRON:
-            make_element_vector_tetrahedron(ele, flux_in_centre);
-            break;
+        flux_in_centre.zeros();
+
+        fe_values.update(ele);
+
+        for (int li = 0; li < ele->n_sides(); li++) {
+            flux_in_centre += dh.side_flux( *(ele->side( li ) ) )
+                              * fe_values.RT0_value( ele, ele->centre(), li )
+                              / ele->material->size;
         }
-        for(int j=0;j<3;j++)
-            ele_flux[i][j]=flux_in_centre[j];
-        i++;
+
+        for(int j=0;j<3;j++) ele_flux[i_side][j]=flux_in_centre[j];
+        i_side++;
     }
 
 }
@@ -289,23 +293,26 @@ void DarcyFlowMHOutput::make_element_vector() {
 //=============================================================================
 //
 //=============================================================================
-
+/*
 void DarcyFlowMHOutput::make_element_vector_line(ElementFullIter ele, arma::vec3 &vec) {
-    double darcy_vel = (ele->side[1]->flux - ele->side[0]->flux) / 2.0 / ele->material->size;
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+    SideIter s1=ele->side(1);
+    SideIter s0=ele->side(0);
+    double darcy_vel =
+            (dh.side_flux( *s1 ) - dh.side_flux( *s0 )) / 2.0 / ele->material->size;
 
     // normalize element vector [node 0, node 1]
     vec = ele->node[1]->point() - ele->node[0]->point();
     vec *= darcy_vel / arma::norm(vec, 2);
-}
+}*/
 //=============================================================================
 //
 //=============================================================================
-
+/*
 void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::vec3 &vec) {
+
+    const MH_DofHandler & dh = darcy_flow->get_mh_dofhandler();
     double bas[ 3 ][ 3 ];
-
-
-
     double X[ 3 ];
     int i, li;
 
@@ -324,7 +331,7 @@ void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::
     ey /= norm(ey, 2);
 
     // compute barycenter in new coordinate system
-    arma::vec3 u = ele->centre - ele->node[0]->point();
+    arma::vec3 u = ele->centre() - ele->node[0]->point();
 
     // compute flux form base functions
     ac.zeros();
@@ -333,52 +340,27 @@ void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::
         bas[ i ][ 1 ] = ele->bas_gama[ i ] * (dot(u,ey) - ele->bas_beta[ i ]);
         bas[ i ][ 2 ] = 0;
         for (li = 0; li < 2; li++)
-            ac[ li ] += ele->side[ i ]->flux * bas[ i ][ li ] / ele->material->size;
+            ac[ li ] += dh.side_flux( *(ele->side( i ) ) ) * bas[ i ][ li ] / ele->material->size;
     }
 
-    /*for (li = 0; li < 3; li++){
-            A[ 0 ][ li ] = ex[ li ];
-            A[ 1 ][ li ] = ey[ li ];
-            A[ 2 ][ li ] = ez[ li ];
-    }
-    matrix_x_matrix(ele->vector, 1, 3, A, 3, 3, X);
-    for (li = 0; li < 3; li++)
-            ele->vector[ li ] = X[ li ];
-
-     */
     vec = ac[0] * ex + ac[1] * ey + ac[2] * ez;
-}
+}*/
 //=============================================================================
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_element_vector_tetrahedron(ElementFullIter ele, arma::vec3 &vec) {
-    double bas[ 4 ][ 3 ];
-    int i, li;
 
-    vec.zeros();
-    for (i = 0; i < 4; i++) {
-        bas[ i ][ 0 ] = ele->bas_delta[ i ] * (ele->centre[ 0 ]
-                - ele->bas_alfa[ i ]);
-        bas[ i ][ 1 ] = ele->bas_delta[ i ] * (ele->centre[ 1 ]
-                - ele->bas_beta[ i ]);
-        bas[ i ][ 2 ] = ele->bas_delta[ i ] * (ele->centre[ 2 ]
-                - ele->bas_gama[ i ]);
-        for (li = 0; li < 3; li++)
-            vec[ li ] += ele->side[ i ]->flux * bas[ i ][ li ];
-    }
-}
 //=============================================================================
 // FILL TH "SCALAR" FIELD FOR ALL INTERNAL SIDES IN THE MESH
 //=============================================================================
-
+/*
 void DarcyFlowMHOutput::make_sides_scalar() {
     double *sol;
     int soi, si;
     unsigned int sol_size;
     struct Side *sde;
 
-    soi = mesh_->n_sides + mesh_->n_elements();
+    soi = mesh_->n_sides() + mesh_->n_elements();
     darcy_flow->get_solution_vector(sol, sol_size);
 
     FOR_EDGES(mesh_, edg) {
@@ -389,6 +371,9 @@ void DarcyFlowMHOutput::make_sides_scalar() {
         soi++;
     }
 }
+*/
+
+
 //=============================================================================
 // pressure interpolation
 //
@@ -409,9 +394,9 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
 
     /** Iterators */
-    NodeIter node;
+    const Node * node;
     ElementIter ele;
-    struct Side* side;
+    //struct Side* side;
 
     int n_nodes = mesh_->node_vector.size(); //!< number of nodes in the mesh */
     int node_index = 0; //!< index of each node */
@@ -427,6 +412,8 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     bool count_sides = true; //!< scalar is counted via sides */
 
 
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+
     /** init arrays */
     for (int i = 0; i < n_nodes; i++){
         sum_elements[i] = 0;
@@ -439,14 +426,14 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     /**first pass - calculate sums (weights)*/
     if (count_elements){
         FOR_ELEMENTS(mesh_, ele)
-            for (int li = 0; li < ele->n_nodes; li++) {
+            for (int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li]; //!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
                 dist = sqrt(
-                        ((node->getX() - ele->centre[ 0 ])*(node->getX() - ele->centre[ 0 ])) +
-                        ((node->getY() - ele->centre[ 1 ])*(node->getY() - ele->centre[ 1 ])) +
-                        ((node->getZ() - ele->centre[ 2 ])*(node->getZ() - ele->centre[ 2 ]))
+                        ((node->getX() - ele->centre()[ 0 ])*(node->getX() - ele->centre()[ 0 ])) +
+                        ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
+                        ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
                 );
                 sum_ele_dist[node_index] += dist;
                 sum_elements[node_index]++;
@@ -454,13 +441,13 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     }
     if (count_sides){
         FOR_SIDES(mesh_, side) {
-            for (int li = 0; li < side->n_nodes; li++) {
-                node = side->node[li];//!< get Node pointer from element */
+            for (int li = 0; li < side->n_nodes(); li++) {
+                node = side->node(li);//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
                 dist = sqrt(
-                        ((node->getX() - side->centre[ 0 ])*(node->getX() - side->centre[ 0 ])) +
-                        ((node->getY() - side->centre[ 1 ])*(node->getY() - side->centre[ 1 ])) +
-                        ((node->getZ() - side->centre[ 2 ])*(node->getZ() - side->centre[ 2 ]))
+                        ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
+                        ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
+                        ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
                 );
 
                 sum_side_dist[node_index] += dist;
@@ -472,36 +459,36 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     /**second pass - calculate scalar  */
     if (count_elements){
         FOR_ELEMENTS(mesh_, ele)
-            for (int li = 0; li < ele->n_nodes; li++) {
+            for (int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li];//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
                 /**TODO - calculate it again or store it in prior pass*/
                 dist = sqrt(
-                        ((node->getX() - ele->centre[ 0 ])*(node->getX() - ele->centre[ 0 ])) +
-                        ((node->getY() - ele->centre[ 1 ])*(node->getY() - ele->centre[ 1 ])) +
-                        ((node->getZ() - ele->centre[ 2 ])*(node->getZ() - ele->centre[ 2 ]))
+                        ((node->getX() - ele->centre()[ 0 ])*(node->getX() - ele->centre()[ 0 ])) +
+                        ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
+                        ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
                 );
                 scalars[node_index] += ele_pressure[ele.index()] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
     }
-    if (count_sides){
+    if (count_sides) {
         FOR_SIDES(mesh_, side) {
-            for (int li = 0; li < side->n_nodes; li++) {
-                node = side->node[li];//!< get Node pointer from element */
+            for (int li = 0; li < side->n_nodes(); li++) {
+                node = side->node(li);//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
                 /**TODO - calculate it again or store it in prior pass*/
                 dist = sqrt(
-                        ((node->getX() - side->centre[ 0 ])*(node->getX() - side->centre[ 0 ])) +
-                        ((node->getY() - side->centre[ 1 ])*(node->getY() - side->centre[ 1 ])) +
-                        ((node->getZ() - side->centre[ 2 ])*(node->getZ() - side->centre[ 2 ]))
+                        ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
+                        ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
+                        ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
                 );
 
 
-                scalars[node_index] += side->scalar *
+                scalars[node_index] += dh.side_scalar( *side ) *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_sides[node_index] + sum_elements[node_index] - 1);
             }
@@ -558,9 +545,9 @@ void DarcyFlowMHOutput::make_node_scalar() {
             nod = ele->node[li];
 
             dist = sqrt(
-                ((nod->getX() - ele->centre[ 0 ])*(nod->getX() - ele->centre[ 0 ])) +
-                ((nod->getY() - ele->centre[ 1 ])*(nod->getY() - ele->centre[ 1 ])) +
-                ((nod->getZ() - ele->centre[ 2 ])*(nod->getZ() - ele->centre[ 2 ]))
+                ((nod->getX() - ele->centre()[ 0 ])*(nod->getX() - ele->centre()[ 0 ])) +
+                ((nod->getY() - ele->centre()[ 1 ])*(nod->getY() - ele->centre()[ 1 ])) +
+                ((nod->getZ() - ele->centre()[ 2 ])*(nod->getZ() - ele->centre()[ 2 ]))
                 );
 
             TED[ele.index()][li] = dist;
@@ -573,9 +560,9 @@ void DarcyFlowMHOutput::make_node_scalar() {
             nod = sde->node[li];
 
             dist = sqrt(
-                    ((nod->getX() - sde->centre[ 0 ])*(nod->getX() - sde->centre[ 0 ])) +
-                    ((nod->getY() - sde->centre[ 1 ])*(nod->getY() - sde->centre[ 1 ])) +
-                    ((nod->getZ() - sde->centre[ 2 ])*(nod->getZ() - sde->centre[ 2 ]))
+                    ((nod->getX() - sde->centre()[ 0 ])*(nod->getX() - sde->centre()[ 0 ])) +
+                    ((nod->getY() - sde->centre()[ 1 ])*(nod->getY() - sde->centre()[ 1 ])) +
+                    ((nod->getZ() - sde->centre()[ 2 ])*(nod->getZ() - sde->centre()[ 2 ]))
             );
 
             TSD[sde->id][li] = dist;
@@ -653,6 +640,7 @@ void DarcyFlowMHOutput::water_balance() {
     F_ENTRY;
 
     if (balance_output_file == NULL) return;
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     double bal;
     int c_water;
@@ -664,13 +652,14 @@ void DarcyFlowMHOutput::water_balance() {
     fprintf(balance_output_file,"********************************\n");
     fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
     fprintf(balance_output_file,"[total balance]    [total outflow]     [total inflow]\n");
-    FOR_BOUNDARIES(mesh_, bcd) (*bcd_balance)[bcd->group] += bcd->side->flux;
-    FOR_BOUNDARIES(mesh_, bcd)
-    	if(bcd->side->flux > 0)
-    		(*bcd_plus_balance)[bcd->group]+= bcd->side->flux;
-    FOR_BOUNDARIES(mesh_, bcd)
-     	if(bcd->side->flux < 0)
-     		(*bcd_minus_balance)[bcd->group]+= bcd->side->flux;
+    FOR_BOUNDARIES(mesh_, bcd) {
+        double flux = dh.side_flux( *(bcd->side) );
+        (*bcd_balance)[bcd->group] += flux;
+
+        if (flux > 0) (*bcd_plus_balance)[bcd->group]+= flux;
+        else (*bcd_minus_balance)[bcd->group]+= flux;
+    }
+
 
 
     for(int i=0; i < bcd_balance->size(); ++i)
@@ -689,7 +678,7 @@ void DarcyFlowMHOutput::water_balance() {
         std::vector<double> *src_balance = new std::vector<double>( mat_base.size(), 0.0 ); // initialize by zero
 
         FOR_ELEMENTS(mesh_, elm) {
-            (*src_balance)[mat_base.index(elm->material)] += elm->volume * p_sources->element_value(elm.index());
+            (*src_balance)[mat_base.index(elm->material)] += elm->volume() * p_sources->element_value(elm.index());
         }
 
 
@@ -725,6 +714,8 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     xfprintf( raw_output_file, dbl_fmt, darcy_flow->time().t());
     xfprintf( raw_output_file, "\n%d\n", mesh_->n_elements() );
 
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+
     int i;
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
@@ -734,11 +725,11 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         for (i = 0; i < 3; i++)
             xfprintf( raw_output_file, dbl_fmt, ele_flux[cit][i]);
 
-        xfprintf( raw_output_file, " %d ", ele->n_sides);
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( raw_output_file, dbl_fmt, ele->side[i]->scalar);
-        for (i = 0; i < ele->n_sides; i++)
-            xfprintf( raw_output_file, dbl_fmt, ele->side[i]->flux);
+        xfprintf( raw_output_file, " %d ", ele->n_sides());
+        for (i = 0; i < ele->n_sides(); i++)
+            xfprintf( raw_output_file, dbl_fmt, dh.side_scalar( *(ele->side(i) ) ) );
+        for (i = 0; i < ele->n_sides(); i++)
+            xfprintf( raw_output_file, dbl_fmt, dh.side_flux( *(ele->side(i) ) ) );
 
         //xfprintf( raw_output_file, "%d ", ele->n_neighs_vv);
         //for (i = 0; i < ele->n_neighs_vv; i++)

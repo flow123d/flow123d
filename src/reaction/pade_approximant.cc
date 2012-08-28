@@ -70,8 +70,8 @@ Input::Type::Record & Pade_approximant::get_input_type()
 
 using namespace std;
 
-Pade_approximant::Pade_approximant(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-			:Reaction(marks, init_mesh, material_database, in_rec)//, Reaction_matrix(NULL)
+Pade_approximant::Pade_approximant(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+			:Reaction(marks, init_mesh, material_database, in_rec, names)//, Reaction_matrix(NULL)
 {
 	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
 	den_pol_deg = in_rec.val<int>("den_pol_deg");
@@ -122,12 +122,12 @@ double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix init
 	}else{
 		release_reaction_matrix();
 	}
-	reaction_matrix = (double **)xmalloc(nr_of_species * sizeof(double*));//allocation section
-	for(rows = 0; rows < nr_of_species; rows++){
-		reaction_matrix[rows] = (double *)xmalloc(nr_of_species * sizeof(double));
+	reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
+	for(rows = 0; rows < n_substances(); rows++){
+		reaction_matrix[rows] = (double *)xmalloc(n_substances() * sizeof(double));
 	}
-	for(rows = 0; rows < nr_of_species;rows++){
-	 for(cols = 0; cols < nr_of_species; cols++){
+	for(rows = 0; rows < n_substances();rows++){
+	 for(cols = 0; cols < n_substances(); cols++){
 		 /*if(rows == cols){
 			 ;//if((nom_pol_deg + den_pol_deg) == 0) reaction_matrix[rows][cols] = 1.0; //this row is different in comparison to the case of Linear_reaction
 		 }else*/{
@@ -140,7 +140,7 @@ double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix init
 }
 
 void Pade_approximant::modify_reaction_matrix(void) //prepare the matrix, which describes reactions
-{
+{/*
 	int rows,cols;
 	double rel_step, prev_rel_step;
 	PetscScalar Hlp_kin, index, prev_index;
@@ -160,7 +160,7 @@ void Pade_approximant::modify_reaction_matrix(void) //prepare the matrix, which 
 			prev_index = index;
 		}
 	}
-	return;
+	return; */
 }
 
 double **Pade_approximant::modify_reaction_matrix(int dec_nr) //prepare the matrix, which describes reactions, takes bifurcation in acount
@@ -211,7 +211,7 @@ double **Pade_approximant::modify_reaction_matrix_repeatedly(void)
 
 	//create the matrix Reaction_matrix
 	MatCreate(PETSC_COMM_SELF, &Reaction_matrix);
-	MatSetSizes(Reaction_matrix, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
+	MatSetSizes(Reaction_matrix, PETSC_DECIDE, PETSC_DECIDE, n_substances(), n_substances()); //should be probably multiplied by 2 (which is the value of m)
 	MatSetType(Reaction_matrix, MATAIJ);
 	MatAssemblyBegin(Reaction_matrix, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Reaction_matrix, MAT_FINAL_ASSEMBLY);
@@ -226,7 +226,7 @@ double **Pade_approximant::modify_reaction_matrix_repeatedly(void)
 	MatDuplicate(Reaction_matrix, MAT_COPY_VALUES, &Pade_approximant);
 	MatAssemblyBegin(Pade_approximant, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
-
+/*
 	if(nr_of_decays > 0){
 		xprintf(Msg,"\nNumber of decays is %d\n",nr_of_decays);
 		if(half_lives != NULL){
@@ -257,7 +257,7 @@ double **Pade_approximant::modify_reaction_matrix_repeatedly(void)
 			}
 			dec_name_nr++;
 		}
-	}
+	}*/
 	/*if(nr_of_FoR > 0){
 		xprintf(Msg,"\nNumber of first order reactions is %d\n",nr_of_FoR);
 		//half_lives.resize(nr_of_FoR); //does not function at all
@@ -311,18 +311,18 @@ double **Pade_approximant::modify_reaction_matrix_repeatedly(void)
 	PCSetUp(Precond);
 
 	VecCreate(PETSC_COMM_WORLD, &tmp1);
-	VecSetSizes(tmp1, PETSC_DECIDE, nr_of_species);
+	VecSetSizes(tmp1, PETSC_DECIDE, n_substances());
 	VecSetFromOptions(tmp1);
 	VecDuplicate(tmp1, &tmp2);
 
-	for(rows = 0; rows < nr_of_species; rows++){
+	for(rows = 0; rows < n_substances(); rows++){
 		MatGetColumnVector(Nominator, tmp1, rows);
 		//VecView(tmp1, PETSC_VIEWER_STDOUT_SELF);
 		PCApply(Precond, tmp1, tmp2);
 		PCView(Precond, PETSC_VIEWER_STDOUT_WORLD);
 		//VecView(tmp2, PETSC_VIEWER_STDOUT_SELF);
 		VecGetArray(tmp2, &Array_hlp);
-		for(cols = 0; cols < nr_of_species; cols++)
+		for(cols = 0; cols < n_substances(); cols++)
 		{
 			MatSetValue(Pade_approximant, rows, cols, Array_hlp[cols], ADD_VALUES);
 		}
@@ -331,11 +331,11 @@ double **Pade_approximant::modify_reaction_matrix_repeatedly(void)
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
 	//pade assembled to reaction_matrix
-	for(rows = 0; rows < nr_of_species; rows++)
+	for(rows = 0; rows < n_substances(); rows++)
 	{
-		for(cols = 0; cols < nr_of_species; cols++)
+		for(cols = 0; cols < n_substances(); cols++)
 		{
-			MatGetValues(Pade_approximant, 1, &rows, 1, &cols, Hlp_mat); //&Hlp_mat[nr_of_species*rows + cols]);
+			MatGetValues(Pade_approximant, 1, &rows, 1, &cols, Hlp_mat); //&Hlp_mat[n_substances()*rows + cols]);
 			reaction_matrix[rows][cols] = (double) (Hlp_mat[0]);
 		}
 	}
@@ -362,7 +362,7 @@ void Pade_approximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction
 
 	//create Identity matrix
 	MatCreate(PETSC_COMM_SELF, &Identity);
-	MatSetSizes(Identity, PETSC_DECIDE, PETSC_DECIDE, nr_of_species, nr_of_species); //should be probably multiplied by 2 (which is the value of m)
+	MatSetSizes(Identity, PETSC_DECIDE, PETSC_DECIDE, n_substances(), n_substances()); //should be probably multiplied by 2 (which is the value of m)
 	MatSetType(Identity, MATAIJ);
 	MatAssemblyBegin(Identity, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Identity, MAT_FINAL_ASSEMBLY);
@@ -384,20 +384,20 @@ double **Pade_approximant::compute_reaction(double **concentrations, int loc_el)
 
 
     int cols, rows, both;
-
+/*
 	if(nr_of_decays > 0){
-		for(cols = 0; cols < nr_of_species; cols++){
+		for(cols = 0; cols < n_substances(); cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
-		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,nr_of_species, concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
+		//xprintf(Msg,"\n%d. of %d substances concentration is %f\n", cols,n_substances(), concentrations[cols][loc_el]); //prev_conc[cols]); //commented to speed the computation up
 		concentrations[cols][loc_el] = 0.0;
 		}
-        for(rows = 0; rows <nr_of_species; rows++){
-            for(cols = 0; cols <nr_of_species; cols++){
+        for(rows = 0; rows <n_substances(); rows++){
+            for(cols = 0; cols <n_substances(); cols++){
                 concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
             }
-            //xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,nr_of_species, concentrations[rows][loc_el]); //commented to speed the computation up
+            //xprintf(Msg,"\n%d. of %d substances concentration after reaction is %f\n", rows,n_substances(), concentrations[rows][loc_el]); //commented to speed the computation up
         }
-	}
+	}*/
 	return concentrations;
 }
 
@@ -512,9 +512,9 @@ void Pade_approximant::print_reaction_matrix(void)
 
 	if(reaction_matrix != NULL){
 		xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_step);
-		for(rows = 0; rows < nr_of_species; rows++){
-			for(cols = 0; cols < nr_of_species; cols++){
-				if(cols == (nr_of_species - 1)){
+		for(rows = 0; rows < n_substances(); rows++){
+			for(cols = 0; cols < n_substances(); cols++){
+				if(cols == (n_substances() - 1)){
 					xprintf(Msg,"%f\n",reaction_matrix[rows][cols]);
 				}else{
 					xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);

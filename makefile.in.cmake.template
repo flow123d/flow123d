@@ -18,6 +18,12 @@ set(PETSC_ARCH "gcc_O3")
 
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
+### set compiler ###
+# g++ is automatically detected and used
+# 
+# Clang can not be used without some modifications in Armadillo.
+# It is worth to try.
+# set( CMAKE_CXX_COMPILER "clang++")
 
 ### Build configuration  ####
 # There are two predefined configurations: "debug" and "release"

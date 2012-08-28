@@ -88,7 +88,6 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     MeshReader* meshReader = new GmshMeshReader();
     meshReader->read( in_record.val<Record>("mesh").val<FilePath>("mesh_file"), mesh);
 
-    mesh->setup_topology();
     mesh->setup_materials(*material_database);
     Profiler::instance()->set_task_size(mesh->n_elements());
 
@@ -226,8 +225,7 @@ void HC_ExplicitSequential::run_simulation()
             // for simplicity we use only last velocity field
             if (velocity_changed) {
                 //DBGMSG("velocity update\n");
-                water->get_velocity_seq_vector(velocity_field);
-                transport_reaction->set_velocity_field(velocity_field);
+                transport_reaction->set_velocity_field( water->get_mh_dofhandler() );
                 velocity_changed = false;
             }
             transport_reaction->update_solution();

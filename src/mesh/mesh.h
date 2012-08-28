@@ -118,10 +118,16 @@ public:
         return edge.size();
     }
 
+    unsigned int n_sides();
+
+    inline unsigned int n_vb_neighbours() const {
+        return vb_neighbours_.size();
+    }
     /**
      * Setup various links between mesh entities. Should be simplified.
      */
     void setup_topology();
+    void read_neighbours();
 
     /**
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
@@ -148,37 +154,42 @@ public:
 
     flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
+    vector<Neighbour> vb_neighbours_;
     int n_materials; // # of materials
-    int n_sides; // # of sides
+
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
-    struct Side *side; // First side
-    struct Side *l_side; // Last side
-    //int n_edges; // # of edges
-    //struct Edge *edge; // First edge
-    //struct Edge *l_edge; // Last edge
-    int n_neighs; // # of neighbours
-    struct Neighbour *neighbour; // First neighbour
-    struct Neighbour *l_neighbour; // Last neighbour
-    // Hashes
-    //int max_edg_id;
-    //int max_side_id;
-    //int max_bou_id; // Highest id number of boundary
-    //int max_ngh_id; // Highest id number of neighbouring
+    int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements
     int n_tetrahedras; // Number of tetrahedra elements
 
-
-//    struct Edge **edge_hash;
-//    struct Side **side_hash;
-//    struct Neighbour **neighbour_hash; // Neighbour id # -> neighbour index
+    // for every side dimension D = 0 .. 2
+    // for every element side 0 .. D+1
+    // for every side node 0 .. D
+    // index into element node array
+    vector< vector< vector<unsigned int> > > side_nodes;
 
 private:
+
+    void node_to_element();
+    void edge_to_side();
+    void neigh_vb_to_element_and_side();
+    void element_to_neigh_vb();
+
     void count_element_types();
+    void count_side_types();
+
+    unsigned int n_bb_neigh, n_vb_neigh;
+    vector<Neighbour_both> neighbours_;
 
 };
+
+
+#include "mesh/side_impl.hh"
+#include "mesh/element_impls.hh"
+#include "mesh/neighbours_impl.hh"
 
 /**
  * Provides for statement to iterate over the Elements of the Mesh.
@@ -229,11 +240,17 @@ for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
         __i !=_mesh_->edge.end(); \
         ++__i)
 
-#define FOR_SIDES(_mesh_,i)        for((i)=_mesh_->side;(i)!=NULL;(i)=(i)->next)
+#define FOR_SIDES(_mesh_, it) \
+    FOR_ELEMENTS(_mesh_, ele)  \
+        for(SideIter it = ele->side(0); it->el_idx() < ele->n_sides(); ++it)
+
 #define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 
 
-#define FOR_NEIGHBOURS(_mesh_, i)   for((i)=_mesh_->neighbour;(i)!=NULL;(i)=(i)->next)
+#define FOR_NEIGHBOURS(_mesh_, it) \
+    for( std::vector<Neighbour>::iterator it = _mesh_->vb_neighbours_.begin(); \
+         (it)!= _mesh_->vb_neighbours_.end(); ++it)
+
 #define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
 #define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
 

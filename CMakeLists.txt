@@ -41,15 +41,10 @@
 # Include settings given by user first
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
-message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
 
-if (NOT EXTERNAL_PROJECT_DIR)
-    set(EXTERNAL_PROJECT_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external_projects)
-endif()    
-message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
+
 # Project name and language(s)
 project(Flow123d CXX C)
-message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.6.4)
@@ -57,10 +52,10 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
 endif()
 
-message(STATUS "build type: ${CMAKE_BUILD_TYPE} ${CC_FLAGS}")
-
-#if defined(__clang__)
-#define COMPILER_ID "Clang"
+if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
+    # this is necessary due to some "bugs" in Armadillo
+    add_definitions(-Wno-uninitialized)
+endif()
 
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
@@ -310,9 +305,18 @@ if( PETSC_FOUND )
 
   #### make a script which call correct mpiexec (taken from PETSC)
   # we can not use link, since mpiexec can be sript which reads its location from calling sequence
-  add_custom_target(mpiexec_link
-    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DPETSC_MPIEXEC=${PETSC_MPIEXEC}
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_mpiexec.cmake)
+  if(EXISTS ${PETSC_MPIEXEC})
+      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
+  else()
+      if(COMMAND mpiexec)
+        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
+        set(MPIEXEC_PATH mpiexec)
+      else()
+        message(WARNING "Missing any mpiexec.")
+      endif()
+  endif()
+  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/mpiexec)
+  
 
 
   ### add target for flow123d binary

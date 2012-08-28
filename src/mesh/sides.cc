@@ -33,352 +33,136 @@
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "sides.h"
+#include "mesh/mesh_types.hh"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"
 #include "materials.hh"
-//#include "transport.h"
 
 
-static struct Side *new_side(void);
-static void add_to_side_list(Mesh*, struct Side*);
-static void init_side(struct Side*);
-static int count_sides(Mesh*);
-static void calc_side_c_row(struct Side*);
-static void calc_side_c_col(Mesh*);
-static void calc_side_c_val(struct Side*);
-static void calc_side_rhs(struct Side*);
+
+
 //static void calc_side_rhs_dens(struct Side*, struct Problem*, Mesh*);
-static double side_length_line(struct Side*);
-static double side_area_triangle(struct Side*);
-static void calc_side_normal(struct Side*);
-static void side_normal_point(struct Side*);
-static void side_normal_line(struct Side*);
-static void side_normal_triangle(struct Side*);
-static void calc_side_centre(struct Side*);
-static void side_centre_point(struct Side*);
-static void side_centre_line(struct Side*);
-static void side_centre_triangle(struct Side*);
 
-//=============================================================================
-// CREATE AND PREFILL LIST OF SIDES
-//=============================================================================
 
-void make_side_list(Mesh* mesh) {
-    F_ENTRY;
 
-    int si;
-    struct Side *sde;
 
-    ASSERT(!(mesh == NULL), "NULL as argument of function make_side_list()\n");
-    xprintf(Msg, "Creating sides...")/*orig verb 2*/;
-    mesh->n_sides = count_sides(mesh);
-    for (si = 0; si < mesh->n_sides; si++) {
-        sde = new_side();
-        ASSERT(!(sde == NULL), "Cannot create side %d\n", si);
-        add_to_side_list(mesh, sde);
-        sde->id = si;
-    }
-    xprintf(MsgVerb, " O.K. %d sides created.", mesh->n_sides)/*orig verb 4*/;
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
-}
-//=============================================================================
-//
-//=============================================================================
 
-int count_sides(Mesh* mesh) {
-    F_ENTRY;
 
-    int rc = 0;
 
-    FOR_ELEMENTS(mesh, ele) {
-        rc += ele->n_sides;
-    }
-    return rc;
-}
-//=============================================================================
-// CREATE NEW SIDE
-//=============================================================================
-
-struct Side *new_side(void) {
-    struct Side *sde;
-
-    sde = (struct Side*) xmalloc(sizeof ( struct Side));
-    init_side(sde);
-    return sde;
-}
-//=============================================================================
-// INIT DATA OF PARTICULAR SIDE
-//=============================================================================
-
-void init_side(struct Side *sde) {
-    ASSERT(!(sde == NULL), "NULL as argument of function init_side()\n");
-    sde->id = NDEF;
-    sde->type = NDEF;
-    sde->shape = NDEF;
-    sde->dim = NDEF;
-    sde->element = NULL;
-    sde->lnum = NDEF;
-    sde->n_nodes = NDEF;
-    sde->node = NULL;
-    sde->cond = NULL;
-    sde->edge = NULL;
-    sde->prev = NULL;
-    sde->next = NULL;
-    sde->neigh_bv = NULL;
-    sde->metrics = 0.0;
-    sde->normal[ 0 ] = 0.0;
-    sde->normal[ 1 ] = 0.0;
-    sde->normal[ 2 ] = 0.0;
-    sde->centre[ 0 ] = 0.0;
-    sde->centre[ 1 ] = 0.0;
-    sde->centre[ 2 ] = 0.0;
-    sde->c_row = NDEF;
-    sde->c_col = NDEF;
-    sde->c_val = 0.0;
-    sde->flux = 0.0;
-    sde->scalar = 0.0;
-    sde->aux = NDEF;
-    sde->faux = 0.0;
-}
-//=============================================================================
-//
-//=============================================================================
-
-void add_to_side_list(Mesh* mesh, struct Side* sde) {
-    F_ENTRY;
-
-    ASSERT(!((mesh == NULL) || (sde == NULL)), "NULL as an argument of function add_to_side_list()\n");
-    // First side in the list
-    if (mesh->side == NULL && mesh->l_side == NULL) {
-        mesh->side = sde;
-        mesh->l_side = sde;
-        sde->prev = NULL;
-        sde->next = NULL;
-        return;
-    }
-    // If something is wrong with the list
-    ASSERT(!((mesh->side == NULL) || (mesh->l_side == NULL)), "Inconsistency in the side list\n");
-    // Add after last side
-    sde->next = NULL;
-    sde->prev = mesh->l_side;
-    mesh->l_side->next = sde;
-    mesh->l_side = sde;
-}
 //=============================================================================
 // CALCULATE PROPERTIES OF ALL SIDES OF THE MESH
 //=============================================================================
 
-void side_calculation_mh(Mesh* mesh) {
-    struct Side *sde;
 
-    xprintf(Msg, "Calculating properties of sides... ")/*orig verb 2*/;
-    ASSERT(NONULL(mesh), "NULL as 'mesh' argument.\n");
-    ASSERT(mesh->n_sides != NDEF && NONULL(mesh->side), "No side list.\n");
-    calc_side_c_col(mesh);
-
-    FOR_SIDES(mesh, sde) {
-        calc_side_c_row(sde);
-        calc_side_c_val(sde);
-        calc_side_metrics(sde);
-        calc_side_normal(sde);
-        calc_side_centre(sde);
-/*
-        if (ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY)
-            calc_side_rhs_dens(sde, problem, mesh);
-        else */
-            calc_side_rhs(sde);
-    }
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
-}
-//=============================================================================
-// FILL THE "C_ROW" FIELD IN STRUCT SIDE FOR SIDE
-//=============================================================================
-
-void calc_side_c_row(struct Side *sde) {
-    sde->c_row = sde->edge->c_row;
-}
-//=============================================================================
-// FILL THE "C_COL" FIELD IN STRUCT SIDE FOR SIDE
-//=============================================================================
-
-void calc_side_c_col(Mesh* mesh) {
-    //ElementIter ele;
-    int li, i;
-
-    i = 0;
-    FOR_ELEMENTS(mesh, ele)
-    for (li = 0; li < ele->n_sides; li++)
-        ele->side[ li ]->c_col = i++;
-}
 //=============================================================================
 // CALCULATE METRICS OF THE SIDE
 //=============================================================================
 
-void calc_side_metrics(struct Side *sde) {
-    switch (sde->shape) {
-        case S_POINT:
-            sde->metrics = 1.0 * sde->element->material->size; //UPDATE
-            break;
-        case S_LINE:
-            sde->metrics = side_length_line(sde) * sde->element->material->size; //UPDATE
-            break;
-        case S_TRIANGLE:
-            sde->metrics = side_area_triangle(sde);
-            break;
+double Side::metric() const {
+    switch ( dim() ) {
+        case 0:
+            return 1.0 * element_->material->size;
+        case 1: {
+            arma::vec3 diff = node(1)->point();
+            diff -= node(0)->point();
+            return arma::norm( diff , 2 ) * element_->material->size;
+        }
+        case 2: {
+            arma::vec3 diff0 = node(1)->point() - node(0)->point();
+            arma::vec3 diff1 = node(2)->point() - node(0)->point();
+            return 0.5*arma::norm( arma::cross(diff0, diff1), 2);
+        }
     }
 }
-//=============================================================================
-//
-//=============================================================================
 
-double side_length_line(struct Side *sde) {
-    double rc, u[ 3 ];
-
-    u[ 0 ] = sde->node[ 1 ]->getX() - sde->node[ 0 ]->getX();
-    u[ 1 ] = sde->node[ 1 ]->getY() - sde->node[ 0 ]->getY();
-    u[ 2 ] = sde->node[ 1 ]->getZ() - sde->node[ 0 ]->getZ();
-    rc = sqrt(u[ 0 ] * u[ 0 ] + u[ 1 ] * u[ 1 ] + u[ 2 ] * u[ 2 ]);
-    return rc;
-}
-//=============================================================================
-//
-//=============================================================================
-
-double side_area_triangle(struct Side *sde) {
-    double u[ 3 ], v[ 3 ], n[ 3 ];
-    double rc;
-
-    u[ 0 ] = sde->node[ 1 ]->getX() - sde->node[ 0 ]->getX();
-    u[ 1 ] = sde->node[ 1 ]->getY() - sde->node[ 0 ]->getY();
-    u[ 2 ] = sde->node[ 1 ]->getZ() - sde->node[ 0 ]->getZ();
-    v[ 0 ] = sde->node[ 2 ]->getX() - sde->node[ 0 ]->getX();
-    v[ 1 ] = sde->node[ 2 ]->getY() - sde->node[ 0 ]->getY();
-    v[ 2 ] = sde->node[ 2 ]->getZ() - sde->node[ 0 ]->getZ();
-    vector_product(u, v, n);
-    rc = fabs(0.5 * sqrt(n[ 0 ] * n[ 0 ] + n[ 1 ] * n[ 1 ] +
-            n[ 2 ] * n[ 2 ]));
-    return rc;
-}
 //=============================================================================
 // CALCULATE NORMAL OF THE SIDE
 //=============================================================================
 
-void calc_side_normal(struct Side *sde) {
-    switch (sde->shape) {
-        case S_POINT:
-            side_normal_point(sde);
-            break;
-        case S_LINE:
-            side_normal_line(sde);
-            break;
-        case S_TRIANGLE:
-            side_normal_triangle(sde);
-            break;
+arma::vec3 Side::normal() const {
+    switch ( dim() ) {
+        case 0:
+            return normal_point();
+        case 1:
+            return normal_line();
+        case 2:
+            return normal_triangle();
     }
 }
 //=============================================================================
 //
 //=============================================================================
 
-void side_normal_point(struct Side *sde) {
-    ElementIter ele;
+arma::vec3 Side::normal_point() const {
+    ElementIter ele = element_;
 
-    ele = sde->element;
-    sde->normal[ 0 ] = ele->node[ 1 ]->getX() - ele->node[ 0 ]->getX();
-    sde->normal[ 1 ] = ele->node[ 1 ]->getY() - ele->node[ 0 ]->getY();
-    sde->normal[ 2 ] = ele->node[ 1 ]->getZ() - ele->node[ 0 ]->getZ();
-    normalize_vector(sde->normal);
-    if (sde->node[ 0 ] == ele->node[ 0 ])
-        scale_vector(sde->normal, -1);
+    arma::vec3 normal(ele->node[1]->point());
+    normal -= ele->node[0] ->point();
+
+    normal /=arma::norm(normal,2);
+    if ( node( 0 ) == ele->node[ 0 ] )
+        return -normal;
+    else
+        return normal;
 }
 //=============================================================================
 //
 //=============================================================================
 
-void side_normal_line(struct Side *sde) {
-    ElementIter ele;
-    double s[ 3 ];
-    double in[ 3 ];
-    double en[ 3 ], u[ 3 ], v[ 3 ];
+arma::vec3 Side::normal_line() const {
+    ElementIter ele=element_;
 
     // At first, we need vector of the normal of the element
-    ele = sde->element;
-    u[ 0 ] = ele->node[ 1 ]->getX() - ele->node[ 0 ]->getX();
-    u[ 1 ] = ele->node[ 1 ]->getY() - ele->node[ 0 ]->getY();
-    u[ 2 ] = ele->node[ 1 ]->getZ() - ele->node[ 0 ]->getZ();
-    v[ 0 ] = ele->node[ 2 ]->getX() - ele->node[ 0 ]->getX();
-    v[ 1 ] = ele->node[ 2 ]->getY() - ele->node[ 0 ]->getY();
-    v[ 2 ] = ele->node[ 2 ]->getZ() - ele->node[ 0 ]->getZ();
-    vector_product(u, v, en);
-    normalize_vector(en);
+    arma::vec3 elem_normal=arma::cross( ele->node[1]->point() - ele->node[0]->point(),
+                                        ele->node[2]->point() - ele->node[0]->point() );
+    elem_normal /= norm( elem_normal, 2);
+
     // Now we can calculate the "normal" of our side
-    s[ 0 ] = sde->node[ 1 ]->getX() - sde->node[ 0 ]->getX();
-    s[ 1 ] = sde->node[ 1 ]->getY() - sde->node[ 0 ]->getY();
-    s[ 2 ] = sde->node[ 1 ]->getZ() - sde->node[ 0 ]->getZ();
-    vector_product(s, en, sde->normal);
-    normalize_vector(sde->normal);
-    in[ 0 ] = ele->centre[ 0 ] - sde->node[ 0 ]->getX();
-    in[ 1 ] = ele->centre[ 1 ] - sde->node[ 0 ]->getY();
-    in[ 2 ] = ele->centre[ 2 ] - sde->node[ 0 ]->getZ();
-    if (scalar_product(sde->normal, in) > 0.0)
-        scale_vector(sde->normal, -1.0);
+    arma::vec3 side_normal = arma::cross( node(1)->point() - node(0)->point() , elem_normal );
+    side_normal /= norm( side_normal, 2);
+
+    if ( dot( side_normal, ele->centre() - node(0)->point() ) > 0.0)
+        return -side_normal;
+    else
+        return side_normal;
 }
 //=============================================================================
 //
 //=============================================================================
 
-void side_normal_triangle(struct Side *sde) {
-    ElementIter ele;
-    double u[ 3 ], v[ 3 ], in[ 3 ];
+arma::vec3 Side::normal_triangle() const {
+    ElementIter ele=element_;
+    double u[ 3 ], v[ 3 ], in[ 3 ], normal[3];
 
-    ele = sde->element;
-    u[ 0 ] = sde->node[ 1 ]->getX() - sde->node[ 0 ]->getX();
-    u[ 1 ] = sde->node[ 1 ]->getY() - sde->node[ 0 ]->getY();
-    u[ 2 ] = sde->node[ 1 ]->getZ() - sde->node[ 0 ]->getZ();
-    v[ 0 ] = sde->node[ 2 ]->getX() - sde->node[ 0 ]->getX();
-    v[ 1 ] = sde->node[ 2 ]->getY() - sde->node[ 0 ]->getY();
-    v[ 2 ] = sde->node[ 2 ]->getZ() - sde->node[ 0 ]->getZ();
-    vector_product(u, v, sde->normal);
-    normalize_vector(sde->normal);
-    in[ 0 ] = ele->centre[ 0 ] - sde->node[ 0 ]->getX();
-    in[ 1 ] = ele->centre[ 1 ] - sde->node[ 0 ]->getY();
-    in[ 2 ] = ele->centre[ 2 ] - sde->node[ 0 ]->getZ();
-    if (scalar_product(sde->normal, in) > 0.0)
-        scale_vector(sde->normal, -1.0);
+    arma::vec3 side_normal=arma::cross( node(1)->point() - node(0)->point(),
+                                        node(2)->point() - node(0)->point() );
+    side_normal /= norm( side_normal, 2);
+
+    in[ 0 ] = ele->centre()[ 0 ] - node( 0 )->getX();
+    in[ 1 ] = ele->centre()[ 1 ] - node( 0 )->getY();
+    in[ 2 ] = ele->centre()[ 2 ] - node( 0 )->getZ();
+    if ( dot(side_normal, ele->centre() - node(0)->point() ) > 0.0)
+        return -side_normal;
+    else
+        return side_normal;
 }
+
 //=============================================================================
-// CALCULATE VALUE IN THE BLOCK C
+// CALCULATE CENTRE OF THE SIDE
 //=============================================================================
 
-void calc_side_c_val(struct Side *sde) {
-    sde->c_val = 1.0;
-    if (sde->cond == NULL)
-        return;
-    if (sde->cond->type == DIRICHLET)
-        sde->c_val = 0.0;
+arma::vec3 Side::centre() const {
+    arma::vec3 barycenter;
+    barycenter.zeros();
+
+    for(unsigned int i=0; i < n_nodes() ; i++)
+        barycenter += node( i )->point();
+
+    barycenter /= (double) n_nodes();
+    return barycenter;
 }
-//=============================================================================
 
-
-//=============================================================================
-// CALCULATE VALUE ON THE RHS -
-//=============================================================================
-
-void calc_side_rhs(struct Side *sde) {
-    ElementIter ele;
-
-    ASSERT(!(sde == NULL), "NULL argument\n", sde->id);
-    ele = sde->element;
-    ASSERT(!(ele == NULL), "Element of the side %d not defined\n", sde->id);
-    ele->rhs[ sde->lnum ] += (ele->centre[ 2 ] - sde->centre[ 2 ]);
-    /*
-     * prbably zero order approximation of :
-     * Int_{El} z div Psi - Int_{Side} z Psi .dot. normal
-     */
-
-}
-//=============================================================================
 
 //======BP F.��r===============================================================
 // CALCULATE VALUE ON THE RHS (Density)
@@ -409,91 +193,6 @@ void calc_side_rhs_dens(struct Side* sde, struct Problem* problem, Mesh* mesh) {
      }        */
 
 }
-//=============================================================================
 
-//=============================================================================
-
-void side_shape_specific(Mesh* mesh) {
-    struct Side *sde;
-    ElementIter ele;
-
-    xprintf(MsgVerb, "   Filling shape specific data for sides... ")/*orig verb 5*/;
-    ASSERT(NONULL(mesh), "NULL as mesh argument!\n");
-    ASSERT((mesh->n_sides != NDEF) && NONULL(mesh->side), "No side list.\n");
-
-    FOR_SIDES(mesh, sde) {
-        ele = sde->element;
-        ASSERT(!(ele == NULL), "Side %d has no reference to its element\n", sde->id);
-        switch (ele->type) {
-            case LINE:
-                sde->shape = S_POINT;
-                sde->dim = 0;
-                sde->n_nodes = 1;
-                break;
-            case TRIANGLE:
-                sde->shape = S_LINE;
-                sde->dim = 1;
-                sde->n_nodes = 2;
-                break;
-            case TETRAHEDRON:
-                sde->shape = S_TRIANGLE;
-                sde->dim = 2;
-                sde->n_nodes = 3;
-                break;
-        }
-        sde->node = (Node**) xmalloc(sde->n_nodes * sizeof (Node*));
-    }
-    xprintf(MsgVerb, "O.K.\n")/*orig verb 6*/;
-}
-//=============================================================================
-// CALCULATE CENTRE OF THE SIDE
-//=============================================================================
-
-void calc_side_centre(struct Side *sde) {
-    switch (sde->shape) {
-        case S_POINT:
-            side_centre_point(sde);
-            break;
-        case S_LINE:
-            side_centre_line(sde);
-            break;
-        case S_TRIANGLE:
-            side_centre_triangle(sde);
-            break;
-    }
-}
-//=============================================================================
-//
-//=============================================================================
-
-void side_centre_point(struct Side *sde) {
-    sde->centre[ 0 ] = sde->node[ 0 ]->getX();
-    sde->centre[ 1 ] = sde->node[ 0 ]->getY();
-    sde->centre[ 2 ] = sde->node[ 0 ]->getZ();
-}
-//=============================================================================
-//
-//=============================================================================
-
-void side_centre_line(struct Side *sde) {
-    sde->centre[ 0 ] = (sde->node[ 0 ]->getX() + sde->node[ 1 ]->getX()) / 2.0;
-    sde->centre[ 1 ] = (sde->node[ 0 ]->getY() + sde->node[ 1 ]->getY()) / 2.0;
-    sde->centre[ 2 ] = (sde->node[ 0 ]->getZ() + sde->node[ 1 ]->getZ()) / 2.0;
-}
-//=============================================================================
-//
-//=============================================================================
-
-void side_centre_triangle(struct Side *sde) {
-    sde->centre[ 0 ] = (sde->node[ 0 ]->getX() +
-            sde->node[ 1 ]->getX() +
-            sde->node[ 2 ]->getX()) / 3.0;
-    sde->centre[ 1 ] = (sde->node[ 0 ]->getY() +
-            sde->node[ 1 ]->getY() +
-            sde->node[ 2 ]->getY()) / 3.0;
-    sde->centre[ 2 ] = (sde->node[ 0 ]->getZ() +
-            sde->node[ 1 ]->getZ() +
-            sde->node[ 2 ]->getZ()) / 3.0;
-}
 //-----------------------------------------------------------------------------
 // vim: set cindent:

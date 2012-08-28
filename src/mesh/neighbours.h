@@ -32,42 +32,56 @@
 
 #include "mesh/mesh_types.hh"
 
-struct Problem;
-class Mesh;
-struct Element;
-struct Neighbour;
-struct Side;
-struct Edge;
 
-//=============================================================================
-// STRUCTURE OF THE NEIGHBOUR
-//=============================================================================
-typedef struct Neighbour
+
+struct Element;
+struct Edge;
+class SideIter;
+
+
+/*
+ *  Class for both types of input neigbours. Only temporary
+ */
+class Neighbour_both
 {
-    int   id;           // Global id number
+public:
+    Neighbour_both();
+
     int   type;         // Type
     int   n_sides;      // # of neighbouring sides
-    int   n_elements;   // # of neighbouring elements
-    //int   n_coefs;      // # of coefficients
+
     int  *sid;      // id numbers of neighbouring sides
     int  *eid;      // id numbers of neighbouring elements
-    double flux;           // flux for VV neigh. from e1 into e2 is negative
-                                // from e2 into e1 is positive
-    //double *coef;       // coefficients of neighbouring
     double  sigma;      // transition coefficient
-    double geom_factor; // fraction of the lower dimension element for VV ngh
-    struct Edge *edge;  // edge (set of neighbouring sides)
-    struct Side **side; // neighbouring sides
-    ElementIter *element;  // neighbouring elements
+};
+
+
+
+/**
+ * Class only for VB neighbouring.
+ */
+class Neighbour
+{
+public:
+    Neighbour();
+
+    void reinit(ElementIter ele, Edge * edg, double sigma_in);
+
+    // side of the edge in higher dim. mesh
+    inline SideIter side();
+
+    // edge of higher dimensional mesh in VB neigh.
+    inline Edge *edge();
+
+    // element of lower dimension mesh in VB neigh.
+    inline ElementIter element();
+
+//private:
+    Edge *edge_;  // edge
+    ElementIter element_;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
-    char *line;     // Type specific part of line of the input file
-    // List
-    struct Neighbour *prev; // Previous neighbour in the list
-    struct Neighbour *next; // Next neighbour in the list
-    // Misc
-    int  aux;       // Auxiliary flag
-    double   faux;      // Auxiliary number
-} Neighbour;
+    double sigma;
+};
 
 // Input neigbouring codes
 #define BB_E         10     // two elements of same dim specified by eid
@@ -77,7 +91,7 @@ typedef struct Neighbour
 
 
 
-void read_neighbour_list(Mesh*, const string neighbour_file);
+//void read_neighbour_list(Mesh*);
 
 #endif
 //-----------------------------------------------------------------------------

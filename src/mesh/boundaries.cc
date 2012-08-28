@@ -91,7 +91,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 
         unsigned int where  = atoi( xstrtok( NULL) );
         int eid, sid, n_exterior;
-        Side *sde;
+        SideIter sde;
 
         switch( where ) {
             case 2: // SIDE_EL - BC given by element and its local side number
@@ -100,10 +100,10 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 
                 // find and set the side
                 ele = mesh->element.find_id( eid );
-                if( sid < 0 || sid >= ele->n_sides )
+                if( sid < 0 || sid >= ele->n_sides() )
                      xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", bcd_id, sid );
-                sde = ele->side[ sid ];
-                sde->cond=bcd;
+                sde = ele->side( sid );
+                ele->boundaries_[ sid ] = bcd;
                 bcd->side=sde;
 
                 break;
@@ -114,15 +114,15 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 ele = mesh->element.find_id( eid );
                 n_exterior=0;
                 FOR_ELEMENT_SIDES(ele, li) {
-                    sde = ele->side[ li ];
-                    if ( sde->type == EXTERNAL ) {
+                    sde = ele->side( li );
+                    if ( sde->is_external() ) {
                         if (n_exterior > 0) {
                             xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
                             //BoundaryFullIter new_bcd = mesh->boundary.add_item();
                             //*new_bcd = *bcd;
                             //bcd=new_bcd;
                         }
-                        sde->cond=bcd;
+                        ele->boundaries_[ sid ] = bcd;
                         bcd->side=sde;
                         n_exterior++;
                     }
@@ -162,6 +162,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 // FILL EDGE PART OF MH MATRIX WHICH BELONGS TO BOUNDARIES
 //=============================================================================
 // TODO: be more sure that BC are applied well
+/*
 void boundary_calculation_mh( struct Mesh *mesh )
 {
 	struct Boundary *bcd;
@@ -170,7 +171,7 @@ void boundary_calculation_mh( struct Mesh *mesh )
 	xprintf( Msg, "Calculating properties of boundaries... ");
 	ASSERT( NONULL(mesh) ,"NULL as argument of function boundary_calculation_mh()\n");
 	FOR_BOUNDARIES(mesh,  bcd ) {
-		edg=bcd->side->edge;
+		edg=bcd->side->edge();
 		// following code may not work if a BC is applied to an edge with neighbouring
 		// in such a case we need to add to the f_val, nevertheless the original code
 		// does not do it as well
@@ -185,10 +186,10 @@ void boundary_calculation_mh( struct Mesh *mesh )
 				break;
 			case NEUMANN:
 				edg->f_val =  0.0;
-				edg->f_rhs = bcd->flux * bcd->side->metrics;
+				edg->f_rhs = bcd->flux * bcd->side->metric();
 				break;
 			case NEWTON:
-				edg->f_val = -1.0 * bcd->side->metrics*bcd->sigma;
+				edg->f_val = -1.0 * bcd->side->metric()*bcd->sigma;
 				edg->f_rhs = edg->f_val * bcd->scalar;
 				break;
 			default:
@@ -196,7 +197,7 @@ void boundary_calculation_mh( struct Mesh *mesh )
 		}
 	}
 	xprintf( Msg, "O.K.\n");
-}
+}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:
 

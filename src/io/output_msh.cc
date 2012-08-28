@@ -61,13 +61,16 @@ void OutputMSH::write_msh_topology(void)
     ofstream &file = this->output->get_base_file();
     Mesh* mesh = this->output->get_mesh();
     int i;
+    const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
 
     // Write information about elements
     file << "$Elements" << endl;
     file << mesh->n_elements() << endl;
     FOR_ELEMENTS(mesh, elm) {
         // element_id element_type 3_other_tags material region partition
-        file << ELEM_FULL_ITER(mesh, elm).index() + 1 << " " << elm->type << " 3 " << elm->mid << " " << elm->rid << " " << elm->pid;
+        file << ELEM_FULL_ITER(mesh, elm).index() + 1
+             << " " << gmsh_simplex_types_[ elm->dim() ]
+             << " 3 " << elm->mid << " " << elm->mid << " " << elm->pid;
 
         FOR_ELEMENT_NODES(elm, i)
             file << " " << NODE_FULL_ITER(mesh, elm->node[i]).index() + 1;

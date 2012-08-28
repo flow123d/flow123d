@@ -144,6 +144,7 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     	if (bc->get_times()[0] == 0.0) bc->read();
     }
 
+    // TODO: Move assembly of mass matrix to update_solution().
     // assemble mass matrix
     ls_dt->start_allocation();
     assemble_mass_matrix();
@@ -151,12 +152,6 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     assemble_mass_matrix();
     ls_dt->finalize();
     mass_matrix = ls_dt->get_matrix();
-
-    // preallocate system matrix
-    ls->start_allocation();
-    assemble_stiffness_matrix();
-    set_boundary_conditions();
-    stiffness_matrix = 0;
 
     // save initial state
     output_data();
@@ -215,6 +210,15 @@ void TransportDG::update_solution()
     if (flux_changed || (bc->get_time_level() != -1 && time_->is_current(bc_mark_type_)))
     {
         flux_changed = false;
+
+        // check first time assembly - needs preallocation
+        if (ls->is_new() ) {
+            // preallocate system matrix
+            ls->start_allocation();
+            assemble_stiffness_matrix();
+            set_boundary_conditions();
+            stiffness_matrix = 0;
+        }
 
         // possibly read boundary conditions
         if (bc->get_time_level() != -1 && time_->is_current(bc_mark_type_)) bc->read();
@@ -292,12 +296,13 @@ void TransportDG::get_parallel_solution_vector(Vec & vector)
 
 
 
-void TransportDG::set_velocity_field(Vec & velocity_vector)
+void TransportDG::set_velocity_field(const MH_DofHandler &dh)
 {
     // So far the velocity_vector contains zeros, so we ignore it.
     // Instead we use the value Side.flux.
 //	flux_vector = velocity_vector;
 
+    mh_dh = &dh;
 	flux_changed = true;
 
 }
@@ -345,7 +350,7 @@ void TransportDG::output_data()
 
     	FOR_ELEMENTS(mesh_, elem)
 		{
-    		switch (elem->dim)
+    		switch (elem->dim())
     		{
     		case 1:
     			dof_handler1d->get_dof_indices(elem, dof_indices);
@@ -397,7 +402,7 @@ void TransportDG::assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,
     // assemble integral over elements
     for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
     {
-        if (cell->dim != dim) continue;
+        if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
 
@@ -462,7 +467,7 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
 	// assemble integral over elements
     for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
     {
-        if (cell->dim != dim) continue;
+        if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
         fv_rt.reinit(cell);
@@ -518,30 +523,31 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
     gamma.resize(mesh_->boundary.size());
 
     // assemble integral over sides
-    for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
+    FOR_EDGES( mesh_, edg ) //for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
     {
-        if (nb->n_sides < 2 ||
-        	(nb->type != BB_E && nb->type != BB_EL) ||
-        	nb->element[0]->dim != dim) continue;
+        // We have to skip edges of wrong dimension
+    	//ASSERT_SIZES(edg->side(0)->element()->dim(), dim);
 
-        fv_sb.resize(nb->n_sides);
-        side_K.resize(nb->n_sides);
-        side_velocity.resize(nb->n_sides);
+        if (edg->n_sides < 2 || edg->side(0)->element()->dim() != dim) continue;
 
-        if (side_dof_indices.size() < nb->n_sides)
-            for (int i=side_dof_indices.size(); i<nb->n_sides; i++)
+        fv_sb.resize(edg->n_sides);
+        side_K.resize(edg->n_sides);
+        side_velocity.resize(edg->n_sides);
+
+        if (side_dof_indices.size() < edg->n_sides)
+            for (int i=side_dof_indices.size(); i<edg->n_sides; i++)
                 side_dof_indices.push_back(new unsigned int[ndofs]);
 
-        if (fe_values_side.size() < nb->n_sides)
-            for (int sid=fe_values_side.size(); sid<nb->n_sides; sid++)
+        if (fe_values_side.size() < edg->n_sides)
+            for (int sid=fe_values_side.size(); sid<edg->n_sides; sid++)
                 fe_values_side.push_back(new FESideValues<dim,3>(map, side_q, *fe, update_values | update_gradients | update_side_JxW_values | update_normal_vectors));
 
-		for (int sid=0; sid<nb->n_sides; sid++)
+		for (int sid=0; sid<edg->n_sides; sid++)
 		{
-			cell = mesh_->element.full_iter(nb->element[sid]);
+			cell = mesh_->element.full_iter(edg->side(sid)->element());
 			dh->get_dof_indices(cell, side_dof_indices[sid]);
-			fe_values_side[sid]->reinit(cell, nb->side[0]);
-			fsv_rt.reinit(cell, nb->side[0]);
+			fe_values_side[sid]->reinit(cell, edg->side(0));
+			fsv_rt.reinit(cell, edg->side(0));
 			calculate_velocity(cell, side_velocity[sid], fsv_rt);
 			calculate_dispersivity_tensor(side_K[sid], side_velocity[sid]);
 			fv_sb[sid] = fe_values_side[sid];
@@ -549,21 +555,24 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 
 
         // fluxes and penalty
-		for (int s1=0; s1<nb->n_sides; s1++)
+		for (int s1=0; s1<edg->n_sides; s1++)
 		{
-			for (int s2=s1+1; s2<nb->n_sides; s2++)
+			for (int s2=s1+1; s2<edg->n_sides; s2++)
 			{
-				vec3 nv = (nb->side[s1]==NULL)?(-fv_sb[s2]->normal_vector(0)):fv_sb[s1]->normal_vector(0);
+				// vec3 nv = ( ! edg->side(s1)->valid() )?(-fv_sb[s2]->normal_vector(0)):fv_sb[s1]->normal_vector(0);
+				ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
+				vec3 nv = fv_sb[s1]->normal_vector(0);
 
 				// set up the parameters for DG method
-				set_DG_parameters(nb, s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
+				set_DG_parameters(edg, s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
 
-				if (nb->side[s1] != NULL && nb->side[s1]->cond != 0) gamma[mesh_->boundary.full_iter(nb->side[s1]->cond).id()] = gamma_l;
+				if (edg->side(s1)->cond() != 0) gamma[mesh_->boundary.full_iter(edg->side(s1)->cond()).id()] = gamma_l;
 
 				int sd[2];
 				sd[0] = s1;
 				sd[1] = s2;
 
+				// For selected pair of elements:
 				for (int m=0; m<2; m++)
 				{
 					for (int n=0; n<2; n++)
@@ -577,10 +586,12 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 								if (side_dof_indices[sd[n]][i] < distr->begin() || side_dof_indices[sd[n]][i] > distr->end()) continue;
 								for (int k=0; k<side_q.size(); k++)
 								{
-									// flux due to transport (applied on interior edges)
-									local_matrix[index] -= (m==0?1:-1)*advection/nb->element[sd[m]]->material->por_m*0.5*transport_flux*fv_sb[sd[m]]->shape_value(j,k)*fv_sb[sd[n]]->shape_value(i,k)*fv_sb[0]->JxW(k);
+									// flux due to transport (applied on interior edges) (average times jump)
+									local_matrix[index] -= (m==0?1:-1)*advection / edg->side(sd[m])->element()->material->por_m
+									                       *0.5*transport_flux
+									                       *fv_sb[sd[m]]->shape_value(j,k)*fv_sb[sd[n]]->shape_value(i,k)*fv_sb[0]->JxW(k);
 
-									// penalty enforcing continuity across edges (applied on interior and Dirichlet edges)
+									// penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
 									local_matrix[index] += (m==n?1:-1)*gamma_l*fv_sb[sd[m]]->shape_value(j,k)*fv_sb[sd[n]]->shape_value(i,k)*fv_sb[0]->JxW(k);
 
 									// terms due to diffusion
@@ -627,29 +638,31 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
     // assemble boundary integral
     for (EdgeFullIter edge = mesh_->edge.begin(); edge != mesh_->edge.end(); ++edge)
     {
-        if (edge->n_sides != 1 || edge->side[0]->dim != dim-1) continue;
+        if (edge->n_sides != 1 || edge->side(0)->dim() != dim-1) continue;
 
         double elem_flux = 0;
-        for (int i=0; i<edge->side[0]->element->n_sides; i++)
-        	elem_flux += fabs(edge->side[0]->element->side[i]->flux);
+        for (int i=0; i<edge->side(0)->element()->n_sides(); i++)
+        	elem_flux += fabs( mh_dh->side_flux( *(edge->side(0)->element()->side(i)) ) );
 
         // skip Neumann boundaries
-        if (edge->side[0]->cond == 0 || edge->side[0]->flux >= -1e-6*elem_flux) continue;
+        // Constant 1e-6 stabilizes switching Dirichlet to Neumann boundary condition.
+        // TODO: Define as a constant. Better determination of its magnitude. See also other places with same constant.
+        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -1e-6*elem_flux) continue;
 
         side_K.resize(edge->n_sides);
         side_velocity.resize(edge->n_sides);
 
-        cell = mesh().element.full_iter(edge->side[0]->element);
+        cell = mesh().element.full_iter(edge->side(0)->element());
         dh->get_dof_indices(cell, side_dof_indices);
-        fe_values_side.reinit(cell, edge->side[0]);
-        fsv_rt.reinit(cell, edge->side[0]);
+        fe_values_side.reinit(cell, edge->side(0));
+        fsv_rt.reinit(cell, edge->side(0));
 
         calculate_velocity(cell, side_velocity[0], fsv_rt);
         calculate_dispersivity_tensor(side_K[0], side_velocity[0]);
 
         // set up the parameters for DG method
         set_DG_parameters_edge(edge, side_q.size(), side_K, fe_values_side.normal_vector(0), alpha, advection, gamma_l, omega);
-        if (edge->side[0]->cond != 0) gamma[mesh_->boundary.full_iter(edge->side[0]->cond).id()] = gamma_l;
+        if (edge->side(0)->cond() != 0) gamma[mesh_->boundary.full_iter(edge->side(0)->cond()).id()] = gamma_l;
 
         // fluxes and penalty
         for (int i=0; i<ndofs; i++)
@@ -690,35 +703,36 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
         fe_values_vb = new FEValues<dim-1,3>(map_vb, side_q, *fe_sub, update_values | update_gradients | update_JxW_values | update_quadrature_points);
 
     // assemble integral over sides
-    for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
+    FOR_NEIGHBOURS(mesh_ , nb)
     {
-        if (nb->n_sides < 2 ||
-        	nb->type != VB_ES ||
-        	nb->element[0]->dim != dim-1) continue;
+        // skip neighbours of different dimension
+        // ASSERT(nb->element()->dim() == dim-1, "Element and side dimension mismatch.");
+        if (nb->element()->dim() != dim-1) continue;
 
-        fv_sb.resize(nb->n_sides);
+        int nb_sides = 2;   // = nb->n_sides;
+        fv_sb.resize(nb_sides);
 
-        if (side_dof_indices.size() < nb->n_sides)
-            for (int i=side_dof_indices.size(); i<nb->n_sides; i++)
+        if (side_dof_indices.size() < nb_sides)
+            for (int i=side_dof_indices.size(); i<nb_sides; i++)
                 side_dof_indices.push_back(new unsigned int[ndofs]);
 
-        if (fe_values_side.size() < nb->n_sides)
-            for (int sid=fe_values_side.size(); sid<nb->n_sides; sid++)
+        if (fe_values_side.size() < nb_sides)
+            for (int sid=fe_values_side.size(); sid<nb_sides; sid++)
                 fe_values_side.push_back(new FESideValues<dim,3>(map, side_q, *fe, update_values | update_gradients | update_side_JxW_values | update_normal_vectors));
 
-		typename DOFHandler<dim-1,3>::CellIterator cell_sub = mesh_->element.full_iter(nb->element[0]);
+		typename DOFHandler<dim-1,3>::CellIterator cell_sub = mesh_->element.full_iter(nb->element());
 		dh_sub->get_dof_indices(cell_sub, side_dof_indices[0]);
 		fe_values_vb->reinit(cell_sub);
 		fv_sb[0] = fe_values_vb;
 
-		cell = mesh_->element.full_iter(nb->element[1]);
+		cell = nb->side()->element();
 		dh->get_dof_indices(cell, side_dof_indices[1]);
-		fe_values_side[1]->reinit(cell, nb->side[1]);
+		fe_values_side[1]->reinit(cell, nb->side());
 		fv_sb[1] = fe_values_side[1];
 
 
 		// flux from the higher dimension to the lower one
-		transport_flux = nb->side[1]->flux;
+		transport_flux = mh_dh->side_flux( *(nb->side()) );
 
 		// set transmission condition for dim-1
 		for (int j=0; j<fv_sb[0]->n_dofs(); j++)
@@ -729,7 +743,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[0][i] < distr->begin() || side_dof_indices[0][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] += advection/nb->element[0]->material->por_m*(sigma+fabs(transport_flux))*fv_sb[0]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] += advection/nb->element()->material->por_m*(sigma+fabs(transport_flux))
+					                       *fv_sb[0]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], local_matrix);
@@ -741,7 +756,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[0][i] < distr->begin() || side_dof_indices[0][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] -= advection/nb->element[1]->material->por_m*(sigma+fabs(transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] -= advection/nb->side()->element()->material->por_m
+					              *(sigma+fabs(transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[0]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], local_matrix);
@@ -755,7 +771,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[1][i] < distr->begin() || side_dof_indices[1][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] += advection/nb->element[0]->material->por_m*(-sigma+min(0.,transport_flux))*fv_sb[0]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] += advection/nb->element()->material->por_m
+					          *(-sigma+min(0.,transport_flux))*fv_sb[0]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[0]->n_dofs(), (int *)side_dof_indices[0], local_matrix);
@@ -767,7 +784,8 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 				local_matrix[index] = 0;
 				if (side_dof_indices[1][i] < distr->begin() || side_dof_indices[1][i] > distr->end()) continue;
 				for (int k=0; k<side_q.size(); k++)
-					local_matrix[index] -= advection/nb->element[1]->material->por_m*(-sigma+min(0.,transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
+					local_matrix[index] -= advection/nb->side()->element()->material->por_m
+					*(-sigma+min(0.,transport_flux))*fv_sb[1]->shape_value(j,k)*fv_sb[1]->shape_value(i,k)*fv_sb[0]->JxW(k);
 			}
 		}
 		ls->mat_set_values(fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], fv_sb[1]->n_dofs(), (int *)side_dof_indices[1], local_matrix);
@@ -802,15 +820,15 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
 
     for (BoundaryFullIter b = mesh_->boundary.begin(); b != mesh_->boundary.end(); ++b)
     {
-        cell = mesh_->element.full_iter(b->side->element);
+        cell = mesh_->element.full_iter(b->side->element());
 
-        if (cell->dim != dim) continue;
+        if (cell->dim()!= dim) continue;
 
         // skip Neumann boundaries
         double elem_flux = 0;
-        for (int i=0; i<b->side->element->n_sides; i++)
-        	elem_flux += fabs(b->side->element->side[i]->flux);
-        if (b->side->flux > -1e-6*elem_flux) continue;
+        for (int i=0; i<b->side->element()->n_sides(); i++)
+        	elem_flux += fabs( mh_dh->side_flux( *(b->side->element()->side(i)) ) );
+        if (mh_dh->side_flux( *(b->side) ) > -1e-6*elem_flux) continue;
 
         if (b.id() < bc->distribution()->begin() || b.id() > bc->distribution()->end()) continue;
 
@@ -837,8 +855,8 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
 template<unsigned int dim>
 void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator cell, vector<vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
-    std::map<Node*, int> node_nums;
-    for (int i=0; i<cell->n_nodes; i++)
+    std::map<const Node*, int> node_nums;
+    for (int i=0; i<cell->n_nodes(); i++)
         node_nums[cell->node[i]] = i;
 
     velocity.resize(fv.n_points());
@@ -846,13 +864,13 @@ void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator ce
     for (int k=0; k<fv.n_points(); k++)
     {
         velocity[k].zeros();
-        for (int sid=0; sid<cell->n_sides; sid++)
+        for (int sid=0; sid<cell->n_sides(); sid++)
         {
-            if (cell->side[sid]->dim != dim-1) continue;
+            if (cell->side(sid)->dim() != dim-1) continue;
             int num = dim*(dim+1)/2;
-            for (int i=0; i<cell->side[sid]->n_nodes; i++)
-                num -= node_nums[cell->side[sid]->node[i]];
-            velocity[k] += fv.shape_vector(num,k)*cell->side[sid]->flux;
+            for (int i=0; i<cell->side(sid)->n_nodes(); i++)
+                num -= node_nums[cell->side(sid)->node(i)];
+            velocity[k] += fv.shape_vector(num,k) * mh_dh->side_flux( *(cell->side(sid)) );
         }
     }
 }
@@ -861,8 +879,8 @@ void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator ce
 template<unsigned int dim>
 void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::CellIterator cell, vector<double> &divergence, FEValuesBase<dim,3> &fv)
 {
-    std::map<Node*, int> node_nums;
-    for (int i=0; i<cell->n_nodes; i++)
+    std::map<const Node*, int> node_nums;
+    for (int i=0; i<cell->n_nodes(); i++)
         node_nums[cell->node[i]] = i;
 
     divergence.resize(fv.n_points());
@@ -870,13 +888,13 @@ void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::Cell
     for (int k=0; k<fv.n_points(); k++)
     {
         divergence[k] = 0;
-        for (int sid=0; sid<cell->n_sides; sid++)
+        for (int sid=0; sid<cell->n_sides(); sid++)
         {
-            if (cell->side[sid]->dim != dim-1) continue;
+            if (cell->side(sid)->dim() != dim-1) continue;
             int num = dim*(dim+1)/2;
-            for (int i=0; i<cell->side[sid]->n_nodes; i++)
-                num -= node_nums[cell->side[sid]->node[i]];
-            divergence[k] += trace(fv.shape_grad_vector(num,k))*cell->side[sid]->flux;
+            for (int i=0; i<cell->side(sid)->n_nodes(); i++)
+                num -= node_nums[cell->side(sid)->node(i)];
+            divergence[k] += trace(fv.shape_grad_vector(num,k)) * mh_dh->side_flux( *(cell->side(sid)) );
         }
     }
 }
@@ -906,7 +924,7 @@ void TransportDG::calculate_dispersivity_tensor(vector<mat33> &K, vector<vec3> &
 }
 
 
-void TransportDG::set_DG_parameters(const Neighbour *n,
+void TransportDG::set_DG_parameters(const Edge *edg,
             const int s1,
             const int s2,
             const unsigned int n_points,
@@ -920,33 +938,27 @@ void TransportDG::set_DG_parameters(const Neighbour *n,
 {
     double delta[2];
     double h = 0;
-    double fluxes[n->n_sides];
-    Side *s = (n->side[s1]==NULL)?n->side[s2]:n->side[s1];
+    double fluxes[edg->n_sides];
+
+    ASSERT(edg->side(s1)->valid(), "Invalid side of an edge.");
+    SideIter s = edg->side(s1);
 
     // calculate the side diameter
-    if (s->dim == 0)
+    if (s->dim() == 0)
     {
         h = 1;
     }
     else
     {
-        for (int i=0; i<s->n_nodes; i++)
-            for (int j=i+1; j<s->n_nodes; j++)
-                h = max(h, s->node[i]->distance(*s->node[j]));
+        for (int i=0; i<s->n_nodes(); i++)
+            for (int j=i+1; j<s->n_nodes(); j++)
+                h = max(h, s->node(i)->distance(*s->node(j)));
     }
 
     // calculate the total in- and out-flux through the edge
-    if (n->side[0] == NULL)
-    {
-        fluxes[0] = -n->side[1]->flux;
-    }
-    else
-    {
-        fluxes[0] = n->side[0]->flux;
-    }
-    for (int i=1; i<n->n_sides; i++) fluxes[i] = n->side[i]->flux;
+    for (int i=0; i<edg->n_sides; i++) fluxes[i] = mh_dh->side_flux( *(edg->side(i)) );
     double pflux = 0, nflux = 0;
-    for (int i=0; i<n->n_sides; i++)
+    for (int i=0; i<edg->n_sides; i++)
     {
         if (fluxes[i] > 0)
             pflux += fluxes[i];
@@ -1026,21 +1038,21 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
 {
     double delta[2];
     double h = 0;
-    Side *side = edge->side[0];
+    SideIter side = edge->side(0);
 
     // calculate the side diameter
-    if (side->dim == 0)
+    if (side->dim() == 0)
     {
         h = 1;
     }
     else
     {
-        for (int i=0; i<side->n_nodes; i++)
-            for (int j=i+1; j<side->n_nodes; j++)
-                h = max(h, side->node[i]->distance(*side->node[j]));
+        for (int i=0; i<side->n_nodes(); i++)
+            for (int j=i+1; j<side->n_nodes(); j++)
+                h = max(h, side->node(i)->distance( *side->node(j) ));
     }
 
-    gamma = 0.5*advection*fabs(side->flux);
+    gamma = 0.5*advection*fabs( mh_dh->side_flux( *(side) ) );
 
 	omega[0] = 1;
 
@@ -1093,7 +1105,7 @@ void TransportDG::read_initial_condition(string concentration_fname)
         eid   = atoi( xstrtok( line ) );
         ElementFullIter cell = mesh_->element.find_id(eid);
 
-        switch (cell->dim)
+        switch (cell->dim())
         {
         case 1:
             dof_handler1d->get_dof_indices(cell, dof_indices);

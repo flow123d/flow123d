@@ -8,12 +8,12 @@
 #ifndef LOCAL_TO_GLOBAL_MAP_HH_
 #define LOCAL_TO_GLOBAL_MAP_HH_
 
-
-#include <system/global_defs.h>
 #include <set>
 #include <vector>
 
 #include "system/system.hh"
+#include "system/global_defs.h"
+
 
 class Distribution;
 

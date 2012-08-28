@@ -65,16 +65,6 @@
       
       reactions = {
         TYPE="LinearReactions",
-        substances = [
-          "A",
-          "B",
-          "C",
-          "D",
-          "E",
-          "F",
-          "G",
-          "H"
-        ],
         decays = [
           {
             parent = "E",
@@ -111,7 +101,7 @@
               0.6
             ]
           },
-          {
+            {
             parent = "A",
             half_life = 0.5,
             products = [

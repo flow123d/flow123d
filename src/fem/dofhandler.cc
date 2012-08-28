@@ -73,7 +73,7 @@ void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe,
     FOR_ELEMENTS(mesh,cell)
     {
         // skip cells of different dimension
-        if (cell->dim != dim) continue;
+        if (cell->dim() != dim) continue;
 
         // distribute dofs
         // TODO: For the moment we distribute only dofs associated to the cell
@@ -193,6 +193,8 @@ void DOFHandler<dim,spacedim>::get_dof_values(const CellIterator &cell, const Ve
 template<unsigned int dim, unsigned int spacedim> inline
 const unsigned int DOFHandler<dim,spacedim>::global_dof_id(const CellIterator &cell, const unsigned int local_dof_id)
 {
+    // WARNING: This method does not work properly (see get_dof_indices()).
+    
     ASSERT(local_dof_id<n_dofs, "Number of local dof is out of range.");
     unsigned int count_dofs = 0;
     for (int dm=0; dm<=dim; dm++)
@@ -202,7 +204,10 @@ const unsigned int DOFHandler<dim,spacedim>::global_dof_id(const CellIterator &c
             int side_dof = count_dofs + cell->n_sides_by_dim(dm) - local_dof_id;
             if (side_dof > 0)
             {
-                return object_dofs[dm][cell->side_by_dim(dm,i)][side_dof];
+                // bad idea to use void * in the dof map
+                // we try to convert SideIter into an pointer
+                // nevertheless why we need void * for side, that dofs are on Element isn't it?
+                return object_dofs[dm][ cell->side(i)->make_ptr() ][side_dof];
             }
             else
             {

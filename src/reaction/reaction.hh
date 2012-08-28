@@ -32,7 +32,7 @@ class Reaction: public EquationBase
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, std::vector<string> &names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const std::vector<string> &names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
 		/**
 		*	Destructor.
 		*/
@@ -45,22 +45,18 @@ class Reaction: public EquationBase
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		virtual void compute_one_step(void);
+
+		/**
+		 * Returns number of substances involved in reactions. This should be same as number of substances in transport.
+		 */
+        inline unsigned int n_substances()
+        { return names_.size(); }
+
+
 		/**
 		* 	It returns current time step used for first order reactions.
 		*/
 		double get_time_step(void);
-		/**
-		*	It enables to set a number of transported species to set a size of reaction matrix.
-		*/
-		void set_nr_of_species(int n_substances);
-		/**
-		*	It returns a number of decays defined in input-file.
-		*/
-		int get_nr_of_decays(void);
-		/**
-		*	It returns a number of first order reactions defined in input-file.
-		*/
-		int get_nr_of_FoR(void);
 		/**
 		*	This method enables to change a data source the program is working with, during simulation.
 		*/
@@ -80,14 +76,6 @@ class Reaction: public EquationBase
 		void get_parallel_solution_vector(Vec &vc);
 		void get_solution_vector(double* &vector, unsigned int &size);
 		/**
-		* Temporary function instead of overtyping Reaction descendant to Linear_reaction.
-		*/
-		//virtual double **modify_reaction_matrix(Input::Record in_rec);
-		/**
-		*  Sets the & to substance names
-		*/
-		void set_names(std::vector<string> &names);
-		/**
 		* Function for setting dual porosity.
 		*/
 		void set_dual_porosity(bool dual_porosity_on);//(Input::Record in_rec);
@@ -97,33 +85,13 @@ class Reaction: public EquationBase
 		*/
 		Reaction();
 		/**
-		*	This method enables to change total number of elements contained in mesh.
-		*/
-		void set_nr_of_elements(int nrOfElements);
-		/**
-		*	This method transfer pointer to mesh between a transport and reactive part of a program.
-		*/
-		void set_mesh_(Mesh *mesh);
-		/**
-		*	This method reads from ini-file an information how many radioactive decays are under consideration.
-		*/
-		//void set_nr_of_decays(void); //Osbolete function.
-		/**
-		*	This method reads from ini-file an information how many first order reactions are under consideration.
-		*/
-		//void set_nr_of_FoR(void); //Obsolete function
-		/**
 		*	Enables to compute factorial k!.
 		*/
 		int faktorial(int k);
 		/**
 		*	Finds a position of a string in specified array.
 		*/
-		int find_index(std::string name);
-		/**
-		*	Contains number of transported chemical species.
-		*/
-		int nr_of_species;
+		unsigned int find_subst_name(const std::string &name);
 		/**
 		*	Boolean which enables to compute reactions also in immobile pores.
 		*/
@@ -132,14 +100,6 @@ class Reaction: public EquationBase
 		*	Holds the double describing time step for radioactive decay or first order reactions simulations.
 		*/
 		double time_step;
-		/**
-		*	Containes information about total number of elements.
-		*/
-		int nr_of_elements;
-		/**
-		*	Informs how many decay chains are under consideration. It means a number of [Decay_i] sections in ini-file.
-		*/
-		int nr_of_decays;
 		/**
 		*	Informs how many firts order reactions of the type A -> B are under consideration. It is a number of [FoReaction_i] in ini-file.
 		*/
@@ -157,11 +117,7 @@ class Reaction: public EquationBase
 		*/
 		double *prev_conc;
 		/**
-		* Number of further species in Semchem, which can never be exhausted.
-		*/
-		//int nr_of_further_species;
-		/**
-		* Names belonging to substances.
+		* Names belonging to substances. Should be same as in the transport.
 		*/
 		vector<string> names_;
 };

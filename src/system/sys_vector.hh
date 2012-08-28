@@ -380,7 +380,7 @@ public:
     /**
      * For given pointer returns the index of the element in the Vector. The first element has zero index.
      */
-    inline unsigned int index(Iter pointer) const
+    inline unsigned int index(const T * pointer) const
         {
           ASSERT( pointer >= &(storage.front()) && pointer <= &(storage.back()),
                 "Wrong pointer %p to obtain its index (%p, %p).\n",pointer, &(storage.front()), &(storage.back()));

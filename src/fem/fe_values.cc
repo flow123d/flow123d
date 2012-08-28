@@ -292,7 +292,7 @@ FESideValues<dim,spacedim>::~FESideValues()
 
 template<unsigned int dim,unsigned int spacedim> inline
 void FESideValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell,
-                                        Side *side)
+                                        SideIter side)
 {
     this->data.present_cell = &cell;
 

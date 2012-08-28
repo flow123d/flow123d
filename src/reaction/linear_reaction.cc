@@ -25,7 +25,7 @@ Input::Type::Record & Linear_reaction::get_one_decay_substep()
                 "Kinetic constants describing first order reactions.");
 		rec.declare_key("products", Array(String()), Default::obligatory(),
 				"Identifies isotopes which decays parental atom to.");
-		rec.declare_key("branch_ratios", Array(Double()), Default::optional(),
+		rec.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
 				"Decay chain branching percentage.");
 		rec.finish();
 	}
@@ -65,7 +65,7 @@ Input::Type::Record & Linear_reaction::get_input_type()
 using namespace std;
 
 Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: Reaction(marks, init_mesh, material_database, in_rec, names), half_lives(NULL), substance_ids(NULL), reaction_matrix(NULL), bifurcation_on(false), prev_conc(NULL), matrix_exp_on(false)
+	: Reaction(marks, init_mesh, material_database, in_rec, names), reaction_matrix(NULL)
 {
 
 	//Input::Array names_array = in_rec.val<Input::Array>("substances");
@@ -83,6 +83,8 @@ Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialData
 	//set_bifurcation(in_rec); //this probably fails
 	//xprintf(Msg,"\n4. Linear_reaction constructor runs.\n");
 	prepare_inputs(in_rec);
+    allocate_reaction_matrix();
+
 	set_time_step(0.5);
 }
 
@@ -90,43 +92,25 @@ Linear_reaction::~Linear_reaction()
 {
 	int i, rows, n_subst;
 
-	//n_subst = sizeof(*reaction_matrix)/sizeof(double *);
-	if(half_lives != NULL){
-		free(half_lives);
-		half_lives = NULL;
-	}
-
-	if(substance_ids != NULL){
-		free(substance_ids);
-		substance_ids = NULL;
-	}
-
-	if(prev_conc != NULL){
-		free(prev_conc);
-		prev_conc = NULL;
-	}
-
 	release_reaction_matrix();
 }
 
 double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
 {
-	int index, rows, cols, dec_nr, prev_index;
-	char dec_name[30];
+	int rows, cols;
 
 	cout << "We are going to allocate reaction matrix" << endl;
-	if(reaction_matrix == NULL)reaction_matrix = (double **)xmalloc(nr_of_species * sizeof(double*));//allocation section
-	for(rows = 0; rows < nr_of_species; rows++){
-		reaction_matrix[rows] = (double *)xmalloc(nr_of_species * sizeof(double));
+	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
+	for(rows = 0; rows < n_substances(); rows++){
+		reaction_matrix[rows] = (double *)xmalloc(n_substances() * sizeof(double));
 	}
-	for(rows = 0; rows < nr_of_species;rows++){
-	 for(cols = 0; cols < nr_of_species; cols++){
-		 if(rows == cols){
-			 reaction_matrix[rows][cols] = 1.0;
-		 }
+	for(rows = 0; rows < n_substances();rows++){
+	 for(cols = 0; cols < n_substances(); cols++){
+		 if(rows == cols)   reaction_matrix[rows][cols] = 1.0;
+		 else           	reaction_matrix[rows][cols] = 0.0;
 	 }
 	}
-	//print_reaction_matrix();
+	print_reaction_matrix();
 	return reaction_matrix;
 }
 
@@ -178,274 +162,119 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 }*/
 
 double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are supposed to be known
-{
-	int rows,cols, index_par, bif_id;
-	int *index_child;
-	double rel_step, prev_rel_step;
+        {
+    unsigned int index_par;
+    double rel_step, prev_rel_step;
 
-	half_lives = (double *)xmalloc(nr_of_decays * sizeof(double));
-	bifurcation.resize(nr_of_decays);
+    if (reaction_matrix == NULL) {
+        xprintf(Warn, "\nReaction matrix pointer is NULL.\n");
+        return NULL;
+    }
 
-	if(reaction_matrix == NULL){
-		xprintf(Msg,"\nReaction matrix pointer is NULL.\n");
-		return NULL;
-	}
+    for (int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
+        index_par = substance_ids[i_decay][0];
+        rel_step = time_step / half_lives[i_decay];
+        reaction_matrix[index_par][index_par] = pow(0.5, rel_step);
 
-	if(nr_of_decays > 0){
-		//pole rozpadu nemuze byt pouzito
-		for(int dec_nr = 0; dec_nr < nr_of_decays; dec_nr++)
-		{
-			index_par = substance_ids[dec_nr][0];
-
-			rel_step = time_step/half_lives[dec_nr];
-			reaction_matrix[index_par][index_par] = pow(0.5,rel_step);
-
-			int nr_of_indices = sizeof(*(substance_ids[dec_nr]))/sizeof(int);//(double);
-			for(int i = 0; i < nr_of_indices; ++i)
-			{
-					reaction_matrix[index_par][substance_ids[dec_nr][i]] = (1 - pow(0.5,rel_step)) * bifurcation[dec_nr][i];
-			}
-		}
-	}
-	print_reaction_matrix();//just for control print
-	return reaction_matrix;
+        for (int i_product = 1; i_product < substance_ids[i_decay].size(); ++i_product)
+            reaction_matrix[index_par][ substance_ids[i_decay][i_product] ]
+                                       = (1 - pow(0.5, rel_step))* bifurcation[i_decay][i_product-1];
+    }
+    print_reaction_matrix(); //just for control print
+    return reaction_matrix;
 }
 
 double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-    int cols, rows, both;
+    int cols, rows;
 
-	if(nr_of_decays > 0){
-		for(cols = 0; cols < nr_of_species; cols++){
+    if (reaction_matrix == NULL) return concentrations;
+
+	for(cols = 0; cols < n_substances(); cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
 		concentrations[cols][loc_el] = 0.0;
-		}
-        for(rows = 0; rows <nr_of_species; rows++){
-            for(cols = 0; cols <nr_of_species; cols++){
-                concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
-            }
-        }
 	}
+
+	for(rows = 0; rows < n_substances(); rows++){
+        for(cols = 0; cols < n_substances(); cols++){
+            concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
+        }
+    }
+
 	return concentrations;
 }
 
-/*double *Linear_reaction::set_half_lives(Input::Record in_rec)
-{
-	char  buffer[1024];
-	char *pom_buf;
-	int j = 0;
-	int i=0;
 
-	Input::Array decay_array = in_rec.val<Input::Array>("decays");
-	int size = decay_array.size();
-	//nr_of_isotopes = size;
+void Linear_reaction::print_half_lives(int nr_of_substances) {
+    int i;
 
-	if(half_lives != NULL){
-			free(half_lives);
-			half_lives = NULL;
-	}
-	if(half_lives == NULL){
-		half_lives = (double *)xmalloc(size * sizeof(double));
-	}
-
-	for (Input::Iterator<Input::Record> it = decay_array.begin<Input::Record>(); it != decay_array.end(); ++it)
-	{
-	  Input::Iterator<double> it_hl = it->find<double>("half_life");
-	  if (it_hl) {
-           half_lives[i] = *it_hl;
-	   } else {
-	       it_hl = it->find<double>("kinetic");
-	       if (it_hl) {
-	    	   half_lives[i] = log(2)/(*it_hl);
-	       } else {
-	         xprintf(Msg, "You did not specify either the half life nor kinetic konstant for %d substep of decay chain.\n", i);
-	         exit(1);
-	       }
-	   }
-	  i++;
-	}
-	return half_lives;
-}*/
-
-void Linear_reaction::print_half_lives(int nr_of_substances)
-{
-	int i;
-
-	if(half_lives == NULL)
-	{
-		xprintf(Msg,"\nHalf-lives are not defined.");
-	}else{
-		xprintf(Msg,"\nHalf-lives are defined as:");
-		for(i=0; i < (nr_of_substances - 1) ; i++)
-		{
-			if(i < (nr_of_substances  - 2)) //cout << " " << half_lives[i] <<",";
-				xprintf(Msg," %f", half_lives[i]);
-			if(i == (nr_of_substances  - 2)) //cout << " " << half_lives[i] <<"\n";
-				xprintf(Msg," %f\n", this->half_lives[i]);
-		}
-	}
-	return;
+    xprintf(Msg, "\nHalf-lives are defined as:");
+    for (i = 0; i < (nr_of_substances - 1); i++) {
+        if (i < (nr_of_substances - 2)) //cout << " " << half_lives[i] <<",";
+            xprintf(Msg, " %f", half_lives[i]);
+        if (i == (nr_of_substances - 2)) //cout << " " << half_lives[i] <<"\n";
+            xprintf(Msg, " %f\n", this->half_lives[i]);
+    }
 }
 
-/*int **Linear_reaction::set_indices(Input::Record in_rec) //(int index, int nr_of_substances)
-{
-
-	if(substance_ids != NULL){
-		free(substance_ids);
-		substance_ids = NULL;
-	}
-	if(substance_ids == NULL){
-		substance_ids = (int **)xmalloc(nr_of_decays*sizeof(int*));
-	}
-
-	Input::Array decay_array = in_rec.val<Input::Array>("decays");
-
-	int dec_nr = 0;
-	for(Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it)
-	{
-		string parent_name = dec_it->val<string>("parent");
-		Input::Array bif_array = dec_it->val<Input::Array>("products");
-
-		if(bif_array.size() > 0)
-		{
-			substance_ids[dec_nr] = (int*)xmalloc((bif_array.size() + 1)*sizeof(int)); //products Ids + parental atom Id
-		}else{
-			xprintf(Msg,"For some reason you forget to dedine products of %d-th reaction.\n", dec_nr);
-			exit(1);
-		}
-		int pos = find_index(parent_name);
-		if(pos > -1)
-		{
-			substance_ids[dec_nr][0] = pos;
-		}else{
-			xprintf(Msg,"In %d decay chain substep you used undefined parental atom.", dec_nr);
-			exit(1);
-		}
-
-		int prod_pos = 0;
-		for(Input::Iterator<string> bif_it = bif_array.begin<string>(); bif_it != bif_array.end(); ++bif_it, ++prod_pos)
-		{
-			int pos = find_index(*bif_it);
-			if(pos > -1)
-			{
-				substance_ids[dec_nr][prod_pos] = pos;
-			}else{
-				xprintf(Msg,"In %d decay chain substep you used undefined %d-th product atom.", dec_nr, prod_pos);
-				exit(1);
-			}
-		}
-		dec_nr++;
-	}
-	 return substance_ids;
-}
-
-void Linear_reaction::set_bifurcation(Input::Record in_rec) // (int index, Input::Record in_rec)
-{
-
-	Input::Array decay_array = in_rec.val<Input::Array>("decays");
-
-		int dec_nr = 0;
-		for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it)
-		{
-			xprintf(Msg,"decay_iterator\n");
-			Input::Array bif_array = dec_it->find<Input::Array>("branch_ratios");
-			int nr_of_prod = bif_array.size();
-			xprintf(Msg,"Nr_of_products is %d\n",nr_of_prod);
-			bifurcation[dec_nr].resize(nr_of_prod + 1);
-    		bifurcation[dec_nr][0]= 1.0;
-			//kdyz bude 1, tak bysem mel dát do radku bifurkaci jednicku, viz par radku nize
-	    	if(nr_of_prod > 1)
-	    	{
-		    	bif_array.copy_to(bifurcation[dec_nr]);
-			}
-	    	dec_nr++;
-		}
-	return;
-}*/
-
+// TODO: check duplicity of parents
+//       raise warning if sum of ratios is not one
 void Linear_reaction::prepare_inputs(Input::Record in_rec)
 {
+    unsigned int idx;
+
 	Input::Array decay_array = in_rec.val<Input::Array>("decays");
-	nr_of_decays = decay_array.size();
-	nr_of_isotopes = nr_of_decays;
 
-	if(substance_ids != NULL){
-		free(substance_ids);
-		substance_ids = NULL;
-	}
-	if(substance_ids == NULL){
-		substance_ids = (int **)xmalloc(nr_of_decays*sizeof(int*));
-	}
+	substance_ids.resize( decay_array.size() );
+	half_lives.resize( decay_array.size() );
+	bifurcation.resize( decay_array.size() );
 
-	int i=0;
-
-	if(half_lives != NULL){
-		free(half_lives);
-		half_lives = NULL;
-	}
-	if(half_lives == NULL){
-		half_lives = (double *)xmalloc(decay_array.size() * sizeof(double));
-	}
-
-	int dec_nr = 0;
-	for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it)
+	int i_decay=0;
+	for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it, ++i_decay)
 	{
 		//half-lives determining part
 		Input::Iterator<double> it_hl = dec_it->find<double>("half_life");
 		if (it_hl) {
-		   half_lives[i] = *it_hl;
+		   half_lives[i_decay] = *it_hl;
 		} else {
 		   it_hl = dec_it->find<double>("kinetic");
 		   if (it_hl) {
-			   half_lives[i] = log(2)/(*it_hl);
+			   half_lives[i_decay] = log(2)/(*it_hl);
 		   } else {
-		    xprintf(Msg, "You did not specify either the half life nor kinetic konstant for %d substep of decay chain.\n", i);
-		    exit(1);
+		    xprintf(UsrErr, "Missing half-life or kinetic in the %d-th reaction.\n", i_decay);
 		  }
 		}
-		i++;
 
 		//indices determining part
 		string parent_name = dec_it->val<string>("parent");
-		Input::Array bif_array = dec_it->val<Input::Array>("products");
+		Input::Array product_array = dec_it->val<Input::Array>("products");
+		Input::Array ratio_array = dec_it->val<Input::Array>("branch_ratios"); // has default value [ 1.0 ]
 
-		if(bif_array.size() > 0)
+		// substance_ids contains also parent id
+		if (product_array.size() > 0)   substance_ids[i_decay].resize( product_array.size()+1 );
+		else			xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_decay);
+
+
+		// set parent index
+		idx = find_subst_name(parent_name);
+		if (idx < n_substances())	substance_ids[i_decay][0] = idx;
+		else                		xprintf(UsrErr,"Wrong name of parent substance in the %d-th reaction.\n", i_decay);
+
+		// set products
+		unsigned int i_product = 1;
+		for(Input::Iterator<string> product_it = product_array.begin<string>(); product_it != product_array.end(); ++product_it, i_product++)
 		{
-			substance_ids[dec_nr] = (int*)xmalloc((bif_array.size() + 1)*sizeof(int)); //products Ids + parental atom Id
-		}else{
-			xprintf(Msg,"For some reason you forget to dedine products of %d-th reaction.\n", dec_nr);
-			exit(1);
-		}
-		int pos = find_index(parent_name);
-		if(pos > -1)
-		{
-			substance_ids[dec_nr][0] = pos;
-		}else{
-			xprintf(Msg,"In %d decay chain substep you used undefined parental atom.", dec_nr);
-			exit(1);
-		}
-		int prod_pos = 0;
-		for(Input::Iterator<string> bif_it = bif_array.begin<string>(); bif_it != bif_array.end(); ++bif_it, ++prod_pos)
-		{
-			int pos = find_index(*bif_it);
-			if(pos > -1)
-			{
-				substance_ids[dec_nr][prod_pos] = pos;
-			}else{
-				xprintf(Msg,"In %d decay chain substep you used undefined %d-th product atom.", dec_nr, prod_pos);
-				exit(1);
-			}
+			idx = find_subst_name(*product_it);
+			if (idx < n_substances())   substance_ids[i_decay][i_product] = idx;
+			else                    	xprintf(Msg,"Wrong name of %d-th product in the %d-th reaction.\n", i_product-1 , i_decay);
 		}
 
 		//bifurcation determining part
-		Input::Array branch_array = dec_it->val<Input::Array>("branch_ratios");
-		int nr_of_prod = branch_array.size();
-		bifurcation[dec_nr].resize(nr_of_prod);
-	    branch_array.copy_to(bifurcation[dec_nr]);
+        if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation[i_decay] );
+        else            xprintf(UsrErr,"Number of branches %d has to match number of products %d in the %d-th reaction.\n",
+                                       ratio_array.size(), product_array.size(), i_decay);
 
-	    dec_nr++;
 	}
-	return;
 }
 
 void Linear_reaction::set_time_step(double new_timestep, Input::Record in_rec)
@@ -475,6 +304,9 @@ void Linear_reaction::set_time_step(double new_timestep)
 	return;
 }
 
+
+
+
 void Linear_reaction::compute_one_step(void)
 {
     if (reaction_matrix == NULL)   return;
@@ -497,7 +329,7 @@ void Linear_reaction::release_reaction_matrix(void)
 	int i;
 	if(reaction_matrix != NULL)
 	{
-		for(i = 0; i < nr_of_isotopes; i++)
+		for(i = 0; i < n_substances(); i++)
 		{
 			if(reaction_matrix[i] != NULL)
 			{
@@ -510,12 +342,7 @@ void Linear_reaction::release_reaction_matrix(void)
 	}
 }
 
-void Linear_reaction::set_nr_of_isotopes(int Nr_of_isotopes)
-{
-	nr_of_isotopes = Nr_of_isotopes;
-	return;
-}
-
+/*
 void Linear_reaction::print_indices(int dec_nr, int nr_of_substances)
 {
 	int i;
@@ -532,7 +359,7 @@ void Linear_reaction::print_indices(int dec_nr, int nr_of_substances)
 		}
 	}
 	return;
-}
+}*/
 
 void Linear_reaction::print_reaction_matrix(void)
 {
@@ -540,14 +367,11 @@ void Linear_reaction::print_reaction_matrix(void)
 
 	if(reaction_matrix != NULL){
 		xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_step);
-		for(rows = 0; rows < nr_of_species; rows++){
-			for(cols = 0; cols < nr_of_species; cols++){
-				if(cols == (nr_of_species - 1)){
-					xprintf(Msg,"%f\n",reaction_matrix[rows][cols]);
-				}else{
+		for(rows = 0; rows < n_substances(); rows++){
+			for(cols = 0; cols < n_substances(); cols++){
 					xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);
-				}
 			}
+			xprintf(Msg,"\n");
 		}
 	}else{
 		xprintf(Msg,"\nReaction matrix needs to be allocated.\n");

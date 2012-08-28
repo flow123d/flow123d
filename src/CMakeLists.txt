@@ -36,7 +36,8 @@ set(sources_lib_non_system
     fem/finite_element.cc
     fem/mapping_p1.cc
 
-    flow/local_matrix.cc
+    flow/mh_fe_values.cc
+    flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
 
@@ -58,7 +59,7 @@ set(sources_lib_non_system
 
     reaction/reaction.cc
     reaction/linear_reaction.cc
-#    reaction/pade_approximant.cc
+    reaction/pade_approximant.cc
     semchem/semchem_interface.cc
 
 

@@ -72,14 +72,15 @@ public:
     /** \brief Calculate values for output.  **/
     void output();
 
+
 private:
     void make_side_flux();
     void make_element_scalar();
     void make_element_vector();
 
-    void make_element_vector_line(ElementFullIter, arma::vec3 &vec);
-    void make_element_vector_triangle(ElementFullIter, arma::vec3 &vec);
-    void make_element_vector_tetrahedron(ElementFullIter, arma::vec3 &vec);
+    //void make_element_vector_line(ElementFullIter, arma::vec3 &vec);
+    //void make_element_vector_triangle(ElementFullIter, arma::vec3 &vec);
+    //void make_element_vector_tetrahedron(ElementFullIter, arma::vec3 &vec);
 
     void make_sides_scalar();
     /**
@@ -109,6 +110,8 @@ private:
     Mesh *mesh_;
     OutputTime *output_writer;
     TimeMark::Type output_mark_type;
+
+
 
     /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by
      *  more general scheme, where you can switch every output field on or off.

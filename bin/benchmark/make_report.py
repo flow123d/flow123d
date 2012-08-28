@@ -94,7 +94,6 @@ def main():
                 minProcInfo = fileInfo[0]
                 for info in fileInfo:
                     if info.tags.has_key(timerTag) and minProcInfo.tags.has_key(timerTag):
-
                         effectivity = ((minProcInfo.tags[timerTag] * minProcInfo.proc) / (info.tags[timerTag] * info.proc)) * (info.taskSize / minProcInfo.taskSize)
                         outFile.write(str("%.2f" % effectivity).rjust(7))
 
@@ -116,7 +115,19 @@ def main():
 
     outFile.close()
     
+    graph1(dir,timerTag,longestTag,fileInfo)
+    graph2(dir,timerTag,longestTag,fileInfo,constantProcNumber,constantTaskSize)
+    
+    
+    sys.exit()
+    
+    
+    ###
+    
     # T(p)
+    
+def graph1(dir,timerTag,longestTag,fileInfo):
+    
     for timerTag in tagsToProcess:         
         outFile = file(os.path.join(dir, 'graph.dat'), "w")
         outFile.write("# n. proc".ljust(2))
@@ -147,7 +158,13 @@ def main():
      os.system("gnuplot '"+os.path.join(dir, tagsToProcess[i])+".gps'")
      
      
+     ###
+     
      # E(p), size = const
+     
+     
+def graph2(dir,timerTag,longestTag,fileInfo,constantProcNumber,constantTaskSize):     
+
     for timerTag in tagsToProcess:         
         outFile = file(os.path.join(dir, 'graphx.dat'), "w")
         outFile.write("# n. proc".ljust(2))
@@ -207,11 +224,13 @@ def main():
      outFile.write("pause -1")
      outFile.close()
      os.system("gnuplot '"+os.path.join(dir, tagsToProcess[i])+".gpse'")     
-          
+       
+       
+     ###  
      
      # E(p), size != const
       
-    sys.exit()
+    
     
       #Create a title:                  > set title "Force-Deflection Data" 
       #Put a label on the x-axis:       > set xlabel "Deflection (meters)"

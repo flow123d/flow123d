@@ -17,7 +17,7 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
-//#include "reaction/pade_approximant.hh"
+#include "reaction/pade_approximant.hh"
 
 #include "semchem/semchem_interface.hh"
 
@@ -111,33 +111,29 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
-		DBGMSG("\nReactions are defined in con-file.\n");
-	    // Chemistry initialization
+		if (reactions_it->type() == Linear_reaction::get_input_type() ) {
+	        decayRad =  new Linear_reaction(marks, init_mesh, material_database, *reactions_it,
+	                                        convection->get_substance_names());
+	        convection->get_par_info(el_4_loc, el_distribution);
+	        decayRad->set_dual_porosity(convection->get_dual_porosity());
+	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
+	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
-	    // todo LinReact type dispatch
-
-	    //decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), * reactions_it);
-	//if(in_rec.val<bool>("matrix_exp_on")== true)
-		//decayRad = (Pade_approximant *) new Pade_approximant(marks, init_mesh, material_database, in_rec);
-	//else
-		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database, *reactions_it, convection->get_substance_names()); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
-	// decayRad = new Linear_reaction(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity(), in_rec);
-	    //convection->get_par_info(el_4_loc, el_distribution); //Temporarily commented.
-		decayRad->set_nr_of_species(convection->get_n_substances());
-		decayRad->allocate_reaction_matrix();
-		decayRad->set_names(convection->get_substance_names());
-		decayRad->set_dual_porosity(convection->get_dual_porosity());
-		decayRad->modify_reaction_matrix();
-	    decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
-
-/*
-	    Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
-	    Semchem_reactions->set_el_4_loc(el_4_loc);
-	    Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
-	    */
-	    Semchem_reactions = NULL;
+	        Semchem_reactions = NULL;
+		} else
+	    if (reactions_it->type() == Pade_approximant::get_input_type() ) {
+	        decayRad = new Pade_approximant(marks, init_mesh, material_database, in_rec,
+	                                        convection->get_substance_names());
+	        Semchem_reactions = NULL;
+	    } else
+	    if (reactions_it->type() == Semchem_interface::get_input_type() ) {
+	        Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
+	        Semchem_reactions->set_el_4_loc(el_4_loc);
+	        Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	    } else {
+	        xprintf(UsrErr, "Wrong reaction type.\n");
+	    }
 	} else {
-	    DBGMSG("\nNo Reactions.\n");
 	    decayRad = NULL;
 	    Semchem_reactions = NULL;
 	}
@@ -246,9 +242,10 @@ void TransportOperatorSplitting::update_solution() {
 }
 
 
-void TransportOperatorSplitting::set_velocity_field(Vec &vec)
+void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 {
-	convection->set_flow_field_vector(&vec);
+    mh_dh = &dh;
+	convection->set_flow_field_vector( dh );
 };
 
 

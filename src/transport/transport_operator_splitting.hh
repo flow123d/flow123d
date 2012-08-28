@@ -5,6 +5,7 @@
 
 #include <limits>
 #include "io/output.h"
+#include "flow/mh_dofhandler.hh"
 
 
 /// external types:
@@ -31,7 +32,7 @@ class MaterialDatabase;
 class TransportBase : public EquationBase{
 public:
     TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
-    : EquationBase(marks, mesh, mat_base, in_rec )
+    : EquationBase(marks, mesh, mat_base, in_rec ), mh_dh(NULL)
     {}
 
     static Input::Type::AbstractRecord &get_input_type();
@@ -43,8 +44,12 @@ public:
      *
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
      */
-    virtual void set_velocity_field(Vec &velocity_vector) =0;
+    virtual void set_velocity_field(const MH_DofHandler &dh) {
+        mh_dh=&dh;
+    }
     virtual void output_data() =0;
+
+    const MH_DofHandler *mh_dh;
 };
 
 
@@ -95,7 +100,7 @@ public:
      */
     static Input::Type::Record &get_input_type();
 
-    virtual void set_velocity_field(Vec &velocity_vector);
+    virtual void set_velocity_field(const MH_DofHandler &dh);
 	virtual void update_solution();
 	void read_simulation_step(double sim_step);
 	//virtual void compute_one_step();
@@ -110,7 +115,7 @@ protected:
 private:
 
     ConvectionTransport *convection;
-    Linear_reaction *decayRad;
+    Reaction *decayRad; //Linear_reaction *decayRad;
     Semchem_interface *Semchem_reactions;
     //int steps;
     OutputTime *field_output;

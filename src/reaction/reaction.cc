@@ -21,8 +21,8 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 	static AbstractRecord rec("Reactions", "Equation for reading information about simple chemical reactions.");
 
 	if (!rec.is_finished()) {
-		rec.declare_key("substances", Array(String()), Default::obligatory(),
-								"Names of transported chemical species.");
+//		rec.declare_key("substances", Array(String()), Default::obligatory(),
+//								"Names of transported chemical species.");
 
 		rec.finish();
 
@@ -36,46 +36,11 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 
 using namespace std;
 
-Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: EquationBase(marks, init_mesh, material_database, in_rec), dual_porosity_on(false), prev_conc(NULL)
+Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const  vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+	: EquationBase(marks, init_mesh, material_database, in_rec),
+	  dual_porosity_on(false), prev_conc(NULL), names_(names)
 {
-	Input::Array decay_array = in_rec.val<Input::Array>("decays"); //Input::Array decay_array = in_rec.find<Input::Array>("decays");
-	nr_of_decays = decay_array.size();
-	//Input::Iterator<Input::Array> dec_it = in_rec.find<Input::Array>("decays");
-	//Asi nebude treba rozlisovat kineticke reakce a rozpady
-	/*nr_of_decays = 0;
-	nr_of_FoR = 0;
-	int i = 0;
-	for(Input::Iterator<Input::Array> dec_it = decay_array.find<Input::Array>("decays"); dec_it != decay_array.end(); ++dec_it)
-	{
-		i++;
-		Input::Iterator<double> it_hl = it->find<double>("half_life");
-		if (it_hl) {
-		    nr_of_decays++;
-		} else {
-		    it_hl = it->find<double>("kinetic");
-		    if (it_hl) {
-		   	   nr_of_FoR++;
-		    } else {
-		       xprintf(Msg, "You did not specify either the half life nor kinetic konstant for %d substep of decay chain.\n", i);
-		       exit(1);
-		    }
-		}
-	}*/
-
-	//Input::Array subst_array = in_rec.val<Input::Array>("substance_names"); //Number of all the substances contained in groundwater.
-	//set_names(Names);
-	nr_of_species = names_.size(); //subst_array.size();
-
-	//proverit nize uvedene predani dat
-	//this->dual_porosity_on = in_rec.val<bool>("dual_porosity");
-	//this->time_step = in_rec.val<double>("time_step");
-	set_nr_of_elements(mesh_->n_elements());
-	if(prev_conc != NULL){
-		free(prev_conc);
-		prev_conc = NULL;
-	}
-	prev_conc = (double *)xmalloc(nr_of_species * sizeof(double));
+	prev_conc = new double[ n_substances() ];
 	//if(timeStep < 1e-12) this->set_time_step(timeStep); else this->set_time_step(0.5); // temporary solution
 }
 
@@ -83,11 +48,10 @@ Reaction::~Reaction()
 {
 
 	if(prev_conc != NULL){
-		free(prev_conc);
+		delete[](prev_conc);
 		prev_conc = NULL;
 	}
 
-	//release_reaction_matrix();
 }
 
 double **Reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
@@ -102,17 +66,6 @@ void Reaction::compute_one_step(void)
 	 return;
 }
 
-void Reaction::set_nr_of_species(int n_substances)
-{
-	this->nr_of_species = n_substances;
-	return;
-}
-
-void Reaction::set_nr_of_elements(int nrOfElements)
-{
-	this->nr_of_elements = nrOfElements;
-	return;
-}
 
 void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc)
 {
@@ -192,24 +145,12 @@ void Reaction::set_time_step_constrain(double dt)
 	return 0;
 }*/
 
-int Reaction::find_index(string bif_it)
+unsigned int Reaction::find_subst_name(const string &name)
 {
-	int pos = -1;
-	int i = 0;
 
-	for(int k = 0; k < names_.size() && pos == -1; k++, i++)//Input::Iterator<string> name_it = names_array.begin<string>(); name_it != names_array.end() && (pos == -1); ++name_it, ++i)
-	{
-		if(bif_it.compare(names_[i]) == 0) //if (strcmp(*name_it, *child_name) == 0)
-		{
-	        pos = i;
-		}
-	}
+    unsigned int k=0;
+	for(; k < names_.size(); k++)
+		if (name == names_[k]) return k;
 
-	return pos;
-}
-
-void Reaction::set_names(std::vector<string> &names)
-{
-	names_ = names;
-	return;
+	return k;
 }
