@@ -133,10 +133,8 @@ void GetIntersection(const TBisector &B, const TAbscissa &A,
 
 void GetIntersection(const TAbscissa &A1, const TAbscissa &A2,
         TPosition &pos, double &t1, double &t2) {
-    void (*fGetIntersection)(const TBisector &, const TBisector &,
-            TPosition &, double &, double &);
-    fGetIntersection = GetIntersection;
-    fGetIntersection(A1, A2, pos, t1, t2);
+    
+    GetIntersection( (const TBisector &)A1, (const TBisector &)A2, pos, t1, t2);
     if (pos == intersecting)
         if (t1 > 1 + epsilon || t1 < 0 - epsilon ||
                 t2 > 1 + epsilon || t2 < 0 - epsilon)
@@ -146,10 +144,8 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2,
 
 void GetIntersection(const TAbscissa &A, const TBisector &B,
         TPosition &pos, double &t1, double &t2) {
-    void (*fGetIntersection)(const TBisector &, const TBisector &,
-            TPosition &, double &, double &);
-    fGetIntersection = GetIntersection;
-    fGetIntersection(A, B, pos, t1, t2);
+    
+    GetIntersection( (const TBisector &)A, (const TBisector &)B, pos, t1, t2);
     if (pos == intersecting)
         if (t1 > 1 + epsilon || t1 < 0 - epsilon)
             pos = skew;
@@ -455,16 +451,13 @@ void GetIntersection(const TBisector &B, const TTriangle &T,
 void GetIntersection(const TAbscissa &A, const TTriangle &T,
         TIntersectionType &it, double &t1, double &t2) {
 
-	void (*fGetIntersection)(const TBisector &, const TTriangle &,
-            TIntersectionType &, double &, double &);
 
     if (!QuickIntersectionTest(A, T)) {
         it = none;
         return;
     }
 
-    fGetIntersection = GetIntersection;
-    fGetIntersection(A, T, it, t1, t2);
+    GetIntersection( (const TBisector &)A, T, it, t1, t2);
 
     if (it == point || it == line) {
         if (t1 > 1 + epsilon || t1 < 0 - epsilon ||
