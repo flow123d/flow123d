@@ -101,6 +101,7 @@ endmacro()
 ##############################
 # test subdirs
 add_subdirectory("input")
+add_subdirectory("interpolation")
 add_subdirectory("la")
 add_subdirectory("system")
 
