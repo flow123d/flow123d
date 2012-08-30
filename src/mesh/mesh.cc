@@ -32,6 +32,12 @@
 
 
 #include "system/system.hh"
+#include "xio.h"
+
+#include <boost/tokenizer.hpp>
+
+#include "boost/lexical_cast.hpp"
+
 #include "mesh/mesh.h"
 
 // think about following dependencies
@@ -105,10 +111,7 @@ Mesh::Mesh() {
     side_nodes[2][3][0] = 0;
     side_nodes[2][3][1] = 1;
     side_nodes[2][3][2] = 2;
-
-
 }
-
 
 unsigned int Mesh::n_sides()
 {
@@ -138,7 +141,7 @@ void Mesh::count_element_types() {
         case 3:
             n_tetrahedras++;
             break;
-    }
+        }
 }
 
 /**
@@ -163,6 +166,10 @@ void Mesh::setup_topology() {
     count_side_types();
 
     read_boundary(mesh);
+
+    read_intersections(OptGetStr("Input", "Neighbouring", "\\"));
+    make_intersec_elements();
+
 
     xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
 
@@ -218,9 +225,7 @@ void Mesh::node_to_element()
     xprintf( MsgVerb, "O.K.\n");*/
 }
 
-//=============================================================================
 //
-//=============================================================================
 void Mesh::count_side_types()
 {
     struct Side *sde;
@@ -298,7 +303,6 @@ void Mesh::read_neighbours() {
                 break;
         }
     }
-
     //xprintf( Msg, " %d neighbours readed. ", n_vb_neighbours() );
 }
 
@@ -365,7 +369,7 @@ void Mesh::edge_to_side()
 
 /**
  * Make
- */
+ ***/
 void Mesh::neigh_vb_to_element_and_side()
 {
 
@@ -402,9 +406,8 @@ void Mesh::neigh_vb_to_element_and_side()
     ASSERT( new_ngh == vb_neighbours_.end(), "Some VB neigbourings wasn't set.\n");
 
 
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    xprintf( MsgVerb, "O.K.\n");
 }
-
 
 
 
@@ -452,5 +455,107 @@ void Mesh::setup_materials( MaterialDatabase &base)
 }
 
 
+void Mesh::read_intersections(string file_name) {
+
+    using namespace boost;
+
+    string mortar_method = OptGetStr("Input", "mortar_method", "None");
+    if (mortar_method == "None") return;
+
+    file_name = IONameHandler::get_instance()->get_input_file_name(file_name);
+    ElementFullIter master(element), slave(element);
+
+    char tmp_line[LINE_SIZE];
+    FILE *in = xfopen(file_name, "rt");
+
+    tokenizer<boost::char_separator<char> >::iterator tok;
+
+    xprintf( Msg, "Reading intersections...")/*orig verb 2*/;
+    skip_to(in, "$Intersections");
+    xfgets(tmp_line, LINE_SIZE - 2, in);
+    int n_intersect = atoi(xstrtok(tmp_line));
+    INPUT_CHECK( n_intersect >= 0 ,"Negative number of neighbours!\n");
+
+    intersections.reserve(n_intersect);
+
+    for (int i = 0; i < n_intersect; i++) {
+        xfgets(tmp_line, LINE_SIZE - 2, in);
+        string line = tmp_line;
+        tokenizer<boost::char_separator<char> > line_tokenizer(line, boost::char_separator<char>("\t \n"));
+
+        tok = line_tokenizer.begin();
+
+        try {
+            ++tok; // skip id token
+            int type = lexical_cast<int> (*tok);
+            ++tok;
+            int master_id = lexical_cast<int> (*tok);
+            ++tok;
+            int slave_id = lexical_cast<int> (*tok);
+            ++tok;
+            double sigma = lexical_cast<double> (*tok);
+            ++tok;
+
+            int n_intersect_points = lexical_cast<int> (*tok);
+            ++tok;
+            master = element.find_id(master_id);
+            slave = element.find_id(slave_id);
+
+            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, tok));
+        } catch (bad_lexical_cast &) {
+            xprintf(UsrErr, "Wrong number at line %d in file %s x%sx\n",i, file_name.c_str(),(*tok).c_str());
+        }
+
+    }
+
+    xprintf( Msg, "O.K.\n")/*orig verb 2*/;
+
+}
+
+
+void Mesh::make_intersec_elements() {
+
+     // calculate sizes and make allocations
+     vector<int >sizes(n_elements(),0);
+     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
+     sizes[i->master_iter().index()]++;
+     master_elements.resize(n_elements());
+     for(int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
+
+     // fill intersec_elements
+     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
+     master_elements[i->master_iter().index()].push_back( i-intersections.begin() );
+
+}
+
+/*
+void Mesh::make_edge_list_from_neigh() {
+    int edi;
+    Mesh *mesh = this;
+    struct Neighbour *ngh;
+
+    xprintf( Msg, "Creating edges from neigbours... ");
+
+    int n_edges = mesh->n_sides;
+    FOR_NEIGHBOURS( ngh )
+        if (ngh->type == BB_E || ngh->type == BB_EL)
+            n_edges-=( ngh->n_elements - 1 );
+
+    mesh->edge.resize(n_edges);
+
+    xprintf( MsgVerb, " O.K. %d edges created.", mesh->n_edges());
+
+    EdgeFullIter edg = mesh->edge.begin();
+    n_edges=0;
+    FOR_NEIGHBOURS( ngh )
+        if (ngh->type == BB_E || ngh->type == BB_EL) {
+            ngh->edge = edg;
+            edg->neigh_bb = ngh;
+            ++edg;
+            n_edges++;
+        }
+    xprintf( MsgVerb, "O.K. %d\n");
+
+}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

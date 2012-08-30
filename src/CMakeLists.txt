@@ -52,6 +52,7 @@ set(sources_lib_non_system
     mesh/nodes.cc
     mesh/sides.cc
     mesh/topology.cc
+    mesh/intersection.cc
 
     quadrature/quadrature_lib.cc
 

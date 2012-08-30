@@ -168,6 +168,9 @@ protected:
     void make_row_numberings();
     void preallocate_mh_matrix();
     void assembly_steady_mh_matrix();
+    void coupling_P0_mortar_assembly();
+    void mh_abstract_assembly_intersection();
+    //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
     void make_schur0();
     void make_schur1();
     void make_schur2();
@@ -215,6 +218,8 @@ protected:
         Mat IA2;                                         //< inverse of matrix IA2
 
         Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
+        
+        double mortar_sigma;
 };
 
 

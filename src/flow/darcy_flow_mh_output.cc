@@ -114,7 +114,7 @@ void DarcyFlowMHOutput::postprocess() {
 
 
 //    make_neighbour_flux();
-//    water_balance();
+    water_balance();
 }
 
 void DarcyFlowMHOutput::output()
@@ -590,8 +590,7 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
         ngh->flux = ngh->sigma * ngh->geom_factor * (ngh->element[1]->scalar - ngh->element[0]->scalar);
         continue;
     }
-}
-*/
+}*/
 
 //=============================================================================
 //
