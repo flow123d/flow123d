@@ -124,7 +124,7 @@ message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
 
 
 # check for subversion and prepare generating of file with revision info.
-find_package(Subversion REQUIRED)
+find_package(Subversion)
 
 # include the output directory, where the svnversion.h file is generated
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -192,7 +192,7 @@ if( PETSC_FOUND )
   add_custom_target(rev_num_always 
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
                          -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_svn_rev_num.cmake)
-
+  
   # rev_num.h is a generated file
   set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
     PROPERTIES GENERATED TRUE

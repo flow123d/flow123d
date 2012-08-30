@@ -4,8 +4,13 @@
 # the FindSubversion.cmake module is part of the standard distribution
 include(FindSubversion)
 
-# extract working copy information for SOURCE_DIR into Flow variable
-Subversion_WC_INFO(${SOURCE_DIR} Flow)
+if (Subversion_FOUND) 
+  # extract working copy information for SOURCE_DIR into Flow variable
+  Subversion_WC_INFO(${SOURCE_DIR} Flow)
+  message(STATUS "SVN revision: ${Flow_WC_REVISION}")
+else ()
+  set(Flow_WC_REVISION "unknown revision")
+endif()
 
 # write a file with the SVNVERSION define
 file(WRITE rev_num.h.tmp "#define REVISION \"${Flow_WC_REVISION}\"\n")
