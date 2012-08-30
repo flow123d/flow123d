@@ -288,7 +288,19 @@ FESideValues<dim,spacedim>::~FESideValues()
     delete this->quadrature;
 }
 
-
+/*
+ * TODO:
+ *
+ * 1) vytvorit tridu pro referencni elementy (ocislovani uzlu, sten, hran, vypocet normal)
+ * 2) upravit mapping->transform_subquadrature aby zavisela jen na lokalnim cislu steny
+ *    pro lepsi konzistenci radeji vracet vytvorenou kvadraturu jako posledni parametr
+ *
+ * 3) mit pole pro (quadrature, mapping_data, fe_data), predpocitano pro kazde lokalni cislo steny,
+ *    toto naplnit v konstruktoru, tim se zbavime opakovanych alokaci a predpocitavani
+ *
+ * 4) metody mapping->initialize a fe->initialize upravit tak, aby pouze plnily jiz predalokovane struktury.
+ *    Ty by se predali jako posledni parametr - pomoci reference.
+ */
 
 template<unsigned int dim,unsigned int spacedim> inline
 void FESideValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell,
