@@ -2,7 +2,6 @@
 #define matrixH
 
 #include <iostream>
-#include <armadillo>
 
 typedef enum {
     no_solution,
@@ -21,6 +20,7 @@ private:
 
 public:
     TMatrix(int);
+    TMatrix(const TMatrix &);
     TMatrix(int, int);
     ~TMatrix();
 
@@ -43,6 +43,7 @@ private:
 
 public:
     TMVector(int);
+    TMVector(const TMVector &);
     ~TMVector();
 
     void Set(int, double);

@@ -1,7 +1,6 @@
 #include "new_mesh/ngh/include/triangle.h"
 #include "new_mesh/ngh/include/config.h"
 #include "new_mesh/ngh/include/system.h"
-#include <armadillo>
 
 
 int TTriangle::numberInstance = 0;
@@ -30,7 +29,6 @@ TTriangle::TTriangle(const TTriangle& T) {
     pl = new TPlain(*T.pl);
 
     area = T.area;
-    boundingBox = T.boundingBox;
 }
 
 TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
@@ -47,7 +45,6 @@ TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
     pl = new TPlain(P1, P2, P3);
 
     ComputeArea();
-    compute_bounding_box();
 }
 
 TTriangle::~TTriangle() {
@@ -77,37 +74,37 @@ TTriangle::~TTriangle() {
 }
 
 TPlain TTriangle::GetPlain() const {
-    TPlain* tmp;
-    tmp = pl;
-    return *tmp;
+    TPlain tmp;
+    tmp = *pl;
+    return tmp;
 }
 
-TAbscissa TTriangle::GetAbscissa(int i) const {
-    TAbscissa* tmp;
+const TAbscissa &TTriangle::GetAbscissa(const int i) const {
     switch (i) {
-        case 1: tmp = A1;
+        case 1: return *A1;
             break;
-        case 2: tmp = A2;
+        case 2: return *A2;
             break;
-        case 3: tmp = A3;
+        case 3: return *A3;
             break;
-        default: mythrow((char*) "Unknown number of the abscissa of the triangle.", __LINE__, __FUNC__);
+        default:
+            mythrow((char*) "Unknown number of the abscissa of the triangle.",  __LINE__, __FUNC__);
+
     }
-    return *tmp;
 }
 
 TPoint TTriangle::GetPoint(int i) const {
-    TPoint* tmp;
+    TPoint tmp;
     switch (i) {
-        case 1: tmp = X1;
+        case 1: tmp = *X1;
             break;
-        case 2: tmp = X2;
+        case 2: tmp = *X2;
             break;
-        case 3: tmp = X3;
+        case 3: tmp = *X3;
             break;
         default: mythrow((char*) "Unknown number of the point of the triangle.", __LINE__, __FUNC__);
     }
-    return *tmp;
+    return tmp;
 }
 
 void TTriangle::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
@@ -122,7 +119,6 @@ void TTriangle::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3) 
     pl->SetPoints(P1, P2, P3);
 
     ComputeArea();
-    compute_bounding_box();
 }
 
 void TTriangle::ComputeArea() {
@@ -130,24 +126,8 @@ void TTriangle::ComputeArea() {
     area = 0.5 * N.Length();
 }
 
-void TTriangle::compute_bounding_box() {
-	arma::vec3 minCoor;
-	arma::vec3 maxCoor;
-
-	for (int i=0; i<3; ++i) {
-		minCoor(i) = GetMin(i+1);
-		maxCoor(i) = GetMax(i+1);
-	}
-
-	boundingBox = new BoundingBox(minCoor, maxCoor);
-}
-
 double TTriangle::GetArea() {
     return area;
-}
-
-BoundingBox* TTriangle::get_bounding_box() {
-	return boundingBox;
 }
 
 double TTriangle::GetMin(int i) const {
@@ -155,7 +135,8 @@ double TTriangle::GetMin(int i) const {
 
     if (X2->Get(i) < min) {
         min = X2->Get(i);
-    } else if (X3->Get(i) < min) {
+    }
+    if (X3->Get(i) < min) {
         min = X3->Get(i);
     }
 
@@ -167,7 +148,8 @@ double TTriangle::GetMax(int i) const {
 
     if (X2->Get(i) > max) {
         max = X2->Get(i);
-    } else if (X3->Get(i) > max) {
+    }
+    if (X3->Get(i) > max) {
         max = X3->Get(i);
     }
 

@@ -2,6 +2,7 @@
 #include "new_mesh/ngh/include/matrix.h"
 #include "new_mesh/ngh/include/mathfce.h"
 #include <cmath>
+//#include "math.h"
 #include <iostream>
 #include <armadillo>
 #include "new_mesh/ngh/include/polygon.h"
@@ -90,7 +91,7 @@ void GetIntersection(const TBisector & B1, const TBisector &B2,
         pos = skew;
     }
 }
-
+/*
 void GetIntersection(const TBisector & B1, const TBisector &B2,
         TPosition &pos, TPoint *P) {
     double t1, t2;
@@ -100,7 +101,8 @@ void GetIntersection(const TBisector & B1, const TBisector &B2,
     *P = B1.GetPoint(t1);
     return;
 }
-
+*/
+/*
 void GetIntersection(const TAbscissa &A1, const TAbscissa &A2,
         TPosition &pos, TPoint *P) {
     double t1, t2;
@@ -114,7 +116,124 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2,
     *P = A1.GetPoint(t1);
     return;
 }
+*/
 
+//------------------------UPRAVENO---------------------------
+// vraci localni souradnice pruniku, prvni souradnice vzhledem k A1 druha souradnice vzhledem k A2
+
+void GetIntersection(const TAbscissa &A1, const TAbscissa &A2, IntersectionLocal * &insec) {
+	double t1, t2;
+	TPosition pos;
+
+    if (!QuickIntersectionTest(A1, A2)) {
+        insec=NULL;
+        return;
+    }
+    GetIntersection(A1, A2, pos, t1, t2);
+    if ( pos == intersecting ) {
+        // test t1 je (0-eps,1+eps) a t2 je z (0-eps,1+eps)
+    	if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon)) || (t2 > (0 - epsilon)) || (t2 < (1 + epsilon))) {
+    		insec=new IntersectionLocal(IntersectionLocal::point);
+    		vector<double> loc_coord_1(1,t1);
+    		vector<double> loc_coord_2(1,t2);
+    		insec->add_local_coord(loc_coord_1,loc_coord_2);
+    		return;
+    	} else {
+    		insec = NULL;
+    		return;
+    	}
+    } else if ( pos == same ) { //A1 a A2 lezi na stejne primce
+        // nalezeni prunikove usecky X1, X2 ; Y1, Y2  ...koncove body usecky XY
+
+    	TAbscissa A2_copy(A2);
+    	double dot_product;
+    	// TEST - vzajemna orientace A1 a A2 (skalarni soucin vektoru A1, A2)
+    	dot_product = Dot(A1.GetVector(), A2.GetVector());
+    		if (dot_product < 0 ) { //if opacna orientace A1 a A2
+    			TVector AX2((-1)*A2.GetVector());
+    			A2_copy.SetVector(AX2);
+    		}
+
+    //vypocet lokalni souradnice koncu A2 vzhledem k A1
+    	TVector Diff;
+    	double loc_begin_A1, loc_end_A1, loc_begin_A2, loc_end_A2;
+    	Diff=A2_copy.GetPoint()-A1.GetPoint();
+    	loc_begin_A2=Diff.Length()/(A1.GetVector().Length());
+
+    	Diff=A2_copy.GetPoint(1)-A1.GetPoint();
+    	loc_end_A2=Diff.Length()/(A1.GetVector().Length());
+
+    //vypocet lokalni souradnice koncu A1 vzhledem k A2
+    	Diff=A1.GetPoint()-A2_copy.GetPoint();
+    	loc_begin_A1=Diff.Length()/(A2_copy.GetVector().Length());
+
+    	Diff=A1.GetPoint(1)-A2_copy.GetPoint();
+    	loc_end_A1=Diff.Length()/(A2_copy.GetVector().Length());
+
+    //X1...loc.souradnice X vzhledem k A1
+    //X2...loc.souradnice X vzhledem k A2
+    //Y1...loc.souradnice Y vzhledem k A1
+    //Y2...loc.souradnice Y vzhledem k A2
+    	double X1, X2, Y1, Y2;
+    //1.possibility - A2 lezi pred A1
+    	if ((loc_begin_A2 < 0) && (loc_end_A2 < 0)) {
+    		insec=NULL;
+    		return;
+    	}
+   	//2.possibility - prekryvaji se, A2 lezi pred A1
+    	if ((loc_begin_A2 < 0) && (loc_end_A2 > 0) && (loc_end_A2 < 1)) {
+    		X1 = 0;
+    		X2 = loc_begin_A1;
+    		Y1 = loc_end_A2;
+    		Y2 = 1;
+    	}
+    //3.possibility - prekryvaji se, A2 lezi mezi koncovymi body A1
+    	if ((loc_begin_A2 > 0) && (loc_end_A2 > 0) && (loc_end_A2 < 1)) {
+    		X1 = loc_begin_A2;
+    		X2 = 0;
+    		Y1 = loc_end_A2;
+    		Y2 = 1;
+    	}
+    //4.possibility - prekryvaji se, A2 lezi za A1
+    	if ((loc_begin_A2 > 0) && (loc_begin_A2 < 1) && (loc_end_A2 > 1)) {
+    		X1 = loc_begin_A2;
+    		X2 = 0;
+    		Y1 = 1;
+    		Y2 = loc_end_A1;
+    	}
+    //5.possibility - A2 lezi za A1
+    	if ((loc_begin_A2 > 1) && (loc_end_A2 > 1)) {
+    		insec=NULL;
+    		return;
+    	}
+    //6.possibility - prekryvaji se, A1 lezi mezi koncovymi body A2
+    	if ((loc_begin_A2 < 0) && (loc_end_A2 > 1)) {
+    		X1 = 0;
+    		X2 = loc_begin_A1;
+    		Y1 = 1;
+    		Y2 = loc_end_A1;
+    	}
+
+    //set local coords:
+    	insec=new IntersectionLocal(IntersectionLocal::line);
+    	vector<double> loc_coord_1(1);
+    	vector<double> loc_coord_2(1);
+    	loc_coord_1[0] = X1;
+    	loc_coord_2[0] = X2;
+    	insec->add_local_coord(loc_coord_1,loc_coord_2);
+    	loc_coord_1[0] = Y1;
+    	loc_coord_2[0] = Y2;
+    	insec->add_local_coord(loc_coord_1,loc_coord_2);
+    	return;
+
+    } else {
+        insec = NULL;
+        return;
+    }
+    insec = NULL;
+	return;
+}
+/*
 void GetIntersection(const TAbscissa &A, const TBisector &B,
         TPosition &pos, TPoint *P) {
     double t1, t2;
@@ -124,16 +243,72 @@ void GetIntersection(const TAbscissa &A, const TBisector &B,
     *P = A.GetPoint(t1);
     return;
 }
+*/
 
+//------------------------UPRAVENO---------------------------
+// vraci localni souradnice pruniku, prvni souradnice vzhledem k A druha souradnice vzhledem k B
+// v pripade ze je prunik usecka - poradi bodu podle orientace abscissa A
+
+void GetIntersection(const TAbscissa &A, const TBisector &B, IntersectionLocal * &insec) {
+    double t1, t2;
+    TPosition pos;
+
+    GetIntersection(A, B, pos, t1, t2);
+    if ( pos == intersecting ) {
+        // test t1 je (0-eps,1+eps)
+        if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon))) {
+        	insec=new IntersectionLocal(IntersectionLocal::point);
+        	vector<double> loc_coord_1(1,t1);
+        	vector<double> loc_coord_2(1,t2); //t2 na Bisectoru B
+        	insec->add_local_coord(loc_coord_1,loc_coord_2);
+        }
+    } else if ( pos == same ) { //A a B lezi na stejne primce
+        // prunik cela usecka =>ulozit koncove body Abscissy A
+
+    //vypocet lokalni souradnice koncovych bodu A
+    	TVector Diff;
+    	double loc_begin_A, loc_end_A;
+    	Diff=A.GetPoint()-B.GetPoint();
+    	loc_begin_A=Diff.Length()/(B.GetVector().Length());
+
+    	Diff=A.GetPoint(1)-B.GetPoint();
+    	loc_end_A=Diff.Length()/(B.GetVector().Length());
+
+    //set local coords:
+        if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon))) {
+        	insec=new IntersectionLocal(IntersectionLocal::line);
+        	// first abscissa point
+        	vector<double> loc_coord_1(1,0);
+        	vector<double> loc_coord_2(1,loc_begin_A);
+        	insec->add_local_coord(loc_coord_1,loc_coord_2);
+        	// second abscissa point
+        	vector<double> loc_coord_1_(1,1);
+        	vector<double> loc_coord_2_(1,loc_end_A);
+        	insec->add_local_coord(loc_coord_1_,loc_coord_2_);
+        	return;
+        }
+    } else {
+    	insec=NULL;
+    	return;
+    }
+    return;
+}
+
+/*
 void GetIntersection(const TBisector &B, const TAbscissa &A,
         TPosition &pos, TPoint *P) {
     GetIntersection(A, B, pos, P);
     return;
 }
+*/
+void GetIntersection(const TBisector &B, const TAbscissa &A, IntersectionLocal * &insec) {
+    GetIntersection(A, B, insec); //KONTROLA
+    return;
+}
 
 void GetIntersection(const TAbscissa &A1, const TAbscissa &A2,
         TPosition &pos, double &t1, double &t2) {
-    
+
     GetIntersection( (const TBisector &)A1, (const TBisector &)A2, pos, t1, t2);
     if (pos == intersecting)
         if (t1 > 1 + epsilon || t1 < 0 - epsilon ||
@@ -144,8 +319,8 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2,
 
 void GetIntersection(const TAbscissa &A, const TBisector &B,
         TPosition &pos, double &t1, double &t2) {
-    
-    GetIntersection( (const TBisector &)A, (const TBisector &)B, pos, t1, t2);
+
+    GetIntersection( (const TBisector &)A, B, pos, t1, t2);
     if (pos == intersecting)
         if (t1 > 1 + epsilon || t1 < 0 - epsilon)
             pos = skew;
@@ -305,17 +480,20 @@ void GetIntersection(const TBisector &B, const TPlain &P,
 }
 
 void GetIntersection(const TTriangle &T1, const TTriangle &T2,
-        TIntersectionType &it, double &value) {
+        TIntersectionType &it, double &value) {	//ZATIM NEPOTREBUJEME =>zakomentovano
+
     //******************************************************************************
     //ONE SHOULD ADD TO THIS FUNCTION POINTS WHICH ARE INSIDE TRIANGLE
     //******************************************************************************
+/*
     if (!QuickIntersectionTest(T1, T2)) {
         it = none;
         return;
     }
 
     TPosition pos;
-    TBisector b;
+    TPoint P1,P2;
+    TBisector b(P1,P2);
     TPolygon pol;
     double t11, t12, t21, t22, t[ 4 ], t1max, t1min, t2max, t2min;
     int i, j, cit;
@@ -384,94 +562,343 @@ void GetIntersection(const TTriangle &T1, const TTriangle &T2,
         value = pol.GetArea();
         return;
     }
+*/
 }
 
 //******************************************************************************
 // The value of it is important for computation
 //******************************************************************************
 
-void GetIntersection(const TBisector &B, const TTriangle &T,
-        TIntersectionType &it, double &t1, double &t2) {
+//------------------------UPRAVENO---------------------------
+// vraci localni souradnice pruniku, prvni souradnice vzhledem k B druha souradnice vzhledem k T
+// pro vsechny body pruniku B a T
 
-    if (it == none) {
-        return;
-    }
-
+void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal * &insec) {
     TPosition pos;
     double t;
-    if (it == unknown || it == point) {
-        GetIntersection(T.GetPlain(), B, pos, t);
-        switch (pos) {
-            case belong: it = line;
-                break;
-            case intersecting: it = point;
-                break;
-            default: it = none;
+    int cit=0;
+    GetIntersection(T.GetPlain(), B, pos, t);
+    switch (pos) {
+        // POINT INTERSECTION
+    	case intersecting:
+            if (!T.IsInner(B.GetPoint(t))) {
+                insec=NULL;
                 return;
-        }
-    }
-
-    if (it == point) {
-    	if (!T.IsInner(B.GetPoint(t))) {
-            it = none;
-            return;
-        }
-        t1 = t;
-        return;
-    }
-
-    int cit;
-    double tt1, tt2, tt[2];
-    if (it == line) {
-        cit = 0;
-        for (int i = 1; i <= 3; i++) {
-            GetIntersection(T.GetAbscissa(i), B, pos, tt1, tt2);
-            if (pos == intersecting) {
-                tt[ cit ] = tt2;
-                cit++;
-                if (cit == 2 && IsEqual(tt[ 0 ], tt[ 1 ])) cit = 1;
             }
-            if (cit == 2 && !IsEqual(tt[ 0 ], tt[ 1 ]))
-                break;
-        }
-        if (cit != 2) {
-            it = none;
+            // !! vratit lokalni souradnice pruseciku na bisectoru a na trianglu
+            // !! nebo hlasit ze neni implementovano.
+            mythrow((char*) "Bisector and Triangle has one point of intersection - not implemented.\n", __LINE__, __FUNC__);
             return;
+
+       // LINE INTERSECTION
+       case belong: {
+           IntersectionLocal* insec_tmp;
+           IntersectionPoint* insec_point_tmp[3];
+
+           vector<double> loc_tria_tmp(2);
+           // inicializace vektoru pro lokalni souradnice pro pripad useckoveho pruseciku
+           // lokalni souradnice vrholu trojuhelnika
+           vector<double> loc_tria_coord_01(2); //loc. coord 1.vrcholu trojuhelnika
+           vector<double> loc_tria_coord_02(2); //loc. coord 2.vrcholu trojuhelnika
+           vector<double> loc_tria_coord_03(2); //loc. coord 3.vrcholu trojuhelnika
+
+           loc_tria_coord_01[0]=0;
+           loc_tria_coord_01[1]=0;
+
+           loc_tria_coord_02[0]=1;
+           loc_tria_coord_02[1]=0;
+
+           loc_tria_coord_03[0]=0;
+           loc_tria_coord_03[1]=1;
+
+           //PRVNI STENA TROJUHELNIKU
+           GetIntersection(T.GetAbscissa(1), B, insec_tmp);
+           if (insec_tmp != NULL) {
+        	   if (insec_tmp->get_type() == IntersectionLocal::point) {
+        		   // intersection in a point
+        		   // zde: 1) vybrat IntersectionPoint z insec_tmp
+                   //      2) prohodit jeho coord
+        		   //      3) z druhe coord udelat lokalni souradnici na trojuhelniku
+
+        		   // loc. triangle coord (X, 0)
+                   loc_tria_tmp[0] = insec_tmp->get_point(0)->el1_coord()[0];
+                   loc_tria_tmp[1] = 0;
+        		   insec_point_tmp[cit] = new IntersectionPoint(insec_tmp->get_point(0)->el2_coord(), loc_tria_tmp);
+        		   cit++; //citac kolik sten protne
+        		   //cout<<"\nCit(1.stena)= "<< cit << endl;
+        		   delete insec_tmp;
+               } else if (insec_tmp->get_type() == IntersectionLocal::line) {
+            	   // intersection is whole tringle side => ulozit lokalni souradnice strany trojuhelnika do insec
+                   insec = new IntersectionLocal(IntersectionLocal::line);
+                   insec->add_local_coord(insec_tmp->get_point(0)->el2_coord(), loc_tria_coord_01);
+                   insec->add_local_coord(insec_tmp->get_point(1)->el2_coord(), loc_tria_coord_02);
+                   delete insec_tmp;
+                   return;
+               }
+           }
+
+           //DRUHA STENA TROJUHELNIKU
+           GetIntersection(T.GetAbscissa(2), B, insec_tmp);
+           if (insec_tmp != NULL) {
+        	   if (insec_tmp->get_type() == IntersectionLocal::point) {
+        		   // loc. triangle coord (1-X, X)
+        		   loc_tria_tmp[0] = 1 - insec_tmp->get_point(0)->el1_coord()[0];
+        		   loc_tria_tmp[1] = insec_tmp->get_point(0)->el1_coord()[0];
+        		   insec_point_tmp[cit] = new IntersectionPoint(insec_tmp->get_point(0)->el2_coord(), loc_tria_tmp);
+        		   cit++; //citac kolik sten protne
+        		   //cout<<"Cit(2.stena)= "<< cit << endl;
+         		   delete insec_tmp;
+               } else if (insec_tmp->get_type() == IntersectionLocal::line) {
+            	   // intersection is whole tringle side => ulozit lokalni souradnice strany trojuhelnika do insec
+                   insec = new IntersectionLocal(IntersectionLocal::line);
+                   insec->add_local_coord(insec_tmp->get_point(0)->el2_coord(), loc_tria_coord_02);
+                   insec->add_local_coord(insec_tmp->get_point(1)->el2_coord(), loc_tria_coord_03);
+                   delete insec_tmp;
+                   return;
+               }
+           }
+
+           //TRETI STENA TROJUHELNIKU
+           GetIntersection(T.GetAbscissa(3), B, insec_tmp);
+           if (insec_tmp != NULL) {
+        	   if (insec_tmp->get_type() == IntersectionLocal::point) {
+        		   // loc. triangle coord (0, 1-X)
+        		   loc_tria_tmp[0] = 0;
+        		   loc_tria_tmp[1] = 1 - insec_tmp->get_point(0)->el1_coord()[0];
+        		   insec_point_tmp[cit] = new IntersectionPoint(insec_tmp->get_point(0)->el2_coord(), loc_tria_tmp);
+        		   cit++; //citac kolik sten protne
+        		   //cout <<"Cit(3.stena)= "<< cit << endl;
+        		   delete insec_tmp;
+               } else if (insec_tmp->get_type() == IntersectionLocal::line) {
+            	   // intersection is whole tringle side => ulozit lokalni souradnice strany trojuhelnika do insec
+                   insec = new IntersectionLocal(IntersectionLocal::line);
+                   insec->add_local_coord(insec_tmp->get_point(0)->el2_coord(), loc_tria_coord_03);
+                   insec->add_local_coord(insec_tmp->get_point(1)->el2_coord(), loc_tria_coord_01);
+                   delete insec_tmp;
+                   return;
+               }
+           }
+
+           //TEST - pocet protnutych sten trojuhelnika
+           if (cit == 0) {
+               insec = NULL;
+               return;
+           }
+           //lezi pres vrchol a zaroven protne protilehlou stenu => cit==3
+           if (cit == 3) {
+        	   //cout<<"(cit == 3) => REDUKCE insec_point_tmp!" << endl;
+        	   if (*(insec_point_tmp[0]) == *(insec_point_tmp[0])) {
+        		   //cout<<"2 insec_point_tmp[0] jsou stejne" << endl;
+        	   }
+
+        	   for (int i = 0; i < cit; i++) {
+        		   if (*(insec_point_tmp[i]) == *(insec_point_tmp[(i+1)%3])) {
+
+        			   //cout<<"insec_point_tmp[(i+1)%3] :: el1_coord().size(): " << insec_point_tmp[(i+1)%3]->el1_coord().size() << endl;
+        			   //cout<<"(insec_point_tmp[(i+1)%3]) :: el2_coord().size(): " << (insec_point_tmp[(i+1)%3])->el2_coord().size() << endl;
+
+        			   delete insec_point_tmp[(i+1)%3];
+        			   cit--;
+        			   //cout<<"PO REDUKCI cit= " << cit << endl;
+
+        			   //nutno posunout zbyle prvky pole insec_point_tmp
+        			   IntersectionPoint* tmp = insec_point_tmp[(i+2)%3];
+        			   insec_point_tmp[0] = insec_point_tmp[i];
+        			   insec_point_tmp[1] = tmp;
+        			   break;
+        		   }
+        	   }
+           }
+           if (cit != 2) {
+        	   mythrow((char*) "Error - pocet bodu pruniku != 2.\n", __LINE__, __FUNC__); //number of intersection points
+        	   return;
+           } else {
+        	   if (*(insec_point_tmp[0]) == *(insec_point_tmp[1])) { //lezi pres vrchol
+        		   insec = new IntersectionLocal(IntersectionLocal::point);
+        		   insec->add_local_point(insec_point_tmp[0]);
+        		   //cout<<"Insec_point_1 == Insec_point_2" << endl;
+        		   delete insec_point_tmp[1];
+        	   } else {
+        		   insec = new IntersectionLocal(IntersectionLocal::line);
+        		   insec->add_local_point(insec_point_tmp[0]);
+        		   insec->add_local_point(insec_point_tmp[1]);
+        		   //cout<<"(IntersectionType=line) - point_1->el1_coord().size()= " << insec->get_point(0)->el1_coord().size()<< endl;
+        		   //cout<<"(IntersectionType=line) - point_2->el1_coord().size()= " << insec->get_point(1)->el1_coord().size()<< endl;
+        	   }
+        	   return;
+           }
+        } //end case belong
+
+        // EMPTY INTERSECTION
+        default:
+        	insec = NULL;
+        	return;
         }
-        t1 = tt[ 0 ];
-        t2 = tt[ 1 ];
-        return;
-    }
 }
 
 //******************************************************************************
 // The value of it is important for computation
 //******************************************************************************
 
-void GetIntersection(const TAbscissa &A, const TTriangle &T,
-        TIntersectionType &it, double &t1, double &t2) {
+//------------------------UPRAVENO---------------------------
+// vraci localni souradnice pruniku, prvni souradnice vzhledem k A druha souradnice vzhledem k T
+// pro vsechny body pruniku A a T
 
+void GetIntersection(const TAbscissa &A, const TTriangle &T,
+        IntersectionLocal * & insec) {
 
     if (!QuickIntersectionTest(A, T)) {
-        it = none;
+        insec = NULL;
         return;
     }
+    IntersectionLocal* insec_tmp;
+    GetIntersection( (const TBisector &)A, T, insec_tmp);
+    if (insec_tmp->get_type() == IntersectionLocal::point) {
+    	if (insec_tmp->get_point(0) != NULL) {
+    		double t1 = insec_tmp->get_point(0)->el1_coord()[0];
+    		if (t1 < 0 - epsilon || t1 > 1 + epsilon) {
+    		    delete insec_tmp;
+    			insec = NULL;
+    		} else {
+    		    insec = insec_tmp;
+    		}
+    	}
+    } else if(insec_tmp->get_type() == IntersectionLocal::line) {
+        // A1 i A2 ma byt v intervalu (0,1) -> vrati insec
+        // pokud ne tak zkusi zkratit, nebo NULL (delete)
 
-    GetIntersection( (const TBisector &)A, T, it, t1, t2);
+    	IntersectionPoint* A1;
+    	IntersectionPoint* A2;
+    	if (insec_tmp->get_point(0) != NULL) {
+    	    if (insec_tmp->get_point(0)->el1_coord()[0] > insec_tmp->get_point(1)->el1_coord()[0]) {
+    	    	A2 = insec_tmp->get_point(0);
+    	    	A1 = insec_tmp->get_point(1);
+    	    } else {
+    	    	A1 = insec_tmp->get_point(0);
+    	    	A2 = insec_tmp->get_point(1);
+    	    }
 
-    if (it == point || it == line) {
-        if (t1 > 1 + epsilon || t1 < 0 - epsilon ||
-                t2 > 1 + epsilon || t2 < 0 - epsilon) {
-            it = none;
-        }
-    }
+    	    double A1_t = A1->el1_coord()[0];
+    	    double A2_t = A2->el1_coord()[0];
+    	    if (A1_t < 0) A1_t = 0;
+    	    if (A2_t > 1) A2_t = 1;
 
+    	    if (A2_t < A1_t) {
+    			delete insec_tmp;
+    			insec = NULL;
+    	    } else {
+				insec = new IntersectionLocal(IntersectionLocal::line);
+				//cout << "A1_t: " << A1_t << endl;
+				//cout << "A2_t: " << A2_t << endl;
+				insec->add_local_point(interpolate(*A1, *A2, A1_t));
+				insec->add_local_point(interpolate(*A1, *A2, A2_t));
+				delete insec_tmp;
+    	    }
+    	}
     return;
+    }
+    return;
+
+//-------------------------------------------------------------------
+/*    		IntersectionPoint* insec_point_tmp[2];
+    		vector<double> loc_tria_tmp(2);
+    		double A1_ = insec_tmp->get_point(0)->el1_coord()[0];
+    		double A2_ = insec_tmp->get_point(1)->el1_coord()[0]; //test != NULL (lezi pres vrchol!)
+    		double *A1 = &A1_;
+    		double *A2 = &A2_;
+    		bool invert = false;
+    		//TEST VZAJEMNE ORIENTACE A1, A2:
+    		if (A1_ > A2_) {
+    			A1 = &A2_;
+    			A2 = &A1_;
+    			invert = true;
+    		}
+    		// pripady:
+    		// 1) prusecik uvnitr usecky -> predat nezmenene
+    		// 2) prusecik mimo usecku -> delete a vratit NULL
+    		// 3) else a) A1 < 0 - zkratit zleva
+    		//         b) A2 > 1  - zkratit zprava
+
+    		//PRUSECIK UVNITR USECKY
+    		if ((*A1 > 0 - epsilon) && (*A1 < 1 + epsilon) && (*A2 > 0 - epsilon) && (*A2 < 1 + epsilon)) {
+    			insec = insec_tmp;
+    		}
+    		//PRUSECIK MIMO USECKU
+    		if (((*A1 < 0 - epsilon) && (*A2 < 0 - epsilon)) || ((*A1 > 1 + epsilon) && (*A2 > 1 + epsilon))) {
+    			delete insec_tmp;
+    			insec = NULL;
+    		} else {
+    			//1.possibility (A1 < 0) - zkratit zleva
+    			if ((*A1 < 0 - epsilon) && (*A2 > 0 - epsilon) && (*A2 < 1 + epsilon)) {
+    				if(invert == true) {
+    					//loc. coord. r:
+    					loc_tria_tmp[0] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(1)->el2_coord()[0] - insec_tmp->get_point(0)->el2_coord()[0]) + insec_tmp->get_point(0)->el2_coord()[0];
+    					//loc. coord. s:
+    					loc_tria_tmp[1] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(1)->el2_coord()[1] - insec_tmp->get_point(0)->el2_coord()[1]) + insec_tmp->get_point(0)->el2_coord()[1];
+    				} else {
+    					//loc. coord. r:
+    					loc_tria_tmp[0] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(0)->el2_coord()[0] - insec_tmp->get_point(1)->el2_coord()[0]) + insec_tmp->get_point(1)->el2_coord()[0];
+    					//loc. coord. s:
+    					loc_tria_tmp[1] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(0)->el2_coord()[1] - insec_tmp->get_point(1)->el2_coord()[1]) + insec_tmp->get_point(1)->el2_coord()[1];
+    				}
+    				vector<double> loc_A1(1, 0);
+    				vector<double> loc_A2(1, *A2);
+    				if(invert == true) {
+    					insec_point_tmp[0] = new IntersectionPoint(loc_A2, insec_tmp->get_point(1)->el2_coord());
+    					insec_point_tmp[1] = new IntersectionPoint(loc_A1, loc_tria_tmp);
+    				} else {
+    					insec_point_tmp[0] = new IntersectionPoint(loc_A2, insec_tmp->get_point(0)->el2_coord());
+    					insec_point_tmp[1] = new IntersectionPoint(loc_A1, loc_tria_tmp);
+    				}
+    				insec = new IntersectionLocal(IntersectionLocal::line);
+    				insec->add_local_point(insec_point_tmp[0]);
+    				insec->add_local_point(insec_point_tmp[1]);
+    				delete insec_tmp;
+    			}
+    			//2.possibility (A2 > 1) - zkratit zprava
+    			if ((*A1 > 0 - epsilon) && (*A1 < 1 + epsilon) && (*A2 > 1 + epsilon)) {
+    				if(invert == true) {
+    					//loc. coord. r:
+    				    loc_tria_tmp[0] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(0)->el2_coord()[0] - insec_tmp->get_point(1)->el2_coord()[0]) + insec_tmp->get_point(1)->el2_coord()[0];
+    				    //loc. coord. s:
+    				    loc_tria_tmp[1] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(0)->el2_coord()[1] - insec_tmp->get_point(1)->el2_coord()[1]) + insec_tmp->get_point(1)->el2_coord()[1];
+    				} else {
+    				    //loc. coord. r:
+    				    loc_tria_tmp[0] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(1)->el2_coord()[0] - insec_tmp->get_point(0)->el2_coord()[0]) + insec_tmp->get_point(0)->el2_coord()[0];
+    				    //loc. coord. s:
+    				    loc_tria_tmp[1] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(1)->el2_coord()[1] - insec_tmp->get_point(0)->el2_coord()[1]) + insec_tmp->get_point(0)->el2_coord()[1];
+    				}
+    				vector<double> loc_A1(1, *A1);
+    				vector<double> loc_A2(1, 1);
+    				if(invert == true) {
+    					insec_point_tmp[0] = new IntersectionPoint(loc_A1, insec_tmp->get_point(1)->el2_coord());
+    					insec_point_tmp[1] = new IntersectionPoint(loc_A2, loc_tria_tmp);
+    				} else {
+    					insec_point_tmp[0] = new IntersectionPoint(loc_A1, insec_tmp->get_point(0)->el2_coord());
+    					insec_point_tmp[1] = new IntersectionPoint(loc_A2, loc_tria_tmp);
+    				}
+    				insec = new IntersectionLocal(IntersectionLocal::line);
+    				insec->add_local_point(insec_point_tmp[0]);
+    				insec->add_local_point(insec_point_tmp[1]);
+    				delete insec_tmp;
+    			}
+
+    			//3.possibility - zkratit z obou stran
+    			//if ((*A1 < 0 - epsilon) && (*A2 > 1 + epsilon)) {
+    			//	vector<double> loc_A1(1, 0);
+    			//	vector<double> loc_A2(1, 1);
+    			//}
+    		}
+    	}
+    return;
+    }
+    return;
+*/
 }
 
 void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
-        TIntersectionType &it, double &t1, double &t2) {
-
+        TIntersectionType &it, double &t1, double &t2) { //ZATIM NEPOTREBUJEME =>zakomentovano
+/*
     if (!QuickIntersectionTest(A, T)) {
         it = none;
         return;
@@ -506,6 +933,7 @@ void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
     it = none;
 
     return;
+*/
 }
 
 void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
@@ -574,12 +1002,11 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 
 template<class A, class B> bool QuickIntersectionTest(const A &a, const B &b) {
     for (int i = 1; i <= 3; i++) {
-        if (a.GetMin(i) > b.GetMax(i) || a.GetMax(i) < b.GetMin(i)) {
+    	//cout << "i: " << i << "; a: " << a.GetMin(i) << "  "<< a.GetMax(i)<< "; b: " << b.GetMin(i) << "  "<< b.GetMax(i) << endl;
+        if (a.GetMin(i) > b.GetMax(i) + epsilon || a.GetMax(i) < b.GetMin(i) - epsilon) {
             return false;
         }
     }
     return true;
 }
-
-
 

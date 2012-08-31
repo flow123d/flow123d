@@ -40,7 +40,6 @@ public:
     friend std::ostream & operator <<(std::ostream&, const TPolygon&);
 
     void Add(const TPoint&);
-    void Write();
     double GetArea();
     TPoint GetCenter();
 

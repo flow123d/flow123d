@@ -1,6 +1,7 @@
 #include <cmath>
 #include "new_mesh/ngh/include/point.h"
 #include "new_mesh/ngh/include/myvector.h"
+//#include <math.h>
 #include "new_mesh/ngh/include/mathfce.h"
 
 using namespace mathfce;
@@ -39,6 +40,17 @@ TVector::TVector(TPoint P1, TPoint P2) {
     coors[ 0 ] = P2.X() - P1.X();
     coors[ 1 ] = P2.Y() - P1.Y();
     coors[ 2 ] = P2.Z() - P1.Z();
+
+    Compute();
+}
+
+TVector::TVector(const TVector &x)
+{
+    id = generateId();
+
+    coors[0]=x.coors[0];
+    coors[1]=x.coors[1];
+    coors[2]=x.coors[2];
 
     Compute();
 }
@@ -182,7 +194,7 @@ double Dot(const TVector &U, const TVector &V) {
 
 bool TVector::operator ==(const TVector &U) {
     for (int i = 0; i < 3; i++) {
-        if (fabs(coors[ i ]) - fabs(U.coors[ i ]) > epsilon) {
+        if ((fabs(coors[ i ]) - fabs(U.coors[ i ])) > epsilon) {
             return false;
         }
     }

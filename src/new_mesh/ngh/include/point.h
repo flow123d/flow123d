@@ -2,6 +2,7 @@
 #define pointH
 
 #include <iostream>
+#include "system.h"
 
 #include "myvector.h"
 
@@ -30,9 +31,9 @@ public:
 
     TPoint & operator =(const TPoint&);
     TPoint & operator =(const TVector&);
-    TPoint operator -(const TPoint&);
-    TPoint operator +(const TPoint&);
-    bool operator ==(const TPoint&);
+    TVector operator -(const TPoint&) const;
+    TPoint operator +(const TPoint&) const;
+    bool operator ==(const TPoint&) const;
     friend std::ostream & operator <<(std::ostream&, const TPoint&);
 
     void SetCoord(double, double, double);

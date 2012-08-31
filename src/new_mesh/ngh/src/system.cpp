@@ -1,6 +1,8 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+//#include <stdio.h>
+//#include <string.h>
 #include  <iostream>
 
 #include "new_mesh/ngh/include/config.h"

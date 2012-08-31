@@ -12,12 +12,12 @@ int TBisector::generateId() {
     return TBisector::numberInstance++;
 }
 
-TBisector::TBisector() {
-    id = generateId();
+//TBisector::TBisector() {
+//    id = generateId();
 
-    X0 = new TPoint(0, 0, 0);
-    U = new TVector(0, 0, 0);
-}
+//    X0 = new TPoint(0, 0, 0);
+//    U = new TVector(0, 0, 0);
+//}
 
 TBisector::TBisector(const TPoint &XX0, const TVector &UU) {
     id = generateId();
@@ -31,6 +31,14 @@ TBisector::TBisector(const TPoint &P0, const TPoint &P1) {
 
     X0 = new TPoint(P0);
     U = new TVector(P0, P1);
+}
+
+TBisector::TBisector(const  TBisector &x)
+{
+    id = generateId();
+
+    X0 = new TPoint(*(x.X0));
+    U = new TVector(*(x.U));
 }
 
 TBisector::~TBisector() {
@@ -67,17 +75,14 @@ void TBisector::SetPoints(const TPoint &P0, const TPoint &P1) {
     *U = (TPoint) P1 - P0;
 }
 
-TVector TBisector::GetVector() const {
-    TVector V(*U);
+const TVector &TBisector::GetVector() const {
 
-    return V;
+    return *(this->U);
 }
 
-TPoint TBisector::GetPoint() const {
-    TPoint tmp;
-    tmp = *X0;
-
-    return tmp;
+const TPoint &TBisector::GetPoint() const
+{
+    return *(this->X0);
 }
 
 TPoint TBisector::GetPoint(double t) const {

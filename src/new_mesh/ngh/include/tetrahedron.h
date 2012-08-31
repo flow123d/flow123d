@@ -36,7 +36,7 @@ public:
     ~TTetrahedron();
 
     TTriangle GetTriangle(int) const;
-    TAbscissa GetAbscissa(int) const;
+    const TAbscissa &GetAbscissa(int) const;
 
     double GetMin(int) const;
     double GetMax(int) const;

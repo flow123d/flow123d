@@ -39,7 +39,7 @@ public:
     TTriangle & operator =(const TTriangle &t);
 
     TPlain GetPlain() const;
-    TAbscissa GetAbscissa(int) const;
+    const TAbscissa &GetAbscissa(int) const;
     TPoint GetPoint(int) const;
 
     void SetPoints(const TPoint&, const TPoint&, const TPoint&);

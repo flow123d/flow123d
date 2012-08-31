@@ -2,6 +2,8 @@
 #define vectorH
 
 class TPoint;
+#include "system.h"
+
 
 class TVector {
 protected:
@@ -20,6 +22,7 @@ public:
     TVector();
     TVector(double, double, double);
     TVector(TPoint, TPoint);
+    TVector(const TVector &);
     ~TVector();
 
     double Length() const;

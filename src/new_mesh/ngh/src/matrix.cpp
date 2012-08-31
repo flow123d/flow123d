@@ -3,6 +3,7 @@
 #include "new_mesh/ngh/include/mathfce.h"
 #include "new_mesh/ngh/include/system.h"
 #include "new_mesh/ngh/include/problem.h"
+//#include <math.h>
 
 using namespace mathfce;
 
@@ -18,6 +19,14 @@ TMatrix::TMatrix(int num_rows, int num_cols) {
     elm = new double[ nc * nr ];
 }
 
+TMatrix::TMatrix(const TMatrix & x)
+{
+    nc = x.nc;
+    nr = x.nr;
+    elm = new double[nc*nr];
+    memcpy(elm,x.elm,nc*nr*sizeof(double));
+}
+
 TMatrix::~TMatrix() {
     delete[] elm;
 }
@@ -25,6 +34,13 @@ TMatrix::~TMatrix() {
 TMVector::TMVector(int size) {
     this->size = size;
     elm = new double[size];
+}
+
+TMVector::TMVector(const TMVector & x)
+{
+    size=x.size;
+    elm = new double[size];
+    memcpy(elm,x.elm,size*sizeof(double));
 }
 
 TMVector::~TMVector() {

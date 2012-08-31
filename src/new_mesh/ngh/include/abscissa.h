@@ -9,8 +9,8 @@ private:
     static int numberInstance;
     int id;
 
-    TPoint* P0;
-    TPoint* P1;
+//    TPoint* P0;
+//    TPoint* P1;
 
     double length;
 
@@ -18,8 +18,8 @@ private:
     void ComputeLength();
 
 public:
-    TAbscissa();
-    TAbscissa(double, double);
+//    TAbscissa();
+//    TAbscissa(double, double);
     TAbscissa(const TPoint&, const TPoint&);
     ~TAbscissa();
 
@@ -38,4 +38,3 @@ public:
 };
 
 #endif
-

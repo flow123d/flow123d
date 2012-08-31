@@ -1,4 +1,5 @@
 #include <cmath>
+//#include <math.h>
 
 #include "new_mesh/ngh/include/config.h"
 #include "new_mesh/ngh/include/tetrahedron.h"
@@ -56,39 +57,37 @@ TTetrahedron::~TTetrahedron() {
 }
 
 TTriangle TTetrahedron::GetTriangle(int i) const {
-    TTriangle* tmp;
+    TTriangle tmp;
     switch (i) {
-        case 1: tmp = T1;
+        case 1: tmp = *T1;
             break;
-        case 2: tmp = T2;
+        case 2: tmp = *T2;
             break;
-        case 3: tmp = T3;
+        case 3: tmp = *T3;
             break;
-        case 4: tmp = T4;
+        case 4: tmp = *T4;
             break;
         default: mythrow((char*)"Unknown number of the triangle of the tetrahedron.", __LINE__, __FUNC__);
     }
-    return *tmp;
+    return tmp;
 }
 
-TAbscissa TTetrahedron::GetAbscissa(int i) const {
-    TAbscissa* tmp;
+const TAbscissa &TTetrahedron::GetAbscissa(int i) const {
     switch (i) {
-        case 1: tmp = A1;
+        case 1: return *A1;
             break;
-        case 2: tmp = A2;
+        case 2: return *A2;
             break;
-        case 3: tmp = A3;
+        case 3: return *A3;
             break;
-        case 4: tmp = A4;
+        case 4: return *A4;
             break;
-        case 5: tmp = A5;
+        case 5: return *A5;
             break;
-        case 6: tmp = A6;
+        case 6: return *A6;
             break;
         default: mythrow((char*)"Unknown number of the triangle of the tetrahedron.", __LINE__, __FUNC__);
     }
-    return *tmp;
 }
 
 double TTetrahedron::GetMin(int i) const {
@@ -96,9 +95,11 @@ double TTetrahedron::GetMin(int i) const {
 
     if (X2->Get(i) < min) {
         min = X2->Get(i);
-    } else if (X3->Get(i) < min) {
+    }
+    if (X3->Get(i) < min) {
         min = X3->Get(i);
-    } else if (X4->Get(i) < min) {
+    }
+    if (X4->Get(i) < min) {
         min = X4->Get(i);
     }
 
@@ -110,9 +111,11 @@ double TTetrahedron::GetMax(int i) const {
 
     if (X2->Get(i) > max) {
         max = X2->Get(i);
-    } else if (X3->Get(i) > max) {
+    }
+    if (X3->Get(i) > max) {
         max = X3->Get(i);
-    } else if (X4->Get(i) > max) {
+    }
+    if (X4->Get(i) > max) {
         max = X4->Get(i);
     }
 

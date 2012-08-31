@@ -47,15 +47,6 @@ std::ostream & operator <<(std::ostream& stream, const TPolygon& p) {
     return stream;
 }
 
-void TPolygon::Write() {
-	std::vector<TVertex*>::iterator iv;
-	printf("TPolygon::Write - size %d\n", verteces.size());
-	FOR_POL_VERTECES(this, iv) {
-		TPoint p = (*iv)->GetPoint();
-		printf("%f %f %f\n", p.X(), p.Y(), p.Z());
-	}
-}
-
 void TPolygon::Add(const TPoint& P) {
     std::vector<TVertex*>::iterator iv;
 
@@ -74,8 +65,6 @@ void TPolygon::Add(const TPoint& P) {
 double TPolygon::GetArea() {
     if (!center_is_actual)
         ComputeCenter();
-    printf("Center: %f %f %f\n", center.Get(1), center.Get(2), center.Get(3));
-    getchar();
     if (area_is_actual)
         return area;
     ComputeArea();

@@ -17,9 +17,10 @@ protected:
     int generateId();
 
 public:
-    TBisector();
+//    TBisector();
     TBisector(const TPoint&, const TVector&);
     TBisector(const TPoint&, const TPoint&);
+    TBisector(const  TBisector &);
     ~TBisector();
 
     TBisector & operator =(const TBisector&);
@@ -29,11 +30,11 @@ public:
     bool Belong(const TPoint&) const;
 
     void SetPoint(const TPoint&);
-    TPoint GetPoint() const;
+    const TPoint &GetPoint() const;
     TPoint GetPoint(double) const;
 
     void SetVector(const TVector&);
-    TVector GetVector() const;
+    const TVector &GetVector() const;
 
     static int getNumInstances() {
         return TBisector::numberInstance;
