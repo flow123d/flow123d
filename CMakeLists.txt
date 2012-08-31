@@ -121,7 +121,12 @@ endif()
 
 message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
 
-
+# optionaly we use Python interface
+find_package(PythonLibs)
+if (PYTHONLIBS_FOUND)
+    include_directories( ${PYTHON_INCLUDE_DIRS})
+    add_definitions(-DHAVE_PYTHON)
+endif()
 
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion REQUIRED)

@@ -92,6 +92,7 @@ set(sources_lib_la
 )
 
 set(sources_lib_system
+    system/python_loader.cc
     system/par_distribution.cc
     system/math_fce.cc
     system/sys_function_stack.cpp
