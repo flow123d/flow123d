@@ -135,6 +135,8 @@ void DarcyFlowMHOutput::output()
 
         water_balance();
 
+        compute_l2_difference();
+
         result = output_writer->register_node_data
                 ("pressure_nodes","L", node_pressure);
         //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
@@ -699,4 +701,71 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         cit ++;
     }
     xfprintf( raw_output_file, "$EndFlowField\n\n" );
+}
+
+
+#include "quadrature/quadrature_lib.hh"
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "fem/mapping_p1.hh"
+
+/*
+* Calculate approximation of L2 norm for:
+ * 1) difference between regularized pressure and analytical solution (using FunctionPython)
+ * 2) difference between RT velocities and analytical solution
+ * 3) difference of divergence
+ * */
+
+struct DiffData {
+    double pressure_error, velocity_error, div_error;
+    vector<double> pressure_diff;
+    vector<double> velocity_diff;
+    vector<double> div_diff;
+};
+
+template <int dim>
+void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, DiffData &result) {
+    fe_values.reinit(ele);
+}
+
+
+
+void DarcyFlowMHOutput::compute_l2_difference() {
+
+
+    const unsigned int spacedim = 2;
+    const unsigned int order = 2; // order of Gauss quadrature
+
+    // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
+    // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
+    FE_P<0,1,3> fe_1d;
+    FE_P<0,2,3> fe_2d;
+
+    QGauss<1> quad_1d( order );
+    QGauss<2> quad_2d( order );
+
+    MappingP1<1,3> mapp_1d;
+    MappingP1<2,3> mapp_2d;
+
+    FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values);
+    FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values);
+
+    static DiffData result;
+
+    result.pressure_diff.resize( mesh_->n_elements() );
+    result.velocity_diff.resize( mesh_->n_elements() );
+    result.div_diff.resize( mesh_->n_elements() );
+
+    output_writer->register_elem_data("pressure_diff","0",result.pressure_diff);
+    output_writer->register_elem_data("velocity_diff","0",result.velocity_diff);
+    output_writer->register_elem_data("div_diff","0",result.div_diff);
+
+    FOR_ELEMENTS( mesh_, ele) {
+        switch (ele->dim()) {
+        case 1:
+            l2_diff_local<1>( ele, fe_values_1d, result);
+        case 2:
+            l2_diff_local<2>( ele, fe_values_2d, result);
+        }
+    }
 }

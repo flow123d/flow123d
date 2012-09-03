@@ -29,6 +29,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
 # every library then can be testetd independently
 set(sources_lib_non_system
+    fem/fe_p.cc
     fem/dofhandler.cc
     fem/fe_values.cc
     fem/finite_element.cc
