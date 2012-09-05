@@ -38,9 +38,9 @@ public:
 
     TTriangle & operator =(const TTriangle &t);
 
-    TPlain GetPlain() const;
+    const TPlain &GetPlain() const;
     const TAbscissa &GetAbscissa(int) const;
-    TPoint GetPoint(int) const;
+    const TPoint &GetPoint(int) const;
 
     void SetPoints(const TPoint&, const TPoint&, const TPoint&);
 

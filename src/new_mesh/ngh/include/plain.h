@@ -31,11 +31,11 @@ public:
     TPlain(const TPlain&);
     ~TPlain();
 
-    TPoint GetPoint() const;
+    const TPoint &GetPoint() const;
     TPoint GetPoint(double, double) const;
-    TVector GetNormal() const;
-    TVector GetU() const;
-    TVector GetV() const;
+    const TVector &GetNormal() const;
+    const TVector &GetU() const;
+    const TVector &GetV() const;
     double GetA() const;
     double GetB() const;
     double GetC() const;

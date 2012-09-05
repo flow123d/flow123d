@@ -32,7 +32,9 @@
 #include "mesh/mesh.h"
 #include "new_mesh/bounding_interval_hierarchy.hh"
 #include "new_mesh/ngh/include/triangle.h"
+#include "new_mesh/ngh/include/tetrahedron.h"
 #include "new_mesh/ngh/include/polygon.h"
+#include "new_mesh/ngh/include/intersection.h"
 #include <armadillo>
 
 
@@ -48,14 +50,26 @@ int main(int argc, char **argv) {
 	meshReader->read(file_name, mesh);
 	BoundingIntevalHierachy* bihTree = new BoundingIntevalHierachy(mesh);
 
-	TPoint* pointA = new TPoint(0.15, 0.26, 0.37);
-	TPoint* pointB = new TPoint(0.28, 1.42, 0.49);
-	TPoint* pointC = new TPoint(1.46, 0.47, 1.41);
-	TTriangle* triangle = new TTriangle(pointA, pointB, pointC);
-	std::vector<BoundingBox *> searchedElements;
-	bihTree->find_elements(*triangle, searchedElements);
+	TPoint* pointA = new TPoint(-0.10, -0.10, 0.00);
+	TPoint* pointB = new TPoint(1.60, 1.60, 0.00);
+	TPoint* pointC = new TPoint(0.10, 0.10, 0.50);
+	TTriangle triangle(pointA, pointB, pointC);
 
-	xprintf(Msg, " - searched elements ids: ");
+	TPoint* point0 = new TPoint(0.00, 0.00, 0.00);
+	TPoint* point1 = new TPoint(3.00, 0.00, 0.00);
+	TPoint* point2 = new TPoint(0.00, 3.00, 0.00);
+	TPoint* point3 = new TPoint(0.00, 0.00, 3.00);
+	TTetrahedron tetrahedron(point0, point1, point2, point3);
+
+	TIntersectionType it;
+	double area;
+	GetIntersection(triangle, tetrahedron, it, area);
+	xprintf(Msg, "Area: %f, Triangle: %f\n", area, triangle.GetArea());
+
+	//std::vector<BoundingBox *> searchedElements;
+	//bihTree->find_elements(*triangle, searchedElements);
+
+	/*xprintf(Msg, " - searched elements ids: ");
 
 	for (std::vector<BoundingBox *>::iterator tmp = searchedElements.begin(); tmp!=searchedElements.end(); tmp++)
 	{
@@ -63,7 +77,7 @@ int main(int argc, char **argv) {
 
 		xprintf(Msg, "%d ", b->getId());
 	}
-	xprintf(Msg, "\n");
+	xprintf(Msg, "\n");*/
 
 	/*TPoint* point1 = new TPoint( 1.0, 1.0, 1.0);
 	TPoint* point2 = new TPoint( 2.0, 6.0, 3.0);

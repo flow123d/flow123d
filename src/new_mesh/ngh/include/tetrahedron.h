@@ -35,13 +35,15 @@ public:
     TTetrahedron(const TPoint&, const TPoint&, const TPoint&, const TPoint&);
     ~TTetrahedron();
 
-    TTriangle GetTriangle(int) const;
+    const TTriangle &GetTriangle(int) const;
     const TAbscissa &GetAbscissa(int) const;
 
     double GetMin(int) const;
     double GetMax(int) const;
 
     double GetVolume();
+
+    bool IsInner(const TPoint&) const;
 
     static int getNumInstances() {
         return TTetrahedron::numberInstance;

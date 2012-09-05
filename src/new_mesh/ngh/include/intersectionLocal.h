@@ -3,11 +3,12 @@
 
 #include <iostream>
 #include <vector>
-#include "element.h"
+#include <stdio.h>
+//#include "element.h"
 
 using namespace std;
 class TPoint;
-class TElement;
+//class TElement;
 
 //class IntersectionPoint - dva vektory lokalnich souradnic
 class IntersectionPoint {
@@ -43,7 +44,7 @@ public:
     IntersectionLocal(IntersectionLocal*);
     ~IntersectionLocal();
 
-    void set_elements(TElement *elem1, TElement *elem2); //metoda na naplneni ele1, ele2
+    //void set_elements(TElement *elem1, TElement *elem2); //metoda na naplneni ele1, ele2
     void add_local_coord(const std::vector<double> &coordin1, const std::vector<double> &coordin2); //metoda na pridani souradnic do i_points
     void add_local_point(IntersectionPoint *InPoint);
     void print(FILE *out_file);
@@ -68,8 +69,8 @@ private:
 
     std::vector<IntersectionPoint *> i_points; //vektor ukazatelu na dvojice lokal. souradnic
     IntersectionType type;
-    TElement *ele1;
-    TElement *ele2;
+    //TElement *ele1;
+    //TElement *ele2;
 
     int generateId();
 };

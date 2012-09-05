@@ -56,20 +56,18 @@ TTetrahedron::~TTetrahedron() {
     delete A6;
 }
 
-TTriangle TTetrahedron::GetTriangle(int i) const {
-    TTriangle tmp;
+const TTriangle &TTetrahedron::GetTriangle(int i) const {
     switch (i) {
-        case 1: tmp = *T1;
+        case 1: return *T1;
             break;
-        case 2: tmp = *T2;
+        case 2: return *T2;
             break;
-        case 3: tmp = *T3;
+        case 3: return *T3;
             break;
-        case 4: tmp = *T4;
+        case 4: return *T4;
             break;
         default: mythrow((char*)"Unknown number of the triangle of the tetrahedron.", __LINE__, __FUNC__);
     }
-    return tmp;
 }
 
 const TAbscissa &TTetrahedron::GetAbscissa(int i) const {
@@ -140,4 +138,31 @@ void TTetrahedron::ComputeVolume() {
     a[ 2 ][ 2 ] = X4->Z() - X1->Z();
 
     volume = fabs(Determinant3(a)) / 6.0;
+}
+
+bool TTetrahedron::IsInner(const TPoint& P) const {
+	TVector N, U1(*X1, *X2), U2(*X1, *X3), U3(*X1, *X4), U4(*X2, *X3), U5(*X2, *X4), U6(*X3, *X4);
+	TVector Up1(*X1, P), Up2(*X2, P), Up3(*X3, P), Up4(*X4, P);
+
+	N = Cross(U1, U2);
+	if (Dot(N, U3) * Dot(N, Up1) < 0) {
+		return false;
+	}
+
+	N = Cross(-1 * U1, U4);
+	if (Dot(N, U5) * Dot(N, Up2) < 0) {
+		return false;
+	}
+
+	N = Cross(-1 * U2, U6);
+	if (Dot(N, -1 * U4) * Dot(N, Up3) < 0) {
+		return false;
+	}
+
+	N = Cross(-1 * U3, -1 * U5);
+	if (Dot(N, -1 * U6) * Dot(N, Up4) < 0) {
+		return false;
+	}
+
+	return true;
 }

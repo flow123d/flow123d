@@ -73,10 +73,8 @@ TTriangle::~TTriangle() {
     }
 }
 
-TPlain TTriangle::GetPlain() const {
-    TPlain tmp;
-    tmp = *pl;
-    return tmp;
+const TPlain &TTriangle::GetPlain() const {
+    return *pl;
 }
 
 const TAbscissa &TTriangle::GetAbscissa(const int i) const {
@@ -93,18 +91,16 @@ const TAbscissa &TTriangle::GetAbscissa(const int i) const {
     }
 }
 
-TPoint TTriangle::GetPoint(int i) const {
-    TPoint tmp;
+const TPoint &TTriangle::GetPoint(int i) const {
     switch (i) {
-        case 1: tmp = *X1;
+        case 1: return *X1;
             break;
-        case 2: tmp = *X2;
+        case 2: return *X2;
             break;
-        case 3: tmp = *X3;
+        case 3: return *X3;
             break;
         default: mythrow((char*) "Unknown number of the point of the triangle.", __LINE__, __FUNC__);
     }
-    return tmp;
 }
 
 void TTriangle::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
@@ -126,8 +122,24 @@ void TTriangle::ComputeArea() {
     area = 0.5 * N.Length();
 }
 
+void TTriangle::compute_bounding_box() {
+	arma::vec3 minCoor;
+	arma::vec3 maxCoor;
+
+	for (int i=0; i<3; ++i) {
+		minCoor(i) = GetMin(i+1);
+		maxCoor(i) = GetMax(i+1);
+	}
+
+	boundingBox = new BoundingBox(minCoor, maxCoor);
+}
+
 double TTriangle::GetArea() {
     return area;
+}
+
+BoundingBox* TTriangle::get_bounding_box() {
+	return boundingBox;
 }
 
 double TTriangle::GetMin(int i) const {

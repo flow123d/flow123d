@@ -94,28 +94,20 @@ double TPlain::GetD() const {
     return d;
 }
 
-TVector TPlain::GetNormal() const {
-    TVector tmp;
-    tmp = *N;
-    return tmp;
+const TVector &TPlain::GetNormal() const {
+    return *N;
 }
 
-TVector TPlain::GetU() const {
-    TVector tmp;
-    tmp = *U;
-    return tmp;
+const TVector &TPlain::GetU() const {
+    return *U;
 }
 
-TVector TPlain::GetV() const {
-    TVector tmp;
-    tmp = *V;
-    return tmp;
+const TVector &TPlain::GetV() const {
+    return *V;
 }
 
-TPoint TPlain::GetPoint() const {
-    TPoint tmp;
-    tmp = *X;
-    return tmp;
+const TPoint &TPlain::GetPoint() const {
+    return *X;
 }
 
 TPoint TPlain::GetPoint(double r, double s) const {

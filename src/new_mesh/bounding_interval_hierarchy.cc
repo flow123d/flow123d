@@ -146,8 +146,8 @@ void BoundingIntevalHierachy::find_elements(TTriangle &triangle, std::vector<Bou
 						Node* n = e->node[i];
 						xprintf(Msg, "Node %d [%f %f %f]\n", (i+1), n->getX(), n->getY(), n->getZ());
 					}*/
-					GetIntersection(triangle, *tetrahedron, it, area);
-					xprintf(Msg, "Area: %f\n", area);
+					//GetIntersection(triangle, *tetrahedron, it, area);
+					//xprintf(Msg, "Area: %f\n", area);
 				}
 				searchedElements.push_back(b);
 			}

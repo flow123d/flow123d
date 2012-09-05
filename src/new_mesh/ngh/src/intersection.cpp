@@ -1,4 +1,5 @@
 #include "new_mesh/ngh/include/intersection.h"
+#include "new_mesh/ngh/include/intersectionLocal.h"
 #include "new_mesh/ngh/include/matrix.h"
 #include "new_mesh/ngh/include/mathfce.h"
 #include <cmath>
@@ -580,15 +581,25 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
     GetIntersection(T.GetPlain(), B, pos, t);
     switch (pos) {
         // POINT INTERSECTION
-    	case intersecting:
+    	case intersecting: {
             if (!T.IsInner(B.GetPoint(t))) {
                 insec=NULL;
                 return;
             }
-            // !! vratit lokalni souradnice pruseciku na bisectoru a na trianglu
-            // !! nebo hlasit ze neni implementovano.
-            mythrow((char*) "Bisector and Triangle has one point of intersection - not implemented.\n", __LINE__, __FUNC__);
+
+            vector<double> loc_coord_1(2);
+            vector<double> loc_coord_2(2);
+
+            loc_coord_1[0] = t;
+            loc_coord_1[1] = 0;
+            loc_coord_1[0] = 0;
+            loc_coord_1[1] = 0;
+
+            insec = new IntersectionLocal(IntersectionLocal::point);
+            insec->add_local_coord(loc_coord_1, loc_coord_2);
+
             return;
+    	}
 
        // LINE INTERSECTION
        case belong: {
@@ -753,6 +764,10 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
     }
     IntersectionLocal* insec_tmp;
     GetIntersection( (const TBisector &)A, T, insec_tmp);
+    if (!insec_tmp) {
+    	insec = NULL;
+    	return;
+    }
     if (insec_tmp->get_type() == IntersectionLocal::point) {
     	if (insec_tmp->get_point(0) != NULL) {
     		double t1 = insec_tmp->get_point(0)->el1_coord()[0];
@@ -946,44 +961,65 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
         return;
     }
 
+    int cit = 0;
     TPolygon *P = new TPolygon();
-
     for (int i = 1; i <= 3; i++) {
-        for (int j = 1; j <= 4; j++) {
-            it = unknown;
-            double t1, t2;
-            GetIntersection(Tr.GetAbscissa(i), Te.GetTriangle(j), it, t1, t2);
-            switch (it) {
-                case point:
-                    P->Add(Tr.GetAbscissa(i).GetPoint(t1));
-                    break;
-                case line:
-                    P->Add(Tr.GetAbscissa(i).GetPoint(t1));
-                    P->Add(Tr.GetAbscissa(i).GetPoint(t2));
-                    break;
-                default:
-                    //mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
-                	break;
-            }
+        if (Te.IsInner(Tr.GetPoint(i))) {
+        	P->Add(Tr.GetPoint(i));
+        	cit++;
         }
     }
 
-    for (int i = 1; i <= 6; i++) {
-        it = unknown;
-        double t1, t2;
-        GetIntersection(Te.GetAbscissa(i), Tr, it, t1, t2);
-        switch (it) {
-            case point:
-                P->Add(Te.GetAbscissa(i).GetPoint(t1));
-                break;
-            case line:
-                P->Add(Te.GetAbscissa(i).GetPoint(t1));
-                P->Add(Te.GetAbscissa(i).GetPoint(t2));
-                break;
-            default:
-                //mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
-            	break;
-        }
+    if (P->vertexes_count() < 3) {
+		IntersectionLocal *insec;
+
+		for (int i = 1; i <= 3; i++) {
+			for (int j = 1; j <= 4; j++) {
+				double t1, t2;
+				GetIntersection(Tr.GetAbscissa(i), Te.GetTriangle(j), insec);
+				if (insec) {
+					switch (insec->get_type()) {
+						case IntersectionLocal::point: {
+							TPoint p = Tr.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]);
+							printf("point\n");
+							printf("   [%f %f %f] [%f %f %f]\n", p.X(), p.Y(), p.Z());
+							//P->Add(Tr.GetAbscissa(i).GetPoint(t1));
+							break;
+						}
+						case IntersectionLocal::line: {
+							TPoint p1 = Tr.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]);
+							TPoint p2 = Tr.GetAbscissa(i).GetPoint(insec->get_point(1)->el1_coord()[0]);
+							printf("line\n");
+							printf("   [%f %f %f] [%f %f %f]\n", p1.X(), p1.Y(), p1.Z(), p2.X(), p2.Y(), p2.Z());
+							//P->Add(Tr.GetAbscissa(i).GetPoint(t1));
+							//P->Add(Tr.GetAbscissa(i).GetPoint(t2));
+							break;
+						}
+						default:
+							//mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
+							break;
+					}
+				}
+			}
+		}
+
+		/*for (int i = 1; i <= 6; i++) {
+			insec = NULL;
+			double t1, t2;
+			GetIntersection(Te.GetAbscissa(i), Tr, insec);
+			switch (insec->get_type()) {
+				case point:
+					P->Add(Te.GetAbscissa(i).GetPoint(t1));
+					break;
+				case line:
+					P->Add(Te.GetAbscissa(i).GetPoint(t1));
+					P->Add(Te.GetAbscissa(i).GetPoint(t2));
+					break;
+				default:
+					//mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
+					break;
+			}
+		}*/
     }
 
     coef = P->GetArea();

@@ -43,6 +43,13 @@ public:
     double GetArea();
     TPoint GetCenter();
 
+    /**
+     * Get count of vertexes
+     */
+    int vertexes_count() {
+    	return verteces.size();
+    }
+
     static int getNumInstances() {
         return TPolygon::numberInstance;
     }

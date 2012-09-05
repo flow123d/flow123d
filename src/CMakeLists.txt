@@ -90,21 +90,14 @@ set(sources_lib_new_mesh
     
     new_mesh/ngh/src/abscissa.cpp
     new_mesh/ngh/src/bisector.cpp
-    new_mesh/ngh/src/edge.cpp
-    new_mesh/ngh/src/element.cpp
     new_mesh/ngh/src/intersection.cpp
     new_mesh/ngh/src/intersectionLocal.cpp
     new_mesh/ngh/src/mathfce.cpp
     new_mesh/ngh/src/matrix.cpp
-    new_mesh/ngh/src/mesh.cpp
-    new_mesh/ngh/src/neighbour.cpp
-    new_mesh/ngh/src/node.cpp
     new_mesh/ngh/src/plain.cpp
     new_mesh/ngh/src/point.cpp
     new_mesh/ngh/src/polygon.cpp
-    new_mesh/ngh/src/side.cpp
     new_mesh/ngh/src/system.cpp
-    new_mesh/ngh/src/TElementFactory.cpp
     new_mesh/ngh/src/tetrahedron.cpp
     new_mesh/ngh/src/triangle.cpp
     new_mesh/ngh/src/vector.cpp

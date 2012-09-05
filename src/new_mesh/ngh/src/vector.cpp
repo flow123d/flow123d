@@ -6,7 +6,7 @@
 
 using namespace mathfce;
 
-double epsilon;
+double epsilon = 1e-6;
 
 int TVector::numberInstance = 0;
 

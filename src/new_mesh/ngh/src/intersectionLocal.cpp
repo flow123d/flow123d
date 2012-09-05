@@ -5,6 +5,7 @@
 #include "new_mesh/ngh/include/config.h"
 #include "new_mesh/ngh/include/problem.h" //epsilon
 #include <stdio.h>
+#include <vector>
 #include <cmath>
 //#include <math.h>
 
@@ -49,7 +50,7 @@ IntersectionLocal::IntersectionLocal(IntersectionType i_type)
 	id = generateId();
 }
 
-void IntersectionLocal::set_elements(TElement  *elem1, TElement *elem2) {
+/*void IntersectionLocal::set_elements(TElement  *elem1, TElement *elem2) {
 	bool pom1 = false;
 	bool pom2 = false;
 
@@ -62,10 +63,10 @@ void IntersectionLocal::set_elements(TElement  *elem1, TElement *elem2) {
 			}
 			else {
 				pom1 = false;
-				/*cout<<"Elem1 - pocet souradnic: "<< (*i_point)->coord1.size() << endl;
-				cout<<"Coord1: "<< (*i_point)->coord1[0] << endl;
-				cout<<"Coord1: "<< (*i_point)->coord1[1] << endl;
-				cout<<"Elem2 - pocet stran: "<< elem1->GetNSides() << endl;*/
+				//cout<<"Elem1 - pocet souradnic: "<< (*i_point)->coord1.size() << endl;
+				//cout<<"Coord1: "<< (*i_point)->coord1[0] << endl;
+				//cout<<"Coord1: "<< (*i_point)->coord1[1] << endl;
+				//cout<<"Elem2 - pocet stran: "<< elem1->GetNSides() << endl;
 			}
 			// TEST SHODY POCTU SOURADNIC S POCTEM STRAN 2.ELEMENTU
 			if ((*i_point)->coord2.size()==elem2->GetNSides() - 1) { //pocet lokal. souradnic 2.elementu
@@ -73,10 +74,10 @@ void IntersectionLocal::set_elements(TElement  *elem1, TElement *elem2) {
 			}
 			else {
 				pom2 = false;
-				/*cout<<"Elem1 - pocet souradnic: "<< (*i_point)->coord2.size() << endl;
-				cout<<"Coord2: "<< (*i_point)->coord2[0] << endl;
-				cout<<"Coord2: "<< (*i_point)->coord2[1] << endl;
-				cout<<"Elem2 - pocet stran: "<< elem2->GetNSides() << endl;*/
+				//cout<<"Elem1 - pocet souradnic: "<< (*i_point)->coord2.size() << endl;
+				//cout<<"Coord2: "<< (*i_point)->coord2[0] << endl;
+				//cout<<"Coord2: "<< (*i_point)->coord2[1] << endl;
+				//cout<<"Elem2 - pocet stran: "<< elem2->GetNSides() << endl;
 			}
 	}
 	if ((pom1==true) && (pom2==true)) {
@@ -86,10 +87,10 @@ void IntersectionLocal::set_elements(TElement  *elem1, TElement *elem2) {
 	else {
 		mythrow((char*) "Invalid size of the vector local coordinates.", __LINE__, __FUNC__);
 	}
-}
+}*/
 
 void IntersectionLocal::add_local_coord(const std::vector<double> &coordin1, const std::vector<double> &coordin2) {
-	i_points.push_back(new IntersectionPoint::IntersectionPoint(coordin1, coordin2));
+	i_points.push_back(new IntersectionPoint(coordin1, coordin2));
 }
 
 void IntersectionLocal::add_local_point(IntersectionPoint *InPoint) {
