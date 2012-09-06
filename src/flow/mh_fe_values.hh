@@ -23,6 +23,9 @@ public:
     double * local_matrix();
     double * inv_local_matrix();
 
+    /**
+     * Temporary hack: returns value of shape function on element 'ele' and its 'face' in 'point' given in global coordinate system.
+     */
     arma::vec3 RT0_value(ElementFullIter ele, arma::vec3 point, unsigned int face);
 
 private:

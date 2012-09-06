@@ -76,12 +76,12 @@ arma::vec3 MHFEValues::RT0_value(ElementFullIter ele, arma::vec3 point, unsigned
     switch( ele->dim() ) {
     case 1:
         {
-            double sign = (face == 0)? -0.5 : 0.5;
-            arma::vec3 vec = ele->node[1]->point() - ele->node[0]->point();
-            vec /= arma::norm(vec, 2);
-
-            return sign * vec;
-
+            arma::vec3 line_vec = ele->node[1]->point() - ele->node[0]->point();
+            if (face == 0) {
+                return - arma::norm( point - ele->node[1]->point(), 2) * line_vec / arma::dot( line_vec, line_vec) ;
+            } else {
+                return arma::norm( point - ele->node[0]->point(), 2) * line_vec / arma::dot( line_vec, line_vec) ;
+            }
         }
     case 2:
         {

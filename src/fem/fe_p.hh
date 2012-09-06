@@ -260,6 +260,14 @@ private:
 template<unsigned int degree, unsigned int dim>
 PolynomialSpace<degree,dim>::PolynomialSpace()
 {
+// computes powers of all monomials up to given @p degree
+// the order is: 1,x,x^2, y, yx,y^2
+//
+// TODO: - check and possibly rewrite to be more clear (use sum_degree temporary
+//       - change order of monomials: 1, x, y, xy, x^2 , y^2 (increasing order)
+//       - allow Q polynomials: 1,x, y, xy
+//       - can use tensor products
+
 	arma::uvec::fixed<dim> pows;
     int i;
 
@@ -272,8 +280,8 @@ PolynomialSpace<degree,dim>::PolynomialSpace()
 
         if (sum(pows) == degree)
         {
-            while (pows[i] == 0) i++;
-            pows[i] = 0;
+            while (pows[i] == 0) i++;   // possibly invalid read ?
+            pows[i] = 0;                // possibly invalid read ?
             if (i == dim-1) break;
             pows[i+1]++;
             i = 0;
