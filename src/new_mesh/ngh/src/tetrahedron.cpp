@@ -141,26 +141,26 @@ void TTetrahedron::ComputeVolume() {
 }
 
 bool TTetrahedron::IsInner(const TPoint& P) const {
-	TVector N, U1(*X1, *X2), U2(*X1, *X3), U3(*X1, *X4), U4(*X2, *X3), U5(*X2, *X4), U6(*X3, *X4);
-	TVector Up1(*X1, P), Up2(*X2, P), Up3(*X3, P), Up4(*X4, P);
+	TVector N, U1(*X1, *X2), U2(*X1, *X3), U3(*X1, *X4), U4(*X2, *X3), U5(*X2, *X4), U6(*X2, *X1);
+	TVector Up1(*X1, P), Up2(*X2, P);
 
-	N = Cross(U1, U2);
+	N = Cross(U1, U2); //X4 is on opposite side of plain X1,X2,X3 than P
 	if (Dot(N, U3) * Dot(N, Up1) < 0) {
 		return false;
 	}
 
-	N = Cross(-1 * U1, U4);
-	if (Dot(N, U5) * Dot(N, Up2) < 0) {
+	N = Cross(U1, U3); //X3 x P
+	if (Dot(N, U2) * Dot(N, Up1) < 0) {
 		return false;
 	}
 
-	N = Cross(-1 * U2, U6);
-	if (Dot(N, -1 * U4) * Dot(N, Up3) < 0) {
+	N = Cross(U2, U3); //X2 x P
+	if (Dot(N, U1) * Dot(N, Up1) < 0) {
 		return false;
 	}
 
-	N = Cross(-1 * U3, -1 * U5);
-	if (Dot(N, -1 * U6) * Dot(N, Up4) < 0) {
+	N = Cross(U4, U5); //X1 x P
+	if (Dot(N, U6) * Dot(N, Up2) < 0) {
 		return false;
 	}
 
