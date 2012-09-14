@@ -87,6 +87,8 @@ set(sources_lib_new_mesh
     new_mesh/point.cc
     new_mesh/bounding_interval_hierarchy.cc
     new_mesh/bounding_box.cc
+    new_mesh/bih_node.cc
+    new_mesh/bih_tree.cc
     
     new_mesh/ngh/src/abscissa.cpp
     new_mesh/ngh/src/bisector.cpp

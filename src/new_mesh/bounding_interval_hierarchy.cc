@@ -28,72 +28,13 @@
 #include "system/system.hh"
 #include "system/sys_vector.hh"
 #include "new_mesh/bounding_interval_hierarchy.hh"
+#include "new_mesh/bih_node.hh"
 #include "new_mesh/ngh/include/tetrahedron.h"
 #include "new_mesh/ngh/include/point.h"
 #include "new_mesh/ngh/include/intersection.h"
 #include <typeinfo>
 
-BoundingIntevalHierachy::BoundingIntevalHierachy(Mesh* mesh) {
-	xprintf(Msg, " - BoundingIntevalHierachy->BoundingIntevalHierachy(Mesh* mesh)\n");
-
-	mesh_ = mesh;
-	leaf_ = false;
-	depth_ = 0;
-
-	bounding_box();
-	element_boxes();
-	split_area();
-	distribute_elements();
-
-	xprintf(Msg, " - Tree created\n");
-}
-
-BoundingIntevalHierachy::BoundingIntevalHierachy(Mesh* mesh, arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth) {
-	//xprintf(Msg, " - BoundingIntevalHierachy->BoundingIntevalHierachy(Mesh*, arma::vec3, arma::vec3, int, int)\n");
-
-	mesh_ = mesh;
-	leaf_ = false;
-	boundingBox_ = new BoundingBox(minCoordinates, maxCoordinates);
-	splitCoor_ = splitCoor;
-	depth_ = depth;
-}
-
-void BoundingIntevalHierachy::bounding_box() {
-	Node* node = mesh_->node_vector.begin();
-	arma::vec3 point = node->point();
-
-	arma::vec3 minCoordinates = point;
-	arma::vec3 maxCoordinates = point;
-
-	FOR_NODES(mesh_, node ) {
-		arma::vec3 point = node->point();
-
-		for (int i=0; i<dimension; i++) {
-			minCoordinates(i) = std::min(minCoordinates(i), point(i));
-			maxCoordinates(i) = std::max(maxCoordinates(i), point(i));
-		}
-	}
-	boundingBox_ = new BoundingBox(minCoordinates, maxCoordinates);
-
-}
-
-void BoundingIntevalHierachy::element_boxes() {
-	FOR_ELEMENTS(mesh_, element) {
-		arma::vec3 minCoor = element->node[0]->point();
-		arma::vec3 maxCoor = element->node[0]->point();
-		int id = element.id();
-		for (int i=1; i<element->n_nodes(); i++) {
-			Node* node = element->node[i];
-			for (int j=0; j<dimension; j++) {
-				minCoor(j) = std::min(minCoor(j), node->point()(j));
-				maxCoor(j) = std::max(maxCoor(j), node->point()(j));
-			}
-		}
-		BoundingBox* boxElement = new BoundingBox(minCoor, maxCoor);
-		boxElement->setId(id);
-		elements_.push_back(boxElement);
-	}
-}
+BoundingIntevalHierachy::~BoundingIntevalHierachy() {}
 
 bool BoundingIntevalHierachy::contains_element(int coor, double min, double max) {
 	return (min < boundingBox_->get_max()(coor)) & (max > boundingBox_->get_min()(coor));
@@ -108,7 +49,8 @@ bool BoundingIntevalHierachy::contains_point(arma::vec3 &point) {
 }
 
 int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<BoundingBox *> &searchedElements) {
-	if (leaf_) {
+	return 0;
+	/*if (leaf_) { // NEPOUZIVA SE
 		for (std::vector<BoundingBox *>::iterator tmp = elements_.begin(); tmp!=elements_.end(); tmp++)
 		{
 			BoundingBox* boundingBox = *tmp;
@@ -120,63 +62,20 @@ int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<Bounding
 		if (child_[0]->contains_point(point)) return child_[0]->get_element(point, searchedElements);
 		else if (child_[1]->contains_point(point)) return child_[1]->get_element(point, searchedElements);
 		else return -1;
-	}
+	}*/
 }
 
-void BoundingIntevalHierachy::find_elements(TTriangle &triangle, std::vector<BoundingBox *> &searchedElements)
-{
-	BoundingBox* boundingBox = triangle.get_bounding_box();
-
-	if (leaf_) {
-		for (std::vector<BoundingBox *>::iterator tmp = elements_.begin(); tmp!=elements_.end(); tmp++)
-		{
-			BoundingBox* b = *tmp;
-
-			if (b->intersection(*boundingBox)) {
-				Element* e = mesh_->element.find_id(b->getId());
-				if (e->n_nodes() == 4) {
-					TPoint* point0 = new TPoint(e->node[0]->getX(), e->node[0]->getY(), e->node[0]->getZ());
-					TPoint* point1 = new TPoint(e->node[1]->getX(), e->node[1]->getY(), e->node[1]->getZ());
-					TPoint* point2 = new TPoint(e->node[2]->getX(), e->node[2]->getY(), e->node[2]->getZ());
-					TPoint* point3 = new TPoint(e->node[3]->getX(), e->node[3]->getY(), e->node[3]->getZ());
-					TTetrahedron* tetrahedron = new TTetrahedron(point0, point1, point2, point3);
-					TIntersectionType it;
-					double area;
-					/*for (int i=0; i<e->n_nodes(); i++) {
-						Node* n = e->node[i];
-						xprintf(Msg, "Node %d [%f %f %f]\n", (i+1), n->getX(), n->getY(), n->getZ());
-					}*/
-					//GetIntersection(triangle, *tetrahedron, it, area);
-					//xprintf(Msg, "Area: %f\n", area);
-				}
-				searchedElements.push_back(b);
-			}
-		}
-	} else {
-		if (child_[0]->boundingBox_->intersection(*boundingBox)) child_[0]->find_elements(triangle, searchedElements);
-		if (child_[1]->boundingBox_->intersection(*boundingBox)) child_[1]->find_elements(triangle, searchedElements);
-	}
-}
-
-void BoundingIntevalHierachy::put_element(BoundingBox* element) {
-	elements_.push_back(element);
-}
-
-int BoundingIntevalHierachy::get_element_count() {
-	return elements_.size();
-}
-
-void BoundingIntevalHierachy::split_distribute() {
-	if (elements_.size()>area_element_limit) {
-		split_area();
-		if (!leaf_) distribute_elements();
+void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox *> elements) {
+	if (get_element_count()>area_element_limit) {
+		split_area(elements);
+		if (!leaf_) distribute_elements(elements);
 	} else {
 		leaf_ = true;
 	}
 }
 
-void BoundingIntevalHierachy::split_area() {
-	int medianStep = elements_.size() / area_median_count;
+void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
+	int medianStep = get_element_count() / area_median_count;
 	int medianPosition = (int)(area_median_count/2);
 	double median;
 	double coors[area_median_count];
@@ -199,7 +98,7 @@ void BoundingIntevalHierachy::split_area() {
 	}
 
 	//select adepts at median
-	for (int i=0; i<area_median_count; i++) coors[i] = elements_[i * medianStep]->get_center()(splitCoor_);
+	for (int i=0; i<area_median_count; i++) coors[i] = get_median_coord(elements, i * medianStep);
 
 	//select median of the adepts
 	for (int i=0; i<medianPosition; i++) {
@@ -238,24 +137,7 @@ void BoundingIntevalHierachy::split_area() {
 				maxCoor(j) = (j==splitCoor_ && i==0) ? median : boundingBox_->get_max()(j);
 			}
 
-			child_[i] = new BoundingIntevalHierachy(mesh_, minCoor, maxCoor, splitCoor_, depth_+1);
+			child_[i] = new BIHNode(minCoor, maxCoor, splitCoor_, depth_+1);
 		}
 	}
-}
-
-void BoundingIntevalHierachy::distribute_elements()
-{
-	for (std::vector<BoundingBox *>::iterator it = elements_.begin(); it!=elements_.end(); it++) {
-		BoundingBox* boundingBox = *it;
-		for (int j=0; j<child_count; j++) {
-			if (child_[j]->contains_element(splitCoor_, boundingBox->get_min()(splitCoor_), boundingBox->get_max()(splitCoor_))) {
-				child_[j]->put_element(boundingBox);
-			}
-		}
-	}
-
-	elements_.erase(elements_.begin(), elements_.end());
-
-	child_[0]->split_distribute();
-	child_[1]->split_distribute();
 }

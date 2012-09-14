@@ -31,6 +31,7 @@
 //#include "new_mesh/mesh.hh"
 #include "mesh/mesh.h"
 #include "new_mesh/bounding_interval_hierarchy.hh"
+#include "new_mesh/bih_tree.hh"
 #include "new_mesh/ngh/include/triangle.h"
 #include "new_mesh/ngh/include/tetrahedron.h"
 #include "new_mesh/ngh/include/polygon.h"
@@ -48,14 +49,14 @@ int main(int argc, char **argv) {
 	const std::string& bcd_fname = "../tests/11_reactional_transport_semchem/input/sit_trans.fbc";
 	Mesh* mesh = new Mesh(ngh_fname, bcd_fname);
 	meshReader->read(file_name, mesh);
-	BoundingIntevalHierachy* bihTree = new BoundingIntevalHierachy(mesh);
+	BoundingIntevalHierachy* bihTree = new BIHTree(mesh);
 
 	TPoint* pointA = new TPoint(-0.10, -0.10, 0.00);
 	TPoint* pointB = new TPoint(1.60, 1.60, 0.00);
 	TPoint* pointC = new TPoint(0.10, 0.10, 0.50);
 	TTriangle triangle(pointA, pointB, pointC);
 
-	TPoint* point0 = new TPoint(0.00, 0.00, 0.00);
+	/*TPoint* point0 = new TPoint(0.00, 0.00, 0.00);
 	TPoint* point1 = new TPoint(3.00, 0.00, 0.00);
 	TPoint* point2 = new TPoint(0.00, 3.00, 0.00);
 	TPoint* point3 = new TPoint(0.00, 0.00, 3.00);
@@ -64,20 +65,20 @@ int main(int argc, char **argv) {
 	TIntersectionType it;
 	double area;
 	GetIntersection(triangle, tetrahedron, it, area);
-	xprintf(Msg, "Area: %f, Triangle: %f\n", area, triangle.GetArea());
+	xprintf(Msg, "Area: %f, Triangle: %f\n", area, triangle.GetArea());*/
 
-	//std::vector<BoundingBox *> searchedElements;
-	//bihTree->find_elements(*triangle, searchedElements);
+	std::vector<int> searchedElements;
+	BoundingBox triangleBox = triangle.get_bounding_box();
+	((BIHTree *)bihTree)->find_elements(triangleBox, searchedElements);
 
-	/*xprintf(Msg, " - searched elements ids: ");
+	xprintf(Msg, " - searched elements orders: ");
 
-	for (std::vector<BoundingBox *>::iterator tmp = searchedElements.begin(); tmp!=searchedElements.end(); tmp++)
+	for (std::vector<int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
 	{
-		BoundingBox* b = *tmp;
-
-		xprintf(Msg, "%d ", b->getId());
+		int id = *it;
+		xprintf(Msg, "%d ", id);
 	}
-	xprintf(Msg, "\n");*/
+	xprintf(Msg, "\n");
 
 	/*TPoint* point1 = new TPoint( 1.0, 1.0, 1.0);
 	TPoint* point2 = new TPoint( 2.0, 6.0, 3.0);

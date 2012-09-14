@@ -36,17 +36,14 @@
 #include <algorithm>
 
 class BoundingIntevalHierachy {
+	friend class BIHNode;
+	friend class BIHTree;
 public:
     /// count of dimensions
     static const unsigned int dimension = 3;
 
-	/**
-	 * Constructor
-	 *
-	 * Set class members and call functions which create tree
-	 * @param mesh Mesh is used for creation the tree
-	 */
-    BoundingIntevalHierachy(Mesh* mesh);
+    /// destructor
+    virtual ~BoundingIntevalHierachy();
 
 	/**
 	 * Gets suspect elements which can contain point
@@ -58,28 +55,13 @@ public:
     int get_element(arma::vec3 &point, std::vector<BoundingBox *> &searchedElements);
 
 	/**
-	 * Gets elements which can have intersection with triangle
-	 *
-	 * @param triangle Triangle which is tested if has intersection
-	 * @param searchedElements vector of suspect elements
-	 */
-    void find_elements(TTriangle &triangle, std::vector<BoundingBox *> &searchedElements);
-
-    /**
-     * Add element into elements_ member
-     *
-     * @param element Added element
-     */
-	void put_element(BoundingBox* element);
-
-	/**
 	 * Get count of elements stored in
 	 *
 	 * @return Count of elements stored in elements_ member
 	 */
-    int get_element_count();
+    virtual int get_element_count() { return -1; }
 
-private:
+protected:
 
     /// limit of elements in area, if count of elements is lesser than value splitting is stopped
     static const unsigned int area_element_limit = 20;
@@ -88,33 +70,23 @@ private:
     /// count of elements of which is selected median - value must be even
     static const unsigned int area_median_count = 9;
 
-	/**
-	 * Constructor
-	 *
-	 * Set class members and call functions which create children of node
-	 * @param mesh Mesh is used for creation the tree
-	 * @param minCoordinates Minimal coordinates of BoxElement
-	 * @param maxCoordinates Maximal coordinates of BoxElement
-	 * @param elementSize Count of elements in parent node
-	 * @param splitCoor Coordination of splitting parent area
-	 * @param depth Depth of node in tree.
-	 */
-	BoundingIntevalHierachy(Mesh* mesh, arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
+    /**
+     * Empty constructor
+     */
+    BoundingIntevalHierachy() {}
 
     /**
      * Method checks count of elements in area.
      * If count is greater than area_element_limit splits area and distributes elements to subareas.
      */
-    void split_distribute();
+    void split_distribute(std::vector<BoundingBox *> elements);
 
     /// split area into two subareas by median
-    void split_area();
+    void split_area(std::vector<BoundingBox *> elements);
     /// distribute elements into subareas
-    void distribute_elements();
-    /// create bounding box of area
-    void bounding_box();
-    /// create bounding boxes of element
-    void element_boxes();
+    virtual void distribute_elements(std::vector<BoundingBox *> elements) {}
+    /// get value of coordination for calculate a median
+    virtual double get_median_coord(std::vector<BoundingBox *> elements, int index) { return 0.0; }
 
     /**
      * Tests if element is contained in area bounding box.
@@ -134,14 +106,10 @@ private:
      */
     bool contains_point(arma::vec3 &point);
 
-    /// mesh
-    Mesh* mesh_;
     /// child nodes
     BoundingIntevalHierachy* child_[child_count];
     /// bounding box of area
     BoundingBox* boundingBox_;
-	/// vector of bounding boxes contained in node
-    std::vector<BoundingBox *> elements_;
     /// coordination of splitting area
     int splitCoor_;
     /// depth of node

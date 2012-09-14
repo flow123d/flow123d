@@ -29,6 +29,7 @@ TTriangle::TTriangle(const TTriangle& T) {
     pl = new TPlain(*T.pl);
 
     area = T.area;
+    compute_bounding_box();
 }
 
 TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
@@ -45,6 +46,7 @@ TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
     pl = new TPlain(P1, P2, P3);
 
     ComputeArea();
+    compute_bounding_box();
 }
 
 TTriangle::~TTriangle() {
@@ -115,6 +117,7 @@ void TTriangle::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3) 
     pl->SetPoints(P1, P2, P3);
 
     ComputeArea();
+    compute_bounding_box();
 }
 
 void TTriangle::ComputeArea() {
@@ -138,8 +141,8 @@ double TTriangle::GetArea() {
     return area;
 }
 
-BoundingBox* TTriangle::get_bounding_box() {
-	return boundingBox;
+const BoundingBox &TTriangle::get_bounding_box() const {
+	return *boundingBox;
 }
 
 double TTriangle::GetMin(int i) const {

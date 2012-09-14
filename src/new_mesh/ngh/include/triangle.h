@@ -48,7 +48,7 @@ public:
     double GetMax(int) const;
 
     double GetArea();
-    BoundingBox* get_bounding_box();
+    const BoundingBox &get_bounding_box() const;
 
     bool IsInner(const TPoint&) const;
 
