@@ -43,6 +43,7 @@ public:
 
     double GetVolume();
 
+    void SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3, const TPoint& P4);
     bool IsInner(const TPoint&) const;
 
     static int getNumInstances() {

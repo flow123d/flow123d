@@ -140,6 +140,27 @@ void TTetrahedron::ComputeVolume() {
     volume = fabs(Determinant3(a)) / 6.0;
 }
 
+void TTetrahedron::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3, const TPoint& P4) {
+	*X1 = P1;
+	*X2 = P2;
+	*X3 = P3;
+	*X4 = P4;
+
+	T1->SetPoints(X2, X3, X4);
+	T2->SetPoints(X1, X3, X4);
+	T3->SetPoints(X1, X2, X4);
+	T4->SetPoints(X1, X2, X3);
+
+	A1->SetPoints(X1, X2);
+	A2->SetPoints(X2, X3);
+	A3->SetPoints(X3, X1);
+	A4->SetPoints(X1, X4);
+	A5->SetPoints(X2, X4);
+	A6->SetPoints(X3, X4);
+
+	ComputeVolume();
+}
+
 bool TTetrahedron::IsInner(const TPoint& P) const {
 	TVector N, U1(*X1, *X2), U2(*X1, *X3), U3(*X1, *X4), U4(*X2, *X3), U5(*X2, *X4), U6(*X2, *X1);
 	TVector Up1(*X1, P), Up2(*X2, P);

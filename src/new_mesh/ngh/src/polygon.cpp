@@ -100,13 +100,24 @@ TPoint TPolygon::GetCenter() {
 
 int TPolygon::InsertPosition(const TVertex& Vx) {
     TVertex *V1, *V2;
-    TVector U1, U2;
+    TVector U1, U2, N;
     double d;
     int pos = 0;
 
     // if size < 2 new vertex is insert at the end
     if (verteces.size() < 2)
         return verteces.size();
+
+    // if size == 2 new vertex is insert at the end and normal vector is computed
+    if (verteces.size() == 2) {
+    	V1 = (*(verteces.begin()));
+    	V2 = (*(verteces.begin() + 1));
+
+    	U1 = V2->GetPoint() - V1->GetPoint();
+    	U2 = Vx.GetPoint() - V1->GetPoint();
+    	normal_vector = Cross(U1, U2);
+    	return verteces.size();
+    }
 
     for (int i=0; i<verteces.size(); ++i) {
     	V1 = (*(verteces.begin() + i));
@@ -116,13 +127,8 @@ int TPolygon::InsertPosition(const TVertex& Vx) {
     	    V2 = (*(verteces.begin() + i + 1));
     	U1 = V2->GetPoint() - V1->GetPoint();
     	U2 = Vx.GetPoint() - V1->GetPoint();
-    	d = U1.Get(1) * U2.Get(2) + U1.Get(2) * U2.Get(3) + U1.Get(3) * U2.Get(1)
-    	        - U1.Get(3) * U2.Get(2) - U1.Get(2) * U2.Get(1) - U1.Get(1) * U2.Get(3);
-    	if (verteces.size() == 2) {
-    		if (d < 0.0) return 1;
-    		else return 2;
-    	}
-    	if (d < 0) {
+    	N = Cross(U1, U2);
+    	if (Dot(N, normal_vector) < 0) {
     		if (pos > 0) xprintf(Msg, " - TPolygon::InsertPosition - ERROR: only one vector product must be negative\n");
     		pos = i+1;
     	}

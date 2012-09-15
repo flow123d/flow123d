@@ -15,6 +15,7 @@ private:
 
     double area;
     TPoint center;
+    TVector normal_vector;
     bool area_is_actual;
     bool center_is_actual;
 
