@@ -27,7 +27,7 @@
 
 add_custom_target( interpolation_test )
 set(super_test "interpolation_test")
-#set(super_test_libs new_mesh_lib)
+set(super_test_libs new_mesh_lib)
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)
