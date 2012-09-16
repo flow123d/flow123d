@@ -104,6 +104,8 @@ set(sources_lib_new_mesh
     new_mesh/ngh/src/triangle.cpp
     new_mesh/ngh/src/vector.cpp
     new_mesh/ngh/src/vertex.cpp
+    
+    functions/function_interpolated_p0.cc
     )
 
 set(sources_lib_la

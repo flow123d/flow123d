@@ -30,14 +30,39 @@
 #include "mesh/msh_gmshreader.h"
 //#include "new_mesh/mesh.hh"
 #include "mesh/mesh.h"
+#include "mesh/elements.h"
 #include "new_mesh/bounding_interval_hierarchy.hh"
 #include "new_mesh/bih_tree.hh"
+#include "new_mesh/ngh/include/abscissa.h"
 #include "new_mesh/ngh/include/triangle.h"
 #include "new_mesh/ngh/include/tetrahedron.h"
 #include "new_mesh/ngh/include/polygon.h"
 #include "new_mesh/ngh/include/intersection.h"
 #include <armadillo>
 
+void createTetrahedron(ElementFullIter ele, TTetrahedron &te) {
+	ASSERT(!( ele->dim() == 3 ), "Dimension of element must be 3!\n");
+
+	te.SetPoints(new TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
+			new TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
+			new TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)),
+			new TPoint(ele->node[3]->point()(0), ele->node[3]->point()(1), ele->node[3]->point()(2)) );
+}
+
+void createTriangle(ElementFullIter ele, TTriangle &tr) {
+	ASSERT(!( ele->dim() == 2 ), "Dimension of element must be 2!\n");
+
+	tr.SetPoints(new TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
+			new TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
+			new TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)) );
+}
+
+void createAbscissa(ElementFullIter ele, TAbscissa &ab) {
+	ASSERT(!( ele->dim() == 1 ), "Dimension of element must be 1!\n");
+
+	ab.SetPoints(new TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
+			new TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)) );
+}
 
 int main(int argc, char **argv) {
 
