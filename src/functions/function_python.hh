@@ -19,10 +19,11 @@ using namespace std;
 
 /**
  *
- * This class assumes function python function that returns a tuple representing a vector value
- * for the given tuple representing the given point.
+ * This class assumes function python function with @p dim arguments containing coordinates of the given point.
+ * The function should return  a tuple representing a vector value (possibly of size one for scalar functions)
  *
  * TODO:
+ * - use rather only one argument - tuple representing the whole point
  * - time functions
  * - set some parameter in the python module
  * - for functions with one component allow python functions returning the value directly
@@ -137,7 +138,7 @@ void FunctionPython<dim>::set_func(const string &func_name)
     if (p_value_ == NULL) {
         PyErr_Print();
         // TODO: use cout and output also function arguments
-        xprintf(Err,"Failed call of function '%s' from the python module: %s\n", func_name.c_str(), PyModule_GetName(p_module_) );
+        xprintf(Err,"Failed to call function '%s' from the python module: %s\n", func_name.c_str(), PyModule_GetName(p_module_) );
     }
 
     if ( ! PyTuple_Check( p_value_)) {

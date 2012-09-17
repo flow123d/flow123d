@@ -269,27 +269,27 @@ PolynomialSpace<degree,dim>::PolynomialSpace()
 //       - can use tensor products
 
 	arma::uvec::fixed<dim> pows;
-    int i;
+	pows.zeros();
 
-    pows.zeros();
-    i = 0;
+    unsigned int degree_sum=0;
+    unsigned int i_dim;
 
-    while (true)
-    {
+
+    while (true) {
         powers.push_back(pows);
 
-        if (sum(pows) == degree)
-        {
-            while (pows[i] == 0) i++;   // possibly invalid read ?
-            pows[i] = 0;                // possibly invalid read ?
-            if (i == dim-1) break;
-            pows[i+1]++;
-            i = 0;
+        // increment pows
+        for(i_dim=0; i_dim < dim; i_dim++) {
+            if (degree_sum < degree) {
+                pows[i_dim]++;
+                degree_sum++;
+                break;
+            } else {                    // if degree_sum == degree, we find first non empty power, free it, and raise the next one
+                degree_sum-=pows[i_dim];
+                pows[i_dim]=0;
+            }
         }
-        else
-        {
-            pows[i]++;
-        }
+        if (i_dim == dim) break; // just after pow == (0, 0, .., degree)
     }
 }
 
