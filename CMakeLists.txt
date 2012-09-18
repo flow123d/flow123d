@@ -50,6 +50,7 @@ project(Flow123d CXX C)
 cmake_minimum_required(VERSION 2.6.4)
 if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
+  cmake_policy(SET CMP0017 NEW)
 endif()
 
 if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
@@ -134,7 +135,7 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization)
 #    the parameters of the find_library are exactly same as in the previous case.
 #
 #set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
-find_package(Boost 1.42.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
@@ -165,11 +166,11 @@ if (NOT Boost_FOUND)
   find_package( Boost 1.42.0 REQUIRED COMPONENTS ${REQUIRED_Boost_COMPONENTS}  )
    
 endif()
-message(STATUS "boost root: ${BOOST_ROOT}")
 
-   
-
-
+message(STATUS "BOOST_ROOT: ${BOOST_ROOT}")
+message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
+message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")   
+message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
 
 # We are looking for PETSC, f succed this module set:
@@ -321,7 +322,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  ${Armadillo_LIBRARIES} flow123d_lib semchem ${Boost_LIBS})     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  ${Armadillo_LIBRARIES} flow123d_lib semchem ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
