@@ -79,3 +79,28 @@ void FunctionInterpolatedP0<dim>::set_source_of_interpolation(const std::string 
 	xfclose(file);
 
 }
+
+template <int dim>
+double FunctionInterpolatedP0<dim>::value(const Point &p, const unsigned int component) {
+	//FunctionBase<dim>::value(p, component);
+	return 0.0;
+}
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::vector_value(const Point &p, std::vector<double> &value) {
+	//FunctionBase<dim>::vector_value(p, value);
+}
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::value_list(const std::vector<Point>  &point_list,
+					  std::vector<double>         &value_list,
+					  const unsigned int  component) {
+	//FunctionBase<dim>::value_list(point_list, value_list, component);
+
+}
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::vector_value_list (const std::vector<Point> &point_list,
+                            std::vector< std::vector<double> > &value_list) {
+	//FunctionBase<dim>::vector_value_list(point_list, value_list);
+}

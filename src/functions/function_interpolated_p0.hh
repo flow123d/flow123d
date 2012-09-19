@@ -34,9 +34,9 @@
 
 
 template <int dim>
-class FunctionInterpolatedP0 : public FunctionBase<dim> {
-	friend class FunctionBase<dim>;
+class FunctionInterpolatedP0: public FunctionBase<dim> {
 public:
+	typedef arma::vec::fixed<dim> Point;
 
 	/**
 	 * Constructor
@@ -56,6 +56,29 @@ public:
 	 */
 	void set_source_of_interpolation(const std::string & mesh_file,
 			const std::string & raw_output);
+
+    /**
+     * Returns one scalar value in one given point.
+     */
+	double value(const Point &p, const unsigned int component);
+
+    /**
+     * Returns one vector value in one given point.
+     */
+    void vector_value(const Point &p, std::vector<double> &value);
+
+    /**
+	 * Returns std::vector of scalar values in several points at once.
+	 */
+    void value_list (const std::vector<Point>  &point_list,
+				  std::vector<double>         &value_list,
+				  const unsigned int  component);
+
+    /**
+     * Returns std::vector of scalar values in several points at once.
+     */
+    void vector_value_list (const std::vector<Point> &point_list,
+                            std::vector< std::vector<double> > &value_list);
 
 protected:
 	/// element for interpolation
