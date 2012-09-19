@@ -91,9 +91,10 @@ class Linear_reaction: public Reaction
 		*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
 		*/
 		void print_half_lives(int n_subst);
-
-
-
+		/**
+		* 	Boolean which indicates the use of Pade approximant of the matrix exponential.
+		*/
+		bool matrix_exp_on;
 		/**
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/

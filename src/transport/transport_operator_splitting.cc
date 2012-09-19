@@ -124,6 +124,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	    if (reactions_it->type() == Pade_approximant::get_input_type() ) {
 	        decayRad = new Pade_approximant(marks, init_mesh, material_database, in_rec,
 	                                        convection->get_substance_names());
+	        convection->get_par_info(el_4_loc, el_distribution);
+	        decayRad->set_dual_porosity(convection->get_dual_porosity());
+	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
+	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	        Semchem_reactions = NULL;
 	    } else
 	    if (reactions_it->type() == Semchem_interface::get_input_type() ) {

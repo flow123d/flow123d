@@ -85,7 +85,7 @@ Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialData
 	prepare_inputs(in_rec);
     allocate_reaction_matrix();
 
-	set_time_step(0.5);
+	//set_time_step(0.5);
 }
 
 Linear_reaction::~Linear_reaction()
