@@ -51,7 +51,6 @@ void pad_string(string *str, int length) {
 Profiler::Profiler(MPI_Comm comm) {
     F_ENTRY;
 
-    task_size = 0;
     id = 0;
     communicator = comm;
     if (comm) {
@@ -68,7 +67,7 @@ Profiler::Profiler(MPI_Comm comm) {
 Profiler::~Profiler() {
 #ifdef DEBUG_PROFILER
     char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler%y%m%d_%H.%M.%S.out", localtime(&start_time));
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
     string full_fname = IONameHandler::get_instance()->get_output_file_name(filename);
 
     ofstream os(full_fname.c_str());
@@ -123,27 +122,34 @@ void Profiler::output(ostream &os) {
             }
         }
 
-        int size;
-        MPI_Comm_size(this->communicator, &size);
+        int mpi_size;
+        MPI_Comm_size(this->communicator, &mpi_size);
 
         time_t end_time = time(NULL);
 
         const char format[] = "%x %X";
-        char startdest[BUFSIZ] = {0};
-        strftime(startdest, sizeof (startdest) - 1, format, localtime(&start_time));
+        char start_time_string[BUFSIZ] = {0};
+        strftime(start_time_string, sizeof (start_time_string) - 1, format, localtime(&start_time));
 
-        char enddest[BUFSIZ] = {0};
-        strftime(enddest, sizeof (enddest) - 1, format, localtime(&end_time));
-
+        char end_time_string[BUFSIZ] = {0};
+        strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
         //create a file where the output will be written to
 
+        os << "Program name: " << flow_name_ << endl
+           << "Program version: " << flow_version_ << endl
+           << "Program branch: " << flow_branch_ << endl
+           << "Program revision: " << flow_revision_ << endl
+           << "Program build: " << flow_build_ << endl << endl;
+
+
+        os << "Task description: " << task_description_ << endl
+           << "Task size: " << task_size_ << endl << endl;
 
         //print some information about the task at the beginning
-        os << "No. of processors: " << size << endl;
-        os << "Task size: " << task_size << endl;
-        os << "Start time: " << startdest << endl;
-        os << "End time: " << enddest << endl;
+        os << "Run processes count: " << mpi_size << endl;
+        os << "Run started at: " << start_time_string << endl;
+        os << "Run finished at: " << end_time_string << endl;
 
         os << setfill ('-') << setw (40) << "" << endl;
         os.fill(' ');
@@ -155,7 +161,8 @@ void Profiler::output(ostream &os) {
            << setw(maxMinMaxLength) << "min/max" << setw(column_space) << ""
            << "subframes" << endl;
 
-        //os << setfill ('-') << setw (40) << endl;
+        os << setfill ('-') << setw (40) << "" << endl;
+        os.fill(' ');
 
         for (int i = 0; i < timersInfo->size(); i++) {
             vector<string>* info = timersInfo->at(i);
@@ -219,9 +226,24 @@ void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer,
     }
 }
 
-void Profiler::set_task_size(int size) {
-    this->task_size = size;
+
+
+void Profiler::set_task_info(string description, int size) {
+    task_description_ = description;
+    task_size_ = size;
 }
+
+
+
+void Profiler::set_program_info(string program_name, string program_version, string branch, string revision, string build) {
+    flow_name_ = program_name;
+    flow_version_ = program_version;
+    flow_branch_ = branch;
+    flow_revision_ = revision;
+    flow_build_ = build;
+}
+
+
 
 void Profiler::start(string tag) {
 
@@ -275,6 +297,7 @@ void Profiler::end(string tag) {
             }
         }
     }
+
     else if (actual_node->tag() == tag) {
         //close actual timing and all of its children
         if (actual_node->end(get_time())) {

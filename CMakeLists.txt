@@ -126,13 +126,12 @@ message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion)
 
-# include the output directory, where the svnversion.h file is generated
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 
 ################################################################### set includes and libraries paths
 
 include_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/flow
     ${CMAKE_SOURCE_DIR}/src/mesh

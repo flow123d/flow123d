@@ -61,7 +61,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(ProblemType problem_type)
     MeshReader* meshReader = new GmshMeshReader();
     meshReader->read(mesh_file_name, mesh);
     mesh->setup_materials(*material_database);
-    Profiler::instance()->set_task_size(mesh->n_elements());
+    Profiler::instance()->set_task_info( string( OptGetStr("Global","Description","no task description") ) ,mesh->n_elements());
 
     // setup water flow object
     switch (problem_type) {
