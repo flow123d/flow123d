@@ -29,78 +29,8 @@
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
 
-template <int dim>
-FunctionInterpolatedP0<dim>::FunctionInterpolatedP0() {
+//template <int dim>
+/*FunctionInterpolatedP0::FunctionInterpolatedP0() {
 
-}
+}*/
 
-
-template <int dim>
-void FunctionInterpolatedP0<dim>::set_element(ElementFullIter &element){
-	element_ = element;
-}
-
-template <int dim>
-void FunctionInterpolatedP0<dim>::set_source_of_interpolation(const std::string & mesh_file,
-		const std::string & raw_output) {
-
-	const std::string& ngh_fname = "";
-	const std::string& bcd_fname = "";
-	MeshReader* meshReader = new GmshMeshReader();
-
-	mesh_ = new Mesh(ngh_fname, bcd_fname);
-	meshReader->read(mesh_file, mesh_);
-
-	FILE* file = xfopen(raw_output.c_str(), "rt");
-	char line[ LINE_SIZE ];
-
-	skip_to(file, "$FlowField");
-	xfgets(line, LINE_SIZE - 2, file); //time
-	xfgets(line, LINE_SIZE - 2, file); //count of elements
-	int numElements = atoi(xstrtok(line));
-
-	for (int i = 0; i < numElements; ++i) {
-	    int id;
-	    double pressure;
-
-		xfgets(line, LINE_SIZE - 2, file);
-
-	    //get element ID, presure
-	    id = atoi(xstrtok(line));
-	    pressure = atoi(xstrtok(NULL));
-	    //ElementFullIter ele = mesh_->element.find_id(id);
-	    //set pressure of element
-
-
-	}
-
-	printf("Count of elements: %s\n", line);
-
-	xfclose(file);
-
-}
-
-template <int dim>
-double FunctionInterpolatedP0<dim>::value(const Point &p, const unsigned int component) {
-	//FunctionBase<dim>::value(p, component);
-	return 0.0;
-}
-
-template <int dim>
-void FunctionInterpolatedP0<dim>::vector_value(const Point &p, std::vector<double> &value) {
-	//FunctionBase<dim>::vector_value(p, value);
-}
-
-template <int dim>
-void FunctionInterpolatedP0<dim>::value_list(const std::vector<Point>  &point_list,
-					  std::vector<double>         &value_list,
-					  const unsigned int  component) {
-	//FunctionBase<dim>::value_list(point_list, value_list, component);
-
-}
-
-template <int dim>
-void FunctionInterpolatedP0<dim>::vector_value_list (const std::vector<Point> &point_list,
-                            std::vector< std::vector<double> > &value_list) {
-	//FunctionBase<dim>::vector_value_list(point_list, value_list);
-}
