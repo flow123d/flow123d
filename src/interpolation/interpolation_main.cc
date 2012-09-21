@@ -38,6 +38,7 @@
 #include "new_mesh/ngh/include/tetrahedron.h"
 #include "new_mesh/ngh/include/polygon.h"
 #include "new_mesh/ngh/include/intersection.h"
+#include "functions/function_interpolated_p0.hh"
 #include <armadillo>
 
 void createTetrahedron(ElementFullIter ele, TTetrahedron &te) {
@@ -123,6 +124,9 @@ int main(int argc, char **argv) {
 	pol->Write();
 	xprintf(Msg, "Polygon: %f\n", pol->GetArea());*/
 
+        
+        FunctionInterpolatedP0 *fip0 = new FunctionInterpolatedP0();
+        
 	xprintf(Msg, " - interpolation_main executed\n");
 
 	getchar();

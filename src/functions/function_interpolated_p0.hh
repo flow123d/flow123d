@@ -42,7 +42,7 @@ public:
 	/**
 	 * Constructor
 	 */
-	//FunctionInterpolatedP0();
+	FunctionInterpolatedP0();
 
     /**
      * Set element for interpolation
@@ -57,41 +57,42 @@ public:
 	 */
 	void set_source_of_interpolation(const std::string & mesh_file,
 			const std::string & raw_output);
-
     /**
      * Returns one scalar value in one given point.
      */
-	virtual double value(const Point &p, const unsigned int component);
-
+    virtual double value(const Point &p, const unsigned int  component = 0) const;
     /**
      * Returns one vector value in one given point.
      */
-	virtual void vector_value(const Point &p, std::vector<double> &value);
-
-    /**
-	 * Returns std::vector of scalar values in several points at once.
-	 */
-	virtual void value_list (const std::vector<Point>  &point_list,
-				  std::vector<double>         &value_list,
-				  const unsigned int  component);
+    virtual void   vector_value(const Point &p, std::vector<double>     &value) const;
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-	virtual void vector_value_list (const std::vector<Point> &point_list,
-                            std::vector< std::vector<double> > &value_list);
+    virtual void   value_list (const std::vector< Point >  &point_list,
+                       std::vector<double>         &value_list,
+                       const unsigned int  component = 0) const;
+
+    /**
+     * Returns std::vector of scalar values in several points at once.
+     */
+    virtual void   vector_value_list (const std::vector< Point >    &point_list,
+                              std::vector< std::vector<double> >      &value_list) const;
 
 protected:
 	/// element for interpolation
-	ElementFullIter element_;
+	ElementIter element_;
 
 	/// mesh
 	Mesh* mesh_;
 
 };
 
+FunctionInterpolatedP0::FunctionInterpolatedP0()
 
-#endif /* FUNCTION_INTERPOLATED_P0_HH_ */
+{
+
+}
 
 void FunctionInterpolatedP0::set_element(ElementFullIter &element){
 	element_ = element;
@@ -136,23 +137,30 @@ void FunctionInterpolatedP0::set_source_of_interpolation(const std::string & mes
 
 }
 
-double FunctionInterpolatedP0::value(const Point &p, const unsigned int component) {
+double FunctionInterpolatedP0::value(const Point &p, const unsigned int component) const
+{
 	//FunctionBase<dim>::value(p, component);
 	return 0.0;
 }
 
-void FunctionInterpolatedP0::vector_value(const Point &p, std::vector<double> &value) {
+void FunctionInterpolatedP0::vector_value(const Point &p, std::vector<double> &value) const
+{
 	//FunctionBase<dim>::vector_value(p, value);
 }
 
 void FunctionInterpolatedP0::value_list(const std::vector<Point>  &point_list,
 					  std::vector<double>         &value_list,
-					  const unsigned int  component) {
+					  const unsigned int  component) const
+{
 	//FunctionBase<dim>::value_list(point_list, value_list, component);
 
 }
 
 void FunctionInterpolatedP0::vector_value_list (const std::vector<Point> &point_list,
-                            std::vector< std::vector<double> > &value_list) {
+                            std::vector< std::vector<double> > &value_list) const
+{
 	//FunctionBase<dim>::vector_value_list(point_list, value_list);
 }
+
+
+#endif /* FUNCTION_INTERPOLATED_P0_HH_ */
