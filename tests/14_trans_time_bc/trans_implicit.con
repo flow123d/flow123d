@@ -58,11 +58,10 @@
       time = {
         REF = "../../time"
       },
+      dg_penalty=1e4,
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07,
-        options = "-ksp_type preonly -pc_type lu"
-
+        accuracy = 1e-07
       }
     }, 
     time = {

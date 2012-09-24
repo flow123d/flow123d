@@ -443,6 +443,8 @@ private:
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
 
+    const double tol_switch_dirichlet_neumann;
+
     const MH_DofHandler * mh_dh;
 
 	// / Vector of fluxes across element edges - so far not used.

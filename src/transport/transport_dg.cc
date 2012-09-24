@@ -48,7 +48,8 @@ using namespace arma;
 
 TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
         : TransportBase(marks, init_mesh, material_database, in_rec),
-          advection(1e0)
+          advection(1e0),
+          tol_switch_dirichlet_neumann(1e-6)
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
 
@@ -278,6 +279,7 @@ void TransportDG::update_solution()
 
     //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
 }
+
 
 
 
@@ -647,7 +649,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         // skip Neumann boundaries
         // Constant 1e-6 stabilizes switching Dirichlet to Neumann boundary condition.
         // TODO: Define as a constant. Better determination of its magnitude. See also other places with same constant.
-        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -1e-6*elem_flux) continue;
+        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
 
         side_K.resize(edge->n_sides);
         side_velocity.resize(edge->n_sides);
@@ -816,7 +818,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
     QGauss<dim-1> side_q(2);
     FESideValues<dim,3> fe_values_side(map, side_q, *fe, update_values | update_side_JxW_values);
     unsigned int side_dof_indices[fe->n_dofs()];
-    double local_rhs[fe->n_dofs()*fe->n_dofs()];
+    double local_rhs[fe->n_dofs()];
 
     for (BoundaryFullIter b = mesh_->boundary.begin(); b != mesh_->boundary.end(); ++b)
     {
@@ -828,7 +830,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
         double elem_flux = 0;
         for (int i=0; i<b->side->element()->n_sides(); i++)
         	elem_flux += fabs( mh_dh->side_flux( *(b->side->element()->side(i)) ) );
-        if (mh_dh->side_flux( *(b->side) ) > -1e-6*elem_flux) continue;
+        if (mh_dh->side_flux( *(b->side) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
 
         if (b.id() < bc->distribution()->begin() || b.id() > bc->distribution()->end()) continue;
 
