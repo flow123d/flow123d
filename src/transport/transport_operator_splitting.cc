@@ -223,6 +223,7 @@ void TransportOperatorSplitting::update_solution() {
 	convection->set_target_time(time_->t());
 
 	if (decayRad) decayRad->set_time_step(convection->time().estimate_dt());
+	//if (decayRad) static_cast<Pade_approximant *>  (decayRad)->set_time_step(convection->time().estimate_dt());
 	//cout << "recent time step value is " << decayRad->get_time_step() << endl;
 	// TODO: update Semchem time step here!!
 	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());

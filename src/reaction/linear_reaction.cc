@@ -5,11 +5,14 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
+#include "reaction/pade_approximant.hh"
 #include "system/system.hh"
 #include "materials.hh"
 #include "transport/transport.h"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
+
+//class Padde_approximant;
 
 Input::Type::Record & Linear_reaction::get_one_decay_substep()
 {
@@ -41,22 +44,8 @@ Input::Type::Record & Linear_reaction::get_input_type()
 	    rec.derive_from( Reaction::get_input_type() );
         rec.declare_key("decays", Array( Linear_reaction::get_one_decay_substep() ), Default::obligatory(),
                 "Description of particular decay chain substeps.");
-
-
-		/*rec.declare_key("substances", Array(String()), Default::obligatory(),
-								"Names of transported isotopes.");
-		rec.declare_key("half_lives", Array(Double()), Default::optional(),
-				"Half lives of transported isotopes.");
-		rec.declare_key("kinetic_constants", Array(Double()), Default::optional(),
-				"Kinetic constants describing first order reactions.");
-		rec.declare_key("kinetics", Array(Kinetics()), Default::optional(),
-				"Description of particular first order reactions.");*/
 		rec.declare_key("matrix_exp_on", Bool(), Default("false"),
 				"Enables to use Pade approximant of matrix exponential.");
-		/*rec.declare_key("nom_pol_deg", Integer(), Default("2"),
-				"Polynomial degree of the nominator of Pade approximant.");
-		rec.declare_key("den_pol_deg", Integer(), Default("2"),
-				"Polynomial degree of the nominator of Pade approximant");*/
 		rec.finish();
 	}
 	return rec;
@@ -277,35 +266,32 @@ void Linear_reaction::prepare_inputs(Input::Record in_rec)
 	}
 }
 
-void Linear_reaction::set_time_step(double new_timestep, Input::Record in_rec)
+/*void Linear_reaction::set_time_step(double new_timestep, Input::Record in_rec)
 {
 	time_step = new_timestep;
 	release_reaction_matrix();
 	allocate_reaction_matrix();
-	modify_reaction_matrix(); //_repeatedly(in_rec);
+	modify_reaction_matrix();
 	return;
 }
 
 void Linear_reaction::set_time_step(Input::Record in_rec)
 {
-	time_step = in_rec.val<double>("time_step"); //OptGetDbl("Global","Save_step","1.0");
+	time_step = in_rec.val<double>("time_step");
 	release_reaction_matrix();
 	allocate_reaction_matrix();
-	modify_reaction_matrix(); //_repeatedly(in_rec);
+	modify_reaction_matrix();
 	return;
-}
+}*/
 
 void Linear_reaction::set_time_step(double new_timestep)
 {
 	time_step = new_timestep;
 	release_reaction_matrix();
 	allocate_reaction_matrix();
-	modify_reaction_matrix(); //_repeatedly(in_rec);
+	this->modify_reaction_matrix();
 	return;
 }
-
-
-
 
 void Linear_reaction::compute_one_step(void)
 {

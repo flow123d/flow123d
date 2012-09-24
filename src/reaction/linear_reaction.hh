@@ -42,11 +42,13 @@ class Linear_reaction: public Reaction
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
-		virtual double **compute_reaction(double **concentrations, int loc_el);
+		//virtual
+		double **compute_reaction(double **concentrations, int loc_el);
 		/**
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		virtual void compute_one_step(void);
+		//virtual
+		void compute_one_step(void);
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/
@@ -54,15 +56,16 @@ class Linear_reaction: public Reaction
 		/**
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
-		virtual void set_time_step(Input::Record in_rec);
-		virtual void set_time_step(double time_step);
+		//virtual void set_time_step(Input::Record in_rec);
+		//virtual
+		void set_time_step(double time_step);
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
 		*/
 		/**
 		*
 		*/
-		double **modify_reaction_matrix(void);
+		virtual double **modify_reaction_matrix(void);
 	protected:
 
         double **allocate_reaction_matrix(void);
@@ -94,7 +97,7 @@ class Linear_reaction: public Reaction
 		/**
 		* 	Boolean which indicates the use of Pade approximant of the matrix exponential.
 		*/
-		bool matrix_exp_on;
+		//bool matrix_exp_on;
 		/**
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/

@@ -8,18 +8,26 @@
 #ifndef PADE_APPROXIMANT_H_
 #define PADE_APPROXIMANT_H_
 
+#include <vector>
+#include <input/input_type.hh>
+#include <input/accessors.hh>
+
 #include "petscvec.h"
 #include "petscmat.h"
 #include "petscksp.h"
 
-#include "reaction/linear_reaction.hh"
+//#include "reaction/linear_reaction.hh"
+
+class Mesh;
+class Distribution;
+class Reaction;
 
 class Pade_approximant: public Linear_reaction
 {
 	public:
 		/*
-		 * Static method for new input data types input
-		 */
+		* Static method for new input data types input
+		*/
 		static Input::Type::Record &get_input_type();
 		/*
 	 	* Static method gets information about particular decay step
@@ -51,11 +59,11 @@ class Pade_approximant: public Linear_reaction
 		/**
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
-		//void set_time_step(void);
+		virtual void set_time_step(double time_step);
 		/**
 		*	Evaluates Pade approximant from Reaction_matrix.
 		*/
-		double **modify_reaction_matrix(void);
+		virtual double **modify_reaction_matrix(void);
 		/**
 		* It enables to evaluate matrix nominator and denominator present in Pade approximant.
 		*/
@@ -149,7 +157,7 @@ class Pade_approximant: public Linear_reaction
 		/**
 		*	Boolean which enables to turn on branching of considered decay chain.
 		*/
-		bool bifurcation_on;
+		//bool bifurcation_on;
 		/**
 		*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
 		*/

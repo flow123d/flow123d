@@ -12,8 +12,6 @@
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
-//class Distribution;
-
 Input::Type::Record & Pade_approximant::get_one_decay_substep()
 {
 	using namespace Input::Type;
@@ -28,7 +26,7 @@ Input::Type::Record & Pade_approximant::get_one_decay_substep()
                 "Kinetic constants describing first order reactions.");
 		rec.declare_key("products", Array(String()), Default::obligatory(),
 				"Identifies isotopes which decays parental atom to.");
-		rec.declare_key("branching_ratios", Array(Double()), Default::optional(),
+		rec.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
 				"Decay chain branching percentage.");
 		rec.finish();
 	}
@@ -42,28 +40,13 @@ Input::Type::Record & Pade_approximant::get_input_type()
 
 	if (!rec.is_finished()) {
 	    rec.derive_from( Reaction::get_input_type() );
-		/*rec.declare_key("substances", Array(String()), Default::obligatory(),
-								"Names of transported isotopes.");
-
-		rec.declare_key("half_lives", Array(Double()), Default::optional(),
-				"Half lives of transported isotopes.");
-		rec.declare_key("decays", Array(Decay()), Default::optional(),
-				"Description of particular decay chain substeps.");
-		rec.declare_key("kinetic_constants", Array(Double()), Default::optional(),
-				"Kinetic constants describing first order reactions.");
-		rec.declare_key("kinetics", Array(Kinetics()), Default::optional(),
-				"Description of particular first order reactions.");
-		rec.declare_key("matrix_exp_on", Bool(), Default("false"),
-				"Enables to use Pade approximant of matrix exponential.");*/
+        rec.declare_key("decays", Array( Pade_approximant::get_one_decay_substep() ), Default::obligatory(),
+                "Description of particular decay chain substeps.");
 		rec.declare_key("nom_pol_deg", Integer(), Default("0"),
 				"Polynomial degree of the nominator of Pade approximant.");
 		rec.declare_key("den_pol_deg", Integer(), Default("0"),
 				"Polynomial degree of the nominator of Pade approximant");
 		rec.finish();
-
-		//Linear_reaction::get_input_type();
-
-		//rec.no_more_descendants();
 	}
 	return rec;
 }
@@ -238,5 +221,15 @@ void Pade_approximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction
 
 	MatDestroy(&Identity);
 
+	return;
+}
+
+void Pade_approximant::set_time_step(double new_timestep)
+{
+	time_step = new_timestep;
+	release_reaction_matrix();
+	allocate_reaction_matrix();
+	modify_reaction_matrix();
+	//static_cast<Pade_approximant *> (this)->modify_reaction_matrix();
 	return;
 }

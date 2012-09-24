@@ -18,6 +18,7 @@ class Mesh;
 
 class Reaction;
 class Linear_reaction;
+//class Pade_approximant;
 class Semchem_interface;
 class ConvectionTransport;
 class MaterialDatabase;
@@ -115,7 +116,7 @@ protected:
 private:
 
     ConvectionTransport *convection;
-    Reaction *decayRad; //Linear_reaction *decayRad;
+    Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     Semchem_interface *Semchem_reactions;
     //int steps;
     OutputTime *field_output;
