@@ -49,11 +49,6 @@ public:
        virtual void   vector_value_list (const std::vector< Point >    &point_list,
                                  std::vector< std::vector<double> >      &value_list) const=0;
 
-       /**
-        * Set element for interpolation
-        */
-       virtual void set_element(ElementFullIter &element);
-
        virtual ~FunctionBase() {}
 
 protected:

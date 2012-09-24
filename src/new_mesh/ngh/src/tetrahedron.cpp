@@ -13,6 +13,12 @@ int TTetrahedron::generateId() {
     return TTetrahedron::numberInstance++;
 }
 
+TTetrahedron::TTetrahedron() {
+	id = generateId();
+
+	volume = 0.0;
+}
+
 TTetrahedron::TTetrahedron(const TPoint& X1, const TPoint& X2,
         const TPoint& X3, const TPoint& X4) {
     id = generateId();
@@ -146,17 +152,17 @@ void TTetrahedron::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P
 	*X3 = P3;
 	*X4 = P4;
 
-	T1->SetPoints(X2, X3, X4);
-	T2->SetPoints(X1, X3, X4);
-	T3->SetPoints(X1, X2, X4);
-	T4->SetPoints(X1, X2, X3);
+	T1 = new TTriangle(X2, X3, X4);
+	T2 = new TTriangle(X1, X3, X4);
+	T3 = new TTriangle(X1, X2, X4);
+	T4 = new TTriangle(X1, X2, X3);
 
-	A1->SetPoints(X1, X2);
-	A2->SetPoints(X2, X3);
-	A3->SetPoints(X3, X1);
-	A4->SetPoints(X1, X4);
-	A5->SetPoints(X2, X4);
-	A6->SetPoints(X3, X4);
+	A1 = new TAbscissa(X1, X2);
+	A2 = new TAbscissa(X2, X3);
+	A3 = new TAbscissa(X3, X1);
+	A4 = new TAbscissa(X1, X4);
+	A5 = new TAbscissa(X2, X4);
+	A6 = new TAbscissa(X3, X4);
 
 	ComputeVolume();
 }

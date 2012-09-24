@@ -41,14 +41,6 @@
 #include "functions/function_interpolated_p0.hh"
 #include <armadillo>
 
-void createTetrahedron(ElementFullIter ele, TTetrahedron &te) {
-	ASSERT(!( ele->dim() == 3 ), "Dimension of element must be 3!\n");
-
-	te.SetPoints(new TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
-			new TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
-			new TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)),
-			new TPoint(ele->node[3]->point()(0), ele->node[3]->point()(1), ele->node[3]->point()(2)) );
-}
 
 void createTriangle(ElementFullIter ele, TTriangle &tr) {
 	ASSERT(!( ele->dim() == 2 ), "Dimension of element must be 2!\n");
@@ -67,16 +59,6 @@ void createAbscissa(ElementFullIter ele, TAbscissa &ab) {
 
 int main(int argc, char **argv) {
 
-	const std::string& file_name = "../tests/11_reactional_transport_semchem/input/sit_trans.msh";
-
-	MeshReader* meshReader = new GmshMeshReader();
-
-	const std::string& ngh_fname = "../tests/11_reactional_transport_semchem/input/sit_trans.ngh";
-	const std::string& bcd_fname = "../tests/11_reactional_transport_semchem/input/sit_trans.fbc";
-	Mesh* mesh = new Mesh(ngh_fname, bcd_fname);
-	meshReader->read(file_name, mesh);
-	BoundingIntevalHierachy* bihTree = new BIHTree(mesh);
-
 	TPoint* pointA = new TPoint(-0.10, -0.10, 0.00);
 	TPoint* pointB = new TPoint(1.60, 1.60, 0.00);
 	TPoint* pointC = new TPoint(0.10, 0.10, 0.50);
@@ -86,25 +68,7 @@ int main(int argc, char **argv) {
 	TPoint* point1 = new TPoint(3.00, 0.00, 0.00);
 	TPoint* point2 = new TPoint(0.00, 3.00, 0.00);
 	TPoint* point3 = new TPoint(0.00, 0.00, 3.00);
-	TTetrahedron tetrahedron(point0, point1, point2, point3);
-
-	TIntersectionType it;
-	double area;
-	GetIntersection(triangle, tetrahedron, it, area);
-	xprintf(Msg, "Area: %f, Triangle: %f\n", area, triangle.GetArea());*/
-
-	std::vector<int> searchedElements;
-	BoundingBox triangleBox = triangle.get_bounding_box();
-	((BIHTree *)bihTree)->find_elements(triangleBox, searchedElements);
-
-	xprintf(Msg, " - searched elements orders: ");
-
-	for (std::vector<int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
-	{
-		int id = *it;
-		xprintf(Msg, "%d ", id);
-	}
-	xprintf(Msg, "\n");
+	TTetrahedron tetrahedron(point0, point1, point2, point3);*/
 
 	/*TPoint* point1 = new TPoint( 1.0, 1.0, 1.0);
 	TPoint* point2 = new TPoint( 2.0, 6.0, 3.0);
@@ -125,7 +89,13 @@ int main(int argc, char **argv) {
 	xprintf(Msg, "Polygon: %f\n", pol->GetArea());*/
 
         
-        FunctionInterpolatedP0 *fip0 = new FunctionInterpolatedP0();
+	const std::string& mesh_file_name = "../tests/01_steady_flow_123d/input/test1.msh";
+	const std::string& raw_output_file_name = "../tests/01_steady_flow_123d/ref_output/flow.ini/raw_output.txt";
+	const std::string& ngh_file_name = "../tests/01_steady_flow_123d/input/test1.ngh";
+	const std::string& bcd_file_name = "../tests/01_steady_flow_123d/input/test1.fbc";
+
+	FunctionInterpolatedP0 *fip0 = new FunctionInterpolatedP0();
+	fip0->set_source_of_interpolation(mesh_file_name, raw_output_file_name, ngh_file_name, bcd_file_name);
         
 	xprintf(Msg, " - interpolation_main executed\n");
 

@@ -32,6 +32,7 @@ private:
     void ComputeVolume();
 
 public:
+    TTetrahedron();
     TTetrahedron(const TPoint&, const TPoint&, const TPoint&, const TPoint&);
     ~TTetrahedron();
 
