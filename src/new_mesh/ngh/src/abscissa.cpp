@@ -9,9 +9,9 @@ int TAbscissa::generateId() {
     return TAbscissa::numberInstance++;
 }
 
-//TAbscissa::TAbscissa() {
-//    id = generateId();
-//}
+TAbscissa::TAbscissa() {
+    id = generateId();
+}
 
 TAbscissa::TAbscissa(const TPoint& PP0, const TPoint& PP1) : TBisector(PP0, PP1) {
     id = generateId();

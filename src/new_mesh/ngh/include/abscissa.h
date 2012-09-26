@@ -18,7 +18,7 @@ private:
     void ComputeLength();
 
 public:
-//    TAbscissa();
+    TAbscissa();
 //    TAbscissa(double, double);
     TAbscissa(const TPoint&, const TPoint&);
     ~TAbscissa();

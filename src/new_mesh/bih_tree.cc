@@ -85,9 +85,23 @@ void BIHTree::distribute_elements(std::vector<BoundingBox *> elements)
 
 void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements)
 {
+	searchedElements.clear();
 	if (!leaf_) {
 		if (child_[0]->boundingBox_->intersection(boundingBox)) ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, elements_);
 		if (child_[1]->boundingBox_->intersection(boundingBox)) ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, elements_);
+	}
+
+	std:sort(searchedElements.begin(), searchedElements.end());
+
+	std::vector<int>::iterator it = searchedElements.begin();
+	while (it != (searchedElements.end() - 1)) {
+		int idxIter = *it;
+		int idxNext = *(it + 1);
+		if (idxIter == idxNext) {
+			searchedElements.erase(it);
+		} else {
+			++it;
+		}
 	}
 }
 

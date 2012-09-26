@@ -22,7 +22,7 @@ private:
 public:
     TPoint();
     TPoint(double, double, double);
-    TPoint(TPoint*);
+    TPoint(const TPoint&);
     ~TPoint();
 
     TPoint * operator =(TPoint*);

@@ -37,7 +37,15 @@ FunctionInterpolatedP0::FunctionInterpolatedP0() {
 }
 
 void FunctionInterpolatedP0::set_element(ElementFullIter &element){
-	element_ = element;
+	//element_ = element;
+
+	if (element->dim() == 2) {
+		TTriangle triangle;
+		createTriangle(element, triangle);
+		calculate_triangle_pressure(triangle);
+	} else {
+		//xprintf(Err, "Dimension of element must be 2!\n");
+	}
 }
 
 void FunctionInterpolatedP0::set_source_of_interpolation(const std::string & mesh_file,
@@ -87,6 +95,7 @@ void FunctionInterpolatedP0::read_pressures(FILE* raw_output) {
 	xprintf(Msg, " %d values of pressure read. O.K.\n", pressures_.size());
 }
 
+// method ONLY for development
 void FunctionInterpolatedP0::calculate_interpolation() {
 	TPoint pointA(0.01, 0.01, 0.00);
 	TPoint pointB(0.16, 0.16, 0.00);
@@ -94,64 +103,65 @@ void FunctionInterpolatedP0::calculate_interpolation() {
 	TTriangle triangle(pointA, pointB, pointC);
 	std::vector<int> searchedElements;
 
-	double pressure = calculate_element(triangle, searchedElements);
-	printf("Pressure = %f\n", pressure);
+	calculate_triangle_pressure(triangle);
+	printf("Pressure = %f\n", pressure_);
 }
 
-double FunctionInterpolatedP0::calculate_element(TTriangle &element, std::vector<int> &searchedElements) {
-	double elArea, iArea, pressure;
+void FunctionInterpolatedP0::calculate_triangle_pressure(TTriangle &element) {
+	double elArea, iArea;
 	BoundingBox elementBoundingBox = element.get_bounding_box();
 	std::vector<int>::iterator it;
 	TIntersectionType iType;
 	TTetrahedron *tetrahedron = new TTetrahedron();
 
-	searchedElements.erase(searchedElements.begin(), searchedElements.end());
-	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements);
-	std:sort(searchedElements.begin(), searchedElements.end());
-
-	it = searchedElements.begin();
-	while (it != (searchedElements.end() - 1)) {
-		int idIter = *it;
-		int idNext = *(it + 1);
-		if (idIter == idNext) {
-			searchedElements.erase(it);
-		} else {
-			++it;
-		}
-	}
+	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements_);
 
 	elArea = element.GetArea();
-	pressure = 0.0;
+	pressure_ = 0.0;
 
-	for (it = searchedElements.begin(); it!=searchedElements.end(); it++)
+	for (it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
-		int id = *it;
-		ElementFullIter ele = mesh_->element.full_iter( mesh_->element.begin() + id );
+		int idx = *it;
+		ElementFullIter ele = mesh_->element( idx );
 		if (ele->dim() == 3) {
 			createTetrahedron(ele, *tetrahedron);
 			GetIntersection(element, *tetrahedron, iType, iArea);
 			if (iType == area) {
-				pressure += pressures_[ id ] * (iArea / elArea);
+				pressure_ += pressures_[ idx ] * (iArea / elArea);
 			}
+		} else {
+			//xprintf(Err, "Dimension of element must be 3!\n");
 		}
 	}
-
-	return pressure;
 }
 
 void FunctionInterpolatedP0::createTetrahedron(ElementFullIter ele, TTetrahedron &te) {
 	ASSERT(( ele->dim() == 3 ), "Dimension of element must be 3!\n");
 
-	te.SetPoints(new TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
-				new TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
-				new TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)),
-				new TPoint(ele->node[3]->point()(0), ele->node[3]->point()(1), ele->node[3]->point()(2)) );
+	te.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
+				TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
+				TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)),
+				TPoint(ele->node[3]->point()(0), ele->node[3]->point()(1), ele->node[3]->point()(2)) );
 }
 
+void FunctionInterpolatedP0::createTriangle(ElementFullIter ele, TTriangle &tr) {
+	ASSERT(( ele->dim() == 2 ), "Dimension of element must be 2!\n");
+
+	tr.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
+				 TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
+				 TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)) );
+}
+
+void FunctionInterpolatedP0::createAbscissa(ElementFullIter ele, TAbscissa &ab) {
+	ASSERT(( ele->dim() == 1 ), "Dimension of element must be 1!\n");
+
+	ab.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
+			 	 TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)) );
+}
 
 double FunctionInterpolatedP0::value(const Point &p, const unsigned int component) const
 {
-	return 0.0;
+	return pressure_;
 }
 
 void FunctionInterpolatedP0::vector_value(const Point &p, std::vector<double> &value) const

@@ -17,7 +17,7 @@ protected:
     int generateId();
 
 public:
-//    TBisector();
+    TBisector();
     TBisector(const TPoint&, const TVector&);
     TBisector(const TPoint&, const TPoint&);
     TBisector(const  TBisector &);

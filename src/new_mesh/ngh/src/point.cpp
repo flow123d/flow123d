@@ -29,10 +29,10 @@ TPoint::TPoint(double x, double y, double z) {
     id = generateId();
 }
 
-TPoint::TPoint(TPoint* point) {
-    x = point->X();
-    y = point->Y();
-    z = point->Z();
+TPoint::TPoint(const TPoint& point) {
+    x = point.X();
+    y = point.Y();
+    z = point.Z();
 
     id = generateId();
 }

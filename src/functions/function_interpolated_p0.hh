@@ -34,10 +34,9 @@
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
 #include "new_mesh/bounding_interval_hierarchy.hh"
+#include "new_mesh/ngh/include/abscissa.h"
 #include "new_mesh/ngh/include/triangle.h"
 #include "new_mesh/ngh/include/tetrahedron.h"
-
-//enum TIntersectionType;
 
 class FunctionInterpolatedP0: public FunctionBase<3> {
 public:
@@ -94,8 +93,14 @@ protected:
 	/// mesh
 	Mesh* mesh_;
 
+	/// value of pressure in element_
+	double pressure_;
+
 	/// vector of pressures in nodes
 	std::vector<double> pressures_;
+
+	/// vector stored suspect elements in calculating the intersection
+	std::vector<int> searchedElements_;
 
 	/// tree of mesh elements
 	BoundingIntevalHierachy* bihTree_;
@@ -107,19 +112,28 @@ protected:
 	 */
 	void read_pressures(FILE* raw_output);
 
-	/// calculate pressures in inner mesh
+	/// method ONLY for development
 	void calculate_interpolation();
 
 	/**
-	 * Calculate pressures in element
+	 * Calculate pressures in triangle element
 	 */
-	double calculate_element(TTriangle &element, std::vector<int> &searchedElements);
+	void calculate_triangle_pressure(TTriangle &element);
 
 	/**
 	 * Create tetrahedron from element
 	 */
 	void createTetrahedron(ElementFullIter ele, TTetrahedron &te);
 
+	/**
+	 * Create triangle from element
+	 */
+	void createTriangle(ElementFullIter ele, TTriangle &tr);
+
+	/**
+	 * Create abscissa from element
+	 */
+	void createAbscissa(ElementFullIter ele, TAbscissa &ab);
 };
 
 

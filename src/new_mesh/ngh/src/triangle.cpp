@@ -12,6 +12,12 @@ int TTriangle::generateId() {
 TTriangle::TTriangle() {
     id = generateId();
 
+    A1 = new TAbscissa();
+    A2 = new TAbscissa();
+    A3 = new TAbscissa();
+
+    pl = new TPlain();
+
     area = 0;
 }
 

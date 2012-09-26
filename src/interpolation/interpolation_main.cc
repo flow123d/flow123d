@@ -42,26 +42,11 @@
 #include <armadillo>
 
 
-void createTriangle(ElementFullIter ele, TTriangle &tr) {
-	ASSERT(!( ele->dim() == 2 ), "Dimension of element must be 2!\n");
-
-	tr.SetPoints(new TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
-			new TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
-			new TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)) );
-}
-
-void createAbscissa(ElementFullIter ele, TAbscissa &ab) {
-	ASSERT(!( ele->dim() == 1 ), "Dimension of element must be 1!\n");
-
-	ab.SetPoints(new TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
-			new TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)) );
-}
-
 int main(int argc, char **argv) {
 
-	TPoint* pointA = new TPoint(-0.10, -0.10, 0.00);
-	TPoint* pointB = new TPoint(1.60, 1.60, 0.00);
-	TPoint* pointC = new TPoint(0.10, 0.10, 0.50);
+	TPoint pointA(-0.10, -0.10, 0.00);
+	TPoint pointB(1.60, 1.60, 0.00);
+	TPoint pointC(0.10, 0.10, 0.50);
 	TTriangle triangle(pointA, pointB, pointC);
 
 	/*TPoint* point0 = new TPoint(0.00, 0.00, 0.00);

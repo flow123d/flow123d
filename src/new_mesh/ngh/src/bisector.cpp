@@ -12,12 +12,12 @@ int TBisector::generateId() {
     return TBisector::numberInstance++;
 }
 
-//TBisector::TBisector() {
-//    id = generateId();
+TBisector::TBisector() {
+    id = generateId();
 
-//    X0 = new TPoint(0, 0, 0);
-//    U = new TVector(0, 0, 0);
-//}
+    X0 = new TPoint(0, 0, 0);
+    U = new TVector(0, 0, 0);
+}
 
 TBisector::TBisector(const TPoint &XX0, const TVector &UU) {
     id = generateId();
