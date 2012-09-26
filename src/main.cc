@@ -48,7 +48,19 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _VERSION_   "1.7.0_dev"
+#define _PROGRAM_VERSION_   "1.7.0_dev"
+
+#ifndef _PROGRAM_REVISION_
+    #define _PROGRAM_REVISION_ "(unknown revision)"
+#endif
+
+#ifndef _PROGRAM_BRANCH_
+    #define _PROGRAM_BRANCH_ "(unknown branch)"
+#endif
+
+#ifndef _COMPILER_FLAGS_
+    #define _COMPILER_FLAGS_ "(unknown compiler flags)"
+#endif
 
 static void main_convert_to_output();
 
@@ -70,10 +82,15 @@ Application::Application(const int argc,  char ** argv)
 
     // Say Hello
     // make strings from macros in order to check type
-    string version(_VERSION_);
-    string revision(REVISION);
-    xprintf(Msg, "This is FLOW-1-2-3, version %s rev: %s\n", version.c_str(),revision.c_str());
-    xprintf(Msg, "Built on %s at %s.\n", __DATE__, __TIME__);
+    string version(_PROGRAM_VERSION_);
+    string revision(_PROGRAM_REVISION_);
+    string branch(_PROGRAM_BRANCH_);
+    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
+    
+    xprintf(Msg, "This is Flow123d, version %s rev: %s\n", version.c_str(),revision.c_str());
+    xprintf(Msg, "Build: %s \n", build.c_str() );
+    Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+
 
     // read main input file
     Input::JSONToStorage json_reader;

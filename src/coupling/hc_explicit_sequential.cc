@@ -89,7 +89,9 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     meshReader->read( in_record.val<Record>("mesh").val<FilePath>("mesh_file"), mesh);
 
     mesh->setup_materials(*material_database);
-    Profiler::instance()->set_task_size(mesh->n_elements());
+    Profiler::instance()->set_task_info( 
+        "Description has to be set in main. by different method.",
+        mesh->n_elements());
 
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
