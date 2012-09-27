@@ -48,12 +48,14 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+#include "input/input_type.hh"
+
 #include <petscmat.h>
 #include "system/sys_vector.hh"
 #include "time_governor.hh"
 #include <field_p0.hh>
 #include <materials.hh>
-#include "equation.hh"
+#include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
 
 /// external types:
@@ -63,6 +65,7 @@ class Mesh;
 class SchurComplement;
 class Distribution;
 class SparseGraph;
+class LocalToGlobalMap;
 
 
 /**
@@ -80,9 +83,11 @@ class SparseGraph;
 
 class DarcyFlowMH : public EquationBase {
 public:
-    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-    : EquationBase(marks, mesh, mat_base), sources(NULL)
+    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
+    : EquationBase(marks, mesh, mat_base, in_rec), sources(NULL)
     {}
+
+    static Input::Type::AbstractRecord &get_input_type();
 
     FieldP0<double>  * get_sources()
         { return sources; }
@@ -151,7 +156,10 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
+    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+
+    static Input::Type::Record &get_input_type();
+
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
@@ -191,7 +199,7 @@ protected:
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
 	Distribution *side_ds;          //< optimal distribution of elements
-	Distribution *rows_ds;          //< final distribution of rows of MH matrix
+	boost::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
 
 	int *el_4_loc;		        //< array of idexes of local elements (in ordering matching the optimal global)
 	int *row_4_el;		        //< element index to matrix row
@@ -204,7 +212,7 @@ protected:
 
 
 	// MATIS related arrays
-        std::vector<int> global_row_4_sub_row;           //< global dof index for subdomain index
+    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 	ISLocalToGlobalMapping map_side_local_to_global; //< PETSC mapping form local SIDE indices of subdomain to global indices
 
 	// gather of the solution
@@ -236,8 +244,10 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
+    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
+
+    static Input::Type::Record &get_input_type();
 protected:
     virtual void modify_system();
     void setup_time_term();
@@ -265,8 +275,10 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in);
+    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
+
+    static Input::Type::Record &get_input_type();
 protected:
     virtual void modify_system();
     void setup_time_term();

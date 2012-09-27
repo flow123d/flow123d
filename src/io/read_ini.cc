@@ -204,6 +204,9 @@ char *section_test(char *line)
  */
 char *OptGetStr(const char *section,const char *key,const char *defval)
 {
+    xprintf(Err, "OptGetXXX input interface is not supported anymore.\n");
+
+
 	const char *rc = NULL;
 	struct Ini_item *ini_item;
 

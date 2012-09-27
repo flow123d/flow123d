@@ -10,24 +10,29 @@
 #ifndef REACT
 #define REACT
 
-#include "equation.hh"
+#include "input/accessors.hh"
+#include "coupling/equation.hh"
 //class Mesh;
 class Distribution;
-
-/*const int Linear_react = 0;
-const int Linear_react_Pade = 1;
-const int General_react_Semch = 2;*/
 
 enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch};
 
 class Reaction: public EquationBase
 {
 	public:
+		/*
+		 * Static method for new input data types input
+		 */
+		static Input::Type::AbstractRecord & get_input_type();
+		/*
+		 * Static method for new input data types input
+		*/
+		static Input::Type::Record & get_one_decay_type();
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const std::vector<string> &names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
 		/**
 		*	Destructor.
 		*/
@@ -40,22 +45,18 @@ class Reaction: public EquationBase
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		virtual void compute_one_step(void);
+
+		/**
+		 * Returns number of substances involved in reactions. This should be same as number of substances in transport.
+		 */
+        inline unsigned int n_substances()
+        { return names_.size(); }
+
+
 		/**
 		* 	It returns current time step used for first order reactions.
 		*/
 		double get_time_step(void);
-		/**
-		*	It enables to set a number of transported species to set a size of reaction matrix.
-		*/
-		void set_nr_of_species(int n_substances);
-		/**
-		*	It returns a number of decays defined in input-file.
-		*/
-		int get_nr_of_decays(void);
-		/**
-		*	It returns a number of first order reactions defined in input-file.
-		*/
-		int get_nr_of_FoR(void);
 		/**
 		*	This method enables to change a data source the program is working with, during simulation.
 		*/
@@ -67,48 +68,30 @@ class Reaction: public EquationBase
 		/**
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
-		virtual void set_time_step(void);
-		/**
-		* Two virtual methods to be implemented in ancestors.
-		*/
+		virtual void set_time_step(Input::Record in_rec);
+		//
 		void update_solution(void);
 		void choose_next_time(void);
 		void set_time_step_constrain(double dt);
 		void get_parallel_solution_vector(Vec &vc);
 		void get_solution_vector(double* &vector, unsigned int &size);
+		/**
+		* Function for setting dual porosity.
+		*/
+		void set_dual_porosity(bool dual_porosity_on);//(Input::Record in_rec);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
 		*/
 		Reaction();
 		/**
-		*	This method enables to change total number of elements contained in mesh.
-		*/
-		void set_nr_of_elements(int nrOfElements);
-		/**
-		*	This method transfer pointer to mesh between a transport and reactive part of a program.
-		*/
-		void set_mesh_(Mesh *mesh);
-		/**
-		*
-		*/
-		void set_dual_porosity(void);
-		/**
-		*	This method reads from ini-file an information how many radioactive decays are under consideration.
-		*/
-		void set_nr_of_decays(void);
-		/**
-		*	This method reads from ini-file an information how many first order reactions are under consideration.
-		*/
-		void set_nr_of_FoR(void);
-		/**
 		*	Enables to compute factorial k!.
 		*/
 		int faktorial(int k);
 		/**
-		*	Contains number of transported chemical species.
+		*	Finds a position of a string in specified array.
 		*/
-		int nr_of_species;
+		unsigned int find_subst_name(const std::string &name);
 		/**
 		*	Boolean which enables to compute reactions also in immobile pores.
 		*/
@@ -118,17 +101,9 @@ class Reaction: public EquationBase
 		*/
 		double time_step;
 		/**
-		*	Containes information about total number of elements.
-		*/
-		int nr_of_elements;
-		/**
-		*	Informs how many decay chains are under consideration. It means a number of [Decay_i] sections in ini-file.
-		*/
-		int nr_of_decays;
-		/**
 		*	Informs how many firts order reactions of the type A -> B are under consideration. It is a number of [FoReaction_i] in ini-file.
 		*/
-		int nr_of_FoR;
+		//int nr_of_FoR; //Obsolete variable.
 		/**
 		*	Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
 		*/
@@ -142,17 +117,9 @@ class Reaction: public EquationBase
 		*/
 		double *prev_conc;
 		/**
-		*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
+		* Names belonging to substances. Should be same as in the transport.
 		*/
-		int nom_pol_deg;
-		/**
-		*	Integer which informs about the order of a polynomial term in denominator of Pade approximant rational term.
-		*/
-		int den_pol_deg;
-		/**
-		* Number of further species in Semchem, which can never be exhausted.
-		*/
-		int nr_of_further_species;
+		vector<string> names_;
 };
 
 #endif

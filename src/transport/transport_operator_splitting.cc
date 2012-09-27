@@ -10,67 +10,160 @@
 #include "system/sys_vector.hh"
 #include <time_governor.hh>
 #include <materials.hh>
-#include "equation.hh"
+#include "coupling/equation.hh"
 #include "transport/transport.h"
+#include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
-//#include "reaction/reaction.hh"
-//#include "reaction/linear_reaction.hh"
+
+#include "reaction/reaction.hh"
+#include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
+
 #include "semchem/semchem_interface.hh"
-#include "system/par_distribution.hh"
+
+#include "la/distribution.hh"
 #include "io/output.h"
 
+#include "input/input_type.hh"
+#include "input/accessors.hh"
 
-TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database )
-: TransportBase(marks, init_mesh, material_database)
+
+Input::Type::AbstractRecord & TransportBase::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("Transport", "Secondary equation for transport of substances.");
+
+	if (!rec.is_finished()) {
+	    rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+	                    "Time governor setting for the transport model.");
+        rec.declare_key("substances", Array(String()), Default::obligatory(),
+                        "Names of transported substances.");
+
+	    // input data
+	    rec.declare_key("sorption_enable", Bool(), Default("false"),
+						                "Model of sorption.");
+		rec.declare_key("dual_porosity", Bool(), Default("false"),
+						                "Dual porosity model.");
+
+		rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
+						                "Input file with initial concentrations.");
+		rec.declare_key("boundary_file", FileName::input(), Default::obligatory(),
+						                "Input file with boundary conditions.");
+		rec.declare_key("bc_times", Array(Double()), Default::optional(),
+				 	 	                "Times for changing the boundary conditions.");
+		rec.declare_key("sources_file", FileName::input(), Default::optional(),
+		                                "File with data for the source term in the transport equation.");
+        rec.declare_key("output", TransportBase::get_input_type_output_record(), Default::obligatory(),
+                                        "Parameters of output stream.");
+
+		rec.finish();
+
+		TransportOperatorSplitting::get_input_type();
+		TransportDG::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}
+
+
+
+Input::Type::Record & TransportBase::get_input_type_output_record()
+{
+    using namespace Input::Type;
+    static Record out_rec("TransportOutput", "Output setting for transport equations.");
+
+    if (!out_rec.is_finished()) {
+        out_rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                "Parameters of output stream.");
+
+        out_rec.declare_key("save_step", Double(0.0), Default::obligatory(),
+                "Interval between outputs.");
+
+        out_rec.declare_key("output_times", Array(Double(0.0)),
+                        "Explicit array of output times (can be combined with 'save_step'.");
+
+        out_rec.declare_key("conc_mobile_p0", String(),
+                        "Name of output stream for P0 approximation of the concentration in mobile phase.");
+        out_rec.declare_key("conc_immobile_p0", String(),
+                                "Name of output stream for P0 approximation of the concentration in immobile phase.");
+        out_rec.declare_key("conc_mobile_sorbed_p0", String(),
+                                "Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.");
+        out_rec.declare_key("conc_immobile_sorbed_p0", String(),
+                                "Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
+
+        out_rec.finish();
+
+    }
+    return out_rec;
+}
+
+
+TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
+: TransportBase(marks, init_mesh, material_database, in_rec)
 {
 	Distribution *el_distribution;
 	int *el_4_loc;
-	bool matrix_exp_on;
 
-    double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
-    double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
+    // double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
 
-	convection = new ConvectionTransport(marks, *mesh_, *mat_base);
-	convection->test_concentration_sources(*convection);
+	convection = new ConvectionTransport(marks, *mesh_, *mat_base, in_rec);
 
-	// Chemistry initialization
-	matrix_exp_on = OptGetBool("Reaction_module","Matrix_exp_on","No");
-	if(matrix_exp_on == true)
-		decayRad = (Pade_approximant *) new Pade_approximant(marks, init_mesh, material_database);
-	else
-		decayRad = (Linear_reaction *) new Linear_reaction(marks, init_mesh, material_database); //(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity());
-	convection->get_par_info(el_4_loc, el_distribution);
-	decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
-	Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
-	Semchem_reactions->set_el_4_loc(el_4_loc);
-	Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
+	if ( reactions_it ) {
+		if (reactions_it->type() == Linear_reaction::get_input_type() ) {
+	        decayRad =  new Linear_reaction(marks, init_mesh, material_database, *reactions_it,
+	                                        convection->get_substance_names());
+	        convection->get_par_info(el_4_loc, el_distribution);
+	        decayRad->set_dual_porosity(convection->get_dual_porosity());
+	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
+	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
+	        Semchem_reactions = NULL;
+		} else
+	    if (reactions_it->type() == Pade_approximant::get_input_type() ) {
+	        decayRad = new Pade_approximant(marks, init_mesh, material_database, in_rec,
+	                                        convection->get_substance_names());
+	        convection->get_par_info(el_4_loc, el_distribution);
+	        decayRad->set_dual_porosity(convection->get_dual_porosity());
+	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
+	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        Semchem_reactions = NULL;
+	    } else
+	    if (reactions_it->type() == Semchem_interface::get_input_type() ) {
+	        Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
+	        Semchem_reactions->set_el_4_loc(el_4_loc);
+	        Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	    } else {
+	        xprintf(UsrErr, "Wrong reaction type.\n");
+	    }
+	} else {
+	    decayRad = NULL;
+	    Semchem_reactions = NULL;
+	}
 
-	time_ = new TimeGovernor(0.0, problem_stop_time, *time_marks, this->mark_type());
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, this->mark_type());
 	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
 
-    time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type );
-	// TOdO: this has to be set after construction of transport matrix !!
+    time_marks->add_time_marks(0.0,
+            in_rec.val<Input::Record>("output").val<double>("save_step"),
+            time_->end_time(), output_mark_type );
+	// TODO: this has to be set after construction of transport matrix !!
 
 
 	// register output vectors from convection
 	double ***out_conc = convection->get_out_conc();
-	char    **substance_name = convection->get_substance_names();
+	vector<string> substance_name = convection->get_substance_names();
 
-	string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
-	field_output = new OutputTime(mesh_, output_file);
+	// TODO: Add corresponding record to the in_rec
+	Input::Record output_rec = in_rec.val<Input::Record>("output");
 
-	/*
-    transport_out_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
-    transport_out_im_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im", "\\"));
-    transport_out_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_sorp", "\\"));
-    transport_out_im_sorp_fname = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out_im_sorp", "\\"));
-    */
+	field_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
+
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
-         std::string subst_name = std::string(substance_name[subst_id]) + "_mobile";
+         std::string subst_name = substance_name[subst_id] + "_mobile";
          double *data = out_conc[MOBILE][subst_id];
          field_output->register_elem_data<double>(subst_name, "M/L^3", data , mesh_->n_elements());
     }
@@ -84,10 +177,31 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 {
     delete field_output;
     delete convection;
-    delete decayRad;
-    delete Semchem_reactions;
+    if (decayRad) delete decayRad;
+    if (Semchem_reactions) delete Semchem_reactions;
     delete time_;
 }
+
+
+Input::Type::Record &TransportOperatorSplitting::get_input_type()
+{
+    using namespace Input::Type;
+    static Record rec("TransportOperatorSplitting",
+            "Explicit FVM transport (no diffusion)\n"
+            "coupled with reaction and sorption model (ODE per element)\n"
+            " via. operator splitting.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(TransportBase::get_input_type());
+        rec.declare_key("reactions", Reaction::get_input_type(), Default::optional(),
+                "Initialization of per element reactions.");
+
+        rec.finish();
+    }
+    return rec;
+}
+
+
 
 void TransportOperatorSplitting::output_data(){
 
@@ -108,10 +222,11 @@ void TransportOperatorSplitting::update_solution() {
     time_->next_time();
 	convection->set_target_time(time_->t());
 
-	decayRad->set_time_step(convection->time().estimate_dt());
+	if (decayRad) decayRad->set_time_step(convection->time().estimate_dt());
+	//if (decayRad) static_cast<Pade_approximant *>  (decayRad)->set_time_step(convection->time().estimate_dt());
 	//cout << "recent time step value is " << decayRad->get_time_step() << endl;
 	// TODO: update Semchem time step here!!
-	Semchem_reactions->set_timestep(convection->time().estimate_dt());
+	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
     xprintf( Msg, "t: %f (TOS)                  cfl_dt: %f ", convection->time().t(), convection->time().estimate_dt() );
     START_TIMER("transport_steps");
@@ -122,9 +237,9 @@ void TransportOperatorSplitting::update_solution() {
 	    // one internal step
 	    //xprintf( Msg, "Time : %f\n", convection->time().t() );
 	    convection->compute_one_step();
-	    // Calling linear reactions and Semchem
-	    decayRad->compute_one_step();
-	    Semchem_reactions->compute_one_step();
+	    // Calling linear reactions and Semchem, temporarily commented
+	    if(decayRad) decayRad->compute_one_step();
+	    if (Semchem_reactions) Semchem_reactions->compute_one_step();
 	}
     END_TIMER("transport_steps");
     //DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());

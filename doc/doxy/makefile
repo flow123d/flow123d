@@ -12,4 +12,4 @@ clean:
 	rm -f flow123d/*
 
 %.doc: %.doxy
-	doxygen $<
+	cat flow123d.doxy short.doxy | doxygen - >doxygen.log

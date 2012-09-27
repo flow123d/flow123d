@@ -27,20 +27,46 @@
  *
  */
 
+#include <string>
+#include "input/input_type.hh"
+
+using namespace std;
+
 #ifndef MAIN_H
 #define MAIN_H
 
 
 
 // problem types
+/*
 typedef enum {
 CONVERT_TO_OUTPUT=0,
 STEADY_SATURATED=1,
 UNSTEADY_SATURATED=2,
 PROBLEM_DENSITY=3,
 UNSTEADY_SATURATED_LMH=4} ProblemType;
+*/
+
+
+class Application {
+public:
+    Application(const int argc, char ** argv);
+    static Input::Type::Record &get_input_type();
+    void parse_cmd_line(const int argc, char ** argv);
+    void free_and_exit();
+private:
+    string main_input_dir_;
+    string main_input_filename_;
+    string log_filename_;
+    int passed_argc_;
+    char ** passed_argv_;
+};
+
+
+
 
 #endif
+
 //-----------------------------------------------------------------------------
 // vim: set cindent:
 

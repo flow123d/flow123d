@@ -32,6 +32,8 @@
 
 
 #include "system/system.hh"
+#include "input/input_type.hh"
+
 #include "mesh/mesh.h"
 
 // think about following dependencies
@@ -50,8 +52,46 @@
 void count_element_types(Mesh*);
 void read_node_list(Mesh*);
 
-Mesh::Mesh() {
-    xprintf(Msg, " - Mesh()     - version with node_vector\n");
+
+Input::Type::Record BoundarySegment::get_input_type() {
+    using namespace Input::Type;
+
+    static Record rec("BoundarySegment","Record with specification of boundary segments,\n"
+            "i.e. subsets of the domain boundary where we prescribe one boundary condition.\n"
+            "Currently very GMSH oriented. (NOT IMPLEMENTED YET)");
+    if (!rec.is_finished()) {
+        rec.declare_key("physical_domains", Array(Integer(0)),
+                "Numbers of physical domains (submeshes) that forms a segment and that "
+                "will be removed from the computational mesh.");
+        rec.declare_key("elements", Array(Integer(0)),
+                        "Numbers of elements that forms a segment and that "
+                        "will be removed from the computational mesh.");
+        rec.declare_key("sides", Array( Array(Integer(0), 2,2) ),
+                        "Pairs [ element, local_side] specifying sides that are part of the boundary segment."
+                        "Sides are NOT removed from computation.");
+        rec.finish();
+    }
+    return rec;
+}
+
+Input::Type::Record Mesh::get_input_type() {
+    using namespace Input::Type;
+
+    static Record rec("Mesh","Record with mesh related data." );
+    if (!rec.is_finished()) {
+        rec.declare_key("mesh_file", FileName::input(), Default::obligatory(),
+                "Input file with mesh description.");
+        rec.declare_key("boundary_segmants", Array( BoundarySegment::get_input_type() ),
+                "Array with specification of boundary segments");
+        rec.declare_key("neighbouring", FileName::input(), Default::obligatory(),
+                "File with mesh connectivity data.");
+        rec.finish();
+    }
+    return rec;
+}
+
+Mesh::Mesh(Input::Record in_record)
+: in_record_(in_record) {
 
     n_materials = NDEF;
 
@@ -162,7 +202,7 @@ void Mesh::setup_topology() {
 
     count_side_types();
 
-    read_boundary(mesh);
+    //read_boundary(mesh);
 
     xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
 
@@ -239,9 +279,8 @@ void Mesh::read_neighbours() {
     char     line[ LINE_SIZE ];   // line of data file
     unsigned int id;
 
-    xprintf( Msg, "Reading neighbours...");
-    const std::string& file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Neighbouring", "\\" ));
-    in = xfopen( file_name, "rt" );
+    xprintf( Msg, "Reading neighbours...A\n");
+    in = xfopen(  in_record_.val<FilePath>("neighbouring"), "rt" );
     skip_to( in, "$Neighbours" );
     xfgets( line, LINE_SIZE - 2, in );
 
@@ -299,7 +338,7 @@ void Mesh::read_neighbours() {
         }
     }
 
-    //xprintf( Msg, " %d neighbours readed. ", n_vb_neighbours() );
+    xprintf( Msg, " %d VB neighbours %d BB neigs. readed. ", n_vb_neigh, n_bb_neigh );
 }
 
 
@@ -321,7 +360,7 @@ void Mesh::edge_to_side()
 
     // create edge vector
     edge.resize(n_edges);
-    xprintf( MsgLog, "Created  %d edges.\n.", n_edges );
+    xprintf( Msg, "Created  %d edges.\n.", n_edges );
 
     // set edge, side connections
     unsigned int i_edge=0;
@@ -356,7 +395,7 @@ void Mesh::edge_to_side()
             sde->element()->edges_[sde->el_idx()] = edg;
         }
     }
-    ASSERT(i_edge == n_edges, "Actual number of edges %d do not match size of its array.\n", i_edge);
+    ASSERT(i_edge == n_edges, "Actual number of edges %d do not match size %d of its array.\n", i_edge, n_edges);
 
     //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
 }

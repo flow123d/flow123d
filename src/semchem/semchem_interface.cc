@@ -1,5 +1,7 @@
 //---------------------------------------------------------------------------
 
+#include "reaction/reaction.hh"
+
 #include "system/system.hh"
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
@@ -16,6 +18,89 @@ struct TS_lat 	*P_lat;
 struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
+
+Input::Type::Record & Specie::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("Isotope", "Definition of information about a single isotope.");
+
+	if (!rec.is_finished()) {
+		rec.declare_key("identifier", Integer(), Default::obligatory(),
+						"Identifier of the isotope.");
+		rec.declare_key("half_life", Double(), Default::obligatory(),
+						"Half life parameter.");
+		/*rec.declare_key("next", Array(Integer()), Default(0),
+						"Identifiers of childern in decay chain.");
+		rec.declare_key("bifurcation", Array(Double), Default(0),
+						"Fractions of division decay chain into branches.");
+		rec.declare_key("kinetic constant", Double(), Default(1.0),
+						"Kinetic conxtant appropriate to described first order reaction.");*/
+
+		rec.finish();
+	}
+	return rec;
+}
+
+Input::Type::Record & General_reaction::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("Isotope", "Definition of information about a single isotope.");
+
+	if (!rec.is_finished()) {
+	    rec.derive_from(Reaction::get_input_type());
+
+        //rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
+        //        "Description of general chemical reactions.");
+
+		rec.declare_key("identifier", Integer(), Default::obligatory(),
+						"Identifier of the isotope.");
+		rec.declare_key("half_life", Double(), Default::obligatory(),
+						"Half life parameter.");
+		/*rec.declare_key("next", Array(Integer()), Default(0),
+						"Identifiers of childern in decay chain.");
+		rec.declare_key("bifurcation", Array(Double), Default(0),
+						"Fractions of division decay chain into branches.");
+		rec.declare_key("kinetic constant", Double(), Default(1.0),
+						"Kinetic conxtant appropriate to described first order reaction.");*/
+
+		rec.finish();
+	}
+	return rec;
+}
+
+Input::Type::AbstractRecord & Semchem_interface::get_input_type()
+{
+	using namespace Input::Type;
+	static AbstractRecord rec("Semchem_module", "Declares infos valid for all reactions.");
+
+	if (!rec.is_finished()) {
+		rec.declare_key("precision", Integer(), Default::obligatory(), //(1),
+						"How accurate should the simulation be, decimal places(?).");
+		rec.declare_key("temperature", Double(), Default::obligatory(), //(298.0),
+						"Isothermal reaction, thermodynamic temperature.");
+		rec.declare_key("temp_Gf", Double(), Default::obligatory(), //(298.0),
+						"Thermodynamic parameter.");
+		rec.declare_key("param_Afi", Double(), Default::obligatory(), //(0.391475),
+						"Thermodynamic parameter.");
+		rec.declare_key("param_b", Double(), Default::obligatory(), //(1.2),
+						"Thermodynamic parameter.");
+		rec.declare_key("epsilon", Double(), Default::obligatory(), //(1.2),
+						"Thermodynamic parameter.");
+		rec.declare_key("time_steps", Integer(), Default::obligatory(), //(10),
+						"Simulation parameter.");
+		rec.declare_key("slow_kinetic_steps", Integer(), Default::obligatory(), //(1),
+						"Simulation parameter.");
+
+		rec.finish();
+
+		//TransportOperatorSplitting::get_input_type();
+		//TransportDG::get_input_type();
+
+		rec.no_more_descendants();
+	}
+	return rec;
+}
+
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
 	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL)
 {

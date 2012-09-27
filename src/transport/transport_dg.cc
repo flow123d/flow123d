@@ -39,46 +39,40 @@
 #include "fem/fe_rt.hh"
 #include "io/output.h"
 #include "mesh/boundaries.h"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include "transport/transport_bc.hh"
+#include "input/accessors.hh"
 
 
 using namespace arma;
 
-TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database)
-        : TransportBase(marks, init_mesh, material_database),
-          advection(1e0)
+TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
+        : TransportBase(marks, init_mesh, material_database, in_rec),
+          advection(1e0),
+          tol_switch_dirichlet_neumann(1e-6)
 {
-    // set up time governor
-    time_=new TimeGovernor(
-            0.0,
-            OptGetDbl("Global", "Stop_time", "1.0"),
-            *time_marks
-            );
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
 
-    time_->set_permanent_constrain(
-            OptGetDbl("Global", "Time_step", "1.0"),
-            OptGetDbl("Global", "Time_step", "1.0")
-            );
     time_->fix_dt_until_mark();
     
     // set up solver
     solver = new Solver;
-    solver_init(solver);
+    solver_init(solver, in_rec.val<Input::AbstractRecord>("solver"));
+
 
 
 
     /*
      * Set up physical parameters.
      */
-    sigma  = OptGetDbl("Transport", "Sigma", "0");
-    alphaL = OptGetDbl("Transport", "Alpha_L", "20e-30");
-    alphaT = OptGetDbl("Transport", "Alpha_T",  "5e-30");
-    Dm 	   = OptGetDbl("Transport", "Dm",        "1e-6");
+    sigma  = in_rec.val<double>("sigma");
+    alphaL = in_rec.val<double>("alpha_l");
+    alphaT = in_rec.val<double>("alpha_t");
+    Dm 	   = in_rec.val<double>("d_m");
 
 
     // Set up the numerical penalty parameter
-    alpha = OptGetDbl("Transport", "DG_penalty", "0");
+    alpha = in_rec.val<double>("dg_penalty");
     if (Dm != 0 && alpha == 0)
     	alpha = max(1e0,1e0/Dm);
 
@@ -86,12 +80,13 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     /*
      * Read names of transported substances.
      */
-    n_substances = OptGetInt("Transport", "N_substances", NULL );
-    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
-    read_subst_names();
+    in_rec.val<Input::Array>("substances").copy_to(substance_names);
+    n_substances = substance_names.size();
+//    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
+//    read_subst_names();
 
-    sorption = OptGetBool("Transport", "Sorption", "no");
-	dual_porosity = OptGetBool("Transport", "Dual_porosity", "no");
+    sorption = in_rec.val<bool>("sorption_enable");
+	dual_porosity = in_rec.val<bool>("dual_porosity");
 	mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
 
 	// distribute DOFs
@@ -111,18 +106,19 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     /*
      * Read boundary conditions.
      */
-    bc = new TransportBC(mesh_, n_substances);
+    bc = new TransportBC(mesh_, n_substances, in_rec);
     bc_mark_type_ = time_marks->type_bc_change() | equation_mark_type_;
     if (bc->get_times().size() > 0)
     {
     	for (int i=0; i<bc->get_times().size(); i++)
     		time_marks->add(TimeMark(bc->get_times()[i], bc_mark_type_));
     }
-
+    //VecView( bc->get_vector(0), PETSC_VIEWER_STDOUT_SELF );
 
     // set up output class
-    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Transport", "Transport_out", "\\"));
-    transport_output = new OutputTime(mesh_, output_file);
+    // TODO: Add corresponding record to the in_rec
+    Input::Record output_rec = in_rec.val<Input::Record>("output");
+    transport_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
     output_solution.resize(n_substances);
     for (int i=0; i<n_substances; i++)
     {
@@ -130,9 +126,10 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
         transport_output->register_corner_data<double>(substance_names[i], "M/L^3", output_solution[i], distr->size());
     }
 
+
 	// set time marks for writing the output
 	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
-    time_marks->add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), time_->end_time(), output_mark_type);
+    time_marks->add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
     
 
     ls    = new LinSys_MPIAIJ(distr->lsize());
@@ -140,7 +137,7 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
 
 
     // Read initial condition.
-    read_initial_condition();
+    read_initial_condition(in_rec.val<FilePath>("initial_file"));
 
     // possibly read boundary conditions
     if (bc->get_time_level() != -1)
@@ -161,6 +158,31 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     output_data();
 }
 
+
+Input::Type::Record & TransportDG::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("AdvectionDiffusion_DG", "DG solver for transport with diffusion.");
+
+	if (!rec.is_finished()) {
+		rec.derive_from(TransportBase::get_input_type());
+
+		rec.declare_key("sigma", Double(), Default("0"),
+				"Coefficient of diffusive transfer through fractures.");
+		rec.declare_key("alpha_l", Double(), Default("0"),
+				"Longitudal dispersivity.");
+		rec.declare_key("alpha_t", Double(), Default("0"),
+				"Transversal dispersivity.");
+		rec.declare_key("d_m", Double(), Default("1e-6"),
+				"Molecular diffusivity.");
+		rec.declare_key("dg_penalty", Double(0), Default("0"),
+				"Penalty parameter influencing the discontinuity of the solution.");
+        rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
+                "Linear solver for MH problem.");
+		rec.finish();
+	}
+	return rec;
+}
 
 TransportDG::~TransportDG()
 {
@@ -220,7 +242,6 @@ void TransportDG::update_solution()
     }
 
 
-
     /* Apply backward Euler time integration.
      *
      * Denoting A the stiffness matrix and M the mass matrix, the algebraic system at the k-th time level reads
@@ -248,12 +269,17 @@ void TransportDG::update_solution()
     // ls->get_rhs() = 1/dt*y + rhs
     VecWAXPY(ls->get_rhs(), 1./time_->dt(), y, rhs);
 
+    //MatView( ls->get_matrix(), PETSC_VIEWER_STDOUT_SELF );
+
     VecDestroy(&y);
 
+    //VecView( ls->get_rhs(), PETSC_VIEWER_STDOUT_SELF );
     // solve
     solve_system(solver, ls);
 
+    //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
 }
+
 
 
 
@@ -623,7 +649,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         // skip Neumann boundaries
         // Constant 1e-6 stabilizes switching Dirichlet to Neumann boundary condition.
         // TODO: Define as a constant. Better determination of its magnitude. See also other places with same constant.
-        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -1e-6*elem_flux) continue;
+        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
 
         side_K.resize(edge->n_sides);
         side_velocity.resize(edge->n_sides);
@@ -792,7 +818,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
     QGauss<dim-1> side_q(2);
     FESideValues<dim,3> fe_values_side(map, side_q, *fe, update_values | update_side_JxW_values);
     unsigned int side_dof_indices[fe->n_dofs()];
-    double local_rhs[fe->n_dofs()*fe->n_dofs()];
+    double local_rhs[fe->n_dofs()];
 
     for (BoundaryFullIter b = mesh_->boundary.begin(); b != mesh_->boundary.end(); ++b)
     {
@@ -804,7 +830,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
         double elem_flux = 0;
         for (int i=0; i<b->side->element()->n_sides(); i++)
         	elem_flux += fabs( mh_dh->side_flux( *(b->side->element()->side(i)) ) );
-        if (mh_dh->side_flux( *(b->side) ) > -1e-6*elem_flux) continue;
+        if (mh_dh->side_flux( *(b->side) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
 
         if (b.id() < bc->distribution()->begin() || b.id() > bc->distribution()->end()) continue;
 
@@ -1050,14 +1076,18 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
 
 
 
-void TransportDG::read_initial_condition()
+
+
+
+
+
+void TransportDG::read_initial_condition(string concentration_fname)
 {
     FILE    *in;          // input file
     char     line[ LINE_SIZE ]; // line of data file
     int sbi,index, eid, i,n_concentrations;
     double value;
 
-    std::string concentration_fname = IONameHandler::get_instance()->get_input_file_name(OptGetFileName("Transport", "Concentration", "\\"));
     in = xfopen( concentration_fname, "rt" );
 
     skip_to( in, "$Concentrations" );
@@ -1108,16 +1138,6 @@ void TransportDG::read_initial_condition()
 }
 
 
-void TransportDG::read_subst_names()
-{
-    int sbi;
-    char *line = OptGetStr("Transport", "Substances", "none");
 
-    ASSERT(!( (n_substances < 1) || (line == NULL) ),"Bad parameter of function subst_names()\n");
-    for (sbi = 0; sbi < n_substances; sbi++)
-        substance_names.push_back(strtok((sbi == 0 ? line : NULL), " \t,;"));
-
-    xfree(line);
-}
 
 

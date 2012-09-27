@@ -39,6 +39,7 @@
 #include "system/system.hh"
 #include <boost/format.hpp>
 
+#include "system/file_path.hh"
 
 Profiler* Profiler::_instance = NULL;
 map<string, TimerFrame*> TimerFrame::_frames;
@@ -68,7 +69,7 @@ Profiler::~Profiler() {
 #ifdef DEBUG_PROFILER
     char filename[PATH_MAX];
     strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
-    string full_fname = IONameHandler::get_instance()->get_output_file_name(filename);
+    string full_fname =  FilePath(string(filename), FilePath::output_file);
 
     ofstream os(full_fname.c_str());
     output(os);

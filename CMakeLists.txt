@@ -8,6 +8,14 @@
 #   this way we can drop third_party directory; however for particular configuration of armadillo or petsc ( using particular libraries) one still need manual
 #   installation of PETSc, so there should be posibility to indicate PETSC_DIR and PETSC_ARCH in makefile.in.cmake. But this file should be merly optional.
 # 
+# * use CMAKE_BUILD_TYPE instead of FLOW_BUILD_TYPE, have rules in main makefile to produce different configurations
+#   and have clearly defined CFLAGS and other settings for individual configurations 
+#
+# * allways use Debug configuration for targets in test_units
+#   WHY? Rather make unit_tests working for both debug and release configurations
+#
+# * report compiler flags and used libraries in a summarizing table before own build
+#
 # * use CTest to perform unit tests
 # 
 # * use CPack to  make Windows and Linux packages
@@ -42,6 +50,7 @@ project(Flow123d CXX C)
 cmake_minimum_required(VERSION 2.6.4)
 if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
+  cmake_policy(SET CMP0017 NEW)
 endif()
 
 if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
@@ -53,13 +62,116 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
 list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
-#in_source builds should buitd in ./build subdirectory
-# this doesn;t work :-(
-#if (${CMAKE_BINARY_DIR} EQUAL ${CMAKE_SOURCE_DIR}) 
-#  set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
-#endif()
-
 ######################################################################### find libraries
+#
+# find boost or use our own
+#
+# - Try to find Boost include dirs and libraries
+#
+# NOTE: Take note of the Boost_ADDITIONAL_VERSIONS variable below.
+# Due to Boost naming conventions and limitations in CMake this find
+# module is NOT future safe with respect to Boost version numbers,
+# and may break.
+#
+# Input variables:
+#
+#   Boost_USE_MULTITHREADED      Can be set to OFF to use the non-multithreaded
+#   Boost_USE_STATIC_LIBS        Can be set to ON to force the use of the static
+#   Boost_NO_SYSTEM_PATHS        Set to TRUE to suppress searching in system (or other locations outside of BOOST_ROOT or BOOST_INCLUDEDIR).
+#   Boost_USE_STATIC_RUNTIME     If enabled, searches for boost libraries linked against a static C++ standard library
+#   Boost_USE_DEBUG_PYTHON       
+#   Boost_USE_STLPORT            If enabled, searches for boost libraries compiled against the STLPort standard
+#   Boost_USE_STLPORT_DEPRECATED_NATIVE_IOSTREAMS    If enabled, searches for boost libraries compiled against the deprecated STLPort "native iostreams" feature ('n' ABI tag).
+#   Boost_ADDITIONAL_VERSIONS    A list of version numbers to use for searching
+#   Boost_DEBUG                  Set this to TRUE to enable debugging output
+#   Boost_DETAILED_FAILURE_MSG   FindBoost doesn't output detailed information
+#   Boost_COMPILER               Set this to the compiler suffix used by Boost
+#   Boost_THREADAPI                When building boost.thread, sometimes the name of the library contains an additional "pthread" or "win32"
+#   Boost_REALPATH               Resolves symbolic links for discovered boost libraries
+#
+#
+#   BOOST_ROOT or BOOSTROOT      The preferred installation prefix for searching for
+#                                back on the system paths, set Boost_NO_SYSTEM_PATHS
+#   BOOST_INCLUDEDIR             Set this to the include directory of Boost, if the
+#   BOOST_LIBRARYDIR             Set this to the lib directory of Boost, if the
+#
+# Variables defined by this module:
+#
+#   Boost_FOUND                         System has Boost, this means the include dir was
+#   Boost_INCLUDE_DIRS                  Boost include directories: not cached
+#   Boost_INCLUDE_DIR                   This is almost the same as above, but this one is cached and may be modified by advanced users
+#   Boost_LIBRARIES                     Link to these to use the Boost libraries that you
+#   Boost_LIBRARY_DIRS                  The path to where the Boost library files are.
+#   Boost_VERSION                       The version number of the boost libraries that
+#   Boost_LIB_VERSION                   The version number in filename form as
+#   Boost_MAJOR_VERSION                 major version number of boost
+#   Boost_MINOR_VERSION                 minor version number of boost
+#   Boost_SUBMINOR_VERSION              subminor version number of boost
+#   Boost_LIB_DIAGNOSTIC_DEFINITIONS    [WIN32 Only] You can call
+#   Boost_${COMPONENT}_FOUND            True IF the Boost library "component" was found.
+#   Boost_${COMPONENT}_LIBRARY          Contains the libraries for the specified Boost
+
+set(Boost_USE_STATIC_LIBS       ON)
+set(Boost_USE_MULTITHREADED     OFF)
+set(Boost_USE_STATIC_RUNTIME    OFF)
+set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost)  
+set(REQUIRED_Boost_COMPONENTS program_options serialization)
+
+#set(Boost_DEBUG TRUE)
+# For some mysterious reason, the second find_package fails to find
+# components of boost in our own build, if we hint BOOST_ROOT of our build to the
+# first find_package.
+#
+# The root of the error is in FindBoost, when it calls find_library for individual components.
+# Success scenario:
+# 1) First find_package didn't found Boost (in system direcotries)
+# 2) we install our Boost
+# 3) the second find_package calls find_library to find boost components and succed
+#
+# Fail scenario:
+# 1) First find_package didn't found Boost (we set BOOST_ROOT to the empty target directory of the external project)
+# 2) we install our Boost
+# 3) the second find_package calls find_library to find boost components and fail
+#    the parameters of the find_library are exactly same as in the previous case.
+#
+#set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+
+if (NOT Boost_FOUND) 
+  message(STATUS "Try to install our own Boost.")
+
+  include(InstallBoost)  
+  
+  # we try to erease from the cache everything that can cause failure of the second find_package
+  # however just unsetting Boost_INCLUDE_DIR should be enough
+  
+ 
+  unset(Boost_FOUND CACHE) 
+  unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
+  unset(Boost_LIBRARY_DIRS CACHE)
+  unset(Boost_LIB_VERSION CACHE)
+  unset(Boost_VERSION CACHE)
+  unset(Boost_VERSION CACHE)
+  foreach(COMPONENT ${REQUIRED_Boost_COMPONENTS})
+      string(TOUPPER ${COMPONENT} COMPONENT)
+
+      unset(Boost_${COMPONENT}_FOUND CACHE)
+      unset(Boost_${COMPONENT}_LIBRARY CACHE)
+      unset(Boost_${COMPONENT}_LIBRARY_DEBUG CACHE)
+      unset(Boost_${COMPONENT}_LIBRARY_RELEASE CACHE)
+            
+  endforeach(COMPONENT)
+  
+  set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})    
+  find_package( Boost 1.42.0 REQUIRED COMPONENTS ${REQUIRED_Boost_COMPONENTS}  )
+   
+endif()
+
+message(STATUS "BOOST_ROOT: ${BOOST_ROOT}")
+message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
+message(STATUS "Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")   
+message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
+
 
 # We are looking for PETSC, f succed this module set:
 #  PETSC_FOUND        - system has PETSc
@@ -69,36 +181,24 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-find_package(PETSc 3.2.0 REQUIRED)
+
+find_package(PETSc 3.2.0)
 find_package(PARMETIS)
-
-
-
-
-
-# find boost or use our own
-#
-find_package(Boost 1.42.0 EXACT)
-if (NOT Boost_FOUND) 
-  message(STATUS "Try to use our essential Boost subset.")
-  unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
-  unset(Boost_LIBRARY_DIRS CACHE)
-  unset(Boost_LIB_VERSION CACHE)
-  unset(Boost_VERSION CACHE)  
-
-  set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-  find_package(Boost 1.42.0 EXACT REQUIRED)
-  
-  # hint same Boost to armadillo 
-  set(Armadillo_Boost_Hint  -D BOOST_ROOT=${CMAKE_SOURCE_DIR}/third_party/boost-1.42)
-endif()
-message(STATUS "Boost_INCLUDE_DIR = ${Boost_INCLUDE_DIR}")
-
 
 # find aramdillo or use our own
 # FindAramdillo returs:
 # Aramdillo_INCLUDE_DIRS
 # Armadillo_LIBRARIES
+
+# hint same Boost to armadillo 
+set(Armadillo_Boost_Hint  -D BOOST_ROOT=${BOOST_ROOT})
+
+#set(our_Armadillo_version 1.1.92)
+#set(our_Armadillo_lib libarmadillo.a)
+
+set(our_Armadillo_version 3.2.4)
+set(our_Armadillo_lib libarmadillo.a)
+
 find_package(Armadillo)
 if (NOT Armadillo_FOUND)
 
@@ -106,22 +206,34 @@ if (NOT Armadillo_FOUND)
   # proper way should be: cmake, make, install Armadillo -> the last step should produce ArmadilloLibraryDepends.cmake
   # which can be included here to get correct includes and libs variables
   message(STATUS "Build our own Armadillo.")
-  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build")
+  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build")
+  
+  # check PETSC fblas and flapack
+  find_file(PETSC_BLAS libfblas.a PATH  ${PETSC_DIR}/${PETSC_ARCH}/lib)
+  find_file(PETSC_LAPACK libflapack.a PATH  ${PETSC_DIR}/${PETSC_ARCH}/lib)
+  if ( PETSC_BLAS AND PETSC_LAPACK )
+      set(PETSC_LAPACK "-DLAPACK_LIBRARY=${PETSC_LAPACK}")
+      set(PETSC_BLAS "-DBLAS_LIBRARY=${PETSC_BLAS}")
+  else()
+      # if fblas or flapack is not presented in PETSC let armadillo to find its own BLAS and LAPACK
+      set(PETSC_LAPACK "")
+      set(PETSC_BLAS "")
+  endif()    
+  
   file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${PETSC_DIR}/${PETSC_ARCH}  ${Armadillo_Boost_Hint} ..
+  message(STATUS "BLAS_LIBRARY: ${PETSC_BLAS}" "LAPACK_LIBRARY: ${PETSC_LAPACK}")
+  execute_process(COMMAND ${CMAKE_COMMAND} ${PETSC_BLAS} ${PETSC_LAPACK} ${Armadillo_Boost_Hint} ..
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND make 
+  execute_process(COMMAND make VERBOSE=1 
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   
   SET(Armadillo_INCLUDE_DIRS 
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/include
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/include)  
-  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-1.1.92/flow_build/libarmadillo.a")  
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/include
+    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/include)  
+  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/${our_Armadillo_lib}")  
 endif()
 
 message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
-
-
 
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion)
@@ -133,13 +245,6 @@ find_package(Subversion)
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/flow
-    ${CMAKE_SOURCE_DIR}/src/mesh
-    ${CMAKE_SOURCE_DIR}/src/reaction
-    ${CMAKE_SOURCE_DIR}/src/system
-    ${CMAKE_SOURCE_DIR}/src/semchem
-    ${CMAKE_SOURCE_DIR}/src/transport
-    ${CMAKE_SOURCE_DIR}/src/input
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit
@@ -150,12 +255,14 @@ include_directories(
 
 ##############
 # set appropriate compiler flags for debug/release compilation modes
+message(STATUS "build type: ${FLOW_BUILD_TYPE} ${FLOW_CC_FLAGS}")
 
-if(CC_FLAGS) 
-  add_definitions(${CC_FLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS ${CC_FLAGS})
+
+if(FLOW_CC_FLAGS) 
+  add_definitions(${FLOW_CC_FLAGS})
+  set(CMAKE_EXE_LINKER_FLAGS ${FLOW_CC_FLAGS})
 else()
-  if(CMAKE_BUILD_TYPE STREQUAL "debug")
+  if(FLOW_BUILD_TYPE STREQUAL "debug")
     # debug mode
     add_definitions("-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g")
@@ -170,8 +277,6 @@ endif()
 
 ############################################################33 process subdirectories
 
-# add json_sprit sources
-add_subdirectory( ${CMAKE_SOURCE_DIR}/third_party/json_spirit )
 
 # add fparser sources
 add_subdirectory(third_party/fparser-4.4.3)
@@ -216,7 +321,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d   flow123d_lib semchem)     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  ${Armadillo_LIBRARIES} flow123d_lib semchem ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number

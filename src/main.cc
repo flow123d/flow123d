@@ -31,10 +31,19 @@
 #include <petsc.h>
 
 #include "system/system.hh"
-#include "hc_explicit_sequential.hh"
+#include "coupling/hc_explicit_sequential.hh"
+#include "input/input_type.hh"
+#include "input/accessors.hh"
+#include "input/json_to_storage.hh"
+#include "io/output.h"
+
+#include <iostream>
+#include <fstream>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
 
 #include "main.h"
-#include "io/read_ini.h"
+//#include "io/read_ini.h"
 
 #include "rev_num.h"
 
@@ -55,85 +64,23 @@
 
 static void main_convert_to_output();
 
-/**
- * @brief Main flow initialization
- * @param[in] argc       command line argument count
- * @param[in] argv       command line arguments
- * @param[out] goal      Flow computation goal
- * @param[out] ini_fname Init file name
- *
- * TODO: this parsing function should be in main.cc
- *
- */
-void parse_cmd_line(const int argc, char * argv[],  string &ini_fname) {
-    const char USAGE_MSG[] = "\
-    Wrong program parameters.\n\
-    Usage: flow123d [options] ini_file\n\
-    Options:\n\
-    -s       Compute MH problem (Obsolete)\n\
-             Source files have to be in the current directory.\n\
-    -S       Compute MH problem\n\
-             Source files have to be in the same directory as ini file.\n\
-    -i       String used to change the 'variable' ${INPUT} in the file path.\n\
-    -o       Absolute path to output directory.\n\
-    -l file  Set base name of log files or turn logging off if no name is given.\n";
 
-    xprintf(MsgLog, "Parsing program parameters ...\n");
+Application::Application(const int argc,  char ** argv)
+: main_input_dir_("."),
+  main_input_filename_(""),
+  log_filename_(""),
+  passed_argc_(0),
+  passed_argv_(0)
+{
 
-    // Check command line arguments
-    if ((argc >= 3) && (strlen(argv[1]) == 2) && (argv[1][0] == '-')) {
-        std::string ini_argument ( argv[2] );
-        std::string ini_dir;
-
-        // Try to find absolute or relative path in fname
-        int delim_pos=ini_argument.find_last_of(DIR_DELIMITER);
-        if (delim_pos < ini_argument.npos) {
-            // It seems, that there is some path in fname ... separate it
-            ini_dir=ini_argument.substr(0,delim_pos);
-            ini_fname=ini_argument.substr(delim_pos+1); // till the end
-        } else {
-            ini_dir=".";
-            ini_fname=ini_argument;
-        }
-
-        switch (argv[ 1 ][ 1 ]) {
-            case 's':
-                ini_fname=ini_argument;
-                break;
-            case 'S':
-                xchdir(ini_dir.c_str());
-                break;
-            default:
-                //xprintf(UsrErr, USAGE_MSG);   // Caused crash of flow123d
-                xprintf(UsrErr,"%s", USAGE_MSG);
-        }
-
-    }
-}
-
-//=============================================================================
-
-/**
- *  FUNCTION "MAIN"
- */
-int main(int argc, char **argv) {
-    std::string ini_fname;
-
-    F_ENTRY;
-
-    parse_cmd_line(argc, argv,  ini_fname); // command-line parsing
-
-
-    system_init(argc, argv); // Petsc, open log, read ini file
-    OptionsInit(ini_fname.c_str()); // Read options/ini file into database
-    system_set_from_options();
+    // parse our own command line arguments, leave others for PETSc
+    parse_cmd_line(argc, argv);
+    system_init(passed_argc_, passed_argv_, log_filename_); // Petsc, open log, read ini file
 
     Profiler::initialize(MPI_COMM_WORLD);
-
     START_TIMER("WHOLE PROGRAM");
 
     // Say Hello
-    
     // make strings from macros in order to check type
     string version(_PROGRAM_VERSION_);
     string revision(_PROGRAM_REVISION_);
@@ -144,25 +91,201 @@ int main(int argc, char **argv) {
     xprintf(Msg, "Build: %s \n", build.c_str() );
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 
-    ProblemType type = (ProblemType) OptGetInt("Global", "Problem_type", NULL);
-    switch (type) {
-    case CONVERT_TO_OUTPUT:
-        main_convert_to_output();
-        break;
-    case STEADY_SATURATED:
-    case UNSTEADY_SATURATED:
-    case UNSTEADY_SATURATED_LMH: {
-        HC_ExplicitSequential *problem = new HC_ExplicitSequential(type);
-        problem->run_simulation();
-        delete problem;
-        break;
-    }
-    case PROBLEM_DENSITY:
-        // main_compute_mh_density(problem);
-        xprintf(UsrErr,"Density driven model not yet reimplemented.");
-        break;
+
+    // read main input file
+    Input::JSONToStorage json_reader;
+    string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
+    DBGMSG("Reading file %s.\n", fname.c_str() );
+    std::ifstream in_stream(fname.c_str());
+    if (! in_stream) {
+        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
     }
 
+    json_reader.read_stream(in_stream, get_input_type() );
+
+    {
+        using namespace Input;
+
+        // get main input record handle
+        Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+
+        sys_info.pause_after_run=i_rec.val<bool>("pause_after_run");
+        Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
+
+        // run simulation
+        if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
+            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
+            problem->run_simulation();
+            delete problem;
+
+        } else {
+            xprintf(UsrErr,"Problem type not implemented.");
+        }
+
+    }
+
+}
+
+
+
+
+
+/**
+ * @brief Main flow initialization
+ * @param[in] argc       command line argument count
+ * @param[in] argv       command line arguments
+ * @param[out] goal      Flow computation goal
+ * @param[out] ini_fname Init file name
+ *
+ * TODO: this parsing function should be in main.cc
+ *
+ */
+void Application::parse_cmd_line(const int argc, char ** argv) {
+    namespace po = boost::program_options;
+
+    const char USAGE_MSG[] = "\n\
+    Usage: flow123d [options] ini_file\n\
+    Options:\n\
+    -s       Compute MH problem (Obsolete)\n\
+             Source files have to be in the current directory.\n\
+    -S       Compute MH problem\n\
+             Source files have to be in the same directory as ini file.\n\
+    -i       String used to change the 'variable' ${INPUT} in the file path.\n\
+    -o       Absolute path to output directory.\n\
+    -l file  Set base name of log files or turn logging off if no name is given.\n";
+
+    //xprintf(MsgLog, "Parsing program parameters ...\n");
+
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("solve,s", po::value< string >(), "Main input file to solve.")
+        ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
+        ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
+        ("log,l", po::value< string >(), "Set base name for log file. Turn logging off if no name is given.")
+        ("full_doc", "Produce full structure of the main input file.");
+    ;
+
+    // parse the command line
+    po::variables_map vm;
+    po::parsed_options parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).allow_unregistered().run();
+    po::store(parsed, vm);
+    po::notify(vm);
+
+    // get unknown options
+    vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+    passed_argc_ = to_pass_further.size();
+    passed_argv_ = new char * [passed_argc_+1];
+
+    // first copy the program executable in argv[0]
+    int arg_i=0;
+    if (argc > 0) passed_argv_[arg_i++] = xstrcpy( argv[0] );
+
+    for(int i=0; i < passed_argc_; i++) {
+        passed_argv_[arg_i++] = xstrcpy( to_pass_further[i].c_str() );
+    }
+    passed_argc_ = arg_i;
+
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        free_and_exit();
+    }
+
+    if (vm.count("full_doc")) {
+        cout << get_input_type() << "\n";
+        free_and_exit();
+    }
+
+    if (vm.count("solve")) {
+        string input_filename = vm["solve"].as<string>();
+
+
+        // Try to find absolute or relative path in fname
+        int delim_pos=input_filename.find_last_of(DIR_DELIMITER);
+        if (delim_pos < input_filename.npos) {
+            // It seems, that there is some path in fname ... separate it
+            main_input_dir_ =input_filename.substr(0,delim_pos);
+            main_input_filename_ =input_filename.substr(delim_pos+1); // till the end
+        } else {
+            main_input_dir_ = ".";
+            main_input_filename_ = input_filename;
+        }
+
+
+    } else {
+        cout << "Usage error: The main input file has to be specified.\n\n";
+        cout << desc << "\n";
+        free_and_exit();
+    }
+
+    string input_dir;
+    string output_dir;
+    if (vm.count("input_dir")) {
+        input_dir = vm["input_dir"].as<string>();
+    }
+    if (vm.count("output_dir")) {
+            output_dir = vm["output_dir"].as<string>();
+    }
+
+    // assumes working directory "."
+    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
+
+
+    if (vm.count("log_filename")) {
+        log_filename_ = vm["log"].as<string>();
+    } else {
+        log_filename_ = "\n";
+    }
+
+    // TODO: catch specific exceptions and output usage messages
+}
+
+
+
+
+Input::Type::Record &  Application::get_input_type() {
+    using namespace Input::Type;
+
+    // this should be part of a system class containing all support information
+    //static Record system_rec("System", "Record with general support data.");
+    //system_rec.finish();
+
+
+    static Record main_rec("Root", "Root record of JSON input for Flow123d.");
+    //main_rec.declare_key("system", system_rec, "");
+
+    if (!main_rec.is_finished()) {
+        main_rec.declare_key("problem", CouplingBase::get_input_type(), Default::obligatory(),
+            "Simulation problem to be solved.");
+        main_rec.declare_key("pause_after_run", Bool(), Default("false"),
+                "If true, the program will wait for key press before it terminates.");
+        main_rec.declare_key("output_streams", Array( OutputTime::get_input_type() ),
+                "Array of formated output streams to open.");
+        main_rec.finish();
+    }
+
+    return main_rec;
+}
+
+
+void Application::free_and_exit() {
+    xterminate(false);
+}
+
+
+
+//=============================================================================
+
+/**
+ *  FUNCTION "MAIN"
+ */
+int main(int argc, char **argv) {
+    using namespace Input;
+    std::string ini_fname;
+
+    F_ENTRY;
+    Application app(argc, argv);
     // Say Goodbye
     return xterminate(false);
 }

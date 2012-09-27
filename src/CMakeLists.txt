@@ -21,6 +21,8 @@
 # $LastChangedDate$
 #
 
+add_subdirectory("input/json_spirit")
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #message(STATUS "Include directories: ${flow123d_includes}")
 #include_directories(${flow123d_includes})
@@ -69,11 +71,12 @@ set(sources_lib_non_system
 
 
 
-    equation.cc
+    coupling/equation.cc
+    coupling/hc_explicit_sequential.cc
+
     time_marks.cc
     materials.cc
     time_governor.cc
-    hc_explicit_sequential.cc
     field_p0.cc
 )
 
@@ -83,7 +86,8 @@ set(sources_lib_new_mesh
     )
 
 set(sources_lib_la
-    la/local_to_global_map.cc
+	la/distribution.cc
+	la/local_to_global_map.cc
     la/schur.cc
     la/solve.cc
     la/linsys.cc
@@ -91,17 +95,25 @@ set(sources_lib_la
 )
 
 set(sources_lib_system
-    system/par_distribution.cc
     system/math_fce.cc
     system/sys_function_stack.cpp
     system/sys_profiler.cc
     system/system.cc
     system/xio.cc
+    system/exceptions.cc
     io/read_ini.cc
+    system/file_path.cc
 )
 
 set(sources_lib_input
-    input/input_type.cc
+  
+    input/type_base.cc
+    input/type_record.cc
+    input/type_selection.cc
+    input/storage.cc
+    input/json_to_storage.cc
+    
+    input/accessors.cc
 )
 
 # make separate library for Semchem (God save us!)
@@ -127,7 +139,7 @@ set(sources_lib_semchem
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARY_DIRS})
+target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
 
 # input_lib
 add_library(input_lib ${sources_lib_input})
@@ -143,13 +155,13 @@ target_link_libraries(input_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
+    ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES}  ${Boost_LIBRARY_DIRS})
 
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    system_lib la_lib fparser semchem
-    ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
+    input_lib system_lib la_lib fparser semchem
+    ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES}  ${Boost_LIBRARY_DIRS})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

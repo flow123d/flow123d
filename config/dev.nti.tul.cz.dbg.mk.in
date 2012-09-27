@@ -21,3 +21,5 @@ set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_C_COMPILER "/usr/bin/gcc44")
 
 set(CMAKE_CXX_COMPILER "/usr/bin/g++44")
+
+set(EXTERNAL_PROJECT_DIR "$ENV{HOME}/external_projects/JB_1.7_inputs") 

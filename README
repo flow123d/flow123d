@@ -16,6 +16,9 @@ requested packages are:
 * gcc, g++, gfortran    C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
 * python, perl, cmake   Scripting languages and building tool
 * boost                 C++ library 
+  namely you need developement version of the library "Program Options",
+  in KUbuntu this is in separate package: libboost-program-options-dev
+  
 
 optionaly you may want also:
 

@@ -8,7 +8,6 @@ add_subdirectory( ${GTEST_ROOT} ${GTEST_ROOT})
 message(STATUS "Gtest tests allowed")
 
 set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/test_units/gtest_mpi.cc)
-set(CMAKE_CXX_FLAGS "-g") 
 
 #################################
 # MACRO define_test

@@ -1,0 +1,166 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "test1", 
+    material = "input/test1.mtr", 
+    mesh = {
+      mesh_file = "input/test1.msh", 
+      neighbouring = "input/test1.ngh"
+    }, 
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "input/test1.fbc", 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        save_step = {
+          REF = "/problem/save_step"
+        }, 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-14
+      }, 
+      time = {
+        REF = "../../time"
+      }
+    }, 
+    save_step = 5.0, 
+    secondary_equation = {
+      TYPE = "AdvectionDiffusion_DG", 
+      boundary_file = "input/test1.tbc", 
+      dual_porosity = false, 
+      initial_file = "input/test1.tic", 
+      output = {
+        mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/system/output_streams/1"
+        }, 
+        save_step = {
+          REF = "/problem/save_step"
+        }
+      }, 
+      sorption_enable = false, 
+      substances = [
+        "A"
+      ], 
+      time = {
+        REF = "../../time"
+      },
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-14
+      }
+    }, 
+    time = {
+      end_time = 100.0, 
+      init_dt = 5.0
+    },
+    solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-14
+    }
+  }, 
+  system = {
+    output_streams = [
+      {
+        file = "test1.msh", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "transport_implicit.pvd", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ], 
+    pause_after_run = true
+  }, 
+  zz_not_supported = {
+    constants = {
+      g = 9.81, 
+      rho = 1000
+    }, 
+    density = {
+      density_implicit = true, 
+      density_max_iter = 21, 
+      eps_iter = 0, 
+      write_iterations = false
+    }, 
+    input = {
+      file_type = 1
+    }, 
+    output = {
+      btc_elms = 80, 
+      cross_section = false, 
+      cs_params = [
+        0.05, 
+        2, 
+        0, 
+        0.05, 
+        0, 
+        0, 
+        0.005
+      ], 
+      fcs_params = [
+        1, 
+        0, 
+        0, 
+        -11, 
+        1
+      ], 
+      output_elm_type = 1, 
+      output_file_2 = "test1.tmp", 
+      output_file_type = "1", 
+      pos_set_view = 1, 
+      pos_view_params = [
+        0, 
+        0, 
+        0, 
+        0.8, 
+        0.8, 
+        0.8, 
+        0.224, 
+        0.224
+      ], 
+      specify_elm_type = false, 
+      write_ftrans_out = "False"
+    }, 
+    "solver parameters": {
+      a_tol = 1e-11, 
+      be_tol = 1e-16, 
+      ilu_cpiv = 0, 
+      ilu_droptol = 1e-05, 
+      ilu_dskip = 10000, 
+      ilu_lfil = -1, 
+      ilu_milu = 0, 
+      max_it = 100, 
+      precond = "ilu", 
+      r_tol = 1e-19, 
+      restart = 20, 
+      scaling = "mc29_30", 
+      sor_omega = 1.0, 
+      stop_crit = "backerr", 
+      stop_test = 1
+    }, 
+    transport = {
+      substances_density_scales = [
+        1, 
+        1, 
+        1
+      ]
+    }
+  }
+}

@@ -35,7 +35,7 @@
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputMSH {
+class OutputMSH : public OutputFormat {
 public:
     /**
      * \brief The constructor of this class
@@ -48,9 +48,19 @@ public:
     OutputMSH(OutputTime *_output_time);
 
     /**
+     * \brief The constructor of this class
+     */
+    OutputMSH(OutputTime *_output_time, const Input::Record &in_rec);
+
+    /**
      * \brief The destructor of this class
      */
     ~OutputMSH();
+
+    /**
+     * \brief The definition of input record for gmsh file format
+     */
+    static Input::Type::Record & get_input_type();
 
     /**
      * \brief This method writes data to the GMSH (.msh) file format. This method
@@ -91,6 +101,14 @@ protected:
     OutputMSH() {}
 
 private:
+
+    /**
+     * \brief The declaration enumeration used for variant of GMSH file format
+     */
+    typedef enum Variant {
+    	VARIANT_ASCII  = 1,
+    	VARIANT_BINARY = 2
+    } Variant;
 
     /**
      * \brief The pointer at Output

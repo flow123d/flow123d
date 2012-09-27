@@ -42,6 +42,7 @@
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
 
+
 // for a linux system we assume glibc library
 // with support of ISOC99 functions
 //#define _ISOC99_SOURCE
@@ -79,7 +80,9 @@ typedef struct SystemInfo {
 
 extern SystemInfo sys_info;
 
-void 	system_init( int &argc, char ** &argv);
+void 	system_init( int argc, char ** argv, const string& log_filename);
+
+
 void    system_set_from_options();
 char * 	get_log_fname( void );
 char * 	get_log_file( void );
@@ -95,9 +98,13 @@ void * xrealloc( void * ptr, size_t size );
 
 // TODO: implement as a templated function
 #ifndef xfree
-    #define xfree(p) do { if (p) { free(p); (p)=NULL; } else {DBGMSG("Free NULL pointer? (in %s, %s(), line %d)\n", __FILE__, __func__, __LINE__);} } while (0) /// test & free memory
+    #define xfree(p) \
+    do { if (p) { free(p); (p)=NULL; } \
+         else {DBGMSG("Free NULL pointer? (in %s, %s(), line %d)\n", __FILE__, __func__, __LINE__); \
+              } \
+    } while (0) /// test & free memory
 #endif
-
+//        F_STACK_SHOW( stdout ); \
 
 /**
  * @brief Replacement of new/delete operator in the spirit of xmalloc.
