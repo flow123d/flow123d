@@ -30,11 +30,30 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # select source files that compose whole flow123d library
 # todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
 # every library then can be testetd independently
-set(sources_lib_non_system
+set(sources_mesh_lib
+    mesh/msh_gmshreader.cc
+    mesh/boundaries.cc
+    mesh/edges.cc
+    mesh/elements.cc
+    mesh/mesh.cc
+    mesh/neighbours.cc
+    mesh/nodes.cc
+    mesh/sides.cc
+    mesh/topology.cc
+    mesh/intersection.cc
+)
+
+set(sources_fem_lib
+    quadrature/quadrature_lib.cc
+
+    fem/fe_p.cc
     fem/dofhandler.cc
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
+)
+
+set(sources_lib_non_system
 
     flow/mh_fe_values.cc
     flow/mh_dofhandler.cc
@@ -45,31 +64,16 @@ set(sources_lib_non_system
     io/output_vtk.cc
     io/output_msh.cc
     
-    mesh/msh_gmshreader.cc
-    mesh/boundaries.cc
-    mesh/edges.cc
-    mesh/elements.cc
-    mesh/mesh.cc
-    mesh/neighbours.cc
-    mesh/nodes.cc
-    mesh/sides.cc
-    mesh/topology.cc
-
-    quadrature/quadrature_lib.cc
-
     reaction/reaction.cc
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
     semchem/semchem_interface.cc
-
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_bc.cc
     transport/transport_dg.cc
     transport/sources.cc
-
-
 
     coupling/equation.cc
     coupling/hc_explicit_sequential.cc
@@ -95,6 +99,7 @@ set(sources_lib_la
 )
 
 set(sources_lib_system
+    system/python_loader.cc
     system/math_fce.cc
     system/sys_function_stack.cpp
     system/sys_profiler.cc
@@ -157,11 +162,21 @@ target_link_libraries(la_lib
     input_lib system_lib
     ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES}  ${Boost_LIBRARY_DIRS})
 
+# mesh_lib
+add_library(mesh_lib ${sources_mesh_lib})
+target_link_libraries(mesh_lib
+    system_lib ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
+    
+# fem_lib    
+add_library(fem_lib ${sources_fem_lib})
+target_link_libraries(fem_lib
+    system_lib mesh_lib ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
+  
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    input_lib system_lib la_lib fparser semchem
-    ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES}  ${Boost_LIBRARY_DIRS})
+    fem_lib mesh_lib la_lib semchem  input_lib system_lib
+    fparser ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

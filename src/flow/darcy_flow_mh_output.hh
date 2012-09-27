@@ -94,6 +94,21 @@ private:
     void output_internal_flow_data();
 
     /**
+     * Temporary hack.
+     * Calculate approximation of L2 norm for:
+     * 1) difference between regularized pressure and analytical solution (using FunctionPython)
+     * 2) difference between RT velocities and analytical solution
+     * 3) difference of divergence
+     *
+     * TODO:
+     * 1) implement field objects
+     * 2) implement DG_P2 finite elements
+     * 3) implement pressure postprocessing (result is DG_P2 field)
+     * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
+     */
+    void compute_l2_difference();
+
+    /**
      * Calculate and output water balance over material subdomains and boudary fluxes.
      * Works only for steady flow.
      *
@@ -129,6 +144,9 @@ private:
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
     std::vector< std::vector<double>  > ele_flux;
+
+    // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
+    std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;

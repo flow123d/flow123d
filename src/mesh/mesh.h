@@ -39,6 +39,7 @@
 #include "mesh/edges.h"
 #include "mesh/neighbours.h"
 #include "mesh/boundaries.h"
+#include "mesh/intersection.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -118,6 +119,10 @@ public:
         return edge.size();
     }
 
+    void read_intersections();
+    void make_intersec_elements();
+    // void make_edge_list_from_neigh();
+
     unsigned int n_sides();
 
     inline unsigned int n_vb_neighbours() const {
@@ -153,6 +158,18 @@ public:
     EdgeVector edge;
 
     flow::VectorId<int> bcd_group_id; // gives a index of group for an id
+
+    /**
+     * Vector of individual intersections of two elements.
+     * This is enough for local mortar.
+     */
+    vector<Intersection>  intersections;
+
+    /**
+     * For every element El we have vector of indices into @var intersections array for every intersection in which El is master element.
+     * This is necessary for true mortar.
+     */
+    vector<vector<unsigned int> >  master_elements;
 
     vector<Neighbour> vb_neighbours_;
     int n_materials; // # of materials

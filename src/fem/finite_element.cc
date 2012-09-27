@@ -89,14 +89,15 @@ const unsigned int FiniteElement<dim,spacedim>::n_object_dofs(
 template<unsigned int dim, unsigned int spacedim> inline
 void FiniteElement<dim,spacedim>::compute_node_matrix()
 {
-    ASSERT(get_generalized_support_points().size() == number_of_dofs,
-            "Invalid number of generalized support points.");
+    ASSERT_SIZES(get_generalized_support_points().size(), number_of_dofs);
 
     arma::mat M(number_of_dofs, number_of_dofs);
 
     for (int i = 0; i < number_of_dofs; i++)
-        for (int j = 0; j < number_of_dofs; j++)
+        for (int j = 0; j < number_of_dofs; j++) {
             M(j, i) = basis_value(j, get_generalized_support_points()[i]);
+
+        }
     node_matrix = arma::inv(M);
 }
 

@@ -83,10 +83,18 @@ class LocalToGlobalMap;
 
 class DarcyFlowMH : public EquationBase {
 public:
+    enum MortarMethod {
+        NoMortar =0,
+        MortarP0 = 1,
+        MortarP1 = 2
+    };
+
+
     DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
     : EquationBase(marks, mesh, mat_base, in_rec), sources(NULL)
     {}
 
+    static Input::Type::Selection & get_mh_mortar_selection();
     static Input::Type::AbstractRecord &get_input_type();
 
     FieldP0<double>  * get_sources()
@@ -124,6 +132,10 @@ protected:
     FieldP0<double> *sources;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
+
+    MortarMethod mortar_method_;
+    // value of sigma used in mortar couplings (TODO: make space depenedent and unify with compatible sigma, both given on lower dim domain)
+    double mortar_sigma_;
 };
 
 
@@ -176,6 +188,9 @@ protected:
     void make_row_numberings();
     void preallocate_mh_matrix();
     void assembly_steady_mh_matrix();
+    void coupling_P0_mortar_assembly();
+    void mh_abstract_assembly_intersection();
+    //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
     void make_schur0();
     void make_schur1();
     void make_schur2();
@@ -223,6 +238,8 @@ protected:
         Mat IA2;                                         //< inverse of matrix IA2
 
         Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
+        
+        double mortar_sigma;
 };
 
 

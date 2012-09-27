@@ -41,3 +41,8 @@ double MH_DofHandler::side_scalar(const Side &side) const {
     Edge * edg = side.edge();
     return mh_solution[ side.mesh()->n_sides() + side.mesh()->n_elements() + side.mesh()->edge.index( edg )];
 }
+
+
+double MH_DofHandler::element_scalar( ElementFullIter &ele ) const {
+    return mh_solution[ ele->mesh_->n_sides() + ele.index() ];
+}

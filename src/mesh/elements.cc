@@ -62,7 +62,7 @@ static void parse_element_properties_line(char*);
 //static void block_A_stats(Mesh*);
 //static void diag_A_stats(Mesh*);
 
-Element::Element()
+Element::Element(unsigned int dim)
 : mid(0),
   pid(0),
 
@@ -75,7 +75,7 @@ Element::Element()
   n_neighs_vb(0),
   neigh_vb(NULL),
 
-  dim_(0)
+  dim_(dim)
 
 {
 }

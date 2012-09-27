@@ -366,8 +366,7 @@ namespace internal {
      */
 
     template<class T>
-    struct TypeDispatch {
-    };
+    struct TypeDispatch;
 } // close namespace internal
 
 
@@ -492,6 +491,20 @@ template<> struct TD<float> { typedef double OT; };
 /**
  *  Template specializations for secondary type dispatch.
  */
+
+// generic implementation accepts only enum types
+template< class T>
+struct TypeDispatch {
+    BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
+
+    typedef T TmpType;
+
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const StorageBase *s, const InputType&) { return ReadType( s->get_int() ); }
+};
+
+
 template<>
 struct TypeDispatch<int> {
     typedef Input::Type::Integer InputType;
@@ -545,6 +558,7 @@ struct TypeDispatch<Record> {
 
 };
 
+
 template<>
 struct TypeDispatch<Array> {
     typedef Input::Type::Array InputType;
@@ -562,6 +576,8 @@ struct TypeDispatch<FilePath> {
     static inline ReadType value(const StorageBase *s, const InputType& t) { return FilePath(s->get_string(), t.get_file_type() ); }
 
 };
+
+
 
 
 } // closing namespace internal

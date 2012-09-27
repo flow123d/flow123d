@@ -174,6 +174,8 @@ void DarcyFlowMHOutput::output()
 
         water_balance();
 
+        //compute_l2_difference();
+
         result = output_writer->register_node_data
                 ("pressure_nodes","L", node_pressure);
         //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
@@ -629,8 +631,7 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
         ngh->flux = ngh->sigma * ngh->geom_factor * (ngh->element[1]->scalar - ngh->element[0]->scalar);
         continue;
     }
-}
-*/
+}*/
 
 //=============================================================================
 //
@@ -740,3 +741,200 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     }
     xfprintf( raw_output_file, "$EndFlowField\n\n" );
 }
+
+/*
+#include "quadrature/quadrature_lib.hh"
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "fem/mapping_p1.hh"
+#include "functions/function_python.hh"
+*/
+
+/*
+* Calculate approximation of L2 norm for:
+ * 1) difference between regularized pressure and analytical solution (using FunctionPython)
+ * 2) difference between RT velocities and analytical solution
+ * 3) difference of divergence
+ * */
+/*
+struct DiffData {
+    double pressure_error[2], velocity_error[2], div_error[2];
+    vector<double> pressure_diff;
+    vector<double> velocity_diff;
+    vector<double> div_diff;
+
+    double * solution;
+    const MH_DofHandler * dh;
+    MHFEValues fe_values;
+
+    std::vector< std::vector<double>  > *ele_flux;
+};
+
+template <int dim>
+void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const FunctionPython<3> &anal_sol,  DiffData &result) {
+
+    fe_values.reinit(ele);
+    result.fe_values.update(ele);
+
+    // get coefficients on the current element
+    vector<double> fluxes(dim+1);
+    vector<double> pressure_traces(dim+1);
+
+    for (unsigned int li = 0; li < ele->n_sides(); li++) {
+        fluxes[li] = result.dh->side_flux( *(ele->side( li ) ) );
+        pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
+    }
+    double pressure_mean = result.dh->element_scalar(ele);
+
+    vector<double> analytical(5); // values tuple (pressure, flux(dim), divergence)
+    arma::vec3 flux_in_q_point;
+    arma::vec3 anal_flux;
+
+    double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
+    double resistance = ele->material->hydrodynamic_resistence[0];  // assumes isotropic medium
+
+    // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
+    // 2d:  mean_x_squared = 1/12 (v0^2 + v1^2 +v2^2 + v0*v1 + v0*v2 + v1*v2)
+    double mean_x_squared=0;
+    for(unsigned int i_node=0; i_node < ele->n_nodes(); i_node++ )
+        for(unsigned int j_node=0; j_node < ele->n_nodes(); j_node++ )
+        {
+            mean_x_squared += (i_node == j_node ? 2.0 : 1.0) / ( 6 * dim )   // multiply by 2 on diagonal
+                    * arma::dot( ele->node[i_node]->point(), ele->node[j_node]->point());
+        }
+
+    for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
+        arma::vec3 q_point = fe_values.point(i_point);
+
+        anal_sol.vector_value(q_point, analytical);
+        for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
+
+        // compute postprocesed pressure
+        diff = 0;
+        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
+            unsigned int oposite_node = (i_shape + dim) % (dim + 1);
+
+            diff += fluxes[ i_shape ] *
+                               (  arma::dot( q_point, q_point )/ 2
+                                - mean_x_squared / 2
+                                - arma::dot( q_point, ele->node[oposite_node]->point() )
+                                + arma::dot( ele->centre(), ele->node[oposite_node]->point() )
+                               );
+        }
+
+        diff = - resistance * diff / dim / ele->volume() + pressure_mean ;
+        diff = ( diff - analytical[0]);
+        pressure_diff += diff * diff * fe_values.JxW(i_point);
+
+
+        // velocity difference
+        flux_in_q_point.zeros();
+        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
+            flux_in_q_point += fluxes[ i_shape ]
+                              * result.fe_values.RT0_value( ele, q_point, i_shape )
+                              / ele->material->size;
+        }
+
+        flux_in_q_point -= anal_flux;
+        velocity_diff += dot(flux_in_q_point, flux_in_q_point) * fe_values.JxW(i_point);
+
+        // divergence diff
+        diff = 0;
+        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes[ i_shape ];
+        diff = ( diff / ele->volume() - analytical[4]);
+        divergence_diff += diff * diff * fe_values.JxW(i_point);
+
+    }
+
+
+    result.velocity_diff[ele.index()] = velocity_diff;
+    result.velocity_error[dim-1] += velocity_diff;
+
+    result.pressure_diff[ele.index()] = pressure_diff;
+    result.pressure_error[dim-1] += pressure_diff;
+
+    result.div_diff[ele.index()] = divergence_diff;
+    result.div_error[dim-1] += divergence_diff;
+
+}
+
+
+
+
+
+*/
+void DarcyFlowMHOutput::compute_l2_difference() {
+}
+/*
+
+    const unsigned int order = 4; // order of Gauss quadrature
+
+    // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
+    // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
+    FE_P_disc<0,1,3> fe_1d;
+    FE_P_disc<0,2,3> fe_2d;
+
+    QGauss<1> quad_1d( order );
+    QGauss<2> quad_2d( order );
+
+    MappingP1<1,3> mapp_1d;
+    MappingP1<2,3> mapp_2d;
+
+    FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values | update_quadrature_points);
+    FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
+
+    FunctionPython<3> anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
+    anal_sol_1d.set_python_function_from_file("analytical_module.py", "all_values_1d");
+
+    FunctionPython<3> anal_sol_2d(5);
+    anal_sol_2d.set_python_function_from_file("analytical_module.py", "all_values_2d");
+
+
+    static DiffData result;
+
+    result.pressure_diff.resize( mesh_->n_elements() );
+    result.velocity_diff.resize( mesh_->n_elements() );
+    result.div_diff.resize( mesh_->n_elements() );
+
+    result.pressure_error[0] = 0;
+    result.velocity_error[0] = 0;
+    result.div_error[0] = 0;
+    result.pressure_error[1] = 0;
+    result.velocity_error[1] = 0;
+    result.div_error[1] = 0;
+
+    result.ele_flux = &( ele_flux );
+
+    output_writer->register_elem_data("pressure_diff","0",result.pressure_diff);
+    output_writer->register_elem_data("velocity_diff","0",result.velocity_diff);
+    output_writer->register_elem_data("div_diff","0",result.div_diff);
+
+    unsigned int solution_size;
+    darcy_flow->get_solution_vector(result.solution, solution_size);
+
+    result.dh = &( darcy_flow->get_mh_dofhandler());
+
+    FOR_ELEMENTS( mesh_, ele) {
+        switch (ele->dim()) {
+        case 1:
+            l2_diff_local<1>( ele, fe_values_1d, anal_sol_1d, result);
+            break;
+        case 2:
+            l2_diff_local<2>( ele, fe_values_2d, anal_sol_2d, result);
+            break;
+        }
+    }
+
+    xprintf(Msg,
+            "\n"
+            "pressure error 1d: %g\n"
+            "pressure error 2d: %g\n"
+            "velocity error 1d: %g\n"
+            "velocity error 2d: %g\n"
+            "div error: %g (1d) %g (2d)\n",
+            sqrt(result.pressure_error[0]), sqrt(result.pressure_error[1]),
+            sqrt(result.velocity_error[0]), sqrt(result.velocity_error[1]),
+            sqrt(result.div_error[0]), sqrt(result.div_error[1])
+            );
+}
+*/

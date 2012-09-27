@@ -18,7 +18,15 @@
 
 #include "system/file_path.hh"
 
+    enum SelectionToRead {
+        value_a = 0,
+        value_b = 1,
+        value_c = 2
+    };
+
+
 class InputInterfaceTest : public testing::Test {
+public:
 
 
 protected:
@@ -30,6 +38,12 @@ protected:
 
         abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
         abstr_rec_ptr->finish();
+
+        selection_ptr = new Selection("NameOfSelectionType");
+        selection_ptr->add_value(value_a, "A", "");
+        selection_ptr->add_value(value_b, "B", "");
+        selection_ptr->add_value(value_c, "C", "");
+        selection_ptr->finish();
 
         desc_a_ptr = new Record("DescendantA","");
         desc_a_ptr->derive_from(*abstr_rec_ptr);
@@ -70,6 +84,7 @@ protected:
         main->declare_key("file_output", FileName::output(),Default::obligatory(), "description");
         main->declare_key("file_input", FileName::input(),Default::obligatory(), "description");
         main->declare_key("optional_int", Integer(), "");
+        main->declare_key("selection", *selection_ptr, "");
         main->finish();
         }
 
@@ -104,7 +119,7 @@ protected:
             desc_b->new_item(2,new StorageDouble(3.45));
 
 
-            StorageArray * main_array = new StorageArray(12);
+            StorageArray * main_array = new StorageArray(13);
             main_array->new_item(0, sub_rec->deep_copy());
             main_array->new_item(1, sub_array_int->deep_copy());
             main_array->new_item(2, sub_array_sub_rec->deep_copy());
@@ -117,7 +132,9 @@ protected:
             main_array->new_item(9, new StorageString("output_subdir/output.vtk"));
             main_array->new_item(10, new StorageString("input/${INPUT}/input_subdir/input.in"));
             main_array->new_item(11, new StorageNull());
+            main_array->new_item(12, new StorageInt(1));
 
+            // check copy constructors and pimpl implementation of Record
             delete sub_array_int;
             delete sub_rec;
             delete sub_array_sub_rec;
@@ -134,6 +151,7 @@ protected:
         delete desc_a_ptr;
         delete desc_b_ptr;
         delete abstr_rec_ptr;
+        delete selection_ptr;
     };
 
     ::Input::Type::Record *main;
@@ -142,6 +160,8 @@ protected:
     ::Input::Type::Record *desc_a_ptr;
     ::Input::Type::Record *desc_b_ptr;
     ::Input::Type::AbstractRecord *abstr_rec_ptr;
+
+    ::Input::Type::Selection *selection_ptr;
 };
 
 TEST_F(InputInterfaceTest, RecordVal) {
@@ -174,6 +194,8 @@ TEST_F(InputInterfaceTest, RecordVal) {
     EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.val<FilePath>("file_output") );
     EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 
+    // read enum from selection
+    EXPECT_EQ( value_b, record.val<SelectionToRead>("selection") );
 
     // read record
     Record sub_record( record.val<Record>("some_record") );

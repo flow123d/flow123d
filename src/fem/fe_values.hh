@@ -43,7 +43,7 @@ template<unsigned int dim, unsigned int spacedim> class Mapping;
 
 struct FEInternalData;
 struct MappingInternalData;
-class Side;
+class SideIter;
 
 
 
@@ -306,6 +306,10 @@ public:
      */
     const unsigned int n_dofs();
 
+    /**
+     * @brief Returns the quadrature in use.
+     */
+    const Quadrature<dim> * get_quadrature() const;
 
 protected:
 
