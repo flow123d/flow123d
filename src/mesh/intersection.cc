@@ -8,7 +8,6 @@
 #include "mesh/intersection.hh"
 #include "mesh/mesh.h"
 
-#include "xio.h"
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
 #include <armadillo>
@@ -16,7 +15,7 @@
 // inicializovat objekt, cist zbytek tokenu z tok a naplnit map a shift pro master a slave
 // viz dokumentace k Armadillu
 Intersection::Intersection(unsigned int dimension, ElementFullIter ele_master,
-		ElementFullIter ele_slave, tokenizer<boost::char_separator<char> >::iterator &tok) :
+		ElementFullIter ele_slave, boost::tokenizer<boost::char_separator<char> >::iterator &tok) :
 	dim(dimension),
 	master(ele_master), slave(ele_slave),
 	master_shift(master->dim()), slave_shift(slave->dim()),
@@ -56,7 +55,9 @@ unsigned int Intersection::slave_dim()
 
 
 void Intersection::read_intersection_point(arma::vec &vec1, arma::vec &vec2,
-		tokenizer<boost::char_separator<char> >::iterator &tok) {
+		boost::tokenizer<boost::char_separator<char> >::iterator &tok) {
+
+using boost::lexical_cast;
 
 	// pocet lokalnich souradnic 1. elementu
 	int n_insec_points_el1 = lexical_cast<int> (*tok);

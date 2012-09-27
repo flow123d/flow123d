@@ -37,6 +37,10 @@
 #include <vector>
 #include "io/output.h"
 
+#include "input/input_type.hh"
+#include "input/accessors.hh"
+
+
 class DarcyFlowMH;
 class OutputTime;
 
@@ -58,8 +62,10 @@ class OutputTime;
  */
 class DarcyFlowMHOutput {
 public:
-    DarcyFlowMHOutput(DarcyFlowMH *flow) ;
+    DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
+
+    static Input::Type::Record get_input_type();
 
     void postprocess();
 

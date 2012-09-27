@@ -30,12 +30,14 @@
 #ifndef OUTPUT_VTK_HH_
 #define OUTPUT_VTK_HH_
 
+#include "input/accessors.hh"
+
 #include "io/output.h"
 
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputVTK {
+class OutputVTK : public OutputFormat {
 
 public:
     /**
@@ -48,12 +50,23 @@ public:
      * \brief The constructor of this class. The head of file is written, when
      * constructor is called
      */
+    OutputVTK(OutputTime *_output_time, const Input::Record &in_rec);
+
+    /**
+     * \brief The constructor of this class. The head of file is written, when
+     * constructor is called
+     */
     OutputVTK(OutputTime *_output_time);
 
     /**
      * \brief The destructor of this class. It writes tail of the file too.
      */
     ~OutputVTK();
+
+    /**
+     * \brief The definition of input record for vtk file format
+     */
+    static Input::Type::Record & get_input_type();
 
     /**
      * \brief This function output data to serial VTK file format (single .vtu)
@@ -79,6 +92,22 @@ public:
     int write_tail(void);
 
 private:
+    /**
+     * \brief The declaration enumeration used for variant of file VTK format
+     */
+    typedef enum Variant {
+    	VARIANT_ASCII  = 1,
+    	VARIANT_BINARY = 2
+    } Variant;
+
+    /**
+     * \brief The declaration of enumeration used for type of compression
+     * used in file format
+     */
+    typedef enum Compression {
+    	COMPRESSION_NONE = 1,
+    	COMPRESSION_GZIP = 2
+    } Compression;
 
     /**
      * \brief The pointer at Output

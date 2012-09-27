@@ -1,0 +1,158 @@
+{
+  
+  problem = {
+    TYPE = "SequentialCoupling", 
+    
+    description = "test1", 
+    
+    time = { end_time = 5.0 },
+    
+    material = "${INPUT}/test1.mtr",              
+    mesh = {
+      mesh_file = "${INPUT}/test1.msh", 
+      neighbouring = "${INPUT}/test1.ngh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH", 
+     
+      balance_output = "water_balance.out", 
+      boundary_file = "${INPUT}/test1.fbc", 
+      n_schurs = 2, 
+      output = {
+        save_step = 0.1,
+        output_stream = {
+          name = "flow_output_stream",
+          file = "flow123.pvd",
+          format = {
+            TYPE = "vtk",
+            variant = "ascii",
+            compression = "none",
+            parallel = false
+          }
+#          file = "flow123.msh",
+#          format = {
+#            TYPE = "gmsh",
+#            variant = "ascii"
+#          }
+        },
+        pressure_p0 = {REF:"/darcy_flow_output"}, 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      }
+    } 
+    
+
+  },
+
+pause_after_run = false
+  
+#  system = {
+#    output_streams = [
+#      {
+#        file = "./test1.msh", 
+#        format = "gmsh", 
+#        name = "flow_output_stream"
+#      }, 
+#      {
+#        name = "transport_output_stream"
+#      }
+#    ], 
+#    output_streams_save = [
+#      {
+#        file = "transport.msh"
+#      }
+#    ], 
+#    pause_after_run = false
+#  }
+  
+darcy_flow_output = "./test1.pvd" 
+#{
+#  file = "./test1.msh", 
+#  format = "gmsh"
+#}
+  
+  
+  
+  
+  
+#  zz_not_supported = {
+#    constants = {
+#      g = 9.81, 
+#      rho = 1000
+#    }, 
+#    density = {
+#      density_implicit = true, 
+#      density_max_iter = 21, 
+#      eps_iter = 0, 
+#      write_iterations = false
+#    }, 
+#    input = {
+#      file_type = 1
+#    }, 
+#    output = {
+#      btc_elms = 80, 
+#      cross_section = false, 
+#      cs_params = [
+#        0.05, 
+#        2, 
+#        0, 
+#        0.05, 
+#        0, 
+#        0, 
+#        0.005
+#      ], 
+#      fcs_params = [
+#        1, 
+#        0, 
+#        0, 
+#        -11, 
+#        1
+#      ], 
+#      output_elm_type = 1, 
+#      output_file_type = "1", 
+#      pos_set_view = "", 
+#      pos_view_params = [
+#        0, 
+#        0, 
+#        0, 
+#        0.8, 
+#        0.8, 
+#        0.8, 
+#        0.224, 
+#        0.224
+#      ], 
+#      specify_elm_type = false, 
+#      write_ftrans_out = "False"
+#    }, 
+#    "solver parameters" = {
+#      a_tol = 1e-11, 
+#      be_tol = 1e-16, 
+#      ilu_cpiv = 0, 
+#      ilu_droptol = 1e-05, 
+#      ilu_dskip = 0, 
+#      ilu_lfil = -1, 
+#      ilu_milu = 0, 
+#      max_it = 100, 
+#      precond = "ilu", 
+#      r_tol = 1e-19, 
+#      restart = 20, 
+#      scaling = "mc29_30", 
+#      sor_omega = 1.0, 
+#      stop_crit = "backerr", 
+#      stop_test = 1
+#    }, 
+#    transport_save = {
+#      substances_density_scales = [
+#        1, 
+#        1, 
+#        1
+#      ]
+#    }
+#  }
+}

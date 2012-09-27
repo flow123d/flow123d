@@ -41,6 +41,9 @@
 #include "mesh/boundaries.h"
 #include "mesh/intersection.hh"
 
+#include "input/input_type.hh"
+#include "input/accessors.hh"
+
 
 #define ELM  0
 #define BC  1
@@ -83,18 +86,26 @@
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
+
+class BoundarySegment {
+public:
+    static Input::Type::Record get_input_type();
+};
+
 //=============================================================================
 // STRUCTURE OF THE MESH
 //=============================================================================
 
 class Mesh {
-private:
-
 public:
+    static Input::Type::Record get_input_type();
+
+    Input::Record in_record_;
+
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 
-    Mesh();
+    Mesh(Input::Record in_record);
 
     inline unsigned int n_elements() const {
         return element.size();
@@ -108,9 +119,9 @@ public:
         return edge.size();
     }
 
-    void read_intersections(string file_name);
+    void read_intersections();
     void make_intersec_elements();
-    void make_edge_list_from_neigh();
+    // void make_edge_list_from_neigh();
 
     unsigned int n_sides();
 

@@ -30,6 +30,7 @@
 #include "system/system.hh"
 #include "time_governor.hh"
 #include "time_marks.hh"
+#include "input/accessors.hh"
 
 #include <limits>
 
@@ -42,31 +43,63 @@ const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
  * TODO:
  * TimeGovernor should be constructed from JSON object.
  */
-TimeGovernor::TimeGovernor(const double init_time,const  double end_time, TimeMarks &marks,const TimeMark::Type fixed_time_mask)
+TimeGovernor::TimeGovernor(const Input::Record &input, TimeMarks &marks, const TimeMark::Type fixed_time_mask)
 : time_level(0),
-  time(init_time),
-  end_of_fixed_dt_interval(time),
-  end_time_(end_time),
   time_step(time_step_lower_bound),
   last_time_step(time_step_lower_bound),
   fixed_dt(0.0),
   dt_changed(true),
-  time_step_constrain(end_time_ - time),
   max_time_step(inf_time),
   min_time_step(time_step_lower_bound),
   time_marks(&marks),
   fixed_time_mark_mask(fixed_time_mask | time_marks->type_fixed_time())
 {
+    time  =  input.val<double>("start_time");
+    end_of_fixed_dt_interval=time;
+    end_time_  =  input.val<double>("end_time");
+    time_step_constrain = end_time_ - time;
 
-    if (end_time_ != inf_time)  max_time_step=end_time_ - init_time;
+
+    if (end_time_ != inf_time)  max_time_step=end_time_ - time;
 
     time_step=max_time_step;
 
-    time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
+    time_marks->add( TimeMark(time, fixed_time_mark_mask) );
     time_marks->add( TimeMark(end_time_, fixed_time_mark_mask) );
+
+    Input::Iterator<double> it = input.find<double>("init_dt");
+    if (it) {
+        time_step = *it;
+        max_time_step = time_step;
+        min_time_step = time_step;
+    }
+    max_time_step = input.val<double>("max_dt", max_time_step);
+    min_time_step = input.val<double>("min_dt", min_time_step);
 
     last_time_step=0.0;
 }
+
+
+// this is get directly form darcy flow staedy,
+// TODO: think about generalization
+TimeGovernor::TimeGovernor(TimeMarks &marks)
+: time_level(0),
+  time(-1.0),
+  end_of_fixed_dt_interval(time),
+  end_time_(inf_time),
+  time_step(inf_time),
+  last_time_step(0.0),
+  fixed_dt(0.0),
+  dt_changed(true),
+  time_step_constrain(inf_time),
+  max_time_step(inf_time),
+  min_time_step(time_step_lower_bound),
+  time_marks(& marks),
+  fixed_time_mark_mask(0x0)
+
+{}
+
+
 
 TimeGovernor::TimeGovernor(double init_time)
 : time_level(0),
@@ -85,6 +118,31 @@ TimeGovernor::TimeGovernor(double init_time)
 
 {}
 
+
+Input::Type::Record &TimeGovernor::get_input_type() {
+    using namespace Input::Type;
+    static Record rec("TimeGovernor",
+            "Setting of the simulation time. (can be specific to one eqaution)");
+
+    if (! rec.is_finished() ) {
+        rec.declare_key("start_time", Double(), Default("0.0"),
+                "Start time of the simulation.");
+        rec.declare_key("end_time", Double(), Default::obligatory(),
+                "End time of the simulation.");
+        rec.declare_key("init_dt", Double(0.0), Default::optional(),
+                                    "Initial guess for the time step. The time step is fixed if "
+                                    "hard time step limits are not set.");
+        rec.declare_key("min_dt", Double(0.0), Default::read_time("Machine precision or 'init_dt' if specified"),
+                                    "Hard lower limit for the time step.");
+        rec.declare_key("max_dt", Double(0.0), Default::read_time("Whole time of the simulation or 'init_dt' if specified"),
+                                    "Hard upper limit for the time step.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
+
 void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
 {
     ASSERT( min_dt >= 0.0,"Minimal time step has to be greater than ZERO\n");
@@ -93,6 +151,8 @@ void TimeGovernor::set_permanent_constrain( double min_dt, double max_dt)
     min_time_step=max(min_dt, time_step_lower_bound);
     max_time_step=min(max_dt, end_time_-time);
 }
+
+
 
 void TimeGovernor::set_constrain(double dt_constrain)
 {
@@ -131,6 +191,8 @@ double TimeGovernor::estimate_dt() const {
 
     return step_estimate;
 }
+
+
 
 void TimeGovernor::next_time()
 {

@@ -32,7 +32,7 @@
 
 #include "transport_operator_splitting.hh"
 #include "la/linsys.hh"
-#include "mh_dofhandler.hh"
+#include "flow/mh_dofhandler.hh"
 
 class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
@@ -85,7 +85,12 @@ public:
      * @param init_mesh			Computational mesh.
      * @param material_database	Material database.
      */
-    TransportDG(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
+    TransportDG(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+
+    /**
+     * @brief Declare input record type for the equation TransportDG.
+     */
+    static Input::Type::Record &get_input_type();
 
     /**
      * @brief Computes the solution in one time instant.
@@ -308,12 +313,8 @@ private:
 	/**
 	 * @brief Reads the initial condition.
 	 */
-	void read_initial_condition();
+	void read_initial_condition(string file_name);
 
-	/**
-	 * @brief Reads the names of transported substances.
-	 */
-	void read_subst_names();
 
 
 
@@ -441,6 +442,8 @@ private:
 
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
+
+    const double tol_switch_dirichlet_neumann;
 
     const MH_DofHandler * mh_dh;
 

@@ -2,14 +2,99 @@
 	#define interfaceH
 
 #include "mesh/elements.h"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include <string.h>
+#include <./input/input_type.hh>
 
 class Distribution;
+
+
+enum type_of_reaction{kinetics = 1, slow_kinetics, equilibrium};
+
+class Specie
+{
+	public:
+	/*
+	* Static method for new input data types input
+	*/
+	static Input::Type::Record &get_input_type();
+	/*
+	* Constructor.
+	*/
+	Specie();
+	private:
+	/*
+	* Identifier.
+	*/
+	int id;
+	/*
+	* Electrical charge.
+	*/
+	double el_charge;
+	/*
+	* Partial Gib's energy.
+	*/
+	double dGf;
+	/*
+	* Partial free enthalpy.
+	*/
+	double dHf;
+	/*
+	* Molar mass.
+	*/
+	double molar_mass;
+	/*
+	* Activity.
+	*/
+	double activity;
+};
+
+class General_reaction
+{
+	public:
+	/*
+	* Static method for new input data types input
+	*/
+	static Input::Type::Record &get_input_type();
+	/*
+	 * Constructor.
+	 */
+	General_reaction();
+	private:
+	/*
+	* Specification of type of reaction.
+	*/
+	type_of_reaction type;
+	/*
+	* Defines species participating reaction.
+	*/
+	Specie *species;
+	/*
+	* Stechiometric coeficients describing reaction under consideration.
+	*/
+	int *stoichiometry;
+	/*
+	* Reaction orders of all the reactants.
+	*/
+	double *order_of_reaction;
+	/*
+	* Kinetic constant describing reaction rate.
+	*/
+	double kinetic_constant;
+	/*
+	* Appropriate constant describing chemical equilibrium.
+	*/
+	double equilibrim_constant;
+
+};
 
 class Semchem_interface
 {
 	public:
+		/*
+		* Static method for new input data types input
+		*/
+		static Input::Type::AbstractRecord &get_input_type();
 		/**
 		*	Semchem interface is the tool to call a simulation of chemical reactions as a part of transport model. timeStep defines the length of time step for simulation of chemical reactions. nrOfSpecies is the number of transported species. dualPorosity defines type of porosity in examinated soil.
 		*/

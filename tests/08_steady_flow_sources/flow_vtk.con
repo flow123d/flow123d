@@ -1,0 +1,74 @@
+{
+  COMMENT_Stop_time = "1275", 
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "test1", 
+    material = "./input/test008.mtr", 
+    mesh = {
+      mesh_file = "./input/test008.msh", 
+      neighbouring = "./input/test008.ngh"
+    }, 
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/test008.fbc", 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      }, 
+      sources_formula = "2*(1-x^2)+2*(1-y^2)"
+    }, 
+    save_step = 0.1, 
+    secondary_equation = null, 
+    secondary_equation_save = {
+      output = {
+        mobile_p0 = "transport_output_stream"
+      }
+    }, 
+    time = {
+      end_time = 5.0
+    }
+  }, 
+  system = {
+    output_streams = [
+      {
+        file = "./flow.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }, 
+  zz_not_supported = {
+    density = {
+      density_implicit = true, 
+      density_max_iter = 21, 
+      eps_iter = 0, 
+      write_iterations = false
+    }, 
+    input = {
+      file_type = 1
+    }, 
+    output = {
+      output_file_type = "1"
+    }
+  }
+}

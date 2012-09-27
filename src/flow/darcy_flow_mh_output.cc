@@ -40,20 +40,29 @@
 #include "io/output.h"
 
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
+
+
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 : darcy_flow(flow), mesh_(&darcy_flow->mesh()),
   ele_flux(mesh_->n_elements(),std::vector<double>(3,0.0)),
   balance_output_file(NULL),raw_output_file(NULL)
 {
+    F_ENTRY;
+    using namespace Input;
+
     // setup output
-    string output_file = IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "Output_file", "\\"));
-    DBGMSG("create output\n");
-    output_writer = new OutputTime(mesh_, output_file);
+    output_writer = new OutputTime(mesh_, Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
     node_pressure.resize(mesh_->node_vector.size());
-    output_piezo_head=OptGetBool("Output","output_piezo_head","No");
+
+    {
+        Iterator<string> it = in_rec.find<string>("piezo_head_p0");
+        output_piezo_head=bool(it);
+
+        DBGMSG("piezo set: %d \n", output_piezo_head);
+    }
 
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
@@ -63,22 +72,52 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow)
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time();
-    marks.add_time_marks(0.0, OptGetDbl("Global", "Save_step", "1.0"), darcy_flow->time().end_time(), output_mark_type );
+    marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
+            darcy_flow->time().end_time(), output_mark_type );
     DBGMSG("end create output\n");
 
 
     // temporary solution for balance output
-    std::string balance_output_fname =
-            IONameHandler::get_instance()->get_output_file_name(OptGetFileName("Output", "balance_output", "water_balance"));
-    balance_output_file = xfopen(balance_output_fname.c_str(), "wt");
+    balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
     // optionally open raw output file
-    std::string raw_output_fname=OptGetFileName("Output","raw_flow_output","//");
-    if (raw_output_fname!= "//") {
-        raw_output_fname=IONameHandler::get_instance()->get_output_file_name(raw_output_fname);
-        raw_output_file = xfopen(raw_output_fname.c_str(), "wt");
+    Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
+
+    if (it) {
+        cout << "raw out: " << string(*it) << endl;
+        raw_output_file = xfopen(*it, "wt");
     }
 
+}
+
+Input::Type::Record DarcyFlowMHOutput::get_input_type() {
+        using namespace Input::Type;
+        static Record rec("DarcyMHOutput", "Parameters of MH output.");
+
+        if (!rec.is_finished()) {
+
+            rec.declare_key("save_step", Double(0.0), Default("1.0"),
+                    "Regular step between MH outputs.");
+            rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                    "Parameters of output stream.");
+            rec.declare_key("velocity_p0", String(),
+                    "Output stream for P0 approximation of the velocity field.");
+            rec.declare_key("pressure_p0", String(),
+                    "Output stream for P0 approximation of the pressure field.");
+            rec.declare_key("pressure_p1", String(),
+                    "Output stream for P1 approximation of the pressure field.");
+            rec.declare_key("piezo_head_p0", String(),
+                    "Output stream for P0 approximation of the piezometric head field.");
+
+            rec.declare_key("balance_output", FileName::output(), Default("water_balance"),
+                    "Output file for water balance table.");
+
+            rec.declare_key("raw_flow_output", FileName::output(), Default::optional(),
+                    "Output file with raw data form MH module.");
+
+            rec.finish();
+        }
+        return rec;
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
@@ -114,7 +153,7 @@ void DarcyFlowMHOutput::postprocess() {
 
 
 //    make_neighbour_flux();
-    water_balance();
+//    water_balance();
 }
 
 void DarcyFlowMHOutput::output()
@@ -135,7 +174,7 @@ void DarcyFlowMHOutput::output()
 
         water_balance();
 
-        compute_l2_difference();
+        //compute_l2_difference();
 
         result = output_writer->register_node_data
                 ("pressure_nodes","L", node_pressure);
@@ -703,12 +742,13 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     xfprintf( raw_output_file, "$EndFlowField\n\n" );
 }
 
-
+/*
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
 #include "functions/function_python.hh"
+*/
 
 /*
 * Calculate approximation of L2 norm for:
@@ -716,7 +756,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
  * 2) difference between RT velocities and analytical solution
  * 3) difference of divergence
  * */
-
+/*
 struct DiffData {
     double pressure_error[2], velocity_error[2], div_error[2];
     vector<double> pressure_diff;
@@ -822,8 +862,10 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const Funct
 
 
 
-
+*/
 void DarcyFlowMHOutput::compute_l2_difference() {
+}
+/*
 
     const unsigned int order = 4; // order of Gauss quadrature
 
@@ -895,3 +937,4 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             sqrt(result.div_error[0]), sqrt(result.div_error[1])
             );
 }
+*/

@@ -1,4 +1,4 @@
-INI_FILES="uloha.ini uloha_LMH.ini"
+INI_FILES="flow_MH.con flow_LMH.con"
 NPROC="1"
 FLOW_PARAMS="-o output"
 

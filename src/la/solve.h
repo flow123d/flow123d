@@ -40,6 +40,10 @@
  * - nastaveni parametru na volajici strane (zavisle na problemu)
  */
 
+#include "input/input_type.hh"
+#include "input/accessors.hh"
+#include "la/linsys.hh"
+
 #ifndef SOLVE_H
 #define SOLVE_H
 
@@ -84,7 +88,16 @@ typedef enum {
 /*!**************************************************************
  *  Solver structure - no matrix, but parameters ...
  **************************************************************/
-typedef struct Solver {
+struct  Solver {
+public:
+    static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::Record &get_input_type_petsc();
+    static Input::Type::Record &get_input_type_bddc();
+
+    int some_func();
+
+
+
 	SolverType		type;	  		//!< type of the solver
 	char	*name;   		//!< Name of the solver
 	char	*executable;  	//!< full path to the external solver executable file
@@ -93,7 +106,7 @@ typedef struct Solver {
 	char	manual_run;		//!< Run solver manualy ?
 	char	use_ctrl_file;	//!< User provided control file ?
 	const char	*ctrl_file;		//!< Name of control file
-	char    *params; 		//!< Solver's comamnd line parameters
+	string  params; 		//!< Solver's comamnd line parameters
 	char    keep_files;   	//!< Keep or remove solver files?
 	int     use_last_sol;   //!< Use last known solution? (should be in water module)
 
@@ -104,11 +117,11 @@ typedef struct Solver {
 	double          a_tol;           //!< Absolute tolerance
 	ISOL_params		*isol_params;	 //!< optional ISOL parameters
 	//@}
-} Solver;
+};
 
 // public functions
-void solver_init( struct Solver *solver);
-void solve_system(struct Solver *solver, LinSys *lin_system);
+void solver_init( Solver*, Input::AbstractRecord in_rec);
+void solve_system( Solver*, LinSys *lin_system);
 
 #endif
 //-----------------------------------------------------------------------------

@@ -32,7 +32,7 @@
 
 #include <petscmat.h>
 #include "mesh/mesh.h"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 
 
 /**
@@ -50,7 +50,7 @@ public:
 	 * @param mesh The mesh.
 	 * @param n_subst Number of substances.
 	 */
-	TransportBC(Mesh *mesh, int n_subst);
+	TransportBC(Mesh *mesh, int n_subst, const Input::Record &in_rec);
 
 	/// Destructor.
 	~TransportBC();

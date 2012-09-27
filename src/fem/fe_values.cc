@@ -105,8 +105,20 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
 template<unsigned int dim,unsigned int spacedim> inline
 FEValuesBase<dim,spacedim>::FEValuesBase()
+: mapping(NULL), quadrature(NULL), fe(NULL), mapping_data(NULL), fe_data(NULL)
 {
 }
+
+
+
+template<unsigned int dim,unsigned int spacedim> inline
+FEValuesBase<dim,spacedim>::~FEValuesBase() {
+    DBGMSG(" FEValuesBase, mapping: %p\n",mapping_data);
+    if (mapping_data) delete mapping_data;
+    if (fe_data) delete fe_data;
+}
+
+
 
 template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
@@ -122,6 +134,8 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     // add flags required by the finite element or mapping
     data.allocate(quadrature->size(), update_each(_flags), fe->is_scalar());
 }
+
+
 
 template<unsigned int dim, unsigned int spacedim> inline
 UpdateFlags FEValuesBase<dim,spacedim>::update_each(UpdateFlags flags)
@@ -210,6 +224,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
          Quadrature<dim> &_quadrature,
          FiniteElement<dim,spacedim> &_fe,
          UpdateFlags _flags)
+:FEValuesBase<dim, spacedim>()
 {
     this->allocate(_mapping, _quadrature, _fe, _flags);
 
@@ -217,6 +232,8 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
     this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
     this->fe_data = this->fe->initialize(*this->quadrature, this->data.update_flags);
 }
+
+
 
 template<unsigned int dim,unsigned int spacedim> inline
 void FEValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell)
@@ -248,21 +265,46 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
                                  Quadrature<dim-1> & _sub_quadrature,
                                  FiniteElement<dim,spacedim> & _fe,
                                  const UpdateFlags _flags)
+:FEValuesBase<dim,spacedim>()
 {
     sub_quadrature = &_sub_quadrature;
     Quadrature<dim> *q = new Quadrature<dim>(_sub_quadrature.size());
     this->allocate(_mapping, *q, _fe, _flags);
+
+    // compute the mapping and finite element data
+    this->mapping_data = this->mapping->initialize(* (this->quadrature), this->data.update_flags);
+    this->fe_data = this->fe->initialize(* (this->quadrature), this->data.update_flags);
+
+
 }
+
+
 
 template<unsigned int dim,unsigned int spacedim>
 FESideValues<dim,spacedim>::~FESideValues()
 {
+    //DBGMSG(" FESideValues, mapping: %p\n",this->mapping_data);
+    //if (this->mapping_data) delete this->mapping_data;
+    //if (this->fe_data) delete this->fe_data;
+
     // Since quadrature is an auxiliary internal variable allocated
     // by the constructor, it must be destroyed here.
     delete this->quadrature;
 }
 
-
+/*
+ * TODO:
+ *
+ * 1) vytvorit tridu pro referencni elementy (ocislovani uzlu, sten, hran, vypocet normal)
+ * 2) upravit mapping->transform_subquadrature aby zavisela jen na lokalnim cislu steny
+ *    pro lepsi konzistenci radeji vracet vytvorenou kvadraturu jako posledni parametr
+ *
+ * 3) mit pole pro (quadrature, mapping_data, fe_data), predpocitano pro kazde lokalni cislo steny,
+ *    toto naplnit v konstruktoru, tim se zbavime opakovanych alokaci a predpocitavani
+ *
+ * 4) metody mapping->initialize a fe->initialize upravit tak, aby pouze plnily jiz predalokovane struktury.
+ *    Ty by se predali jako posledni parametr - pomoci reference.
+ */
 
 template<unsigned int dim,unsigned int spacedim> inline
 void FESideValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell,
@@ -274,8 +316,11 @@ void FESideValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellI
     this->mapping->transform_subquadrature(cell, *this->quadrature, *side, *sub_quadrature);
 
     // compute the mapping and finite element data
-    this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
-    this->fe_data = this->fe->initialize(*this->quadrature, this->data.update_flags);
+    delete this->mapping_data;
+    delete this->fe_data;
+    this->mapping_data = this->mapping->initialize(* (this->quadrature), this->data.update_flags);
+    this->fe_data = this->fe->initialize(* (this->quadrature), this->data.update_flags);
+
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     this->mapping->fill_fe_side_values(cell,

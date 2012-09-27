@@ -1,13 +1,12 @@
 #ifndef TRANSPORT_OPERATOR_SPLITTING_HH_
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
-#include "equation.hh"
-//#include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
-#include "semchem/semchem_interface.hh"
+#include "coupling/equation.hh"
+
 #include <limits>
 #include "io/output.h"
 #include "flow/mh_dofhandler.hh"
+
 
 /// external types:
 //class LinSys;
@@ -16,8 +15,15 @@ class Mesh;
 //class SchurComplement;
 //class Distribution;
 //class SparseGraph;
+
+class Reaction;
+class Linear_reaction;
+//class Pade_approximant;
+class Semchem_interface;
 class ConvectionTransport;
 class MaterialDatabase;
+
+
 /**
  * @brief Specification of transport model interface.
  *
@@ -26,9 +32,12 @@ class MaterialDatabase;
  */
 class TransportBase : public EquationBase{
 public:
-    TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-    : EquationBase(marks, mesh, mat_base), mh_dh(NULL)
+    TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
+    : EquationBase(marks, mesh, mat_base, in_rec ), mh_dh(NULL)
     {}
+
+    static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::Record & get_input_type_output_record();
 
     /**
      * This method takes sequantial PETSc vector of side velocities and update
@@ -52,7 +61,7 @@ public:
 class TransportNothing : public TransportBase {
 public:
     TransportNothing(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : TransportBase(marks, mesh_in, mat_base_in)
+    : TransportBase(marks, mesh_in, mat_base_in, Input::Record() )
     {
         // make module solved for ever
         time_=new TimeGovernor();
@@ -79,8 +88,18 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
+	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
     virtual ~TransportOperatorSplitting();
+
+    /**
+     * @brief Declare input record type for the equation TransportOperatorSplittiong.
+     *
+     * TODO: The question is if this should be a general coupling class
+     * (e.g. allow coupling TranportDG with reactions even if it is not good idea for numerical reasons.)
+     * To make this a coupling class we should modify all main input files for transport problems.
+     *
+     */
+    static Input::Type::Record &get_input_type();
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
 	virtual void update_solution();
@@ -97,7 +116,7 @@ protected:
 private:
 
     ConvectionTransport *convection;
-    Reaction *decayRad; //Linear_reaction *decayRad;
+    Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     Semchem_interface *Semchem_reactions;
     //int steps;
     OutputTime *field_output;

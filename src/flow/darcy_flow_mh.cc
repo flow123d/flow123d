@@ -36,27 +36,83 @@
 #include "petscerror.h"
 #include <armadillo>
 
+
 #include "system/system.hh"
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "mesh/intersection.hh"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 #include "la/linsys.hh"
 #include "la/solve.h"
 #include "la/schur.hh"
 #include "la/sparse_graph.hh"
+#include "la/local_to_global_map.hh"
 #include "field_p0.hh"
 
-
+#include "system/file_path.hh"
 #include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 
+#include "flow/darcy_flow_mh_output.hh"
 
 #include <limits>
 #include <set>
 #include <vector>
 #include <iostream>
 #include <iterator>
+
+Input::Type::Selection & DarcyFlowMH::get_mh_mortar_selection() {
+    using namespace Input::Type;
+    static Selection sel("MH_MortarMethod");
+
+    if (! sel.is_finished()) {
+        sel.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.");
+        sel.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.");
+        sel.add_value(MortarP1, "P1", "Mortar space: P1 on intersections, using non-conforming pressures.");
+        sel.finish();
+    }
+    return sel;
+}
+
+Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
+{
+    using namespace Input::Type;
+    static AbstractRecord rec("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        // declare keys common to all DarcyFlow classes
+
+        rec.declare_key("n_schurs", Integer(0,2), Default("2"),
+                "Number of Schur complements to perform when solving MH sytem.");
+        rec.declare_key("sources_file", FileName::input(),
+                "File with water source field.");
+        rec.declare_key("sources_formula", String(),
+                "Formula to determine the source field.");
+        rec.declare_key("boundary_file", FileName::input(),Default::obligatory(),
+                "File with boundary conditions for MH solver.");
+        rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
+                "Linear solver for MH problem.");
+        rec.declare_key("output", DarcyFlowMHOutput::get_input_type(), Default::obligatory(),
+                "Parameters of output form MH module.");
+        rec.declare_key("mortar_method", get_mh_mortar_selection(), Default("None"),
+                "Method for coupling Darcy flow between dimensions." );
+        rec.declare_key("mortar_sigma", Double(0.0), Default("1.0"),
+                "Conductivity between dimensions." );
+        rec.finish();
+
+        DarcyFlowMH_Steady::get_input_type();
+        DarcyFlowMH_Unsteady::get_input_type();
+        DarcyFlowLMH_Unsteady::get_input_type();
+
+        rec.no_more_descendants();
+    }
+    return rec;
+}
+
+
+
+
+
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
 // - do it in parallel:
@@ -69,21 +125,24 @@
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in)
-: DarcyFlowMH(marks, mesh_in, mat_base_in)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
+: DarcyFlowMH(marks, mesh_in, mat_base_in, in_rec)
 
 {
+    using namespace Input;
+    F_ENTRY;
+
     int ierr;
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
-    n_schur_compls = OptGetInt("Solver", "NSchurs", "2");
+    n_schur_compls = in_rec.val<int>("n_schurs");
     if ((unsigned int) n_schur_compls > 2) {
         xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
         n_schur_compls = 2;
     }
 
     solver = new (Solver);
-    solver_init(solver);
+    solver_init(solver, in_rec.val<AbstractRecord>("solver"));
 
     solution = NULL;
     schur0   = NULL;
@@ -92,26 +151,35 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     IA1      = NULL;
     IA2      = NULL;
 
-    string sources_fname = OptGetFileName("Input", "Sources", "//");
-    if (sources_fname != "//") {
+    Iterator<FilePath> it = in_rec.find<FilePath>("sources_file");
+    if (it) {
         sources= new FieldP0<double>(mesh_);
-        sources->read_field(IONameHandler::get_instance()->get_input_file_name(sources_fname), string("$Sources"));
+        sources->read_field(*it,string("$Sources"));
     }
 
-    string sources_formula = OptGetStr("Input", "sources_formula","//");
-    if (sources_formula!= "//") {
+    Iterator<string> it_f = in_rec.find<string>("sources_formula");
+    if (it_f) {
         sources= new FieldP0<double>(mesh_);
-        sources->setup_from_function(sources_formula);
+        sources->setup_from_function(*it_f);
     }
 
     // time governor
-    time_=new TimeGovernor(-1, TimeGovernor::inf_time, *time_marks);
+    time_=new TimeGovernor(marks);
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
     ierr += MPI_Comm_size(PETSC_COMM_WORLD, &(np));
     if (ierr)
         xprintf(Err, "Some error in MPI.\n");
+
+    read_boundary(mesh_, in_rec.val<FilePath>("boundary_file") );
+
+    mortar_method_= in_rec.val<MortarMethod>("mortar_method");
+    if (mortar_method_ != NoMortar) {
+        mesh_->read_intersections();
+        mesh_->make_intersec_elements();
+        mortar_sigma_ = in_rec.val<double>("mortar_sigma");
+    }
 
 
     mh_dh.reinit(mesh_);
@@ -161,6 +229,21 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     solution_changed_for_scatter=true;
 
 }
+
+Input::Type::Record & DarcyFlowMH_Steady::get_input_type()
+{
+    using namespace Input::Type;
+    static Record rec("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(DarcyFlowMH::get_input_type());
+        rec.finish();
+    }
+    return rec;
+}
+
+
+
 
 //=============================================================================
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
@@ -418,15 +501,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         //ls->rhs_set_value(edge_row, edg->f_rhs);
     }*/
 
-    mortar_sigma = OptGetDbl("Input", "mortar_sigma", "100.0");
-    string mortar_method = OptGetStr("Input", "mortar_method", "None");
-    if (mortar_method == "P0") {
-      coupling_P0_mortar_assembly();
-    } else if (mortar_method == "P1") {  
-     mh_abstract_assembly_intersection();
-    } else if (mortar_method == "None") {
-    } else {  
-      xprintf(UsrErr, "Wrong mortar_method.\n");
+
+    if (mortar_method_ == MortarP0) {
+        coupling_P0_mortar_assembly();
+    } else if (mortar_method_ == MortarP1) {
+        mh_abstract_assembly_intersection();
     }  
 
 
@@ -743,8 +822,7 @@ void DarcyFlowMH_Steady::make_schur0() {
     if (schur0 == NULL) { // create Linear System for MH matrix
 
         if (solver->type == PETSC_MATIS_SOLVER)
-            schur0 = new LinSys_MATIS( lsize, static_cast<int>( global_row_4_sub_row.size() ),
-                                       &(global_row_4_sub_row[0]) );
+            schur0 = new LinSys_MATIS( global_row_4_sub_row );
 
         else
             schur0 = new LinSys_MPIAIJ(lsize);
@@ -789,11 +867,6 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
     if ( IA2 != NULL ) MatDestroy( &(IA2) );
 
     delete schur0;
-
-    if (solver->type == PETSC_MATIS_SOLVER) {
-        global_row_4_sub_row.clear( );
-    }
-
     delete solver;
 }
 
@@ -817,7 +890,10 @@ void DarcyFlowMH_Steady::make_schur1() {
     // check type of LinSys
     if (schur0->type == LinSys::MAT_IS) {
         // create mapping for PETSc
-       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, side_ds->lsize(), side_id_4_loc, PETSC_COPY_VALUES, &map_side_local_to_global);
+
+       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,
+               side_ds->lsize(),
+               side_id_4_loc, PETSC_COPY_VALUES, &map_side_local_to_global);
         ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
        err = MatCreateIS(PETSC_COMM_WORLD,  side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA1);
@@ -1086,6 +1162,7 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     int np = edge_ds->np();
     int edge_shift[np], el_shift[np], side_shift[np];
     unsigned int rows_starts[np];
+
     int edge_n_id = mesh_->n_edges(),
             el_n_id = mesh_->element.size(),
             side_n_id = mesh_->n_sides();
@@ -1124,7 +1201,9 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     // make distribution of rows
     for (i = np - 1; i > 0; i--)
         rows_starts[i] -= rows_starts[i - 1];
-    rows_ds = new Distribution(rows_starts);
+
+
+    rows_ds = boost::make_shared<Distribution>(&(rows_starts[0]));
 }
 
 // ====================================================================================
@@ -1346,18 +1425,17 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     if (solver->type == PETSC_MATIS_SOLVER) {
         //xprintf(Msg,"Compute mapping of local subdomain rows to global rows.\n");
 
-        // initialize array
-        std::set<int> localDofSet;
+        global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);
 
+        //
         // ordering of dofs
         // for each subdomain:
         // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
-
         for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
             el = mesh_->element(el_4_loc[i_loc]);
             el_row = row_4_el[el_4_loc[i_loc]];
 
-            localDofSet.insert( el_row );
+            global_row_4_sub_row->insert( el_row );
 
             nsides = el->n_sides();
             for (i = 0; i < nsides; i++) {
@@ -1365,8 +1443,8 @@ void DarcyFlowMH_Steady::prepare_parallel() {
                 Edge *edg=el->side(i)->edge();
 		        edge_row = row_4_edge[mesh_->edge.index(edg)];
 
-                localDofSet.insert( side_row );
-                localDofSet.insert( edge_row );
+		        global_row_4_sub_row->insert( side_row );
+		        global_row_4_sub_row->insert( edge_row );
 
                 // edge neighbouring overlap
                 //if (edg->neigh_vb != NULL) {
@@ -1378,21 +1456,10 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             for (i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
                 // mark this edge
                 edge_row = row_4_edge[mesh_->edge.index(el->neigh_vb[i_neigh]->edge() )];
-                localDofSet.insert( edge_row );
+                global_row_4_sub_row->insert( edge_row );
             }
         }
-
-        // initialize mapping arrays in MATIS matrix
-        global_row_4_sub_row.resize( localDofSet.size(), -1 );
-        // copy set to vector
-        std::copy( localDofSet.begin(), localDofSet.end(), global_row_4_sub_row.begin() );
-
-        // check that the array was filled
-        ASSERT ( std::find( global_row_4_sub_row.begin(), global_row_4_sub_row.end(), -1 ) == global_row_4_sub_row.end(),
-                 "Array global_row_4_sub_row not filled properly." );
-
-        //debug print
-        //std::copy( global_row_4_sub_row.begin(), global_row_4_sub_row.end(), std::ostream_iterator<int>( std::cout, " " ) );
+        global_row_4_sub_row->finalize();
     }
 }
 
@@ -1423,25 +1490,39 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
+    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
     // time governor
-    time_=new TimeGovernor(
-            0.0,
-            OptGetDbl("Global", "Stop_time", "1.0"),
-            *time_marks
-            );
+    //time_=new TimeGovernor(
+    //        0.0,
+    //        OptGetDbl("Global", "Stop_time", "1.0"),
+    //        *time_marks
+    //        );
 
-    time_->set_permanent_constrain(
-            OptGetDbl("Global", "Time_step", "1.0"),
-            OptGetDbl("Global", "Time_step", "1.0")
-            );
     time_->fix_dt_until_mark();
     setup_time_term();
 
 }
+Input::Type::Record & DarcyFlowMH_Unsteady::get_input_type()
+{
+    using namespace Input::Type;
+    static Record rec("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(DarcyFlowMH::get_input_type());
+        rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+                                "Time governor setting for the unsteady Darcy flow model.");
+        rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
+                                        "File with initial condition for the pressure.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
 void DarcyFlowMH_Unsteady::setup_time_term() {
 
     // have created full steady linear system
@@ -1450,13 +1531,10 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
 
     // read inital condition
-
-    string file_name = IONameHandler::get_instance()->get_input_file_name(OptGetStr("Input", "Initial", "\\"));
-    INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
     VecZeroEntries(schur0->get_solution());
 
     FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-    initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
+    initial_pressure->read_field( input_record_.val<FilePath>("initial_file") ,string("$PressureHead"));
     double *local_sol = schur0->get_solution_array();
 
     PetscScalar *local_diagonal;
@@ -1513,25 +1591,44 @@ void DarcyFlowMH_Unsteady::modify_system() {
 // ========================
 // unsteady
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, const  Input::Record in_rec)
+    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
-    // time governor
-    time_=new TimeGovernor(
-            0.0,
-            OptGetDbl("Global", "Stop_time", "1.0"),
-            *time_marks
-            );
 
-    time_->set_permanent_constrain(
-            OptGetDbl("Global", "Time_step", "1.0"),
-            OptGetDbl("Global", "Time_step", "1.0")
-            );
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
+    // time governor
+    //time_=new TimeGovernor(
+    //        0.0,
+    //        OptGetDbl("Global", "Stop_time", "1.0"),
+    //        *time_marks
+    //        );
+
     time_->fix_dt_until_mark();
     setup_time_term();
 
 }
+
+
+
+Input::Type::Record & DarcyFlowLMH_Unsteady::get_input_type()
+{
+    using namespace Input::Type;
+    static Record rec("Unsteady_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.");
+
+    if (!rec.is_finished()) {
+        rec.derive_from(DarcyFlowMH::get_input_type());
+        rec.declare_key("time",         TimeGovernor::get_input_type(), Default::obligatory(),
+                                        "Time governor setting for the unsteady Darcy flow model.");
+        rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
+                                        "File with initial condition for the pressure.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
+
 void DarcyFlowLMH_Unsteady::setup_time_term()
 {
     // have created full steady linear system
@@ -1540,12 +1637,9 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
      MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
 
      // read inital condition
-
-     string file_name=IONameHandler::get_instance()->get_input_file_name(OptGetStr( "Input", "Initial", "\\" ));
-     INPUT_CHECK( file_name != "\\","Undefined filename with initial pressure.\n");
      VecZeroEntries(schur0->get_solution());
      FieldP0<double> *initial_pressure = new FieldP0<double>(mesh_);
-     initial_pressure->read_field("input/pressure_initial.in",string("$PressureHead"));
+     initial_pressure->read_field( input_record_.val<FilePath>("initial_file") ,string("$PressureHead"));
 
      VecDuplicate(steady_diagonal,& new_diagonal);
 

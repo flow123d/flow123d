@@ -283,6 +283,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
     }
 
     if (dim>0) node_matrix = pinv(F);
+
 }
 
 template<unsigned int dim, unsigned int spacedim>

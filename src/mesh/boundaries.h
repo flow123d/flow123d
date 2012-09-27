@@ -68,7 +68,7 @@ public:
 #define NEWTON      3
 
 
-void read_boundary(Mesh*);
+void read_boundary(Mesh*, const string &boundary_filename);
 
 #endif
 //-----------------------------------------------------------------------------

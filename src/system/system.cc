@@ -42,8 +42,10 @@
 
 #include "global_defs.h"
 #include "system/system.hh"
-#include "io/read_ini.h"
+//#include "io/read_ini.h"
 #include "system/xio.h"
+
+
 
 #ifdef WINDOWS
   #include <direct.h>
@@ -60,7 +62,7 @@ static bool petsc_initialized = false;
 /*!
  * @brief Read system parameters, open log.
  */
-void system_init( int &argc, char ** &argv )
+void system_init( int argc, char ** argv , const string &log_filename)
 {
     int ierr;
 
@@ -85,14 +87,13 @@ void system_init( int &argc, char ** &argv )
     char file[PETSC_MAX_PATH_LEN];     /* log file name */
     stringstream log_name;
 
-    PetscOptionsGetString(PETSC_NULL,"-l",file,PETSC_MAX_PATH_LEN,&flg);
-    if (flg == PETSC_TRUE) {
-        if (file[0] == '\n') {
+    if (log_filename != "") {
+        if ( log_filename == "\n" ) {
            // -l option without given name -> turn logging off
            sys_info.log=NULL;
         } else {
            // given log name
-           log_name << string(file) <<  "." << sys_info.my_proc << ".log";
+           log_name << log_filename <<  "." << sys_info.my_proc << ".log";
            sys_info.log_fname = IONameHandler::get_instance()->get_output_file_name(log_name.str());
            sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
 
@@ -111,8 +112,8 @@ void system_init( int &argc, char ** &argv )
 
 void system_set_from_options()
 {
-    sys_info.verbosity=OptGetInt( "Run", "Screen_verbosity", "0" );
-    sys_info.pause_after_run=OptGetBool( "Run", "Pause_after_run", "no" );
+    //sys_info.verbosity = OptGetInt( "Run", "Screen_verbosity", "0" );
+
 }
 
 

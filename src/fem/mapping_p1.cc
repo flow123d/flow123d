@@ -86,6 +86,8 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature<dim> &
         }
     }
 
+
+
     return data;
 }
 
