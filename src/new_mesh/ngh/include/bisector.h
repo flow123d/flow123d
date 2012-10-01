@@ -32,6 +32,7 @@ public:
     void SetPoint(const TPoint&);
     const TPoint &GetPoint() const;
     TPoint GetPoint(double) const;
+    void GetParameter(const TPoint&, double &, bool &) const;
 
     void SetVector(const TVector&);
     const TVector &GetVector() const;

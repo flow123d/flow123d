@@ -3,6 +3,7 @@
 #include "new_mesh/ngh/include/bisector.h"
 #include "new_mesh/ngh/include/mathfce.h"
 #include "new_mesh/ngh/include/intersection.h"
+#include "new_mesh/ngh/include/problem.h"
 
 using namespace mathfce;
 
@@ -92,6 +93,11 @@ TPoint TBisector::GetPoint(double t) const {
     tmp = tmp + *X0;
 
     return tmp;
+}
+
+void TBisector::GetParameter(const TPoint &P, double &t, bool &onBisector) const {
+	t = (P.X() - X0->X()) / U->X1();
+	onBisector = (fabs( (P.Y() - X0->Y()) / U->X2() - t ) < epsilon) & (fabs( (P.Z() - X0->Z()) / U->X3() - t ) < epsilon);
 }
 
 bool TBisector::Belong(const TPoint &P) const {

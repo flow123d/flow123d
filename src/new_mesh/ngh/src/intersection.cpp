@@ -267,27 +267,36 @@ void GetIntersection(const TAbscissa &A, const TBisector &B, IntersectionLocal *
         // prunik cela usecka =>ulozit koncove body Abscissy A
 
     //vypocet lokalni souradnice koncovych bodu A
-    	TVector Diff;
-    	double loc_begin_A, loc_end_A;
-    	Diff=A.GetPoint()-B.GetPoint();
-    	loc_begin_A=Diff.Length()/(B.GetVector().Length());
+    	bool x;
 
-    	Diff=A.GetPoint(1)-B.GetPoint();
-    	loc_end_A=Diff.Length()/(B.GetVector().Length());
+    	// get local coords of points of A on B
+    	B.GetParameter(A.GetPoint(), t1, x);
+    	B.GetParameter(A.GetPoint(1), t2, x);
 
-    //set local coords:
-        if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon))) {
-        	insec=new IntersectionLocal(IntersectionLocal::line);
-        	// first abscissa point
-        	vector<double> loc_coord_1(1,0);
-        	vector<double> loc_coord_2(1,loc_begin_A);
-        	insec->add_local_coord(loc_coord_1,loc_coord_2);
-        	// second abscissa point
-        	vector<double> loc_coord_1_(1,1);
-        	vector<double> loc_coord_2_(1,loc_end_A);
-        	insec->add_local_coord(loc_coord_1_,loc_coord_2_);
-        	return;
-        }
+    	// sort t1, t2
+    	if (t2 < t1) {
+    		double swap = t1;
+    		t1 = t2;
+    		t2 = swap;
+    	}
+
+    	//set local coords:
+    	if ((t2 > (0 - epsilon)) && (t1 < (1 + epsilon))) {
+    		double loc_begin_A, loc_end_A;
+    		loc_begin_A = (t1 > 0) ? t1 : 0;
+    		loc_end_A = (t2 < 1) ? t2 : 1;
+
+    		insec=new IntersectionLocal(IntersectionLocal::line);
+			// first abscissa point
+			vector<double> loc_coord_1(1,0);
+			vector<double> loc_coord_2(1,loc_begin_A);
+			insec->add_local_coord(loc_coord_1,loc_coord_2);
+			// second abscissa point
+			vector<double> loc_coord_1_(1,1);
+			vector<double> loc_coord_2_(1,loc_end_A);
+			insec->add_local_coord(loc_coord_1_,loc_coord_2_);
+			return;
+    	}
     } else {
     	insec=NULL;
     	return;
@@ -960,12 +969,10 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
         return;
     }
 
-    int cit = 0;
     TPolygon *P = new TPolygon();
     for (int i = 1; i <= 3; i++) {
         if (Te.IsInner(Tr.GetPoint(i))) {
         	P->Add(Tr.GetPoint(i));
-        	cit++;
         }
     }
 
