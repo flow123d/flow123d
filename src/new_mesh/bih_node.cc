@@ -39,7 +39,7 @@ BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int split
 }
 
 void BIHNode::put_element(int element_id) {
-	element_ids_.push_back(element_id); //TODO: element_id can be add only once
+	element_ids_.push_back(element_id);
 }
 
 double BIHNode::get_median_coord(std::vector<BoundingBox *> elements, int index) {

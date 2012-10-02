@@ -121,6 +121,11 @@ protected:
 	void calculate_triangle_pressure(TTriangle &element);
 
 	/**
+	 * Calculate pressures in abscissa element
+	 */
+	void calculate_abscissa_pressure(TAbscissa &element);
+
+	/**
 	 * Create tetrahedron from element
 	 */
 	void createTetrahedron(ElementFullIter ele, TTetrahedron &te);

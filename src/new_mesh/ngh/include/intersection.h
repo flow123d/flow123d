@@ -66,7 +66,7 @@ void GetIntersection(const TBisector &, const TTriangle &, IntersectionLocal * &
 void GetIntersection(const TAbscissa &, const TTriangle &, IntersectionLocal * & insec);
 
 void GetIntersection(const TAbscissa &, const TTetrahedron &,
-                     TIntersectionType &, double &, double &);
+                     TIntersectionType &, double &);
 void GetIntersection(const TTriangle &, const TTetrahedron &,
                      TIntersectionType &, double &);
 

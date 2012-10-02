@@ -920,8 +920,8 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
 }
 
 void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
-        TIntersectionType &it, double &t1, double &t2) { //ZATIM NEPOTREBUJEME =>zakomentovano
-/*
+        TIntersectionType &it, double &coef) {
+
     if (!QuickIntersectionTest(A, T)) {
         it = none;
         return;
@@ -929,26 +929,67 @@ void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
 
     int cit = 0;
     double tt1, tt2;
+    double tt[2];
+
+    if (T.IsInner(A.GetPoint())) {
+    	tt[cit] = 0;
+    	cit++;
+    }
+    if (T.IsInner(A.GetPoint(1))) {
+    	tt[cit] = 1;
+    	cit++;
+    }
+    if (cit == 2) {
+    	coef = fabs(tt[1] - tt[0]);
+    	it = line;
+    	return;
+    }
+
+    IntersectionLocal *insec;
+
     for (int i = 1; i <= 4; i++) {
         it = unknown;
-        GetIntersection(A, T.GetTriangle(i), it, tt1, tt2);
-        if (it == line) {
-            t1 = tt1;
-            t2 = tt2;
+        GetIntersection(A, T.GetTriangle(i), insec);
+        if (insec) {
+            if (insec->get_type() == IntersectionLocal::line) {
+            	tt1 = insec->get_point(0)->el1_coord()[0];
+            	tt2 = insec->get_point(1)->el1_coord()[0];
+            	if (tt1 > tt2) {
+            		double swap = tt1;
+            		tt1 = tt2;
+            		tt2 = swap;
+            	}
 
-            return;
-        }
-        if (it == point) {
-            if (cit == 0) {
-                t1 = tt1;
-                cit++;
-            } else {
-                if (IsEqual(t1, tt1)) {
-                    continue;
+            	if ((tt2 > (0 - epsilon)) && (tt1 < (1 + epsilon))) {
+            		if (tt1 < 0) tt1 = 0;
+            		if (tt2 > 1) tt2 = 1;
+            		coef = fabs(tt2 - tt1);
+            		it = line;
+            		return;
+            	}
+            }
+            if (insec->get_type() == IntersectionLocal::point) {
+                if (cit == 0) {
+                    tt[0] = insec->get_point(0)->el1_coord()[0];
+                    cit++;
+                } else {
+                    if (IsEqual(tt[0], insec->get_point(0)->el1_coord()[0])) {
+                        continue;
+                    }
+                    if (tt[0] > insec->get_point(0)->el1_coord()[0]) {
+                    	tt[1] = tt[0];
+                    	tt[0] = insec->get_point(0)->el1_coord()[0];
+                    } else {
+                    	tt[1] = insec->get_point(0)->el1_coord()[0];
+                    }
+                    if ((tt[1] > (0 - epsilon)) && (tt[0] < (1 + epsilon))) {
+						if (tt[0] < 0) tt[0] = 0;
+						if (tt[1] > 1) tt[1] = 1;
+						coef = fabs(tt[1] - tt[0]);
+						it = line;
+						return;
+                    }
                 }
-                t2 = tt1;
-                it = line;
-                return;
             }
         }
     }
@@ -956,7 +997,6 @@ void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
     it = none;
 
     return;
-*/
 }
 
 void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,

@@ -101,7 +101,6 @@ void FunctionInterpolatedP0::calculate_interpolation() {
 	TPoint pointB(0.16, 0.16, 0.00);
 	TPoint pointC(0.02, 0.02, 0.05);
 	TTriangle triangle(pointA, pointB, pointC);
-	std::vector<int> searchedElements;
 
 	calculate_triangle_pressure(triangle);
 	printf("Pressure = %f\n", pressure_);
@@ -128,6 +127,43 @@ void FunctionInterpolatedP0::calculate_triangle_pressure(TTriangle &element) {
 			GetIntersection(element, *tetrahedron, iType, iArea);
 			if (iType == area) {
 				pressure_ += pressures_[ idx ] * (iArea / elArea);
+			}
+		} else {
+			//xprintf(Err, "Dimension of element must be 3!\n");
+		}
+	}
+}
+
+void FunctionInterpolatedP0::calculate_abscissa_pressure(TAbscissa &element) {
+	double elLength, coef;
+	BoundingBox elementBoundingBox = element.get_bounding_box();
+	std::vector<int>::iterator it;
+	TIntersectionType iType;
+	TTetrahedron *tetrahedron = new TTetrahedron();
+
+	printf("2a %f %f %f\n", elementBoundingBox.get_min()(0), elementBoundingBox.get_min()(1), elementBoundingBox.get_min()(2));
+	printf("   %f %f %f\n", elementBoundingBox.get_max()(0), elementBoundingBox.get_max()(1), elementBoundingBox.get_max()(2));
+
+	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements_);
+
+	printf("2b\n");
+
+	elLength = element.Length();
+	pressure_ = 0.0;
+
+	printf("2c\n");
+
+	for (it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
+	{
+		int idx = *it;
+		printf("2 %d\n", idx);
+		ElementFullIter ele = mesh_->element( idx );
+		if (ele->dim() == 3) {
+			createTetrahedron(ele, *tetrahedron);
+			GetIntersection(element, *tetrahedron, iType, coef);
+			printf("  %f\n", coef);
+			if (iType == line) {
+				pressure_ += pressures_[ idx ] * (coef * elLength);
 			}
 		} else {
 			//xprintf(Err, "Dimension of element must be 3!\n");

@@ -38,6 +38,7 @@ public:
 
     const TTriangle &GetTriangle(int) const;
     const TAbscissa &GetAbscissa(int) const;
+    const TPoint &GetPoint(int) const;
 
     double GetMin(int) const;
     double GetMax(int) const;

@@ -106,6 +106,20 @@ const TAbscissa &TTetrahedron::GetAbscissa(int i) const {
     }
 }
 
+const TPoint &TTetrahedron::GetPoint(int i) const {
+    switch (i) {
+        case 1: return *X1;
+            break;
+        case 2: return *X2;
+            break;
+        case 3: return *X3;
+            break;
+        case 4: return *X4;
+            break;
+        default: mythrow((char*)"Unknown number of the point of the tetrahedron.", __LINE__, __FUNC__);
+    }
+}
+
 double TTetrahedron::GetMin(int i) const {
     double min = X1->Get(i);
 
