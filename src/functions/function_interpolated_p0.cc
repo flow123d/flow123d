@@ -114,6 +114,9 @@ void FunctionInterpolatedP0::calculate_interpolation() {
 
 	calculate_triangle_pressure(triangle);
 	printf("Pressure = %f\n", pressure_);
+	getchar();
+	calculate_triangle_pressure(triangle);
+	printf("Pressure2 = %f\n", pressure_);
 }
 
 void FunctionInterpolatedP0::calculate_triangle_pressure(TTriangle &element) {
