@@ -39,12 +39,22 @@ FunctionInterpolatedP0::FunctionInterpolatedP0() {
 void FunctionInterpolatedP0::set_element(ElementFullIter &element){
 	//element_ = element;
 
-	if (element->dim() == 2) {
-		TTriangle triangle;
-		createTriangle(element, triangle);
-		calculate_triangle_pressure(triangle);
-	} else {
-		//xprintf(Err, "Dimension of element must be 2!\n");
+	switch (element->dim()) {
+		case 1: {
+			TAbscissa abscissa;
+			createAbscissa(element, abscissa);
+			calculate_abscissa_pressure(abscissa);
+			break;
+		}
+		case 2: {
+			TTriangle triangle;
+			createTriangle(element, triangle);
+			calculate_triangle_pressure(triangle);
+			break;
+		}
+		default:
+			xprintf(Err, "Dimension of element must be 1 or 2!\n");
+			break;
 	}
 }
 
@@ -141,27 +151,18 @@ void FunctionInterpolatedP0::calculate_abscissa_pressure(TAbscissa &element) {
 	TIntersectionType iType;
 	TTetrahedron *tetrahedron = new TTetrahedron();
 
-	printf("2a %f %f %f\n", elementBoundingBox.get_min()(0), elementBoundingBox.get_min()(1), elementBoundingBox.get_min()(2));
-	printf("   %f %f %f\n", elementBoundingBox.get_max()(0), elementBoundingBox.get_max()(1), elementBoundingBox.get_max()(2));
-
 	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements_);
-
-	printf("2b\n");
 
 	elLength = element.Length();
 	pressure_ = 0.0;
 
-	printf("2c\n");
-
 	for (it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
 		int idx = *it;
-		printf("2 %d\n", idx);
 		ElementFullIter ele = mesh_->element( idx );
 		if (ele->dim() == 3) {
 			createTetrahedron(ele, *tetrahedron);
 			GetIntersection(element, *tetrahedron, iType, coef);
-			printf("  %f\n", coef);
 			if (iType == line) {
 				pressure_ += pressures_[ idx ] * (coef * elLength);
 			}
@@ -202,19 +203,18 @@ double FunctionInterpolatedP0::value(const Point &p, const unsigned int componen
 
 void FunctionInterpolatedP0::vector_value(const Point &p, std::vector<double> &value) const
 {
-
+	xprintf(Msg, " - Method vector_value is not used and implemented in class FunctionInterpolatedP0\n");
 }
 
 void FunctionInterpolatedP0::value_list(const std::vector<Point>  &point_list,
 					  std::vector<double>         &value_list,
 					  const unsigned int  component) const
 {
-
-
+	xprintf(Msg, " - Method value_list is not used and implemented in class FunctionInterpolatedP0\n");
 }
 
 void FunctionInterpolatedP0::vector_value_list (const std::vector<Point> &point_list,
                             std::vector< std::vector<double> > &value_list) const
 {
-
+	xprintf(Msg, " - Method vector_value_list is not used and implemented in class FunctionInterpolatedP0\n");
 }
