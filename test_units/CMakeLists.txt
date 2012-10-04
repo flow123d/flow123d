@@ -31,7 +31,7 @@ macro(define_test class_name)
   set(test_valgrind "${class_name}_valgrind")
   
   # executable rule
-  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${mpi_gtest_sources} ${test_source} ) 
+  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} ) 
   target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
 
   # rule to run the test
