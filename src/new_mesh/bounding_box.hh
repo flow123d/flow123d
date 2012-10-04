@@ -57,9 +57,9 @@ public:
 	/// get id of element
     int getId();
     /// get minimal coordinates of bounding box
-    arma::vec3 get_min();
+    const arma::vec3 get_min() const;
     /// get maximal coordinates of bounding box
-    arma::vec3 get_max();
+    const arma::vec3 get_max() const;
     /// get center coordinates of bounding box
     arma::vec3 get_center();
 
@@ -74,6 +74,8 @@ public:
     bool intersection(BoundingBox &b2);
 
 private:
+    /// count of dimensions
+    static const unsigned int dimension = 3;
     /// minimal coordinates of bounding box
     arma::vec3 minCoordinates_;
     /// maximal coordinates of bounding box

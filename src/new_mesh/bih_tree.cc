@@ -70,9 +70,8 @@ void BIHTree::distribute_elements(std::vector<BoundingBox *> elements)
 {
 	int index=0;
 	for (std::vector<BoundingBox *>::iterator it = elements_.begin(); it!=elements_.end(); it++) {
-		BoundingBox* boundingBox = *it;
 		for (int j=0; j<child_count; j++) {
-			if (child_[j]->contains_element(splitCoor_, boundingBox->get_min()(splitCoor_), boundingBox->get_max()(splitCoor_))) {
+			if (child_[j]->contains_element(splitCoor_, ((BoundingBox*)*it)->get_min()(splitCoor_), ((BoundingBox*)*it)->get_max()(splitCoor_))) {
 				((BIHNode *)child_[j])->put_element(index);
 			}
 		}

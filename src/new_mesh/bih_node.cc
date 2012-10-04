@@ -43,17 +43,15 @@ void BIHNode::put_element(int element_id) {
 }
 
 double BIHNode::get_median_coord(std::vector<BoundingBox *> elements, int index) {
-	int boundingBoxIndex = *(element_ids_.begin() + index);
+	int boundingBoxIndex = element_ids_[index];
 	return elements[boundingBoxIndex]->get_center()(splitCoor_);
 }
 
 void BIHNode::distribute_elements(std::vector<BoundingBox *> elements) {
 	for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
-		int id = *it;
-		BoundingBox* boundingBox = (*(elements.begin() + id));
 		for (int j=0; j<child_count; j++) {
-			if (child_[j]->contains_element(splitCoor_, boundingBox->get_min()(splitCoor_), boundingBox->get_max()(splitCoor_))) {
-				((BIHNode *)child_[j])->put_element(id);
+			if (child_[j]->contains_element(splitCoor_, elements[*it]->get_min()(splitCoor_), elements[*it]->get_max()(splitCoor_))) {
+				((BIHNode *)child_[j])->put_element(*it);
 			}
 		}
 	}
@@ -67,11 +65,8 @@ void BIHNode::distribute_elements(std::vector<BoundingBox *> elements) {
 void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox *> meshElements) {
 	if (leaf_) {
 		for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
-			int id = *it;
-			BoundingBox* b = (*(meshElements.begin() + id));;
-
-			if (b->intersection(boundingBox)) {
-				searchedElements.push_back(id);
+			if (meshElements[*it]->intersection(boundingBox)) {
+				searchedElements.push_back(*it);
 			}
 		}
 	} else {
