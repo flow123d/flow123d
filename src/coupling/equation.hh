@@ -37,6 +37,8 @@
 #include "time_marks.hh"
 #include "input/accessors.hh"
 
+#include <petscvec.h>
+
 class Mesh;
 class MaterialDatabase;
 namespace Input {

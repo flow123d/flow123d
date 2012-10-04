@@ -24,8 +24,8 @@
 #ifndef GTEST_FLOW_HH_
 #define GTEST_FLOW_HH_
 
-#include "system/global_defs.h"
-#include "system/system.hh"
+#include <global_defs.h>
+#include <system/system.hh>
 
 #include <gtest/gtest.h>
 

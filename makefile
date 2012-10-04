@@ -59,10 +59,17 @@ cmake: build/CMakeCache.txt  create_unit_test_links
 
 
 
-build_all: build_flow123d  # build_interpolation  #ngh bcd
+build_all: build_flow123d  build_interpolation ngh
 
 flow123d:  build_flow123d  install
 
+
+# timing of parallel builds (on Core 2 Duo, 4 GB ram)
+# N JOBS	O3	g,O0	
+# 1 		51s	46s
+# 2 		30s	26s
+# 4 		31s	27s
+# 8 		30s
 build_flow123d: cmake
 	make -j $(N_JOBS) -C build flow123d
 
@@ -72,12 +79,7 @@ interpolation: build_interpolation install
 build_interpolation: 
 	make -j $(N_JOBS) -C build interpolation
 
-# timing of parallel builds (on Core 2 Duo, 4 GB ram)
-# N JOBS	O3	g,O0	
-# 1 		51s	46s
-# 2 		30s	26s
-# 4 		31s	27s
-# 8 		30s
+
 	
 # Remove all generated files
 clean: cmake

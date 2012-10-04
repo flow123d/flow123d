@@ -5,7 +5,7 @@
 /********************************************************************/
 #define DOS                                 /* Prepinac DOS X UNIX  */
 #define VERB                                /* Upovidany vystup     */
-#define BOOL int
+#define S_BOOL int
 
 #ifdef MAIN
 	#define EX
@@ -168,21 +168,21 @@ struct S_glp
 #endif // SKUPINY_MATERIALU
 /*------------------------------------------------------------------*/
 #ifdef SKUPINA_DUALPOROSITY
-   BOOL     sw_DP_apply;       /* pocitat s dvoji porozitou     */
+   S_BOOL     sw_DP_apply;       /* pocitat s dvoji porozitou     */
    int      ndpor;                 /* pocet skupin DUAL_POROSITY    */
 #endif // SKUPINA_DUALPOROSITY
 /*------------------------------------------------------------------*/
 #ifdef SKUPINA_INTERTRANSFER
-   BOOL     sw_CTR_apply;      /* pocitat INTERTRANSFER         */
+   S_BOOL     sw_CTR_apply;      /* pocitat INTERTRANSFER         */
    int      nctr;                  /* pocet skupin INTERTRANSFER    */
 #endif // SKUPINA_INTERTRANSFER
 /*------------------------------------------------------------------*/
 #ifdef SKUPINA_TRANSPORT
     int     nvod;                  /* pocet typu vod                */
 /*------------------------------------------------------------------*/
-	BOOL   time_analysis;         /* rozbor casoveho kroku         */
-	BOOL    quazi_unsteady;        /* kvazi nestacionarni uloha     */
-    BOOL    write_waters;          /* vypsat nalezene vody          */
+	S_BOOL   time_analysis;         /* rozbor casoveho kroku         */
+	S_BOOL    quazi_unsteady;        /* kvazi nestacionarni uloha     */
+    S_BOOL    write_waters;          /* vypsat nalezene vody          */
 /*..................................................................*/
     char    jmeno_rini[ MAXPATH ];
     char    jmeno_rpop[ MAXPATH ];
@@ -202,8 +202,8 @@ struct S_glp
 #endif // SKUPINA_TRANSPORT
 /*------------------------------------------------------------------*/
 #ifdef SKUPINA_CHEMIE
-   BOOL     sw_Chem_WriteSet; /* Vypsat nastaveni chemie  0-NE, 1-ano */
-   BOOL     sw_Chem_Consist;  /* Vyzadovat konzistenci    0-ne, 1-ANO */
+   S_BOOL     sw_Chem_WriteSet; /* Vypsat nastaveni chemie  0-NE, 1-ano */
+   S_BOOL     sw_Chem_Consist;  /* Vyzadovat konzistenci    0-ne, 1-ANO */
    char     jmeno_chem_cfg[ MAXPATH ];
    char     jmeno_chem_err[ MAXPATH ];
    TChemie  *Chem_Chem;
@@ -211,13 +211,13 @@ struct S_glp
    char     jmeno_hini[ MAXPATH ];
    char     jmeno_hpop[ MAXPATH ];
    int      nhslo;                  /* pocet slozek Horniny - POP   */
-   BOOL     sw_kapalna;             /* Pocita se s KAPALNOU fazi    */
-   BOOL     sw_pevna;               /* Pocita se s PEVNOU fazi      */
-   BOOL     sw_plyn;                /* Pocita se s PLYNNOU fazi     */
-//   BOOL     sw_sorpce;              /* Pocita se s SORBOVANOU fazi  */
-   BOOL     sw_redox;               /* Pocita se s REDOX fazi       */
-   BOOL     sw_radio;               /* Pocita se s RADIO fazi       */
-   BOOL     sw_vlastnosti;          /* Pocita se s VLASTNOSTMI      */
+   S_BOOL     sw_kapalna;             /* Pocita se s KAPALNOU fazi    */
+   S_BOOL     sw_pevna;               /* Pocita se s PEVNOU fazi      */
+   S_BOOL     sw_plyn;                /* Pocita se s PLYNNOU fazi     */
+//   S_BOOL     sw_sorpce;              /* Pocita se s SORBOVANOU fazi  */
+   S_BOOL     sw_redox;               /* Pocita se s REDOX fazi       */
+   S_BOOL     sw_radio;               /* Pocita se s RADIO fazi       */
+   S_BOOL     sw_vlastnosti;          /* Pocita se s VLASTNOSTMI      */
 #endif // SKUPINA_CHEMIE
 /*------------------------------------------------------------------*/
     int     pis_log;
@@ -305,7 +305,7 @@ struct S_elm                       // element
 #endif // SKUPINA_REAKCE
 /*------------------------------------------------------------------*/
    double      cas_koef;
-   BOOL         cas_typ;
+   S_BOOL         cas_typ;
 };
 EX struct S_elm *P_elm;
 /********************************************************************/
@@ -348,8 +348,8 @@ struct S_vod
     int     typ;                        /* typ vody                 */
     char    nazev[ 128 ];               /* nazev typu vody          */
 /*------------------------------------------------------------------*/
-	BOOL    sw_OSM;                     /* Zapisovat hmotnosti vy. latek */
-    BOOL    sw_OSC;                     /* Zapisovat koncentraci    */
+	S_BOOL    sw_OSM;                     /* Zapisovat hmotnosti vy. latek */
+    S_BOOL    sw_OSC;                     /* Zapisovat koncentraci    */
 /*------------------------------------------------------------------*/
 //  Okamzite koncentrace
     double  *vrslo;       /* koncentrace slozek vtlaceneho ROZTOKU */

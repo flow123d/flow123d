@@ -56,9 +56,9 @@
 #include <iostream>
 #include <time.h>
 #include <vector>
-#include <petsc.h>
 #include <string>
 
+#include <mpi.h>
 #include <cstring>
 
 using namespace std;
@@ -264,7 +264,7 @@ public:
     static Profiler* instance() {
         //singleton pattern implementation
         if (!_instance)
-            _instance = new Profiler(PETSC_COMM_WORLD);
+            _instance = new Profiler(MPI_COMM_WORLD);
 
         return _instance;
     }

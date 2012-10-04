@@ -4,6 +4,7 @@
 
 #include "system/system.hh"
 #include "io/read_ini.h"
+
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
 #include "transport/transport.h"
@@ -107,7 +108,7 @@ Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpeci
 {
 
   //temporary semchem output file name
-  std::string semchem_output_fname = IONameHandler::get_instance()->get_output_file_name("./semchem_output.out");
+  std::string semchem_output_fname = FilePath("semchem_output.out", FilePath::output_file);
   xprintf(Msg,"Semchem output file name is %s\n",semchem_output_fname.c_str());
 
   //char *Semchem_output_file;

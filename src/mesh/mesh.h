@@ -191,7 +191,9 @@ public:
     // for every side node 0 .. D
     // index into element node array
     vector< vector< vector<unsigned int> > > side_nodes;
-
+    
+    string neigh_fname_;
+    string bcd_fname_;
 private:
 
     void node_to_element();

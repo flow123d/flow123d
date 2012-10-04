@@ -16,7 +16,12 @@ string FilePath::output_dir="";
 string FilePath::root_dir="";
 
 FilePath::FilePath(const string file_path, const  FileType ft) {
-    ASSERT( output_dir != "", "Creating FileName object before set_io_dirs is called.\n");
+    if (output_dir == "") {
+        xprintf(Warn, "Creating FileName object before set_io_dirs is called. No file path resolving.\n");
+        abs_file_path = file_path;
+        return;
+    }
+
     if (ft == input_file) {
         abs_file_path = root_dir + DIR_DELIMITER + file_path;
         substitute_value();

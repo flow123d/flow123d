@@ -9,6 +9,7 @@
 #define FUNCTION_BASE_HH_
 
 #include <armadillo>
+#include "mesh/mesh_types.hh"
 
 template <int dim>
 class FunctionBase {
@@ -18,10 +19,6 @@ public:
        FunctionBase(const unsigned int n_components=1, const double init_time=0.0)
        : n_components_(n_components), time_(init_time)
        {}
-
-       static Input::Type::AbstractRecord &get_input_type();
-
-       virtual void init_from_input(Input::Record &in_rec) = 0;
 
        /**
         * Set new time value.

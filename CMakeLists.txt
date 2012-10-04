@@ -117,6 +117,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost)  
 set(REQUIRED_Boost_COMPONENTS program_options serialization)
 
+
 #set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
@@ -181,9 +182,48 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-
 find_package(PETSc 3.2.0)
 find_package(PARMETIS)
+
+if (NOT PETSC_FOUND)
+# === Variables ===
+# This module will set the following variables per language in your project,
+# where <lang> is one of C, CXX, or Fortran:
+#   MPI_<lang>_FOUND           TRUE if FindMPI found MPI flags for <lang>
+#   MPI_<lang>_COMPILER        MPI Compiler wrapper for <lang>
+#   MPI_<lang>_COMPILE_FLAGS   Compilation flags for MPI programs
+#   MPI_<lang>_INCLUDE_PATH    Include path(s) for MPI header
+#   MPI_<lang>_LINK_FLAGS      Linking flags for MPI programs
+#   MPI_<lang>_LIBRARIES       All libraries to link MPI programs against
+# Additionally, FindMPI sets the following variables for running MPI
+# programs from the command line:
+#   MPIEXEC                    Executable for running MPI programs
+#   MPIEXEC_NUMPROC_FLAG       Flag to pass to MPIEXEC before giving
+#                              it the number of processors to run on
+#   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
+#                              before the executable to run.
+#   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
+
+  find_package(MPI)
+  
+  if (NOT MPI_CXX_FOUND) 
+    set(mpiuni_sources    system/mpiuni/mpi.c)
+    set(MPIUNI_INCLUDES src/system/mpiuni)
+    add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+    
+    # overwrite NOTFOUND status
+    set(MPI_CXX_LIBRARIES "")
+    set(MPI_CXX_INCLUDE_PATH "")
+  else()
+    add_definitions(-DHAVE_MPI)
+  endif()
+  
+else()
+  add_definitions(-DHAVE_PETSC -DHAVE_MPI)
+endif()
+
+
+
 
 # find aramdillo or use our own
 # FindAramdillo returs:
@@ -227,10 +267,13 @@ if (NOT Armadillo_FOUND)
   execute_process(COMMAND make VERBOSE=1 
                  WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
   
+  # ARMA_LIBS has to be set manually in makefile.in.cmake 
+  # if Armadillo use different BLAS and LAPACK then that in PETSC (e.g. if PETSC are not found)
+  # ... TODO: find correct way how to make this automatic (Install Armadillo)
   SET(Armadillo_INCLUDE_DIRS 
     ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/include
     ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/include)  
-  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/${our_Armadillo_lib}")  
+  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/${our_Armadillo_lib};${PETSC_LAPACK};${PETSC_BLAS};${ARMA_LIBS}")  
 endif()
 
 message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
@@ -257,6 +300,8 @@ include_directories(
     ${PETSC_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
+    ${MPI_CXX_INCLUDE_PATH}
+    ${MPIUNI_INCLUDES}  
 )
 
 ##############
@@ -332,9 +377,11 @@ if( PETSC_FOUND )
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
+else()
+  message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
 
 
 ### add target for interpolation binary
-# add_executable(interpolation src/interpolation/interpolation_main.cc)
-# target_link_libraries(interpolation  new_mesh_lib ${Armadillo_LIBRARIES})
+add_executable(interpolation src/interpolation/interpolation_main.cc)
+target_link_libraries(interpolation  system_lib functions_lib new_mesh_lib ${Armadillo_LIBRARIES})

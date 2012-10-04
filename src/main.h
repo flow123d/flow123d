@@ -38,7 +38,7 @@ using namespace std;
 
 class Application {
 public:
-    Application(const int argc, char ** argv);
+    Application(int argc, char ** argv);
     static Input::Type::Record &get_input_type();
     void parse_cmd_line(const int argc, char ** argv);
     void free_and_exit();

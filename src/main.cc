@@ -65,7 +65,7 @@
 static void main_convert_to_output();
 
 
-Application::Application(const int argc,  char ** argv)
+Application::Application( int argc,  char ** argv)
 : main_input_dir_("."),
   main_input_filename_(""),
   log_filename_(""),
@@ -75,9 +75,15 @@ Application::Application(const int argc,  char ** argv)
 
     // parse our own command line arguments, leave others for PETSc
     parse_cmd_line(argc, argv);
-    system_init(passed_argc_, passed_argv_, log_filename_); // Petsc, open log, read ini file
 
-    Profiler::initialize(MPI_COMM_WORLD);
+    // temporary moving PETSC stuff here from system.hh
+    // should be made better in JB_1.7.input
+    PetscErrorCode ierr;
+    ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+
+    system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
+
+    Profiler::initialize(PETSC_COMM_WORLD);
     START_TIMER("WHOLE PROGRAM");
 
     // Say Hello

@@ -27,6 +27,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #message(STATUS "Include directories: ${flow123d_includes}")
 #include_directories(${flow123d_includes})
 
+
+
+
 # select source files that compose whole flow123d library
 # todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
 # every library then can be testetd independently
@@ -91,7 +94,8 @@ set(sources_lib_la
 )
 
 set(sources_lib_functions
-    functions/discrete_function.cc
+    #functions/discrete_function.cc
+    functions/function_interpolated_p0.cc
 )    
 
 set(sources_lib_non_system
@@ -134,23 +138,42 @@ set(sources_lib_semchem
 #    semchem/cti_ichnew.c
 )
 
-# this seems as converting *.c to *.cc for Semchem files
-# but this can be dengerous
-#foreach(file ${libflow123d_C_SRCS})
-#  set(libflow123d_SRCS ${libFlow123d_SRCS} ${file}c)
-#  list(APPEND libflow123d_SRCS ${file}c)
-#  configure_file(${file} ${file}c COPYONLY)
-#endforeach(file)
 
-# add build targets
-#link_directories(${Flow123dLinkDirectories})
-
+set(sources_lib_new_mesh
+    new_mesh/multi_mesh.cc
+    new_mesh/point.cc
+    new_mesh/bounding_interval_hierarchy.cc
+    new_mesh/bounding_box.cc
+    new_mesh/bih_node.cc
+    new_mesh/bih_tree.cc
+    
+    new_mesh/ngh/src/abscissa.cpp
+    new_mesh/ngh/src/bisector.cpp
+    new_mesh/ngh/src/intersection.cpp
+    new_mesh/ngh/src/intersectionLocal.cpp
+    new_mesh/ngh/src/mathfce.cpp
+    new_mesh/ngh/src/matrix.cpp
+    new_mesh/ngh/src/plain.cpp
+    new_mesh/ngh/src/point.cpp
+    new_mesh/ngh/src/polygon.cpp
+    new_mesh/ngh/src/system.cpp
+    new_mesh/ngh/src/tetrahedron.cpp
+    new_mesh/ngh/src/triangle.cpp
+    new_mesh/ngh/src/vector.cpp
+    new_mesh/ngh/src/vertex.cpp
+    
+    )
 
 # add individual libraries
 
+if (mpiuni_sources) 
+  add_library(mpiuni_lib ${mpiuni_sources})
+  set(MPIUNI_LIB mpiuni_lib)
+endif()
+
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(system_lib ${MPIUNI_LIB} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 # input_lib
 add_library(input_lib ${sources_lib_input})
@@ -158,9 +181,9 @@ target_link_libraries(input_lib
     system_lib json_spirit)
 
 # new_mesh_lib
-#add_library(new_mesh_lib ${sources_lib_new_mesh})
-#target_link_libraries(new_mesh_lib 
-#    ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})    
+add_library(new_mesh_lib ${sources_lib_new_mesh})
+target_link_libraries(new_mesh_lib 
+    ${Armadillo_LIBRARIES} ${Boost_LIBRARIES})    
     
 # la_lib
 add_library(la_lib ${sources_lib_la})
@@ -187,7 +210,7 @@ target_link_libraries(functions_lib
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib system_lib
+    functions_lib fem_lib new_mesh_lib mesh_lib la_lib semchem  input_lib system_lib
     fparser ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib

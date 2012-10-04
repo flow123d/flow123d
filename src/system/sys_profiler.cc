@@ -54,9 +54,7 @@ Profiler::Profiler(MPI_Comm comm) {
 
     id = 0;
     communicator = comm;
-    if (comm) {
-        MPI_Comm_rank(PETSC_COMM_WORLD, &(id));
-    }
+    MPI_Comm_rank(communicator, &(id));
 
     actual_node = root = new Timer("", NULL);
     root->start(0);
@@ -178,6 +176,7 @@ void Profiler::output(ostream &os) {
         }
     }
 }
+
 
 
 void Profiler::set_timer_subframes(string tag, int n_subframes) {

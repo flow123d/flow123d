@@ -38,6 +38,7 @@
 
 #include "system/system.hh"
 #include "la/distribution.hh"
+#include "io_namehandler.hh"
 #include "la/solve.h"
 #include "la/linsys.hh"
 

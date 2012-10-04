@@ -39,27 +39,17 @@
 #include <fstream>
 #include <string>
 
-#include <petscsys.h>
-#include <petscerror.h>
-#include <petsc.h>
-
 #include "global_defs.h"
 #include "system/system.hh"
 //#include "io/read_ini.h"
 #include "system/xio.h"
+#include "system/file_path.hh"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
 
 
-#ifdef WINDOWS
-  #include <direct.h>
-  #define GetCurrentDir _getcwd
-#else
-  #include <unistd.h>
-  #define GetCurrentDir getcwd
-#endif
 
 SystemInfo sys_info;
 
@@ -68,13 +58,13 @@ static bool petsc_initialized = false;
 /*!
  * @brief Read system parameters, open log.
  */
-void system_init( int argc, char ** argv , const string &log_filename)
+void system_init( MPI_Comm comm,const  string &log_filename )
 {
     int ierr;
 
     //for(int i=0;i<argc;i++) xprintf(Msg,"%s,",argv[i]);
-    ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
-    petsc_initialized = true;
+     petsc_initialized = true;
+    sys_info.comm=comm; 
 
 
     xio_init(); //Initialize XIO library
@@ -82,32 +72,30 @@ void system_init( int argc, char ** argv , const string &log_filename)
     // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
     // inicializaci systemu
 
-    ierr=MPI_Comm_rank(PETSC_COMM_WORLD,&(sys_info.my_proc));
-    ierr+=MPI_Comm_size(PETSC_COMM_WORLD,&(sys_info.n_proc));
+    ierr=MPI_Comm_rank(comm, &(sys_info.my_proc));
+    ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
     ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
 
     DBGMSG("MPI size: %d rank: %d\n",sys_info.n_proc,sys_info.my_proc);
 
     // determine logfile name or switch it off
-    PetscBool flg;
-    char file[PETSC_MAX_PATH_LEN];     /* log file name */
     stringstream log_name;
 
     if (log_filename != "") {
         if ( log_filename == "\n" ) {
            // -l option without given name -> turn logging off
            sys_info.log=NULL;
-        } else {
-           // given log name
+    } else {
+      // given log name
            log_name << log_filename <<  "." << sys_info.my_proc << ".log";
-           sys_info.log_fname = IONameHandler::get_instance()->get_output_file_name(log_name.str());
+           sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
            sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
 
         }
     } else {
         // use default name
         log_name << "flow123."<< sys_info.my_proc << ".log";
-        sys_info.log_fname = IONameHandler::get_instance()->get_output_file_name(log_name.str());
+        sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
         sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
 
     }
@@ -203,7 +191,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 
     //generate barrier and unique ID for MPI messages
     if (mf.mpi) {
-        ierr = MPI_Barrier(PETSC_COMM_WORLD);
+        ierr = MPI_Barrier(sys_info.comm);
         if (ierr != MPI_SUCCESS ) {
             printf("MPI_Barrier() error in xprintf()\n"); //can not call xprintf() when xprintf() is failing
             exit(EXIT_FAILURE);
@@ -262,26 +250,39 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
  *
  * TODO: should be destructor of a main program object with pointer to the main application object, through deleting
  * application object it should delete all created objects, namely free all memory and close all files.
+ * 
+ * More over the application should be derived from ApplicationBase which collects functionality of system.cc
+ * In descendants  of ApplicationBase we can call PetscFinalize, and keep ApplicationBase free of petsc.
  *
  */
+
+#ifdef HAVE_PETSC
+
+#include <petsc.h>
+#endif
+
 int xterminate( bool on_error )
 {
     //close the Profiler
     Profiler::uninitialize();
 
-    PetscErrorCode ierr=0;
 
     if (on_error) { F_STACK_SHOW( stderr ); }
 
 	//TODO: Free memory, close files
 
+#ifdef HAVE_PETSC	
 	if ( petsc_initialized )
 	{
+           PetscErrorCode ierr=0;
+ 
 	   ierr = PetscFinalize(); CHKERRQ(ierr);
+           
+           on_error = (ierr != 0);
 	   petsc_initialized = false;
 	}
-
-	if (sys_info.log) xfclose( sys_info.log );
+#endif
+    if (sys_info.log) xfclose( sys_info.log );
 
     if (sys_info.pause_after_run) {
         printf("\nPress <ENTER> for closing the window\n");
@@ -293,7 +294,7 @@ int xterminate( bool on_error )
     fcloseall();
 
     //select proper Return Code
-    if ( on_error || ierr ) //error in program or during PetscFinalize()
+    if ( on_error ) //error in program or during PetscFinalize()
         exit( EXIT_FAILURE );
     else
         exit( EXIT_SUCCESS );
@@ -649,98 +650,3 @@ bool skip_to( istream &in, const string &pattern )
 }
 
 
-
-IONameHandler* IONameHandler::instance = NULL;
-
-IONameHandler* IONameHandler::get_instance() {
-	if (!instance) {
-		instance = new IONameHandler();
-		instance->initialize_root_dir();
-		instance->initialize_placeholder();
-	}
-	return instance;
-}
-/**
- * TODO: Treat condition - error message?
- */
-void IONameHandler::initialize_root_dir() {
-	char cCurrentPath[FILENAME_MAX];
-
-	if (!GetCurrentDir(cCurrentPath, sizeof(cCurrentPath)))
-	{
-	    //return errno;
-	}
-	cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
-	this->root_dir = cCurrentPath;
-	this->initialize_output_dir();
-}
-void IONameHandler::initialize_output_dir() {
-	PetscBool flg; //PetscBool instead of PetscTruth data type
-	char dir[PETSC_MAX_PATH_LEN];     /* directory name */
-
-	/* Initialize output directory path */
-	PetscOptionsHasName(PETSC_NULL,"-o",&flg);
-	if (flg) {
-		PetscOptionsGetString(PETSC_NULL,"-o",dir,PETSC_MAX_PATH_LEN,&flg);
-	    this->output_dir = dir;
-	} else {
-		this->output_dir = this->root_dir;
-	}
-}
-
-std::string IONameHandler::get_root_dir() {
-	return this->root_dir;
-}
-
-std::string IONameHandler::get_output_dir() {
-	return this->output_dir;
-}
-
-std::string IONameHandler::get_input_file_name(std::string file_name) {
-	std::string file = this->get_root_dir() + "/" + file_name;
-	return substitute_value(file);
-}
-
-std::string IONameHandler::get_output_file_name(std::string file_name) {
-	std::string file = this->get_output_dir() + "/" + file_name;
-	return substitute_value(file);
-}
-
-std::string IONameHandler::substitute_value(std::string file) {
-	for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); ++it) {
-		size_t i = file.find((*it).first,0);
-		if(i != std::string::npos) {
-			file.replace(i, (*it).first.size(), (*it).second);
-		}
-	}
-	return file;
-}
-
-bool IONameHandler::add_placeholder_item(std::string key, std::string value) {
-	this->placeholder.insert( pair<std::string,std::string>(key,value));
-	return true;
-}
-
-/*std::string IONameHandler::remove_placeholder_item(std::string key) {
-	std::string ret = "";
-	for (std::map<std::string,std::string>::iterator it = this->placeholder.begin(); it != this->placeholder.end(); it++) {
-		if ((*it).first.compare(key) == 0) {
-			ret += (*it).second;
-			this->placeholder.erase(it);
-			break;
-		}
-	}
-	return ret;
-}
-*/
-void IONameHandler::initialize_placeholder() {
-	PetscBool flg; // PetscBool instead of PetscTruth data type
-	char dir[PETSC_MAX_PATH_LEN];     /* directory name */
-
-	/* Initialize input directory name */
-	PetscOptionsHasName(PETSC_NULL,"-i",&flg);
-	if (flg) {
-		PetscOptionsGetString(PETSC_NULL,"-i",dir,PETSC_MAX_PATH_LEN,&flg);
-	    this->add_placeholder_item("${INPUT}",dir);
-	}
-}
