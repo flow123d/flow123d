@@ -11,9 +11,9 @@ private:
     static int numberInstance;
     int id;
 
-    TPoint* X1;
-    TPoint* X2;
-    TPoint* X3;
+    TPoint X1;
+    TPoint X2;
+    TPoint X3;
 
     TAbscissa* A1;
     TAbscissa* A2;

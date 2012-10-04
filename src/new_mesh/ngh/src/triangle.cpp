@@ -24,9 +24,9 @@ TTriangle::TTriangle() {
 TTriangle::TTriangle(const TTriangle& T) {
     id = generateId();
 
-    X1 = new TPoint(*T.X1);
-    X2 = new TPoint(*T.X2);
-    X3 = new TPoint(*T.X3);
+    X1 = T.X1;
+    X2 = T.X2;
+    X3 = T.X3;
 
     A1 = new TAbscissa(*T.A1);
     A2 = new TAbscissa(*T.A2);
@@ -41,9 +41,9 @@ TTriangle::TTriangle(const TTriangle& T) {
 TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
     id = generateId();
 
-    X1 = new TPoint(P1);
-    X2 = new TPoint(P2);
-    X3 = new TPoint(P3);
+    X1 = P1;
+    X2 = P2;
+    X3 = P3;
 
     A1 = new TAbscissa(P1, P2);
     A2 = new TAbscissa(P2, P3);
@@ -56,7 +56,7 @@ TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
 }
 
 TTriangle::~TTriangle() {
-    if (X1 != NULL) {
+    /*if (X1 != NULL) {
         delete X1;
     }
     if (X2 != NULL) {
@@ -64,7 +64,7 @@ TTriangle::~TTriangle() {
     }
     if (X3 != NULL) {
         delete X3;
-    }
+    }*/
 
     if (A1 != NULL) {
         delete A1;
@@ -101,20 +101,20 @@ const TAbscissa &TTriangle::GetAbscissa(const int i) const {
 
 const TPoint &TTriangle::GetPoint(int i) const {
     switch (i) {
-        case 1: return *X1;
+        case 1: return X1;
             break;
-        case 2: return *X2;
+        case 2: return X2;
             break;
-        case 3: return *X3;
+        case 3: return X3;
             break;
         default: mythrow((char*) "Unknown number of the point of the triangle.", __LINE__, __FUNC__);
     }
 }
 
 void TTriangle::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
-    *X1 = P1;
-    *X2 = P2;
-    *X3 = P3;
+    X1 = P1;
+    X2 = P2;
+    X3 = P3;
 
     A1->SetPoints(P1, P2);
     A2->SetPoints(P2, P3);
@@ -152,26 +152,26 @@ const BoundingBox &TTriangle::get_bounding_box() const {
 }
 
 double TTriangle::GetMin(int i) const {
-    double min = X1->Get(i);
+    double min = X1.Get(i);
 
-    if (X2->Get(i) < min) {
-        min = X2->Get(i);
+    if (X2.Get(i) < min) {
+        min = X2.Get(i);
     }
-    if (X3->Get(i) < min) {
-        min = X3->Get(i);
+    if (X3.Get(i) < min) {
+        min = X3.Get(i);
     }
 
     return min;
 }
 
 double TTriangle::GetMax(int i) const {
-    double max = X1->Get(i);
+    double max = X1.Get(i);
 
-    if (X2->Get(i) > max) {
-        max = X2->Get(i);
+    if (X2.Get(i) > max) {
+        max = X2.Get(i);
     }
-    if (X3->Get(i) > max) {
-        max = X3->Get(i);
+    if (X3.Get(i) > max) {
+        max = X3.Get(i);
     }
 
     return max;
@@ -184,16 +184,16 @@ TTriangle & TTriangle::operator =(const TTriangle& t) {
     *(*this).A2 = *t.A2;
     *(*this).A3 = *t.A3;
     *(*this).pl = *t.pl;
-    *(*this).X1 = *t.X1;
-    *(*this).X2 = *t.X2;
-    *(*this).X3 = *t.X3;
+    X1 = t.X1;
+    X2 = t.X2;
+    X3 = t.X3;
 
     return *this;
 }
 
 bool TTriangle::IsInner(const TPoint& P) const {
-    TVector N1, N2, U1(*X1, *X2), U2(*X2, *X3), U3(*X3, *X1);
-    TVector Up1(*X1, P), Up2(*X2, P), Up3(*X3, P);
+    TVector N1, N2, U1(X1, X2), U2(X2, X3), U3(X3, X1);
+    TVector Up1(X1, P), Up2(X2, P), Up3(X3, P);
 
     N1 = Cross(Up1, U1);
     N2 = Cross(U1, U3);

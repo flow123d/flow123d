@@ -9,15 +9,15 @@ private:
     static int numberInstance;
     int id;
 
-    TPoint* X1;
-    TPoint* X2;
-    TPoint* X3;
-    TPoint* X4;
+    TPoint X1;
+    TPoint X2;
+    TPoint X3;
+    TPoint X4;
 
-    TTriangle* T1;
-    TTriangle* T2;
-    TTriangle* T3;
-    TTriangle* T4;
+    TTriangle T1;
+    TTriangle T2;
+    TTriangle T3;
+    TTriangle T4;
 
     TAbscissa* A1;
     TAbscissa* A2;

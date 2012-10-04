@@ -72,7 +72,7 @@ void FunctionInterpolatedP0::set_source_of_interpolation(const std::string & mes
 	read_pressures(raw_output_file);
 	xfclose(raw_output_file);
 
-	calculate_interpolation();
+	//calculate_interpolation();
 }
 
 void FunctionInterpolatedP0::read_pressures(FILE* raw_output) {
