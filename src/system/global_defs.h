@@ -128,6 +128,8 @@
  *
  * You can turn all off defining: NODEBUG
  * or turn all on defining: DEBUG
+ *
+ * DEBUG overrides NODEBUG
  */
 
 #ifdef NODEBUG
@@ -137,8 +139,8 @@
 #undef  DEBUG_PROFILER
 #undef  DEBUG_FUNCTION_STACK
 
+#endif
 
-#else
 
 #ifdef DEBUG
 
@@ -146,7 +148,6 @@
 #define  DEBUG_ASSERTS
 #define  DEBUG_PROFILER
 #define  DEBUG_FUNCTION_STACK
-#endif
 
 #endif
 
@@ -178,6 +179,24 @@
 #else
 
 #define ASSERT_SIZES( a, b)
+
+#endif
+
+
+
+#ifdef DEBUG_ASSERTS
+
+#define ASSERT_LESS( a, b) do { if (a >= b) { \
+    std::cerr << "Violated assert in file " << __FILE__ << " func: " << __func__ << " line: " << __LINE__ << std::endl \
+    << #a << " < " << #b << std::endl \
+    << a << " < " << b << std::endl; \
+    std::cerr.flush(); \
+    abort();} \
+    } while (0)
+
+#else
+
+#define ASSERT_LESS( a, b)
 
 #endif
 

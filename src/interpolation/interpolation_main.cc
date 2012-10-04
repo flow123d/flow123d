@@ -75,12 +75,13 @@ int main(int argc, char **argv) {
 
         
 	const std::string& mesh_file_name = "../tests/01_steady_flow_123d/input/test1.msh";
-	const std::string& raw_output_file_name = "../tests/01_steady_flow_123d/ref_output/flow.ini/raw_output.txt";
-	const std::string& ngh_file_name = "../tests/01_steady_flow_123d/input/test1.ngh";
-	const std::string& bcd_file_name = "../tests/01_steady_flow_123d/input/test1.fbc";
+	const std::string& raw_output_file_name = "../tests/01_steady_flow_123d/ref_output/flow_gmsh.con/raw_output.txt";
+	//const std::string& ngh_file_name = "../tests/01_steady_flow_123d/input/test1.ngh";
+	//const std::string& bcd_file_name = "../tests/01_steady_flow_123d/input/test1.fbc";
 
 	FunctionInterpolatedP0 *fip0 = new FunctionInterpolatedP0();
-	fip0->set_source_of_interpolation(mesh_file_name, raw_output_file_name, ngh_file_name, bcd_file_name);
+	fip0->set_source_of_interpolation(FilePath(mesh_file_name, FilePath::input_file),
+	                                  FilePath(raw_output_file_name, FilePath::input_file) );
         
 	xprintf(Msg, " - interpolation_main executed\n");
 

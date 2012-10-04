@@ -29,7 +29,7 @@
  * @mainpage
  *
  *
- * <h1> Flow123d -
+ * <h1> Flow123d </h1>
  *
  * <h2>Purpose </h2>
  * Flow123d is a simulator of underground water flow and transport processes.
@@ -56,7 +56,7 @@
  *
  * <b> Reactions. </b> There are two modules for simulation of chemical reactions. SEMCHEM module can solve nonlinear differential equations rising form
  *      general multicompoent reactiong systems. On the other side this is very costly and is suitable only for small meshes. The second chemical module
- *      is fast but can cope only with linear reactions, i.e. decays.</b>
+ *      is fast but can cope only with linear reactions, i.e. decays.
  *
  * <b> Paralellism. </b> Both the water flow solver and transport solver can run in parallel on distributed memory systems. We use essentially PETSc and MPI libraries.
  *

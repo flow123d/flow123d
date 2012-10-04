@@ -297,7 +297,38 @@ OutputMSH::OutputMSH(OutputTime *_output_time)
     this->write_head();
 }
 
+OutputMSH::OutputMSH(OutputTime *_output_time, const Input::Record &in_rec)
+{
+    this->output = _output_time;
+    this->output_time = _output_time;
+    this->write_head();
+}
+
 OutputMSH::~OutputMSH()
 {
     this->write_tail();
+}
+
+Input::Type::Record & OutputMSH::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("gmsh", "Parameters of gmsh output format.");
+
+	if (!rec.is_finished()) {
+
+		// It is derived from abstract class
+		rec.derive_from(OutputFormat::get_input_type());
+
+		// The variant
+		static Selection variant_sel("GMSH variant");
+	    variant_sel.add_value(OutputMSH::VARIANT_ASCII, "ascii",
+	    		"ASCII variant of GMSH file format");
+	    variant_sel.add_value(OutputMSH::VARIANT_BINARY, "binary",
+	    		"Binary variant of GMSH file format (not supported yet)");
+	    variant_sel.finish();
+
+		rec.finish();
+	}
+
+	return rec;
 }

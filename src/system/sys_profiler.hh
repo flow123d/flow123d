@@ -213,8 +213,16 @@ private:
     time_t start_time;
     MPI_Comm communicator;
     int id;
-    int task_size;
-    string out_dir;
+
+    // header informations
+    int task_size_;
+    string task_description_;
+
+    string flow_name_;
+    string flow_version_;
+    string flow_branch_;
+    string flow_revision_;
+    string flow_build_;
 
     map<string, Timer*> tag_map;
 
@@ -274,10 +282,9 @@ public:
     /**
      * Initializes the Profiler with specific MPI communicator object
      */
-    static void initialize(MPI_Comm communicator, string odir) {
+    static void initialize(MPI_Comm communicator) {
         if (!_instance)
             _instance = new Profiler(communicator);
-        _instance->out_dir = odir;
     }
 
     /**
@@ -295,11 +302,20 @@ public:
     void end(string tag = "");
 
     /**
-     * Sets the size of the task. Will be written into output
+     * Sets task specific information. The string @p description with textual description of the task and the
+     * number of elements of the mesh (parameter @p size). This is used for weak scaling graphs so it should
+     * measure size of the task of the same type (same description).
      *
-     * @param size - size of the task
      */
-    void set_task_size(int size);
+    void set_task_info(string description, int size);
+
+    /**
+     * Sets informations about program version. This consists of @p program_version (includes program name), @p branch in the repository or rather full URL of the branch,
+     * and SVN @p revision (or hash for GIT).
+     *
+     */
+    void set_program_info(string program_name, string program_version, string branch, string revision, string build);
+
 
     /**
      * Sets the number of subframes (eg. iterations) in which the current Timer is divided.

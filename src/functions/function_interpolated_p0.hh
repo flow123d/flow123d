@@ -59,10 +59,8 @@ public:
 	 * @param ngh_file file with specification of adjacency between dimensions
 	 * @param bcd_file file with boundary conditions
 	 */
-	void set_source_of_interpolation(const std::string & mesh_file,
-									 const std::string & raw_output,
-									 const std::string & ngh_file,
-									 const std::string & bcd_file);
+	void set_source_of_interpolation(const FilePath & mesh_file,
+									 const FilePath & raw_output);
 
     /**
      * Returns one scalar value in one given point.

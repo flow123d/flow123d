@@ -32,23 +32,62 @@
 #ifndef _GMSHMESHREADER_H
 #define	_GMSHMESHREADER_H
 
-#include "msh_reader.h"
 #include "mesh/mesh.h"
+#include <string>
+#include <istream>
+#include <boost/tokenizer.hpp>
 
-class GmshMeshReader : public MeshReader {
+
+class Tokenizer {
+public:
+    typedef boost::tokenizer<boost::char_separator<char> > BT;
+
+    Tokenizer( istream &in);
+    void next_line();
+    inline const std::string & operator *() const
+        { return *tok_; }
+    inline BT::iterator & operator ++()
+        {position++; return ++tok_;}
+    inline unsigned int line_num() const
+        {return line_counter_;}
 private:
-    void read_nodes(FILE*, Mesh*);
-    void read_elements(FILE*, Mesh*);
-    void parse_element_line(ElementVector&, char*, Mesh* mesh);
+    istream &in_;
+    string line_;
+    unsigned int line_counter_;
+
+    unsigned int position;
+    BT::iterator tok_;
+    BT line_tokenizer_;
+};
+
+
+
+class GmshMeshReader {
+private:
+    std::string mesh_file;
+
+    /**
+     * private method for reading of nodes
+     */
+    void read_nodes(istream &in, Mesh*);
+    /**
+     * private method for reading of elements - in process of implementation
+     */
+    void read_elements(istream &in, Mesh*);
 
 public:
     GmshMeshReader();
     ~GmshMeshReader();
 
     /**
-     *  Read mesh from file
+     *  Reads @p mesh from file with given @p file_name.
      */
-    void read(const std::string &file_name, Mesh* mesh);
+    void read(const FilePath &file_name, Mesh* mesh);
+
+    /**
+     *  Reads @p mesh from given stream @p in.
+     */
+    void read(istream &in, Mesh *mesh);
 
 };
 

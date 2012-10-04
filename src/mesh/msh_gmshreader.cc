@@ -32,166 +32,176 @@
 
 #include "msh_gmshreader.h"
 #include "mesh/nodes.hh"
-#include "system/xio.h"
+#include <fstream>
+#include <string>
 
-GmshMeshReader::GmshMeshReader() {
+#include <boost/tokenizer.hpp>
+#include "boost/lexical_cast.hpp"
+
+
+using namespace std;
+
+Tokenizer::Tokenizer( istream &in)
+: in_(in), line_counter_(0), line_tokenizer_(line_,  boost::char_separator<char>("\t \n"))
+{}
+
+
+
+void Tokenizer::next_line() {
+    line_="";
+    while ( line_ == "") { std::getline( in_, line_); boost::trim( line_ ); line_counter_++; }
+    line_tokenizer_.assign(line_);
+    tok_ = line_tokenizer_.begin();
+    position = 0;
+}
+
+GmshMeshReader::GmshMeshReader()
+{
     xprintf(Msg, " - GmshMeshReader()\n");
 }
+
+
 
 GmshMeshReader::~GmshMeshReader() {
 }
 
-/**
- *  Read mesh from file
- */
-void GmshMeshReader::read(const std::string &fileName, Mesh* mesh) {
-    xprintf(Msg, " - GmshMeshReader->read(const char* fileName, Mesh* mesh)\n");
 
-    ASSERT(!(mesh == NULL), "Argument mesh is NULL in method GmshMeshRedaer->read(const char*, Mesh*)\n");
 
-    FILE* file = xfopen(fileName.c_str(), "rt");
+void GmshMeshReader::read(const FilePath &file_name, Mesh* mesh) {
+    mesh_file = file_name;
 
-    read_nodes(file, mesh);
-    read_elements(file, mesh);
+    std::ifstream ifs( mesh_file.c_str(), std::ifstream::in );
+    read(ifs, mesh);
 
-    xfclose(file);
+    mesh_file ="";
+}
+
+
+
+
+void GmshMeshReader::read(istream &in, Mesh *mesh) {
+    F_ENTRY;
+
+    ASSERT( mesh , "Argument mesh is NULL.\n");
+
+    read_nodes(in, mesh);
+    read_elements(in, mesh);
 
     mesh->setup_topology();
 }
 
-/**
- * private method for reading of nodes
- */
-void GmshMeshReader::read_nodes(FILE* in, Mesh* mesh) {
+
+
+
+void GmshMeshReader::read_nodes(istream &in, Mesh* mesh) {
+    using namespace boost;
     xprintf(Msg, " - Reading nodes...");
 
-    char line[ LINE_SIZE ];
-
     skip_to(in, "$Nodes");
-    xfgets(line, (LINE_SIZE - 2), in);
-    int numNodes = atoi(xstrtok(line));
-    ASSERT(!(numNodes < 1), "Number of nodes < 1 in function read_node_list()\n");
+    Tokenizer tok(in);
+    try {
+        tok.next_line();
 
-    mesh->node_vector.reserve(numNodes);
+        unsigned int n_nodes = lexical_cast<unsigned int> (*tok);;
 
-    for (int i = 0; i < numNodes; ++i) {
-        xfgets(line, LINE_SIZE - 2, in);
+        INPUT_CHECK( n_nodes > 0, "Zero number of nodes in the mesh file %s.", mesh_file.c_str() ); // should throw and catch at level where we know the file name
+        mesh->node_vector.reserve(n_nodes);
 
-        int id = atoi(xstrtok(line));
-        //TODO: co kdyz id <= 0 ???
-        INPUT_CHECK(!(id < 0), "Id of node must be > 0\n");
+        for (int i = 0; i < n_nodes; ++i) {
+            tok.next_line();
 
+            unsigned int id = lexical_cast<unsigned int> (*tok); ++tok;
+            INPUT_CHECK( id >= 0, "Negative node id at line %d of the '$Nodes' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
+            NodeFullIter node = mesh->node_vector.add_item(id);
 
-        double x = atof(xstrtok(NULL));
-        double y = atof(xstrtok(NULL));
-        double z = atof(xstrtok(NULL));
+            node->point()(0)=lexical_cast<double> (*tok); ++tok;
+            node->point()(1)=lexical_cast<double> (*tok); ++tok;
+            node->point()(2)=lexical_cast<double> (*tok);
+        }
 
-        NodeFullIter node = mesh->node_vector.add_item(id);
-        //node->id = id;
-        node->point()(0)=x;
-        node->point()(1)=y;
-        node->point()(2)=z;
+    } catch (bad_lexical_cast &) {
+        xprintf(UsrErr, "Wrong number at line %d of the '$Nodes' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
     }
-
-    //xprintf(MsgVerb, " %d nodes readed. ", nodeList->size());
-    xprintf(Msg, " %d nodes readed. ", mesh->node_vector.size());
-    xprintf(Msg, "O.K.\n");
-}
-
-/**
- * PARSE ELEMENT LINE
- */
-void GmshMeshReader::parse_element_line(ElementVector &ele_vec, char *line, Mesh* mesh) {
-    int id, ti, ni;
-    int type;
-    int n_tags = NDEF;
-
-    F_ENTRY;
-    ASSERT(NONULL(line), "NULL as argument of function parse_element_line()\n");
-
-    //get element ID
-    id = atoi(xstrtok(line));
-    INPUT_CHECK(id >= 0, "Id number of element must be >= 0\n");
-
-    //DBGMSG("add el: %d", id);
-    ElementFullIter ele(ele_vec.add_item(id));
-
-    //get element type: supported:
-    //	1 Line (2 nodes)
-    //	2 Triangle (3 nodes)
-    //	4 Tetrahedron (4 nodes)
-    type = atoi(xstrtok(NULL));
-    switch (type) {
-        case 1:
-            ele->dim_ = 1;
-            break;
-        case 2:
-            ele->dim_ = 2;
-            break;
-        case 4:
-            ele->dim_ = 3;
-            break;
-        default:
-            xprintf(UsrErr, "Element %d is of the unsupported type %d\n", ele.id(), type);
-    }
-
-    //get number of tags (at least 2)
-    n_tags = atoi(xstrtok(NULL));
-    INPUT_CHECK(!(n_tags < 2), "At least two element tags have to be defined. Elm %d\n", id);
-    //get tags 1 and 2
-    ele->mid = atoi(xstrtok(NULL));
-    int rid = atoi(xstrtok(NULL));
-    //get remaining tags
-    if (n_tags > 2)  ele->pid = atoi(xstrtok(NULL)); // chop partition number in the new GMSH format
-    for (ti = 3; ti < n_tags; ti++) xstrtok(NULL);         //skip remaining tags
-
-    // allocate element arrays
-    ele->node = new Node * [ele->n_nodes()];
-    ele->edges_ = new Edge * [ele->n_sides()];
-    ele->boundaries_ = new Boundary * [ele->n_sides()];
-    ele->mesh_ = mesh;
-
-    FOR_ELEMENT_SIDES(ele, si) {
-        ele->edges_[ si ]=NULL;
-        ele->boundaries_[si] =NULL;
-    }
-
-    FOR_ELEMENT_NODES(ele, ni) {
-        int nodeId = atoi(xstrtok(NULL));
-        NodeIter node = mesh->node_vector.find_id( nodeId );
-
-        ASSERT(NONULL(node), "Unknown node with label %d\n", nodeId);
-
-        ele->node[ni] = node;
-    }
+    xprintf(Msg, " %d nodes read. \n ", mesh->node_vector.size());
 }
 
 
-/**
- * private method for reading of elements - in process of implementation
- */
-void GmshMeshReader::read_elements(FILE* in, Mesh * mesh) {
+
+
+
+void GmshMeshReader::read_elements(istream &in, Mesh * mesh) {
+    using namespace boost;
     xprintf(Msg, " - Reading elements...");
 
-    char line[ LINE_SIZE ];
-
     skip_to(in, "$Elements");
-    xfgets(line, LINE_SIZE - 2, in);
-    int numElements = atoi(xstrtok(line));
-    ASSERT(!(numElements < 1), "Number of elements < 1 in function read_node_list()\n");
+    Tokenizer tok(in);
 
-    mesh->element.reserve(numElements);
-    //init_element_list( mesh );
+    try {
+        tok.next_line();
+        unsigned int n_elements = lexical_cast<unsigned int> (*tok);
+        INPUT_CHECK( n_elements > 0, "Zero number of elements in the mesh file %s.\n", mesh_file.c_str());
+        mesh->element.reserve(n_elements);
 
-    for (int i = 0; i < numElements; ++i) {
-        xfgets(line, LINE_SIZE - 2, in);
-        parse_element_line(mesh->element, line, mesh);
+        for (unsigned int i = 0; i < n_elements; ++i) {
+            tok.next_line();
+
+            unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
+            INPUT_CHECK(id >= 0, "Negative element id at line %d of the '$Elements' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
+
+            ElementFullIter ele(mesh->element.add_item(id));
+
+            //get element type: supported:
+            //  1 Line (2 nodes)
+            //  2 Triangle (3 nodes)
+            //  4 Tetrahedron (4 nodes)
+            unsigned int type = lexical_cast<unsigned int>(*tok); ++tok;
+            switch (type) {
+                case 1:
+                    ele->dim_ = 1;
+                    break;
+                case 2:
+                    ele->dim_ = 2;
+                    break;
+                case 4:
+                    ele->dim_ = 3;
+                    break;
+                default:
+                    xprintf(UsrErr, "Element %d is of the unsupported type %d\n", ele.id(), type);
+            }
+
+            //get number of tags (at least 2)
+            unsigned int n_tags = lexical_cast<unsigned int>(*tok); ++tok;
+            INPUT_CHECK(n_tags >= 2, "At least two element tags have to be defined for elment with id=%d\n", id);
+            //get tags 1 and 2
+            ele->mid = lexical_cast<unsigned int>(*tok); ++tok;
+            unsigned int rid = lexical_cast<unsigned int>(*tok); ++tok; // region number, we do not store this
+            //get remaining tags
+            if (n_tags > 2)  { ele->pid = lexical_cast<unsigned int>(*tok); ++tok; } // save partition number in the new GMSH format
+            for (unsigned int ti = 3; ti < n_tags; ti++) ++tok;         //skip remaining tags
+
+            // allocate element arrays TODO: should be in mesh class
+            ele->node = new Node * [ele->n_nodes()];
+            ele->edges_ = new Edge * [ele->n_sides()];
+            ele->boundaries_ = new Boundary * [ele->n_sides()];
+            ele->mesh_ = mesh;
+
+            FOR_ELEMENT_SIDES(ele, si) {
+                ele->edges_[ si ]=NULL;
+                ele->boundaries_[si] =NULL;
+            }
+
+            unsigned int ni;
+            FOR_ELEMENT_NODES(ele, ni) {
+                unsigned int node_id = lexical_cast<unsigned int>(*tok); ++tok;
+                NodeIter node = mesh->node_vector.find_id( node_id );
+                INPUT_CHECK( node!=mesh->node_vector.end() , "Unknown node id %d in specification of element with id=%d.\n", node_id, id);
+                ele->node[ni] = node;
+            }
+        }
+
+    } catch (bad_lexical_cast &) {
+        xprintf(UsrErr, "Wrong number at line %d of the '$Elements' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
     }
-    ASSERT((mesh->n_elements() == numElements),
-            "Number of created elements %d does not match number of elements %d in the input file.\n",
-            mesh->n_elements(),
-            numElements);
 
-    xprintf(Msg, " %d elements readed. ", mesh->n_elements())/*orig verb 4*/;
-    xprintf(Msg, "O.K.\n")/*orig verb 2*/;
+    xprintf(Msg, " %d elements read. \n", mesh->n_elements());
 }

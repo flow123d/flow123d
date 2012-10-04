@@ -52,6 +52,8 @@ struct Boundary;
 class Boundary
 {
 public:
+    ElementIter get_bc_element_iter();
+
     // Data readed from boundary conditions files (REMOVE)
     int      type;      // Type of boundary condition
     double   scalar;    // Scalar - for Dirichlet's or Newton's type
@@ -61,6 +63,7 @@ public:
     int      group;     // Group of condition
     // Topology of the mesh
     SideIter side;      // side, where prescribed
+    Element bc_element_;  // in near future this should replace Boundary itself, when we remove BC data members
 
 };
 #define DIRICHLET   1
@@ -68,7 +71,7 @@ public:
 #define NEWTON      3
 
 
-void read_boundary(Mesh*);
+void read_boundary(Mesh*, const string &boundary_filename);
 
 #endif
 //-----------------------------------------------------------------------------

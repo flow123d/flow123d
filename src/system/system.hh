@@ -36,11 +36,11 @@
 
 
 #include "global_defs.h"
-#include "io/read_ini.h"
 #include "system/math_fce.h"
 #include "system/sys_function_stack.hh"
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
+
 
 // for a linux system we assume glibc library
 // with support of ISOC99 functions
@@ -60,7 +60,7 @@
 #endif
 
 #define strcmpi strcasecmp
-#define PATH_SEP "/"
+#define DIR_DELIMITER '/'
 
 using namespace std;
 
@@ -92,6 +92,8 @@ typedef struct SystemInfo {
 extern SystemInfo sys_info;
 
 void system_init( MPI_Comm comm,const  string &log_fname );
+
+
 void    system_set_from_options();
 char * 	get_log_fname( void );
 char * 	get_log_file( void );
@@ -107,9 +109,13 @@ void * xrealloc( void * ptr, size_t size );
 
 // TODO: implement as a templated function
 #ifndef xfree
-    #define xfree(p) do { if (p) { free(p); (p)=NULL; } else {DBGMSG("Free NULL pointer? (in %s, %s(), line %d)\n", __FILE__, __func__, __LINE__);} } while (0) /// test & free memory
+    #define xfree(p) \
+    do { if (p) { free(p); (p)=NULL; } \
+         else {DBGMSG("Free NULL pointer? (in %s, %s(), line %d)\n", __FILE__, __func__, __LINE__); \
+              } \
+    } while (0) /// test & free memory
 #endif
-
+//        F_STACK_SHOW( stdout ); \
 
 /**
  * @brief Replacement of new/delete operator in the spirit of xmalloc.
@@ -141,7 +147,8 @@ int     xrename( const char * oldname, const char * newname ); ///< Rename file 
 
 //! @brief auxiliary
 /// @{
-bool    skip_to( FILE *const in, const char *section );
+bool skip_to( FILE *const in, const char *section );
+bool skip_to( istream &in, const string &pattern );
 //! @}
 
 // string operations

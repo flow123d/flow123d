@@ -21,6 +21,8 @@
 # $LastChangedDate$
 #
 
+add_subdirectory("input/json_spirit")
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #message(STATUS "Include directories: ${flow123d_includes}")
 #include_directories(${flow123d_includes})
@@ -31,13 +33,72 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # select source files that compose whole flow123d library
 # todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
 # every library then can be testetd independently
-set(sources_lib_non_system
+set(sources_lib_system
+    system/python_loader.cc
+    system/math_fce.cc
+    system/sys_function_stack.cpp
+    system/sys_profiler.cc
+    system/system.cc
+    system/xio.cc
+    system/exceptions.cc
+    io/read_ini.cc
+    system/file_path.cc
+)
+
+set(sources_lib_input
+  
+    input/type_base.cc
+    input/type_record.cc
+    input/type_selection.cc
+    input/storage.cc
+    input/json_to_storage.cc
     
-    
+    input/accessors.cc
+)
+
+set(sources_mesh_lib
+    mesh/msh_gmshreader.cc
+    mesh/boundaries.cc
+    mesh/edges.cc
+    mesh/elements.cc
+    mesh/mesh.cc
+    mesh/neighbours.cc
+    mesh/nodes.cc
+    mesh/sides.cc
+    mesh/topology.cc
+    mesh/intersection.cc
+)
+
+set(sources_fem_lib
+    quadrature/quadrature_lib.cc
+
+    fem/fe_p.cc
     fem/dofhandler.cc
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
+)
+
+set(sources_lib_new_mesh
+    new_mesh/multi_mesh.cc
+    new_mesh/point.cc
+    )
+
+set(sources_lib_la
+	la/distribution.cc
+	la/local_to_global_map.cc
+    la/schur.cc
+    la/solve.cc
+    la/linsys.cc
+    la/sparse_graph.cc
+)
+
+set(sources_lib_functions
+    #functions/discrete_function.cc
+    functions/function_interpolated_p0.cc
+)    
+
+set(sources_lib_non_system
 
     flow/mh_fe_values.cc
     flow/mh_dofhandler.cc
@@ -48,12 +109,10 @@ set(sources_lib_non_system
     io/output_vtk.cc
     io/output_msh.cc
     
-
-    quadrature/quadrature_lib.cc
-
+    reaction/reaction.cc
     reaction/linear_reaction.cc
+    reaction/pade_approximant.cc
     semchem/semchem_interface.cc
-
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
@@ -61,28 +120,26 @@ set(sources_lib_non_system
     transport/transport_dg.cc
     transport/sources.cc
 
+    coupling/equation.cc
+    coupling/hc_explicit_sequential.cc
 
-    io_namehandler.cc
-    equation.cc
     time_marks.cc
     materials.cc
     time_governor.cc
-    hc_explicit_sequential.cc
     field_p0.cc
 )
 
-set(sources_lib_new_mesh
-    mesh/msh_gmshreader.cc
-    
-    mesh/boundaries.cc
-    mesh/edges.cc
-    mesh/elements.cc
-    mesh/mesh.cc
-    mesh/neighbours.cc
-    mesh/nodes.cc
-    mesh/sides.cc
-    mesh/topology.cc
 
+
+# make separate library for Semchem (God save us!)
+set(sources_lib_semchem
+    semchem/che_semchem.cc
+    semchem/che_read.cc
+#    semchem/cti_ichnew.c
+)
+
+
+set(sources_lib_new_mesh
     new_mesh/multi_mesh.cc
     new_mesh/point.cc
     new_mesh/bounding_interval_hierarchy.cc
@@ -105,40 +162,7 @@ set(sources_lib_new_mesh
     new_mesh/ngh/src/vector.cpp
     new_mesh/ngh/src/vertex.cpp
     
-    functions/function_interpolated_p0.cc
     )
-
-set(sources_lib_la
-    la/local_to_global_map.cc
-    la/schur.cc
-    la/solve.cc
-    la/linsys.cc
-    la/sparse_graph.cc
-    
-    # distribution is already part of 'la' in new branches
-    system/par_distribution.cc
-)
-
-set(sources_lib_system
-    
-    system/math_fce.cc
-    system/sys_function_stack.cpp
-    system/sys_profiler.cc
-    system/system.cc
-    system/xio.cc
-    io/read_ini.cc
-)
-
-set(sources_lib_input
-    input/input_type.cc
-)
-
-# make separate library for Semchem (God save us!)
-set(sources_lib_semchem
-    semchem/che_semchem.cc
-    semchem/che_read.cc
-#    semchem/cti_ichnew.c
-)
 
 # add individual libraries
 
@@ -149,28 +173,45 @@ endif()
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${MPIUNI_LIB} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARY_DIRS})
+target_link_libraries(system_lib ${MPIUNI_LIB} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 # input_lib
 add_library(input_lib ${sources_lib_input})
-target_link_libraries(input_lib system_lib json_spirit)
+target_link_libraries(input_lib 
+    system_lib json_spirit)
 
 # new_mesh_lib
 add_library(new_mesh_lib ${sources_lib_new_mesh})
 target_link_libraries(new_mesh_lib 
-    ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})    
+    ${Armadillo_LIBRARIES} ${Boost_LIBRARIES})    
     
 # la_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
+    ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
 
+# mesh_lib
+add_library(mesh_lib ${sources_mesh_lib})
+target_link_libraries(mesh_lib
+    input_lib system_lib ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
+    
+# fem_lib    
+add_library(fem_lib ${sources_fem_lib})
+target_link_libraries(fem_lib
+    system_lib mesh_lib ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
+ 
+# functions_lib  
+add_library(functions_lib ${sources_lib_functions})
+target_link_libraries(functions_lib
+    system_lib input_lib mesh_lib ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
+
+  
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    system_lib la_lib fparser semchem new_mesh_lib
-    ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARY_DIRS})
+    functions_lib fem_lib new_mesh_lib mesh_lib la_lib semchem  input_lib system_lib
+    fparser ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

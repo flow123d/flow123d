@@ -32,6 +32,11 @@
 
 
 #include "system/system.hh"
+#include "input/input_type.hh"
+
+#include <boost/tokenizer.hpp>
+#include "boost/lexical_cast.hpp"
+
 #include "mesh/mesh.h"
 
 // think about following dependencies
@@ -50,11 +55,63 @@
 void count_element_types(Mesh*);
 void read_node_list(Mesh*);
 
-Mesh::Mesh(string neighbour_fname, string bcd_fname) {
-    xprintf(Msg, " - Mesh()     - version with node_vector\n");
 
-    neigh_fname_=neighbour_fname;
-    bcd_fname_=bcd_fname;
+Input::Type::Record BoundarySegment::get_input_type() {
+    using namespace Input::Type;
+
+    static Record rec("BoundarySegment","Record with specification of boundary segments,\n"
+            "i.e. subsets of the domain boundary where we prescribe one boundary condition.\n"
+            "Currently very GMSH oriented. (NOT IMPLEMENTED YET)");
+    if (!rec.is_finished()) {
+        rec.declare_key("physical_domains", Array(Integer(0)),
+                "Numbers of physical domains (submeshes) that forms a segment and that "
+                "will be removed from the computational mesh.");
+        rec.declare_key("elements", Array(Integer(0)),
+                        "Numbers of elements that forms a segment and that "
+                        "will be removed from the computational mesh.");
+        rec.declare_key("sides", Array( Array(Integer(0), 2,2) ),
+                        "Pairs [ element, local_side] specifying sides that are part of the boundary segment."
+                        "Sides are NOT removed from computation.");
+        rec.finish();
+    }
+    return rec;
+}
+
+Input::Type::Record Mesh::get_input_type() {
+    using namespace Input::Type;
+
+    static Record rec("Mesh","Record with mesh related data." );
+    if (!rec.is_finished()) {
+        rec.declare_key("mesh_file", FileName::input(), Default::obligatory(),
+                "Input file with mesh description.");
+        rec.declare_key("boundary_segmants", Array( BoundarySegment::get_input_type() ),
+                "Array with specification of boundary segments");
+        rec.declare_key("neighbouring", FileName::input(), Default::obligatory(),
+                "File with mesh connectivity data.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
+
+Mesh::Mesh()
+{
+    reinit(in_record_);
+}
+
+
+
+Mesh::Mesh(Input::Record in_record)
+: in_record_(in_record) {
+    reinit(in_record_);
+}
+
+
+
+void Mesh::reinit(Input::Record in_record)
+{
+
     n_materials = NDEF;
 
     n_insides = NDEF;
@@ -107,8 +164,6 @@ Mesh::Mesh(string neighbour_fname, string bcd_fname) {
     side_nodes[2][3][0] = 0;
     side_nodes[2][3][1] = 1;
     side_nodes[2][3][2] = 2;
-
-
 }
 
 
@@ -140,13 +195,13 @@ void Mesh::count_element_types() {
         case 3:
             n_tetrahedras++;
             break;
-    }
+        }
 }
 
 /**
  *  Setup whole topology for read mesh.
  */
-void Mesh::setup_topology() {
+void Mesh::setup_topology(istream *in) {
     F_ENTRY;
     Mesh *mesh=this;
 
@@ -155,8 +210,16 @@ void Mesh::setup_topology() {
 
     // topology
     //node_to_element();
+    if (in) {
+        read_neighbours(*in);
+    } else if ( ! in_record_.is_empty() ) {
+        string ngh_file_name = in_record_.val<FilePath>("neighbouring");
+        ifstream ngh_in(  ngh_file_name.c_str(), std::ifstream::in );
+        read_neighbours(ngh_in);
+    } else {
+        return;
+    }
 
-    read_neighbours();
     edge_to_side();
 
     neigh_vb_to_element_and_side();
@@ -164,7 +227,7 @@ void Mesh::setup_topology() {
 
     count_side_types();
 
-    read_boundary(mesh);
+
 
     xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
 
@@ -220,9 +283,7 @@ void Mesh::node_to_element()
     xprintf( MsgVerb, "O.K.\n");*/
 }
 
-//=============================================================================
 //
-//=============================================================================
 void Mesh::count_side_types()
 {
     struct Side *sde;
@@ -236,18 +297,15 @@ void Mesh::count_side_types()
 
 
 
-void Mesh::read_neighbours() {
-    FILE    *in;   // input file
-    char     line[ LINE_SIZE ];   // line of data file
+void Mesh::read_neighbours(istream &in) {
+    char line[LINE_SIZE];   // line of data file
     unsigned int id;
 
-    xprintf( Msg, "Reading neighbours...");
-    
-    in = xfopen( neigh_fname_, "rt" );
+    xprintf( Msg, "Reading neighbours...A\n");
     skip_to( in, "$Neighbours" );
-    xfgets( line, LINE_SIZE - 2, in );
+    in.getline(line, LINE_SIZE);
 
-    unsigned int n_neighs = atoi( xstrtok( line) );
+    unsigned int n_neighs = atoi( xstrtok( line ) );
     INPUT_CHECK( n_neighs > 0 ,"Number of neighbours  < 1 in read_neighbour_list()\n");
     neighbours_.resize( n_neighs );
 
@@ -256,9 +314,9 @@ void Mesh::read_neighbours() {
 
     for(vector<Neighbour_both>::iterator ngh= neighbours_.begin();
             ngh != neighbours_.end(); ++ngh ) {
-        xfgets( line, LINE_SIZE - 2, in );
+        in.getline(line, LINE_SIZE);
 
-        id              = atoi( xstrtok( line) );
+        id              = atoi( xstrtok( line ) );
         ngh->type            = atoi( xstrtok( NULL) );
 
         switch( ngh->type ) {
@@ -300,8 +358,7 @@ void Mesh::read_neighbours() {
                 break;
         }
     }
-
-    //xprintf( Msg, " %d neighbours readed. ", n_vb_neighbours() );
+    xprintf( Msg, " %d VB neighbours %d BB neigs. readed. ", n_vb_neigh, n_bb_neigh );
 }
 
 
@@ -323,7 +380,7 @@ void Mesh::edge_to_side()
 
     // create edge vector
     edge.resize(n_edges);
-    xprintf( MsgLog, "Created  %d edges.\n.", n_edges );
+    xprintf( Msg, "Created  %d edges.\n.", n_edges );
 
     // set edge, side connections
     unsigned int i_edge=0;
@@ -358,7 +415,7 @@ void Mesh::edge_to_side()
             sde->element()->edges_[sde->el_idx()] = edg;
         }
     }
-    ASSERT(i_edge == n_edges, "Actual number of edges %d do not match size of its array.\n", i_edge);
+    ASSERT(i_edge == n_edges, "Actual number of edges %d do not match size %d of its array.\n", i_edge, n_edges);
 
     //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
 }
@@ -369,7 +426,7 @@ void Mesh::edge_to_side()
 
 /**
  * Make
- */
+ ***/
 void Mesh::neigh_vb_to_element_and_side()
 {
 
@@ -406,9 +463,8 @@ void Mesh::neigh_vb_to_element_and_side()
     ASSERT( new_ngh == vb_neighbours_.end(), "Some VB neigbourings wasn't set.\n");
 
 
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    xprintf( MsgVerb, "O.K.\n");
 }
-
 
 
 
@@ -456,5 +512,104 @@ void Mesh::setup_materials( MaterialDatabase &base)
 }
 
 
+void Mesh::read_intersections() {
+
+    using namespace boost;
+
+    ElementFullIter master(element), slave(element);
+
+    char tmp_line[LINE_SIZE];
+    string file_name = in_record_.val<FilePath>("neighbouring");
+    FILE *in = xfopen( file_name , "rt" );
+
+    tokenizer<boost::char_separator<char> >::iterator tok;
+
+    xprintf( Msg, "Reading intersections...")/*orig verb 2*/;
+    skip_to(in, "$Intersections");
+    xfgets(tmp_line, LINE_SIZE - 2, in);
+    int n_intersect = atoi(xstrtok(tmp_line));
+    INPUT_CHECK( n_intersect >= 0 ,"Negative number of neighbours!\n");
+
+    intersections.reserve(n_intersect);
+
+    for (int i = 0; i < n_intersect; i++) {
+        xfgets(tmp_line, LINE_SIZE - 2, in);
+        string line = tmp_line;
+        tokenizer<boost::char_separator<char> > line_tokenizer(line, boost::char_separator<char>("\t \n"));
+
+        tok = line_tokenizer.begin();
+
+        try {
+            ++tok; // skip id token
+            int type = lexical_cast<int> (*tok);
+            ++tok;
+            int master_id = lexical_cast<int> (*tok);
+            ++tok;
+            int slave_id = lexical_cast<int> (*tok);
+            ++tok;
+            double sigma = lexical_cast<double> (*tok);
+            ++tok;
+
+            int n_intersect_points = lexical_cast<int> (*tok);
+            ++tok;
+            master = element.find_id(master_id);
+            slave = element.find_id(slave_id);
+
+            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, tok));
+        } catch (bad_lexical_cast &) {
+            xprintf(UsrErr, "Wrong number format at line %d in file %s x%sx\n",i, file_name.c_str(),(*tok).c_str());
+        }
+
+    }
+
+    xprintf( Msg, "O.K.\n")/*orig verb 2*/;
+
+}
+
+
+void Mesh::make_intersec_elements() {
+
+     // calculate sizes and make allocations
+     vector<int >sizes(n_elements(),0);
+     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
+     sizes[i->master_iter().index()]++;
+     master_elements.resize(n_elements());
+     for(int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
+
+     // fill intersec_elements
+     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
+     master_elements[i->master_iter().index()].push_back( i-intersections.begin() );
+
+}
+
+/*
+void Mesh::make_edge_list_from_neigh() {
+    int edi;
+    Mesh *mesh = this;
+    struct Neighbour *ngh;
+
+    xprintf( Msg, "Creating edges from neigbours... ");
+
+    int n_edges = mesh->n_sides;
+    FOR_NEIGHBOURS( ngh )
+        if (ngh->type == BB_E || ngh->type == BB_EL)
+            n_edges-=( ngh->n_elements - 1 );
+
+    mesh->edge.resize(n_edges);
+
+    xprintf( MsgVerb, " O.K. %d edges created.", mesh->n_edges());
+
+    EdgeFullIter edg = mesh->edge.begin();
+    n_edges=0;
+    FOR_NEIGHBOURS( ngh )
+        if (ngh->type == BB_E || ngh->type == BB_EL) {
+            ngh->edge = edg;
+            edg->neigh_bb = ngh;
+            ++edg;
+            n_edges++;
+        }
+    xprintf( MsgVerb, "O.K. %d\n");
+
+}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -40,7 +40,7 @@ static void parse_boundary_line(struct Boundary*,char*);
 //=============================================================================
 // READ DATA OF BOUNDARY CONDITIONS
 //=============================================================================
-void read_boundary( struct Mesh *mesh )
+void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 {
 	FILE	*in;		  // input file
 	char     line[ LINE_SIZE ]; // line of data file
@@ -51,8 +51,8 @@ void read_boundary( struct Mesh *mesh )
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_boundary_list()\n");
 	xprintf( Msg, "Reading boundary conditions...")/*orig verb 2*/;
-	
-	in = xfopen( mesh->bcd_fname_, "rt" );
+
+	in = xfopen( boundary_filename, "rt" );
 	skip_to( in, "$BoundaryConditions" );
 	xfgets( line, LINE_SIZE - 2, in );
 
@@ -86,6 +86,7 @@ void read_boundary( struct Mesh *mesh )
                             break;
             default :
                 xprintf(UsrErr,"Unknown type of boundary condition - cond # %d, type %c\n", bcd_id, bcd->type );
+                break;
         }
 
         unsigned int where  = atoi( xstrtok( NULL) );

@@ -58,17 +58,20 @@ void FunctionInterpolatedP0::set_element(ElementFullIter &element){
 	}
 }
 
-void FunctionInterpolatedP0::set_source_of_interpolation(const std::string & mesh_file,
-		const std::string & raw_output, const std::string & ngh_file, const std::string & bcd_file) {
+void FunctionInterpolatedP0::set_source_of_interpolation(const FilePath & mesh_file,
+		const FilePath & raw_output) {
 
 	// read mesh, create tree
-	MeshReader* meshReader = new GmshMeshReader();
-	mesh_ = new Mesh(ngh_file, bcd_file);
-	meshReader->read(mesh_file, mesh_);
+    {
+	   GmshMeshReader reader;
+	   mesh_ = new Mesh();
+	   reader.read( mesh_file, mesh_);
+	   // no call to mesh->setup_topology, we need only elements, no connectivity
+    }
 	bihTree_ = new BIHTree(mesh_);
 
 	// read pressures
-	FILE* raw_output_file = xfopen(raw_output.c_str(), "rt");
+	FILE* raw_output_file = xfopen( string(raw_output).c_str(), "rt");
 	read_pressures(raw_output_file);
 	xfclose(raw_output_file);
 

@@ -30,6 +30,10 @@ FLOW_BIN=flow123d
 INTERPOLATE_BIN=interpolation
 MPIEXEC_BIN=mpiexec
 
+ifndef N_JOBS
+  N_JOBS=4
+endif  
+
 # install all binaries form build tree to './bin' dir
 install: 
 	if [ -e  "build/$(INTERPOLATE_BIN)" ]; then rm -f bin/$(INTERPOLATE_BIN); cp "build/$(INTERPOLATE_BIN)" bin; fi
@@ -67,14 +71,13 @@ flow123d:  build_flow123d  install
 # 4 		31s	27s
 # 8 		30s
 build_flow123d: cmake
-	make -j 4 -C build flow123d
+	make -j $(N_JOBS) -C build flow123d
 
 	
 interpolation: build_interpolation install
 	
 build_interpolation: 
-	make -j 4 -C build interpolation
-
+	make -j $(N_JOBS) -C build interpolation
 
 
 	
@@ -83,7 +86,7 @@ clean: cmake
 	make -C build clean
 
 # try to remove all
-clean-all:
+clean-all: 
 	rm -f bin/${FLOW_BIN}
 	rm -f bin/${MPIEXEC_BIN}
 	rm -f bin/${INTERPOLATE_BIN}

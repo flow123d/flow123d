@@ -45,7 +45,7 @@ struct MaterialDatabase;
 class Element
 {
 public:
-    Element();
+    Element(unsigned int dim = 0);
 
     inline unsigned int dim() const;
     inline unsigned int index() const;
@@ -72,7 +72,7 @@ public:
     Node** node;    // Element's nodes
 
     MaterialDatabase::Iter material; // Element's material
-    //struct Side **side_; // Element's sides
+
     Edge **edges_; // Edges on sides
     Boundary **boundaries_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators

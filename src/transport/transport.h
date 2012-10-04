@@ -31,9 +31,10 @@
 #define TRANSPORT_H_
 
 #include <petscmat.h>
-#include "equation.hh"
+#include "coupling/equation.hh"
 #include "transport/sources.hh"
 #include "materials.hh"
+#include "input/accessors.hh"
 #include "flow/mh_dofhandler.hh"
 
 
@@ -73,7 +74,7 @@ public:
     /**
      * Constructor.
      */
-	ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database);
+	ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
 
 	/**
 	 * TODO: destructor
@@ -124,12 +125,10 @@ public:
 	 * TODO: Maybe this should be made by get_solution_vector, but here we have matrix of arrays.
 	 */
 	double ***get_out_conc();
-    char    **get_substance_names();
+    vector<string> &get_substance_names();
     TransportSources *transportsources;
-
     const MH_DofHandler *mh_dh;
 
-    void test_concentration_sources(ConvectionTransport&);
 
 private:
 
@@ -152,7 +151,7 @@ private:
     void create_transport_matrix_mpi();
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
-	void read_initial_condition(); //
+	void read_initial_condition(string fname); //
 	void read_concentration_sources();
 
 	/**
@@ -186,6 +185,7 @@ private:
 	void subst_names(char *line); //
 	void subst_scales(char *line); //
 
+	//void get_names(string* array);
 
 	bool is_convection_matrix_scaled;
 
@@ -213,7 +213,8 @@ private:
 
             double ***out_conc;
             int              n_substances;    // # substances transported by water
-            char            **substance_name;   // Names of substances
+            vector<string> substance_name;   // Names of substances
+            string bc_fname; // name of input file with boundary conditions
 
         	//Density
             bool density;			// Density Yes/NO
@@ -251,10 +252,6 @@ private:
 
             Vec *vconc; // concentration vector
             Vec *vpconc; // previous concentration vector
-            Vec *vsources_density;
-            Vec *vsources_sigma;
-            Vec *vsources_conc;
-            Vec *vsources_corr;
             Vec *vcumulative_corr;
 
 
@@ -270,5 +267,6 @@ private:
             int *row_4_el;
             int *el_4_loc;
             Distribution *el_ds;
+
 };
 #endif /* TRANSPORT_H_ */

@@ -48,7 +48,7 @@
 #include "private/matimpl.h"
 
 //#include "la/schur.hh"
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 
 
 /**

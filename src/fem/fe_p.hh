@@ -30,6 +30,9 @@
 #ifndef FE_P_HH_
 #define FE_P_HH_
 
+#include <vector>
+
+#include "system/system.hh"
 #include "fem/finite_element.hh"
 
 
@@ -73,7 +76,7 @@ private:
      * Powers of x, y, z, ... in the i-th basis function are stored
      * in powers[i].
      */
-    vector<arma::uvec::fixed<dim> > powers;
+    std::vector<arma::uvec::fixed<dim> > powers;
 
 };
 
@@ -138,7 +141,7 @@ public:
      * finite elements the dof values are precisely the function
      * values at @p unit_support_points.
      */
-    vector<arma::vec::fixed<dim> > unit_support_points;
+    std::vector<arma::vec::fixed<dim> > unit_support_points;
 
 };
 
@@ -257,28 +260,36 @@ private:
 template<unsigned int degree, unsigned int dim>
 PolynomialSpace<degree,dim>::PolynomialSpace()
 {
+// computes powers of all monomials up to given @p degree
+// the order is: 1,x,x^2, y, yx,y^2
+//
+// TODO: - check and possibly rewrite to be more clear (use sum_degree temporary
+//       - change order of monomials: 1, x, y, xy, x^2 , y^2 (increasing order)
+//       - allow Q polynomials: 1,x, y, xy
+//       - can use tensor products
+
 	arma::uvec::fixed<dim> pows;
-    int i;
+	pows.zeros();
 
-    pows.zeros();
-    i = 0;
+    unsigned int degree_sum=0;
+    unsigned int i_dim;
 
-    while (true)
-    {
+
+    while (true) {
         powers.push_back(pows);
 
-        if (sum(pows) == degree)
-        {
-            while (pows[i] == 0) i++;
-            pows[i] = 0;
-            if (i == dim-1) break;
-            pows[i+1]++;
-            i = 0;
+        // increment pows
+        for(i_dim=0; i_dim < dim; i_dim++) {
+            if (degree_sum < degree) {
+                pows[i_dim]++;
+                degree_sum++;
+                break;
+            } else {                    // if degree_sum == degree, we find first non empty power, free it, and raise the next one
+                degree_sum-=pows[i_dim];
+                pows[i_dim]=0;
+            }
         }
-        else
-        {
-            pows[i]++;
-        }
+        if (i_dim == dim) break; // just after pow == (0, 0, .., degree)
     }
 }
 
@@ -457,53 +468,22 @@ arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(cons
 
 // P0 constant element
 template<>
-DofDistribution<0,1>::DofDistribution()
-{
-    number_of_dofs = 1;
-
-    number_of_single_dofs[1] = 1;
-
-    unit_support_points.push_back(arma::zeros<arma::vec>(1));
-}
+DofDistribution<0,1>::DofDistribution();
 
 // P1 linear element
 template<>
-DofDistribution<1,1>::DofDistribution()
-{
-    number_of_dofs = 2;
-
-    number_of_single_dofs[0] = 2;
-
-    unit_support_points.push_back(arma::vec::fixed<1>("0"));
-    unit_support_points.push_back(arma::vec::fixed<1>("1"));
-}
+DofDistribution<1,1>::DofDistribution();
 
 /*** 2D finite elements ***/
 
 // P0 constant element
 template<>
-DofDistribution<0,2>::DofDistribution()
-{
-    number_of_dofs = 1;
-
-    number_of_single_dofs[2] = 1;
-
-    unit_support_points.push_back(arma::vec2("0 0"));
-}
+DofDistribution<0,2>::DofDistribution();
 
 
 // P1 linear element
 template<>
-DofDistribution<1,2>::DofDistribution()
-{
-    number_of_dofs = 3;
-
-    number_of_single_dofs[0] = 3;
-
-    unit_support_points.push_back(arma::vec2("0 0"));
-    unit_support_points.push_back(arma::vec2("1 0"));
-    unit_support_points.push_back(arma::vec2("0 1"));
-}
+DofDistribution<1,2>::DofDistribution();
 
 
 
@@ -511,29 +491,12 @@ DofDistribution<1,2>::DofDistribution()
 
 // P0 constant element
 template<>
-DofDistribution<0,3>::DofDistribution()
-{
-    number_of_dofs = 1;
-
-    number_of_single_dofs[3] = 1;
-
-    unit_support_points.push_back(arma::vec3("0 0 0"));
-}
+DofDistribution<0,3>::DofDistribution();
 
 
 // P1 linear element
 template<>
-DofDistribution<1,3>::DofDistribution()
-{
-    number_of_dofs = 4;
-
-    number_of_single_dofs[0] = 4;
-
-    unit_support_points.push_back(arma::vec3("0 0 0"));
-    unit_support_points.push_back(arma::vec3("1 0 0"));
-    unit_support_points.push_back(arma::vec3("0 1 0"));
-    unit_support_points.push_back(arma::vec3("0 0 1"));
-}
+DofDistribution<1,3>::DofDistribution();
 
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 

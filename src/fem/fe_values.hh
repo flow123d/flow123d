@@ -43,7 +43,7 @@ template<unsigned int dim, unsigned int spacedim> class Mapping;
 
 struct FEInternalData;
 struct MappingInternalData;
-class Side;
+class SideIter;
 
 
 
@@ -197,6 +197,13 @@ public:
      */
     FEValuesBase();
 
+
+    /**
+     * Correct deallocation of objects created by 'initialize' methods.
+     */
+    virtual ~FEValuesBase();
+
+
     /**
      * @brief Allocates space for computed data.
      *
@@ -299,6 +306,10 @@ public:
      */
     const unsigned int n_dofs();
 
+    /**
+     * @brief Returns the quadrature in use.
+     */
+    const Quadrature<dim> * get_quadrature() const;
 
 protected:
 
@@ -415,7 +426,7 @@ public:
              UpdateFlags flags);
 
     /// Destructor.
-    ~FESideValues();
+    virtual ~FESideValues();
 
     /**
      * @brief Update cell-dependent data (gradients, Jacobians etc.)

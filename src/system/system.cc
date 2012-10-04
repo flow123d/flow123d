@@ -36,10 +36,18 @@
 #include <cerrno>
 #include <sstream>
 
+#include <fstream>
+#include <string>
+
 #include "global_defs.h"
 #include "system/system.hh"
-#include "io/read_ini.h"
+//#include "io/read_ini.h"
 #include "system/xio.h"
+#include "system/file_path.hh"
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
+
 
 
 
@@ -50,7 +58,7 @@ static bool petsc_initialized = false;
 /*!
  * @brief Read system parameters, open log.
  */
-void system_init( MPI_Comm comm,const  string &log_fname )
+void system_init( MPI_Comm comm,const  string &log_filename )
 {
     int ierr;
 
@@ -70,23 +78,36 @@ void system_init( MPI_Comm comm,const  string &log_fname )
 
     DBGMSG("MPI size: %d rank: %d\n",sys_info.n_proc,sys_info.my_proc);
 
-    if (log_fname.size() == 0) {
+    // determine logfile name or switch it off
+    stringstream log_name;
+
+    if (log_filename != "") {
+        if ( log_filename == "\n" ) {
            // -l option without given name -> turn logging off
            sys_info.log=NULL;
     } else {
       // given log name
-      sys_info.log_fname = log_fname;
-      sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+           log_name << log_filename <<  "." << sys_info.my_proc << ".log";
+           sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
+           sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+
+        }
+    } else {
+        // use default name
+        log_name << "flow123."<< sys_info.my_proc << ".log";
+        sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
+        sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
+
     }
-    
+
     sys_info.verbosity=0;
     sys_info.pause_after_run=0;
 }
 
 void system_set_from_options()
 {
-    sys_info.verbosity=OptGetInt( "Run", "Screen_verbosity", "0" );
-    sys_info.pause_after_run=OptGetBool( "Run", "Pause_after_run", "no" );
+    //sys_info.verbosity = OptGetInt( "Run", "Screen_verbosity", "0" );
+
 }
 
 
@@ -604,3 +625,28 @@ bool skip_to( FILE *const in, const char *section )
 
     return(false);
 }
+
+
+
+/*!
+ *  @brief Skip to the first line match  @p pattern up to surrounding spaces and case.
+ *  @param[in,out]  in          Input stream to search.
+ *  @param[in]      pattern     String to look for.
+ *  @return                     true - if we have found the section, false otherwise
+ */
+bool skip_to( istream &in, const string &pattern )
+{
+    char line[ LINE_SIZE ];
+    char string[ LINE_SIZE ];
+
+    F_ENTRY;
+
+    for(std::string line; ! in.eof() ; std::getline(in, line) ) {
+        boost::trim(line);
+        if ( boost::iequals( line, pattern ) ) return true;
+    }
+
+    return false;
+}
+
+

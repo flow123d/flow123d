@@ -1,0 +1,315 @@
+{
+  material = "materialy.mtr", 
+  problem = {
+    Save_step = 0.5, 
+    TYPE = "sequential_coupling", 
+    description = "test2", 
+    mesh = {
+      file = "./input/test2.msh", 
+      neighbouring = "./input/test2.ngh"
+    }, 
+    primary_equation = {
+      TYPE = "steady_mh", 
+      boundary_file = "./input/test2.fbc", 
+      conductivity = [
+        {
+          material = 48, 
+          value = 10
+        }, 
+        {
+          material = 184, 
+          value = [
+            1, 
+            2, 
+            0
+          ]
+        }, 
+        {
+          material = 256, 
+          value = [
+            [
+              1, 
+              0, 
+              0
+            ], 
+            [
+              0, 
+              2, 
+              0
+            ], 
+            [
+              0, 
+              0, 
+              3
+            ]
+          ]
+        }
+      ], 
+      cross_area = [
+        {
+          material = 48, 
+          value = 1.3
+        }, 
+        {
+          material = 184, 
+          value = 1.4
+        }
+      ], 
+      output = {
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "petsc", 
+        accuracy = 1e-07
+      }, 
+      storativity = [
+        {
+          material = 48, 
+          value = 2.3
+        }, 
+        {
+          material = 184, 
+          value = 3.4
+        }
+      ]
+    }, 
+    reactions = {
+      decays = [
+        {
+          Half_life = 0.5, 
+          Substances = [
+            7, 
+            3
+          ]
+        }, 
+        {
+          Half_life = 0.2, 
+          Substances = [
+            3, 
+            4
+          ]
+        }, 
+        {
+          Half_life = 0.5, 
+          Substances = [
+            4, 
+            6
+          ]
+        }, 
+        {
+          Half_life = 0.5, 
+          Substances = [
+            6, 
+            2
+          ]
+        }, 
+        {
+          Half_life = 0.5, 
+          Probability = [
+            0.2, 
+            0.2, 
+            0.6
+          ], 
+          Substances = [
+            2, 
+            1, 
+            7, 
+            8
+          ]
+        }, 
+        {
+          Half_life = 0.5, 
+          Substances = [
+            1, 
+            7
+          ]
+        }, 
+        {
+          Half_life = 0.5, 
+          Substances = [
+            8, 
+            7
+          ]
+        }, 
+        {
+          Half_life = 0.5, 
+          Substances = [
+            7, 
+            3
+          ]
+        }, 
+        {
+          Kinetic = 0.277258872, 
+          Substances = [
+            4, 
+            5
+          ]
+        }
+      ]
+    }, 
+    secondary_equation = {
+      boundary_file = "./input/test2.tbc", 
+      dual_porosity = [
+        {
+          coef = [
+            0.01, 
+            0.01
+          ], 
+          immobile = 0.25, 
+          material = 48, 
+          mobile = 0.25
+        }, 
+        {
+          coef = [
+            0.01, 
+            0.01
+          ], 
+          immobile = 0.25, 
+          material = 184, 
+          mobile = 0.25
+        }
+      ], 
+      initial_file = "./input/test2.tic", 
+      output = {
+        mobile_p0 = "transport_output_stream"
+      }, 
+      sorption = [
+        {
+          coef = [
+            0.02
+          ], 
+          material = 48, 
+          substance = 0, 
+          type = "Equilibrium"
+        }, 
+        {
+          coef = [
+            0.02
+          ], 
+          material = 184, 
+          substance = 0, 
+          type = "Equilibrium"
+        }, 
+        {
+          coef = [
+            0.02, 
+            0.5
+          ], 
+          material = 48, 
+          substance = 1, 
+          type = "Freundlich"
+        }, 
+        {
+          coef = [
+            0.02, 
+            0.5
+          ], 
+          material = 184, 
+          substance = 1, 
+          type = "Freundlich"
+        }
+      ], 
+      sorption_enable = true, 
+      sorption_fraction = {}, 
+      substances = [
+        A, 
+        B
+      ]
+    }, 
+    time_governor = {
+      end_time = 5.0, 
+      end_time_comment = "1275"
+    }
+  }, 
+  system = {
+    output_streams = [
+      {
+        file = "./test2.msh", 
+        format = "gmsh_ascii", 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport.msh", 
+        name = "transport_output_stream"
+      }
+    ], 
+    pause_after_run = false
+  }, 
+  zz_not_supported = {
+    constants = {
+      g = 9.81, 
+      rho = 1000
+    }, 
+    density = {
+      density_implicit = true, 
+      density_max_iter = 21, 
+      eps_iter = 0, 
+      write_iterations = false
+    }, 
+    input = {
+      file_type = 1
+    }, 
+    output = {
+      btc_elms = 80, 
+      cross_section = false, 
+      cs_params = [
+        0.05, 
+        2, 
+        0, 
+        0.05, 
+        0, 
+        0, 
+        0.005
+      ], 
+      fcs_params = [
+        1, 
+        0, 
+        0, 
+        -11, 
+        1
+      ], 
+      output_elm_type = 1, 
+      output_file_2 = "./test2.tmp", 
+      output_file_type = "1", 
+      pos_set_view = "", 
+      pos_view_params = [
+        0, 
+        0, 
+        0, 
+        0.8, 
+        0.8, 
+        0.8, 
+        0.224, 
+        0.224
+      ], 
+      specify_elm_type = false, 
+      write_ftrans_out = "False"
+    }, 
+    "solver parameters" = {
+      a_tol = 1e-11, 
+      be_tol = 1e-16, 
+      ilu_cpiv = 0, 
+      ilu_droptol = 1e-05, 
+      ilu_dskip = 0, 
+      ilu_lfil = -1, 
+      ilu_milu = 0, 
+      max_it = 100, 
+      precond = "ilu", 
+      r_tol = 1e-19, 
+      restart = 20, 
+      scaling = "mc29_30", 
+      sor_omega = 1.0, 
+      stop_crit = "backerr", 
+      stop_test = 1
+    }, 
+    transport = {
+      substances_density_scales = [
+        1, 
+        1, 
+        1
+      ]
+    }
+  }
+}

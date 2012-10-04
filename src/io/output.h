@@ -38,8 +38,9 @@
 #include "system/xio.h"
 #include "mesh/mesh.h"
 
-class OutputMSH;
-class OutputVTK;
+#include "input/accessors.hh"
+
+class OutputFormat;
 
 /**
  * Class of output data storing reference on data.
@@ -312,16 +313,13 @@ public:
 
     typedef enum {
         NONE = 0,
-        GMSH_MSH_ASCII = 1,
-        GMSH_MSH_BIN = 2,
-        VTK_SERIAL_ASCII = 3,
-        VTK_PARALLEL_ASCII = 4
+        GMSH = 1,
+        VTK = 2,
     } OutFileFormat;
 
     OutFileFormat file_format;
 
-    OutputVTK *output_vtk;
-    OutputMSH *output_msh;
+    OutputFormat *output_format;
 
 protected:
     // Protected setters for descendant
@@ -480,15 +478,23 @@ public:
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
      * \param[in]   *_mesh  The pointer at mesh object.
-     * \param[in]   fname   The name of output file
+     * \param[in]   &in_rec The reference on the input record
      */
-    OutputTime(Mesh *mesh, string filename);
+    OutputTime(Mesh *mesh, const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
      * necessary destructors will be called in destructor of Output
      */
     virtual ~OutputTime();
+
+    /**
+     * \brief The specification of output stream
+     *
+     * \return This method returns record for output stream
+     */
+    static Input::Type::Record & get_input_type();
+
 
     /**
      * \brief This function register data on nodes.
@@ -886,5 +892,20 @@ int OutputTime::register_elem_data(std::string name,
     return 1;
 
 }
+
+/**
+ * \brief The class used as parent of class of file formats
+ */
+class OutputFormat {
+public:
+	OutputFormat() {}
+    virtual ~OutputFormat() {}
+	virtual int write_data(void) { return 0; }
+	virtual int write_data(double time) { return 0; }
+	virtual int write_head(void) { return 0; }
+	virtual int write_tail(void) { return 0; }
+
+	static Input::Type::AbstractRecord &get_input_type();
+};
 
 #endif

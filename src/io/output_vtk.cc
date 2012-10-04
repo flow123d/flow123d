@@ -846,6 +846,14 @@ OutputVTK::OutputVTK(Output *_output)
     this->write_head();
 }
 
+OutputVTK::OutputVTK(OutputTime *_output_time, const Input::Record &in_rec)
+{
+    this->output = _output_time;
+    this->output_time = _output_time;
+
+    this->write_head();
+}
+
 OutputVTK::OutputVTK(OutputTime *_output_time)
 {
     this->output = _output_time;
@@ -857,4 +865,46 @@ OutputVTK::OutputVTK(OutputTime *_output_time)
 OutputVTK::~OutputVTK()
 {
     this->write_tail();
+}
+
+Input::Type::Record & OutputVTK::get_input_type()
+{
+	using namespace Input::Type;
+	static Record rec("vtk", "Parameters of vtk output format.");
+
+	if (!rec.is_finished()) {
+
+		// It is derived from abstract class
+		rec.derive_from(OutputFormat::get_input_type());
+
+		// The variant
+		static Selection variant_sel("VTK variant (ascii or binary)");
+	    variant_sel.add_value(OutputVTK::VARIANT_ASCII, "ascii",
+	    		"ASCII variant of VTK file format");
+	    variant_sel.add_value(OutputVTK::VARIANT_BINARY, "binary",
+	    		"Binary variant of VTK file format (not supported yet)");
+	    variant_sel.finish();
+
+		rec.declare_key("variant", variant_sel, Default("ascii"),
+				"Variant of output stream file format.");
+
+		// The parallel or serial variant
+		rec.declare_key("parallel", Bool(), Default("false"),
+				"Parallel or serial version of file format.");
+
+		// The compression
+		static Selection compression_sel("Type of compression of VTK file format");
+		compression_sel.add_value(OutputVTK::COMPRESSION_NONE, "none",
+				"Data in VTK file format are not compressed");
+		compression_sel.add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
+				"Data in VTK file format are compressed using zlib (not supported yet)");
+		compression_sel.finish();
+
+		rec.declare_key("compression", compression_sel, Default("none"),
+				"Compression used in output stream file format.");
+
+		rec.finish();
+	}
+
+	return rec;
 }
