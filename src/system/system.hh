@@ -36,7 +36,6 @@
 
 
 #include "global_defs.h"
-#include "io/read_ini.h"
 #include "system/math_fce.h"
 #include "system/sys_function_stack.hh"
 #include "system/sys_profiler.hh"
@@ -51,7 +50,7 @@
 #endif
 
 #define strcmpi strcasecmp
-#define PATH_SEP "/"
+#define DIR_DELIMITER '/'
 
 using namespace std;
 
@@ -136,7 +135,8 @@ int     xrename( const char * oldname, const char * newname ); ///< Rename file 
 
 //! @brief auxiliary
 /// @{
-bool    skip_to( FILE *const in, const char *section );
+bool skip_to( FILE *const in, const char *section );
+bool skip_to( istream &in, const string &pattern );
 //! @}
 
 // string operations

@@ -77,10 +77,23 @@ Input::Type::Selection & DarcyFlowMH::get_mh_mortar_selection() {
 Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
 {
     using namespace Input::Type;
+
+    static AbstractRecord bc_type("DarcyFlowMH_BC_Type", "Boundary condition for DaryFlowMH equation.");
+    bc_type.finish();
+    //BCTable::set_input_type_for_dirichlet( bc_type );
+    //BCTable::set_input_type_for_neumman( bc_type );
+    //BCTable::set_input_type_for_newton( bc_type );
+    bc_type.no_more_descendants();
+
+    //static Record bc_table_item_rec = BCTable::get_item_input_type( bc_type );
+
     static AbstractRecord rec("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.");
+
 
     if (!rec.is_finished()) {
         // declare keys common to all DarcyFlow classes
+        //rec.declare_key("boundary_condition", Array( bc_table_item_rec), Default::obligatory(),
+        //        "Table of boundary conditions for BC segments.");
 
         rec.declare_key("n_schurs", Integer(0,2), Default("2"),
                 "Number of Schur complements to perform when solving MH sytem.");

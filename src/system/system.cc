@@ -36,6 +36,9 @@
 #include <cerrno>
 #include <sstream>
 
+#include <fstream>
+#include <string>
+
 #include <petscsys.h>
 #include <petscerror.h>
 #include <petsc.h>
@@ -44,6 +47,9 @@
 #include "system/system.hh"
 //#include "io/read_ini.h"
 #include "system/xio.h"
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 
 
@@ -618,6 +624,31 @@ bool skip_to( FILE *const in, const char *section )
 
     return(false);
 }
+
+
+
+/*!
+ *  @brief Skip to the first line match  @p pattern up to surrounding spaces and case.
+ *  @param[in,out]  in          Input stream to search.
+ *  @param[in]      pattern     String to look for.
+ *  @return                     true - if we have found the section, false otherwise
+ */
+bool skip_to( istream &in, const string &pattern )
+{
+    char line[ LINE_SIZE ];
+    char string[ LINE_SIZE ];
+
+    F_ENTRY;
+
+    for(std::string line; ! in.eof() ; std::getline(in, line) ) {
+        boost::trim(line);
+        if ( boost::iequals( line, pattern ) ) return true;
+    }
+
+    return false;
+}
+
+
 
 IONameHandler* IONameHandler::instance = NULL;
 

@@ -105,7 +105,9 @@ public:
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 
+    Mesh();
     Mesh(Input::Record in_record);
+    void reinit(Input::Record in_record);
 
     inline unsigned int n_elements() const {
         return element.size();
@@ -131,8 +133,8 @@ public:
     /**
      * Setup various links between mesh entities. Should be simplified.
      */
-    void setup_topology();
-    void read_neighbours();
+    void setup_topology(istream *in = NULL);
+    void read_neighbours(istream &in);
 
     /**
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
@@ -154,6 +156,8 @@ public:
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
     BoundaryVector boundary;
+    ElementVector bc_elements;
+
     /// Vector of MH edges, this should not be part of the geometrical mesh
     EdgeVector edge;
 

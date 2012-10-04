@@ -57,6 +57,8 @@
 #include <materials.hh>
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
+#include "functions/function_base.hh"
+//#include "functions/bc_table.hh"
 
 /// external types:
 class LinSys;
@@ -66,6 +68,33 @@ class SchurComplement;
 class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
+
+
+
+class DarcyFlowMH_BC {
+public:
+    static Input::Type::AbstractRecord &get_input_type();
+};
+
+class BC_Dirichlet : public DarcyFlowMH_BC {
+public:
+    static Input::Type::Record &get_input_type();
+    FunctionBase<3> *value;
+};
+
+class BC_Neumann : public DarcyFlowMH_BC {
+public:
+    static Input::Type::Record &get_input_type();
+    FunctionBase<3> *flux;
+};
+
+class BC_Newton : public DarcyFlowMH_BC {
+public:
+    static Input::Type::Record &get_input_type();
+    FunctionBase<3> *sigma;
+    FunctionBase<3> *value;
+};
+
 
 
 /**
@@ -96,6 +125,8 @@ public:
 
     static Input::Type::Selection & get_mh_mortar_selection();
     static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::AbstractRecord &get_bc_input_type();
+    static std::vector<Input::Type::Record> &get_bc_input_types();
 
     FieldP0<double>  * get_sources()
         { return sources; }
@@ -136,6 +167,8 @@ protected:
     MortarMethod mortar_method_;
     // value of sigma used in mortar couplings (TODO: make space depenedent and unify with compatible sigma, both given on lower dim domain)
     double mortar_sigma_;
+
+    //BoundaryData<DarcyFlowMH_BC> bc_data_;
 };
 
 

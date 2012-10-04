@@ -3,6 +3,7 @@
 #include "reaction/reaction.hh"
 
 #include "system/system.hh"
+#include "io/read_ini.h"
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
 #include "transport/transport.h"

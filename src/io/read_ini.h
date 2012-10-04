@@ -35,7 +35,7 @@
 struct Ini_item;
 struct Read_ini;
 
-#define DIR_DELIMITER '/'
+#include "system/system.hh"
 
 struct Read_ini
 {

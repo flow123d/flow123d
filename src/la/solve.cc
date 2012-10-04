@@ -490,6 +490,7 @@ void solver_petsc(Solver *solver)
 void isol_params_init(ISOL_params *par) {
 
         F_ENTRY;
+        /*
         par->method           = OptGetStr( "Solver parameters", "method", "fgmres" );
         par->restart          = OptGetInt( "Solver parameters", "restart", "20");
         par->stop_crit        = OptGetStr( "Solver parameters", "stop_crit", "backerr" );
@@ -503,6 +504,7 @@ void isol_params_init(ISOL_params *par) {
         par->ilu_dskip        = OptGetInt( "Solver parameters", "ilu_dskip", "-1" );
         par->ilu_lfil         = OptGetInt( "Solver parameters", "ilu_lfil", "-1" );
         par->ilu_milu         = OptGetInt( "Solver parameters", "ilu_milu", "0" );
+        */
 }
 
 //=============================================================================

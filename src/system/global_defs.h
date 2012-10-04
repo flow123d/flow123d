@@ -184,6 +184,24 @@
 
 
 
+#ifdef DEBUG_ASSERTS
+
+#define ASSERT_LESS( a, b) do { if (a >= b) { \
+    std::cerr << "Violated assert in file " << __FILE__ << " func: " << __func__ << " line: " << __LINE__ << std::endl \
+    << #a << " < " << #b << std::endl \
+    << a << " < " << b << std::endl; \
+    std::cerr.flush(); \
+    abort();} \
+    } while (0)
+
+#else
+
+#define ASSERT_LESS( a, b)
+
+#endif
+
+
+
 #ifdef DEBUG_MESSAGES
 
 #define DBGMSG(...) do { xprintf(MsgDbg,__VA_ARGS__); fflush(NULL); } while (0)

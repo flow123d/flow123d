@@ -24,7 +24,7 @@
 #define JSON_TO_STORAGE_HH_
 
 
-
+#include <sstream>
 
 #include "json_spirit/json_spirit.h"
 #include "input/input_type.hh"

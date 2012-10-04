@@ -35,7 +35,6 @@
 #include "input/input_type.hh"
 
 #include <boost/tokenizer.hpp>
-
 #include "boost/lexical_cast.hpp"
 
 #include "mesh/mesh.h"
@@ -94,8 +93,24 @@ Input::Type::Record Mesh::get_input_type() {
     return rec;
 }
 
+
+
+Mesh::Mesh()
+{
+    reinit(in_record_);
+}
+
+
+
 Mesh::Mesh(Input::Record in_record)
 : in_record_(in_record) {
+    reinit(in_record_);
+}
+
+
+
+void Mesh::reinit(Input::Record in_record)
+{
 
     n_materials = NDEF;
 
@@ -151,6 +166,7 @@ Mesh::Mesh(Input::Record in_record)
     side_nodes[2][3][2] = 2;
 }
 
+
 unsigned int Mesh::n_sides()
 {
     if (n_sides_ == NDEF) {
@@ -185,7 +201,7 @@ void Mesh::count_element_types() {
 /**
  *  Setup whole topology for read mesh.
  */
-void Mesh::setup_topology() {
+void Mesh::setup_topology(istream *in) {
     F_ENTRY;
     Mesh *mesh=this;
 
@@ -194,8 +210,16 @@ void Mesh::setup_topology() {
 
     // topology
     //node_to_element();
+    if (in) {
+        read_neighbours(*in);
+    } else if ( ! in_record_.is_empty() ) {
+        string ngh_file_name = in_record_.val<FilePath>("neighbouring");
+        ifstream ngh_in(  ngh_file_name.c_str(), std::ifstream::in );
+        read_neighbours(ngh_in);
+    } else {
+        return;
+    }
 
-    read_neighbours();
     edge_to_side();
 
     neigh_vb_to_element_and_side();
@@ -273,17 +297,15 @@ void Mesh::count_side_types()
 
 
 
-void Mesh::read_neighbours() {
-    FILE    *in;   // input file
-    char     line[ LINE_SIZE ];   // line of data file
+void Mesh::read_neighbours(istream &in) {
+    char line[LINE_SIZE];   // line of data file
     unsigned int id;
 
     xprintf( Msg, "Reading neighbours...A\n");
-    in = xfopen(  in_record_.val<FilePath>("neighbouring"), "rt" );
     skip_to( in, "$Neighbours" );
-    xfgets( line, LINE_SIZE - 2, in );
+    in.getline(line, LINE_SIZE);
 
-    unsigned int n_neighs = atoi( xstrtok( line) );
+    unsigned int n_neighs = atoi( xstrtok( line ) );
     INPUT_CHECK( n_neighs > 0 ,"Number of neighbours  < 1 in read_neighbour_list()\n");
     neighbours_.resize( n_neighs );
 
@@ -292,9 +314,9 @@ void Mesh::read_neighbours() {
 
     for(vector<Neighbour_both>::iterator ngh= neighbours_.begin();
             ngh != neighbours_.end(); ++ngh ) {
-        xfgets( line, LINE_SIZE - 2, in );
+        in.getline(line, LINE_SIZE);
 
-        id              = atoi( xstrtok( line) );
+        id              = atoi( xstrtok( line ) );
         ngh->type            = atoi( xstrtok( NULL) );
 
         switch( ngh->type ) {

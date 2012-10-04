@@ -19,6 +19,10 @@ public:
        : n_components_(n_components), time_(init_time)
        {}
 
+       static Input::Type::AbstractRecord &get_input_type();
+
+       virtual void init_from_input(Input::Record &in_rec) = 0;
+
        /**
         * Set new time value.
         */

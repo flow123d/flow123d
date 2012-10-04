@@ -28,6 +28,7 @@
 #include <string>
 #include <boost/type_traits.hpp>
 #include <boost/mpl/if.hpp>
+#include <boost/static_assert.hpp>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
@@ -106,7 +107,7 @@ public:
      * Default constructor creates an accessor to an empty storage.
      */
     Record()
-    : record_type_("DummyType",""), storage_( NULL )
+    : record_type_("Empty Record",""), storage_( NULL )
     {
             record_type_.finish();
     }
@@ -154,6 +155,13 @@ public:
      */
     template <class Ret>
     inline Iterator<Ret> find(const string &key) const;
+
+    /**
+     * Returns true if the accessor is empty (after default constructor).
+     */
+    inline bool is_empty() const
+    { return (storage_ == NULL); }
+
 
 private:
     /// Corresponding Type::Record object.
@@ -495,7 +503,8 @@ template<> struct TD<float> { typedef double OT; };
 // generic implementation accepts only enum types
 template< class T>
 struct TypeDispatch {
-    BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
+    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
+    //BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
 
     typedef T TmpType;
 

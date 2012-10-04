@@ -83,15 +83,16 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
 
     // Read mesh
-    // TODO: Move whole mesh setup (in particular reading, or rather generating, neighborings)
-    mesh = new Mesh( in_record.val<Record>("mesh") );
-    MeshReader* meshReader = new GmshMeshReader();
-    meshReader->read( in_record.val<Record>("mesh").val<FilePath>("mesh_file"), mesh);
+    {
+        GmshMeshReader reader;
+        mesh = new Mesh( in_record.val<Record>("mesh") );
+        reader.read( in_record.val<Record>("mesh").val<FilePath>("mesh_file"), mesh);
 
-    mesh->setup_materials(*material_database);
-    Profiler::instance()->set_task_info( 
-        "Description has to be set in main. by different method.",
-        mesh->n_elements());
+        mesh->setup_materials(*material_database);
+        Profiler::instance()->set_task_info(
+            "Description has to be set in main. by different method.",
+            mesh->n_elements());
+    }
 
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
