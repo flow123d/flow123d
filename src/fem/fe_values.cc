@@ -113,7 +113,6 @@ FEValuesBase<dim,spacedim>::FEValuesBase()
 
 template<unsigned int dim,unsigned int spacedim> inline
 FEValuesBase<dim,spacedim>::~FEValuesBase() {
-    DBGMSG(" FEValuesBase, mapping: %p\n",mapping_data);
     if (mapping_data) delete mapping_data;
     if (fe_data) delete fe_data;
 }

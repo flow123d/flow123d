@@ -153,10 +153,12 @@ public:
     NodeVector node_vector;
     /// Vector of elements of the mesh.
     ElementVector element;
+
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
     BoundaryVector boundary;
-    ElementVector bc_elements;
+    /// vector of boundary elements - should replace 'boundary'
+    std::vector<Element> bc_elements;
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
     EdgeVector edge;
@@ -200,6 +202,7 @@ private:
     void edge_to_side();
     void neigh_vb_to_element_and_side();
     void element_to_neigh_vb();
+    void create_external_boundary();
 
     void count_element_types();
     void count_side_types();

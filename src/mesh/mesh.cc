@@ -224,6 +224,7 @@ void Mesh::setup_topology(istream *in) {
 
     neigh_vb_to_element_and_side();
     element_to_neigh_vb();
+    create_external_boundary();
 
     count_side_types();
 
@@ -372,7 +373,7 @@ void Mesh::edge_to_side()
 
     xprintf( MsgVerb, "   Edge to side and back... \n");
 
-    // count edges
+    // count edges (in NGHfile there are missing (??not sure) edges on boundary and between dimensions
     unsigned int n_edges = n_sides();
     for(vector<Neighbour_both>::iterator it= neighbours_.begin();
         it != neighbours_.end(); ++it )
@@ -391,7 +392,7 @@ void Mesh::edge_to_side()
 
         edg = &( edge[i_edge++] );
 
-        // init edge (can init all its data)
+        // init edge (can init all its data), set element to edge, for Side iterators
         edg->n_sides = it->n_sides;
         edg->side_ = new SideIter [edg->n_sides];
 
@@ -443,7 +444,6 @@ void Mesh::neigh_vb_to_element_and_side()
 
         if ( ngh->type != VB_ES ) continue;
 
-
         ele_lower = element.find_id( ngh->eid[0]);
         ele_higher = element.find_id( ngh->eid[1] );
         edg = ele_higher->side( ngh->sid[ 1 ] )->edge();
@@ -466,6 +466,86 @@ void Mesh::neigh_vb_to_element_and_side()
     xprintf( MsgVerb, "O.K.\n");
 }
 
+
+/**
+ * Set Element->boundaries_ for all external sides. (temporary solution)
+ */
+void Mesh::create_external_boundary()
+{
+    // set to non zero all pointers including boundary connected to lower dim elements
+    // these have only one side per edge
+    Boundary empty_boundary;
+
+
+    FOR_ELEMENTS(this, ele) {
+        // is there any outer side
+        bool outer=false;
+        FOR_ELEMENT_SIDES(ele, si)
+            if ( ele->side(si)->edge()->n_sides == 1) {
+                outer=true;
+                break;
+            }
+       if (outer) {
+           // for elements on the boundary set boundaries_
+           FOR_ELEMENT_SIDES(ele,si)
+                if ( ele->side(si)->edge()->n_sides == 1)
+                    ele->boundaries_[si] = &empty_boundary;
+                else
+                    ele->boundaries_[si] = NULL;
+
+       } else {
+           // can delete boundaries on internal elements !!
+            delete ele->boundaries_;
+            ele->boundaries_=NULL;
+       }
+    }
+
+    int count=0;
+    // pass through neighbours and set to NULL internal interfaces
+    FOR_NEIGHBOURS(this,  ngh ) {
+        SideIter s = ngh->side();
+        if (s->element()->boundaries_ == NULL) continue;
+        s->element()->boundaries_[ s->el_idx() ] = NULL;
+    }
+
+    // count remaining
+    unsigned int n_boundaries=0;
+    FOR_ELEMENTS(this, ele) {
+        if (ele->boundaries_ == NULL) continue;
+        FOR_ELEMENT_SIDES(ele, si)
+            if (ele->boundaries_[si]) n_boundaries ++;
+    }
+
+    // fill boundaries
+    BoundaryFullIter bcd(boundary);
+    unsigned int ni;
+
+    boundary.reserve(n_boundaries);
+    bc_elements.resize(n_boundaries);
+    FOR_ELEMENTS(this, ele) {
+         if (ele->boundaries_ == NULL) continue;
+         FOR_ELEMENT_SIDES(ele, si)
+             if (ele->boundaries_[si]) {
+                 // add boundary object
+                 bcd = boundary.add_item();
+
+                 // fill boundary element
+                 Element * bc_ele = &( bc_elements[bcd.index()] );
+                 bc_ele->dim_ = ele->dim()-1;
+                 bc_ele->mid = 0;
+                 bc_ele->node = new Node * [bc_ele->n_nodes()];
+                 FOR_ELEMENT_NODES(bc_ele, ni) {
+                     bc_ele->node[ni] = (Node *)ele->side(si)->node(ni);
+                 }
+
+                 // fill Boudary object
+                 bcd->side = ele->side(si);
+                 bcd->bc_element_ = bc_ele;
+                 ele->boundaries_[si] = bcd;
+
+             }
+    }
+}
 
 
 //=============================================================================

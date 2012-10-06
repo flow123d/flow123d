@@ -50,7 +50,7 @@ typedef flow::VectorId<Element> ElementVector;
 typedef ElementVector::Iter ElementIter;
 typedef ElementVector::FullIter ElementFullIter;
 
-typedef flow::VectorId<Boundary> BoundaryVector;
+typedef flow::Vector<Boundary> BoundaryVector;
 typedef BoundaryVector::Iter BoundaryIter;
 typedef BoundaryVector::FullIter BoundaryFullIter;
 

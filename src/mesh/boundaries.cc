@@ -37,6 +37,8 @@ static void add_to_boundary_list(struct Mesh*,struct Boundary*);
 static void init_boundary_list(struct Mesh*);
 static void parse_boundary_line(struct Boundary*,char*);
 
+flow::VectorId<Boundary *> Boundary::id_to_bcd;
+
 //=============================================================================
 // READ DATA OF BOUNDARY CONDITIONS
 //=============================================================================
@@ -46,7 +48,8 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 	char     line[ LINE_SIZE ]; // line of data file
 //	int where;
 	int bcd_id, n_tags;
-	BoundaryFullIter bcd = BOUNDARY_NULL(mesh);
+	double scalar, flux, sigma;
+	BoundaryIter bcd;
 	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh);
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_boundary_list()\n");
@@ -57,8 +60,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 	xfgets( line, LINE_SIZE - 2, in );
 
 	int n_boundaries = atoi( xstrtok( line) );
-	INPUT_CHECK( n_boundaries >= 1 ,"Number of bounaries < 1 in function read_boundary_list()\n");
-	mesh->boundary.reserve(n_boundaries);
+	Boundary::id_to_bcd.reserve(n_boundaries);
 
 	int group_number=0;
 
@@ -67,22 +69,26 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
         xfgets( line, LINE_SIZE - 2, in );
         // Parse the line
         bcd_id    = atoi( xstrtok( line) );
-        bcd = mesh->boundary.add_item(bcd_id);
         // DBGMSG("boundary id: %d \n",bcd_id);
 
-        bcd->type  = atoi( xstrtok( NULL) );
+        unsigned int type  = atoi( xstrtok( NULL) );
 
         // physical data - should be moved to water_linsys
-        switch( bcd->type ) {
+        switch( type ) {
             case DIRICHLET:
-                bcd->scalar = atof( xstrtok( NULL) );
+                scalar = atof( xstrtok( NULL) );
+                flux = 0.0;
+                sigma = 0.0;
                 break;
             case NEUMANN:
-                bcd->flux   = atof( xstrtok( NULL) );
+                flux   = atof( xstrtok( NULL) );
+                sigma = 0.0;
+                scalar = 0.0;
                 break;
             case NEWTON:
-                bcd->scalar = atof( xstrtok( NULL) );
-                bcd->sigma  = atof( xstrtok( NULL) );
+                scalar = atof( xstrtok( NULL) );
+                sigma  = atof( xstrtok( NULL) );
+                flux = 0.0;
                             break;
             default :
                 xprintf(UsrErr,"Unknown type of boundary condition - cond # %d, type %c\n", bcd_id, bcd->type );
@@ -102,12 +108,18 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 ele = mesh->element.find_id( eid );
                 if( sid < 0 || sid >= ele->n_sides() )
                      xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", bcd_id, sid );
-                sde = ele->side( sid );
-                ele->boundaries_[ sid ] = bcd;
-                bcd->side=sde;
+                bcd = ele->side(sid) -> cond();
+
+                ASSERT( bcd != NULL, "Missing boundary object.");
+                bcd->type = type;
+                bcd->flux = flux;
+                bcd->scalar = scalar;
+                bcd->sigma = sigma;
 
                 break;
             case 3: // SIDE_E - BC given only by element, apply to all its sides
+
+                xprintf(UsrErr, "Element only BCD are not supported.\n");
                 eid = atoi( xstrtok( NULL) );
 
                 // find and set all exterior sides, possibly add more boundaries
@@ -115,15 +127,18 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 n_exterior=0;
                 FOR_ELEMENT_SIDES(ele, li) {
                     sde = ele->side( li );
-                    if ( sde->is_external() ) {
+                    if ( bcd=sde->cond() ) {
+
                         if (n_exterior > 0) {
                             xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
                             //BoundaryFullIter new_bcd = mesh->boundary.add_item();
                             //*new_bcd = *bcd;
                             //bcd=new_bcd;
                         }
-                        ele->boundaries_[ sid ] = bcd;
-                        bcd->side=sde;
+                        bcd->type = type;
+                        bcd->flux = flux;
+                        bcd->scalar = scalar;
+                        bcd->sigma = sigma;
                         n_exterior++;
                     }
                 }
@@ -133,6 +148,10 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 xprintf(UsrErr,"Unknown entity for boundary condition - cond # %d, ent. %c\n", bcd_id, where );
                 break;
         }
+        // DBGMSG("fbcd: %d %d %d %d \n", i_bcd, bcd - mesh->boundary.begin(), bcd->side->element().index(), bcd->side->el_idx() );
+        *(Boundary::id_to_bcd.add_item(bcd_id)) = bcd;
+
+
         //TODO: if group is necessary set it for all bcd in case where == SIDE_E
         n_tags  = atoi( xstrtok( NULL) );
         if( n_tags > 0 ) {

@@ -31,8 +31,8 @@
 #define BOUNDARIES_H
 
 #include "mesh/mesh.h"
+#include "system/sys_vector.hh"
 
-struct Boundary;
 
 
 /**
@@ -52,6 +52,16 @@ struct Boundary;
 class Boundary
 {
 public:
+    Boundary()
+    : group(0), type(2), flux(0.0)
+    {}
+    /**
+     * temporary solution for old type BCD.
+     * Transport BCD refers through IDs to flow BCD, so we have to
+     * store positions of Flow BCD items somewhere.
+     */
+    static flow::VectorId<Boundary *> id_to_bcd;
+
     ElementIter get_bc_element_iter();
 
     // Data readed from boundary conditions files (REMOVE)
@@ -63,7 +73,7 @@ public:
     int      group;     // Group of condition
     // Topology of the mesh
     SideIter side;      // side, where prescribed
-    Element bc_element_;  // in near future this should replace Boundary itself, when we remove BC data members
+    ElementIter bc_element_;  // in near future this should replace Boundary itself, when we remove BC data members
 
 };
 #define DIRICHLET   1

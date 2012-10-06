@@ -51,7 +51,9 @@ using namespace arma;
 TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
         : TransportBase(marks, init_mesh, material_database, in_rec),
           advection(1e0),
-          tol_switch_dirichlet_neumann(1e-6)
+          tol_switch_dirichlet_neumann(1e-5)
+          // TODO: this should be dependent on precision of the Flow solution
+          // see also remark in BC application
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
 
@@ -570,7 +572,12 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 				// set up the parameters for DG method
 				set_DG_parameters(edg, s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
 
-				if (edg->side(s1)->cond() != 0) gamma[mesh_->boundary.full_iter(edg->side(s1)->cond()).id()] = gamma_l;
+				// !!! NEED CHECK - modification ID -> index , ?? some other place
+				// WHY this is here if this computes internal fluxes ??
+				//if ( edg->side(s1)->cond() ) {
+				//    ASSERT(0, "Boundary at internall edge!");
+				//    gamma[ mesh_->boundary.full_iter(edg->side(s1)->cond()).index()] = gamma_l;
+				//}
 
 				int sd[2];
 				sd[0] = s1;
@@ -651,7 +658,12 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         // skip Neumann boundaries
         // Constant 1e-6 stabilizes switching Dirichlet to Neumann boundary condition.
         // TODO: Define as a constant. Better determination of its magnitude. See also other places with same constant.
-        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
+        // ?? set the constant from precision of the flow solver ??
+        // stil there are elements with  elme_flux and BC flux in order 1e-7 ~ tolerance of linear solver
+        // then this condition doesn't work, we either has to set zero water fluxes or make this dependent on tolerance in flow solver
+        // temporary solution: check zero Neuman BC in water
+        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux
+                || (edge->side(0)->cond()->type == 2 /* Neuman*/ && edge->side(0)->cond()->flux == 0.0) ) continue;
 
         side_K.resize(edge->n_sides);
         side_velocity.resize(edge->n_sides);
@@ -666,7 +678,9 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
 
         // set up the parameters for DG method
         set_DG_parameters_edge(edge, side_q.size(), side_K, fe_values_side.normal_vector(0), alpha, advection, gamma_l, omega);
-        if (edge->side(0)->cond() != 0) gamma[mesh_->boundary.full_iter(edge->side(0)->cond()).id()] = gamma_l;
+        if (edge->side(0)->cond() != 0) {
+            gamma[mesh_->boundary.full_iter(edge->side(0)->cond()).index()] = gamma_l;
+        }
 
         // fluxes and penalty
         for (int i=0; i<ndofs; i++)
@@ -832,9 +846,10 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
         double elem_flux = 0;
         for (int i=0; i<b->side->element()->n_sides(); i++)
         	elem_flux += fabs( mh_dh->side_flux( *(b->side->element()->side(i)) ) );
-        if (mh_dh->side_flux( *(b->side) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
+        if (mh_dh->side_flux( *(b->side) ) >= -tol_switch_dirichlet_neumann*elem_flux
+                || (b->type == 2 /* Neuman*/ && b->flux == 0.0) ) continue;
 
-        if (b.id() < bc->distribution()->begin() || b.id() > bc->distribution()->end()) continue;
+        if (b.index() < bc->distribution()->begin() || b.index() > bc->distribution()->end()) continue;
 
         fe_values_side.reinit(cell, b->side);
         dh->get_dof_indices(cell, side_dof_indices);
@@ -845,7 +860,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
             for (int k=0; k<side_q.size(); k++)
             {
                 local_rhs[i] += (
-                        +gamma[b.id()]*bc->get_array(0)[b.id()-bc->distribution()->begin()]
+                        +gamma[b.index()]*bc->get_array(0)[b.index()-bc->distribution()->begin()]
 //                       -advection*0.5*min(b->side->flux, 0)*bc_values[0][b.id()]
                                 )*fe_values_side.shape_value(i,k)*fe_values_side.JxW(k);
             }

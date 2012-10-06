@@ -468,6 +468,8 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         //ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh__->n_elements(),&transport->vpconc[sbi]);
         ierr = VecCreateMPI(PETSC_COMM_WORLD, lb_col[rank], mesh_->n_boundaries(), &bcv[sbi]);
         ierr = VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &bcvcorr[sbi]);
+        VecZeroEntries(bcv[sbi]);
+        VecZeroEntries(bcvcorr[sbi]);
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), conc[MOBILE][sbi],
                 &vconc[sbi]);
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
@@ -566,7 +568,8 @@ void ConvectionTransport::read_bc_vector() {
             bcd_id = atoi(xstrtok(line)); // scratch transport bcd id
             boundary_id = atoi(xstrtok(NULL));
             //        DBGMSG("transp b. id: %d\n",boundary_id);
-            boundary_index = mesh_->boundary.find_id(boundary_id).index();
+            boundary_index = mesh_->boundary.index( *(Boundary::id_to_bcd.find_id(boundary_id)) );
+            DBGMSG("transp bcd: %d %d\n", boundary_id, boundary_index);
             INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
             for (sbi = 0; sbi < n_substances; sbi++) {
                 bcd_conc = atof(xstrtok(NULL));

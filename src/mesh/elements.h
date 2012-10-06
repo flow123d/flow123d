@@ -83,11 +83,10 @@ public:
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
-
+    unsigned int dim_;
 
 protected:
 
-    unsigned int dim_;
 
     double element_length_line();
     double element_area_triangle();

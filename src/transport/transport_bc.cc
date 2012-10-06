@@ -108,6 +108,8 @@ void TransportBC::read()
 
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
+	for (sbi = 0; sbi < n_substances; sbi++)
+	    VecZeroEntries(bcv[sbi]);
 	if (rank == 0)
 	{
 		int bcd_id, boundary_id, boundary_index;
@@ -125,7 +127,7 @@ void TransportBC::read()
 			bcd_id = atoi(xstrtok(line)); // scratch transport bcd id
 			boundary_id = atoi(xstrtok(NULL));
 			//        DBGMSG("transp b. id: %d\n",boundary_id);
-			boundary_index = mesh_->boundary.find_id(boundary_id).index();
+			boundary_index =mesh_->boundary.index( *(Boundary::id_to_bcd.find_id(boundary_id)) );
 			INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
 			for (sbi = 0; sbi < n_substances; sbi++) {
 				bcd_conc = atof(xstrtok(NULL));
