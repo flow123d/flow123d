@@ -94,8 +94,7 @@ set(sources_lib_la
 )
 
 set(sources_lib_functions
-    #functions/discrete_function.cc
-    functions/function_interpolated_p0.cc
+    functions/discrete_function.cc
 )    
 
 set(sources_lib_non_system
@@ -183,35 +182,35 @@ target_link_libraries(input_lib
 # new_mesh_lib
 add_library(new_mesh_lib ${sources_lib_new_mesh})
 target_link_libraries(new_mesh_lib 
-    ${Armadillo_LIBRARIES} ${Boost_LIBRARIES})    
+    armadillo ${Boost_LIBRARIES})    
     
 # la_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})
 target_link_libraries(mesh_lib
-    input_lib system_lib ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
+    input_lib system_lib armadillo ${Boost_LIBRARIES})
     
 # fem_lib    
 add_library(fem_lib ${sources_fem_lib})
 target_link_libraries(fem_lib
-    system_lib mesh_lib ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
+    system_lib mesh_lib armadillo ${Boost_LIBRARIES})
  
 # functions_lib  
 add_library(functions_lib ${sources_lib_functions})
 target_link_libraries(functions_lib
-    system_lib input_lib mesh_lib ${Armadillo_LIBRARIES} ${PETSC_LIBRARIES} ${Boost_LIBRARIES})
+    system_lib input_lib mesh_lib armadillo  ${Boost_LIBRARIES})
 
   
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
     functions_lib fem_lib new_mesh_lib mesh_lib la_lib semchem  input_lib system_lib
-    fparser ${PETSC_LIBRARIES} ${Armadillo_LIBRARIES} ${Boost_LIBRARIES})
+    fparser  armadilo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

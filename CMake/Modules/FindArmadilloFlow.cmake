@@ -19,6 +19,10 @@
 #  Armadillo_VERSION_PATCH - patch version number
 #  Armadillo_VERSION_STRING - version number as a string (ex: "1.0.4")
 #  Armadillo_VERSION_NAME - name of the version (ex: "Antipodean Antileech")
+#  Armadillo_CONFIGURE_FILE - file that, when included, creates armadillo library target, that links correct libraries
+#       ARMADILLO_INCLUDE_DIRS - include directories for Armadillo
+#       ARMADILLO_LIBRARY_DIRS - library directories for Armadillo (normally not used!)
+#       ARMADILLO_LIBRARIES    - libraries to link against !!! crucial for more complicated projects
 #
 #=============================================================================
 # Copyright 2011 Clement Creusot
@@ -34,31 +38,46 @@
 #
 #=============================================================================
 
+message(STATUS "Armadillo hint: ${Armadillo_ROOT_HINT}")
 
 if ( WIN32 )
 
   FIND_LIBRARY(Armadillo_LIBRARY
     NAMES armadillo
     PATHS "$ENV{ProgramFiles}/Armadillo/lib"  "$ENV{ProgramFiles}/Armadillo/lib64" "$ENV{ProgramFiles}/Armadillo"
+    HINTS ${Armadillo_ROOT_HINT}/lib
     )
   FIND_PATH(Armadillo_INCLUDE_DIR
     NAMES armadillo
     PATHS "$ENV{ProgramFiles}/Armadillo/include"
+    HINTS ${Armadillo_ROOT_HINT}/include
     )
+  FIND_FILE(Armadillo_CONFIGURE_FILE    # !!! NOT TESTED ON Windows
+      NAMES ArmadilloConfig.cmake
+      PATHS "$ENV{ProgramFiles}/Armadillo/share/Armadillo/CMake"
+      HINTS ${Armadillo_ROOT_HINT}/share/Armadillo/CMake
+      )  
 
 else ( WIN32 )  # UNIX LIKE SYSTEMS
 
   FIND_LIBRARY(Armadillo_LIBRARY
     NAMES armadillo
     PATHS /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib
+    HINTS ${Armadillo_ROOT_HINT}/lib
     )
   FIND_PATH(Armadillo_INCLUDE_DIR
     NAMES armadillo
     PATHS /usr/include /usr/local/include
+    HINTS ${Armadillo_ROOT_HINT}/include
     )
-
+  FIND_FILE(Armadillo_CONFIGURE_FILE
+      NAMES ArmadilloConfig.cmake
+      PATHS /usr/share/Armadillo/CMake /usr/local/share/Armadillo/CMake
+      HINTS ${Armadillo_ROOT_HINT}/share/Armadillo/CMake 
+      )  
 endif ( WIN32 )
 
+message(STATUS "${Armadillo_LIBRARY} ${Armadillo_INCLUDE_DIR} ${Armadillo_CONFIGURE_FILE}")
 
 SET(Armadillo_HEADERS_FOUND FALSE)  
 if(Armadillo_INCLUDE_DIR)
@@ -94,12 +113,16 @@ if(Armadillo_INCLUDE_DIR)
 endif (Armadillo_INCLUDE_DIR)
 
 
-
 #======================
 
 
 IF (Armadillo_LIBRARY AND Armadillo_HEADERS_FOUND)
   SET(Armadillo_LIBRARIES ${Armadillo_LIBRARY})
+  IF (Armadillo_CONFIG)
+        include(${Armadillo_CONFIG})    
+        SET(Armadillo_LINK_LIBRARIES ${ARMADILLO_LIBRARIES})  
+  ENDIF(Armadillo_CONFIG)
+
   SET(Armadillo_FOUND "YES")
 ELSE (Armadillo_LIBRARY AND Armadillo_HEADERS_FOUND)
   SET(Armadillo_FOUND "NO")

@@ -25,6 +25,8 @@
  *
  */
 
+#include "functions/functions_all.hh"
+
 #ifndef FUNCTION_INTERPOLATED_P0_HH_
 #define FUNCTION_INTERPOLATED_P0_HH_
 
@@ -38,26 +40,40 @@
 #include "new_mesh/ngh/include/triangle.h"
 #include "new_mesh/ngh/include/tetrahedron.h"
 
-class FunctionInterpolatedP0: public FunctionBase<3> {
+
+template <int dim>
+class FunctionInterpolatedP0: public FunctionBase<dim> {
 public:
+    typedef typename FunctionBase<dim>::Point Point;
 
 	/**
 	 * Constructor
 	 */
-	FunctionInterpolatedP0();
+	FunctionInterpolatedP0(const unsigned int n_components=1, const double init_time=0.0);
+
+
+	/**
+	 * Declare Input type.
+	 */
+	static Input::Type::Record &get_input_type();
+
+	/**
+	 * Initialization from the input interface.
+	 */
+	void init_from_input(Input::Record &rec);
 
     /**
      * Set element for interpolation
      */
-	void set_element(ElementFullIter &element);
+	void set_element(Element *element);
 
 	/**
 	 * Set sources files of interpolation
 	 *
 	 * @param mesh_file file contained data of mesh
 	 * @param raw_output file contained output
-	 * @param ngh_file file with specification of adjacency between dimensions
-	 * @param bcd_file file with boundary conditions
+	 *
+	 * TODO: use streams instead of filenames (better testing)
 	 */
 	void set_source_of_interpolation(const FilePath & mesh_file,
 									 const FilePath & raw_output);
@@ -110,9 +126,6 @@ protected:
 	 */
 	void read_pressures(FILE* raw_output);
 
-	/// method ONLY for development
-	void calculate_interpolation();
-
 	/**
 	 * Calculate pressures in triangle element
 	 */
@@ -126,17 +139,17 @@ protected:
 	/**
 	 * Create tetrahedron from element
 	 */
-	void createTetrahedron(ElementFullIter ele, TTetrahedron &te);
+	void createTetrahedron(Element *ele, TTetrahedron &te);
 
 	/**
 	 * Create triangle from element
 	 */
-	void createTriangle(ElementFullIter ele, TTriangle &tr);
+	void createTriangle(Element *ele, TTriangle &tr);
 
 	/**
 	 * Create abscissa from element
 	 */
-	void createAbscissa(ElementFullIter ele, TAbscissa &ab);
+	void createAbscissa(Element *ele, TAbscissa &ab);
 };
 
 

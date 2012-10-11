@@ -712,6 +712,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
     char dbl_fmt[ 16 ]= "%.8g ";
     // header
+    xfprintf( raw_output_file, "// fields:\n ele_id    ele_presure    flux_in_barycenter    n_sides   side_pressures    side_fluxes");
     xfprintf( raw_output_file, "$FlowField\nT=");
     xfprintf( raw_output_file, dbl_fmt, darcy_flow->time().t());
     xfprintf( raw_output_file, "\n%d\n", mesh_->n_elements() );

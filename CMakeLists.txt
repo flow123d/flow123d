@@ -53,6 +53,8 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(SET CMP0017 NEW)
 endif()
 
+
+
 if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
     # this is necessary due to some "bugs" in Armadillo
     add_definitions(-Wno-uninitialized)
@@ -61,6 +63,11 @@ endif()
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
 list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
+
+if (NOT EXTERNAL_PROJECT_DIR)
+    set(EXTERNAL_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/external)
+endif()
+
 
 ######################################################################### find libraries
 #
@@ -114,7 +121,7 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
-set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost)  
+set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost_build)  
 set(REQUIRED_Boost_COMPONENTS program_options serialization)
 
 
@@ -151,7 +158,6 @@ if (NOT Boost_FOUND)
   unset(Boost_INCLUDE_DIR CACHE)        # overwrite cache    
   unset(Boost_LIBRARY_DIRS CACHE)
   unset(Boost_LIB_VERSION CACHE)
-  unset(Boost_VERSION CACHE)
   unset(Boost_VERSION CACHE)
   foreach(COMPONENT ${REQUIRED_Boost_COMPONENTS})
       string(TOUPPER ${COMPONENT} COMPONENT)
@@ -224,59 +230,48 @@ endif()
 
 
 
+#################################################################################
+#  Armadillo_FOUND - set to true if the library is found
+#  Armadillo_INCLUDE_DIRS - list of required include directories
+#  Armadillo_LIBRARIES - list of libraries to be linked 
+#  Armadillo_VERSION_MAJOR - major version number
+#  Armadillo_VERSION_MINOR - minor version number
+#  Armadillo_VERSION_PATCH - patch version number
+#  Armadillo_VERSION_STRING - version number as a string (ex: "1.0.4")
+#  Armadillo_VERSION_NAME - name of the version (ex: "Antipodean Antileech")
+#  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that set:
+#       ARMADILLO_INCLUDE_DIRS - include directories for Armadillo
+#       ARMADILLO_LIBRARY_DIRS - library directories for Armadillo (normally not used!)
+#       ARMADILLO_LIBRARIES    - libraries to link against !!! crucial for more complicated projects
 
-# find aramdillo or use our own
-# FindAramdillo returs:
-# Aramdillo_INCLUDE_DIRS
-# Armadillo_LIBRARIES
-
-# hint same Boost to armadillo 
-set(Armadillo_Boost_Hint  -D BOOST_ROOT=${BOOST_ROOT})
-
-#set(our_Armadillo_version 1.1.92)
-#set(our_Armadillo_lib libarmadillo.a)
-
-set(our_Armadillo_version 3.2.4)
-set(our_Armadillo_lib libarmadillo.a)
-
-find_package(Armadillo)
+find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
+  message(STATUS "Try to install our own Armadillo.")
+  set(EXTERNAL_ARMADILLO_DIR  ${EXTERNAL_PROJECT_DIR}/armadillo_build)
+  include(InstallArmadillo)
 
-  # THIS IS NOT CORRECT WAY TO BUILD Armadillo, IT MERLY WORKS. DO NOT FOLLOW THIS.
-  # proper way should be: cmake, make, install Armadillo -> the last step should produce ArmadilloLibraryDepends.cmake
-  # which can be included here to get correct includes and libs variables
-  message(STATUS "Build our own Armadillo.")
-  set(ARMADILLO_BUILD_DIR "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build")
-  
-  # check PETSC fblas and flapack
-  find_file(PETSC_BLAS libfblas.a PATH  ${PETSC_DIR}/${PETSC_ARCH}/lib)
-  find_file(PETSC_LAPACK libflapack.a PATH  ${PETSC_DIR}/${PETSC_ARCH}/lib)
-  if ( PETSC_BLAS AND PETSC_LAPACK )
-      set(PETSC_LAPACK "-DLAPACK_LIBRARY=${PETSC_LAPACK}")
-      set(PETSC_BLAS "-DBLAS_LIBRARY=${PETSC_BLAS}")
-  else()
-      # if fblas or flapack is not presented in PETSC let armadillo to find its own BLAS and LAPACK
-      set(PETSC_LAPACK "")
-      set(PETSC_BLAS "")
-  endif()    
-  
-  file(MAKE_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  message(STATUS "BLAS_LIBRARY: ${PETSC_BLAS}" "LAPACK_LIBRARY: ${PETSC_LAPACK}")
-  execute_process(COMMAND ${CMAKE_COMMAND} ${PETSC_BLAS} ${PETSC_LAPACK} ${Armadillo_Boost_Hint} ..
-                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  execute_process(COMMAND make VERBOSE=1 
-                 WORKING_DIRECTORY "${ARMADILLO_BUILD_DIR}")
-  
-  # ARMA_LIBS has to be set manually in makefile.in.cmake 
-  # if Armadillo use different BLAS and LAPACK then that in PETSC (e.g. if PETSC are not found)
-  # ... TODO: find correct way how to make this automatic (Install Armadillo)
-  SET(Armadillo_INCLUDE_DIRS 
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/include
-    ${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/include)  
-  SET(Armadillo_LIBRARIES "${CMAKE_SOURCE_DIR}/third_party/armadillo-${our_Armadillo_version}/flow_build/${our_Armadillo_lib};${PETSC_LAPACK};${PETSC_BLAS};${ARMA_LIBS}")  
+  # we try to erease from the cache everything that can cause failure of the second find_package
+  # however just unsetting Boost_INCLUDE_DIR should be enough
+  unset(Armadillo_FOUND CACHE) 
+  unset(Armadillo_INCLUDE_DIR CACHE)        # overwrite cache    
+  unset(Armadillo_LIBRARY_DIRS CACHE)
+
+  set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
+  find_package(ArmadilloFlow 3.2.4 REQUIRED)
+
 endif()
 
-message(STATUS "Arma inc: ${Armadillo_INCLUDE_DIRS}")
+message(STATUS "Armadillo_LIBRARIES: ${Armadillo_LIBRARIES}")
+message(STATUS "Armadillo_INCLUDE_DIRS: ${Armadillo_INCLUDE_DIRS}")
+message(STATUS "Armadillo_CONFIGURE_FILE: ${Armadillo_CONFIGURE_FILE}")
+include("${Armadillo_CONFIGURE_FILE}")   # this introduce target "armadillo" with correct dependencies
+IF (PETSC_FOUND)
+    # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
+    # this is fragile because of _NOCONFIG
+    set_target_properties(armadillo PROPERTIES 
+      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_LIBRARIES}"
+      ) 
+endif()
 
 # optionaly we use Python interface
 find_package(PythonLibs)
@@ -372,7 +367,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  ${Armadillo_LIBRARIES} flow123d_lib semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  flow123d_lib semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number

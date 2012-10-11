@@ -640,6 +640,7 @@ bool skip_to( istream &in, const string &pattern )
     char string[ LINE_SIZE ];
 
     F_ENTRY;
+    if (! in.good()) xprintf(PrgErr, "Input stream is not ready for i/o operations. Perhaps missing check about correct open.\n");
 
     for(std::string line; ! in.eof() ; std::getline(in, line) ) {
         boost::trim(line);

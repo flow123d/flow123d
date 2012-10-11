@@ -61,7 +61,7 @@ public:
      */
     Node(double x, double y, double z)
     //: element(NULL)
-        {coordinates(0)=x; coordinates(1)=y; coordinates(3)=z;}
+        {coordinates(0)=x; coordinates(1)=y; coordinates(2)=z;}
 
     /**
      * Old getter methods. OBSOLETE.

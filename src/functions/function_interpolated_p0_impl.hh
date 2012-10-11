@@ -25,6 +25,11 @@
  *
  */
 
+#include "functions/functions_all.hh"
+
+#ifndef FUNCTION_INTERPOLATED_P0_IMPL_HH_
+#define FUNCTION_INTERPOLATED_P0_IMPL_HH_
+
 #include "function_interpolated_p0.hh"
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
@@ -32,14 +37,53 @@
 #include "new_mesh/ngh/include/intersection.h"
 #include "new_mesh/ngh/include/point.h"
 
-FunctionInterpolatedP0::FunctionInterpolatedP0() {
+
+template <int dim>
+FunctionInterpolatedP0<dim>::FunctionInterpolatedP0(const unsigned int n_components, const double init_time)
+: FunctionBase<dim>( n_components, init_time)
+{
 
 }
 
-void FunctionInterpolatedP0::set_element(ElementFullIter &element){
-	//element_ = element;
 
-	switch (element->dim()) {
+
+template <int dim>
+Input::Type::Record &FunctionInterpolatedP0<dim>::get_input_type() {
+    using namespace  Input::Type;
+
+    static Record rec("Interolated_Function_P0", "Function given by P0 data on another mesh. Currently defined only on boundary.");
+
+    if (! rec.is_finished()) {
+        // TODO: use mesh record here, but make it possibly of the same simplicity (the file name only)
+        rec.declare_key("mesh", FileName::input(),Default::obligatory(),
+                "File with the mesh from which we interpolate. (currently only GMSH supported)");
+        // TODO: allow interpolation from VTK files (contains also mesh), and our own format of raw data, that includes:
+        // mesh, dof_handler, and dof values
+        rec.declare_key("raw_data", FileName::input(), Default::obligatory(),
+                "File with raw output from flow calculation. Currently we can interpolate only pressure.");
+        rec.finish();
+    }
+    return rec;
+}
+
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::init_from_input(Input::Record &rec) {
+    set_source_of_interpolation(
+            rec.val<FilePath>("mesh"),
+            rec.val<FilePath>("raw_data")
+            );
+}
+
+
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::set_element(Element *element){
+	element_ = element;
+
+	switch (element_->dim()) {
 		case 1: {
 			TAbscissa abscissa;
 			createAbscissa(element, abscissa);
@@ -58,13 +102,16 @@ void FunctionInterpolatedP0::set_element(ElementFullIter &element){
 	}
 }
 
-void FunctionInterpolatedP0::set_source_of_interpolation(const FilePath & mesh_file,
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::set_source_of_interpolation(const FilePath & mesh_file,
 		const FilePath & raw_output) {
 
 	// read mesh, create tree
     {
+       mesh_ = new Mesh();
 	   GmshMeshReader reader;
-	   mesh_ = new Mesh();
 	   reader.read( mesh_file, mesh_);
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
@@ -78,7 +125,10 @@ void FunctionInterpolatedP0::set_source_of_interpolation(const FilePath & mesh_f
 	//calculate_interpolation();
 }
 
-void FunctionInterpolatedP0::read_pressures(FILE* raw_output) {
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::read_pressures(FILE* raw_output) {
 	xprintf(Msg, " - FunctionInterpolatedP0->read_pressures(FILE* raw_output)\n");
 
 	int numElements;
@@ -108,21 +158,14 @@ void FunctionInterpolatedP0::read_pressures(FILE* raw_output) {
 	xprintf(Msg, " %d values of pressure read. O.K.\n", pressures_.size());
 }
 
-// method ONLY for development
-void FunctionInterpolatedP0::calculate_interpolation() {
-	TPoint pointA(0.01, 0.01, 0.00);
-	TPoint pointB(0.16, 0.16, 0.00);
-	TPoint pointC(0.02, 0.02, 0.05);
-	TTriangle triangle(pointA, pointB, pointC);
 
-	calculate_triangle_pressure(triangle);
-	printf("Pressure = %f\n", pressure_);
-	getchar();
-	calculate_triangle_pressure(triangle);
-	printf("Pressure2 = %f\n", pressure_);
-}
 
-void FunctionInterpolatedP0::calculate_triangle_pressure(TTriangle &element) {
+
+
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::calculate_triangle_pressure(TTriangle &element) {
 	double elArea, iArea;
 	BoundingBox elementBoundingBox = element.get_bounding_box();
 	std::vector<int>::iterator it;
@@ -150,7 +193,10 @@ void FunctionInterpolatedP0::calculate_triangle_pressure(TTriangle &element) {
 	}
 }
 
-void FunctionInterpolatedP0::calculate_abscissa_pressure(TAbscissa &element) {
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::calculate_abscissa_pressure(TAbscissa &element) {
 	double elLength, coef;
 	BoundingBox elementBoundingBox = element.get_bounding_box();
 	std::vector<int>::iterator it;
@@ -178,7 +224,10 @@ void FunctionInterpolatedP0::calculate_abscissa_pressure(TAbscissa &element) {
 	}
 }
 
-void FunctionInterpolatedP0::createTetrahedron(ElementFullIter ele, TTetrahedron &te) {
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::createTetrahedron(Element *ele, TTetrahedron &te) {
 	ASSERT(( ele->dim() == 3 ), "Dimension of element must be 3!\n");
 
 	te.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
@@ -187,7 +236,10 @@ void FunctionInterpolatedP0::createTetrahedron(ElementFullIter ele, TTetrahedron
 				TPoint(ele->node[3]->point()(0), ele->node[3]->point()(1), ele->node[3]->point()(2)) );
 }
 
-void FunctionInterpolatedP0::createTriangle(ElementFullIter ele, TTriangle &tr) {
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::createTriangle(Element *ele, TTriangle &tr) {
 	ASSERT(( ele->dim() == 2 ), "Dimension of element must be 2!\n");
 
 	tr.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
@@ -195,32 +247,50 @@ void FunctionInterpolatedP0::createTriangle(ElementFullIter ele, TTriangle &tr) 
 				 TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)) );
 }
 
-void FunctionInterpolatedP0::createAbscissa(ElementFullIter ele, TAbscissa &ab) {
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::createAbscissa(Element *ele, TAbscissa &ab) {
 	ASSERT(( ele->dim() == 1 ), "Dimension of element must be 1!\n");
 
 	ab.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
 			 	 TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)) );
 }
 
-double FunctionInterpolatedP0::value(const Point &p, const unsigned int component) const
+
+
+template <int dim>
+double FunctionInterpolatedP0<dim>::value(const Point &p, const unsigned int component) const
 {
 	return pressure_;
 }
 
-void FunctionInterpolatedP0::vector_value(const Point &p, std::vector<double> &value) const
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::vector_value(const Point &p, std::vector<double> &value) const
 {
 	xprintf(Msg, " - Method vector_value is not used and implemented in class FunctionInterpolatedP0\n");
 }
 
-void FunctionInterpolatedP0::value_list(const std::vector<Point>  &point_list,
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::value_list(const std::vector<Point>  &point_list,
 					  std::vector<double>         &value_list,
 					  const unsigned int  component) const
 {
 	xprintf(Msg, " - Method value_list is not used and implemented in class FunctionInterpolatedP0\n");
 }
 
-void FunctionInterpolatedP0::vector_value_list (const std::vector<Point> &point_list,
+
+
+template <int dim>
+void FunctionInterpolatedP0<dim>::vector_value_list (const std::vector<Point> &point_list,
                             std::vector< std::vector<double> > &value_list) const
 {
 	xprintf(Msg, " - Method vector_value_list is not used and implemented in class FunctionInterpolatedP0\n");
 }
+
+
+#endif

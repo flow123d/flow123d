@@ -71,6 +71,7 @@ void GmshMeshReader::read(const FilePath &file_name, Mesh* mesh) {
     mesh_file = file_name;
 
     std::ifstream ifs( mesh_file.c_str(), std::ifstream::in );
+    INPUT_CHECK( ifs.good(), "Can not open GMSH input file: %s\n", mesh_file.c_str());
     read(ifs, mesh);
 
     mesh_file ="";
@@ -83,7 +84,6 @@ void GmshMeshReader::read(istream &in, Mesh *mesh) {
     F_ENTRY;
 
     ASSERT( mesh , "Argument mesh is NULL.\n");
-
     read_nodes(in, mesh);
     read_elements(in, mesh);
 

@@ -45,7 +45,10 @@ struct MaterialDatabase;
 class Element
 {
 public:
-    Element(unsigned int dim = 0);
+    Element();
+    Element(unsigned int dim);
+
+    void reinit(unsigned int dim);
 
     inline unsigned int dim() const;
     inline unsigned int index() const;

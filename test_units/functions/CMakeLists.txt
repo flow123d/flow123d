@@ -27,15 +27,15 @@
 
 add_custom_target( functions_test )
 set(super_test "functions_test")
-set(super_test_libs system_lib functions_lib ${PYTHON_LIBRARIES})
+set(super_test_libs functions_lib mesh_lib new_mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     
     set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for multiline raw strings
-    #define_test(python_function)
+    define_test(python_function)
     define_test(discrete_function)
-
+    define_test(function_interpolated_p0)
     
     #define_test(generic_node)
     

@@ -572,13 +572,6 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 				// set up the parameters for DG method
 				set_DG_parameters(edg, s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
 
-				// !!! NEED CHECK - modification ID -> index , ?? some other place
-				// WHY this is here if this computes internal fluxes ??
-				//if ( edg->side(s1)->cond() ) {
-				//    ASSERT(0, "Boundary at internall edge!");
-				//    gamma[ mesh_->boundary.full_iter(edg->side(s1)->cond()).index()] = gamma_l;
-				//}
-
 				int sd[2];
 				sd[0] = s1;
 				sd[1] = s2;
@@ -662,6 +655,11 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         // stil there are elements with  elme_flux and BC flux in order 1e-7 ~ tolerance of linear solver
         // then this condition doesn't work, we either has to set zero water fluxes or make this dependent on tolerance in flow solver
         // temporary solution: check zero Neuman BC in water
+        //
+        // Solution:
+        // 1) postprocessing of flow solution, set flux DOFs to zero on Neuman boundaries
+        // 2) modify following condition to select Neuman BC in transport if flux is smaller then tolerance of lin. solver * some const, or matrix diagonal (think carefully)
+        //
         if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux
                 || (edge->side(0)->cond()->type == 2 /* Neuman*/ && edge->side(0)->cond()->flux == 0.0) ) continue;
 

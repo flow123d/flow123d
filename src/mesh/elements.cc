@@ -44,25 +44,8 @@
 
 
 
-static void calc_a_row(Mesh*);
-static void calc_b_row(Mesh*);
-//static ElementIter new_element(void);
-//static void add_to_element_list(Mesh*, ElementIter);
-//static void make_block_e(ElementFullIter, Mesh *mesh );
-//static void alloc_and_init_block_e(ElementIter );
-//static char supported_element_type(int);
-//static void element_type_specific(ElementFullIter );
-//static void element_allocation_independent(ElementFullIter );
-//static void make_block_d(Mesh *mesh, ElementFullIter );
-//static void calc_rhs(ElementFullIter );
-//static void calc_rhs_b(ElementFullIter );
-//static void dirichlet_elm(ElementFullIter );
 
-static void parse_element_properties_line(char*);
-//static void block_A_stats(Mesh*);
-//static void diag_A_stats(Mesh*);
-
-Element::Element(unsigned int dim)
+Element::Element()
 : mid(0),
   pid(0),
 
@@ -75,9 +58,33 @@ Element::Element(unsigned int dim)
   n_neighs_vb(0),
   neigh_vb(NULL),
 
+  dim_(0)
+
+{
+}
+
+
+Element::Element(unsigned int dim)
+: mid(0),
+  pid(0),
+
+  material(NULL),
+
+  n_neighs_vb(0),
+  neigh_vb(NULL),
+
   dim_(dim)
 
 {
+    // allocate element arrays TODO: should be in mesh class
+    node = new Node * [ n_nodes()];
+    edges_ = new Edge * [ n_sides()];
+    boundaries_ = new Boundary * [ n_sides()];
+
+    FOR_ELEMENT_SIDES(this, si) {
+        edges_[ si ]=NULL;
+        boundaries_[si] =NULL;
+    }
 }
 
 
