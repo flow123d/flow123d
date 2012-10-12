@@ -12,7 +12,6 @@
 #ifndef FUNCTION_PYTHON_HH_
 #define FUNCTION_PYTHON_HH_
 
-#ifdef HAVE_PYTHON
 
 #include "system/system.hh"
 #include "system/python_loader.hh"
@@ -39,14 +38,11 @@ class FunctionPython : public FunctionBase<dim>
 public:
     typedef typename FunctionBase<dim>::Point Point;
 
-    FunctionPython(const unsigned int n_components=1, const double init_time=0.0)
-    : FunctionBase<dim>(n_components, init_time),
-      p_func_(NULL), p_module_(NULL), p_args_(NULL), p_value_(NULL)
-    {}
+    FunctionPython(const unsigned int n_components=1, const double init_time=0.0);
 
     static Input::Type::Record &get_input_type();
 
-    void init_from_input( Input::Record);
+    void init_from_input( Input::Record rec);
 
     /**
      * Set the file and function to be called.
@@ -87,14 +83,15 @@ private:
      * Common part of set_python_function_from_* methods
      */
     void set_func(const string &func_name);
-
+#ifdef HAVE_PYTHON
     PyObject *p_func_;
     PyObject *p_module_;
     mutable PyObject *p_args_;
     mutable PyObject *p_value_;
+#endif // HAVE_PYTHON
+
 };
 
 
-#endif // HAVE_PYTHON
 
 #endif /* FUNCTION_PYTHON_HH_ */

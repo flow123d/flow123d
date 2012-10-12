@@ -31,7 +31,7 @@
 
 #include <functions/function_base_impl.hh>
 #include <functions/function_interpolated_p0_impl.hh>
-#include <functions/function_python.hh>
+#include <functions/function_python_impl.hh>
 #include <functions/function_elementwise_impl.hh>
 
 #endif /* FUNCTIONS_ALL_HH_ */

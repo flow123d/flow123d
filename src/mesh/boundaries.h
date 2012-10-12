@@ -62,7 +62,9 @@ public:
      */
     static flow::VectorId<Boundary *> id_to_bcd;
 
-    ElementIter get_bc_element_iter();
+    inline ElementIter get_bc_element_iter() {
+        return bc_element_;
+    }
 
     // Data readed from boundary conditions files (REMOVE)
     int      type;      // Type of boundary condition

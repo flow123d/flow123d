@@ -36,12 +36,12 @@ public:
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns pointer to general FunctionBase.
         */
-       static FunctionBase<dim> *function_factory(Input::AbstractRecord &rec);
+       static FunctionBase<dim> *function_factory(Input::AbstractRecord rec, const unsigned int n_comp=0, const double init_time=0.0);
 
        /**
         *  Function can provide way to initialize itself from the input data.
         */
-       virtual void init_from_input(Input::Record &rec);
+       virtual void init_from_input(Input::Record rec);
 
        /**
         * Set new time value.

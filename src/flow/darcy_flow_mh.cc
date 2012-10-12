@@ -80,12 +80,11 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
 {
     using namespace Input::Type;
 
-    static AbstractRecord bc_type("DarcyFlowMH_BC_Type", "Boundary condition for DaryFlowMH equation.");
-    bc_type.finish();
+    static Record bc_segment_rec("DarcyFlowMH_BC_Type", "Boundary condition for DaryFlowMH equation.");
     //BCTable::set_input_type_for_dirichlet( bc_type );
     //BCTable::set_input_type_for_neumman( bc_type );
     //BCTable::set_input_type_for_newton( bc_type );
-    bc_type.no_more_descendants();
+    //bc_type.no_more_descendants();
 
     //static Record bc_table_item_rec = BCTable::get_item_input_type( bc_type );
 
@@ -93,6 +92,11 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
 
 
     if (!rec.is_finished()) {
+        bc_segment_rec.declare_key("value", FunctionBase<3>::get_input_type(), Default::obligatory(),
+                "Value of scalar Dirichlet BC.");
+        bc_segment_rec.finish();
+
+
         // declare keys common to all DarcyFlow classes
         //rec.declare_key("boundary_condition", Array( bc_table_item_rec), Default::obligatory(),
         //        "Table of boundary conditions for BC segments.");
@@ -103,8 +107,10 @@ Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
                 "File with water source field.");
         rec.declare_key("sources_formula", String(),
                 "Formula to determine the source field.");
-        rec.declare_key("boundary_file", FileName::input(),Default::obligatory(),
+        rec.declare_key("boundary_file", FileName::input(),Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
                 "File with boundary conditions for MH solver.");
+        rec.declare_key("boundary_conditions", bc_segment_rec, Default::optional(),
+                "Specification of boundary conditions.");
         rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
                 "Linear solver for MH problem.");
         rec.declare_key("output", DarcyFlowMHOutput::get_input_type(), Default::obligatory(),
@@ -178,6 +184,18 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
         sources->setup_from_function(*it_f);
     }
 
+    Iterator<Record> it_bc = in_rec.find<Record>("boundary_conditions");
+    if (it_bc) {
+        bc_function = FunctionBase<3>::function_factory(it_bc->val<AbstractRecord>("value"));
+
+        // set bcd groups for correct water_balance
+        FOR_BOUNDARIES(mesh_, bcd) bcd->group=0;
+        mesh_->bcd_group_id.add_item(0);
+
+    } else {
+        read_boundary(mesh_, in_rec.val<FilePath>("boundary_file", FilePath("NO_BCD_FILE", FilePath::input_file) ) );
+        bc_function=NULL;
+    }
     // time governor
     time_=new TimeGovernor(marks);
 
@@ -187,7 +205,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
     if (ierr)
         xprintf(Err, "Some error in MPI.\n");
 
-    read_boundary(mesh_, in_rec.val<FilePath>("boundary_file") );
 
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
@@ -417,6 +434,16 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             double c_val = 1.0;
 
             if (bcd) {
+                if (bc_function) {
+                    bc_function->set_element(bcd->get_bc_element_iter());
+                    double value=bc_function->value(bcd->get_bc_element_iter()->centre());
+                    c_val = 0.0;
+                    loc_side_rhs[i] -= value;
+
+                    ls->rhs_set_value(edge_row, -value);
+                    ls->mat_set_value(edge_row, edge_row, -1.0);
+
+                } else
                 if ( bcd->type == DIRICHLET ) {
                     c_val = 0.0;
                     loc_side_rhs[i] -= bcd->scalar;

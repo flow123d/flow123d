@@ -60,7 +60,7 @@ public:
 	/**
 	 * Initialization from the input interface.
 	 */
-	void init_from_input(Input::Record &rec);
+	void init_from_input(Input::Record rec);
 
     /**
      * Set element for interpolation

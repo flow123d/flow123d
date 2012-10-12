@@ -51,9 +51,10 @@ template <int dim>
 Input::Type::Record &FunctionInterpolatedP0<dim>::get_input_type() {
     using namespace  Input::Type;
 
-    static Record rec("Interolated_Function_P0", "Function given by P0 data on another mesh. Currently defined only on boundary.");
+    static Record rec("FunctionInterpolatedP0", "Function given by P0 data on another mesh. Currently defined only on boundary.");
 
     if (! rec.is_finished()) {
+        rec.derive_from(FunctionBase<dim>::get_input_type());
         // TODO: use mesh record here, but make it possibly of the same simplicity (the file name only)
         rec.declare_key("mesh", FileName::input(),Default::obligatory(),
                 "File with the mesh from which we interpolate. (currently only GMSH supported)");
@@ -69,7 +70,7 @@ Input::Type::Record &FunctionInterpolatedP0<dim>::get_input_type() {
 
 
 template <int dim>
-void FunctionInterpolatedP0<dim>::init_from_input(Input::Record &rec) {
+void FunctionInterpolatedP0<dim>::init_from_input(Input::Record rec) {
     set_source_of_interpolation(
             rec.val<FilePath>("mesh"),
             rec.val<FilePath>("raw_data")

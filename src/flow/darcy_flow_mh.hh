@@ -169,6 +169,8 @@ protected:
     double mortar_sigma_;
 
     //BoundaryData<DarcyFlowMH_BC> bc_data_;
+
+    FunctionBase<3> *bc_function;
 };
 
 

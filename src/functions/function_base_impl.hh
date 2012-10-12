@@ -31,9 +31,8 @@ Input::Type::AbstractRecord &FunctionBase<dim>::get_input_type() {
 
     if (! rec.is_finished()) {
         rec.finish();
-#ifdef HAVE_PYTHON
+
         FunctionPython<dim>::get_input_type();
-#endif
         FunctionInterpolatedP0<dim>::get_input_type();
         rec.no_more_descendants();
     }
@@ -43,22 +42,25 @@ Input::Type::AbstractRecord &FunctionBase<dim>::get_input_type() {
 
 
 template <int dim>
-FunctionBase<dim> *  FunctionBase<dim>::function_factory(Input::AbstractRecord &rec) {
+FunctionBase<dim> *  FunctionBase<dim>::function_factory(Input::AbstractRecord rec, const unsigned int n_comp, const double init_time) {
+    FunctionBase<dim> *func;
 
     if (rec.type() == FunctionInterpolatedP0<dim>::get_input_type()) {
-        return  new FunctionInterpolatedP0<dim>(rec);
+        func= new FunctionInterpolatedP0<dim>(n_comp, init_time);
 #ifdef HAVE_PYTHON
     } else if (rec.type() == FunctionPython<dim>::get_input_type()) {
-        return  new FunctionPython<dim>(rec);
+        func= new FunctionPython<dim>(n_comp, init_time);
 #endif
     } else {
         xprintf(PrgErr,"TYPE of Function is out of set of descendants. SHOULD NOT HAPPEN.\n");
     }
+    func->init_from_input(rec);
+    return func;
 }
 
 
 template <int dim>
-void FunctionBase<dim>::init_from_input(Input::Record &rec) {
+void FunctionBase<dim>::init_from_input(Input::Record rec) {
     xprintf(PrgErr, "The function do not support initialization from input.\n");
 }
 
