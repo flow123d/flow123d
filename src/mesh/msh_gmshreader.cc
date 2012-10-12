@@ -70,9 +70,28 @@ GmshMeshReader::~GmshMeshReader() {
 void GmshMeshReader::read(const FilePath &file_name, Mesh* mesh) {
     mesh_file = file_name;
 
-    std::ifstream ifs( mesh_file.c_str(), std::ifstream::in );
-    INPUT_CHECK( ifs.good(), "Can not open GMSH input file: %s\n", mesh_file.c_str());
-    read(ifs, mesh);
+    std::ifstream ifs;
+    ifs.exceptions ( ifstream::failbit | ifstream::badbit );
+    try {
+        ifs.open( mesh_file.c_str(), std::ifstream::in );
+        read(ifs, mesh);
+    }
+    catch (ifstream::failure &e)
+    {
+        /*
+         * This doesn't work well, bad bit is set also for failure in getline.
+         * 1) check Boost iostreams if thay provides better resolution of exceptions
+         * 2) make an open_stream method in FilePath, that can at least check correct oppening
+         *    of the stream and turn on the exceptions.
+         * 3) If not provided by boost create correct exception types in FilePath
+         *    for reporting type of io problem and possibly information about filename and
+         *    line.
+         */
+        if (ifs.bad())
+            xprintf(UsrErr,"Can not open GMSH input file: %s\n", mesh_file.c_str());
+        if (ifs.fail())
+            xprintf(UsrErr,"Can not read GMSH input file: %s. Should be text file.\n", mesh_file.c_str());
+    }
 
     mesh_file ="";
 }
@@ -84,6 +103,7 @@ void GmshMeshReader::read(istream &in, Mesh *mesh) {
     F_ENTRY;
 
     ASSERT( mesh , "Argument mesh is NULL.\n");
+    INPUT_CHECK( ! in.fail(), "Can not open GMSH input file: %s\n", mesh_file.c_str());
     read_nodes(in, mesh);
     read_elements(in, mesh);
 
@@ -101,7 +121,7 @@ void GmshMeshReader::read_nodes(istream &in, Mesh* mesh) {
     Tokenizer tok(in);
     try {
         tok.next_line();
-
+        DBGMSG("%d\n",tok.line_num());
         unsigned int n_nodes = lexical_cast<unsigned int> (*tok);;
 
         INPUT_CHECK( n_nodes > 0, "Zero number of nodes in the mesh file %s.", mesh_file.c_str() ); // should throw and catch at level where we know the file name

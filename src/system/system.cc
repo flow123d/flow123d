@@ -643,6 +643,7 @@ bool skip_to( istream &in, const string &pattern )
     if (! in.good()) xprintf(PrgErr, "Input stream is not ready for i/o operations. Perhaps missing check about correct open.\n");
 
     for(std::string line; ! in.eof() ; std::getline(in, line) ) {
+        DBGMSG("%s\n", line.c_str());
         boost::trim(line);
         if ( boost::iequals( line, pattern ) ) return true;
     }

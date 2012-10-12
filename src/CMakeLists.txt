@@ -182,7 +182,7 @@ target_link_libraries(input_lib
 # new_mesh_lib
 add_library(new_mesh_lib ${sources_lib_new_mesh})
 target_link_libraries(new_mesh_lib 
-    armadillo ${Boost_LIBRARIES})    
+    system_lib armadillo ${Boost_LIBRARIES})    
     
 # la_lib
 add_library(la_lib ${sources_lib_la})
@@ -210,7 +210,7 @@ target_link_libraries(functions_lib
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
     functions_lib fem_lib new_mesh_lib mesh_lib la_lib semchem  input_lib system_lib
-    fparser  armadilo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    fparser  armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

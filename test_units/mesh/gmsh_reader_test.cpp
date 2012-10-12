@@ -79,3 +79,15 @@ TEST(GMSHReader, read_mesh_from_stream) {
 }
 
 
+TEST(GMSHReader, read_mesh_from_file) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file("../../test_units/mesh/test_input.msh", FilePath::input_file);
+
+    Mesh mesh;
+    GmshMeshReader reader;
+
+    reader.read(mesh_file, &mesh);
+
+    EXPECT_EQ(216, mesh.n_elements());
+}
+
