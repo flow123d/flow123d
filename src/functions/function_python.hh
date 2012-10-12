@@ -4,6 +4,8 @@
  *  Created on: Aug 30, 2012
  *      Author: jb
  */
+// TODO: make FunctionPython dummy class if we do not have python, so that we
+// need not optional code elsewhere
 
 #include "functions/functions_all.hh"
 

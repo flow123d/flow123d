@@ -65,7 +65,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
 list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
 if (NOT EXTERNAL_PROJECT_DIR)
-    set(EXTERNAL_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/external)
+    # default directory for building external libraries 
+    set(EXTERNAL_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/third_party)
 endif()
 
 
