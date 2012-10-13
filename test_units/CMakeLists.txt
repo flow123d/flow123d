@@ -7,7 +7,13 @@ include_directories( ${GTEST_ROOT}/include ${CMAKE_SOURCE_DIR}/test_units)
 add_subdirectory( ${GTEST_ROOT} ${GTEST_ROOT})
 message(STATUS "Gtest tests allowed")
 
+# sources for our mpi gtest extension
 set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/test_units/gtest_mpi.cc)
+
+# Defines macro for absolute path to unit_tests, so that unit tests can read
+# some test files in its source directory, while the binary of the test is created
+# elsewhere.
+add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/test_units")
 
 #################################
 # MACRO define_test

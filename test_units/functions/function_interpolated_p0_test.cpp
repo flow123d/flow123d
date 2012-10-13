@@ -36,8 +36,8 @@
 // tests are started from 'build/test_units'
 string input = R"CODE(
 {   
-   mesh="../../test_units/functions/large_domain.msh",
-   raw_data="../../test_units/functions/large_domain_raw_data.txt"
+   mesh="${INPUT}/functions/large_domain.msh",
+   raw_data="${INPUT}/functions/large_domain_raw_data.txt"
 }
 )CODE";
 
@@ -75,6 +75,12 @@ $EndElements
 
 
 TEST(FunctionInterpolatedP0, 2d_elements) {
+    // setup FilePath directories
+    FilePath::set_io_dirs(".","/",UNIT_TESTS_SRC_DIR,".");
+
+    // initialize Input:Types
+    FunctionBase<3>::get_input_type();
+
     // read input string
     std::stringstream ss(input);
     Input::JSONToStorage reader;

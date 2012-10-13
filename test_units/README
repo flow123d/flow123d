@@ -1,8 +1,0 @@
-This directory is meant for unit tests based on CppUnit or similar tools.
-
-In order to test also correct ASSERTs there should be possibility catch the error messages e.g.
-there could be compiler flag that makes xprintf throw exception containing the text of the message.
-Then in the test we just check that exception was thrown. We can not check that the right exception
-was thrown unless we compare the text of the message, but that could be dangerous
-since texts are often changed.
- 

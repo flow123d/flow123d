@@ -22,7 +22,7 @@ inline const Ret Record::val(const string &key) const {
         Type::Record::KeyIter key_it = record_type_.key_iterator(key);
 
         ASSERT( key_it->default_.is_obligatory() || key_it->default_.has_value_at_declaration(),
-                "The key %s is declared as optional or with default value at read time,"
+                "The key '%s' is declared as optional or with default value at read time,"
                 " you have to use Record::find instead.\n", key.c_str());
 
         Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);

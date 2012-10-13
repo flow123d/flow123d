@@ -8,6 +8,11 @@
 #ifndef GTEST_THROW_WHAT_HH_
 #define GTEST_THROW_WHAT_HH_
 
+/**
+ * Macros for death test that test particular class of exception
+ * and more over test contents of message created by its what() method.
+ */
+
 
 #include <gtest/gtest.h>
 

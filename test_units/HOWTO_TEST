@@ -1,3 +1,43 @@
+How to make unit tests for Flow123d
+===================================
+
+Basic structure of test that need not to use MPI is:
+----------------------------------------
+#include "gtest/gtest.hh"
+
+TEST( class_name, test_name ) {
+	...
+} 
+----------------------------------------
+
+If you want to use MPI just replace include with:
+#include <gtest_mpi.hh>
+
+Optionally you can include "gtest_throw_what.hh", that provides macro
+
+EXPECT_THROW_WHAT( code_to_throw, exception_class, pattern_of_what_message )
+
+to test thrown exception together with message provided by standard what() method of the exception. 
+
+Neccessary modifications in CMakeLists.txt:
+1) to add new test file "some_test.cpp" in existing subdirectory "subdir", just add
+define_test("some") or define_mpi_test(n_proc, "some") into "subdir/CMakeLists.txt".
+Test files has to be named "*_test.cpp".
+
+2) to add new directory "subdir" you have to:
+- put add_subdirecctory("subdir") into "test_units/CMakeLists.txt" 
+- make file "test_units/subdir/CMakeLists.txt" (start with copy of the existing one)
+
+
+The CMake system provides macro UNIT_TESTS_SRC_DIR, that expands to root directory of
+unit tests, like "/home/jb/workspace/flow123d/trunk/test_units". This can be used to 
+read some test files stored under this path.
+
+==========================================================================================
+GTest overview
+====================================================================================
+
+
 simple test
 ===========
 TEST(test_case_name, test_name) {

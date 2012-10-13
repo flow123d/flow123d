@@ -84,7 +84,7 @@ protected:
         main->declare_key("file_output", FileName::output(),Default::obligatory(), "description");
         main->declare_key("file_input", FileName::input(),Default::obligatory(), "description");
         main->declare_key("optional_int", Integer(), "");
-        main->declare_key("selection", *selection_ptr, "");
+        main->declare_key("selection", *selection_ptr, Default::obligatory(), "");
         main->finish();
         }
 
@@ -211,7 +211,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef DEBUG_ASSERTS
-    EXPECT_DEATH( {record.val<int>("optional_int");}, "The key optional_int is declared as optional, you have to use Record::find instead.");
+    EXPECT_DEATH( {record.val<int>("optional_int");}, "The key 'optional_int' is declared as optional .*you have to use Record::find instead.");
 #endif
 
 }

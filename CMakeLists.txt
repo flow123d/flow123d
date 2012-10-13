@@ -192,42 +192,48 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 find_package(PETSc 3.2.0)
 find_package(PARMETIS)
 
-if (NOT PETSC_FOUND)
-# === Variables ===
-# This module will set the following variables per language in your project,
-# where <lang> is one of C, CXX, or Fortran:
-#   MPI_<lang>_FOUND           TRUE if FindMPI found MPI flags for <lang>
-#   MPI_<lang>_COMPILER        MPI Compiler wrapper for <lang>
-#   MPI_<lang>_COMPILE_FLAGS   Compilation flags for MPI programs
-#   MPI_<lang>_INCLUDE_PATH    Include path(s) for MPI header
-#   MPI_<lang>_LINK_FLAGS      Linking flags for MPI programs
-#   MPI_<lang>_LIBRARIES       All libraries to link MPI programs against
-# Additionally, FindMPI sets the following variables for running MPI
-# programs from the command line:
-#   MPIEXEC                    Executable for running MPI programs
-#   MPIEXEC_NUMPROC_FLAG       Flag to pass to MPIEXEC before giving
-#                              it the number of processors to run on
-#   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
-#                              before the executable to run.
-#   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
+if (PETSC_FOUND)
+    add_definitions(-DHAVE_PETSC -DHAVE_MPI)
+    set(MPI_CXX_LIBRARIES ${PETSC_LIBRARIES})
+    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
+else(PETSC_FOUND)
+    # If we haven't PETSC, we try to find MPI
+        
+    # === Variables ===
+    # This module will set the following variables per language in your project,
+    # where <lang> is one of C, CXX, or Fortran:
+    #   MPI_<lang>_FOUND           TRUE if FindMPI found MPI flags for <lang>
+    #   MPI_<lang>_COMPILER        MPI Compiler wrapper for <lang>
+    #   MPI_<lang>_COMPILE_FLAGS   Compilation flags for MPI programs
+    #   MPI_<lang>_INCLUDE_PATH    Include path(s) for MPI header
+    #   MPI_<lang>_LINK_FLAGS      Linking flags for MPI programs
+    #   MPI_<lang>_LIBRARIES       All libraries to link MPI programs against
+    # Additionally, FindMPI sets the following variables for running MPI
+    # programs from the command line:
+    #   MPIEXEC                    Executable for running MPI programs
+    #   MPIEXEC_NUMPROC_FLAG       Flag to pass to MPIEXEC before giving
+    #                              it the number of processors to run on
+    #   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
+    #                              before the executable to run.
+    #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
 
-  find_package(MPI)
+    find_package(MPI)
   
-  if (NOT MPI_CXX_FOUND) 
-    set(mpiuni_sources    system/mpiuni/mpi.c)
-    set(MPIUNI_INCLUDES src/system/mpiuni)
-    add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+    if (MPI_CXX_FOUND)
+        add_definitions(-DHAVE_MPI)
+    else(MPI_CXX_FOUND) 
+        # build single processor replacement taken from PETSc
+        set(mpiuni_sources    system/mpiuni/mpi.c)
+        set(MPIUNI_INCLUDES src/system/mpiuni)
+        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
     
-    # overwrite NOTFOUND status
-    set(MPI_CXX_LIBRARIES "")
-    set(MPI_CXX_INCLUDE_PATH "")
-  else()
-    add_definitions(-DHAVE_MPI)
-  endif()
-  
-else()
-  add_definitions(-DHAVE_PETSC -DHAVE_MPI)
-endif()
+        # overwrite NOTFOUND status
+        set(MPI_CXX_LIBRARIES mpiuni_lib)
+        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
+    
+    endif(MPI_CXX_FOUND)
+
+endif(PETSC_FOUND)
 
 
 
@@ -297,7 +303,6 @@ include_directories(
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
-    ${MPIUNI_INCLUDES}  
 )
 
 ##############

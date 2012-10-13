@@ -306,20 +306,24 @@ using namespace Input::Type;
     EXPECT_EQ(0, a_rec.key_index("TYPE"));
     EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
 
-
+    // test derived type
     Record b_rec("EqDarcy","");
     b_rec.derive_from(a_rec);
     b_rec.declare_key("b_val", Integer(), "");
     b_rec.finish();
-    EXPECT_EQ(0, b_rec.key_index("TYPE"));
+
     EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
+    // TYPE should be derived as optional
+    EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
 
     Record c_rec("EqTransp","");
     c_rec.derive_from(a_rec);
     c_rec.declare_key("c_val", Integer(), "");
     c_rec.declare_key("a_val", Double(),"");
     c_rec.finish();
-    EXPECT_EQ(0, c_rec.key_index("TYPE"));
+    // TYPE should be derived as optional
+    EXPECT_TRUE( c_rec.key_iterator("TYPE")->default_.is_optional());
+
 
     a_rec.no_more_descendants();
 

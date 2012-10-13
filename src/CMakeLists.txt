@@ -167,12 +167,11 @@ set(sources_lib_new_mesh
 
 if (mpiuni_sources) 
   add_library(mpiuni_lib ${mpiuni_sources})
-  set(MPIUNI_LIB mpiuni_lib)
 endif()
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${MPIUNI_LIB} ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 # input_lib
 add_library(input_lib ${sources_lib_input})

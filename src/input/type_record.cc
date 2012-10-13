@@ -75,14 +75,18 @@ void Record::derive_from(AbstractRecord parent) {
             THROW( ExcDeriveNonEmpty() << EI_RecordName(parent.type_name()) << EI_Record(*this) );
 
     parent.add_descendant(*this);
-    // semi-deep copy
+    // copy keys form parent, we have to copy TYPE also since there should be place in storage for it
+    // however we change its Default to optional()
     for(Record::KeyIter it=parent.begin(); it != parent.end(); ++it) {
-        Key tmp_key=*it;
+        Key tmp_key=*it;    // make temporary copy of the key
         KeyHash key_h = key_hash(tmp_key.key_);
 
         data_->key_to_index.insert( std::make_pair(key_h, data_->keys.size()) );
         tmp_key.key_index=data_->keys.size();
         tmp_key.derived = true;
+        if (tmp_key.key_=="TYPE") {
+            tmp_key.default_=Default::optional();
+        }
         data_->keys.push_back(tmp_key);
     }
 }

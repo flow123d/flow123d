@@ -38,6 +38,7 @@
 
 #include <fstream>
 #include <string>
+#include "mpi.h"
 
 #include "global_defs.h"
 #include "system/system.hh"
