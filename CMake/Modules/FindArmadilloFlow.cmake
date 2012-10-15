@@ -118,11 +118,6 @@ endif (Armadillo_INCLUDE_DIR)
 
 IF (Armadillo_LIBRARY AND Armadillo_HEADERS_FOUND)
   SET(Armadillo_LIBRARIES ${Armadillo_LIBRARY})
-  IF (Armadillo_CONFIG)
-        include(${Armadillo_CONFIG})    
-        SET(Armadillo_LINK_LIBRARIES ${ARMADILLO_LIBRARIES})  
-  ENDIF(Armadillo_CONFIG)
-
   SET(Armadillo_FOUND "YES")
 ELSE (Armadillo_LIBRARY AND Armadillo_HEADERS_FOUND)
   SET(Armadillo_FOUND "NO")

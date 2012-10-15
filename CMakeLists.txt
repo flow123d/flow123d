@@ -8,8 +8,6 @@
 #   this way we can drop third_party directory; however for particular configuration of armadillo or petsc ( using particular libraries) one still need manual
 #   installation of PETSc, so there should be posibility to indicate PETSC_DIR and PETSC_ARCH in makefile.in.cmake. But this file should be merly optional.
 # 
-# * use CMAKE_BUILD_TYPE instead of FLOW_BUILD_TYPE, have rules in main makefile to produce different configurations
-#   and have clearly defined CFLAGS and other settings for individual configurations 
 #
 # * allways use Debug configuration for targets in test_units
 #   WHY? Rather make unit_tests working for both debug and release configurations
@@ -26,16 +24,6 @@
 #   - build ngh and bcd ?? rather include them into flow123d
 #   - clean and clean-all targets
 #   - doxygen target    
-#
-# - use compiler flags from PETSc as defaults ( different setting can make problems with optimization)
-#
-# * how to organize flow123d libraries? I want:
-#    1) each library should declare on which libraries it depends, but should not link against them (not contain them)
-#       this setting should by automatically used in final linking
-#    2) In particular third party libraries should not be part of any our library
-#   - This requires carefull understanding of target_link_libraries commad, may be that this command DO NOT actualy
-#     include library into library
-#   - in that case how to produce flow123_lib EXPLICITELY containing all flow sub-libraries
 #
 
 # Include settings given by user first
@@ -241,15 +229,8 @@ endif(PETSC_FOUND)
 #  Armadillo_FOUND - set to true if the library is found
 #  Armadillo_INCLUDE_DIRS - list of required include directories
 #  Armadillo_LIBRARIES - list of libraries to be linked 
-#  Armadillo_VERSION_MAJOR - major version number
-#  Armadillo_VERSION_MINOR - minor version number
-#  Armadillo_VERSION_PATCH - patch version number
-#  Armadillo_VERSION_STRING - version number as a string (ex: "1.0.4")
-#  Armadillo_VERSION_NAME - name of the version (ex: "Antipodean Antileech")
-#  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that set:
-#       ARMADILLO_INCLUDE_DIRS - include directories for Armadillo
-#       ARMADILLO_LIBRARY_DIRS - library directories for Armadillo (normally not used!)
-#       ARMADILLO_LIBRARIES    - libraries to link against !!! crucial for more complicated projects
+#  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that introduce target 'armadillo'
+#                              with correctly set dependencies on other libraries
 
 find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
@@ -274,7 +255,7 @@ message(STATUS "Armadillo_CONFIGURE_FILE: ${Armadillo_CONFIGURE_FILE}")
 include("${Armadillo_CONFIGURE_FILE}")   # this introduce target "armadillo" with correct dependencies
 IF (PETSC_FOUND)
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
-    # this is fragile because of _NOCONFIG
+    # this may be fragile because of _NOCONFIG
     set_target_properties(armadillo PROPERTIES 
       IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_LIBRARIES}"
       ) 

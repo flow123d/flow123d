@@ -1,11 +1,15 @@
 #include <gtest/gtest.h>
 #include "system/system.hh"
+#include "new_mesh/ngh/include/point.h"
+#include "new_mesh/ngh/include/intersection.h"
+//#include "new_mesh/ngh/include/point.h"
 
 #define DEBUG
 
 TEST(intersection, triangle_tetrahedron) {
 	TIntersectionType it;
 	double area;
+	double epsilon =0.0001;
 
 	// create tetrahedron
 	TPoint point0(0.00, 0.00, 0.00);
@@ -42,7 +46,7 @@ TEST(intersection, triangle_tetrahedron) {
 
 	xprintf(Msg, "Test - intersection is tetragon");
 	GetIntersection(triangle, tetrahedron, it, area);
-	EXPECT_EQ(area, 0.875);
+	EXPECT_FLOAT_EQ(area, 0.875);
 
 	// intersection is pentagon
 	pointA.SetCoord(-0.25, -0.25, 0.00);
@@ -52,6 +56,7 @@ TEST(intersection, triangle_tetrahedron) {
 
 	xprintf(Msg, "Test - intersection is pentagon");
 	GetIntersection(triangle, tetrahedron, it, area);
+	// EXPECT_FLOAT_EQ
 	EXPECT_LE(fabs(area - 1.944544), epsilon);
 
 	// intersection is hexagon (plane parallel to x-y)
