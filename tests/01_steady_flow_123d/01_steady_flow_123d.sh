@@ -6,12 +6,13 @@ echo "##########                     01_steady_flow_132d                   ## St
 echo "################################################################################"
 echo
 
-#choose one of following:	
+#choose one of following:
+#	all		
 #	flow
-#	flow_mumps 
 #	flow_vtk 
+#	flow_mumps 
 #	flow_matis
-CONFIG="flow"
+CONFIG="all"
 
 NAME="test1"
 
@@ -24,10 +25,26 @@ FLOW=../../bin/flow123d
 #meshing geo file
 gmsh -2 -algo front2d -3 -algo front3d -o input/$NAME.msh -format msh $NAME.geo
 
-$CON  -ini ./$CONFIG.ini -final ./$CONFIG.con
 $NGH ./ngh.ini
 $BCD ./bcd.ini
-$FLOW  -i input -o output -s ./$CONFIG.con #-ksp_atol 1.0e-10 -ksp_rtol 1.0e-10 -ksp_monitor
+
+if [ "$CONFIG" == "all" ]; then
+	$CON  -ini ./flow.ini -final ./flow.con
+	$CON  -ini ./flow_vtk.ini -final ./flow_vtk.con
+	$CON  -ini ./flow_mumps.ini -final ./flow_mumps.con
+	$CON  -ini ./flow_matis.ini -final ./flow_matis.con
+else
+	$CON  -ini ./$CONFIG.ini -final ./$CONFIG.con
+fi
+
+if [ $CONFIG == "all" ]; then
+	$FLOW  -i input -o output -s ./flow.con
+	$FLOW  -i input -o output -s ./flow_vtk.con
+	$FLOW  -i input -o output -s ./flow_mumps.con
+	$FLOW  -i input -o output -s ./flow_matis.con
+else
+	$FLOW  -i input -o output -s ./$CONFIG.con	#-ksp_atol 1.0e-10 -ksp_rtol 1.0e-10 -ksp_monitor
+fi
 
 
 echo
