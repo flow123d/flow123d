@@ -1,8 +1,8 @@
 Test problem 1
 ---------------------
 setting:
-- cube cutted by two diagonal 2d fractures which are furter separated by a 1D chanel in their crossection
-- boundary conditions: simple pressure gradient in direction form one corner of cube to the oposite corner
+- cube cutted by two diagonal 2d fractures which are furter separated by a 1D channel in their crossection
+- boundary conditions: simple pressure gradient in direction from one corner of cube to the oposite corner
   this is applied on all boundary faces of all dimensions
 
 verification of:
