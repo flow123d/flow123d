@@ -95,6 +95,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
                              const std::vector<int> & isngn, 
                              const std::vector<int> & isvgvn,
                              const std::vector<double> & xyz,
+                             const std::vector<double> & element_permeability,
                              const int meshDim ) 
 {
     // simply pass the data to BDDCML solver
@@ -102,8 +103,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
     ASSERT( numDofs == size_, "Global problem size mismatch!" );
 
-    bddcml_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, meshDim );
-
+    bddcml_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, element_permeability, meshDim );
 
     // create a map for BDDCML to PETSc vector
     PetscErrorCode ierr;

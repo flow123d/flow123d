@@ -536,6 +536,8 @@ void DarcyFlowMH_Steady::make_schur0() {
            std::vector<int> nnet;
            std::vector<int> isegn;
 
+           std::vector<double> element_permeability;
+
            // maximal and minimal dimension of elements
            int elDimMax = 1;
            int elDimMin = 3;
@@ -591,6 +593,18 @@ void DarcyFlowMH_Steady::make_schur0() {
                }
 
                nnet.push_back( nne );
+
+               // compute mean on the diagonal
+               double coef = 0.;
+               int dim =  el->material->dimension;
+               // trace computation
+               for ( int i = 0; i < dim; i++) {
+                   coef = coef + el->material->hydrodynamic_resistence[i*dim + i];
+               }
+               coef = coef / static_cast<double>(dim);
+               ASSERT( coef > 0.,
+                       "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
+               element_permeability.push_back( 1. / coef );
            }
            //convert set of dofs to vectors
            int numNodeSub = localDofMap.size();
@@ -655,7 +669,7 @@ void DarcyFlowMH_Steady::make_schur0() {
            int meshDim     = elDimMax; 
            //std::cout << "I have identified following dimensions: max " << elDimMax << ", min " << elDimMin << std::endl;
 
-           schur0 -> load_mesh( spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, meshDim );
+           schur0 -> load_mesh( spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, element_permeability, meshDim );
            //schur0 -> load_mesh( mesh_, edge_ds, el_ds, side_ds, rows_ds, el_4_loc, row_4_el, side_id_4_loc, 
            //                     side_row_4_id, edge_4_loc, row_4_edge );
         }
@@ -899,6 +913,16 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_o
     int li, si, e_idx, i_neigh;
     int i_s, n_s;
     F_ENTRY;
+
+    //int elDimMax = 1;
+    //int elDimMin = 3;
+    //FOR_ELEMENTS(mesh, ele) {
+    //    //xprintf(Msg,"Element id %d , its index %d.\n",ele.id(), i_ele);
+    //    int elDim = ele->dim();
+    //    elDimMax = std::max( elDimMax, elDim );
+    //    elDimMin = std::min( elDimMin, elDim );
+    //}
+    //std::cout << "max and min element dimensions: " << elDimMax << " " << elDimMin << std::endl;
 
     FOR_ELEMENTS(mesh, ele) {
         //xprintf(Msg,"Element id %d , its index %d.\n",ele.id(), i_ele);

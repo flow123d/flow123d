@@ -83,6 +83,7 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const i
                                      const std::vector<int> & isngn, 
                                      const std::vector<int> & isvgvn,
                                      const std::vector<double> & xyz,
+                                     const std::vector<double> & element_data,
                                      const int meshDim )
 {
     // space dimension
@@ -149,6 +150,8 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const i
     std::copy( isvgvn.begin(), isvgvn.end(), isvgvn_.begin() );
     xyz_.resize( xyz.size() );
     std::copy( xyz.begin(), xyz.end(), xyz_.begin() );
+    element_data_.resize( element_data.size() );
+    std::copy( element_data.begin(), element_data.end(), element_data_.begin() );
 
     // prepare auxiliary map for renumbering dofs in the global array
     for ( unsigned ind = 0; ind < isvgvn_.size(); ++ind ) {
@@ -409,6 +412,9 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int lUserConstraints1 = 0;
     int lUserConstraints2 = 0;
 
+    int lelement_data1 = 1;
+    int lelement_data2 = element_data_.size();
+
     // upload local data to the solver
     bddcml_upload_subdomain_data( &numElem_, &numNodes_, &numDofsInt, &nDim_, &meshDim_, 
                                   &iSub, &numElemSub_, &numNodesSub_, &numDofsSubInt, 
@@ -419,7 +425,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
                                   &(rhsVec_[0]),&lrhsVec, &isRhsCompleteInt,
                                   &(sol_[0]), &lsol,
                                   &matrixTypeInt, &(i_sparse[0]), &(j_sparse[0]), &(a_sparse[0]), &la, &isMatAssembledInt,
-                                  &(userConstraints[0]),&lUserConstraints1,&lUserConstraints2 );
+                                  &(userConstraints[0]),&lUserConstraints1,&lUserConstraints2,
+                                  &(element_data_[0]),&lelement_data1,&lelement_data2 );
     i_sparse.clear();
     j_sparse.clear();
     a_sparse.clear();

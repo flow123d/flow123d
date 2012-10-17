@@ -143,6 +143,7 @@ public:
                             const std::vector<int> & isngn, 
                             const std::vector<int> & isvgvn,
                             const std::vector<double> & xyz,
+                            const std::vector<double> & element_permeability,
                             const int meshDim )
     {
         ASSERT( false, "Function load_mesh is not implemented for linsys type %d \n.", this -> type );

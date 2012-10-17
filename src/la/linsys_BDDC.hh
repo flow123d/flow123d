@@ -66,6 +66,7 @@ public:
                     const std::vector<int> & isngn, 
                     const std::vector<int> & isvgvn,
                     const std::vector<double> & xyz,
+                    const std::vector<double> & element_permeability,
                     const int meshDim );
 
     void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals );

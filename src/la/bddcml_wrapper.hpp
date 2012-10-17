@@ -104,6 +104,7 @@ public:
                       const std::vector<int> & isngn, 
                       const std::vector<int> & isvgvn,
                       const std::vector<double> & xyz,
+                      const std::vector<double> & element_data,
                       const int meshDim = 0 );
 
     //! Prepare assembly of matrix - reserve space in underlying coordinate matrix object
@@ -236,6 +237,7 @@ private:
                                            //!< e.g. [ 3, 3, 3, ... ] for 3D solids
     std::vector<double>  xyz_;             //!< linearized array of coordinates - all x values, all y values, all z values ( if present )
                                            //!< i.e. [ x_0 x_1 x_2 ... x_(numNodes - 1) y_0 y_1 y_2 ... y_(numNodes - 1) z_0 z_1 z_2 ... z_(numNodes - 1) ]
+    std::vector<double>  element_data_;    //!< array with data on elements, here used for permeability for each element 
                                            
     std::vector<int>     isngn_;           //!< Indices of Subdomain Nodes in Global Numbering
     std::vector<int>     isvgvn_;          //!< Indices of Subdomain Variables in Global Variable Numbering ( i.e. dof mapping )
