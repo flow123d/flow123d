@@ -1,4 +1,4 @@
-include ../../../makefile.in
+#include ../../../makefile.in
 
 CINCLUDE=-I../include
 
