@@ -36,7 +36,7 @@ Input::Type::Record & Pade_approximant::get_one_decay_substep()
 Input::Type::Record & Pade_approximant::get_input_type()
 {
 	using namespace Input::Type;
-	static Record rec("Approximant", "Abstract record with an information about pade approximant parameters.");
+	static Record rec("PadeApproximant", "Abstract record with an information about pade approximant parameters.");
 
 	if (!rec.is_finished()) {
 	    rec.derive_from( Reaction::get_input_type() );

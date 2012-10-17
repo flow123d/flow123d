@@ -5,6 +5,7 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
+#include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
 
 #include "system/system.hh"
@@ -26,6 +27,7 @@ Input::Type::AbstractRecord & Reaction::get_input_type()
 
 		rec.finish();
 
+		Pade_approximant::get_input_type();
 		Linear_reaction::get_input_type();
 		General_reaction::get_input_type();
 
