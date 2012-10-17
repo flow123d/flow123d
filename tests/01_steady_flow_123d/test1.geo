@@ -1,4 +1,4 @@
-mesh = 0.057;
+mesh = 0.2;
 Point(1) = {0, 0, 0, mesh};
 Point(2) = {1, 0, 0, mesh};
 Point(3) = {1, 1, 0, mesh};
