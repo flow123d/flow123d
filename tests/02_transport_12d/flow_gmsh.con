@@ -1,5 +1,4 @@
 {
-  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
     description = "test2", 

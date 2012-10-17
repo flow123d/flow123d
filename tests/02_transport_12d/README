@@ -1,7 +1,13 @@
 Test problem 2
 ---------------------
+
 verification of:
 -flow
 -explicit transport (convection, dual porosity, sorption)
 -implicit transport (convection, dispersion)
 -multidimensional connection (1D-2D)
+
+preparing input:
+- run the script
+  - ngh (finding neighbours in mesh)
+  - bcd (defining boundary conditions)

@@ -1,5 +1,4 @@
 {
-  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
     description = "test2", 
@@ -17,11 +16,17 @@
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
+        save_step = {
+          REF = "/problem/save_step"
+        }, 
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
+      }, 
+      time = {
+        REF = "../../time"
       }
     }, 
     save_step = 0.5, 
