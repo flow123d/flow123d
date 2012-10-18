@@ -1,7 +1,7 @@
 ChL=0.05;
 // Default 2d algo (1) and MeshAdapt (4) produce nonsymetric mesh
 // Delaunay (5) produce symmetric mesh
-//Mesh.Algorithm=1;
+Mesh.Algorithm=4;
 
 Point(1) = {-1,-1,0,ChL};
 Point(2) = {-1,1,0,ChL};

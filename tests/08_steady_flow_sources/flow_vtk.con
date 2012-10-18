@@ -1,16 +1,15 @@
 {
-  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "test1", 
-    material = "./input/test008.mtr", 
+    description = "test08", 
+    material = "./input/test08.mtr", 
     mesh = {
-      mesh_file = "./input/test008.msh", 
-      neighbouring = "./input/test008.ngh"
+      mesh_file = "./input/test08.msh", 
+      neighbouring = "./input/test08.ngh"
     }, 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test008.fbc", 
+      boundary_file = "./input/test08.fbc", 
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
