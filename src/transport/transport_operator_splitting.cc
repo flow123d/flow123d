@@ -125,7 +125,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	        Semchem_reactions = NULL;
 		} else
 	    if (reactions_it->type() == Pade_approximant::get_input_type() ) {
-	        decayRad = new Pade_approximant(marks, init_mesh, material_database, in_rec,
+	        decayRad = new Pade_approximant(marks, init_mesh, material_database, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());

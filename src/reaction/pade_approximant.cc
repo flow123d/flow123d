@@ -42,9 +42,9 @@ Input::Type::Record & Pade_approximant::get_input_type()
 	    rec.derive_from( Reaction::get_input_type() );
         rec.declare_key("decays", Array( Pade_approximant::get_one_decay_substep() ), Default::obligatory(),
                 "Description of particular decay chain substeps.");
-		rec.declare_key("nom_pol_deg", Integer(), Default("0"),
+		rec.declare_key("nom_pol_deg", Integer(), Default("2"),
 				"Polynomial degree of the nominator of Pade approximant.");
-		rec.declare_key("den_pol_deg", Integer(), Default("0"),
+		rec.declare_key("den_pol_deg", Integer(), Default("2"),
 				"Polynomial degree of the nominator of Pade approximant");
 		rec.finish();
 	}
@@ -64,6 +64,7 @@ Pade_approximant::Pade_approximant(TimeMarks &marks, Mesh &init_mesh, MaterialDa
 		//break;
 	}
 	cout << "Pade_approximant constructor is running." << endl;
+	allocate_reaction_matrix();
 }
 
 Pade_approximant::~Pade_approximant()
@@ -85,7 +86,23 @@ Pade_approximant::~Pade_approximant()
 	cout << "Pade approximant destructor is running."  << endl;
 }
 
+double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix initialization
+{
+	int rows, cols;
 
+	cout << "We are going to allocate reaction matrix" << endl;
+	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
+	for(rows = 0; rows < n_substances(); rows++){
+		reaction_matrix[rows] = (double *)xmalloc(n_substances() * sizeof(double));
+	}
+	for(rows = 0; rows < n_substances();rows++){
+	 for(cols = 0; cols < n_substances(); cols++){
+		 reaction_matrix[rows][cols] = 0.0;
+	 }
+	}
+	print_reaction_matrix();
+	return reaction_matrix;
+}
 
 double **Pade_approximant::modify_reaction_matrix(void)
 {
@@ -125,9 +142,28 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	MatAssemblyBegin(Pade_approximant, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
+	//It is necessery to initialize reaction matrix here
+	int index_par;
+	int index_child;
+	PetscScalar rel_step;
+	PetscScalar extent;
+    for (int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
+        index_par = substance_ids[i_decay][0];
+        rel_step = time_step/ half_lives[i_decay];
+        extent = -log(2)*rel_step; //pow(0.5, rel_step);
+        cout<<"parental index" << index_par << ", extent "<< extent << endl;
+        MatSetValue(Reaction_matrix, index_par, index_par, extent,INSERT_VALUES);
+        for (int i_product = 1; i_product < substance_ids[i_decay].size(); ++i_product){
+            //reaction_matrix[index_par][ substance_ids[i_decay][i_product] ]
+            extent = log(2)*rel_step* bifurcation[i_decay][i_product-1];
+            index_child = substance_ids[i_decay][i_product];
+        	MatSetValue(Reaction_matrix, index_par, index_child,extent,INSERT_VALUES);
+        }
+    }
+
 	MatAssemblyBegin(Reaction_matrix, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(Reaction_matrix, MAT_FINAL_ASSEMBLY);
-	MatView(Reaction_matrix,PETSC_VIEWER_STDOUT_SELF);
+	//MatView(Reaction_matrix,PETSC_VIEWER_STDOUT_SELF);
 
 	//Computation of nominator in pade approximant follows
 	MatZeroEntries(Nominator);
@@ -138,7 +174,7 @@ double **Pade_approximant::modify_reaction_matrix(void)
 		nominator_coef[j] = (PetscScalar) (faktorial(nom_pol_deg + den_pol_deg - j) * faktorial(nom_pol_deg)) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(j) * faktorial(nom_pol_deg - j));
 	}
 	evaluate_matrix_polynomial(&Nominator, &Reaction_matrix, nominator_coef);
-	MatView(Nominator,PETSC_VIEWER_STDOUT_WORLD);
+	//MatView(Nominator,PETSC_VIEWER_STDOUT_WORLD);
 
 	//Computation of denominator in pade approximant follows
 	MatZeroEntries(Denominator);
@@ -149,7 +185,7 @@ double **Pade_approximant::modify_reaction_matrix(void)
 		denominator_coef[i] = (PetscScalar) pow(-1.0,i) * faktorial(nom_pol_deg + den_pol_deg - i) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(i) * faktorial(den_pol_deg - i));
 	}
 	evaluate_matrix_polynomial(&Denominator, &Reaction_matrix, denominator_coef);
-	MatView(Denominator, PETSC_VIEWER_STDOUT_WORLD);
+	//MatView(Denominator, PETSC_VIEWER_STDOUT_WORLD);
 
 	PCCreate(PETSC_COMM_WORLD, &Precond);
 	PCSetType(Precond, PCLU);
@@ -179,6 +215,13 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
 	//pade assembled to reaction_matrix
+	for(rows = 0; rows < n_substances(); rows++)
+		{
+			for(cols = 0; cols < n_substances(); cols++)
+			{
+				reaction_matrix[rows][cols] = 0.0;
+			}
+		}
 	for(rows = 0; rows < n_substances(); rows++)
 	{
 		for(cols = 0; cols < n_substances(); cols++)
@@ -232,4 +275,24 @@ void Pade_approximant::set_time_step(double new_timestep)
 	modify_reaction_matrix();
 	//static_cast<Pade_approximant *> (this)->modify_reaction_matrix();
 	return;
+}
+
+double **Pade_approximant::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+{
+    int cols, rows;
+
+    if (reaction_matrix == NULL) return concentrations;
+
+	for(cols = 0; cols < n_substances(); cols++){
+		prev_conc[cols] = concentrations[cols][loc_el];
+		concentrations[cols][loc_el] = 0.0;
+	}
+
+	for(cols = 0; cols < n_substances(); cols++){
+		for(rows = 0; rows < n_substances(); rows++){
+            concentrations[cols][loc_el] += reaction_matrix[cols][rows]*prev_conc[rows];
+        }
+    }
+
+	return concentrations;
 }

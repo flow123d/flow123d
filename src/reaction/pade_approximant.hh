@@ -47,7 +47,7 @@ class Pade_approximant: public Linear_reaction
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
-		//double **compute_reaction(double **concentrations, int loc_el);
+		double **compute_reaction(double **concentrations, int loc_el);
 		/**
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
@@ -108,7 +108,7 @@ class Pade_approximant: public Linear_reaction
 		/**
 		*
 		*/
-		//double **allocate_reaction_matrix(void);
+		double **allocate_reaction_matrix(void);
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
 		*/
