@@ -36,9 +36,13 @@
 
 BoundingIntevalHierachy::~BoundingIntevalHierachy() {}
 
+
+
 bool BoundingIntevalHierachy::contains_element(int coor, double min, double max) {
 	return (min < boundingBox_->get_max()(coor)) & (max > boundingBox_->get_min()(coor));
 }
+
+
 
 bool BoundingIntevalHierachy::contains_point(arma::vec3 &point) {
 	for (int i=0; i<dimension; i++) {
@@ -47,6 +51,8 @@ bool BoundingIntevalHierachy::contains_point(arma::vec3 &point) {
 
 	return true;
 }
+
+
 
 int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<BoundingBox *> &searchedElements) {
 	return 0;
@@ -65,6 +71,8 @@ int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<Bounding
 	}*/
 }
 
+
+
 void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox *> elements) {
 	if (get_element_count()>area_element_limit) {
 		split_area(elements);
@@ -73,6 +81,8 @@ void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox *> elemen
 		leaf_ = true;
 	}
 }
+
+
 
 void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 	int medianStep = get_element_count() / area_median_count;

@@ -1,4 +1,4 @@
-INI_FILES="flow_decay_vtk.ini"
+INI_FILES="flow_decay_vtk.con"
 NPROC="1"
 FLOW_PARAMS="-o output"
 

@@ -43,6 +43,8 @@ BIHTree::BIHTree(Mesh* mesh) : BoundingIntevalHierachy() {
 	xprintf(Msg, " - Tree created\n");
 }
 
+
+
 void BIHTree::bounding_box() {
 	Node* node = mesh_->node_vector.begin();
 	arma::vec3 point = node->point();
@@ -62,9 +64,13 @@ void BIHTree::bounding_box() {
 
 }
 
+
+
 int BIHTree::get_element_count() {
 	return elements_.size();
 }
+
+
 
 void BIHTree::distribute_elements(std::vector<BoundingBox *> elements)
 {
@@ -81,6 +87,8 @@ void BIHTree::distribute_elements(std::vector<BoundingBox *> elements)
 	((BIHNode *)child_[0])->split_distribute(elements_);
 	((BIHNode *)child_[1])->split_distribute(elements_);
 }
+
+
 
 void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements)
 {
@@ -104,9 +112,13 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 	}
 }
 
+
+
 double BIHTree::get_median_coord(std::vector<BoundingBox *> elements, int index) {
 	return elements[index]->get_center()(splitCoor_);
 }
+
+
 
 void BIHTree::element_boxes() {
 	FOR_ELEMENTS(mesh_, element) {
