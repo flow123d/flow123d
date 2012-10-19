@@ -19,3 +19,10 @@ preparing input:
   - meshing with gmsh from geo file
   - ngh (finding neighbours in mesh)
   - bcd (defining boundary conditions)
+
+
+pozn.: 
+- neni potreba tbc, tic soubory, proto v bcd zakomentovane
+- materialovy soubor mtr je zakomentovany, aby se pri dalsim spusteni BCD nesmazaly mat. konstanty
+- pretransformovany con odlehcen od pozustatku z ini
+- v zz_old_con_ini pozustatky (pretransformovane con, stare ini), 

@@ -16,20 +16,13 @@
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        save_step = {
-          REF = "/problem/save_step"
-        }, 
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }, 
-      time = {
-        REF = "../../time"
       }
     }, 
-    save_step = 0.1, 
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
       boundary_file = "./input/test3.tbc", 
@@ -40,9 +33,7 @@
         output_stream = {
           REF = "/system/output_streams/1"
         }, 
-        save_step = {
-          REF = "/problem/save_step"
-        }
+        save_step = 0.1
       }, 
       sorption_enable = true, 
       substances = [
@@ -50,16 +41,13 @@
         "U235"
       ], 
       time = {
-        REF = "../../time"
+        end_time = 1.0, 
+	init_dt = 0.1
       },
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
       }
-    }, 
-    time = {
-      end_time = 1.0, 
-      init_dt = 0.1
     }
   }, 
   system = {
@@ -82,78 +70,6 @@
         }, 
         name = "transport_output_stream"
       }
-    ], 
-    pause_after_run = false
-  }, 
-  zz_not_supported = {
-    constants = {
-      g = 9.81, 
-      rho = 1000
-    }, 
-    density = {
-      density_implicit = true, 
-      density_max_iter = 21, 
-      eps_iter = 0, 
-      write_iterations = false
-    }, 
-    global = {
-      density_step = 10.0
-    }, 
-    input = {
-      file_type = 1
-    }, 
-    output = {
-      cross_section = false, 
-      cs_params = [
-        0, 
-        2, 
-        0, 
-        0, 
-        4, 
-        0, 
-        0.2
-      ], 
-      output_elm_type = 2, 
-      output_file_2 = "./output/vysledky.tmp", 
-      output_file_type = "1", 
-      pos_set_view = true, 
-      pos_view_params = [
-        270, 
-        0, 
-        0, 
-        2.5, 
-        2.5, 
-        2.5, 
-        -1, 
-        1
-      ], 
-      specify_elm_type = true, 
-      write_ftrans_out = "False"
-    }, 
-    "solver parameters": {
-      a_tol = 1e-11, 
-      be_tol = 1e-25, 
-      ilu_cpiv = 0, 
-      ilu_droptol = 0.0001, 
-      ilu_dskip = 10000, 
-      ilu_lfil = -1, 
-      ilu_milu = 0, 
-      max_it = 1000, 
-      precond = "ilu", 
-      r_tol = 1e-19, 
-      restart = 20, 
-      scaling = "mc29_30", 
-      sor_omega = 1.0, 
-      stop_crit = "backerr", 
-      stop_test = 1
-    }, 
-    transport = {
-      substances_density_scales = [
-        1.0, 
-        0.0, 
-        0.0, 
-        2.0
-      ]
-    }
+    ]
   }
 }
