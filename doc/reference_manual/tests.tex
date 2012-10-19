@@ -1,0 +1,130 @@
+% Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+%
+% Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+% especially for academic research:
+% Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+%
+% This program is free software; you can redistribute it and/or modify it under the terms
+% of the GNU General Public License version 3 as published by the Free Software Foundation.
+%
+% This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+% without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% See the GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License along with this program; if not,
+% write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
+
+\chapter{Tests}
+
+\section{Test 01 -- Steady flow}
+This test involves steady Darcy flow in 3D, multidimensional connections, Dirichlet boundary condition for flow.
+
+\subsection*{Geometry}
+A cube with its side 1.0 is cutted by two diagonal 2D fractures which are further separated by a 1D channel in their crossection.
+
+There are only simple Dirichlet boundary conditions. Pressure gradient in direction from one corner of the cube to the oposite corner is applied on all boundary faces of all dimensions.
+
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Conductivity:} The conductivity of materials:
+    \begin{itemize}
+      \item 1D fracture is set to $K=10$.
+      \item 2D fracture is set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$.
+      \item cube material is set to $\mathbf{K}=\left(\begin{array}{ccc} 0.1 & 0 & 0 \\ 0 & 0.1 & 0 \\ 0 & 0 & 0.1\end{array} \right)$.
+    \end{itemize}
+  \item There is no transport so there are not any other parameters.
+\end{itemize}
+
+\subsection*{Verification}
+This test verifies functionality of solving steady Darcy flow by mixed hybrid method. There are different dimension connections which are 2D-3D connection between cube and flat fractures and 1D-2D connection between 1D channel and the two flat fractures in their crossection.
+
+After Schur complements are computed the set of linear equations is solved by CG solver used from PETSC library.
+
+
+
+%- parallel sover using PCASM - overlaping domain decomposition
+
+%I don't so...
+%- input/output of GMSH when intput mesh has nonstandard numbering of nodes (0,1,3,...)
+
+
+\section{Test 02 -- Steady flow in 2D and transport}
+This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, transport of two substances without initial condition for concentration. Other features are also used in explicit transport -- convection, dual porosity and sorption; in implicit transport it is convection and dispersion.
+
+\subsection*{Geometry}
+A two-dimensional slice through a part of a relief. which involves several one-dimensional cracks.
+
+Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
+
+Dirichlet boundary condition for transport is prescribed on both sides as it is for flow boundary condition. The value of concentration is 1.0 for both substances. Initial concentration of the substances is zero in the whole area. 
+
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Conductivity:} The conductivity of materials:
+    \begin{itemize}
+      \item fracture material is set to $K=10$.
+      \item plane material is set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$.
+    \end{itemize}
+  \item \textbf{Sorption:} The sorption parameters are for both materials equal:
+    \begin{itemize}
+      \item linear sorption isotherm parameter of the first substance is set to $k_d=0.02$.
+      \item Freundlich sorption isotherm parameters of the second substance are set to $k_f=0.02$, $\alpha=0.5$  
+    \end{itemize}
+  \item \textbf{Dual porosity:} The dual porosity parameters are for both materials equal:
+    \begin{itemize}
+      \item mobile porosity coefficient is set to $0.25$
+      \item immobile porosity coefficient is set to $0.25$
+      \item nonequilibrium coefficient of both substances $0.01$
+    \end{itemize}
+  \item \textbf{Sorption fraction:} The sorption fraction parameters are for both materials equal and set to $SF=0.5$.
+  \item \textbf{Diffusivity coefficient:} These are not set so default values are applied 
+	$\sigma=0$, $\alpha_l=0$, $\alpha_t=0$, $d_m=1e-6$.
+\end{itemize}
+
+\subsection*{Verification}
+
+
+%verification of:
+%-flow
+%-explicit transport (convection, dual porosity, sorption)
+%-implicit transport (convection, dispersion)
+%-multidimensional connection (1D-2D)
+
+
+\section{Test 03 -- Steady flow in 2D and transport}
+This test differs from the previous one only by simpler structure of its geometry. It shows how the substace flows in the main fracture and divides in two other fractures. The substance spreads in the fractures much faster in comparision to the plane.
+\subsection*{Geometry}
+There is a plane with side 1.0 which is cutted by fractures. The main fracture divides in two other fractures.
+\subsection*{Parameters}
+Parameters are the same as in test 02.
+\subsection*{Verification}
+
+%Test problem 3 (variant of problem 2 with simpler geometry)
+%---------------------
+%verification of:
+%-flow
+%-explicit transport (convection, dual porosity, sorption)
+%-implicit transport (convection, dispersion)
+%-multidimensional connection (1D-2D)
+
+
+\section{Test 08 -- Steady flow with source}
+This test is aimed in verifying the function parser. Therefore a simple steady flow problem with a source prescribed by a formula was made.
+
+We will solve Laplace equation $-\Lapl{}u = f$ where source $f$ is prescribed by formula: $f = 2(1-y^2) + 2(1-x^2)$.
+
+We can easily prove that the analytic solution is $u = (1-x^2)(1-y^2)$ by replacing it in the Laplace equation.
+
+\subsection*{Geometry}
+The domain is a square with opposite corner points $[-1,-1]$ and $[1,1]$. Zero dirichlet boundary condition is prescribed on all boundaries -- along the circumference of the square.
+ 
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Conductivity:} The conductivity of plane material is $1.0$.
+  \item There are no other materials, no transport so there are not any other parameters.
+\end{itemize}
+
+\subsection*{Verification}
+As it was mentioned above, this test mainly verifies that the function parser works properly. The source formula to be parsed is given in the key \verb0source_formula0. The solution (pressure) is a paraboloid with a top in $[0,0,1]$.
+
+
