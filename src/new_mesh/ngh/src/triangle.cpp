@@ -35,7 +35,6 @@ TTriangle::TTriangle(const TTriangle& T) {
     pl = new TPlain(*T.pl);
 
     area = T.area;
-    compute_bounding_box();
 }
 
 TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
@@ -52,7 +51,6 @@ TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
     pl = new TPlain(P1, P2, P3);
 
     ComputeArea();
-    compute_bounding_box();
 }
 
 TTriangle::~TTriangle() {
@@ -123,7 +121,6 @@ void TTriangle::SetPoints(const TPoint& P1, const TPoint& P2, const TPoint& P3) 
     pl->SetPoints(P1, P2, P3);
 
     ComputeArea();
-    compute_bounding_box();
 }
 
 void TTriangle::ComputeArea() {
@@ -131,7 +128,11 @@ void TTriangle::ComputeArea() {
     area = 0.5 * N.Length();
 }
 
-void TTriangle::compute_bounding_box() {
+double TTriangle::GetArea() {
+    return area;
+}
+
+BoundingBox &TTriangle::get_bounding_box() {
 	arma::vec3 minCoor;
 	arma::vec3 maxCoor;
 
@@ -140,15 +141,8 @@ void TTriangle::compute_bounding_box() {
 		maxCoor(i) = GetMax(i+1);
 	}
 
-	boundingBox = new BoundingBox(minCoor, maxCoor);
-}
-
-double TTriangle::GetArea() {
-    return area;
-}
-
-const BoundingBox &TTriangle::get_bounding_box() const {
-	return *boundingBox;
+	boundingBox.set_bounds(minCoor, maxCoor);
+	return boundingBox;
 }
 
 double TTriangle::GetMin(int i) const {

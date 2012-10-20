@@ -13,13 +13,12 @@ private:
 //    TPoint* P0;
 //    TPoint* P1;
 
-    BoundingBox* boundingBox;
+    BoundingBox boundingBox;
 
     double length;
 
     int generateId();
     void ComputeLength();
-    void compute_bounding_box();
 
 public:
     TAbscissa();
@@ -30,7 +29,7 @@ public:
     TAbscissa & operator =(const TAbscissa&);
 
     double Length();
-    const BoundingBox &get_bounding_box() const;
+    BoundingBox &get_bounding_box();
 
     void SetPoints(const TPoint&, const TPoint&);
 

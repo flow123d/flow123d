@@ -30,7 +30,16 @@
 #include "new_mesh/bounding_interval_hierarchy.hh"
 
 
+BoundingBox::BoundingBox() {
+
+}
+
 BoundingBox::BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor) {
+	minCoordinates_ = minCoor;
+	maxCoordinates_ = maxCoor;
+}
+
+void BoundingBox::set_bounds(arma::vec3 minCoor, arma::vec3 maxCoor) {
 	minCoordinates_ = minCoor;
 	maxCoordinates_ = maxCoor;
 }

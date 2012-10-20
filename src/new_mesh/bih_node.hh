@@ -36,6 +36,11 @@ class BIHNode : public BoundingIntevalHierachy {
 public:
 
 	/**
+	 * Destructor
+	 */
+	~BIHNode();
+
+	/**
 	 * Get count of elements stored in
 	 *
 	 * @return Count of elements stored in elements_ member

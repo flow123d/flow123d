@@ -23,7 +23,6 @@ TAbscissa::TAbscissa(const TPoint& PP0, const TPoint& PP1) : TBisector(PP0, PP1)
     //    *P1 = PP1;
 
     ComputeLength();
-    compute_bounding_box();
 }
 
 TAbscissa & TAbscissa::operator =(const TAbscissa& a) {
@@ -54,7 +53,6 @@ void TAbscissa::SetPoints(const TPoint& PP0, const TPoint& PP1) {
 
     TBisector::SetPoints(PP0, PP1);
     ComputeLength();
-    compute_bounding_box();
 }
 
 void TAbscissa::ComputeLength() {
@@ -62,7 +60,11 @@ void TAbscissa::ComputeLength() {
     length = U->Length();
 }
 
-void TAbscissa::compute_bounding_box() {
+double TAbscissa::Length() {
+    return length;
+}
+
+BoundingBox &TAbscissa::get_bounding_box() {
 	arma::vec3 minCoor;
 	arma::vec3 maxCoor;
 
@@ -71,15 +73,9 @@ void TAbscissa::compute_bounding_box() {
 		maxCoor(i) = GetMax(i+1);
 	}
 
-	boundingBox = new BoundingBox(minCoor, maxCoor);
-}
+	boundingBox.set_bounds(minCoor, maxCoor);
 
-double TAbscissa::Length() {
-    return length;
-}
-
-const BoundingBox &TAbscissa::get_bounding_box() const {
-	return *boundingBox;
+	return boundingBox;
 }
 
 double TAbscissa::GetMin(int x) const {

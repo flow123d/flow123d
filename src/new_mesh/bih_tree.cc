@@ -45,6 +45,12 @@ BIHTree::BIHTree(Mesh* mesh) : BoundingIntevalHierachy() {
 
 
 
+BIHTree::~BIHTree() {
+
+}
+
+
+
 void BIHTree::bounding_box() {
 	Node* node = mesh_->node_vector.begin();
 	arma::vec3 point = node->point();

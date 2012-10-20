@@ -39,6 +39,11 @@ class BoundingBox {
 public:
 
 	/**
+	 * Empty constructor
+	 */
+	BoundingBox();
+
+	/**
 	 * Constructor.
 	 *
 	 * Set class members
@@ -72,6 +77,14 @@ public:
     bool contains_point(arma::vec3 &point);
 
     bool intersection(BoundingBox &b2);
+
+    /**
+     * Set class members
+     *
+	 * @param minCoor Set value to minCoordinates_
+	 * @param maxCoor Set value to maxCoordinates_
+     */
+    void set_bounds(arma::vec3 minCoor, arma::vec3 maxCoor);
 
 private:
     /// count of dimensions

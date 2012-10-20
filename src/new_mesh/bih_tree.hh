@@ -42,6 +42,11 @@ public:
 	BIHTree(Mesh* mesh);
 
 	/**
+	 * Destructor
+	 */
+	~BIHTree();
+
+	/**
 	 * Get count of elements stored in
 	 *
 	 * @return Count of elements stored in element_ids_ member

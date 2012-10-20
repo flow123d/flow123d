@@ -38,6 +38,10 @@ BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int split
 	depth_ = depth;
 }
 
+BIHNode::~BIHNode() {
+
+}
+
 void BIHNode::put_element(int element_id) {
 	element_ids_.push_back(element_id);
 }

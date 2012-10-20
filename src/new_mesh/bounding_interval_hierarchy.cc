@@ -34,7 +34,17 @@
 #include "new_mesh/ngh/include/intersection.h"
 #include <typeinfo>
 
-BoundingIntevalHierachy::~BoundingIntevalHierachy() {}
+BoundingIntevalHierachy::~BoundingIntevalHierachy() {
+	if (boundingBox_ != NULL) {
+		delete boundingBox_;
+	}
+	if (child_[0] != NULL) {
+		delete child_[0];
+	}
+	if (child_[1] != NULL) {
+		delete child_[1];
+	}
+}
 
 
 
