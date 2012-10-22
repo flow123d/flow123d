@@ -435,7 +435,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
             if (bcd) {
                 if (bc_function) {
+                    START_TIMER("FIND INTERPOLATION");
+
                     bc_function->set_element(bcd->get_bc_element_iter());
+                    END_TIMER("FIND INTERPOLATION");
+
                     double value=bc_function->value(bcd->get_bc_element_iter()->centre());
                     c_val = 0.0;
                     loc_side_rhs[i] -= value;

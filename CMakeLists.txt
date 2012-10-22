@@ -338,6 +338,9 @@ if( PETSC_FOUND )
 
   #### make a script which call correct mpiexec (taken from PETSC)
   # we can not use link, since mpiexec can be sript which reads its location from calling sequence
+  #
+  # TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
+  # ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
   message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
   if(EXISTS "${PETSC_MPIEXEC}")
       message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")

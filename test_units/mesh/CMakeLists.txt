@@ -35,6 +35,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for multiline raw strings
     define_test(gmsh_reader)
     define_test(intersection)
+    define_test(bih_tree)
     
     #define_test(generic_node)
     
