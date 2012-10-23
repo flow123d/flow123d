@@ -33,7 +33,8 @@ BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int split
 	//xprintf(Msg, " - BIHNode->BIHNode(arma::vec3, arma::vec3, int, int)\n");
 
 	leaf_ = false;
-	boundingBox_ = new BoundingBox(minCoordinates, maxCoordinates);
+	boundingBox_.set_bounds(minCoordinates, maxCoordinates);
+	//boundingBox_ = new BoundingBox(minCoordinates, maxCoordinates);
 	splitCoor_ = splitCoor;
 	depth_ = depth;
 }
@@ -74,8 +75,8 @@ void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 			}
 		}
 	} else {
-		if (child_[0]->boundingBox_->intersection(boundingBox)) ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, meshElements);
-		if (child_[1]->boundingBox_->intersection(boundingBox)) ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, meshElements);
+		if (child_[0]->boundingBox_.intersection(boundingBox)) ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, meshElements);
+		if (child_[1]->boundingBox_.intersection(boundingBox)) ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, meshElements);
 	}
 }
 

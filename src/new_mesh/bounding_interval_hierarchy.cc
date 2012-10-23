@@ -35,9 +35,9 @@
 #include <typeinfo>
 
 BoundingIntevalHierachy::~BoundingIntevalHierachy() {
-	if (boundingBox_ != NULL) {
+	/*if (boundingBox_ != NULL) {
 		delete boundingBox_;
-	}
+	}*/
 	if (child_[0] != NULL) {
 		delete child_[0];
 	}
@@ -49,14 +49,14 @@ BoundingIntevalHierachy::~BoundingIntevalHierachy() {
 
 
 bool BoundingIntevalHierachy::contains_element(int coor, double min, double max) {
-	return (min < boundingBox_->get_max()(coor)) & (max > boundingBox_->get_min()(coor));
+	return (min < boundingBox_.get_max()(coor)) & (max > boundingBox_.get_min()(coor));
 }
 
 
 
 bool BoundingIntevalHierachy::contains_point(arma::vec3 &point) {
 	for (int i=0; i<dimension; i++) {
-		if ((point(i) < boundingBox_->get_min()(i)) | (point(i) > boundingBox_->get_max()(i))) return false;
+		if ((point(i) < boundingBox_.get_min()(i)) | (point(i) > boundingBox_.get_max()(i))) return false;
 	}
 
 	return true;
@@ -100,7 +100,7 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 	double median;
 	double coors[area_median_count];
 	bool isMaxSplit;
-	arma::vec3 diff = boundingBox_->get_max() - boundingBox_->get_min();
+	arma::vec3 diff = boundingBox_.get_max() - boundingBox_.get_min();
 
 	// Set splitCoor_ class member (select maximal dimension)
 	for (int i=0; i<dimension; i++) {
@@ -146,15 +146,15 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 	median = coors[medianPosition];
 
 	//calculate bounding boxes of subareas and create them
-	if (median == boundingBox_->get_min()(splitCoor_) || median == boundingBox_->get_max()(splitCoor_)) {
+	if (median == boundingBox_.get_min()(splitCoor_) || median == boundingBox_.get_max()(splitCoor_)) {
 		leaf_ = true;
 	} else {
 		for (int i=0; i<child_count; i++) {
 			arma::vec3 minCoor;
 			arma::vec3 maxCoor;
 			for (int j=0; j<3; j++) {
-				minCoor(j) = (j==splitCoor_ && i==1) ? median : boundingBox_->get_min()(j);
-				maxCoor(j) = (j==splitCoor_ && i==0) ? median : boundingBox_->get_max()(j);
+				minCoor(j) = (j==splitCoor_ && i==1) ? median : boundingBox_.get_min()(j);
+				maxCoor(j) = (j==splitCoor_ && i==0) ? median : boundingBox_.get_max()(j);
 			}
 
 			child_[i] = new BIHNode(minCoor, maxCoor, splitCoor_, depth_+1);

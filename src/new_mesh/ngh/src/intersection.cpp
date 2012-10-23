@@ -1009,14 +1009,14 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
         return;
     }
 
-    TPolygon *P = new TPolygon();
+    TPolygon P;// = new TPolygon();
     for (int i = 1; i <= 3; i++) {
         if (Te.IsInner(Tr.GetPoint(i))) {
-        	P->Add(Tr.GetPoint(i));
+        	P.Add(Tr.GetPoint(i));
         }
     }
 
-    if (P->vertexes_count() < 3) {
+    if (P.vertexes_count() < 3) {
 		IntersectionLocal *insec;
 
 		for (int i = 1; i <= 3; i++) {
@@ -1025,12 +1025,12 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 				if (insec) {
 					switch (insec->get_type()) {
 						case IntersectionLocal::point: {
-							P->Add(Tr.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
+							P.Add(Tr.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
 							break;
 						}
 						case IntersectionLocal::line: {
-							P->Add(Tr.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
-							P->Add(Tr.GetAbscissa(i).GetPoint(insec->get_point(1)->el1_coord()[0]));
+							P.Add(Tr.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
+							P.Add(Tr.GetAbscissa(i).GetPoint(insec->get_point(1)->el1_coord()[0]));
 							break;
 						}
 						default:
@@ -1045,11 +1045,11 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 			if (insec) {
 				switch (insec->get_type()) {
 					case IntersectionLocal::point:
-						P->Add(Te.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
+						P.Add(Te.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
 						break;
 					case IntersectionLocal::line:
-						P->Add(Te.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
-						P->Add(Te.GetAbscissa(i).GetPoint(insec->get_point(1)->el1_coord()[0]));
+						P.Add(Te.GetAbscissa(i).GetPoint(insec->get_point(0)->el1_coord()[0]));
+						P.Add(Te.GetAbscissa(i).GetPoint(insec->get_point(1)->el1_coord()[0]));
 						break;
 					default:
 						//mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
@@ -1059,7 +1059,7 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 		}
     }
 
-    coef = P->GetArea();
+    coef = P.GetArea();
     if (IsZero(coef)) {
         it = none;
     } else {

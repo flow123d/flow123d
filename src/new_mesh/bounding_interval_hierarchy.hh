@@ -109,7 +109,7 @@ protected:
     /// child nodes
     BoundingIntevalHierachy* child_[child_count];
     /// bounding box of area
-    BoundingBox* boundingBox_;
+    BoundingBox boundingBox_;
     /// coordination of splitting area
     int splitCoor_;
     /// depth of node

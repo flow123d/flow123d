@@ -141,7 +141,7 @@ int TPolygon::InsertPosition(const TVertex& Vx) {
 void TPolygon::ComputeArea() {
     std::vector<TVertex*>::iterator iv;
 
-    TTriangle* T;
+    TTriangle T;
     TPoint P1, P2, P3;
 
     area = 0;
@@ -156,8 +156,8 @@ void TPolygon::ComputeArea() {
             P3 = (*verteces.begin())->GetPoint();
         else
             P3 = (*(iv + 1))->GetPoint();
-        T = new TTriangle(P1, P2, P3);
-        area += T->GetArea();
+        T.SetPoints(P1, P2, P3);
+        area += T.GetArea();
     }
     return;
 }
