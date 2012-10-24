@@ -19,16 +19,16 @@
 \section{Radioactive Decay and First Order Reactions}
 Lets consider to have a narrow decay chain without branches. This kind of decay chain can be described by following equation
 \[
- A\xrightarrow{t_{1/2},A}B\xrightarrow{t_{1/2},B}C\xrightarrow{t_{1/2},C}D\xrightarrow{t_{1/2},D}E,
+ A\xrightarrow{t_{1/2,A}}B\xrightarrow{t_{1/2,B}}C\xrightarrow{t_{1/2,C}}D\xrightarrow{t_{1/2,D}}E,
 \]
-where letters $\{A,\ldots, E\}$ denotes isotopes containet in considered decay chain and ${t_{1/2},i},~i\in\{A,\ldots, E\}$ is a symbol for a halflife of $i$-th isotope.
+where letters $\{A,\ldots, E\}$ denotes isotopes contained in considered decay chain and ${t_{1/2},i},~i\in\{A,\ldots, E\}$ is a symbol for a half-life of $i$-th isotope.
 For a simulation of radioactive decay and first order reactions matrix multiplication based approach has been developed. It has been based on an arrangement of all the data to matrices. The matrix ${\bf C}^k$ contains the information about concentrations of all species ($s$) in all observed elements ($e$). The upper index $k$ denotes $k$-th time step. The matrix ${\bf C}^k$ has the dimension $e\times s~( rows \times columns)$.
 The transport simulation is realized by matrix multiplication 
 \[
   {\bf T}\cdot{\bf C}^k = {\bf C}^{k+1},
 \]
 where ${\bf T}$ is a square, block-diagonal matrix, representing a set of algebraic equations constructed from a set of partial differential equations.
-When the simulation of the radioactive decay or first order reaction is switched on, one step of
+When the simulation of the radioactive decay or the first order reaction is switched on, one step of
 simulation changes to 
 \[
   {\bf T}\cdot{\bf C}^k\cdot{\bf R} = {\bf C}^{k+1},
@@ -51,7 +51,7 @@ diagonals are engaged and the matrix R looks as follows:
    \end{array}
 \]\end{tiny}
 
-Every single $j$-th column, except the first one, includes the contribution $1 - \left(\frac{1}{2}\right)^\frac{\Delta t}{t_{1/2,j}},~j\in\{A,\ldots, E\}$ from $(j-1)-th$
+Every single $j$-th column, except the first one, includes the contribution $1 - \left(\frac{1}{2}\right)^\frac{\Delta t}{t_{1/2,j}},~j\in\{A,\ldots, E\}$ from $(j-1)$-th
 isotope with its half-life $t_{1/2,j-1}$. The term $\left(\frac{1}{2}\right)^\frac{\Delta t}{t_{1/2,j}}$ describes concentration decrease caused by the radioactive decay of $j$-th isotope itself. In general cases the matrix ${\bf R}$ can have much more complicated structure, especially when the considered decay chain has more branches.
 The implementation of the radioactive decay in Flow123D does not firmly include standard natural decay chain. Instead of that it is possible for a user to define his/her decay chain.
 
@@ -69,13 +69,13 @@ When it comes to a simulation of first order reactions, the kinetic constant is 
 The description of a kinetic chemical reaction has obviously two folowing forms
 \[
   \begin{array}{l}
-    A\xrightarrow{k_1}B,\\
-    \frac{dc^A}{dt} = -k_1 \cdot c^A.
+    A\xrightarrow{k}B,\\
+    \frac{dc^A}{dt} = -k \cdot c^A.
   \end{array}
 \]
-The first one description is a standard chmical one. The second equation describes temporal decrease in amount of concentrations of the specie $c^A$. The constant $k_1$ is so called kinetic constant and for the case of a first order reactions it is equal to so called reaction rate. The order of reaction with just one reactant is equal to the power of $c^A$ in partial diferential reaction.
+The first one description is a standard chemical one. The second equation describes temporal decrease in amount of concentrations of the specie $c^A$. The constant $k$ is so called kinetic constant and for the case of a first order reactions it is equal to so called reaction rate. The order of reaction with just one reactant is equal to the power of $c^A$ in partial diferential reaction.
 
-For an inclusion of first order reaction into a reaction matrix a half-live need to be computed from the corresponding kinetic constant $k_i$. The derivation follows
+For an inclusion of first order reaction into a reaction matrix a half-life needs to be computed from the corresponding kinetic constant $k$. The derivation follows
 \[
   \begin{array}{l}
     A\xrightarrow{k} B\\
@@ -88,7 +88,7 @@ For an inclusion of first order reaction into a reaction matrix a half-live need
 %     {\bf substitution} \qquad c^A(t_{1/2,A}) = \frac{1}{2}\cdot c^A_0\\
 %     \frac{1}{2} c^A_0 = c^A_0\cdot e^{-k_1\cdot t_{1/2,A}}\\
     \ln 2 = k \cdot t_{1/2,A}\\
-    t_{1/2,A} = \frac{ln 2}{k_1}
+    t_{1/2,A} = \frac{ln 2}{k}
   \end{array}                                                                                                                                                                                                                                                                                                            
 \]
 The matrix ${\bf R}$ is constructed in the same way as for the radioactive

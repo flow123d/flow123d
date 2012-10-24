@@ -128,3 +128,60 @@ The domain is a square with opposite corner points $[-1,-1]$ and $[1,1]$. Zero d
 As it was mentioned above, this test mainly verifies that the function parser works properly. The source formula to be parsed is given in the key \verb0source_formula0. The solution (pressure) is a paraboloid with a top in $[0,0,1]$.
 
 
+\section{Test 12 -- Radioactive decay}
+There are actually two tests of the radioactive decay. The first one considers first order reaction of two isotopes determined by kinetic constant and the other one described radioactive decay chain of three isotopes.
+
+\subsection*{Geometry}
+The domain is a prism which base is a right-angled triangle with its ordinates 3.0 units long. There are then only three tetrahedron elements in the mesh.
+
+There are two Dirichlet boundary conditions prescribed.
+
+\begin{itemize}
+  \item \textbf{Conductivity:} The conductivity of the prism material is $0.01$. 
+  \item There is no other parameter for flow or transport.
+\end{itemize}
+
+
+ 
+\subsection{First order reaction determined by kinetic constant}
+The only linear reaction between D and F substances.
+\[
+D\xrightarrow{k}F
+\]
+
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Substances:} 6 substances to be transported -- A, B, C, D, E, F
+  \item \textbf{Kinetic constant:} $k = 0.277258872$
+\end{itemize}
+
+\subsection*{Verification}
+
+\subsection{Radioactive decay chain}
+The considered radioctive decay chain is:
+\[
+ D\xrightarrow{t_{1/2,D}}F\xrightarrow{t_{1/2,F}}B
+\]
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Substances:} 6 substances to be transported -- A, B, C, D, E, F
+  \item \textbf{Decay half-lives:} $t_{1/2,D} = t_{1/2,F} = 2.5$
+\end{itemize}
+
+\subsection*{Verification}
+
+Both following tests are realized without combination with transport (zero pressure gradient).
+verification of:
+- first order reaction A->B determined by kinetic constant,
+-- 6 chemical species (A, B, .., F) are transported but just 2 of them take a part in considered first order kinetic reaction wich looks as follows
+--- D->F, appropriate kinetic constant is k = 0.277258872.
+--- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
+--- Transport boundary conditions does not matter because zero presure gradient is considered.
+--- Final concentrations of all isotopes except A, B, C, E do not change. Concentrations of D decreases to 0.003. Concentration of F increase to 0.85 in 20 time steps.
+
+- narrow radioctive decay chain without branches, A -> B -> C,
+-- 6 isotopes (A, B, .., F) are transported but just 3 of them are members of considered decay chain which looks as folows
+--- D->F->B
+--- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
+--- Transport boundary conditions does not matter because zero presure gradient is considered.
+--- Final concentrations of all isotopes except A, C, E do not change. Concentrations of D and B decrease to 0.004 and 0.012 respectively. Concentration of B increase to 0.1 in 20 time steps.
