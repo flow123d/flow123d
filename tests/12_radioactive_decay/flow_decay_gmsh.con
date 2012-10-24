@@ -76,15 +76,15 @@
   system = {
     output_streams = [
       {
-        file = "./decay.pvd", 
+        file = "./decay.msh", 
         format = {
-          TYPE = "vtk", 
+          TYPE = "gmsh", 
           variant = "ascii"
         }, 
         name = "flow_output_stream"
       }, 
       {
-        file = "./transport_decay.pvd", 
+        file = "./transport_decay.msh", 
         format = {
           TYPE = {
             REF = "/system/output_streams/0/format/TYPE"
