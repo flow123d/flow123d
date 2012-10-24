@@ -610,6 +610,7 @@ The common keys are:
 \keyitem{sources}{time-space field}{0} Density of water sources. Scalar valued field (1x1 tensor).
 \keyitem{sources\_file}{input file name}{null optional}
 File with sources in old format. (OBSOLETE)
+\keyitem{source\_formula}{space function}{0} Space function that prescribes water source.
 %
 \keyitem{coef\_tensor}{tensor steady field}{1.0}
 Conductivity 3x3 tensor. [Should be always 3x3 and then restricted on 2d and 1d fractures.]
@@ -667,10 +668,22 @@ Force output in prescribed times. Can be combined with regular otuptu given by \
 
 \subsection{Transport type}
 \begin{recordtype}{Transport type}{}
+ \keyitem{TYPE}{enum}{}
+    Two types are sofar possible. The second type is for advection-diffusion equation which needs implicit solver.
+    \enumhead{transport type}
+    \enumitem{TransportOperatorSplitting}{0}
+    \enumitem{AdvectionDiffusion\_DG}{1}
+ %
  \keyitem{sorption}{bool}{no}
  \keyitem{dual\_porosity}{bool}{no}
  \keyitem{transport\_reactions}{bool}{no}
  What kind of reactions is this? Age of water?
+ %
+ \keyitem{sigma}{double}{0} Coefficient of diffusive transfer through fractures.
+ \keyitem{alpha\_l}{double}{0} Longitudal dispersivity.
+ \keyitem{alpha\_t}{double}{0} Transversal dispersivity.
+ \keyitem{d\_m}{double}{1e-6} Molecular diffusivity.
+ \keyitem{dg\_penalty}{double}{0} Penalty parameter influencing the discontinuity of the solution.
  %
  \keyitem{reactions}{reaction type}{null optional}
  Currently only Semchem is supported. [Interface to Phreaq ...]

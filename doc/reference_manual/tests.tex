@@ -170,18 +170,45 @@ The considered radioctive decay chain is:
 
 \subsection*{Verification}
 
-Both following tests are realized without combination with transport (zero pressure gradient).
-verification of:
-- first order reaction A->B determined by kinetic constant,
--- 6 chemical species (A, B, .., F) are transported but just 2 of them take a part in considered first order kinetic reaction wich looks as follows
---- D->F, appropriate kinetic constant is k = 0.277258872.
---- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
---- Transport boundary conditions does not matter because zero presure gradient is considered.
---- Final concentrations of all isotopes except A, B, C, E do not change. Concentrations of D decreases to 0.003. Concentration of F increase to 0.85 in 20 time steps.
+% Both following tests are realized without combination with transport (zero pressure gradient).
+% verification of:
+% - first order reaction A->B determined by kinetic constant,
+% -- 6 chemical species (A, B, .., F) are transported but just 2 of them take a part in considered first order kinetic reaction wich looks as follows
+% --- D->F, appropriate kinetic constant is k = 0.277258872.
+% --- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
+% --- Transport boundary conditions does not matter because zero presure gradient is considered.
+% --- Final concentrations of all isotopes except A, B, C, E do not change. Concentrations of D decreases to 0.003. Concentration of F increase to 0.85 in 20 time steps.
 
-- narrow radioctive decay chain without branches, A -> B -> C,
--- 6 isotopes (A, B, .., F) are transported but just 3 of them are members of considered decay chain which looks as folows
---- D->F->B
---- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
---- Transport boundary conditions does not matter because zero presure gradient is considered.
---- Final concentrations of all isotopes except A, C, E do not change. Concentrations of D and B decrease to 0.004 and 0.012 respectively. Concentration of B increase to 0.1 in 20 time steps.
+% - narrow radioctive decay chain without branches, A -> B -> C,
+% -- 6 isotopes (A, B, .., F) are transported but just 3 of them are members of considered decay chain which looks as folows
+% --- D->F->B
+% --- Initail conditions look as follows, A(0) = 0.01, B(0) = 0.02, C(0) = 0.03, D(0) = 0.04, E(0) = 0.05, F(0) = 0.06.
+% --- Transport boundary conditions does not matter because zero presure gradient is considered.
+% --- Final concentrations of all isotopes except A, C, E do not change. Concentrations of D and B decrease to 0.004 and 0.012 respectively. Concentration of B increase to 0.1 in 20 time steps.
+
+
+\section{Test 17 -- Radioactive decay -- Pade approximation}
+This test solves radioactive decay chain of five isotopes using Pade approximation.
+The considered radioctive decay chain is:
+\[
+ A\xrightarrow{t_{1/2,A}}B\xrightarrow{t_{1/2,B}}C\xrightarrow{t_{1/2,C}}D\xrightarrow{t_{1/2,D}}E
+\]
+
+\subsection*{Geometry}
+The geometry and material and transport parameters are the same as in test 12.
+
+
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Substances:} 5 substances to be transported -- A, B, C, D, E
+  \item Polynomial degree of the nominator and the denominator of Pade approximation is~3.
+  \item \textbf{Decay half-lives:} 
+    \begin{tabular}[c]{|c|c|c|c|}
+      \hline
+      $t_{1/2,A}$ & $t_{1/2,B}$  & $t_{1/2,C}$ & $t_{1/2,D}$\\[4pt]
+      $1.3863$ & $2.3105$ & $1.5403$ & $1.1552$\\[4pt]
+      \hline
+    \end{tabular}
+\end{itemize}
+
+\subsection*{Verification}
