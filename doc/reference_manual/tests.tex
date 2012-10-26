@@ -14,29 +14,54 @@
 % You should have received a copy of the GNU General Public License along with this program; if not,
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
+\chapter{Units}
+\begin{table}
+  \label{tab:units}
+  \begin{center}
+    \begin{tabular}{|l|c|}
+      \hline
+      \textbf{Quantity} & \textbf{Unit} \\
+      \hline 
+      lenght & $L$ \\
+      time & $T$ \\
+      conductivity & $ $ \\
+      concentration & $ $ \\
+      diffusivity & $ $ \\
+      \hline
+    \end{tabular}
+  \caption{The table of units used in the document.}
+  \end{center}
+\end{table}
+
 \chapter{Tests}
+\label{sec:tests}
 
 \section{Test 01 -- Steady flow}
-This test involves steady Darcy flow in 3D, multidimensional connections, Dirichlet boundary condition for flow.
+\label{sec:test01}
+This test considers steady Darcy flow in a cube domain which is cutted by fractures so the multidimensional connections is involved in the computation. Dirichlet boundary condition is defined for flow.
 
 \subsection*{Geometry}
-A cube with its side 1.0 is cutted by two diagonal 2D fractures which are further separated by a 1D channel in their crossection.
+A cube with its side 1.0~$L$ is cutted by two diagonal 2D fractures which are further separated by a~1D channel in their cross section.
+
+Geometry parameters are defined for physical domains. Thickness of the 2D fractures is set to 1.0~$L$ and the area of the cross section is set to 1.0~$L^2$. These parameters are unrealistic (the side of the cube is 1.0~$L$ long) but it is compensated in the equation in the fraction with conductivity.
 
 There are only simple Dirichlet boundary conditions. Pressure gradient in direction from one corner of the cube to the oposite corner is applied on all boundary faces of all dimensions.
 
 \subsection*{Parameters}
 \begin{itemize}
+  \item \textbf{Cross section area:} 1D channel is set to 1.0~$L^2$.
+  \item \textbf{Thickness:} 2D fractures are set to 1.0~$L$.
   \item \textbf{Conductivity:} The conductivity of materials:
     \begin{itemize}
-      \item 1D fracture is set to $K=10$.
-      \item 2D fracture is set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$.
+      \item 1D channel is set to $K=10$.
+      \item 2D fractures are set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$.
       \item cube material is set to $\mathbf{K}=\left(\begin{array}{ccc} 0.1 & 0 & 0 \\ 0 & 0.1 & 0 \\ 0 & 0 & 0.1\end{array} \right)$.
     \end{itemize}
   \item There is no transport so there are not any other parameters.
 \end{itemize}
 
 \subsection*{Verification}
-This test verifies functionality of solving steady Darcy flow by mixed hybrid method. There are different dimension connections which are 2D-3D connection between cube and flat fractures and 1D-2D connection between 1D channel and the two flat fractures in their crossection.
+This test verifies solving steady Darcy flow by mixed hybrid method. There are different dimensional connections which are 2D-3D connection between the cube and the flat fractures and 1D-2D connection between the 1D channel and the two flat fractures in their crossection.
 
 After Schur complements are computed the set of linear equations is solved by CG solver used from PETSC library.
 
@@ -49,10 +74,11 @@ After Schur complements are computed the set of linear equations is solved by CG
 
 
 \section{Test 02 -- Steady flow in 2D and transport}
-This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, transport of two substances without initial condition for concentration. Other features are also used in explicit transport -- convection, dual porosity and sorption; in implicit transport it is convection and dispersion.
+\label{sec:test02}
+This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, transport of two substances without initial condition for concentration. Other features are used in explicit transport -- convection, dual porosity and sorption; in implicit transport it is convection and dispersion.
 
 \subsection*{Geometry}
-A two-dimensional slice through a part of a relief. which involves several one-dimensional cracks.
+The domain is two-dimensional slice through a part of a relief which involves several one-dimensional cracks.
 
 Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
 
@@ -60,6 +86,8 @@ Dirichlet boundary condition for transport is prescribed on both sides as it is 
 
 \subsection*{Parameters}
 \begin{itemize}
+  \item \textbf{Cross section area:} 1D fractures are set to 1.0~$L^2$.
+  \item \textbf{Thickness:} domain is set to 1.0~$L$.
   \item \textbf{Conductivity:} The conductivity of materials:
     \begin{itemize}
       \item fracture material is set to $K=10$.
@@ -82,8 +110,7 @@ Dirichlet boundary condition for transport is prescribed on both sides as it is 
 \end{itemize}
 
 \subsection*{Verification}
-
-
+This test verifies explicitly computed transport considering only convection with dual porosity and sorption and implicitly computed transport considering both convection and dispersion. Flow and transport through 1D-2D connection is also involved.
 %verification of:
 %-flow
 %-explicit transport (convection, dual porosity, sorption)
@@ -92,6 +119,7 @@ Dirichlet boundary condition for transport is prescribed on both sides as it is 
 
 
 \section{Test 03 -- Steady flow in 2D and transport}
+\label{sec:test03}
 This test differs from the previous one only by simpler structure of its geometry. It shows how the substace flows in the main fracture and divides in two other fractures. The substance spreads in the fractures much faster in comparision to the plane.
 \subsection*{Geometry}
 There is a plane with side 1.0 which is cutted by fractures. The main fracture divides in two other fractures.
@@ -108,10 +136,11 @@ Parameters are the same as in test 02.
 %-multidimensional connection (1D-2D)
 
 
-\section{Test 08 -- Steady flow with source}
-This test is aimed in verifying the function parser. Therefore a simple steady flow problem with a source prescribed by a formula was made.
+\section{Test 08 -- Steady Darcy flow with source}
+\label{sec:test08}
+This test is aimed at verifying steady Darcy flow with source which is prescribed by space function formula. This formula is processed by the function parser.
 
-We will solve Laplace equation $-\Lapl{}u = f$ where source $f$ is prescribed by formula: $f = 2(1-y^2) + 2(1-x^2)$.
+We will solve Laplace equation $-\Lapl{}u = f$ where source $f$ is prescribed by function: $f = 2(1-y^2) + 2(1-x^2)$.
 
 We can easily prove that the analytic solution is $u = (1-x^2)(1-y^2)$ by replacing it in the Laplace equation.
 
@@ -129,7 +158,7 @@ As it was mentioned above, this test mainly verifies that the function parser wo
 
 
 \section{Test 12 -- Radioactive decay}
-There are actually two tests of the radioactive decay. The first one considers first order reaction of two isotopes determined by kinetic constant and the other one described radioactive decay chain of three isotopes.
+There are actually two tests of the radioactive decay. The first one considers first order reaction of two isotopes determined by kinetic constant and the other one describes radioactive decay chain of three isotopes.
 
 \subsection*{Geometry}
 The domain is a prism which base is a right-angled triangle with its ordinates 3.0 units long. There are then only three tetrahedron elements in the mesh.
@@ -212,3 +241,79 @@ The geometry and material and transport parameters are the same as in test 12.
 \end{itemize}
 
 \subsection*{Verification}
+
+
+=====================  PREPARING  ====================
+\section{Test 20 -- Dirichlet boundary condition}
+\label{sec:test20}
+This test involves steady Darcy flow in 3D determined by Dirichlet boundary condition. The analytic solution is prescribed $u = xyz$. We can see from the formula that there are no sources $-\Lapl{}u = 0$ (zero right hand side) and we can easily define Dirichlet boundary conditions on the sides of the cube just by evaluating the solution there.
+
+\subsection*{Geometry}
+The domain is a cube with its side 1.0~$L$ long.
+Dirichlet boundary conditions are summarized in the following table. Physical domains corresponds with the numbers in \verb0geo0 file, the row \emph{plane} contains equations of the planes (sides of the cube). The row \emph{Dirichlet} contains solution on the planes. The row \emph{boundary} segment contains numbers of segments defined in \verb0con0 file.
+
+\begin{center}
+  \begin{tabular}{|l|c|c|c|c|c|c|}
+      \hline
+      boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
+      physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
+      plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
+      Dirichlet [$u_D$] & $xy$ & $yz$ & $0$ & $0$ & $xz$ & $0$\\
+      \hline
+  \end{tabular}
+\end{center}
+
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Conductivity:} cube material is set to $\mathbf{K}=\left(\begin{array}{ccc} 1.0 & 0 & 0 \\ 0 & 1.0 & 0 \\ 0 & 0 & 1.0\end{array} \right)$.
+  \item There is no transport so there are not any other parameters.
+\end{itemize}
+
+\subsection*{Verification}
+This test verifies prescribing Dirichlet boundary condition.
+
+
+\section{Test 21 -- Neumann boundary condition}
+\label{sec:test21}
+This test uses the same geometry and parameters as in the test 20 (viz~\ref{sec:test20}) but there are prescribed both Dirichlet and Neumann boundary conditions. 
+
+The table of the boundary conditions is below. The row \emph{Dirichlet} contains contains solution on the planes and the row \emph{Neumann} contains flow through the planes.
+
+\begin{center}
+  \begin{tabular}{|l|c|c|c|c|c|c|}
+      \hline
+      boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
+      physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
+      plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
+      Dirichlet [$u_D$] 
+	  &   -   & $yz$ & $0$ & $0$ &   -   & $0$\\
+      Neumann [$-\nabla{}u\cdot{}\mathbf{n}$] 
+	  & $-xy$ &   -  &  -  &  -  & $-xz$ & - \\
+      \hline
+  \end{tabular}
+\end{center}
+
+\subsection*{Verification}
+This test verifies prescribing Neumann boundary condition.
+
+\section{Test 22 -- Newton boundary condition}
+\label{sec:test21}
+This test uses the same geometry and parameters as in the test 20 (viz~\ref{sec:test20}) but there is prescribed Newton boundary condition $-\nabla{}u\cdot{}\mathbf{n} = \sigma(u-u_T)$.
+
+The table of the boundary conditions where parameters $\sigma$ and $u_T$ are written is below. The values of parameters were chosen to satisfy condition $-\nabla{}u\cdot{}\mathbf{n} = -(yz,xz,xy)\cdot\mathbf{n} = \sigma(u-u_T)$
+
+\begin{center}
+  \begin{tabular}{|l|c|c|c|c|c|c|}
+      \hline
+      boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
+      physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
+      plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
+      $-\nabla{}u\cdot{}\mathbf{n}$ & $-xy$ & $-yz$ & $xy$ & $yz$ & $-xz$ &\\
+      $\sigma$ & $xy$ & $yz$ & $0$ & $0$ & $xz$ & $0$\\
+      $u_T$ & $u_T=xy$ & $u=yz$ & $u=0$ & $u=0$ & $u=xz$ & $u=0$\\
+      \hline
+  \end{tabular}
+\end{center}
+
+\subsection*{Verification}
+This test verifies prescribing Newton boundary condition.
