@@ -38,8 +38,9 @@ public:
 	 *
 	 * Set class members and call functions which create tree
 	 * @param mesh Mesh is used for creation the tree
+	 * @param areaElementLimit limit of elements in area
 	 */
-	BIHTree(Mesh* mesh);
+	BIHTree(Mesh* mesh, unsigned int areaElementLimit = 0);
 
 	/**
 	 * Destructor
@@ -60,6 +61,12 @@ public:
 	 * @param searchedElements vector of ids of suspect elements
 	 */
     void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements);
+
+    /// Overrides BoundingIntevalHierachy::sum_elements_in_leaves
+    void sum_elements_in_leaves(int &sum);
+
+    /// Overrides BoundingIntevalHierachy::get_tree_depth
+    void get_tree_depth(int &maxDepth, bool writeAllDepth);
 
 protected:
     /// distribute elements into subareas

@@ -28,10 +28,12 @@
 #include "new_mesh/bih_tree.hh"
 #include "new_mesh/bih_node.hh"
 
-BIHTree::BIHTree(Mesh* mesh) : BoundingIntevalHierachy() {
-	xprintf(Msg, " - BIHTree->BIHTree(Mesh* mesh)\n");
+BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) : BoundingIntevalHierachy() {
+	xprintf(Msg, " - BIHTree->BIHTree(Mesh, unsigned int)\n");
 
 	mesh_ = mesh;
+	if (areaElementLimit == 0) area_element_limit_ = 20;
+	else area_element_limit_ = areaElementLimit;
 	leaf_ = false;
 	depth_ = 0;
 
@@ -76,6 +78,12 @@ int BIHTree::get_element_count() {
 	return elements_.size();
 }
 
+
+void BIHTree::sum_elements_in_leaves(int &sum) {
+	sum = 0;
+	((BIHNode *)child_[0])->sum_elements_in_leaves(sum);
+	((BIHNode *)child_[1])->sum_elements_in_leaves(sum);
+}
 
 
 void BIHTree::distribute_elements(std::vector<BoundingBox *> elements)
@@ -142,4 +150,15 @@ void BIHTree::element_boxes() {
 		boxElement->setId(id);
 		elements_.push_back(boxElement);
 	}
+}
+
+
+
+void BIHTree::get_tree_depth(int &maxDepth, bool writeAllDepth) {
+	maxDepth = 0;
+	if (writeAllDepth) xprintf(Msg, " - Depth in leaf nodes:\n");
+	((BIHNode *)child_[0])->get_tree_depth(maxDepth, writeAllDepth);
+	((BIHNode *)child_[1])->get_tree_depth(maxDepth, writeAllDepth);
+	if (writeAllDepth) xprintf(Msg, "\n");
+	xprintf(Msg, " - Maximal depth of tree : %d\n", maxDepth);
 }

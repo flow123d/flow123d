@@ -29,12 +29,12 @@
 #include "new_mesh/bih_node.hh"
 #include "new_mesh/bounding_box.hh"
 
-BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth) : BoundingIntevalHierachy() {
-	//xprintf(Msg, " - BIHNode->BIHNode(arma::vec3, arma::vec3, int, int)\n");
+BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth, unsigned int areaElementLimit) : BoundingIntevalHierachy() {
+	//xprintf(Msg, " - BIHNode->BIHNode(arma::vec3, arma::vec3, int, int, unsigned int)\n");
 
 	leaf_ = false;
 	boundingBox_.set_bounds(minCoordinates, maxCoordinates);
-	//boundingBox_ = new BoundingBox(minCoordinates, maxCoordinates);
+	area_element_limit_ = areaElementLimit;
 	splitCoor_ = splitCoor;
 	depth_ = depth;
 }
@@ -82,4 +82,23 @@ void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 
 int BIHNode::get_element_count() {
 	return element_ids_.size();
+}
+
+void BIHNode::sum_elements_in_leaves(int &sum) {
+	if (leaf_) {
+		sum += element_ids_.size();
+	} else {
+		((BIHNode *)child_[0])->sum_elements_in_leaves(sum);
+		((BIHNode *)child_[1])->sum_elements_in_leaves(sum);
+	}
+}
+
+void BIHNode::get_tree_depth(int &maxDepth, bool writeAllDepth) {
+	if (leaf_) {
+		if (writeAllDepth) xprintf(Msg, "%d - ", depth_);
+		if (depth_ > maxDepth) maxDepth = depth_;
+	} else {
+		((BIHNode *)child_[0])->get_tree_depth(maxDepth, writeAllDepth);
+		((BIHNode *)child_[1])->get_tree_depth(maxDepth, writeAllDepth);
+	}
 }

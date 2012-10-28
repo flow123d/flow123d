@@ -47,6 +47,12 @@ public:
 	 */
     int get_element_count();
 
+    /// Overrides BoundingIntevalHierachy::sum_elements_in_leaves
+    void sum_elements_in_leaves(int &sum);
+
+    /// Overrides BoundingIntevalHierachy::get_tree_depth
+    void get_tree_depth(int &maxDepth, bool writeAllDepth);
+
 protected:
 
     /**
@@ -75,7 +81,7 @@ private:
 	 * @param splitCoor Coordination of splitting parent area
 	 * @param depth Depth of node in tree.
 	 */
-	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
+	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth, unsigned int areaElementLimit);
 
 	/**
      * Add element into elements_ member

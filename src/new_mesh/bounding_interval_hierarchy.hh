@@ -61,10 +61,25 @@ public:
 	 */
     virtual int get_element_count() { return -1; }
 
+    /**
+     * Get sum of element counts in all leaf nodes of tree
+     * Method for gtests
+     *
+     * @param sum Sums up counts of elements
+     */
+    virtual void sum_elements_in_leaves(int &sum) {}
+
+    /**
+     * Browse tree and get its maximal depth
+     * Method for gtests
+     *
+     * @param maxDepth Contains maximal depth of tree
+     * @param writeAllDepth Method writes depth in all leaf nodes if value is true
+     */
+    virtual void get_tree_depth(int &maxDepth, bool writeAllDepth) {}
+
 protected:
 
-    /// limit of elements in area, if count of elements is lesser than value splitting is stopped
-    static const unsigned int area_element_limit = 20;
     /// count of subareas - don't change
     static const unsigned int child_count = 2;
     /// count of elements of which is selected median - value must be even
@@ -106,6 +121,8 @@ protected:
      */
     bool contains_point(arma::vec3 &point);
 
+    /// limit of elements in area, if count of elements is lesser than value splitting is stopped
+    unsigned int area_element_limit_;
     /// child nodes
     BoundingIntevalHierachy* child_[child_count];
     /// bounding box of area

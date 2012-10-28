@@ -84,7 +84,7 @@ int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<Bounding
 
 
 void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox *> elements) {
-	if (get_element_count()>area_element_limit) {
+	if (get_element_count()>area_element_limit_) {
 		split_area(elements);
 		if (!leaf_) distribute_elements(elements);
 	} else {
@@ -98,7 +98,7 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 	int medianStep = get_element_count() / area_median_count;
 	int medianPosition = (int)(area_median_count/2);
 	double median;
-	double coors[area_median_count];
+	std:vector<double> coors;
 	bool isMaxSplit;
 	arma::vec3 diff = boundingBox_.get_max() - boundingBox_.get_min();
 
@@ -118,31 +118,13 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 	}
 
 	//select adepts at median
-	for (int i=0; i<area_median_count; i++) coors[i] = get_median_coord(elements, i * medianStep);
-
-	//select median of the adepts
-	for (int i=0; i<medianPosition; i++) {
-		int minIndex=i, maxIndex=i;
-		double min=coors[i], max=coors[i], change;
-
-		for (int j=i+1; j<area_median_count-i; j++) {
-			if (coors[j]<min) {
-				min=coors[j];
-				minIndex=j;
-			} else if (coors[j]>max) {
-				max=coors[j];
-				maxIndex=j;
-			}
-		}
-		change = coors[i];
-		coors[i] = coors[minIndex];
-		coors[minIndex] = change;
-		if (maxIndex==i) maxIndex=minIndex;
-		change = coors[area_median_count-i-1];
-		coors[area_median_count-i-1] = coors[maxIndex];
-		coors[maxIndex] = change;
+	coors.resize(area_median_count);
+	for (int i=0; i<area_median_count; i++) {
+		coors[i] = get_median_coord(elements, i * medianStep);
 	}
 
+	//select median of the adepts
+	std::nth_element(coors.begin(), coors.begin()+medianPosition, coors.end());
 	median = coors[medianPosition];
 
 	//calculate bounding boxes of subareas and create them
@@ -157,7 +139,7 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 				maxCoor(j) = (j==splitCoor_ && i==0) ? median : boundingBox_.get_max()(j);
 			}
 
-			child_[i] = new BIHNode(minCoor, maxCoor, splitCoor_, depth_+1);
+			child_[i] = new BIHNode(minCoor, maxCoor, splitCoor_, depth_+1, area_element_limit_);
 		}
 	}
 }
