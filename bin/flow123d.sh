@@ -24,6 +24,8 @@
 # Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
 #
 
+set -x 
+
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
 # Relative path to mpiexec binary from current/working directory
@@ -32,8 +34,10 @@ MPIEXEC="${0%/*}/${MPIEXEC}"
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
 FLOW123D="./flow123d"
-# Relative path to Flow123d binary from current/working directory
-FLOW123D="${0%/*}/${FLOW123D}"
+# Absolute path to Flow123d binary from current/working directory
+FLOW123D="${PWD}/${0%/*}/${FLOW123D}"
+# Absolute path to working directory
+WORKDIR="${PWD}"
 
 AWK="awk"
 
@@ -47,13 +51,14 @@ function print_help {
 	echo ""
 	echo "OPTIONS:"
 	echo "    -h              Print this help"
-	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOU seconds"
+	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOUT seconds"
 	echo "    -m MEM          Flow123d can use only MEM bytes"
 	echo "    -n NICE         Run Flow123d with changed (lower) priority"
 	echo "    -p N            Run Flow123d using N parallel procces" 
 	echo "    -r OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
 	echo "    -s              Working directory will be current directory (default)"
 	echo "    -S              Working directory will be relative path to ini file"
+	echo "    -q QUEUE        Name of queue to use for batch processing (if supported by system)"
 	echo ""
 	echo "RETURN VALUES:"
 	echo "    0               Flow123d process exited normaly"
@@ -79,7 +84,7 @@ function parse_arguments()
 	FLOW_OPT="-s"
 	
 	# Parse arguments with bash builtin command getopts
-	while getopts ":ht:m:n:p:r:sS" opt
+	while getopts ":ht:m:n:p:q:r:sS" opt
 	do
 		case ${opt} in
 		h)
@@ -98,6 +103,9 @@ function parse_arguments()
 		p)
 			NP="${OPTARG}"
 			;;
+                q)
+                        QUEUE="${OPTARG}"
+                        ;;
 		r)
 			OUT_FILE="${OPTARG}"
 			;;

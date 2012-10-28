@@ -35,7 +35,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
 project(Flow123d CXX C)
 
 # CMake version required for pre-build this project
-cmake_minimum_required(VERSION 2.6.4)
+cmake_minimum_required(VERSION 2.8)
 if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
   cmake_policy(SET CMP0017 NEW)
@@ -54,7 +54,7 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
 if (NOT EXTERNAL_PROJECT_DIR)
     # default directory for building external libraries 
-    set(EXTERNAL_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/third_party)
+    set(EXTERNAL_PROJECT_DIR ${PROJECT_SOURCE_DIR}/external_projects)
 endif()
 
 
@@ -110,9 +110,8 @@ endif()
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
-set(EXTERNAL_BOOST_DIR  ${EXTERNAL_PROJECT_DIR}/boost_build)  
+set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
 set(REQUIRED_Boost_COMPONENTS program_options serialization)
-
 
 #set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
@@ -342,7 +341,7 @@ if( PETSC_FOUND )
   # TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
   # ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
   message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
-  if(EXISTS "${PETSC_MPIEXEC}")
+  if(PETSC_MPIEXEC)     # missing CMAKE command to test working executable, moreover it could be without full path
       message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")
       set(MPIEXEC_PATH ${PETSC_MPIEXEC})
   else()
