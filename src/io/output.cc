@@ -249,6 +249,30 @@ int Output::write_data()
     return 0;
 }
 
+/**
+ * \brief This method add right suffix to .pvd VTK file
+ */
+static inline void fix_VTK_file_name(string *fname)
+{
+	// When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
+	if(fname->compare(fname->size()-4, 4, ".pvd") != 0) {
+		xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n", fname->c_str(), fname->c_str());
+		*fname = *fname + ".pvd";
+	}
+}
+
+/**
+ * \brief This method add right suffix to .msh GMSH file
+ */
+static inline void fix_GMSH_file_name(string *fname)
+{
+	// When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
+	if(fname->compare(fname->size()-4, 4, ".msh") != 0) {
+		xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n", fname->c_str(), fname->c_str());
+		*fname = *fname + ".msh";
+	}
+}
+
 OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 {
     int rank=0;
@@ -264,6 +288,24 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     string *base_filename;
 
     string fname = in_rec.val<FilePath>("file");
+    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
+
+    // Check if file suffix is suffix of specified file format
+    if(format) {
+    	if((*format).type() == OutputVTK::get_input_type()) {
+    		// This should be pvd file format
+    		fix_VTK_file_name(&fname);
+    	} else if((*format).type() == OutputMSH::get_input_type()) {
+    		// This should be msh file format
+    		fix_GMSH_file_name(&fname);
+    	} else {
+    		// Unsuported file format
+    		fix_VTK_file_name(&fname);
+    	}
+    } else {
+		// Default file format is VTK
+    	fix_VTK_file_name(&fname);
+    }
 
     base_file = new ofstream;
 
@@ -295,7 +337,6 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     set_corner_data(corner_data);
     set_elem_data(elem_data);
 
-    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
     if(format) {
 		if((*format).type() == OutputVTK::get_input_type()) {
 			this->output_format = new OutputVTK(this, *format);
