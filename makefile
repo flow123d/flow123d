@@ -31,7 +31,7 @@ INTERPOLATE_BIN=interpolation
 MPIEXEC_BIN=mpiexec
 
 ifndef N_JOBS
-  N_JOBS=4
+  N_JOBS=2
 endif  
 
 # install all binaries form build tree to './bin' dir
