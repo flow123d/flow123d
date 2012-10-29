@@ -13,12 +13,15 @@ On Linux use package manager of your distribution ('apt-get' for Ubuntu and Debi
 
 requested packages are: 
 
-* gcc, g++, gfortran    C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
-* python, perl, cmake   Scripting languages and building tool
+* gcc, gcc4-g++, gcc4-fortran    C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
+* python, perl, cmake (>2.8)   Scripting languages and building tool
+* make, cmake, patch, subversion  
 * boost                 C++ library 
   namely you need developement version of the library "Program Options",
   in KUbuntu this is in separate package: libboost-program-options-dev
-  
+* need to install openssh for MPICH
+* some editor that can save Unix like text files (notepad++, vim under cygwin) 
+
 
 optionaly you may want also:
 
