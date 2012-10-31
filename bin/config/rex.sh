@@ -56,15 +56,28 @@ cat << xxEOFxx > ${QSUB_FILE}
 ##################BS -l walltime=24:00:00
 #PBS -l select=1:ncpus=$NP:host=rex
 #PBS -l place=free:shared 
+
+# set paths to intel libraries
+source /opt/intel/Compiler/11.1/046/bin/iccvars.sh ia64 
+
+# set same LD paths as in the evironment from which the task is started
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ARCH_LD_LIBRARY_PATH
+
+# load module for SGI MPI library
 . /usr/share/modules/init/bash
 module load mpt
+
+# ???
 export KMP_MONITOR_STACKSIZE=64K   
 
 cd ${WORKDIR}
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ARCH_LD_LIBRARY_PATH
+
+# header - info about task
 uname -a
 echo JOB START: `date` 
 pwd
+
+# dplace is used for better process placement
 dplace mpirun -np $NP "$FLOW123D" $FLOW_OPT "$INI_FILE" $FLOW_PARAMS 
 # 2>${ERR_FILE} 1>${OUT_FILE}
 	

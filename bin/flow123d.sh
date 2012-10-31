@@ -34,8 +34,10 @@ MPIEXEC="${0%/*}/${MPIEXEC}"
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
 FLOW123D="./flow123d"
-# Absolute path to Flow123d binary from current/working directory
-FLOW123D="${PWD}/${0%/*}/${FLOW123D}"
+# Relative or absolute path to Flow123d binary from current/working directory
+FLOW123D="${0%/*}/${FLOW123D}"
+# Absolute path
+FLOW123D=`which "${FLOW123D}"`
 # Absolute path to working directory
 WORKDIR="${PWD}"
 
