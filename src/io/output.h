@@ -321,6 +321,8 @@ public:
 
     OutputFormat *output_format;
 
+    string          *name;              ///< Name of output stream
+
 protected:
     // Protected setters for descendant
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
@@ -461,7 +463,6 @@ int Output::register_elem_data(std::string name,
     }
 }
 
-
 /**
  * \brief The class for outputing data during time.
  *
@@ -472,8 +473,26 @@ int Output::register_elem_data(std::string name,
 class OutputTime : public Output {
 protected:
     OutputTime() {};
-
+private:
 public:
+    /**
+     * \brief Array of pointer at OutputTime
+     */
+    static OutputTime **output_streams;
+
+    /**
+     * \brief The count of instances
+     */
+    static int output_streams_count;
+
+    /**
+     * \brief Does OutputStream with same name and filename exist? When this
+     * record is already created, then it returns pointer at this record. When
+     * this record doesn' exixt, then it returns NULL pointer.
+     *
+     */
+    static OutputTime *is_created(const Input::Record &in_rec);
+
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
@@ -907,5 +926,30 @@ public:
 
 	static Input::Type::AbstractRecord &get_input_type();
 };
+
+inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)
+{
+    int rank=0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank != 0) {
+        return NULL;
+    }
+
+    OutputTime *output_time = OutputTime::is_created(in_rec);
+
+    /* When this record doesn't exist, then create new one */
+    if(output_time == NULL) {
+        /* Realloc array of output_streams */
+        OutputTime **new_ptr = (OutputTime**)xrealloc(OutputTime::output_streams,
+                sizeof(void*) * (OutputTime::output_streams_count + 1));
+        OutputTime::output_streams = new_ptr;
+        /* Create new output */
+        output_time = new OutputTime(mesh, in_rec);
+        /* Add this output to the array of output streams */
+        OutputTime::output_streams[OutputTime::output_streams_count-1] = output_time;
+    }
+
+    return output_time;
+}
 
 #endif

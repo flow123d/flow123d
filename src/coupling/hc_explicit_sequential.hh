@@ -64,7 +64,8 @@ class HC_ExplicitSequential : public CouplingBase {
 public:
     static Input::Type::Record &get_input_type();
 
-    HC_ExplicitSequential(Input::Record in_record);
+    HC_ExplicitSequential(Input::Record in_record,
+            Input::Iterator<Input::Array> output_streams);
     void run_simulation();
     ~HC_ExplicitSequential();
 

@@ -52,7 +52,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     using namespace Input;
 
     // setup output
-    output_writer = new OutputTime(mesh_, Record(in_rec).val<Record>("output_stream"));
+    //output_writer = new OutputTime(mesh_, Record(in_rec).val<Record>("output_stream"));
+    output_writer = OutputStream(mesh_, Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
@@ -122,7 +123,7 @@ Input::Type::Record DarcyFlowMHOutput::get_input_type() {
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
-    if (output_writer != NULL) delete output_writer;
+    //if (output_writer != NULL) delete output_writer;
 
     if (balance_output_file != NULL) xfclose(balance_output_file);
     if (raw_output_file != NULL) xfclose(raw_output_file);

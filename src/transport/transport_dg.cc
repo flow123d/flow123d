@@ -122,7 +122,8 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     // set up output class
     // TODO: Add corresponding record to the in_rec
     Input::Record output_rec = in_rec.val<Input::Record>("output");
-    transport_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
+    //transport_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
+    transport_output = OutputStream(mesh_, output_rec.val<Input::Record>("output_stream"));
     output_solution.resize(n_substances);
     for (int i=0; i<n_substances; i++)
     {
@@ -190,7 +191,7 @@ Input::Type::Record & TransportDG::get_input_type()
 
 TransportDG::~TransportDG()
 {
-    delete transport_output;
+    //delete transport_output;
     delete time_;
     delete solver;
     delete ls;

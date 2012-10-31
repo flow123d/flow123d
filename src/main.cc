@@ -111,19 +111,41 @@ Application::Application( int argc,  char ** argv)
 
     {
         using namespace Input;
+        int i;
 
         // get main input record handle
         Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
-        sys_info.pause_after_run=i_rec.val<bool>("pause_after_run");
+        // should flow123d wait for pressing "Enter", when simulation is completed
+        sys_info.pause_after_run = i_rec.val<bool>("pause_after_run");
+        // read record with problem configuration
         Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
 
-        // run simulation
         if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
-            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
-            problem->run_simulation();
-            delete problem;
 
+            // try to find "output_streams" record
+            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
+
+            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem, output_streams);
+
+            // run simulation
+            problem->run_simulation();
+
+            int rank=0;
+            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+            if (rank == 0) {
+                // free all output streams
+                if(OutputTime::output_streams != NULL) {
+                    for(int i=0; i<OutputTime::output_streams_count; i++) {
+                        delete OutputTime::output_streams[i];
+                    }
+                    xfree(OutputTime::output_streams);
+                    OutputTime::output_streams = NULL;
+                    OutputTime::output_streams_count = 0;
+                }
+            }
+
+            delete problem;
         } else {
             xprintf(UsrErr,"Problem type not implemented.");
         }
@@ -278,8 +300,6 @@ Input::Type::Record &  Application::get_input_type() {
 void Application::free_and_exit() {
     xterminate(false);
 }
-
-
 
 //=============================================================================
 

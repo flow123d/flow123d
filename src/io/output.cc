@@ -179,8 +179,6 @@ Output::Output(Mesh *_mesh, string fname)
 
     base_filename = new string(fname);
 
-    // !!!! NEEDS new input
-    // char *format_name = OptGetStr("Output", "POS_format", "VTK_SERIAL_ASCII");
     this->file_format = VTK;
     this->output_format = new OutputVTK(this);
 }
@@ -273,11 +271,42 @@ static inline void fix_GMSH_file_name(string *fname)
 	}
 }
 
+
+
+/* Initialize static member of the class */
+OutputTime** OutputTime::output_streams = NULL;
+
+/* Initialize static member of the class */
+int OutputTime::output_streams_count = 0;
+
+
+OutputTime *OutputTime::is_created(const Input::Record &in_rec)
+{
+    string name = in_rec.val<string>("name");
+
+    xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
+
+    if(OutputTime::output_streams != NULL) {
+        for(int i=0; i<OutputTime::output_streams_count; i++) {
+            if(name == *OutputTime::output_streams[i]->name) {
+                xprintf(MsgLog, "FOUND\n");
+                return OutputTime::output_streams[i];
+            }
+        }
+    }
+
+    xprintf(MsgLog, "NOT FOUND\n");
+
+    return NULL;
+}
+
 OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 {
     int rank=0;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank!=0) return;
+
+    OutputTime::output_streams_count++;
 
     std::vector<OutputData> *node_data;
     std::vector<OutputData> *corner_data;
@@ -288,7 +317,10 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     string *base_filename;
 
     string fname = in_rec.val<FilePath>("file");
+    string stream_name = in_rec.val<string>("name");
+
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
+    
 
     // Check if file suffix is suffix of specified file format
     if(format) {
@@ -324,7 +356,8 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 
     base_filename = new string(fname);
 
-    current_step = 0;
+    this->name = new string(stream_name);
+    this->current_step = 0;
 
     node_data = new OutputDataVec;
     corner_data = new OutputDataVec;

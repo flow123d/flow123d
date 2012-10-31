@@ -70,11 +70,12 @@ Input::Type::AbstractRecord &CouplingBase::get_input_type() {
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
-HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
+HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
+        Input::Iterator<Input::Array> output_streams)
 {
     F_ENTRY;
+    int i=0;
     using namespace Input;
-
 
     // Initialize Time Marks
     main_time_marks = new TimeMarks();
@@ -94,23 +95,36 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
             mesh->n_elements());
     }
 
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank == 0) {
+        // Go through all configuration of "root" output streams and create them.
+        // Other output streams can be created on the fly and added to the array
+        // of output streams
+        if(output_streams) {
+            for (Input::Iterator<Input::Record> output_stream = (*output_streams).begin<Input::Record>();
+                    output_stream != (*output_streams).end();
+                    i++, ++output_stream)
+            {
+                OutputTime::output_streams[i] = OutputStream(mesh, *output_stream);
+            }
+        }
+    }
+
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
     if (prim_eq.type() == DarcyFlowMH_Steady::get_input_type() ) {
-            water=new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database, prim_eq);
-
-    } else
-    if (prim_eq.type() == DarcyFlowMH_Unsteady::get_input_type() ) {
-            water=new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
-    } else
-    if (prim_eq.type() == DarcyFlowLMH_Unsteady::get_input_type() ) {
-            water=new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
+            water = new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database, prim_eq);
+    } else if (prim_eq.type() == DarcyFlowMH_Unsteady::get_input_type() ) {
+            water = new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
+    } else if (prim_eq.type() == DarcyFlowLMH_Unsteady::get_input_type() ) {
+            water = new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
     } else {
             xprintf(UsrErr,"Equation type not implemented.");
     }
 
     // object for water postprocessing and output
-    water_output = new DarcyFlowMHOutput(water,Record(prim_eq).val<Record>("output") );
+    water_output = new DarcyFlowMHOutput(water, Record(prim_eq).val<Record>("output") );
 
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
@@ -241,7 +255,6 @@ void HC_ExplicitSequential::run_simulation()
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
-
     delete mesh;
     delete material_database;
     delete main_time_marks;
