@@ -108,8 +108,10 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 {
 	searchedElements.clear();
 	if (!leaf_) {
-		if (child_[0]->boundingBox_.intersection(boundingBox)) ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, elements_);
-		if (child_[1]->boundingBox_.intersection(boundingBox)) ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, elements_);
+		if (child_[0]->boundingBox_.intersection(boundingBox))
+		    ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, elements_);
+		if (child_[1]->boundingBox_.intersection(boundingBox))
+		    ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, elements_);
 	}
 
 	std:sort(searchedElements.begin(), searchedElements.end());

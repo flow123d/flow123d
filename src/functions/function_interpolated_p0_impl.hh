@@ -173,11 +173,15 @@ void FunctionInterpolatedP0<dim>::calculate_triangle_pressure(TTriangle &element
 	TIntersectionType iType;
 	TTetrahedron tetrahedron;
 
+	START_TIMER("find_elements_2D");
 	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements_);
+	END_TIMER("find_elements_2D");
 
 	elArea = element.GetArea();
 	pressure_ = 0.0;
 
+    START_TIMER("compute_pressure_2D");
+    SET_TIMER_SUBFRAMES("compute_pressure_2D", searchedElements_.size());
 	for (it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
 		int idx = *it;
@@ -192,6 +196,7 @@ void FunctionInterpolatedP0<dim>::calculate_triangle_pressure(TTriangle &element
 			//xprintf(Err, "Dimension of element must be 3!\n");
 		}
 	}
+	END_TIMER("compute_pressure_2D");
 }
 
 
@@ -204,11 +209,14 @@ void FunctionInterpolatedP0<dim>::calculate_abscissa_pressure(TAbscissa &element
 	TIntersectionType iType;
 	TTetrahedron tetrahedron;
 
+	START_TIMER("find_elements_1D");
 	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements_);
+	END_TIMER("find_elements_1D");
 
 	elLength = element.Length();
 	pressure_ = 0.0;
-
+	START_TIMER("compute_pressure_1D");
+	SET_TIMER_SUBFRAMES("compute_pressure_1D", searchedElements_.size());
 	for (it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
 		int idx = *it;
@@ -223,6 +231,7 @@ void FunctionInterpolatedP0<dim>::calculate_abscissa_pressure(TAbscissa &element
 			//xprintf(Err, "Dimension of element must be 3!\n");
 		}
 	}
+	END_TIMER("compute_pressure_1D");
 }
 
 

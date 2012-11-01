@@ -143,7 +143,7 @@ public:
     }
 
     void subframes(int info) {
-        sub_frames = info;
+        sub_frames += info;
     }
 
     /**
@@ -376,7 +376,7 @@ public:
  * The specified timer tag must represent the currently active timer.
  */
 #ifdef DEBUG_PROFILER
-#define SET_TIMER_SUBFRAMES(tag, subframes) Profiler::instance->setTimerSubframes(tag, info)
+#define SET_TIMER_SUBFRAMES(tag, subframes) Profiler::instance()->set_timer_subframes(tag, subframes)
 #else
 #define SET_TIMER_SUBFRAMES(tag,subfarmes)
 #endif

@@ -351,7 +351,7 @@ Timer::Timer(string tag, Timer* parent)
     start_time = 0;
     cumul_time = 0;
     count = 0;
-    sub_frames = -1;
+    sub_frames = 0;
 }
 
 void Timer::start(double time) {

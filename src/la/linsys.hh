@@ -190,6 +190,10 @@ public:
         return ( status == NONE );
     }
 
+    inline bool is_preallocated() {
+        return (status == INSERT || status == ADD);
+    }
+
     /// Output the system in the Matlab format possibly with given ordering.
     void view(std::ostream output_stream, int * output_mapping = NULL);
 

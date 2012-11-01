@@ -398,6 +398,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     struct Boundary *bcd;
     struct Neighbour *ngh;
 
+    bool fill_matrix = schur0->is_preallocated();
+    DBGMSG("fill_matrix: %d\n", fill_matrix);
     int el_row, side_row, edge_row;
     int tmp_rows[100];
     int i, i_loc, nsides, li, si;
@@ -420,7 +422,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides();
-        fe_values.update(ele);
+        if (fill_matrix) fe_values.update(ele);
 
         for (i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
@@ -437,7 +439,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 if (bc_function) {
                     START_TIMER("FIND INTERPOLATION");
 
-                    bc_function->set_element(bcd->get_bc_element_iter());
+                    if (fill_matrix) bc_function->set_element(bcd->get_bc_element_iter());
                     END_TIMER("FIND INTERPOLATION");
 
                     double value=bc_function->value(bcd->get_bc_element_iter()->centre());

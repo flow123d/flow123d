@@ -69,7 +69,7 @@ protected:
      * @param triangle Triangle which is tested if has intersection
      * @param searchedElements vector of ids of suspect elements
      */
-    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox *> meshElements);
+    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,const std::vector<BoundingBox *> &meshElements);
 
 private:
 	/**

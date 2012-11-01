@@ -67,16 +67,22 @@ void BIHNode::distribute_elements(std::vector<BoundingBox *> elements) {
 	((BIHNode *)child_[1])->split_distribute(elements);
 }
 
-void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox *> meshElements) {
+void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,const  std::vector<BoundingBox *> &meshElements) {
 	if (leaf_) {
+	    //START_TIMER("leaf");
 		for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
 			if (meshElements[*it]->intersection(boundingBox)) {
 				searchedElements.push_back(*it);
 			}
 		}
+		//END_TIMER("leaf");
 	} else {
-		if (child_[0]->boundingBox_.intersection(boundingBox)) ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, meshElements);
-		if (child_[1]->boundingBox_.intersection(boundingBox)) ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, meshElements);
+	    //START_TIMER("recursion");
+		if (child_[0]->boundingBox_.intersection(boundingBox))
+		    ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, meshElements);
+		if (child_[1]->boundingBox_.intersection(boundingBox))
+		    ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, meshElements);
+		//END_TIMER("recursion");
 	}
 }
 
