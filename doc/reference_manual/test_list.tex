@@ -1,0 +1,397 @@
+% Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+%
+% Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+% especially for academic research:
+% Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+%
+% This program is free software; you can redistribute it and/or modify it under the terms
+% of the GNU General Public License version 3 as published by the Free Software Foundation.
+%
+% This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+% without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% See the GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License along with this program; if not,
+% write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
+%
+%
+%
+% use PDFLatex to compile this
+%
+
+\documentclass[12pt,a4paper]{report}
+
+%%% remove comment delimiter ('%') and specify encoding parameter if required,
+%%% see TeX documentation for additional info (cp1252-Western,cp1251-Cyrillic)
+%\usepackage[cp1252]{inputenc}
+
+%%% remove comment delimiter ('%') and select language if required
+%\usepackage[english,spanish]{babel}
+%\usepackage{czech}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{graphicx} %[dvips]
+
+\usepackage{fancyvrb}	% extended verbatim environments (for examples of IO files)
+\usepackage{hyperref}   % hypertext capabilities, should by last package
+
+\hypersetup{backref,colorlinks=true}  %setup hyperef package
+
+\newcommand{\vari}[1]{{\it #1}}
+\newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
+\newenvironment{fileformat}{\tt\begin{flushleft}}{\end{flushleft}}
+%
+%% ini table environment
+\newcommand{\key}[1]{{\tt #1 }}
+\newcommand{\type}[1]{{\bf #1}}
+%
+\newenvironment{initable}[1]{%
+        \vspace{4ex}
+        \noindent
+        Section: \textbf{[#1]}\\
+        \begingroup
+        %%
+        %% internal commands of initable environment
+        %%
+       \newcommand{\br}{\hfill\break}
+        %%
+        \renewcommand{\arraystretch}{1.4}
+        \renewcommand{\tabcolsep}{2mm}
+        \small
+        \baselineskip 3ex
+        %\begin{longtable}{@{}lp{5cm}p{5cm}p{9cm}}%
+        \tabularx{\textwidth}{l>{\centering}p{2cm}>{\raggedright}p{2cm}>{\raggedright\arraybackslash}X}%
+        %\renewcommand{\\}{\\[3ex]}%
+        \hline\hline
+        KEY & TYPE & DEFAULT & DESCRIPTION \\%\endhead
+        \hline\hline
+}{%
+        %\end{longtable}
+        \endtabularx
+        \endgroup
+}
+
+%%%%%%%%%%%%%%%%%%%% specific math macros
+\def\prtl{\partial}
+\def\vc#1{\mathbf{\boldsymbol{#1}}}     % vector
+\def\tn#1{{\mathbb{#1}}}    % tensor
+\def\abs#1{\lvert#1\rvert}
+\def\Abs#1{\bigl\lvert#1\bigr\rvert}
+\def\div{{\rm div}}
+\def\Lapl{\Delta}
+\def\grad{\nabla}
+
+%% ini_table members
+
+%%% remove comment delimiter ('%') and specify parameters if required
+%\usepackage[dvips]{graphics}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DOCUMENT
+%% set specific page layout
+\addtolength{\textwidth}{2cm}
+\addtolength{\hoffset}{-1.5cm}
+\addtolength{\textheight}{4cm}
+\addtolength{\voffset}{-2.5cm}
+\begin{document}
+
+%%% remove comment delimiter ('%') and select language if required
+%\selectlanguage{spanish} 
+\thispagestyle{empty}
+\begin{center}
+\noindent 
+\textbf{\LARGE{
+  Technical university of Liberec
+}}
+
+\vspace{2ex}
+\textbf{\LARGE{
+  Faculty of mechatronics, informatics\\
+  and interdisciplinary studies
+}}
+
+\vspace{160pt}
+
+\textbf{\Huge{
+FLOW123D - List of tests
+}}
+
+\vspace{1cm}
+\textbf{\Large{
+version 1.7.0
+}}
+
+\vspace{1cm}
+
+\textbf{\Large{
+Brief description of automatic tests.
+}}
+
+
+\vspace{7cm}
+
+\noindent \textbf{\Large{Liberec, november 2012}}
+
+\vspace{1cm}
+
+
+\end{center}
+\noindent 
+
+\newpage
+
+This is a list of automatic tests that are being computed after every change that is made and commited to the main development branch. These tests help to check the functions of the software and provides developers feed-back that new changes did not corrupt some functions developed earlier. Other purpose is to give the users examples of problems that can be solved with Flow123d and to show them how to implement them. 
+
+%=====================================================
+%                   TEST  1
+%=====================================================
+\begin{itemize}
+
+\item \textbf{Test 01 -- Steady flow}
+
+This test considers steady Darcy flow in a cube domain which is cutted by 2D fractures which are further separated by a~1D channel in their cross section. The multidimensional connections between 1D, 2D and 3D elements are involved in the computation. Dirichlet boundary condition is prescribed for flow.
+
+There are only simple Dirichlet boundary conditions. Pressure gradient in the direction from one corner of the cube to the oposite corner is applied on all boundary faces of all dimensions.
+
+This test verifies solving steady Darcy flow by mixed hybrid method. There are different dimensional connections which are 2D-3D connection between the cube and the flat fractures and 1D-2D connection between the 1D channel and the two flat fractures in their cross section.
+
+
+%=====================================================
+%                   TEST  2
+%=====================================================
+
+\item \textbf{Test 02 -- Steady flow in 2D and transport}
+
+This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, transport of two substances with zero initial condition for concentration. 
+There are acutally two different cases computed in this test. Dual porosity and sorption features in explicit transport. Dispersion is defined in implicit transport.
+
+The coefficient of diffusive transfer through the fractures (means between the fracture and the surrounding material) is set to zero so the substance can be transported only along the fractures.
+
+The domain is two-dimensional slice through a part of a relief which is cutted by several one-dimensional fractures.
+
+Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
+
+Dirichlet boundary condition for transport is prescribed on both sides as it is for flow boundary condition. The value of concentration is 1.0 for both substances. Initial concentration of the substances is zero in the whole area. 
+
+This test verifies explicitly computed transport considering only convection with dual porosity and sorption and implicitly computed transport considering both convection and dispersion. Transport through 1D-2D element connections is computed in addition to the first test.
+
+
+
+%=====================================================
+%                   TEST  3
+%=====================================================
+
+\item \textbf{Test 03 -- Steady flow in 2D and transport}
+
+This test differs from the previous one only by simpler structure of its geometry. There is a plane which is cutted by fork shaped fracture in which the conductivity is 10 times higher than in the plane. Other parameters are the same as in test 3.
+
+It shows how the substace flows in the main fracture and divides in two other fractures. The substance spreads in the fractures much faster in comparision to transport in the plane.
+
+
+%=====================================================
+%                   TEST  8
+%=====================================================
+
+\item \textbf{Test 08 -- Steady Darcy flow with source}
+
+This test is aimed at verifying steady Darcy flow with source which is prescribed by space function formula. This formula is processed by the function parser.
+
+We solve Laplace equation $-\Lapl{}u = f$ where source $f$ is prescribed by function: $f = 2(1-y^2) + 2(1-x^2)$. We can easily prove that the analytic solution is $u = (1-x^2)(1-y^2)$ by replacing it in the Laplace equation.
+
+The domain is a square with opposite corner vertices $[-1,-1]$ and $[1,1]$. Zero dirichlet boundary condition is prescribed on all boundaries -- along the circumference of the square.
+
+This test mainly verifies that the function parser works properly. The source formula to be parsed is given in the key \verb0source_formula0. One is going to be able define other input data like boundary condition in near future. The solution (pressure) is a paraboloid with a top in $[0,0,1]$.
+
+
+%=====================================================
+%                   TEST  10
+%=====================================================
+
+\item \textbf{Test 10 -- Unsteady flow in 2D}
+
+Unsteady flow is simulated in this test. The domain is a square with different Dirichlet boundary condition for flow prescribed on two opposite sides. No transport is involved.
+This test verifies two different numerical methods so the problem is computed by both mixed hybrid and lumped mixed hybrid method.
+
+
+%=====================================================
+%                   TEST  11
+%=====================================================
+
+\item \textbf{Test 11 -- Radioactive decay chain with more branches}
+
+8 isotopes are members of considered decay chain with three branches. Transport boundary conditions does not matter because zero presure gradient is considered. Final concentrations of all isotopes except C decrease to zero after 20 time steps, whereas C concentration grows to 0.36.
+\[
+ E\xrightarrow{}D\xrightarrow{}B
+ \quad
+ \begin{matrix}
+    0.2B\xrightarrow{}A & A\xrightarrow{}G \\
+    0.6B\xrightarrow{}H & H\xrightarrow{}G \\
+    0.2B\xrightarrow{}G &\\
+ \end{matrix}
+ \quad
+ G\xrightarrow{}C 
+\]
+
+Initial concentrations are summarized in the table below:
+\begin{center}
+  \begin{tabular}[c]{|l|c|c|c|c|c|c|c|}
+      \hline
+      $c$ & $A_0$ & $B_0$  & $C_0$ & $D_0$ & $E_0$ & $F_0$ & $G_0$ \\[4pt]
+      $value$ & $0.01$ & $0.02$ & $0.03$ & $0.04$ & $0.05$ & $0.06$ & $0.07$\\[4pt]
+      \hline
+  \end{tabular}
+\end{center}
+
+Chemical module Sem-Chem was also involved in this test but it is not functional in the new version being developed. The test must be updated. The old test considered two equations -- chemical kinetics (Trichlorethen dechloration) and chemical equilibrium of $H^+$ and $OH^-$ ions.
+\begin{eqnarray}
+  2MnO4^- + C_2Cl_3H \longrightarrow 3Cl^- + 2CO_2 + 2MnO_2 + H^+\nonumber\\
+  H_2O \longleftrightarrow H^+ + OH^-\nonumber
+\end{eqnarray}
+Both chemical reactions were simulated in combination with transport (column experiment).
+
+
+%=====================================================
+%                   TEST  12
+%=====================================================
+
+\item \textbf{Test 12 -- Radioactive decay}
+
+There are actually two tests of the radioactive decay. The first one considers first order reaction of two isotopes determined by kinetic constant and the other one describes radioactive decay chain of three isotopes.
+
+The domain is a prism which base is a right-angled triangle. There are then only three tetrahedron elements in the mesh.
+
+There are two Dirichlet boundary conditions prescribed.
+
+\begin{itemize}
+\item \textbf{First order reaction determined by kinetic constant}
+
+The only linear reaction between D and F substances.
+\[
+D\xrightarrow{k}F
+\]
+
+\begin{itemize}
+  \item Substances: 6 substances to be transported -- A, B, C, D, E, F
+  \item Kinetic constant: $k = 0.277258872$
+\end{itemize}
+
+
+\item \textbf{Radioactive decay chain}
+
+The considered radioctive decay chain is:
+\[
+ D\xrightarrow{t_{1/2,D}}F\xrightarrow{t_{1/2,F}}B
+\]
+
+\begin{itemize}
+  \item Substances: 6 substances to be transported -- A, B, C, D, E, F
+  \item Decay half-lives: $t_{1/2,D} = t_{1/2,F} = 2.5$
+\end{itemize}
+\end{itemize}
+
+This test verifies the computation of narrow radioactive decay chains. Both ways of defining kinematic behaviour of the reactions are tested -- kinematic constant, half-life.
+
+%=====================================================
+%                   TEST  13
+%=====================================================
+
+\item \textbf{Test 13 -- Solute mixing on the edge}
+
+This test realizes mixing of substances on the edges of planes and also does quantitative test on a trivial transport problem. The problem is computed with both explicit and implicit transport.
+
+The domain is a fork where the main branch with the incoming solute is in the $xy$ plane. Then it is divided into two other branches, one with positive and the another with negative $z$ coordinate. There are different conductivities in each branch.
+
+
+%=====================================================
+%                   TEST  14
+%=====================================================
+
+\item \textbf{Test 14 -- Variable transport boundary condition}
+
+There is considered a time variable boundary condition for transport in this test. Steady flow with constant velocity field is caused by a pressure gradient from one side of a 2D strip to another. Dirichlet boundary condition for transport evolving in time is prescribed on the right side. 
+
+Two pulses of nonzero concentration are applied on the boundary. The changes of the boundary condition at specified times are shown in the following table:
+
+\begin{center}
+  \begin{tabular}{|l|c|c|c|c|c|}
+    \hline
+    time & $0$ & $1$ & $3$ & $6$ & $7$\\
+    concentration & $0$ & $20$ & $0$ & $40$ & $0$\\
+    \hline
+  \end{tabular}
+\end{center}
+
+
+%=====================================================
+%                   TEST  15
+%=====================================================
+
+\item \textbf{Test 15 -- Unsteady flow with transport}
+
+This test involves unsteady flow computed by lumped hybrid method with both explicit and implicit transport.
+ 
+The domain is a 2D strip with dimensions $1.0$ x $16.0$. Zero Dirichlet boundary for flow is prescribed for $x=0$, zero Neumann boundary is elsewhere. Initial pressure is zero everywhere. The source is prescribed with function $f=-x$ along the strip.
+
+Dirichlet boundary condition for transport is prescribed for $x=0$ at beginning of the time interval.
+
+The test is similar to the test 10 but here in addition the computation of a transport in an unsteady flow field is verified.
+
+%=====================================================
+%                   TEST  16
+%=====================================================
+
+\item \textbf{Test 16 -- Substance concentration source in transport}
+
+This test includes a source of concentration of a substance. The domain is a 2D strip in vertical direction. There is a steady flow with constant velocity in the vertical direction. Two sources are situated on two elements at the top of the strip and the substance is transported down along the strip. The concentration values of the sources are defined in the \verb0tso0 input file.
+
+
+%=====================================================
+%                   TEST  17
+%=====================================================
+
+\item \textbf{Test 17 -- Radioactive decay -- Pade approximation}
+
+This test solves radioactive decay chain of five isotopes using Pade approximation.
+The considered radioctive decay chain is:
+\[
+ A\xrightarrow{t_{1/2,A}}B\xrightarrow{t_{1/2,B}}C\xrightarrow{t_{1/2,C}}D\xrightarrow{t_{1/2,D}}E
+\]
+
+The geometry and material and transport parameters are the same as in test 12.
+
+\begin{itemize}
+  \item Substances: 5 substances to be transported -- A, B, C, D, E
+  \item Polynomial degree of the nominator and the denominator of Pade approximation is~3.
+  \item Decay half-lives:
+    \begin{tabular}[c]{|c|c|c|c|}
+      \hline
+      $t_{1/2,A}$ & $t_{1/2,B}$  & $t_{1/2,C}$ & $t_{1/2,D}$\\[4pt]
+      $1.3863$ & $2.3105$ & $1.5403$ & $1.1552$\\[4pt]
+      \hline
+    \end{tabular}
+\end{itemize}
+
+
+
+%=====================================================
+%                   TEST  18
+%=====================================================
+
+\item \textbf{Test 18 -- Diffusion through fractures}
+
+This test is aimed at transport caused just by diffusion. 
+
+There is a triangular domain with zero pressure everywhere so no flow is present. Triangular element with high concentration of a substance lies in the middle of the domain and its sides neighbour with fractures.
+The coeffients of molecular diffusion and diffusive transfer through fractures are the parameters of the implicit transport and are set in the configuration file.
+The substance is at the end of several time steps diffused across the whole domain.
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\end{document}
+
+

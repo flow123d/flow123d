@@ -36,9 +36,14 @@
 \chapter{Tests}
 \label{sec:tests}
 
+
+%=====================================================
+%                   TEST  1
+%=====================================================
+
 \section{Test 01 -- Steady flow}
 \label{sec:test01}
-This test considers steady Darcy flow in a cube domain which is cutted by fractures so the multidimensional connections is involved in the computation. Dirichlet boundary condition is defined for flow.
+This test considers steady Darcy flow in a cube domain which is cutted by 2D fractures so the multidimensional connections are involved in the computation. Dirichlet boundary condition is defined for flow.
 
 \subsection*{Geometry}
 A cube with its side 1.0~$L$ is cutted by two diagonal 2D fractures which are further separated by a~1D channel in their cross section.
@@ -63,22 +68,24 @@ There are only simple Dirichlet boundary conditions. Pressure gradient in direct
 \subsection*{Verification}
 This test verifies solving steady Darcy flow by mixed hybrid method. There are different dimensional connections which are 2D-3D connection between the cube and the flat fractures and 1D-2D connection between the 1D channel and the two flat fractures in their crossection.
 
-After Schur complements are computed the set of linear equations is solved by CG solver used from PETSC library.
-
-
-
 %- parallel sover using PCASM - overlaping domain decomposition
 
 %I don't so...
 %- input/output of GMSH when intput mesh has nonstandard numbering of nodes (0,1,3,...)
 
 
+%=====================================================
+%                   TEST  2
+%=====================================================
+
 \section{Test 02 -- Steady flow in 2D and transport}
 \label{sec:test02}
-This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, transport of two substances without initial condition for concentration. Other features are used in explicit transport -- convection, dual porosity and sorption; in implicit transport it is convection and dispersion.
+This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, transport of two substances with zero initial condition for concentration. Other features are used in explicit transport -- convection, dual porosity and sorption; in implicit transport it is convection and dispersion.
+
+The coefficient of diffusive transfer through the fractures (means between the fracture and the surrounding material) is set to zero so the substance can be transported only along the fractures.
 
 \subsection*{Geometry}
-The domain is two-dimensional slice through a part of a relief which involves several one-dimensional cracks.
+The domain is two-dimensional slice through a part of a relief which involves several one-dimensional fractures.
 
 Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
 
@@ -105,7 +112,7 @@ Dirichlet boundary condition for transport is prescribed on both sides as it is 
       \item nonequilibrium coefficient of both substances $0.01$
     \end{itemize}
   \item \textbf{Sorption fraction:} The sorption fraction parameters are for both materials equal and set to $SF=0.5$.
-  \item \textbf{Diffusivity coefficient:} These are not set so default values are applied 
+  \item \textbf{Diffusivity coefficients:} These are not set so default values are applied 
 	$\sigma=0$, $\alpha_l=0$, $\alpha_t=0$, $d_m=1e-6$.
 \end{itemize}
 
@@ -117,6 +124,10 @@ This test verifies explicitly computed transport considering only convection wit
 %-implicit transport (convection, dispersion)
 %-multidimensional connection (1D-2D)
 
+
+%=====================================================
+%                   TEST  16
+%=====================================================
 
 \section{Test 03 -- Steady flow in 2D and transport}
 \label{sec:test03}
@@ -135,6 +146,10 @@ Parameters are the same as in test 02.
 %-implicit transport (convection, dispersion)
 %-multidimensional connection (1D-2D)
 
+
+%=====================================================
+%                   TEST  8
+%=====================================================
 
 \section{Test 08 -- Steady Darcy flow with source}
 \label{sec:test08}
@@ -156,6 +171,58 @@ The domain is a square with opposite corner points $[-1,-1]$ and $[1,1]$. Zero d
 \subsection*{Verification}
 As it was mentioned above, this test mainly verifies that the function parser works properly. The source formula to be parsed is given in the key \verb0source_formula0. The solution (pressure) is a paraboloid with a top in $[0,0,1]$.
 
+
+%=====================================================
+%                   TEST  10
+%=====================================================
+
+\section{Test 10 -- Unsteady flow in 2D}
+Unsteady flow in 2D domain is computed in this test by both mixed hybrid and lumped mixed hybrid method.
+
+\subsection*{Geometry}
+
+\subsection*{Parameters}
+
+\subsection*{Verification}
+
+
+%=====================================================
+%                   TEST  11
+%=====================================================
+
+\section{Test 11 -- Radioactive decay chain with more branches}
+8 isotopes are members of considered decay chain with three branches. Transport boundary conditions does not matter because zero presure gradient is considered. Final concentrations of all isotopes except C decrease to zero after 20 time steps, whereas C concentration grows to 0.36.
+\[
+ E\xrightarrow{}D\xrightarrow{}B
+ \quad
+ \begin{matrix}
+    0.2B\xrightarrow{}A & A\xrightarrow{}G \\
+    0.6B\xrightarrow{}H & H\xrightarrow{}G \\
+    0.2B\xrightarrow{}G &\\
+ \end{matrix}
+ \quad
+ G\xrightarrow{}C 
+\]
+
+\subsection*{Geometry}
+
+\subsection*{Parameters}
+Initial concentrations are summarized in the table below:
+\begin{center}
+  \begin{tabular}[c]{|l|c|c|c|c|c|c|c|}
+      \hline
+      $c$ & $A_0$ & $B_0$  & $C_0$ & $D_0$ & $E_0$ & $F_0$ & $G_0$ \\[4pt]
+      $value$ & $0.01$ & $0.02$ & $0.03$ & $0.04$ & $0.05$ & $0.06$ & $0.07$\\[4pt]
+      \hline
+  \end{tabular}
+\end{center}
+
+\subsection*{Verification}
+
+
+%=====================================================
+%                   TEST  12
+%=====================================================
 
 \section{Test 12 -- Radioactive decay}
 There are actually two tests of the radioactive decay. The first one considers first order reaction of two isotopes determined by kinetic constant and the other one describes radioactive decay chain of three isotopes.
@@ -215,6 +282,86 @@ The considered radioctive decay chain is:
 % --- Transport boundary conditions does not matter because zero presure gradient is considered.
 % --- Final concentrations of all isotopes except A, C, E do not change. Concentrations of D and B decrease to 0.004 and 0.012 respectively. Concentration of B increase to 0.1 in 20 time steps.
 
+%=====================================================
+%                   TEST  13
+%=====================================================
+
+\section{Test 13 -- Solute mixing on the edge}
+This test realizes mixing of substances on the edges of planes and also does quantitative test on a trivial transport problem. The problem is computed with both explicit and implicit transport.
+
+\subsection*{Geometry}
+The domain is a fork where the main branch with the incoming solute is in the $xy$ plane. Then it is divided into two other branches, one with positive and the another with negative $z$ coordinate. There are different conductivities in each branch.
+
+\subsection*{Parameters}
+
+\subsection*{Verification}
+
+
+%=====================================================
+%                   TEST  14
+%=====================================================
+
+\section{Test 14 -- Variable transport boundary condition}
+There is considered a time variable boundary condition for transport in this test. Steady flow with constant velocity is caused by a pressure gradient from one side of a 2D strip to another. Dirichlet boundary condition for transport evolving in time is prescribed on the right side. 
+
+Two pulses of nonzero concentration are applied on the boundary. The changes of the boundary condition at specified times are shown in the following table:
+
+\begin{center}
+  \begin{tabular}{|l|c|c|c|c|c|}
+    \hline
+    time & $0$ & $1$ & $3$ & $6$ & $7$\\
+    concentration & $0$ & $20$ & $0$ & $40$ & $0$\\
+    \hline
+  \end{tabular}
+\end{center}
+
+\subsection*{Geometry}
+
+
+\subsection*{Parameters}
+
+\subsection*{Verification}
+
+
+
+%=====================================================
+%                   TEST  15
+%=====================================================
+
+\section{Test 15 -- Unsteady flow with transport}
+This test involves unsteady flow computed by lumped hybrid method with both explicit and implicit transport.
+ 
+The domain is a 2D strip with dimensions $1.0$x$16.0$. Zero Dirichlet boundary for flow is prescribed for $x=0$, zero Neumann boundary is elsewhere. Initial pressure is zero everywhere. The source is prescribed with function $f=-x$ along the strip.
+
+Dirichlet boundary condition for transport is prescribed for $x=0$ at beginning of the time interval.
+
+\subsection*{Geometry}
+
+
+\subsection*{Parameters}
+
+\subsection*{Verification}
+
+
+%=====================================================
+%                   TEST  16
+%=====================================================
+
+\section{Test 16 -- Substance concentration source in transport}
+This test include a source of concentration of a substance. The domain is a 2D strip in vertical direction. There is a steady flow with constant velocity in the vertical direction. Two sources are situated on two elements at the top of the strip and the substance is transported down along the strip. The concentration values of the sources are defined in the \verb0tso0 input file.
+
+\subsection*{Geometry}
+
+
+\subsection*{Parameters}
+
+\subsection*{Verification}
+
+
+
+%=====================================================
+%                   TEST  17
+%=====================================================
 
 \section{Test 17 -- Radioactive decay -- Pade approximation}
 This test solves radioactive decay chain of five isotopes using Pade approximation.
@@ -242,6 +389,22 @@ The geometry and material and transport parameters are the same as in test 12.
 
 \subsection*{Verification}
 
+
+%=====================================================
+%                   TEST  18
+%=====================================================
+
+\section{Test 18 -- Diffusion through fractures}
+This test is aimed at transport caused just by diffusion. 
+
+There is a triangular domain with zero pressure everywhere so no flow is present. Triangular element with high concentration of a substance lies in the middle of the domain and its sides neighbour with fractures.
+The coeffients of molecular diffusion and diffusive transfer through fractures are the parameters of the implicit transport and are set in the configuration file.
+
+\subsection*{Geometry}
+
+\subsection*{Parameters}
+
+\subsection*{Verification}
 
 =====================  PREPARING  ====================
 \section{Test 20 -- Dirichlet boundary condition}
