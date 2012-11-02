@@ -7,35 +7,46 @@ Prerequisities
 ==============
 
 If you are running Windows, you have to install 'cygwin' for emulation of POSIX unix environment.
+Then all work has to be done in the directories under cygwin, e.g "C:\cygwin\home\user\".
 
 For build you will need some developement software packages. On Windows use cygwin to install them. 
 On Linux use package manager of your distribution ('apt-get' for Ubuntu and Debian, 'yum' for RedHat and Centos)
 
 requested packages are: 
 
-* gcc, gcc4-g++, gcc4-fortran    C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
-* python, perl, cmake (>2.8)   Scripting languages and building tool
-* make, cmake, patch, subversion  
-* boost                 C++ library 
-  namely you need developement version of the library "Program Options",
-  in KUbuntu this is in separate package: libboost-program-options-dev
-* need to install openssh for MPICH
+* gcc, gcc4-g++, gcc4-fortran                   C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
+* python, perl, cmake (>2.8)                    Scripting languages 
+* make, cmake (>2.8), patch, subversion         Building tools
+* libboost                                      General purpose C++ library 
+  ( Flow123d can install Boost automatically during configuration, but it may take long.)
+  
+  Namely you need development version of the sub-libraries "Program Options" and "Serialize"
+  in KUbuntu these are in separate packages: libboost-program-options-dev, libboost-serialize-dev
+
+
+Under Cygwin you also need to install:  
+
+* openssh (for MPICH)
 * some editor that can save Unix like text files (notepad++, vim under cygwin) 
 
+optionaly you may be interested in:
 
-optionaly you may want also:
+* doxygen, graphviz     source generated documentation and its support tool for diagrams 
+                        ( GraphViz neni soucasti CygWin, je treba nainstalovat rucne )
+* eclipse + CDT         (C/C++ developement toolkit)   
+  or
+  KDevelop
+* kdesvn                graphical SVN client  
 
-* doxygen, graphviz     source generated documentation and its supprot tool for diagrams.
-* eclipse + CDT (C/C++ developement toolkit)   
 
-You can find complete set of usefull libraries compatible with Flow123d on address:
+Other libraries that can be possibly useful for developers can be found on address:
 
-http://dev.nti.tul.cz/jan.brezina/flow_libs (check)
+http://dev.nti.tul.cz/trac/flow123d/wiki/Developement
+http://dev.nti.tul.cz/trac/flow123d/wiki/Software
 
 ==============================
 Step 1 - Install PETSc Library
 ==============================
-
 Flow versions 1.7.x depends on the PETSC library 3.2.0-xx.
 You can download this version from:
 
@@ -85,17 +96,53 @@ Alternatives and Troubleshooting
 ================================
 
 ** WINDOWS: If you use a shell script for PETSC configuration under cygwin, always check if you use UNIX line ends.
-   It can be specified in the notepad of Windows 7.
+   It can be specified in the notepad of Windows 7 (WHERE ?)
 
-** If you want only serial version of PETSc (and Flow123d)
-add --with-mpi=0 to the configure command line.
-You can have several PETSC configuration using different PETSC_ARCH.
+  
+
+  
+** For some Windows versions it may be necessary to set in configuration of PETSC
+    --with-timer=nt 
+
+** You may get strange errors during configuration of PETSc, like 
+
+    C:\cygwin\bin\python.exe: *** unable to remap C:\cygwin\bin\cygssl.dll to same address as parent(0xDF0000) != 0xE00000
+
+   or other errors usually related to DLL conflicts.
+   (see http://www.tishler.net/jason/software/rebase/rebase-2.4.2.README)
+   To fix DLL libraries you should perform:
+
+    1. shutdown all Cygwin processes and services
+    2. start 'ash' (do not use bash or rxvt)
+    3. execute '/usr/bin/rebaseall' (in the ash window)
+
+   Possible problem with 'rebase':
+    /usr/lib/cygicudata.dll: skipped because nonexist
+    .
+    .
+    .
+    FixImage (/usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgcc_s_sjlj-1.dll) failed with last error = 13
+
+   Solution (ATTENTION, depends on Cygwin version): 
+    add following to line 110 in the rebase script:
+    -e '/\/sys-root\/mingw\/bin/d'
+
+
+** For some Windows versions it may be necessary to set in configuration of PETSC
+   (TODO: symptoms of this issue ?)
+   
+    --with-timer=nt 
 
 ** By default PETSC will create dynamically linked libraries, which can be shared be more applications. But on some systems 
-(in particular we have problems under Windows) this doesn't work, so one is forced to turn off dynamic linking by:
+  (in particular we have problems under Windows) this doesn't work, so one is forced to turn off dynamic linking by:
 
---with-shared=0
+  --with-shared=0
 
+** If you want only serial version of PETSc (and Flow123d)
+  add --with-mpi=0 to the configure command line.
+
+** You can have several PETSC configuration using different PETSC_ARCH.
+  
 ** PETSC use BLAS and few LAPACK functions for its local vector and matrix operations. The speed of BLAS and LAPACK have dramatic impact 
    on the overall performance. There is a sophisticated implementation of BLAS called ATLAS. ATLAS performs extensive set of performance tests on
    your hardware then make an optimized implementation of  BLAS code for you. According to our measurements the Flow123d is about two times faster
@@ -115,15 +162,15 @@ You can have several PETSC configuration using different PETSC_ARCH.
    as a part of Flow123d sources.
    See. HAVE_ATTLAS_ONLY_LAPACK in ./makefile.in
 
-** PETSC provides interface to many usefull packages. You can install them 
-adding further configure options:
---download-superlu=yes         # parallel direct solver
---download-hypre=yes           # Boomer algebraic multigrid preconditioner, many preconditioners
---download-spools=yes          # parallel direc solver
---download-blacs=ifneeded      # needed by MUMPS
---download-scalapack=ifneeded  # needed by MUMPS
---download-mumps=yes           # parallel direct solver
---download-umfpack=yes         # MATLAB solver
+** PETSC provides interface to many useful packages. You can install them 
+  adding further configure options:
+  --download-superlu=yes         # parallel direct solver
+  --download-hypre=yes           # Boomer algebraic multigrid preconditioner, many preconditioners
+  --download-spools=yes          # parallel direc solver
+  --download-blacs=ifneeded      # needed by MUMPS
+  --download-scalapack=ifneeded  # needed by MUMPS
+  --download-mumps=yes           # parallel direct solver
+  --download-umfpack=yes         # MATLAB solver
 
 For further information about use of these packages see:
 
@@ -137,22 +184,17 @@ http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/M
 
 http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-dev/docs/manualpages/PC/PCHYPRE.html
 
-=========================
- Step 2 - Armadillo
-=========================
-
-Flow123d use Armadillo library for calculations with small and fixed size vectors and matrices.
-The library in compatible version is part of the source in directory third_party and is configured and build 
-automatically.
 
 =========================
- Step 4 - Compile Flow123
+ Step 2 - Compile Flow123
 =========================
 
 Get appropriate branch from repository, "trunk" is main developement branch. In "tag" you can find
-copies of stable versions.
+copies of stable versions. Using the standard SVN client:
 
-Copy file  makefile.in.cmake.template to makefile.in.cm	ake:
+> svn checkout https://dev.nti.tul.cz/repos/flow123d/trunk
+
+Copy file  makefile.in.cmake.template to makefile.in.cmake:
 > cp makefile.in.cmake.template makefile.in.cmake
 
 Edit file makefile.in.cmake, set PETSC_DIR and PETSC_ARCH variables.
@@ -172,7 +214,7 @@ set(CC_FLAGS "-O3 -DNODEBUG -pg ")
 Then run the compilation by:
 > make all
 
-This should run configuration and then build process. If the configuration fails and you have to correct 
+This should run configuration and then build process. If the configuration fails and you need to correct 
 your makefile.in.cmake or other system setting you have to cleanup all files generated by unsuccessful
 cmake configuration by:
 
@@ -180,7 +222,25 @@ cmake configuration by:
 
 Try this every if your build doesn't work and you don't know why.
 
+** Petsc detection problem.
+
+   CMake try to detect type of your PETSc installation and then test it
+   by compiling and running simple program. However, this can fail if the 
+   program has to be started under 'mpiexec'. In such a case, please, set:
+     
+   set (PETSC_EXECUTABLE_RUNS YES)
+   
+   in your makefile.in.cmake file, and perform: make clean-all; make all
+
+   
+===================================================
+
 For further information about program usage see documentation in "doc/" in particular 
 reference manual "doc/flow_doc". 
 
 
+
+=============================================================
+Tips for Eclipse
+=============================================================
+SVN pro Eclipse:   Help->Install new software-> Add: Subversive - http://subclipse.tigris.org/update_1.6.x
