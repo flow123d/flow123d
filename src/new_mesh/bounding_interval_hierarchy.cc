@@ -38,10 +38,8 @@ BoundingIntevalHierachy::~BoundingIntevalHierachy() {
 	/*if (boundingBox_ != NULL) {
 		delete boundingBox_;
 	}*/
-	if (child_[0] != NULL) {
+	if (!leaf_) {
 		delete child_[0];
-	}
-	if (child_[1] != NULL) {
 		delete child_[1];
 	}
 }
@@ -83,10 +81,10 @@ int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<Bounding
 
 
 
-void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox *> elements) {
-	if (get_element_count()>area_element_limit_) {
-		split_area(elements);
-		if (!leaf_) distribute_elements(elements);
+void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox *> elements, int areaElementLimit) {
+	if (get_element_count() > areaElementLimit) {
+		split_area(elements, areaElementLimit);
+		if (!leaf_) distribute_elements(elements, areaElementLimit);
 	} else {
 		leaf_ = true;
 	}
@@ -94,8 +92,8 @@ void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox *> elemen
 
 
 
-void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
-	int medianStep = get_element_count() / area_median_count;
+void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements, int areaElementLimit) {
+	int elementCount = get_element_count();
 	int medianPosition = (int)(area_median_count/2);
 	double median;
 	std:vector<double> coors;
@@ -120,7 +118,7 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 	//select adepts at median
 	coors.resize(area_median_count);
 	for (int i=0; i<area_median_count; i++) {
-		coors[i] = get_median_coord(elements, i * medianStep);
+		coors[i] = get_median_coord(elements, rand() % elementCount);
 	}
 
 	//select median of the adepts
@@ -139,7 +137,7 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox *> elements) {
 				maxCoor(j) = (j==splitCoor_ && i==0) ? median : boundingBox_.get_max()(j);
 			}
 
-			child_[i] = new BIHNode(minCoor, maxCoor, splitCoor_, depth_+1, area_element_limit_);
+			child_[i] = new BIHNode(minCoor, maxCoor, splitCoor_, depth_+1, areaElementLimit);
 		}
 	}
 }

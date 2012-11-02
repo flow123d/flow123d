@@ -28,19 +28,21 @@
 #include "new_mesh/bih_tree.hh"
 #include "new_mesh/bih_node.hh"
 
+#define DEBUG
+
 BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) : BoundingIntevalHierachy() {
 	xprintf(Msg, " - BIHTree->BIHTree(Mesh, unsigned int)\n");
 
 	mesh_ = mesh;
-	if (areaElementLimit == 0) area_element_limit_ = 20;
-	else area_element_limit_ = areaElementLimit;
+	if (areaElementLimit == 0) areaElementLimit = 20;
+	//area_element_limit_ = areaElementLimit;
 	leaf_ = false;
 	depth_ = 0;
 
 	bounding_box();
 	element_boxes();
-	split_area(elements_);
-	distribute_elements(elements_);
+	split_area(elements_, areaElementLimit);
+	distribute_elements(elements_, areaElementLimit);
 
 	xprintf(Msg, " - Tree created\n");
 }
@@ -86,7 +88,7 @@ void BIHTree::sum_elements_in_leaves(int &sum) {
 }
 
 
-void BIHTree::distribute_elements(std::vector<BoundingBox *> elements)
+void BIHTree::distribute_elements(std::vector<BoundingBox *> elements, int areaElementLimit)
 {
 	int index=0;
 	for (std::vector<BoundingBox *>::iterator it = elements_.begin(); it!=elements_.end(); it++) {
@@ -98,8 +100,8 @@ void BIHTree::distribute_elements(std::vector<BoundingBox *> elements)
 		++index;
 	}
 
-	((BIHNode *)child_[0])->split_distribute(elements_);
-	((BIHNode *)child_[1])->split_distribute(elements_);
+	((BIHNode *)child_[0])->split_distribute(elements_, areaElementLimit);
+	((BIHNode *)child_[1])->split_distribute(elements_, areaElementLimit);
 }
 
 
@@ -156,11 +158,17 @@ void BIHTree::element_boxes() {
 
 
 
-void BIHTree::get_tree_depth(int &maxDepth, bool writeAllDepth) {
+void BIHTree::get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth) {
 	maxDepth = 0;
+	minDepth = 32767;
+	sumDepth = 0;
+	leavesCount = 0;
 	if (writeAllDepth) xprintf(Msg, " - Depth in leaf nodes:\n");
-	((BIHNode *)child_[0])->get_tree_depth(maxDepth, writeAllDepth);
-	((BIHNode *)child_[1])->get_tree_depth(maxDepth, writeAllDepth);
+	((BIHNode *)child_[0])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
+	((BIHNode *)child_[1])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
 	if (writeAllDepth) xprintf(Msg, "\n");
-	xprintf(Msg, " - Maximal depth of tree : %d\n", maxDepth);
+	xprintf(Msg, " - Depths of tree - \n");
+	xprintf(Msg, "   - Maximal : %d\n", maxDepth);
+	xprintf(Msg, "   - Minimal : %d\n", minDepth);
+	xprintf(Msg, "   - Average : %f\n", ((double) sumDepth / (double) leavesCount));
 }

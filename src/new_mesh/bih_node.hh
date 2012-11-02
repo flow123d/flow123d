@@ -51,14 +51,14 @@ public:
     void sum_elements_in_leaves(int &sum);
 
     /// Overrides BoundingIntevalHierachy::get_tree_depth
-    void get_tree_depth(int &maxDepth, bool writeAllDepth);
+    void get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth);
 
 protected:
 
     /**
      * distribute elements into subareas
      */
-    void distribute_elements(std::vector<BoundingBox *> elements);
+    void distribute_elements(std::vector<BoundingBox *> elements, int areaElementLimit);
 
     /// get value of coordination for calculate a median
     double get_median_coord(std::vector<BoundingBox *> elements, int index);

@@ -34,7 +34,6 @@ BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int split
 
 	leaf_ = false;
 	boundingBox_.set_bounds(minCoordinates, maxCoordinates);
-	area_element_limit_ = areaElementLimit;
 	splitCoor_ = splitCoor;
 	depth_ = depth;
 }
@@ -52,7 +51,7 @@ double BIHNode::get_median_coord(std::vector<BoundingBox *> elements, int index)
 	return elements[boundingBoxIndex]->get_center()(splitCoor_);
 }
 
-void BIHNode::distribute_elements(std::vector<BoundingBox *> elements) {
+void BIHNode::distribute_elements(std::vector<BoundingBox *> elements, int areaElementLimit) {
 	for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
 		for (int j=0; j<child_count; j++) {
 			if (child_[j]->contains_element(splitCoor_, elements[*it]->get_min()(splitCoor_), elements[*it]->get_max()(splitCoor_))) {
@@ -63,8 +62,8 @@ void BIHNode::distribute_elements(std::vector<BoundingBox *> elements) {
 
 	element_ids_.erase(element_ids_.begin(), element_ids_.end());
 
-	((BIHNode *)child_[0])->split_distribute(elements);
-	((BIHNode *)child_[1])->split_distribute(elements);
+	((BIHNode *)child_[0])->split_distribute(elements, areaElementLimit);
+	((BIHNode *)child_[1])->split_distribute(elements, areaElementLimit);
 }
 
 void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,const  std::vector<BoundingBox *> &meshElements) {
@@ -99,12 +98,15 @@ void BIHNode::sum_elements_in_leaves(int &sum) {
 	}
 }
 
-void BIHNode::get_tree_depth(int &maxDepth, bool writeAllDepth) {
+void BIHNode::get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth) {
 	if (leaf_) {
 		if (writeAllDepth) xprintf(Msg, "%d - ", depth_);
 		if (depth_ > maxDepth) maxDepth = depth_;
+		if (depth_ < minDepth) minDepth = depth_;
+		sumDepth += depth_;
+		++leavesCount;
 	} else {
-		((BIHNode *)child_[0])->get_tree_depth(maxDepth, writeAllDepth);
-		((BIHNode *)child_[1])->get_tree_depth(maxDepth, writeAllDepth);
+		((BIHNode *)child_[0])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
+		((BIHNode *)child_[1])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
 	}
 }

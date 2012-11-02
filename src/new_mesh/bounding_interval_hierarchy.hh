@@ -70,13 +70,17 @@ public:
     virtual void sum_elements_in_leaves(int &sum) {}
 
     /**
-     * Browse tree and get its maximal depth
+     * Browse tree and get its minimal, maximal and average depth
+     * Average depth is counted as sumDepth / leavesCount
      * Method for gtests
      *
-     * @param maxDepth Contains maximal depth of tree
+     * @param maxDepth Gets maximal depth of tree
+     * @param minDepth Gets minimal depth of tree
+     * @param sumDepth Gets sum of all depths of tree
+     * @param leavesCount Gets count of all leaves of tree
      * @param writeAllDepth Method writes depth in all leaf nodes if value is true
      */
-    virtual void get_tree_depth(int &maxDepth, bool writeAllDepth) {}
+    virtual void get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth) {}
 
 protected:
 
@@ -92,14 +96,14 @@ protected:
 
     /**
      * Method checks count of elements in area.
-     * If count is greater than area_element_limit splits area and distributes elements to subareas.
+     * If count is greater than areaElementLimit splits area and distributes elements to subareas.
      */
-    void split_distribute(std::vector<BoundingBox *> elements);
+    void split_distribute(std::vector<BoundingBox *> elements, int areaElementLimit);
 
     /// split area into two subareas by median
-    void split_area(std::vector<BoundingBox *> elements);
+    void split_area(std::vector<BoundingBox *> elements, int areaElementLimit);
     /// distribute elements into subareas
-    virtual void distribute_elements(std::vector<BoundingBox *> elements) {}
+    virtual void distribute_elements(std::vector<BoundingBox *> elements, int areaElementLimit) {}
     /// get value of coordination for calculate a median
     virtual double get_median_coord(std::vector<BoundingBox *> elements, int index) { return 0.0; }
 
@@ -122,7 +126,7 @@ protected:
     bool contains_point(arma::vec3 &point);
 
     /// limit of elements in area, if count of elements is lesser than value splitting is stopped
-    unsigned int area_element_limit_;
+    //unsigned int area_element_limit_;
     /// child nodes
     BoundingIntevalHierachy* child_[child_count];
     /// bounding box of area

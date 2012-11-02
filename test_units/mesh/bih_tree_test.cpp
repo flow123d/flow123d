@@ -56,8 +56,18 @@ $EndElements
 )CODE";
 
 
+void create_tree(FilePath &meshFile, int elementLimit = 0) {
+	int maxDepth, minDepth, sum, leaves;
+	Mesh mesh;
+	GmshMeshReader reader;
 
-TEST(BIHTree_Test, create_tree) {
+	reader.read(meshFile, &mesh);
+
+	BIHTree bt(&mesh, elementLimit);
+	bt.get_tree_depth(maxDepth, minDepth, sum, leaves, false);
+}
+
+TEST(BIHTree_Test, mesh_from_stream) {
     stringstream ss(gmsh_mesh);
 
     Mesh mesh;
@@ -65,8 +75,86 @@ TEST(BIHTree_Test, create_tree) {
 
     reader.read(ss, &mesh);
 
-    // TODO: vytvorit strom a otestovat jeho vysku
-    BIHTree bt(&mesh);
+    BIHTree bt(&mesh, 4);
+    int maxDepth, minDepth, sum, leaves;
+    bt.get_tree_depth(maxDepth, minDepth, sum, leaves, false);
+}
+
+TEST(BIHTree_Test, mesh_108_elements_homogeneous) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_390_elements_homogeneous) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_390_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_1907_elements_homogeneous) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_1907_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_7590_elements_homogeneous) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_7590_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_31949_elements_homogeneous) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_31949_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file, 100);
+}
+
+TEST(BIHTree_Test, mesh_188_elements_refined) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_188_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_482_elements_refined) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_482_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_1638_elements_refined) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_1638_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_5927_elements_refined) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_5927_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file);
+}
+
+TEST(BIHTree_Test, mesh_27936_elements_refined) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_27936_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file, 100);
+}
+
+TEST(BIHTree_Test, mesh_111324_elements_refined) {
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_111324_elem.msh", FilePath::input_file);
+
+    create_tree(mesh_file, 100);
 }
 
 
