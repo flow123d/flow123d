@@ -1,11 +1,26 @@
 Test problem 13
 ---------------------
+Test of mixing of substances on edges and quantitative test on trivial transport problem.
+
 verification of:
 -edge mixing
 -explicit transport (convection)
 -implicit transport (convection, dispersion)
 -flow/transport interconnection
 
+Geometry:
+
+Fork consists of :
+* incomming branch in XY plane 
+  material number 17, conductivity 1, water flux 1
+  length 5
+and two outcome branch
+* one with positive Z coordinate
+  material number 18, conductivity 0.1, water flux 0.05 * sqrt(2)
+  length 5*sqrt(2)
+* second with negative Z coordinate
+  material number 19, conductivity 1, water flux 0.5 * sqrt(2)
+  length 5*sqrt(2)
 
 Analytic solution for:
 
@@ -29,3 +44,9 @@ solute at the end of the first branch: 14.60 T
 solute at the end of the second branch:  94.60 T
 
 
+pozn.: 
+- materialovy soubor mtr je zakomentovany, aby se pri dalsim spusteni BCD nesmazaly mat. konstanty
+- pretransformovany con odlehcen od pozustatku z ini
+- v zz_old_con_ini pozustatky (pretransformovane con, stare ini), 
+      a take starsi referencni test13.msh z vystupu flow_gmsh.con - lisily se na poslednich des. mistech
+- geo soubor generuje mirne jinou mesh nez je aktualni v input adresari
