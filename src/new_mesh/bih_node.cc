@@ -46,12 +46,12 @@ void BIHNode::put_element(int element_id) {
 	element_ids_.push_back(element_id);
 }
 
-double BIHNode::get_median_coord(std::vector<BoundingBox *> elements, int index) {
+double BIHNode::get_median_coord(const std::vector<BoundingBox *> &elements, int index) {
 	int boundingBoxIndex = element_ids_[index];
 	return elements[boundingBoxIndex]->get_center()(splitCoor_);
 }
 
-void BIHNode::distribute_elements(std::vector<BoundingBox *> elements, int areaElementLimit) {
+void BIHNode::distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit) {
 	for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
 		for (int j=0; j<child_count; j++) {
 			if (child_[j]->contains_element(splitCoor_, elements[*it]->get_min()(splitCoor_), elements[*it]->get_max()(splitCoor_))) {
