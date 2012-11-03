@@ -30,6 +30,27 @@
 
 #include "new_mesh/bounding_interval_hierarchy.hh"
 
+/**
+ * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
+ *
+ * TODO:
+ * - BIHTree neni korenovym uzlem, ale vi kde je korenovy uzel (nulty prvek v poli uzlu).
+ *   BIHTree nebude podomkem BoundingIntervalHierarchy
+ * - Kod pro hledani ve stromu i pro tvorbu stromu presunout pouze do BIHTree.
+ * - Zrusit BoundingIntervalHierarchy, vse presunout pouze do BIHNode
+ * - V BIHTree mit vector<BIHNode> a do nej pridavat (spolecna alokace uzlu)
+ *   BIHNode::child_ nebudou pointery, ale indexy do tohoto vektoru
+ * - indexy bounding boxu v listech jsou ulozeny v jednom spolecnem vektoru vector<unsigned int> in_leaves
+ * - Optimalizovat BIHNode, obsahuje pouze: unsigned int child_[2], double planes[2] (min for right, max for left), char axes
+ *   List se pozna tak, ze axes==255. V tom pripade udava child_ range do vektoru in_leaves (tj. child[0] je index prvniho a
+ *   child_[1]= 1+ index posledniho prvku v listu)
+ * - hledani ve stromu udelat bez rekurze, pomoci cylku
+ * - konstrukci stromu udelat bez rekurze (pruchod do sirky by mohl znamenat mene kopirovani)
+ * - pri vypoctu medianu pouzit vice prvku (aby se to veslo do cache napr. 1024) nemelo by to zhorsovat slozitost
+ *   jelikoz median z celeho pole ma prumernou slozitost O(N)
+ * - more precise documentation
+ *
+ */
 class BIHTree : public BoundingIntevalHierachy {
 	friend class BoundingIntevalHierachy;
 public:

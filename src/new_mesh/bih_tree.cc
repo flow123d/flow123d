@@ -39,10 +39,18 @@ BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) : BoundingIntevalHie
 	leaf_ = false;
 	depth_ = 0;
 
+	START_TIMER("BIH Tree");
+
+	START_TIMER("BIH box");
 	bounding_box();
+	END_START_TIMER("BIH element boxes");
 	element_boxes();
+	END_START_TIMER("BIH split area");
 	split_area(elements_, areaElementLimit);
+	END_START_TIMER("BIH distribute els.");
 	distribute_elements(elements_, areaElementLimit);
+
+	END_TIMER("BIH Tree");
 
 	xprintf(Msg, " - Tree created\n");
 }
@@ -116,18 +124,8 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 		    ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, elements_);
 	}
 
-	std:sort(searchedElements.begin(), searchedElements.end());
-
-	std::vector<int>::iterator it = searchedElements.begin();
-	while (it != (searchedElements.end() - 1)) {
-		int idxIter = *it;
-		int idxNext = *(it + 1);
-		if (idxIter == idxNext) {
-			searchedElements.erase(it);
-		} else {
-			++it;
-		}
-	}
+	sort(searchedElements.begin(), searchedElements.end());
+	unique(searchedElements.begin(), searchedElements.end());
 }
 
 

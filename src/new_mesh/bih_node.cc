@@ -32,10 +32,12 @@
 BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth, unsigned int areaElementLimit) : BoundingIntevalHierachy() {
 	//xprintf(Msg, " - BIHNode->BIHNode(arma::vec3, arma::vec3, int, int, unsigned int)\n");
 
-	leaf_ = false;
+	leaf_ = true;
 	boundingBox_.set_bounds(minCoordinates, maxCoordinates);
 	splitCoor_ = splitCoor;
 	depth_ = depth;
+	child_[0]=NULL;
+	child_[1]=NULL;
 }
 
 BIHNode::~BIHNode() {
@@ -51,14 +53,33 @@ double BIHNode::get_median_coord(const std::vector<BoundingBox *> &elements, int
 	return elements[boundingBoxIndex]->get_center()(splitCoor_);
 }
 
+<<<<<<< .mine
 void BIHNode::distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit) {
+    unsigned n_child_elements=0;
+=======
+void BIHNode::distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit) {
+>>>>>>> .r1944
 	for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
 		for (int j=0; j<child_count; j++) {
 			if (child_[j]->contains_element(splitCoor_, elements[*it]->get_min()(splitCoor_), elements[*it]->get_max()(splitCoor_))) {
 				((BIHNode *)child_[j])->put_element(*it);
+				n_child_elements++;
 			}
+
 		}
 	}
+    //DBGMSG("depth: %d els: %d childs: %d %d %d\n", depth_, get_element_count(),
+    //        n_child_elements, child_[0]->get_element_count(), child_[1]->get_element_count());
+
+	if (child_[0]->get_element_count() > 0.8*get_element_count() ||
+	    child_[1]->get_element_count() > 0.8*get_element_count() ||
+	    n_child_elements > 1.5 * element_ids_.size()) {
+
+	    delete child_[0];
+	    delete child_[1];
+	    return;
+	}
+	leaf_=false;
 
 	element_ids_.erase(element_ids_.begin(), element_ids_.end());
 

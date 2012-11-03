@@ -84,9 +84,7 @@ int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<Bounding
 void BoundingIntevalHierachy::split_distribute(const std::vector<BoundingBox *> &elements, int areaElementLimit) {
 	if (get_element_count() > areaElementLimit) {
 		split_area(elements, areaElementLimit);
-		if (!leaf_) distribute_elements(elements, areaElementLimit);
-	} else {
-		leaf_ = true;
+        distribute_elements(elements, areaElementLimit);
 	}
 }
 
@@ -126,9 +124,7 @@ void BoundingIntevalHierachy::split_area(const std::vector<BoundingBox *> &eleme
 	median = coors[medianPosition];
 
 	//calculate bounding boxes of subareas and create them
-	if (median <= boundingBox_.get_min()(splitCoor_) || median >= boundingBox_.get_max()(splitCoor_)) {
-		leaf_ = true;
-	} else {
+	// Following test is always false !!!!
 		for (int i=0; i<child_count; i++) {
 			arma::vec3 minCoor;
 			arma::vec3 maxCoor;
@@ -140,5 +136,4 @@ void BoundingIntevalHierachy::split_area(const std::vector<BoundingBox *> &eleme
 
 			child_[i] = new BIHNode(minCoor, maxCoor, splitCoor_, depth_+1, areaElementLimit);
 		}
-	}
 }

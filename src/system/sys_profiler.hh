@@ -362,12 +362,25 @@ public:
  * \def END_TIMER(tag)
  *
  * Ends a timer with specified tag.
+ * Use only if you want end on different place then end of function
  */
 #ifdef DEBUG_PROFILER
-#define END_TIMER(tag) TimerFrame::endTimer(tag)          // only if you want end on different place then end of function
+#define END_TIMER(tag) TimerFrame::endTimer(tag)
 #else
 #define END_TIMER(tag)
 #endif
+
+/**
+ * \def END_START_TIMER(tag)
+ *
+ * Ends current timer and starts the new with given tag.
+ */
+#ifdef DEBUG_PROFILER
+#define END_START_TIMER(tag) Profiler::instance()->end(""); TimerFrame PASTE(timer_,__LINE__) = TimerFrame(tag)
+#else
+#define END_START_TIMER(tag)
+#endif
+
 
 /**
  * \def SET_TIMER_SUBFRAMES(tag, subframes)
