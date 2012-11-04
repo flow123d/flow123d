@@ -48,16 +48,16 @@ void BIHNode::put_element(int element_id) {
 	element_ids_.push_back(element_id);
 }
 
-double BIHNode::get_median_coord(const std::vector<BoundingBox *> &elements, int index) {
+double BIHNode::get_median_coord(std::vector<BoundingBox> &elements, int index) {
 	int boundingBoxIndex = element_ids_[index];
-	return elements[boundingBoxIndex]->get_center()(splitCoor_);
+	return elements[boundingBoxIndex].get_center()(splitCoor_);
 }
 
-void BIHNode::distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit) {
+void BIHNode::distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit) {
     unsigned n_child_elements=0;
 	for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
 		for (int j=0; j<child_count; j++) {
-			if (child_[j]->contains_element(splitCoor_, elements[*it]->get_min()(splitCoor_), elements[*it]->get_max()(splitCoor_))) {
+			if (child_[j]->contains_element(splitCoor_, elements[*it].get_min()(splitCoor_), elements[*it].get_max()(splitCoor_))) {
 				((BIHNode *)child_[j])->put_element(*it);
 				n_child_elements++;
 			}
@@ -83,11 +83,11 @@ void BIHNode::distribute_elements(const std::vector<BoundingBox *> &elements, in
 	((BIHNode *)child_[1])->split_distribute(elements, areaElementLimit);
 }
 
-void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,const  std::vector<BoundingBox *> &meshElements) {
+void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox> &meshElements) {
 	if (leaf_) {
 	    //START_TIMER("leaf");
 		for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
-			if (meshElements[*it]->intersection(boundingBox)) {
+			if (meshElements[*it].intersection(boundingBox)) {
 				searchedElements.push_back(*it);
 			}
 		}

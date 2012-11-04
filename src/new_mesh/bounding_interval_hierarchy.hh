@@ -86,8 +86,8 @@ protected:
 
     /// count of subareas - don't change
     static const unsigned int child_count = 2;
-    /// count of elements of which is selected median - value must be even
-    static const unsigned int area_median_count = 9;
+    /// max count of elements of which is selected median - value must be even
+    static const unsigned int max_median_count = 1023;
 
     /**
      * Empty constructor
@@ -98,14 +98,14 @@ protected:
      * Method checks count of elements in area.
      * If count is greater than areaElementLimit splits area and distributes elements to subareas.
      */
-    void split_distribute(const std::vector<BoundingBox *> &elements, int areaElementLimit);
+    void split_distribute(std::vector<BoundingBox> &elements, int areaElementLimit);
 
     /// split area into two subareas by median
-    void split_area(const std::vector<BoundingBox *> &elements, int areaElementLimit);
+    void split_area(std::vector<BoundingBox> &elements, int areaElementLimit);
     /// distribute elements into subareas
-    virtual void distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit) {}
+    virtual void distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit) {}
     /// get value of coordination for calculate a median
-    virtual double get_median_coord(const std::vector<BoundingBox *> &elements, int index) { return 0.0; }
+    virtual double get_median_coord(std::vector<BoundingBox> &elements, int index) { return 0.0; }
 
     /**
      * Tests if element is contained in area bounding box.

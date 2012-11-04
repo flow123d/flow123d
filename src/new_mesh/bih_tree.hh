@@ -46,8 +46,6 @@
  *   child_[1]= 1+ index posledniho prvku v listu)
  * - hledani ve stromu udelat bez rekurze, pomoci cylku
  * - konstrukci stromu udelat bez rekurze (pruchod do sirky by mohl znamenat mene kopirovani)
- * - pri vypoctu medianu pouzit vice prvku (aby se to veslo do cache napr. 1024) nemelo by to zhorsovat slozitost
- *   jelikoz median z celeho pole ma prumernou slozitost O(N)
  * - more precise documentation
  *
  */
@@ -91,9 +89,9 @@ public:
 
 protected:
     /// distribute elements into subareas
-    void distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit);
+    void distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit);
     /// get value of coordination for calculate a median
-    double get_median_coord(const std::vector<BoundingBox *> &elements, int index);
+    double get_median_coord(std::vector<BoundingBox> &elements, int index);
     /// create bounding box of area
     void bounding_box();
     /// create bounding boxes of element
@@ -102,7 +100,7 @@ protected:
     /// mesh
     Mesh* mesh_;
 	/// vector of bounding boxes contained in node
-    std::vector<BoundingBox *> elements_;
+    std::vector<BoundingBox> elements_;
 
 private:
 };

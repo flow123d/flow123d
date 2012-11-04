@@ -81,7 +81,7 @@ int BoundingIntevalHierachy::get_element(arma::vec3 &point, std::vector<Bounding
 
 
 
-void BoundingIntevalHierachy::split_distribute(const std::vector<BoundingBox *> &elements, int areaElementLimit) {
+void BoundingIntevalHierachy::split_distribute(std::vector<BoundingBox> &elements, int areaElementLimit) {
 	if (get_element_count() > areaElementLimit) {
 		split_area(elements, areaElementLimit);
         distribute_elements(elements, areaElementLimit);
@@ -90,9 +90,10 @@ void BoundingIntevalHierachy::split_distribute(const std::vector<BoundingBox *> 
 
 
 
-void BoundingIntevalHierachy::split_area(const std::vector<BoundingBox *> &elements, int areaElementLimit) {
+void BoundingIntevalHierachy::split_area(std::vector<BoundingBox> &elements, int areaElementLimit) {
 	int elementCount = get_element_count();
-	int medianPosition = (int)(area_median_count/2);
+	int medianCount = (elementCount >= max_median_count) ? max_median_count :((elementCount % 2) ? elementCount : elementCount - 1);
+	int medianPosition = (int)(medianCount/2);
 	double median;
 	std:vector<double> coors;
 	bool isMaxSplit;
@@ -114,8 +115,8 @@ void BoundingIntevalHierachy::split_area(const std::vector<BoundingBox *> &eleme
 	}
 
 	//select adepts at median
-	coors.resize(area_median_count);
-	for (int i=0; i<area_median_count; i++) {
+	coors.resize(medianCount);
+	for (int i=0; i<medianCount; i++) {
 		coors[i] = get_median_coord(elements, rand() % elementCount);
 	}
 

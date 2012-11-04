@@ -96,20 +96,20 @@ void BIHTree::sum_elements_in_leaves(int &sum) {
 }
 
 
-void BIHTree::distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit)
+void BIHTree::distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit)
 {
 	int index=0;
-	for (std::vector<BoundingBox *>::iterator it = elements_.begin(); it!=elements_.end(); it++) {
+	for (std::vector<BoundingBox>::iterator it = elements.begin(); it!=elements.end(); it++) {
 		for (int j=0; j<child_count; j++) {
-			if (child_[j]->contains_element(splitCoor_, ((BoundingBox*)*it)->get_min()(splitCoor_), ((BoundingBox*)*it)->get_max()(splitCoor_))) {
+			if (child_[j]->contains_element(splitCoor_, ((BoundingBox)*it).get_min()(splitCoor_), ((BoundingBox)*it).get_max()(splitCoor_))) {
 				((BIHNode *)child_[j])->put_element(index);
 			}
 		}
 		++index;
 	}
 
-	((BIHNode *)child_[0])->split_distribute(elements_, areaElementLimit);
-	((BIHNode *)child_[1])->split_distribute(elements_, areaElementLimit);
+	((BIHNode *)child_[0])->split_distribute(elements, areaElementLimit);
+	((BIHNode *)child_[1])->split_distribute(elements, areaElementLimit);
 }
 
 
@@ -126,17 +126,18 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 
 	sort(searchedElements.begin(), searchedElements.end());
 	unique(searchedElements.begin(), searchedElements.end());
-}
+		}
 
 
 
-double BIHTree::get_median_coord(const std::vector<BoundingBox *> &elements, int index) {
-	return elements[index]->get_center()(splitCoor_);
+double BIHTree::get_median_coord(std::vector<BoundingBox> &elements, int index) {
+	return elements[index].get_center()(splitCoor_);
 }
 
 
 
 void BIHTree::element_boxes() {
+	elements_.resize(mesh_->element.size());
 	FOR_ELEMENTS(mesh_, element) {
 		arma::vec3 minCoor = element->node[0]->point();
 		arma::vec3 maxCoor = element->node[0]->point();
@@ -148,9 +149,8 @@ void BIHTree::element_boxes() {
 				maxCoor(j) = std::max(maxCoor(j), node->point()(j));
 			}
 		}
-		BoundingBox* boxElement = new BoundingBox(minCoor, maxCoor);
-		boxElement->setId(id);
-		elements_.push_back(boxElement);
+		elements_[element.index()].set_bounds(minCoor, maxCoor);
+		elements_[element.index()].setId(id);
 	}
 }
 

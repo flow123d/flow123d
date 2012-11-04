@@ -58,10 +58,10 @@ protected:
     /**
      * distribute elements into subareas
      */
-    void distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit);
+    void distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit);
 
     /// get value of coordination for calculate a median
-    double get_median_coord(const std::vector<BoundingBox *> &elements, int index);
+    double get_median_coord(std::vector<BoundingBox> &elements, int index);
 
     /**
      * Gets elements which can have intersection with triangle
@@ -69,7 +69,7 @@ protected:
      * @param triangle Triangle which is tested if has intersection
      * @param searchedElements vector of ids of suspect elements
      */
-    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,const std::vector<BoundingBox *> &meshElements);
+    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox> &meshElements);
 
 private:
 	/**
