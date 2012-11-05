@@ -1,15 +1,16 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "2D transport with time variable B", 
-    material = "./input/uloha.mtr", 
+    description = "Test14 - 2D transport with time variable boundary", 
+    material = "./input/test14.mtr", 
     mesh = {
-      mesh_file = "./input/uloha.msh", 
-      neighbouring = "./input/uloha.ngh"
+      mesh_file = "./input/test14.msh", 
+      neighbouring = "./input/test14.ngh"
     }, 
+
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/uloha.fbc", 
+      boundary_file = "./input/test14.fbc", 
       n_schurs = 2, 
       output = {
         output_stream = {
@@ -17,21 +18,14 @@
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        save_step = {
-          REF = "/problem/save_step"
-        }, 
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07, 
-        parameters = ""
-      }, 
-      time = {
-        REF = "../../time"
+        accuracy = 1e-07
       }
     }, 
-    save_step = 1.0, 
+
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       bc_times = [
@@ -40,34 +34,31 @@
         6, 
         7
       ], 
-      boundary_file = "./input/uloha_tbc", 
-      dual_porosity = false, 
-      initial_file = "./input/uloha.tic", 
+      boundary_file = "./input/test14_tbc", 
+      initial_file = "./input/test14.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
           REF = "/system/output_streams/1"
         }, 
-        save_step = {
-          REF = "/problem/save_step"
-        }
+        save_step = 1.0
       }, 
+
+      dual_porosity = false, 
       sorption_enable = false, 
       substances = [
         "A"
       ], 
       time = {
-        REF = "../../time"
+        end_time = 10.0
       }
-    }, 
-    time = {
-      end_time = 10.0
     }
   }, 
+
   system = {
     output_streams = [
       {
-        file = "./uloha.pvd", 
+        file = "./test14.pvd", 
         format = {
           TYPE = "vtk", 
           variant = "ascii"
@@ -85,46 +76,5 @@
         name = "transport_output_stream"
       }
     ]
-  }, 
-  zz_not_supported = {
-    input = {
-      file_type = 1
-    }, 
-    output = {
-      btc_elms = 80, 
-      cross_section = false, 
-      cs_params = [
-        0.05, 
-        2, 
-        0, 
-        0.05, 
-        0, 
-        0, 
-        0.005
-      ], 
-      fcs_params = [
-        1, 
-        0, 
-        0, 
-        -11, 
-        1
-      ], 
-      output_elm_type = 1, 
-      output_file_2 = "./uloha.tmp", 
-      output_file_type = "1", 
-      pos_set_view = 1, 
-      pos_view_params = [
-        0, 
-        0, 
-        0, 
-        0.8, 
-        0.8, 
-        0.8, 
-        0.224, 
-        0.224
-      ], 
-      specify_elm_type = false, 
-      write_ftrans_out = "False"
-    }
   }
 }
