@@ -34,18 +34,23 @@
  * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
  *
  * TODO:
+ * - unit testy
  * - BIHTree neni korenovym uzlem, ale vi kde je korenovy uzel (nulty prvek v poli uzlu).
  *   BIHTree nebude podomkem BoundingIntervalHierarchy
  * - Kod pro hledani ve stromu i pro tvorbu stromu presunout pouze do BIHTree.
  * - Zrusit BoundingIntervalHierarchy, vse presunout pouze do BIHNode
  * - V BIHTree mit vector<BIHNode> a do nej pridavat (spolecna alokace uzlu)
  *   BIHNode::child_ nebudou pointery, ale indexy do tohoto vektoru
+ *
  * - indexy bounding boxu v listech jsou ulozeny v jednom spolecnem vektoru vector<unsigned int> in_leaves
- * - Optimalizovat BIHNode, obsahuje pouze: unsigned int child_[2], double planes[2] (min for right, max for left), char axes
+ * - Optimalizovat BIHNode, obsahuje pouze: unsigned int child_[2], double median_ , char axes
  *   List se pozna tak, ze axes==255. V tom pripade udava child_ range do vektoru in_leaves (tj. child[0] je index prvniho a
  *   child_[1]= 1+ index posledniho prvku v listu)
  * - hledani ve stromu udelat bez rekurze, pomoci cylku
  * - konstrukci stromu udelat bez rekurze (pruchod do sirky by mohl znamenat mene kopirovani)
+ * - pri vypoctu medianu pouzit vice prvku (aby se to veslo do cache napr. 1024) nemelo by to zhorsovat slozitost
+ *   jelikoz median z celeho pole ma prumernou slozitost O(N)
+ *
  * - more precise documentation
  *
  */
@@ -89,9 +94,9 @@ public:
 
 protected:
     /// distribute elements into subareas
-    void distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit);
+    void distribute_elements(const std::vector<BoundingBox *> &elements, int areaElementLimit);
     /// get value of coordination for calculate a median
-    double get_median_coord(std::vector<BoundingBox> &elements, int index);
+    double get_median_coord(const std::vector<BoundingBox *> &elements, int index);
     /// create bounding box of area
     void bounding_box();
     /// create bounding boxes of element
@@ -100,7 +105,7 @@ protected:
     /// mesh
     Mesh* mesh_;
 	/// vector of bounding boxes contained in node
-    std::vector<BoundingBox> elements_;
+    std::vector<BoundingBox *> elements_;
 
 private:
 };

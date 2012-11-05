@@ -80,11 +80,20 @@ TEST(BIHTree_Test, mesh_from_stream) {
     bt.get_tree_depth(maxDepth, minDepth, sum, leaves, false);
 }
 
+// ONLY THIS
 TEST(BIHTree_Test, mesh_108_elements_homogeneous) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
 
     create_tree(mesh_file);
+
+    // tree->number_of_nodes  < C * (mesh.n_elements() / areaElementLimit)
+    // tree->max_depth  < (lg(A) - lg(N))/lg(0.8)
+    //
+    // find_elements - box mimo sit - EXPECT_EQ( 0, result.size())
+    // find_elements - box uvnitr - porovnat s uplnym pruchodem site
+    // asi tri boxy .. EXPECT_EQ
+
 }
 
 TEST(BIHTree_Test, mesh_390_elements_homogeneous) {
@@ -101,6 +110,7 @@ TEST(BIHTree_Test, mesh_1907_elements_homogeneous) {
     create_tree(mesh_file);
 }
 
+// ONLY THIS
 TEST(BIHTree_Test, mesh_7590_elements_homogeneous) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_7590_elem.msh", FilePath::input_file);
@@ -115,6 +125,7 @@ TEST(BIHTree_Test, mesh_31949_elements_homogeneous) {
     create_tree(mesh_file, 100);
 }
 
+// ONLY THIS
 TEST(BIHTree_Test, mesh_188_elements_refined) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_188_elem.msh", FilePath::input_file);
@@ -143,6 +154,8 @@ TEST(BIHTree_Test, mesh_5927_elements_refined) {
     create_tree(mesh_file);
 }
 
+
+// ONLY THIS
 TEST(BIHTree_Test, mesh_27936_elements_refined) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_27936_elem.msh", FilePath::input_file);
