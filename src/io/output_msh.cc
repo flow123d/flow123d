@@ -271,8 +271,18 @@ int OutputMSH::write_data(double time)
 
     this->write_msh_elem_data(time, this->output_time->current_step);
 
+    // It seems that flush is not enough on some crapy hardware
+#if 0
     // Flush stream to be sure everything is in the file now
     this->output->get_base_file().flush();
+#else
+    // Flush stream to be sure everything is in the file now
+    this->output->get_base_file().flush();
+    // Close and re-open file in append mode
+    this->output->get_base_file().close();
+    this->output->get_base_file().open(this->output->get_base_filename().c_str(),
+    		fstream::in | fstream::out | fstream::app);
+#endif
 
     xprintf(MsgLog, "O.K.\n");
 
