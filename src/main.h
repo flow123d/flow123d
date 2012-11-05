@@ -43,11 +43,20 @@ public:
     void parse_cmd_line(const int argc, char ** argv);
     void free_and_exit();
 private:
+
     string main_input_dir_;
     string main_input_filename_;
+
+    /**
+     * Log file name argument - passed to system_init; "" menas default, "\n" means no logging
+     * TODO: move whole system_init into Application, use singleton for some runtime global options
+     * for the Flow123d library.
+     */
     string log_filename_;
     int passed_argc_;
     char ** passed_argv_;
+
+    bool use_profiler;
 };
 
 

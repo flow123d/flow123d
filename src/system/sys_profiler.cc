@@ -62,19 +62,6 @@ Profiler::Profiler(MPI_Comm comm) {
     start_time = time(NULL);
 }
 
-Profiler::~Profiler() {
-#ifdef DEBUG_PROFILER
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
-    string full_fname =  FilePath(string(filename), FilePath::output_file);
-
-    ofstream os(full_fname.c_str());
-    output(os);
-    os.flush();
-#endif
-}
-
-
 
 void Profiler::output(ostream &os) {
     const int column_space = 3;
@@ -176,6 +163,29 @@ void Profiler::output(ostream &os) {
     }
 }
 
+
+
+void Profiler::output() {
+#ifdef DEBUG_PROFILER
+            char filename[PATH_MAX];
+            strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
+            string full_fname =  FilePath(string(filename), FilePath::output_file);
+
+            ofstream os(full_fname.c_str());
+            output(os);
+            os.close();
+#endif
+}
+
+
+
+void Profiler::uninitialize()
+{
+    if (_instance) {
+        delete _instance;
+        _instance = NULL;
+    }
+}
 
 
 void Profiler::set_timer_subframes(string tag, int n_subframes) {

@@ -82,17 +82,16 @@ void system_init( MPI_Comm comm,const  string &log_filename )
     // determine logfile name or switch it off
     stringstream log_name;
 
-    if (log_filename != "") {
-        if ( log_filename == "\n" ) {
+    if ( log_filename == "\n" ) {
            // -l option without given name -> turn logging off
            sys_info.log=NULL;
-    } else {
+    } else
+   if (log_filename != "") {
       // given log name
            log_name << log_filename <<  "." << sys_info.my_proc << ".log";
            sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
            sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
 
-        }
     } else {
         // use default name
         log_name << "flow123."<< sys_info.my_proc << ".log";
@@ -264,8 +263,6 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 
 int xterminate( bool on_error )
 {
-    //close the Profiler
-    Profiler::uninitialize();
 
 
     if (on_error) { F_STACK_SHOW( stderr ); }

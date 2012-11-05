@@ -70,7 +70,8 @@ Application::Application( int argc,  char ** argv)
   main_input_filename_(""),
   log_filename_(""),
   passed_argc_(0),
-  passed_argv_(0)
+  passed_argv_(0),
+  use_profiler(true)
 {
 
     // parse our own command line arguments, leave others for PETSc
@@ -81,6 +82,7 @@ Application::Application( int argc,  char ** argv)
     PetscErrorCode ierr;
     ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
+    DBGMSG("log: %s\n", log_filename_.c_str());
     system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
     Profiler::initialize(PETSC_COMM_WORLD);
@@ -191,7 +193,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("solve,s", po::value< string >(), "Main input file to solve.")
         ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
         ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
-        ("log,l", po::value< string >(), "Set base name for log file. Turn logging off if no name is given.")
+        ("log,l", po::value< string >(), "Set base name for log files.")
+        ("no_log", "Turn off logging.")
+        ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Produce full structure of the main input file.");
     ;
 
@@ -215,16 +219,19 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
     passed_argc_ = arg_i;
 
+    // if there is "help" option
     if (vm.count("help")) {
         cout << desc << "\n";
         free_and_exit();
     }
 
+    // if there is "full_doc" option
     if (vm.count("full_doc")) {
         cout << get_input_type() << "\n";
         free_and_exit();
     }
 
+    // if there is "solve" option
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
 
@@ -239,13 +246,14 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
             main_input_dir_ = ".";
             main_input_filename_ = input_filename;
         }
-
-
     } else {
         cout << "Usage error: The main input file has to be specified.\n\n";
         cout << desc << "\n";
         free_and_exit();
     }
+
+    // possibly turn off profilling
+    if (vm.count("no_profiler")) use_profiler=false;
 
     string input_dir;
     string output_dir;
@@ -259,12 +267,16 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // assumes working directory "."
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
 
-
-    if (vm.count("log_filename")) {
-        log_filename_ = vm["log"].as<string>();
+    if (vm.count("no_log")) {
+        log_filename_="\n";     // do not open log files
     } else {
-        log_filename_ = "\n";
+        if (vm.count("log_filename")) {
+            log_filename_ = vm["log"].as<string>();
+        } else {
+            log_filename_ = ""; // use default
+        }
     }
+    DBGMSG("log: %d %s\n", vm.count("log_filename"), log_filename_.c_str());
 
     // TODO: catch specific exceptions and output usage messages
 }
@@ -298,6 +310,10 @@ Input::Type::Record &  Application::get_input_type() {
 
 
 void Application::free_and_exit() {
+    //close the Profiler
+    if (use_profiler) Profiler::instance()->output();
+    Profiler::uninitialize();
+
     xterminate(false);
 }
 
@@ -315,6 +331,35 @@ int main(int argc, char **argv) {
     // Say Goodbye
     return xterminate(false);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * FUNCTION "MAIN" FOR CONVERTING FILES TO POS

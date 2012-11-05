@@ -76,7 +76,7 @@
 
 #include <mpi.h>
 #include <cstring>
-#include "system/const_hashes.h"
+//#include "system/const_hashes.h"
 
 using namespace std;
 
@@ -320,22 +320,6 @@ private:
 
     Profiler & operator=(Profiler const&); // assignment operator is private
 
-    /**
-     * Stop all timers, synchronize all processes, collect
-     * profiling informations and write it to given stream.
-     *
-     *  Pass through the profiling tree (collective over processors)
-     *  Print cumulative times average, balance (max/min), count (denote differences)
-     *
-     */
-    void output(ostream &os);
-
-    /**
-     *  Calls output.
-     *  Destroy all structures.
-     */
-    ~Profiler();
-
 public:
 
     /**
@@ -350,14 +334,25 @@ public:
     }
 
     /**
+     * Stop all timers, synchronize all processes, collect
+     * profiling informations and write it to given stream.
+     *
+     *  Pass through the profiling tree (collective over processors)
+     *  Print cumulative times average, balance (max/min), count (denote differences)
+     *
+     */
+    void output(ostream &os);
+
+    /**
+     * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
+     * Empty body if macro DEBUG_PROFILER is not defined.
+     */
+    void output();
+
+    /**
      * Destroys the Profiler object and causes that the statistics will be written to output
      */
-    static void uninitialize() {
-        if (_instance) {
-            delete _instance;
-            _instance = NULL;
-        }
-    }
+    static void uninitialize();
 
     /**
      * Initializes the Profiler with specific MPI communicator object
