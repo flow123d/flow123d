@@ -17,3 +17,7 @@ verification of:
 --- Initail conditions look as follows, A_0 = 0.01, B_0 = 0.02, C_0 = 0.03, D_0 = 0.04, E_0 = 0.05, F_0 = 0.06, G_0 = 0.07, H_0 = 0.08.
 --- Transport boundary conditions does not matter because zero presure gradient is considered.
 --- Final concentrations of all isotopes except C decrease to zero after 20 time steps, whereas C concentration grows to 0.36.
+
+
+pozn.:
+- v adresari zz_old_con_ini je take stary ini file pro semchem - potreba renovovat
