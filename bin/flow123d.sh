@@ -24,7 +24,8 @@
 # Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
 #
 
-set -x 
+# Uncomment following line, when you want to debug bash script
+# set -x 
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
