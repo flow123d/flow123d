@@ -20,3 +20,12 @@ TODO:
 - nonuniform timesteping
 - more output times
 - better transport test (no discontinuity in time zero)
+
+
+pozn.:
+- materialovy soubor mtr je zakomentovany, aby se pri dalsim spusteni BCD nesmazaly mat. konstanty
+- pretransformovany con odlehcen od pozustatku z ini
+- v zz_old_con_ini pozustatky (pretransformovane con, stare ini), 
+- geo soubor generuje mirne jinou mesh nez je aktualne pouzita v input adresari
+
+- zadny transport se tu nepocita!
