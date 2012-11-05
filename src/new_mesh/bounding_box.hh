@@ -66,7 +66,7 @@ public:
     /// get maximal coordinates of bounding box
     const arma::vec3 get_max() const;
     /// get center coordinates of bounding box
-    arma::vec3 get_center();
+    arma::vec3 get_center() const;
 
     /**
      * Detects if box element contains point
@@ -74,9 +74,9 @@ public:
      * @param point Testing point
      * @return True if box element contains point
      */
-    bool contains_point(arma::vec3 &point);
+    bool contains_point(arma::vec3 &point) const;
 
-    bool intersection(BoundingBox &b2);
+    bool intersection(BoundingBox &b2) const;
 
     /**
      * Set class members

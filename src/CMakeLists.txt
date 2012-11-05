@@ -172,6 +172,7 @@ endif()
 # system_lib
 add_library(system_lib ${sources_lib_system})
 target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
+set_target_properties(system_lib PROPERTIES COMPILE_FLAGS "-std=gnu++0x")
 
 # input_lib
 add_library(input_lib ${sources_lib_input})

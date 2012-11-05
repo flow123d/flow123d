@@ -26,8 +26,24 @@
  * 
  * 
  * TODO:
- * 
- * - remove dependence on petsc, have mpi_stub.hh as mpi replacement. 
+ * 1) START_TIMER(tag)  Profiler::instance()->start_timer(HASH(tag), tag, PLACE(__FILE__, __LINE__, __FUNCTION__))
+ *    HASH is compile time, only pointer to tag and place string are stored
+ *    NOTE: using C++11 constwxpr, we can have class for storing just data used to create new timer (see above),
+ *    however actual creation of the timer has to be done runtime, since it depends on actually opened timer frame.
+ * 2) Have Class to store data about point in the code, can be created at compile time.
+ * 3) Profiler should take care about timer tree modifications. Timer Nodes just store data and provides access.
+ * 4) START_GLOBAL_TIMER(tag) - this calls the start_timer, which creates local timer on the correct place in the hierarchy,
+ *    further this timer is added to the list of global timers, this contains groups of timers with same tag, and
+ *    collect/sum data from these timers in the report.
+ * 5) Allow output even during calculation (not complete, but at least some thing)
+ *    Report should conatin time of start as well as time of creation of the report or time from start of the program.
+ *
+ * 6) Every Timer node has small array( map or hash) with its own sub timers, may be better to have global array whith all
+ *    Timers.
+ *
+ * 7) When generating report we has to deal with possibly different trees at every MPI process.
+ *
+ *
  * - optimize (map lookup, TimeFrame creation)
  *   - use compile time hashes instead of tags
  *   - have only one tag/hash map to Timer nodes, detect error when starting inappropriate tag (that is not child of current frame
@@ -60,6 +76,7 @@
 
 #include <mpi.h>
 #include <cstring>
+#include "system/const_hashes.h"
 
 using namespace std;
 
@@ -104,25 +121,36 @@ public:
     }
 };
 
+
+/**
+ * @brief Class that represents point in the code.
+ */
+/*
+class CodePoint {
+public:
+    constexpr CodePoint(const char *tag, const char * code_point)
+    : tag_(tag), code_point_(code_point), hash_(CONSTHASH(tag))
+    {}
+
+private:
+
+    const char *tag_;
+    const char *code_point_;
+    unsigned int hash_;
+};
+*/
+
 /**
  * @brief Class for profiling tree nodes.
+ *
+ * One Timer represents one particular time frame in the execution tree.
+ * It collect information about total time, number of calls, allocated and deallocated memory.
+ *
+ * Subframes can be used to deal with calling large number of sub frames, that can not be measured itself.
+ * ... this has to be solved by particular macro, that creates child timer with specified number of calls, and
+ * unknown time.
  */
 class Timer {
-private:
-    double start_time;
-    double cumul_time;
-    int count;
-    int start_count;
-    int sub_frames;
-    bool running;
-    string timer_tag;
-    Timer* parent_timer;
-    vector<Timer*> child_timers;
-
-    size_t total_allocated_;
-    size_t total_deallocated_;
-
-    void stop(double time);
 
 public:
     Timer(string tag, Timer* parent);
@@ -166,7 +194,6 @@ public:
     Timer* parent() {
         return parent_timer;
     }
-
     vector<Timer*>* child_timers_list() {
         return &child_timers;
     }
@@ -182,7 +209,60 @@ public:
     }
 
     ~Timer();
+
+private:
+    /**
+     *   Start time when frame opens.
+     */
+    double start_time;
+    /**
+     * Cumulative time spent in the frame.
+     */
+    double cumul_time;
+    /**
+     * Total number of opening of the frame.
+     */
+    int count;
+    /**
+     * Number of recursive openings. ?? Would we allow this?
+     */
+    int start_count;
+    /**
+     * TODO: replace subframes with proper childs.
+     */
+    int sub_frames;
+    /**
+     * TODO: use only start_count
+     */
+    bool running;
+    /**
+     * Tag of the Timer frame. Used to identifie the frame in code and in final profiler info table.
+     * Possibly we should also store compile-time computed hashes.
+     */
+    string timer_tag;
+    /**
+     * Parent in the tree.
+     */
+    Timer* parent_timer;
+    /**
+     * Should be local map or hash of child timers.
+     */
+    vector<Timer*> child_timers;
+
+    /**
+     * Total number of bytes allocated directly in this frame (not include subframes).
+     */
+    size_t total_allocated_;
+    /**
+     * Total number of bytes deallocated directly in this frame (not include subframes).
+     */
+    size_t total_deallocated_;
+
+    void stop(double time);
+
 };
+
+
 
 /**
  *
@@ -290,16 +370,25 @@ public:
     /**
      * Starts a timer with specified name. If the timer is not already created, creates a new one.
      *
+     * starts particular timing period:
+     * - if the tag is new:
+     *        make new instance of timing class and connect it to actual leaf of the profiling tree
+     *        register into map
+     *        if it is the first timing, set it as a root
+     * - if tag exists, change actual leaf, increment call count of the timing object
+     *
+     *
+     *
      * @param tag - name of the timer to start
      */
-    void start(string tag);
+    Timer * start_timer(const string &tag);
 
     /**
      * Stops a timer with specified name.
      *
      * @param tag - name of the timer to stop
      */
-    void end(string tag = "");
+    void stop_timer(const string &tag = "");
 
     /**
      * Sets task specific information. The string @p description with textual description of the task and the
@@ -339,6 +428,8 @@ public:
     void notify_free(const size_t size );
 };
 
+
+
 // These helper macros are necessary due to use of _LINE_ variable in START_TIMER macro.
 #define _PASTE(a,b) a ## b
 #define PASTE(a,b) _PASTE(a, b)
@@ -365,7 +456,7 @@ public:
  * Use only if you want end on different place then end of function
  */
 #ifdef DEBUG_PROFILER
-#define END_TIMER(tag) TimerFrame::endTimer(tag)
+#define END_TIMER(tag) Profiler::instance()->stop_timer(tag)
 #else
 #define END_TIMER(tag)
 #endif
@@ -376,7 +467,7 @@ public:
  * Ends current timer and starts the new with given tag.
  */
 #ifdef DEBUG_PROFILER
-#define END_START_TIMER(tag) Profiler::instance()->end(""); TimerFrame PASTE(timer_,__LINE__) = TimerFrame(tag)
+#define END_START_TIMER(tag) Profiler::instance()->stop_timer(); TimerFrame PASTE(timer_,__LINE__) = TimerFrame(tag)
 #else
 #define END_START_TIMER(tag)
 #endif
@@ -405,46 +496,20 @@ public:
  * in situations where #END_TIMER was used to stop the timer manually before (but there is still the
  * variable which will be later destroyed), we have to store references to these variables and
  * destroy them on-demand.
+ *
+ * TODO:
+ * Should only contain pointer to the Timer. And destructor, that close the timer.
  */
 class TimerFrame {
 private:
-    string tag;
-    TimerFrame* _parent;
-    bool closed;
-    static map<string, TimerFrame*> _frames;
+    Timer* timer_handle_;
 public:
-
-    /**
-     * Parent of the TimerFrame object (it is a TimerFrame object with the same tag,
-     * but defined in the superior block of code or function)
-     */
-    TimerFrame* parent() {
-        return _parent;
+    TimerFrame(const string &tag) {
+        timer_handle_ = Profiler::instance()->start_timer(tag);
     }
 
-    TimerFrame(string tag);
-
-    ~TimerFrame();
-
-    /**
-     * If not already closed, closes the TimerFrame object.
-     * Asks Profiler to end a timer with specified tag and changes the frames
-     * map appropriately (if the TimerFrame object has a parent, associate hits parent
-     * with the tag or if not, delete the tag from the map)
-     */
-    void close();
-
-    /**
-     * Stops the timer manually
-     * @param tag - timer name
-     */
-    static void endTimer(string tag);
-
-    /**
-     * Tags with associated TimerFrame objects
-     */
-    static map<string, TimerFrame*>* frames() {
-        return &_frames;
+    ~TimerFrame() {
+        Profiler::instance()->stop_timer();
     }
 };
 

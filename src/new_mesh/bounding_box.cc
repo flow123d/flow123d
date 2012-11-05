@@ -60,11 +60,11 @@ const arma::vec3 BoundingBox::get_max() const {
 	return maxCoordinates_;
 }
 
-arma::vec3 BoundingBox::get_center() {
+arma::vec3 BoundingBox::get_center() const {
 	return (maxCoordinates_ + minCoordinates_) / 2;
 }
 
-bool BoundingBox::contains_point(arma::vec3 &point) {
+bool BoundingBox::contains_point(arma::vec3 &point) const {
 	for (int i=0; i<dimension; i++) {
 		if ((point(i) < minCoordinates_(i)) | (point(i) > maxCoordinates_(i))) return false;
 	}
@@ -72,7 +72,7 @@ bool BoundingBox::contains_point(arma::vec3 &point) {
 	return true;
 }
 
-bool BoundingBox::intersection(BoundingBox &b2) {
+bool BoundingBox::intersection(BoundingBox &b2) const {
 	for (int i=0; i<dimension; i++) {
 		if ((minCoordinates_(i) > b2.get_max()(i)) | (maxCoordinates_(i) < b2.get_min()(i))) return false;
 	}

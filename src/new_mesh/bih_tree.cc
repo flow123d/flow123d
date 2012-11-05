@@ -96,7 +96,7 @@ void BIHTree::sum_elements_in_leaves(int &sum) {
 }
 
 
-void BIHTree::distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit)
+void BIHTree::distribute_elements( std::vector<BoundingBox> &elements, int areaElementLimit)
 {
 	int index=0;
 	for (std::vector<BoundingBox>::iterator it = elements.begin(); it!=elements.end(); it++) {
@@ -130,7 +130,7 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 
 
 
-double BIHTree::get_median_coord(std::vector<BoundingBox> &elements, int index) {
+double BIHTree::get_median_coord(const std::vector<BoundingBox> &elements, int index) {
 	return elements[index].get_center()(splitCoor_);
 }
 

@@ -42,7 +42,6 @@
 #include "system/file_path.hh"
 
 Profiler* Profiler::_instance = NULL;
-map<string, TimerFrame*> TimerFrame::_frames;
 
 void pad_string(string *str, int length) {
     if (length > str->size())
@@ -245,16 +244,7 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 
 
-void Profiler::start(string tag) {
-
-    /**
-     * starts particular timing period:
-     * - if the tag is new:
-     *        make new instance of timing class and connect it to actual leaf of the profiling tree
-     *        register into map
-     *        if it is the first timing, set it as a root
-     * - if tag exists, change actual leaf, increment call count of the timing object
-     */
+Timer *  Profiler::start_timer(const string &tag) {
 
     ASSERT(actual_node, "No active timing node!");
 
@@ -276,9 +266,11 @@ void Profiler::start(string tag) {
 
         actual_node = i->second;
     }
+
+    return actual_node;
 }
 
-void Profiler::end(string tag) {
+void Profiler::stop_timer(const string &tag) {
 
     /**
      * - check if tag match tag of actual timing object, if not print warning and proceed to matchin parent, while closing all open timings
@@ -399,6 +391,11 @@ void Timer::insert_child(Timer* child) {
     child_timers.push_back(child);
 }
 
+/*****************************************************************
+ * implementation of TimerFrame
+ */
+
+/*
 TimerFrame::TimerFrame(string tag) {
     this->_parent = NULL;
     this->closed = false;
@@ -447,3 +444,4 @@ void TimerFrame::endTimer(string tag) {
         i->second->close(); //manually close (we call close because it not a good idea to call destructor explicitly)
     }
 }
+*/
