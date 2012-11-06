@@ -272,7 +272,7 @@ int OutputMSH::write_data(double time)
     this->write_msh_elem_data(time, this->output_time->current_step);
 
     // It seems that flush is not enough on some crapy hardware
-#if 0
+#if 1
     // Flush stream to be sure everything is in the file now
     this->output->get_base_file().flush();
 #else
