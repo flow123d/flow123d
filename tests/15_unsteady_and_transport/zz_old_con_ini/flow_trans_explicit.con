@@ -1,16 +1,16 @@
 {
+  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Test15 - 2D unsteady flow LM", 
-    material = "./input/test15.mtr", 
+    description = "2D unsteady flow LM", 
+    material = "./input/uloha.mtr", 
     mesh = {
-      mesh_file = "./input/test15.msh", 
-      neighbouring = "./input/test15.ngh"
+      mesh_file = "./input/uloha.msh", 
+      neighbouring = "./input/uloha.ngh"
     }, 
-
     primary_equation = {
       TYPE = "Unsteady_LMH", 
-      boundary_file = "./input/test15.fbc", 
+      boundary_file = "./input/uloha.fbc", 
       initial_file = "./input/pressure_initial.in", 
       n_schurs = 2, 
       output = {
@@ -18,30 +18,33 @@
           REF = "/system/output_streams/0"
         }, 
         pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream",          
-        velocity_p0 = "flow_output_stream",
-	save_step = {
+        pressure_p1 = "flow_output_stream", 
+        save_step = {
           REF = "/problem/save_step"
-        }
+        }, 
+        velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07 
+        accuracy = 1e-07, 
+        parameters = ""
       }, 
       sources_formula = "-x", 
       time = {
-        REF = "../../time"
+        end_time = 2.0, 
+        init_dt = 0.01
       }
     }, 
-
+    save_step = 0.1, 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "TransportOperatorSplitting", 
       bc_times = [
         0.0, 
-        0.2
+        0.1
       ], 
-      boundary_file = "./input/test15_tbc", 
-      initial_file = "./input/test15.tic", 
+      boundary_file = "./input/uloha_tbc", 
+      dual_porosity = false, 
+      initial_file = "./input/uloha.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -51,31 +54,19 @@
           REF = "/problem/save_step"
         }
       }, 
-      dual_porosity = false, 
       sorption_enable = false, 
       substances = [
         "conc"
       ], 
       time = {
-        REF = "../../time"
-      },
-      solver = {
-        TYPE = "Petsc", 
-        accuracy = 1e-07 
-      } 
-    }, 
-
-    save_step = 0.1, 
-    time = {
-      end_time = 2.0, 
-      init_dt = 0.1
-    }
-  },
- 
+        end_time = 2.0
+      }
+    } 
+  }, 
   system = {
     output_streams = [
       {
-        file = "./test15.pvd", 
+        file = "./uloha.pvd", 
         format = {
           TYPE = "vtk", 
           variant = "ascii"
@@ -83,7 +74,7 @@
         name = "flow_output_stream"
       }, 
       {
-        file = "./transport-implicit.pvd", 
+        file = "./transport.pvd", 
         format = {
           TYPE = {
             REF = "/system/output_streams/0/format/TYPE"
@@ -93,5 +84,23 @@
         name = "transport_output_stream"
       }
     ]
+  }, 
+  zz_not_supported = {
+    constants = {
+      g = 9.81, 
+      rho = 1000
+    }, 
+    input = {
+      file_type = 1
+    }, 
+    output = {
+      output_file_2 = "./uloha.tmp", 
+      output_file_type = "1"
+    }, 
+    transport = {
+      substances_density_scales = [
+        1
+      ]
+    }
   }
 }

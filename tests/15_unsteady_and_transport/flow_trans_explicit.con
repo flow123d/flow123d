@@ -1,16 +1,16 @@
 {
-  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "2D unsteady flow LM", 
-    material = "./input/uloha.mtr", 
+    description = "Test15 - 2D unsteady flow LM", 
+    material = "./input/test15.mtr", 
     mesh = {
-      mesh_file = "./input/uloha.msh", 
-      neighbouring = "./input/uloha.ngh"
-    }, 
+      mesh_file = "./input/test15.msh", 
+      neighbouring = "./input/test15.ngh"
+    },
+ 
     primary_equation = {
       TYPE = "Unsteady_LMH", 
-      boundary_file = "./input/uloha.fbc", 
+      boundary_file = "./input/test15.fbc", 
       initial_file = "./input/pressure_initial.in", 
       n_schurs = 2, 
       output = {
@@ -19,10 +19,10 @@
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        save_step = {
+        velocity_p0 = "flow_output_stream",
+	save_step = {
           REF = "/problem/save_step"
-        }, 
-        velocity_p0 = "flow_output_stream"
+        }
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -35,6 +35,7 @@
         init_dt = 0.01
       }
     }, 
+
     save_step = 0.1, 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
@@ -42,9 +43,8 @@
         0.0, 
         0.1
       ], 
-      boundary_file = "./input/uloha_tbc", 
-      dual_porosity = false, 
-      initial_file = "./input/uloha.tic", 
+      boundary_file = "./input/test15_tbc", 
+      initial_file = "./input/test15.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -54,19 +54,22 @@
           REF = "/problem/save_step"
         }
       }, 
+      dual_porosity = false, 
       sorption_enable = false, 
       substances = [
         "conc"
       ], 
+
       time = {
         end_time = 2.0
       }
     } 
   }, 
+
   system = {
     output_streams = [
       {
-        file = "./uloha.pvd", 
+        file = "./test15.pvd", 
         format = {
           TYPE = "vtk", 
           variant = "ascii"
@@ -84,23 +87,5 @@
         name = "transport_output_stream"
       }
     ]
-  }, 
-  zz_not_supported = {
-    constants = {
-      g = 9.81, 
-      rho = 1000
-    }, 
-    input = {
-      file_type = 1
-    }, 
-    output = {
-      output_file_2 = "./uloha.tmp", 
-      output_file_type = "1"
-    }, 
-    transport = {
-      substances_density_scales = [
-        1
-      ]
-    }
   }
 }
