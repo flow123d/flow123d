@@ -34,6 +34,21 @@
 #include "fem/mapping.hh"
 
 
+/**
+ * Auxiliary templates to resolve nonzero matrix sizes for small dimensions. 
+ * ( some compilers do not accept ternary operator in template parameters.)
+ */ 
+template<unsigned int dim>
+class MatrixSizes {
+public:  
+  static const unsigned int dim_minus_one = dim-1;
+};  
+
+template<>
+class MatrixSizes<0> {
+public:  
+  static const unsigned int dim_minus_one = 0;
+};  
 
 
 /**

@@ -288,7 +288,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
         else
         {
             mat::fixed<spacedim,dim> side_coords;
-            mat::fixed<spacedim, (dim-1 >= 0) ? dim-1 : 0 > side_jac;   // some compilers complain for case dim==0
+            mat::fixed<spacedim, MatrixSizes<dim>::dim_minus_one > side_jac;   // some compilers complain for case dim==0
 
             // calculation of side Jacobian
             side_coords.zeros();

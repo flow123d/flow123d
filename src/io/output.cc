@@ -416,9 +416,11 @@ int OutputTime::write_data(double time)
 {
     int ret = 0;
 
+    DBGMSG("write_data 1");
     int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank != 0 ) return 0;
+    DBGMSG("write_data 2");
 
     if(this->output_format != NULL) {
     	ret = this->output_format->write_data(time);
