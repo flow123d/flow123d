@@ -86,11 +86,26 @@ public:
 	 */
     void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements);
 
-    /// Overrides BoundingIntevalHierachy::sum_elements_in_leaves
-    void sum_elements_in_leaves(int &sum);
+    /**
+     * Browse tree and get its typical parameters
+     * Method for gtests
+     *
+     * @param maxDepth Gets maximal depth of tree
+     * @param minDepth Gets minimal depth of tree
+     * @param avgDepth Gets average depth of tree
+     * @param leafNodesCount Gets count of all leaf nodes of tree
+     * @param innerNodesCount Gets count of all inner nodes of tree
+     * @param elementLeafCount Gets sum of elements contained in all leaf nodes
+     */
+    void get_tree_params(int &maxDepth, int &minDepth, double &avgDepth, int &leafNodesCount,
+    		int &innerNodesCount, int &sumElements);
 
-    /// Overrides BoundingIntevalHierachy::get_tree_depth
-    void get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth);
+    /**
+     * Get vector of mesh elements bounding boxes
+     *
+     * @return elements_ vector
+     */
+    std::vector<BoundingBox> &get_elements() { return elements_; }
 
 protected:
     /// distribute elements into subareas
@@ -104,7 +119,7 @@ protected:
 
     /// mesh
     Mesh* mesh_;
-	/// vector of bounding boxes contained in node
+	/// vector of mesh elements bounding boxes
     std::vector<BoundingBox> elements_;
 
 private:

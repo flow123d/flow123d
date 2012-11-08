@@ -47,11 +47,19 @@ public:
 	 */
     int get_element_count();
 
-    /// Overrides BoundingIntevalHierachy::sum_elements_in_leaves
-    void sum_elements_in_leaves(int &sum);
-
-    /// Overrides BoundingIntevalHierachy::get_tree_depth
-    void get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth);
+    /**
+     * Browse tree and get its typical parameters
+     * Method for gtests
+     *
+     * @param maxDepth Gets maximal depth of tree
+     * @param minDepth Gets minimal depth of tree
+     * @param sumDepth Gets sum of all depths of tree
+     * @param leafNodesCount Gets count of all leaf nodes of tree
+     * @param innerNodesCount Gets count of all inner nodes of tree
+     * @param elementLeafCount Gets sum of elements contained in all leaf nodes
+     */
+    void get_tree_params(int &maxDepth, int &minDepth, int &sumDepth, int &leafNodesCount,
+    		int &innerNodesCount, int &sumElements);
 
 protected:
 

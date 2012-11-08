@@ -106,24 +106,18 @@ int BIHNode::get_element_count() {
 	return element_ids_.size();
 }
 
-void BIHNode::sum_elements_in_leaves(int &sum) {
-	if (leaf_) {
-		sum += element_ids_.size();
-	} else {
-		((BIHNode *)child_[0])->sum_elements_in_leaves(sum);
-		((BIHNode *)child_[1])->sum_elements_in_leaves(sum);
-	}
-}
 
-void BIHNode::get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth) {
+void BIHNode::get_tree_params(int &maxDepth, int &minDepth, int &sumDepth, int &leafNodesCount,
+		int &innerNodesCount, int &sumElements) {
 	if (leaf_) {
-		if (writeAllDepth) xprintf(Msg, "%d - ", depth_);
 		if (depth_ > maxDepth) maxDepth = depth_;
 		if (depth_ < minDepth) minDepth = depth_;
 		sumDepth += depth_;
-		++leavesCount;
+		++leafNodesCount;
+		sumElements += element_ids_.size();
 	} else {
-		((BIHNode *)child_[0])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
-		((BIHNode *)child_[1])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
+		++innerNodesCount;
+		((BIHNode *)child_[0])->get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
+		((BIHNode *)child_[1])->get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
 	}
 }

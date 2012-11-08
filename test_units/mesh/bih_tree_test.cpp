@@ -6,88 +6,104 @@
  */
 
 
-
-
-/*
- * gmsh_reader_test.cpp
- *
- *  Created on: Oct 2, 2012
- *      Author: jb
- */
-
 #define DEBUG
 
 #include <gtest/gtest.h>
-#include <sstream>
-#include <string>
+#include <cmath>
 
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include "new_mesh/bih_tree.hh"
 
-// simplest cube 123d
-string gmsh_mesh = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-8
-1 1 1 1
-2 -1 1 1
-3 -1 -1 1
-4 1 -1 1
-5 1 -1 -1
-6 -1 -1 -1
-7 1 1 -1
-8 -1 1 -1
-$EndNodes
-$Elements
-9
-1 1 2 37 20 7 3
-2 2 2 38 34 6 3 7
-3 2 2 38 36 3 1 7
-4 4 2 39 40 3 7 1 2
-5 4 2 39 40 3 7 2 8
-6 4 2 39 40 3 7 8 6
-7 4 2 39 42 3 7 6 5
-8 4 2 39 42 3 7 5 4
-9 4 2 39 42 3 7 4 1
-$EndElements
-)CODE";
+
+/// Generates random double number in interval <fMin, fMax>
+double f_rand(double fMin, double fMax) {
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
+}
 
 
-void create_tree(FilePath &meshFile, int elementLimit = 0) {
-	int maxDepth, minDepth, sum, leaves;
+/// Gets count of intersected elements with bounding box
+int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &boundingBoxes) {
+	int insecElements = 0;
+
+	for (int i=0; i<boundingBoxes.size(); i++) {
+		if (bb.intersection(boundingBoxes[i])) insecElements++;
+	}
+
+	return insecElements;
+}
+
+
+/**
+ * Creates tree and performs its tests
+ *  - creates tree from mesh file
+ *  - performs tests of basic parameters (maximal depth, count of nodes)
+ *  - tests intersection with bounding box out of mesh
+ *  - tests intersection with three bounding boxes in mesh
+ */
+void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
+	int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
+	double avgDepth;
 	Mesh mesh;
 	GmshMeshReader reader;
+	BoundingBox bb;
+	arma::vec3 min, max;
+	std::vector<int> searchedElements;
 
 	reader.read(meshFile, &mesh);
 
+	// creates tree and tests its basic parameters
 	BIHTree bt(&mesh, elementLimit);
-	bt.get_tree_depth(maxDepth, minDepth, sum, leaves, false);
+	bt.get_tree_params(maxDepth, minDepth, avgDepth, leafNodesCount, innerNodesCount, sumElements);
+	EXPECT_LT( (leafNodesCount + innerNodesCount) , 4 * (mesh.n_elements() / elementLimit) );
+	EXPECT_LT( maxDepth, (log2(elementLimit) - log2(mesh.n_elements())) / log2(0.8) );
+
+	// tests of intersection with bounding box out of mesh
+	bb.set_bounds(arma::vec3("0 0 1.01"), arma::vec3("0.1 0.1 1.05"));
+	bt.find_elements(bb, searchedElements);
+	EXPECT_EQ(0, searchedElements.size());
+
+	// tests of intersection with bounding box in mesh near point [-1, -1, -1]
+	for (int i=0; i<3; i++) {
+		min(i) = f_rand(-0.99, -0.97);
+		max(i) = f_rand(-0.96, -0.94);
+	}
+	bb.set_bounds(min, max);
+	bt.find_elements(bb, searchedElements);
+	insecSize = get_intersection_count(bb, bt.get_elements());
+	EXPECT_EQ(searchedElements.size(), insecSize);
+
+	// tests of intersection with bounding box in mesh near point [0, 0, 0]
+	for (int i=0; i<3; i++) {
+		min(i) = f_rand(-0.03, -0.01);
+		max(i) = f_rand(+0.01, +0.03);
+	}
+	bb.set_bounds(min, max);
+	bt.find_elements(bb, searchedElements);
+	insecSize = get_intersection_count(bb, bt.get_elements());
+	EXPECT_EQ(searchedElements.size(), insecSize);
+
+	// tests of intersection with bounding box in mesh near point [0.1, 0.5, 0.9]
+	for (int i=0; i<3; i++) {
+		min(i) = f_rand(0.07 + i * 0.4, 0.09 + i * 0.4);
+		max(i) = f_rand(0.11 + i * 0.4, 0.13 + i * 0.4);
+	}
+	bb.set_bounds(min, max);
+	bt.find_elements(bb, searchedElements);
+	insecSize = get_intersection_count(bb, bt.get_elements());
+	EXPECT_EQ(searchedElements.size(), insecSize);
+
 }
 
-TEST(BIHTree_Test, mesh_from_stream) {
-    stringstream ss(gmsh_mesh);
 
-    Mesh mesh;
-    GmshMeshReader reader;
-
-    reader.read(ss, &mesh);
-
-    BIHTree bt(&mesh, 4);
-    int maxDepth, minDepth, sum, leaves;
-    bt.get_tree_depth(maxDepth, minDepth, sum, leaves, false);
-}
-
-// ONLY THIS
 TEST(BIHTree_Test, mesh_108_elements_homogeneous) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
 
-    create_tree(mesh_file);
+    create_test_tree(mesh_file);
 
-    // tree->number_of_nodes  < C * (mesh.n_elements() / areaElementLimit)
+    // tree->number_of_nodes  < C * (mesh.n_elements() / areaElementLimit) -- C=4
     // tree->max_depth  < (lg(A) - lg(N))/lg(0.8)
     //
     // find_elements - box mimo sit - EXPECT_EQ( 0, result.size())
@@ -96,78 +112,27 @@ TEST(BIHTree_Test, mesh_108_elements_homogeneous) {
 
 }
 
-TEST(BIHTree_Test, mesh_390_elements_homogeneous) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_390_elem.msh", FilePath::input_file);
 
-    create_tree(mesh_file);
-}
-
-TEST(BIHTree_Test, mesh_1907_elements_homogeneous) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_1907_elem.msh", FilePath::input_file);
-
-    create_tree(mesh_file);
-}
-
-// ONLY THIS
 TEST(BIHTree_Test, mesh_7590_elements_homogeneous) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_7590_elem.msh", FilePath::input_file);
 
-    create_tree(mesh_file);
+    create_test_tree(mesh_file);
 }
 
-TEST(BIHTree_Test, mesh_31949_elements_homogeneous) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_31949_elem.msh", FilePath::input_file);
 
-    create_tree(mesh_file, 100);
-}
-
-// ONLY THIS
 TEST(BIHTree_Test, mesh_188_elements_refined) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_188_elem.msh", FilePath::input_file);
 
-    create_tree(mesh_file);
-}
-
-TEST(BIHTree_Test, mesh_482_elements_refined) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_482_elem.msh", FilePath::input_file);
-
-    create_tree(mesh_file);
-}
-
-TEST(BIHTree_Test, mesh_1638_elements_refined) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_1638_elem.msh", FilePath::input_file);
-
-    create_tree(mesh_file);
-}
-
-TEST(BIHTree_Test, mesh_5927_elements_refined) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_5927_elem.msh", FilePath::input_file);
-
-    create_tree(mesh_file);
+    create_test_tree(mesh_file);
 }
 
 
-// ONLY THIS
 TEST(BIHTree_Test, mesh_27936_elements_refined) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_27936_elem.msh", FilePath::input_file);
 
-    create_tree(mesh_file, 100);
+    create_test_tree(mesh_file);
 }
-
-TEST(BIHTree_Test, mesh_111324_elements_refined) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_111324_elem.msh", FilePath::input_file);
-
-    create_tree(mesh_file, 100);
-}
-
 

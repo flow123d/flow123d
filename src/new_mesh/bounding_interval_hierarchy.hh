@@ -61,27 +61,6 @@ public:
 	 */
     virtual int get_element_count() { return -1; }
 
-    /**
-     * Get sum of element counts in all leaf nodes of tree
-     * Method for gtests
-     *
-     * @param sum Sums up counts of elements
-     */
-    virtual void sum_elements_in_leaves(int &sum) {}
-
-    /**
-     * Browse tree and get its minimal, maximal and average depth
-     * Average depth is counted as sumDepth / leavesCount
-     * Method for gtests
-     *
-     * @param maxDepth Gets maximal depth of tree
-     * @param minDepth Gets minimal depth of tree
-     * @param sumDepth Gets sum of all depths of tree
-     * @param leavesCount Gets count of all leaves of tree
-     * @param writeAllDepth Method writes depth in all leaf nodes if value is true
-     */
-    virtual void get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth) {}
-
 protected:
 
     /// count of subareas - don't change

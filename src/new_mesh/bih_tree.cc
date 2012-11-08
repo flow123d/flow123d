@@ -89,13 +89,6 @@ int BIHTree::get_element_count() {
 }
 
 
-void BIHTree::sum_elements_in_leaves(int &sum) {
-	sum = 0;
-	((BIHNode *)child_[0])->sum_elements_in_leaves(sum);
-	((BIHNode *)child_[1])->sum_elements_in_leaves(sum);
-}
-
-
 void BIHTree::distribute_elements( std::vector<BoundingBox> &elements, int areaElementLimit)
 {
 	int index=0;
@@ -116,6 +109,7 @@ void BIHTree::distribute_elements( std::vector<BoundingBox> &elements, int areaE
 
 void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements)
 {
+	vector<int>::iterator it;
 	searchedElements.clear();
 	if (!leaf_) {
 		if (child_[0]->boundingBox_.intersection(boundingBox))
@@ -125,9 +119,9 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 	}
 
 	sort(searchedElements.begin(), searchedElements.end());
-	unique(searchedElements.begin(), searchedElements.end());
-		}
-
+	it = unique(searchedElements.begin(), searchedElements.end());
+	searchedElements.resize( it - searchedElements.begin() );
+}
 
 
 double BIHTree::get_median_coord(const std::vector<BoundingBox> &elements, int index) {
@@ -156,17 +150,17 @@ void BIHTree::element_boxes() {
 
 
 
-void BIHTree::get_tree_depth(int &maxDepth, int &minDepth, int &sumDepth, int &leavesCount, bool writeAllDepth) {
+void BIHTree::get_tree_params(int &maxDepth, int &minDepth, double &avgDepth, int &leafNodesCount,
+		int &innerNodesCount, int &sumElements) {
+	int sumDepth = 0;
 	maxDepth = 0;
 	minDepth = 32767;
-	sumDepth = 0;
-	leavesCount = 0;
-	if (writeAllDepth) xprintf(Msg, " - Depth in leaf nodes:\n");
-	((BIHNode *)child_[0])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
-	((BIHNode *)child_[1])->get_tree_depth(maxDepth, minDepth, sumDepth, leavesCount, writeAllDepth);
-	if (writeAllDepth) xprintf(Msg, "\n");
-	xprintf(Msg, " - Depths of tree - \n");
-	xprintf(Msg, "   - Maximal : %d\n", maxDepth);
-	xprintf(Msg, "   - Minimal : %d\n", minDepth);
-	xprintf(Msg, "   - Average : %f\n", ((double) sumDepth / (double) leavesCount));
+	leafNodesCount = 0;
+	innerNodesCount = 1;
+	sumElements = 0;
+
+	((BIHNode *)child_[0])->get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
+	((BIHNode *)child_[1])->get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
+
+	avgDepth = (double) sumDepth / (double) leafNodesCount;
 }
