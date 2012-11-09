@@ -29,7 +29,7 @@
 
 #include <string>
 #include "system/system.hh"
-#include "io_namehandler.hh"
+#include "system/xio.h"
 
 #include <boost/algorithm/string/trim.hpp> // trim string leading and ending spaces
 #include <boost/algorithm/string/classification.hpp>

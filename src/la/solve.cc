@@ -37,8 +37,11 @@
 #include <petscviewer.h>
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
+#include "system/xio.h"
+
+
 #include "la/distribution.hh"
-#include "io_namehandler.hh"
 #include "la/solve.h"
 #include "la/linsys.hh"
 
@@ -468,14 +471,17 @@ void solver_petsc(Solver *solver)
 	KSPSetOperators(System, sys->get_matrix(), sys->get_matrix(), DIFFERENT_NONZERO_PATTERN);
 	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
 	KSPSetFromOptions(System);
+
+	START_TIMER("iteration");
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);
 
 	// TODO: make solver part of LinSyt, and make gatter for num of it
-	xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", Reason, nits);
-    Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
+	xprintf(Msg,"convergence reason %d, number of iterations is %d\n", Reason, nits);
+    ADD_CALLS(nits);
 	KSPDestroy(&System);
+	END_TIMER("iteration");
 
 }
 

@@ -38,7 +38,6 @@
 
 
 #include "system/system.hh"
-#include "io_namehandler.hh"
 
 #include "system/math_fce.h"
 #include "mesh/mesh.h"

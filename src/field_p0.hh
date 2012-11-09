@@ -30,6 +30,8 @@
 #define FIELD_P0_HH_
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
+#include "system/xio.h"
 #include <string>
 #include "mesh/mesh_types.hh"
 #include "mesh/mesh.h"

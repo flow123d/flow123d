@@ -30,14 +30,17 @@ set(PETSC_ARCH "gcc_O3")
 # "debug" set flags: "-g -pg -DDEBUG"
 # "release" set flags: "-O3 -DNODEBUG"
 #
-# you can override these settings through variable CC_FLAGS
+# you can override these settings through variable FLOW_CC_FLAGS
 
-set(CMAKE_BUILD_TYPE debug)
+set(FLOW_BUILD_TYPE debug)
 
-# Uncomment this for CygWIN compiled PETSc (CMAKE fails to detect it properly)
+#set(FLOW_CC_FLAGS "-O3 -DNODEBUG -pg ")
+
+### PETSC - use without testing
+# Uncomment this if PETSC are detected, but tests during configuration fail. 
+# (Cygwin, parallel systems with obligatory mpirun execution)
 # set (PETSC_EXECUTABLE_RUNS YES)
 
-#set(CC_FLAGS "-O3 -DNODEBUG -pg ")
 
 ### External Projects directory
 #

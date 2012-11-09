@@ -29,6 +29,7 @@
  */
 
 #include "system/system.hh"
+#include "system/xio.h"
 #include "mesh/boundaries.h"
 #include "mesh/mesh.h"
 

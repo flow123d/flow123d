@@ -27,6 +27,7 @@
 
 #include "new_mesh/bih_tree.hh"
 #include "new_mesh/bih_node.hh"
+#include "system/sys_profiler.hh"
 
 #define DEBUG
 

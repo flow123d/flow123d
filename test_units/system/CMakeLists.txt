@@ -10,7 +10,7 @@
 # 
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
+# See the GNU General Public License for more detail
 #
 # You should have received a copy of the GNU General Public License along with this program; if not,
 # write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
@@ -29,11 +29,12 @@ add_custom_target( system_test )
 set(super_test "system_test")
 set(super_test_libs system_lib)
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for auto and multiline raw strings
 
-
-define_mpi_test(profiler 1)
-#define_mpi_test(profiler 2)
-
+    define_mpi_test(profiler 1)
+    #define_mpi_test(profiler 2)
+endif()
 
 
 

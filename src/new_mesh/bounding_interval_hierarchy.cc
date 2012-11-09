@@ -95,7 +95,7 @@ void BoundingIntevalHierachy::split_area(std::vector<BoundingBox> &elements, int
 	int medianCount = (elementCount >= max_median_count) ? max_median_count :((elementCount % 2) ? elementCount : elementCount - 1);
 	int medianPosition = (int)(medianCount/2);
 	double median;
-	std:vector<double> coors;
+	std::vector<double> coors;
 	bool isMaxSplit;
 	arma::vec3 diff = boundingBox_.get_max() - boundingBox_.get_min();
 

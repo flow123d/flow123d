@@ -179,7 +179,7 @@ void FunctionInterpolatedP0<dim>::calculate_triangle_pressure(TTriangle &element
 	pressure_ = 0.0;
 
         START_TIMER("compute_pressure_2D");
-        SET_TIMER_SUBFRAMES("compute_pressure_2D", searchedElements_.size());
+    ADD_CALLS( searchedElements_.size());
 	for (std::vector<int>::iterator it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
                 int idx = *it;
@@ -215,7 +215,7 @@ void FunctionInterpolatedP0<dim>::calculate_abscissa_pressure(TAbscissa &element
         total_measure = 0.0;
 	pressure_ = 0.0;
 	START_TIMER("compute_pressure_1D");
-	SET_TIMER_SUBFRAMES("compute_pressure_1D", searchedElements_.size());
+	ADD_CALLS(searchedElements_.size());
 	for (std::vector<int>::iterator it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
 		int idx = *it;

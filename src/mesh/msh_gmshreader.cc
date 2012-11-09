@@ -131,7 +131,6 @@ void GmshMeshReader::read_nodes(istream &in, Mesh* mesh) {
             tok.next_line();
 
             unsigned int id = lexical_cast<unsigned int> (*tok); ++tok;
-            INPUT_CHECK( id >= 0, "Negative node id at line %d of the '$Nodes' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
             NodeFullIter node = mesh->node_vector.add_item(id);
 
             node->point()(0)=lexical_cast<double> (*tok); ++tok;
@@ -166,7 +165,6 @@ void GmshMeshReader::read_elements(istream &in, Mesh * mesh) {
             tok.next_line();
 
             unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
-            INPUT_CHECK(id >= 0, "Negative element id at line %d of the '$Elements' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
 
             ElementFullIter ele(mesh->element.add_item(id));
 

@@ -27,8 +27,6 @@
  *  @author Jan Stebel
  */
 
-#include "io_namehandler.hh"
-
 #include "petscmat.h"
 #include <armadillo>
 #include "system/xio.h"

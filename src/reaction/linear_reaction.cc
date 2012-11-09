@@ -7,6 +7,7 @@
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 #include "materials.hh"
 #include "transport/transport.h"
 #include "la/distribution.hh"

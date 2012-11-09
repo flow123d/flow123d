@@ -31,6 +31,7 @@
 #include <petsc.h>
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -82,11 +83,9 @@ Application::Application( int argc,  char ** argv)
     PetscErrorCode ierr;
     ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
-    DBGMSG("log: %s\n", log_filename_.c_str());
     system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
     Profiler::initialize(PETSC_COMM_WORLD);
-    START_TIMER("WHOLE PROGRAM");
 
     // Say Hello
     // make strings from macros in order to check type
@@ -95,15 +94,17 @@ Application::Application( int argc,  char ** argv)
     string branch(_PROGRAM_BRANCH_);
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
     
+    int mpi_size;
+    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
     xprintf(Msg, "This is Flow123d, version %s rev: %s\n", version.c_str(),revision.c_str());
-    xprintf(Msg, "Build: %s \n", build.c_str() );
+    xprintf(Msg, "Build: %s MPI size: %d\n", build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 
 
     // read main input file
     Input::JSONToStorage json_reader;
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    DBGMSG("Reading file %s.\n", fname.c_str() );
+    DBGMSG("Reading main input file %s.\n", fname.c_str() );
     std::ifstream in_stream(fname.c_str());
     if (! in_stream) {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
@@ -153,6 +154,8 @@ Application::Application( int argc,  char ** argv)
         }
 
     }
+
+    free_and_exit();
 
 }
 
@@ -276,7 +279,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
             log_filename_ = ""; // use default
         }
     }
-    DBGMSG("log: %d %s\n", vm.count("log_filename"), log_filename_.c_str());
 
     // TODO: catch specific exceptions and output usage messages
 }
@@ -311,6 +313,7 @@ Input::Type::Record &  Application::get_input_type() {
 
 void Application::free_and_exit() {
     //close the Profiler
+    DBGMSG("prof: %d\n", use_profiler);
     if (use_profiler) Profiler::instance()->output();
     Profiler::uninitialize();
 

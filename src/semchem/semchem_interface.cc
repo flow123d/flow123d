@@ -3,6 +3,7 @@
 #include "reaction/reaction.hh"
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 #include "io/read_ini.h"
 
 #include "semchem/che_semchem.h"

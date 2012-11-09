@@ -241,6 +241,10 @@ int Output::write_tail(void)
 
 int Output::write_data()
 {
+    int rank=0;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank!=0) return 1;
+
 	if(this->output_format != NULL) {
         return this->output_format->write_data();
     }

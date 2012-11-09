@@ -32,6 +32,7 @@
 
 
 #include "system/system.hh"
+#include "system/xio.h"
 #include "input/input_type.hh"
 
 #include <boost/tokenizer.hpp>
