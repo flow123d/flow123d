@@ -568,7 +568,6 @@ void ConvectionTransport::read_bc_vector() {
             boundary_id = atoi(xstrtok(NULL));
             //        DBGMSG("transp b. id: %d\n",boundary_id);
             boundary_index = mesh_->boundary.index( *(Boundary::id_to_bcd.find_id(boundary_id)) );
-            DBGMSG("transp bcd: %d %d\n", boundary_id, boundary_index);
             INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
             for (sbi = 0; sbi < n_substances; sbi++) {
                 bcd_conc = atof(xstrtok(NULL));
@@ -1018,8 +1017,7 @@ void ConvectionTransport::transport_sorption( int elm_pos, MaterialDatabase::Ite
 
     phi = mtr->phi;
 
-    if ((mtr->sorp_coef[sbi][0] == 0) || (mtr->por_m == 1))
-        return;
+    if ((mtr->sorp_coef[sbi].size() == 0) || (mtr->por_m == 1)) return;
 
     n = 1 - (mtr->por_m + mtr->por_imm);
     Nm = mtr->por_m;

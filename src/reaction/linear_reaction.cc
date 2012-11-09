@@ -55,7 +55,8 @@ Input::Type::Record & Linear_reaction::get_input_type()
 using namespace std;
 
 Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: Reaction(marks, init_mesh, material_database, in_rec, names), reaction_matrix(NULL)
+	: Reaction(marks, init_mesh, material_database, in_rec, names),
+	  reaction_matrix(NULL)
 {
 
 	//Input::Array names_array = in_rec.val<Input::Array>("substances");
@@ -89,7 +90,7 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 {
 	int rows, cols;
 
-	cout << "We are going to allocate reaction matrix" << endl;
+	DBGMSG("We are going to allocate reaction matrix\n");
 	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
 	for(rows = 0; rows < n_substances(); rows++){
 		reaction_matrix[rows] = (double *)xmalloc(n_substances() * sizeof(double));
@@ -100,7 +101,8 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 		 else           	reaction_matrix[rows][cols] = 0.0;
 	 }
 	}
-	print_reaction_matrix();
+
+	//print_reaction_matrix();
 	return reaction_matrix;
 }
 
@@ -170,7 +172,7 @@ double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are 
             reaction_matrix[index_par][ substance_ids[i_decay][i_product] ]
                                        = (1 - pow(0.5, rel_step))* bifurcation[i_decay][i_product-1];
     }
-    print_reaction_matrix(); //just for control print
+    // print_reaction_matrix(); //just for control print
     return reaction_matrix;
 }
 
@@ -352,6 +354,7 @@ void Linear_reaction::print_reaction_matrix(void)
 {
 	int cols,rows;
 
+	DBGMSG("r mat: %p\n", reaction_matrix);
 	if(reaction_matrix != NULL){
 		xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_step);
 		for(rows = 0; rows < n_substances(); rows++){

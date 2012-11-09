@@ -390,7 +390,8 @@ void solver_petsc(Solver *solver)
 	   } else {
 	       // serial setting
               if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
+                  petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix  -pc_factor_fill 6.0";
+                  //petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
               else
                   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
 	   }

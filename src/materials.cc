@@ -180,6 +180,8 @@ void MaterialDatabase::read_transport_materials(bool dual_porosity, bool sorptio
                 count++;
             }
             valid_sections["DualPorosity"] = count;
+
+
         }
    // }
 
