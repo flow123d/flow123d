@@ -239,7 +239,6 @@ public:
     unsigned int hash_idx_;
 };
 
-#endif
 
 
 /**
@@ -255,6 +254,7 @@ public:
  *
  */
 class Timer {
+
 
 public:
     /// Size of array @p child_timers, the hash table containing descendants in the call tree.
@@ -363,6 +363,7 @@ protected:
 
 
     friend class Profiler;
+
 };
 
 
@@ -595,5 +596,49 @@ public:
         Profiler::instance()->stop_timer(timer_index_);
     }
 };
+
+#else // DEBUG_PROFILER
+
+
+// dummy declaration of Profiler class
+class Profiler {
+public:
+    static void initialize(MPI_Comm communicator)
+    {
+        if (!_instance) _instance = new Profiler();
+    }
+    inline static Profiler* instance() {
+        ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
+        return _instance;
+    }
+    void set_task_info(string description, int size)
+    {}
+    void set_program_info(string program_name, string program_version, string branch, string revision, string build)
+    {}
+    void notify_malloc(const size_t size )
+    {}
+    void notify_free(const size_t size )
+    {}
+    void output(ostream &os)
+    {}
+    void output()
+    {}
+    static void uninitialize() {
+        if (_instance)  {
+            delete _instance;
+            _instance = NULL;
+        }
+    }
+
+private:
+    static Profiler* _instance;
+    Profiler() {}
+};
+
+
+
+
+#endif
+
 
 #endif

@@ -43,6 +43,7 @@ set(sources_lib_system
     system/exceptions.cc
     io/read_ini.cc
     system/file_path.cc
+    system/tokenizer.cc
 )
 
 set(sources_lib_input

@@ -35,25 +35,12 @@
 #include <fstream>
 #include <string>
 
-#include <boost/tokenizer.hpp>
+#include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 
 
 using namespace std;
 
-Tokenizer::Tokenizer( istream &in)
-: in_(in), line_counter_(0), line_tokenizer_(line_,  boost::char_separator<char>("\t \n"))
-{}
-
-
-
-void Tokenizer::next_line() {
-    line_="";
-    while ( line_ == "") { std::getline( in_, line_); boost::trim( line_ ); line_counter_++; }
-    line_tokenizer_.assign(line_);
-    tok_ = line_tokenizer_.begin();
-    position = 0;
-}
 
 GmshMeshReader::GmshMeshReader()
 {

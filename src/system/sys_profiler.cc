@@ -40,7 +40,7 @@
 
 #include "system/file_path.hh"
 
-
+#ifdef DEBUG_PROFILER
 /*********************************************************************************************
  * Implementation of class Timer
  */
@@ -146,12 +146,12 @@ CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__
 
 void Profiler::initialize(MPI_Comm communicator)
 {
-#ifdef DEBUG_PROFILER
+
     if (!_instance)
         _instance = new Profiler(communicator);
     else
         xprintf(Warn, "The profiler already initialized.\n");
-#endif
+
 }
 
 
@@ -162,10 +162,12 @@ Profiler::Profiler(MPI_Comm comm)
   start_time( time(NULL) )
 
 {
+#ifdef DEBUG_PROFILER
     MPI_Comm_rank(communicator_, &(mpi_rank_));
 
     static constexpr CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
+#endif
 }
 
 
@@ -368,7 +370,6 @@ void Profiler::update_running_timers() {
 
 
 void Profiler::output(ostream &os) {
-#ifdef DEBUG_PROFILER
 
     const int column_space = 3;
 
@@ -466,13 +467,11 @@ void Profiler::output(ostream &os) {
             os << endl;
         }
     }
-#endif
 }
 
 
 
 void Profiler::output() {
-#ifdef DEBUG_PROFILER
             char filename[PATH_MAX];
             strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
             string full_fname =  FilePath(string(filename), FilePath::output_file);
@@ -481,14 +480,12 @@ void Profiler::output() {
             ofstream os(full_fname.c_str());
             output(os);
             os.close();
-#endif
 }
 
 
 
 void Profiler::uninitialize()
 {
-#ifdef DEBUG_PROFILER
     if (_instance) {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag());
@@ -496,5 +493,12 @@ void Profiler::uninitialize()
         delete _instance;
         _instance = NULL;
     }
-#endif
 }
+
+#else // def DEBUG_PROFILER
+
+Profiler* Profiler::_instance = NULL;
+
+#endif // def DEBUG_PROFILER
+
+
