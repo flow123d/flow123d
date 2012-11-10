@@ -305,8 +305,8 @@ OutputTime *OutputTime::is_created(const Input::Record &in_rec)
 }
 
 OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
-: output_format(NULL)
 {
+    output_format=NULL;
     int rank=0;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank!=0) return;

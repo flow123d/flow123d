@@ -644,6 +644,7 @@ void ConvectionTransport::compute_one_step() {
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
     }
+    DBGMSG("time: %f, end\n", time_->t());
 }
 
 

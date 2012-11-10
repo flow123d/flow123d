@@ -88,7 +88,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (it && rank==0) {
-        xprintf(Msg, "Opening raw output: %s\n", string(*it).c_ptr());
+        xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
         raw_output_file = xfopen(*it, "wt");
     }
 
