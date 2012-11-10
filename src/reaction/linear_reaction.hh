@@ -48,7 +48,7 @@ class Linear_reaction: public Reaction
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		//virtual
-		void compute_one_step(void);
+		virtual void compute_one_step(void);
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/

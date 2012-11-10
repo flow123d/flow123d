@@ -298,6 +298,7 @@ void Linear_reaction::set_time_step(double new_timestep)
 
 void Linear_reaction::compute_one_step(void)
 {
+    //DBGMSG("decay step\n");
     if (reaction_matrix == NULL)   return;
 
     START_TIMER("decay_step");

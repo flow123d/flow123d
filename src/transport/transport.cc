@@ -608,6 +608,7 @@ void ConvectionTransport::compute_one_step() {
 
     // proceed to actually computed time
     time_->next_time();
+    DBGMSG("time: %f, soorp: %d\n", time_->t(), sorption);
 
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase

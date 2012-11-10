@@ -85,8 +85,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     // optionally open raw output file
     Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
 
-    if (it) {
-        cout << "raw out: " << string(*it) << endl;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (it && rank==0) {
+        xprintf(Msg, "Opening raw output: %s\n", string(*it).c_ptr());
         raw_output_file = xfopen(*it, "wt");
     }
 

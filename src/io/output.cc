@@ -305,6 +305,7 @@ OutputTime *OutputTime::is_created(const Input::Record &in_rec)
 }
 
 OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
+: output_format(NULL)
 {
     int rank=0;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -420,11 +421,11 @@ int OutputTime::write_data(double time)
 {
     int ret = 0;
 
-    DBGMSG("write_data 1");
+    DBGMSG("write_data before MPI rank test\n");
     int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank != 0 ) return 0;
-    DBGMSG("write_data 2");
+    DBGMSG("write_data AFTER MPI rank test\n");
 
     if(this->output_format != NULL) {
     	ret = this->output_format->write_data(time);
