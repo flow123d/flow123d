@@ -142,7 +142,7 @@ set(sources_lib_semchem
 set(sources_lib_new_mesh
     new_mesh/multi_mesh.cc
     new_mesh/point.cc
-    new_mesh/bounding_interval_hierarchy.cc
+#    new_mesh/bounding_interval_hierarchy.cc
     new_mesh/bounding_box.cc
     new_mesh/bih_node.cc
     new_mesh/bih_tree.cc

@@ -27,7 +27,6 @@
 
 #include "system/system.hh"
 #include "new_mesh/bounding_box.hh"
-#include "new_mesh/bounding_interval_hierarchy.hh"
 
 
 BoundingBox::BoundingBox() {

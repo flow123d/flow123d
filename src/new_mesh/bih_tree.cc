@@ -27,31 +27,22 @@
 
 #include "new_mesh/bih_tree.hh"
 #include "new_mesh/bih_node.hh"
-#include "system/sys_profiler.hh"
 
 #define DEBUG
 
-BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) : BoundingIntevalHierachy() {
+BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) {
 	xprintf(Msg, " - BIHTree->BIHTree(Mesh, unsigned int)\n");
 
 	mesh_ = mesh;
 	if (areaElementLimit == 0) areaElementLimit = 20;
-	//area_element_limit_ = areaElementLimit;
-	leaf_ = false;
-	depth_ = 0;
+	nodes_.reserve(2 * mesh_->n_elements() / areaElementLimit);
 
-	START_TIMER("BIH Tree");
+	//START_TIMER("BIH Tree");
 
-	START_TIMER("BIH box");
-	bounding_box();
-	END_START_TIMER("BIH element boxes");
 	element_boxes();
-	END_START_TIMER("BIH split area");
-	split_area(elements_, areaElementLimit);
-	END_START_TIMER("BIH distribute els.");
-	distribute_elements(elements_, areaElementLimit);
+	root_node(areaElementLimit);
 
-	END_TIMER("BIH Tree");
+	//END_TIMER("BIH Tree");
 
 	xprintf(Msg, " - Tree created\n");
 }
@@ -63,8 +54,7 @@ BIHTree::~BIHTree() {
 }
 
 
-
-void BIHTree::bounding_box() {
+void BIHTree::root_node(unsigned int areaElementLimit) {
 	Node* node = mesh_->node_vector.begin();
 	arma::vec3 point = node->point();
 
@@ -79,8 +69,16 @@ void BIHTree::bounding_box() {
 			maxCoordinates(i) = std::max(maxCoordinates(i), point(i));
 		}
 	}
-	boundingBox_.set_bounds(minCoordinates, maxCoordinates);
 
+	BIHNode bihNode(minCoordinates, maxCoordinates, 0, 0);
+	bihNode.element_ids_.resize(mesh_->n_elements());
+	for (int i=0; i<mesh_->n_elements(); i++) {
+		bihNode.element_ids_[i] = i;
+	}
+	nodes_.push_back(bihNode);
+	bihNode.split_distribute(elements_, nodes_, areaElementLimit);
+
+	//printf(" +++ size: %d \n", nodes_.size());
 }
 
 
@@ -90,45 +88,18 @@ int BIHTree::get_element_count() {
 }
 
 
-void BIHTree::distribute_elements( std::vector<BoundingBox> &elements, int areaElementLimit)
-{
-	int index=0;
-	for (std::vector<BoundingBox>::iterator it = elements.begin(); it!=elements.end(); it++) {
-		for (int j=0; j<child_count; j++) {
-			if (child_[j]->contains_element(splitCoor_, ((BoundingBox)*it).get_min()(splitCoor_), ((BoundingBox)*it).get_max()(splitCoor_))) {
-				((BIHNode *)child_[j])->put_element(index);
-			}
-		}
-		++index;
-	}
-
-	((BIHNode *)child_[0])->split_distribute(elements, areaElementLimit);
-	((BIHNode *)child_[1])->split_distribute(elements, areaElementLimit);
-}
-
-
-
 void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements)
 {
 	vector<int>::iterator it;
 	searchedElements.clear();
-	if (!leaf_) {
-		if (child_[0]->boundingBox_.intersection(boundingBox))
-		    ((BIHNode *)child_[0])->find_elements(boundingBox, searchedElements, elements_);
-		if (child_[1]->boundingBox_.intersection(boundingBox))
-		    ((BIHNode *)child_[1])->find_elements(boundingBox, searchedElements, elements_);
+	if (nodes_.size()) {
+		nodes_[0].find_elements(boundingBox, searchedElements, elements_);
 	}
 
 	sort(searchedElements.begin(), searchedElements.end());
 	it = unique(searchedElements.begin(), searchedElements.end());
 	searchedElements.resize( it - searchedElements.begin() );
 }
-
-
-double BIHTree::get_median_coord(const std::vector<BoundingBox> &elements, int index) {
-	return elements[index].get_center()(splitCoor_);
-}
-
 
 
 void BIHTree::element_boxes() {
@@ -160,8 +131,7 @@ void BIHTree::get_tree_params(int &maxDepth, int &minDepth, double &avgDepth, in
 	innerNodesCount = 1;
 	sumElements = 0;
 
-	((BIHNode *)child_[0])->get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
-	((BIHNode *)child_[1])->get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
+	nodes_[0].get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
 
 	avgDepth = (double) sumDepth / (double) leafNodesCount;
 }

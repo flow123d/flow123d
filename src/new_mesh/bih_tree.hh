@@ -28,7 +28,8 @@
 #ifndef BIH_TREE_HH_
 #define BIH_TREE_HH_
 
-#include "new_mesh/bounding_interval_hierarchy.hh"
+#include "new_mesh/bih_node.hh"
+#include "mesh/mesh.h"
 
 /**
  * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
@@ -54,10 +55,12 @@
  * - more precise documentation
  *
  */
-class BIHTree : public BoundingIntevalHierachy {
-	friend class BoundingIntevalHierachy;
+class BIHTree {
 public:
-	/**
+    /// count of dimensions
+    static const unsigned int dimension = 3;
+
+    /**
 	 * Constructor
 	 *
 	 * Set class members and call functions which create tree
@@ -107,22 +110,19 @@ public:
      */
     std::vector<BoundingBox> &get_elements() { return elements_; }
 
-protected:
-    /// distribute elements into subareas
-    void distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit);
-    /// get value of coordination for calculate a median
-    double get_median_coord(const std::vector<BoundingBox> &elements, int index);
-    /// create bounding box of area
-    void bounding_box();
+private:
     /// create bounding boxes of element
     void element_boxes();
+    /// create root node of tree
+    void root_node(unsigned int areaElementLimit);
 
     /// mesh
     Mesh* mesh_;
 	/// vector of mesh elements bounding boxes
     std::vector<BoundingBox> elements_;
+    /// vector of tree nodes
+    std::vector<BIHNode> nodes_;
 
-private:
 };
 
 #endif /* BIH_TREE_HH_ */

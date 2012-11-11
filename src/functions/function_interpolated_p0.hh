@@ -35,7 +35,7 @@
 #include "mesh/mesh_types.hh"
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
-#include "new_mesh/bounding_interval_hierarchy.hh"
+#include "new_mesh/bih_tree.hh"
 #include "new_mesh/ngh/include/abscissa.h"
 #include "new_mesh/ngh/include/triangle.h"
 #include "new_mesh/ngh/include/tetrahedron.h"
@@ -117,7 +117,7 @@ protected:
 	std::vector<int> searchedElements_;
 
 	/// tree of mesh elements
-	BoundingIntevalHierachy* bihTree_;
+	BIHTree* bihTree_;
 
 	/**
 	 * Read pressures from file and put them to vector pressures_

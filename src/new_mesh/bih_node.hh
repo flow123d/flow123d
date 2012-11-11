@@ -28,10 +28,12 @@
 #ifndef BIH_NODE_HH_
 #define BIH_NODE_HH_
 
-#include "new_mesh/bounding_interval_hierarchy.hh"
+#include "system/system.hh"
+#include "new_mesh/bounding_box.hh"
+#include <armadillo>
+#include <algorithm>
 
-class BIHNode : public BoundingIntevalHierachy {
-	friend class BoundingIntevalHierachy;
+class BIHNode {
 	friend class BIHTree;
 public:
 
@@ -61,26 +63,13 @@ public:
     void get_tree_params(int &maxDepth, int &minDepth, int &sumDepth, int &leafNodesCount,
     		int &innerNodesCount, int &sumElements);
 
-protected:
-
-    /**
-     * distribute elements into subareas
-     */
-    void distribute_elements(std::vector<BoundingBox> &elements, int areaElementLimit);
-
-    /// get value of coordination for calculate a median
-    double get_median_coord(std::vector<BoundingBox> &elements, int index);
-
-    /**
-     * Gets elements which can have intersection with triangle
-     *
-     * @param triangle Triangle which is tested if has intersection
-     * @param searchedElements vector of ids of suspect elements
-     */
-    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox> &meshElements);
-
 private:
-	/**
+    /// max count of elements of which is selected median - value must be even
+    static const unsigned int max_median_count = 1023;
+    /// count of subareas - don't change
+    static const unsigned int child_count = 2;
+
+    /**
 	 * Constructor
 	 *
 	 * Set class members and call functions which create children of node
@@ -89,17 +78,56 @@ private:
 	 * @param splitCoor Coordination of splitting parent area
 	 * @param depth Depth of node in tree.
 	 */
-	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth, unsigned int areaElementLimit);
+	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
 
-	/**
+    /**
+     * Method checks count of elements in area.
+     * If count is greater than areaElementLimit splits area and distributes elements to subareas.
+     */
+    void split_distribute(std::vector<BoundingBox> &elements, std::vector<BIHNode> &nodes, unsigned int areaElementLimit);
+
+    /// get value of coordination for calculate a median
+    double get_median_coord(std::vector<BoundingBox> &elements, int index);
+
+    /**
+     * Tests if element is contained in area bounding box.
+     *
+     * @param coor Testing coordination (split coordination of parent area)
+     * @param min Minimum value of testing coordination
+     * @param max Maximum value of testing coordination
+     * @return True if element is contained in area
+     */
+    bool contains_element(int coor, double min, double max);
+
+    /**
      * Add element into elements_ member
      *
      * @param element Added element
      */
 	void put_element(int element_id);
 
+	/**
+     * Gets elements which can have intersection with triangle
+     *
+     * @param triangle Triangle which is tested if has intersection
+     * @param searchedElements vector of ids of suspect elements
+     */
+    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox> &meshElements);
+
+    /// child nodes indexes
+    //unsigned int child_[child_count];
+    /// child nodes
+    BIHNode* child_[child_count];
 	/// vector of bounding boxes ids contained in node
 	std::vector<int> element_ids_;
+    /// bounding box of area
+    BoundingBox boundingBox_;
+    /// coordination of splitting area
+    int splitCoor_;
+    /// depth of node
+    int depth_;
+    /// indicates if node is leaf
+    bool leaf_;
 
 };
 
