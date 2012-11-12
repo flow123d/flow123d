@@ -35,7 +35,7 @@ BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) {
 
 	mesh_ = mesh;
 	if (areaElementLimit == 0) areaElementLimit = 20;
-	nodes_.reserve(2 * mesh_->n_elements() / areaElementLimit);
+	nodes_.reserve(4 * mesh_->n_elements() / areaElementLimit);
 
 	//START_TIMER("BIH Tree");
 
@@ -77,8 +77,6 @@ void BIHTree::root_node(unsigned int areaElementLimit) {
 	}
 	nodes_.push_back(bihNode);
 	bihNode.split_distribute(elements_, nodes_, areaElementLimit);
-
-	//printf(" +++ size: %d \n", nodes_.size());
 }
 
 
@@ -93,7 +91,7 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 	vector<int>::iterator it;
 	searchedElements.clear();
 	if (nodes_.size()) {
-		nodes_[0].find_elements(boundingBox, searchedElements, elements_);
+		nodes_[0].find_elements(boundingBox, searchedElements, elements_, nodes_);
 	}
 
 	sort(searchedElements.begin(), searchedElements.end());
@@ -131,7 +129,7 @@ void BIHTree::get_tree_params(int &maxDepth, int &minDepth, double &avgDepth, in
 	innerNodesCount = 1;
 	sumElements = 0;
 
-	nodes_[0].get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements);
+	nodes_[0].get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, nodes_);
 
 	avgDepth = (double) sumDepth / (double) leafNodesCount;
 }

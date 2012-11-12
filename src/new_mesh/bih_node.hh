@@ -59,15 +59,21 @@ public:
      * @param leafNodesCount Gets count of all leaf nodes of tree
      * @param innerNodesCount Gets count of all inner nodes of tree
      * @param elementLeafCount Gets sum of elements contained in all leaf nodes
+     * @param nodes Vector of tree nodes
      */
     void get_tree_params(int &maxDepth, int &minDepth, int &sumDepth, int &leafNodesCount,
-    		int &innerNodesCount, int &sumElements);
+    		int &innerNodesCount, int &sumElements, std::vector<BIHNode> &nodes);
 
 private:
     /// max count of elements of which is selected median - value must be even
     static const unsigned int max_median_count = 1023;
     /// count of subareas - don't change
     static const unsigned int child_count = 2;
+
+    /**
+     * Empty constructor
+     */
+    BIHNode() {}
 
     /**
 	 * Constructor
@@ -79,6 +85,16 @@ private:
 	 * @param depth Depth of node in tree.
 	 */
 	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
+
+	/**
+	 * Set class members
+	 *
+	 * @param minCoordinates Minimal coordinates of BoxElement
+	 * @param maxCoordinates Maximal coordinates of BoxElement
+	 * @param splitCoor Coordination of splitting parent area
+	 * @param depth Depth of node in tree.
+	 */
+	void set_values(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
 
     /**
      * Method checks count of elements in area.
@@ -112,12 +128,11 @@ private:
      * @param triangle Triangle which is tested if has intersection
      * @param searchedElements vector of ids of suspect elements
      */
-    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements, std::vector<BoundingBox> &meshElements);
+    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,
+    		std::vector<BoundingBox> &meshElements, std::vector<BIHNode> &nodes);
 
     /// child nodes indexes
-    //unsigned int child_[child_count];
-    /// child nodes
-    BIHNode* child_[child_count];
+    unsigned int child_[child_count];
 	/// vector of bounding boxes ids contained in node
 	std::vector<int> element_ids_;
     /// bounding box of area
