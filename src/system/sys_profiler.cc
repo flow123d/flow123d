@@ -51,6 +51,8 @@ Timer::Timer(const CodePoint &cp, int parent)
   call_count(0),
   start_count(0),
   code_point_(&cp),
+  full_hash_(cp.hash_),
+  hash_idx_(cp.hash_idx_),
   parent_timer(parent),
   total_allocated_(0),
   total_deallocated_(0)
@@ -115,7 +117,7 @@ bool Timer::stop(bool forced) {
 
 void Timer::add_child(int child_index, const Timer &child)
 {
-    unsigned int idx = child.code_point_->hash_idx_;
+    unsigned int idx = child.hash_idx_;
     if (child_timers[idx] >0) {
         unsigned int i=idx;
         do {
@@ -165,7 +167,7 @@ Profiler::Profiler(MPI_Comm comm)
 #ifdef DEBUG_PROFILER
     MPI_Comm_rank(communicator_, &(mpi_rank_));
 
-    static constexpr CodePoint main_cp = CODE_POINT("Whole Program");
+    static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
 #endif
 }
@@ -218,7 +220,7 @@ int Profiler::find_child(const CodePoint &cp) {
         if (child_idx < 0) break; // tag is not there
 
         ASSERT_LESS( child_idx, timers_.size());
-        if (timers_[child_idx].code_point_->hash_ == cp.hash_) return child_idx;
+        if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( idx==Timer::max_n_childs ? 0 : idx+1 );
     } while (idx != cp.hash_idx_); // passed through whole array
     return -1;
@@ -235,12 +237,12 @@ void Profiler::stop_timer(const CodePoint &cp) {
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag(), timer.tag() );
 #endif
 
-    if ( cp.hash_ != timers_[actual_node].code_point_->hash_) {
+    if ( cp.hash_ != timers_[actual_node].full_hash_) {
         DBGMSG("close '%s' actual '%s'\n", cp.tag_, timers_[actual_node].tag());
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer) {
             DBGMSG("cmp close '%s' idx '%s'\n", cp.tag_, timers_[node].tag());
-            if ( cp.hash_ == timers_[node].code_point_->hash_) {
+            if ( cp.hash_ == timers_[node].full_hash_) {
                 // found above - close all nodes between
                 for(; actual_node != node; actual_node=timers_[actual_node].parent_timer) {
                     xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag());
@@ -498,6 +500,18 @@ void Profiler::uninitialize()
 #else // def DEBUG_PROFILER
 
 Profiler* Profiler::_instance = NULL;
+
+void Profiler::initialize(MPI_Comm communicator) {
+    if (!_instance) _instance = new Profiler();
+}
+
+void Profiler::uninitialize() {
+    if (_instance)  {
+        delete _instance;
+        _instance = NULL;
+    }
+}
+
 
 #endif // def DEBUG_PROFILER
 

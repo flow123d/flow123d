@@ -5,21 +5,21 @@
  *      Author: jb
  */
 
-
-#define DEBUG
-#define DEBUG_PROFILER
-
 #include <ctime>
 #include <cstdlib>
 
-#include <random>
+//#include <random>
 
 
 #define TEST_USE_MPI
 #include <gtest_mpi.hh>
 
+
+
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+
+#ifdef DEBUG_PROFILER
 
 /*************************
  * We test collisions of hash function on strings with max length 13.
@@ -64,6 +64,8 @@ TEST(Profiler, CodePoint) {
     EXPECT_EQ( line_save, cp.line_ );
     //EXPECT_EQ(string("(profiler_test.cpp, xxx(), 130)"), string(CODE_POINT) );
 }
+
+
 
 
 /**********************************************
@@ -190,13 +192,24 @@ TEST(Profiler, structure) {
 
         START_TIMER("sub1");
         END_TIMER("sub1");
-
-
     }
     Profiler::instance()->output(cout);
     Profiler::uninitialize();
 
 }
 
+#else // DEBUG_PROFILER
+
+
+TEST(Profiler, test_calls_only) {
+    Profiler::initialize(MPI_COMM_WORLD);
+    START_TIMER("sub1");
+    END_TIMER("sub1");
+    Profiler::instance()->output(cout);
+    Profiler::uninitialize();
+}
+
+
+#endif // DEBUG_PROFILER
 
 

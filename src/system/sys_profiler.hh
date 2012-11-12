@@ -44,11 +44,22 @@
  *      code point (az nekde na konci radky)
  *
  *
+ *  !!! Unfortunately using constexpr is worse (without optimization).
+ *  This is probably due to use of static variable for
+ *  CodePoint, the access could be slow, and computation of hash is done only once. Actually timing results
+ *  are:
+ *
+ *  OPTIONS     OVERHEAD (compared to call 2x clock())
+ *  -g, no c++11 : 18%
+ *  -g,    c++11 : 60%
+ *  -O3,no c++11 : 6%
+ *  -O3,   c++11 : 6%
  */
 
 
 #ifndef PROFILER_H
 #define	PROFILER_H
+
 
 
 #include <iostream>
@@ -59,6 +70,14 @@
 #include <mpi.h>
 #include "system/system.hh"
 //#include "system/const_hashes.h"
+
+// Workaround for older compilers, that do not support constexpr feature
+#ifdef HAVE_CXX11
+    #define CONSTEXPR_ constexpr
+#else
+    #define CONSTEXPR_
+#endif
+
 
 using namespace std;
 
@@ -128,7 +147,7 @@ public:
  * @endcode
  */
 #ifdef DEBUG_PROFILER
-#define START_TIMER(tag) static constexpr CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__) )
+#define START_TIMER(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__) )
 #else
 #define START_TIMER(tag)
 #endif
@@ -141,7 +160,7 @@ public:
  * Use only if you want to end timer before the end of block. Again this expands into two lines, see ATTENTION in previous macro.
  */
 #ifdef DEBUG_PROFILER
-#define END_TIMER(tag) static constexpr CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); Profiler::instance()->stop_timer( PASTE(cp_,__LINE__) )
+#define END_TIMER(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); Profiler::instance()->stop_timer( PASTE(cp_,__LINE__) )
 #else
 #define END_TIMER(tag)
 #endif
@@ -183,6 +202,10 @@ public:
 #define ADD_CALLS(n_calls)
 #endif
 
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef DEBUG_PROFILER
 
 /**
@@ -192,7 +215,7 @@ public:
  *
  * SALT is hash for the empty string. Currently zero for simpler testing.
  */
-inline constexpr unsigned int str_hash(const char * str) {
+inline CONSTEXPR_ unsigned int str_hash(const char * str) {
     #define SALT 0 //0xef50e38f
     return (*str == 0 ? SALT : str_hash(str+1) * 101 + (unsigned int)(*str) );
 }
@@ -212,7 +235,7 @@ inline constexpr unsigned int str_hash(const char * str) {
  */
 class CodePoint {
 public:
-    constexpr CodePoint(const char *tag, const char * file, const char * func, const unsigned int line)
+    CONSTEXPR_ CodePoint(const char *tag, const char * file, const char * func, const unsigned int line)
     : tag_(tag), file_(file), func_(func), line_(line),
       hash_(str_hash(tag)), hash_idx_( str_hash(tag)%max_n_timer_childs )
     {}
@@ -343,6 +366,11 @@ protected:
      * and is used in reported profiler table.
      */
     const CodePoint *code_point_;
+    /// Full tag hash. Copy from code_point_.
+    unsigned int full_hash_;
+    /// Hash modulo size of array of timer childs. Copy from code_point_.
+    unsigned int hash_idx_;
+
     /**
      * Index of the parent timer node  in the tree. Negative value means 'not set'.
      */
@@ -603,14 +631,12 @@ public:
 // dummy declaration of Profiler class
 class Profiler {
 public:
-    static void initialize(MPI_Comm communicator)
-    {
-        if (!_instance) _instance = new Profiler();
-    }
+    static void initialize(MPI_Comm communicator);
     inline static Profiler* instance() {
         ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
         return _instance;
     }
+
     void set_task_info(string description, int size)
     {}
     void set_program_info(string program_name, string program_version, string branch, string revision, string build)
@@ -623,12 +649,13 @@ public:
     {}
     void output()
     {}
-    static void uninitialize() {
-        if (_instance)  {
-            delete _instance;
-            _instance = NULL;
-        }
-    }
+    const char *actual_tag() const
+    {}
+    inline unsigned int actual_count() const
+    {}
+    inline double actual_cumulative_time() const
+    {}
+    static void uninitialize();
 
 private:
     static Profiler* _instance;

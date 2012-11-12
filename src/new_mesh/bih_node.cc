@@ -90,6 +90,7 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 	}
 
 	//select adepts at median
+	// rand() << 15 + rand();
 	coors.resize(medianCount);
 	for (int i=0; i<medianCount; i++) {
 		coors[i] = get_median_coord(elements, rand() % elementCount);

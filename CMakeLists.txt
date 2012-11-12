@@ -44,12 +44,7 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(SET CMP0017 NEW)
 endif()
 
-
-if (${CMAKE_CXX_COMPILER} MATCHES  "clang")
-    # this is necessary due to some "bugs" in Armadillo
-    add_definitions(-Wno-uninitialized)
-endif()
-
+################################################################################# set CMake Modules
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
 list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
@@ -58,6 +53,70 @@ if (NOT EXTERNAL_PROJECT_DIR)
     # default directory for building external libraries 
     set(EXTERNAL_PROJECT_DIR ${PROJECT_SOURCE_DIR}/external_projects)
 endif()
+
+
+############################################################################################# set compiler
+# check C++11 properties of the compiler
+# Initialize CXXFLAGS.
+
+
+
+
+##############
+# set appropriate compiler flags for debug/release compilation modes
+message(STATUS "Flow build type: ${FLOW_BUILD_TYPE} C++ compiler falgs: ${FLOW_CC_FLAGS}")
+
+
+
+
+if(FLOW_CC_FLAGS) 
+  # user given flags overrides everything  
+  message(STATUS "Using user specified compiler options: ${FLOW_CC_FLAGS}")
+  set(CMAKE_CXX_FLAGS  "${FLOW_CC_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${FLOW_CC_FLAGS}")
+  
+else(FLOW_CC_FLAGS)
+ 
+  message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
+  if(FLOW_BUILD_TYPE STREQUAL "debug")
+    # debug mode
+    set(CMAKE_CXX_FLAGS "-g -pg -O0")
+    set(CMAKE_EXE_LINKER_FLAGS "-g -pg")
+    add_definitions(-DDEBUG)
+  elseif(FLOW_BUILD_TYPE STREQUAL "release")
+    # Release mode
+    set(CMAKE_CXX_FLAGS "-O3")
+    add_definitions(-DNODEBUG)
+  elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
+    # Release mode with debug info 
+    set(CMAKE_CXX_FLAGS "-O3")
+    add_definitions(-DDEBUG)
+  else()
+  endif()
+  
+  
+    # Compiler-specific C++11 activation.
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+        execute_process(
+            COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+        if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+            add_definitions("-DHAVE_CXX11")    
+        elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+            add_definitions("-DHAVE_CXX11")    
+        endif ()
+    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+        add_definitions("-Wno-uninitialized -DHAVE_CXX11")
+    else ()
+        message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
+    endif()
+  
+endif(FLOW_CC_FLAGS)
+
+
+
 
 
 ######################################################################### find libraries
@@ -287,31 +346,6 @@ include_directories(
     ${MPI_CXX_INCLUDE_PATH}
 )
 
-##############
-# set appropriate compiler flags for debug/release compilation modes
-message(STATUS "build type: ${FLOW_BUILD_TYPE} ${FLOW_CC_FLAGS}")
-
-
-if(FLOW_CC_FLAGS) 
-  add_definitions(${FLOW_CC_FLAGS})
-  set(CMAKE_EXE_LINKER_FLAGS ${FLOW_CC_FLAGS})
-else()
-  if(FLOW_BUILD_TYPE STREQUAL "debug")
-    # debug mode
-    add_definitions("-g -O0")
-    set(CMAKE_EXE_LINKER_FLAGS "-g")
-    add_definitions(-DDEBUG)
-  else()
-    # Release mode
-    add_definitions("-O3")
-    add_definitions(-DNODEBUG)
-  endif()
-endif()
-
-# use C++11 extensions
-if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "-std=gnu++0x")        
-endif()
 
 ##############
 

@@ -30,10 +30,21 @@ set(PETSC_ARCH "gcc_O3")
 # "debug" set flags: "-g -pg -DDEBUG"
 # "release" set flags: "-O3 -DNODEBUG"
 #
-# you can override these settings through variable FLOW_CC_FLAGS
 
 set(FLOW_BUILD_TYPE debug)
 
+
+# you can override these settings through variable FLOW_CC_FLAGS
+#
+# Flow recognize  following definitions:
+# NODEBUG					- all debug options off
+# DEBUG						- all debug options on
+# DEBUG_MESSAGES
+# DEBUG_ASSERTS
+# DEBUG_PROFILER
+# DEBUG_FUNCTION_STACK
+# HAVE_CXX11				- support for requested C++11 features (constexpr)
+#
 #set(FLOW_CC_FLAGS "-O3 -DNODEBUG -pg ")
 
 ### PETSC - use without testing

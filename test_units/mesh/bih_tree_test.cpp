@@ -56,7 +56,14 @@ void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
 	// creates tree and tests its basic parameters
 	BIHTree bt(&mesh, elementLimit);
 	bt.get_tree_params(maxDepth, minDepth, avgDepth, leafNodesCount, innerNodesCount, sumElements);
+	// For ideal case the node count should be comparable to total number of elements devided
+	// by number of elements in leaf nodes. In this test we check that the overhead is not
+	// too big. Empirical test showed, that for big meshes the actual number of nodes is
+	// 3.7 * ideal number of nodes
 	EXPECT_LT( (leafNodesCount + innerNodesCount) , 4 * (mesh.n_elements() / elementLimit) );
+	// Check  the conditions that limit growth of the redundancy of elements in nodes
+	// The condition says that number of elements in the child node has to have number of elements less then
+	// 0.8 * (number of elements in parent node).
 	EXPECT_LT( maxDepth, (log2(elementLimit) - log2(mesh.n_elements())) / log2(0.8) );
 
 	// tests of intersection with bounding box out of mesh
@@ -71,7 +78,7 @@ void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
 	}
 	bb.set_bounds(min, max);
 	bt.find_elements(bb, searchedElements);
-	insecSize = get_intersection_count(bb, bt.get_elements());
+	insecSize = get_intersection_count(bb, bt.get_elements()); // get intersections by linear search
 	EXPECT_EQ(searchedElements.size(), insecSize);
 
 	// tests of intersection with bounding box in mesh near point [0, 0, 0]
