@@ -471,8 +471,11 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         VecZeroEntries(bcvcorr[sbi]);
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), conc[MOBILE][sbi],
                 &vconc[sbi]);
+
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
                 pconc[MOBILE][sbi], &vpconc[sbi]);
+        VecZeroEntries(vconc[sbi]);
+        VecZeroEntries(vpconc[sbi]);
 
         // SOURCES
         /*
@@ -490,6 +493,8 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         //  if(rank == 0)
         ierr = VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_elements(), out_conc[MOBILE][sbi], &vconc_out[sbi]);
 
+        VecZeroEntries(vcumulative_corr[sbi]);
+        VecZeroEntries(vconc_out[sbi]);
         //ierr = VecCreateMPI(PETSC_COMM_SELF ,transport->mesh_->n_elements(),transport->mesh_->n_elements(),&transport->vconc_out[sbi]); /*xx*/
         /*
          if(transport->vconc_im != NULL)
@@ -613,6 +618,11 @@ void ConvectionTransport::compute_one_step() {
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase
         if (transportsources != NULL) {
+            //DBGMSG("component: %d\n", sbi);
+
+            //if (vcumulative_corr[sbi][10] >0) { int i =1;}
+            //if (bcvcorr[sbi][10] >0) { int i =1;}
+            //if (conc[sbi][10] >0) { int i =1;}
             VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi],
                     transportsources->compute_concentration_sources(sbi, conc[MOBILE][sbi] )
                     );

@@ -52,9 +52,12 @@ void TransportSources::alloc_sources_vectors() {
     double *ptr = (double *) sources_conc + 1;
 
     for (sbi = 0; sbi < n_subst_; sbi++){
-        sources_density[sbi] = ptr; ptr += el_distr_.lsize();
+        sources_density[sbi] = ptr;
+        for(;ptr < sources_density[sbi] + el_distr_.lsize(); ptr++) (*ptr) = 0.0;
         sources_sigma[sbi] = ptr; ptr += el_distr_.lsize();
+        for(;ptr < sources_sigma[sbi] + el_distr_.lsize(); ptr++) (*ptr) = 0.0;
         sources_conc[sbi] = ptr; ptr += el_distr_.lsize();
+        for(;ptr < sources_conc[sbi] + el_distr_.lsize(); ptr++) (*ptr) = 0.0;
     }
 
     sources_corr = new double[el_distr_.lsize()];

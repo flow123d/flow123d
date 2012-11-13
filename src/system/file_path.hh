@@ -63,7 +63,7 @@ public:
      * Set:
      * - working directory (used only if the output directory is relative)
      * - root directory (of the main input file)
-     * - input directory to replace ${INPUT} placeholder
+     * - input directory to replace ${INPUT} place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
     static void set_io_dirs(const string working_dir, const string root_input,const string input,const string output);

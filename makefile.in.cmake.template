@@ -7,12 +7,18 @@
 #set(PETSC_DIR "$ENV{HOME}/local/petsc")
 #set(PETSC_ARCH "linux-gcc-dbg")
 
+###
+# Uncomment this if PETSC are detected, but tests during configuration fail. 
+# (Cygwin, parallel systems with obligatory mpirun execution)
+# set (PETSC_EXECUTABLE_RUNS YES)
+
+
 set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
 set(PETSC_ARCH "gcc_O3")
 
 ### verbose mode ####
 # option to produce more verbose compiling
-# for the same result tou can call make with VERBOSE=1
+# for the same result you can call make with VERBOSE=1
 # e.g.
 # make VERBOSE=1 all
 
@@ -27,7 +33,7 @@ set(PETSC_ARCH "gcc_O3")
 
 ### Build configuration  ####
 # There are two predefined configurations: "debug" and "release"
-# "debug" set flags: "-g -pg -DDEBUG"
+# "debug" set flags: "-g -DDEBUG"
 # "release" set flags: "-O3 -DNODEBUG"
 #
 
@@ -45,12 +51,9 @@ set(FLOW_BUILD_TYPE debug)
 # DEBUG_FUNCTION_STACK
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
+# e.g. :
 #set(FLOW_CC_FLAGS "-O3 -DNODEBUG -pg ")
 
-### PETSC - use without testing
-# Uncomment this if PETSC are detected, but tests during configuration fail. 
-# (Cygwin, parallel systems with obligatory mpirun execution)
-# set (PETSC_EXECUTABLE_RUNS YES)
 
 
 ### External Projects directory

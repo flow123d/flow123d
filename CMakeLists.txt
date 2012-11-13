@@ -80,8 +80,8 @@ else(FLOW_CC_FLAGS)
   message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
   if(FLOW_BUILD_TYPE STREQUAL "debug")
     # debug mode
-    set(CMAKE_CXX_FLAGS "-g -pg -O0")
-    set(CMAKE_EXE_LINKER_FLAGS "-g -pg")
+    set(CMAKE_CXX_FLAGS "-g -O0")
+    set(CMAKE_EXE_LINKER_FLAGS "-g ")
     add_definitions(-DDEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode

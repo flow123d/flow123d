@@ -7,8 +7,8 @@
 
 #include <ctime>
 #include <cstdlib>
+#include <sstream>
 
-//#include <random>
 
 
 #define TEST_USE_MPI
@@ -193,7 +193,14 @@ TEST(Profiler, structure) {
         START_TIMER("sub1");
         END_TIMER("sub1");
     }
+
+    std::stringstream sout;
     Profiler::instance()->output(cout);
+    Profiler::instance()->output(sout);
+
+    EXPECT_TRUE( sout.str().find("Whole Program   0") );
+    EXPECT_TRUE( sout.str().find("  sub1          2") );
+
     Profiler::uninitialize();
 
 }
@@ -207,6 +214,7 @@ TEST(Profiler, test_calls_only) {
     END_TIMER("sub1");
     Profiler::instance()->output(cout);
     Profiler::uninitialize();
+
 }
 
 
