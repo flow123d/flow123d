@@ -9,6 +9,7 @@
 #ifdef HAVE_PYTHON
 
 #include "system/python_loader.hh"
+#include "global_defs.h"
 #include "system/system.hh"
 #include <string>
 #include <iostream>
