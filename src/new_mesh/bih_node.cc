@@ -30,10 +30,10 @@
 #include "new_mesh/bounding_box.hh"
 #include "new_mesh/bih_tree.hh"
 
-BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth) {
-	//xprintf(Msg, " - BIHNode->BIHNode(arma::vec3, arma::vec3, int, int)\n");
+BIHNode::BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, unsigned int depth) {
+	//xprintf(Msg, " - BIHNode->BIHNode(arma::vec3, arma::vec3, unsigned int)\n");
 
-	set_values(minCoordinates, maxCoordinates, splitCoor, depth);
+	set_values(minCoordinates, maxCoordinates, depth);
 }
 
 BIHNode::~BIHNode() {
@@ -41,22 +41,21 @@ BIHNode::~BIHNode() {
 }
 
 
-void BIHNode::set_values(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth) {
-	leaf_ = true;
+void BIHNode::set_values(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, unsigned int depth) {
+	axes_ = 255;
 	boundingBox_.set_bounds(minCoordinates, maxCoordinates);
-	splitCoor_ = splitCoor;
 	depth_ = depth;
 }
 
 
-void BIHNode::put_element(int element_id) {
+void BIHNode::put_element(unsigned int element_id) {
 	element_ids_.push_back(element_id);
 }
 
 
-double BIHNode::get_median_coord(std::vector<BoundingBox> &elements, int index) {
-	int boundingBoxIndex = element_ids_[index];
-	return elements[boundingBoxIndex].get_center()(splitCoor_);
+double BIHNode::get_median_coord(std::vector<BoundingBox> &elements, unsigned int index) {
+	unsigned int boundingBoxIndex = element_ids_[index];
+	return elements[boundingBoxIndex].get_center()(axes_);
 }
 
 
@@ -65,16 +64,16 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 		return;
 	}
 
-	int elementCount = get_element_count();
-	int medianCount = (elementCount >= max_median_count) ? max_median_count : ((elementCount % 2) ? elementCount : elementCount - 1);
-	int medianPosition = (int)(medianCount/2);
+	unsigned int elementCount = get_element_count();
+	unsigned int medianCount = (elementCount >= max_median_count) ? max_median_count : ((elementCount % 2) ? elementCount : elementCount - 1);
+	unsigned int medianPosition = (int)(medianCount/2);
 	double median;
 	std:vector<double> coors;
 	bool isMaxSplit;
 	arma::vec3 diff = boundingBox_.get_max() - boundingBox_.get_min();
 	BIHNode child[child_count];
 
-	// Set splitCoor_ class member (select maximal dimension)
+	// Set axes_ class member (select maximal dimension)
 	for (int i=0; i<BIHTree::dimension; i++) {
 		isMaxSplit = true;
 		for (int j=i+1; j<BIHTree::dimension; j++) {
@@ -84,7 +83,7 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 			}
 		}
 		if (isMaxSplit) {
-			splitCoor_ = i;
+			axes_ = i;
 			break;
 		}
 	}
@@ -92,7 +91,7 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 	//select adepts at median
 	// rand() << 15 + rand();
 	coors.resize(medianCount);
-	for (int i=0; i<medianCount; i++) {
+	for (unsigned int i=0; i<medianCount; i++) {
 		coors[i] = get_median_coord(elements, rand() % elementCount);
 	}
 
@@ -105,19 +104,19 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 		arma::vec3 minCoor;
 		arma::vec3 maxCoor;
 		for (int j=0; j<3; j++) {
-			minCoor(j) = (j==splitCoor_ && i==1) ? median : boundingBox_.get_min()(j);
-			maxCoor(j) = (j==splitCoor_ && i==0) ? median : boundingBox_.get_max()(j);
+			minCoor(j) = (j==axes_ && i==1) ? median : boundingBox_.get_min()(j);
+			maxCoor(j) = (j==axes_ && i==0) ? median : boundingBox_.get_max()(j);
 
 		}
 
-		child[i].set_values(minCoor, maxCoor, splitCoor_, depth_+1);
+		child[i].set_values(minCoor, maxCoor, depth_+1);
 	}
 
 	// distribute elements into subareas
     unsigned int n_child_elements=0;
-	for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
+	for (std::vector<unsigned int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
 		for (int j=0; j<child_count; j++) {
-			if (child[j].contains_element(splitCoor_, elements[*it].get_min()(splitCoor_), elements[*it].get_max()(splitCoor_))) {
+			if (child[j].contains_element(axes_, elements[*it].get_min()(axes_), elements[*it].get_max()(axes_))) {
 				child[j].put_element(*it);
 				n_child_elements++;
 			}
@@ -132,11 +131,11 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 	    child[1].get_element_count() > 0.8*get_element_count() ||
 	    n_child_elements > 1.5 * element_ids_.size()) {
 
+		axes_ = 255;
 	    return;
 	}
 
 	// put nodes into vector
-	leaf_ = false;
 	child_[0] = nodes.size();
 	nodes.push_back(child[0]);
 	child_[1] = nodes.size();
@@ -149,11 +148,11 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 }
 
 
-void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,
+void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements,
 		std::vector<BoundingBox> &meshElements, std::vector<BIHNode> &nodes) {
-	if (leaf_) {
+	if (axes_ == 255) {
 	    //START_TIMER("leaf");
-		for (std::vector<int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
+		for (std::vector<unsigned int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
 			if (meshElements[*it].intersection(boundingBox)) {
 				searchedElements.push_back(*it);
 			}
@@ -169,19 +168,19 @@ void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<int> &searched
 	}
 }
 
-int BIHNode::get_element_count() {
+unsigned int BIHNode::get_element_count() {
 	return element_ids_.size();
 }
 
 
-bool BIHNode::contains_element(int coor, double min, double max) {
+bool BIHNode::contains_element(unsigned char coor, double min, double max) {
 	return (min < boundingBox_.get_max()(coor)) & (max > boundingBox_.get_min()(coor));
 }
 
 
-void BIHNode::get_tree_params(int &maxDepth, int &minDepth, int &sumDepth, int &leafNodesCount,
-		int &innerNodesCount, int &sumElements, std::vector<BIHNode> &nodes) {
-	if (leaf_) {
+void BIHNode::get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, unsigned int &sumDepth, unsigned int &leafNodesCount,
+		unsigned int &innerNodesCount, unsigned int &sumElements, std::vector<BIHNode> &nodes) {
+	if (axes_ == 255) {
 		if (depth_ > maxDepth) maxDepth = depth_;
 		if (depth_ < minDepth) minDepth = depth_;
 		sumDepth += depth_;

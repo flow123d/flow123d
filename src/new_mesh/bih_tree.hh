@@ -75,7 +75,7 @@ public:
 	 *
 	 * @return Count of elements stored in element_ids_ member
 	 */
-    int get_element_count();
+    unsigned int get_element_count();
 
 	/**
 	 * Gets elements which can have intersection with bounding box
@@ -83,7 +83,7 @@ public:
 	 * @param boundingBox Bounding box which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements);
+    void find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements);
 
     /**
      * Browse tree and get its typical parameters
@@ -96,8 +96,8 @@ public:
      * @param innerNodesCount Gets count of all inner nodes of tree
      * @param elementLeafCount Gets sum of elements contained in all leaf nodes
      */
-    void get_tree_params(int &maxDepth, int &minDepth, double &avgDepth, int &leafNodesCount,
-    		int &innerNodesCount, int &sumElements);
+    void get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, double &avgDepth, unsigned int &leafNodesCount,
+    		unsigned int &innerNodesCount, unsigned int &sumElements);
 
     /**
      * Get vector of mesh elements bounding boxes

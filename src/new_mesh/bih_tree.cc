@@ -70,7 +70,7 @@ void BIHTree::root_node(unsigned int areaElementLimit) {
 		}
 	}
 
-	BIHNode bihNode(minCoordinates, maxCoordinates, 0, 0);
+	BIHNode bihNode(minCoordinates, maxCoordinates, 0);
 	bihNode.element_ids_.resize(mesh_->n_elements());
 	for (int i=0; i<mesh_->n_elements(); i++) {
 		bihNode.element_ids_[i] = i;
@@ -81,14 +81,14 @@ void BIHTree::root_node(unsigned int areaElementLimit) {
 
 
 
-int BIHTree::get_element_count() {
+unsigned int BIHTree::get_element_count() {
 	return elements_.size();
 }
 
 
-void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements)
+void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements)
 {
-	vector<int>::iterator it;
+	vector<unsigned int>::iterator it;
 	searchedElements.clear();
 	if (nodes_.size()) {
 		nodes_[0].find_elements(boundingBox, searchedElements, elements_, nodes_);
@@ -120,9 +120,9 @@ void BIHTree::element_boxes() {
 
 
 
-void BIHTree::get_tree_params(int &maxDepth, int &minDepth, double &avgDepth, int &leafNodesCount,
-		int &innerNodesCount, int &sumElements) {
-	int sumDepth = 0;
+void BIHTree::get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, double &avgDepth, unsigned int &leafNodesCount,
+		unsigned int &innerNodesCount, unsigned int &sumElements) {
+	unsigned int sumDepth = 0;
 	maxDepth = 0;
 	minDepth = 32767;
 	leafNodesCount = 0;

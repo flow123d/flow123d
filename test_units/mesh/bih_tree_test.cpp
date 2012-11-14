@@ -24,10 +24,10 @@ double f_rand(double fMin, double fMax) {
 
 
 /// Gets count of intersected elements with bounding box
-int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &boundingBoxes) {
-	int insecElements = 0;
+unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &boundingBoxes) {
+	unsigned int insecElements = 0;
 
-	for (int i=0; i<boundingBoxes.size(); i++) {
+	for (unsigned int i=0; i<boundingBoxes.size(); i++) {
 		if (bb.intersection(boundingBoxes[i])) insecElements++;
 	}
 
@@ -42,14 +42,14 @@ int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &boundingBo
  *  - tests intersection with bounding box out of mesh
  *  - tests intersection with three bounding boxes in mesh
  */
-void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
-	int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
+void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
+	unsigned int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
 	double avgDepth;
 	Mesh mesh;
 	GmshMeshReader reader;
 	BoundingBox bb;
 	arma::vec3 min, max;
-	std::vector<int> searchedElements;
+	std::vector<unsigned int> searchedElements;
 
 	reader.read(meshFile, &mesh);
 

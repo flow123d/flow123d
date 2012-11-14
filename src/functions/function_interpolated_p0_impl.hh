@@ -223,7 +223,7 @@ void FunctionInterpolatedP0<dim>::calculate_triangle_pressure(TTriangle &element
 
         START_TIMER("compute_pressure_2D");
     ADD_CALLS( searchedElements_.size());
-	for (std::vector<int>::iterator it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
+	for (std::vector<unsigned int>::iterator it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
                 int idx = *it;
                 ElementFullIter ele = mesh_->element( idx );
@@ -259,7 +259,7 @@ void FunctionInterpolatedP0<dim>::calculate_abscissa_pressure(TAbscissa &element
 	pressure_ = 0.0;
 	START_TIMER("compute_pressure_1D");
 	ADD_CALLS(searchedElements_.size());
-	for (std::vector<int>::iterator it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
+	for (std::vector<unsigned int>::iterator it = searchedElements_.begin(); it!=searchedElements_.end(); it++)
 	{
 		int idx = *it;
 		ElementFullIter ele = mesh_->element( idx );

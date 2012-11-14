@@ -114,7 +114,7 @@ protected:
 	std::vector<double> pressures_;
 
 	/// vector stored suspect elements in calculating the intersection
-	std::vector<int> searchedElements_;
+	std::vector<unsigned int> searchedElements_;
 
 	/// tree of mesh elements
 	BIHTree* bihTree_;

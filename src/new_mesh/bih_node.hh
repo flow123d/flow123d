@@ -45,9 +45,9 @@ public:
 	/**
 	 * Get count of elements stored in
 	 *
-	 * @return Count of elements stored in elements_ member
+	 * @return Count of elements stored in element_ids_ member
 	 */
-    int get_element_count();
+    unsigned int get_element_count();
 
     /**
      * Browse tree and get its typical parameters
@@ -61,8 +61,9 @@ public:
      * @param elementLeafCount Gets sum of elements contained in all leaf nodes
      * @param nodes Vector of tree nodes
      */
-    void get_tree_params(int &maxDepth, int &minDepth, int &sumDepth, int &leafNodesCount,
-    		int &innerNodesCount, int &sumElements, std::vector<BIHNode> &nodes);
+    void get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, unsigned int &sumDepth, unsigned int &leafNodesCount,
+    		unsigned int &innerNodesCount, unsigned int &sumElements, std::vector<BIHNode> &nodes);
+
 
 private:
     /// max count of elements of which is selected median - value must be even
@@ -81,20 +82,18 @@ private:
 	 * Set class members and call functions which create children of node
 	 * @param minCoordinates Minimal coordinates of BoxElement
 	 * @param maxCoordinates Maximal coordinates of BoxElement
-	 * @param splitCoor Coordination of splitting parent area
 	 * @param depth Depth of node in tree.
 	 */
-	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
+	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, unsigned int depth);
 
 	/**
 	 * Set class members
 	 *
 	 * @param minCoordinates Minimal coordinates of BoxElement
 	 * @param maxCoordinates Maximal coordinates of BoxElement
-	 * @param splitCoor Coordination of splitting parent area
 	 * @param depth Depth of node in tree.
 	 */
-	void set_values(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, int splitCoor, int depth);
+	void set_values(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, unsigned int depth);
 
     /**
      * Method checks count of elements in area.
@@ -103,7 +102,7 @@ private:
     void split_distribute(std::vector<BoundingBox> &elements, std::vector<BIHNode> &nodes, unsigned int areaElementLimit);
 
     /// get value of coordination for calculate a median
-    double get_median_coord(std::vector<BoundingBox> &elements, int index);
+    double get_median_coord(std::vector<BoundingBox> &elements, unsigned int index);
 
     /**
      * Tests if element is contained in area bounding box.
@@ -113,14 +112,14 @@ private:
      * @param max Maximum value of testing coordination
      * @return True if element is contained in area
      */
-    bool contains_element(int coor, double min, double max);
+    bool contains_element(unsigned char coor, double min, double max);
 
     /**
      * Add element into elements_ member
      *
      * @param element Added element
      */
-	void put_element(int element_id);
+	void put_element(unsigned int element_id);
 
 	/**
      * Gets elements which can have intersection with triangle
@@ -128,21 +127,19 @@ private:
      * @param triangle Triangle which is tested if has intersection
      * @param searchedElements vector of ids of suspect elements
      */
-    void find_elements(BoundingBox &boundingBox, std::vector<int> &searchedElements,
+    void find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements,
     		std::vector<BoundingBox> &meshElements, std::vector<BIHNode> &nodes);
 
     /// child nodes indexes
     unsigned int child_[child_count];
 	/// vector of bounding boxes ids contained in node
-	std::vector<int> element_ids_;
+	std::vector<unsigned int> element_ids_;
     /// bounding box of area
     BoundingBox boundingBox_;
-    /// coordination of splitting area
-    int splitCoor_;
+    /// coordination of splitting area (for values 0,1,2) or flag that node is leaf (value 255)
+    unsigned char axes_;
     /// depth of node
-    int depth_;
-    /// indicates if node is leaf
-    bool leaf_;
+    unsigned int depth_;
 
 };
 
