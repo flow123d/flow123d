@@ -33,6 +33,8 @@
 #ifndef TIME_MARKS_HH_
 #define TIME_MARKS_HH_
 
+#include "system/global_defs.h"
+
 /**
  * This class represents one record in the TimeMarks simple database.
  * Class members can not be modified after the item is created.

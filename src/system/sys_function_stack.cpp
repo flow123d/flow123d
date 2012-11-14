@@ -29,8 +29,6 @@
  *
  */
 
-#include <vector>
-
 #include "sys_function_stack.hh"
 
 namespace flow

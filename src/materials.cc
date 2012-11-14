@@ -27,6 +27,7 @@
  *
  */
 
+#include <math.h>
 #include <string>
 #include "system/system.hh"
 #include "system/xio.h"

@@ -35,6 +35,7 @@
 #include <fstream>
 #include <string>
 
+#include "system/system.hh"
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 

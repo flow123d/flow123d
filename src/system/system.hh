@@ -30,15 +30,11 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-//#include <mpi>
-#include <cstdio>
-#include <string>
 
-
-#include "global_defs.h"
-#include "system/math_fce.h"
 #include "system/sys_function_stack.hh"
-#include "mpi.h"
+
+//instead of #include "mpi.h"
+typedef int MPI_Comm;
 
 
 // for a linux system we assume glibc library

@@ -60,16 +60,22 @@
 #ifndef PROFILER_H
 #define	PROFILER_H
 
-
-
-#include <iostream>
-#include <ctime>
-#include <vector>
-#include <string>
-
-#include <mpi.h>
+#include "global_defs.h"
 #include "system/system.hh"
-//#include "system/const_hashes.h"
+
+
+//instead of #include "mpi.h"
+//mpi declarations follows:
+typedef int MPI_Comm;
+class MPI_Functions {
+public:
+    static int sum(int* val, MPI_Comm comm);
+    static double sum(double* val, MPI_Comm comm);
+    static int min(int* val, MPI_Comm comm);
+    static double min(double* val, MPI_Comm comm);
+    static int max(int* val, MPI_Comm comm);
+    static double max(double* val, MPI_Comm comm);
+};
 
 // Workaround for older compilers, that do not support constexpr feature
 #ifdef HAVE_CXX11
@@ -80,49 +86,6 @@
 
 
 using namespace std;
-
-/*
- * These should be replaced by using boost MPI interface
- */
-class MPI_Functions {
-public:
-
-    static int sum(int* val, MPI_Comm comm) {
-        int total = 0;
-        MPI_Reduce(val, &total, 1, MPI_INT, MPI_SUM, 0, comm);
-        return total;
-    }
-
-    static double sum(double* val, MPI_Comm comm) {
-        double total = 0;
-        MPI_Reduce(val, &total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-        return total;
-    }
-
-    static int min(int* val, MPI_Comm comm) {
-        int min = 0;
-        MPI_Reduce(val, &min, 1, MPI_INT, MPI_MIN, 0, comm);
-        return min;
-    }
-
-    static double min(double* val, MPI_Comm comm) {
-        double min = 0;
-        MPI_Reduce(val, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-        return min;
-    }
-
-    static int max(int* val, MPI_Comm comm) {
-        int max = 0;
-        MPI_Reduce(val, &max, 1, MPI_INT, MPI_MAX, 0, comm);
-        return max;
-    }
-
-    static double max(double* val, MPI_Comm comm) {
-        double max = 0;
-        MPI_Reduce(val, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-        return max;
-    }
-};
 
 
 // These helper macros are necessary due to use of _LINE_ variable in START_TIMER macro.

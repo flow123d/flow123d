@@ -15,11 +15,10 @@
  * We are using boost::exceptions .
  */
 
-#include <iostream>
-#include <cstdlib>
 #include <boost/exception/all.hpp>
 
-#include "system.hh"
+#include "global_defs.h"
+
 
 /**
  * Macro for throwing with saving place of the throw.

@@ -28,6 +28,7 @@
  *
  */
 
+#include "system/global_defs.h"
 #include "system/system.hh"
 #include "distribution.hh"
 

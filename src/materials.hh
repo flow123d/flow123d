@@ -30,6 +30,7 @@
  * global library of materials.
  *
  */
+#include <stdint.h>
 #include <map>
 #include <vector>
 #include <string>

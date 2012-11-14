@@ -30,9 +30,6 @@
 #ifndef MATH_H
 #define MATH_H
 
-#include <math.h>
-#include "global_defs.h"
-
 //! small matrix types
 typedef double SmallVec1_t[1];
 typedef double SmallVec2_t[2];

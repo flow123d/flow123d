@@ -11,6 +11,9 @@
 #include "mesh/mesh_types.hh"
 #include <armadillo>
 
+//declared in system/math_fce.h
+typedef double SmallVec2_t[2];
+typedef SmallVec2_t *SmallMtx2;
 
 /**
  * Temporary class to remove MH calculations (basis functions and leading local matrix) from geometrical mesh.

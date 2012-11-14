@@ -6,6 +6,7 @@
  */
 
 #include "field_p0.hh"
+#include "system/parsed_function.hh"
 #include "mesh/mesh.h"
 
 // specialization

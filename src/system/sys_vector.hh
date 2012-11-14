@@ -33,7 +33,8 @@
 
 #include <vector>
 #include <map>
-#include "system/system.hh"
+#include "global_defs.h"
+#include "system.hh"
 
 // OPEN NAME SPACE "flow"
 namespace flow {

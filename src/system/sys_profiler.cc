@@ -31,7 +31,6 @@
 #include <fstream>
 #include <iomanip>
 
-
 #include <sys/param.h>
 
 #include "sys_profiler.hh"
@@ -39,6 +38,48 @@
 #include <boost/format.hpp>
 
 #include "system/file_path.hh"
+
+
+#include "mpi.h"
+/*
+ * These should be replaced by using boost MPI interface
+ */
+int MPI_Functions::sum(int* val, MPI_Comm comm) {
+        int total = 0;
+        MPI_Reduce(val, &total, 1, MPI_INT, MPI_SUM, 0, comm);
+        return total;
+    }
+
+double MPI_Functions::sum(double* val, MPI_Comm comm) {
+        double total = 0;
+        MPI_Reduce(val, &total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+        return total;
+    }
+
+int MPI_Functions::min(int* val, MPI_Comm comm) {
+        int min = 0;
+        MPI_Reduce(val, &min, 1, MPI_INT, MPI_MIN, 0, comm);
+        return min;
+    }
+
+double MPI_Functions::min(double* val, MPI_Comm comm) {
+        double min = 0;
+        MPI_Reduce(val, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+        return min;
+    }
+
+int MPI_Functions::max(int* val, MPI_Comm comm) {
+        int max = 0;
+        MPI_Reduce(val, &max, 1, MPI_INT, MPI_MAX, 0, comm);
+        return max;
+    }
+
+double MPI_Functions::max(double* val, MPI_Comm comm) {
+        double max = 0;
+        MPI_Reduce(val, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+        return max;
+    }
+
 
 #ifdef DEBUG_PROFILER
 /*********************************************************************************************

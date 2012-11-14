@@ -11,9 +11,13 @@
 #include <set>
 #include <vector>
 
+#include "system/boost_include.h"
 #include "system/system.hh"
 #include "system/global_defs.h"
 
+//namespace boost{    
+//    template<class T> class shared_ptr;
+//}
 
 class Distribution;
 
