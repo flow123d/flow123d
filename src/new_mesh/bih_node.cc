@@ -148,26 +148,6 @@ void BIHNode::split_distribute(std::vector<BoundingBox> &elements, std::vector<B
 }
 
 
-void BIHNode::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements,
-		std::vector<BoundingBox> &meshElements, std::vector<BIHNode> &nodes) {
-	if (axes_ == 255) {
-	    //START_TIMER("leaf");
-		for (std::vector<unsigned int>::iterator it = element_ids_.begin(); it!=element_ids_.end(); it++) {
-			if (meshElements[*it].intersection(boundingBox)) {
-				searchedElements.push_back(*it);
-			}
-		}
-		//END_TIMER("leaf");
-	} else {
-	    //START_TIMER("recursion");
-		if (nodes[child_[0]].boundingBox_.intersection(boundingBox))
-			nodes[child_[0]].find_elements(boundingBox, searchedElements, meshElements, nodes);
-		if (nodes[child_[1]].boundingBox_.intersection(boundingBox))
-			nodes[child_[1]].find_elements(boundingBox, searchedElements, meshElements, nodes);
-		//END_TIMER("recursion");
-	}
-}
-
 unsigned int BIHNode::get_element_count() {
 	return element_ids_.size();
 }

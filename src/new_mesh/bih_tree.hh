@@ -118,6 +118,8 @@ private:
     std::vector<BoundingBox> elements_;
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
+    /// vector stored elements for level-order walk of tree
+    std::vector<unsigned int> queue_;
 
 };
 

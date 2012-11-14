@@ -121,15 +121,6 @@ private:
      */
 	void put_element(unsigned int element_id);
 
-	/**
-     * Gets elements which can have intersection with triangle
-     *
-     * @param triangle Triangle which is tested if has intersection
-     * @param searchedElements vector of ids of suspect elements
-     */
-    void find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements,
-    		std::vector<BoundingBox> &meshElements, std::vector<BIHNode> &nodes);
-
     /// child nodes indexes
     unsigned int child_[child_count];
 	/// vector of bounding boxes ids contained in node

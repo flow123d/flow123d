@@ -88,10 +88,32 @@ unsigned int BIHTree::get_element_count() {
 
 void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements)
 {
-	vector<unsigned int>::iterator it;
+	std::vector<unsigned int>::iterator it;
 	searchedElements.clear();
+	queue_.clear();
+
 	if (nodes_.size()) {
-		nodes_[0].find_elements(boundingBox, searchedElements, elements_, nodes_);
+		queue_.push_back(0);
+		while (queue_.size()) {
+			if (nodes_[queue_[0]].axes_ == 255) {
+			    //START_TIMER("leaf");
+				for (it = nodes_[queue_[0]].element_ids_.begin(); it!=nodes_[queue_[0]].element_ids_.end(); it++) {
+					if (elements_[*it].intersection(boundingBox)) {
+						searchedElements.push_back(*it);
+					}
+				}
+				//END_TIMER("leaf");
+			} else {
+			    //START_TIMER("recursion");
+				if (nodes_[ nodes_[queue_[0]].child_[0] ].boundingBox_.intersection(boundingBox))
+					queue_.push_back( nodes_[queue_[0]].child_[0] );
+				if (nodes_[ nodes_[queue_[0]].child_[1] ].boundingBox_.intersection(boundingBox))
+					queue_.push_back( nodes_[queue_[0]].child_[1] );
+				//END_TIMER("recursion");
+			}
+			queue_.erase(queue_.begin());
+		}
+
 	}
 
 	sort(searchedElements.begin(), searchedElements.end());
