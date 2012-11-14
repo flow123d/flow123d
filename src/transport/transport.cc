@@ -107,10 +107,10 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
     make_transport_partitioning();
     alloc_transport_vectors();
-    read_initial_condition(in_rec.val<FilePath>("initial_file"));
-   // read_concentration_sources();
-
     alloc_transport_structs_mpi();
+    read_initial_condition(in_rec.val<FilePath>("initial_file"));
+
+
 
     // read times of time dependent boundary condition and check the input files
 
