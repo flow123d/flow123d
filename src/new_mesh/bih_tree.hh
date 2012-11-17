@@ -30,6 +30,7 @@
 
 #include "new_mesh/bih_node.hh"
 #include "mesh/mesh.h"
+#include <armadillo>
 
 /**
  * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
@@ -107,10 +108,15 @@ public:
     std::vector<BoundingBox> &get_elements() { return elements_; }
 
 private:
+    /// max count of elements of which is selected median - value must be even
+    static const unsigned int max_median_count = 1023;
+
     /// create bounding boxes of element
     void element_boxes();
     /// create root node of tree
     void root_node(unsigned int areaElementLimit);
+    /// create tree
+    void create_tree(unsigned int areaElementLimit);
 
     /// mesh
     Mesh* mesh_;

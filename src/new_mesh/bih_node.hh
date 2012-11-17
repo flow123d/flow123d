@@ -79,40 +79,21 @@ private:
     /**
 	 * Constructor
 	 *
-	 * Set class members and call functions which create children of node
-	 * @param minCoordinates Minimal coordinates of BoxElement
-	 * @param maxCoordinates Maximal coordinates of BoxElement
+	 * Set class members
 	 * @param depth Depth of node in tree.
 	 */
-	BIHNode(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, unsigned int depth);
+	BIHNode(unsigned int depth);
 
 	/**
 	 * Set class members
 	 *
-	 * @param minCoordinates Minimal coordinates of BoxElement
-	 * @param maxCoordinates Maximal coordinates of BoxElement
 	 * @param depth Depth of node in tree.
 	 */
-	void set_values(arma::vec3 minCoordinates, arma::vec3 maxCoordinates, unsigned int depth);
-
-    /**
-     * Method checks count of elements in area.
-     * If count is greater than areaElementLimit splits area and distributes elements to subareas.
-     */
-    void split_distribute(std::vector<BoundingBox> &elements, std::vector<BIHNode> &nodes, unsigned int areaElementLimit);
+	void set_values(unsigned int depth);
 
     /// get value of coordination for calculate a median
     double get_median_coord(std::vector<BoundingBox> &elements, unsigned int index);
 
-    /**
-     * Tests if element is contained in area bounding box.
-     *
-     * @param coor Testing coordination (split coordination of parent area)
-     * @param min Minimum value of testing coordination
-     * @param max Maximum value of testing coordination
-     * @return True if element is contained in area
-     */
-    bool contains_element(unsigned char coor, double min, double max);
 
     /**
      * Add element into elements_ member
@@ -125,8 +106,8 @@ private:
     unsigned int child_[child_count];
 	/// vector of bounding boxes ids contained in node
 	std::vector<unsigned int> element_ids_;
-    /// bounding box of area
-    BoundingBox boundingBox_;
+    /// value of median which splits area to subareas (coordination is getting by axes_)
+    double median_;
     /// coordination of splitting area (for values 0,1,2) or flag that node is leaf (value 255)
     unsigned char axes_;
     /// depth of node

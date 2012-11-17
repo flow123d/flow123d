@@ -55,30 +55,134 @@ BIHTree::~BIHTree() {
 
 
 void BIHTree::root_node(unsigned int areaElementLimit) {
-	Node* node = mesh_->node_vector.begin();
-	arma::vec3 point = node->point();
-
-	arma::vec3 minCoordinates = point;
-	arma::vec3 maxCoordinates = point;
-
-	FOR_NODES(mesh_, node ) {
-		arma::vec3 point = node->point();
-
-		for (int i=0; i<dimension; i++) {
-			minCoordinates(i) = std::min(minCoordinates(i), point(i));
-			maxCoordinates(i) = std::max(maxCoordinates(i), point(i));
-		}
-	}
-
-	BIHNode bihNode(minCoordinates, maxCoordinates, 0);
+	BIHNode bihNode(0);
 	bihNode.element_ids_.resize(mesh_->n_elements());
 	for (int i=0; i<mesh_->n_elements(); i++) {
 		bihNode.element_ids_[i] = i;
 	}
 	nodes_.push_back(bihNode);
-	bihNode.split_distribute(elements_, nodes_, areaElementLimit);
+	create_tree(areaElementLimit);
 }
 
+
+void BIHTree::create_tree(unsigned int areaElementLimit) {
+	unsigned int elementCount, medianCount, medianPosition;
+	bool isMaxSplit;
+	std:vector<double> coors;
+
+	// arma::vec6 stores minimal and maximal coordinations of area
+	arma::vec6 areaCoors;
+
+	// temporary vector keeps coordinations of elements stored in queue_
+	std::vector<arma::vec6> queueCoors;
+
+	// find minimal and maximal coordination of whole mesh
+	Node* node = mesh_->node_vector.begin();
+	for (int i=0; i<dimension; i++) {
+		areaCoors(i) = node->point()(i);
+		areaCoors(i + dimension) = node->point()(i);
+	}
+	FOR_NODES(mesh_, node ) {
+		for (int i=0; i<dimension; i++) {
+			areaCoors(i) = std::min( areaCoors(i), node->point()(i) );
+			areaCoors(i + dimension) = std::max( areaCoors(i + dimension), node->point()(i) );
+		}
+	}
+
+	// put index of root node and its coordinations to vectors
+	queue_.clear();
+	queue_.push_back(0);
+	queueCoors.push_back(areaCoors);
+
+	while (queue_.size()) {
+		BIHNode child[BIHNode::child_count];
+		arma::vec6 childCoors[BIHNode::child_count];
+		elementCount = nodes_[queue_[0]].get_element_count();
+
+		if (elementCount <= areaElementLimit) {
+			queue_.erase(queue_.begin());
+			queueCoors.erase(queueCoors.begin());
+			continue;
+		}
+
+		medianCount = (elementCount >= max_median_count) ? max_median_count : ((elementCount % 2) ? elementCount : elementCount - 1);
+		medianPosition = (int)(medianCount/2);
+
+		// Set axes_ class member (select maximal dimension)
+		for (int i=0; i<dimension; i++) {
+			isMaxSplit = true;
+			for (int j=i+1; j<dimension; j++) {
+				if (queueCoors[0](i + dimension) - queueCoors[0](i) < queueCoors[0](j + dimension) - queueCoors[0](j)) {
+					isMaxSplit = false;
+					break;
+				}
+			}
+			if (isMaxSplit) {
+				nodes_[queue_[0]].axes_ = i;
+				break;
+			}
+		}
+
+		//select adepts at median
+		coors.resize(medianCount);
+		for (unsigned int i=0; i<medianCount; i++) {
+			coors[i] = nodes_[queue_[0]].get_median_coord(elements_, ( rand() << 15 | rand() ) % elementCount);
+		}
+
+		//select median of the adepts
+		std::nth_element(coors.begin(), coors.begin()+medianPosition, coors.end());
+		nodes_[queue_[0]].median_ = coors[medianPosition];
+
+		//calculate bounding boxes of subareas and create them
+		for (int i=0; i<BIHNode::child_count; i++) {
+			arma::vec3 minCoor;
+			arma::vec3 maxCoor;
+			for (int j=0; j<dimension; j++) {
+				minCoor(j) = (j==nodes_[queue_[0]].axes_ && i==1) ? nodes_[queue_[0]].median_ : queueCoors[0](j);
+				maxCoor(j) = (j==nodes_[queue_[0]].axes_ && i==0) ? nodes_[queue_[0]].median_ : queueCoors[0](j + dimension);
+				childCoors[i](j) = minCoor(j);
+				childCoors[i](j + dimension) = maxCoor(j);
+			}
+
+			child[i].set_values(nodes_[queue_[0]].depth_+1);
+		}
+
+		// distribute elements into subareas
+		for (std::vector<unsigned int>::iterator it = nodes_[queue_[0]].element_ids_.begin(); it!=nodes_[queue_[0]].element_ids_.end(); it++) {
+			if (elements_[*it].get_min()(nodes_[queue_[0]].axes_) < nodes_[queue_[0]].median_) {
+				child[0].put_element(*it);
+			}
+			if (elements_[*it].get_max()(nodes_[queue_[0]].axes_) > nodes_[queue_[0]].median_) {
+				child[1].put_element(*it);
+			}
+		}
+	    //DBGMSG("depth: %d els: %d childs: %d %d %d\n", depth_, get_element_count(),
+	    //        n_child_elements, child_[0]->get_element_count(), child_[1]->get_element_count());
+
+		// test count of elements in subareas
+		if (child[0].get_element_count() > 0.8*elementCount ||
+		    child[1].get_element_count() > 0.8*elementCount ||
+		    child[0].get_element_count() + child[1].get_element_count() > 1.5 * nodes_[queue_[0]].element_ids_.size()) {
+
+			nodes_[queue_[0]].axes_ = 255;
+			queue_.erase(queue_.begin());
+			queueCoors.erase(queueCoors.begin());
+		    continue;
+		}
+
+		// put nodes into vectors
+		for (int i=0; i<BIHNode::child_count; i++) {
+			nodes_[queue_[0]].child_[i] = nodes_.size();
+			queue_.push_back(nodes_.size());
+			queueCoors.push_back(childCoors[i]);
+			nodes_.push_back(child[i]);
+		}
+
+		nodes_[queue_[0]].element_ids_.erase(nodes_[queue_[0]].element_ids_.begin(), nodes_[queue_[0]].element_ids_.end());
+		queue_.erase(queue_.begin());
+		queueCoors.erase(queueCoors.begin());
+	}
+}
 
 
 unsigned int BIHTree::get_element_count() {
@@ -105,9 +209,9 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> 
 				//END_TIMER("leaf");
 			} else {
 			    //START_TIMER("recursion");
-				if (nodes_[ nodes_[queue_[0]].child_[0] ].boundingBox_.intersection(boundingBox))
+				if ( boundingBox.get_min()(nodes_[ queue_[0] ].axes_) < nodes_[ queue_[0] ].median_ )
 					queue_.push_back( nodes_[queue_[0]].child_[0] );
-				if (nodes_[ nodes_[queue_[0]].child_[1] ].boundingBox_.intersection(boundingBox))
+				if ( boundingBox.get_max()(nodes_[ queue_[0] ].axes_) > nodes_[ queue_[0] ].median_ )
 					queue_.push_back( nodes_[queue_[0]].child_[1] );
 				//END_TIMER("recursion");
 			}
@@ -136,7 +240,6 @@ void BIHTree::element_boxes() {
 			}
 		}
 		elements_[element.index()].set_bounds(minCoor, maxCoor);
-		elements_[element.index()].setId(id);
 	}
 }
 

@@ -52,15 +52,6 @@ public:
 	 */
 	BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor);
 
-	/**
-	 * Set id of element
-	 * NOT USED this method!
-	 *
-	 * @param id Element id for set
-	 */
-	void setId(int id);
-	/// get id of element
-    int getId();
     /// get minimal coordinates of bounding box
     const arma::vec3 get_min() const;
     /// get maximal coordinates of bounding box
@@ -93,8 +84,6 @@ private:
     arma::vec3 minCoordinates_;
     /// maximal coordinates of bounding box
     arma::vec3 maxCoordinates_;
-    /// id of element
-    int elementId_;
 };
 
 #endif /* BOX_ELEMENT_HH_ */

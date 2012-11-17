@@ -43,14 +43,6 @@ void BoundingBox::set_bounds(arma::vec3 minCoor, arma::vec3 maxCoor) {
 	maxCoordinates_ = maxCoor;
 }
 
-int BoundingBox::getId() {
-	return elementId_;
-}
-
-void BoundingBox::setId(int id) {
-	elementId_ = id;
-}
-
 const arma::vec3 BoundingBox::get_min() const {
 	return minCoordinates_;
 }
