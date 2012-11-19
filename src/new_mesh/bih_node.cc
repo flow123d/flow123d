@@ -61,19 +61,3 @@ double BIHNode::get_median_coord(std::vector<BoundingBox> &elements, unsigned in
 unsigned int BIHNode::get_element_count() {
 	return element_ids_.size();
 }
-
-
-void BIHNode::get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, unsigned int &sumDepth, unsigned int &leafNodesCount,
-		unsigned int &innerNodesCount, unsigned int &sumElements, std::vector<BIHNode> &nodes) {
-	if (axes_ == 255) {
-		if (depth_ > maxDepth) maxDepth = depth_;
-		if (depth_ < minDepth) minDepth = depth_;
-		sumDepth += depth_;
-		++leafNodesCount;
-		sumElements += get_element_count();
-	} else {
-		++innerNodesCount;
-		nodes[child_[0]].get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, nodes);
-		nodes[child_[1]].get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, nodes);
-	}
-}

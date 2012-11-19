@@ -27,15 +27,18 @@
 
 #include "new_mesh/bih_tree.hh"
 #include "new_mesh/bih_node.hh"
+#include <ctime>
 
 #define DEBUG
 
 BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) {
 	xprintf(Msg, " - BIHTree->BIHTree(Mesh, unsigned int)\n");
 
+	srand((unsigned)time(0));
+
 	mesh_ = mesh;
 	if (areaElementLimit == 0) areaElementLimit = 20;
-	nodes_.reserve(4 * mesh_->n_elements() / areaElementLimit);
+	nodes_.reserve(2 * mesh_->n_elements() / areaElementLimit);
 
 	//START_TIMER("BIH Tree");
 
@@ -254,7 +257,17 @@ void BIHTree::get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, do
 	innerNodesCount = 1;
 	sumElements = 0;
 
-	nodes_[0].get_tree_params(maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, nodes_);
+	for (unsigned int i=0; i<nodes_.size(); i++) {
+		if (nodes_[i].axes_ == 255) {
+			if (nodes_[i].depth_ > maxDepth) maxDepth = nodes_[i].depth_;
+			if (nodes_[i].depth_ < minDepth) minDepth = nodes_[i].depth_;
+			sumDepth += nodes_[i].depth_;
+			++leafNodesCount;
+			sumElements += nodes_[i].get_element_count();
+		} else {
+			++innerNodesCount;
+		}
+	}
 
 	avgDepth = (double) sumDepth / (double) leafNodesCount;
 }

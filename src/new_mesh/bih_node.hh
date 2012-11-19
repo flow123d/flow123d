@@ -49,22 +49,6 @@ public:
 	 */
     unsigned int get_element_count();
 
-    /**
-     * Browse tree and get its typical parameters
-     * Method for gtests
-     *
-     * @param maxDepth Gets maximal depth of tree
-     * @param minDepth Gets minimal depth of tree
-     * @param sumDepth Gets sum of all depths of tree
-     * @param leafNodesCount Gets count of all leaf nodes of tree
-     * @param innerNodesCount Gets count of all inner nodes of tree
-     * @param elementLeafCount Gets sum of elements contained in all leaf nodes
-     * @param nodes Vector of tree nodes
-     */
-    void get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, unsigned int &sumDepth, unsigned int &leafNodesCount,
-    		unsigned int &innerNodesCount, unsigned int &sumElements, std::vector<BIHNode> &nodes);
-
-
 private:
     /// max count of elements of which is selected median - value must be even
     static const unsigned int max_median_count = 1023;
