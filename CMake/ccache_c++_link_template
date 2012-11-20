@@ -1,0 +1,2 @@
+#!/bin/sh
+@CCACHE_CXX_COMPILER@  "$@"         

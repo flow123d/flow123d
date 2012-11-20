@@ -31,6 +31,16 @@ set(PETSC_ARCH "gcc_O3")
 # It is worth to try.
 # set( CMAKE_CXX_COMPILER "clang++")
 
+# USING CCACHE
+# The build command with using ccache is: 
+# $ ccache {original_command}
+# To do this, the compiler has to be set here: "ccache {compiler}"
+# assuming that you have ccache installed and added to PATH.
+#
+# Then the link to the compiler is created in build directory.
+# set (CCACHE_CXX_COMPILER "ccache /usr/bin/c++")
+
+
 ### Build configuration  ####
 # There are two predefined configurations: "debug" and "release"
 # "debug" set flags: "-g -DDEBUG"

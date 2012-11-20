@@ -34,6 +34,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
 
 
+# If the CCACHE_CXX_COMPILER is set 
+# then the link to this compiler with ccache is created and used.
+if(CCACHE_CXX_COMPILER)
+    set (CMAKE_CXX_COMPILER "ccache_c++")
+    configure_file(${CMAKE_SOURCE_DIR}/CMake/ccache_c++_link_template ${CMAKE_BINARY_DIR}/ccache_c++)
+endif(CCACHE_CXX_COMPILER)
+
+
 # Project name and language(s)
 project(Flow123d CXX C)
 
