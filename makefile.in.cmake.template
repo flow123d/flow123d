@@ -31,13 +31,19 @@ set(PETSC_ARCH "gcc_O3")
 # It is worth to try.
 # set( CMAKE_CXX_COMPILER "clang++")
 
-# USING CCACHE
-# The build command with using ccache is: 
+### USING CCACHE ###
+# The build command with using ccache looks like: 
 # $ ccache {original_command}
 # To do this, the compiler has to be set here: "ccache {compiler}"
 # assuming that you have ccache installed and added to PATH.
+# Then the link to the compiler is created in the build directory.
 #
-# Then the link to the compiler is created in build directory.
+# ccache works even if you use "make clean-all" command (that's the main advantage).
+# Just the first time build with ccache is slower.
+# To clean the ccache files, use command: 
+# $ ccache -C
+# More info and download at: http://ccache.samba.org/
+#
 # set (CCACHE_CXX_COMPILER "ccache /usr/bin/c++")
 
 
