@@ -127,6 +127,21 @@ protected:
 	void read_pressures(FILE* raw_output);
 
 	/**
+	 * Read scalar element data with name @p field_name using tokenizer @p tok initialized
+	 * over a GMSH file or stream.
+	 *
+	 * This needs lot of work to be general enough to be outside of this class
+	 * TODO:
+	 * - we need concept of Fields so that we can fill corresponding vectors
+	 * - then we should support scalar as well as vector or even tensor data
+	 * - support for time dependent data
+	 * - selective reading on submesh (parallelism - subdomains, or boundary data)
+	 *
+	 */
+	void read_element_data_from_gmsh(Tokenizer &tok, const  string &field_name);
+
+
+	/**
 	 * Calculate pressures in triangle element
 	 */
 	void calculate_triangle_pressure(TTriangle &element);

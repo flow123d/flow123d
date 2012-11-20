@@ -32,38 +32,65 @@
 #ifndef _GMSHMESHREADER_H
 #define	_GMSHMESHREADER_H
 
-#include "mesh/mesh.h"
 #include <string>
 #include <istream>
+#include <vector>
 #include "system/tokenizer.hh"
 
+class Mesh;
+class GMSH_DataHeader;
+class FilePath;
+
 class GmshMeshReader {
+public:
+    /**
+     * Construct the GMSH format reader from given filename.
+     * This opens the file for reading.
+     */
+    GmshMeshReader(const FilePath &file_name);
+    /**
+     * Construct the GMSH format reader from given input stream.
+     * The input stream should be correctly opened. To get correct information about
+     * line numbers there should be no previous reading from the stream.
+     */
+    GmshMeshReader(std::istream &in);
+
+    /**
+     * Destructor close the file if opened.
+     */
+    ~GmshMeshReader();
+
+    /**
+     *  Reads @p mesh from the GMSH file.
+     */
+    void read_mesh(Mesh* mesh);
+
+    /**
+     *  Reads ElementData section of opened GMSH file. Only scalar data are currently supported.
+     *  Given @p mesh parameter is used to identify element IDs. The output vector @p data, is
+     *  cleared and resized to the size equal to the number of elements in the mesh. Data are stored in the
+     *  natural ordering of the ilements in the @p mesh.
+     */
+    void read_element_data(const std::string &field_name, std::vector<double> &data, Mesh *mesh);
+
 private:
-    std::string mesh_file;
 
     /**
      * private method for reading of nodes
      */
-    void read_nodes(istream &in, Mesh*);
+    void read_nodes(Tokenizer &in, Mesh*);
     /**
      * private method for reading of elements - in process of implementation
      */
-    void read_elements(istream &in, Mesh*);
-
-public:
-    GmshMeshReader();
-    ~GmshMeshReader();
-
+    void read_elements(Tokenizer &in, Mesh*);
     /**
-     *  Reads @p mesh from file with given @p file_name.
+     *
      */
-    void read(const FilePath &file_name, Mesh* mesh);
+    void read_data_header(Tokenizer &tok, GMSH_DataHeader &head);
 
-    /**
-     *  Reads @p mesh from given stream @p in.
-     */
-    void read(istream &in, Mesh *mesh);
 
+    /// Tokenizer used for reading ASCII GMSH file format.
+    Tokenizer tok_;
 };
 
 #endif	/* _GMSHMESHREADER_H */

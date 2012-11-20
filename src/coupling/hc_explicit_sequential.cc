@@ -85,9 +85,9 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
 
     // Read mesh
     {
-        GmshMeshReader reader;
         mesh = new Mesh( in_record.val<Record>("mesh") );
-        reader.read( in_record.val<Record>("mesh").val<FilePath>("mesh_file"), mesh);
+        GmshMeshReader reader( in_record.val<Record>("mesh").val<FilePath>("mesh_file") );
+        reader.read_mesh(mesh);
 
         mesh->setup_materials(*material_database);
         Profiler::instance()->set_task_info(

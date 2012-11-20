@@ -20,7 +20,8 @@ class FilePath;
  *
  * Boost library provides nice tokenizer. The string is viewed as a container of tokens and
  * you can iterate over them. This class simplify the usage of the boost's tokenizer and further simplify
- * reading of the text files.
+ * reading of the text files. Actual tokenizer use backslash '\' as the escape character, double quotas '"'as quotation
+ * character, and space ' ' or tabelator '\t' as the separator of tokens.
  *	
  * Provides:
  * - method to read @p next_line, automatically skipping empty lines
@@ -43,7 +44,9 @@ public:
     /**
      * Shortcut for boost tokenizer.
      */
-    typedef boost::tokenizer<boost::char_separator<char> > BT;
+    typedef boost::escaped_list_separator<char> Separator;
+    //typedef boost::tokenizer<boost::char_separator<char> > BT;
+    typedef boost::tokenizer<Separator> BT;
 
     /**
      * Opens a file given by file path @p fp. And construct the tokenizer over the
@@ -52,7 +55,7 @@ public:
      * either tabelator '\t' or space ' '.
      *
      */
-    Tokenizer( FilePath &fp);
+    Tokenizer(const  FilePath &fp);
     /**
      * Construct the tokenizer over given input stream @p in.
      * The stream is read from its actual position. The separator of the tokens is
@@ -74,8 +77,12 @@ public:
      * The lines without any tokens are skipped, but counted into
      * number reported by @p line_num. Retuns false if we reach the end of file
      * otherwise returns true.
+     *
+     * Optional parameter @p assert_for_remaining_tokens can be set false if you
+     * want to ignore remaining tokens on current line. Otherwise an warning for the user is
+     * produced since possibly there is error in the data format.
      */
-    bool next_line();
+    bool next_line(bool assert_for_remaining_tokens=true);
     /**
      * Dereference of the tokenizer iterator. Returns reference to the string
      * that contains current token.
@@ -101,6 +108,13 @@ public:
      */    
     inline bool eof() const
         { return in_->eof(); }
+
+    /**
+     * Returns position on line.
+     */
+    inline unsigned int pos() const
+        { return position_;}
+
     /**
      * Returns number of lines read by the tokenizer.
      * After first call of @p next_line this returns '1'.
@@ -108,16 +122,30 @@ public:
     inline unsigned int line_num() const
         {return line_counter_;}
 
+    /**
+     * Returns file name.
+     */
+    inline const std::string &f_name() const
+        {return f_name_;}
 
+    /**
+     * Returns full position description.
+     */
+    std::string position_msg() const;
+
+    /**
+     * Destructor close the file if it was opened by tokenizer itself.
+     */
     ~Tokenizer();
 
 private:
+    // reset tokenizer for actual line
     void set_tokenizer();
     
     /// File name (for better error messages)
     std::string f_name_;
     /// Pointer to internal stream , if tokenizer is constructed form FilePath object.
-    std::istream *own_stream_;
+    std::ifstream *own_stream_;
     /// Input stream.
     std::istream *in_;
     /// Current line
@@ -128,6 +156,8 @@ private:
 
     /// Line token iterator
     BT::iterator tok_;
+    /// Separator function used by the tokenizer
+    Separator separator_;
     /// Line tokenizer (container like object).
     BT line_tokenizer_;
 };

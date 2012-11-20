@@ -16,13 +16,18 @@
 
 using namespace std;
 
-Tokenizer::Tokenizer( FilePath &fp)
+Tokenizer::Tokenizer(const FilePath &fp)
 : f_name_(fp),
   own_stream_(NULL),
   line_counter_(0), position_(0),
-  line_tokenizer_(line_,  boost::char_separator<char>("\t \n"))
+  separator_("\\"," \t","\""),
+  line_tokenizer_(line_,  separator_)
 {
-    in_ = own_stream_ = new ifstream( string(fp).c_str() ); // open a stream (?? error checking)
+    in_ = own_stream_ = new ifstream;
+    own_stream_->open( string(fp).c_str() );
+    // check correct openning
+    INPUT_CHECK(! own_stream_->fail(), "Can not open input file '%s'.\n", f_name_.c_str() );
+    own_stream_->exceptions ( ifstream::failbit | ifstream::badbit );
 
 }
 
@@ -33,7 +38,8 @@ Tokenizer::Tokenizer( istream &in)
   own_stream_(NULL),
   in_( &in ),
   line_counter_(0), position_(0),
-  line_tokenizer_(line_,  boost::char_separator<char>("\t \n"))
+  separator_("\\"," \t","\""),
+  line_tokenizer_(line_,  separator_)
 {}
 
 
@@ -42,7 +48,7 @@ bool Tokenizer::skip_to(const std::string& pattern)
 {
     ASSERT( in_->good(), "Tokenizer stream (for file: %s) is not ready for i/o operations. Perhaps missing check about correct open.\n", f_name_.c_str());
 
-    while (! eof() &&  line_.find(pattern)==string::npos ) next_line();
+    while (! eof() &&  line_.find(pattern)==string::npos ) next_line(false);
     if (! eof()) {
         set_tokenizer();
         return true;
@@ -52,9 +58,12 @@ bool Tokenizer::skip_to(const std::string& pattern)
 
 
 
-bool Tokenizer::next_line() {
+bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     // input assert about remaining tokens
-    if ( ! eol() ) xprintf(Warn, "Remaining tokens, file '%s', line '%d', after token #%d.\n", f_name_.c_str(), line_num(), position_);
+    if (assert_for_remaining_tokens && (! eol() )) {
+        //DBGMSG("Line: '%s'\n", line_.c_str());
+        xprintf(Warn, "Remaining tokens, file '%s', line '%d', after token #%d.\n", f_name_.c_str(), line_num(), position_);
+    }
 
     line_="";
     while ( ! eof() && line_ == "") { std::getline( *in_, line_); boost::trim( line_ ); line_counter_++; }
@@ -84,7 +93,14 @@ void Tokenizer::set_tokenizer()
 
 
 
+string Tokenizer::position_msg() const {
+    stringstream ss;
+    ss << "token: " << pos() << ", line: " << line_num() << ", in file '" << f_name() << "'";
+    return ss.str();
+}
+
+
 Tokenizer::~Tokenizer() {
-    if (own_stream_ != NULL) delete own_stream_;
+    if (own_stream_ != NULL) delete own_stream_; // this also close the input file
 }
 

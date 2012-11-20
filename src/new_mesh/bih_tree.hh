@@ -36,19 +36,22 @@
  * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
  *
  * TODO:
- * - Kod pro hledani ve stromu i pro tvorbu stromu presunout pouze do BIHTree.
+ * - v pruchodech do sirky pouzit std::deque
+ *   po vytvoreni stromu, provest uvolneni pameti pomoci swap + temporary.
+ *   .. podobne pro queueCoors
+ *
+ * - pro ulozeni hloubky pouzit prostor v axes_
+ *
+ * - zjednoduseni hledani max. dimenze v create_tree
+ *
+ * - pro konstanty 0.8 a 1.5 udelat const staticke promenne v BIHTree a vysvetlit jejich vyznam
+ *
  *
  * - indexy bounding boxu v listech jsou ulozeny v jednom spolecnem vektoru vector<unsigned int> in_leaves
- * - Optimalizovat BIHNode, obsahuje pouze: unsigned int child_[2], double median_ , char axes
- *   List se pozna tak, ze axes==255. V tom pripade udava child_ range do vektoru in_leaves (tj. child[0] je index prvniho a
- *   child_[1]= 1+ index posledniho prvku v listu)
- * - hledani ve stromu udelat bez rekurze, pomoci cylku
- * - konstrukci stromu udelat bez rekurze (pruchod do sirky by mohl znamenat mene kopirovani)
+ *
  *
  * - more precise documentation
  * - elementy Meshe umi vracet svuj BoundingBox
- * - pozruseni BoundingBox v BIHNode, testovat, ze funguje automaticke zvetsovani vektoru BIHNode
- * - pouzit 2x rand, pro jistotu
  *
  *
  */

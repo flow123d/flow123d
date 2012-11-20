@@ -36,6 +36,8 @@
 #include "new_mesh/bih_tree.hh"
 #include "new_mesh/ngh/include/intersection.h"
 #include "new_mesh/ngh/include/point.h"
+#include "system/sys_profiler.hh"
+#include "boost/lexical_cast.hpp"
 #include "system/tokenizer.hh"
 
 
@@ -113,20 +115,20 @@ void FunctionInterpolatedP0<dim>::set_source_of_interpolation(const FilePath & m
 	// read mesh, create tree
     {
        mesh_ = new Mesh();
-	   GmshMeshReader reader;
-	   reader.read( mesh_file, mesh_);
+	   GmshMeshReader reader(mesh_file);
+	   reader.read_mesh( mesh_);
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
 	bihTree_ = new BIHTree(mesh_);
 
 	// read pressures
+	Tokenizer tok(mesh_file);
+
 	FILE* raw_output_file = xfopen( string(raw_output).c_str(), "rt");
 	read_pressures(raw_output_file);
 	xfclose(raw_output_file);
-
-	//calculate_interpolation();
+	//read_element_data_from_gmsh(tok, "xx");
 }
-
 
 
 template <int dim>
@@ -160,51 +162,6 @@ void FunctionInterpolatedP0<dim>::read_pressures(FILE* raw_output) {
 	xprintf(Msg, " %d values of pressure read. O.K.\n", pressures_.size());
 }
 
-/*
-
-template <int dim>
-void FunctionInterpolatedP0<dim>::read_element_data_from_gmsh(istream &in, const  string &field_name) {
-    xprintf(Msg, "FunctionInterpolatedP0->read_element_data_from_gmsh.\n");
-
-    string line;
-    while (1) {
-        skip_to(in, "$ElementData");
-        std::getline( in, line);
-        unsigned int n_str = lexical_cast<unsigned int> (line);
-        if (n_str == 0) continue;
-        std::getline( in, line);
-        if (line != field_name) continue;
-
-
-    skip_to(in, filed_name)
-    int numElements;
-    char line[ LINE_SIZE ];
-
-    skip_to(raw_output, "$FlowField");
-    xfgets(line, LINE_SIZE - 2, raw_output); //time
-    xfgets(line, LINE_SIZE - 2, raw_output); //count of elements
-    numElements = atoi(xstrtok(line));
-    pressures_.reserve(numElements);
-    for (int  i = 0; i < numElements; ++i) pressures_.push_back(0.0);
-    xprintf(Msg, " - Reading pressures...");
-
-    for (int i = 0; i < numElements; ++i) {
-        int id;
-        double pressure;
-
-        xfgets(line, LINE_SIZE - 2, raw_output);
-
-        //get element ID, presure
-        id = atoi(xstrtok(line));
-        pressure = atof(xstrtok(NULL));
-        ElementFullIter ele = mesh_->element.find_id(id);
-        pressures_[ ele.index() ] = pressure;
-    }
-
-    xprintf(Msg, " %d values of pressure read. O.K.\n", pressures_.size());
-}
-
-*/
 
 template <int dim>
 void FunctionInterpolatedP0<dim>::calculate_triangle_pressure(TTriangle &element) {

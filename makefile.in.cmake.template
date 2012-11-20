@@ -1,4 +1,3 @@
-
 ### PETSC library ###################################################################
 # The Flow123 requires PETSC library (3.2.x), you have to set 
 # the location of PETSC and used PETSC architecture unless you
@@ -7,14 +6,17 @@
 #set(PETSC_DIR "$ENV{HOME}/local/petsc")
 #set(PETSC_ARCH "linux-gcc-dbg")
 
+set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
+set(PETSC_ARCH "gcc_O3")
+
 ###
 # Uncomment this if PETSC are detected, but tests during configuration fail. 
 # (Cygwin, parallel systems with obligatory mpirun execution)
 # set (PETSC_EXECUTABLE_RUNS YES)
 
 
-set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
-set(PETSC_ARCH "gcc_O3")
+### Build setting ####################################################################
+
 
 ### verbose mode ####
 # option to produce more verbose compiling
@@ -24,6 +26,7 @@ set(PETSC_ARCH "gcc_O3")
 
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
+
 ### set compiler ###
 # g++ is automatically detected and used
 # 
@@ -31,12 +34,11 @@ set(PETSC_ARCH "gcc_O3")
 # It is worth to try.
 # set( CMAKE_CXX_COMPILER "clang++")
 
+
 ### USING CCACHE ###
-# The build command with using ccache looks like: 
-# $ ccache {original_command}
-# To do this, the compiler has to be set here: "ccache {compiler}"
-# assuming that you have ccache installed and added to PATH.
-# Then the link to the compiler is created in the build directory.
+# If you have installed 'ccache' package, you can enjoy faster builds by setting 
+# variable CCACHE_CXX_COMPILER to "ccache __your_favourite_c++_compiler__".
+# The helper script is created in the build directory.
 #
 # ccache works even if you use "make clean-all" command (that's the main advantage).
 # Just the first time build with ccache is slower.
@@ -47,7 +49,7 @@ set(PETSC_ARCH "gcc_O3")
 # set (CCACHE_CXX_COMPILER "ccache /usr/bin/c++")
 
 
-### Build configuration  ####
+### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
 # "debug" set flags: "-g -DDEBUG"
 # "release" set flags: "-O3 -DNODEBUG"
@@ -72,7 +74,7 @@ set(FLOW_BUILD_TYPE debug)
 
 
 
-### External Projects directory
+### External Projects directory ##########################################################
 #
 # The directory where possible external projects should be stored and built.
 # The default location is ${PROJECT_SOURCE_DIR}/external_projects.

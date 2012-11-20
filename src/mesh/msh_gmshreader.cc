@@ -31,8 +31,10 @@
  */
 
 #include "msh_gmshreader.h"
+
+#include "mesh/mesh.h"
 #include "mesh/nodes.hh"
-#include <fstream>
+#include <istream>
 #include <string>
 
 #include "system/system.hh"
@@ -43,78 +45,46 @@
 using namespace std;
 
 
-GmshMeshReader::GmshMeshReader()
-{
-    xprintf(Msg, " - GmshMeshReader()\n");
-}
+GmshMeshReader::GmshMeshReader(const FilePath &file_name)
+: tok_(file_name)
+{}
 
 
 
-GmshMeshReader::~GmshMeshReader() {
-}
+GmshMeshReader::GmshMeshReader(istream &in)
+: tok_(in)
+{}
 
 
 
-void GmshMeshReader::read(const FilePath &file_name, Mesh* mesh) {
-    mesh_file = file_name;
-
-    std::ifstream ifs;
-    ifs.exceptions ( ifstream::failbit | ifstream::badbit );
-    try {
-        ifs.open( mesh_file.c_str(), std::ifstream::in );
-        read(ifs, mesh);
-    }
-    catch (ifstream::failure &e)
-    {
-        /*
-         * This doesn't work well, bad bit is set also for failure in getline.
-         * 1) check Boost iostreams if thay provides better resolution of exceptions
-         * 2) make an open_stream method in FilePath, that can at least check correct oppening
-         *    of the stream and turn on the exceptions.
-         * 3) If not provided by boost create correct exception types in FilePath
-         *    for reporting type of io problem and possibly information about filename and
-         *    line.
-         */
-        if (ifs.bad())
-            xprintf(UsrErr,"Can not open GMSH input file: %s\n", mesh_file.c_str());
-        if (ifs.fail())
-            xprintf(UsrErr,"Can not read GMSH input file: %s. Should be text file.\n", mesh_file.c_str());
-    }
-
-    mesh_file ="";
-}
+GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
+{}
 
 
 
-
-void GmshMeshReader::read(istream &in, Mesh *mesh) {
+void GmshMeshReader::read_mesh(Mesh* mesh) {
     F_ENTRY;
 
     ASSERT( mesh , "Argument mesh is NULL.\n");
-    INPUT_CHECK( ! in.fail(), "Can not open GMSH input file: %s\n", mesh_file.c_str());
-    read_nodes(in, mesh);
-    read_elements(in, mesh);
-
+    read_nodes(tok_, mesh);
+    read_elements(tok_, mesh);
     mesh->setup_topology();
 }
 
 
 
-
-void GmshMeshReader::read_nodes(istream &in, Mesh* mesh) {
+void GmshMeshReader::read_nodes(Tokenizer &tok, Mesh* mesh) {
     using namespace boost;
-    xprintf(Msg, " - Reading nodes...");
+    xprintf(Msg, "- Reading nodes...");
 
-    skip_to(in, "$Nodes");
-    Tokenizer tok(in);
+    tok.skip_to("$Nodes");
     try {
-        tok.next_line();
-        DBGMSG("%d\n",tok.line_num());
+        tok.next_line(false);
         unsigned int n_nodes = lexical_cast<unsigned int> (*tok);;
+        INPUT_CHECK( n_nodes > 0, "Zero number of nodes, %s.\n", tok.position_msg().c_str() );
+        ++tok; // end of line
 
-        INPUT_CHECK( n_nodes > 0, "Zero number of nodes in the mesh file %s.", mesh_file.c_str() ); // should throw and catch at level where we know the file name
         mesh->node_vector.reserve(n_nodes);
-
         for (int i = 0; i < n_nodes; ++i) {
             tok.next_line();
 
@@ -123,30 +93,29 @@ void GmshMeshReader::read_nodes(istream &in, Mesh* mesh) {
 
             node->point()(0)=lexical_cast<double> (*tok); ++tok;
             node->point()(1)=lexical_cast<double> (*tok); ++tok;
-            node->point()(2)=lexical_cast<double> (*tok);
+            node->point()(2)=lexical_cast<double> (*tok); ++tok;
+            ++tok; // skip mesh size parameter
         }
 
     } catch (bad_lexical_cast &) {
-        xprintf(UsrErr, "Wrong number at line %d of the '$Nodes' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
+        xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
     }
-    xprintf(Msg, " %d nodes read. \n ", mesh->node_vector.size());
+    xprintf(Msg, " %d nodes read. \n", mesh->node_vector.size());
 }
 
 
 
-
-
-void GmshMeshReader::read_elements(istream &in, Mesh * mesh) {
+void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
     using namespace boost;
-    xprintf(Msg, " - Reading elements...");
+    xprintf(Msg, "- Reading elements...");
 
-    skip_to(in, "$Elements");
-    Tokenizer tok(in);
-
+    tok.skip_to("$Elements");
     try {
-        tok.next_line();
+        tok.next_line(false);
         unsigned int n_elements = lexical_cast<unsigned int> (*tok);
-        INPUT_CHECK( n_elements > 0, "Zero number of elements in the mesh file %s.\n", mesh_file.c_str());
+        INPUT_CHECK( n_elements > 0, "Zero number of elements, %s.\n", tok.position_msg().c_str());
+        ++tok; // end of line
+
         mesh->element.reserve(n_elements);
 
         for (unsigned int i = 0; i < n_elements; ++i) {
@@ -176,8 +145,11 @@ void GmshMeshReader::read_elements(istream &in, Mesh * mesh) {
             }
 
             //get number of tags (at least 2)
-            unsigned int n_tags = lexical_cast<unsigned int>(*tok); ++tok;
-            INPUT_CHECK(n_tags >= 2, "At least two element tags have to be defined for elment with id=%d\n", id);
+            unsigned int n_tags = lexical_cast<unsigned int>(*tok);
+            INPUT_CHECK(n_tags >= 2, "At least two element tags have to be defined for element with id=%d, %s.\n",
+                    id, tok.position_msg().c_str());
+            ++tok;
+
             //get tags 1 and 2
             ele->mid = lexical_cast<unsigned int>(*tok); ++tok;
             unsigned int rid = lexical_cast<unsigned int>(*tok); ++tok; // region number, we do not store this
@@ -198,16 +170,139 @@ void GmshMeshReader::read_elements(istream &in, Mesh * mesh) {
 
             unsigned int ni;
             FOR_ELEMENT_NODES(ele, ni) {
-                unsigned int node_id = lexical_cast<unsigned int>(*tok); ++tok;
+                unsigned int node_id = lexical_cast<unsigned int>(*tok);
                 NodeIter node = mesh->node_vector.find_id( node_id );
-                INPUT_CHECK( node!=mesh->node_vector.end() , "Unknown node id %d in specification of element with id=%d.\n", node_id, id);
+                INPUT_CHECK( node!=mesh->node_vector.end() ,
+                        "Unknown node id %d in specification of element with id=%d, %s.\n",
+                        node_id, id, tok.position_msg().c_str());
                 ele->node[ni] = node;
+                ++tok;
             }
         }
 
     } catch (bad_lexical_cast &) {
-        xprintf(UsrErr, "Wrong number at line %d of the '$Elements' section in mesh file '%s'\n", tok.line_num(), mesh_file.c_str());
+        xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
     }
 
     xprintf(Msg, " %d elements read. \n", mesh->n_elements());
 }
+
+
+
+
+/***********************************
+ * Format of GMSH ASCII data sections
+ *
+   number-of-string-tags (== 2)
+     field_name
+     interpolation_scheme_name
+   number-of-real-tags (==1)
+     time_of_dataset
+   number-of-integer-tags
+     time_step_index (starting from zero)
+     number_of_field_components (1, 3, or 9 - i.e. 3d scalar, vector or tensor data)
+     number_of entities (nodes or elements)
+     partition_index (0 == no partition, not clear if GMSH support reading different partition from different files)
+   elm-number value ...
+
+*/
+
+
+/// Structure to which store the information form the header of data section.
+///
+struct GMSH_DataHeader {
+    string field_name;
+    string interpolation_scheme;
+    double time;
+    unsigned int time_index;
+    unsigned int n_components;
+    unsigned int n_entities;
+    unsigned int partition_index;
+};
+
+// Is assumed to be called just after tok.skip_to("..")
+// reads the header from the tokenizer @p tok and return it as the second parameter
+void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
+    using namespace boost;
+
+    // string tags
+    tok.next_line();
+    unsigned int n_str = lexical_cast<unsigned int>(*tok);
+    head.field_name="";
+    head.interpolation_scheme = "";
+    if (n_str > 0) {
+        tok.next_line(); n_str--;
+        head.field_name= *tok; //  unquoted by tokenizer if needed
+    }
+    if (n_str > 0) {
+        tok.next_line(); n_str--;
+        head.interpolation_scheme = *tok;
+    }
+    for(;n_str>0;n_str--) tok.next_line(); // skip possible remaining tags
+
+    //real tags
+    tok.next_line();
+    unsigned int n_real = lexical_cast<unsigned int>(*tok);
+    head.time=0.0;
+    if (n_real>0) {
+        tok.next_line(); n_real--;
+        head.time=lexical_cast<double>(*tok);
+    }
+    for(;n_real>0;n_real--) tok.next_line();
+
+    // int tags
+    tok.next_line();
+    unsigned int n_int = lexical_cast<unsigned int>(*tok);
+    head.time_index=0;
+    head.n_components=1;
+    head.n_entities=0;
+    head.partition_index=0;
+    if (n_int>0) {
+        tok.next_line(); n_int--;
+        head.time_index=lexical_cast<unsigned int>(*tok);
+    }
+    if (n_int>0) {
+        tok.next_line(); n_int--;
+        head.n_components=lexical_cast<unsigned int>(*tok);
+    }
+    if (n_int>0) {
+        tok.next_line(); n_int--;
+        head.n_entities=lexical_cast<unsigned int>(*tok);
+    }
+    for(;n_int>0;n_int--) tok.next_line();
+}
+
+
+
+void GmshMeshReader::read_element_data( const  string &field_name, vector<double> &data, Mesh *mesh) {
+    using namespace boost;
+
+    // find the data section
+    GMSH_DataHeader head;
+    head.field_name="";
+    while (! tok_.eof() && head.field_name!=field_name) {
+        tok_.skip_to("$ElementData");
+        read_data_header(tok_, head);
+    }
+
+    INPUT_CHECK(head.field_name==field_name, "Can not find data field '%s' in input file '%s'.\n",
+            field_name.c_str(), tok_.f_name().c_str());
+    ASSERT( mesh , "Argument mesh is NULL.\n");
+
+    // read the data
+    vector<double>(data).swap(data); // clear vector by swapping
+    data.reserve(head.n_entities);
+    int id;
+    double scalar_value;
+    for (unsigned int i = 0; i < head.n_entities; ++i) {
+        tok_.next_line();
+        id = lexical_cast<unsigned int>(*tok_); ++tok_;
+        scalar_value = lexical_cast<double>(*tok_); ++tok_;
+
+        ElementFullIter ele = mesh->element.find_id(id);
+        data[ ele.index() ] = scalar_value;
+    }
+
+    xprintf(Msg, " %d values of pressure read. O.K.\n", data.size());
+}
+
