@@ -42,8 +42,7 @@ BIHNode::~BIHNode() {
 
 
 void BIHNode::set_values(unsigned int depth) {
-	axes_ = 255;
-	depth_ = depth;
+	axes_ = depth + BIHTree::dimension;
 }
 
 

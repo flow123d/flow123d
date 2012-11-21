@@ -70,14 +70,15 @@ void BIHTree::root_node(unsigned int areaElementLimit) {
 
 void BIHTree::create_tree(unsigned int areaElementLimit) {
 	unsigned int elementCount, medianCount, medianPosition;
-	bool isMaxSplit;
-	std:vector<double> coors;
+	unsigned char depth;
+	double maxDiff;
+	std::vector<double> coors;
 
 	// arma::vec6 stores minimal and maximal coordinations of area
 	arma::vec6 areaCoors;
 
 	// temporary vector keeps coordinations of elements stored in queue_
-	std::vector<arma::vec6> queueCoors;
+	std::deque<arma::vec6> queueCoors;
 
 	// find minimal and maximal coordination of whole mesh
 	Node* node = mesh_->node_vector.begin();
@@ -100,91 +101,87 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 	while (queue_.size()) {
 		BIHNode child[BIHNode::child_count];
 		arma::vec6 childCoors[BIHNode::child_count];
-		elementCount = nodes_[queue_[0]].get_element_count();
+		elementCount = nodes_[queue_.front()].get_element_count();
 
 		if (elementCount <= areaElementLimit) {
-			queue_.erase(queue_.begin());
-			queueCoors.erase(queueCoors.begin());
+			queue_.pop_front();
+			queueCoors.pop_front();
 			continue;
 		}
 
-		medianCount = (elementCount >= max_median_count) ? max_median_count : ((elementCount % 2) ? elementCount : elementCount - 1);
-		medianPosition = (int)(medianCount/2);
-
 		// Set axes_ class member (select maximal dimension)
-		for (int i=0; i<dimension; i++) {
-			isMaxSplit = true;
-			for (int j=i+1; j<dimension; j++) {
-				if (queueCoors[0](i + dimension) - queueCoors[0](i) < queueCoors[0](j + dimension) - queueCoors[0](j)) {
-					isMaxSplit = false;
-					break;
-				}
-			}
-			if (isMaxSplit) {
-				nodes_[queue_[0]].axes_ = i;
-				break;
+		depth = nodes_[queue_.front()].axes_ - dimension;
+		maxDiff = queueCoors.front()(dimension) - queueCoors.front()(0);
+		nodes_[queue_.front()].axes_ = 0;
+		for (int i=1; i<dimension; i++) {
+			if (queueCoors.front()(i + dimension) - queueCoors.front()(i) > maxDiff) {
+				maxDiff = queueCoors.front()(i + dimension) - queueCoors.front()(i);
+				nodes_[queue_.front()].axes_ = i;
 			}
 		}
 
 		//select adepts at median
+		medianCount = (elementCount >= max_median_count) ? max_median_count : ((elementCount % 2) ? elementCount : elementCount - 1);
+		medianPosition = (int)(medianCount/2);
 		coors.resize(medianCount);
 		for (unsigned int i=0; i<medianCount; i++) {
-			coors[i] = nodes_[queue_[0]].get_median_coord(elements_, ( rand() << 15 | rand() ) % elementCount);
+			coors[i] = nodes_[queue_.front()].get_median_coord(elements_, ( rand() << 15 | rand() ) % elementCount);
 		}
 
 		//select median of the adepts
 		std::nth_element(coors.begin(), coors.begin()+medianPosition, coors.end());
-		nodes_[queue_[0]].median_ = coors[medianPosition];
+		nodes_[queue_.front()].median_ = coors[medianPosition];
 
 		//calculate bounding boxes of subareas and create them
 		for (int i=0; i<BIHNode::child_count; i++) {
-			arma::vec3 minCoor;
-			arma::vec3 maxCoor;
 			for (int j=0; j<dimension; j++) {
-				minCoor(j) = (j==nodes_[queue_[0]].axes_ && i==1) ? nodes_[queue_[0]].median_ : queueCoors[0](j);
-				maxCoor(j) = (j==nodes_[queue_[0]].axes_ && i==0) ? nodes_[queue_[0]].median_ : queueCoors[0](j + dimension);
-				childCoors[i](j) = minCoor(j);
-				childCoors[i](j + dimension) = maxCoor(j);
+				childCoors[i](j) = (j==nodes_[queue_.front()].axes_ && i==1) ? nodes_[queue_.front()].median_
+																		: queueCoors.front()(j);
+				childCoors[i](j + dimension) = (j==nodes_[queue_.front()].axes_ && i==0) ? nodes_[queue_.front()].median_
+																					: queueCoors.front()(j + dimension);
 			}
 
-			child[i].set_values(nodes_[queue_[0]].depth_+1);
+			child[i].set_values(depth+1);
 		}
 
 		// distribute elements into subareas
-		for (std::vector<unsigned int>::iterator it = nodes_[queue_[0]].element_ids_.begin(); it!=nodes_[queue_[0]].element_ids_.end(); it++) {
-			if (elements_[*it].get_min()(nodes_[queue_[0]].axes_) < nodes_[queue_[0]].median_) {
+		for (std::vector<unsigned int>::iterator it = nodes_[queue_.front()].element_ids_.begin(); it!=nodes_[queue_.front()].element_ids_.end(); it++) {
+			if (elements_[*it].get_min()(nodes_[queue_.front()].axes_) < nodes_[queue_.front()].median_) {
 				child[0].put_element(*it);
 			}
-			if (elements_[*it].get_max()(nodes_[queue_[0]].axes_) > nodes_[queue_[0]].median_) {
+			if (elements_[*it].get_max()(nodes_[queue_.front()].axes_) > nodes_[queue_.front()].median_) {
 				child[1].put_element(*it);
 			}
 		}
-	    //DBGMSG("depth: %d els: %d childs: %d %d %d\n", depth_, get_element_count(),
+	    //DBGMSG("depth: %d els: %d childs: %d %d %d\n", axes_, get_element_count(),
 	    //        n_child_elements, child_[0]->get_element_count(), child_[1]->get_element_count());
 
 		// test count of elements in subareas
-		if (child[0].get_element_count() > 0.8*elementCount ||
-		    child[1].get_element_count() > 0.8*elementCount ||
-		    child[0].get_element_count() + child[1].get_element_count() > 1.5 * nodes_[queue_[0]].element_ids_.size()) {
+		if (child[0].get_element_count() > max_elements_in_child * elementCount ||
+		    child[1].get_element_count() > max_elements_in_child * elementCount ||
+		    child[0].get_element_count() + child[1].get_element_count() > max_elements_in_children * nodes_[queue_.front()].element_ids_.size()) {
 
-			nodes_[queue_[0]].axes_ = 255;
-			queue_.erase(queue_.begin());
-			queueCoors.erase(queueCoors.begin());
+			nodes_[queue_.front()].axes_ = depth + dimension;
+			queue_.pop_front();
+			queueCoors.pop_front();
 		    continue;
 		}
 
 		// put nodes into vectors
 		for (int i=0; i<BIHNode::child_count; i++) {
-			nodes_[queue_[0]].child_[i] = nodes_.size();
+			nodes_[queue_.front()].child_[i] = nodes_.size();
 			queue_.push_back(nodes_.size());
 			queueCoors.push_back(childCoors[i]);
 			nodes_.push_back(child[i]);
 		}
 
-		nodes_[queue_[0]].element_ids_.erase(nodes_[queue_[0]].element_ids_.begin(), nodes_[queue_[0]].element_ids_.end());
-		queue_.erase(queue_.begin());
-		queueCoors.erase(queueCoors.begin());
+		nodes_[queue_.front()].element_ids_.erase(nodes_[queue_.front()].element_ids_.begin(), nodes_[queue_.front()].element_ids_.end());
+		queue_.pop_front();
+		queueCoors.pop_front();
 	}
+
+	queue_.clear();
+	std::deque<unsigned int>().swap(queue_);
 }
 
 
@@ -202,9 +199,9 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> 
 	if (nodes_.size()) {
 		queue_.push_back(0);
 		while (queue_.size()) {
-			if (nodes_[queue_[0]].axes_ == 255) {
+			if (nodes_[queue_.front()].axes_ >= dimension) {
 			    //START_TIMER("leaf");
-				for (it = nodes_[queue_[0]].element_ids_.begin(); it!=nodes_[queue_[0]].element_ids_.end(); it++) {
+				for (it = nodes_[queue_.front()].element_ids_.begin(); it!=nodes_[queue_.front()].element_ids_.end(); it++) {
 					if (elements_[*it].intersection(boundingBox)) {
 						searchedElements.push_back(*it);
 					}
@@ -212,13 +209,13 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> 
 				//END_TIMER("leaf");
 			} else {
 			    //START_TIMER("recursion");
-				if ( boundingBox.get_min()(nodes_[ queue_[0] ].axes_) < nodes_[ queue_[0] ].median_ )
-					queue_.push_back( nodes_[queue_[0]].child_[0] );
-				if ( boundingBox.get_max()(nodes_[ queue_[0] ].axes_) > nodes_[ queue_[0] ].median_ )
-					queue_.push_back( nodes_[queue_[0]].child_[1] );
+				if ( boundingBox.get_min()(nodes_[ queue_.front() ].axes_) < nodes_[ queue_.front() ].median_ )
+					queue_.push_back( nodes_[queue_.front()].child_[0] );
+				if ( boundingBox.get_max()(nodes_[ queue_.front() ].axes_) > nodes_[ queue_.front() ].median_ )
+					queue_.push_back( nodes_[queue_.front()].child_[1] );
 				//END_TIMER("recursion");
 			}
-			queue_.erase(queue_.begin());
+			queue_.pop_front();
 		}
 
 	}
@@ -258,10 +255,10 @@ void BIHTree::get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, do
 	sumElements = 0;
 
 	for (unsigned int i=0; i<nodes_.size(); i++) {
-		if (nodes_[i].axes_ == 255) {
-			if (nodes_[i].depth_ > maxDepth) maxDepth = nodes_[i].depth_;
-			if (nodes_[i].depth_ < minDepth) minDepth = nodes_[i].depth_;
-			sumDepth += nodes_[i].depth_;
+		if (nodes_[i].axes_ >= dimension) {
+			if (nodes_[i].axes_ - dimension > maxDepth) maxDepth = nodes_[i].axes_ - dimension;
+			if (nodes_[i].axes_ - dimension < minDepth) minDepth = nodes_[i].axes_ - dimension;
+			sumDepth += nodes_[i].axes_ - dimension;
 			++leafNodesCount;
 			sumElements += nodes_[i].get_element_count();
 		} else {

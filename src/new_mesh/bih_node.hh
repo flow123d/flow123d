@@ -92,10 +92,12 @@ private:
 	std::vector<unsigned int> element_ids_;
     /// value of median which splits area to subareas (coordination is getting by axes_)
     double median_;
-    /// coordination of splitting area (for values 0,1,2) or flag that node is leaf (value 255)
+    /**
+     * Value stores coordination of splitting area for inner nodes or depth for leaf nodes
+     *  - values 0,1,2 indicate inner node of tree and coordination of splitting area
+     *  - values 3 and greater indicate leaf node of tree and store depth of node (depth = axes_ - 3)
+     */
     unsigned char axes_;
-    /// depth of node
-    unsigned int depth_;
 
 };
 

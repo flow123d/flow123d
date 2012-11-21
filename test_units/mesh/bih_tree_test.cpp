@@ -46,12 +46,12 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 	unsigned int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
 	double avgDepth;
 	Mesh mesh;
-	GmshMeshReader reader;
+	GmshMeshReader reader(meshFile);
 	BoundingBox bb;
 	arma::vec3 min, max;
 	std::vector<unsigned int> searchedElements;
 
-	reader.read(meshFile, &mesh);
+	reader.read_mesh(&mesh);
 
 	// creates tree and tests its basic parameters
 	BIHTree bt(&mesh, elementLimit);

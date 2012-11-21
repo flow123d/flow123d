@@ -113,6 +113,10 @@ public:
 private:
     /// max count of elements of which is selected median - value must be even
     static const unsigned int max_median_count = 1023;
+    /// value indicates ratio of the number of element in node and number of elements of its child
+    static const double max_elements_in_child = 0.8;
+    /// value indicates ratio of the number of element in node and number of elements of its children
+    static const double max_elements_in_children = 1.5;
 
     /// create bounding boxes of element
     void element_boxes();
@@ -128,7 +132,7 @@ private:
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
     /// vector stored elements for level-order walk of tree
-    std::vector<unsigned int> queue_;
+    std::deque<unsigned int> queue_;
 
 };
 
