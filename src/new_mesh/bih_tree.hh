@@ -114,9 +114,9 @@ private:
     /// max count of elements of which is selected median - value must be even
     static const unsigned int max_median_count = 1023;
     /// value indicates ratio of the number of element in node and number of elements of its child
-    static const double max_elements_in_child = 0.8;
+    static const double max_elements_in_child;
     /// value indicates ratio of the number of element in node and number of elements of its children
-    static const double max_elements_in_children = 1.5;
+    static const double max_elements_in_children;
 
     /// create bounding boxes of element
     void element_boxes();

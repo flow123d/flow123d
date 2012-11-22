@@ -31,6 +31,10 @@
 
 #define DEBUG
 
+const double BIHTree::max_elements_in_child = 0.8;
+const double BIHTree::max_elements_in_children = 1.5;
+
+
 BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) {
 	xprintf(Msg, " - BIHTree->BIHTree(Mesh, unsigned int)\n");
 
