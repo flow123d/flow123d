@@ -32,9 +32,10 @@
 
 
 #include "system/sys_function_stack.hh"
+#include <mpi.h>
 
 //instead of #include "mpi.h"
-typedef int MPI_Comm;
+//typedef int MPI_Comm;
 
 
 // for a linux system we assume glibc library
