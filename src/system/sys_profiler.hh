@@ -62,11 +62,10 @@
 
 #include "global_defs.h"
 #include "system/system.hh"
-
+#include <mpi.h>
 
 //instead of #include "mpi.h"
 //mpi declarations follows:
-typedef int MPI_Comm;
 class MPI_Functions {
 public:
     static int sum(int* val, MPI_Comm comm);
