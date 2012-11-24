@@ -293,6 +293,9 @@ public:
     inline bool running() const
         { return start_count >0; }
 
+    /// Returns string with description of the code point where the timer was first started.
+    std::string code_point_str() const;
+
     /**
      * Returns cumulative time of the timer in 'ms'.
      */
@@ -547,7 +550,12 @@ private:
     string flow_build_;
 
 
-    void add_timer_info(vector<vector<string>*>* timersInfo, int timer_idx, int indent);
+    /**
+     * Use DFS to pass through the tree and collect information about all timers reduced from the processes in the communicator.
+     * For every timer the information strings are stored in the struct TimerInfo in order to pad fields correctly
+     * to have alligned columns on the output. The alligning is performed in the output() method.
+     */
+    void add_timer_info(vector<vector<string> > &timersInfo, int timer_idx, int indent, double parent_time);
 
     Profiler(MPI_Comm comm); // private constructor
     Profiler(Profiler const&); // copy constructor is private

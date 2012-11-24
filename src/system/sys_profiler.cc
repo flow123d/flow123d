@@ -172,6 +172,10 @@ void Timer::add_child(int child_index, const Timer &child)
 
 
 
+string Timer::code_point_str() const {
+    return boost::str( boost::format("%s:%d, %s()") % code_point_->file_ % code_point_->line_ % code_point_->func_ );
+}
+
 
 /***********************************************************************************************
  * Implementation of Profiler
@@ -210,6 +214,7 @@ Profiler::Profiler(MPI_Comm comm)
 
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
+    timers_[0].start();
 #endif
 }
 
@@ -355,13 +360,9 @@ void Profiler::notify_free(const size_t size) {
 
 
 
-void pad_string(string *str, int length) {
-    if (length > str->size())
-        str->insert(str->size(), length - str->size(), ' ');
-}
 
 
-void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, int timer_idx, int indent) {
+void Profiler::add_timer_info(vector<vector<string> > &timers_info, int timer_idx, int indent, double parent_time) {
 
     Timer &timer = timers_[timer_idx];
 
@@ -371,35 +372,38 @@ void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, int timer_idx
     int numproc;
     MPI_Comm_size(communicator_, &numproc);
 
-    int callCount = timer.call_count;
-    int callCountMin = MPI_Functions::min(&callCount, communicator_);
-    int callCountMax = MPI_Functions::max(&callCount, communicator_);
+    int call_count = timer.call_count;
+    int call_count_min = MPI_Functions::min(&call_count, communicator_);
+    int call_count_max = MPI_Functions::max(&call_count, communicator_);
+    int call_count_sum = MPI_Functions::sum(&call_count, communicator_);
 
-    double cumulTime = timer.cumulative_time() / 1000;
-    double cumulTimeMin = MPI_Functions::min(&cumulTime, communicator_);
-    double cumulTimeMax = MPI_Functions::max(&cumulTime, communicator_);
-    double cumulTimeSum = MPI_Functions::sum(&cumulTime, communicator_);
+    double cumul_time = timer.cumulative_time() / 1000; // in seconds
+    double cumul_time_min = MPI_Functions::min(&cumul_time, communicator_);
+    double cumul_time_max = MPI_Functions::max(&cumul_time, communicator_);
+    double cumul_time_sum = MPI_Functions::sum(&cumul_time, communicator_);
 
-    string spaces = "";
-    pad_string(&spaces, indent);
+    if (timer_idx == 0) parent_time = cumul_time_sum;
 
-    vector<string>* info = new vector<string > ();
-    info->push_back(spaces + string(timer.tag()) );
-    info->push_back(boost::str(boost::format("%i%s") % callCount % (callCountMin != callCountMax ? "*" : "")));
-    info->push_back(boost::str(boost::format("%.2f") % (cumulTimeSum / numproc)));
-    info->push_back(boost::str(boost::format("%.2f") % (cumulTimeMax > 1.0e-10 ? cumulTimeMin / cumulTimeMax : 1)));
+    vector<string> info;
+    double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
+    string tree_info = string(2*indent, ' ') +
+                       boost::str( boost::format("[%.1f] ") % percent )+
+                       timer.tag();
+    info.push_back( tree_info );
 
+    info.push_back( boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " ")) );
+    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_max) ) );
+    info.push_back( boost::str(boost::format("%.2f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1)) );
+    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum / call_count_sum) ) );
+    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum) ) );
+    info.push_back( timer.code_point_str() );
 
-    timersInfo->push_back(info);
+    timers_info.push_back(info);
 
     for (int i = 0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] > 0)
-            add_timer_info(timersInfo, timer.child_timers[i], indent + 1);
-
+            add_timer_info(timers_info, timer.child_timers[i], indent + 1, cumul_time_sum);
 }
-
-
-
 
 
 
@@ -415,45 +419,44 @@ void Profiler::output(ostream &os) {
 
     const int column_space = 3;
 
-
-
     //wait until profiling on all processors is finished
     MPI_Barrier(this->communicator_);
-
     update_running_timers();
 
-    vector < vector<string>* >* timersInfo = new vector < vector<string>*>();
-    add_timer_info(timersInfo, 0, 0);
+    vector < vector<string> > timers_info(1);
+
+    // add header into timers_info table !!
+    timers_info[0].push_back( "tag tree");
+    timers_info[0].push_back( "calls");
+    timers_info[0].push_back( "Tmax");
+    timers_info[0].push_back( "max/min");
+    timers_info[0].push_back( "T/calls");
+    timers_info[0].push_back( "Ttotal");
+    timers_info[0].push_back( "code_point");
+
+    add_timer_info(timers_info, 0, 0, 0.0);
 
     //create profiler output only once (on the first processor)
     if (mpi_rank_ == 0) {
 
-        int maxTagLength = 0;
-        int maxCallCountLength = 0;
-        int maxTimeLength = 0;
-        int maxMinMaxLength = 0;
-
-        for (int i = 0; i < timersInfo->size(); i++) {
-            for (int j = 0; j < timersInfo->at(i)->size(); j++) {
-                string str = timersInfo->at(i)->at(j);
-                int size = str.size();
-
-                switch (j) {
-                    case 0:
-                        maxTagLength = max(maxTagLength, size);
-                        break;
-                    case 1:
-                        maxCallCountLength = max(5, max(maxCallCountLength, size));
-                        break;
-                    case 2:
-                        maxTimeLength = max(4, max(maxTimeLength, size));
-                        break;
-                    case 3:
-                        maxMinMaxLength = max(7, max(maxMinMaxLength, size));
-                        break;
+        // compute with of columns
+        vector<unsigned int> width(timers_info[0].size(),0);
+        for (int i = 0; i < timers_info.size(); i++)
+            for (int j = 0; j < timers_info[i].size(); j++) width[j] = max( width[j] , (unsigned int)timers_info[i][j].size() );
+        // detect common path of code points
+        unsigned int common_length=timers_info[1].back().size();
+        for (int i = 2; i < timers_info.size(); i++) {
+            common_length = min( common_length, (unsigned int) timers_info[i].back().size() );
+            for (unsigned int j = 0; j < common_length; j++ ) {
+                if (timers_info[1].back().at(j) != timers_info[i].back().at(j)) {
+                    common_length = j;
+                    break;
                 }
             }
         }
+        // remove common path
+        for (int i = 1; i < timers_info.size(); i++) timers_info[i].back().erase(0, common_length);
+
 
         int mpi_size;
         MPI_Comm_size(this->communicator_, &mpi_size);
@@ -484,30 +487,27 @@ void Profiler::output(ostream &os) {
         os << "Run started at: " << start_time_string << endl;
         os << "Run finished at: " << end_time_string << endl;
 
-        os << setfill ('-') << setw (40) << "" << endl;
+        os << setfill ('-') << setw (80) << "" << endl;
         os.fill(' ');
 
-        // header
-        os << left << setw(maxTagLength) << "tag tree" << setw(column_space) << ""
-           << setw(maxCallCountLength) << "calls" << setw(column_space) << ""
-           << setw(maxTimeLength) << "time" << setw(column_space) << ""
-           << setw(maxMinMaxLength) << "min/max" << setw(column_space) << ""
-           << "subframes" << endl;
+        // print header
+        for(int j=0; j< timers_info[0].size(); j++)
+            os << left << setw(width[j]) << timers_info[0][j] << setw(column_space) << "";
+        os << endl;
 
-        os << setfill ('-') << setw (40) << "" << endl;
+        os << setfill ('-') << setw (80) << "" << endl;
         os.fill(' ');
 
-        for (int i = 0; i < timersInfo->size(); i++) {
-            vector<string>* info = timersInfo->at(i);
+        for (int i = 1; i < timers_info.size(); i++) {
+            for(int j=0; j< timers_info[i].size(); j++) {
+                // first and last item are left aligned
+                if (j==0 || j==timers_info[i].size()-1 ) os << left; else os<<right;
+                os << setw(width[j]) << timers_info[i][j] << setw(column_space) << "";
+            }
 
-            os << left << setw(maxTagLength) << info->at(0)         << setw(column_space) << ""        // tag
-               << setw(maxCallCountLength) << info->at(1)   << setw(column_space) << ""       // calls
-               << setw(maxTimeLength) << info->at(2)        << setw(column_space) << ""       // time
-               << setw(maxMinMaxLength) << info->at(3)      << setw(column_space) << "";     // min/max
-            if (info->size() > 4)
-               os << info->at(4);                           // subframes
             os << endl;
         }
+
     }
 }
 
