@@ -45,7 +45,7 @@ public:
 	/**
 	 * Get count of elements stored in
 	 *
-	 * @return Count of elements stored in element_ids_ member
+	 * @return Count of elements contained in node
 	 */
     unsigned int get_element_count();
 
@@ -58,7 +58,7 @@ private:
     /**
      * Empty constructor
      */
-    BIHNode() {}
+    BIHNode() { }
 
     /**
 	 * Constructor
@@ -75,21 +75,8 @@ private:
 	 */
 	void set_values(unsigned int depth);
 
-    /// get value of coordination for calculate a median
-    double get_median_coord(std::vector<BoundingBox> &elements, unsigned int index);
-
-
-    /**
-     * Add element into elements_ member
-     *
-     * @param element Added element
-     */
-	void put_element(unsigned int element_id);
-
     /// child nodes indexes
     unsigned int child_[child_count];
-	/// vector of bounding boxes ids contained in node
-	std::vector<unsigned int> element_ids_;
     /// value of median which splits area to subareas (coordination is getting by axes_)
     double median_;
     /**

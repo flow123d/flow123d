@@ -46,17 +46,6 @@ void BIHNode::set_values(unsigned int depth) {
 }
 
 
-void BIHNode::put_element(unsigned int element_id) {
-	element_ids_.push_back(element_id);
-}
-
-
-double BIHNode::get_median_coord(std::vector<BoundingBox> &elements, unsigned int index) {
-	unsigned int boundingBoxIndex = element_ids_[index];
-	return elements[boundingBoxIndex].get_center()(axes_);
-}
-
-
 unsigned int BIHNode::get_element_count() {
-	return element_ids_.size();
+	return child_[1] - child_[0];
 }

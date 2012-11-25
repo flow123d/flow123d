@@ -75,9 +75,9 @@ public:
 	~BIHTree();
 
 	/**
-	 * Get count of elements stored in
+	 * Get count of elements stored in tree
 	 *
-	 * @return Count of elements stored in element_ids_ member
+	 * @return Count of bounding boxes stored in elements_ member
 	 */
     unsigned int get_element_count();
 
@@ -120,10 +120,14 @@ private:
 
     /// create bounding boxes of element
     void element_boxes();
-    /// create root node of tree
-    void root_node(unsigned int areaElementLimit);
     /// create tree
     void create_tree(unsigned int areaElementLimit);
+    /**
+     * Put indexes of elements to in_leaves_ vector if node is marked as leaf
+     *
+     * @param listElementId List of all elements indexes
+     */
+    void put_leaf_elements(std::vector<unsigned int> &listElementId);
 
     /// mesh
     Mesh* mesh_;
@@ -133,6 +137,8 @@ private:
     std::vector<BIHNode> nodes_;
     /// vector stored elements for level-order walk of tree
     std::deque<unsigned int> queue_;
+    /// vector stored element indexes in leaf nodes
+    std::vector<unsigned int> in_leaves_;
 
 };
 
