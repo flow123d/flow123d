@@ -36,19 +36,14 @@
  * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
  *
  * TODO:
- * - v pruchodech do sirky pouzit std::deque
- *   po vytvoreni stromu, provest uvolneni pameti pomoci swap + temporary.
- *   .. podobne pro queueCoors
+ * - v BIHNode udelat inline metody depth() (osetrit ASSERTEM is_leaf()), is_leaf(), axes() (ASSERT ! is_leaf() )\
+ *   ... pouzit create_tree, find_elements
  *
- * - pro ulozeni hloubky pouzit prostor v axes_
- *
- * - zjednoduseni hledani max. dimenze v create_tree
- *
- * - pro konstanty 0.8 a 1.5 udelat const staticke promenne v BIHTree a vysvetlit jejich vyznam
+ * - v BIHTree::create_tree - prohozeni vrstev na konec, pokusit se nahradit test hloubky za test konce vrstvy,
+ *   mit ASSERT na shodu techto testu, pripadne zjistit pricinu problemu
  *
  *
- * - indexy bounding boxu v listech jsou ulozeny v jednom spolecnem vektoru vector<unsigned int> in_leaves
- *
+ * - ROZCLENENI CREATE_tree
  *
  * - more precise documentation
  * - elementy Meshe umi vracet svuj BoundingBox

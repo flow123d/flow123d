@@ -63,14 +63,15 @@ BIHTree::~BIHTree() {
 
 void BIHTree::create_tree(unsigned int areaElementLimit) {
 	unsigned int elementCount, medianCount, medianPosition;
-	unsigned int bound1, bound2, bound3, swapIndex, medianIndex;
 	unsigned char depth;
 	double maxDiff;
 	std::vector<double> coors;
-	std::vector<unsigned int> listElementIndex;
-	std::vector<unsigned int> listElementIndexNext;
+	std::vector<unsigned int> listElementIndex;          // last complete level of the BFS tree
+	std::vector<unsigned int> listElementIndexNext;      // actually  constructed level of the BFS tree
 
 	// arma::vec6 stores minimal and maximal coordinations of area
+	// Mimics BoundingBox functionality.
+	// TODO: Possibly add suitable methods to BoundingBox in order to use it here.
 	arma::vec6 areaCoors;
 
 	// temporary vector keeps coordinations of elements stored in queue_
@@ -112,6 +113,9 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 		BIHNode child[BIHNode::child_count];
 		arma::vec6 childCoors[BIHNode::child_count];
 
+		BIHNode & actual_node = nodes_[queue_.front()];
+
+
 		// switch vectors for calculation new level of tree
 		if (depth != nodes_[queue_.front()].axes_ - dimension) {
 			listElementIndex.swap(listElementIndexNext);
@@ -139,6 +143,7 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 		}
 
 		//select adepts at median
+		unsigned int medianIndex;
 		medianCount = (elementCount >= max_median_count) ? max_median_count : ((elementCount % 2) ? elementCount : elementCount - 1);
 		medianPosition = (int)(medianCount/2);
 		coors.resize(medianCount);
@@ -164,16 +169,17 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 		}
 
 		// sort elements to 3 groups (contained only in left child, contained in both children, contained only in right child)
-		bound1 = nodes_[queue_.front()].child_[0];
+	    unsigned int bound1, bound2, bound3, swapIndex;
+	    bound1 = nodes_[queue_.front()].child_[0];
 		bound2 = nodes_[queue_.front()].child_[0];
 		bound3 = nodes_[queue_.front()].child_[1];
-		unsigned int x1=0, x2=0, x3=0;
 		while (bound2 != bound3) {
 			if (elements_[ listElementIndex[bound2] ].get_min()(nodes_[queue_.front()].axes_) < nodes_[queue_.front()].median_) {
 				if (elements_[ listElementIndex[bound2] ].get_max()(nodes_[queue_.front()].axes_) > nodes_[queue_.front()].median_) {
+				    // median in bounding box (element in both ranges)
 					bound2++;
-					x2++;
 				} else {
+				    // median after bounding box (element in left range)
 					if (bound1 != bound2) {
 						swapIndex = listElementIndex[bound2];
 						listElementIndex[bound2] = listElementIndex[bound1];
@@ -181,14 +187,13 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 					}
 					bound1++;
 					bound2++;
-					x1++;
 				}
 			} else {
+			    // median before bounding box (element in right range)
 				swapIndex = listElementIndex[bound2];
 				listElementIndex[bound2] = listElementIndex[bound3-1];
 				listElementIndex[bound3-1] = swapIndex;
 				bound3--;
-				x3++;
 			}
 		}
 
