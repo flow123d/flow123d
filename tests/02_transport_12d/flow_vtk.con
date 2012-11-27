@@ -1,12 +1,13 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "test2", 
+    description = "Test2 - Transport 1D-2D (convection, dual porosity, sorption)", 
     material = "./input/test2.mtr", 
     mesh = {
       mesh_file = "./input/test2.msh", 
       neighbouring = "./input/test2.ngh"
     }, 
+
     primary_equation = {
       TYPE = "Steady_MH", 
       boundary_file = "./input/test2.fbc", 
@@ -22,11 +23,11 @@
         TYPE = "Petsc", 
         accuracy = 1e-07
       }
-    }
+    },
+
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      boundary_file = "./input/test2.tbc", 
-      dual_porosity = true, 
+      boundary_file = "./input/test2.tbc",  
       initial_file = "./input/test2.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
@@ -35,6 +36,8 @@
         }, 
         save_step = 0.5
       }, 
+
+      dual_porosity = true,
       sorption_enable = true, 
       substances = [
         "A", 
@@ -45,6 +48,7 @@
       }
     }
   }, 
+
   system = {
     output_streams = [
       {

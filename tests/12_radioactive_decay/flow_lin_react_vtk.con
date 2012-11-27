@@ -1,7 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "radioactive decay simulation, long decay chain with biffurcation, VTK output, test11", 
+    description = "Test12 - radioactive decay simulation, long decay chain with biffurcation", 
     material = "./input/flow_lin_react/sit_lin_react.mtr", 
     mesh = {
       mesh_file = "./input/flow_lin_react/sit_lin_react.msh", 
@@ -28,7 +28,6 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       boundary_file = "./input/flow_lin_react/sit_lin_react.tbc", 
-      dual_porosity = false, 
       initial_file = "./input/flow_lin_react/sit_lin_react.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
@@ -37,6 +36,8 @@
         }, 
         save_step = 0.5
       }, 
+
+      dual_porosity = false, 
       sorption_enable = false, 
       substances = [
         "A", 
@@ -62,9 +63,8 @@
           }
         ]
       } 
-    } # sec. eq.
-  }, # problem 
-  
+    }
+  },
   
   system = {
     output_streams = [

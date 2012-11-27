@@ -1,7 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient, VTK output test12", 
+    description = "Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient", 
     material = "./input/flow_decay/sit_decay.mtr", 
     mesh = {
       mesh_file = "./input/flow_decay/sit_decay.msh", 

@@ -1,7 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Test11 - radioactive decay simulation, long decay chain with biffurcation, VTK output", 
+    description = "Test11 - radioactive decay simulation, long decay chain with biffurcation", 
     material = "./input/sit_decay.mtr", 
     mesh = {
       mesh_file = "./input/sit_decay.msh", 
@@ -116,7 +116,6 @@
       }
     } 
   }, 
-  
   
   system = {
     output_streams = [

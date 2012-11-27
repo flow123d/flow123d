@@ -1,7 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "[u'2D', u'unsteady', u'flow', u'MH']", 
+    description = "Test10 - Unsteady flow in 2D, Mixed Hybrid method", 
     material = "./input/test10.mtr", 
     mesh = {
       mesh_file = "./input/test10.msh", 
@@ -34,7 +34,6 @@
       }
     }, 
 
-    secondary_equation_save = null,
     save_step = 0.1, 
     time = {
       end_time = 0.5, 

@@ -1,12 +1,13 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "test1", 
+    description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
     material = "${INPUT}/test1.mtr", 
     mesh = {
       mesh_file = "${INPUT}/test1.msh", 
       neighbouring = "${INPUT}/test1.ngh"
     }, 
+
     primary_equation = {
       TYPE = "Steady_MH", 
       boundary_file = "${INPUT}/test1.fbc", 
@@ -28,6 +29,7 @@
       }
     }
   }, 
+
   system = {
     output_stream = {
         file = "./test1.msh", 
