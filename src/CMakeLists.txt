@@ -64,6 +64,7 @@ set(sources_lib_input
 )
 
 set(sources_mesh_lib
+    mesh/region.cc
     mesh/msh_gmshreader.cc
     mesh/boundaries.cc
     mesh/edges.cc

@@ -71,7 +71,7 @@ struct InputException : virtual ExceptionBase
  * @code
  *      TYPEDEF_ERR_INFO( EI_Dim1Mismatch, int)
  *      TYPEDEF_ERR_INFO( EI_Dim2Mismatch, int)
- *      DeclareException( ExcDimensionMismatch, << "Dimensions dim1=" << EI_Dim1Missmatch::val << " and dim2=" << EI_Dim2Mismatch::val << " should be same.");
+ *      DECLARE_EXCEPTION( ExcDimensionMismatch, << "Dimensions dim1=" << EI_Dim1Missmatch::val << " and dim2=" << EI_Dim2Mismatch::val << " should be same.");
  * @endcode
  */
 #define DECLARE_EXCEPTION( ExcName, Format)                                 \

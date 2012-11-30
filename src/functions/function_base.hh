@@ -5,6 +5,31 @@
  *      Author: jb
  */
 
+/**
+ * TODO:
+ * - FunctionBase (as well as all functions) will be templated by the type of the returned value @p Val
+ *   and dimension
+ * - methods:
+ *   /// returns the value (for nontrivial Values this involves copy constructor)
+ *   virtual Val value(Point<spacedim>, ElementAccessor<dim,spacedim>)
+ *   /// Returns value through reference, the returned ResultType indicate zero, identity, not def and possibly other
+ *   /// particular values. For complex 'Val' the values are not filled for nontrivial ResultType, i.e. we assume that
+ *   /// there is an check of these particular cases. We may provide default resolution function.
+ *   virtual ResultType value(Point<spacedim>, ElementAccessor<dim,spacedim>, Val &val);
+ *   virtual void value_list(std::vector<Point<spacedim> >, ElementAccessor<dim,spacedim>, std::vector<Val> &, std::vecto<ResultType>& );
+ *
+ * - Question: how to treat parameter <dim> of ElementAccessors
+ *   What we use from ElementAccessor?
+ *   1) material number
+ *   2) access to data on the same or refined mesh, i.e. make DoFAccessor from it
+ *      identification of mesh, submesh, level, index in level
+ *   3) Coordinates to interpolate from different mesh
+ *
+ *   Seems that nothing depends on <dim>
+ *
+ */
+
+
 #include <functions/functions_all.hh>
 
 #ifndef FUNCTION_BASE_HH_
