@@ -32,6 +32,7 @@
 #include "new_mesh/bounding_box.hh"
 #include <armadillo>
 #include <algorithm>
+#include "input/accessors.hh"
 
 class BIHNode {
 	friend class BIHTree;
@@ -49,11 +50,31 @@ public:
 	 */
     unsigned int get_element_count();
 
+    /// return true if node is leaf
+    inline bool is_leaf()
+    	{ return axes_ >= dimension; }
+
+    /// return depth of leaf node
+    inline unsigned char depth()
+    {
+    	ASSERT(is_leaf(), "Call depth() function for inner node.\n");
+    	return axes_ - dimension;
+    }
+
+    /// return axes (coordination of splitting) of inner node
+    inline unsigned char axes()
+    {
+    	ASSERT(!is_leaf(), "Call axes() function for leaf node.\n");
+    	return axes_;
+    }
+
 private:
     /// max count of elements of which is selected median - value must be even
     static const unsigned int max_median_count = 1023;
     /// count of subareas - don't change
     static const unsigned int child_count = 2;
+    /// count of dimensions
+    static const unsigned char dimension = 3;
 
     /**
      * Empty constructor
@@ -69,11 +90,11 @@ private:
 	BIHNode(unsigned int depth);
 
 	/**
-	 * Set class members
+	 * Set depth of node to axes_ class members
 	 *
 	 * @param depth Depth of node in tree.
 	 */
-	void set_values(unsigned int depth);
+	void set_depth(unsigned int depth);
 
     /// child nodes indexes
     unsigned int child_[child_count];

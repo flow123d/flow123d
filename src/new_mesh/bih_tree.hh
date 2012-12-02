@@ -117,12 +117,33 @@ private:
     void element_boxes();
     /// create tree
     void create_tree(unsigned int areaElementLimit);
+    /// Creates root node of tree, finds its bounding coordinations
+    /// and pushes elements to the vector using for creating tree
+    void create_root_node();
+    /// Set axes_ class member (select maximal dimension) of actually processed node
+    void set_axes();
+    /// Set median_ class member of actually processed node
+    void set_median();
+    /// Put indexes of elements to in_leaves_ vector if node is marked as leaf
+    void put_leaf_elements();
+    /// Deallocate memory reserved by vectors
+    void free_memory();
+    /// Test if processed node is at the end of level during creating of tree
+    void test_new_level();
     /**
-     * Put indexes of elements to in_leaves_ vector if node is marked as leaf
+     * Sort elements in node to 3 groups (contained only in left child, in both children, only in right child)
      *
-     * @param listElementId List of all elements indexes
+     * @param bound1 Bound of sorting between first and second group
+     * @param bound2 Bound of sorting between second and third group
      */
-    void put_leaf_elements(std::vector<unsigned int> &listElementId);
+    void sort_elements(unsigned int &bound1, unsigned int &bound2);
+    /**
+     * Distribute elements into subareas
+     *
+     * @param leftChild Left child of actually processed node
+     * @param rightChild Right child of actually processed node
+     */
+    void distribute_elements(BIHNode &left_child, BIHNode &right_child);
 
     /// mesh
     Mesh* mesh_;
@@ -132,8 +153,16 @@ private:
     std::vector<BIHNode> nodes_;
     /// vector stored elements for level-order walk of tree
     std::deque<unsigned int> queue_;
+	// temporary vector keeps coordinations of elements stored in queue_
+	std::deque<arma::vec6> queue_coors_;
     /// vector stored element indexes in leaf nodes
     std::vector<unsigned int> in_leaves_;
+    /// temporary vector stored element indexes in last complete level of the BFS tree
+    std::vector<unsigned int> list_element_index_;
+    /// temporary vector stored element indexes in actually constructed level of the BFS tree
+    std::vector<unsigned int> list_element_index_next_;
+    /// temporary vector stored values of coordinations for calculating median
+    std::vector<double> coors_;
 
 };
 

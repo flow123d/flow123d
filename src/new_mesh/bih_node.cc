@@ -33,7 +33,7 @@
 BIHNode::BIHNode(unsigned int depth) {
 	//xprintf(Msg, " - BIHNode->BIHNode(unsigned int)\n");
 
-	set_values(depth);
+	set_depth(depth);
 }
 
 BIHNode::~BIHNode() {
@@ -41,8 +41,8 @@ BIHNode::~BIHNode() {
 }
 
 
-void BIHNode::set_values(unsigned int depth) {
-	axes_ = depth + BIHTree::dimension;
+void BIHNode::set_depth(unsigned int depth) {
+	axes_ = depth + dimension;
 }
 
 
