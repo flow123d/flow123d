@@ -35,19 +35,13 @@
 /**
  * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
  *
+ * Notes:
+ * Assumes spacedim=3. Implementation was designed for arbitrary number of childs per node, but
+ * currently it supports max 2 childs per node (binary tree).
+ *
  * TODO:
- * - v BIHNode udelat inline metody depth() (osetrit ASSERTEM is_leaf()), is_leaf(), axes() (ASSERT ! is_leaf() )\
- *   ... pouzit create_tree, find_elements
- *
- * - v BIHTree::create_tree - prohozeni vrstev na konec, pokusit se nahradit test hloubky za test konce vrstvy,
- *   mit ASSERT na shodu techto testu, pripadne zjistit pricinu problemu
- *
- *
- * - ROZCLENENI CREATE_tree
- *
- * - more precise documentation
- * - elementy Meshe umi vracet svuj BoundingBox
- *
+ * - rename method find_element, radeji find_bounding_box
+ * - new method find_point parametr Point<3> , #include "mesh/point.hh"
  *
  */
 class BIHTree {

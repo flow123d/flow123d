@@ -230,7 +230,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
-        cout << get_input_type() << "\n";
+        get_input_type().documentation(cout, Input::Type::TypeBase::full_after_record);
         free_and_exit();
     }
 
