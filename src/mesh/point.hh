@@ -10,16 +10,23 @@
 
 #include <armadillo>
 
-#if HAVE_CXX11
 
-template <int spacedim>
-using Point = arma::vec::fixed<spacedim>
+//#if HAVE_CXX11
 
-#else
+/*
+ * TODO:
+ * need better resolution of various C++11 functionalities
+ * e.g. following is supported from GCC 4.7
+ */
+
+//template <int spacedim>
+//using Point = arma::vec::fixed<spacedim>
+
+//#else
 
 #define Point arma::vec::fixed
 
-#endif
+//#endif
 
 
 #endif /* POINT_HH_ */

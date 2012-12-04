@@ -127,7 +127,7 @@ void FunctionPython<dim>::set_func(const string &func_name)
 
 
 template <int dim>
-double FunctionPython<dim>::value(const Point &p, const unsigned int  component) const
+double FunctionPython<dim>::value(const Point<dim> &p, const unsigned int  component) const
 {
 #ifdef HAVE_PYTHON
     for(unsigned int i = 0; i < dim; i++) {
@@ -149,7 +149,7 @@ double FunctionPython<dim>::value(const Point &p, const unsigned int  component)
 * Returns one vector value in one given point.
 */
 template <int dim>
-void   FunctionPython<dim>::vector_value(const Point &p, std::vector<double>     &value) const
+void   FunctionPython<dim>::vector_value(const Point<dim> &p, std::vector<double>     &value) const
 {
 #ifdef HAVE_PYTHON
     ASSERT_SIZES( this->n_components_, value.size() );
@@ -175,7 +175,7 @@ void   FunctionPython<dim>::vector_value(const Point &p, std::vector<double>    
 * Returns std::vector of scalar values in several points at once.
 */
 template <int dim>
-void   FunctionPython<dim>::value_list (const std::vector< Point >  &point_list,
+void   FunctionPython<dim>::value_list (const std::vector< Point<dim> >  &point_list,
                   std::vector<double>         &value_list,
                   const unsigned int  component) const
 {
@@ -190,7 +190,7 @@ void   FunctionPython<dim>::value_list (const std::vector< Point >  &point_list,
 * Returns std::vector of scalar values in several points at once.
 */
 template <int dim>
-void   FunctionPython<dim>::vector_value_list (const std::vector< Point >    &point_list,
+void   FunctionPython<dim>::vector_value_list (const std::vector< Point<dim> >    &point_list,
                          std::vector< std::vector<double> >      &value_list) const
 {
 #ifdef HAVE_PYTHON

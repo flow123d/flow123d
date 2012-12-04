@@ -50,7 +50,7 @@ TEST(PythonLoader, all) {
 TEST(FunctionPython, two_args) {
     double pi = 4.0 * atan(1);
 
-    FunctionBase<2>::Point point_1, point_2;
+    Point<2> point_1, point_2;
     point_1(0)=1.0; point_1(1)= pi / 2.0;
     point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
 
@@ -70,7 +70,7 @@ TEST(FunctionPython, two_args) {
 
 
 TEST(FunctionPython, three_args) {
-    FunctionBase<3>::Point point_1, point_2;
+    Point<3> point_1, point_2;
     point_1(0)=1; point_1(1)=0; point_1(2)=0;
     point_2(0)=1; point_2(1)=2; point_2(2)=3;
 

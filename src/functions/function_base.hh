@@ -37,6 +37,8 @@
 
 #include <armadillo>
 #include "input/input_type.hh"
+#include "input/accessors.hh"
+#include "mesh/point.hh"
 #include "mesh/elements.h"
 
 
@@ -50,7 +52,6 @@ class FunctionBase;
 template <int dim>
 class FunctionBase {
 public:
-       typedef arma::vec::fixed<dim> Point;
 
        FunctionBase(const unsigned int n_components=1, const double init_time=0.0);
 
@@ -82,24 +83,24 @@ public:
        /**
         * Returns one scalar value in one given point.
         */
-       virtual double value(const Point &p, const unsigned int  component = 0) const =0;
+       virtual double value(const Point<dim> &p, const unsigned int  component = 0) const =0;
 
        /**
         * Returns one vector value in one given point.
         */
-       virtual void vector_value(const Point &p, std::vector<double>     &value) const =0;
+       virtual void vector_value(const Point<dim> &p, std::vector<double>     &value) const =0;
 
        /**
         * Returns std::vector of scalar values in several points at once.
         */
-       virtual void value_list (const std::vector< Point >  &point_list,
+       virtual void value_list (const std::vector< Point<dim> >  &point_list,
                           std::vector<double>         &value_list,
                           const unsigned int  component = 0) const =0;
 
        /**
         * Returns std::vector of scalar values in several points at once.
         */
-       virtual void vector_value_list (const std::vector< Point >    &point_list,
+       virtual void vector_value_list (const std::vector< Point<dim> >    &point_list,
                                  std::vector< std::vector<double> >      &value_list) const=0;
 
 

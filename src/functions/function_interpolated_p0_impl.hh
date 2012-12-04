@@ -39,7 +39,7 @@
 #include "system/sys_profiler.hh"
 #include "boost/lexical_cast.hpp"
 #include "system/tokenizer.hh"
-
+#include "system/xio.h"
 
 template <int dim>
 FunctionInterpolatedP0<dim>::FunctionInterpolatedP0(const unsigned int n_components, const double init_time)
@@ -271,7 +271,7 @@ void FunctionInterpolatedP0<dim>::createAbscissa(Element *ele, TAbscissa &ab) {
 
 
 template <int dim>
-double FunctionInterpolatedP0<dim>::value(const Point &p, const unsigned int component) const
+double FunctionInterpolatedP0<dim>::value(const Point<dim> &p, const unsigned int component) const
 {
 	return pressure_;
 }
@@ -279,7 +279,7 @@ double FunctionInterpolatedP0<dim>::value(const Point &p, const unsigned int com
 
 
 template <int dim>
-void FunctionInterpolatedP0<dim>::vector_value(const Point &p, std::vector<double> &value) const
+void FunctionInterpolatedP0<dim>::vector_value(const Point<dim> &p, std::vector<double> &value) const
 {
 	xprintf(Msg, " - Method vector_value is not used and implemented in class FunctionInterpolatedP0\n");
 }
@@ -287,7 +287,7 @@ void FunctionInterpolatedP0<dim>::vector_value(const Point &p, std::vector<doubl
 
 
 template <int dim>
-void FunctionInterpolatedP0<dim>::value_list(const std::vector<Point>  &point_list,
+void FunctionInterpolatedP0<dim>::value_list(const std::vector<Point<dim> >  &point_list,
 					  std::vector<double>         &value_list,
 					  const unsigned int  component) const
 {
@@ -297,7 +297,7 @@ void FunctionInterpolatedP0<dim>::value_list(const std::vector<Point>  &point_li
 
 
 template <int dim>
-void FunctionInterpolatedP0<dim>::vector_value_list (const std::vector<Point> &point_list,
+void FunctionInterpolatedP0<dim>::vector_value_list (const std::vector<Point<dim> > &point_list,
                             std::vector< std::vector<double> > &value_list) const
 {
 	xprintf(Msg, " - Method vector_value_list is not used and implemented in class FunctionInterpolatedP0\n");

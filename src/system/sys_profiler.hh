@@ -389,7 +389,7 @@ public:
     /**
      * Initializes the Profiler with specific MPI communicator object
      */
-    static void initialize(MPI_Comm communicator);
+    static void initialize(MPI_Comm communicator = MPI_COMM_WORLD);
     /**
      * Returns unique Profiler object.
      */
@@ -601,7 +601,7 @@ public:
 // dummy declaration of Profiler class
 class Profiler {
 public:
-    static void initialize(MPI_Comm communicator);
+    static void initialize(MPI_Comm communicator = MPI_COMM_WORLD);
     inline static Profiler* instance() {
         ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
         return _instance;

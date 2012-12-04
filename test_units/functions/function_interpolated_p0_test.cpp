@@ -30,6 +30,7 @@
 #include "system/system.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
+#include "system/sys_profiler.hh"
 
 #include "functions/function_interpolated_p0_impl.hh"
 
@@ -77,6 +78,7 @@ $EndElements
 TEST(FunctionInterpolatedP0, 2d_elements) {
     // setup FilePath directories
     FilePath::set_io_dirs(".","/",UNIT_TESTS_SRC_DIR,".");
+    Profiler::initialize();
 
     // initialize Input:Types
     FunctionBase<3>::get_input_type();
@@ -89,17 +91,13 @@ TEST(FunctionInterpolatedP0, 2d_elements) {
 
     FunctionInterpolatedP0<3> func;
     func.init_from_input(in_rec);
-    FunctionBase<3>::Point p;
-    DBGMSG("here\n");
+    Point<3> p;
     Element ele(2);
-    DBGMSG("here\n");
     ele.node[0]= new Node(0.01, 0.01, 0.00);
     ele.node[1]= new Node(0.16, 0.16, 0.00);
     ele.node[2]= new Node(0.02, 0.02, 0.05);
-    DBGMSG("here\n");
     func.set_element(&ele);
-    DBGMSG("here\n");
-    EXPECT_EQ(0.0 , func.value(p));
+    EXPECT_EQ(3.5 , func.value(p));
 }
 
 /*

@@ -44,7 +44,6 @@
 template <int dim>
 class FunctionInterpolatedP0: public FunctionBase<dim> {
 public:
-    typedef typename FunctionBase<dim>::Point Point;
 
 	/**
 	 * Constructor
@@ -81,23 +80,23 @@ public:
     /**
      * Returns one scalar value in one given point.
      */
-    virtual double value(const Point &p, const unsigned int  component = 0) const;
+    virtual double value(const Point<dim> &p, const unsigned int  component = 0) const;
     /**
      * Returns one vector value in one given point.
      */
-    virtual void   vector_value(const Point &p, std::vector<double>     &value) const;
+    virtual void   vector_value(const Point<dim> &p, std::vector<double>     &value) const;
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void   value_list (const std::vector< Point >  &point_list,
+    virtual void   value_list (const std::vector< Point<dim> >  &point_list,
                        std::vector<double>         &value_list,
                        const unsigned int  component = 0) const;
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void   vector_value_list (const std::vector< Point >    &point_list,
+    virtual void   vector_value_list (const std::vector< Point<dim> >    &point_list,
                               std::vector< std::vector<double> >      &value_list) const;
 
 protected:
