@@ -45,7 +45,7 @@
 \label{sec:test01}
 This test considers steady Darcy flow in a cube domain which is cutted by 2D fractures which are further separated by a~1D channel in their cross section. The multidimensional connections between 1D, 2D and 3D elements are involved in the computation. Dirichlet boundary condition is prescribed for flow.
 
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 A cube with its side 1.0~$L$ is cutted by two diagonal 2D fractures which are further separated by a~1D channel in their cross section.
 
 Geometry parameters are defined for different physical domains. Thickness of the 2D fractures is set to 1.0~$L$ and the area of the cross section is set to 1.0~$L^2$. These parameters are unrealistic (the side of the cube is 1.0~$L$ long) but it is compensated in the equation in the fraction with conductivity.
@@ -84,7 +84,7 @@ This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Diric
 
 The coefficient of diffusive transfer through a fracture (means between the fracture and the surrounding material) is set to zero so the substance cannot be diffused through the fracture's boundary.
 
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 The domain is two-dimensional slice through a part of a relief which involves several one-dimensional fractures.
 
 Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
@@ -129,7 +129,7 @@ This test verifies explicitly computed transport considering only convection wit
 \section{Test 03 -- Steady flow in 2D and transport}
 \label{sec:test03}
 This test differs from the previous one only by simpler structure of its geometry. It shows how the substace flows in the main fracture and divides in two other fractures. The substance spreads in the fractures much faster in comparision to transport in the plane.
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 There is a plane with side 1.0 which is cutted by fractures. The main fracture divides in two other fractures.
 \subsection*{Parameters}
 The flow is steady and the transport is solved in time interval $<0,1.0>$. The output is written every 0.01. Initial time step for transport computed implicitly is set to 0.1 and the output is written every 0.1.
@@ -152,7 +152,7 @@ We will solve Laplace equation $-\Lapl{}u = f$ where source $f$ is prescribed by
 
 We can easily prove that the analytic solution is $u = (1-x^2)(1-y^2)$ by replacing it in the Laplace equation.
 
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 The domain is a square with opposite vertices $[-1,-1]$ and $[1,1]$. Zero dirichlet boundary condition is prescribed on all boundaries -- along the circumference of the square.
  
 \subsection*{Parameters}
@@ -173,7 +173,7 @@ As it was mentioned above, this test mainly verifies that the function parser wo
 \label{sec:test10}
 Unsteady flow in 2D domain is simulated in this test and is computed by both mixed hybrid and lumped mixed hybrid method. No transport is involved. 
 
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 The domain is a square with oposite vertices $[0,0]$ and $[1,1]$. Different Dirichlet boundary condition for flow is prescribed on two opposite sides -- 0.0 on the left and 100.0 on the right.
 
 \subsection*{Parameters}
@@ -231,7 +231,7 @@ Half-lives are equal to 0.5 for all isotopes. Initial concentrations are summari
 \section{Test 12 -- Radioactive decay}
 There are actually two tests of the radioactive decay. The first one considers first order reaction of two isotopes determined by kinetic constant and the other one describes radioactive decay chain of three isotopes.
 
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 The domain is a prism which base is a right-angled triangle with its ordinates 3.0 units long. There are then only three tetrahedron elements in the mesh.
 
 There are two Dirichlet boundary conditions for flow prescribed.
@@ -295,7 +295,7 @@ Time parameters are the same as they are above.
 \section{Test 13 -- Solute mixing on the edge}
 This test realizes mixing of substances on the edges of planes and also does quantitative test on a trivial transport problem. The problem is computed with both explicit and implicit transport.
 
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 The domain is a fork where the main branch with the incoming solute is in the $xy$ plane. Then it is divided into two other branches, one with positive and the another with negative $z$ coordinate. There are different conductivities in each branch.
 
 \subsection*{Parameters}
@@ -321,7 +321,7 @@ Two pulses of nonzero concentration are applied on the boundary. The changes of 
   \end{tabular}
 \end{center}
 
-\subsection*{Geometry}
+\subsection*{Geometry and boundary conditions}
 
 
 \subsection*{Parameters}
@@ -335,18 +335,18 @@ Two pulses of nonzero concentration are applied on the boundary. The changes of 
 %=====================================================
 
 \section{Test 15 -- Unsteady flow with transport}
-This test involves unsteady flow computed by lumped hybrid method with both explicit and implicit transport.
+This test involves unsteady flow computed by lumped hybrid method. Transport is solved with both explicit and implicit scheme.
  
-The domain is a 2D strip with dimensions $1.0$x$16.0$. Zero Dirichlet boundary for flow is prescribed for $x=0$, zero Neumann boundary is elsewhere. Initial pressure is zero everywhere. The source is prescribed with function $f=-x$ along the strip.
 
-Dirichlet boundary condition for transport is prescribed for $x=0$ at beginning of the time interval.
-
-\subsection*{Geometry}
-
+\subsection*{Geometry and boundary conditions}
+The domain is a 2D strip with dimensions $1.0$x$16.0$. Zero Dirichlet boundary for flow is prescribed at $x=0$, zero Neumann boundary is elsewhere. 
 
 \subsection*{Parameters}
+Initial pressure is zero everywhere. 
+The source is prescribed with function $f=-x$ along the strip.
 
 \subsection*{Verification}
+The test is similar to the test 10 but here in addition the computation of a transport in an unsteady flow field is verified.
 
 
 %=====================================================

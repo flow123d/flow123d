@@ -112,7 +112,7 @@ add_subdirectory("system")
 add_subdirectory("functions")
 add_subdirectory("quadrature")
 add_subdirectory("mesh")
-
+add_subdirectory("time_governor")
 
 
 #add_executable(ioNameHandlerTest system/io_name_handler.cc)

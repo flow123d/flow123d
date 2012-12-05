@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
+ * $Id: time_marks.cc 1334 2011-09-19 13:58:59Z jan.brezina $
+ * $Revision: 1334 $
+ * $LastChangedBy: jan.brezina $
+ * $LastChangedDate: 2011-09-19 15:58:59 +0200 (Po, 19 zář 2011) $
  *
  * @file
  * @brief

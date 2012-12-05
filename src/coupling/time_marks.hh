@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
+ * $Id: time_marks.hh 1974 2012-11-14 13:46:11Z pavel.exner $
+ * $Revision: 1974 $
+ * $LastChangedBy: pavel.exner $
+ * $LastChangedDate: 2012-11-14 14:46:11 +0100 (St, 14 lis 2012) $
  *
  * @file
  * @brief

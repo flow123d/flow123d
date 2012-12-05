@@ -36,7 +36,7 @@ unsigned int random_string(char *str){
     return length;
 }
 
-TEST(Profile, str_hash) {
+TEST(Profiler, str_hash) {
     EXPECT_EQ(0, str_hash(""));
     EXPECT_EQ(65, str_hash("A"));
     EXPECT_EQ(6597, str_hash(" A"));

@@ -105,6 +105,15 @@ set(sources_lib_functions
     functions/discrete_function.cc
 )    
 
+set (sources_lib_coupling
+
+    coupling/time_marks.cc
+    coupling/time_governor.cc
+
+   # coupling/equation.cc
+   # coupling/hc_explicit_sequential.cc
+)
+
 set(sources_lib_non_system
 
     flow/mh_fe_values.cc
@@ -127,13 +136,11 @@ set(sources_lib_non_system
     transport/transport_dg.cc
     transport/sources.cc
 
+    materials.cc
+    field_p0.cc
+
     coupling/equation.cc
     coupling/hc_explicit_sequential.cc
-
-    time_marks.cc
-    materials.cc
-    time_governor.cc
-    field_p0.cc
 )
 
 
@@ -221,12 +228,16 @@ add_library(functions_lib ${sources_lib_functions})
 target_link_libraries(functions_lib
     system_lib input_lib mesh_lib armadillo  ${Boost_LIBRARIES})
 
+# coupling_lib  
+add_library(coupling_lib ${sources_lib_coupling})
+target_link_libraries(coupling_lib
+    system_lib input_lib)
   
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
     functions_lib fem_lib new_mesh_lib mesh_lib la_lib semchem  input_lib system_lib
-    fparser  armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    coupling_lib fparser  armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

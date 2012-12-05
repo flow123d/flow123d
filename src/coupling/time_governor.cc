@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
+ * $Id: time_governor.cc 1877 2012-09-27 12:53:36Z jan.brezina $
+ * $Revision: 1877 $
+ * $LastChangedBy: jan.brezina $
+ * $LastChangedDate: 2012-09-27 14:53:36 +0200 (Čt, 27 zář 2012) $
  *
  * @file
  * @ingroup application
