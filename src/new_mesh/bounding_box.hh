@@ -29,6 +29,7 @@
 #define BOX_ELEMENT_HH_
 
 #include "system/system.hh"
+#include "mesh/point.hh"
 #include <armadillo>
 
 /**
@@ -65,7 +66,7 @@ public:
      * @param point Testing point
      * @return True if box element contains point
      */
-    bool contains_point(arma::vec3 &point) const;
+    bool contains_point(Point<3> &point) const;
 
     bool intersection(BoundingBox &b2) const;
 

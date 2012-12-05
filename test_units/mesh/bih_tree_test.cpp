@@ -68,7 +68,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 
 	// tests of intersection with bounding box out of mesh
 	bb.set_bounds(arma::vec3("0 0 1.01"), arma::vec3("0.1 0.1 1.05"));
-	bt.find_elements(bb, searchedElements);
+	bt.find_bounding_box(bb, searchedElements);
 	EXPECT_EQ(0, searchedElements.size());
 
 	// tests of intersection with bounding box in mesh near point [-1, -1, -1]
@@ -77,7 +77,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		max(i) = f_rand(-0.96, -0.94);
 	}
 	bb.set_bounds(min, max);
-	bt.find_elements(bb, searchedElements);
+	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements()); // get intersections by linear search
 	EXPECT_EQ(searchedElements.size(), insecSize);
 
@@ -87,7 +87,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		max(i) = f_rand(+0.01, +0.03);
 	}
 	bb.set_bounds(min, max);
-	bt.find_elements(bb, searchedElements);
+	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
 
@@ -97,10 +97,20 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		max(i) = f_rand(0.11 + i * 0.4, 0.13 + i * 0.4);
 	}
 	bb.set_bounds(min, max);
-	bt.find_elements(bb, searchedElements);
+	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
 
+	// tests of intersection with point in mesh near point [0.2, 0.3, 0.4]
+	insecSize = 0;
+	for (int i=0; i<3; i++) {
+		min(i) = f_rand(0.18 + i * 0.1, 0.22 + i * 0.1);
+	}
+	bt.find_point(min, searchedElements);
+	for (unsigned int i=0; i<bt.get_elements().size(); i++) {
+		if ( bt.get_elements()[i].contains_point(min) ) insecSize++;
+	}
+	EXPECT_EQ(searchedElements.size(), insecSize);
 }
 
 

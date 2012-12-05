@@ -280,7 +280,7 @@ unsigned int BIHTree::get_element_count() {
 }
 
 
-void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements)
+void BIHTree::find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements)
 {
 	std::vector<unsigned int>::iterator it;
 	searchedElements.clear();
@@ -313,6 +313,27 @@ void BIHTree::find_elements(BoundingBox &boundingBox, std::vector<unsigned int> 
 	sort(searchedElements.begin(), searchedElements.end());
 	it = unique(searchedElements.begin(), searchedElements.end());
 	searchedElements.resize( it - searchedElements.begin() );
+}
+
+
+void BIHTree::find_point(Point<3> &point, std::vector<unsigned int> &searchedElements) {
+	unsigned int node_index = 0; // index of actual walking node
+
+	searchedElements.clear();
+
+	while (!nodes_[node_index].is_leaf()) {
+		if ( point(nodes_[node_index].axes()) < nodes_[node_index].median_ ) {
+			node_index = nodes_[node_index].child_[0];
+		} else {
+			node_index = nodes_[node_index].child_[1];
+		}
+	}
+
+	for (int i=nodes_[node_index].child_[0]; i<nodes_[node_index].child_[1]; i++) {
+		if (elements_[ in_leaves_[i] ].contains_point(point)) {
+			searchedElements.push_back(in_leaves_[i]);
+		}
+	}
 }
 
 

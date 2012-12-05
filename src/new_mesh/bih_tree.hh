@@ -30,6 +30,7 @@
 
 #include "new_mesh/bih_node.hh"
 #include "mesh/mesh.h"
+#include "mesh/point.hh"
 #include <armadillo>
 
 /**
@@ -76,7 +77,15 @@ public:
 	 * @param boundingBox Bounding box which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_elements(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements);
+    void find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements);
+
+	/**
+	 * Gets elements which can have intersection with point
+	 *
+	 * @param point Point which is tested if has intersection
+	 * @param searchedElements vector of ids of suspect elements
+	 */
+    void find_point(Point<3> &point, std::vector<unsigned int> &searchedElements);
 
     /**
      * Browse tree and get its typical parameters

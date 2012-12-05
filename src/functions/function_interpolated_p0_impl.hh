@@ -172,7 +172,7 @@ void FunctionInterpolatedP0<dim>::calculate_triangle_pressure(TTriangle &element
 	TTetrahedron tetrahedron;
 
 	START_TIMER("find_elements_2D");
-	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements_);
+	((BIHTree *)bihTree_)->find_bounding_box(elementBoundingBox, searchedElements_);
 	END_TIMER("find_elements_2D");
 
 	total_measure = 0.0;
@@ -209,7 +209,7 @@ void FunctionInterpolatedP0<dim>::calculate_abscissa_pressure(TAbscissa &element
 	TTetrahedron tetrahedron;
 
 	START_TIMER("find_elements_1D");
-	((BIHTree *)bihTree_)->find_elements(elementBoundingBox, searchedElements_);
+	((BIHTree *)bihTree_)->find_bounding_box(elementBoundingBox, searchedElements_);
 	END_TIMER("find_elements_1D");
 
         total_measure = 0.0;
