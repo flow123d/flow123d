@@ -48,6 +48,8 @@ using std::string;
  */
 
 class Selection : public Scalar {
+	friend class OutputBase;
+
 public:
     /*
      * Exceptions specific to this class.

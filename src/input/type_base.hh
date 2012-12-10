@@ -181,6 +181,7 @@ class SelectionBase;
  * @ingroup input_types
  */
 class Array : public TypeBase {
+	friend class OutputBase;
 
 public:
     /**
@@ -283,6 +284,8 @@ public:
  * @ingroup input_types
  */
 class Integer : public Scalar {
+	friend class OutputBase;
+
 public:
     Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
@@ -317,6 +320,8 @@ private:
  * @ingroup input_types
  */
 class Double : public Scalar {
+	friend class OutputBase;
+
 public:
     Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
     : lower_bound_(lower_bound), upper_bound_(upper_bound)

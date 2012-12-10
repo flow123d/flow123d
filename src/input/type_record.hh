@@ -171,6 +171,8 @@ class AbstractRecord;
  * @ingroup input_types
  */
 class Record : public TypeBase {
+	friend class OutputBase;
+
 public:
 
     /*

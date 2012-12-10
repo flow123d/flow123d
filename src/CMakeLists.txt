@@ -59,6 +59,7 @@ set(sources_lib_input
     input/type_selection.cc
     input/storage.cc
     input/json_to_storage.cc
+    input/type_output.cc
     
     input/accessors.cc
 )

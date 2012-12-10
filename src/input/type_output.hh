@@ -9,6 +9,10 @@
 #define TYPE_OUTPUT_HH_
 
 
+#include "input/type_base.hh"
+#include "input/type_record.hh"
+
+
 namespace Input {
 
 namespace Type {
@@ -20,11 +24,18 @@ namespace Type {
 
 class OutputBase {
 public:
-    OutBase(TypeBase *type, unsigned int depth = 0);
-private:
+    OutputBase(TypeBase *type, unsigned int depth = 0) : depth_(depth) {}
+
+protected:
+    // destructor
+    virtual ~OutputBase();
+
     // data getters
-    void get_array_sizes(Array array, int &lower , int  &upper );
-    void get_record_key(Record rec, unsigned int key_idx, Record::Key &key)
+    void get_array_sizes(Array array, int &lower , int &upper );
+    void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
+    void get_integer_bounds(Integer integer, int &lower , int &upper );
+    void get_double_bounds(Double dbl, double &lower , double &upper );
+    //void get_selection_keys(Selection sel, double &lower , double &upper );
 
 
     // type resolution like in json_to_storage
@@ -33,19 +44,35 @@ private:
 
     // following methods realize output in particular format
     // using getters from the base class OutputBase
-    virtual void print(ostream& stream, const Record *type);
-    virtual void print(ostream& stream, const Array *type);
-    virtual void print(ostream& stream, const AbstractRecord *type);
-    virtual void print(ostream& stream, const Selection *type);
-    virtual void print(ostream& stream, const Scalar *type);
-    virtual void print(ostream& stream, const FileName *type);
+    virtual void print(ostream& stream, const Record *type) = 0;
+    virtual void print(ostream& stream, const Array *type) = 0;
+    virtual void print(ostream& stream, const AbstractRecord *type) = 0;
+    virtual void print(ostream& stream, const Selection *type) = 0;
+	virtual void print(ostream& stream, const Integer *type) = 0;
+	virtual void print(ostream& stream, const Double *type) = 0;
+	virtual void print(ostream& stream, const Bool *type) = 0;
+	virtual void print(ostream& stream, const String *type) = 0;
+    virtual void print(ostream& stream, const FileName *type) = 0;
 
-    unsigned int detph_
+    unsigned int depth_;
 
 };
 
 class OutputText : public OutputBase {
+public:
+	OutputText(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
+protected:
+
+    void print(ostream& stream, const Record *type);
+    void print(ostream& stream, const Array *type);
+    void print(ostream& stream, const AbstractRecord *type);
+    void print(ostream& stream, const Selection *type);
+	void print(ostream& stream, const Integer *type);
+	void print(ostream& stream, const Double *type);
+	void print(ostream& stream, const Bool *type);
+	void print(ostream& stream, const String *type);
+    void print(ostream& stream, const FileName *type);
 };
 
 /**
@@ -56,12 +83,12 @@ std::ostream& operator<<(std::ostream& stream, OutputText type_output);
 
 
 
-class OutputJSONTemplate : public OutputBase {
+/*class OutputJSONTemplate : public OutputBase {
 
 };
 
 
-std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);
+std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);*/
 
 
 } // closing namespace Type
