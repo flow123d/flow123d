@@ -59,6 +59,21 @@ public:
             << "Key " << EI_KeyName::qval <<" not found in Selection:\n" <<  EI_Selection::val );
 
     /**
+     * Structure for description of one key in selection
+     */
+    struct Key {
+        unsigned int key_index;
+        string key_;
+        string description_;
+        int value;
+    };
+
+    /**
+     * Public typedef of constant iterator into array of keys
+     */
+    typedef std::vector<struct Key>::const_iterator keys_const_iterator;
+
+    /**
      * Default constructor. Empty handle.
      */
     Selection()
@@ -95,6 +110,21 @@ public:
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     virtual bool operator==(const TypeBase &other) const;
+
+    /**
+     * Container-like access to the keys of the Record. Returns iterator to the first key.
+     */
+    inline keys_const_iterator begin() const;
+
+    /**
+     * Container-like access to the keys of the Record. Returns iterator to the last key.
+     */
+    inline keys_const_iterator end() const;
+
+    /**
+     * Returns iterator to the key struct for given key string.
+     */
+    inline keys_const_iterator key_iterator(const string& key) const;
 
     /**
      * Converts given value name \p key to the value. Throws exception if the value name does not exist.
@@ -140,13 +170,6 @@ private:
     class SelectionData {
     public:
 
-        struct Key {
-            unsigned int key_index;
-            string key_;
-            string description_;
-            int value;
-        };
-
         SelectionData(const string &name)
         : type_name_(name), made_extensive_doc(false), finished(false)
         {}
@@ -169,7 +192,6 @@ private:
 
         /// Vector of values of the Selection
         std::vector<Key> keys_;
-        typedef std::vector<struct Key>::const_iterator keys_const_iterator;
 
         /**
          * This flag is set to true when documentation of the Record was called with extensive==true
@@ -228,6 +250,28 @@ inline void Selection::finished_check() const {
     ASSERT( is_finished(), "Asking for information of unfinished Seleciton type: %s\n", type_name().c_str());
 }
 
+
+
+inline Selection::keys_const_iterator Selection::begin() const
+{
+    finished_check();
+    return data_->keys_.begin();
+}
+
+
+
+inline Selection::keys_const_iterator Selection::end() const
+{
+    finished_check();
+    return data_->keys_.end();
+}
+
+
+inline Selection::keys_const_iterator Selection::key_iterator(const string& key) const
+{
+    finished_check();
+    return begin() + name_to_int(key);
+}
 
 
 } // closing namespace Type
