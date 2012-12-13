@@ -24,7 +24,9 @@ namespace Type {
 
 class OutputBase {
 public:
-    OutputBase(TypeBase *type, unsigned int depth = 0) : depth_(depth) {}
+    OutputBase(TypeBase *type, unsigned int depth = 0) : type_(type), depth_(depth) {}
+
+    void print(ostream& stream);
 
 protected:
     // destructor
@@ -54,6 +56,7 @@ protected:
 	virtual void print(ostream& stream, const String *type) = 0;
     virtual void print(ostream& stream, const FileName *type) = 0;
 
+    TypeBase *type_;
     unsigned int depth_;
 
 };
@@ -61,6 +64,8 @@ protected:
 class OutputText : public OutputBase {
 public:
 	OutputText(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+
+	void print(ostream& stream) { OutputBase::print(stream); }
 
 protected:
 

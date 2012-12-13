@@ -18,6 +18,11 @@ using namespace std;
 OutputBase::~OutputBase() {}
 
 
+void OutputBase::print(ostream& stream) {
+	print(stream, type_);
+}
+
+
 void OutputBase::get_array_sizes(Array array, int &lower , int &upper ) {
 	lower = array.lower_bound_;
 	upper = array.upper_bound_;
@@ -109,16 +114,16 @@ void OutputText::print(ostream& stream, const AbstractRecord *type) {
 
 
 void OutputText::print(ostream& stream, const Selection *type) {
-    /*stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
+    stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
     stream << setw(0) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
     // keys
-    for (Selection::SelectionData::keys_const_iterator it = type->data_.keys_.begin(); it != type->data_.keys_.end(); ++it) {
-        //stream << setw(4) << "" << it->key_ << " = " << it->value;
-        //if (it->description_ != "")
-        //    stream << " (" << it->description_ << ")";
-        //stream << endl;
+    for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
+        stream << setw(4) << "" << it->key_ << " = " << it->value;
+        if (it->description_ != "")
+            stream << " (" << it->description_ << ")";
+        stream << endl;
     }
-    stream << setw(0) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name_ << endl;*/
+    stream << setw(0) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
 }
 
 
@@ -164,7 +169,8 @@ void OutputText::print(ostream& stream, const FileName *type) {
 
 
 std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
-	//cout << type_output.print(stream) << endl;
+	type_output.print(stream);
+	stream << endl;
 	return stream;
 }
 
