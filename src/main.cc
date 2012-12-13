@@ -167,12 +167,12 @@ Application::Application( int argc,  char ** argv)
  * @brief Main flow initialization
  * @param[in] argc       command line argument count
  * @param[in] argv       command line arguments
- * @param[out] goal      Flow computation goal
- * @param[out] ini_fname Init file name
- *
+
  * TODO: this parsing function should be in main.cc
  *
  */
+//@param[out] ini_fname Init file name
+//@param[out] goal      Flow computation goal
 void Application::parse_cmd_line(const int argc, char ** argv) {
     namespace po = boost::program_options;
 

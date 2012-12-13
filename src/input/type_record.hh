@@ -154,7 +154,7 @@ private:
     /**
      * Constructor for other types then 'declaration'.
      */
-    Default(enum DefaultType type, const string &value = "");
+    Default(enum DefaultType type, const std::string &value = "");
 
 };
 

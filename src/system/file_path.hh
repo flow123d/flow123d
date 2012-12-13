@@ -86,7 +86,7 @@ public:
      * @endcode
      *
      * @param[in]   key Key of new item.
-     * @param[in]   val Value of new item.
+     * @param[in]   value Value of new item.
      */
     static void add_placeholder(string key,string value);
 

@@ -20,8 +20,8 @@ class FilePath;
  *
  * Boost library provides nice tokenizer. The string is viewed as a container of tokens and
  * you can iterate over them. This class simplify the usage of the boost's tokenizer and further simplify
- * reading of the text files. Actual tokenizer use backslash '\' as the escape character, double quotas '"'as quotation
- * character, and space ' ' or tabelator '\t' as the separator of tokens.
+ * reading of the text files. Actual tokenizer use backslash '\\' as the escape character, double quotas '"'as quotation
+ * character, and space ' ' or tabelator '\\t' as the separator of tokens.
  *	
  * Provides:
  * - method to read @p next_line, automatically skipping empty lines
@@ -29,10 +29,9 @@ class FilePath;
  * - number of lines that the tokenizer has read -- method line_num
  *
  * Example of usage:
- * @CODE
+ * @code
  * Tokenizer(in_stream);
- *
- * @ENDCODE
+ * @endcode
  *
  * TODO:
  * - incorporate skip_to method
@@ -52,14 +51,14 @@ public:
      * Opens a file given by file path @p fp. And construct the tokenizer over the
      * input stream for this file.
      * The stream is read from its actual position. The separator of the tokens is
-     * either tabelator '\t' or space ' '.
+     * either tabelator '\\t' or space ' '.
      *
      */
     Tokenizer(const  FilePath &fp);
     /**
      * Construct the tokenizer over given input stream @p in.
      * The stream is read from its actual position. The separator of the tokens is
-     * either tabelator '\t' or space ' '.
+     * either tabelator '\\t' or space ' '.
      */
     Tokenizer( std::istream &in);
     /**

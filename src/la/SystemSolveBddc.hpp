@@ -153,8 +153,9 @@ public:
                                                                  //!<   1 - mild output, 
                                                                  //!<   2 - detailed output )
                       int  maxIt = 1000,                         //!< maximum number of iterations
-                      int  ndecrMax = 30 );                      //!< maximum number of iterations with non-decreasing residual 
+                      int  ndecrMax = 30                         //!< maximum number of iterations with non-decreasing residual 
                                                                  //!< ( used to stop diverging process )
+                     );
 
     //! Get norm of right-hand side
     double normRhs( ) { return normRhs_; }

@@ -33,7 +33,7 @@ Tokenizer::Tokenizer(const FilePath &fp)
 
 
 
-Tokenizer::Tokenizer( istream &in)
+Tokenizer::Tokenizer( std::istream &in)
 : f_name_("__anonymous_stream__"),
   own_stream_(NULL),
   in_( &in ),

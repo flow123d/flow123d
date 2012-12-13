@@ -94,7 +94,7 @@ public:
      *
      * @param[in] vtx - global vertex index (from zero)
      * @param[in] xyz - coordinates of vetrex position
-     * @parem[in] weight - optional weight of the vertex
+     * @param[in] weight - optional weight of the vertex
      *
      */
     void set_vtx_position(const int vtx, const float xyz[3], int weight=1);
@@ -105,11 +105,8 @@ public:
      * 1) send edges to the owner of .from vertex
      * 2) sort local edges
      * 3) fill rows, adj;   remove duplicities
-     * @param[in] vtx - global vertex index (from zero)
-     * @param[in] xyz - coordinates of vetrex position
-     *
-     * Assume that vtx is an index of local vertex.
      */
+    //Assume that vtx is an index of local vertex.
     void finalize();
 
     /**

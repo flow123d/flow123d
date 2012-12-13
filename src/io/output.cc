@@ -38,8 +38,8 @@
 #include "input/accessors.hh"
 
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         int *data_data,
         unsigned int size)
 {
@@ -50,8 +50,8 @@ OutputData::OutputData(string data_name,
     num = size;
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         float *data_data,
         unsigned int size)
 {
@@ -62,8 +62,8 @@ OutputData::OutputData(string data_name,
     num = size;
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         double *data_data,
         unsigned int size)
 {
@@ -74,8 +74,8 @@ OutputData::OutputData(string data_name,
     num = size;
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         std::vector<int> &data_data)
 {
     name = new string(data_name); units = new string(data_units);
@@ -85,8 +85,8 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         std::vector< vector<int> > &data_data)
 {
     name = new string(data_name); units = new string(data_units);
@@ -96,8 +96,8 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         std::vector<float> &data_data)
 {
     name = new string(data_name); units = new string(data_units);
@@ -107,8 +107,8 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         std::vector< vector<float> > &data_data)
 {
     name = new string(data_name); units = new string(data_units);
@@ -118,8 +118,8 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         std::vector<double> &data_data)
 {
     name = new string(data_name); units = new string(data_units);
@@ -129,8 +129,8 @@ OutputData::OutputData(string data_name,
     num = data_data.size();
 }
 
-OutputData::OutputData(string data_name,
-        string data_units,
+OutputData::OutputData(std::string data_name,
+        std::string data_units,
         std::vector< vector<double> > &data_data)
 {
     name = new string(data_name); units = new string(data_units);

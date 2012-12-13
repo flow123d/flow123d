@@ -72,6 +72,7 @@ static void write_sys_isol( struct Solver *solver );
  *  Possibly initialize specific solver parameters.
  *
  *  @param[in] solver already allocated structure to be initialized
+ *  @param[in] in_rec input record
  */
 void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     double solver_accurancy;

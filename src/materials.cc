@@ -267,7 +267,9 @@ MaterialDatabase::FullIter MaterialDatabase::new_material( int id )
 
 /*!
  * @brief SET THE "a[][]" AND "k[][]" FIELDS IN STRUCT ELEMENT
- * @param[in,out] ele element
+ * @param type is a type the material constant depending on the dimension and type of the material (isotropic/anisotropic)
+ * @param coef vector of coeficients
+ * @param mat  material iterator
  */
 void MaterialDatabase::calc_material_resistance( int type, double coef[6], MaterialDatabase::Iter mat)
 {

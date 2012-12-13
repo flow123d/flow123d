@@ -23,7 +23,7 @@
  * $LastChangedDate$
  *
  *
- * @file   gmshmeshreader.h
+ * @file   msh_gmshreader.h
  * @author dalibor
  *
  * @date October 3, 2010, 11:23 AM

@@ -214,7 +214,8 @@ public:
  *     Useful even for T be class since when creating a new element the default constructor is called
  *     which can not fill it with values.
  *
- *  <b> Developer note: <\b>
+ *  <b> Developer note: </b>
+ * 
  *  It appears very dangerous to combine reallocating std::vectors with iterators implemented as pointers.
  *  Indeed, when vector array is reallocated old pointers become invalid. One possibility is to strictly
  *  distinguish crating of the array and later creating references into it. Another is to implement iterators by indexes
@@ -327,7 +328,8 @@ protected:
  * Main application is to keep Id numbers from input, which are only necessary to amke correct references during input and possibly to
  * generate consistent output. Id numbers are useless for calculations.
  *
- * <b> Developer Note: <\b>
+ * <b> Developer Note: </b>
+ * 
  *  I have tried to make one common base class VectorBase which
  * should have storage member and implements basic operations with it.
  * But I can not make it to return FullIterator which has to be initialized

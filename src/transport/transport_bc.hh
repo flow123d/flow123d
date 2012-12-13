@@ -47,8 +47,9 @@ public:
 
 	/**
 	 * @brief Constructor.
-	 * @param mesh The mesh.
+	 * @param *mesh The pointer at mesh.
 	 * @param n_subst Number of substances.
+         * @param in_rec input record.
 	 */
 	TransportBC(Mesh *mesh, int n_subst, const Input::Record &in_rec);
 

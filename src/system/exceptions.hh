@@ -10,7 +10,7 @@
 #define EXCEPTIONS_HH_
 
 /**
- * @file Basic exceptions used in Flow123d.
+ * @brief Basic exceptions used in Flow123d.
  *
  * We are using boost::exceptions .
  */
@@ -143,9 +143,9 @@ struct ExcName : virtual ::InputException {                                   \
  *
  * or you rather declare an exception
  * @code
- *
  * DeclException( SomeFlowException , << "You can provide " << EI_VAL(ErrorCode) << " here.");
- *
+ * @endcode
+ * 
  * TODO: static modifier is necessary if we define inside a class but this limits declaration of
  * any exception that use the Tag to the same compilation unit !! Better solution ?
  *
@@ -242,7 +242,7 @@ public:
 
 namespace internal {
 
-/***
+/*
  * Helper class template. Together with its redirection operator it either outputs value pointed by pointer given to the constructor or
  * , if the pointer is null, outputs string 'NO_VALUE'. If the optional parameter quoted is true, the value is printed in single quotation marks.
  */

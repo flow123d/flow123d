@@ -51,7 +51,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 
 
 
-GmshMeshReader::GmshMeshReader(istream &in)
+GmshMeshReader::GmshMeshReader(std::istream &in)
 : tok_(in)
 {}
 
