@@ -102,8 +102,13 @@ set(sources_lib_la
     la/sparse_graph.cc
 )
 
+
+set(sources_lib_field
+    fields/field_base.cc
+)
+
 set(sources_lib_functions
-    functions/discrete_function.cc
+    functions/discrete_function.cc   
 )    
 
 set (sources_lib_coupling
@@ -223,6 +228,11 @@ target_link_libraries(mesh_lib
 add_library(fem_lib ${sources_fem_lib})
 target_link_libraries(fem_lib
     system_lib mesh_lib armadillo ${Boost_LIBRARIES})
+
+# field_lib  
+add_library(field_lib ${sources_lib_field})
+target_link_libraries(field_lib
+    system_lib input_lib mesh_lib armadillo  ${Boost_LIBRARIES})
  
 # functions_lib  
 add_library(functions_lib ${sources_lib_functions})

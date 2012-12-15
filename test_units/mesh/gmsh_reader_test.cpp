@@ -68,9 +68,9 @@ TEST(GMSHReader, read_mesh_from_stream) {
     stringstream ss(gmsh_mesh);
 
     Mesh mesh;
-    GmshMeshReader reader;
+    GmshMeshReader reader(ss);
 
-    reader.read(ss, &mesh);
+    reader.read_mesh(&mesh);
 
     stringstream ngh_ss(ngh_input);
     mesh.setup_topology(&ngh_ss);
@@ -84,9 +84,9 @@ TEST(GMSHReader, read_mesh_from_file) {
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_input.msh", FilePath::input_file);
 
     Mesh mesh;
-    GmshMeshReader reader;
+    GmshMeshReader reader(mesh_file);
 
-    reader.read(mesh_file, &mesh);
+    reader.read_mesh(&mesh);
 
     EXPECT_EQ(216, mesh.n_elements());
 }
