@@ -159,7 +159,7 @@ public:
     /**
      * Sets value of made_extensive_doc in the SelectionData
      */
-    inline void set_made_extensive_doc(bool val);
+    inline void set_made_extensive_doc(bool val) const;
 
 
 private:
@@ -290,7 +290,7 @@ inline bool Selection::made_extensive_doc() const
 }
 
 
-inline void Selection::set_made_extensive_doc(bool val)
+inline void Selection::set_made_extensive_doc(bool val) const
 {
 	data_->made_extensive_doc = val;
 }

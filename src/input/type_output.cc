@@ -182,7 +182,7 @@ void OutputText::print(ostream& stream, const Selection *type) {
 		break;
 	case full_record:
 		if (! type->made_extensive_doc()) {
-			//type->set_made_extensive_doc(true);
+			type->set_made_extensive_doc(true);
 
 			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
