@@ -35,6 +35,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     ### define_test(enum_macro)
     
     define_test(type_base)
+    define_test(type_output)
     define_test(type_record)
     
     define_test(storage)

@@ -151,6 +151,16 @@ public:
      */
     inline unsigned int size() const;
 
+    /**
+     * Returns value of made_extensive_doc in the SelectionData
+     */
+    inline bool made_extensive_doc() const;
+
+    /**
+     * Sets value of made_extensive_doc in the SelectionData
+     */
+    inline void set_made_extensive_doc(bool val);
+
 
 private:
 
@@ -271,6 +281,18 @@ inline Selection::keys_const_iterator Selection::key_iterator(const string& key)
 {
     finished_check();
     return begin() + name_to_int(key);
+}
+
+
+inline bool Selection::made_extensive_doc() const
+{
+	return data_->made_extensive_doc;
+}
+
+
+inline void Selection::set_made_extensive_doc(bool val)
+{
+	data_->made_extensive_doc = val;
 }
 
 

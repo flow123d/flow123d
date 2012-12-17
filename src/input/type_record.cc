@@ -132,6 +132,14 @@ string Record::type_name() const
 
 
 
+string Record::description() const
+{
+    if (data_.use_count() == 0) return "empty_handle";
+    else return data_->description_;
+}
+
+
+
 void Record::valid_default(const string &str) const
 {
     empty_check();

@@ -272,6 +272,9 @@ public:
     /// Record type name getter.
     virtual string type_name() const;
 
+    /// Record description getter.
+    virtual string description() const;
+
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.

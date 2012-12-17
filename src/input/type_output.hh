@@ -29,15 +29,23 @@ public:
     void print(ostream& stream);
 
 protected:
+    /// Padding of new level of printout
+    static const unsigned int padding_size = 4;
+
+    /// Types of documentation output
+    enum DocumentationType {
+    	key_record,
+    	full_record
+    };
+
     // destructor
     virtual ~OutputBase();
 
     // data getters
-    void get_array_sizes(Array array, int &lower , int &upper );
+    void get_array_sizes(Array array, unsigned int &lower , unsigned int &upper );
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     void get_integer_bounds(Integer integer, int &lower , int &upper );
     void get_double_bounds(Double dbl, double &lower , double &upper );
-    //void get_selection_keys(Selection sel, double &lower , double &upper );
 
 
     // type resolution like in json_to_storage
@@ -56,8 +64,16 @@ protected:
 	virtual void print(ostream& stream, const String *type) = 0;
     virtual void print(ostream& stream, const FileName *type) = 0;
 
+    void write_description(std::ostream& stream, const string& str);
+
+    /// Object for which is created printout
     TypeBase *type_;
+    /// Depth of printout
     unsigned int depth_;
+    /// Actual level of printout
+    unsigned int level_;
+    /// Type of documentation output
+    DocumentationType doc_type_;
 
 };
 
@@ -68,6 +84,8 @@ public:
 	void print(ostream& stream) { OutputBase::print(stream); }
 
 protected:
+
+	void print(ostream& stream, const TypeBase *type) { OutputBase::print(stream, type); }
 
     void print(ostream& stream, const Record *type);
     void print(ostream& stream, const Array *type);

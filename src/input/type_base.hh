@@ -182,6 +182,7 @@ class SelectionBase;
  */
 class Array : public TypeBase {
 	friend class OutputBase;
+	friend class OutputText;
 
 public:
     /**
