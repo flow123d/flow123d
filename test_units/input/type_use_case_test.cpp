@@ -9,6 +9,7 @@
 
 #include <gtest/gtest.h>
 
+#include <fstream>
 #include <input/input_type.hh>
 #include <input/json_to_storage.hh>
 #include <input/accessors.hh>
@@ -16,21 +17,21 @@
 
 class Equation {
 public:
-    static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::AbstractRecord input_type;
 
 };
 
 
 class EquationA : public Equation {
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
     EquationA(Input::Record rec);
 };
 
 
 class EquationB : public Equation {
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
     EquationB(Input::Record rec);
 };
 
@@ -40,7 +41,7 @@ public:
  */
 class Application : public testing::Test{
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     inline Input::Record input()
     { return  json_reader.get_root_interface<Input::Record>(); }
@@ -75,36 +76,31 @@ TEST_F(Application, init) {
  *
  */
 
-Input::Type::AbstractRecord &Equation::get_input_type() {
-    using namespace Input::Type;
-    static AbstractRecord abstr_rec("AbstractEquation","Abstract input Record type for any equation.");
-    if (! abstr_rec.is_finished() ) {
-        // keys that will be derived by every equation, but their type can be overridden
-        abstr_rec.declare_key("mesh",FileName::input(),Default::obligatory(),"");
-        abstr_rec.finish(); // finish declaration of keys to allow equations to derive keys
+namespace Input {
+namespace Type {
 
-        // declare descendants, they automatically register themself to the abstract record
-        EquationA::get_input_type();
-        EquationB::get_input_type();
+Record Application::input_type = Record("Application", "Root record of the whole application.")
+    // Array of equations with types given by method of class Equation
+    .declare_key("equations", Array( Equation::input_type, 1, 10 ), Default::obligatory(), "");
 
-        // finish registering of descendants
-        abstr_rec.no_more_descendants();
-    }
-    return abstr_rec;
+
+AbstractRecord Equation::input_type = AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
+	// keys that will be derived by every equation, but their type can be overridden
+    .declare_key("mesh",FileName::input(),Default::obligatory(),"");
+
+
+Record EquationA::input_type = Record("EquationA", "For example explicit transport equation solver.")
+    .derive_from( Equation::input_type )
+    .declare_key("parameter_a", Double(), "");
+
+
+Record EquationB::input_type = Record("EquationB", "For example implicit transport equation solver.")
+    .derive_from( Equation::input_type )
+    .declare_key("parameter_b", Integer(), Default("111"), "")
+    .declare_key("default_str", String(), Default("str value"), "" )
+    .declare_key("substances", Array( String() ), Default::obligatory(), "" );
+
 }
-
-
-
-Input::Type::Record &EquationA::get_input_type() {
-    using namespace Input::Type;
-    static Record input_record("EquationA", "For example explicit transport equation solver.");
-
-    if (! input_record.is_finished()) {
-        input_record.derive_from( Equation::get_input_type() );
-        input_record.declare_key("parameter_a", Double(), "");
-        input_record.finish();
-    }
-    return input_record;
 }
 
 
@@ -121,19 +117,7 @@ EquationA::EquationA(Input::Record rec) {
 }
 
 
-Input::Type::Record &EquationB::get_input_type() {
-    using namespace Input::Type;
-    static Record input_record("EquationB", "For example implicit transport equation solver.");
 
-    if (! input_record.is_finished()) {
-        input_record.derive_from( Equation::get_input_type() );
-        input_record.declare_key("parameter_b", Integer(), Default("111"), "");
-        input_record.declare_key("default_str", String(), Default("str value"), "" );
-        input_record.declare_key("substances", Array( String() ), Default::obligatory(), "" );
-        input_record.finish();
-    }
-    return input_record;
-}
 
 
 
@@ -153,49 +137,12 @@ EquationB::EquationB(Input::Record rec) {
 
 
 
-Input::Type::Record &Application::get_input_type() {
-    using namespace Input::Type;
-    static Record input_record("Application", "Root record of the whole application.");
 
-    if (! input_record.is_finished()) {
-        // Array of equations with types given by method of class Equation
-        Array eq_array( Equation::get_input_type(), 1, 10 );
-        input_record.declare_key("equations", eq_array, Default::obligatory(), "");
-        input_record.finish();
-    }
-    return input_record;
-}
-
-
-
-/**
- * In place input file.
- */
-const string flow_json = R"JSON(
-{
-global_mesh = "some.msh",
-
-equations= 
-[
-   {
-      TYPE="EquationA",
-      mesh={REF:"/global_mesh"},
-      parameter_a=3.14 
-   },
-   {
-      TYPE="EquationB",
-      mesh={REF:"/global_mesh"},
-      parameter_b=314,
-      substances = [ "Rn", "Cs", "I", "C" ]
-   }   
-]
-}
-)JSON";
 
 
 void Application::SetUp() {
-    std::stringstream in_stream(flow_json);
-    json_reader.read_stream(in_stream, get_input_type() );
+    std::ifstream in_stream(string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con");
+    json_reader.read_stream(in_stream, input_type );
 }
 
 

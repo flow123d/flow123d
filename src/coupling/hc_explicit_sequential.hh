@@ -51,7 +51,7 @@ class MaterialDatabase;
  */
 class CouplingBase {
 public:
-    static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::AbstractRecord input_type;
 
 };
 
@@ -62,7 +62,7 @@ public:
  */
 class HC_ExplicitSequential : public CouplingBase {
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     HC_ExplicitSequential(Input::Record in_record,
             Input::Iterator<Input::Array> output_streams);

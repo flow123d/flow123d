@@ -66,6 +66,24 @@
 static void main_convert_to_output();
 
 
+
+namespace it = Input::Type;
+
+// this should be part of a system class containing all support information
+//static Record system_rec("System", "Record with general support data.");
+//system_rec.finish();
+it::Record Application::input_type
+    = it::Record("Root", "Root record of JSON input for Flow123d.")
+    //main_rec.declare_key("system", system_rec, "");
+    .declare_key("problem", CouplingBase::input_type, it::Default::obligatory(),
+    		"Simulation problem to be solved.")
+    .declare_key("pause_after_run", it::Bool(), it::Default("false"),
+    		"If true, the program will wait for key press before it terminates.")
+    .declare_key("output_streams", it::Array( OutputTime::input_type ),
+    		"Array of formated output streams to open.");
+
+
+
 Application::Application( int argc,  char ** argv)
 : main_input_dir_("."),
   main_input_filename_(""),
@@ -110,7 +128,7 @@ Application::Application( int argc,  char ** argv)
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
     }
 
-    json_reader.read_stream(in_stream, get_input_type() );
+    json_reader.read_stream(in_stream, input_type );
 
     {
         using namespace Input;
@@ -124,7 +142,7 @@ Application::Application( int argc,  char ** argv)
         // read record with problem configuration
         Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
 
-        if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
+        if (i_problem.type() == HC_ExplicitSequential::input_type ) {
 
             // try to find "output_streams" record
             Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
@@ -230,7 +248,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
-        get_input_type().documentation(cout, Input::Type::TypeBase::full_after_record);
+        input_type.documentation(cout, Input::Type::TypeBase::full_after_record);
         free_and_exit();
     }
 
@@ -285,30 +303,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
 
-
-Input::Type::Record &  Application::get_input_type() {
-    using namespace Input::Type;
-
-    // this should be part of a system class containing all support information
-    //static Record system_rec("System", "Record with general support data.");
-    //system_rec.finish();
-
-
-    static Record main_rec("Root", "Root record of JSON input for Flow123d.");
-    //main_rec.declare_key("system", system_rec, "");
-
-    if (!main_rec.is_finished()) {
-        main_rec.declare_key("problem", CouplingBase::get_input_type(), Default::obligatory(),
-            "Simulation problem to be solved.");
-        main_rec.declare_key("pause_after_run", Bool(), Default("false"),
-                "If true, the program will wait for key press before it terminates.");
-        main_rec.declare_key("output_streams", Array( OutputTime::get_input_type() ),
-                "Array of formated output streams to open.");
-        main_rec.finish();
-    }
-
-    return main_rec;
-}
 
 
 void Application::free_and_exit() {

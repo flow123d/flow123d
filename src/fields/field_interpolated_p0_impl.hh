@@ -41,32 +41,27 @@
 #include "system/tokenizer.hh"
 #include "system/xio.h"
 
+
+namespace it = Input::Type;
+template <int spacedim, class Value>
+it::Record FieldInterpolatedP0<spacedim, Value>::input_type
+    = it::Record("FieldInterpolatedP0", "Field given by P0 data on another mesh. Currently defined only on boundary.")
+	.derive_from(FieldBase<spacedim, Value>::input_type)
+	// TODO: use mesh record here, but make it possibly of the same simplicity (the file name only)
+	.declare_key("mesh", it::FileName::input(),it::Default::obligatory(),
+			"File with the mesh from which we interpolate. (currently only GMSH supported)")
+	// TODO: allow interpolation from VTK files (contains also mesh), and our own format of raw data, that includes:
+	// mesh, dof_handler, and dof values
+	.declare_key("raw_data", it::FileName::input(), it::Default::obligatory(),
+			"File with raw output from flow calculation. Currently we can interpolate only pressure.");
+
+
+
 template <int spacedim, class Value>
 FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const double init_time, const unsigned int n_comp)
 : FieldBase<spacedim, Value>(init_time, n_comp)
 {}
 
-
-
-template <int spacedim, class Value>
-Input::Type::Record &FieldInterpolatedP0<spacedim, Value>::get_input_type() {
-    using namespace  Input::Type;
-
-    static Record rec("FieldInterpolatedP0", "Field given by P0 data on another mesh. Currently defined only on boundary.");
-
-    if (! rec.is_finished()) {
-        rec.derive_from(FieldBase<spacedim, Value>::get_input_type());
-        // TODO: use mesh record here, but make it possibly of the same simplicity (the file name only)
-        rec.declare_key("mesh", FileName::input(),Default::obligatory(),
-                "File with the mesh from which we interpolate. (currently only GMSH supported)");
-        // TODO: allow interpolation from VTK files (contains also mesh), and our own format of raw data, that includes:
-        // mesh, dof_handler, and dof values
-        rec.declare_key("raw_data", FileName::input(), Default::obligatory(),
-                "File with raw output from flow calculation. Currently we can interpolate only pressure.");
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

@@ -16,6 +16,7 @@
  */
 
 #include <boost/exception/all.hpp>
+#include <iostream>
 
 #include "global_defs.h"
 

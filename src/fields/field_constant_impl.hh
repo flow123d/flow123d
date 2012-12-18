@@ -17,32 +17,27 @@
 
 /// Implementation.
 
+namespace it = Input::Type;
+
+template <int spacedim, class Value>
+it::Record FieldConstant<spacedim, Value>::input_type
+    = it::Record("FieldConstant", FieldBase<spacedim,Value>::template_name()+" Field constant in space.")
+    .derive_from(FieldBase<spacedim, Value>::input_type)
+    .declare_key("value", Value::input_type, Default("0.0"),
+                                "Value of the constant field.\n"
+                                "For vector values, you can use scalar value to enter constant vector.\n"
+                                "For square NxN-matrix values, you can use:\n"
+                                "* vector of size N to enter diagonal matrix\n"
+                                "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
+                                "* scalar to enter multiple of the unit matrix." );
+
+
 template <int spacedim, class Value>
 FieldConstant<spacedim, Value>::FieldConstant(const double init_time, unsigned int n_comp)
 : FieldBase<spacedim, Value>(init_time, n_comp)
 {}
 
 
-
-template <int spacedim, class Value>
-Input::Type::Record &FieldConstant<spacedim, Value>::get_input_type() {
-    using namespace  Input::Type;
-
-    static Record rec("FieldConstant", FieldBase<spacedim,Value>::template_name()+" Field constant in space.");
-
-    if (! rec.is_finished()) {
-        rec.derive_from(FieldBase<spacedim, Value>::get_input_type());
-        rec.declare_key("value", Value::get_input_type(), Default("0.0"),
-                                "Value of the constant field.\n"
-                                "For vector values, you can use scalar value to enter constatn vector.\n"
-                                "For square NxN-matrix values, you can use:\n"
-                                "* vector of size N to enter diagonal matrix\n"
-                                "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                "* scalar to enter multiple of the unit matrix." );
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

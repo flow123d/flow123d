@@ -21,13 +21,13 @@ class Reaction: public EquationBase
 {
 	public:
 		/*
-		 * Static method for new input data types input
+		 * Static variable for new input data types input
 		 */
-		static Input::Type::AbstractRecord & get_input_type();
+		static Input::Type::AbstractRecord input_type;
 		/*
-		 * Static method for new input data types input
+		 * Static variable for new input data types input
 		*/
-		static Input::Type::Record & get_one_decay_type();
+		static Input::Type::Record input_type_one_decay;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description

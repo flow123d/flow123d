@@ -40,7 +40,7 @@ public:
 
     FunctionPython(const unsigned int n_components=1, const double init_time=0.0);
 
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     void init_from_input( Input::Record rec);
 

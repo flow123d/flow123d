@@ -40,7 +40,7 @@ public:
 
     FieldPython(const double init_time=0.0, unsigned int n_comp=0);
 
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     virtual void init_from_input( Input::Record rec);
 

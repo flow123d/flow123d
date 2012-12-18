@@ -15,42 +15,30 @@
 
 //class Padde_approximant;
 
-Input::Type::Record & Linear_reaction::get_one_decay_substep()
-{
-	using namespace Input::Type;
-	static Record rec("Substep", "Equation for reading information about radioactive decays.");
+using namespace Input::Type;
 
-	if(!rec.is_finished()){
-		rec.declare_key("parent", String(), Default::obligatory(),
-				"Identifier of an isotope.");
-        rec.declare_key("half_life", Double(), Default::optional(),
-                "Half life of the parent substance.");
-        rec.declare_key("kinetic", Double(), Default::optional(),
-                "Kinetic constants describing first order reactions.");
-		rec.declare_key("products", Array(String()), Default::obligatory(),
-				"Identifies isotopes which decays parental atom to.");
-		rec.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
+Record Linear_reaction::input_type_one_decay_substep
+	= Record("Substep", "Equation for reading information about radioactive decays.")
+	.declare_key("parent", String(), Default::obligatory(),
+				"Identifier of an isotope.")
+    .declare_key("half_life", Double(), Default::optional(),
+                "Half life of the parent substance.")
+    .declare_key("kinetic", Double(), Default::optional(),
+                "Kinetic constants describing first order reactions.")
+    .declare_key("products", Array(String()), Default::obligatory(),
+				"Identifies isotopes which decays parental atom to.")
+	.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
 				"Decay chain branching percentage.");
-		rec.finish();
-	}
-	return rec;
-}
 
-Input::Type::Record & Linear_reaction::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("LinearReactions", "Information for a decision about the way to simulate radioactive decay.");
 
-	if (!rec.is_finished()) {
-	    rec.derive_from( Reaction::get_input_type() );
-        rec.declare_key("decays", Array( Linear_reaction::get_one_decay_substep() ), Default::obligatory(),
-                "Description of particular decay chain substeps.");
-		rec.declare_key("matrix_exp_on", Bool(), Default("false"),
+Record Linear_reaction::input_type
+	= Record("LinearReactions", "Information for a decision about the way to simulate radioactive decay.")
+	.derive_from( Reaction::input_type )
+    .declare_key("decays", Array( Linear_reaction::input_type_one_decay_substep ), Default::obligatory(),
+                "Description of particular decay chain substeps.")
+	.declare_key("matrix_exp_on", Bool(), Default("false"),
 				"Enables to use Pade approximant of matrix exponential.");
-		rec.finish();
-	}
-	return rec;
-}
+
 
 using namespace std;
 

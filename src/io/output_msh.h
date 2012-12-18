@@ -60,7 +60,7 @@ public:
     /**
      * \brief The definition of input record for gmsh file format
      */
-    static Input::Type::Record & get_input_type();
+    static Input::Type::Record input_type;
 
     /**
      * \brief This method writes data to the GMSH (.msh) file format. This method

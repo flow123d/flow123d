@@ -32,75 +32,59 @@
 #include "input/accessors.hh"
 
 
-Input::Type::AbstractRecord & TransportBase::get_input_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("Transport", "Secondary equation for transport of substances.");
+using namespace Input::Type;
 
-	if (!rec.is_finished()) {
-	    rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-	                    "Time governor setting for the transport model.");
-        rec.declare_key("substances", Array(String()), Default::obligatory(),
-                        "Names of transported substances.");
-
+AbstractRecord TransportBase::input_type
+	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
+	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
+			"Time governor setting for the transport model.")
+	.declare_key("substances", Array(String()), Default::obligatory(),
+			"Names of transported substances.")
 	    // input data
-	    rec.declare_key("sorption_enable", Bool(), Default("false"),
-						                "Model of sorption.");
-		rec.declare_key("dual_porosity", Bool(), Default("false"),
-						                "Dual porosity model.");
-
-		rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
-						                "Input file with initial concentrations.");
-		rec.declare_key("boundary_file", FileName::input(), Default::obligatory(),
-						                "Input file with boundary conditions.");
-		rec.declare_key("bc_times", Array(Double()), Default::optional(),
-				 	 	                "Times for changing the boundary conditions.");
-		rec.declare_key("sources_file", FileName::input(), Default::optional(),
-		                                "File with data for the source term in the transport equation.");
-        rec.declare_key("output", TransportBase::get_input_type_output_record(), Default::obligatory(),
-                                        "Parameters of output stream.");
-
-		rec.finish();
-
-		TransportOperatorSplitting::get_input_type();
-		TransportDG::get_input_type();
-
-		rec.no_more_descendants();
-	}
-	return rec;
-}
+	.declare_key("sorption_enable", Bool(), Default("false"),
+			"Model of sorption.")
+	.declare_key("dual_porosity", Bool(), Default("false"),
+			"Dual porosity model.")
+	.declare_key("initial_file", FileName::input(), Default::obligatory(),
+			"Input file with initial concentrations.")
+	.declare_key("boundary_file", FileName::input(), Default::obligatory(),
+			"Input file with boundary conditions.")
+	.declare_key("bc_times", Array(Double()), Default::optional(),
+			"Times for changing the boundary conditions.")
+	.declare_key("sources_file", FileName::input(), Default::optional(),
+			"File with data for the source term in the transport equation.")
+	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
+			"Parameters of output stream.");
 
 
+Record TransportBase::input_type_output_record
+	= Record("TransportOutput", "Output setting for transport equations.")
+	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+			"Parameters of output stream.")
+	.declare_key("save_step", Double(0.0), Default::obligatory(),
+			"Interval between outputs.")
+	.declare_key("output_times", Array(Double(0.0)),
+			"Explicit array of output times (can be combined with 'save_step'.")
+	.declare_key("conc_mobile_p0", String(),
+			"Name of output stream for P0 approximation of the concentration in mobile phase.")
+	.declare_key("conc_immobile_p0", String(),
+			"Name of output stream for P0 approximation of the concentration in immobile phase.")
+	.declare_key("conc_mobile_sorbed_p0", String(),
+			"Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.")
+	.declare_key("conc_immobile_sorbed_p0", String(),
+			"Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
 
-Input::Type::Record & TransportBase::get_input_type_output_record()
-{
-    using namespace Input::Type;
-    static Record out_rec("TransportOutput", "Output setting for transport equations.");
 
-    if (!out_rec.is_finished()) {
-        out_rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-                "Parameters of output stream.");
+Record TransportOperatorSplitting::input_type
+	= Record("TransportOperatorSplitting",
+            "Explicit FVM transport (no diffusion)\n"
+            "coupled with reaction and sorption model (ODE per element)\n"
+            " via. operator splitting.")
+    .derive_from(TransportBase::input_type)
+	.declare_key("reactions", Reaction::input_type, Default::optional(),
+                "Initialization of per element reactions.");
 
-        out_rec.declare_key("save_step", Double(0.0), Default::obligatory(),
-                "Interval between outputs.");
 
-        out_rec.declare_key("output_times", Array(Double(0.0)),
-                        "Explicit array of output times (can be combined with 'save_step'.");
-
-        out_rec.declare_key("conc_mobile_p0", String(),
-                        "Name of output stream for P0 approximation of the concentration in mobile phase.");
-        out_rec.declare_key("conc_immobile_p0", String(),
-                                "Name of output stream for P0 approximation of the concentration in immobile phase.");
-        out_rec.declare_key("conc_mobile_sorbed_p0", String(),
-                                "Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.");
-        out_rec.declare_key("conc_immobile_sorbed_p0", String(),
-                                "Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
-
-        out_rec.finish();
-
-    }
-    return out_rec;
-}
 
 
 TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
@@ -115,7 +99,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
-		if (reactions_it->type() == Linear_reaction::get_input_type() ) {
+		if (reactions_it->type() == Linear_reaction::input_type ) {
 	        decayRad =  new Linear_reaction(marks, init_mesh, material_database, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
@@ -125,7 +109,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	        Semchem_reactions = NULL;
 		} else
-	    if (reactions_it->type() == Pade_approximant::get_input_type() ) {
+	    if (reactions_it->type() == Pade_approximant::input_type ) {
 	        decayRad = new Pade_approximant(marks, init_mesh, material_database, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
@@ -134,7 +118,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	        Semchem_reactions = NULL;
 	    } else
-	    if (reactions_it->type() == Semchem_interface::get_input_type() ) {
+	    if (reactions_it->type() == Semchem_interface::input_type ) {
 	        Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	        Semchem_reactions->set_el_4_loc(el_4_loc);
 	        Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
@@ -187,24 +171,6 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
     delete time_;
 }
 
-
-Input::Type::Record &TransportOperatorSplitting::get_input_type()
-{
-    using namespace Input::Type;
-    static Record rec("TransportOperatorSplitting",
-            "Explicit FVM transport (no diffusion)\n"
-            "coupled with reaction and sorption model (ODE per element)\n"
-            " via. operator splitting.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(TransportBase::get_input_type());
-        rec.declare_key("reactions", Reaction::get_input_type(), Default::optional(),
-                "Initialization of per element reactions.");
-
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

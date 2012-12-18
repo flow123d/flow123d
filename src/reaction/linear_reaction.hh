@@ -22,13 +22,13 @@ class Linear_reaction: public Reaction
 {
 	public:
 		/*
-	 	* Static method for new input data types input
+	 	* Static variable for new input data types input
 		*/
-		static Input::Type::Record &get_input_type();
+		static Input::Type::Record input_type;
 		/*
-	 	* Static method gets information about particular decay step
+	 	* Static variable gets information about particular decay step
 		*/
-		static Input::Type::Record & get_one_decay_substep();
+		static Input::Type::Record input_type_one_decay_substep;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description

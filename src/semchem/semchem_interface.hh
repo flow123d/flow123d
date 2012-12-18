@@ -15,9 +15,9 @@ class Specie
 {
 	public:
 	/*
-	* Static method for new input data types input
+	* Static variable for new input data types input
 	*/
-	static Input::Type::Record &get_input_type();
+	static Input::Type::Record input_type;
 	/*
 	* Constructor.
 	*/
@@ -53,9 +53,9 @@ class General_reaction
 {
 	public:
 	/*
-	* Static method for new input data types input
+	* Static variable for new input data types input
 	*/
-	static Input::Type::Record &get_input_type();
+	static Input::Type::Record input_type;
 	/*
 	 * Constructor.
 	 */
@@ -92,9 +92,9 @@ class Semchem_interface
 {
 	public:
 		/*
-		* Static method for new input data types input
+		* Static variable for new input data types input
 		*/
-		static Input::Type::AbstractRecord &get_input_type();
+		static Input::Type::AbstractRecord input_type;
 		/**
 		*	Semchem interface is the tool to call a simulation of chemical reactions as a part of transport model. timeStep defines the length of time step for simulation of chemical reactions. nrOfSpecies is the number of transported species. dualPorosity defines type of porosity in examinated soil.
 		*/

@@ -38,6 +38,29 @@
 #include "input/accessors.hh"
 
 
+using namespace Input::Type;
+
+Record OutputTime::input_type
+	= Record("OutputStrem", "Parameters of output.")
+	// The name
+	.declare_key("name", String(), Default::obligatory(),
+			"The name of this stream. Used to reference the output stream.")
+	// The stream
+	.declare_key("file", FileName::output(), Default::obligatory(),
+			"File path to the output stream.")
+	// The format
+	.declare_key("format", OutputFormat::input_type, Default::optional(),
+			"Format of output stream and possible parameters.");
+
+
+AbstractRecord OutputFormat::input_type
+	= AbstractRecord("OutputFormat",
+    		"Format of output stream and possible parameters.");
+    // Complete declaration of  abstract record OutputFormat
+
+
+
+
 OutputData::OutputData(std::string data_name,
         std::string data_units,
         int *data_data,
@@ -329,10 +352,10 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 
     // Check if file suffix is suffix of specified file format
     if(format) {
-    	if((*format).type() == OutputVTK::get_input_type()) {
+    	if((*format).type() == OutputVTK::input_type) {
     		// This should be pvd file format
     		fix_VTK_file_name(&fname);
-    	} else if((*format).type() == OutputMSH::get_input_type()) {
+    	} else if((*format).type() == OutputMSH::input_type) {
     		// This should be msh file format
     		fix_GMSH_file_name(&fname);
     	} else {
@@ -376,9 +399,9 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     set_elem_data(elem_data);
 
     if(format) {
-		if((*format).type() == OutputVTK::get_input_type()) {
+		if((*format).type() == OutputVTK::input_type) {
 			this->output_format = new OutputVTK(this, *format);
-		} else if ( (*format).type() == OutputMSH::get_input_type()) {
+		} else if ( (*format).type() == OutputMSH::input_type) {
 			this->output_format = new OutputMSH(this, *format);
 		} else {
 			xprintf(Warn, "Unsupported file format, using default VTK\n");
@@ -392,29 +415,6 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 
 OutputTime::~OutputTime(void)
 {
-}
-
-Input::Type::Record & OutputTime::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("OutputStrem", "Parameters of output.");
-
-	if (!rec.is_finished()) {
-
-		// The name
-		rec.declare_key("name", String(), Default::obligatory(),
-				"The name of this stream. Used to reference the output stream.");
-		// The stream
-		rec.declare_key("file", FileName::output(), Default::obligatory(),
-				"File path to the output stream.");
-		// The format
-		rec.declare_key("format", OutputFormat::get_input_type(), Default::optional(),
-				"Format of output stream and possible parameters.");
-
-		rec.finish();
-	}
-
-	return rec;
 }
 
 int OutputTime::write_data(double time)
@@ -435,22 +435,5 @@ int OutputTime::write_data(double time)
     return ret;
 }
 
-Input::Type::AbstractRecord& OutputFormat::get_input_type()
-{
-    static Input::Type::AbstractRecord output_format("OutputFormat",
-    		"Format of output stream and possible parameters.");
 
-    if (!output_format.is_finished()) {
-        // Complete declaration of  abstract record OutputFormat
-        output_format.finish();
-
-        // List of possible descendants
-        OutputVTK::get_input_type();
-        OutputMSH::get_input_type();
-
-        output_format.no_more_descendants();
-    }
-
-    return output_format;
-}
 

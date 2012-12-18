@@ -36,8 +36,8 @@ public:
     : EquationBase(marks, mesh, mat_base, in_rec ), mh_dh(NULL)
     {}
 
-    static Input::Type::AbstractRecord &get_input_type();
-    static Input::Type::Record & get_input_type_output_record();
+    static Input::Type::AbstractRecord input_type;
+    static Input::Type::Record input_type_output_record;
 
     /**
      * This method takes sequantial PETSc vector of side velocities and update
@@ -99,7 +99,7 @@ public:
      * To make this a coupling class we should modify all main input files for transport problems.
      *
      */
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
 	virtual void update_solution();

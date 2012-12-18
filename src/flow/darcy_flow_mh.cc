@@ -62,74 +62,73 @@
 #include <iostream>
 #include <iterator>
 
-Input::Type::Selection & DarcyFlowMH::get_mh_mortar_selection() {
-    using namespace Input::Type;
-    static Selection sel("MH_MortarMethod");
 
-    if (! sel.is_finished()) {
-        sel.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.");
-        sel.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.");
-        sel.add_value(MortarP1, "P1", "Mortar space: P1 on intersections, using non-conforming pressures.");
-        sel.finish();
-    }
-    return sel;
-}
+namespace it = Input::Type;
 
-Input::Type::AbstractRecord & DarcyFlowMH::get_input_type()
-{
-    using namespace Input::Type;
-
-    static Record bc_segment_rec("DarcyFlowMH_BC_Type", "Boundary condition for DaryFlowMH equation.");
-    //BCTable::set_input_type_for_dirichlet( bc_type );
-    //BCTable::set_input_type_for_neumman( bc_type );
-    //BCTable::set_input_type_for_newton( bc_type );
-    //bc_type.no_more_descendants();
-
-    //static Record bc_table_item_rec = BCTable::get_item_input_type( bc_type );
-
-    static AbstractRecord rec("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.");
+it::Selection DarcyFlowMH::mh_mortar_selection
+	= it::Selection("MH_MortarMethod")
+	.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.")
+	.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.")
+	.add_value(MortarP1, "P1", "Mortar space: P1 on intersections, using non-conforming pressures.");
 
 
-    if (!rec.is_finished()) {
-        bc_segment_rec.declare_key("value", FunctionBase<3>::get_input_type(), Default::obligatory(),
-                "Value of scalar Dirichlet BC.");
-        bc_segment_rec.finish();
+it::Record DarcyFlowMH::bc_segment_rec
+	= it::Record("DarcyFlowMH_BC_Type", "Boundary condition for DaryFlowMH equation.")
+    .declare_key("value", FunctionBase<3>::input_type, it::Default::obligatory(),
+            "Value of scalar Dirichlet BC.");
+//BCTable::set_input_type_for_dirichlet( bc_type );
+//BCTable::set_input_type_for_neumman( bc_type );
+//BCTable::set_input_type_for_newton( bc_type );
+//bc_type.no_more_descendants();
 
+//static Record bc_table_item_rec = BCTable::get_item_input_type( bc_type );
 
+it::AbstractRecord DarcyFlowMH::input_type
+	= it::AbstractRecord("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.")
         // declare keys common to all DarcyFlow classes
         //rec.declare_key("boundary_condition", Array( bc_table_item_rec), Default::obligatory(),
         //        "Table of boundary conditions for BC segments.");
-
-        rec.declare_key("n_schurs", Integer(0,2), Default("2"),
-                "Number of Schur complements to perform when solving MH sytem.");
-        rec.declare_key("sources_file", FileName::input(),
-                "File with water source field.");
-        rec.declare_key("sources_formula", String(),
-                "Formula to determine the source field.");
-        rec.declare_key("boundary_file", FileName::input(),Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
-                "File with boundary conditions for MH solver.");
-        rec.declare_key("boundary_conditions", bc_segment_rec, Default::optional(),
-                "Specification of boundary conditions.");
-        rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
-                "Linear solver for MH problem.");
-        rec.declare_key("output", DarcyFlowMHOutput::get_input_type(), Default::obligatory(),
-                "Parameters of output form MH module.");
-        rec.declare_key("mortar_method", get_mh_mortar_selection(), Default("None"),
-                "Method for coupling Darcy flow between dimensions." );
-        rec.declare_key("mortar_sigma", Double(0.0), Default("1.0"),
+	.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
+                "Number of Schur complements to perform when solving MH sytem.")
+    .declare_key("sources_file", it::FileName::input(),
+                "File with water source field.")
+	.declare_key("sources_formula", it::String(),
+                "Formula to determine the source field.")
+	.declare_key("boundary_file", it::FileName::input(),it::Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
+                "File with boundary conditions for MH solver.")
+	.declare_key("boundary_conditions", bc_segment_rec, it::Default::optional(),
+                "Specification of boundary conditions.")
+	.declare_key("solver", Solver::input_type, it::Default::obligatory(),
+                "Linear solver for MH problem.")
+	.declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
+                "Parameters of output form MH module.")
+	.declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
+                "Method for coupling Darcy flow between dimensions." )
+	.declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
                 "Conductivity between dimensions." );
-        rec.finish();
-
-        DarcyFlowMH_Steady::get_input_type();
-        DarcyFlowMH_Unsteady::get_input_type();
-        DarcyFlowLMH_Unsteady::get_input_type();
-
-        rec.no_more_descendants();
-    }
-    return rec;
-}
 
 
+it::Record DarcyFlowMH_Steady::input_type
+    = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
+    .derive_from(DarcyFlowMH::input_type);
+
+
+it::Record DarcyFlowMH_Unsteady::input_type
+	= it::Record("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+	.derive_from(DarcyFlowMH::input_type)
+	.declare_key("time", TimeGovernor::input_type, it::Default::obligatory(),
+                 "Time governor setting for the unsteady Darcy flow model.")
+	.declare_key("initial_file", it::FileName::input(), it::Default::obligatory(),
+                 "File with initial condition for the pressure.");
+
+
+it::Record DarcyFlowLMH_Unsteady::input_type
+    = it::Record("Unsteady_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+    .derive_from(DarcyFlowMH::input_type)
+    .declare_key("time",         TimeGovernor::input_type, it::Default::obligatory(),
+                                "Time governor setting for the unsteady Darcy flow model.")
+    .declare_key("initial_file", it::FileName::input(), it::Default::obligatory(),
+                                        "File with initial condition for the pressure.");
 
 
 
@@ -259,18 +258,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
         }
     solution_changed_for_scatter=true;
 
-}
-
-Input::Type::Record & DarcyFlowMH_Steady::get_input_type()
-{
-    using namespace Input::Type;
-    static Record rec("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(DarcyFlowMH::get_input_type());
-        rec.finish();
-    }
-    return rec;
 }
 
 
@@ -1553,21 +1540,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mater
     setup_time_term();
 
 }
-Input::Type::Record & DarcyFlowMH_Unsteady::get_input_type()
-{
-    using namespace Input::Type;
-    static Record rec("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.");
 
-    if (!rec.is_finished()) {
-        rec.derive_from(DarcyFlowMH::get_input_type());
-        rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-                                "Time governor setting for the unsteady Darcy flow model.");
-        rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
-                                        "File with initial condition for the pressure.");
-        rec.finish();
-    }
-    return rec;
-}
 
 
 void DarcyFlowMH_Unsteady::setup_time_term() {
@@ -1657,22 +1630,6 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
 }
 
 
-
-Input::Type::Record & DarcyFlowLMH_Unsteady::get_input_type()
-{
-    using namespace Input::Type;
-    static Record rec("Unsteady_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(DarcyFlowMH::get_input_type());
-        rec.declare_key("time",         TimeGovernor::get_input_type(), Default::obligatory(),
-                                        "Time governor setting for the unsteady Darcy flow model.");
-        rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
-                                        "File with initial condition for the pressure.");
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

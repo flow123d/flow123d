@@ -44,6 +44,25 @@
 #include "input/accessors.hh"
 
 
+using namespace Input::Type;
+
+Record TransportDG::input_type
+	= Record("AdvectionDiffusion_DG", "DG solver for transport with diffusion.")
+	.derive_from(TransportBase::input_type)
+	.declare_key("sigma", Double(), Default("0"),
+			"Coefficient of diffusive transfer through fractures.")
+	.declare_key("alpha_l", Double(), Default("0"),
+			"Longitudal dispersivity.")
+	.declare_key("alpha_t", Double(), Default("0"),
+			"Transversal dispersivity.")
+	.declare_key("d_m", Double(), Default("1e-6"),
+			"Molecular diffusivity.")
+	.declare_key("dg_penalty", Double(0), Default("0"),
+			"Penalty parameter influencing the discontinuity of the solution.")
+    .declare_key("solver", Solver::input_type, Default::obligatory(),
+            "Linear solver for MH problem.");
+
+
 using namespace arma;
 
 TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
@@ -161,31 +180,6 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     output_data();
 }
 
-
-Input::Type::Record & TransportDG::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("AdvectionDiffusion_DG", "DG solver for transport with diffusion.");
-
-	if (!rec.is_finished()) {
-		rec.derive_from(TransportBase::get_input_type());
-
-		rec.declare_key("sigma", Double(), Default("0"),
-				"Coefficient of diffusive transfer through fractures.");
-		rec.declare_key("alpha_l", Double(), Default("0"),
-				"Longitudal dispersivity.");
-		rec.declare_key("alpha_t", Double(), Default("0"),
-				"Transversal dispersivity.");
-		rec.declare_key("d_m", Double(), Default("1e-6"),
-				"Molecular diffusivity.");
-		rec.declare_key("dg_penalty", Double(0), Default("0"),
-				"Penalty parameter influencing the discontinuity of the solution.");
-        rec.declare_key("solver", Solver::get_input_type(), Default::obligatory(),
-                "Linear solver for MH problem.");
-		rec.finish();
-	}
-	return rec;
-}
 
 TransportDG::~TransportDG()
 {

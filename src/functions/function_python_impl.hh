@@ -11,6 +11,18 @@
 
 /// Implementation.
 
+namespace it = Input::Type;
+
+template <int dim>
+it::Record FunctionPython<dim>::input_type
+    = it::Record("FunctionPython", "Function given by a Python script.")
+    .derive_from(FunctionBase<dim>::input_type);
+        //rec.declare_key("mesh", FileName::input(),Default::obligatory(),
+        //        "File with the mesh from which we interpolate. (currently only GMSH supported)");
+        //rec.declare_key("raw_data", FileName::input(), Default::obligatory(),
+        //        "File with raw output from flow calculation. Currently we can interpolate only pressure.");
+
+
 template <int dim>
 FunctionPython<dim>::FunctionPython(const unsigned int n_components, const double init_time)
 : FunctionBase<dim>(n_components, init_time)
@@ -37,23 +49,6 @@ void FunctionPython<dim>::set_python_function_from_string(const string &python_s
 }
 
 
-
-template <int dim>
-Input::Type::Record &FunctionPython<dim>::get_input_type() {
-    using namespace  Input::Type;
-
-    static Record rec("FunctionPython", "Function given by a Python script.");
-
-    if (! rec.is_finished()) {
-        rec.derive_from(FunctionBase<dim>::get_input_type());
-        //rec.declare_key("mesh", FileName::input(),Default::obligatory(),
-        //        "File with the mesh from which we interpolate. (currently only GMSH supported)");
-        //rec.declare_key("raw_data", FileName::input(), Default::obligatory(),
-        //        "File with raw output from flow calculation. Currently we can interpolate only pressure.");
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

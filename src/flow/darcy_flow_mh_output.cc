@@ -42,6 +42,28 @@
 
 
 
+namespace it = Input::Type;
+
+it::Record DarcyFlowMHOutput::input_type
+	= it::Record("DarcyMHOutput", "Parameters of MH output.")
+	.declare_key("save_step", it::Double(0.0), it::Default("1.0"),
+                    "Regular step between MH outputs.")
+    .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
+                    "Parameters of output stream.")
+    .declare_key("velocity_p0", it::String(),
+                    "Output stream for P0 approximation of the velocity field.")
+    .declare_key("pressure_p0", it::String(),
+                    "Output stream for P0 approximation of the pressure field.")
+    .declare_key("pressure_p1", it::String(),
+                    "Output stream for P1 approximation of the pressure field.")
+    .declare_key("piezo_head_p0", it::String(),
+                    "Output stream for P0 approximation of the piezometric head field.")
+    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance"),
+                    "Output file for water balance table.")
+    .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
+                    "Output file with raw data form MH module.");
+
+
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 : darcy_flow(flow), mesh_(&darcy_flow->mesh()),
@@ -94,35 +116,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
 }
 
-Input::Type::Record DarcyFlowMHOutput::get_input_type() {
-        using namespace Input::Type;
-        static Record rec("DarcyMHOutput", "Parameters of MH output.");
 
-        if (!rec.is_finished()) {
-
-            rec.declare_key("save_step", Double(0.0), Default("1.0"),
-                    "Regular step between MH outputs.");
-            rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-                    "Parameters of output stream.");
-            rec.declare_key("velocity_p0", String(),
-                    "Output stream for P0 approximation of the velocity field.");
-            rec.declare_key("pressure_p0", String(),
-                    "Output stream for P0 approximation of the pressure field.");
-            rec.declare_key("pressure_p1", String(),
-                    "Output stream for P1 approximation of the pressure field.");
-            rec.declare_key("piezo_head_p0", String(),
-                    "Output stream for P0 approximation of the piezometric head field.");
-
-            rec.declare_key("balance_output", FileName::output(), Default("water_balance"),
-                    "Output file for water balance table.");
-
-            rec.declare_key("raw_flow_output", FileName::output(), Default::optional(),
-                    "Output file with raw data form MH module.");
-
-            rec.finish();
-        }
-        return rec;
-}
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
     //if (output_writer != NULL) delete output_writer;

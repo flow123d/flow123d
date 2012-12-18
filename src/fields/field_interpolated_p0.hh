@@ -54,7 +54,7 @@ public:
 	/**
 	 * Declare Input type.
 	 */
-	static Input::Type::Record &get_input_type();
+	static Input::Type::Record input_type;
 
 	/**
 	 * Initialization from the input interface.

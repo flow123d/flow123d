@@ -66,7 +66,17 @@ public:
     /**
      * \brief The definition of input record for vtk file format
      */
-    static Input::Type::Record & get_input_type();
+    static Input::Type::Record input_type;
+
+    /**
+	 * \brief The definition of input record for selection of variant of file format
+	 */
+    static Input::Type::Selection input_type_variant;
+
+    /**
+	 * \brief The definition of input record for selection of compression type
+	 */
+    static Input::Type::Selection input_type_compression;
 
     /**
      * \brief This function output data to serial VTK file format (single .vtu)

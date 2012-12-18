@@ -12,12 +12,14 @@ namespace Type {
 
 using std::string;
 
-void Selection::add_value(const int value, const std::string &key, const std::string &description) {
+Selection &Selection::add_value(const int value, const std::string &key, const std::string &description) {
     empty_check();
     if (is_finished())
         xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
 
     data_->add_value(value, key, description);
+
+    return *this;
 }
 
 

@@ -13,6 +13,21 @@
 
 /// Implementation.
 
+namespace it = Input::Type;
+
+template <int spacedim, class Value>
+it::Record FieldPython<spacedim, Value>::input_type
+    = it::Record("FieldPython", FieldBase<spacedim,Value>::template_name()+" Field given by a Python script.")
+	.derive_from(FieldBase<spacedim, Value>::input_type)
+	.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
+			"Python script given as in place string")
+	.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
+			"Python script given as external file")
+    .declare_key("function", it::String(), it::Default::obligatory(),
+    		"Function in the given script that returns tuple containing components of the return type.\n"
+    		"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).");
+
+
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::FieldPython(const double init_time, unsigned int n_comp)
 : FieldBase<spacedim, Value>(init_time, n_comp)
@@ -39,26 +54,6 @@ void FieldPython<spacedim, Value>::set_python_field_from_string(const string &py
 }
 
 
-
-template <int spacedim, class Value>
-Input::Type::Record &FieldPython<spacedim, Value>::get_input_type() {
-    using namespace  Input::Type;
-
-    static Record rec("FieldPython", FieldBase<spacedim,Value>::template_name()+" Field given by a Python script.");
-
-    if (! rec.is_finished()) {
-        rec.derive_from(FieldBase<spacedim, Value>::get_input_type());
-        rec.declare_key("script_string", String(), Default::read_time("Obligatory if 'script_file' is not given."),
-                                        "Python script given as in place string");
-        rec.declare_key("script_file", FileName::input(), Default::read_time("Obligatory if 'script_striong' is not given."),
-                                        "Python script given as external file");
-        rec.declare_key("function", String(), Default::obligatory(),
-                                        "Function in the given script that returns tuple containing components of the return type.\n"
-                                        "For NxM tensor values: tensor(row,col) = tuple( M*row + col ).");
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

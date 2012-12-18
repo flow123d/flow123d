@@ -90,7 +90,7 @@ public:
     /**
      * @brief Declare input record type for the equation TransportDG.
      */
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     /**
      * @brief Computes the solution in one time instant.

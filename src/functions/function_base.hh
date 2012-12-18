@@ -55,7 +55,7 @@ public:
 
        FunctionBase(const unsigned int n_components=1, const double init_time=0.0);
 
-       static Input::Type::AbstractRecord &get_input_type();
+       static Input::Type::AbstractRecord input_type;
 
        /**
         * This static method gets accessor to abstract record with function input,

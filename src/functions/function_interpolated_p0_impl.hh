@@ -41,6 +41,23 @@
 #include "system/tokenizer.hh"
 #include "system/xio.h"
 
+
+namespace it = Input::Type;
+
+template <int dim>
+it::Record FunctionInterpolatedP0<dim>::input_type
+    = it::Record("FunctionInterpolatedP0", "Function given by P0 data on another mesh. Currently defined only on boundary.")
+	.derive_from(FunctionBase<dim>::input_type)
+    // TODO: use mesh record here, but make it possibly of the same simplicity (the file name only)
+	.declare_key("mesh", it::FileName::input(),it::Default::obligatory(),
+            "File with the mesh from which we interpolate. (currently only GMSH supported)")
+    // TODO: allow interpolation from VTK files (contains also mesh), and our own format of raw data, that includes:
+    // mesh, dof_handler, and dof values
+    .declare_key("raw_data", it::FileName::input(), it::Default::obligatory(),
+            "File with raw output from flow calculation. Currently we can interpolate only pressure.");
+
+
+
 template <int dim>
 FunctionInterpolatedP0<dim>::FunctionInterpolatedP0(const unsigned int n_components, const double init_time)
 : FunctionBase<dim>( n_components, init_time)
@@ -49,26 +66,6 @@ FunctionInterpolatedP0<dim>::FunctionInterpolatedP0(const unsigned int n_compone
 }
 
 
-
-template <int dim>
-Input::Type::Record &FunctionInterpolatedP0<dim>::get_input_type() {
-    using namespace  Input::Type;
-
-    static Record rec("FunctionInterpolatedP0", "Function given by P0 data on another mesh. Currently defined only on boundary.");
-
-    if (! rec.is_finished()) {
-        rec.derive_from(FunctionBase<dim>::get_input_type());
-        // TODO: use mesh record here, but make it possibly of the same simplicity (the file name only)
-        rec.declare_key("mesh", FileName::input(),Default::obligatory(),
-                "File with the mesh from which we interpolate. (currently only GMSH supported)");
-        // TODO: allow interpolation from VTK files (contains also mesh), and our own format of raw data, that includes:
-        // mesh, dof_handler, and dof values
-        rec.declare_key("raw_data", FileName::input(), Default::obligatory(),
-                "File with raw output from flow calculation. Currently we can interpolate only pressure.");
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

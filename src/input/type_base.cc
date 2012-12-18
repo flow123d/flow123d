@@ -23,6 +23,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "type_base.hh"
+#include "type_record.hh"
 #include <boost/algorithm/string.hpp>
 
 
@@ -81,6 +82,29 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
 /**********************************************************************************
  * implementation of Type::Array
  */
+
+void Array::finish()
+{
+	if (finished) return;
+
+	if (p_type_of_values != 0)
+	{
+		if (dynamic_cast<const AbstractRecord *>(p_type_of_values) != 0)
+		{
+			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*dynamic_cast<const AbstractRecord *>(p_type_of_values));
+			type_of_values_ = type_copy;
+			p_type_of_values = 0;
+		}
+		else if (dynamic_cast<const Record *>(p_type_of_values) != 0)
+		{
+			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*dynamic_cast<const Record *>(p_type_of_values));
+			type_of_values_ = type_copy;
+			p_type_of_values = 0;
+		}
+	}
+
+	finished = true;
+}
 
 
 std::ostream& Array::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const {

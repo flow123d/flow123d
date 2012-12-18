@@ -78,11 +78,6 @@ public:
        static std::string template_name();
 
        /**
-        * Returns input type specification. As static function this depends on the template parameters.
-        */
-       static Input::Type::AbstractRecord &get_input_type();
-
-       /**
         * This static method gets accessor to abstract record with function input,
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns pointer to  FunctionBase<>.
@@ -130,6 +125,12 @@ public:
        virtual void value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list,
                           std::vector<FieldResult> &result_list);
+
+
+       /**
+        * Declaration of input type.
+        */
+       static Input::Type::AbstractRecord input_type;
 
 
 protected:

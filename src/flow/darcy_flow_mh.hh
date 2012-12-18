@@ -78,19 +78,19 @@ public:
 
 class BC_Dirichlet : public DarcyFlowMH_BC {
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
     FunctionBase<3> *value;
 };
 
 class BC_Neumann : public DarcyFlowMH_BC {
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
     FunctionBase<3> *flux;
 };
 
 class BC_Newton : public DarcyFlowMH_BC {
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
     FunctionBase<3> *sigma;
     FunctionBase<3> *value;
 };
@@ -123,10 +123,11 @@ public:
     : EquationBase(marks, mesh, mat_base, in_rec), sources(NULL)
     {}
 
-    static Input::Type::Selection & get_mh_mortar_selection();
-    static Input::Type::AbstractRecord &get_input_type();
-    static Input::Type::AbstractRecord &get_bc_input_type();
-    static std::vector<Input::Type::Record> &get_bc_input_types();
+    static Input::Type::Selection mh_mortar_selection;
+    static Input::Type::AbstractRecord input_type;
+    static Input::Type::Record bc_segment_rec;
+    static Input::Type::AbstractRecord bc_input_type;
+    static std::vector<Input::Type::Record> bc_input_types;
 
     FieldP0<double>  * get_sources()
         { return sources; }
@@ -205,7 +206,7 @@ class DarcyFlowMH_Steady : public DarcyFlowMH
 public:
     DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
 
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
@@ -299,7 +300,7 @@ public:
     DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 protected:
     virtual void modify_system();
     void setup_time_term();
@@ -330,7 +331,7 @@ public:
     DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 protected:
     virtual void modify_system();
     void setup_time_term();

@@ -12,6 +12,7 @@
 #include "system/system.hh"
 #include "system/exceptions.hh"
 #include "system/file_path.hh"
+#include "lazy_types.hh"
 
 
 #include <limits>
@@ -96,7 +97,10 @@ public:
      */
     virtual void  reset_doc_flags() const =0;
 
-    /// Returns true if the type is fully specified. In particular for Record and Selection, it returns true after @p finish() method is called.
+    /**
+     * Returns true if the type is fully specified.
+     * In particular for Record and Selection, it returns true after @p finish() method is called.
+     */
     virtual bool is_finished() const
     {return true;}
 
@@ -163,7 +167,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 
 class Record;
-class SelectionBase;
+class Selection;
 
 /**
  * @brief Class for declaration of inputs sequences.
@@ -180,7 +184,7 @@ class SelectionBase;
  *
  * @ingroup input_types
  */
-class Array : public TypeBase {
+class Array : public TypeBase, LazyType {
 	friend class OutputBase;
 	friend class OutputText;
 
@@ -191,22 +195,37 @@ public:
      */
     template <class ValueType>
     inline Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
-    : lower_bound_(min_size), upper_bound_(max_size)
+    : lower_bound_(min_size), upper_bound_(max_size), finished(false)
     {
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
 
         ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
 
-        if ( ! type.is_finished())
-            xprintf(PrgErr, "Unfinished type '%s' used in declaration of Array.\n", type.type_name().c_str() );
+        // Records, AbstractRecords and Selections need not be initialized
+        // at the moment, so we save the reference of type and update
+        // the array later in finish().
+        if (boost::is_base_of<Record, ValueType>::value ||
+        	boost::is_base_of<Selection, ValueType>::value)
+        {
+        	p_type_of_values = &type;
+        }
+        else
+        {
+        	if ( ! type.is_finished())
+        		xprintf(PrgErr, "Unfinished type '%s' used in declaration of Array.\n", type.type_name().c_str() );
+        	p_type_of_values = 0;
 
-        boost::shared_ptr<const ValueType> type_copy = boost::make_shared<ValueType>(type);
-        type_of_values_ = type_copy;
-        //set_type_impl(type, boost::is_base_of<TypeBase,ValueType>() );
+        	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
+        	type_of_values_ = type_copy;
+        	//set_type_impl(type, boost::is_base_of<TypeBase,ValueType>() );
+        }
     }
 
+    /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
+    virtual void finish();
 
+    virtual bool is_finished() const { return finished; }
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const
@@ -239,6 +258,8 @@ protected:
 
     boost::shared_ptr<const TypeBase> type_of_values_;
     unsigned int lower_bound_, upper_bound_;
+    const TypeBase *p_type_of_values;
+    bool finished;
 
 };
 

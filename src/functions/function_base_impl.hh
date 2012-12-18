@@ -17,6 +17,14 @@
 #include "input/input_type.hh"
 
 
+namespace it = Input::Type;
+
+template <int dim>
+it::AbstractRecord FunctionBase<dim>::input_type
+    = it::AbstractRecord("Function", "Abstract record for all time-space functions.");
+
+
+
 template <int dim>
 FunctionBase<dim>::FunctionBase(const unsigned int n_components, const double init_time)
 : n_components_(n_components), time_(init_time)
@@ -24,31 +32,16 @@ FunctionBase<dim>::FunctionBase(const unsigned int n_components, const double in
 
 
 
-template <int dim>
-Input::Type::AbstractRecord &FunctionBase<dim>::get_input_type() {
-    using namespace Input::Type;
-    static AbstractRecord rec("Function", "Abstract record for all time-space functions.");
-
-    if (! rec.is_finished()) {
-        rec.finish();
-
-        FunctionPython<dim>::get_input_type();
-        FunctionInterpolatedP0<dim>::get_input_type();
-        rec.no_more_descendants();
-    }
-    return rec;
-}
-
 
 
 template <int dim>
 FunctionBase<dim> *  FunctionBase<dim>::function_factory(Input::AbstractRecord rec, const unsigned int n_comp, const double init_time) {
     FunctionBase<dim> *func;
 
-    if (rec.type() == FunctionInterpolatedP0<dim>::get_input_type()) {
+    if (rec.type() == FunctionInterpolatedP0<dim>::input_type) {
         func= new FunctionInterpolatedP0<dim>(n_comp, init_time);
 #ifdef HAVE_PYTHON
-    } else if (rec.type() == FunctionPython<dim>::get_input_type()) {
+    } else if (rec.type() == FunctionPython<dim>::input_type) {
         func= new FunctionPython<dim>(n_comp, init_time);
 #endif
     } else {

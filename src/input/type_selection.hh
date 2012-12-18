@@ -89,7 +89,7 @@ public:
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
      */
-    void add_value(const int value, const std::string &key, const std::string &description = "");
+    Selection &add_value(const int value, const std::string &key, const std::string &description = "");
 
     /**
      * Close the Selection, no more values can be added.

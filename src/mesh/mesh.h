@@ -89,7 +89,7 @@
 
 class BoundarySegment {
 public:
-    static Input::Type::Record get_input_type();
+    static Input::Type::Record input_type;
 };
 
 //=============================================================================
@@ -98,7 +98,7 @@ public:
 
 class Mesh {
 public:
-    static Input::Type::Record get_input_type();
+    static Input::Type::Record input_type;
 
     Input::Record in_record_;
 

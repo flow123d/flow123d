@@ -64,6 +64,26 @@ static void isol_params_init(ISOL_params *par);
 static void write_sys_isol( struct Solver *solver );
 
 
+namespace it = Input::Type;
+
+it::AbstractRecord Solver::input_type = it::AbstractRecord("Solver", "Solver setting.")
+    .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"),
+                "Absolute residual tolerance.")
+    .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
+                "Relative residual tolerance (to initial error).")
+    .declare_key("max_it", it::Integer(0), it::Default("10000"),
+                "Maximum number of outer iterations of the linear solver.");
+
+
+it::Record Solver::input_type_petsc = it::Record("Petsc", "Solver setting.")
+    .derive_from(Solver::input_type)
+    .declare_key("options", it::String(), it::Default(""),  "Options passed to the petsc instead of default setting.");
+
+
+it::Record Solver::input_type_bddc = it::Record("Bddc", "Solver setting.")
+    .derive_from(Solver::input_type);
+
+
 
 //==============================================================================
 /*!	@brief	Initialize a solver structure
@@ -80,11 +100,11 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     F_ENTRY;
 	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
 
-	if (in_rec.type() == Solver::get_input_type_petsc() )  {
+	if (in_rec.type() == Solver::input_type_petsc )  {
 	    solver->type = PETSC_SOLVER;
 	    solver->params  = Input::Record(in_rec).val<string>("options");
 	} else
-	if (in_rec.type() == Solver::get_input_type_bddc() ) {
+	if (in_rec.type() == Solver::input_type_bddc ) {
 	    solver->type = PETSC_MATIS_SOLVER;
 	} else {
 	    xprintf(UsrErr,"Unsupported solver: %s\n", in_rec.type().type_name().c_str());
@@ -120,50 +140,6 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
 }
 
 
-
-Input::Type::AbstractRecord & Solver::get_input_type() {
-    using namespace Input::Type;
-    static AbstractRecord rec("Solver", "Solver setting.");
-
-    if (!rec.is_finished()) {
-        rec.declare_key("a_tol", Double(0.0), Default("1.0e-9"),
-                "Absolute residual tolerance.");
-        rec.declare_key("r_tol", Double(0.0, 1.0), Default("1.0e-7"),
-                "Relative residual tolerance (to initial error).");
-        rec.declare_key("max_it", Integer(0), Default("10000"),
-                "Maximum number of outer iterations of the linear solver.");
-        rec.finish();
-
-        Solver::get_input_type_petsc();
-        Solver::get_input_type_bddc();
-
-        rec.no_more_descendants();
-    }
-    return rec;
-}
-
-Input::Type::Record & Solver::get_input_type_petsc() {
-    using namespace Input::Type;
-    static Record rec("Petsc", "Solver setting.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(Solver::get_input_type());
-        rec.declare_key("options", String(), Default(""),  "Options passed to the petsc instead of default setting.");
-        rec.finish();
-    }
-    return rec;
-}
-
-Input::Type::Record & Solver::get_input_type_bddc() {
-    using namespace Input::Type;
-    static Record rec("Bddc", "Solver setting.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(Solver::get_input_type());
-        rec.finish();
-    }
-    return rec;
-}
 
 
 //=============================================================================

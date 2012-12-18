@@ -17,6 +17,7 @@
 
 #include "system/system.hh"
 
+#include <boost/typeof/typeof.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/shared_ptr.hpp>
@@ -60,52 +61,39 @@ Record::Record(const string & type_name_in, const string & description)
 {}
 
 
+Record::Record(boost::shared_ptr<RecordData> data_ptr)
+: data_(data_ptr)
+{}
 
-void Record::allow_auto_conversion(const string &from_key) {
+
+
+Record &Record::allow_auto_conversion(const string &from_key) {
     empty_check();
     ASSERT(data_->auto_conversion_key == -1, "Can not use key %s for auto conversion, the key is already set.", from_key.c_str());
     data_->auto_conversion_key = key_index(from_key);
+
+    return *this;
 }
 
 
-void Record::derive_from(AbstractRecord parent) {
+Record &Record::derive_from(AbstractRecord &parent) {
 
     empty_check();
     if (data_->keys.size() != 0)
-            THROW( ExcDeriveNonEmpty() << EI_RecordName(parent.type_name()) << EI_Record(*this) );
+            THROW( ExcDeriveNonEmpty() << EI_RecordName(data_->parent_->type_name()) << EI_Record(*this) );
 
-    parent.add_descendant(*this);
-    // copy keys form parent, we have to copy TYPE also since there should be place in storage for it
-    // however we change its Default to optional()
-    for(Record::KeyIter it=parent.begin(); it != parent.end(); ++it) {
-        Key tmp_key=*it;    // make temporary copy of the key
-        KeyHash key_h = key_hash(tmp_key.key_);
+    // Reserve the first key for the TYPE selection.
+    // The reference to the child list will be updated in finish().
+    data_->declare_key_reference("TYPE", 0, Default::obligatory(),
+                 "Sub-record selection.");
 
-        data_->key_to_index.insert( std::make_pair(key_h, data_->keys.size()) );
-        tmp_key.key_index=data_->keys.size();
-        tmp_key.derived = true;
-        if (tmp_key.key_=="TYPE") {
-            tmp_key.default_=Default::optional();
-        }
-        data_->keys.push_back(tmp_key);
-    }
+	data_->parent_ = &parent;
+	data_->descendant_data_ = data_;
+
+	return *this;
 }
 
 
-
-void Record::finish() {
-    empty_check();
-    data_->finished = true;
-
-    if (data_->auto_conversion_key != -1 ) {
-        // check that all other keys have default values
-        for(KeyIter it=begin(); it != end(); ++it) {
-            if (! it->default_.has_value_at_declaration() && it->key_index != data_->auto_conversion_key)
-                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other key: '%s' has no default value.\n",
-                        auto_conversion_key_iter()->key_.c_str(), it->key_.c_str());
-        }
-    }
-}
 
 
 
@@ -114,6 +102,12 @@ bool Record::is_finished() const {
     return data_->finished;
 }
 
+
+void Record::finish()
+{
+	empty_check();
+	data_->finish();
+}
 
 
 std::ostream& Record::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const
@@ -165,8 +159,7 @@ bool Record::operator==(const TypeBase &other) const
 
 Record::KeyIter Record::auto_conversion_key_iter() const {
     empty_check();
-    if (data_->auto_conversion_key >= 0) return begin() + data_->auto_conversion_key;
-    else return end();
+    return data_->auto_conversion_key_iter();
 }
 
 
@@ -177,10 +170,105 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 Record::RecordData::RecordData(const string & type_name_in, const string & description)
 :description_(description),
  type_name_(type_name_in),
+ parent_(0),
  made_extensive_doc(false),
  finished(false),
  auto_conversion_key(-1)    // auto conversion turned off
-{}
+{
+	LazyTypes::instance().addType(this);
+}
+
+
+Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
+	if (auto_conversion_key >= 0) return keys.begin() + auto_conversion_key;
+  	else return keys.end();
+}
+
+
+
+void Record::RecordData::finish() {
+
+    if (finished) return;
+
+    // Finish derive_from():
+    if (parent_ != 0)
+    {
+    	parent_->finish();
+
+    	Record tmp_rec(descendant_data_);
+    	parent_->add_descendant(tmp_rec);
+		// copy keys form parent, we have to copy TYPE also since there should be place in storage for it
+		// however we change its Default to optional()
+		for(KeyIter it=parent_->begin(); it != parent_->end(); ++it) {
+			Key tmp_key=*it;    // make temporary copy of the key
+			KeyHash key_h = key_hash(tmp_key.key_);
+
+			tmp_key.derived = true;
+
+			// the TYPE key is placed to the beginning of the vector keys,
+			// while the other keys are appended to the end.
+			if (tmp_key.key_=="TYPE") {
+				tmp_key.default_=Default::optional();
+				key_to_index.insert( std::make_pair(key_h, 0) );
+				tmp_key.key_index=0;
+				keys[0] = tmp_key;
+			} else {
+				key_to_index.insert( std::make_pair(key_h, keys.size()) );
+				tmp_key.key_index=keys.size();
+				keys.push_back(tmp_key);
+			}
+		}
+
+		parent_ = 0;
+    }
+
+
+
+    // Finish declare_key():
+    for (vector<Key>::iterator it=keys.begin(); it!=keys.end(); it++)
+    {
+		// make our own copy of type object allocated at heap (could be expensive, but we don't care)
+		if (it->p_type != 0) {
+			if (dynamic_cast<const AbstractRecord *>(it->p_type) != 0) {
+				it->type_ = boost::make_shared<const AbstractRecord>(*dynamic_cast<const AbstractRecord *>(it->p_type));
+				it->p_type = 0;
+			} else if (dynamic_cast<const Record *>(it->p_type) != 0) {
+				it->type_ = boost::make_shared<const Record>(*dynamic_cast<const Record *>(it->p_type));
+				it->p_type = 0;
+			} else if (dynamic_cast<const Selection *>(it->p_type) != 0) {
+				it->type_ = boost::make_shared<const Selection>(*dynamic_cast<const Selection *>(it->p_type));
+				it->p_type = 0;
+			}
+		} else if (dynamic_cast<const Array *>(it->type_.get()) != 0) {
+			// Arrays may be of type Record, AbstractRecord or Selection,
+			// in which case they must be finished.
+			((Array *)dynamic_cast<const Array *>(it->type_.get()))->finish();
+		}
+
+		// check validity of possibly given default value
+		if ( it->default_.has_value_at_declaration() ) {
+
+			try {
+				it->type_->valid_default( it->default_.value() );
+			} catch (ExcWrongDefault & e) {
+				e << EI_KeyName(it->key_);
+				throw;
+			}
+		}
+    }
+
+    // Check default values
+    if (auto_conversion_key != -1 ) {
+        // check that all other keys have default values
+        for(KeyIter it=keys.begin(); it != keys.end(); ++it) {
+            if (! it->default_.has_value_at_declaration() && it->key_index != auto_conversion_key)
+                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other key: '%s' has no default value.\n",
+                        auto_conversion_key_iter()->key_.c_str(), it->key_.c_str());
+        }
+    }
+
+    finished = true;
+}
 
 
 
@@ -263,11 +351,32 @@ void Record::RecordData::declare_key(const string &key,
     key_to_index_const_iter it = key_to_index.find(key_h);
     if ( it == key_to_index.end() ) {
        key_to_index.insert( std::make_pair(key_h, keys.size()) );
-       Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false};
+       Key tmp_key = { (unsigned int)keys.size(), key, description, type, 0, default_value, false};
        keys.push_back(tmp_key);
     } else {
        if (keys[it->second].derived) {
-           Key tmp_key = { it->second, key, description, type, default_value, false};
+    	   Key tmp_key = { it->second, key, description, type, 0, default_value, false};
+           keys[ it->second ] = tmp_key;
+       } else {
+           xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
+       }
+    }
+}
+
+
+void Record::RecordData::declare_key_reference(const string &key,
+                         const TypeBase *type,
+                         const Default &default_value, const string &description)
+{
+    KeyHash key_h = key_hash(key);
+    key_to_index_const_iter it = key_to_index.find(key_h);
+    if ( it == key_to_index.end() ) {
+       key_to_index.insert( std::make_pair(key_h, keys.size()) );
+       Key tmp_key = { (unsigned int)keys.size(), key, description, boost::shared_ptr<const TypeBase>(), type, default_value, false };
+       keys.push_back(tmp_key);
+    } else {
+       if (keys[it->second].derived) {
+           Key tmp_key = { it->second, key, description, boost::shared_ptr<const TypeBase>(), type, default_value, false };
            keys[ it->second ] = tmp_key;
        } else {
            xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
@@ -287,8 +396,8 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
   child_data_( boost::make_shared<ChildData>( type_name_in + "_TYPE_selection" ) )
 {
 
-    // declare very first item of any descendent
-    data_->declare_key("TYPE", child_data_->selection_of_childs, Default::obligatory(),
+    // declare very first item of any descendant
+    data_->declare_key_reference("TYPE", child_data_->selection_of_childs.get(), Default::obligatory(),
                  "Sub-record selection.");
 
 }

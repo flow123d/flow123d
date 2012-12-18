@@ -16,25 +16,14 @@
 
 #include "input/accessors.hh"
 
-Input::Type::AbstractRecord & Reaction::get_input_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("Reactions", "Equation for reading information about simple chemical reactions.");
 
-	if (!rec.is_finished()) {
+using namespace Input::Type;
+
+AbstractRecord Reaction::input_type
+	= AbstractRecord("Reactions", "Equation for reading information about simple chemical reactions.");
 //		rec.declare_key("substances", Array(String()), Default::obligatory(),
 //								"Names of transported chemical species.");
 
-		rec.finish();
-
-		Pade_approximant::get_input_type();
-		Linear_reaction::get_input_type();
-		General_reaction::get_input_type();
-
-		rec.no_more_descendants();
-	}
-	return rec;
-}
 
 using namespace std;
 

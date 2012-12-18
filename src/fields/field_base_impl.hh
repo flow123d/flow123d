@@ -27,6 +27,13 @@ using namespace std;
 #include "input/input_type.hh"
 
 
+namespace it = Input::Type;
+
+template <int spacedim, class Value>
+it::AbstractRecord FieldBase<spacedim, Value>::input_type
+    = it::AbstractRecord("Field", "Abstract record for all time-space functions.");
+
+
 template <int spacedim, class Value>
 FieldBase<spacedim, Value>::FieldBase(const double init_time, unsigned int n_comp)
 : time_(init_time), value_(r_value_)
@@ -43,22 +50,6 @@ string FieldBase<spacedim, Value>::template_name() {
 }
 
 
-
-template <int spacedim, class Value>
-Input::Type::AbstractRecord &FieldBase<spacedim, Value>::get_input_type() {
-    using namespace Input::Type;
-    static AbstractRecord rec("Field", "Abstract record for all time-space functions.");
-
-    if (! rec.is_finished()) {
-        rec.finish();
-
-        FieldConstant<spacedim,Value>::get_input_type();
-        FieldPython<spacedim, Value>::get_input_type();
-        FieldInterpolatedP0<spacedim, Value>::get_input_type();
-        rec.no_more_descendants();
-    }
-    return rec;
-}
 
 
 

@@ -39,6 +39,27 @@ const double TimeGovernor::comparison_precision = 0.0001;
 const double TimeGovernor::time_step_lower_bound = numeric_limits<double>::epsilon();
 const double TimeGovernor::inf_time =  numeric_limits<double>::infinity();
 
+
+
+using namespace Input::Type;
+
+Record TimeGovernor::input_type = Record("TimeGovernor",
+            "Setting of the simulation time. (can be specific to one eqaution)")
+    .declare_key("start_time", Double(), Default("0.0"),
+                "Start time of the simulation.")
+    .declare_key("end_time", Double(), Default::obligatory(),
+                "End time of the simulation.")
+    .declare_key("init_dt", Double(0.0), Default::optional(),
+                                    "Initial guess for the time step. The time step is fixed if "
+                                    "hard time step limits are not set.")
+    .declare_key("min_dt", Double(0.0), Default::read_time("Machine precision or 'init_dt' if specified"),
+                                    "Hard lower limit for the time step.")
+    .declare_key("max_dt", Double(0.0), Default::read_time("Whole time of the simulation or 'init_dt' if specified"),
+                                    "Hard upper limit for the time step.");
+
+
+
+
 /*
  * TODO:
  * TimeGovernor should be constructed from JSON object.
@@ -118,28 +139,6 @@ TimeGovernor::TimeGovernor(double init_time)
 
 {}
 
-
-Input::Type::Record &TimeGovernor::get_input_type() {
-    using namespace Input::Type;
-    static Record rec("TimeGovernor",
-            "Setting of the simulation time. (can be specific to one eqaution)");
-
-    if (! rec.is_finished() ) {
-        rec.declare_key("start_time", Double(), Default("0.0"),
-                "Start time of the simulation.");
-        rec.declare_key("end_time", Double(), Default::obligatory(),
-                "End time of the simulation.");
-        rec.declare_key("init_dt", Double(0.0), Default::optional(),
-                                    "Initial guess for the time step. The time step is fixed if "
-                                    "hard time step limits are not set.");
-        rec.declare_key("min_dt", Double(0.0), Default::read_time("Machine precision or 'init_dt' if specified"),
-                                    "Hard lower limit for the time step.");
-        rec.declare_key("max_dt", Double(0.0), Default::read_time("Whole time of the simulation or 'init_dt' if specified"),
-                                    "Hard upper limit for the time step.");
-        rec.finish();
-    }
-    return rec;
-}
 
 
 

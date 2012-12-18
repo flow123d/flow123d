@@ -194,6 +194,7 @@ public:
         string key_;                                ///< Key identifier.
         string description_;                        ///< Key description in context of particular Record type.
         boost::shared_ptr<const TypeBase> type_;    ///< Type of the key.
+        const TypeBase *p_type;						///< Pointer to the key type (needed for lazy evaluation).
         Default default_;                      ///< Default, type and possibly value itself.
         bool derived;                               ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
     };
@@ -209,7 +210,7 @@ public:
     Record() {}
 
     /**
-     * Basic constructor. You has to provide \p type_name of the new declared Record type and
+     * Basic constructor. You have to provide \p type_name of the new declared Record type and
      * its \p description.
      */
     Record(const string & type_name_in, const string & description);
@@ -218,7 +219,7 @@ public:
      * Method to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
      * in the @p parent. You are free to overwrite copied keys, but you can not delete them.
      */
-    void derive_from(AbstractRecord parent);
+    Record &derive_from(AbstractRecord &parent);
 
     /**
      * Allows shorter input of the Record providing only value of the \p from_key given as the parameter.
@@ -228,7 +229,7 @@ public:
      * If the input reader come across the Record in declaration tree, but there is not 'record-like' input, it
      * save default values into storage tree and tries to match the input with the type of the \p from_key.
      */
-    void allow_auto_conversion(const string &from_key);
+    Record &allow_auto_conversion(const string &from_key);
 
     /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
@@ -236,7 +237,7 @@ public:
      *
      */
     template <class KeyType>
-    void declare_key(const string &key,
+    Record &declare_key(const string &key,
                             const KeyType &type,
                             const Default &default_value, const string &description);
 
@@ -244,12 +245,12 @@ public:
      * Same as previous method but without given default value (same as Default() - optional key )
      */
     template <class KeyType>
-    void declare_key(const string &key,
+    Record &declare_key(const string &key,
                             const KeyType &type,
                             const string &description);
 
     /**
-     * Finish declaration of the Record type. Now further declarations can be added.
+     * Finish declaration of the Record type. No further declarations can be added.
      */
     void finish();
 
@@ -349,13 +350,32 @@ protected:
     /**
      * Internal data class.
      */
-    class RecordData {
+    class RecordData : public LazyType {
     public:
         RecordData(const string & type_name_in, const string & description);
 
+        /**
+         * Declares a key and stores its type. The type parameter has to be finished at the call of declare_key().
+         */
         void declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
                          const Default &default_value, const string &description);
+
+        /**
+         * Declares a key and saves the reference of its type, which will be finished later.
+         * This method is typically called for keys of type Record, AbstractRecord or Selection,
+         * which need not be initialized at the moment.
+         */
+        void declare_key_reference(const string &key,
+                         const TypeBase *type,
+                         const Default &default_value, const string &description);
+
+        /**
+         * Finish declaration of the RecordData. No further declarations can be added.
+         */
+        virtual void finish();
+
+        Record::KeyIter auto_conversion_key_iter() const;
 
         std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
 
@@ -374,6 +394,20 @@ protected:
         const string type_name_;
 
         /**
+         * Temporary reference to the parent AbstractRecord object.
+         * After the parent is initialized, the current object is
+         * finalized by finish().
+         */
+        AbstractRecord *parent_;
+
+        /**
+         * Auxiliary variable which saves the shared_ptr to the actual RecordData.
+         * It is used in the finish() method of RecordData for derived types, where
+         * we need to link the parent with the descendant.
+         */
+        boost::shared_ptr<RecordData> descendant_data_;
+
+        /**
          * This flag is set to true when documentation of the Record was called with extensive==true
          * and full description of the Record was produced.
          *
@@ -390,6 +424,14 @@ protected:
 
     /// Data handle.
     boost::shared_ptr<RecordData> data_;
+
+
+public:
+
+    /**
+     * This constructor creates a record containing the given shared_ptr to data.
+     */
+    Record(boost::shared_ptr<RecordData> data_ptr);
 
 };
 
@@ -472,6 +514,19 @@ public:
      */
     void no_more_descendants();
 
+    template <class KeyType>
+    AbstractRecord &declare_key(const string &key,
+                            const KeyType &type,
+                            const Default &default_value, const string &description);
+
+    /**
+     * Same as previous method but without given default value (same as Default() - optional key )
+     */
+    template <class KeyType>
+    AbstractRecord &declare_key(const string &key,
+                            const KeyType &type,
+                            const string &description);
+
 
     /**
      * @brief Implements @p Type:TypeBase::documentation.
@@ -505,7 +560,7 @@ public:
      * prevents deriving an AbstractRecord form other AbstractRecord.
      * In such a case the linker should report an undefined reference.
      */
-    void derive_from(AbstractRecord parent);
+    Record &derive_from(AbstractRecord &parent);
 
 
 protected:
@@ -528,7 +583,7 @@ protected:
  */
 
 template <class KeyType>
-void Record::declare_key(const string &key,
+Record &Record::declare_key(const string &key,
                         const KeyType &type,
                         const Default &default_value, const string &description)
 {
@@ -545,37 +600,48 @@ void Record::declare_key(const string &key,
     if (! is_valid_identifier(key))
         xprintf(PrgErr, "Invalid key identifier %s in declaration of Record type: %s\n", key.c_str(), type_name().c_str());
 
-    // We do not allow declaration with unfinished type. The only exception is internal "TYPE"
-    // key defined by AbstractRecord.
-    if ( ! type.is_finished() )
-        xprintf(PrgErr, "Unfinished type of declaring key: %s in Record type: %s\n", key.c_str(), type_name().c_str() );
-
-    // check validity of possibly given default value
-    if ( default_value.has_value_at_declaration() ) {
-
-        try {
-            type.valid_default( default_value.value() );
-        } catch (ExcWrongDefault & e) {
-            e << EI_KeyName(key);
-            throw;
-        }
+    // Keys of the type Record, AbstractRecord and Selection need not be initialized yet,
+    // so we save the reference to the type variable and finish the declaration of the
+    // key later after all types are initialized.
+    if (boost::is_base_of<Record, KeyType>::value ||
+    	boost::is_base_of<Selection, KeyType>::value) {
+    	data_->declare_key_reference(key, &type, default_value, description);
+    } else {
+    	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
+    	data_->declare_key(key, type_copy, default_value, description);
     }
 
-    // make our own copy of type object allocated at heap (could be expensive, but we don't care)
-    boost::shared_ptr<const KeyType> type_copy = boost::make_shared<KeyType>(type);
-
-    data_->declare_key(key, type_copy, default_value, description);
+    return *this;
 }
 
 
 
 template <class KeyType>
-void Record::declare_key(const string &key,
+Record &Record::declare_key(const string &key,
                         const KeyType &type,
                         const string &description)
 {
-    declare_key(key,type, Default::optional(), description);
+	return declare_key(key,type, Default::optional(), description);
 }
+
+
+template <class KeyType>
+AbstractRecord &AbstractRecord::declare_key(const string &key,
+                        const KeyType &type,
+                        const Default &default_value, const string &description)
+{
+	Record::declare_key(key, type, default_value, description);
+    return *this;
+}
+
+
+template <class KeyType>
+AbstractRecord &AbstractRecord::declare_key(const string &key,
+                        const KeyType &type,
+                        const string &description)
+{
+    return declare_key(key,type, Default::optional(), description);
+ }
 
 
 

@@ -510,9 +510,9 @@ public:
     /**
      * \brief The specification of output stream
      *
-     * \return This method returns record for output stream
+     * \return This variable defines record for output stream
      */
-    static Input::Type::Record & get_input_type();
+    static Input::Type::Record input_type;
 
 
     /**
@@ -922,7 +922,7 @@ public:
 	virtual int write_head(void) { return 0; }
 	virtual int write_tail(void) { return 0; }
 
-	static Input::Type::AbstractRecord &get_input_type();
+	static Input::Type::AbstractRecord input_type;
 };
 
 inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)

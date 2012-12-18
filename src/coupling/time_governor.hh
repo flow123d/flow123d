@@ -117,7 +117,7 @@ public:
     */
    TimeGovernor(TimeMarks &marks);
 
-   static Input::Type::Record &get_input_type();
+   static Input::Type::Record input_type;
 
    /**
     * Set permanent constrain for time step.
