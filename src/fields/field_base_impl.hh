@@ -21,9 +21,11 @@ using namespace std;
 #include "fields/field_base.hh"
 #include "fields/field_interpolated_p0.hh"
 #include "fields/field_python.hh"
+#include "fields/field_constant.hh"
+#include "fields/field_values.hh"
+
 #include "input/input_type.hh"
 
-#include "fields/field_values.hh"
 
 template <int spacedim, class Value>
 FieldBase<spacedim, Value>::FieldBase(const double init_time, unsigned int n_comp)
@@ -50,6 +52,7 @@ Input::Type::AbstractRecord &FieldBase<spacedim, Value>::get_input_type() {
     if (! rec.is_finished()) {
         rec.finish();
 
+        FieldConstant<spacedim,Value>::get_input_type();
         FieldPython<spacedim, Value>::get_input_type();
         FieldInterpolatedP0<spacedim, Value>::get_input_type();
         rec.no_more_descendants();
@@ -71,6 +74,8 @@ FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(
     } else if (rec.type() == FieldPython<spacedim,Value>::get_input_type()) {
         func= new FieldPython<spacedim, Value>(init_time, n_comp);
 #endif
+    } else if (rec.type() == FieldConstant<spacedim, Value>::get_input_type()) {
+        func=new FieldConstant<spacedim,Value>(init_time, n_comp);
     } else {
         xprintf(PrgErr,"TYPE of Field is out of set of descendants. SHOULD NOT HAPPEN.\n");
     }

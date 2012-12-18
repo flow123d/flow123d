@@ -216,9 +216,6 @@ void TransportOperatorSplitting::output_data(){
     }
 }
 
-void TransportOperatorSplitting::read_simulation_step(double sim_step) {
-	time_->set_constrain(sim_step);
-}
 
 
 void TransportOperatorSplitting::update_solution() {

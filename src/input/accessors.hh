@@ -64,7 +64,20 @@ DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_Accesso
 class IteratorBase;
 template <class T> class Iterator;
 
-
+/**
+ * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
+ *
+ * TODO:
+ * - store root TypeBase + array of iterator indices into Storage + cast from Abstract to Record
+ * - at every level needs to copy internal vector, can be prohibitive only for
+ *   large array of records ( one may need FastRecord accessor )
+ * - possibly one can explicitly drop passing the address in constructor of an accessor/iterator
+ *
+ */
+class InputAddress {
+public:
+private:
+};
 
 /**
  * @brief Accessor to the data with type \p Type::Record.

@@ -73,7 +73,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
-    output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time();
+    output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
     marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
             darcy_flow->time().end_time(), output_mark_type );
     DBGMSG("end create output\n");

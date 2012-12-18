@@ -93,7 +93,7 @@ TEST(FieldPython, vector_2D) {
 }
 
 
-TEST(FunctionPython, double_3D) {
+TEST(FieldPython, double_3D) {
     Point<3> point_1, point_2;
     point_1(0)=1; point_1(1)=0; point_1(2)=0;
     point_2(0)=1; point_2(1)=2; point_2(2)=3;
@@ -109,7 +109,7 @@ TEST(FunctionPython, double_3D) {
 }
 
 
-TEST(FunctionPython, read_from_input) {
+TEST(FieldPython, read_from_input) {
     typedef FieldBase<2, FieldValue<2>::VectorFixed > VectorField;
     typedef FieldBase<3, FieldValue<3>::Scalar > ScalarField;
     double pi = 4.0 * atan(1);

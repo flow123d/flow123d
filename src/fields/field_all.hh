@@ -27,11 +27,13 @@
 #include <fields/field_base.hh>
 #include <fields/field_interpolated_p0.hh>
 #include <fields/field_python.hh>
+#include <fields/field_constant.hh>
 //#include <fields/field_elementwise.hh>
 
 #include <fields/field_base_impl.hh>
 #include <fields/field_interpolated_p0_impl.hh>
 #include <fields/field_python_impl.hh>
+#include <fields/field_constant_impl.hh>
 //#include <fields/field_elementwise_impl.hh>
 
 #endif /* FIELD_ALL_HH_ */

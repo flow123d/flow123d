@@ -36,6 +36,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     define_test(field_python)
     #define_test(field_interpolated_p0)
     define_test(field_value)
+    define_test(field_const)
     
     #define_test(generic_node)
     

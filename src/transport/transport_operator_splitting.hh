@@ -103,7 +103,6 @@ public:
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
 	virtual void update_solution();
-	void read_simulation_step(double sim_step);
 	//virtual void compute_one_step();
 	//virtual void compute_until();
 	void compute_internal_step();
