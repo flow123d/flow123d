@@ -329,6 +329,15 @@ public:
      */
     inline unsigned int size() const;
 
+    /**
+     * Returns value of made_extensive_doc in the SelectionData
+     */
+    inline bool made_extensive_doc() const;
+
+    /**
+     * Sets value of made_extensive_doc in the SelectionData
+     */
+    inline void set_made_extensive_doc(bool val) const;
 
 protected:
 
@@ -502,10 +511,25 @@ protected:
 
 public:
     /**
+     * Public typedef of constant iterator into array of keys.
+     */
+    typedef std::vector< Record >::const_iterator ChildDataIter;
+
+    /**
      * Basic constructor. You has to provide \p type_name of the new declared Record type and
      * its \p description.
      */
     AbstractRecord(const string & type_name_in, const string & description);
+
+    /**
+     * Container-like access to the data of the Record. Returns iterator to the first data.
+     */
+    inline ChildDataIter begin_child_data() const;
+
+    /**
+     * Container-like access to the data of the Record. Returns iterator to the last data.
+     */
+    inline ChildDataIter end_child_data() const;
 
     /**
      * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
@@ -561,6 +585,12 @@ public:
      * In such a case the linker should report an undefined reference.
      */
     Record &derive_from(AbstractRecord &parent);
+
+
+    /**
+     * Returns number of keys in the child_data_.
+     */
+    inline unsigned int child_size() const;
 
 
 protected:
@@ -709,6 +739,30 @@ inline unsigned int Record::size() const {
     finished_check();
     ASSERT( data_->keys.size() == data_->key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", data_->key_to_index.size(), data_->keys.size());
     return data_->keys.size();
+}
+
+
+inline bool Record::made_extensive_doc() const {
+	return data_->made_extensive_doc;
+}
+
+
+inline void Record::set_made_extensive_doc(bool val) const {
+	data_->made_extensive_doc = val;
+}
+
+
+inline unsigned int AbstractRecord::child_size() const {
+	return child_data_->list_of_childs.size();
+}
+
+
+inline AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
+	child_data_->list_of_childs.begin();
+}
+
+inline AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
+	child_data_->list_of_childs.end();
 }
 
 

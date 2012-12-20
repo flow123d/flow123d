@@ -48,37 +48,37 @@ void OutputBase::get_double_bounds(Double dbl, double &lower , double &upper ) {
 }
 
 
-void OutputBase::print(ostream& stream, const TypeBase *type) {
+void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth) {
 	if (typeid(*type) == typeid(Type::Record)) {
-		print(stream, static_cast<const Type::Record *>(type) );
+		print(stream, static_cast<const Type::Record *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
-		print(stream, static_cast<const Type::Array *>(type) );
+		print(stream, static_cast<const Type::Array *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::AbstractRecord)) {
-		print(stream, static_cast<const Type::AbstractRecord *>(type) );
+		print(stream, static_cast<const Type::AbstractRecord *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
-		print(stream, static_cast<const Type::Selection *>(type) );
+		print(stream, static_cast<const Type::Selection *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Integer)) {
-		print(stream, static_cast<const Type::Integer *>(type) );
+		print(stream, static_cast<const Type::Integer *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Double)) {
-		print(stream, static_cast<const Type::Double *>(type) );
+		print(stream, static_cast<const Type::Double *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Bool)) {
-		print(stream, static_cast<const Type::Bool *>(type) );
+		print(stream, static_cast<const Type::Bool *>(type), depth );
 	} else {
 		const Type::FileName * file_name_type = dynamic_cast<const Type::FileName *>(type);
         if (file_name_type != NULL ) {
-        	print(stream, file_name_type );
+        	print(stream, file_name_type, depth );
         	return;
         }
 
 		const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) {
-        	print(stream, string_type );
+        	print(stream, string_type, depth );
         	return;
         }
 
@@ -105,7 +105,7 @@ void OutputBase::write_description(std::ostream& stream, const string& str) {
  * implementation of OutputText
  */
 
-void OutputText::print(ostream& stream, const Record *type) {
+void OutputText::print(ostream& stream, const Record *type, unsigned int depth) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
 	}
@@ -134,15 +134,17 @@ void OutputText::print(ostream& stream, const Record *type) {
 
 	    // Full documentation of embedded record types.
 	    doc_type_ = full_record;
-	    for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-	    	print(stream, it->type_.get());
+	    if (depth_ == 0 || depth_ > depth) {
+		    for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+		    	print(stream, it->type_.get(), depth+1);
+		    }
 	    }
 		break;
 	}
 }
 
 
-void OutputText::print(ostream& stream, const Array *type) {
+void OutputText::print(ostream& stream, const Array *type, unsigned int depth) {
 
 	switch (doc_type_) {
 	case key_record:
@@ -154,24 +156,53 @@ void OutputText::print(ostream& stream, const Array *type) {
 		print(stream, type->type_of_values_.get());
 		break;
 	case full_record:
-		print(stream, type->type_of_values_.get());
+		print(stream, type->type_of_values_.get(), depth);
 		break;
 	}
 }
 
 
-void OutputText::print(ostream& stream, const AbstractRecord *type) {
+void OutputText::print(ostream& stream, const AbstractRecord *type, unsigned int depth) {
 	// Print documentation of abstract record
-	/*switch (doc_type_) {
+	switch (doc_type_) {
 	case key_record:
+		stream << "AbstractRecord '" << type->type_name() << "' with "<< type->child_size() << " descendants.";
 		break;
 	case full_record:
+        if (! type->made_extensive_doc()) {
+
+            // Extensive description
+            type->set_made_extensive_doc(true);
+
+            // header
+            stream << endl;
+            stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
+            stream << endl;
+            stream << "" << "# " << type->description() << endl;
+            stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+            // descendants
+            doc_type_ = key_record;
+            for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+                stream << setw(padding_size) << "";
+            	print(stream, &*it);
+                stream << endl;
+            }
+            stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
+
+            // Full documentation of embedded record types.
+            doc_type_ = full_record;
+            if (depth_ == 0 || depth_ > depth) {
+                for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+                    print(stream, &*it, depth+1);
+                }
+            }
+        }
 		break;
-	}*/
+	}
 }
 
 
-void OutputText::print(ostream& stream, const Selection *type) {
+void OutputText::print(ostream& stream, const Selection *type, unsigned int depth) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
 	}
@@ -200,7 +231,7 @@ void OutputText::print(ostream& stream, const Selection *type) {
 }
 
 
-void OutputText::print(ostream& stream, const Integer *type) {
+void OutputText::print(ostream& stream, const Integer *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		int lower_bound, upper_bound;
 		get_integer_bounds(*type, lower_bound, upper_bound);
@@ -209,7 +240,7 @@ void OutputText::print(ostream& stream, const Integer *type) {
 }
 
 
-void OutputText::print(ostream& stream, const Double *type) {
+void OutputText::print(ostream& stream, const Double *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		double lower_bound, upper_bound;
 		get_double_bounds(*type, lower_bound, upper_bound);
@@ -218,21 +249,21 @@ void OutputText::print(ostream& stream, const Double *type) {
 }
 
 
-void OutputText::print(ostream& stream, const Bool *type) {
+void OutputText::print(ostream& stream, const Bool *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		stream << "Bool";
 	}
 }
 
 
-void OutputText::print(ostream& stream, const String *type) {
+void OutputText::print(ostream& stream, const String *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		stream << "String (generic)";
 	}
 }
 
 
-void OutputText::print(ostream& stream, const FileName *type) {
+void OutputText::print(ostream& stream, const FileName *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		stream << "FileName of ";
 

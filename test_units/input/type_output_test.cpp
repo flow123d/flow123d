@@ -140,3 +140,16 @@ Record array_record("RecordOfArrays",
 	output_record.documentation(cout, TypeBase::full_after_record);
 	output_text3.print(cout);*/
 }
+
+TEST(OutputTypeAbstractRecord, abstract_record_test) {
+	using namespace Input::Type;
+
+    AbstractRecord a_rec("EqBase","Base of equation records.");
+    a_rec.declare_key("mesh", String(), Default::obligatory(), "Comp. mesh.");
+    a_rec.declare_key("a_val", String(), Default::obligatory(), "");
+    a_rec.finish();
+
+    OutputText output_text( &a_rec, 0);
+    output_text.print(cout);
+
+}
