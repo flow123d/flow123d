@@ -32,15 +32,16 @@ class MaterialDatabase;
  */
 class TransportBase : public EquationBase{
 public:
-    TransportBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
-    : EquationBase(marks, mesh, mat_base, in_rec ), mh_dh(NULL)
+  TransportBase(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
+    : EquationBase(mesh, mat_base, in_rec ), 
+      mh_dh(NULL)
     {}
 
     static Input::Type::AbstractRecord input_type;
     static Input::Type::Record input_type_output_record;
 
     /**
-     * This method takes sequantial PETSc vector of side velocities and update
+     * This method takes sequential PETSc vector of side velocities and update
      * transport matrix. The ordering is same as ordering of sides in the mesh.
      *
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
@@ -60,8 +61,8 @@ public:
  */
 class TransportNothing : public TransportBase {
 public:
-    TransportNothing(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : TransportBase(marks, mesh_in, mat_base_in, Input::Record() )
+   TransportNothing(Mesh &mesh_in, MaterialDatabase &mat_base_in)
+    : TransportBase(mesh_in, mat_base_in, Input::Record() )
     {
         // make module solved for ever
         time_=new TimeGovernor();
@@ -88,7 +89,7 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-	TransportOperatorSplitting(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+    TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
     virtual ~TransportOperatorSplitting();
 
     /**

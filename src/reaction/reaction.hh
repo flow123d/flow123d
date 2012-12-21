@@ -20,11 +20,11 @@ enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_
 class Reaction: public EquationBase
 {
 	public:
-		/*
+		/**
 		 * Static variable for new input data types input
 		 */
 		static Input::Type::AbstractRecord input_type;
-		/*
+		/**
 		 * Static variable for new input data types input
 		*/
 		static Input::Type::Record input_type_one_decay;
@@ -32,7 +32,8 @@ class Reaction: public EquationBase
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const std::vector<string> &names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		//Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const std::vector<string> &names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
+		Reaction(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const std::vector<string> &names);
 		/**
 		*	Destructor.
 		*/

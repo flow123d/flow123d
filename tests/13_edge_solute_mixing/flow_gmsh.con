@@ -51,8 +51,7 @@
     
     save_step = 0.5, 
     time = {
-      end_time = 100.0, 
-      time_step = 0.5
+      end_time = 100.0
     }
 
   }, 

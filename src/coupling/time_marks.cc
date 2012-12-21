@@ -40,13 +40,14 @@
 
 ostream& operator<<(ostream& stream, const TimeMark &mark)
 {
-    return ( stream << mark.time()<<": 0o" << oct << mark.mark_type() << dec );
+    //return ( stream << mark.time()<<": 0o" << oct << mark.mark_type() << dec ); //octal output
+    return ( stream << mark.time()<<": 0x" << hex << mark.mark_type() << dec );
 }
 
-//const TimeMark::Type TimeMark::strict =  0x1;
 const TimeMark::Type TimeMark::every_type =  ~0x0;
 
-
+//This mask is replaced by type_fixed_time_ defined in constructor of TimeMarks //OBSOLETE
+//const TimeMark::Type TimeMark::strict =  0x1;
 
 
 // ------------------------------------------------------
@@ -85,6 +86,7 @@ void TimeMarks::add(const TimeMark &mark) {
 
     // check equivalence with found mark
     if (fabs(first_ge->time() - mark.time()) < 2*numeric_limits<double>::epsilon()) {
+	//if "equal" does bitwise OR with the mark type at the first_ge iterator position
         first_ge->add_to_type(mark.mark_type());
         return;
     }
@@ -117,7 +119,6 @@ bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) c
 {
     if (tg.end_time() == TimeGovernor::inf_time) return (tg.t() == TimeGovernor::inf_time);
     const TimeMark &tm = *last(tg, mask);
-    //cout << "last: " << tm << endl;
     return tg.lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
 }
 
@@ -133,8 +134,10 @@ TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type
 TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
     vector<TimeMark>::const_iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t()+0.01*tg.dt(),mask));
-    while ( ! tg.ge(first_ge->time()) || ! first_ge->match_mask(mask) )
+    while ( ! tg.ge(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         --first_ge;
+    }
+    // cout << "TimeMark::last(): " << *first_ge << endl;
     return TimeMarksIterator(marks_, first_ge, mask);
 }
 

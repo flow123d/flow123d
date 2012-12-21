@@ -42,7 +42,6 @@ struct BTC;
 class OutputTime;
 class Mesh;
 class Distribution;
-class TimeMarks;
 class MaterialDatabase;
 class TransportSources;
 class ConvectionTransport;
@@ -74,8 +73,7 @@ public:
     /**
      * Constructor.
      */
-	ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
-
+        ConvectionTransport(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
 	/**
 	 * TODO: destructor
 	 */
@@ -194,8 +192,10 @@ private:
     //double max_step;		              ///< Time step constrain given by CFL condition.
     //unsigned int time_level;              ///< Number of computed time steps.
 
-    //std::vector<double> bc_times;       ///< Times of reading time dependent boundary condition. Initial boundary condition is zero.
-	TimeMark::Type bc_mark_type_;
+    
+    TimeMark::Type bc_mark_type_;       ///< TimeMark Type for reading time dependent boundary condition.
+    //std::vector<double> bc_times;       ///< Times of reading time dependent boundary condition. Initial boundary condition is zero. 
+    //                                    ///< Helps with constructing time marks.
     unsigned int bc_time_level;         ///< Index into bc_times vector.
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
@@ -208,8 +208,8 @@ private:
             // global
 
 //        	std::string		transport_out_fname;// Name of file of trans. output
-        	int              dens_step;            //
-        	double 			update_dens_time;
+            int       dens_step;            //
+            double 			update_dens_time;
 
             double ***out_conc;
             int              n_substances;    // # substances transported by water

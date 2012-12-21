@@ -42,9 +42,11 @@ Record Linear_reaction::input_type
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: Reaction(marks, init_mesh, material_database, in_rec, names),
-	  reaction_matrix(NULL)
+//Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+//    : Reaction(marks, init_mesh, material_database, in_rec, names),
+Linear_reaction::Linear_reaction(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+      : Reaction(init_mesh, material_database, in_rec, names),
+      reaction_matrix(NULL)
 {
 
 	//Input::Array names_array = in_rec.val<Input::Array>("substances");

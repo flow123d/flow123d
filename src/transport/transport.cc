@@ -66,9 +66,13 @@
 #include "flow/darcy_flow_mh.hh"
 #include "input/accessors.hh"
 
+#include "coupling/time_governor.hh"
 
-ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: EquationBase(marks,init_mesh,material_database, in_rec )
+
+//ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
+//: EquationBase(marks,init_mesh,material_database, in_rec )
+ConvectionTransport::ConvectionTransport(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
+: EquationBase(init_mesh, material_database, in_rec)
 {
     F_ENTRY;
 
@@ -82,8 +86,11 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
     */
 
     //double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
-    target_mark_type=this->mark_type();
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, target_mark_type);
+
+    //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
+    target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), target_mark_type);
+    
 
     sorption = in_rec.val<bool>("sorption_enable");
     dual_porosity = in_rec.val<bool>("dual_porosity");
@@ -113,9 +120,9 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
 
 
     // read times of time dependent boundary condition and check the input files
-
+    
     // bc marks do not influent choice of time step (not fixed_time type)
-    bc_mark_type_ = time_marks->type_bc_change() | equation_mark_type_;
+    bc_mark_type_ = time_->marks().type_bc_change() | equation_mark_type_;
     std::vector<double> bc_times;
 
 
@@ -149,7 +156,7 @@ ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, Mat
             }
             xfclose(f);
 
-            time_marks->add(TimeMark(bc_times[i],bc_mark_type_));
+            time_->marks().add(TimeMark(bc_times[i],bc_mark_type_));
         }
     }
 
@@ -612,6 +619,7 @@ void ConvectionTransport::compute_one_step() {
         read_bc_vector();
 
     // proceed to actually computed time
+    time_->view();
     time_->next_time();
     DBGMSG("time: %f, soorp: %d\n", time_->t(), sorption);
 
@@ -660,13 +668,19 @@ void ConvectionTransport::compute_one_step() {
 
 void ConvectionTransport::set_target_time(double target_time)
 {
-//    DBGMSG("CFL dt: %f tt: %f\n",cfl_max_step, target_time);
+    //sets target_mark_type (it is fixed) to be met in next_time()
     time_->marks().add(TimeMark(target_time, target_mark_type));
-    time_->set_constrain(cfl_max_step);
-    DBGMSG("pre fix dt: %f\n",time_->estimate_dt());
-
+    
+    //returns integer, one can check here whether the constraint has been set or not
+    time_->set_upper_constraint(cfl_max_step);
+    
+    xprintf(MsgDbg, "\nCONVECTION: time: %f target_mark_type: %d    cfl: %f\n", 
+            target_time, target_mark_type, cfl_max_step);
+    
+    //fixing convection time governor till next target_mark_type (got from TOS or other)
     time_->fix_dt_until_mark();
-    DBGMSG("post fix dt: %f\n",time_->estimate_dt());
+    
+    //time_->view();    //show convection time governor
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix

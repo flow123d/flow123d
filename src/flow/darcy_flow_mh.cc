@@ -62,6 +62,8 @@
 #include <iostream>
 #include <iterator>
 
+#include "coupling/time_governor.hh"
+
 
 namespace it = Input::Type;
 
@@ -144,8 +146,8 @@ it::Record DarcyFlowLMH_Unsteady::input_type
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
-: DarcyFlowMH(marks, mesh_in, mat_base_in, in_rec)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
+: DarcyFlowMH(mesh_in, mat_base_in, in_rec)
 
 {
     using namespace Input;
@@ -195,7 +197,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(TimeMarks &marks, Mesh &mesh_in, Material
         bc_function=NULL;
     }
     // time governor
-    time_=new TimeGovernor(marks);
+    time_ = new TimeGovernor();
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -275,6 +277,8 @@ void DarcyFlowMH_Steady::update_solution() {
     time_->next_time();
 
     xprintf(Msg, "t: %f (Darcy) dt: %f\n",time_->t(), time_->dt());
+    //time_->view(); //time governor information output
+    
     modify_system(); // hack for unsteady model
 
     switch (n_schur_compls) {
@@ -1524,11 +1528,11 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
-    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
+    : DarcyFlowMH_Steady(mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     // time governor
     //time_=new TimeGovernor(
     //        0.0,
@@ -1611,12 +1615,12 @@ void DarcyFlowMH_Unsteady::modify_system() {
 // ========================
 // unsteady
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, MaterialDatabase &mat_base_in, const  Input::Record in_rec)
-    : DarcyFlowMH_Steady(marks,mesh_in, mat_base_in, in_rec)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, MaterialDatabase &mat_base_in, const  Input::Record in_rec)
+    : DarcyFlowMH_Steady(mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
 
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     // time governor
     //time_=new TimeGovernor(
     //        0.0,
@@ -1626,7 +1630,6 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh_in, Mat
 
     time_->fix_dt_until_mark();
     setup_time_term();
-
 }
 
 

@@ -68,7 +68,7 @@ public:
     /**
      * Common initialization constructor.
      */
-    EquationBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec);
+    EquationBase(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec);
 
     /**
      * Require virtual destructor also for child classes.
@@ -102,10 +102,16 @@ public:
         {time_->fix_dt_until_mark();}
 
     /**
-     * Set external constrain for time governor of the equation.
+     * Set external upper time step constrain for time governor of the equation.
      */
-    virtual void set_time_step_constrain(double dt)
-        {time_->set_constrain(dt);}
+    virtual void set_time_upper_constraint(double dt)
+        {time_->set_upper_constraint(dt);}
+        
+    /**
+     * Set external lower time step constrain for time governor of the equation.
+     */
+    virtual void set_time_lower_constraint(double dt)
+        {time_->set_lower_constraint(dt);}
 
     /**
      * Basic getter method returns constant TimeGovernor reference which provides full read access to the time information.
@@ -163,7 +169,6 @@ protected:
 
     Mesh * const mesh_;
     MaterialDatabase * mat_base;
-    TimeMarks * const time_marks;
     TimeGovernor *time_;
     TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
@@ -175,7 +180,7 @@ protected:
 class EquationNothing : public EquationBase {
 
 public:
-    EquationNothing(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base);
+    EquationNothing(Mesh &mesh, MaterialDatabase &mat_base);
 
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
         vector = NULL;

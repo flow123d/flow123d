@@ -36,6 +36,8 @@
 #include "system/global_defs.h"
 
 /**
+ * @brief Class used for marking specified times at which some events occur.
+ * 
  * This class represents one record in the TimeMarks simple database.
  * Class members can not be modified after the item is created.
  */
@@ -43,24 +45,32 @@ class TimeMark {
 public:
 
     /**
-     *  MarkType is a bitmap where each bit represents one base type such as (strict, Output, Input, ...)
+     *  MarkType is a bitmap where each bit represents one base type such as (Output, Input, BC change, Fixed...)
      *  This allow more complex queries through bitwise operations. Also one TimeMark can be shared by more events.
-     *  In the context of TimeMarks the MarkType can be either strict or vague. If a TimeGovernor is connected to the TimeMarks object
-     *  the  TimeMarks with strict MarkType are used to match exactly their times. Base MarkTypes should be obtained form TimeMarks class
+     *  In the context of TimeMarks the Type can be either fixed or vague. If a TimeGovernor is connected to the TimeMarks object
+     *  the  TimeMarks with fixed Type are used to match exactly their times. Base Types should be created/obtained from TimeMarks class
      *  through the TimeMarks::new_mark_type method.
+     *  There are three Types predefined in TimeMarks constructor:
+     *  - type_fixed_time (hex 0x01)
+     *  - type_output (hex 0x02)
+     *  - type_bc_change (hex 0x04)
+     *  @see TimeMarks
      */
     typedef unsigned long int Type;
 
-    /// Mask that matchs every type of TimeMark.
+    /// Mask that matches every type of TimeMark.
     static const Type every_type;
+    
+    //This mask is replaced by type_fixed_time_ defined in constructor of TimeMarks     //OBSOLETE
+    //static const Type strict;
 
     /**
      * Constructor for a TimeMarks::Mark
-     * @param time - time of the mark
-     * @param type - mark type
+     * @param time time of the mark
+     * @param type type of the mark
      *
-     * <b> In order to create a strict TimeMark (at time=0.1) with base type output_type, use:
-     * TimeMark( 0.1, output_type | TimeMark::strict)
+     * In order to create a fixed TimeMark (at time=0.1) with base TimeMark::Type my_type, use the TimeMarks class:
+     * TimeMark( 0.1, timemarks.type_fixed_time() | my_type)
      */
     TimeMark(double time, Type type) :
         time_(time), mark_type_(type) {}
@@ -86,22 +96,26 @@ public:
     }
 
     /// Add more bits that a mark satisfies.
+    /// @param type type that should be modified
     inline void add_to_type(const TimeMark::Type &type) {
         mark_type_ |= type;
     }
 
     /// Comparison of time marks according to their time.
-    bool operator<(const TimeMark& second) const
-      { return time_ < second.time(); }
+    /// @param another is another Timemark which should be compared.
+    bool operator<(const TimeMark& another) const
+      { return time_ < another.time(); }
 
 
 private:
+    /// The marked time.
     double time_;
+    /// The type of the TimeMark.
     Type mark_type_;
 };
 
 /**
- * Output operator for TimeMark class.
+ * Output to stream operator for TimeMark class.
  */
 ostream& operator<<(ostream& stream, const TimeMark &marks);
 
@@ -113,10 +127,18 @@ ostream& operator<<(ostream& stream, const TimeMark &marks);
 
 
 /**
- * Iterator into the TimeMarks of particular mask. This is always const iterator, i.e. it points to const TimeMark.
+ * @brief Iterator over TimeMark objects in TimeMarks object (database of TimeMark objects).
+ * 
+ * Iterator over the TimeMarks of particular mask. This is always const iterator, i.e. it points to const TimeMark.
+ * While iterating over TimeMarks with different types, all non matching types are skipped.
  */
 class TimeMarksIterator {
 public:
+    /**Constructor. It is used in TimeMarks class which has the vector of TimeMark objects.
+     * @param marks is vector of TimeMark objects.
+     * @param it is iterator over the vector of TimeMark objects.
+     * @param mask is the type of marks over which we iterate. 
+     */
     TimeMarksIterator(const vector<TimeMark> &marks,const  vector<TimeMark>::const_iterator &it, const TimeMark::Type &mask)
     : marks_(marks), it_(it), mask_(mask) {}
 
@@ -126,14 +148,15 @@ public:
      mask_=it.mask_;
      return *this;
     }
-    /// Prefix increment. Skip non-matching marks.
+    /// Prefix increment. Skip non matching marks.
     TimeMarksIterator &operator++()
-    { while ( it_ != marks_.begin() && ! (++it_) -> match_mask(mask_) ); return (*this); }
-
-    /// Prefix decrement. Skip non-matching marks.
+    //{ while ( it_ != marks_.begin() && ! (++it_) -> match_mask(mask_) ); return (*this); }
+    { while ( it_ != marks_.end() && ! (++it_) -> match_mask(mask_) ); return (*this); }
+    
+    /// Prefix decrement. Skip non matching marks.
     TimeMarksIterator &operator--()
-    { while ( it_ != marks_.end() && ! (--it_) -> match_mask(mask_) ); return (*this); }
-
+    //{ while ( it_ != marks_.end() && ! (--it_) -> match_mask(mask_) ); return (*this); }
+    { while ( it_ != marks_.begin() && ! (--it_) -> match_mask(mask_) ); return (*this); }
 
     ///  * dereference operator
     inline const TimeMark & operator *() const
@@ -142,18 +165,23 @@ public:
     /// -> dereference operator
     inline const TimeMark * operator ->() const
             { return &(*(it_)); }
-
+    
     inline bool operator ==(const TimeMarksIterator &other) const
         {return it_ == other.it_; }
 
     inline bool operator !=(const TimeMarksIterator &other) const
             {return it_ != other.it_; }
 
+    /// Returns mask.
     TimeMark::Type mask()
     { return mask_; }
+    
 private:
+    /// Reference to the vector of TimeMark objects.
     const vector<TimeMark> &marks_;
+    /// Iterator over the vector of TimeMark objects.
     vector<TimeMark>::const_iterator it_;
+    /// Mask type.
     TimeMark::Type mask_;
 };
 
@@ -166,26 +194,32 @@ class TimeGovernor;
  * @brief This class is a collection of time marks to manage various events occurring during simulation time.
  *
  * <b> TimeMark and their types </b>
- * One TimeMark consists of time and type (TimeMark::Type) see the constructor TimeMark::TimeMark.
+ * 
+ * One TimeMark consists of time and type (TimeMark::Type), see the constructor TimeMark::TimeMark.
  * The type of mark is bitmap where individual bits corresponds to some base event types like changing a BC, output solution, coupling time with another
  * equation and so on. Base types can be combined by bitwise or (operator|).
  *
- * There is one particular base mark type TimeMark::strict.
- * Only marks with this type are considered as fixed times by a TimeGovernor which is connected to particular TimeMarks object.
- *
- * <b> TimeMarks collection</b>
+ * Special types are predefined in TimeMarks class. These are returned by their getters:
+ * - type_fixed_time() - marks of this type are considered as fixed times by a TimeGovernor which is connected to particular TimeMarks object.
+ * - type_output() - this type marks times at which solution should be computed and written to output.
+ * - type_bc_change() - this type marks times at which BC is is changed and model has to be updated. 
+ * 
+ * <b> TimeMarks collection </b>
+ * 
  * TimeMarks collect marks of various types and provides methods for iterating over stored marks. You can selectively access only marks matching given
  * type mask. See TimeMark::match_mask.
  *
  * You can add one new mark through method add or add evenly spaced marks of same type by TimeMarks::add_time_marks.
  *
- * You can allocate new TimeMark::Type in the context of one TimeMarks object by TimeMarks::new_mark_type and TimeMarks::new_strict_mark_type.
+ * You can allocate new TimeMark::Type in the context of one TimeMarks object by TimeMarks::new_mark_type.
  *
- * For a given TimeGovernor (not necessarily connected one) you can ask about existence of mark in current time interval (TimeMarks::is_current) and iterate
- * around current time (TimeMarks::next and TimeMarks::last).
+ * For a given TimeGovernor (not necessarily connected one) you can ask about existence of mark in current time interval (TimeMarks::is_current) and see TimeMarks
+ * close to the current time (TimeMarks::next and TimeMarks::last). The current time interval is left-open and right-closed: (t,t+dt]. Repeatedly used TimeMarks::next always returns the same TimeMark if the time of the TimeGovernor is not changed.
  *
  * In most cases there will be only one TimeMarks object for the whole solved problem and used by TimeGovernors of individual equations. However
  * this is not necessary.
+ * 
+ * @see TimeMark
  */
 class TimeMarks {
 
@@ -202,35 +236,39 @@ public:
      * Add a new base mark within the context of the particular TimeMarks instance.
      * User should keep the returned value (MarkType is basically a bitmap) for further queries and
      * TimeMark insertions. ATTENTION: You can not use the TimeMark::Type with other TimeMarks instance!
+     * Types are added as they are prepared in next_mark_type_. 
+     * Next mark type is updated by (left) bit shifting operator.
      */
     TimeMark::Type new_mark_type();
 
     /// Predefined base TimeMark type that is taken into account by the TimeGovernor.
+    /// Is defined by constructor as 0x01.
     inline TimeMark::Type type_fixed_time()
     { return type_fixed_time_;}
 
     /// Predefined base TimeMark type for output times.
+    /// Is defined by constructor as 0x02.
     inline TimeMark::Type type_output()
     { return type_output_;}
 
     /// Predefined base TimeMark type for times when the boundary condition is changed.
+    /// Is defined by constructor as 0x04.
     inline TimeMark::Type type_bc_change()
     { return type_bc_change_;}
 
 
     /**
      * Basic method for inserting TimeMarks.
-     * @param time    Time of the TimeMark.
-     * @param type    MarkType or their combinations.
+     * @param mark    Reference to TimeMark object.
      */
     void add(const TimeMark &mark);
 
     /**
      * Method for creating and inserting equally spaced TimeMarks.
      * @param time    Time of the first TimeMark.
-     * @param dt      Interval for further TimeMarks.
+     * @param dt      Lenght of interval between equally spaced TimeMarks.
      * @param end_time  No marks after the end_time.
-     * @param type    MarkType or their combinations.
+     * @param type    Type of inserted TimeMarks or their combinations.
      *
      * Current lazy implementation have complexity O(m*n) where m is number of inserted time marks and n number of time marks in the array.
      * TODO: O(n+m) implementation
@@ -263,7 +301,7 @@ public:
      */
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
-    /// Iterator for the begging mimics container-like  of TimeMarks
+    /// Iterator for the begin mimics container-like  of TimeMarks
     TimeMarks::iterator begin() const
     {return TimeMarksIterator(marks_, marks_.begin(), TimeMark::every_type); }
 
@@ -282,16 +320,13 @@ private:
     /// TimeMarks list sorted according to the their time.
     vector<TimeMark> marks_;
 
-    /// Predefined types.
+    /// Predefined type for fixed time.
     TimeMark::Type type_fixed_time_;
+    /// Predefined type for output.
     TimeMark::Type type_output_;
+    /// Predefined type for change of boundary condition.
     TimeMark::Type type_bc_change_;
 };
-
-/**
- * Output operator for TimeMarks database.
- */
-ostream& operator<<(ostream& stream, const  TimeMarks &marks);
 
 
 #endif /* TIME_MARKS_HH_ */

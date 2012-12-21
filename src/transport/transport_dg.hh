@@ -81,11 +81,11 @@ public:
 
     /**
      * @brief Constructor.
-     * @param marks				TimeMarks.
-     * @param init_mesh			Computational mesh.
-     * @param material_database	Material database.
+     * @param init_mesh         computational mesh
+     * @param material_database material database
+     * @param in_rec            input record
      */
-    TransportDG(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+    TransportDG(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
 
     /**
      * @brief Declare input record type for the equation TransportDG.
@@ -112,7 +112,9 @@ public:
 
 	/**
 	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 *
+	 * 
+         * @param dh mixed hybrid dof handler
+         * 
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
@@ -240,10 +242,10 @@ private:
 	/**
 	 * @brief Calculates the velocity divergence on a given @p dim dimensional cell.
 	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed divergence (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
+	 * @param cell       The cell.
+	 * @param divergence The computed divergence (at quadrature points).
+	 * @param fv         The FEValues class providing the quadrature points
+	 *                   and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
 	void calculate_velocity_divergence(typename DOFHandler<dim,3>::CellIterator cell, std::vector<double> &divergence, FEValuesBase<dim,3> &fv);

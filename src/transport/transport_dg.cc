@@ -65,14 +65,14 @@ Record TransportDG::input_type
 
 using namespace arma;
 
-TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
-        : TransportBase(marks, init_mesh, material_database, in_rec),
+TransportDG::TransportDG(Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
+        : TransportBase(init_mesh, material_database, in_rec),
           advection(1e0),
           tol_switch_dirichlet_neumann(1e-5)
           // TODO: this should be dependent on precision of the Flow solution
           // see also remark in BC application
 {
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, equation_mark_type_);
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
 
     time_->fix_dt_until_mark();
     
@@ -107,32 +107,32 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
 //    read_subst_names();
 
     sorption = in_rec.val<bool>("sorption_enable");
-	dual_porosity = in_rec.val<bool>("dual_porosity");
-	mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
+    dual_porosity = in_rec.val<bool>("dual_porosity");
+    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
 
-	// distribute DOFs
-	dof_handler1d = new DOFHandler<1,3>(mesh());
-	dof_handler2d = new DOFHandler<2,3>(mesh());
-	dof_handler3d = new DOFHandler<3,3>(mesh());
-	fe1d = new FE_P_disc<1,1,3>;
-	fe2d = new FE_P_disc<1,2,3>;
-	fe3d = new FE_P_disc<1,3,3>;
-	dof_handler1d->distribute_dofs(*fe1d);
-	dof_handler2d->distribute_dofs(*fe2d, dof_handler1d->n_global_dofs());
-	dof_handler3d->distribute_dofs(*fe3d, dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs());
+    // distribute DOFs
+    dof_handler1d = new DOFHandler<1,3>(mesh());
+    dof_handler2d = new DOFHandler<2,3>(mesh());
+    dof_handler3d = new DOFHandler<3,3>(mesh());
+    fe1d = new FE_P_disc<1,1,3>;
+    fe2d = new FE_P_disc<1,2,3>;
+    fe3d = new FE_P_disc<1,3,3>;
+    dof_handler1d->distribute_dofs(*fe1d);
+    dof_handler2d->distribute_dofs(*fe2d, dof_handler1d->n_global_dofs());
+    dof_handler3d->distribute_dofs(*fe3d, dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs());
 
-	// distribute solution vectors on processors
-	distr = new Distribution(Distribution::Block, dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs() + dof_handler3d->n_global_dofs());
+    // distribute solution vectors on processors
+    distr = new Distribution(Distribution::Block, dof_handler1d->n_global_dofs() + dof_handler2d->n_global_dofs() + dof_handler3d->n_global_dofs());
 
     /*
      * Read boundary conditions.
      */
     bc = new TransportBC(mesh_, n_substances, in_rec);
-    bc_mark_type_ = time_marks->type_bc_change() | equation_mark_type_;
+    bc_mark_type_ = time_->marks().type_bc_change() | equation_mark_type_;
     if (bc->get_times().size() > 0)
     {
-    	for (int i=0; i<bc->get_times().size(); i++)
-    		time_marks->add(TimeMark(bc->get_times()[i], bc_mark_type_));
+        for (int i=0; i<bc->get_times().size(); i++)
+                time_->marks().add(TimeMark(bc->get_times()[i], bc_mark_type_));
     }
     //VecView( bc->get_vector(0), PETSC_VIEWER_STDOUT_SELF );
 
@@ -149,9 +149,9 @@ TransportDG::TransportDG(TimeMarks & marks, Mesh & init_mesh, MaterialDatabase &
     }
 
 
-	// set time marks for writing the output
-	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
-    time_marks->add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
+    // set time marks for writing the output
+    output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
+    time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
     
 
     ls    = new LinSys_MPIAIJ(distr->lsize());

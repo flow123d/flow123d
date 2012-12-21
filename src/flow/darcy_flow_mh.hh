@@ -52,7 +52,6 @@
 
 #include <petscmat.h>
 #include "system/sys_vector.hh"
-#include "coupling/time_marks.hh"
 #include <field_p0.hh>
 #include <materials.hh>
 #include "coupling/equation.hh"
@@ -119,8 +118,8 @@ public:
     };
 
 
-    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
-    : EquationBase(marks, mesh, mat_base, in_rec), sources(NULL)
+    DarcyFlowMH(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
+    : EquationBase(mesh, mat_base, in_rec), sources(NULL)
     {}
 
     static Input::Type::Selection mh_mortar_selection;
@@ -189,7 +188,7 @@ protected:
  * where
  * - @f$ q @f$ is flux @f$[ms^{-1}]@f$ for 3d, @f$[m^2s^{-1}]@f$ for 2d and @f$[m^3s^{-1}]@f$ for 1d.
  * - @f$ \mathbf{K} @f$ is hydraulic tensor ( its orientation for 2d, 1d case is questionable )
- * - @f$ h = \frac{\pi}{\rho_0 g}+z @f$ is pressures head, @f$ \pi, \rho_0, g @f$ are the pressure, water density, and acceleration of gravity , respectively.
+ * - @f$ h = \frac{\pi}{\rho_0 g}+z @f$ is pressure head, @f$ \pi, \rho_0, g @f$ are the pressure, water density, and acceleration of gravity , respectively.
  *   Assumes gravity force acts counter to the direction of the @f$ z @f$ axis.
  * - @f$ R @f$ is destity or gravity variability coefficient. For density driven flow it should be
  * @f[
@@ -204,7 +203,7 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+    DarcyFlowMH_Steady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
 
     static Input::Type::Record input_type;
 
@@ -297,7 +296,7 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+    DarcyFlowMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
     static Input::Type::Record input_type;
@@ -328,7 +327,7 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+    DarcyFlowLMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 
     static Input::Type::Record input_type;

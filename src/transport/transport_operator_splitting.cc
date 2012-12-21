@@ -87,20 +87,20 @@ Record TransportOperatorSplitting::input_type
 
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: TransportBase(marks, init_mesh, material_database, in_rec)
+TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
+: TransportBase(init_mesh, material_database, in_rec)
 {
 	Distribution *el_distribution;
 	int *el_4_loc;
 
     // double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
 
-	convection = new ConvectionTransport(marks, *mesh_, *mat_base, in_rec);
+	convection = new ConvectionTransport(*mesh_, *mat_base, in_rec);
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
 		if (reactions_it->type() == Linear_reaction::input_type ) {
-	        decayRad =  new Linear_reaction(marks, init_mesh, material_database, *reactions_it,
+	        decayRad =  new Linear_reaction(init_mesh, material_database, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
@@ -110,7 +110,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	        Semchem_reactions = NULL;
 		} else
 	    if (reactions_it->type() == Pade_approximant::input_type ) {
-	        decayRad = new Pade_approximant(marks, init_mesh, material_database, *reactions_it,
+                decayRad = new Pade_approximant(init_mesh, material_database, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
@@ -129,11 +129,11 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	    decayRad = NULL;
 	    Semchem_reactions = NULL;
 	}
+	
+        time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), this->mark_type());
+        output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
 
-	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, this->mark_type());
-	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
-
-    time_marks->add_time_marks(0.0,
+        time_->marks().add_time_marks(0.0,
             in_rec.val<Input::Record>("output").val<double>("save_step"),
             time_->end_time(), output_mark_type );
 	// TODO: this has to be set after construction of transport matrix !!
@@ -177,6 +177,7 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 void TransportOperatorSplitting::output_data(){
 
     if (time_->is_current(output_mark_type)) {
+        DBGMSG("\nTOS: output time: %f\n", time_->t());
         convection->output_vector_gather();
         field_output->write_data(time_->t());
     }
@@ -188,7 +189,9 @@ void TransportOperatorSplitting::update_solution() {
 
 
     time_->next_time();
-	convection->set_target_time(time_->t());
+    //time_->view();    //show time governor
+    
+    convection->set_target_time(time_->t());
 
 	if (decayRad) decayRad->set_time_step(convection->time().estimate_dt());
 	//if (decayRad) static_cast<Pade_approximant *>  (decayRad)->set_time_step(convection->time().estimate_dt());
@@ -196,14 +199,16 @@ void TransportOperatorSplitting::update_solution() {
 	// TODO: update Semchem time step here!!
 	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
-    xprintf( Msg, "t: %f (TOS)                  cfl_dt: %f ", convection->time().t(), convection->time().estimate_dt() );
+    xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n", 
+             time_->t(), convection->time().t(), convection->time().estimate_dt() );
+    
     START_TIMER("transport_steps");
     int steps=0;
     while ( convection->time().lt(time_->t()) )
     {
         steps++;
 	    // one internal step
-	    //xprintf( Msg, "Time : %f\n", convection->time().t() );
+	    xprintf( Msg, "CONVECTION: time: %f\n", convection->time().t() );
 	    convection->compute_one_step();
 	    // Calling linear reactions and Semchem, temporarily commented
 	    if(decayRad) decayRad->compute_one_step();
@@ -211,7 +216,7 @@ void TransportOperatorSplitting::update_solution() {
 	}
     END_TIMER("transport_steps");
     //DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
-    xprintf( Msg, " steps: %d\n",steps);
+    xprintf( Msg, "CONVECTION: steps: %d\n",steps);
 }
 
 

@@ -39,7 +39,6 @@
 
 class DarcyFlowMH;
 class DarcyFlowMHOutput;
-class TimeMarks;
 class Mesh;
 class EquationBase;
 class TransportBase;
@@ -76,9 +75,6 @@ private:
 
     /// Material database to provide various material dependent data
     MaterialDatabase *material_database;
-
-    /// one global time marks table
-    TimeMarks * main_time_marks;
 
     /// steady or unsteady water flow simulator based on MH scheme
     DarcyFlowMH *water;

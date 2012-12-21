@@ -30,24 +30,20 @@
 
 #include <petscmat.h>
 #include "time_governor.hh"
-#include "time_marks.hh"
 
 #include "equation.hh"
 #include "system/system.hh"
 #include "input/accessors.hh"
 
-
-EquationBase::EquationBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base,const  Input::Record in_rec)
-: time_marks(&marks),
-  mesh_(&mesh),
+EquationBase::EquationBase(Mesh &mesh, MaterialDatabase &mat_base,const  Input::Record in_rec)
+: mesh_(&mesh),
   mat_base(&mat_base),
   time_(NULL),
-  equation_mark_type_(time_marks->new_mark_type()),
+  equation_mark_type_(TimeGovernor::marks().new_mark_type()), //creating mark type for new equation
   input_record_(in_rec)
 {}
 
 
-
-EquationNothing::EquationNothing(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base)
-: EquationBase(marks, mesh, mat_base, Input::Record() )
+EquationNothing::EquationNothing(Mesh &mesh, MaterialDatabase &mat_base)
+: EquationBase(mesh, mat_base, Input::Record() )
 {}

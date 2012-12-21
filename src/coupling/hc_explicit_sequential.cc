@@ -34,7 +34,6 @@
 #include "transport/transport_operator_splitting.hh"
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
-#include "time_marks.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
@@ -81,7 +80,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     using namespace Input;
 
     // Initialize Time Marks
-    main_time_marks = new TimeMarks();
+    //main_time_marks = new TimeMarks();
 
     // Material Database
     material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
@@ -117,11 +116,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
     if (prim_eq.type() == DarcyFlowMH_Steady::input_type ) {
-            water = new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database, prim_eq);
+            water = new DarcyFlowMH_Steady(*mesh, *material_database, prim_eq);
     } else if (prim_eq.type() == DarcyFlowMH_Unsteady::input_type ) {
-            water = new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
+            water = new DarcyFlowMH_Unsteady(*mesh, *material_database, prim_eq);
     } else if (prim_eq.type() == DarcyFlowLMH_Unsteady::input_type ) {
-            water = new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
+            water = new DarcyFlowLMH_Unsteady(*mesh, *material_database, prim_eq);
     } else {
             xprintf(UsrErr,"Equation type not implemented.");
     }
@@ -134,11 +133,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     if (it) {
         if (it->type() == TransportOperatorSplitting::input_type)
         {
-            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database, *it);
+            transport_reaction = new TransportOperatorSplitting(*mesh, *material_database, *it);
         }
         else if (it->type() == TransportDG::input_type)
         {
-            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database, *it);
+            transport_reaction = new TransportDG(*mesh, *material_database, *it);
         }
         else
         {
@@ -146,7 +145,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         }
 
     } else {
-        transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
+        transport_reaction = new TransportNothing(*mesh, *material_database);
     }
 }
 
@@ -171,6 +170,8 @@ void HC_ExplicitSequential::run_simulation()
     // theta = 0.5   velocity from center of transport interval ( mimic Crank-Nicholson)
     // theta = 1.0   velocity from end of transport interval (partialy explicit scheme)
     const double theta=0.5;
+    
+    xprintf(Msg,"HC_EXPL_SEQ: velocity interpolation has been set:     theta = %f\n", theta);
 
     double velocity_interpolation_time;
     bool velocity_changed;
@@ -198,13 +199,16 @@ void HC_ExplicitSequential::run_simulation()
 
     while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
 
-        transport_reaction->set_time_step_constrain(water->time().dt());
+        transport_reaction->set_time_upper_constraint(water->time().dt());
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
         // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
         velocity_interpolation_time= theta * transport_reaction->planned_time() + (1-theta) * transport_reaction->solved_time();
-
+        
+        xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
+                velocity_interpolation_time, water->time().t(), transport_reaction->time().t());
+         
         // if transport is off, transport should return infinity solved and planned times so that
         // only water branch takes the place
         if (water->solved_time() < velocity_interpolation_time) {
@@ -213,6 +217,10 @@ void HC_ExplicitSequential::run_simulation()
             water_output->postprocess();
             // here possibly save solution from water for interpolation in time
 
+            xprintf( Msg,"WATER computed:  time: %f     step: %f\n", 
+                     water->time().t(), water->time().dt());
+            water->time().view();     //show water time governor
+            
             water_output->output();
 
             water->choose_next_time();
@@ -230,6 +238,12 @@ void HC_ExplicitSequential::run_simulation()
                 velocity_changed = false;
             }
             transport_reaction->update_solution();
+            
+            xprintf( Msg,"TRANSPORT computed:   time: %f    step: %f\n", 
+                     transport_reaction->time().t(), transport_reaction->time().dt());
+            
+            //transport_reaction->time().view();        //show transport time governor
+            
             transport_reaction->output_data();
         }
 
@@ -241,7 +255,6 @@ void HC_ExplicitSequential::run_simulation()
 HC_ExplicitSequential::~HC_ExplicitSequential() {
     delete mesh;
     delete material_database;
-    delete main_time_marks;
     delete water;
     delete water_output;
     delete transport_reaction;

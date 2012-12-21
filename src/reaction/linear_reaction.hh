@@ -33,7 +33,8 @@ class Linear_reaction: public Reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
+		//Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
+		Linear_reaction(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
 		/**
 		*	Destructor.
 		*/
