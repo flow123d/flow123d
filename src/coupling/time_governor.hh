@@ -49,12 +49,14 @@ namespace Input {
  * @brief
  * Basic time management functionality for unsteady (and steady) solvers (class Equation).
  *
+ * <b> Common features and unsteady time governor (TG) <\b>
+ * 
  * This class provides algorithm for selecting next time step, and information about current time step frame.
  * Step estimating is constrained by several bounds (permanent maximal and minimal time step, upper 
  * and lower constraint of time step). The permanent constraints are set in the constructor from the input 
  * record so that user can set the time step constraints for the whole model. 
  * Function set_permanent_constraint() should be used only in very specific cases and possibly right after 
- * the constructor before using other functions of TimeGovernor.
+ * the constructor before using other functions of TG.
  * 
  * Choice of the very next time step can be constrained using functions set_upper_constraint() and set_lower_constraint(). 
  * Lower and upper constraints are set equal to permanent ones in the constructor and can only 
@@ -77,22 +79,38 @@ namespace Input {
  * -# Fix next time step up to the next time mark (this is necessary for ConvectionTransport)
  * -# Proceed to the next time when solution is available. (this can replace solved flag in equation classes)
  *
- * Information provided by time governor includes:
+ * Information provided by TG includes:
  * - actual time, last time, end time
  * - actual time step
  * - number of the time level
  * - end of interval with fixed time step
  * - time comparison
  * - static pointer to time marks
- *
- * TODO: better implementation of steady TimeGovernor, be careful with infinite values namely where we do some calculations with time:
- * - TimeMarks::is_current
- * - TimeGovernor:: lt le ge gt
+ * 
+ * <b> Steady time governor<\b>
+ * 
+ * Steady TG can be constructed by default constructor (initial time is zero) or by 
+ * constructor with initial time as parameter. End time and time step are set to infinity. 
+ * One can check if the time governor is steady by calling is_steady(). 
+ * Calling estimate_dt() will return infinity.
+ * 
+ * Setting constraints have no consequences. Calling fix_dt_until_mark() will only return zero 
+ * and will not do anything.
+ * 
+ * The steady TG works in two states. At first the time is set to initial and time level 
+ * is equal zero. To use steady TG properly one should call next_time() after the computation 
+ * of steady problem is done. Current time is then set to infinity, time level is set to 1 and 
+ * calling estimate_dt() will return zero.
+ * 
+ * Note: For example class TransportNothing (which computes really nothing) uses also steady TG but
+ * it calls next_time() immediately after TG's construction. This means that the 'computation'of transport 
+ * is done.
+ * 
  *
  * TODO:
  * - still we have problems with time comparisons
- * 1) TimeMarks can merge marks only with fixed precision, since they are shared by several equations with possibly different timesteps
- * 2) queries
+ * 1) TimeMarks can merge marks only with fixed precision, since they are shared by several equations with possibly different timesteps.
+ * 2) On the other hand comparing of times by time governor can be done relatively to the current time step.
  *
  *
  *
@@ -179,7 +197,7 @@ public:
      * @return actual end of fixed time step.
      */
     inline double fix_dt_until_mark() {
-        if (steady) return inf_time;
+        if (steady) return 0.0;
         end_of_fixed_dt_interval=-inf_time; // release previous fixed interval
         fixed_dt = estimate_dt();
         dt_fixed_now = true;    //flag means fixed step has been set since now
@@ -340,11 +358,12 @@ public:
 
     /**
      * Prints out TimeGovernor status -- time level, end time, actual time and step.
+     * @param name is the name of time governor that you want to show up in output (just for your convenience)
      */
-    void view() const
+    void view(const char *name="") const
     {
-        xprintf(MsgDbg, "\nTG: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f\n",time_level, end_time_, time, time_step, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval);
-        //xprintf(Msg, "TG: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f\n",time_level, end_time_, time, time_step, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval);
+        xprintf(MsgDbg, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f\n",
+                name, time_level, end_time_, time, time_step, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval);
     }
 
     /// Infinity time used for steady case.

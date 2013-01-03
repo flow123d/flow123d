@@ -120,7 +120,6 @@ TimeGovernor::TimeGovernor(const Input::Record &input, const TimeMark::Type fixe
 }
 
 // steady time governor constructor
-// TODO: think about generalization
 TimeGovernor::TimeGovernor()
 : time_level(0),
   time(0.0),
@@ -136,8 +135,9 @@ TimeGovernor::TimeGovernor()
   min_time_step(time_step_lower_bound),
   fixed_time_mark_mask(0x0),
   steady(true)
-{}
-
+{
+    time_marks->add( TimeMark(time, fixed_time_mark_mask) );
+}
 
 
 TimeGovernor::TimeGovernor(double init_time)
@@ -155,7 +155,9 @@ TimeGovernor::TimeGovernor(double init_time)
   min_time_step(time_step_lower_bound),
   fixed_time_mark_mask(0x0),
   steady(true)
-{}
+{
+    time_marks->add( TimeMark(init_time, fixed_time_mark_mask) );
+}
 
 
 
@@ -226,6 +228,11 @@ int TimeGovernor::set_lower_constraint (double lower)
 double TimeGovernor::estimate_dt() const {
     if (time == inf_time || is_end()) return 0.0;
     if (time_marks == NULL) return inf_time;
+    
+    //two states of steady time governor returns different estimate
+    if (steady && time_level==0) return inf_time;	//at the beginning
+    if (steady && time_level==1) return 0.0;		//at the end
+    
     if (this->lt(end_of_fixed_dt_interval))    return fixed_dt;
 
     // jump to the first future fix time
@@ -277,7 +284,11 @@ void TimeGovernor::next_time()
     
     //in case the time governor is steady the time is set to end time which is infinity
     if (steady) {
+        last_time_step = end_time_;
+        time_level = 1;
+	time_step = 0.0;
         time = end_time_;
+        dt_changed = false;
         return;
     }
     
