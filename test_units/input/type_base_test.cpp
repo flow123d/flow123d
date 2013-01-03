@@ -118,6 +118,8 @@ using namespace Input::Type;
 
     Array arr_of_sel( sel );
 
+    LazyTypes::instance().finish();
+
     // get_sub_type
     EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type());
 

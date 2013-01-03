@@ -25,8 +25,8 @@ void OutputBase::print(ostream& stream) {
 
 
 void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int &upper ) {
-	lower = array.lower_bound_;
-	upper = array.upper_bound_;
+	lower = array.data_->lower_bound_;
+	upper = array.data_->upper_bound_;
 }
 
 
@@ -153,10 +153,10 @@ void OutputText::print(ostream& stream, const Array *type, unsigned int depth) {
 		get_array_sizes(*type, lower_size, upper_size);
 		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
 		stream << setw(padding_size) << "";
-		print(stream, type->type_of_values_.get());
+		print(stream, type->data_->type_of_values_.get());
 		break;
 	case full_record:
-		print(stream, type->type_of_values_.get(), depth);
+		print(stream, type->data_->type_of_values_.get(), depth);
 		break;
 	}
 }

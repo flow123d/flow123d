@@ -79,13 +79,14 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 Record &Record::derive_from(AbstractRecord &parent) {
 
     empty_check();
-    if (data_->keys.size() != 0)
-            THROW( ExcDeriveNonEmpty() << EI_RecordName(data_->parent_->type_name()) << EI_Record(*this) );
+//    it is possible to derive from abstract record even after declaration of keys
+//    if (data_->keys.size() != 0)
+//            THROW( ExcDeriveNonEmpty() << EI_RecordName(data_->parent_->type_name()) << EI_Record(*this) );
 
-    // Reserve the first key for the TYPE selection.
-    // The reference to the child list will be updated in finish().
-    data_->declare_key_reference("TYPE", 0, Default::obligatory(),
-                 "Sub-record selection.");
+//    // Reserve the first key for the TYPE selection.
+//    // The reference to the child list will be updated in finish().
+//    data_->declare_key_reference("TYPE", 0, Default::obligatory(),
+//                 "Sub-record selection.");
 
 	data_->parent_ = &parent;
 	data_->descendant_data_ = data_;
@@ -197,30 +198,48 @@ void Record::RecordData::finish() {
 
     	Record tmp_rec(descendant_data_);
     	parent_->add_descendant(tmp_rec);
-		// copy keys form parent, we have to copy TYPE also since there should be place in storage for it
-		// however we change its Default to optional()
-		for(KeyIter it=parent_->begin(); it != parent_->end(); ++it) {
-			Key tmp_key=*it;    // make temporary copy of the key
+
+		// copy keys form parent
+    	std::vector<Key>::iterator it = keys.begin();
+    	int n_inserted = 0;
+		for(KeyIter pit=parent_->begin(); pit != parent_->end(); ++pit) {
+			Key tmp_key=*pit;    // make temporary copy of the key
 			KeyHash key_h = key_hash(tmp_key.key_);
 
 			tmp_key.derived = true;
 
-			// the TYPE key is placed to the beginning of the vector keys,
-			// while the other keys are appended to the end.
-			if (tmp_key.key_=="TYPE") {
+			// we have to copy TYPE also since there should be place in storage for it
+			// however we change its Default to optional()
+			if (tmp_key.key_=="TYPE")
 				tmp_key.default_=Default::optional();
-				key_to_index.insert( std::make_pair(key_h, 0) );
-				tmp_key.key_index=0;
-				keys[0] = tmp_key;
+
+			// check for duplicate keys, save only the key derived by the descendant
+			key_to_index_const_iter kit = key_to_index.find(key_h);
+			if (kit != key_to_index.end()) {
+				Key *k = &(keys[kit->second+n_inserted]);
+				tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
+				k->key_ = "";
+			}
+
+			key_to_index[key_h] = tmp_key.key_index;
+
+			it = keys.insert(it, tmp_key)+1;
+			n_inserted++;
+		}
+		// delete duplicate keys and update key indices
+		for (int i=0; i<keys.size(); i++) {
+			if (keys[i].key_.compare("") == 0) {
+				keys.erase(keys.begin()+i);
+				i--;
 			} else {
-				key_to_index.insert( std::make_pair(key_h, keys.size()) );
-				tmp_key.key_index=keys.size();
-				keys.push_back(tmp_key);
+				keys[i].key_index = i;
+				key_to_index[key_hash(keys[i].key_)] = i;
 			}
 		}
 
 		parent_ = 0;
     }
+
 
 
 
@@ -230,13 +249,18 @@ void Record::RecordData::finish() {
 		// make our own copy of type object allocated at heap (could be expensive, but we don't care)
 		if (it->p_type != 0) {
 			if (dynamic_cast<const AbstractRecord *>(it->p_type) != 0) {
-				it->type_ = boost::make_shared<const AbstractRecord>(*dynamic_cast<const AbstractRecord *>(it->p_type));
+				AbstractRecord *ar = (AbstractRecord *)dynamic_cast<const AbstractRecord *>(it->p_type);
+				ar->finish();
+				it->type_ = boost::make_shared<const AbstractRecord>(*ar);
 				it->p_type = 0;
 			} else if (dynamic_cast<const Record *>(it->p_type) != 0) {
-				it->type_ = boost::make_shared<const Record>(*dynamic_cast<const Record *>(it->p_type));
+				Record *r= (Record *)dynamic_cast<const Record *>(it->p_type);
+				r->finish();
+				it->type_ = boost::make_shared<const Record>(*r);
 				it->p_type = 0;
 			} else if (dynamic_cast<const Selection *>(it->p_type) != 0) {
-				it->type_ = boost::make_shared<const Selection>(*dynamic_cast<const Selection *>(it->p_type));
+				Selection *s = (Selection *)dynamic_cast<const Selection *>(it->p_type);
+				it->type_ = boost::make_shared<const Selection>(*s);
 				it->p_type = 0;
 			}
 		} else if (dynamic_cast<const Array *>(it->type_.get()) != 0) {

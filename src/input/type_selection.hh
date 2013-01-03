@@ -84,7 +84,9 @@ public:
      */
     Selection(const string &name) :
             data_(boost::make_shared<SelectionData>(name))
-    {}
+    {
+    	LazyTypes::instance().addSelection(data_.get());
+    }
 
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
@@ -177,7 +179,7 @@ private:
     /**
      * Actual Selection data.
      */
-    class SelectionData {
+    class SelectionData : public LazyType {
     public:
 
         SelectionData(const string &name)
@@ -187,6 +189,8 @@ private:
         void add_value(const int value, const std::string &key, const std::string &description);
 
         std::ostream& documentation(std::ostream& stream, DocType extensive , unsigned int pad) const;
+
+        void finish() { finished = true; }
 
 
         /// Name of the Selection.
@@ -217,6 +221,12 @@ private:
 
     /// Handle to actual Selection data.
     boost::shared_ptr<SelectionData> data_;
+
+public:
+
+    Selection(boost::shared_ptr<SelectionData> data_ptr)
+    : data_(data_ptr)
+    {}
 };
 
 

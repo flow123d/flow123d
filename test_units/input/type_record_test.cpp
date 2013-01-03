@@ -52,13 +52,14 @@ using namespace Input::Type;
    EXPECT_DEATH( {rec_fin.declare_key("xx", String(),"");}, "in finished Record type:");
 
 
+//   This no more fails: Declaration of incomplete (unfinished) keys is possible.
    Record rec_unfin("yy","");
-   EXPECT_DEATH({rec.declare_key("yy", rec_unfin, ""); }, "Unfinished type of declaring key:");
+   rec.declare_key("yy", rec_unfin, "");
 
    EXPECT_DEATH( { rec.declare_key("data_description", String(),"");},
                 "Re-declaration of the key:");
 
-   EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),"");}, ExcWrongDefault,
+   EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),""); rec.finish(); }, ExcWrongDefault,
            "Default value .* do not match type: 'Double';");
 
    enum Colors {
@@ -122,6 +123,7 @@ using namespace Input::Type;
 
 
    static Record array_record("RecordOfArrays", "desc.");
+   static Record array_record2("RecordOfArrays2", "desc.");
 
    // array type passed through shared_ptr
     Array array_of_int(Integer(0), 5, 100 );
@@ -134,13 +136,12 @@ using namespace Input::Type;
 
     // allow default values for an array
     array_record.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
-    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); array_record.finish(); }, ExcWrongDefault,
                   "Default value 'ahoj' do not match type: 'Integer';"
                  );
-    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( {array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); array_record2.finish(); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
-    array_record.finish();
 }
 
 TEST(InputTypeRecord, allow_convertible) {
@@ -181,6 +182,7 @@ using namespace Input::Type;
 
 
     Record record_record("RecordOfRecords", "");
+    Record record_record2("RecordOfRecords2", "");
 
     // Test that Record has to be passed as shared_ptr
     //ASSERT_DEATH( {record_record->declare_key("sub_rec_1", Record("subrec_type", "desc") , "desc"); },
@@ -197,16 +199,15 @@ using namespace Input::Type;
     sub_rec.finish();
 
     record_record.declare_key("sub_rec_1", other_record, "key desc");
-    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); record_record.finish(); }, ExcWrongDefault,
             "Default value '2.3' do not match type: 'OtherRecord';" );
-    record_record.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
-    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); } , ExcWrongDefault,
+    record_record2.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
+    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); record_record2.finish(); } , ExcWrongDefault,
             "Default value '2.3' do not match type: 'Integer';" );
 
     // recursion  -  forbidden
     //record_record->declare_key("sub_rec_2", record_record, "desc.");
 
-    record_record.finish();
 }
 
 TEST(InputTypeRecord, iterating) {
@@ -337,8 +338,7 @@ using namespace Input::Type;
     EXPECT_EQ( b_rec, a_rec.get_descendant("EqDarcy"));
     EXPECT_EQ( c_rec, a_rec.get_descendant("EqTransp"));
 
-    EXPECT_THROW_WHAT( {c_rec.derive_from(a_rec);} , Record::ExcDeriveNonEmpty,
-            "Can not derive from Record .* into non-empty Record:" );
+    c_rec.derive_from(a_rec);
 
     AbstractRecord x_rec("ar","");
     Record y_rec("y_rec","");

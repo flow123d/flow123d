@@ -76,32 +76,29 @@ TEST_F(Application, init) {
  *
  */
 
-namespace Input {
-namespace Type {
+namespace it = Input::Type;
 
-Record Application::input_type = Record("Application", "Root record of the whole application.")
+it::Record Application::input_type = it::Record("Application", "Root record of the whole application.")
     // Array of equations with types given by method of class Equation
-    .declare_key("equations", Array( Equation::input_type, 1, 10 ), Default::obligatory(), "");
+    .declare_key("equations", it::Array( Equation::input_type, 1, 10 ), it::Default::obligatory(), "");
 
 
-AbstractRecord Equation::input_type = AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
+it::AbstractRecord Equation::input_type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
 	// keys that will be derived by every equation, but their type can be overridden
-    .declare_key("mesh",FileName::input(),Default::obligatory(),"");
+    .declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"");
 
 
-Record EquationA::input_type = Record("EquationA", "For example explicit transport equation solver.")
+it::Record EquationA::input_type = it::Record("EquationA", "For example explicit transport equation solver.")
     .derive_from( Equation::input_type )
-    .declare_key("parameter_a", Double(), "");
+    .declare_key("parameter_a", it::Double(), "");
 
 
-Record EquationB::input_type = Record("EquationB", "For example implicit transport equation solver.")
+it::Record EquationB::input_type = it::Record("EquationB", "For example implicit transport equation solver.")
     .derive_from( Equation::input_type )
-    .declare_key("parameter_b", Integer(), Default("111"), "")
-    .declare_key("default_str", String(), Default("str value"), "" )
-    .declare_key("substances", Array( String() ), Default::obligatory(), "" );
+    .declare_key("parameter_b", it::Integer(), it::Default("111"), "")
+    .declare_key("default_str", it::String(), it::Default("str value"), "" )
+    .declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" );
 
-}
-}
 
 
 

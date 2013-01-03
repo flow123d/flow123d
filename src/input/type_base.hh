@@ -113,7 +113,7 @@ public:
     string desc() const;
 
     /**
-     * Comparison of types. It compares kind of type (Intteger, Double, String, REcord, ..), for complex types
+     * Comparison of types. It compares kind of type (Integer, Double, String, Record, ..), for complex types
      * it also compares names. For arrays compare subtypes.
      */
     virtual bool operator==(const TypeBase &other) const
@@ -184,9 +184,29 @@ class Selection;
  *
  * @ingroup input_types
  */
-class Array : public TypeBase, LazyType {
+class Array : public TypeBase {
 	friend class OutputBase;
 	friend class OutputText;
+
+protected:
+
+    class ArrayData : public LazyType {
+    public:
+
+    	ArrayData(unsigned int min_size, unsigned int max_size)
+    	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
+    	{
+    		LazyTypes::instance().addType(this);
+    	}
+
+    	void finish();
+
+    	boost::shared_ptr<const TypeBase> type_of_values_;
+    	unsigned int lower_bound_, upper_bound_;
+    	const TypeBase *p_type_of_values;
+    	bool finished;
+
+    };
 
 public:
     /**
@@ -195,7 +215,7 @@ public:
      */
     template <class ValueType>
     inline Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
-    : lower_bound_(min_size), upper_bound_(max_size), finished(false)
+    : data_(boost::make_shared<ArrayData>(min_size, max_size))
     {
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
@@ -206,34 +226,46 @@ public:
         // at the moment, so we save the reference of type and update
         // the array later in finish().
         if (boost::is_base_of<Record, ValueType>::value ||
-        	boost::is_base_of<Selection, ValueType>::value)
+        	boost::is_base_of<Selection, ValueType>::value ||
+        	boost::is_base_of<Array, ValueType>::value)
         {
-        	p_type_of_values = &type;
+        	data_->p_type_of_values = &type;
         }
         else
         {
         	if ( ! type.is_finished())
         		xprintf(PrgErr, "Unfinished type '%s' used in declaration of Array.\n", type.type_name().c_str() );
-        	p_type_of_values = 0;
+        	data_->p_type_of_values = 0;
 
         	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
-        	type_of_values_ = type_copy;
+        	data_->type_of_values_ = type_copy;
         	//set_type_impl(type, boost::is_base_of<TypeBase,ValueType>() );
         }
     }
 
+    Array(boost::shared_ptr<ArrayData> data_ptr)
+    : data_(data_ptr)
+    {}
+
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
     virtual void finish();
 
-    virtual bool is_finished() const { return finished; }
+    virtual bool is_finished() const { empty_check(); return data_->finished; }
+
+    /**
+     * Assertion for non-empty Type::Record handle.
+     */
+    inline void empty_check() const {
+        ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
+    }
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const
-        { return *type_of_values_; }
+        { empty_check(); return *data_->type_of_values_; }
 
     /// Checks size of particular array.
     inline bool match_size(unsigned int size) const
-        { return size >=lower_bound_ && size<=upper_bound_; }
+        { empty_check(); return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::documentation.
     virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
@@ -256,10 +288,8 @@ public:
 
 protected:
 
-    boost::shared_ptr<const TypeBase> type_of_values_;
-    unsigned int lower_bound_, upper_bound_;
-    const TypeBase *p_type_of_values;
-    bool finished;
+    /// Handle to the actual array data.
+    boost::shared_ptr<ArrayData> data_;
 
 };
 

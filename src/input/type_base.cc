@@ -85,19 +85,44 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
 
 void Array::finish()
 {
+	empty_check();
+	data_->finish();
+}
+
+void Array::ArrayData::finish()
+{
 	if (finished) return;
 
 	if (p_type_of_values != 0)
 	{
 		if (dynamic_cast<const AbstractRecord *>(p_type_of_values) != 0)
 		{
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*dynamic_cast<const AbstractRecord *>(p_type_of_values));
+			AbstractRecord *ar = (AbstractRecord *)dynamic_cast<const AbstractRecord *>(p_type_of_values);
+			ar->finish();
+			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*ar);
 			type_of_values_ = type_copy;
 			p_type_of_values = 0;
 		}
 		else if (dynamic_cast<const Record *>(p_type_of_values) != 0)
 		{
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*dynamic_cast<const Record *>(p_type_of_values));
+			Record *r = (Record *)dynamic_cast<const Record *>(p_type_of_values);
+			r->finish();
+			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*r);
+			type_of_values_ = type_copy;
+			p_type_of_values = 0;
+		}
+		else if (dynamic_cast<const Selection *>(p_type_of_values) != 0)
+		{
+			Selection *s = (Selection *)dynamic_cast<const Selection *>(p_type_of_values);
+			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Selection>(*s);
+			type_of_values_ = type_copy;
+			p_type_of_values = 0;
+		}
+		else if (dynamic_cast<const Array *>(p_type_of_values) != 0)
+		{
+			Array *a = (Array *)dynamic_cast<const Array *>(p_type_of_values);
+			a->finish();
+			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Array>(*a);
 			type_of_values_ = type_copy;
 			p_type_of_values = 0;
 		}
@@ -109,42 +134,47 @@ void Array::finish()
 
 std::ostream& Array::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const {
 
-        switch (extensive) {
-        case record_key:
-            stream << "Array, size limits: [" << lower_bound_ << ", " << upper_bound_ << "] of type: " << endl;
-            stream << setw(pad+4) << "";
-            type_of_values_->documentation(stream, record_key, pad+4);
-            break;
-        case full_after_record:
-            type_of_values_->documentation(stream, full_after_record, pad+4);
-            break;
-        case full_along:
-            stream << "Array, size limits: [" << lower_bound_ << ", " << upper_bound_ << "] of type: " << endl;
-            stream << setw(pad+4) << "";
-            type_of_values_->documentation(stream, record_key, pad+4);
-            break;
-        }
+	empty_check();
 
-        return stream;
+	switch (extensive) {
+	case record_key:
+		stream << "Array, size limits: [" << data_->lower_bound_ << ", " << data_->upper_bound_ << "] of type: " << endl;
+		stream << setw(pad+4) << "";
+		data_->type_of_values_->documentation(stream, record_key, pad+4);
+		break;
+	case full_after_record:
+		data_->type_of_values_->documentation(stream, full_after_record, pad+4);
+		break;
+	case full_along:
+		stream << "Array, size limits: [" << data_->lower_bound_ << ", " << data_->upper_bound_ << "] of type: " << endl;
+		stream << setw(pad+4) << "";
+		data_->type_of_values_->documentation(stream, record_key, pad+4);
+		break;
+	}
+
+	return stream;
 }
 
 
 
 void  Array::reset_doc_flags() const {
-    type_of_values_->reset_doc_flags();
+	empty_check();
+	data_->type_of_values_->reset_doc_flags();
 }
 
 
 
 string Array::type_name() const {
-    return "array_of_" + type_of_values_->type_name();
+	empty_check();
+    return "array_of_" + data_->type_of_values_->type_name();
 }
 
 
 
 bool Array::operator==(const TypeBase &other) const    {
+	empty_check();
     return  typeid(*this) == typeid(other) &&
-              (*type_of_values_ == static_cast<const Array *>(&other)->get_sub_type() );
+              (*data_->type_of_values_ == static_cast<const Array *>(&other)->get_sub_type() );
 }
 
 

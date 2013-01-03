@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 
 namespace Input {
@@ -40,11 +41,11 @@ namespace Type {
 
 
 class TypeBase;
-
+class Selection;
 
 /**
  * The class LazyType is an abstract base for input types that cannot be initialized at once but in two steps.
- * This concerns in particular Record, AbstractRecord and Array. These input types are typically defined by means
+ * This concerns in particular Record, AbstractRecord, Array and Selection. These input types are typically defined by means
  * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
  * input types through its keys, these input types cannot be accessed directly at the initialization phase.
  * The remaining part of initialization can be done later, typically from main(), by calling the method finish().
@@ -62,13 +63,16 @@ public:
 /**
  * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
  * LazyType. When all static variables are initialized, the method LazyTypes::instance().finish() can be called
- * in order to finish initialization of lazy types such as Records, AbstractRecords and Arrays.
+ * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
+ * Selections have to be finished after all other types since they are used by AbstractRecords to register all
+ * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
  */
 class LazyTypes
 {
 public:
 
 	typedef std::vector<LazyType *> TypeVector;
+	typedef std::vector<LazyType *> SelectionVector;
 
 	/**
 	 * The reference to the singleton instance.
@@ -90,6 +94,11 @@ public:
 	 */
 	void addType(LazyType *type);
 
+	/**
+	 * Registers new selection type.
+	 */
+	void addSelection(LazyType *sel);
+
 	/// Finishes all registered lazy types.
 	void finish();
 
@@ -99,6 +108,9 @@ private:
 
 	/// The array of registered lazy types.
 	TypeVector types;
+
+	/// The array of registered selections.
+	SelectionVector selections;
 };
 
 

@@ -48,16 +48,35 @@ LazyTypes::TypeVector::iterator LazyTypes::end()
 }
 
 
-void LazyTypes::addType(Input::Type::LazyType *type)
+void LazyTypes::addType(LazyType *type)
 {
 	types.push_back(type);
+}
+
+void LazyTypes::addSelection(LazyType *sel)
+{
+	selections.push_back(sel);
 }
 
 
 void LazyTypes::finish()
 {
+	// first finish all lazy input types
 	for (TypeVector::iterator it=begin(); it!=end(); it++)
 		(*it)->finish();
+
+	// then finalize abstract records so that no type can derive from them
+	for (TypeVector::iterator it=begin(); it!=end(); it++)
+	{
+		if (dynamic_cast<AbstractRecord *>(*it) != 0)
+			dynamic_cast<AbstractRecord *>(*it)->no_more_descendants();
+	}
+
+	// at last finish all selections
+	for (SelectionVector::iterator it=selections.begin(); it!=selections.end(); it++)
+		(*it)->finish();
+
 	types.clear();
+	selections.clear();
 }
 

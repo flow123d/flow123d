@@ -11,35 +11,18 @@
 
 #include <gtest/gtest.h>
 #include <gtest_throw_what.hh>
+#include <fstream>
 
 #include "input/json_to_storage.hh"
 
 using namespace std;
-
-// Test data strings
-const string storage_input = R"JSON(
-[ 
-  false,
-  1,
-  2,
-  3.3,
-  "ctyri",
-  [1,2,3,4,5],
-  { "a": {"REF":"../../7/b/c"},
-    "b": {"REF":"/4"}
-  },
-  { "b": { "c":1 } },
-  {"REF":[0]},          
-  {}
-]
-)JSON";
 
 using namespace Input;
 
 TEST(JSONPath, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    stringstream in_str(storage_input);
+    ifstream in_str(string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con");
     JSONPath::Node node;
     json_spirit::read_or_throw( in_str, node);
     JSONPath path(node);
@@ -81,7 +64,7 @@ TEST(JSONPath, all) {
 
 TEST(JSONPath, errors) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-    stringstream in_str(storage_input);
+	ifstream in_str(string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con");
     JSONPath::Node node;
     json_spirit::read_or_throw( in_str, node);
 
@@ -337,7 +320,7 @@ TEST_F(InputJSONToStorageTest, Record) {
 
 }
 
-TEST_F(InputJSONToStorageTest, AbstratRec) {
+TEST_F(InputJSONToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     static Type::AbstractRecord a_rec("EqBase","Base of equation records.");
