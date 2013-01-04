@@ -33,8 +33,8 @@ set(super_test_libs field_lib flow123d_lib ${Armadillo_LIBRARIES} ${Armadillo_LI
 if(CMAKE_COMPILER_IS_GNUCXX)
     
     set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=gnu++0x")        ## Use C++11 for multiline raw strings
-    define_test(eq_data)
-    #define_test(time_governor)
+    #define_test(eq_data)
+    define_test(time_governor)
     
 endif()
 
