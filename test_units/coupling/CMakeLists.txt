@@ -25,16 +25,18 @@
 
 
 
-add_custom_target( coupling )
-set(super_test "coupling")
-set(super_test_libs coupling_lib)
+add_custom_target( coupling_test )
+set(super_test "coupling_test")
+set(super_test_libs field_lib flow123d_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for auto and multiline raw strings
-    define_test(time_governor)
-endif(CMAKE_COMPILER_IS_GNUCXX)
-
- 
+    
+    set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=gnu++0x")        ## Use C++11 for multiline raw strings
+    define_test(eq_data)
+    #define_test(time_governor)
+    
+endif()
 
 
 

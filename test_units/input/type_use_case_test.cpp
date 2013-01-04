@@ -83,9 +83,6 @@ it::Record Application::input_type = it::Record("Application", "Root record of t
     .declare_key("equations", it::Array( Equation::input_type, 1, 10 ), it::Default::obligatory(), "");
 
 
-it::AbstractRecord Equation::input_type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
-	// keys that will be derived by every equation, but their type can be overridden
-    .declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"");
 
 
 it::Record EquationA::input_type = it::Record("EquationA", "For example explicit transport equation solver.")
@@ -98,6 +95,10 @@ it::Record EquationB::input_type = it::Record("EquationB", "For example implicit
     .declare_key("parameter_b", it::Integer(), it::Default("111"), "")
     .declare_key("default_str", it::String(), it::Default("str value"), "" )
     .declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" );
+
+it::AbstractRecord Equation::input_type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
+	// keys that will be derived by every equation, but their type can be overridden
+    .declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"");
 
 
 
@@ -138,7 +139,8 @@ EquationB::EquationB(Input::Record rec) {
 
 
 void Application::SetUp() {
-    std::ifstream in_stream(string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con");
+    std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
+    std::ifstream in_stream(f_name.c_str());
     json_reader.read_stream(in_stream, input_type );
 }
 

@@ -226,26 +226,23 @@ public:
         // at the moment, so we save the reference of type and update
         // the array later in finish().
         if (boost::is_base_of<Record, ValueType>::value ||
-        	boost::is_base_of<Selection, ValueType>::value ||
-        	boost::is_base_of<Array, ValueType>::value)
+        	boost::is_base_of<Selection, ValueType>::value)
         {
         	data_->p_type_of_values = &type;
         }
         else
         {
-        	if ( ! type.is_finished())
-        		xprintf(PrgErr, "Unfinished type '%s' used in declaration of Array.\n", type.type_name().c_str() );
-        	data_->p_type_of_values = 0;
+            data_->p_type_of_values = NULL;
+
 
         	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
         	data_->type_of_values_ = type_copy;
-        	//set_type_impl(type, boost::is_base_of<TypeBase,ValueType>() );
         }
     }
 
-    Array(boost::shared_ptr<ArrayData> data_ptr)
-    : data_(data_ptr)
-    {}
+    //Array(boost::shared_ptr<ArrayData> data_ptr)
+    //: data_(data_ptr)
+    //{}
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
     virtual void finish();
@@ -290,6 +287,8 @@ protected:
 
     /// Handle to the actual array data.
     boost::shared_ptr<ArrayData> data_;
+
+    /// For lazy finishing value types, we store just pointer at declaration
 
 };
 

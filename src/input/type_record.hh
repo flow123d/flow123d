@@ -411,8 +411,9 @@ protected:
 
         /**
          * Auxiliary variable which saves the shared_ptr to the actual RecordData.
+         * It is shared_ptr version of 'this' ptr.
          * It is used in the finish() method of RecordData for derived types, where
-         * we need to link the parent with the descendant.
+         * we need to make instance of Record from method of RecordData class.
          */
         boost::shared_ptr<RecordData> descendant_data_;
 

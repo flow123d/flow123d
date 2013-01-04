@@ -27,9 +27,9 @@
  *  @author Jan Stebel
  */
 
-#include "lazy_types.hh"
-#include "type_base.hh"
-#include "transport/transport_dg.hh"
+#include "input/lazy_types.hh"
+#include "input/type_base.hh"
+#include "input/type_record.hh"
 
 using namespace Input::Type;
 

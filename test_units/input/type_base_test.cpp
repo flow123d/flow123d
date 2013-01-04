@@ -121,7 +121,7 @@ using namespace Input::Type;
     LazyTypes::instance().finish();
 
     // get_sub_type
-    EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type());
+    EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // boost::smart_ptr assert fails
 
     // operator ==
     EXPECT_NE( arr_int, Array( Double() ) );

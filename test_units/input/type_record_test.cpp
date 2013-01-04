@@ -343,9 +343,6 @@ using namespace Input::Type;
     AbstractRecord x_rec("ar","");
     Record y_rec("y_rec","");
 
-#ifdef DEBUG_ASSERTS
-    EXPECT_DEATH( {y_rec.derive_from(x_rec);} , "Can not add descendant to unfinished AbstractType." );
-#endif
 }
 
 
