@@ -22,11 +22,9 @@ DECLARE_INPUT_EXCEPTION( ExcFV_Input, << "Wrong field value input: " << EI_Input
 
 namespace internal {
 
-std::string type_name_(double)
-{ return "Real"; }
-
-std::string type_name_(int)
-{ return "Int"; }
+// Helper functions to get scalar type name
+std::string type_name_(double);
+std::string type_name_(int);
 
 
 template <class ET>
@@ -68,7 +66,7 @@ public:
             return IT::Array( IT::Array( typename internal::InputType<ET>::type(), NCols, NCols), NRows, NRows );
     }
 
-    FieldValue_(return_type &val) : value_(val) {}
+    inline FieldValue_(return_type &val) : value_(val) {}
 
     void init_from_input( InputType rec ) {
         Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
@@ -148,7 +146,7 @@ public:
     static std::string type_name() { return boost::str(boost::format("%s") % internal::type_name_( ET() ) ); }
     static typename internal::InputType<ET>::type get_input_type() { return typename internal::InputType<ET>::type(); }
 
-    FieldValue_(return_type &val) : value_(val) {}
+    inline FieldValue_(return_type &val) : value_(val) {}
     void init_from_input( InputType val ) { value_ = val; }
 
     void set_n_comp(unsigned int) {};
@@ -178,7 +176,7 @@ public:
         return Input::Type::Array( typename internal::InputType<ET>::type(), 1);
     }
 
-    FieldValue_(return_type &val) : value_(val) {}
+    inline FieldValue_(return_type &val) : value_(val) {}
     void init_from_input( InputType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
@@ -221,7 +219,7 @@ public:
         return IT::Array( typename internal::InputType<ET>::type(), 1, NRows);
     }
 
-    FieldValue_(return_type &val) : value_(val) {}
+    inline FieldValue_(return_type &val) : value_(val) {}
 
     void init_from_input( InputType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();

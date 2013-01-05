@@ -39,8 +39,8 @@ TEST(FieldConst, read_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record  rec_type("FieldConstTest","");
-    rec_type.declare_key("conductivity_3d", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("init_conc", VectorField::get_input_type(), Input::Type::Default::obligatory(), "" );
+    rec_type.declare_key("conductivity_3d", TensorField::input_type, Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("init_conc", VectorField::input_type, Input::Type::Default::obligatory(), "" );
     rec_type.finish();
 
     // read input string
@@ -58,12 +58,12 @@ TEST(FieldConst, read_from_input) {
     {
         arma::vec result;
 
-        conc->value( point_1, elm, result);
+        result = conc->value( point_1, elm);
         EXPECT_DOUBLE_EQ( 1.2 , result[0]);
         EXPECT_DOUBLE_EQ( 2.3, result[1]);
         EXPECT_DOUBLE_EQ( 3.4, result[2]);
 
-        conc->value( point_2, elm, result);
+        result = conc->value( point_2, elm);
         EXPECT_DOUBLE_EQ( 1.2 , result[0]);
         EXPECT_DOUBLE_EQ( 2.3, result[1]);
         EXPECT_DOUBLE_EQ( 3.4, result[2]);
@@ -73,7 +73,7 @@ TEST(FieldConst, read_from_input) {
     {
         arma::mat::fixed<3,3> result;
 
-        cond->value( point_2, elm, result);
+        result = cond->value( point_2, elm);
         arma::umat match = ( arma::mat::fixed<3,3>("1 0 0; 0 2 0; 0 0 3") == result );
         EXPECT_TRUE( match.max());
 

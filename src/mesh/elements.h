@@ -31,6 +31,8 @@
 #define ELEMENTS_H
 
 #include "mesh/nodes.hh"
+#include "mesh/region.hh"
+
 #include <materials.hh>
 
 
@@ -63,11 +65,12 @@ public:
     //void *side_by_dim(int side_dim, unsigned int n);
     const Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
     inline SideIter side(const unsigned int loc_index);
-
+    inline Region region() { return region_; }
 
 
     // Data readed from mesh file
-    int      mid;       // Id # of material
+    Region  region_;
+    //int      mid;       // Id # of material
     //int      rid;       // Id # of region
     int      pid;       // Id # of mesh partition
 

@@ -37,9 +37,16 @@ class RegionDB;
 class Region {
 public:
 
+    /// Default region is undefined
+    Region():idx_(undefined) {}
+
     /// Returns true if it is a Boundary region and false if it is a Bulk region.
     inline bool is_boundary() const
         { return !(idx_ & 1); }
+
+    /// Returns false if the region has undefined value
+    inline bool is_valid() const
+        { return idx_!=undefined;}
 
     /// Returns a global index of the region.
     inline unsigned int idx() const
@@ -61,6 +68,17 @@ public:
     /// Returns id of the region (using RegionDB)
     unsigned int id() const;
 
+    /// Returns dimension of the region.
+    unsigned int dim() const;
+
+    /// Comparison operators
+    inline bool operator==(const Region &other) const
+        { return idx_ == other.idx_; }
+
+    /// Comparison operators
+    inline bool operator!=(const Region &other) const
+        { return idx_ != other.idx_; }
+
     /**
      * Returns region database. Meant to be used for getting range of
      * global, boundary, and bulk region indices.
@@ -69,6 +87,8 @@ public:
         { return db_;}
 
 private:
+    /// index for undefined region
+    static const unsigned int undefined=0xffffffff;
     /// Global variable with information about all regions.
     static RegionDB db_;
 
@@ -111,7 +131,6 @@ class RegionSet {
  * We assume that all regions are known at beginning of the program (typically after reading all meshes)
  * however they need not be used through the whole computation.
  *
- * TODO: Use boost multi_index_set to avoid two complementary data structures.
  *
  */
 
@@ -135,11 +154,32 @@ public:
      * of reasonable size.
      */
     static const unsigned int max_n_regions = 64000;
+
+
     /**
-     * Add new region into database and return its index. If the region is already in the DB,
-     * check consistency of label and id and return its index.
+     * Add new region into database and return its index. This requires full
+     * specification of the region that is given in PhysicalNames section of the GMSH MSH format.
+     * If the region is already in the DB, check consistency of label and id and return its index.
+     *
      */
-    Region add_region(unsigned int id, const std::string &label, bool boundary);
+    Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+
+    /**
+     * As the previous, but generates automatic label of form 'region_ID', and set bulk region.
+     * Meant to be used when reading elements from MSH file. Agion, if the region is defined already, we just check consistency.
+     */
+    Region add_region(unsigned int id, unsigned int dim);
+
+    /**
+     * Returns a @p Region with given @p label. If it is not found it returns @p undefined Region.
+     */
+    Region find_label(const std::string &label);
+
+    /**
+     * Returns a @p Region with given @p id. If it is not found it returns @p undefined Region.
+     */
+    Region find_id(unsigned int id);
+
     /**
      * Return original label for given index @p idx.
      */
@@ -148,7 +188,10 @@ public:
      * Return original ID for given index @p idx.
      */
     unsigned int get_id(unsigned int idx) const;
-
+    /**
+     * Return dimension of region with given index @p idx.
+     */
+    unsigned int get_dim(unsigned int idx) const;
     /**
      * Close this class for adding labels. This is necessary to return correct size
      * for material indexed arrays and vectors. After calling this method you can
@@ -158,26 +201,29 @@ public:
     /**
      * Returns maximal index + 1
      */
-    unsigned int size() const;
+    unsigned int size();
     /**
      * Returns total number boundary regions.
      */
-    unsigned int boundary_size() const;
+    unsigned int boundary_size();
     /**
      * Returns total number bulk regions.
      */
-    unsigned int bulk_size() const;
+    unsigned int bulk_size();
 
 
 private:
     /// One item in region database
     struct RegionItem {
-        RegionItem(unsigned int index, unsigned int id, const std::string &label)
-            : index(index), id(id), label(label) {}
+        RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim)
+            : index(index), id(id), label(label), dim_(dim) {}
 
+        // unique identifiers
         unsigned int index;
         unsigned int id;
         std::string label;
+        // data
+        unsigned int dim_;
     };
 
     // tags

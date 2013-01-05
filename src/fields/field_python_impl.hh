@@ -133,13 +133,37 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
 
 }
 
+/**
+ * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
+ */
+template <int spacedim, class Value>
+typename Value::return_type & FieldPython<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
+{
+    set_value(p,elm, this->value_);
+    return this->r_value_;
+}
 
+
+/**
+ * Returns std::vector of scalar values in several points at once.
+ */
+template <int spacedim, class Value>
+void FieldPython<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+                   std::vector<typename Value::return_type>  &value_list)
+{
+    ASSERT_SIZES( point_list.size(), value_list.size() );
+    for(unsigned int i=0; i< point_list.size(); i++) {
+        Value envelope(value_list[i]);
+        set_value(point_list[i], elm, envelope );
+
+    }
+}
 
 /**
 * Returns one vector value in one given point.
 */
 template <int spacedim, class Value>
-FieldResult FieldPython<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value)
+void FieldPython<spacedim, Value>::set_value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, Value &value)
 {
 #ifdef HAVE_PYTHON
     for(unsigned int i = 0; i < spacedim; i++) {
@@ -153,14 +177,12 @@ FieldResult FieldPython<spacedim, Value>::value(const Point<spacedim> &p, Elemen
         xprintf(Err,"FieldPython call failed\n");
     }
 
-    Value tmp_value(value);
     unsigned int pos =0;
-    for(unsigned int row=0; row < tmp_value.n_rows(); row++)
-        for(unsigned int col=0; col < tmp_value.n_cols(); col++, pos++)
-            if ( boost::is_integral< typename Value::element_type >::value ) tmp_value(row,col) = PyInt_AsLong( PyTuple_GetItem( p_value_, pos ) );
-            else tmp_value(row,col) = PyFloat_AsDouble( PyTuple_GetItem( p_value_, pos ) );
+    for(unsigned int row=0; row < value.n_rows(); row++)
+        for(unsigned int col=0; col < value.n_cols(); col++, pos++)
+            if ( boost::is_integral< typename Value::element_type >::value ) value(row,col) = PyInt_AsLong( PyTuple_GetItem( p_value_, pos ) );
+            else value(row,col) = PyFloat_AsDouble( PyTuple_GetItem( p_value_, pos ) );
 
-    return result_other;
 #endif // HAVE_PYTHON
 }
 

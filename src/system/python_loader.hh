@@ -31,8 +31,8 @@ public:
  * Class with static only members, should be used to load and compile Python sources either from file or from string.
  * Implement correct initialization and finalization.
  * TODO:
- * - check validity of results and report errors / exceptions (if having light weight system_lib).
- * - better loading of modules form files
+ * - check validity of results and throw exceptions
+ * - better loading of modules from files
  * - explain and resolve RuntimeWarning:
  *   "flow123d_python_loader:1: RuntimeWarning: Parent module 'field_python_script' not found while handling absolute import"
  *   that appears during field_python_test.cpp

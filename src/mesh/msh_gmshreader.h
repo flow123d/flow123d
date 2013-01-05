@@ -74,6 +74,10 @@ public:
     void read_element_data(const std::string &field_name, std::vector<double> &data, Mesh *mesh);
 
 private:
+    /**
+     * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
+     */
+    void read_physical_names(Tokenizer &in);
 
     /**
      * private method for reading of nodes

@@ -5,12 +5,11 @@
  *      Author: jb
  */
 
-#include "fields/field_all.hh"
-
 #ifndef FIELD_CONSTANT_IMPL_HH_
 #define FIELD_CONSTANT_IMPL_HH_
 
 #include "fields/field_constant.hh"
+#include "input/input_type.hh"
 
 
 //#include <boost/type_traits.hpp>
@@ -23,7 +22,7 @@ template <int spacedim, class Value>
 it::Record FieldConstant<spacedim, Value>::input_type
     = it::Record("FieldConstant", FieldBase<spacedim,Value>::template_name()+" Field constant in space.")
     .derive_from(FieldBase<spacedim, Value>::input_type)
-    .declare_key("value", Value::input_type, Default("0.0"),
+    .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
                                 "Value of the constant field.\n"
                                 "For vector values, you can use scalar value to enter constant vector.\n"
                                 "For square NxN-matrix values, you can use:\n"
@@ -48,34 +47,33 @@ void FieldConstant<spacedim, Value>::init_from_input( Input::Record rec) {
 
 
 
-
-
+/**
+ * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
+ */
+template <int spacedim, class Value>
+typename Value::return_type & FieldConstant<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
+{
+    return this->r_value_;
+}
 
 
 /**
-* Returns one vector value in one given point.
-*/
-template <int spacedim, class Value>
-FieldResult FieldConstant<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value)
-{
-    value=this->value_;
-    return result_other;
-}
-
-
-
-/*
+ * Returns std::vector of scalar values in several points at once.
+ */
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
-                   std::vector<Value>  &value_list, std::vector<FieldResult> &result_list)
+                   std::vector<typename Value::return_type>  &value_list)
 {
-#ifdef HAVE_PYTHON
     ASSERT_SIZES( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++)
-        result_list[i] = value(point_list[i], component);
-#endif // HAVE_PYTHON
+        value_list[i]=this->r_value_;
 }
-*/
+
+
+
+
+
+
 
 
 

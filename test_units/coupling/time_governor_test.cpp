@@ -105,7 +105,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     static Input::Type::Record in_rec("RootInput", "Root record.");
     
     if (! in_rec.is_finished()) {
-    in_rec.declare_key("time", TimeGovernor::input_type, "");
+    in_rec.declare_key("time", TimeGovernor::input_type, Input::Type::Default::obligatory(), "");
     in_rec.finish();
     }
     

@@ -522,7 +522,6 @@ void Mesh::create_external_boundary()
                  // fill boundary element
                  Element * bc_ele = &( bc_elements[bcd.index()] );
                  bc_ele->dim_ = ele->dim()-1;
-                 bc_ele->mid = 0;
                  bc_ele->node = new Node * [bc_ele->n_nodes()];
                  FOR_ELEMENT_NODES(bc_ele, ni) {
                      bc_ele->node[ni] = (Node *)ele->side(si)->node(ni);
@@ -574,9 +573,9 @@ void Mesh::setup_materials( MaterialDatabase &base)
 {
     xprintf( MsgVerb, "   Element to material... ")/*orig verb 5*/;
     FOR_ELEMENTS(this, ele ) {
-        ele->material=base.find_id(ele->mid);
+        ele->material=base.find_id(ele->region().id());
         INPUT_CHECK( ele->material != base.end(),
-                "Reference to undefined material %d in element %d\n", ele->mid, ele.id() );
+                "Reference to undefined material %d in element %d\n", ele->region().id(), ele.id() );
     }
     xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
 }

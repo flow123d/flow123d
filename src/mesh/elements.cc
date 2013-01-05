@@ -46,8 +46,7 @@
 
 
 Element::Element()
-: mid(0),
-  pid(0),
+:  pid(0),
 
   node(NULL),
 
@@ -65,8 +64,7 @@ Element::Element()
 
 
 Element::Element(unsigned int dim)
-: mid(0),
-  pid(0),
+:  pid(0),
 
   material(NULL),
 

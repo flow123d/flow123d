@@ -23,7 +23,7 @@
  *
  * http://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Nifty_Counter
  */
-
+/*
 #include <fields/field_base.hh>
 #include <fields/field_interpolated_p0.hh>
 #include <fields/field_python.hh>
@@ -35,5 +35,5 @@
 #include <fields/field_python_impl.hh>
 #include <fields/field_constant_impl.hh>
 //#include <fields/field_elementwise_impl.hh>
-
+*/
 #endif /* FIELD_ALL_HH_ */

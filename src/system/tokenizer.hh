@@ -34,7 +34,7 @@ class FilePath;
  * @endcode
  *
  * TODO:
- * - incorporate skip_to method
+ * - method to reopen - skip to the beginning
  *
  *
  */
@@ -67,6 +67,7 @@ public:
      * Returns true if the pattern has been found before end of file.
      * 
      * TODO: similar method that use regular expressions (e.g. from boost)
+     * TODO: add option to find the pattern in the whole file (wrap over the end of file)
      */
     bool skip_to(const std::string &pattern);
     

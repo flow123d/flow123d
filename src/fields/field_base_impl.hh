@@ -59,13 +59,13 @@ FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(
 {
     FieldBase<spacedim, Value> *func;
 
-    if (rec.type() == FieldInterpolatedP0<spacedim,Value>::get_input_type()) {
+    if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
 //        func= new FieldInterpolatedP0<spacedim,Value>(init_time, n_comp);
 #ifdef HAVE_PYTHON
-    } else if (rec.type() == FieldPython<spacedim,Value>::get_input_type()) {
+    } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
         func= new FieldPython<spacedim, Value>(init_time, n_comp);
 #endif
-    } else if (rec.type() == FieldConstant<spacedim, Value>::get_input_type()) {
+    } else if (rec.type() == FieldConstant<spacedim, Value>::input_type ) {
         func=new FieldConstant<spacedim,Value>(init_time, n_comp);
     } else {
         xprintf(PrgErr,"TYPE of Field is out of set of descendants. SHOULD NOT HAPPEN.\n");
@@ -89,22 +89,23 @@ void FieldBase<spacedim, Value>::set_time(double time) {
 }
 
 
-
+/*
 template <int spacedim, class Value>
 typename Value::return_type &FieldBase<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm) {
     this->value(p,elm, this->r_value_);
     return this->r_value_;
 }
+*/
 
-
-
+/*
 template <int spacedim, class Value>
 void FieldBase<spacedim, Value>::value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list, std::vector<FieldResult> &result_list)
 {
     ASSERT_SIZES( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++)
-        result_list[i] = value(point_list[i], elm, value_list[i]);
+        value_list[i] = value(point_list[i], elm);
 }
+*/
 
 #endif //FUNCTION_BASE_IMPL_HH_

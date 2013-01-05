@@ -8,16 +8,27 @@
 
 #include "fields/field_values.hh"
 
-template class FieldValue<0>::Discrete;
-template class FieldValue<0>::Scalar;
-template class FieldValue<0>::Vector;
+namespace internal {
+// Helper functions to get scalar type name
+std::string type_name_(double)
+{ return "Real"; }
 
-template class FieldValue<2>::VectorFixed;
-template class FieldValue<2>::TensorFixed;
+std::string type_name_(int)
+{ return "Int"; }
 
-template class FieldValue<3>::VectorFixed;
-template class FieldValue<3>::TensorFixed;
+} // namespace internal
 
+
+
+template class FieldValue_<1,1,int>;
+template class FieldValue_<1,1,double>;
+template class FieldValue_<0,1,double>;
+
+template class FieldValue_<2,1,double>;
+template class FieldValue_<3,1,double>;
+
+template class FieldValue_<2,2,double>;
+template class FieldValue_<3,3,double>;
 
 template class FieldValue<1>;
 template class FieldValue<2>;

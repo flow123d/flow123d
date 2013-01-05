@@ -5,8 +5,6 @@
  *      Author: jb
  */
 
-#include "fields/field_all.hh"
-
 
 #ifndef FIELD_CONSTANT_HH_
 #define FIELD_CONSTANT_HH_
@@ -38,14 +36,13 @@ public:
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual FieldResult value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value);
+    virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-//    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
-//                       std::vector<Value>  &value_list,
-//                       std::vector<FieldResult> &result_list);
+    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+                       std::vector<typename Value::return_type>  &value_list);
 
 
     virtual ~FieldConstant();

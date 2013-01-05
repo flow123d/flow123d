@@ -10,6 +10,8 @@
 
 #include "new_mesh/bounding_box.hh"
 #include "mesh/mesh_types.hh"
+#include "mesh/region.hh"
+#include "mesh/elements.h"
 
 /**
  * Element accessor templated just by dimension of the embedding space, used by Fields.
@@ -23,10 +25,15 @@
  */
 template <int spacedim>
 class ElementAccessor {
+public:
+    ElementAccessor() {}
+    ElementAccessor(const ElementIter &e_it) : element_(e_it) {}
     inline unsigned int dim() const
         { return dim_; }
     inline const ElementIter element() const
         { return element_;}
+    inline Region region() const
+        { return element_->region_; }
 
     const BoundingBox &bounding_box();
 

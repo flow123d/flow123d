@@ -7,7 +7,6 @@
 // TODO: make FieldPython dummy class if we do not have python, so that we
 // need not optional code elsewhere
 
-#include "fields/field_all.hh"
 
 #ifndef FIELD_PYTHON_HH_
 #define FIELD_PYTHON_HH_
@@ -55,19 +54,16 @@ public:
      */
     void set_python_field_from_string( const string &python_source, const string &func_name);
 
-    using FieldBase<spacedim,Value>::value;
-
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual FieldResult value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value);
+    virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-//    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
-//                       std::vector<Value>  &value_list,
-//                       std::vector<FieldResult> &result_list);
+    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+                       std::vector<typename Value::return_type>  &value_list);
 
 
     virtual ~FieldPython();
@@ -77,6 +73,11 @@ private:
      * Common part of set_python_field_from_* methods
      */
     void set_func(const string &func_name);
+
+    /**
+     * Implementation.
+     */
+    inline void set_value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, Value &value);
 
 #ifdef HAVE_PYTHON
     PyObject *p_func_;

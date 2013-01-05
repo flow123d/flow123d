@@ -88,7 +88,7 @@ void OutputMSH::write_msh_topology(void)
         // element_id element_type 3_other_tags material region partition
         file << ELEM_FULL_ITER(mesh, elm).index() + 1
              << " " << gmsh_simplex_types_[ elm->dim() ]
-             << " 3 " << elm->mid << " " << elm->mid << " " << elm->pid;
+             << " 3 " << elm->region().id() << " " << elm->region().id() << " " << elm->pid;
 
         FOR_ELEMENT_NODES(elm, i)
             file << " " << NODE_FULL_ITER(mesh, elm->node[i]).index() + 1;

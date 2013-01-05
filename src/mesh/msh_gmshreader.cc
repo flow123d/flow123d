@@ -66,6 +66,7 @@ void GmshMeshReader::read_mesh(Mesh* mesh) {
     F_ENTRY;
 
     ASSERT( mesh , "Argument mesh is NULL.\n");
+    read_physical_names(tok_);
     read_nodes(tok_, mesh);
     read_elements(tok_, mesh);
     mesh->setup_topology();
@@ -151,8 +152,9 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
             ++tok;
 
             //get tags 1 and 2
-            ele->mid = lexical_cast<unsigned int>(*tok); ++tok;
-            unsigned int rid = lexical_cast<unsigned int>(*tok); ++tok; // region number, we do not store this
+            unsigned int mid = lexical_cast<unsigned int>(*tok); ++tok;
+            ele->region_ = Region::db().add_region(mid, ele->dim());
+            unsigned int rid = lexical_cast<unsigned int>(*tok); ++tok; // GMSH region number, we do not store this
             //get remaining tags
             if (n_tags > 2)  { ele->pid = lexical_cast<unsigned int>(*tok); ++tok; } // save partition number in the new GMSH format
             for (unsigned int ti = 3; ti < n_tags; ti++) ++tok;         //skip remaining tags
@@ -188,6 +190,32 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
 }
 
 
+void read_physical_names(Tokenizer &tok) {
+    using namespace boost;
+
+    if (! tok.skip_to("$PhysicalNames") ) return;
+    try {
+        tok.next_line(false);
+        unsigned int n_physicals = lexical_cast<unsigned int> (*tok);
+        ++tok; // end of line
+
+        for (unsigned int i = 0; i < n_physicals; ++i) {
+            tok.next_line();
+            // format of one line:
+            // dim    physical-id    physical-name
+
+            unsigned int dim = lexical_cast<unsigned int>(*tok); ++tok;
+            unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
+            string name = *tok; ++tok;
+
+            bool boundary =  ( name.size() != 0 && name[0] == '!' );
+            Region::db().add_region(id, name, dim, boundary);
+        }
+
+    } catch (bad_lexical_cast &) {
+        xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
+    }
+}
 
 
 /***********************************

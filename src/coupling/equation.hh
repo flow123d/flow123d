@@ -66,6 +66,16 @@ namespace Input {
 class EquationBase {
 public:
     /**
+     * Default constructor. Necessary to make tests fixtures for equations.
+     * TODO:
+     * Replace setting all in constructor with appropriate getters and setters.
+     * Make appropriate checks if key ingredients are initialized.
+     */
+    EquationBase() : mesh_(NULL), mat_base(NULL), time_(NULL),
+    equation_mark_type_(TimeGovernor::marks().new_mark_type()), //creating mark type for new equation
+    input_record_()
+    {}
+    /**
      * Common initialization constructor.
      */
     EquationBase(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec);
@@ -166,8 +176,7 @@ public:
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
 protected:
-
-    Mesh * const mesh_;
+    Mesh * mesh_;
     MaterialDatabase * mat_base;
     TimeGovernor *time_;
     TimeMark::Type equation_mark_type_;

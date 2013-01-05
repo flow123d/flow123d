@@ -78,15 +78,13 @@ TEST(FieldPython, vector_2D) {
 
     arma::vec2 result;
     {
-    FieldResult result_type = vec_func.value( point_1, elm, result);
-    EXPECT_EQ(result_other, result_type);
+    result = vec_func.value( point_1, elm);
     EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
     EXPECT_DOUBLE_EQ( 1, result[1]);
     }
 
     {
-    FieldResult result_type = vec_func.value( point_2, elm, result);
-    EXPECT_EQ(result_other, result_type);
+    result = vec_func.value( point_2, elm);
     EXPECT_DOUBLE_EQ( -1, result[0]);
     EXPECT_DOUBLE_EQ( 1, result[1]);
     }
@@ -118,8 +116,8 @@ TEST(FieldPython, read_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record  rec_type("FieldPythonTest","");
-    rec_type.declare_key("field_string", VectorField::get_input_type(), Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("field_file", ScalarField::get_input_type(), Input::Type::Default::obligatory(), "" );
+    rec_type.declare_key("field_string", VectorField::input_type, Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("field_file", ScalarField::input_type, Input::Type::Default::obligatory(), "" );
     rec_type.finish();
 
     // read input string
@@ -137,11 +135,11 @@ TEST(FieldPython, read_from_input) {
         ElementAccessor<2> elm;
         arma::vec2 result;
 
-        flux->value( point_1, elm, result);
+        result = flux->value( point_1, elm);
         EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
         EXPECT_DOUBLE_EQ( 1, result[1]);
 
-        flux->value( point_2, elm, result);
+        result = flux->value( point_2, elm);
         EXPECT_DOUBLE_EQ( -1, result[0]);
         EXPECT_DOUBLE_EQ( 1, result[1]);
     }
