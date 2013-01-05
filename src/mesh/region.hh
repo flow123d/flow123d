@@ -138,10 +138,14 @@ class RegionDB {
 public:
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
     TYPEDEF_ERR_INFO( EI_ID, unsigned int);
+    TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);
+    TYPEDEF_ERR_INFO( EI_LabelOfOtherID, const std::string);
     DECLARE_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
     DECLARE_EXCEPTION( ExcSizeWhileOpen, << "Can not get size of MaterialDispatch yet open.");
-    DECLARE_EXCEPTION( ExcInconsistentAdd, << "Can get region with id: " << EI_ID::val <<", label: " << EI_Label::qval
-                                             << " each used by different region.");
+    DECLARE_EXCEPTION( ExcInconsistentAdd, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "other region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n" \
+                                             << "OR other region with same label but different ID: " << EI_IDOfOtherLabel::val << " already exists\n" \
+                                             << "OR both ID and label match an existing region with different dimension and/or boundary flag.");
     DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
 
 
@@ -161,12 +165,16 @@ public:
      * specification of the region that is given in PhysicalNames section of the GMSH MSH format.
      * If the region is already in the DB, check consistency of label and id and return its index.
      *
+     * Parameter @p id is any non-negative integer that is unique for the region over all meshes used in the simulation,
+     * parameter @p label is unique string identifier of the region, @p dim is dimension of reference elements in the region
+     * and @p boundary is true if the region consist of boundary elements (where one can apply boundary condition).
+     *
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
 
     /**
      * As the previous, but generates automatic label of form 'region_ID', and set bulk region.
-     * Meant to be used when reading elements from MSH file. Agion, if the region is defined already, we just check consistency.
+     * Meant to be used when reading elements from MSH file. Again, if the region is defined already, we just check consistency.
      */
     Region add_region(unsigned int id, unsigned int dim);
 

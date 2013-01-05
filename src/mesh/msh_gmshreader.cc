@@ -78,7 +78,7 @@ void GmshMeshReader::read_nodes(Tokenizer &tok, Mesh* mesh) {
     using namespace boost;
     xprintf(Msg, "- Reading nodes...");
 
-    tok.skip_to("$Nodes");
+    if (! tok.skip_to("$Nodes")) xprintf(UsrErr,"Missing section '$Nodes' in the GMSH input file: %s\n",tok.f_name().c_str());
     try {
         tok.next_line(false);
         unsigned int n_nodes = lexical_cast<unsigned int> (*tok);;
@@ -110,7 +110,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
     using namespace boost;
     xprintf(Msg, "- Reading elements...");
 
-    tok.skip_to("$Elements");
+    if (! tok.skip_to("$Elements")) xprintf(UsrErr,"Missing section '$Elements' in the GMSH input file: %s\n",tok.f_name().c_str());
     try {
         tok.next_line(false);
         unsigned int n_elements = lexical_cast<unsigned int> (*tok);
@@ -190,10 +190,11 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
 }
 
 
-void read_physical_names(Tokenizer &tok) {
+
+void GmshMeshReader::read_physical_names(Tokenizer &tok) {
     using namespace boost;
 
-    if (! tok.skip_to("$PhysicalNames") ) return;
+    if (! tok.skip_to("$PhysicalNames", "$Nodes") ) return;
     try {
         tok.next_line(false);
         unsigned int n_physicals = lexical_cast<unsigned int> (*tok);

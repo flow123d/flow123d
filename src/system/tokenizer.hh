@@ -22,6 +22,10 @@ class FilePath;
  * you can iterate over them. This class simplify the usage of the boost's tokenizer and further simplify
  * reading of the text files. Actual tokenizer use backslash '\\' as the escape character, double quotas '"'as quotation
  * character, and space ' ' or tabelator '\\t' as the separator of tokens.
+ *
+ * !! Used token separator @p escaped_list_separator do not provide possibility to merge several consecutive
+ * separator characters into one separator. Consequently, there appears empty tokens when there more spaces
+ * then one separating tokens. To overcome this, we drop every empty token.
  *	
  * Provides:
  * - method to read @p next_line, automatically skipping empty lines
@@ -64,12 +68,15 @@ public:
     /**
      * Skip forward to the line that match given string. 
      * The tokenizer is set to the begining of that line.
-     * Returns true if the pattern has been found before end of file.
+     * Returns true if the @p pattern has been found before the end of file.
+     * Optionally, if the parameter @p end_search_pattern is provided, the search is
+     * stopped after search for @p pattern on the line where @p end_search_pattern was detected.
+     * Next line is not read.
      * 
      * TODO: similar method that use regular expressions (e.g. from boost)
      * TODO: add option to find the pattern in the whole file (wrap over the end of file)
      */
-    bool skip_to(const std::string &pattern);
+    bool skip_to(const std::string &pattern, const std::string &end_search_pattern="");
     
     /**
      * Drops remaining tokens on the current line and reads the new one.
@@ -94,6 +101,8 @@ public:
      */
     inline BT::iterator & operator ++() {
       if (! eol()) {position_++; ++tok_;}
+      // skip empty tokens (consecutive separators)
+      while (! eol() && (*tok_).size()==0 ) {position_++; ++tok_;}
       return tok_;
     }
 

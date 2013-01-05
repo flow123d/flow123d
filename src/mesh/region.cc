@@ -36,37 +36,50 @@ unsigned int Region::dim() const
 Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
     if (closed_) xprintf(PrgErr, "Can not add to closed region DB.\n");
 
-    RegionSet::index<ID>::type::iterator it_id = region_set_.get<ID>().find(id);
-    RegionSet::index<Label>::type::iterator it_label = region_set_.get<Label>().find(label);
+    Region r_id = find_id(id);
+    Region r_label=find_label(label);
 
-    if (it_id==region_set_.get<ID>().end() || it_label==region_set_.get<Label>().end()  ) {
-        // check that both finds failed
-        if (! ( it_id==region_set_.get<ID>().end() && it_label==region_set_.get<Label>().end() ))
-            THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
-        // if DB is open add new entry
-        if (closed_)  THROW( ExcAddingIntoClosed() << EI_Label(label) <<EI_ID(id) );
-        else {
-            unsigned int index;
-            if (boundary) (index = (n_boundary_ <<1)), n_boundary_++;
-            else (index = (n_bulk_ << 1)+1),  n_bulk_++;
-            if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
-               THROW( ExcCantAdd()  << EI_Label(label) <<EI_ID(id) );
-            return Region(index);
-        }
+    if (r_id.is_valid() && r_label.is_valid()) {
+        // both iterators are valid; check they are same, and match new values
+        if (r_id.idx() != r_label.idx() ) THROW(ExcInconsistentAdd()
+                << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(r_id.label()) << EI_IDOfOtherLabel(r_label.id())
+                );
+        if ( r_id.dim() != dim || r_id.is_boundary() != boundary ) THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
+        return r_id;
     } else {
-        // both iterators are valid
-        if (it_id->index != it_label->index) THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
-        Region reg(it_id->index);
-        if ( reg.dim() != dim || reg.is_boundary() != boundary ) THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
-        return reg;
+        // check that both finds failed
+        if (! r_id.is_valid() && ! r_label.is_valid() ) {
+            // if DB is open add new entry
+            if (closed_)  THROW( ExcAddingIntoClosed() << EI_Label(label) <<EI_ID(id) );
+            else {
+                unsigned int index;
+                if (boundary) (index = (n_boundary_ <<1)), n_boundary_++;
+                else (index = (n_bulk_ << 1)+1),  n_bulk_++;
+                if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
+                   THROW( ExcCantAdd()  << EI_Label(label) <<EI_ID(id) );
+                return Region(index);
+            }
+        } else {
+            if ( r_id.is_valid() ) THROW(ExcInconsistentAdd()
+                    << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(r_id.label())
+                    );
+            else
+                if (r_label.is_valid() ) THROW(ExcInconsistentAdd()
+                        << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(r_label.id())
+                        );
+                else xprintf(PrgErr, "Rotten inconsistency.\n");
+        }
     }
 }
 
 
 
 Region RegionDB::add_region(unsigned int id, unsigned int dim) {
+    Region r_id = find_id(id);
+    if (r_id.is_valid()) return add_region(id, r_id.label(), dim, false);
+    // else
     stringstream ss;
-    ss << "region_%d" << id;
+    ss << "region_" << id;
     return add_region(id, ss.str(), dim, false);
 }
 

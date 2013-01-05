@@ -17,10 +17,10 @@
 using  namespace std;
 
 string input = R"CODE(0 1
-"a b c" , a b c
+"a b c" ,  a b c
 
 $Elements_
-0 1 2 3
+ 0  1 2 3
 $EndElements 
 something
 )CODE";
@@ -66,9 +66,8 @@ void test_tokenizer(Tokenizer &tok) {
     tok.next_line();
 
     EXPECT_TRUE( tok.next_line() );
-    EXPECT_FALSE( tok.eof() );
-    EXPECT_FALSE( tok.next_line() ); // no next line
-    EXPECT_TRUE( tok.eof() );
+    EXPECT_EQ("something", *tok);
+
 
 }
 
@@ -77,6 +76,9 @@ TEST(Tokenizer, from_stream) {
     std::stringstream ss(input);
     Tokenizer tok(ss);
     test_tokenizer(tok);
+    EXPECT_FALSE( tok.eof() );
+    EXPECT_FALSE( tok.next_line() ); // no next line
+    EXPECT_TRUE( tok.eof() );
 }
 
 
@@ -86,4 +88,10 @@ TEST(Tokenizer, from_file) {
     FilePath tok_file( string(UNIT_TESTS_SRC_DIR) + "/system/tokenizer_test_input", FilePath::input_file);
     Tokenizer tok(tok_file);
     test_tokenizer(tok);
+    // in the file we have removed last empty line to test correct behavior in this case
+    EXPECT_EQ(7, tok.line_num());
+    EXPECT_TRUE( tok.eof() );
+    EXPECT_FALSE( tok.next_line() );
+    EXPECT_EQ(7, tok.line_num());
+
 }

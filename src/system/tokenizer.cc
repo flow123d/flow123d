@@ -27,7 +27,7 @@ Tokenizer::Tokenizer(const FilePath &fp)
     own_stream_->open( string(fp).c_str() );
     // check correct openning
     INPUT_CHECK(! own_stream_->fail(), "Can not open input file '%s'.\n", f_name_.c_str() );
-    own_stream_->exceptions ( ifstream::failbit | ifstream::badbit );
+    //own_stream_->exceptions ( ifstream::failbit | ifstream::badbit );
 
 }
 
@@ -44,14 +44,18 @@ Tokenizer::Tokenizer( std::istream &in)
 
 
 
-bool Tokenizer::skip_to(const std::string& pattern)
+bool Tokenizer::skip_to(const std::string& pattern, const std::string &end_search_pattern)
 {
     ASSERT( in_->good(), "Tokenizer stream (for file: %s) is not ready for i/o operations. Perhaps missing check about correct open.\n", f_name_.c_str());
+    bool end_search= (end_search_pattern.size() > 0);
 
-    while (! eof() &&  line_.find(pattern)==string::npos ) next_line(false);
-    if (! eof()) {
-        set_tokenizer();
-        return true;
+    while (! eof()) {
+        if (line_.find(pattern)!=string::npos ) {
+            set_tokenizer();
+            return true;
+        }
+        if ( end_search && line_.find(end_search_pattern)!=string::npos ) return false;
+        next_line(false);
     }
     return false;
 }
@@ -65,12 +69,24 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
         xprintf(Warn, "Remaining tokens, file '%s', line '%d', after token #%d.\n", f_name_.c_str(), line_num(), position_);
     }
 
+    if (eof()) return false; // we are sure that at least one getline will occur
+
     line_="";
-    while ( ! eof() && line_ == "") { std::getline( *in_, line_); boost::trim( line_ ); line_counter_++; }
-    if (! eof() ) {
+    // skip empty lines
+    while ( ! eof() && line_ == "") {
+        std::getline( *in_, line_);
+        // check failure bits
+        if (in_->bad()) xprintf(Err, "Can not read from stream, file: '%s', line: '%d'\n", f_name_.c_str(), line_num());
+        boost::trim( line_ );
+        line_counter_++;
+    }
+    if (! in_->fail() ) { // allow only eof state after any getline
         set_tokenizer();
         return true;
+    } else {
+        DBGMSG("Line: '%s'\n", line_.c_str());
     }
+
     return false;
 }
 
@@ -89,6 +105,9 @@ void Tokenizer::set_tokenizer()
         line_tokenizer_.assign(line_);
         tok_ = line_tokenizer_.begin();
         position_ = 0;   
+        // skip leading separators
+        while (! eol() && (*tok_).size()==0 ) {position_++; ++tok_;}
+
 }
 
 
