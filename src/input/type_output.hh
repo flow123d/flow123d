@@ -18,8 +18,46 @@ namespace Input {
 namespace Type {
 /***
  * TODO:
- * - ve tride OutputBase navrhnout privatni virtualni medoty pro
+ * - proc je v OutputText pretizena resolution metoda print ?
+ *   podobne v OutputJSONTemplate
+ * - v OutputText: Record ktery dedi bude uvadet jmeno predka (AbstractRecordu)
+ * - nejak informovat o povoleni automaticke konverze pro Array a Record
+ * - OutptuJSONTemplate:
+ *   - vypis defaultnich hodnot pro skalarni klice, typ klice do komentare na stejnem radku
+ *     pokud je obligatory vypsat <OBLIGATORY>, ?? co s default at read time a optional
+ *     patrne je uvest ale v komentari, idea je aby soubor byl platny JSON soubor az na OBLIGATORY klice, ktere uzivatel musi vyplnit
+ *   - Pro selection uvest mozne hodnoty a jejich popisy do komentare
+ *   - Pro abstract record: uvest TYPE (selection), pak jeho klice (dedi se) a pak
+ *     jednotlive potomky pomoci klicu s pripojenym typem recordu,
+ *   - pro klice ktere maji typ ktery uz byl popsan se uvede reference na klic kde se popis vyskytuje
  *
+ *     # abstract record FieldBase_3_to_1x1_double
+ *     # description:
+ *     # ...
+ *     init_pressure={
+ *         # selection of 5 values
+ *         # FieldConstant - ...
+ *         # FieldFormula - ...
+ *         # FieldInterpolationP0
+ *         # FieldElementwise
+ *         # FieldPython
+ *         TYPE="FieldConstant"
+ *
+ *         # .. some common key, with default value 0
+ *         common_key=0
+ *     }
+ *     # record FieldConstant, descendant of FieldBase_3_to_1x1_double
+ *     init_pressure_FieldConstant={
+ *     ...
+ *     }
+ *     # record FieldFormula
+ *     init_pressure_FieldFormula={
+ *     ...
+ *     }
+ *
+ *     water_source={REF=/.../init_pressure}
+ *   - ?? jak se vyporadat s default values  pro automaticky konvertovatelne recordy a pole?
+ *   - avoid repetitive output of same tyes
  */
 
 class OutputBase {

@@ -34,6 +34,7 @@
 #include "system/sys_profiler.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
+#include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
 #include "io/output.h"
@@ -90,7 +91,7 @@ Application::Application( int argc,  char ** argv)
   log_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
-  use_profiler(true)
+  use_profiler(false)
 {
 
     // parse our own command line arguments, leave others for PETSc
@@ -103,7 +104,9 @@ Application::Application( int argc,  char ** argv)
 
     system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
+    use_profiler=true;
     Profiler::initialize(PETSC_COMM_WORLD);
+
 
     // Say Hello
     // make strings from macros in order to check type
@@ -217,7 +220,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("log,l", po::value< string >(), "Set base name for log files.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-        ("full_doc", "Produce full structure of the main input file.");
+        ("full_doc", "Produce full structure of the main input file.")
+        ("JSON_template", "Creates file 'flow_input_template.con' with description of the input structure in valid CON file format.");
     ;
 
     // parse the command line
@@ -248,7 +252,15 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
-        input_type.documentation(cout, Input::Type::TypeBase::full_after_record);
+        Input::Type::LazyTypes::instance().finish();
+        cout << Input::Type::OutputText(&input_type);
+        //input_type.documentation(cout, Input::Type::TypeBase::full_after_record);
+        free_and_exit();
+    }
+
+    if (vm.count("JSON_template")) {
+        Input::Type::LazyTypes::instance().finish();
+        cout << Input::Type::OutputJSONTemplate(&input_type);
         free_and_exit();
     }
 
@@ -308,8 +320,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 void Application::free_and_exit() {
     //close the Profiler
     DBGMSG("prof: %d\n", use_profiler);
-    if (use_profiler) Profiler::instance()->output();
-    Profiler::uninitialize();
+    if (use_profiler) {
+        Profiler::instance()->output();
+        Profiler::uninitialize();
+    }
 
     xterminate(false);
 }

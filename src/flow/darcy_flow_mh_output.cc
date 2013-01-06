@@ -161,6 +161,9 @@ void DarcyFlowMHOutput::output()
 
     unsigned int result = 0;
 
+    // skip initial output for steady solver
+    if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
+
     if (darcy_flow->time().is_current(output_mark_type)) {
 
         make_element_vector();

@@ -22,7 +22,7 @@ using namespace Input;
 TEST(JSONPath, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    ifstream in_str(string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con");
+    ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
     JSONPath::Node node;
     json_spirit::read_or_throw( in_str, node);
     JSONPath path(node);
@@ -64,7 +64,7 @@ TEST(JSONPath, all) {
 
 TEST(JSONPath, errors) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	ifstream in_str(string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con");
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
     JSONPath::Node node;
     json_spirit::read_or_throw( in_str, node);
 

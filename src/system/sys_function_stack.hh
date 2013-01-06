@@ -95,9 +95,13 @@ namespace flow
          */
         explicit Trace( const char * const trace_str, const char * const trace_str2, const char * const trace_str3 )
         {
-            program_stack[stack_depth].str_file = trace_str;
-            program_stack[stack_depth].str_func = trace_str2;
-            program_stack[stack_depth].str_line = trace_str3;
+            if (stack_depth == -1) {
+                stack_depth=0;
+                program_stack=new std::vector<Trace_helper>(16);
+            }
+            (*program_stack)[stack_depth].str_file = trace_str;
+            (*program_stack)[stack_depth].str_func = trace_str2;
+            (*program_stack)[stack_depth].str_line = trace_str3;
             stack_depth++;
         }
 
@@ -116,7 +120,7 @@ namespace flow
         {
             fprintf( fw, "Stack trace, depth: %d\n", stack_depth );
             for( int i = stack_depth-1; i >= 0 ; --i )
-                fprintf( fw, " %s%s%s\n", program_stack[i].str_file, program_stack[i].str_func, program_stack[i].str_line );
+                fprintf( fw, " %s%s%s\n", (*program_stack)[i].str_file, (*program_stack)[i].str_func, (*program_stack)[i].str_line );
         }
 
         /**
@@ -126,14 +130,14 @@ namespace flow
         {
             *os << "Stack trace, depth: " << stack_depth << std::endl;
             for( int i = stack_depth-1; i >= 0 ; --i )
-                *os << program_stack[i].str_file << program_stack[i].str_func << program_stack[i].str_line << std::endl;
+                *os << (*program_stack)[i].str_file << (*program_stack)[i].str_func << (*program_stack)[i].str_line << std::endl;
         }
     private:
         /**
          * Static stack of trace messages.
          */
         static int stack_depth;
-        static std::vector<Trace_helper> program_stack;
+        static std::vector<Trace_helper> *program_stack;
     };
 }
 

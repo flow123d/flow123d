@@ -55,6 +55,7 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
                 unsigned int index;
                 if (boundary) (index = (n_boundary_ <<1)), n_boundary_++;
                 else (index = (n_bulk_ << 1)+1),  n_bulk_++;
+                if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
                 if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
                    THROW( ExcCantAdd()  << EI_Label(label) <<EI_ID(id) );
                 return Region(index);

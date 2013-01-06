@@ -33,18 +33,19 @@ class RegionDB;
  * 2) return index (this is used to select correct Field, possibly we can distinguish boundary_index and bulk_index)
  *
  * Implementation: currently we number bulk regions by odd indices and boundary regions by even indices.
+ *
  */
 class Region {
 public:
 
-    /// Default region is undefined
+    /// Default region is undefined/invalid
     Region():idx_(undefined) {}
 
     /// Returns true if it is a Boundary region and false if it is a Bulk region.
     inline bool is_boundary() const
         { return !(idx_ & 1); }
 
-    /// Returns false if the region has undefined value
+    /// Returns false if the region has undefined/invalid value
     inline bool is_valid() const
         { return idx_!=undefined;}
 
@@ -71,16 +72,16 @@ public:
     /// Returns dimension of the region.
     unsigned int dim() const;
 
-    /// Comparison operators
+    /// Equality comparison operators for regions.
     inline bool operator==(const Region &other) const
         { return idx_ == other.idx_; }
 
-    /// Comparison operators
+    /// Equality comparison operators for regions.
     inline bool operator!=(const Region &other) const
         { return idx_ != other.idx_; }
 
     /**
-     * Returns region database. Meant to be used for getting range of
+     * Returns static region database. Meant to be used for getting range of
      * global, boundary, and bulk region indices.
      */
     static RegionDB &db()
@@ -108,6 +109,7 @@ private:
  * Class representing a set of regions.
  * CAn be used  to set function(field) on more regions at once, possibly across meshes
  *
+ * TODO:
  * Desired properties:
  * - can construct itself from input, from a list
  *   of regions (given by label or id)
@@ -131,6 +133,13 @@ class RegionSet {
  * We assume that all regions are known at beginning of the program (typically after reading all meshes)
  * however they need not be used through the whole computation.
  *
+ * TODO:
+ * In order to support more meshes , possibly changing during the time we need better policy for RegionDB closing.
+ * Currently we close RegionDB at first call to any of @p size methods. We need size information for initialization of
+ * RegionFields. However, every RegionField should be used for assembly over just one mesh (or set of meshes - supermesh?),
+ * surly this mesh has to be initialized before assembly so it could be initialized before initialization of RegionField which
+ * lives on this mesh. So the solution can be: RegionDB keeps list of meshes that has their regions registered in RegionDB.
+ * RegionField has signature of its mesh and check if the mesh is registered in the RegionDB before initialization of REgionField.
  *
  */
 
@@ -159,7 +168,6 @@ public:
      */
     static const unsigned int max_n_regions = 64000;
 
-
     /**
      * Add new region into database and return its index. This requires full
      * specification of the region that is given in PhysicalNames section of the GMSH MSH format.
@@ -173,7 +181,7 @@ public:
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
 
     /**
-     * As the previous, but generates automatic label of form 'region_ID', and set bulk region.
+     * As the previous, but generates automatic label of form 'region_ID' if the region with same ID is not already present. Set bulk region.
      * Meant to be used when reading elements from MSH file. Again, if the region is defined already, we just check consistency.
      */
     Region add_region(unsigned int id, unsigned int dim);
@@ -251,8 +259,10 @@ private:
             >
     > RegionSet;
 
+    /// Should be RegionSet that consist from all regions. After RegionSets are implemented.
     RegionSet region_set_;
 
+    /// flag for closed database
     bool closed_;
     /// Number of boundary regions
     unsigned int n_boundary_;

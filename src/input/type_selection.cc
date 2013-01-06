@@ -91,8 +91,6 @@ int Selection::from_default(const string &str) const {
 
 
 void Selection::SelectionData::add_value(const int value, const std::string &key, const std::string &description) {
-    F_ENTRY;
-
     KeyHash key_h = TypeBase::key_hash(key);
     if (key_to_index_.find(key_h) != key_to_index_.end()) {
         xprintf(PrgErr, "Name '%s' already exists in Selection: %s\n", key.c_str(), type_name_.c_str());
