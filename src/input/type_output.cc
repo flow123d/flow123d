@@ -290,5 +290,94 @@ std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
 
 
 
+/*******************************************************************
+ * implementation of OutputJSONTemplate
+ */
+
+
+void OutputJSONTemplate::print(ostream& stream, const Record *type, unsigned int depth) {
+	stream << "{" << endl;
+	for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+		stream << setw((depth+1) * padding_size) << "" << it->key_ << " = ";
+		print(stream, it->type_.get(), depth+1);
+		stream << endl;
+	}
+	stream << setw(depth * padding_size) << "" << "}";
+	if (depth == 0) {
+		stream << endl;
+	}
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const Array *type, unsigned int depth) {
+	unsigned int lower_size, upper_size, minimum=2;
+	get_array_sizes(*type, lower_size, upper_size);
+	lower_size = std::max(lower_size, minimum);
+
+	stream << "[" << endl;
+
+	for (unsigned int i=0; i<lower_size; i++) {
+		if (i > 0) {
+			stream << "," << endl;
+		}
+		stream << setw((depth + 1) * padding_size) << "";
+		print(stream, type->data_->type_of_values_.get(), depth+1);
+	}
+
+	stream << endl;
+	stream << setw(depth * padding_size) << "" << "]";
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+	//aaa
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const Selection *type, unsigned int depth) {
+	stream << "<";
+	for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
+		if (it != type->begin()) {
+			stream << " | ";
+		}
+		stream << "\"" << it->key_ << "\"";
+    }
+	stream << ">";
+
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const Integer *type, unsigned int depth) {
+	stream << "1";
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const Double *type, unsigned int depth) {
+	stream << "2.5";
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const Bool *type, unsigned int depth) {
+	stream << "false";
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const String *type, unsigned int depth) {
+	stream << "\"Some string.\"";
+}
+
+
+void OutputJSONTemplate::print(ostream& stream, const FileName *type, unsigned int depth) {
+	stream << "\"./mesh.msh\"";
+}
+
+
+std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output) {
+	type_output.print(stream);
+	stream << endl;
+	return stream;
+}
+
+
 } // closing namespace Type
 } // closing namespace Input

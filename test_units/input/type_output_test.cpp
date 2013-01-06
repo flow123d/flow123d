@@ -93,8 +93,16 @@ Record array_record("RecordOfArrays",
  main.declare_key("array_record", array_record, "no commment on array_record");
  main.finish();
 
+ cout << "/// " << "OutputText printout" << endl;
+
  OutputText output_text( &main, 0);
  output_text.print(cout);
+
+ cout << endl;
+ cout << "/// " << "OutputJSONTemplate printout" << endl;
+
+ OutputJSONTemplate output_json( &main, 0);
+ output_json.print(cout);
 
 /*	// selection
 	Selection sel("Colors");

@@ -104,12 +104,29 @@ std::ostream& operator<<(std::ostream& stream, OutputText type_output);
 
 
 
-/*class OutputJSONTemplate : public OutputBase {
+class OutputJSONTemplate : public OutputBase {
+public:
+	OutputJSONTemplate(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+
+	void print(ostream& stream) { OutputBase::print(stream); }
+
+protected:
+	void print(ostream& stream, const TypeBase *type, unsigned int depth = 0) { OutputBase::print(stream, type, depth); }
+
+    void print(ostream& stream, const Record *type, unsigned int depth = 0);
+    void print(ostream& stream, const Array *type, unsigned int depth = 0);
+    void print(ostream& stream, const AbstractRecord *type, unsigned int depth = 0);
+    void print(ostream& stream, const Selection *type, unsigned int depth = 0);
+	void print(ostream& stream, const Integer *type, unsigned int depth = 0);
+	void print(ostream& stream, const Double *type, unsigned int depth = 0);
+	void print(ostream& stream, const Bool *type, unsigned int depth = 0);
+	void print(ostream& stream, const String *type, unsigned int depth = 0);
+    void print(ostream& stream, const FileName *type, unsigned int depth = 0);
 
 };
 
 
-std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);*/
+std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);
 
 
 } // closing namespace Type
