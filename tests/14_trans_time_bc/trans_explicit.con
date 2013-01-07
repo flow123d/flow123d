@@ -43,9 +43,7 @@
         }, 
         save_step = 1.0
       }, 
-
-      dual_porosity = false, 
-      sorption_enable = false, 
+ 
       substances = [
         "A"
       ], 

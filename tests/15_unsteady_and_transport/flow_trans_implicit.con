@@ -51,8 +51,9 @@
           REF = "/problem/save_step"
         }
       }, 
-      dual_porosity = false, 
-      sorption_enable = false, 
+
+      d_m = 1e-6,
+
       substances = [
         "conc"
       ], 

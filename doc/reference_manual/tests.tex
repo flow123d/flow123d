@@ -44,6 +44,10 @@
 \section{Test 01 -- Steady flow}
 \label{sec:test01}
 This test considers steady Darcy flow in a cube domain which is cutted by 2D fractures which are further separated by a~1D channel in their cross section. The multidimensional connections between 1D, 2D and 3D elements are involved in the computation. Dirichlet boundary condition is prescribed for flow.
+  \begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+  \end{itemize}
 
 \subsection*{Geometry and boundary conditions}
 A cube with its side 1.0~$L$ is cutted by two diagonal 2D fractures which are further separated by a~1D channel in their cross section.
@@ -51,7 +55,15 @@ A cube with its side 1.0~$L$ is cutted by two diagonal 2D fractures which are fu
 Geometry parameters are defined for different physical domains. Thickness of the 2D fractures is set to 1.0~$L$ and the area of the cross section is set to 1.0~$L^2$. These parameters are unrealistic (the side of the cube is 1.0~$L$ long) but it is compensated in the equation in the fraction with conductivity.
 
 There are only simple Dirichlet boundary conditions. Pressure gradient in direction from one corner of the cube to the oposite corner is applied on all boundary faces of all dimensions.
-
+%
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=13cm]{tests_graphics/01_mesh.pdf}
+\caption{Test 01 -- mesh}
+\label{fig:test13_mesh}
+\end{figure}
+%
+%
 \subsection*{Parameters}
 \begin{itemize}
   \item \textbf{Cross section area:} 1D channel is set to 1.0~$L^2$.
@@ -84,15 +96,29 @@ This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Diric
 
 The coefficient of diffusive transfer through a fracture (means between the fracture and the surrounding material) is set to zero so the substance cannot be diffused through the fracture's boundary.
 
+  \begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting (explicit), discontinuous Galerkin method (implicit)
+  \end{itemize}
+
 \subsection*{Geometry and boundary conditions}
 The domain is two-dimensional slice through a part of a relief which involves several one-dimensional fractures.
 
 Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
 
 Dirichlet boundary condition for transport is prescribed on both sides as it is for flow boundary condition and the value of concentration is 1.0 for both substances. Initial concentration of the substances is zero in the whole area. 
-
+%
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=15cm]{tests_graphics/02_mesh.pdf}
+\caption{Test 02 -- mesh}
+\label{fig:test13_mesh}
+\end{figure}
+%
+%
 \subsection*{Parameters}
-The flow is steady and the transport is solved in time interval $<0,5.0>$. The output is written every 0.5. Time parameters for implicitly computed transport are the same only initial time step is set to 0.5.
+The flow is steady and the transport is solved in time interval $(0,5.0)$. The output is written every 0.5. Time parameters for implicitly computed transport are the same only initial time step is set to 0.5.
 \begin{itemize}
   \item \textbf{Cross section area:} 1D fractures are set to 1.0~$L^2$.
   \item \textbf{Thickness:} domain is set to 1.0~$L$.
@@ -132,7 +158,7 @@ This test differs from the previous one only by simpler structure of its geometr
 \subsection*{Geometry and boundary conditions}
 There is a plane with side 1.0 which is cutted by fractures. The main fracture divides in two other fractures.
 \subsection*{Parameters}
-The flow is steady and the transport is solved in time interval $<0,1.0>$. The output is written every 0.01. Initial time step for transport computed implicitly is set to 0.1 and the output is written every 0.1.
+The flow is steady and the transport is solved in time interval $(0,1.0)$. The output is written every 0.01. Initial time step for transport computed implicitly is set to 0.1 and the output is written every 0.1.
 
 Other parameters are the same as in test 02.
 \subsection*{Verification}
@@ -151,6 +177,11 @@ This test is aimed at verifying steady Darcy flow with source which is prescribe
 We will solve Laplace equation $-\Lapl{}u = f$ where source $f$ is prescribed by function: $f = 2(1-y^2) + 2(1-x^2)$.
 
 We can easily prove that the analytic solution is $u = (1-x^2)(1-y^2)$ by replacing it in the Laplace equation.
+
+  \begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+  \end{itemize}
 
 \subsection*{Geometry and boundary conditions}
 The domain is a square with opposite vertices $[-1,-1]$ and $[1,1]$. Zero dirichlet boundary condition is prescribed on all boundaries -- along the circumference of the square.
@@ -173,11 +204,16 @@ As it was mentioned above, this test mainly verifies that the function parser wo
 \label{sec:test10}
 Unsteady flow in 2D domain is simulated in this test and is computed by both mixed hybrid and lumped mixed hybrid method. No transport is involved. 
 
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- unsteady mixed hybrid, unsteady lumped mixed hybrid
+  \end{itemize}
+
 \subsection*{Geometry and boundary conditions}
 The domain is a square with oposite vertices $[0,0]$ and $[1,1]$. Different Dirichlet boundary condition for flow is prescribed on two opposite sides -- 0.0 on the left and 100.0 on the right.
 
 \subsection*{Parameters}
-The flow is solved in time interval $<0,0.5>$ with step 0.01. The output is written every 0.1.
+The flow is solved in time interval $(0,0.5)$ with step 0.01. The output is written every 0.1.
 \begin{itemize}
   \item \textbf{Conductivity:} The conductivity of plane material is $0.02$.
   \item Initial pressure is set to zero everywhere.
@@ -204,11 +240,19 @@ This test verifies two different numerical methods -- the problem is computed by
  \quad
  G\xrightarrow{}C 
 \]
+
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting
+    \item \emph{reactions} -- linear reactions
+  \end{itemize}
+
 \subsection*{Geometry}
 The domain is a prism which base is a right-angled triangle with its ordinates 3.0 units long. There are then only three tetrahedron elements in the mesh.
 
 \subsection*{Parameters}
-The flow is steady and the transport is solved in time interval $<0,10.0>$. The output is written every 0.5.
+The flow is steady and the transport is solved in time interval $(0,10.0)$. The output is written every 0.5.
 
 Half-lives are equal to 0.5 for all isotopes. Initial concentrations are summarized in the table below:
   \begin{center}
@@ -231,6 +275,13 @@ Half-lives are equal to 0.5 for all isotopes. Initial concentrations are summari
 \section{Test 12 -- Radioactive decay}
 There are actually two tests of the radioactive decay. The first one considers first order reaction of two isotopes determined by kinetic constant and the other one describes radioactive decay chain of three isotopes.
 
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting
+    \item \emph{reactions} -- linear reactions
+  \end{itemize}
+
 \subsection*{Geometry and boundary conditions}
 The domain is a prism which base is a right-angled triangle with its ordinates 3.0 units long. There are then only three tetrahedron elements in the mesh.
 
@@ -250,7 +301,7 @@ D\xrightarrow{k}F
 \]
 
 \subsection*{Parameters}
-The flow is steady and the transport is solved in time interval $<0,10.0>$. The output is written every 0.5.  
+The flow is steady and the transport is solved in time interval $(0,10.0)$. The output is written every 0.5.  
 \begin{itemize}
   \item \textbf{Substances:} 6 substances to be transported -- A, B, C, D, E, F
   \item \textbf{Kinetic constant:} $k = 0.277258872$
@@ -295,13 +346,45 @@ Time parameters are the same as they are above.
 \section{Test 13 -- Solute mixing on the edge}
 This test realizes mixing of substances on the edges of planes and also does quantitative test on a trivial transport problem. The problem is computed with both explicit and implicit transport.
 
-\subsection*{Geometry and boundary conditions}
-The domain is a fork where the main branch with the incoming solute is in the $xy$ plane. Then it is divided into two other branches, one with positive and the another with negative $z$ coordinate. There are different conductivities in each branch.
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting (explicit), discontinuous Galerkin method (implicit)
+  \end{itemize}
 
+\subsection*{Geometry and boundary conditions}
+The domain is a fork where the main branch of length 5 with the incoming solute is in the $xy$ plane. Then it is divided into two other branches of length $5\sqrt{2}$, one with positive and the another with negative $z$ coordinate. There are different conductivities in each branch.
+
+Dirichlet boundary conditions for flow and transport are prescribed at the beginning of the main plane ($x=0$) and at the end of the secondary branches ($x=10$).
+
+flow: $h_D=-x-z+10.0$ which gives 10.0 at point [0,0,0] and $\pm5$ at points [10,0,$\mp5$]\\
+transport: concentration is 1.0 at point [0,0,0] and 0.0 at points [10,0,$\mp5$]
+
+Initial concentration of the substances is zero in the whole area. 
+%
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=12cm]{tests_graphics/13_mesh.pdf}
+\caption{Test 13 -- mesh}
+\label{fig:test13_mesh}
+\end{figure}
+%
+%
 \subsection*{Parameters}
+The flow is steady and the transport is solved in time interval $(0,100.0)$. The output is written every 0.5. Time parameters for implicitly computed transport are the same only initial time step and output time is set to 5.0.
+\begin{itemize}
+  \item \textbf{Thickness:} all planes are set to 1.0~$L$.
+  \item \textbf{Conductivity:} The conductivity of materials (isotropic planes):
+    \begin{itemize}
+      \item main branch (material num. 17): $K=1$.
+      \item branch (positive $z$, material num. 18): $K=0.1$.
+      \item branch (negative $z$, material num. 19): $K=0.1$.
+    \end{itemize}
+  \item \textbf{Diffusivity coefficients:} are used in implicit transport wth dispersion. 
+	Default parameters are set ($d_m=1e-6$, others are zero, see manual or parameters in test02 in ~\ref{sec:test02}).
+\end{itemize}
 
 \subsection*{Verification}
-
 
 %=====================================================
 %                   TEST  14
@@ -310,8 +393,18 @@ The domain is a fork where the main branch with the incoming solute is in the $x
 \section{Test 14 -- Variable transport boundary condition}
 There is considered a time variable boundary condition for transport in this test. Steady flow with constant velocity is caused by a pressure gradient from one side of a 2D strip to another. Dirichlet boundary condition for transport evolving in time is prescribed on the right side. 
 
-Two pulses of nonzero concentration are applied on the boundary. The changes of the boundary condition at specified times are shown in the following table:
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting (explicit), discontinuous Galerkin method (implicit)
+  \end{itemize}
 
+\subsection*{Geometry and boundary conditions}
+
+Flow boundary condition is prescribed all around the plane and is equal $x$ and causes constant flow from right to left (pressure prescribed on the upper and lower sides are along x equal so have no influence). Transport boundary condition has the same prescribtion as flow only the values evolves in time.
+
+Initial concentration is zero on the whole plane. Two pulses of nonzero concentration are applied on the boundary. The changes of the boundary condition at specified times are shown in the following table:
+%
 \begin{center}
   \begin{tabular}{|l|c|c|c|c|c|}
     \hline
@@ -320,11 +413,24 @@ Two pulses of nonzero concentration are applied on the boundary. The changes of 
     \hline
   \end{tabular}
 \end{center}
-
-\subsection*{Geometry and boundary conditions}
-
-
+%
+\begin{itemize}
+  \item \textbf{Thickness:} all planes are set to 1.0~$L$.
+  \item \textbf{Conductivity:} The conductivity of material (isotropic plane): $K=0.1$.
+  \item \textbf{Diffusivity coefficients:} are used in implicit transport wth dispersion. 
+	Default parameters are set except $dg_penalty=1e-4$ (see manual or parameters in test02 in ~\ref{sec:test02}).
+\end{itemize}
+%
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=15cm]{tests_graphics/14_mesh.pdf}
+\caption{Test 14 -- mesh}
+\label{fig:test13_mesh}
+\end{figure}
+%
+%
 \subsection*{Parameters}
+The flow is steady and the transport is solved in time interval $(0,10.0)$. The output is written every 1.0. Time parameters for implicitly computed transport are the same only initial time step is set to 1.0.
 
 \subsection*{Verification}
 
@@ -335,16 +441,39 @@ Two pulses of nonzero concentration are applied on the boundary. The changes of 
 %=====================================================
 
 \section{Test 15 -- Unsteady flow with transport}
-This test involves unsteady flow computed by lumped hybrid method. Transport is solved with both explicit and implicit scheme.
+Transport of a single pulse of concentration moving along a 2D strip is solved. This test involves unsteady flow computed by lumped hybrid method, transport is solved both with explicit and implicit (involves dispersion) scheme.
  
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- unsteady lumped mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting (explicit), discontinuous Galerkin method (implicit)
+  \end{itemize}
 
 \subsection*{Geometry and boundary conditions}
 The domain is a 2D strip with dimensions $1.0$x$16.0$. Zero Dirichlet boundary for flow is prescribed at $x=0$, zero Neumann boundary is elsewhere. 
 
+Dirichlet transport boundary condition is set on the left side to 10.0 only at the beginning. Then is this boundary condition zero.
+
 \subsection*{Parameters}
 Initial pressure is zero everywhere. 
 The source is prescribed with function $f=-x$ along the strip.
-
+%
+\begin{itemize}
+  \item \textbf{Thickness:} all planes are set to 1.0~$L$.
+  \item \textbf{Conductivity:} The conductivity of material (isotropic plane): $K=1.0$.
+  \item \textbf{Source formula:} $f = -x$
+  \item \textbf{Diffusivity coefficients:} are used in implicit transport wth dispersion. 
+	Default parameters are set ($d_m=1e-6$, others are zero, see manual or parameters in test02 in ~\ref{sec:test02}).
+\end{itemize}
+%
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=15cm]{tests_graphics/15_mesh.pdf}
+\caption{Test 15 -- mesh}
+\label{fig:test13_mesh}
+\end{figure}
+%
+%
 \subsection*{Verification}
 The test is similar to the test 10 but here in addition the computation of a transport in an unsteady flow field is verified.
 
@@ -355,6 +484,12 @@ The test is similar to the test 10 but here in addition the computation of a tra
 
 \section{Test 16 -- Substance concentration source in transport}
 This test include a source of concentration of a substance. The domain is a 2D strip in vertical direction. There is a steady flow with constant velocity in the vertical direction. Two sources are situated on two elements at the top of the strip and the substance is transported down along the strip. The concentration values of the sources are defined in the \verb0tso0 input file.
+
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting
+  \end{itemize}
 
 \subsection*{Geometry}
 
@@ -375,6 +510,13 @@ The considered radioctive decay chain is:
 \[
  A\xrightarrow{t_{1/2,A}}B\xrightarrow{t_{1/2,B}}C\xrightarrow{t_{1/2,C}}D\xrightarrow{t_{1/2,D}}E
 \]
+
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting
+    \item \emph{reactions} -- Pade approximation
+  \end{itemize}
 
 \subsection*{Geometry}
 The geometry and material and transport parameters are the same as in test 12.

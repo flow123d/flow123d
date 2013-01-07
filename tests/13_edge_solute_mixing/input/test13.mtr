@@ -7,3 +7,8 @@ $Materials
 	18	21	0.1
 	19	21	1
 $EndMaterials
+$Geometry
+        17      2       1
+        18      2       1
+        19      2       1
+$EndGeometry

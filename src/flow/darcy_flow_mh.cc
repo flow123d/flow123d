@@ -276,8 +276,8 @@ void DarcyFlowMH_Steady::update_solution() {
 
     time_->next_time();
 
-    xprintf(Msg, "t: %f (Darcy) dt: %f\n",time_->t(), time_->dt());
-    //time_->view(); //time governor information output
+    xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());
+    //time_->view("DARCY"); //time governor information output
     
     modify_system(); // hack for unsteady model
 

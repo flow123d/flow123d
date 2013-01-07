@@ -39,9 +39,6 @@
 	    save_step = {
 	    REF = "/problem/save_step"
         },
-
-	dual_porosity = false, 
-	sorption_enable = false
       }, 
       
       substances = [

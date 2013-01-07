@@ -49,7 +49,7 @@ namespace Input {
  * @brief
  * Basic time management functionality for unsteady (and steady) solvers (class Equation).
  *
- * <b> Common features and unsteady time governor (TG) <\b>
+ * <h2> Common features and unsteady time governor (TG) </h2>
  * 
  * This class provides algorithm for selecting next time step, and information about current time step frame.
  * Step estimating is constrained by several bounds (permanent maximal and minimal time step, upper 
@@ -87,7 +87,7 @@ namespace Input {
  * - time comparison
  * - static pointer to time marks
  * 
- * <b> Steady time governor<\b>
+ * <h2> Steady time governor</h2>
  * 
  * Steady TG can be constructed by default constructor (initial time is zero) or by 
  * constructor with initial time as parameter. End time and time step are set to infinity. 

@@ -171,7 +171,6 @@ void HC_ExplicitSequential::run_simulation()
     // theta = 1.0   velocity from end of transport interval (partialy explicit scheme)
     const double theta=0.5;
     
-    xprintf(Msg,"HC_EXPL_SEQ: velocity interpolation has been set:     theta = %f\n", theta);
 
     double velocity_interpolation_time;
     bool velocity_changed;
@@ -206,8 +205,9 @@ void HC_ExplicitSequential::run_simulation()
         // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
         velocity_interpolation_time= theta * transport_reaction->planned_time() + (1-theta) * transport_reaction->solved_time();
         
-        xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
-                velocity_interpolation_time, water->time().t(), transport_reaction->time().t());
+        // printing water and transport times every step
+        //xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
+        //        velocity_interpolation_time, water->time().t(), transport_reaction->time().t());
          
         // if transport is off, transport should return infinity solved and planned times so that
         // only water branch takes the place
@@ -217,9 +217,7 @@ void HC_ExplicitSequential::run_simulation()
             water_output->postprocess();
             // here possibly save solution from water for interpolation in time
 
-            xprintf( Msg,"WATER computed:  time: %f     step: %f\n", 
-                     water->time().t(), water->time().dt());
-            water->time().view();     //show water time governor
+            //water->time().view("WATER");     //show water time governor
             
             water_output->output();
 
@@ -239,10 +237,7 @@ void HC_ExplicitSequential::run_simulation()
             }
             transport_reaction->update_solution();
             
-            xprintf( Msg,"TRANSPORT computed:   time: %f    step: %f\n", 
-                     transport_reaction->time().t(), transport_reaction->time().dt());
-            
-            //transport_reaction->time().view();        //show transport time governor
+            //transport_reaction->time().view("TRANSPORT");        //show transport time governor
             
             transport_reaction->output_data();
         }

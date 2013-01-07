@@ -2,6 +2,7 @@ $BoundaryFormat
 1.0	0	8
 $EndBoundaryFormat
 $BoundaryConditions
-1
-0	1	 0.000000000000	2	22	0	1	1
+2
+0	1	 0.000000000000	2	25	0	1	0
+1	1	 0.000000000000	2	25	2	1	0
 $EndBoundaryConditions

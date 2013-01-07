@@ -69,8 +69,6 @@
 #include "coupling/time_governor.hh"
 
 
-//ConvectionTransport::ConvectionTransport(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-//: EquationBase(marks,init_mesh,material_database, in_rec )
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
 : EquationBase(init_mesh, material_database, in_rec)
 {
@@ -562,7 +560,7 @@ void ConvectionTransport::read_bc_vector() {
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank == 0) {
-        xprintf(Msg, "Convection: Reading BC (level = %d)\n",bc_time_level);
+        xprintf(Msg, "CONVECTION: Reading BC (level = %d)\n",bc_time_level);
 
         int bcd_id, boundary_id, boundary_index;
         double bcd_conc;
@@ -619,7 +617,7 @@ void ConvectionTransport::compute_one_step() {
         read_bc_vector();
 
     // proceed to actually computed time
-    time_->view();
+    //time_->view("CONVECTION");
     time_->next_time();
     DBGMSG("time: %f, soorp: %d\n", time_->t(), sorption);
 
@@ -674,13 +672,10 @@ void ConvectionTransport::set_target_time(double target_time)
     //returns integer, one can check here whether the constraint has been set or not
     time_->set_upper_constraint(cfl_max_step);
     
-    xprintf(MsgDbg, "\nCONVECTION: time: %f target_mark_type: %d    cfl: %f\n", 
-            target_time, target_mark_type, cfl_max_step);
-    
     //fixing convection time governor till next target_mark_type (got from TOS or other)
     time_->fix_dt_until_mark();
     
-    //time_->view();    //show convection time governor
+    //time_->view("CONVECTION");    //show convection time governor
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix

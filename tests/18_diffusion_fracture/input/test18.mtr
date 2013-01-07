@@ -13,7 +13,6 @@ $EndStorativity
 $Sorption
 	48	0	1	0.02
 	184	0	1	0.02
-
 $EndSorption
 $DualPorosity
 	48	0.25	0.25	0.01

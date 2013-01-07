@@ -39,12 +39,13 @@
 
       dual_porosity = true, 
       sorption_enable = true, 
+      dg_penalty = 1e2,
+      d_m = 1e-4,
+      sigma = 1e1,
+
       substances = [
         "A"
       ], 
-
-      d_m = 1e-4,
-      sigma = 1e1,
 
       solver = {
         TYPE = "Petsc", 

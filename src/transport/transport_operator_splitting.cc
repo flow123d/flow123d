@@ -189,7 +189,7 @@ void TransportOperatorSplitting::update_solution() {
 
 
     time_->next_time();
-    //time_->view();    //show time governor
+    //time_->view("TOS");    //show time governor
     
     convection->set_target_time(time_->t());
 
@@ -199,6 +199,7 @@ void TransportOperatorSplitting::update_solution() {
 	// TODO: update Semchem time step here!!
 	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
+        
     xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n", 
              time_->t(), convection->time().t(), convection->time().estimate_dt() );
     
@@ -208,14 +209,13 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
-	    xprintf( Msg, "CONVECTION: time: %f\n", convection->time().t() );
 	    convection->compute_one_step();
 	    // Calling linear reactions and Semchem, temporarily commented
 	    if(decayRad) decayRad->compute_one_step();
 	    if (Semchem_reactions) Semchem_reactions->compute_one_step();
 	}
     END_TIMER("transport_steps");
-    //DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
+    
     xprintf( Msg, "CONVECTION: steps: %d\n",steps);
 }
 

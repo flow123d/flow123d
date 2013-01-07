@@ -34,9 +34,7 @@
         output_stream = {
           REF = "/system/output_streams/1"
         }, 
-        save_step = {
-          REF = "/problem/save_step"
-        }
+        save_step = 0.001
       }, 
 
       dual_porosity = true, 
@@ -53,14 +51,9 @@
         accuracy = 1e-7
       }, 
       time = {
-        REF = "../../time"
+        end_time = 0.01, 
+        init_dt = 0.001
       }
-    }, 
-
-    save_step = 0.001,
-    time = {
-      end_time = 0.01, 
-      init_dt = 0.001
     }
   }, 
 
