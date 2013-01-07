@@ -20,12 +20,16 @@ namespace Type {
  * TODO:
  * - proc je v OutputText pretizena resolution metoda print ?
  *   podobne v OutputJSONTemplate
+ *
  * - v OutputText: Record ktery dedi bude uvadet jmeno predka (AbstractRecordu)
- * - nejak informovat o povoleni automaticke konverze pro Array a Record
- * - OutptuJSONTemplate:
+ *
+ * - nejak informovat o povoleni automaticke konverze pro Record
+ *
+ * - OutputJSONTemplate:
  *   - vypis defaultnich hodnot pro skalarni klice, typ klice do komentare na stejnem radku
  *     pokud je obligatory vypsat <OBLIGATORY>, ?? co s default at read time a optional
  *     patrne je uvest ale v komentari, idea je aby soubor byl platny JSON soubor az na OBLIGATORY klice, ktere uzivatel musi vyplnit
+ *
  *   - Pro selection uvest mozne hodnoty a jejich popisy do komentare
  *   - Pro abstract record: uvest TYPE (selection), pak jeho klice (dedi se) a pak
  *     jednotlive potomky pomoci klicu s pripojenym typem recordu,
@@ -34,30 +38,40 @@ namespace Type {
  *     # abstract record FieldBase_3_to_1x1_double
  *     # description:
  *     # ...
- *     init_pressure={
- *         # selection of 5 values
- *         # FieldConstant - ...
- *         # FieldFormula - ...
- *         # FieldInterpolationP0
- *         # FieldElementwise
- *         # FieldPython
- *         TYPE="FieldConstant"
- *
- *         # .. some common key, with default value 0
- *         common_key=0
- *     }
+ *     # ----------------------------------------------- DESCENDANTS FOLLOWS
  *     # record FieldConstant, descendant of FieldBase_3_to_1x1_double
- *     init_pressure_FieldConstant={
- *     ...
- *     }
+ *     init_pressure={
+ *          TYPE="FieldConstant"
+ *
+ *          # description
+ *          value=
+ *     },
  *     # record FieldFormula
- *     init_pressure_FieldFormula={
- *     ...
+ *     init_pressure={
+ *          TYPE="FieldFormula"
+ *          formula=
+ *          parameters=
  *     }
  *
- *     water_source={REF=/.../init_pressure}
+ *     # abstract record FieldBase_3_to_1x1_double
+ *     # description:
+ *     water_source={REF="/.../init_pressure"},
+ *
+ *     # Array, size limits [2,3]
+ *     # key description ...
+ *     array_key=[
+ *         # Record ...
+ *         #
+ *         {
+ *             ...
+ *         },
+ *         < 1 more entry >
+ *         ]
+ *
+ *
  *   - ?? jak se vyporadat s default values  pro automaticky konvertovatelne recordy a pole?
  *   - avoid repetitive output of same tyes
+ *
  */
 
 class OutputBase {
