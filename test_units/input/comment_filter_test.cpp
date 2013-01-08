@@ -18,7 +18,7 @@ using namespace std;
 
 std::string get_file_contents(const string &filename)
 {
-  std::ifstream in(filename, std::ios::in | std::ios::binary);
+  std::ifstream in(filename.c_str(), std::ios::in | std::ios::binary);
   if (in)
   {
     std::string contents;
@@ -53,7 +53,7 @@ TEST(Storage, comment_filter) {
 
 
     // This seems to produce correct output, but to be sure we have small inputs compared to correct outputs
-    cout << filter(get_file_contents(string(UNIT_TESTS_SRC_DIR) + "/input/comment_filter_test.con"));
+    cout << filter(get_file_contents( string(UNIT_TESTS_SRC_DIR) + "/input/comment_filter_test.con") );
 
     // check comments ending with Windows line ends
     EXPECT_EQ("\n\r\n\r", filter("# comment \n\r\n\r"));

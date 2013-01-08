@@ -20,11 +20,49 @@ namespace IT=Input::Type;
 TYPEDEF_ERR_INFO( EI_InputMsg, const string );
 DECLARE_INPUT_EXCEPTION( ExcFV_Input, << "Wrong field value input: " << EI_InputMsg::val );
 
+
+/**
+ * Mimics arma::mat<std::string>.
+ */
+class StringTensor {
+public:
+    StringTensor( unsigned int n_rows, unsigned int n_cols )
+    : n_rows(n_rows),values_(n_rows) {
+        for(unsigned int row=0; row<values_.size(); row++) values_[row].resize(n_cols);
+    }
+    StringTensor(const std::string &value)
+    : n_rows(1), values_(1) {
+        values_[0].resize(1); (values_[0])[0]=value;
+    }
+    std::string & at(unsigned int row) { return (values_[row])[0]; }
+    std::string & at(unsigned int row, unsigned int col) { return (values_[row])[col]; }
+    void zeros() {
+        for(unsigned int row=0; row<values_.size(); row++)
+            for(unsigned int col=0; col<values_[row].size(); col++) (values_[row])[col]="0.0";
+    }
+    unsigned int n_rows;
+    operator std::string() {
+        ASSERT( n_rows==1 && values_[0].size()==1, "Converting StringTensor(n,m) too std::string with m!=1 or n!=1.");
+        return values_[0][0];
+    }
+private:
+    std::vector< std::vector<std::string> > values_;
+
+};
+
+
+
+
 namespace internal {
 
 // Helper functions to get scalar type name
 std::string type_name_(double);
 std::string type_name_(int);
+std::string type_name_(std::string);
+
+double &scalar_value_conversion(double &ref);
+int &scalar_value_conversion(int &ref);
+std::string &scalar_value_conversion(StringTensor &ref);
 
 
 template <class ET>
@@ -37,6 +75,33 @@ struct InputType<int> { typedef Input::Type::Integer type; };
 template <>
 struct InputType<std::string> { typedef Input::Type::String type; };
 
+
+
+// resolution of Value::return_type
+template<int NRows, int NCols, class ET>
+struct ReturnType { typedef typename arma::Mat<ET>::template fixed<NRows, NCols> return_type; };
+
+template<class ET>
+struct ReturnType<1,1,ET> { typedef ET return_type; };
+
+template <class ET>
+struct ReturnType<0,1,ET> { typedef arma::Col<ET>  return_type; };
+
+template <int NRows, class ET>
+struct ReturnType<NRows,1,ET> { typedef typename arma::Col<ET>::template fixed<NRows> return_type; };
+
+template<int NRows, int NCols>
+struct ReturnType<NRows, NCols, std::string> { typedef StringTensor return_type; };
+
+
+template<>
+struct ReturnType<1,1, std::string> { typedef StringTensor return_type; };
+
+template <>
+struct ReturnType<0,1, std::string> { typedef StringTensor return_type; };
+
+template <int NRows>
+struct ReturnType<NRows,1, std::string> { typedef StringTensor return_type; };
 
 } // namespace internal
 
@@ -55,15 +120,25 @@ template <int NRows, int NCols, class ET>
 class FieldValue_ {
 public:
     typedef ET element_type;
-    typedef typename arma::Mat<ET>::template fixed<NRows, NCols> return_type;
+    typedef typename internal::ReturnType<NRows, NCols, ET>::return_type return_type;
     typedef Input::Array InputType;
+    const static int NRows_ = NRows;
+    const static int NCols_ = NCols;
+
     static std::string type_name() { return boost::str(boost::format("%s[%d,%d]") % internal::type_name_( ET() ) % NRows % NCols); }
-    static Input::Type::Array get_input_type() {
+    static IT::Array get_input_type() {
         if (NRows == NCols)
             // for square tensors allow initialization by diagonal vector, etc.
             return IT::Array( IT::Array( typename internal::InputType<ET>::type(), 1), 1 );
         else
             return IT::Array( IT::Array( typename internal::InputType<ET>::type(), NCols, NCols), NRows, NRows );
+    }
+    static IT::Array get_formula_input_type() {
+        if (NRows == NCols)
+            // for square tensors allow initialization by diagonal vector, etc.
+            return IT::Array( IT::Array( typename internal::InputType<std::string>::type(), 1), 1 );
+        else
+            return IT::Array( IT::Array( typename internal::InputType<std::string>::type(), NCols, NCols), NRows, NRows );
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
@@ -124,7 +199,7 @@ public:
     inline unsigned int n_rows() const
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int j)
-        { return value_(i,j); }
+        { return value_.at(i,j); }
     inline operator return_type()
         { return value_;}
 
@@ -140,14 +215,19 @@ template <class ET>
 class FieldValue_<1,1,ET> {
 public:
     typedef ET element_type;
-    typedef ET return_type;
+    typedef typename internal::ReturnType<1, 1, ET>::return_type return_type;
     typedef ET InputType;
+    const static int NRows_ = 1;
+    const static int NCols_ = 1;
 
     static std::string type_name() { return boost::str(boost::format("%s") % internal::type_name_( ET() ) ); }
     static typename internal::InputType<ET>::type get_input_type() { return typename internal::InputType<ET>::type(); }
+    static IT::String get_formula_input_type() {
+            return IT::String();
+    }
 
     inline FieldValue_(return_type &val) : value_(val) {}
-    void init_from_input( InputType val ) { value_ = val; }
+    void init_from_input( InputType val ) { value_ = return_type(val); }
 
     void set_n_comp(unsigned int) {};
     inline unsigned int n_cols() const
@@ -155,7 +235,7 @@ public:
     inline unsigned int n_rows() const
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
-        { return value_; }
+        { return internal::scalar_value_conversion(value_); }
     inline operator return_type()
         { return value_;}
 
@@ -163,25 +243,35 @@ private:
     return_type &value_;
 };
 
+
+
 /// Specialization for variable size vectors
 template <class ET>
 class FieldValue_<0,1,ET> {
 public:
     typedef ET element_type;
-    typedef arma::Col<ET> return_type;
+    typedef typename internal::ReturnType<0, 1, ET>::return_type return_type;
     typedef Input::Array InputType;
+    const static int NRows_ = 0;
+    const static int NCols_ = 1;
+
 
     static std::string type_name() { return boost::str(boost::format("%s[n]") % internal::type_name_( ET() ) ); }
-    static Input::Type::Array get_input_type() {
+    static IT::Array get_input_type() {
         return Input::Type::Array( typename internal::InputType<ET>::type(), 1);
+    }
+    static IT::Array get_formula_input_type() {
+        return Input::Type::Array( typename internal::InputType<std::string>::type(), 1);
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
     void init_from_input( InputType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
-        if ( rec.size() == 1 ) value_.fill( *it );
-        else if ( rec.size() == n_rows() ) {
+        if ( rec.size() == 1 ) {
+            for(unsigned int i=0; i< n_rows(); i++)
+                value_.at(i)=*it;
+        } else if ( rec.size() == n_rows() ) {
             for(unsigned int i=0; i< n_rows(); i++, ++it)
                 value_.at(i)=*it;
         } else {
@@ -192,13 +282,13 @@ public:
         }
     }
 
-    void set_n_comp(unsigned int n_comp) { value_ = return_type(n_comp); };
+    void set_n_comp(unsigned int n_comp) { value_ = return_type(n_comp,1); };
     inline unsigned int n_cols() const
         { return 1; }
     inline unsigned int n_rows() const
         { return value_.n_rows; }
     inline ET &operator() ( unsigned int i, unsigned int )
-        { return value_[i]; }
+        { return value_.at(i); }
     inline operator return_type()
         { return value_;}
 
@@ -211,21 +301,30 @@ template <int NRows, class ET>
 class FieldValue_<NRows,1,ET> {
 public:
     typedef ET element_type;
-    typedef typename arma::Col<ET>::template fixed<NRows> return_type;
+    typedef typename internal::ReturnType<NRows, 1, ET>::return_type return_type;
     typedef Input::Array InputType;
+    const static int NRows_ = NRows;
+    const static int NCols_ = 1;
+
 
     static std::string type_name() { return boost::str(boost::format("%s[%d]") % internal::type_name_( ET() ) % NRows ); }
     static IT::Array get_input_type() {
         return IT::Array( typename internal::InputType<ET>::type(), 1, NRows);
     }
+    static IT::Array get_formula_input_type() {
+        return IT::Array( typename internal::InputType<std::string>::type(), 1, NRows);
+    }
+
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
     void init_from_input( InputType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
-        if ( rec.size() == 1 ) value_.fill( *it );
-        else if ( rec.size() == NRows ) {
+        if ( rec.size() == 1 ) {
+            for(unsigned int i=0; i< n_rows(); i++)
+                value_.at(i)=*it;
+        } else if ( rec.size() == NRows ) {
             for(unsigned int i=0; i< NRows; i++, ++it)
                 value_.at(i)=*it;
         } else {
@@ -242,7 +341,7 @@ public:
     inline unsigned int n_rows() const
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int )
-        { return value_[i]; }
+        { return value_.at(i); }
     inline operator return_type()
         { return value_;}
 

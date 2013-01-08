@@ -234,7 +234,7 @@ target_link_libraries(fem_lib
 # field_lib  
 add_library(field_lib ${sources_lib_field})
 target_link_libraries(field_lib
-    system_lib input_lib mesh_lib armadillo  ${Boost_LIBRARIES})
+    system_lib input_lib fparser mesh_lib armadillo  ${Boost_LIBRARIES})
  
 # functions_lib  
 add_library(functions_lib ${sources_lib_functions})

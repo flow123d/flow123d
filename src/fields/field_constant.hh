@@ -31,8 +31,6 @@ public:
 
     virtual void init_from_input( Input::Record rec);
 
-    using FieldBase<spacedim,Value>::value;
-
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */

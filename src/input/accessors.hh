@@ -120,9 +120,8 @@ public:
      * Default constructor creates an accessor to an empty storage.
      */
     Record()
-    : record_type_("Empty Record",""), storage_( NULL )
+    : record_type_(), storage_( NULL )
     {
-            record_type_.finish();
     }
 
 

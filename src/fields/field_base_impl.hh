@@ -22,6 +22,8 @@ using namespace std;
 #include "fields/field_interpolated_p0.hh"
 #include "fields/field_python.hh"
 #include "fields/field_constant.hh"
+#include "fields/field_formula.hh"
+
 #include "fields/field_values.hh"
 
 #include "input/input_type.hh"
@@ -67,6 +69,8 @@ FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(
 #endif
     } else if (rec.type() == FieldConstant<spacedim, Value>::input_type ) {
         func=new FieldConstant<spacedim,Value>(init_time, n_comp);
+    } else if (rec.type() == FieldFormula<spacedim,Value>::input_type ) {
+        func=new FieldFormula<spacedim,Value>(init_time, n_comp);
     } else {
         xprintf(PrgErr,"TYPE of Field is out of set of descendants. SHOULD NOT HAPPEN.\n");
     }

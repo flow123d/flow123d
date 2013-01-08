@@ -10,6 +10,7 @@
 #include "fields/field_base_impl.hh"
 #include "fields/field_python_impl.hh"
 #include "fields/field_constant_impl.hh"
+#include "fields/field_formula_impl.hh"
 #include "fields/field_interpolated_p0_impl.hh"
 
 /*
@@ -47,4 +48,5 @@ INSTANCE_TO_ALL( field, 3) \
 INSTANCE_ALL(FieldBase)
 INSTANCE_ALL(FieldConstant)
 INSTANCE_ALL(FieldPython)
+INSTANCE_ALL(FieldFormula)
 //INSTANCE_ALL(FieldInterpolatedP0)

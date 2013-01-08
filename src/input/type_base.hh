@@ -196,9 +196,7 @@ protected:
 
     	ArrayData(unsigned int min_size, unsigned int max_size)
     	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
-    	{
-    		LazyTypes::instance().addType(this);
-    	}
+    	{}
 
     	void finish();
 
@@ -230,6 +228,7 @@ public:
         	boost::is_base_of<Selection, ValueType>::value)
         {
         	data_->p_type_of_values = &type;
+        	LazyTypes::instance().addType( data_.get() );
         }
         else
         {
