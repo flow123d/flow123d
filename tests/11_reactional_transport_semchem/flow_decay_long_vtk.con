@@ -58,7 +58,7 @@
         decays = [
           {
             parent = "E",
-            half_life = 0.5,
+            kinetic = 1.3836,
             products = [
               "D"
             ]
@@ -72,7 +72,7 @@
           },
           {
             parent = "F",
-            half_life = 0.5,
+            kinetic = 1.3836,
             products = [
               "B"
             ]
