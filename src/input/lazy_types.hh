@@ -50,6 +50,7 @@ class Selection;
  * input types through its keys, these input types cannot be accessed directly at the initialization phase.
  * The remaining part of initialization can be done later, typically from main(), by calling the method finish().
  */
+/*
 class LazyType
 {
 public:
@@ -59,6 +60,7 @@ public:
     /// Empty virtual destructor.
     virtual ~LazyType( void ) {}
 };
+*/
 
 /**
  * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
@@ -71,8 +73,8 @@ class LazyTypes
 {
 public:
 
-	typedef std::vector<LazyType *> TypeVector;
-	typedef std::vector<LazyType *> SelectionVector;
+	typedef std::vector< boost::shared_ptr<TypeBase> > TypeVector;
+	typedef std::vector< boost::shared_ptr<TypeBase> > SelectionVector;
 
 	/**
 	 * The reference to the singleton instance.
@@ -83,21 +85,12 @@ public:
 		return INSTANCE;
 	}
 
-	/// Iterator to the first lazy type in the array.
-	TypeVector::iterator begin();
-
-	/// Iterator to the last lazy type in the array.
-	TypeVector::iterator end();
 
 	/**
 	 * Registers new lazy type to be finished later.
 	 */
-	void addType(LazyType *type);
+	void addType(const boost::shared_ptr<TypeBase> &type);
 
-	/**
-	 * Registers new selection type.
-	 */
-	void addSelection(LazyType *sel);
 
 	/// Finishes all registered lazy types.
 	void finish();
@@ -109,8 +102,6 @@ private:
 	/// The array of registered lazy types.
 	TypeVector types;
 
-	/// The array of registered selections.
-	SelectionVector selections;
 };
 
 

@@ -104,6 +104,16 @@ public:
     virtual bool is_finished() const
     {return true;}
 
+    /**
+     * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
+     * These input types are typically defined by means
+     * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
+     * input types through its keys, these input types cannot be accessed directly at the initialization phase.
+     * The remaining part of initialization can be done later, typically from main(), by calling the method finish().
+     */
+    virtual void finish()
+    {};
+
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  =0;
 
@@ -191,7 +201,7 @@ class Array : public TypeBase {
 
 protected:
 
-    class ArrayData : public LazyType {
+    class ArrayData  {
     public:
 
     	ArrayData(unsigned int min_size, unsigned int max_size)
@@ -228,7 +238,7 @@ public:
         	boost::is_base_of<Selection, ValueType>::value)
         {
         	data_->p_type_of_values = &type;
-        	LazyTypes::instance().addType( data_.get() );
+        	LazyTypes::instance().addType( boost::make_shared<Array>( *this ) );
         }
         else
         {

@@ -58,7 +58,9 @@ Default::Default(enum DefaultType type, const std::string & value)
 Record::Record(const string & type_name_in, const string & description)
 : data_( boost::make_shared<RecordData>(type_name_in, description) )
 
-{}
+{
+    LazyTypes::instance().addType( boost::make_shared<Record>( *this ) );
+}
 
 
 Record::Record(boost::shared_ptr<RecordData> data_ptr)
@@ -176,7 +178,7 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
  finished(false),
  auto_conversion_key(-1)    // auto conversion turned off
 {
-	LazyTypes::instance().addType(this);
+
 }
 
 

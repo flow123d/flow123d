@@ -359,7 +359,7 @@ protected:
     /**
      * Internal data class.
      */
-    class RecordData : public LazyType {
+    class RecordData  {
     public:
         RecordData(const string & type_name_in, const string & description);
 

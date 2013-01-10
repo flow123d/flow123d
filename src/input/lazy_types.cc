@@ -27,6 +27,7 @@
  *  @author Jan Stebel
  */
 
+
 #include "input/lazy_types.hh"
 #include "input/type_base.hh"
 #include "input/type_record.hh"
@@ -37,46 +38,34 @@ using namespace Input::Type;
 LazyTypes::LazyTypes()
 {}
 
-LazyTypes::TypeVector::iterator LazyTypes::begin()
-{
-	return types.begin();
-}
 
-LazyTypes::TypeVector::iterator LazyTypes::end()
-{
-	return types.end();
-}
-
-
-void LazyTypes::addType(LazyType *type)
+void LazyTypes::addType(const boost::shared_ptr<TypeBase> &type)
 {
 	types.push_back(type);
-}
-
-void LazyTypes::addSelection(LazyType *sel)
-{
-	selections.push_back(sel);
 }
 
 
 void LazyTypes::finish()
 {
-	// first finish all lazy input types
-	for (TypeVector::iterator it=begin(); it!=end(); it++)
-		(*it)->finish();
+    // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
 
-	// then finalize abstract records so that no type can derive from them
-	for (TypeVector::iterator it=begin(); it!=end(); it++)
-	{
-		if (dynamic_cast<AbstractRecord *>(*it) != 0)
-			dynamic_cast<AbstractRecord *>(*it)->no_more_descendants();
+	// first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
+	for (TypeVector::iterator it=types.begin(); it!=types.end(); it++) {
+	    if (dynamic_pointer_cast<Selection>(*it) == 0) {
+	        (*it)->finish();
+	    }
 	}
 
-	// at last finish all selections
-	for (SelectionVector::iterator it=selections.begin(); it!=selections.end(); it++)
-		(*it)->finish();
+	// then finalize abstract records so that no type can derive from them
+	for (TypeVector::iterator it=types.begin(); it!=types.end(); it++)
+	{
+	    boost::shared_ptr<AbstractRecord> a_rec_ptr = dynamic_pointer_cast<AbstractRecord>(*it);
+		if ( a_rec_ptr!= 0) a_rec_ptr->no_more_descendants();
+	}
+
+	// at last finish all selections (including those in AbstractRecord)
+	for (TypeVector::iterator it=types.begin(); it!=types.end(); it++) (*it)->finish();
 
 	types.clear();
-	selections.clear();
 }
 

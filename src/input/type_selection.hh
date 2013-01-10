@@ -79,13 +79,14 @@ public:
     Selection()
     {}
 
+
     /**
      * Creates a handle pointing to the new SelectionData.
      */
     Selection(const string &name) :
             data_(boost::make_shared<SelectionData>(name))
     {
-    	LazyTypes::instance().addSelection(data_.get());
+    	LazyTypes::instance().addType( boost::make_shared<Selection>( *this) );
     }
 
     /**
@@ -179,7 +180,7 @@ private:
     /**
      * Actual Selection data.
      */
-    class SelectionData : public LazyType {
+    class SelectionData  {
     public:
 
         SelectionData(const string &name)
