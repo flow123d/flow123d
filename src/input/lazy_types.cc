@@ -51,7 +51,7 @@ void LazyTypes::finish()
 
 	// first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
 	for (TypeVector::iterator it=types.begin(); it!=types.end(); it++) {
-	    if (dynamic_pointer_cast<Selection>(*it) == 0) {
+	    if (boost::dynamic_pointer_cast<Selection>(*it) == 0) {
 	        (*it)->finish();
 	    }
 	}
@@ -59,7 +59,7 @@ void LazyTypes::finish()
 	// then finalize abstract records so that no type can derive from them
 	for (TypeVector::iterator it=types.begin(); it!=types.end(); it++)
 	{
-	    boost::shared_ptr<AbstractRecord> a_rec_ptr = dynamic_pointer_cast<AbstractRecord>(*it);
+	    boost::shared_ptr<AbstractRecord> a_rec_ptr = boost::dynamic_pointer_cast<AbstractRecord>(*it);
 		if ( a_rec_ptr!= 0) a_rec_ptr->no_more_descendants();
 	}
 
