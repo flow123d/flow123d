@@ -59,14 +59,8 @@ Record::Record(const string & type_name_in, const string & description)
 : data_( boost::make_shared<RecordData>(type_name_in, description) )
 
 {
-    LazyTypes::instance().addType( boost::make_shared<Record>( *this ) );
+    TypeBase::lazy_type_list().push_back( boost::make_shared<Record>( *this ) );
 }
-
-
-Record::Record(boost::shared_ptr<RecordData> data_ptr)
-: data_(data_ptr)
-{}
-
 
 
 Record &Record::allow_auto_conversion(const string &from_key) {
@@ -97,9 +91,6 @@ Record &Record::derive_from(AbstractRecord &parent) {
 }
 
 
-
-
-
 bool Record::is_finished() const {
     empty_check();
     return data_->finished;
@@ -109,7 +100,8 @@ bool Record::is_finished() const {
 void Record::finish()
 {
 	empty_check();
-	data_->finish();
+	if (data_->finished) return;
+	data_->finish(this);
 }
 
 
@@ -189,7 +181,7 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 
 
 
-void Record::RecordData::finish() {
+void Record::RecordData::finish(Record *owner_ptr) {
 
     if (finished) return;
 
@@ -197,9 +189,7 @@ void Record::RecordData::finish() {
     if (parent_ != 0)
     {
     	parent_->finish();
-
-    	Record tmp_rec(descendant_data_);
-    	parent_->add_descendant(tmp_rec);
+    	parent_->add_descendant(*owner_ptr);
 
 		// copy keys form parent
     	std::vector<Key>::iterator it = keys.begin();
@@ -371,45 +361,24 @@ void  Record::RecordData::reset_doc_flags() const {
 
 void Record::RecordData::declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
+                         const TypeBase *type_temporary,
                          const Default &default_value, const string &description)
 {
     KeyHash key_h = key_hash(key);
     key_to_index_const_iter it = key_to_index.find(key_h);
     if ( it == key_to_index.end() ) {
        key_to_index.insert( std::make_pair(key_h, keys.size()) );
-       Key tmp_key = { (unsigned int)keys.size(), key, description, type, 0, default_value, false};
+       Key tmp_key = { (unsigned int)keys.size(), key, description, type, type_temporary, default_value, false};
        keys.push_back(tmp_key);
     } else {
        if (keys[it->second].derived) {
-    	   Key tmp_key = { it->second, key, description, type, 0, default_value, false};
+    	   Key tmp_key = { it->second, key, description, type, type_temporary, default_value, false};
            keys[ it->second ] = tmp_key;
        } else {
            xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
        }
     }
 }
-
-
-void Record::RecordData::declare_key_reference(const string &key,
-                         const TypeBase *type,
-                         const Default &default_value, const string &description)
-{
-    KeyHash key_h = key_hash(key);
-    key_to_index_const_iter it = key_to_index.find(key_h);
-    if ( it == key_to_index.end() ) {
-       key_to_index.insert( std::make_pair(key_h, keys.size()) );
-       Key tmp_key = { (unsigned int)keys.size(), key, description, boost::shared_ptr<const TypeBase>(), type, default_value, false };
-       keys.push_back(tmp_key);
-    } else {
-       if (keys[it->second].derived) {
-           Key tmp_key = { it->second, key, description, boost::shared_ptr<const TypeBase>(), type, default_value, false };
-           keys[ it->second ] = tmp_key;
-       } else {
-           xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
-       }
-    }
-}
-
 
 
 
@@ -421,11 +390,9 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 : Record(type_name_in, description),
   child_data_( boost::make_shared<ChildData>( type_name_in + "_TYPE_selection" ) )
 {
-
     // declare very first item of any descendant
-    data_->declare_key_reference("TYPE", child_data_->selection_of_childs.get(), Default::obligatory(),
+    data_->declare_key("TYPE", boost::shared_ptr<Selection>(), child_data_->selection_of_childs.get(), Default::obligatory(),
                  "Sub-record selection.");
-
 }
 
 

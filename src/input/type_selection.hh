@@ -76,18 +76,14 @@ public:
     /**
      * Default constructor. Empty handle.
      */
-    Selection()
-    {}
+    //Selection()
+    //{}
 
 
     /**
      * Creates a handle pointing to the new SelectionData.
      */
-    Selection(const string &name) :
-            data_(boost::make_shared<SelectionData>(name))
-    {
-    	LazyTypes::instance().addType( boost::make_shared<Selection>( *this) );
-    }
+    Selection(const string &name);
 
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
@@ -223,11 +219,6 @@ private:
     /// Handle to actual Selection data.
     boost::shared_ptr<SelectionData> data_;
 
-public:
-
-    Selection(boost::shared_ptr<SelectionData> data_ptr)
-    : data_(data_ptr)
-    {}
 };
 
 

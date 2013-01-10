@@ -252,14 +252,14 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
-        Input::Type::LazyTypes::instance().finish();
+        Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputText(&input_type);
         //input_type.documentation(cout, Input::Type::TypeBase::full_after_record);
         free_and_exit();
     }
 
     if (vm.count("JSON_template")) {
-        Input::Type::LazyTypes::instance().finish();
+        Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputJSONTemplate(&input_type);
         free_and_exit();
     }

@@ -48,7 +48,7 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
     }
 
     // finish all lazy input types
-    Input::Type::LazyTypes::instance().finish();
+    Input::Type::TypeBase::lazy_finish();
 
     io::filtering_istream filter_in;
 

@@ -13,20 +13,9 @@
 #include "type_base.hh"
 #include "type_selection.hh"
 
-/**
- * Macro to create a key object. The reason for this is twofold:
- * 1) We may use it to implement compile time computed hashes for faster access to the data.
- * 2) We can store line, function, filename where the key where used in order to report more specific error messages.
- */
-#define KEY(name) #name
-
 
 namespace Input {
 namespace Type {
-
-
-
-
 
 
 /** *********************************************************************************************************************************
@@ -60,7 +49,6 @@ private:
     };
 public:
 
-
     /**
      * Constructor with given default value (at declaration time)
      */
@@ -83,7 +71,6 @@ public:
      */
     static Default read_time(const std::string & description)
     { return Default(default_at_read_time, description); }
-
 
     /**
      * Factory function to make an empty default value which is obligatory.
@@ -109,7 +96,6 @@ public:
      */
     static Default optional()
     { return Default(no_default_optional_type); }
-
 
     /**
      * Returns true if the default value is or will be available when someone tries to read the value.
@@ -155,7 +141,6 @@ private:
      * Constructor for other types then 'declaration'.
      */
     Default(enum DefaultType type, const std::string &value = "");
-
 };
 
 
@@ -365,24 +350,19 @@ protected:
 
         /**
          * Declares a key and stores its type. The type parameter has to be finished at the call of declare_key().
+         * If the parameter @p type_temporary is NULL, the parameter @p type provides pointer to
+         * already finished type that will be assigned to the key. On the other hand, if @p type_temporary is not NULL,
+         * only this raw pointer is stored and key is fully completed later through TypeBase::lazy_finish().
          */
         void declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
-                         const Default &default_value, const string &description);
-
-        /**
-         * Declares a key and saves the reference of its type, which will be finished later.
-         * This method is typically called for keys of type Record, AbstractRecord or Selection,
-         * which need not be initialized at the moment.
-         */
-        void declare_key_reference(const string &key,
-                         const TypeBase *type,
+                         const TypeBase *type_temporary,
                          const Default &default_value, const string &description);
 
         /**
          * Finish declaration of the RecordData. No further declarations can be added.
          */
-        virtual void finish();
+        void finish(Record *owner_ptr);
 
         Record::KeyIter auto_conversion_key_iter() const;
 
@@ -396,7 +376,6 @@ protected:
 
         /// Keys in order as they where declared.
         std::vector<struct Key> keys;
-
 
         /// Description of the whole record type.
         const string description_;
@@ -431,18 +410,8 @@ protected:
 
     };
 
-
     /// Data handle.
     boost::shared_ptr<RecordData> data_;
-
-
-public:
-
-    /**
-     * This constructor creates a record containing the given shared_ptr to data.
-     */
-    Record(boost::shared_ptr<RecordData> data_ptr);
-
 };
 
 /**
@@ -543,7 +512,6 @@ public:
     AbstractRecord &declare_key(const string &key,
                             const KeyType &type,
                             const Default &default_value, const string &description);
-
     /**
      * Same as previous method but without given default value (same as Default() - optional key )
      */
@@ -551,8 +519,6 @@ public:
     AbstractRecord &declare_key(const string &key,
                             const KeyType &type,
                             const string &description);
-
-
     /**
      * @brief Implements @p Type:TypeBase::documentation.
      */
@@ -579,14 +545,12 @@ public:
      */
     const Selection &get_type_selection() const;
 
-
     /**
      * This method intentionally have no implementation to
      * prevents deriving an AbstractRecord form other AbstractRecord.
      * In such a case the linker should report an undefined reference.
      */
     Record &derive_from(AbstractRecord &parent);
-
 
     /**
      * Returns number of keys in the child_data_.
@@ -604,8 +568,6 @@ protected:
     void add_descendant(const Record &subrec);
 
     friend class Record;
-
-
 };
 
 
@@ -636,10 +598,10 @@ Record &Record::declare_key(const string &key,
     // key later after all types are initialized.
     if (boost::is_base_of<Record, KeyType>::value ||
     	boost::is_base_of<Selection, KeyType>::value) {
-    	data_->declare_key_reference(key, &type, default_value, description);
+    	data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
     } else {
     	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
-    	data_->declare_key(key, type_copy, default_value, description);
+    	data_->declare_key(key, type_copy, NULL, default_value, description);
     }
 
     return *this;

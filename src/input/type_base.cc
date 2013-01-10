@@ -72,6 +72,39 @@ string TypeBase::desc() const {
 
 
 
+TypeBase::LazyTypeVector &TypeBase::lazy_type_list() {
+    static LazyTypeVector lazy_type_list;
+    return lazy_type_list;
+}
+
+
+
+void TypeBase::lazy_finish() {
+    // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
+
+    // first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
+    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
+        if (boost::dynamic_pointer_cast<Selection>(*it) == 0) {
+            (*it)->finish();
+        }
+    }
+
+    // then finalize abstract records so that no type can derive from them
+    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++)
+    {
+        boost::shared_ptr<AbstractRecord> a_rec_ptr = boost::dynamic_pointer_cast<AbstractRecord>(*it);
+        if ( a_rec_ptr!= 0) a_rec_ptr->no_more_descendants();
+    }
+
+    // at last finish all selections (including those in AbstractRecord)
+    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) (*it)->finish();
+
+    lazy_type_list().clear();
+
+}
+
+
+
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
     type.reset_doc_flags();
     return type.documentation(stream);

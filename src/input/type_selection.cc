@@ -12,6 +12,15 @@ namespace Type {
 
 using std::string;
 
+
+Selection::Selection(const string &name) :
+        data_(boost::make_shared<SelectionData>(name))
+{
+    TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
+}
+
+
+
 Selection &Selection::add_value(const int value, const std::string &key, const std::string &description) {
     empty_check();
     if (is_finished())

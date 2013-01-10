@@ -12,7 +12,7 @@
 #include "system/system.hh"
 #include "system/exceptions.hh"
 #include "system/file_path.hh"
-#include "lazy_types.hh"
+//#include "lazy_types.hh"
 
 
 #include <limits>
@@ -143,6 +143,9 @@ public:
     virtual void valid_default(const string &str) const
     { }
 
+    /// Finishes all registered lazy types.
+    static void lazy_finish();
+
 protected:
     /**
      * Write out a string with given padding of every new line.
@@ -167,6 +170,19 @@ protected:
      */
     static bool is_valid_identifier(const string& key);
 
+    /**
+     * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
+     * LazyType. When all static variables are initialized, the method LazyTypes::instance().finish() can be called
+     * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
+     * Selections have to be finished after all other types since they are used by AbstractRecords to register all
+     * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
+     */
+    typedef std::vector< boost::shared_ptr<TypeBase> > LazyTypeVector;
+
+    /**
+     * The reference to the singleton instance of @p lazy_type_list.
+     */
+    static LazyTypeVector &lazy_type_list();
 
 };
 
@@ -238,7 +254,7 @@ public:
         	boost::is_base_of<Selection, ValueType>::value)
         {
         	data_->p_type_of_values = &type;
-        	LazyTypes::instance().addType( boost::make_shared<Array>( *this ) );
+        	TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
         }
         else
         {
