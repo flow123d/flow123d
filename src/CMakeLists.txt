@@ -62,7 +62,6 @@ set(sources_lib_input
     input/type_output.cc
     
     input/accessors.cc
-    input/lazy_types.cc
 )
 
 set(sources_mesh_lib
