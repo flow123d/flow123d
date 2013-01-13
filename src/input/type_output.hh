@@ -116,7 +116,12 @@ protected:
 	virtual void print(ostream& stream, const String *type, unsigned int depth = 0) = 0;
     virtual void print(ostream& stream, const FileName *type, unsigned int depth = 0) = 0;
 
-    void write_description(std::ostream& stream, const string& str);
+    /**
+     * Write out a string with given padding of every new line.
+     */
+    virtual void write_description(std::ostream& stream, const string& str) = 0;
+
+    void write_value(std::ostream& stream, Default dft);
 
     /// Object for which is created printout
     TypeBase *type_;
@@ -124,6 +129,9 @@ protected:
     unsigned int depth_;
     /// Type of documentation output
     DocumentationType doc_type_;
+
+    /// temporary value for printout of description (used in std::setw function)
+    unsigned int size_setw_;
 
 };
 
@@ -146,6 +154,9 @@ protected:
 	void print(ostream& stream, const Bool *type, unsigned int depth = 0);
 	void print(ostream& stream, const String *type, unsigned int depth = 0);
     void print(ostream& stream, const FileName *type, unsigned int depth = 0);
+
+    void write_description(std::ostream& stream, const string& str);
+
 };
 
 /**
@@ -160,10 +171,15 @@ class OutputJSONTemplate : public OutputBase {
 public:
 	OutputJSONTemplate(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
-	void print(ostream& stream) { OutputBase::print(stream); }
+	void print(ostream& stream) {
+		type_name_ = ""; //.str(std::string());
+		OutputBase::print(stream);
+	}
 
 protected:
-	void print(ostream& stream, const TypeBase *type, unsigned int depth = 0) { OutputBase::print(stream, type, depth); }
+	void print(ostream& stream, const TypeBase *type, unsigned int depth = 0) {
+		OutputBase::print(stream, type, depth);
+	}
 
     void print(ostream& stream, const Record *type, unsigned int depth = 0);
     void print(ostream& stream, const Array *type, unsigned int depth = 0);
@@ -175,6 +191,14 @@ protected:
 	void print(ostream& stream, const String *type, unsigned int depth = 0);
     void print(ostream& stream, const FileName *type, unsigned int depth = 0);
 
+    void write_description(std::ostream& stream, const string& str);
+
+    /// temporary value of actually record type
+    string type_name_;
+    /// temporary value of actually record description
+    string description_;
+    /// temporary value of actually record value
+    Default value_;
 };
 
 

@@ -37,6 +37,8 @@ namespace Type {
  * @ingroup input_types
  */
 class Default {
+	friend class OutputJSONTemplate;
+
 private:
     /**
      * Possible types of default values.
@@ -157,6 +159,7 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
+	friend class OutputText;
 
 public:
 
