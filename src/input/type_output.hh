@@ -18,19 +18,26 @@ namespace Input {
 namespace Type {
 /***
  * TODO:
- * - proc je v OutputText pretizena resolution metoda print ?
- *   podobne v OutputJSONTemplate
- *
- * - v OutputText: Record ktery dedi bude uvadet jmeno predka (AbstractRecordu)
+ * - v OutputText: Record ktery dedi bude uvadet jmeno predka (AbstractRecordu) - TODO: pridat shared_ptr do Record ukazujici na predka (trvale)
  *
  * - nejak informovat o povoleni automaticke konverze pro Record
  *
  * - OutputJSONTemplate:
  *   - vypis defaultnich hodnot pro skalarni klice, typ klice do komentare na stejnem radku
- *     pokud je obligatory vypsat <OBLIGATORY>, ?? co s default at read time a optional
+ *     pokud je obligatory vypsat <OBLIGATORY>, klic nezakomentovat
+ *     Optional: prefix klice "OPT_", nezakomentovat (funguje jako komentar.. neznamy klic), jako hodnotu pouzit Integer, Double:0, String, Selection: ""
+ *     Read_time: prefix "OPT_" , za rovnitko komentar?? co s default at read time a optional
  *     patrne je uvest ale v komentari, idea je aby soubor byl platny JSON soubor az na OBLIGATORY klice, ktere uzivatel musi vyplnit
  *
  *   - Pro selection uvest mozne hodnoty a jejich popisy do komentare
+ *     # Selection of 3 values:
+       # "None" - Mortar space: P0 on elements of lower dimension.
+       # "P0"   - Mortar space: P0 on elements of lower dimension.
+       # "P1"   - Mortar space: P1 on intersections, using non-conforming pressures.
+       # ---------
+       # Method for coupling Darcy flow between dimensions.
+       mortar_method = "None"
+ *
  *   - Pro abstract record: uvest TYPE (selection), pak jeho klice (dedi se) a pak
  *     jednotlive potomky pomoci klicu s pripojenym typem recordu,
  *   - pro klice ktere maji typ ktery uz byl popsan se uvede reference na klic kde se popis vyskytuje
