@@ -48,8 +48,8 @@ using namespace Input::Type;
 #endif
 
    Record rec_fin("xx","");
-   rec_fin.finish();
-   EXPECT_DEATH( {rec_fin.declare_key("xx", String(),"");}, "in finished Record type:");
+   rec_fin.close();
+   EXPECT_DEATH( {rec_fin.declare_key("xx", String(),"");}, "Can not add .* into closed record");
 
 
 //   This no more fails: Declaration of incomplete (unfinished) keys is possible.
@@ -59,7 +59,7 @@ using namespace Input::Type;
    EXPECT_DEATH( { rec.declare_key("data_description", String(),"");},
                 "Re-declaration of the key:");
 
-   EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),""); rec.finish(); }, ExcWrongDefault,
+   EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),""); }, ExcWrongDefault,
            "Default value .* do not match type: 'Double';");
 
    enum Colors {
@@ -69,7 +69,7 @@ using namespace Input::Type;
    Selection sel("Color selection");
    sel.add_value(black, "black");
    sel.add_value(red, "red");
-   sel.finish();
+   sel.close();
 
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
 
@@ -83,7 +83,7 @@ using namespace Input::Type;
    {
        Record rec("Rec", "");
        rec.declare_key("int_key", Integer(), Default::read_time("Default value provided at read time."), "");
-       rec.finish();
+       rec.close();
 
        stringstream out;
        out << rec;
@@ -95,7 +95,7 @@ using namespace Input::Type;
        // test documentation of OPTIONAL keys
        Record rec("Rec", "");
        rec.declare_key("int_key", Integer(), Default::optional(), "Doc");
-       rec.finish();
+       rec.close();
 
        stringstream out;
        out << rec;
@@ -107,7 +107,7 @@ using namespace Input::Type;
        // test documentation of OPTIONAL keys
        Record rec("Rec", "");
        rec.declare_key("int_key", Integer(), Default::obligatory(), "Doc");
-       rec.finish();
+       rec.close();
 
        stringstream out;
        out << rec;
@@ -136,10 +136,10 @@ using namespace Input::Type;
 
     // allow default values for an array
     array_record.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
-    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); array_record.finish(); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); array_record.close(); }, ExcWrongDefault,
                   "Default value 'ahoj' do not match type: 'Integer';"
                  );
-    EXPECT_THROW_WHAT( {array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); array_record2.finish(); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( {array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); array_record2.close(); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
 }
@@ -168,8 +168,7 @@ using namespace Input::Type;
 
     {
     static Record sub_rec( "SubRecord", "");
-    sub_rec.finish();
-
+    EXPECT_TRUE( sub_rec.finish() );
     EXPECT_EQ( sub_rec.end(), sub_rec.auto_conversion_key_iter() );
     }
 
@@ -190,19 +189,22 @@ using namespace Input::Type;
     //              );
 
     Record other_record("OtherRecord","desc");
-    other_record.finish();
+    other_record.close();
 
     static Record sub_rec( "SubRecord", "");
     sub_rec.declare_key("bool_key", Bool(), Default("false"), "");
     sub_rec.declare_key("int_key", Integer(),  "");
     sub_rec.allow_auto_conversion("int_key");
-    sub_rec.finish();
+    sub_rec.close();
 
     record_record.declare_key("sub_rec_1", other_record, "key desc");
-    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); record_record.finish(); }, ExcWrongDefault,
+    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); record_record.close(); }, ExcWrongDefault,
             "Default value '2.3' do not match type: 'OtherRecord';" );
+
+    DBGMSG("here\n");
     record_record2.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
-    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); record_record2.finish(); } , ExcWrongDefault,
+    DBGMSG("here\n");
+    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); record_record2.close(); } , ExcWrongDefault,
             "Default value '2.3' do not match type: 'Integer';" );
 
     // recursion  -  forbidden
@@ -304,29 +306,36 @@ using namespace Input::Type;
     a_rec.declare_key("a_val", String(), Default::obligatory(), "");
     a_rec.finish();
 
-    EXPECT_EQ(0, a_rec.key_index("TYPE"));
-    EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
-
     // test derived type
     Record b_rec("EqDarcy","");
     b_rec.derive_from(a_rec);
     b_rec.declare_key("b_val", Integer(), "");
-    b_rec.finish();
-
-    EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
-    // TYPE should be derived as optional
-    EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
 
     Record c_rec("EqTransp","");
     c_rec.derive_from(a_rec);
     c_rec.declare_key("c_val", Integer(), "");
     c_rec.declare_key("a_val", Double(),"");
+
     c_rec.finish();
+    b_rec.finish();
+
+    a_rec.no_more_descendants();
+    DBGMSG("here: %d\n", a_rec.is_finished());
+    EXPECT_TRUE( a_rec.is_finished() );
+    EXPECT_EQ(0, a_rec.key_index("TYPE"));
+    EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
+
+    DBGMSG("here: %d\n", a_rec.is_finished());
+
+    EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
+    // TYPE should be derived as optional
+    EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
+
     // TYPE should be derived as optional
     EXPECT_TRUE( c_rec.key_iterator("TYPE")->default_.is_optional());
 
 
-    a_rec.no_more_descendants();
+    DBGMSG("here: %d\n", a_rec.is_finished());
 
     // inherited keys
     EXPECT_TRUE( b_rec.has_key("mesh") );
@@ -338,7 +347,9 @@ using namespace Input::Type;
     EXPECT_EQ( b_rec, a_rec.get_descendant("EqDarcy"));
     EXPECT_EQ( c_rec, a_rec.get_descendant("EqTransp"));
 
-    c_rec.derive_from(a_rec);
+    DBGMSG("here: %d\n", a_rec.is_finished());
+
+    //c_rec.derive_from(a_rec);
 
     AbstractRecord x_rec("ar","");
     Record y_rec("y_rec","");

@@ -83,7 +83,7 @@ namespace Type {
 
 class OutputBase {
 public:
-    OutputBase(TypeBase *type, unsigned int depth = 0) : type_(type), depth_(depth) {}
+    OutputBase(TypeBase *type, unsigned int depth = 0);
 
     void print(ostream& stream);
 

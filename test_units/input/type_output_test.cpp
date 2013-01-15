@@ -37,7 +37,7 @@ Record output_record("OutputRecord",
             "Simulation time of first output.");
     output_record.declare_key("data_description", String(), Default::optional(),
             "");
-    output_record.finish();
+    output_record.close();
 } // delete local variables
 
 Record array_record("RecordOfArrays",
@@ -53,7 +53,7 @@ Record array_record("RecordOfArrays",
          "Desc. of array");
  array_record.declare_key("array_of_str_1", Array( String() ), Default::optional(),
              "Desc. of array");
- array_record.finish();
+ array_record.close();
 }
 
 
@@ -65,14 +65,14 @@ Record array_record("RecordOfArrays",
 
  {
      Record other_record("OtherRecord","desc");
-     other_record.finish();
+     other_record.close();
 
      record_record.declare_key("sub_rec_1", other_record, "key desc");
 
      // recursion
      //record_record->declare_key("sub_rec_2", record_record, "Recursive key.");
 
-     record_record.finish();
+     record_record.close();
  }
 
  Selection sel("Colors");
@@ -82,7 +82,7 @@ Record array_record("RecordOfArrays",
      sel.add_value(black,"black");
      sel.add_value(red,"red");
      sel.add_value(green,"green");
-     sel.finish();
+     sel.close();
  }
 
  Record main("MainRecord", "The main record of flow.");
@@ -91,7 +91,7 @@ Record array_record("RecordOfArrays",
  main.declare_key("color", sel, "My favourite color.");
  main.declare_key("color1", sel, "My second favourite color.");
  main.declare_key("array_record", array_record, "no commment on array_record");
- main.finish();
+ main.close();
 
  cout << "/// " << "OutputText printout" << endl;
 
@@ -155,7 +155,7 @@ TEST(OutputTypeAbstractRecord, abstract_record_test) {
     AbstractRecord a_rec("EqBase","Base of equation records.");
     a_rec.declare_key("mesh", String(), Default::obligatory(), "Comp. mesh.");
     a_rec.declare_key("a_val", String(), Default::obligatory(), "");
-    a_rec.finish();
+    a_rec.close();
 
     OutputText output_text( &a_rec, 0);
     output_text.print(cout);

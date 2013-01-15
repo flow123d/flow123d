@@ -9,13 +9,19 @@
 #define FIELD_VALUES_HH_
 
 #include <armadillo>
-#include <boost/type_traits.hpp>
+//#include <boost/type_traits.hpp>
 #include <boost/format.hpp>
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 namespace IT=Input::Type;
 
+/**
+ * @file
+ *
+ * This file contains various dispatch classes to simplify implementation of Fields. Essential is class template
+ * @p FieldValues_  which provides unified access and initialization to scalar, vector and matrix type object in Armadillo library
+ */
 
 TYPEDEF_ERR_INFO( EI_InputMsg, const string );
 DECLARE_INPUT_EXCEPTION( ExcFV_Input, << "Wrong field value input: " << EI_InputMsg::val );
@@ -51,6 +57,8 @@ private:
 };
 
 
+typedef unsigned int FieldEnum;
+
 
 
 namespace internal {
@@ -59,25 +67,36 @@ namespace internal {
 std::string type_name_(double);
 std::string type_name_(int);
 std::string type_name_(std::string);
+std::string type_name_(FieldEnum);
+
 
 double &scalar_value_conversion(double &ref);
 int &scalar_value_conversion(int &ref);
+FieldEnum &scalar_value_conversion(FieldEnum &ref);
 std::string &scalar_value_conversion(StringTensor &ref);
 
 
+
+/**
+ * InputType dispatch from elementary type @p ET of FieldValues_ to elementary Input::Type, i.e. descendant of Input::Type::Scalar.
+ */
 template <class ET>
 struct InputType { typedef Input::Type::Double type; };
 
 template <>
 struct InputType<int> { typedef Input::Type::Integer type; };
 
-// for FieldFormula
 template <>
-struct InputType<std::string> { typedef Input::Type::String type; };
+struct InputType<std::string> { typedef Input::Type::String type; };    // for FieldFormula
+
+template <>
+struct InputType<FieldEnum> { typedef Input::Type::Selection type; };
 
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resolution of Value::return_type
+
+// general element type
 template<int NRows, int NCols, class ET>
 struct ReturnType { typedef typename arma::Mat<ET>::template fixed<NRows, NCols> return_type; };
 
@@ -90,9 +109,10 @@ struct ReturnType<0,1,ET> { typedef arma::Col<ET>  return_type; };
 template <int NRows, class ET>
 struct ReturnType<NRows,1,ET> { typedef typename arma::Col<ET>::template fixed<NRows> return_type; };
 
+
+// string element type (for FieldFormula)
 template<int NRows, int NCols>
 struct ReturnType<NRows, NCols, std::string> { typedef StringTensor return_type; };
-
 
 template<>
 struct ReturnType<1,1, std::string> { typedef StringTensor return_type; };
@@ -102,6 +122,20 @@ struct ReturnType<0,1, std::string> { typedef StringTensor return_type; };
 
 template <int NRows>
 struct ReturnType<NRows,1, std::string> { typedef StringTensor return_type; };
+
+
+// FiledEnum element type - this just returns types with ET=unsigned int, however input should be different
+template<int NRows, int NCols>
+struct ReturnType<NRows, NCols, FieldEnum> { typedef typename arma::Mat<unsigned int>::template fixed<NRows, NCols> return_type; };
+
+template<>
+struct ReturnType<1,1, FieldEnum> { typedef unsigned int return_type; };
+
+template <>
+struct ReturnType<0,1, FieldEnum> { typedef arma::Col<unsigned int> return_type; };
+
+template <int NRows>
+struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>::template fixed<NRows> return_type; };
 
 } // namespace internal
 
@@ -121,29 +155,34 @@ class FieldValue_ {
 public:
     typedef ET element_type;
     typedef typename internal::ReturnType<NRows, NCols, ET>::return_type return_type;
-    typedef Input::Array InputType;
+    typedef typename internal::InputType<ET>::type ElementInputType;
+    typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = NCols;
 
     static std::string type_name() { return boost::str(boost::format("%s[%d,%d]") % internal::type_name_( ET() ) % NRows % NCols); }
-    static IT::Array get_input_type() {
-        if (NRows == NCols)
-            // for square tensors allow initialization by diagonal vector, etc.
-            return IT::Array( IT::Array( typename internal::InputType<ET>::type(), 1), 1 );
-        else
-            return IT::Array( IT::Array( typename internal::InputType<ET>::type(), NCols, NCols), NRows, NRows );
+    static IT::Array get_input_type(ElementInputType *element_input_type=NULL) {
+        if (element_input_type) {
+            // has sense only for ET==FieldEnum
+            if (NRows == NCols)
+                // for square tensors allow initialization by diagonal vector, etc.
+                return IT::Array( IT::Array( *element_input_type, 1), 1 );
+            else
+                return IT::Array( IT::Array( *element_input_type, NCols, NCols), NRows, NRows );
+
+        } else {
+            if (NRows == NCols)
+                // for square tensors allow initialization by diagonal vector, etc.
+                return IT::Array( IT::Array( ElementInputType(), 1), 1 );
+            else
+                return IT::Array( IT::Array( ElementInputType(), NCols, NCols), NRows, NRows );
+        }
     }
-    static IT::Array get_formula_input_type() {
-        if (NRows == NCols)
-            // for square tensors allow initialization by diagonal vector, etc.
-            return IT::Array( IT::Array( typename internal::InputType<std::string>::type(), 1), 1 );
-        else
-            return IT::Array( IT::Array( typename internal::InputType<std::string>::type(), NCols, NCols), NRows, NRows );
-    }
+
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
-    void init_from_input( InputType rec ) {
+    void init_from_input( AccessType rec ) {
         Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
         if (NRows == NCols) {
             // square tensor
@@ -207,8 +246,10 @@ private:
     return_type &value_;
 };
 
-
-
+template <class ET>
+struct AccessTypeDispatch { typedef ET type;};
+template <>
+struct AccessTypeDispatch<unsigned int> { typedef Input::Enum type; };
 
 /// Specialization for scalars
 template <class ET>
@@ -216,18 +257,22 @@ class FieldValue_<1,1,ET> {
 public:
     typedef ET element_type;
     typedef typename internal::ReturnType<1, 1, ET>::return_type return_type;
-    typedef ET InputType;
+    typedef typename internal::InputType<ET>::type ElementInputType;
+    typedef typename AccessTypeDispatch<ET>::type AccessType;
     const static int NRows_ = 1;
     const static int NCols_ = 1;
 
     static std::string type_name() { return boost::str(boost::format("%s") % internal::type_name_( ET() ) ); }
-    static typename internal::InputType<ET>::type get_input_type() { return typename internal::InputType<ET>::type(); }
-    static IT::String get_formula_input_type() {
-            return IT::String();
+    static ElementInputType get_input_type(ElementInputType *element_input_type=NULL)
+    {
+        if (element_input_type)
+            return *element_input_type;
+        else
+            return ElementInputType();
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
-    void init_from_input( InputType val ) { value_ = return_type(val); }
+    void init_from_input( AccessType val ) { value_ = return_type(val); }
 
     void set_n_comp(unsigned int) {};
     inline unsigned int n_cols() const
@@ -251,21 +296,23 @@ class FieldValue_<0,1,ET> {
 public:
     typedef ET element_type;
     typedef typename internal::ReturnType<0, 1, ET>::return_type return_type;
-    typedef Input::Array InputType;
+    typedef typename internal::InputType<ET>::type ElementInputType;
+    typedef Input::Array AccessType;
     const static int NRows_ = 0;
     const static int NCols_ = 1;
 
 
     static std::string type_name() { return boost::str(boost::format("%s[n]") % internal::type_name_( ET() ) ); }
-    static IT::Array get_input_type() {
-        return Input::Type::Array( typename internal::InputType<ET>::type(), 1);
-    }
-    static IT::Array get_formula_input_type() {
-        return Input::Type::Array( typename internal::InputType<std::string>::type(), 1);
+    static IT::Array get_input_type(ElementInputType *element_input_type=NULL) {
+        if (element_input_type) {
+            return IT::Array( *element_input_type, 1);
+        } else {
+            return IT::Array( ElementInputType(), 1);
+        }
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
-    void init_from_input( InputType rec ) {
+    void init_from_input( AccessType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
         if ( rec.size() == 1 ) {
@@ -302,23 +349,24 @@ class FieldValue_<NRows,1,ET> {
 public:
     typedef ET element_type;
     typedef typename internal::ReturnType<NRows, 1, ET>::return_type return_type;
-    typedef Input::Array InputType;
+    typedef typename internal::InputType<ET>::type ElementInputType;
+    typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = 1;
 
 
     static std::string type_name() { return boost::str(boost::format("%s[%d]") % internal::type_name_( ET() ) % NRows ); }
-    static IT::Array get_input_type() {
-        return IT::Array( typename internal::InputType<ET>::type(), 1, NRows);
+    static IT::Array get_input_type(ElementInputType *element_input_type=NULL) {
+        if (element_input_type) {
+            return IT::Array( *element_input_type, 1, NRows);
+        } else {
+            return IT::Array( ElementInputType(), 1, NRows);
+        }
     }
-    static IT::Array get_formula_input_type() {
-        return IT::Array( typename internal::InputType<std::string>::type(), 1, NRows);
-    }
-
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
-    void init_from_input( InputType rec ) {
+    void init_from_input( AccessType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
         if ( rec.size() == 1 ) {
@@ -363,10 +411,11 @@ private:
 template <int spacedim>
 struct FieldValue {
     // typedefs for possible field values
-    typedef FieldValue_<1,1,int>     Discrete;
-    typedef FieldValue_<1,1,double>   Scalar;
-    typedef FieldValue_<spacedim,1,double> VectorFixed;
-    typedef FieldValue_<0,1,double> Vector;
+    typedef FieldValue_<1,1,int>            Integer;
+    typedef FieldValue_<1,1, FieldEnum>     Enum;
+    typedef FieldValue_<1,1,double>         Scalar;
+    typedef FieldValue_<spacedim,1,double>  VectorFixed;
+    typedef FieldValue_<0,1,double>         Vector;
     typedef FieldValue_<spacedim,spacedim,double> TensorFixed;
 };
 

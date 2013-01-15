@@ -17,6 +17,7 @@
 
 #include <limits>
 #include <ios>
+#include <set>
 #include <map>
 #include <vector>
 #include <string>
@@ -98,21 +99,13 @@ public:
     virtual void  reset_doc_flags() const =0;
 
     /**
-     * Returns true if the type is fully specified.
+     * Returns true if the type is fully specified and ready for read access. For Record and Array types
+     * this say nothing about child types referenced in particular type object.
      * In particular for Record and Selection, it returns true after @p finish() method is called.
+     *
      */
     virtual bool is_finished() const
     {return true;}
-
-    /**
-     * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
-     * These input types are typically defined by means
-     * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
-     * input types through its keys, these input types cannot be accessed directly at the initialization phase.
-     * The remaining part of initialization can be done later, typically from main(), by calling the method finish().
-     */
-    virtual void finish()
-    {};
 
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  =0;
@@ -121,6 +114,8 @@ public:
      * Returns string with Type extensive documentation.
      */
     string desc() const;
+
+
 
     /**
      * Comparison of types. It compares kind of type (Integer, Double, String, Record, ..), for complex types
@@ -136,17 +131,38 @@ public:
     /// Empty virtual destructor.
     virtual ~TypeBase( void ) {}
 
-    /**
-     * For types that can be initialized from a default string, this method check
-     * validity of the default string. For invalid string an exception is thrown.
-     */
-    virtual void valid_default(const string &str) const
-    { }
+
 
     /// Finishes all registered lazy types.
     static void lazy_finish();
 
+
+    /**
+     * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
+     * These input types are typically defined by means
+     * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
+     * input types through its keys, these input types cannot be accessed directly at the initialization phase.
+     * The remaining part of initialization can be done later, typically from main(), by calling the method finish().
+     *
+     * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
+     * are still raw pointers to not constructed objects the method returns false.
+     */
+    virtual bool finish() const
+    { return true; };
+
+    /**
+     * For types that can be initialized from a default string, this method check
+     * validity of the default string. For invalid string an exception is thrown.
+     *
+     * Return false if the validity can not be decided due to presence of unconstructed types (Record, Selection)
+     */
+    virtual bool valid_default(const string &str) const =0;
+
 protected:
+
+
+
+
     /**
      * Write out a string with given padding of every new line.
      */
@@ -176,6 +192,11 @@ protected:
      * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
      * Selections have to be finished after all other types since they are used by AbstractRecords to register all
      * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
+     *
+     * This is list of unique instances that may contain raw pointers to possibly not yet constructed
+     * (static) objects. Unique instance is the instance that creates unique instance of the data class in pimpl idiom.
+     * These has to be completed/finished before use.
+     *
      */
     typedef std::vector< boost::shared_ptr<TypeBase> > LazyTypeVector;
 
@@ -184,6 +205,20 @@ protected:
      */
     static LazyTypeVector &lazy_type_list();
 
+    /**
+     * Set of  pointers to all constructed (even temporaries) lazy types. This list contains ALL instances
+     * (including copies and empty handles) of lazy types.
+     */
+    typedef std::set<const TypeBase *> LazyObjectsSet;
+
+    static LazyObjectsSet &lazy_object_set();
+
+    static bool was_constructed(const TypeBase * ptr);
+
+    static void insert_lazy_object(const TypeBase * ptr);
+
+    friend class Array;
+    friend class Record;
 };
 
 /**
@@ -194,6 +229,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 class Record;
 class Selection;
+
 
 /**
  * @brief Class for declaration of inputs sequences.
@@ -224,7 +260,7 @@ protected:
     	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
     	{}
 
-    	void finish();
+    	bool finish();
 
     	boost::shared_ptr<const TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
@@ -239,39 +275,56 @@ public:
      * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
      */
     template <class ValueType>
-    inline Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
+    Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
     : data_(boost::make_shared<ArrayData>(min_size, max_size))
     {
         // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
         BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
-
         ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
 
         // Records, AbstractRecords and Selections need not be initialized
         // at the moment, so we save the reference of type and update
         // the array later in finish().
-        if (boost::is_base_of<Record, ValueType>::value ||
-        	boost::is_base_of<Selection, ValueType>::value)
-        {
-        	data_->p_type_of_values = &type;
-        	TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
-        }
-        else
-        {
+        if ( (boost::is_base_of<Record, ValueType>::value ||
+              boost::is_base_of<Selection, ValueType>::value)
+             && ! TypeBase::was_constructed(&type) ) {
+            //xprintf(Warn,"In construction of Array of Lazy type %s with copy declaration. Potential problem with order of static initializations.\n",
+            //        type.type_name().c_str());
+            data_->p_type_of_values = &type;
+            TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
+        } else {
             data_->p_type_of_values = NULL;
-
-
-        	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
-        	data_->type_of_values_ = type_copy;
+            boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
+            data_->type_of_values_ = type_copy;
+            data_->finished=true;
         }
     }
+
+
+    /**
+     * Constructor with a @p type of array items given as pure reference. In this case \p type has to by descendant of \p TypeBase different from
+     * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
+     */
+    /*
+    template <class ValueType>
+    Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
+    : data_(boost::make_shared<ArrayData>(min_size, max_size))
+    {
+        // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
+        BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
+        ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+
+        data_->p_type_of_values = &type;
+        TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
+    }
+*/
 
     //Array(boost::shared_ptr<ArrayData> data_ptr)
     //: data_(data_ptr)
     //{}
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    virtual void finish();
+    virtual bool finish() const;
 
     virtual bool is_finished() const { empty_check(); return data_->finished; }
 
@@ -284,7 +337,9 @@ public:
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const
-        { empty_check(); return *data_->type_of_values_; }
+        { empty_check();
+          ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
+        return *data_->type_of_values_; }
 
     /// Checks size of particular array.
     inline bool match_size(unsigned int size) const
@@ -307,14 +362,14 @@ public:
      *  that is initialized by given default value. So this method check
      *  if the default value is valid for the sub type of the array.
      */
-    virtual void valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const;
 
 protected:
 
+
+
     /// Handle to the actual array data.
     boost::shared_ptr<ArrayData> data_;
-
-    /// For lazy finishing value types, we store just pointer at declaration
 
 };
 
@@ -344,12 +399,12 @@ public:
     Bool()
     {}
 
-    virtual void valid_default(const string &str) const;
-
     bool from_default(const string &str) const;
 
     virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
+
+    virtual bool valid_default(const string &str) const;
 };
 
 
@@ -377,13 +432,13 @@ public:
      * As before but also returns converted integer in @p value.
      */
     int from_default(const string &str) const;
-
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual void valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const;
 
     virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
+
     int lower_bound_, upper_bound_;
 
 };
@@ -409,17 +464,19 @@ public:
      */
     bool match(double value) const;
 
+    /// Implements  @p Type::TypeBase::valid_defaults.
+    virtual bool valid_default(const string &str) const;
+
     /**
      * As before but also returns converted integer in @p value.
      */
     double from_default(const string &str) const;
 
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual void valid_default(const string &str) const;
-
     virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
+
+
     double lower_bound_, upper_bound_;
 
 };
@@ -436,15 +493,17 @@ public:
     virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
     virtual string type_name() const;
 
-    virtual void valid_default(const string &str) const;
+
 
     string from_default(const string &str) const;
-
 
     /**
      * Particular descendants can check validity of the string.
      */
     virtual bool match(const string &value) const;
+
+    /// Implements  @p Type::TypeBase::valid_defaults.
+    virtual bool valid_default(const string &str) const;
 };
 
 

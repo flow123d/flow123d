@@ -31,7 +31,8 @@ template class field<dim_from, FieldValue<dim_to>::TensorFixed >;               
 
 //first dimension independent values then dimension dependent
 #define INSTANCE_TO_ALL(field, dim_from) \
-template class field<dim_from, FieldValue<0>::Discrete >;                       \
+template class field<dim_from, FieldValue<0>::Enum >;                       \
+template class field<dim_from, FieldValue<0>::Integer >;                       \
 template class field<dim_from, FieldValue<0>::Scalar >;                       \
 template class field<dim_from, FieldValue<0>::Vector >;                         \
 \
@@ -46,6 +47,8 @@ INSTANCE_TO_ALL( field, 3) \
 
 
 INSTANCE_ALL(FieldBase)
+INSTANCE_ALL(Field)
+INSTANCE_ALL(BCField)
 INSTANCE_ALL(FieldConstant)
 INSTANCE_ALL(FieldPython)
 INSTANCE_ALL(FieldFormula)

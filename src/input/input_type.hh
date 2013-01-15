@@ -15,7 +15,7 @@
  *
  *  - type_use_case_test, + demonstrace vystupu dokumentace
  *  - match metody pro Scalarni typy + converze z default hodnot
- *  - operator-> for iterators to accessors
+ *  - instance InputType metod a dalsich sablon v Input namespace
  *
  *  - TYPE is obligatory key of descendants of an AbstractRecord, for consistent documentation it should be reported as
  *    a obligatory key in these Records, however it is quite complicated to have it there , and it is not necessary for
@@ -23,6 +23,9 @@
  *  - Documentation of AbstractRecord should contain TYPE and common keys, descendants should report only nonderived keys.
  *  - Descendant of an AbstractRecord should not be used directly !!
  *
+ *  - copy constructory od Record, abstractRecord a Selection a Array (Pimpl idiom) by mely
+ *    kontrolovat, ze vnitrni ukazatele nejsou empty, jinak jsou kopie shared_ptr neplatne, popr. je v default constructoru musime inizializovat na nulu
+ *\
  *  - Doxygen doc
  *
  *
@@ -42,6 +45,10 @@
  *  - declare_key should take TypeBase as parameter to be more flexible, but is not necessary
  *
  *  - have global list of Record and selection names and guarantee the they are unique, otherwise == can be incorrect.
+ *
+ *  - when creating a "unique instance" of a lazy type we should check that its name is unique (in derived records we should
+ *    distinguish short_name used in AbstractRecord TYPE selection, and full_name that includes name of the parent AbstractRecord.
+ *    This is important to prevent Record derive from different local instances of AbstractRecord.
  *
  *  When C++11 specification become more supported, we can introduce class Key  that should be constructed form
  *  constant string during compilation, in particular it should check validity of the key string and compute the hash.

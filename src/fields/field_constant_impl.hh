@@ -20,15 +20,28 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 it::Record FieldConstant<spacedim, Value>::input_type
-    = it::Record("FieldConstant", FieldBase<spacedim,Value>::template_name()+" Field constant in space.")
-    .derive_from(FieldBase<spacedim, Value>::input_type)
-    .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
-                                "Value of the constant field.\n"
-                                "For vector values, you can use scalar value to enter constant vector.\n"
-                                "For square NxN-matrix values, you can use:\n"
-                                "* vector of size N to enter diagonal matrix\n"
-                                "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                "* scalar to enter multiple of the unit matrix." );
+    = FieldConstant<spacedim, Value>::get_input_type(FieldBase<spacedim, Value>::input_type, NULL);
+
+
+template <int spacedim, class Value>
+Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
+        Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit
+        )
+{
+    it::Record type=
+        it::Record("FieldConstant", FieldBase<spacedim,Value>::template_name()+" Field constant in space.")
+        .derive_from(a_type)
+        .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
+                                    "Value of the constant field.\n"
+                                    "For vector values, you can use scalar value to enter constant vector.\n"
+                                    "For square NxN-matrix values, you can use:\n"
+                                    "* vector of size N to enter diagonal matrix\n"
+                                    "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
+                                    "* scalar to enter multiple of the unit matrix." );
+
+    return type;
+}
+
 
 
 template <int spacedim, class Value>
@@ -38,11 +51,9 @@ FieldConstant<spacedim, Value>::FieldConstant(const double init_time, unsigned i
 
 
 
-
-
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::init_from_input( Input::Record rec) {
-    this->value_.init_from_input( rec.val<typename Value::InputType>("value") );
+    this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
 }
 
 
@@ -57,6 +68,7 @@ typename Value::return_type & FieldConstant<spacedim, Value>::value(const Point<
 }
 
 
+
 /**
  * Returns std::vector of scalar values in several points at once.
  */
@@ -68,12 +80,6 @@ void FieldConstant<spacedim, Value>::value_list (const std::vector< Point<spaced
     for(unsigned int i=0; i< point_list.size(); i++)
         value_list[i]=this->r_value_;
 }
-
-
-
-
-
-
 
 
 

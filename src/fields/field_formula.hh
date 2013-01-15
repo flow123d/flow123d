@@ -38,6 +38,8 @@ public:
 
     static Input::Type::Record input_type;
 
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+
     virtual void init_from_input( Input::Record rec);
 
     virtual void set_time(double time);

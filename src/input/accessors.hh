@@ -59,6 +59,20 @@ TYPEDEF_ERR_INFO( EI_AccessorName, const string );
 DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_AccessorName::val << " from StorageNull.");
 
 
+/**
+ * Class that represents base type of all enum types. We need it to return integer from a Selection input withou
+ * knowing exact enum type. This class contains int and is convertible to int.
+ */
+class Enum {
+public:
+    Enum() : val_(0) {}
+    Enum(int v) :val_(v) {}
+    operator int() {return val_;}
+    operator unsigned int() {return val_;}
+private:
+    int val_;
+};
+
 
 // Forward declaration
 class IteratorBase;
@@ -201,11 +215,8 @@ public:
      * Default constructor creates an accessor to an empty storage.
      */
     AbstractRecord()
-    : record_type_("DummyType",""), storage_( NULL )
-    {
-            record_type_.finish();
-            record_type_.no_more_descendants();
-    }
+    : record_type_(), storage_( NULL )
+    {}
 
     /**
      * Copy constructor.
@@ -515,7 +526,7 @@ template<> struct TD<float> { typedef double OT; };
 // generic implementation accepts only enum types
 template< class T>
 struct TypeDispatch {
-    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
+    BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
     //BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
 
     typedef T TmpType;

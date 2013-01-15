@@ -25,7 +25,6 @@
  *
  */
 
-#include "fields/field_all.hh"
 
 #ifndef FIELD_INTERPOLATED_P0_IMPL_HH_
 #define FIELD_INTERPOLATED_P0_IMPL_HH_

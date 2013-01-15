@@ -169,8 +169,6 @@ public:
     TYPEDEF_ERR_INFO( EI_Record, Record );
     TYPEDEF_ERR_INFO( EI_RecordName, const string);
     DECLARE_EXCEPTION( ExcRecordKeyNotFound, << "Key " << EI_KeyName::qval <<" not found in Record:\n" <<  EI_Record::val );
-    DECLARE_EXCEPTION( ExcDeriveNonEmpty, << "Can not derive from Record " << EI_RecordName::qval << " into "
-            "non-empty Record:\n" << EI_Record::val );
 
     /**
      *  Structure for description of one key in record.
@@ -195,7 +193,13 @@ public:
     /**
      * Default constructor. Empty handle.
      */
-    Record() {}
+    Record();
+
+    /**
+     * Copy constructor. We allow only copies of non-empty records.
+     */
+    Record(const Record & other);
+
 
     /**
      * Basic constructor. You have to provide \p type_name of the new declared Record type and
@@ -220,32 +224,35 @@ public:
     Record &allow_auto_conversion(const string &from_key);
 
     /**
-     * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
-     * @p description. The parameter @p type has to be any of descendants of TypeBase.
-     *
+     * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type,
+     * default value by parameter @p default_value, and with given @p description.
+     * The parameter @p type has a descendant of TypeBase. If @p type is an instance of Record, Selection, or AbstractRecord,
+     * we support references to static objects of these types that may not be yet constructed at the point when the declare_key method
+     * is called. This method can detect this case and postpone completion of the key.
      */
     template <class KeyType>
-    Record &declare_key(const string &key,
-                            const KeyType &type,
+    Record &declare_key(const string &key, const KeyType &type,
                             const Default &default_value, const string &description);
+
 
     /**
      * Same as previous method but without given default value (same as Default() - optional key )
      */
     template <class KeyType>
-    Record &declare_key(const string &key,
-                            const KeyType &type,
+    Record &declare_key(const string &key,const KeyType &type,
                             const string &description);
 
     /**
-     * Finish declaration of the Record type. No further declarations can be added.
+     *  Can be used to close the Record for further declarations of keys.
      */
-    void finish();
+    const Record &close() const;
+
 
     /**
      * Implements @p TypeBase::is_finished.
      */
     virtual bool is_finished() const;
+
 
 
     /**
@@ -268,7 +275,7 @@ public:
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
-    virtual void valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const;
 
     /// Class comparison and Record type name comparision.
     virtual bool operator==(const TypeBase &other) const;
@@ -327,7 +334,16 @@ public:
      */
     inline void set_made_extensive_doc(bool val) const;
 
+    /**
+     * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
+     */
+    bool finish() const;
+
 protected:
+
+
+    /// Check that given default value is valid for given type of the key.
+    bool check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const;
 
     /**
      * Assertion for non-empty Type::Record handle.
@@ -341,8 +357,16 @@ protected:
      */
     inline void finished_check() const {
         empty_check();
+        if (! is_finished()) {
+            DBGMSG("Record not finished!\n");
+        }
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
+
+    /**
+     * Actually perform registration in the parent AbstractRecord and copy keys from it.
+     */
+    void make_derive_from(AbstractRecord &parent) const;
 
     /**
      * Internal data class.
@@ -362,10 +386,6 @@ protected:
                          const TypeBase *type_temporary,
                          const Default &default_value, const string &description);
 
-        /**
-         * Finish declaration of the RecordData. No further declarations can be added.
-         */
-        void finish(Record *owner_ptr);
 
         Record::KeyIter auto_conversion_key_iter() const;
 
@@ -389,7 +409,10 @@ protected:
          * After the parent is initialized, the current object is
          * finalized by finish().
          */
-        AbstractRecord *parent_;
+        AbstractRecord *p_parent_;
+
+        /// Permanent pointer to parent AbstractRecord, necessary for output.
+        boost::shared_ptr<AbstractRecord> parent_ptr_;
 
         /**
          * Auxiliary variable which saves the shared_ptr to the actual RecordData.
@@ -397,7 +420,7 @@ protected:
          * It is used in the finish() method of RecordData for derived types, where
          * we need to make instance of Record from method of RecordData class.
          */
-        boost::shared_ptr<RecordData> descendant_data_;
+        //boost::shared_ptr<RecordData> descendant_data_;
 
         /**
          * This flag is set to true when documentation of the Record was called with extensive==true
@@ -407,9 +430,24 @@ protected:
          */
         mutable bool made_extensive_doc;
 
+        /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
 
-        int auto_conversion_key;
+        /// If record is closed, we do not allow any further declare_key calls.
+        bool closed_;
+
+        /// True for derived records after make_derived.
+        bool derived_;
+
+        /**
+         * Initial value is = -1, when allow_auto_conversion is called we set this to 0.
+         * Final value can be assigned just after possible inheritance copy of keys from parent AbstractRecord.
+         */
+        int auto_conversion_key_idx;
+        /**
+         * Name of key to use for auto conversion.
+         */
+        std::string auto_conversion_key;
 
     };
 
@@ -489,6 +527,17 @@ public:
     typedef std::vector< Record >::const_iterator ChildDataIter;
 
     /**
+     * Default constructor.
+     */
+    AbstractRecord();
+
+    /**
+     * Copy constructor. We check that other is non empty.
+     */
+    AbstractRecord(const AbstractRecord& other);
+
+
+    /**
      * Basic constructor. You has to provide \p type_name of the new declared Record type and
      * its \p description.
      */
@@ -511,17 +560,25 @@ public:
      */
     void no_more_descendants();
 
+    /**
+     * Same as Record::declare_key but returning reference to AbstractRecord.
+     */
     template <class KeyType>
-    AbstractRecord &declare_key(const string &key,
-                            const KeyType &type,
+    AbstractRecord &declare_key(const string &key, const KeyType &type,
                             const Default &default_value, const string &description);
     /**
      * Same as previous method but without given default value (same as Default() - optional key )
      */
     template <class KeyType>
-    AbstractRecord &declare_key(const string &key,
-                            const KeyType &type,
+    AbstractRecord &declare_key(const string &key, const KeyType &type,
                             const string &description);
+
+    /**
+     *  Can be used to close the AbstractRecord for further declarations of keys.
+     */
+    inline AbstractRecord &close() { Record::close(); return *this; }
+
+
     /**
      * @brief Implements @p Type:TypeBase::documentation.
      */
@@ -579,32 +636,26 @@ protected:
  */
 
 template <class KeyType>
-Record &Record::declare_key(const string &key,
-                        const KeyType &type,
+Record &Record::declare_key(const string &key, const KeyType &type,
                         const Default &default_value, const string &description)
+// this accept only lvalues - we assume that these are not local variables
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
-
     empty_check();
-    if (is_finished() ) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name().c_str());
+    if (data_->closed_)
+        xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
+    if ( (boost::is_base_of<Record, KeyType>::value ||
+          boost::is_base_of<Selection, KeyType>::value)
+         && ! TypeBase::was_constructed(&type) ) {
 
-    // If KeyType is not derived from Scalar, we check emptiness of the default value.
-    //if (boost::is_same<Record, KeyType>::value && typedefault_value.has_value() )
-    //    xprintf(Err, "Default value for non scalar type in declaration of key: %s in Record type: %s \n", key.c_str(), type_name().c_str() );
-
-    if (! is_valid_identifier(key))
-        xprintf(PrgErr, "Invalid key identifier %s in declaration of Record type: %s\n", key.c_str(), type_name().c_str());
-
-    // Keys of the type Record, AbstractRecord and Selection need not be initialized yet,
-    // so we save the reference to the type variable and finish the declaration of the
-    // key later after all types are initialized.
-    if (boost::is_base_of<Record, KeyType>::value ||
-    	boost::is_base_of<Selection, KeyType>::value) {
-    	data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
+        data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
     } else {
-    	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
-    	data_->declare_key(key, type_copy, NULL, default_value, description);
+        // for Array, Double, Integer, we assume no static variables
+        if (type.finish()) check_key_default_value(default_value, type, key);
+
+        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
+        data_->declare_key(key, type_copy, NULL, default_value, description);
     }
 
     return *this;
@@ -613,17 +664,16 @@ Record &Record::declare_key(const string &key,
 
 
 template <class KeyType>
-Record &Record::declare_key(const string &key,
-                        const KeyType &type,
+Record &Record::declare_key(const string &key, const KeyType &type,
                         const string &description)
 {
-	return declare_key(key,type, Default::optional(), description);
+    return declare_key(key,type, Default::optional(), description);
 }
 
 
+
 template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key,
-                        const KeyType &type,
+AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
                         const Default &default_value, const string &description)
 {
 	Record::declare_key(key, type, default_value, description);
@@ -631,13 +681,13 @@ AbstractRecord &AbstractRecord::declare_key(const string &key,
 }
 
 
+
 template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key,
-                        const KeyType &type,
+AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
                         const string &description)
 {
     return declare_key(key,type, Default::optional(), description);
- }
+}
 
 
 

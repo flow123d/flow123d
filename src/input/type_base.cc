@@ -97,12 +97,26 @@ void TypeBase::lazy_finish() {
     }
 
     // at last finish all selections (including those in AbstractRecord)
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) (*it)->finish();
+    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
+        if (! (*it)->finish()) xprintf(PrgErr, "Can not finish '%s' during lazy_finish.\n", (*it)->type_name().c_str() );
+    }
 
     lazy_type_list().clear();
 
 }
 
+TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
+    static LazyObjectsSet set_;
+    return set_;
+}
+
+bool TypeBase::was_constructed(const TypeBase * ptr) {
+    return lazy_object_set().find(ptr) != lazy_object_set().end();
+}
+
+void TypeBase::insert_lazy_object(const TypeBase * ptr) {
+    lazy_object_set().insert(ptr);
+}
 
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
@@ -116,22 +130,23 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  * implementation of Type::Array
  */
 
-void Array::finish()
+bool Array::finish() const
 {
 	empty_check();
-	data_->finish();
+	return data_->finish();
 }
 
-void Array::ArrayData::finish()
+bool Array::ArrayData::finish()
 {
-	if (finished) return;
+	if (finished) return true;
 
 	if (p_type_of_values != 0)
 	{
+	    if (! was_constructed(p_type_of_values) ) return false;
+
 		if (dynamic_cast<const AbstractRecord *>(p_type_of_values) != 0)
 		{
 			AbstractRecord *ar = (AbstractRecord *)dynamic_cast<const AbstractRecord *>(p_type_of_values);
-			ar->finish();
 			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*ar);
 			type_of_values_ = type_copy;
 			p_type_of_values = 0;
@@ -139,7 +154,6 @@ void Array::ArrayData::finish()
 		else if (dynamic_cast<const Record *>(p_type_of_values) != 0)
 		{
 			Record *r = (Record *)dynamic_cast<const Record *>(p_type_of_values);
-			r->finish();
 			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*r);
 			type_of_values_ = type_copy;
 			p_type_of_values = 0;
@@ -152,16 +166,16 @@ void Array::ArrayData::finish()
 			p_type_of_values = 0;
 		}
 		else if (dynamic_cast<const Array *>(p_type_of_values) != 0)
-		{
+		    xprintf(PrgErr, "Should not happen!\n");
+		    /*
 			Array *a = (Array *)dynamic_cast<const Array *>(p_type_of_values);
-			a->finish();
 			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Array>(*a);
 			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
+			p_type_of_values = 0;*/
+
 	}
 
-	finished = true;
+	return (finished = true);
 }
 
 
@@ -212,9 +226,9 @@ bool Array::operator==(const TypeBase &other) const    {
 
 
 
-void Array::valid_default(const string &str) const {
+bool Array::valid_default(const string &str) const {
     if ( this->match_size( 1 ) ) {
-        get_sub_type().valid_default( str );
+        return get_sub_type().valid_default( str );
     } else {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
     }
@@ -233,11 +247,10 @@ void  Scalar::reset_doc_flags() const
  * implementation of Type::Bool
  */
 
-void Bool::valid_default(const string &str) const {
+bool Bool::valid_default(const string &str) const {
     from_default(str);
+    return true;
 }
-
-
 
 bool Bool::from_default(const string &str) const {
     if (str == "true" )  {
@@ -288,8 +301,11 @@ int Integer::from_default(const string &str) const {
 
 
 
-void Integer::valid_default(const string &str) const
-{ from_default(str);}
+bool Integer::valid_default(const string &str) const
+{
+    from_default(str);
+    return true;
+}
 
 
 
@@ -330,8 +346,11 @@ double Double::from_default(const string &str) const {
 
 
 
-void Double::valid_default(const string &str) const
-{ from_default(str);}
+bool Double::valid_default(const string &str) const
+{
+    from_default(str);
+    return true;
+}
 
 
 
@@ -411,10 +430,11 @@ string String::type_name() const {
 
 
 
-void String::valid_default(const string &str) const {
+bool String::valid_default(const string &str) const {
     if (! match(str)) {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
     }
+    return true;
 }
 
 

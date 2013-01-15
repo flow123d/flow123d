@@ -18,6 +18,15 @@ using namespace std;
 OutputBase::~OutputBase() {}
 
 
+
+OutputBase::OutputBase(TypeBase *type, unsigned int depth)
+: type_(type), depth_(depth)
+{
+    TypeBase::lazy_finish();
+}
+
+
+
 void OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
 	print(stream, type_);

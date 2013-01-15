@@ -74,11 +74,15 @@ public:
     typedef std::vector<struct Key>::const_iterator keys_const_iterator;
 
     /**
-     * Default constructor. Empty handle.
+     * Default constructor. Empty selection.
      */
-    //Selection()
-    //{}
+    Selection();
 
+
+    /**
+     * Copy constructor.
+     */
+    Selection(const Selection& other);
 
     /**
      * Creates a handle pointing to the new SelectionData.
@@ -90,10 +94,11 @@ public:
      */
     Selection &add_value(const int value, const std::string &key, const std::string &description = "");
 
+
     /**
      * Close the Selection, no more values can be added.
      */
-    void finish();
+    const Selection &close() const;
 
     /// Implements \p TypeBase::is_finished
     virtual bool is_finished() const;
@@ -135,6 +140,9 @@ public:
      */
     int from_default(const string &str) const;
 
+    /// Implements  @p Type::TypeBase::valid_defaults.
+    virtual bool valid_default(const string &str) const;
+
     /**
      * Just check if there is a particular name in the Selection.
      */
@@ -161,7 +169,11 @@ public:
     inline void set_made_extensive_doc(bool val) const;
 
 
+    bool finish() const
+        { close(); return true; }
 private:
+
+
 
     /**
      * Assertion for empty Selection handle.
@@ -171,7 +183,7 @@ private:
     /**
      * Assertion for finished Selection (methods are called in correct order).
      */
-    inline void finished_check() const;
+    void finished_check() const;
 
     /**
      * Actual Selection data.
@@ -186,9 +198,6 @@ private:
         void add_value(const int value, const std::string &key, const std::string &description);
 
         std::ostream& documentation(std::ostream& stream, DocType extensive , unsigned int pad) const;
-
-        void finish() { finished = true; }
-
 
         /// Name of the Selection.
         string type_name_;
@@ -213,7 +222,7 @@ private:
         mutable bool made_extensive_doc;
 
         /// Indicator of finished Selection.
-        bool finished;
+        mutable bool finished;
     };
 
     /// Handle to actual Selection data.
@@ -253,13 +262,15 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::empty_check() const {
-    ASSERT( data_.use_count() != 0, "Empty Selection handle.\n");
+    ASSERT( data_.use_count() != 0, "Empty Selection handle. Should not happen.\n");
+
 }
 
 
 
 inline void Selection::finished_check() const {
-    ASSERT( is_finished(), "Asking for information of unfinished Seleciton type: %s\n", type_name().c_str());
+    empty_check();
+    ASSERT(data_->finished, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
 }
 
 

@@ -17,12 +17,12 @@
  *
  */
 
-#include <fields/field_all.hh>
 
 #ifndef FIELD_BASE_HH_
 #define FIELD_BASE_HH_
 
 #include <string>
+#include <boost/type_traits.hpp>
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -64,6 +64,9 @@ public:
         * Returns template parameters as string in order to distinguish Fields Input::Type name.
         */
        static std::string template_name();
+
+
+       static Input::Type::AbstractRecord get_input_type(typename Value::ElementInputType *element_input_type=NULL);
 
        /**
         * This static method gets accessor to abstract record with function input,
@@ -152,6 +155,183 @@ protected:
        FieldResult field_result_;
 };
 
+
+
+
+/**
+ * @brief Common abstract parent of all Field<...> classes.
+ *
+ * We need common ancestor in order to keep a list of all fields in one EqData object and allow
+ * collective operations like @p set_time or @p init_from_input.
+ */
+class FieldCommonBase {
+public:
+    /**
+     * Constructor, we denote if this is bulk or bc field.
+     */
+    FieldCommonBase(bool bc) : bc_(bc), element_selection_(NULL), default_( IT::Default::obligatory()) {}
+
+    /**
+     * Setters. We need to store these information into the Field itself during construction of an EqData class in order to
+     * allow creation of Input::Type tree and initialization of all fields in the EqData class by generic functions.
+     */
+    /// Set name of the field, used for naming particular key in EqData record.
+    void set_name(const string & name)        { name_ =name; }
+    /// Set description of the field, used for description of corresponding key.
+    void set_desc(const string & desc)        { desc_=desc; }
+    void set_default(IT::Default &dflt)           { default_=dflt;}
+
+    /// Set number of components for run-time sized vectors.
+    void set_n_comp( unsigned int n_comp)     { n_comp_=n_comp; }
+    /// For Fields returning "Enum", we have to pass in corresponding Selection object.
+    void set_selection( Input::Type::Selection *element_selection)
+        { element_selection_=element_selection;}
+    /**
+     * Getters.
+     */
+    const std::string &name() const     { return name_;}
+    const std::string &desc() const     { return desc_;}
+    bool is_bc() const                  { return bc_;}
+    bool is_enum_valued() const         { return enum_valued_;}
+
+    /**
+     * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
+     * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
+     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
+     */
+    virtual IT::AbstractRecord &get_input_type() =0;
+
+    virtual IT::AbstractRecord make_input_tree() =0;
+
+    /**
+     * Abstract method for initialization of the field on one region.
+     */
+    virtual void init_from_input(Region reg, Input::AbstractRecord rec) =0;
+
+    /**
+     * Abstract method to update field to the new time.
+     */
+    virtual void set_time(double time) =0;
+
+protected:
+    std::string name_;
+    std::string desc_;
+    bool bc_;
+    unsigned int n_comp_;
+    IT::Selection *element_selection_;
+    IT::Default default_;
+    /// Is true if the value returned by the field is based on Enum (i.e. constant value is initialized by some Input::Type::Selection)
+    bool enum_valued_;
+};
+
+
+///Helper function.
+template <class FieldBaseType>
+IT::AbstractRecord get_input_type_resolution(
+        Input::Type::Selection *sel,  const boost::true_type&)
+{
+    ASSERT( sel, "NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
+    // create nonlocal copy that live as long as the object instance
+    //rec = boost::make_shared<IT::AbstractRecord>(FieldBaseType::get_input_type(sel));
+    return FieldBaseType::get_input_type(sel);
+}
+template <class FieldBaseType>
+IT::AbstractRecord get_input_type_resolution(
+        Input::Type::Selection *sel,  const boost::false_type&)
+{
+    return FieldBaseType::get_input_type(NULL);
+}
+
+
+/**
+ * @brief Class template representing a field with values dependent on: point, element, and region.
+ *
+ * By "field" we mean a mapping of a a pair (Point, Time) to a @p Value, where
+ * Point is from @p spacedim  dimensional ambient space, Time is real number (set by @p set_time method),
+ * and @p Value type representing range of the field, which can be: real scalar, integer scalar (a discrete value),
+ * real vector of fixed (compile time) size, real vector of runtime size, or a matrix of fixed dimensions.
+ * Extensions to vectors or matrices of integers, or to variable tensors are possible. For vector and matrix values
+ * we use classes provided by Armadillo library for linear algebra.
+ *
+ * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
+ * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however
+ * key methods @p value, and @p value_list are not virtual in this class by contrast these methods are inlined to minimize overhead for
+ * simplest fields like FieldConstant.
+ *
+ *arguments
+ *
+ */
+template<int spacedim, class Value>
+class Field : public FieldCommonBase {
+public:
+    typedef FieldBase<spacedim, Value> FieldBaseType;
+
+
+
+    /**
+     * Default constructor.
+     *
+     */
+    Field();
+
+    /**
+     * Direct read access to the table of Field pointers on regions.
+     */
+    FieldBaseType * operator() (Region reg);
+
+    /**
+     * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
+     * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
+     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
+     */
+    IT::AbstractRecord &get_input_type() {
+        return FieldBaseType::input_type;
+    }
+
+    IT::AbstractRecord make_input_tree() {
+        return get_input_type_resolution<FieldBaseType>( this->element_selection_ ,boost::is_same<typename Value::element_type, FieldEnum>());
+    }
+
+    /**
+     * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
+     * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
+     */
+    void init_from_input(Region reg, Input::AbstractRecord rec);
+
+    /**
+     * ?? Shouldn't be function of ancestor?
+     */
+    void set_time(double time);
+
+    /**
+     * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
+     * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
+     */
+    virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
+
+    /**
+     * Returns std::vector of scalar values in several points at once. The base class implements
+     * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
+     * but this overhead can be negligible for more complex fields as Python of Formula.
+     */
+    virtual FieldResult value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+                       std::vector<typename Value::return_type>  &value_list);
+
+private:
+
+    std::vector<FieldBaseType *> region_fields;
+};
+
+
+
+/**
+ * Same as Field<...> but for boundary regions.
+ */
+template<int spacedim, class Value>
+class BCField : public Field<spacedim, Value> {
+public:
+    BCField() { this->bc_=true; }
+};
 
 
 

@@ -1,4 +1,4 @@
-/*
+    /*
  * field_formula_impl.hh
  *
  *  Created on: Jan 2, 2013
@@ -18,18 +18,29 @@
 namespace it = Input::Type;
 
 template <int spacedim, class Value>
-it::Record FieldFormula<spacedim, Value>::input_type
-    = it::Record("FieldFormula", FieldBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
-    .derive_from(FieldBase<spacedim, Value>::input_type)
-    .declare_key("value", StringValue::get_input_type(), it::Default::obligatory(),
-                                "String, array of strings, or matrix of strings with formulas for individual "
-                                "entries of scalar, vector, or tensor value respectively.\n"
-                                "For vector values, you can use just one string to enter homogeneous vector.\n"
-                                "For square NxN-matrix values, you can use:\n"
-                                "* array of strings of size N to enter diagonal matrix\n"
-                                "* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                "* just one string to enter (spatially variable) multiple of the unit matrix.\n"
-                                "Formula can contain variables x,y,z,t and usual operators and functions." );
+it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldBase<spacedim,Value>::input_type, NULL);
+
+template <int spacedim, class Value>
+Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
+        Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit
+        )
+{
+    it::Record type
+            = it::Record("FieldFormula", FieldBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
+            .derive_from(a_type)
+            .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
+                                        "String, array of strings, or matrix of strings with formulas for individual "
+                                        "entries of scalar, vector, or tensor value respectively.\n"
+                                        "For vector values, you can use just one string to enter homogeneous vector.\n"
+                                        "For square NxN-matrix values, you can use:\n"
+                                        "* array of strings of size N to enter diagonal matrix\n"
+                                        "* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
+                                        "* just one string to enter (spatially variable) multiple of the unit matrix.\n"
+                                        "Formula can contain variables x,y,z,t and usual operators and functions." );
+
+    return type;
+}
+
 
 
 
@@ -49,7 +60,7 @@ FieldFormula<spacedim, Value>::FieldFormula(const double init_time, unsigned int
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::init_from_input( Input::Record rec) {
     // read formulas form input
-    formula_matrix_helper_.init_from_input( rec.val<typename StringValue::InputType>("value") );
+    formula_matrix_helper_.init_from_input( rec.val<typename StringValue::AccessType>("value") );
 
     set_time(this->time_);
 }
