@@ -57,7 +57,6 @@ Default::Default(enum DefaultType type, const std::string & value)
 
 
 Record::Record() {
-    TypeBase::insert_lazy_object(this);
 }
 
 
@@ -66,7 +65,6 @@ Record::Record(const Record & other)
 : TypeBase( other )
 {
     ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
-    TypeBase::insert_lazy_object(this);
     data_ = other.data_;
 }
 
@@ -76,7 +74,6 @@ Record::Record(const string & type_name_in, const string & description)
 : data_( boost::make_shared<RecordData>(type_name_in, description) )
 
 {
-    TypeBase::insert_lazy_object(this);
     TypeBase::lazy_type_list().push_back( boost::make_shared<Record>( *this ) );
 }
 
@@ -253,14 +250,14 @@ const Record &Record::close() const {
 }
 
 
-
+/*
 std::ostream& Record::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const
 {
     if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
     return data_->documentation(stream, extensive, pad);
 }
 
-
+*/
 
 string Record::type_name() const
 {
@@ -337,7 +334,7 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 
 
 
-
+/*
 
 std::ostream& Record::RecordData::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const
 {
@@ -397,7 +394,7 @@ std::ostream& Record::RecordData::documentation(std::ostream& stream,DocType ext
 
     return stream;
 }
-
+*/
 
 
 void  Record::RecordData::reset_doc_flags() const {
@@ -443,10 +440,7 @@ void Record::RecordData::declare_key(const string &key,
  * implementation of AbstractRecord
  */
 
-AbstractRecord::AbstractRecord()
-: Record(), child_data_()
-{
-    TypeBase::insert_lazy_object(this);
+AbstractRecord::AbstractRecord() {
 }
 
 
@@ -455,8 +449,6 @@ AbstractRecord::AbstractRecord(const AbstractRecord& other)
 : Record(other)
 {
     ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
-
-    TypeBase::insert_lazy_object(this);
     child_data_ = other.child_data_;
 }
 
@@ -507,7 +499,7 @@ void  AbstractRecord::reset_doc_flags() const {
 }
 
 
-
+/*
 std::ostream& AbstractRecord::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const
 {
     if (! is_finished()) xprintf(Warn, "Printing documentation of unfinished Input::Type:AbstractRecord!\n");
@@ -568,7 +560,7 @@ std::ostream& AbstractRecord::documentation(std::ostream& stream,DocType extensi
     }
     return stream;
 }
-
+*/
 
 
 

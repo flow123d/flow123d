@@ -87,7 +87,7 @@ using namespace Input::Type;
 
        stringstream out;
        out << rec;
-       EXPECT_EQ("\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <Default value provided at read time.> is Integer in [-2147483648, 2147483647]\n---------- Rec\n",
+       EXPECT_EQ("\nRecord 'Rec' (1 keys).\n# \n----------\n    int_key = \"Default value provided at read time.\" is Integer in [-2147483648, 2147483647]\n---------- Rec\n\n",
                  out.str());
    }
 
@@ -99,7 +99,7 @@ using namespace Input::Type;
 
        stringstream out;
        out << rec;
-       EXPECT_EQ("\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <OPTIONAL> is Integer in [-2147483648, 2147483647]\n    # Doc\n---------- Rec\n",
+       EXPECT_EQ("\nRecord 'Rec' (1 keys).\n# \n----------\n    int_key = <OPTIONAL> is Integer in [-2147483648, 2147483647]\n              # Doc\n---------- Rec\n\n",
                  out.str());
    }
 
@@ -111,7 +111,7 @@ using namespace Input::Type;
 
        stringstream out;
        out << rec;
-       EXPECT_EQ("\nRecord 'Rec' with 1 keys.\n----------\n    int_key = <OBLIGATORY> is Integer in [-2147483648, 2147483647]\n    # Doc\n---------- Rec\n",
+       EXPECT_EQ("\nRecord 'Rec' (1 keys).\n# \n----------\n    int_key = <OBLIGATORY> is Integer in [-2147483648, 2147483647]\n              # Doc\n---------- Rec\n\n",
                  out.str());
    }
 

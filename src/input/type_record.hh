@@ -258,7 +258,7 @@ public:
     /**
      * @brief Implements @p Type:TypeBase::documentation.
      */
-    virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
+    //virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
 
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
@@ -389,7 +389,7 @@ protected:
 
         Record::KeyIter auto_conversion_key_iter() const;
 
-        std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
+//        std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
 
         void  reset_doc_flags() const;
 
@@ -582,7 +582,7 @@ public:
     /**
      * @brief Implements @p Type:TypeBase::documentation.
      */
-    virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
+//    virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
 
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.

@@ -70,10 +70,8 @@ public:
         full_after_record,      ///<    Detail description of complex types after the record.
         full_along              ///<    Detail description of the type itself as part of the error messages (no descendants).
     };
-    /**
-     * Default constructor. Set all types finished after construction.
-     */
-    TypeBase() {}
+
+
     /**
      * @brief Implementation of documentation printing mechanism.
      *
@@ -90,7 +88,7 @@ public:
      * Search the tree by BFS instead of DFS (current implementation).
      *
      */
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const = 0;
+    //virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const = 0;
 
     /**
      * In order to output documentation of complex types only once, we mark types that have printed their documentation.
@@ -108,7 +106,7 @@ public:
     {return true;}
 
     /// Returns an identification of the type. Useful for error messages.
-    virtual string type_name() const  =0;
+    virtual string type_name() const  { return "TypeBase"; }
 
     /**
      * Returns string with Type extensive documentation.
@@ -128,8 +126,10 @@ public:
     bool operator!=(const TypeBase & other) const
         { return ! (*this == other); }
 
-    /// Empty virtual destructor.
-    virtual ~TypeBase( void ) {}
+    /**
+     *  Destructor removes type object from lazy_object_set.
+     */
+    virtual ~TypeBase();
 
 
 
@@ -160,8 +160,15 @@ public:
 
 protected:
 
+    /**
+     * Default constructor. Register type object into lazy_object_set.
+     */
+    TypeBase();
 
-
+    /**
+     * Copy constructor. Register type object into lazy_object_set.
+     */
+    TypeBase(const TypeBase& other);
 
     /**
      * Write out a string with given padding of every new line.
@@ -169,7 +176,7 @@ protected:
     static std::ostream& write_description(std::ostream& stream, const string& str, unsigned int pad);
 
     /**
-     * Type of hash values used in associative array that translates key names to indices in a record.
+     * Type of hash values used in associative array that translates key names to indices in Record and Selection.
      *
      * For simplicity, we currently use whole strings as "hash".
      */
@@ -214,8 +221,6 @@ protected:
     static LazyObjectsSet &lazy_object_set();
 
     static bool was_constructed(const TypeBase * ptr);
-
-    static void insert_lazy_object(const TypeBase * ptr);
 
     friend class Array;
     friend class Record;
@@ -346,7 +351,7 @@ public:
         { empty_check(); return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::documentation.
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
+    //virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
 
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
     virtual void  reset_doc_flags() const;

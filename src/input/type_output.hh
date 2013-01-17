@@ -83,7 +83,7 @@ namespace Type {
 
 class OutputBase {
 public:
-    OutputBase(TypeBase *type, unsigned int depth = 0);
+    OutputBase(const TypeBase *type, unsigned int depth = 0);
 
     void print(ostream& stream);
 
@@ -131,7 +131,7 @@ protected:
     void write_value(std::ostream& stream, Default dft);
 
     /// Object for which is created printout
-    TypeBase *type_;
+    const TypeBase *type_;
     /// Depth of printout
     unsigned int depth_;
     /// Type of documentation output
@@ -144,7 +144,7 @@ protected:
 
 class OutputText : public OutputBase {
 public:
-	OutputText(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+	OutputText(const TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
 	void print(ostream& stream) { OutputBase::print(stream); }
 

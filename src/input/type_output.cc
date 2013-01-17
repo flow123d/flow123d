@@ -19,7 +19,7 @@ OutputBase::~OutputBase() {}
 
 
 
-OutputBase::OutputBase(TypeBase *type, unsigned int depth)
+OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 : type_(type), depth_(depth)
 {
     TypeBase::lazy_finish();

@@ -16,7 +16,6 @@ Selection::Selection()
 : data_(boost::make_shared<SelectionData>("EmptySelection"))
 {
     close();
-    TypeBase::insert_lazy_object(this);
 }
 
 
@@ -27,7 +26,6 @@ Selection::Selection(const Selection& other)
     ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
     other.empty_check();
 
-    TypeBase::insert_lazy_object(this);
     data_ = other.data_;
 }
 
@@ -36,7 +34,6 @@ Selection::Selection(const Selection& other)
 Selection::Selection(const string &name)
 : data_(boost::make_shared<SelectionData>(name))
 {
-    TypeBase::insert_lazy_object(this);
     TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
 }
 

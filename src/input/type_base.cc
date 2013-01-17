@@ -24,6 +24,7 @@
 
 #include "type_base.hh"
 #include "type_record.hh"
+#include "type_output.hh"
 #include <boost/algorithm/string.hpp>
 
 
@@ -33,7 +34,25 @@ namespace Type {
 using namespace std;
 
 
+TypeBase::TypeBase() {
+    TypeBase::lazy_object_set().insert(this);
+}
 
+
+
+TypeBase::TypeBase(const TypeBase& other)
+{
+    TypeBase::lazy_object_set().insert(this);
+}
+
+
+
+TypeBase::~TypeBase() {
+    TypeBase::LazyObjectsSet &set=TypeBase::lazy_object_set();
+    TypeBase::LazyObjectsSet::iterator it =set.find(this);
+    ASSERT( it != set.end(), "Missing pointer in lazy_object_set to '%s'.\n", this->type_name().c_str());
+    TypeBase::lazy_object_set().erase(it);
+}
 
 /*******************************************************************
  * implementation of TypeBase
@@ -66,7 +85,7 @@ bool TypeBase::is_valid_identifier(const string& key) {
 string TypeBase::desc() const {
     stringstream ss;
     reset_doc_flags();
-    documentation(ss);
+    ss << OutputText(this,1);
     return ss.str();
 }
 
@@ -105,23 +124,24 @@ void TypeBase::lazy_finish() {
 
 }
 
+
+
+
 TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
     static LazyObjectsSet set_;
     return set_;
 }
 
+
+
 bool TypeBase::was_constructed(const TypeBase * ptr) {
     return lazy_object_set().find(ptr) != lazy_object_set().end();
 }
 
-void TypeBase::insert_lazy_object(const TypeBase * ptr) {
-    lazy_object_set().insert(ptr);
-}
 
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
-    type.reset_doc_flags();
-    return type.documentation(stream);
+    return ( stream << OutputText(&type, 1) );
 }
 
 
@@ -178,7 +198,7 @@ bool Array::ArrayData::finish()
 	return (finished = true);
 }
 
-
+/*
 std::ostream& Array::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const {
 
 	empty_check();
@@ -201,7 +221,7 @@ std::ostream& Array::documentation(std::ostream& stream,DocType extensive, unsig
 
 	return stream;
 }
-
+*/
 
 
 void  Array::reset_doc_flags() const {
