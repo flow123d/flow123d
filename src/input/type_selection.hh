@@ -104,7 +104,7 @@ public:
     virtual bool is_finished() const;
 
     /// Implements \p TypeBase::documentation
-    virtual std::ostream& documentation(std::ostream& stream, DocType extensive = full_along, unsigned int pad = 0) const;
+//    virtual std::ostream& documentation(std::ostream& stream, DocType extensive = full_along, unsigned int pad = 0) const;
 
     /// Implements \p TypeBase::reset_doc_flags
     virtual void reset_doc_flags() const;
@@ -173,13 +173,6 @@ public:
         { close(); return true; }
 private:
 
-
-
-    /**
-     * Assertion for empty Selection handle.
-     */
-    inline void empty_check() const;
-
     /**
      * Assertion for finished Selection (methods are called in correct order).
      */
@@ -197,7 +190,7 @@ private:
 
         void add_value(const int value, const std::string &key, const std::string &description);
 
-        std::ostream& documentation(std::ostream& stream, DocType extensive , unsigned int pad) const;
+//        std::ostream& documentation(std::ostream& stream, DocType extensive , unsigned int pad) const;
 
         /// Name of the Selection.
         string type_name_;
@@ -261,15 +254,8 @@ inline unsigned int Selection::size() const {
 
 
 
-inline void Selection::empty_check() const {
-    ASSERT( data_.use_count() != 0, "Empty Selection handle. Should not happen.\n");
-
-}
-
-
 
 inline void Selection::finished_check() const {
-    empty_check();
     ASSERT(data_->finished, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
 }
 

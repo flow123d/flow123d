@@ -21,12 +21,9 @@ Selection::Selection()
 
 
 Selection::Selection(const Selection& other)
-: Scalar(other)
+: Scalar(other), data_(other.data_)
 {
     ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
-    other.empty_check();
-
-    data_ = other.data_;
 }
 
 
@@ -40,18 +37,15 @@ Selection::Selection(const string &name)
 
 
 Selection &Selection::add_value(const int value, const std::string &key, const std::string &description) {
-    empty_check();
     if (is_finished())
         xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
 
     data_->add_value(value, key, description);
-
     return *this;
 }
 
 
 const Selection & Selection::close() const {
-    empty_check();
     data_->finished=true;
     return *this;
 }
@@ -66,32 +60,27 @@ bool Selection::valid_default(const string &str) const {
 
 
 bool Selection::is_finished() const {
-    empty_check();
     return data_->finished;
 }
 
 
-
+/*
 std::ostream& Selection::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const {
     if (!is_finished())
         xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
     return data_->documentation(stream, extensive, pad);
 }
-
+*/
 
 
 void Selection::reset_doc_flags() const {
-    if (data_.use_count() != 0)
-        data_->made_extensive_doc = false;
+   data_->made_extensive_doc = false;
 }
 
 
 
 string Selection::type_name() const {
-    if (data_.use_count() == 0)
-        return "empty_selection_handle";
-    else
-        return data_->type_name_;
+   return data_->type_name_;
 }
 
 
@@ -146,7 +135,7 @@ void Selection::SelectionData::add_value(const int value, const std::string &key
 }
 
 
-
+/*
 std::ostream& Selection::SelectionData::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const
 {
 
@@ -173,6 +162,6 @@ std::ostream& Selection::SelectionData::documentation(std::ostream& stream, DocT
 }
 
 
-
+*/
 } // closing namespace Type
 } // close namespace Input

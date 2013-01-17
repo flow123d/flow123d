@@ -56,16 +56,18 @@ Default::Default(enum DefaultType type, const std::string & value)
  */
 
 
-Record::Record() {
+Record::Record()
+: data_( boost::make_shared<RecordData> ("EmptyRecord","") )
+{
+    finish();
 }
 
 
 
 Record::Record(const Record & other)
-: TypeBase( other )
+: TypeBase( other ), data_(other.data_)
 {
     ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
-    data_ = other.data_;
 }
 
 
@@ -80,7 +82,6 @@ Record::Record(const string & type_name_in, const string & description)
 
 
 Record &Record::allow_auto_conversion(const string &from_key) {
-    empty_check();
     ASSERT(data_->auto_conversion_key_idx == -1, "Can not use key %s for auto conversion, the key is already set.", from_key.c_str());
     data_->auto_conversion_key_idx = 0;
     data_->auto_conversion_key=from_key;
@@ -140,8 +141,6 @@ void Record::make_derive_from(AbstractRecord &parent) const {
 
 
 Record &Record::derive_from(AbstractRecord &parent) {
-
-    empty_check();
     if (TypeBase::was_constructed(&parent)) {
         data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
         data_->p_parent_ = NULL;
@@ -155,7 +154,6 @@ Record &Record::derive_from(AbstractRecord &parent) {
 
 
 bool Record::is_finished() const {
-    empty_check();
     return data_->finished;
 }
 
@@ -180,7 +178,6 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 bool Record::finish() const
 {
-	empty_check();
 	if (data_->finished) return true;
 
 	close();
@@ -244,7 +241,6 @@ bool Record::finish() const
 
 
 const Record &Record::close() const {
-    empty_check();
     data_->closed_=true;
     return *this;
 }
@@ -277,7 +273,6 @@ string Record::description() const
 
 bool Record::valid_default(const string &str) const
 {
-    empty_check();
     if (data_->auto_conversion_key_idx >=0) {
         unsigned int idx=key_index(data_->auto_conversion_key);
         if ( data_->keys[idx].type_ ) return data_->keys[idx].type_->valid_default(str);
@@ -289,7 +284,7 @@ bool Record::valid_default(const string &str) const
 
 
 void  Record::reset_doc_flags() const {
-    if (data_.use_count() != 0) data_->reset_doc_flags();
+    data_->reset_doc_flags();
 }
 
 
@@ -301,7 +296,6 @@ bool Record::operator==(const TypeBase &other) const
 
 
 Record::KeyIter Record::auto_conversion_key_iter() const {
-    empty_check();
     finished_check();
     return data_->auto_conversion_key_iter();
 }
@@ -436,20 +430,96 @@ void Record::RecordData::declare_key(const string &key,
 
 
 
+template <class KeyType>
+Record &Record::declare_key(const string &key, const KeyType &type,
+                        const Default &default_value, const string &description)
+// this accept only lvalues - we assume that these are not local variables
+{
+    // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
+    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
+    if (data_->closed_)
+        xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
+    if ( (boost::is_base_of<Record, KeyType>::value ||
+          boost::is_base_of<Selection, KeyType>::value)
+         && ! TypeBase::was_constructed(&type) ) {
+
+        data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
+    } else {
+        // for Array, Double, Integer, we assume no static variables
+        if (type.finish()) check_key_default_value(default_value, type, key);
+
+        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
+        data_->declare_key(key, type_copy, NULL, default_value, description);
+    }
+
+    return *this;
+}
+
+
+
+template <class KeyType>
+Record &Record::declare_key(const string &key, const KeyType &type,
+                        const string &description)
+{
+    return declare_key(key,type, Default::optional(), description);
+}
+
+
+
+template <class KeyType>
+AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
+                        const Default &default_value, const string &description)
+{
+    Record::declare_key(key, type, default_value, description);
+    return *this;
+}
+
+
+
+template <class KeyType>
+AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
+                        const string &description)
+{
+    return declare_key(key,type, Default::optional(), description);
+}
+
+
+// explicit instantiation of template methods
+
+#define RECORD_DECLARE_KEY(TYPE) \
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description); \
+template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
+template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+
+
+RECORD_DECLARE_KEY(String);
+RECORD_DECLARE_KEY(Integer);
+RECORD_DECLARE_KEY(Double);
+RECORD_DECLARE_KEY(Bool);
+RECORD_DECLARE_KEY(FileName);
+RECORD_DECLARE_KEY(Selection);
+RECORD_DECLARE_KEY(Array);
+RECORD_DECLARE_KEY(Record);
+RECORD_DECLARE_KEY(AbstractRecord);
+
+
+
 /************************************************
  * implementation of AbstractRecord
  */
 
-AbstractRecord::AbstractRecord() {
+AbstractRecord::AbstractRecord()
+: Record(), child_data_( boost::make_shared<ChildData>( "EmptyAbstractRecord_TYPE_selection" ) )
+{
 }
 
 
 
 AbstractRecord::AbstractRecord(const AbstractRecord& other)
-: Record(other)
+: Record(other), child_data_(other.child_data_)
 {
     ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
-    child_data_ = other.child_data_;
 }
 
 
@@ -469,7 +539,6 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 
 void AbstractRecord::add_descendant(const Record &subrec)
 {
-    empty_check();
     ASSERT( data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
 
     child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
@@ -480,22 +549,17 @@ void AbstractRecord::add_descendant(const Record &subrec)
 
 void AbstractRecord::no_more_descendants()
 {
-    if (child_data_.use_count() == 0)
-            xprintf(PrgErr, "Can not close empty AbstractRecord handle.\n");
     child_data_->selection_of_childs->close();
-    empty_check();
     if (! finish()) xprintf(PrgErr, "Can not finish AbstractRecord when calling no_more_descendants.\n");
 }
 
 
 
 void  AbstractRecord::reset_doc_flags() const {
-    if (data_.use_count() != 0) {
         data_->reset_doc_flags();
         for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
                     it!= child_data_->list_of_childs.end(); ++it)
             it->reset_doc_flags();
-    }
 }
 
 
@@ -566,7 +630,6 @@ std::ostream& AbstractRecord::documentation(std::ostream& stream,DocType extensi
 
 const Record  & AbstractRecord::get_descendant(const string& name) const
 {
-    ASSERT(child_data_.use_count() != 0, "Wrong use of an empty AbstractRecord.");
     ASSERT( is_finished(), "Can not get descendant of unfinished AbstractType\n");
     return get_descendant( child_data_->selection_of_childs->name_to_int(name) );
 }
@@ -575,7 +638,6 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 {
-    ASSERT(child_data_.use_count() != 0, "Wrong use of an empty AbstractRecord.");
 
     ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
     return child_data_->list_of_childs[idx];
@@ -584,7 +646,6 @@ const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 
 const Selection  & AbstractRecord::get_type_selection() const
 {
-    ASSERT(child_data_.use_count() != 0, "Wrong use of an empty AbstractRecord.");
     return * child_data_->selection_of_childs;
 }
 

@@ -348,15 +348,14 @@ protected:
     /**
      * Assertion for non-empty Type::Record handle.
      */
-    inline void empty_check() const {
-        ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
-    }
+    //inline void empty_check() const {
+    //    ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
+    //}
 
     /**
      * Assertion for finished Type::Record.
      */
     inline void finished_check() const {
-        empty_check();
         if (! is_finished()) {
             DBGMSG("Record not finished!\n");
         }
@@ -635,59 +634,6 @@ protected:
  * Implementation
  */
 
-template <class KeyType>
-Record &Record::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
-// this accept only lvalues - we assume that these are not local variables
-{
-    // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
-    empty_check();
-    if (data_->closed_)
-        xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
-    if ( (boost::is_base_of<Record, KeyType>::value ||
-          boost::is_base_of<Selection, KeyType>::value)
-         && ! TypeBase::was_constructed(&type) ) {
-
-        data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
-    } else {
-        // for Array, Double, Integer, we assume no static variables
-        if (type.finish()) check_key_default_value(default_value, type, key);
-
-        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
-        data_->declare_key(key, type_copy, NULL, default_value, description);
-    }
-
-    return *this;
-}
-
-
-
-template <class KeyType>
-Record &Record::declare_key(const string &key, const KeyType &type,
-                        const string &description)
-{
-    return declare_key(key,type, Default::optional(), description);
-}
-
-
-
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
-{
-	Record::declare_key(key, type, default_value, description);
-    return *this;
-}
-
-
-
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const string &description)
-{
-    return declare_key(key,type, Default::optional(), description);
-}
 
 
 

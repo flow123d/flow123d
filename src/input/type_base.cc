@@ -150,11 +150,10 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  * implementation of Type::Array
  */
 
-bool Array::finish() const
-{
-	empty_check();
+bool Array::finish() const {
 	return data_->finish();
 }
+
 
 bool Array::ArrayData::finish()
 {
@@ -225,21 +224,18 @@ std::ostream& Array::documentation(std::ostream& stream,DocType extensive, unsig
 
 
 void  Array::reset_doc_flags() const {
-	empty_check();
 	data_->type_of_values_->reset_doc_flags();
 }
 
 
 
 string Array::type_name() const {
-	empty_check();
     return "array_of_" + data_->type_of_values_->type_name();
 }
 
 
 
 bool Array::operator==(const TypeBase &other) const    {
-	empty_check();
     return  typeid(*this) == typeid(other) &&
               (*data_->type_of_values_ == static_cast<const Array *>(&other)->get_sub_type() );
 }
@@ -255,6 +251,48 @@ bool Array::valid_default(const string &str) const {
 }
 
 
+/**********************************************************************************
+ * implementation and explicit instantiation of Array constructor template
+ */
+
+template <class ValueType>
+Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size)
+: data_(boost::make_shared<ArrayData>(min_size, max_size))
+{
+    // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
+    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
+    ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+
+    // Records, AbstractRecords and Selections need not be initialized
+    // at the moment, so we save the reference of type and update
+    // the array later in finish().
+    if ( (boost::is_base_of<Record, ValueType>::value ||
+          boost::is_base_of<Selection, ValueType>::value)
+         && ! TypeBase::was_constructed(&type) ) {
+        //xprintf(Warn,"In construction of Array of Lazy type %s with copy declaration. Potential problem with order of static initializations.\n",
+        //        type.type_name().c_str());
+        data_->p_type_of_values = &type;
+        TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
+    } else {
+        data_->p_type_of_values = NULL;
+        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
+        data_->type_of_values_ = type_copy;
+        data_->finished=true;
+    }
+}
+
+#define ARRAY_CONSTRUCT(TYPE) \
+template Array::Array(const TYPE &type, unsigned int min_size, unsigned int max_size)
+
+ARRAY_CONSTRUCT(String);
+ARRAY_CONSTRUCT(Integer);
+ARRAY_CONSTRUCT(Double);
+ARRAY_CONSTRUCT(Bool);
+ARRAY_CONSTRUCT(FileName);
+ARRAY_CONSTRUCT(Selection);
+ARRAY_CONSTRUCT(Array);
+ARRAY_CONSTRUCT(Record);
+ARRAY_CONSTRUCT(AbstractRecord);
 
 
 /**********************************************************************************

@@ -280,75 +280,22 @@ public:
      * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
      */
     template <class ValueType>
-    Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
-    : data_(boost::make_shared<ArrayData>(min_size, max_size))
-    {
-        // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-        BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
-        ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
-
-        // Records, AbstractRecords and Selections need not be initialized
-        // at the moment, so we save the reference of type and update
-        // the array later in finish().
-        if ( (boost::is_base_of<Record, ValueType>::value ||
-              boost::is_base_of<Selection, ValueType>::value)
-             && ! TypeBase::was_constructed(&type) ) {
-            //xprintf(Warn,"In construction of Array of Lazy type %s with copy declaration. Potential problem with order of static initializations.\n",
-            //        type.type_name().c_str());
-            data_->p_type_of_values = &type;
-            TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
-        } else {
-            data_->p_type_of_values = NULL;
-            boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
-            data_->type_of_values_ = type_copy;
-            data_->finished=true;
-        }
-    }
-
-
-    /**
-     * Constructor with a @p type of array items given as pure reference. In this case \p type has to by descendant of \p TypeBase different from
-     * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
-     */
-    /*
-    template <class ValueType>
-    Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
-    : data_(boost::make_shared<ArrayData>(min_size, max_size))
-    {
-        // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-        BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
-        ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
-
-        data_->p_type_of_values = &type;
-        TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
-    }
-*/
-
-    //Array(boost::shared_ptr<ArrayData> data_ptr)
-    //: data_(data_ptr)
-    //{}
+    Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
     virtual bool finish() const;
 
-    virtual bool is_finished() const { empty_check(); return data_->finished; }
-
-    /**
-     * Assertion for non-empty Type::Record handle.
-     */
-    inline void empty_check() const {
-        ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
-    }
+    virtual bool is_finished() const {
+        return data_->finished; }
 
     /// Getter for the type of array items.
-    inline const TypeBase &get_sub_type() const
-        { empty_check();
-          ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
+    inline const TypeBase &get_sub_type() const {
+        ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
         return *data_->type_of_values_; }
 
     /// Checks size of particular array.
-    inline bool match_size(unsigned int size) const
-        { empty_check(); return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
+    inline bool match_size(unsigned int size) const {
+        return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::documentation.
     //virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
@@ -371,11 +318,11 @@ public:
 
 protected:
 
-
-
     /// Handle to the actual array data.
     boost::shared_ptr<ArrayData> data_;
-
+private:
+    /// Forbids default constructor in order to prevent empty data_.
+    Array();
 };
 
 
