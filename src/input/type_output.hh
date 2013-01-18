@@ -79,6 +79,9 @@ namespace Type {
  *   - ?? jak se vyporadat s default values  pro automaticky konvertovatelne recordy a pole?
  *   - avoid repetitive output of same tyes
  *
+ *   - jak je reseno potlaceni opakovaneho vypisovani Recordu, je mozno odstranit reset_doc_flags z TypeBase
+ *   - pri dalsich upravach v exceptions zkusit predavat v EI smart_ptr na TypeBase, nicmene na miste vyvolani fce by muselo byt
+ *     make_shared, aby se vytvorila kopie spravneho typu. (faktycky je potreba objekt Type kopirovat jinak nevim, ze mi ho nekdo neodalokuje.
  */
 
 class OutputBase {

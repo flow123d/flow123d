@@ -34,6 +34,13 @@ namespace Type {
 using namespace std;
 
 
+
+/*******************************************************************
+ * implementation of TypeBase
+ */
+
+
+
 TypeBase::TypeBase() {
     TypeBase::lazy_object_set().insert(this);
 }
@@ -54,26 +61,6 @@ TypeBase::~TypeBase() {
     TypeBase::lazy_object_set().erase(it);
 }
 
-/*******************************************************************
- * implementation of TypeBase
- */
-
-std::ostream& TypeBase::write_description(std::ostream& stream, const string& str, unsigned int pad) {
-    boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
-    boost::tokenizer<boost::char_separator<char> >::iterator tok;
-
-    // Up to first \n without padding.
-    stream << endl;
-
-        // For every \n add padding at beginning of the nex line.
-        for(tok = line_tokenizer.begin(); tok != line_tokenizer.end(); ++tok) {
-            stream << setw(pad) << "" << "# "
-                    << *tok << endl;
-        }
-    return stream;
-}
-
-
 
 bool TypeBase::is_valid_identifier(const string& key) {
   namespace ba = boost::algorithm;
@@ -81,10 +68,9 @@ bool TypeBase::is_valid_identifier(const string& key) {
 }
 
 
-
 string TypeBase::desc() const {
     stringstream ss;
-    reset_doc_flags();
+//    reset_doc_flags();
     ss << OutputText(this,1);
     return ss.str();
 }
@@ -150,9 +136,11 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  * implementation of Type::Array
  */
 
+
 bool Array::finish() const {
 	return data_->finish();
 }
+
 
 
 bool Array::ArrayData::finish()
@@ -197,36 +185,12 @@ bool Array::ArrayData::finish()
 	return (finished = true);
 }
 
+
 /*
-std::ostream& Array::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const {
-
-	empty_check();
-
-	switch (extensive) {
-	case record_key:
-		stream << "Array, size limits: [" << data_->lower_bound_ << ", " << data_->upper_bound_ << "] of type: " << endl;
-		stream << setw(pad+4) << "";
-		data_->type_of_values_->documentation(stream, record_key, pad+4);
-		break;
-	case full_after_record:
-		data_->type_of_values_->documentation(stream, full_after_record, pad+4);
-		break;
-	case full_along:
-		stream << "Array, size limits: [" << data_->lower_bound_ << ", " << data_->upper_bound_ << "] of type: " << endl;
-		stream << setw(pad+4) << "";
-		data_->type_of_values_->documentation(stream, record_key, pad+4);
-		break;
-	}
-
-	return stream;
+void  Array::reset_doc_flags() const {
+//	data_->type_of_values_->reset_doc_flags();
 }
 */
-
-
-void  Array::reset_doc_flags() const {
-	data_->type_of_values_->reset_doc_flags();
-}
-
 
 
 string Array::type_name() const {
@@ -305,10 +269,13 @@ void  Scalar::reset_doc_flags() const
  * implementation of Type::Bool
  */
 
+
 bool Bool::valid_default(const string &str) const {
     from_default(str);
     return true;
 }
+
+
 
 bool Bool::from_default(const string &str) const {
     if (str == "true" )  {
@@ -320,14 +287,6 @@ bool Bool::from_default(const string &str) const {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
     }
 }
-
-
-std::ostream& Bool::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
-    if (extensive == full_after_record) return stream;
-    stream << "Bool";
-    return stream;
-}
-
 
 
 string Bool::type_name() const {
@@ -363,14 +322,6 @@ bool Integer::valid_default(const string &str) const
 {
     from_default(str);
     return true;
-}
-
-
-
-std::ostream& Integer::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
-    if (extensive == full_after_record) return stream;
-    stream << "Integer in [" << lower_bound_ << ", " << upper_bound_ << "]";
-    return stream;
 }
 
 
@@ -412,13 +363,6 @@ bool Double::valid_default(const string &str) const
 
 
 
-std::ostream& Double::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
-    if (extensive == full_after_record) return stream;
-    stream << "Double in [" << lower_bound_ << ", " << upper_bound_ << "]";
-    return stream;
-}
-
-
 
 string Double::type_name() const {
     return "Double";
@@ -429,6 +373,7 @@ string Double::type_name() const {
  * implementation of Type::FileName
  */
 
+/*
 std::ostream& FileName::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
     if (extensive == full_after_record) return stream;
 
@@ -446,7 +391,7 @@ std::ostream& FileName::documentation(std::ostream& stream,DocType extensive, un
     }
     return stream;
 }
-
+*/
 
 
 string FileName::type_name() const {
@@ -470,14 +415,6 @@ bool FileName::match(const string &str) const {
 /**********************************************************************************
  * implementation of Type::String
  */
-
-
-std::ostream& String::documentation(std::ostream& stream,DocType extensive, unsigned int pad) const {
-
-    if (extensive == full_after_record) return stream;
-    stream << "String (generic)";
-    return stream;
-}
 
 
 

@@ -253,17 +253,10 @@ public:
      */
     virtual bool is_finished() const;
 
-
-
-    /**
-     * @brief Implements @p Type:TypeBase::documentation.
-     */
-    //virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
-
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
-    virtual void  reset_doc_flags() const;
+//    virtual void  reset_doc_flags() const;
 
     /// Record type name getter.
     virtual string type_name() const;
@@ -388,9 +381,7 @@ protected:
 
         Record::KeyIter auto_conversion_key_iter() const;
 
-//        std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
-
-        void  reset_doc_flags() const;
+//        void  reset_doc_flags() const;
 
         /// Database of valid keys
         std::map<KeyHash, unsigned int> key_to_index;
@@ -578,15 +569,11 @@ public:
     inline AbstractRecord &close() { Record::close(); return *this; }
 
 
-    /**
-     * @brief Implements @p Type:TypeBase::documentation.
-     */
-//    virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
 
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
-    virtual void  reset_doc_flags() const;
+//    virtual void  reset_doc_flags() const;
 
     /**
      * Returns reference to the inherited Record with given name.

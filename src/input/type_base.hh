@@ -64,37 +64,11 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  */
 class TypeBase {
 public:
-    /// Possible types of documentation output
-    enum DocType {
-        record_key,             ///<    Short type description as part of key description.
-        full_after_record,      ///<    Detail description of complex types after the record.
-        full_along              ///<    Detail description of the type itself as part of the error messages (no descendants).
-    };
-
-
-    /**
-     * @brief Implementation of documentation printing mechanism.
-     *
-     * It writes documentation into given stream @p stream. With @p extensive==0, it should print the description
-     * about two lines long, while for @p extensive>0 it outputs full documentation. For value 1 it do not
-     * output documentation of subtypes, while for value 2 it calls decumentations of subtypes recursively.
-     *
-     * This is primarily used for documentation of Record types where we first
-     * describe all keys of an Record with short descriptions and then we call recursively extensive documentation
-     * for sub types that was not fully described yet. Further, we provide method @p reset_doc_flags to reset
-     * all flags marking the already printed documentations. Parameter @p pad is used for correct indentation.
-     *
-     * TODO: Make specialized class for output of the declaration tree into various output formats.
-     * Search the tree by BFS instead of DFS (current implementation).
-     *
-     */
-    //virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const = 0;
-
     /**
      * In order to output documentation of complex types only once, we mark types that have printed their documentation.
      * This method turns these marks off for the whole type subtree.
      */
-    virtual void  reset_doc_flags() const =0;
+//    virtual void  reset_doc_flags() const =0;
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -109,7 +83,19 @@ public:
     virtual string type_name() const  { return "TypeBase"; }
 
     /**
-     * Returns string with Type extensive documentation.
+     * Returns string with Type extensive documentation. We need this to pass Type description at
+     * throw points since the Type object can be deallocated during stack unrolling so it is not good idea to pass
+     * pointer. Maybe we can pass smart pointers. Actually this method is used in various exceptions in json_to_storage.
+     *
+     * Some old note on this topic:
+     *    !!! how to pass instance of descendant of TypeBase through EI -
+     *  - can not pass it directly since TypeBase is not copyconstructable
+     *  - can not use shared_ptr for same reason
+     *  - can not use C pointers since the refered object can be temporary
+     *  solutions:
+     *   - consistently move TypeBase to Pimpl design
+     *   - provide virtual function make_copy, that returns valid shared_ptr
+     *
      */
     string desc() const;
 
@@ -169,11 +155,6 @@ protected:
      * Copy constructor. Register type object into lazy_object_set.
      */
     TypeBase(const TypeBase& other);
-
-    /**
-     * Write out a string with given padding of every new line.
-     */
-    static std::ostream& write_description(std::ostream& stream, const string& str, unsigned int pad);
 
     /**
      * Type of hash values used in associative array that translates key names to indices in Record and Selection.
@@ -297,11 +278,8 @@ public:
     inline bool match_size(unsigned int size) const {
         return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
-    /// @brief Implements @p Type::TypeBase::documentation.
-    //virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
-
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     virtual string type_name() const;
@@ -353,7 +331,6 @@ public:
 
     bool from_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 
     virtual bool valid_default(const string &str) const;
@@ -387,7 +364,6 @@ public:
     /// Implements  @p Type::TypeBase::valid_defaults.
     virtual bool valid_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
 
@@ -424,7 +400,6 @@ public:
      */
     double from_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
 
@@ -442,7 +417,6 @@ private:
  */
 class String : public Scalar {
 public:
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
     virtual string type_name() const;
 
 
@@ -481,7 +455,6 @@ public:
     static FileName output()
     { return FileName(::FilePath::output_file); }
 
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 
     virtual bool operator==(const TypeBase &other) const

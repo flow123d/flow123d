@@ -103,11 +103,8 @@ public:
     /// Implements \p TypeBase::is_finished
     virtual bool is_finished() const;
 
-    /// Implements \p TypeBase::documentation
-//    virtual std::ostream& documentation(std::ostream& stream, DocType extensive = full_along, unsigned int pad = 0) const;
-
     /// Implements \p TypeBase::reset_doc_flags
-    virtual void reset_doc_flags() const;
+//    virtual void reset_doc_flags() const;
 
     /// Implements \p TypeBase::type_name
     virtual string type_name() const;
@@ -189,8 +186,6 @@ private:
         {}
 
         void add_value(const int value, const std::string &key, const std::string &description);
-
-//        std::ostream& documentation(std::ostream& stream, DocType extensive , unsigned int pad) const;
 
         /// Name of the Selection.
         string type_name_;

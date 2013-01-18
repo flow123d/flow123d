@@ -16,6 +16,18 @@ namespace Input {
  */
 
 
+Record::Record()
+: record_type_(), storage_( NULL )
+{}
+
+
+
+Record::Record(const Record &rec)
+: record_type_(rec.record_type_), storage_(rec.storage_)
+{}
+
+
+
 Record::Record(const StorageBase *store, const Type::Record type)
 : record_type_(type), storage_(store)
 {
@@ -24,9 +36,24 @@ Record::Record(const StorageBase *store, const Type::Record type)
 }
 
 
+
+
 /*****************************************************************************
  * Implementation of the class Input::AbstractRecord
  */
+
+AbstractRecord::AbstractRecord()
+: record_type_(), storage_( NULL )
+{}
+
+
+
+AbstractRecord::AbstractRecord(const AbstractRecord &rec)
+: record_type_(rec.record_type_), storage_(rec.storage_)
+{}
+
+
+
 AbstractRecord::AbstractRecord(const StorageBase *store, const Type::AbstractRecord type)
 : record_type_(type), storage_(store)
 {
@@ -52,6 +79,18 @@ Input::Type::Record AbstractRecord::type()
 /*****************************************************************************
  * Implementation of the class Input::Array
  */
+
+
+Array::Array()
+: array_type_(Type::Bool()), storage_( NULL )
+{}
+
+
+Array::Array(const Array &ar)
+: array_type_(ar.array_type_), storage_(ar.storage_)
+{}
+
+
 Array::Array(const StorageBase *store, const Type::Array type)
 : array_type_(type), storage_(store)
 {
@@ -59,8 +98,11 @@ Array::Array(const StorageBase *store, const Type::Array type)
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("Array") );
 }
 
-
-
+/*****************************************************************************
+ * Explicit instantiation of accessor's templates
+ *
+ * .. TODO
+ */
 
 
 

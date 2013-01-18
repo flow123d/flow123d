@@ -103,7 +103,7 @@ inline Iterator<Ret> Record::find(const string &key) const {
  */
 
 template <class ValueType>
-Iterator<ValueType> Array::begin() const {
+inline Iterator<ValueType> Array::begin() const {
     try {
         return Iterator<ValueType>(array_type_.get_sub_type(), storage_, 0);
     }

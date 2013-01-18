@@ -5,20 +5,15 @@
  *      Author: jb
  *
  *
+ *  TODO:
+ *  - decide which part of interface has to be optimized ( probably nothing until we
+ *    implement reader for HDF5, XML or large Raw data files, and try to use the same input interface for input of large data)
+ *  - then make inlined only neccessary functions  and carefully move as much as possible into accessors.cc including explicit instantiation of
+ *    support classes. This should speedup compilation of the code that use the accessors.
  *
-
- *  - presun vhodnych casti do *.cc
- *  - dokumentace
- *  - implementace operator -> without alocation (shared_ptr), i.e. put Accesors into Iterators
- *    Create corresponding acessor at construction of the iterator.
+ *  - implement operator -> without allocation (shared_ptr), i.e. put Accesors into Iterators
+ *    Create corresponding accessor at construction of the iterator.
  *
- *  !!! how to pass instance of descendant of TypeBase through EI -
- *  - can not pass it directly since TypeBase is not copyconstructable
- *  - can not use shared_ptr for same reason
- *  - can not use C pointers since the refered object can be temporary
- *  solutions:
- *   - consistently move TypeBase to Pimpl design
- *   - provide virtual function make_copy, that returns valid shared_ptr
  */
 
 #ifndef INPUT_INTERFACE_HH_
@@ -60,8 +55,20 @@ DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_Accesso
 
 
 /**
- * Class that represents base type of all enum types. We need it to return integer from a Selection input withou
+ * Class that works as base type of all enum types. We need it to return integer from a Selection input without
  * knowing exact enum type. This class contains int and is convertible to int.
+ *
+ * Usage example:
+ * @CODE
+ *
+ *      // in some general read function that do not know BCTypeEnum
+ *      int bc_type_int = record.val<Enum>("bc_type_selection_key");
+ *      ...
+ *      // outside of general function
+ *      enum { dirichlet, neumann, newton } BCTypeEnum;
+ *      BCTypeEnum bc_type = bc_typ_int;
+ * @ENDCODE
+ *
  */
 class Enum {
 public:
@@ -131,22 +138,14 @@ class Record {
 
 public:
     /**
-     * Default constructor creates an accessor to an empty storage.
+     * Default constructor.
      */
-    Record()
-    : record_type_(), storage_( NULL )
-    {
-    }
-
-
+    Record();
 
     /**
      * Copy constructor.
      */
-    Record(const Record &rec)
-    : record_type_(rec.record_type_), storage_(rec.storage_)
-    {}
-
+    Record(const Record &rec);
 
     /**
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
@@ -214,17 +213,12 @@ public:
     /**
      * Default constructor creates an accessor to an empty storage.
      */
-    AbstractRecord()
-    : record_type_(), storage_( NULL )
-    {}
+    AbstractRecord();
 
     /**
      * Copy constructor.
      */
-    AbstractRecord(const AbstractRecord &rec)
-    : record_type_(rec.record_type_), storage_(rec.storage_)
-    {}
-
+    AbstractRecord(const AbstractRecord &rec);
 
     /**
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
@@ -237,7 +231,6 @@ public:
      * way as the \p Input::Record.
      */
     operator Record();
-
 
     /**
      * Returns particular type selected from input. You can use it to construct particular type.
@@ -296,16 +289,12 @@ public:
     /**
      * Default constructor, empty accessor.
      */
-    Array()
-    : array_type_(Type::Bool()), storage_( NULL )
-    {}
+    Array();
 
     /**
      * Copy constructor.
      */
-    Array(const Array &ar)
-    : array_type_(ar.array_type_), storage_(ar.storage_)
-    {}
+    Array(const Array &ar);
 
     /**
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
@@ -318,7 +307,7 @@ public:
     * read from the array. Only types supported by Input::Interface::Iterator can be used.
     */
    template <class ValueType>
-   Iterator<ValueType> begin() const;
+   inline Iterator<ValueType> begin() const;
 
    /**
     * Returns end iterator common to all iterators inner types.

@@ -65,18 +65,10 @@ bool Selection::is_finished() const {
 
 
 /*
-std::ostream& Selection::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const {
-    if (!is_finished())
-        xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
-    return data_->documentation(stream, extensive, pad);
-}
-*/
-
-
 void Selection::reset_doc_flags() const {
    data_->made_extensive_doc = false;
 }
-
+*/
 
 
 string Selection::type_name() const {
@@ -134,34 +126,5 @@ void Selection::SelectionData::add_value(const int value, const std::string &key
     keys_.push_back(tmp_key);
 }
 
-
-/*
-std::ostream& Selection::SelectionData::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const
-{
-
-    if (extensive == record_key) {
-        stream << "Selection '" << type_name_ << "' of " << keys_.size() << " values.";
-    } else
-    if (! made_extensive_doc) {
-        made_extensive_doc = true;
-        pad=0;
-
-        stream << endl << "Selection '" << type_name_ << "' of " << keys_.size() << " values." << endl;
-        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
-        // keys
-        for (keys_const_iterator it = keys_.begin(); it != keys_.end(); ++it) {
-            stream << setw(4) << "" << it->key_ << " = " << it->value;
-            if (it->description_ != "")
-                stream << " (" << it->description_ << ")";
-            stream << endl;
-        }
-        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name_ << endl;
-    }
-
-    return stream;
-}
-
-
-*/
 } // closing namespace Type
 } // close namespace Input
