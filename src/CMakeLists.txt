@@ -135,6 +135,7 @@ set(sources_lib_non_system
     reaction/reaction.cc
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
+    reaction/sorption.cc
     semchem/semchem_interface.cc
 
     transport/transport.cc
