@@ -39,7 +39,8 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 it::AbstractRecord FieldBase<spacedim, Value>::input_type
-    = it::AbstractRecord("Field", "Abstract record for all time-space functions.");
+    = it::AbstractRecord("Field"+template_name(), "Abstract record for all time-space functions.")
+          .allow_auto_conversion("FieldConstant");
 
 
 template <int spacedim, class Value>
@@ -62,7 +63,7 @@ template <int spacedim, class Value>
 Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename Value::ElementInputType *element_input_type) {
     // jak sem dostat primo potomky
     it::AbstractRecord type= it::AbstractRecord("Field", "Abstract record for all time-space functions.");
-
+    type.allow_auto_conversion("FieldConstant");
 
     FieldConstant<spacedim,Value>::get_input_type(type, element_input_type);
     FieldFormula<spacedim,Value>::get_input_type(type, element_input_type);

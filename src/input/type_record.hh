@@ -533,22 +533,14 @@ public:
      */
     AbstractRecord(const string & type_name_in, const string & description);
 
-    /**
-     * Container-like access to the data of the Record. Returns iterator to the first data.
-     */
-    inline ChildDataIter begin_child_data() const;
 
     /**
-     * Container-like access to the data of the Record. Returns iterator to the last data.
+     * Allows shorter input of the AbstractRecord providing the default value to the "TYPE" key.
+     * If the input reader come across the AbstractRecord in the declaration tree and the input
+     * is not 'record-like' with specified value for TYPE, it tries to use the descendant Record specified by
+     * @p type_default parameter of this method. Further auto conversion of such Record may be possible.
      */
-    inline ChildDataIter end_child_data() const;
-
-    /**
-     * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
-     * a Selection for list of descendants, since current interface do not expose this Selection. Then this method
-     * could be removed.
-     */
-    void no_more_descendants();
+    AbstractRecord &allow_auto_conversion(const string &type_default);
 
     /**
      * Same as Record::declare_key but returning reference to AbstractRecord.
@@ -566,9 +558,16 @@ public:
     /**
      *  Can be used to close the AbstractRecord for further declarations of keys.
      */
-    inline AbstractRecord &close() { Record::close(); return *this; }
+    inline AbstractRecord &close() {
+        Record::close(); return *this; }
 
 
+    /**
+     * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
+     * a Selection for list of descendants, since current interface do not expose this Selection. Then this method
+     * could be removed.
+     */
+    void no_more_descendants();
 
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
@@ -579,6 +578,11 @@ public:
      * Returns reference to the inherited Record with given name.
      */
     const Record  &get_descendant(const string& name) const;
+
+    /**
+     * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
+     */
+    const Record * get_default_descendant() const;
 
     /**
      * Returns reference to the inherited Record with given index (indexed in the same order
@@ -592,19 +596,28 @@ public:
     const Selection &get_type_selection() const;
 
     /**
+     * Returns number of keys in the child_data_.
+     */
+    unsigned int child_size() const;
+
+    /**
+     * Container-like access to the data of the Record. Returns iterator to the first data.
+     */
+    ChildDataIter begin_child_data() const;
+
+    /**
+     * Container-like access to the data of the Record. Returns iterator to the last data.
+     */
+    ChildDataIter end_child_data() const;
+
+protected:
+    /**
      * This method intentionally have no implementation to
      * prevents deriving an AbstractRecord form other AbstractRecord.
      * In such a case the linker should report an undefined reference.
      */
     Record &derive_from(AbstractRecord &parent);
 
-    /**
-     * Returns number of keys in the child_data_.
-     */
-    inline unsigned int child_size() const;
-
-
-protected:
     /// Actual data of the AbstractRecord.
     boost::shared_ptr<ChildData> child_data_;
 
@@ -700,19 +713,6 @@ inline void Record::set_made_extensive_doc(bool val) const {
 	data_->made_extensive_doc = val;
 }
 
-
-inline unsigned int AbstractRecord::child_size() const {
-	return child_data_->list_of_childs.size();
-}
-
-
-inline AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
-	child_data_->list_of_childs.begin();
-}
-
-inline AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
-	child_data_->list_of_childs.end();
-}
 
 
 

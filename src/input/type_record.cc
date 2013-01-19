@@ -107,9 +107,9 @@ void Record::make_derive_from(AbstractRecord &parent) const {
         tmp_key.derived = true;
 
         // we have to copy TYPE also since there should be place in storage for it
-        // however we change its Default to optional()
+        // however we change its Default to name of actual Record
         if (tmp_key.key_=="TYPE")
-            tmp_key.default_=Default::optional();
+            tmp_key.default_=Default( type_name() );
 
         // check for duplicate keys, save only the key derived by the descendant
         RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
@@ -217,10 +217,11 @@ bool Record::finish() const
         }
         if (it->key_ != "TYPE") {
             data_->finished = data_->finished && it->type_->finish();
+
+            // we check once more even keys that was already checked, otherwise we have to store
+            // result of validity check in every key
+            check_key_default_value(it->default_, *(it->type_), it->key_);
         }
-        // we check once more even keys that was already checked, otherwise we have to store
-        // result of validity check in every key
-        check_key_default_value(it->default_, *(it->type_), it->key_);
     }
 
     // Check default values of autoconvertible records
@@ -469,9 +470,28 @@ void AbstractRecord::add_descendant(const Record &subrec)
 
 
 
+AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
+    ASSERT( ! data_->closed_, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
+    data_->keys[0].default_=Default(type_default); // default record is closed; other constructor creates the zero item
+    return *this;
+}
+
+
+
 void AbstractRecord::no_more_descendants()
 {
     child_data_->selection_of_childs->close();
+    // check validity of possible default value of TYPE key
+    if (data_->keys.size() > 0 ) { // skip for empty records
+        Default &dflt = data_->keys[0].default_;
+        if ( dflt.has_value_at_declaration() ) {
+            try {
+                child_data_->selection_of_childs->valid_default( dflt.value() );
+            } catch (ExcWrongDefault & e) {
+                xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", data_->keys[0].default_.value().c_str(), type_name().c_str());
+            }
+        }
+    }
     if (! finish()) xprintf(PrgErr, "Can not finish AbstractRecord when calling no_more_descendants.\n");
 }
 
@@ -502,10 +522,38 @@ const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 }
 
 
+
+const Record * AbstractRecord::get_default_descendant() const {
+    if (data_->keys.size() != 0 )  { // skip for empty records
+        Default &dflt = data_->keys[0].default_;
+        if ( dflt.has_value_at_declaration() ) {
+            return &( get_descendant( child_data_->selection_of_childs->name_to_int( dflt.value() ) ) );
+        }
+    }
+    return NULL;
+}
+
+
+
 const Selection  & AbstractRecord::get_type_selection() const
 {
     return * child_data_->selection_of_childs;
 }
+
+
+unsigned int AbstractRecord::child_size() const {
+    return child_data_->list_of_childs.size();
+}
+
+
+AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
+    child_data_->list_of_childs.begin();
+}
+
+AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
+    child_data_->list_of_childs.end();
+}
+
 
 
 

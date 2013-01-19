@@ -397,6 +397,29 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
     }
 
+    { // auto conversion
+       Input::Type::AbstractRecord ar("AR","");
+       ar.allow_auto_conversion("BR");
+       Input::Type::Record br("BR","");
+       br.derive_from(ar)
+         .declare_key("x",Input::Type::Integer(),Input::Type::Default("10"),"")
+         .declare_key("y",Input::Type::Integer(),"")
+         .allow_auto_conversion("y")
+         .close();
+       br.finish();
+       ar.no_more_descendants();
+
+       stringstream ss("20");
+       this->read_stream(ss, ar);
+
+       EXPECT_NE((void *)NULL, storage_);
+       storage_->get_array_size();
+       EXPECT_EQ(3, storage_->get_array_size());
+       EXPECT_EQ(0, storage_->get_item(0)->get_int());
+       EXPECT_EQ(10, storage_->get_item(1)->get_int());
+       EXPECT_EQ(20, storage_->get_item(2)->get_int());
+    }
+
 
 }
 

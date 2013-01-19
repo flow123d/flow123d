@@ -61,7 +61,8 @@ public:
        FieldBase(const double init_time=0.0, unsigned int n_comp=0);
 
        /**
-        * Returns template parameters as string in order to distinguish Fields Input::Type name.
+        * Returns template parameters as string in order to distinguish name of AbstractRecords
+        * for initialization of different instances of the FieldBase template.
         */
        static std::string template_name();
 

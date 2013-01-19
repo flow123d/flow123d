@@ -37,7 +37,8 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
                                     "For square NxN-matrix values, you can use:\n"
                                     "* vector of size N to enter diagonal matrix\n"
                                     "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                    "* scalar to enter multiple of the unit matrix." );
+                                    "* scalar to enter multiple of the unit matrix." )
+        .allow_auto_conversion("value");
 
     return type;
 }

@@ -304,6 +304,8 @@ using namespace Input::Type;
     AbstractRecord a_rec("EqBase","Base of equation records.");
     a_rec.declare_key("mesh", String(), Default::obligatory(), "Comp. mesh.");
     a_rec.declare_key("a_val", String(), Default::obligatory(), "");
+    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy");
+    EXPECT_EQ( a_rec, a_ref);
     a_rec.finish();
 
     // test derived type
@@ -319,23 +321,23 @@ using namespace Input::Type;
     c_rec.finish();
     b_rec.finish();
 
+    // auto conversion - default value for TYPE
+    EXPECT_EQ("EqDarcy", a_rec.key_iterator("TYPE")->default_.value() );
+    // no more allow_auto_conversion for a_rec
+    EXPECT_DEATH( { a_rec.allow_auto_conversion("EqTransp");}, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
+
     a_rec.no_more_descendants();
-    DBGMSG("here: %d\n", a_rec.is_finished());
+    EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
+
+    // check correct stat of a_rec
     EXPECT_TRUE( a_rec.is_finished() );
     EXPECT_EQ(0, a_rec.key_index("TYPE"));
     EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
-
-    DBGMSG("here: %d\n", a_rec.is_finished());
-
     EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
-    // TYPE should be derived as optional
-    EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
 
     // TYPE should be derived as optional
-    EXPECT_TRUE( c_rec.key_iterator("TYPE")->default_.is_optional());
-
-
-    DBGMSG("here: %d\n", a_rec.is_finished());
+    //EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
+    //EXPECT_TRUE( c_rec.key_iterator("TYPE")->default_.is_optional());
 
     // inherited keys
     EXPECT_TRUE( b_rec.has_key("mesh") );
@@ -347,12 +349,11 @@ using namespace Input::Type;
     EXPECT_EQ( b_rec, a_rec.get_descendant("EqDarcy"));
     EXPECT_EQ( c_rec, a_rec.get_descendant("EqTransp"));
 
-    DBGMSG("here: %d\n", a_rec.is_finished());
 
-    //c_rec.derive_from(a_rec);
-
-    AbstractRecord x_rec("ar","");
-    Record y_rec("y_rec","");
+    // check of correct auto conversion value
+    AbstractRecord  x("AR","");
+    x.allow_auto_conversion("BR");
+    EXPECT_DEATH({ x.no_more_descendants(); }, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
 
 }
 

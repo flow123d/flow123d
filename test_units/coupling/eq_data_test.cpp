@@ -80,10 +80,7 @@ const string eq_data_input = R"JSON(
           }
       },
       { rid=1,
-          init_pressure={
-              TYPE="FieldConstant",
-              value=2.2
-          }
+        init_pressure=2.2
       }          
   ],
   bc_data=[
