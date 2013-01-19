@@ -27,7 +27,7 @@
 
 add_custom_target( coupling_test )
 set(super_test "coupling_test")
-set(super_test_libs field_lib flow123d_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(super_test_libs field_lib coupling_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)

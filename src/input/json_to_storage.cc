@@ -542,6 +542,15 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
 StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
+        if (typeid(*type) == typeid(Type::AbstractRecord) ) {
+            // an auto-convertible AbstractRecord can be initialized form default value
+            const Type::AbstractRecord *a_record = static_cast<const Type::AbstractRecord *>(type);
+
+            if (a_record->begin()->default_.has_value_at_declaration() )
+                make_storage_from_default( dflt_str, a_record->get_default_descendant() );
+            else
+                xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", typeid(type).name());
+        } else
         if (typeid(*type) == typeid(Type::Record) ) {
             // an auto-convertible Record can be initialized form default value
             const Type::Record *record = static_cast<const Type::Record *>(type);
@@ -563,7 +572,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
 
                 return storage_array;
             } else {
-                xprintf(Err,"Can not initialize (non-auto-convertible) Record '%s' by default value\n", typeid(type).name());
+                xprintf(PrgErr,"Can not initialize (non-auto-convertible) Record '%s' by default value\n", typeid(type).name());
             }
         } else
         if (typeid(*type) == typeid(Type::Array) ) {
@@ -575,7 +584,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
                 storage_array->new_item(0, make_storage_from_default(dflt_str, &sub_type) );
                 return storage_array;
             } else {
-                xprintf(Err,"Can not initialize Array '%s' by default value, size 1 not allowed.\n", typeid(type).name());
+                xprintf(PrgErr,"Can not initialize Array '%s' by default value, size 1 not allowed.\n", typeid(type).name());
             }
 
         } else
@@ -595,7 +604,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
             if (string_type != NULL ) return new StorageString( string_type->from_default(dflt_str) );
 
             // default error
-            xprintf(Err,"Can not store default value for type: %s\n", typeid(type).name());
+            xprintf(PrgErr,"Can not store default value for type: %s\n", typeid(type).name());
         }
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration

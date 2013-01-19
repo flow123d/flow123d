@@ -302,7 +302,7 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     AbstractRecord a_rec("EqBase","Base of equation records.");
-    a_rec.declare_key("mesh", String(), Default::obligatory(), "Comp. mesh.");
+    a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
     a_rec.declare_key("a_val", String(), Default::obligatory(), "");
     AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy");
     EXPECT_EQ( a_rec, a_ref);
@@ -311,7 +311,8 @@ using namespace Input::Type;
     // test derived type
     Record b_rec("EqDarcy","");
     b_rec.derive_from(a_rec);
-    b_rec.declare_key("b_val", Integer(), "");
+    b_rec.declare_key("b_val", Integer(), Default("10"), "");
+    b_rec.allow_auto_conversion("a_val");
 
     Record c_rec("EqTransp","");
     c_rec.derive_from(a_rec);
@@ -328,6 +329,11 @@ using namespace Input::Type;
 
     a_rec.no_more_descendants();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
+
+    // test default value for an auto convertible abstract record key
+    Record xx_rec("XX", "");
+    xx_rec.declare_key("ar_key", a_rec, Default("ahoj"), "");
+    xx_rec.finish();
 
     // check correct stat of a_rec
     EXPECT_TRUE( a_rec.is_finished() );

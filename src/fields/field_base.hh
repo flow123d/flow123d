@@ -192,6 +192,7 @@ public:
      */
     const std::string &name() const     { return name_;}
     const std::string &desc() const     { return desc_;}
+    const IT::Default &get_default() const {return default_;}
     bool is_bc() const                  { return bc_;}
     bool is_enum_valued() const         { return enum_valued_;}
 

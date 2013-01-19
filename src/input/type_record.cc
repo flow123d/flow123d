@@ -505,10 +505,20 @@ void  AbstractRecord::reset_doc_flags() const {
 }
 */
 
+bool AbstractRecord::valid_default(const string &str) const
+{
+    if (data_->keys.size() != 0)  { // skip for empty records
+        Default &dflt = data_->keys[0].default_;
+        if (! child_data_->selection_of_childs->is_finished()) return false;
+        if ( dflt.has_value_at_declaration() ) return get_default_descendant()->valid_default(str);
+    }
+    THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
+}
+
 
 const Record  & AbstractRecord::get_descendant(const string& name) const
 {
-    ASSERT( is_finished(), "Can not get descendant of unfinished AbstractType\n");
+    ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
     return get_descendant( child_data_->selection_of_childs->name_to_int(name) );
 }
 
@@ -516,7 +526,7 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 {
-
+    ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
     ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");
     return child_data_->list_of_childs[idx];
 }
@@ -527,7 +537,7 @@ const Record * AbstractRecord::get_default_descendant() const {
     if (data_->keys.size() != 0 )  { // skip for empty records
         Default &dflt = data_->keys[0].default_;
         if ( dflt.has_value_at_declaration() ) {
-            return &( get_descendant( child_data_->selection_of_childs->name_to_int( dflt.value() ) ) );
+            return &( get_descendant( dflt.value() ) );
         }
     }
     return NULL;

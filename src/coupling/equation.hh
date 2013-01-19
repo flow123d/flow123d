@@ -41,6 +41,10 @@
 
 class Mesh;
 class MaterialDatabase;
+class FieldCommonBase;
+class Region;
+
+
 namespace Input {
     class Record;
 }
@@ -71,10 +75,8 @@ public:
      * Replace setting all in constructor with appropriate getters and setters.
      * Make appropriate checks if key ingredients are initialized.
      */
-    EquationBase() : mesh_(NULL), mat_base(NULL), time_(NULL),
-    equation_mark_type_(TimeGovernor::marks().new_mark_type()), //creating mark type for new equation
-    input_record_()
-    {}
+    EquationBase();
+
     /**
      * Common initialization constructor.
      */
@@ -182,6 +184,91 @@ protected:
     TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
 };
+
+
+
+/**
+ * Base class for a data subclasses of equations. We suggest following structure of an equation class:
+ * @code
+ *      class SomeEquation : public EqBase {
+ *          class EqData : public EqDataBase {
+ *          ...
+ *          }
+ *          ...
+ *      }
+ * @endcode
+ * The @p SomeEquation::EqData class should be used to introduce all necessary data of the equation in terms of bulk (Field)
+ * and boundary (BCField) fields. The base class EqDataBase implements some common operations with these fields as
+ * construction of the Input::Type objects, reading fields from the input and calling set_time methods.
+ */
+class EqDataBase {
+public:
+
+    /**
+     * The only constructor. The name of the equation has to be provided by parameter @p eq_name.
+     */
+    EqDataBase(const std::string& eq_name);
+
+    /**
+     * Adds given field into list of fields for group operations on fields.
+     * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
+     * @p d_val with default value. This method is rather called through the macro ADD_FIELD
+     */
+    void add_field( FieldCommonBase *field, const string &name, const string &desc, Input::Type::Default d_val= Input::Type::Default::optional() );
+
+    /**
+     * This method returns a Record for
+     * - @p eq_class_name should be name of the particular equation class, the name of bulk data record has form:
+     *   'EqName_BulkData' and record for boundary data has name 'EqName_BoundaryData'. However, these names has
+     *   only documentation purpose since these records are not descendants of an AbstractRecord.
+     * - we do not finish returned records !!
+     */
+    Input::Type::Record generic_input_type(const string &eq_class_name, const string &desc, bool bc_regions);
+
+    /**
+     * Accepts accessors to both data lists
+     *
+     * TODO:
+     * - read arrays and check correct sequence of times, save the input accessors for both lists
+     * - call set_time, which should read up to the first bigger time
+     * - check that all fields are initialized
+     */
+    void init_from_input(Input::Array bulk_list, Input::Array bc_list);
+
+    /**
+     * Reads input from one region - one time descriptor.
+     */
+    virtual Region init_from_input_one_region(Input::Record rec, bool bc_regions);
+
+protected:
+    EqDataBase();
+
+    std::string equation_name_;
+    std::vector<FieldCommonBase *> field_list;
+    //static IT::Record *generic_input_type;
+};
+
+
+/**
+ * Macro to simplify call of EqDataBase::add_field method. Two forms are supported:
+ *
+ * ADD_FIELD(some_field, description);
+ * ADD_FIELD(some_field, description, Default);
+ *
+ * The first form adds name "some_field" to the field member some_field, also adds description of the field. No default
+ * value is specified, so the user must initialize the field on all regions (This is checked at the end of the method
+ * EqDataBase::init_from_input.
+ *
+ * The second form adds also default value to the field, that is Default(".."), or Default::read_time(), other default value specifications are
+ * meaningless. The automatic conversion to FieldConst is used, e.g.  Default::("0.0") is automatically converted to
+ * { TYPE="FieldConst", value=[ 0.0 ] } for a vector valued field, so you get zero vector on output on regions with default value.
+ */
+#define ADD_FIELD(name, ...)                   add_field(&name, string(#name), __VA_ARGS__)
+
+
+
+
+
 
 /**
  * Demonstration of empty equation class, which can be used if user turns off some equation in the model.

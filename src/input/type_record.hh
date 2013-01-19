@@ -573,6 +573,11 @@ public:
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
 //    virtual void  reset_doc_flags() const;
+    /**
+     * The default string can initialize an Record if the record is auto-convertible
+     * and the string is valid default value for the auto conversion key.
+     */
+    virtual bool valid_default(const string &str) const;
 
     /**
      * Returns reference to the inherited Record with given name.
@@ -580,15 +585,15 @@ public:
     const Record  &get_descendant(const string& name) const;
 
     /**
-     * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
-     */
-    const Record * get_default_descendant() const;
-
-    /**
      * Returns reference to the inherited Record with given index (indexed in the same order
      * as they are derived).
      */
     const Record  &get_descendant(unsigned int idx) const;
+
+    /**
+     * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
+     */
+    const Record * get_default_descendant() const;
 
     /**
      * Returns reference to Selection type of the implicit key TYPE.

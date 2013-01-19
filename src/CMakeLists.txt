@@ -117,7 +117,7 @@ set (sources_lib_coupling
     coupling/time_marks.cc
     coupling/time_governor.cc
 
-   # coupling/equation.cc
+   coupling/equation.cc
    # coupling/hc_explicit_sequential.cc
 )
 
@@ -147,7 +147,6 @@ set(sources_lib_non_system
     materials.cc
     field_p0.cc
 
-    coupling/equation.cc
     coupling/hc_explicit_sequential.cc
 )
 
@@ -234,7 +233,7 @@ target_link_libraries(fem_lib
 # field_lib  
 add_library(field_lib ${sources_lib_field})
 target_link_libraries(field_lib
-    system_lib input_lib fparser mesh_lib armadillo  ${Boost_LIBRARIES})
+    system_lib input_lib fparser new_mesh_lib mesh_lib armadillo  ${Boost_LIBRARIES})
  
 # functions_lib  
 add_library(functions_lib ${sources_lib_functions})
@@ -244,7 +243,7 @@ target_link_libraries(functions_lib
 # coupling_lib  
 add_library(coupling_lib ${sources_lib_coupling})
 target_link_libraries(coupling_lib
-    system_lib input_lib)
+    system_lib input_lib field_lib mesh_lib)
   
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})

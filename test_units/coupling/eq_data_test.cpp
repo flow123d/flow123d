@@ -98,98 +98,6 @@ const string eq_data_input = R"JSON(
 
 
 
-class EqDataBase {
-public:
-    void add_field( FieldCommonBase *field, const string &name, const string &desc, Input::Type::Default = Input::Type::Default::obligatory() ) {
-        field->set_name( name );
-        field->set_desc( desc );
-        field_list.push_back(field);
-    }
-
-    /**
-     * - @p eq_class_name should be name of the particular equation class, the name of bulk data record has form:
-     *   'EqName_BulkData' and record for boundary data has name 'EqName_BoundaryData'. However, these names has
-     *   only documentation purpose since these records are not descendants of an AbstractRecord.
-     * - we do not finish returned records !!
-     */
-    IT::Record generic_input_type(const string &eq_class_name, const string &desc, bool bc_regions) {
-        string rec_name = eq_class_name + (bc_regions ? "_BoundaryData" : "_BulkData");
-        IT::Record rec = IT::Record(rec_name, desc)
-                         .declare_key("region", IT::String(), "Region label")
-                         .declare_key("rid", IT::Integer(0), "Region ID (alternative to region label)" );
-
-        BOOST_FOREACH(FieldCommonBase * field, field_list)
-            if (bc_regions == field->is_bc()) {
-                if (field->is_enum_valued())
-                    rec.declare_key(field->name(), field->make_input_tree(), field->desc() );
-                else
-                    rec.declare_key(field->name(), field->get_input_type(), field->desc() );
-            }
-
-
-        // intentionally we do not call finish here in order to allow adding keys after the generic ones
-        // finish should be called at global level through Lazyhttp://stackoverflow.com/questions/4786649/are-variadic-macros-nonstandardTypes
-
-        return rec;
-    }
-
-    void init_from_input(Input::Array bulk_list, Input::Array bc_list) {
-        for(Input::Iterator<Input::Record> it=bulk_list.begin<Input::Record>(); it != bulk_list.end(); ++it)
-            init_from_input_one_region(*it, false);
-        for(Input::Iterator<Input::Record> it=bc_list.begin<Input::Record>(); it != bc_list.end(); ++it)
-            init_from_input_one_region(*it, true);
-    }
-
-    Region init_from_input_one_region(Input::Record rec, bool bc_regions) {
-        Input::Iterator<string> it = rec.find<string>("region");
-        Region reg;
-
-        // get the region
-        if (it) {
-            // try find region by label
-            reg = Region::db().find_label(*it);
-            if (! reg.is_valid() ) xprintf(UsrErr, "Unknown region with label: '%s'\n", (*it).c_str());
-        } else {
-            // try find region by ID
-            Input::Iterator<unsigned int> id_it = rec.find<unsigned int>("rid");
-            reg = Region::db().find_id(*id_it);
-            if (! reg.is_valid() ) xprintf(UsrErr, "Unknown region with id: '%d'\n", *id_it);
-        }
-
-        // init all fields on this region
-        BOOST_FOREACH(FieldCommonBase * field, field_list) {
-            if (bc_regions == field->is_bc()) {
-                Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>(field->name());
-                if (field_it) {
-                    field->init_from_input(reg,*field_it);
-                }
-            }
-        }
-
-        return reg;
-    }
-
-protected:
-    std::vector<FieldCommonBase *> field_list;
-    //static IT::Record *generic_input_type;
-};
-
-
-/**
- * Macro to simplify call of EqDataBase::add_field method. Two forms are supported:
- *
- * ADD_FIELD(some_field, description);
- * ADD_FIELD(some_field, description, Default);
- *
- * The first form adds name "some_field" to the field member some_field, also adds description of the field. No default
- * value is specified, so the user must initialize the field on all regions (This is checked at the end of the method
- * EqDataBase::init_from_input.
- *
- * The second form adds also default value to the field, that is Default(".."), or Default::read_time(), other default value specifications are
- * meaningless. The automatic conversion to FieldConst is used, e.g.  Default::("0.0") is automatically converted to
- * { TYPE="FieldConst", value=[ 0.0 ] } for a vector valued field, so you get zero vector on output on regions with default value.
- */
-#define ADD_FIELD(name, ...)                   add_field(&name, string(#name), __VA_ARGS__)
 
 
 
@@ -211,14 +119,14 @@ public:
         static IT::Selection bc_type_selection;
 
 
-        EqData() {
+        EqData() : EqDataBase("") {
             ADD_FIELD(init_pressure, "Initial condition as pressure");
             ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", IT::Default("1.0"));
             ADD_FIELD(bc_type,"Boundary condition type, possible values:");
-            bc_type.set_selection(&bc_type_selection);
+                      bc_type.set_selection(&bc_type_selection);
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components");
-            init_conc.set_n_comp(4);
+                      init_conc.set_n_comp(4);
             // ...
         }
         IT::Array boundary_input_type() {
@@ -234,12 +142,14 @@ public:
             return IT::Array( rec , 0);
         }
 
-        void init_from_input_one_region(Input::Record rec, bool bc_regions) {
+        Region init_from_input_one_region(Input::Record rec, bool bc_regions) {
             Region region=EqDataBase::init_from_input_one_region(rec, bc_regions);
-            Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("piezo_head");
-            if (field_it) {
-                bc_pressure(region)->init_from_input(*field_it);
-                //bc_pressure(region)=FieldAddGradient<3, FieldValue<3>::Scalar >(bc_pressure(region), gravity);
+            if (bc_regions) {
+                Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("piezo_head");
+                if (field_it) {
+                    bc_pressure(region)->init_from_input(*field_it);
+                    //bc_pressure(region)=FieldAddGradient<3, FieldValue<3>::Scalar >(bc_pressure(region), gravity);
+                }
             }
         }
 
@@ -319,14 +229,30 @@ TEST_F(SomeEquation, values) {
     Element el_10(3);
     el_10.region_=Region::db().find_id(10);
 
+    // bulk fields
     {
     ElementAccessor<3> elm(&el_0);
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, elm) );
+
+    FieldValue<3>::TensorFixed::return_type value = data.cond_anisothropy.value(p, elm);
+    EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
+    EXPECT_DOUBLE_EQ( 0.0, value.at(0,1) );
+    EXPECT_DOUBLE_EQ( 0.0, value.at(0,2) );
+
+    EXPECT_DOUBLE_EQ( 0.0, value.at(1,0) );
+    EXPECT_DOUBLE_EQ( 1.0, value.at(1,1) );
+    EXPECT_DOUBLE_EQ( 0.0, value.at(1,2) );
+
+    EXPECT_DOUBLE_EQ( 0.0, value.at(2,0) );
+    EXPECT_DOUBLE_EQ( 0.0, value.at(2,1) );
+    EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
     }
     {
     ElementAccessor<3> elm(&el_1);
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, elm) );
     }
+
+    //boundary fields
     {
         ElementAccessor<3> elm(&el_10);
         EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, elm) );
