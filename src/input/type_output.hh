@@ -182,7 +182,7 @@ public:
 	OutputJSONTemplate(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
 	void print(ostream& stream) {
-		type_name_ = ""; //.str(std::string());
+		key_name_ = "";
 		OutputBase::print(stream);
 	}
 
@@ -203,8 +203,21 @@ protected:
 
     void write_description(std::ostream& stream, const string& str);
 
+private:
+    /**
+     * Prints value according to DefaultType
+     * Respects obligatory, optional and read time flag
+     *
+     * @param stream Output stream
+     * @param depth Depth of output
+     * @param empty_val Default empty value (zero for numeric types, empty string ...)
+     * @param invalid_val Flag if value is invalid for its type
+     * @param has_quote Flag if value is enclosed in quotes
+     */
+    void print_default_value(ostream& stream, unsigned int depth, string empty_val, bool invalid_val, bool has_quote = false);
+
     /// temporary value of actually record type
-    string type_name_;
+    string key_name_;
     /// temporary value of actually record description
     string description_;
     /// temporary value of actually record value
