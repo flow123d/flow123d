@@ -70,7 +70,6 @@ bool TypeBase::is_valid_identifier(const string& key) {
 
 string TypeBase::desc() const {
     stringstream ss;
-//    reset_doc_flags();
     ss << OutputText(this,1);
     return ss.str();
 }

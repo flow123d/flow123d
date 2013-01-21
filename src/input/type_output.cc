@@ -131,11 +131,11 @@ void OutputText::print(ostream& stream, const Record *type, unsigned int depth) 
 			stream << "" << "Record '" << type->type_name() << "'";
 
 			// parent record
-			/*if (type->data_.get()->parent_ptr_.use_count() == 1) {
-				AbstractRecord *abstract_rec = type->data_.get()->parent_ptr_.get();
-				Record parent = type->derive_from( *abstract_rec );
-				stream << ", implementation of " << parent.type_name();
-			}*/
+			if (type->data_->parent_ptr_) {
+				//AbstractRecord *abstract_rec = type->data_.get()->parent_ptr_.get();
+				//Record parent = type->derive_from( *abstract_rec );
+				stream << ", implementation of " << type->data_->parent_ptr_->type_name();
+			}
 
 			// reducible to key
 			Record::KeyIter key_it = type->auto_conversion_key_iter();
@@ -454,7 +454,7 @@ void OutputJSONTemplate::print(ostream& stream, const Selection *type, unsigned 
 	stream << setw(depth * padding_size) << "" << "# Selection of " << type->size() << " values:";
 
 	for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
-		max_size = std::max(max_size, it->key_.size());
+		max_size = std::max(max_size, (unsigned int)(it->key_.size()) );
 	}
 
 	for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
