@@ -113,7 +113,6 @@ namespace Input {
  * 2) On the other hand comparing of times by time governor can be done relatively to the current time step.
  *
  *
- *
  */
 
 class TimeGovernor
@@ -138,7 +137,7 @@ public:
     * @see default constructor.
     * 
     */
-   TimeGovernor(double init_time);
+   explicit TimeGovernor(double init_time);
 
    /**
     * @brief Deafult constructor - steady time governor.
@@ -155,6 +154,13 @@ public:
     * Has a private pointer to static TimeMarks and can access them by marks().
     */
    TimeGovernor();
+
+   /**
+    * DO NOT USE THIS, NOT TESTED YET.
+    *
+    * The aim of this constuctor is simple way to make a time governor without Input interface.
+    */
+   TimeGovernor(double init_time, double dt);
 
    static Input::Type::Record input_type;
 

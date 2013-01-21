@@ -37,7 +37,7 @@ class FieldPython : public FieldBase<spacedim, Value>
 {
 public:
 
-    FieldPython(const double init_time=0.0, unsigned int n_comp=0);
+    FieldPython(unsigned int n_comp=0);
 
     static Input::Type::Record input_type;
 

@@ -57,8 +57,8 @@ it::Record FieldInterpolatedP0<spacedim, Value>::input_type
 
 
 template <int spacedim, class Value>
-FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const double init_time, const unsigned int n_comp)
-: FieldBase<spacedim, Value>(init_time, n_comp)
+FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_comp)
+: FieldBase<spacedim, Value>(n_comp)
 {}
 
 

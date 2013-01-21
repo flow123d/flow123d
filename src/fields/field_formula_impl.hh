@@ -45,8 +45,8 @@ Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
 
 
 template <int spacedim, class Value>
-FieldFormula<spacedim, Value>::FieldFormula(const double init_time, unsigned int n_comp)
-: FieldBase<spacedim, Value>(init_time, n_comp),
+FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
+: FieldBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
   formula_matrix_helper_(formula_matrix_), parser_matrix_(this->value_.n_rows())
 {

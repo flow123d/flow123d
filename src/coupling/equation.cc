@@ -67,8 +67,11 @@ namespace IT=Input::Type;
 
 
 EqDataBase::EqDataBase(const std::string& eq_name)
-: equation_name_(eq_name)
-{}
+: equation_name_(eq_name),
+  mesh_(NULL)
+{
+    if (equation_name_ == "") xprintf(PrgErr, "You have to provide non-empty equation name when constructing EqDataBase.\n");
+}
 
 
 
@@ -81,11 +84,22 @@ void EqDataBase::add_field( FieldCommonBase *field, const string &name, const st
 
 
 
-IT::Record EqDataBase::generic_input_type(const string &eq_class_name, const string &desc, bool bc_regions) {
-    string rec_name = eq_class_name + (bc_regions ? "_BoundaryData" : "_BulkData");
-    IT::Record rec = IT::Record(rec_name, desc)
+IT::Record EqDataBase::generic_input_type(bool bc_regions) {
+    string rec_name, description;
+
+    if (bc_regions) {
+        rec_name = equation_name_ + "_BoundaryData";
+        description = "Record to set BOUNDARY fields of equation '" + equation_name_ + "' on given region set at given time.";
+    } else {
+        rec_name = equation_name_ + "_BulkData";
+        description = "Record to set BULK fields of equation '" + equation_name_ + "' on given region set at given time.";
+    }
+    IT::Record rec = IT::Record(rec_name, description)
                      .declare_key("region", IT::String(), "Region label")
-                     .declare_key("rid", IT::Integer(0), "Region ID (alternative to region label)" );
+                     .declare_key("rid", IT::Integer(0), "Region ID (alternative to region label)" )
+                     .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
+                             "Apply field setting in this record at given time.\n"
+                             "These times has to form increasing sequence.");
 
     BOOST_FOREACH(FieldCommonBase * field, field_list)
         if (bc_regions == field->is_bc()) {
@@ -95,25 +109,91 @@ IT::Record EqDataBase::generic_input_type(const string &eq_class_name, const str
                 rec.declare_key(field->name(), field->get_input_type(), field->get_default(), field->desc() );
         }
 
-
-    // intentionally we do not call finish here in order to allow adding keys after the generic ones
-    // finish should be called at global level through Lazyhttp://stackoverflow.com/questions/4786649/are-variadic-macros-nonstandardTypes
-
     return rec;
 }
 
 
 
-void EqDataBase::init_from_input(Input::Array bulk_list, Input::Array bc_list) {
-    for(Input::Iterator<Input::Record> it=bulk_list.begin<Input::Record>(); it != bulk_list.end(); ++it)
-        init_from_input_one_region(*it, false);
-    for(Input::Iterator<Input::Record> it=bc_list.begin<Input::Record>(); it != bc_list.end(); ++it)
-        init_from_input_one_region(*it, true);
+IT::Record EqDataBase::boundary_input_type() {
+    return generic_input_type(true);
+}
+
+
+IT::Record EqDataBase::bulk_input_type() {
+    return generic_input_type(false);
 }
 
 
 
-Region EqDataBase::init_from_input_one_region(Input::Record rec, bool bc_regions) {
+void EqDataBase::set_time(const TimeGovernor &time) {
+    /*
+     * - read records from arrays until we reach greater time then actual
+     * - update fields (delete the previous, use mekae factory for the new one.
+     */
+    set_time(time, boundary_input_array_, boundary_it_, true);
+    set_time(time, bulk_input_array_, bulk_it_, false);
+}
+
+
+
+void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_region) {
+    // read input up to given time
+    while( it != list.end() && time.ge( it->val<double>("time") ) ) {
+        if (bc_region) read_boundary_list_item(*it);
+        else read_bulk_list_item(*it);
+        ++it;
+    }
+    // check validity of fields and set current time
+    BOOST_FOREACH(FieldCommonBase * field, field_list) field->set_time( time.t() );
+}
+
+
+
+void EqDataBase::set_mesh(Mesh *mesh) {
+    mesh_=mesh;
+}
+
+
+void EqDataBase::check_times(Input::Array &list) {
+    double time,last_time=0.0;
+
+    for( Input::Iterator<Input::Record> it = list.begin<Input::Record>(); it != list.end(); ++it) {
+        time = it->val<double>("time");
+        if (time < last_time) xprintf(UsrErr, "Time %f in bulk data of equation '%s' is smaller then the previous time %f.\n",
+                time, equation_name_.c_str(), last_time );
+        last_time=time;
+    }
+}
+
+void EqDataBase::init_from_input(Input::Array bulk_list, Input::Array bc_list) {
+    bulk_input_array_ = bulk_list;
+    boundary_input_array_ = bc_list;
+
+    if (mesh_ == NULL) xprintf(PrgErr, "The mesh pointer wasn't set in the EqData of equation '%s'.\n", equation_name_.c_str());
+    check_times(bulk_input_array_);
+    check_times(boundary_input_array_);
+
+    bulk_it_ = bulk_input_array_.begin<Input::Record>();
+    boundary_it_ = boundary_input_array_.begin<Input::Record>();
+}
+
+
+
+
+Region EqDataBase::read_boundary_list_item(Input::Record rec) {
+    return read_list_item(rec, true);
+}
+
+
+
+Region EqDataBase::read_bulk_list_item(Input::Record rec) {
+    return read_list_item(rec, false);
+}
+
+
+
+
+Region EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     Input::Iterator<string> it = rec.find<string>("region");
     Region reg;
 
@@ -133,9 +213,10 @@ Region EqDataBase::init_from_input_one_region(Input::Record rec, bool bc_regions
     BOOST_FOREACH(FieldCommonBase * field, field_list) {
         if (bc_regions == field->is_bc()) {
             Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>(field->name());
-            DBGMSG("%s %d\n", field->name().c_str(), int(field_it) );
+            DBGMSG("reading field %s %d\n", field->name().c_str(), int(field_it) );
             if (field_it) {
-                field->init_from_input(reg,*field_it);
+                field->set_from_input(reg,*field_it);
+                field->set_mesh(mesh_);
             }
         }
     }

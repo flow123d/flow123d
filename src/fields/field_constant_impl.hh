@@ -46,8 +46,8 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
 
 
 template <int spacedim, class Value>
-FieldConstant<spacedim, Value>::FieldConstant(const double init_time, unsigned int n_comp)
-: FieldBase<spacedim, Value>(init_time, n_comp)
+FieldConstant<spacedim, Value>::FieldConstant( unsigned int n_comp)
+: FieldBase<spacedim, Value>(n_comp)
 {}
 
 

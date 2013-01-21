@@ -58,7 +58,7 @@ public:
         * Kind of default constructor , with possible setting of the initial time.
         * Fields that returns variable size vectors accepts number of components @p n_comp.
         */
-       FieldBase(const double init_time=0.0, unsigned int n_comp=0);
+       FieldBase(unsigned int n_comp=0);
 
        /**
         * Returns template parameters as string in order to distinguish name of AbstractRecords
@@ -74,8 +74,7 @@ public:
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns pointer to  FunctionBase<>.
         */
-       static FieldBase<spacedim, Value> *function_factory(Input::AbstractRecord rec,
-               double init_time=0.0, unsigned int n_comp=0);
+       static FieldBase<spacedim, Value> *function_factory(Input::AbstractRecord rec, unsigned int n_comp=0);
 
        /**
         *  Function can provide way to initialize itself from the input data.
@@ -90,6 +89,11 @@ public:
         * we can use ODE integrators of higher order.
         */
        virtual void set_time(double time);
+
+       /**
+        * Is used only by some Field imlementations, but can be used to check validity of incomming ElementAccessor in value methods.
+        */
+       virtual void set_mesh(Mesh *mesh);
 
        /**
         * Special field values spatially constant. Could allow optimization of tensor multiplication and
@@ -187,6 +191,7 @@ public:
     /// For Fields returning "Enum", we have to pass in corresponding Selection object.
     void set_selection( Input::Type::Selection *element_selection)
         { element_selection_=element_selection;}
+
     /**
      * Getters.
      */
@@ -208,12 +213,17 @@ public:
     /**
      * Abstract method for initialization of the field on one region.
      */
-    virtual void init_from_input(Region reg, Input::AbstractRecord rec) =0;
+    virtual void set_from_input(Region reg, Input::AbstractRecord rec) =0;
 
     /**
      * Abstract method to update field to the new time.
      */
     virtual void set_time(double time) =0;
+
+    /**
+     *
+     */
+    virtual void set_mesh(Mesh *mesh) =0;
 
 protected:
     std::string name_;
@@ -268,8 +278,6 @@ class Field : public FieldCommonBase {
 public:
     typedef FieldBase<spacedim, Value> FieldBaseType;
 
-
-
     /**
      * Default constructor.
      *
@@ -298,12 +306,18 @@ public:
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
      * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
      */
-    void init_from_input(Region reg, Input::AbstractRecord rec);
+    void set_from_input(Region reg, Input::AbstractRecord rec);
 
     /**
-     * ?? Shouldn't be function of ancestor?
+     * Check that whole field list is set and call set_time of them.
      */
     void set_time(double time);
+
+    /**
+     *
+     */
+    virtual void set_mesh(Mesh *mesh);
+
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

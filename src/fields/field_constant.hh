@@ -25,7 +25,7 @@ class FieldConstant : public FieldBase<spacedim, Value>
 {
 public:
 
-    FieldConstant(const double init_time=0.0, unsigned int n_comp=0);
+    FieldConstant(unsigned int n_comp=0);
 
     static Input::Type::Record input_type;
 

@@ -33,7 +33,7 @@ class FieldFormula : public FieldBase<spacedim, Value>
 {
 public:
 
-    FieldFormula(const double init_time=0.0, unsigned int n_comp=0);
+    FieldFormula(unsigned int n_comp=0);
 
 
     static Input::Type::Record input_type;

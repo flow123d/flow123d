@@ -47,7 +47,7 @@ public:
 	/**
 	 * Constructor
 	 */
-	FieldInterpolatedP0(const double init_time=0.0, unsigned int n_comp=0);
+	FieldInterpolatedP0(unsigned int n_comp=0);
 
 
 	/**

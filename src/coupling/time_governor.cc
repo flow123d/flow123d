@@ -119,6 +119,35 @@ TimeGovernor::TimeGovernor(const Input::Record &input, const TimeMark::Type fixe
     last_time_step=0.0;
 }
 
+
+TimeGovernor::TimeGovernor(double init_time, double dt)
+: time_level(0),
+  time_step(dt),
+  last_time_step(time_step_lower_bound),
+  fixed_dt(dt),
+  dt_changed(true),
+  dt_fixed_now(true),
+  upper_constraint_(inf_time),
+  lower_constraint_(time_step_lower_bound),
+  max_time_step(dt),
+  min_time_step(dt),
+  //time_marks(&marks),
+  fixed_time_mark_mask(time_marks->type_fixed_time()),
+  steady(false)
+{
+    time = init_time;
+    if (time < 0.0) xprintf(UsrErr, "Start time has to be equal or greater than ZERO.\n");
+
+    end_time_ = inf_time;
+    end_of_fixed_dt_interval = inf_time;
+
+    if (min_time_step <= 0.0) xprintf(UsrErr, "Minimal time step has to be greater than ZERO.\n");
+    if (max_time_step < min_time_step) xprintf(UsrErr, "Maximal time step has to be greater or equal to the minimal.\n");
+
+    last_time_step=0.0;
+}
+
+
 // steady time governor constructor
 TimeGovernor::TimeGovernor()
 : time_level(0),

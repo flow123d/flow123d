@@ -294,6 +294,12 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
  //       EXPECT_EQ("123", data_array[idx].s);
     }
 
+    // check creation of empty accessor and defautl iterator
+    Array empty_array;
+    EXPECT_EQ(0, empty_array.size());
+
+    Iterator<Record> it_r;
+
 
     delete[] data_array;
 }

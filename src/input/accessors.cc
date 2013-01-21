@@ -82,7 +82,7 @@ Input::Type::Record AbstractRecord::type()
 
 
 Array::Array()
-: array_type_(Type::Bool()), storage_( NULL )
+: array_type_(Type::Bool()), storage_( &empty_storage_ )
 {}
 
 
@@ -97,6 +97,8 @@ Array::Array(const StorageBase *store, const Type::Array type)
     if (store->is_null())
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("Array") );
 }
+
+StorageArray Array::empty_storage_ = StorageArray(0);
 
 /*****************************************************************************
  * Explicit instantiation of accessor's templates

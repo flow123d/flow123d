@@ -221,31 +221,73 @@ public:
      * - @p eq_class_name should be name of the particular equation class, the name of bulk data record has form:
      *   'EqName_BulkData' and record for boundary data has name 'EqName_BoundaryData'. However, these names has
      *   only documentation purpose since these records are not descendants of an AbstractRecord.
-     * - we do not finish returned records !!
      */
-    Input::Type::Record generic_input_type(const string &eq_class_name, const string &desc, bool bc_regions);
+    Input::Type::Record generic_input_type(bool bc_regions);
 
     /**
-     * Accepts accessors to both data lists
+     * Return Input::Type for field descriptor record. The key 'bulk_data' of an equation should be declared as
+     * Array of this record.
+     */
+    virtual Input::Type::Record bulk_input_type();
+
+    /**
+     * Return Input::Type for field descriptor record. The key 'boundary_data' of an equation should be declared as
+     * Array of this record.
+     */
+    virtual Input::Type::Record boundary_input_type();
+
+    /**
+     * Actualize fields for actual state of the time governor. We assume that this method is called
+     * before the actual time in time governor is solved.
      *
-     * TODO:
-     * - read arrays and check correct sequence of times, save the input accessors for both lists
      * - call set_time, which should read up to the first bigger time
      * - check that all fields are initialized
+     *
+     */
+    virtual void set_time(const TimeGovernor &time);
+
+    /**
+     * Set mesh pointer in EqDataBase so that it can be set in  those fields that needs it.
+     * The mesh has to be set before initialization of fields from input.
+     */
+    void set_mesh(Mesh *mesh);
+
+    /**
+     * Accepts accessors to both data lists,
+     * Do not initialize the fields, you have to call set_time.
+     *
+     * - read arrays and check correct sequence of times, save the input accessors for both lists
+     *
      */
     void init_from_input(Input::Array bulk_list, Input::Array bc_list);
 
     /**
      * Reads input from one region - one time descriptor.
      */
-    virtual Region init_from_input_one_region(Input::Record rec, bool bc_regions);
+    virtual Region read_boundary_list_item(Input::Record rec);
+
+    virtual Region read_bulk_list_item(Input::Record rec);
 
 protected:
     EqDataBase();
 
+    void check_times(Input::Array &list);
+
+    void set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_region);
+
+    Region read_list_item(Input::Record rec, bool bc_region);
+
+    /// Pointer to mesh where the equation data fields live.
+    Mesh *mesh_;
+    /// Equation name. Used to name input type records.
     std::string equation_name_;
+    /// List of all fields.
     std::vector<FieldCommonBase *> field_list;
-    //static IT::Record *generic_input_type;
+
+    /// Accessors to to bulk and boundary input arrays.
+    Input::Array bulk_input_array_, boundary_input_array_;
+    /// Iterators into these arrays pointing to the first unprocessed item.
+    Input::Iterator<Input::Record> bulk_it_, boundary_it_;
 };
 
 

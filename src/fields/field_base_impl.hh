@@ -44,8 +44,8 @@ it::AbstractRecord FieldBase<spacedim, Value>::input_type
 
 
 template <int spacedim, class Value>
-FieldBase<spacedim, Value>::FieldBase(const double init_time, unsigned int n_comp)
-: time_(init_time), value_(r_value_)
+FieldBase<spacedim, Value>::FieldBase(unsigned int n_comp)
+: time_(0.0), value_(r_value_)
 {
     value_.set_n_comp(n_comp);
 }
@@ -78,21 +78,20 @@ Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename 
 
 
 template <int spacedim, class Value>
-FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(
-        Input::AbstractRecord rec, double init_time, unsigned int n_comp )
+FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(Input::AbstractRecord rec, unsigned int n_comp )
 {
     FieldBase<spacedim, Value> *func;
 
     if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
-//        func= new FieldInterpolatedP0<spacedim,Value>(init_time, n_comp);
+//        func= new FieldInterpolatedP0<spacedim,Value>(n_comp);
 #ifdef HAVE_PYTHON
     } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
-        func= new FieldPython<spacedim, Value>(init_time, n_comp);
+        func= new FieldPython<spacedim, Value>(n_comp);
 #endif
     } else if (rec.type() == FieldConstant<spacedim, Value>::input_type ) {
-        func=new FieldConstant<spacedim,Value>(init_time, n_comp);
+        func=new FieldConstant<spacedim,Value>(n_comp);
     } else if (rec.type() == FieldFormula<spacedim,Value>::input_type ) {
-        func=new FieldFormula<spacedim,Value>(init_time, n_comp);
+        func=new FieldFormula<spacedim,Value>(n_comp);
     } else {
         xprintf(PrgErr,"TYPE of Field is out of set of descendants. SHOULD NOT HAPPEN.\n");
     }
@@ -113,6 +112,13 @@ template <int spacedim, class Value>
 void FieldBase<spacedim, Value>::set_time(double time) {
     time_ = time;
 }
+
+
+
+template <int spacedim, class Value>
+void FieldBase<spacedim, Value>::set_mesh(Mesh *mesh) {
+}
+
 
 
 /*
@@ -157,25 +163,35 @@ typename Field<spacedim,Value>::FieldBaseType * Field<spacedim,Value>::operator(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::init_from_input(Region reg, Input::AbstractRecord rec) {
+void Field<spacedim, Value>::set_from_input(Region reg, Input::AbstractRecord rec) {
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields.size() == 0)
         region_fields.resize(Region::db().size(), NULL);
 
     if (region_fields[reg.idx()] != NULL) {
-        xprintf(
-                Warn, "Overwriting existing value on region ID=%d. In initialization of the Field: '%s'.\n", reg.id(), this->name().c_str());
         delete region_fields[reg.idx()];
     }
-    region_fields[reg.idx()] = FieldBaseType::function_factory(rec, 0.0, this->n_comp_);
+    region_fields[reg.idx()] = FieldBaseType::function_factory(rec, this->n_comp_);
 }
 
 
 template<int spacedim, class Value>
-
 void Field<spacedim, Value>::set_time(double time) {
-    for(unsigned int i=0; i < region_fields.size(); i++) region_fields[i]->set_time(time);
+    for(unsigned int i=0; i < region_fields.size(); i++) {
+        if (region_fields[i])  region_fields[i]->set_time(time);
+        //else  xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d.\n", name_.c_str(), Region::db().get_id(i) );
+    }
 }
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::set_mesh(Mesh *mesh) {
+    for(unsigned int i=0; i < region_fields.size(); i++) {
+        if (region_fields[i])  region_fields[i]->set_mesh(mesh);
+    }
+}
+
 
 
 

@@ -64,6 +64,8 @@
 
 #include "fields/field_base.hh"
 #include "coupling/equation.hh"
+
+#include "mesh/mesh.h"
 #include "mesh/region.hh"
 
 using namespace std;
@@ -109,7 +111,7 @@ public:
     class EqData : public EqDataBase {
     public:
 
-        enum BC {
+        enum BC_type {
             dirichlet,
             neumann,
             robin,
@@ -118,8 +120,7 @@ public:
 
         static IT::Selection bc_type_selection;
 
-
-        EqData() : EqDataBase("") {
+        EqData() : EqDataBase("SomeEquation") {
             ADD_FIELD(init_pressure, "Initial condition as pressure");
             ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", IT::Default("1.0"));
             ADD_FIELD(bc_type,"Boundary condition type, possible values:");
@@ -129,28 +130,18 @@ public:
                       init_conc.set_n_comp(4);
             // ...
         }
-        IT::Array boundary_input_type() {
-            static IT::Record rec =  generic_input_type("SomeEquation", "", true)
-                                .declare_key("piezo_head", bc_pressure.get_input_type(), "" );
-            //rec.finish();
-            return IT::Array( rec , 1);
-        }
-        IT::Array bulk_input_type() {
-            static IT::Record rec =  generic_input_type("SomeEquation", "", false)
-                                .declare_key("init_piezo_head", init_pressure.get_input_type(), "" );
-            //rec.finish();
-            return IT::Array( rec , 0);
+
+        Region read_boundary_list_item(Input::Record rec) {
+            Region region=EqDataBase::read_boundary_list_item(rec);
+            Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("piezo_head");
+            if (field_it) {
+                bc_pressure(region)->init_from_input(*field_it);
+                //bc_pressure(region)=FieldAddGradient<3, FieldValue<3>::Scalar >(bc_pressure(region), gravity);
+            }
         }
 
-        Region init_from_input_one_region(Input::Record rec, bool bc_regions) {
-            Region region=EqDataBase::init_from_input_one_region(rec, bc_regions);
-            if (bc_regions) {
-                Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("piezo_head");
-                if (field_it) {
-                    bc_pressure(region)->init_from_input(*field_it);
-                    //bc_pressure(region)=FieldAddGradient<3, FieldValue<3>::Scalar >(bc_pressure(region), gravity);
-                }
-            }
+        Region read_bulk_list_item(Input::Record rec) {
+            Region region=EqDataBase::read_bulk_list_item(rec);
         }
 
 
@@ -191,16 +182,22 @@ protected:
         reader.read_stream( ss, input_type );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
+        mesh=new Mesh;
         Region::db().add_region(0,"main_volume",3,false);
         Region::db().add_region(1,"upper_layer",3,false);
         Region::db().add_region(10,"top_surface",3,true);
+        data.set_mesh(mesh);
         data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+
+        TimeGovernor tg(0.0, 1.0);
+        data.set_time(tg);
     }
     virtual void TearDown() {
+        delete mesh;
     };
 
 
-
+    Mesh *mesh;
 };
 
 IT::Selection SomeEquation::EqData::bc_type_selection =
@@ -213,8 +210,14 @@ IT::Selection SomeEquation::EqData::bc_type_selection =
 
 IT::Record SomeEquation::input_type=
         IT::Record("SomeEquation","")
-        .declare_key("bc_data", SomeEquation::EqData().boundary_input_type(), IT::Default::obligatory(), ""  )
-        .declare_key("bulk_data", SomeEquation::EqData().bulk_input_type(), IT::Default::obligatory(), ""  );
+        .declare_key("bc_data", IT::Array(
+                SomeEquation::EqData().boundary_input_type()
+                .declare_key("piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "" )
+                ), IT::Default::obligatory(), ""  )
+        .declare_key("bulk_data", IT::Array(
+                SomeEquation::EqData().bulk_input_type()
+                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "" )
+                ), IT::Default::obligatory(), ""  );
 
 
 

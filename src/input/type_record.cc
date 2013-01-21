@@ -471,7 +471,7 @@ void AbstractRecord::add_descendant(const Record &subrec)
 
 
 AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
-    ASSERT( ! data_->closed_, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
+    if (data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
     data_->keys[0].default_=Default(type_default); // default record is closed; other constructor creates the zero item
     return *this;
 }

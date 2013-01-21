@@ -333,6 +333,8 @@ private:
 
     /// Pointer to the corresponding array storage object.
     const StorageBase *storage_;
+
+    static StorageArray empty_storage_;
 };
 
 
@@ -448,6 +450,9 @@ public:
     typedef typename internal::TypeDispatch<DispatchType>::InputType InputType;
 
 
+    /// Iterator is not default constructible.
+    Iterator() : IteratorBase(NULL, 0) {}
+
     /**
      * Constructor with Type of data
      */
@@ -465,15 +470,11 @@ public:
 
     /**
      *  Dereference operator can be used only for iterators to accessors Record, AbstractRecord, and Array.
-     *
-     *  TODO: make this without memory allocation.
      */
     inline OutputType *operator ->() const;
 
 
 private:
-    /// Iterator is not default constructible.
-    Iterator();
 
     /**
      * Check that Type::TypeBase reference is in fact object of InputType
