@@ -28,6 +28,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       boundary_file = "./input/flow_decay/sit_decay.tbc", 
+      dual_porosity = false, 
       initial_file = "./input/flow_decay/sit_decay.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
@@ -37,7 +38,6 @@
         save_step = 0.5
       }, 
 
-      dual_porosity = false, 
       sorption_enable = false, 
       substances = [
         "A", 
