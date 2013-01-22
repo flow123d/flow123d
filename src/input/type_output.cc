@@ -29,7 +29,7 @@ OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 
 void OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
-	//type_->reset_doc_flags();
+	type_->reset_doc_flags();
 	print(stream, type_);
 }
 

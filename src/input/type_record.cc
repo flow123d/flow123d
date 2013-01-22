@@ -270,11 +270,14 @@ bool Record::valid_default(const string &str) const
     }
 }
 
-/*
+
 void  Record::reset_doc_flags() const {
-    data_->reset_doc_flags();
+	data_->made_extensive_doc=false;
+    for(KeyIter it = begin(); it!=end(); ++it) {
+        it->type_->reset_doc_flags();
+    }
 }
-*/
+
 
 
 bool Record::operator==(const TypeBase &other) const
@@ -311,16 +314,6 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 	if (auto_conversion_key_idx >= 0) return keys.begin() + auto_conversion_key_idx;
   	else return keys.end();
 }
-
-
-/*
-void  Record::RecordData::reset_doc_flags() const {
-    made_extensive_doc=false;
-    for(KeyIter it = keys.begin(); it!=keys.end(); ++it) {
-        it->type_->reset_doc_flags();
-    }
-}
-*/
 
 
 
@@ -496,14 +489,13 @@ void AbstractRecord::no_more_descendants()
 }
 
 
-/*
 void  AbstractRecord::reset_doc_flags() const {
-        data_->reset_doc_flags();
+		Record::reset_doc_flags();
         for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
                     it!= child_data_->list_of_childs.end(); ++it)
             it->reset_doc_flags();
 }
-*/
+
 
 bool AbstractRecord::valid_default(const string &str) const
 {

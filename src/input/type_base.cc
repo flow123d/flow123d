@@ -185,11 +185,11 @@ bool Array::ArrayData::finish()
 }
 
 
-/*
+
 void  Array::reset_doc_flags() const {
-//	data_->type_of_values_->reset_doc_flags();
+	data_->type_of_values_->reset_doc_flags();
 }
-*/
+
 
 
 string Array::type_name() const {
