@@ -74,12 +74,12 @@ public:
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns pointer to  FunctionBase<>.
         */
-       static FieldBase<spacedim, Value> *function_factory(Input::AbstractRecord rec, unsigned int n_comp=0);
+       static FieldBase<spacedim, Value> *function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
 
        /**
         *  Function can provide way to initialize itself from the input data.
         */
-       virtual void init_from_input(Input::Record rec);
+       virtual void init_from_input(const Input::Record &rec);
 
        /**
         * Set new time value. Some Fields may and some may not implement time dependent values and
@@ -94,6 +94,11 @@ public:
         * Is used only by some Field imlementations, but can be used to check validity of incomming ElementAccessor in value methods.
         */
        virtual void set_mesh(Mesh *mesh);
+
+       /**
+        * Returns number of rows, i.e. number of components for variable size vectors. For values of fixed size returns zero.
+        */
+       unsigned int n_comp() const;
 
        /**
         * Special field values spatially constant. Could allow optimization of tensor multiplication and
@@ -127,7 +132,7 @@ public:
         *  s having in part
         *
         */
-       virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)=0;
+       virtual typename Value::return_type const &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)=0;
 
        /**
         * Pure virtual method. At least this has to be implemented by descendants.
@@ -213,7 +218,7 @@ public:
     /**
      * Abstract method for initialization of the field on one region.
      */
-    virtual void set_from_input(Region reg, Input::AbstractRecord rec) =0;
+    virtual void set_from_input(Region reg, const Input::AbstractRecord &rec) =0;
 
     /**
      * Abstract method to update field to the new time.
@@ -306,7 +311,13 @@ public:
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
      * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
      */
-    void set_from_input(Region reg, Input::AbstractRecord rec);
+    void set_from_input(Region reg, const Input::AbstractRecord &rec);
+
+    /**
+     * Assigns @p field to the given region @p reg. Caller is responsible for correct construction of given field
+     * and may not delete it. The pointer is deleted by the Field object itself. Use this method only if necessary.
+     */
+    void set_field(Region reg, FieldBaseType * field);
 
     /**
      * Check that whole field list is set and call set_time of them.
@@ -323,7 +334,7 @@ public:
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
      * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
      */
-    virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once. The base class implements

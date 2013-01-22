@@ -60,7 +60,7 @@ public:
 	/**
 	 * Initialization from the input interface.
 	 */
-	virtual void init_from_input(Input::Record rec);
+	virtual void init_from_input(const Input::Record &rec);
 
 
 	/**

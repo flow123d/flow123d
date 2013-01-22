@@ -31,12 +31,12 @@ public:
 
     static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
 
-    virtual void init_from_input( Input::Record rec);
+    virtual void init_from_input(const Input::Record &rec);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.

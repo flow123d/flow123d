@@ -63,6 +63,7 @@
 #include "input/json_to_storage.hh"
 
 #include "fields/field_base.hh"
+#include "fields/field_add_potential.hh"
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
@@ -92,7 +93,12 @@ const string eq_data_input = R"JSON(
             TYPE="FieldConstant",
             value=1.23
         }
-      } 
+      },
+      { rid=20,
+        bc_type="dirichlet",
+        bc_piezo_head=1.23
+      }
+ 
   ] 
 }
 )JSON";
@@ -133,10 +139,10 @@ public:
 
         Region read_boundary_list_item(Input::Record rec) {
             Region region=EqDataBase::read_boundary_list_item(rec);
-            Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("piezo_head");
+            Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
             if (field_it) {
-                bc_pressure(region)->init_from_input(*field_it);
-                //bc_pressure(region)=FieldAddGradient<3, FieldValue<3>::Scalar >(bc_pressure(region), gravity);
+                //bc_pressure(region)->init_from_input(*field_it);
+                bc_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
             }
         }
 
@@ -161,6 +167,7 @@ public:
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 
+        arma::vec4 gravity_;
     };
 
 public:
@@ -174,8 +181,8 @@ protected:
     static Input::Type::Record input_type;
     EqData data;
 
-
     virtual void SetUp() {
+        data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         // read input string
         std::stringstream ss(eq_data_input);
         Input::JSONToStorage reader;
@@ -186,6 +193,7 @@ protected:
         Region::db().add_region(0,"main_volume",3,false);
         Region::db().add_region(1,"upper_layer",3,false);
         Region::db().add_region(10,"top_surface",3,true);
+        Region::db().add_region(20,"bottom_surface",3,true);
         data.set_mesh(mesh);
         data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
 
@@ -212,7 +220,7 @@ IT::Record SomeEquation::input_type=
         IT::Record("SomeEquation","")
         .declare_key("bc_data", IT::Array(
                 SomeEquation::EqData().boundary_input_type()
-                .declare_key("piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "" )
+                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "" )
                 ), IT::Default::obligatory(), ""  )
         .declare_key("bulk_data", IT::Array(
                 SomeEquation::EqData().bulk_input_type()
@@ -231,7 +239,8 @@ TEST_F(SomeEquation, values) {
     el_1.region_=Region::db().find_id(1);
     Element el_10(3);
     el_10.region_=Region::db().find_id(10);
-
+    Element el_20(3);
+    el_20.region_=Region::db().find_id(20);
     // bulk fields
     {
     ElementAccessor<3> elm(&el_0);
@@ -259,6 +268,10 @@ TEST_F(SomeEquation, values) {
     {
         ElementAccessor<3> elm(&el_10);
         EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, elm) );
-        EXPECT_DOUBLE_EQ(1.23, data.bc_pressure.value(p, elm) );
+        EXPECT_DOUBLE_EQ(1.23, data.bc_pressure.value(p, elm) );    // pressure
+
+        ElementAccessor<3> elm_1(&el_20);
+        EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, elm_1) );
+        EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, elm_1) );    // piezo_head
     }
 }

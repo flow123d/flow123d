@@ -53,7 +53,7 @@ FieldConstant<spacedim, Value>::FieldConstant( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::init_from_input( Input::Record rec) {
+void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec) {
     this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
 }
 
@@ -63,7 +63,7 @@ void FieldConstant<spacedim, Value>::init_from_input( Input::Record rec) {
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type & FieldConstant<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
 {
     return this->r_value_;
 }

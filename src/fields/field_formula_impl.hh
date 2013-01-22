@@ -58,7 +58,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::init_from_input( Input::Record rec) {
+void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
     // read formulas form input
     formula_matrix_helper_.init_from_input( rec.val<typename StringValue::AccessType>("value") );
 
@@ -94,7 +94,7 @@ void FieldFormula<spacedim, Value>::set_time(double time) {
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type & FieldFormula<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
 {
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {

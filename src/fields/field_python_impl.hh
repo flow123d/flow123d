@@ -71,7 +71,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_string(const string &py
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::init_from_input( Input::Record rec) {
+void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec) {
     Input::Iterator<string> it = rec.find<string>("script_string");
     if (it) {
         set_python_field_from_string( *it, rec.val<string>("function") );
@@ -150,7 +150,7 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type & FieldPython<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
 {
     set_value(p,elm, this->value_);
     return this->r_value_;

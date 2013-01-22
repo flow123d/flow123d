@@ -78,7 +78,7 @@ Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename 
 
 
 template <int spacedim, class Value>
-FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(Input::AbstractRecord rec, unsigned int n_comp )
+FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
 {
     FieldBase<spacedim, Value> *func;
 
@@ -102,7 +102,7 @@ FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(Input
 
 
 template <int spacedim, class Value>
-void FieldBase<spacedim, Value>::init_from_input(Input::Record rec) {
+void FieldBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
     xprintf(PrgErr, "The function do not support initialization from input.\n");
 }
 
@@ -119,6 +119,12 @@ template <int spacedim, class Value>
 void FieldBase<spacedim, Value>::set_mesh(Mesh *mesh) {
 }
 
+
+
+template<int spacedim, class Value>
+unsigned int FieldBase<spacedim, Value>::n_comp() const {
+    return (Value::NRows_ ? 0 : value_.n_rows());
+}
 
 
 /*
@@ -163,7 +169,7 @@ typename Field<spacedim,Value>::FieldBaseType * Field<spacedim,Value>::operator(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_from_input(Region reg, Input::AbstractRecord rec) {
+void Field<spacedim, Value>::set_from_input(Region reg, const Input::AbstractRecord &rec) {
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields.size() == 0)
         region_fields.resize(Region::db().size(), NULL);
@@ -172,6 +178,22 @@ void Field<spacedim, Value>::set_from_input(Region reg, Input::AbstractRecord re
         delete region_fields[reg.idx()];
     }
     region_fields[reg.idx()] = FieldBaseType::function_factory(rec, this->n_comp_);
+}
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::set_field(Region reg, FieldBaseType * field) {
+    // initialize table if it is empty, we assume that the RegionDB is closed at this moment
+    if (region_fields.size() == 0)
+        region_fields.resize(Region::db().size(), NULL);
+
+    if (region_fields[reg.idx()] != NULL) {
+        delete region_fields[reg.idx()];
+    }
+
+    ASSERT_SIZES( field->n_comp() , this->n_comp_);
+    region_fields[reg.idx()] = field;
 }
 
 
@@ -195,8 +217,9 @@ void Field<spacedim, Value>::set_mesh(Mesh *mesh) {
 
 
 
+
 template<int spacedim, class Value>
-inline typename Value::return_type & Field<spacedim,Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)  {
+inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)  {
     ASSERT_LESS(elm.region().idx(), region_fields.size() );
     ASSERT( region_fields[elm.region().idx()] , "Null field ptr on region %d, field: %s\n", elm.region().idx(), this->name_.c_str());
     return region_fields[elm.region().idx()]->value(p,elm);

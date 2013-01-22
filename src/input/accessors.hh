@@ -230,17 +230,21 @@ public:
      * Implicit conversion to the \p Input::Record accessor. You can use \p Input::AbstractRecord in the same
      * way as the \p Input::Record.
      */
-    operator Record();
+    operator Record() const;
 
     /**
      * Returns particular type selected from input. You can use it to construct particular type.
      *
      * @code
+     * class MyClass {
+     *      MyClass( Input::Record );
+     * }
+     *
      * if (abstract_record.type() == MyClass.get_input_type())
-     *      my_class = new MyClass(abstract_record);        // here the conversion to Input::Record is used
+     *      my_class = new MyClass(abstract_record);        // here the implicit conversion to Input::Record is used
      * @endcode
      */
-    Input::Type::Record type();
+    Input::Type::Record type() const;
 
 
 private:

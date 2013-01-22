@@ -63,12 +63,12 @@ AbstractRecord::AbstractRecord(const StorageBase *store, const Type::AbstractRec
 
 
 
-AbstractRecord::operator Record()
+AbstractRecord::operator Record() const
 { return Record(storage_,type()); }
 
 
 
-Input::Type::Record AbstractRecord::type()
+Input::Type::Record AbstractRecord::type() const
 {
     unsigned int type_id = storage_->get_item(0)->get_int();
     return record_type_.get_descendant(type_id);

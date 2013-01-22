@@ -12,6 +12,7 @@
 #include "fields/field_constant_impl.hh"
 #include "fields/field_formula_impl.hh"
 #include "fields/field_interpolated_p0_impl.hh"
+#include "fields/field_add_potential_impl.hh"
 
 /*
 #define INSTANCE_FIELD_ALL_TYPES(field)    \
@@ -43,7 +44,7 @@ INSTANCE_DIM_DEP_VALUES( field, dim_from, 3) \
 INSTANCE_TO_ALL(field, 0) \
 INSTANCE_TO_ALL( field, 1) \
 INSTANCE_TO_ALL( field, 2) \
-INSTANCE_TO_ALL( field, 3) \
+INSTANCE_TO_ALL( field, 3)
 
 
 INSTANCE_ALL(FieldBase)
@@ -53,3 +54,6 @@ INSTANCE_ALL(FieldConstant)
 INSTANCE_ALL(FieldPython)
 INSTANCE_ALL(FieldFormula)
 //INSTANCE_ALL(FieldInterpolatedP0)
+
+template class FieldAddPotential<3, FieldValue<0>::Scalar >;
+template class FieldAddPotential<2, FieldValue<0>::Scalar >;

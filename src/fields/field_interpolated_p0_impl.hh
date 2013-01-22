@@ -65,7 +65,7 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::init_from_input(Input::Record rec) {
+void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec) {
     set_source_of_interpolation(
             rec.val<FilePath>("mesh"),
             rec.val<FilePath>("raw_data")
