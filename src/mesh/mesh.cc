@@ -527,6 +527,7 @@ void Mesh::create_external_boundary()
     unsigned int ni;
 
     boundary.reserve(n_boundaries);
+    DBGMSG("bc_elements size after read: %d\n", bc_elements.size());
     bc_elements.reserve(n_boundaries);
     FOR_ELEMENTS(this, ele) {
          if (ele->boundaries_ == NULL) continue;
@@ -535,8 +536,9 @@ void Mesh::create_external_boundary()
                  // add boundary object
                  bcd = boundary.add_item();
 
+
                  // fill boundary element
-                 Element * bc_ele = &( bc_elements[bcd.index()] );
+                 Element * bc_ele = bc_elements.add_item( -bcd.index() ); // use negative bcd index as ID,
                  bc_ele->dim_ = ele->dim()-1;
                  bc_ele->node = new Node * [bc_ele->n_nodes()];
                  FOR_ELEMENT_NODES(bc_ele, ni) {

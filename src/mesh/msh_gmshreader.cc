@@ -155,7 +155,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
             unsigned int region_id = lexical_cast<unsigned int>(*tok); ++tok;
             unsigned int object_id = lexical_cast<unsigned int>(*tok); ++tok; // GMSH region number, we do not store this
             //get remaining tags
-            unsigned int partition_id;
+            unsigned int partition_id=0;
             if (n_tags > 2)  { partition_id = lexical_cast<unsigned int>(*tok); ++tok; } // save partition number from the new GMSH format
             for (unsigned int ti = 3; ti < n_tags; ti++) ++tok;         //skip remaining tags
 

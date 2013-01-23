@@ -78,7 +78,7 @@ TEST(GMSHReader, read_mesh_from_stream) {
     stringstream ngh_ss(ngh_input);
     mesh.setup_topology(&ngh_ss);
 
-    EXPECT_EQ(13, mesh.n_elements());
+    EXPECT_EQ(9, mesh.n_elements());
 }
 
 
