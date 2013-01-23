@@ -5,7 +5,6 @@
  *      Author: jb
  */
 
-#define DEBUG
 
 #include <gtest/gtest.h>
 #include <sstream>
@@ -65,7 +64,11 @@ $EndNeighbours
 
 
 TEST(GMSHReader, read_mesh_from_stream) {
-    stringstream ss(gmsh_mesh);
+    string fname = string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh";
+    ifstream ifs( fname.c_str() );
+    if (! ifs) cout << "Can not open file!" << endl;
+    stringstream ss;
+    ss << ifs.rdbuf();
 
     Mesh mesh;
     GmshMeshReader reader(ss);
@@ -75,7 +78,7 @@ TEST(GMSHReader, read_mesh_from_stream) {
     stringstream ngh_ss(ngh_input);
     mesh.setup_topology(&ngh_ss);
 
-    EXPECT_EQ(9, mesh.n_elements());
+    EXPECT_EQ(13, mesh.n_elements());
 }
 
 

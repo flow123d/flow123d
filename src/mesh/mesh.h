@@ -44,6 +44,11 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
+// Forward declarations
+template <int spacedim>
+class ElementAccessor;
+
+
 
 #define ELM  0
 #define BC  1
@@ -143,11 +148,8 @@ public:
     void setup_materials( MaterialDatabase &base);
     void make_element_geometry();
 
-    // Files
-    // DF - Move to ConstantDB
-    // char *geometry_fname; // Name of file of nodes and elems
-    // char *concentration_fname;//Name of file of concentration
-    // char *transport_bcd_fname;//Name of file of transport BCD
+
+    ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
@@ -158,7 +160,9 @@ public:
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
     BoundaryVector boundary;
     /// vector of boundary elements - should replace 'boundary'
-    std::vector<Element> bc_elements;
+    /// TODO: put both bulk and bc elements (on zero level) to the same vector or make better map id->element for field inputs that use element IDs
+    /// the avoid usage of ElementVector etc.
+    ElementVector bc_elements;
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
     EdgeVector edge;

@@ -124,25 +124,25 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
 
             unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
 
-            ElementFullIter ele(mesh->element.add_item(id));
 
             //get element type: supported:
             //  1 Line (2 nodes)
             //  2 Triangle (3 nodes)
             //  4 Tetrahedron (4 nodes)
             unsigned int type = lexical_cast<unsigned int>(*tok); ++tok;
+            unsigned int dim;
             switch (type) {
                 case 1:
-                    ele->dim_ = 1;
+                    dim = 1;
                     break;
                 case 2:
-                    ele->dim_ = 2;
+                    dim = 2;
                     break;
                 case 4:
-                    ele->dim_ = 3;
+                    dim = 3;
                     break;
                 default:
-                    xprintf(UsrErr, "Element %d is of the unsupported type %d\n", ele.id(), type);
+                    xprintf(UsrErr, "Element %d is of the unsupported type %d\n", id, type);
             }
 
             //get number of tags (at least 2)
@@ -152,14 +152,25 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
             ++tok;
 
             //get tags 1 and 2
-            unsigned int mid = lexical_cast<unsigned int>(*tok); ++tok;
-            ele->region_ = Region::db().add_region(mid, ele->dim());
-            unsigned int rid = lexical_cast<unsigned int>(*tok); ++tok; // GMSH region number, we do not store this
+            unsigned int region_id = lexical_cast<unsigned int>(*tok); ++tok;
+            unsigned int object_id = lexical_cast<unsigned int>(*tok); ++tok; // GMSH region number, we do not store this
             //get remaining tags
-            if (n_tags > 2)  { ele->pid = lexical_cast<unsigned int>(*tok); ++tok; } // save partition number in the new GMSH format
+            unsigned int partition_id;
+            if (n_tags > 2)  { partition_id = lexical_cast<unsigned int>(*tok); ++tok; } // save partition number from the new GMSH format
             for (unsigned int ti = 3; ti < n_tags; ti++) ++tok;         //skip remaining tags
 
             // allocate element arrays TODO: should be in mesh class
+            Element *ele;
+            Region region_idx = Region::db().add_region( region_id, dim );
+            if (region_idx.is_boundary()) {
+                ele = mesh->bc_elements.add_item(id);
+            } else {
+                ele = mesh->element.add_item(id);
+            }
+            ele->dim_=dim;
+            ele->region_=region_idx;
+            ele->pid=partition_id;
+
             ele->node = new Node * [ele->n_nodes()];
             ele->edges_ = new Edge * [ele->n_sides()];
             ele->boundaries_ = new Boundary * [ele->n_sides()];
@@ -209,7 +220,7 @@ void GmshMeshReader::read_physical_names(Tokenizer &tok) {
             unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
             string name = *tok; ++tok;
 
-            bool boundary =  ( name.size() != 0 && name[0] == '!' );
+            bool boundary =  ( name.size() != 0 && name[0] == '.' );
             Region::db().add_region(id, name, dim, boundary);
         }
 

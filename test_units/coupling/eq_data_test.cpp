@@ -67,6 +67,7 @@
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
 using namespace std;
@@ -76,25 +77,25 @@ namespace IT=Input::Type;
 const string eq_data_input = R"JSON(
 { 
   bulk_data=[
-      { rid=0,
+      { rid=37,
           init_pressure={
               TYPE="FieldConstant",
               value=1.1
           }
       },
-      { rid=1,
+      { region="2D XY diagonal",
         init_pressure=2.2
       }          
   ],
   bc_data=[
-      { rid=10,
+      { rid=101,
         bc_type={TYPE="FieldConstant", value = "dirichlet"},
         bc_pressure={
             TYPE="FieldConstant",
             value=1.23
         }
       },
-      { rid=20,
+      { rid=102,
         bc_type="dirichlet",
         bc_piezo_head=1.23
       }
@@ -189,11 +190,22 @@ protected:
         reader.read_stream( ss, input_type );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-        mesh=new Mesh;
-        Region::db().add_region(0,"main_volume",3,false);
-        Region::db().add_region(1,"upper_layer",3,false);
-        Region::db().add_region(10,"top_surface",3,true);
-        Region::db().add_region(20,"bottom_surface",3,true);
+        FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+        mesh= new Mesh;
+        GmshMeshReader mesh_reader(mesh_file);
+        mesh_reader.read_mesh(mesh);
+
+        /* Regions in mesh:
+         * $PhysicalNames
+            6
+            1       37      "1D diagonal"
+            2       38      "2D XY diagonal"
+            2       101     ".top side"
+            2       102     ".bottom side"
+            3       39      "3D back"
+            3       40      "3D front"
+            $EndPhysicalNames
+         */
         data.set_mesh(mesh);
         data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
 
@@ -233,20 +245,23 @@ TEST_F(SomeEquation, values) {
     Point<3> p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
-    Element el_0(3);
-    el_0.region_=Region::db().find_id(0);
-    Element el_1(3);
-    el_1.region_=Region::db().find_id(1);
-    Element el_10(3);
-    el_10.region_=Region::db().find_id(10);
-    Element el_20(3);
-    el_20.region_=Region::db().find_id(20);
-    // bulk fields
-    {
-    ElementAccessor<3> elm(&el_0);
-    EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, elm) );
+    DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
 
-    FieldValue<3>::TensorFixed::return_type value = data.cond_anisothropy.value(p, elm);
+    ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
+    EXPECT_EQ(37, el_1d.region_id());
+    ElementAccessor<3> el_2d=mesh->element_accessor(1); // region 38 "2D XY diagonal"
+    EXPECT_EQ(38, el_2d.region_id());
+    ElementAccessor<3> el_3d=mesh->element_accessor(3); // region 39 "3D back"
+    EXPECT_EQ(39, el_3d.region_id());
+    ElementAccessor<3> el_bc_top=mesh->element_accessor(0,true); // region 101 ".top side"
+    EXPECT_EQ(101, el_bc_top.region_id());
+    ElementAccessor<3> el_bc_bottom=mesh->element_accessor(2,true); // region 102 ".top side"
+    EXPECT_EQ(102, el_bc_bottom.region_id());
+
+    // bulk fields
+    EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
+
+    FieldValue<3>::TensorFixed::return_type value = data.cond_anisothropy.value(p, el_1d);
     EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,1) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,2) );
@@ -258,20 +273,13 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ( 0.0, value.at(2,0) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(2,1) );
     EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
-    }
-    {
-    ElementAccessor<3> elm(&el_1);
-    EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, elm) );
-    }
+
+    EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
 
     //boundary fields
-    {
-        ElementAccessor<3> elm(&el_10);
-        EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, elm) );
-        EXPECT_DOUBLE_EQ(1.23, data.bc_pressure.value(p, elm) );    // pressure
+    EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_top) );
+    EXPECT_DOUBLE_EQ(1.23, data.bc_pressure.value(p, el_bc_top) );    // pressure
 
-        ElementAccessor<3> elm_1(&el_20);
-        EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, elm_1) );
-        EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, elm_1) );    // piezo_head
-    }
+    EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_bottom) );
+    EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, el_bc_bottom) );    // piezo_head
 }

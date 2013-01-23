@@ -33,6 +33,37 @@ unsigned int Region::dim() const
  * Implementation of     RegionDB
  */
 
+
+namespace IT=Input::Type;
+
+IT::Record RegionDB::region_input_type =
+        IT::Record("Region", "Definition of region of elements.")
+        .declare_key("name",IT::String(), IT::Default::obligatory(),
+                "Label (name) of the region. Has to be unique in one mesh.\n")
+        .declare_key("id", IT::Integer(0), IT::Default::obligatory(),
+                "The ID of the region to which you assign label.")
+        .declare_key("element_list", IT::Array( IT::Integer(0) ), IT::Default::optional(),
+                "Specification of the region by the list of elements. This is not recomended")
+        .close();
+
+IT::Record RegionDB::region_set_input_type =
+        IT::Record("RegionSet", "Definition of one region set.")
+        .declare_key("name", IT::String(), IT::Default::obligatory(),
+                "Unique name of the region set.")
+        .declare_key("region_ids", IT::Array( IT::Integer(0)),
+                "List of region ID numbers that has to be added to the region set.")
+        .declare_key("region_labels", IT::Array( IT::String()),
+                "List of labels of the regions that has to be added to the region set.")
+        .declare_key("union", IT::Array( IT::String(), 2,2),
+                "Defines region set as a union of given pair of sets. Overrides previous keys.")
+        .declare_key("intersection", IT::Array( IT::String(), 2,2),
+                "Defines region set as an intersection of given pair of sets. Overrides previous keys.")
+        .declare_key("difference", IT::Array( IT::String(), 2,2),
+                "Defines region set as a difference of given pair of sets. Overrides previous keys.")
+        .close();
+
+
+
 Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
     if (closed_) xprintf(PrgErr, "Can not add to closed region DB.\n");
 
@@ -44,7 +75,11 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
         if (r_id.idx() != r_label.idx() ) THROW(ExcInconsistentAdd()
                 << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(r_id.label()) << EI_IDOfOtherLabel(r_label.id())
                 );
-        if ( r_id.dim() != dim || r_id.is_boundary() != boundary ) THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
+
+        if ( r_id.dim() != dim || r_id.is_boundary() != boundary ) {
+            //DBGMSG("dims: %d %d, bc: %d %d\n", r_id.dim(),dim, r_id.is_boundary(), boundary);
+            THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
+        }
         return r_id;
     } else {
         // check that both finds failed
@@ -77,7 +112,7 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
 
 Region RegionDB::add_region(unsigned int id, unsigned int dim) {
     Region r_id = find_id(id);
-    if (r_id.is_valid()) return add_region(id, r_id.label(), dim, false);
+    if (r_id.is_valid()) return add_region(id, r_id.label(), dim, r_id.is_boundary() );
     // else
     stringstream ss;
     ss << "region_" << id;

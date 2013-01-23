@@ -16,6 +16,8 @@
 #include "system/global_defs.h"
 #include "system/exceptions.hh"
 
+#include "input/input_type.hh"
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
@@ -141,10 +143,69 @@ class RegionSet {
  * lives on this mesh. So the solution can be: RegionDB keeps list of meshes that has their regions registered in RegionDB.
  * RegionField has signature of its mesh and check if the mesh is registered in the RegionDB before initialization of REgionField.
  *
+ * Update TODO:
+ *
+ * - make one instance of Region DB per mesh; put region indices into mesh elements make them private and provide
+ *   method that returns Region accessor. ?? Speed concerns? This introduce needless copies of mesh pointer since
+ *   in most cases we do not need methods label, id, dim where whole RegionnDB is needed. Thus possibly make
+ *   class RegionIdx (without Mesh) and make some asking methods for label, id in RegionDB.
+ * - in RegionDB make support for sets:
+
+/// map set name to lists of indices of its regions
+typedef std::vector<RegionIdx> RegionSet;
+std::map<std::string, RegionSet > sets_;
+
+/// Add region to given set. Creat the set if it does not exist.
+add_to_set( const string& set_name, RegionIdx region);
+/// Add a set into map, delete possible previous value, do not worry about slow copies of
+/// the set array.
+add_set( const string& set_name, const RegionSet & set);
+RegionSet union( const string & set_name_1, const string & set_name_2); // sort + std::set_union
+RegionSet intersection( const string & set_name_1, const string & set_name_2);
+RegionSet difference( const string & set_name_1, const string & set_name_2);
+const Region & get_set(const string & set_name);
+void read_sets_from_input(Input::Record rec); // see structure of RegionDB::region_set_input_type
+
+region_sets = [
+   { name="set name",
+     region_ids=[ int ...],
+     region_labels= ["..."], // these are merger together
+
+     union=["set_1", "set_2"], // later overwrites previous
+     intersection=
+     difference=
+   }
+]
+ *
+ * - MODIFICATION IN MESH AND READER:
+ * Mesh reading proccess:
+ * 1) Read PhysicalNames form GMSH file, populate RegionDB (DONE in GMSH reader, may need small modifications)
+ * 2) Read region definitions from the input, see RegionDB::region_input_type
+ *    (TODO in RegionDB, also creates (and return to Mesh) element regions modification map: std::map< unsigned int, RegionIdx>
+ *     that maps element IDs to the new region names, GMSH reader should have setter method to accept this map
+ *     and modify the elements during reading)
+ * 3) Read region sets - TODO in RegionDB
+ * 4) Read boundary key of the Mesh record and mark appropriate regions as boundary (TODO in RegionDB)
+ * 5) Read nodes (DONE in GMSH reader)
+ * 6) Read elements, per element:
+ *    - possibly modify region according map
+ *    - find element ID:
+ *       if found: add_region(ID, get_label, dim, get_boundary_flag) // possibly set dimension of the region if it is undefined
+ *       not found: add_region(ID, default_label, dim, false)
+ *    - if region is boundary put element into Mesh::bc_elements
+ *      else put it into Mesh::element
+ *  ---
+ *  7) Setup topology - we has to connect Boundary with existing bc_elements, and add the remaining elements,
+ *     after we remove support for old bCD files we may skip creation of remaining boundary elements since there will be no way how to set
+ *     BC on them.
+ *
  */
 
 class RegionDB {
 public:
+    static Input::Type::Record region_input_type;
+    static Input::Type::Record region_set_input_type;
+
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
     TYPEDEF_ERR_INFO( EI_ID, unsigned int);
     TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);

@@ -42,6 +42,7 @@
 
 // think about following dependencies
 #include "mesh/boundaries.h"
+#include "mesh/accessors.hh"
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -52,6 +53,7 @@
 #include "mesh/topology.cc"
 #include "mesh/msh_reader.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh/region.hh"
 
 void count_element_types(Mesh*);
 void read_node_list(Mesh*);
@@ -78,8 +80,22 @@ Record Mesh::input_type
 	= Record("Mesh","Record with mesh related data." )
 	.declare_key("mesh_file", FileName::input(), Default::obligatory(),
 			"Input file with mesh description.")
-    .declare_key("boundary_segmants", Array( BoundarySegment::input_type ),
-    		"Array with specification of boundary segments")
+	.declare_key("regions", Array( RegionDB::region_input_type ), Default::optional(),
+	        "List of additional region definitions not contained in the mesh.")
+	.declare_key("sets", Array( RegionDB::region_set_input_type), Default::optional(),
+	        "List of region set definitions.")
+    .declare_key("boundary",
+            Record( "BoundaryLists", "Lists of boundary regions and sets.\n "
+                    "All regions with name starting with period '.' are automatically treated as boundary regions.")
+            .declare_key("ids", Array( Integer(0) ), Default::optional(),
+                    "List with ID numbers of boundary regions.")
+            .declare_key("labels", Array( String() ), Default::optional(),
+                    "List of labels of boundary regions.")
+            .declare_key("sets", Array( String() ), Default::optional(),
+                    "List of regions sets whose regions will be marked as boundary.")
+            .close(),
+            Default::optional(),
+            "")
     .declare_key("neighbouring", FileName::input(), Default::obligatory(),
     		"File with mesh connectivity data.");
 
@@ -511,7 +527,7 @@ void Mesh::create_external_boundary()
     unsigned int ni;
 
     boundary.reserve(n_boundaries);
-    bc_elements.resize(n_boundaries);
+    bc_elements.reserve(n_boundaries);
     FOR_ELEMENTS(this, ele) {
          if (ele->boundaries_ == NULL) continue;
          FOR_ELEMENT_SIDES(ele, si)
@@ -649,6 +665,10 @@ void Mesh::make_intersec_elements() {
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
      master_elements[i->master_iter().index()].push_back( i-intersections.begin() );
 
+}
+
+ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
+    return ElementAccessor<3>(this, idx, boundary);
 }
 
 /*

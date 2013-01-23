@@ -35,6 +35,7 @@
 
 /// Result type have sense only for larger Value types like vectors and tensors.
 typedef enum  {
+    result_none,    // field not set
     result_zero,    // zero scalar, vector, or tensor
     result_one,     // unit scalar (1.0), identity tensor
     result_other
@@ -179,7 +180,11 @@ public:
     /**
      * Constructor, we denote if this is bulk or bc field.
      */
-    FieldCommonBase(bool bc) : bc_(bc), element_selection_(NULL), default_( IT::Default::obligatory()) {}
+    FieldCommonBase(bool bc)
+    : n_comp_(0),
+      bc_(bc),
+      element_selection_(NULL),
+      default_( IT::Default::obligatory()) {}
 
     /**
      * Setters. We need to store these information into the Field itself during construction of an EqData class in order to
@@ -325,10 +330,16 @@ public:
     void set_time(double time);
 
     /**
-     *
+     * Set mesh to all fields.
      */
     virtual void set_mesh(Mesh *mesh);
 
+    /**
+     * Special field values spatially constant. Could allow optimization of tensor multiplication and
+     * tensor or vector addition. field_result_ should be set in constructor and in set_time method of particular Field implementation.
+     * We return value @p result_none, if the field is not initialized on the region of the given element accessor @p elm.
+     */
+    inline FieldResult field_result( ElementAccessor<spacedim> &elm) const;
 
     /**
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
@@ -341,7 +352,7 @@ public:
      * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
-    virtual FieldResult value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+    virtual void value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 private:

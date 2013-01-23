@@ -216,6 +216,13 @@ void Field<spacedim, Value>::set_mesh(Mesh *mesh) {
 
 
 
+template<int spacedim, class Value>
+FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
+    FieldBaseType *f = region_fields[elm.region().idx()];
+    if (f) return f->field_result();
+    else return result_none;
+}
+
 
 
 template<int spacedim, class Value>
@@ -228,7 +235,7 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 
 
 template<int spacedim, class Value>
-inline FieldResult Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
     region_fields[elm.region().idx()]->value_list(point_list,elm, value_list);
