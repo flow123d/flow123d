@@ -132,8 +132,6 @@ void OutputText::print(ostream& stream, const Record *type, unsigned int depth) 
 
 			// parent record
 			if (type->data_->parent_ptr_) {
-				//AbstractRecord *abstract_rec = type->data_.get()->parent_ptr_.get();
-				//Record parent = type->derive_from( *abstract_rec );
 				stream << ", implementation of " << type->data_->parent_ptr_->type_name();
 			}
 
@@ -154,7 +152,7 @@ void OutputText::print(ostream& stream, const Record *type, unsigned int depth) 
 		        stream << setw(padding_size) << "" << it->key_ << " = ";
 		        write_value(stream, it->default_);
 		        stream << endl;
-		        stream << setw(padding_size + size_setw_) << "" <<"is ";
+		        stream << setw(padding_size + size_setw_) << "" <<"# is ";
 		        print(stream, it->type_.get());
 		        write_description(stream, it->description_);
 		        stream << endl;
@@ -183,7 +181,7 @@ void OutputText::print(ostream& stream, const Array *type, unsigned int depth) {
 
 		get_array_sizes(*type, lower_size, upper_size);
 		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
-		stream << setw(padding_size + size_setw_) << "";
+		stream << setw(padding_size + size_setw_) << "" << "# ";
 		print(stream, type->data_->type_of_values_.get());
 		break;
 	case full_record:
@@ -255,7 +253,7 @@ void OutputText::print(ostream& stream, const Selection *type, unsigned int dept
 		        stream << setw(padding_size) << "" << it->key_ << " = " << it->value;
 		        if (it->description_ != "") {
 		        	stream << endl;
-		        	stream << setw(2 * padding_size) << "" << "# " << it->description_ << "";
+		        	stream << setw(padding_size + it->key_.size() + 3) << "" << "# " << it->description_ << "";
 		        }
 		        stream << endl;
 		    }
@@ -317,14 +315,15 @@ void OutputText::print(ostream& stream, const FileName *type, unsigned int depth
 }
 
 
-void OutputText::write_description(std::ostream& stream, const string& str) {
+void OutputText::write_description(std::ostream& stream, const string& str, unsigned int hash_count) {
     boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
     boost::tokenizer<boost::char_separator<char> >::iterator it;
 
 	// For every \n add padding at beginning of the next line.
 	for(it = line_tokenizer.begin(); it != line_tokenizer.end(); ++it) {
 		stream << endl;
-		stream << setw(padding_size + size_setw_) << "" << "# " << *it;
+		stream << setw(padding_size + size_setw_) << "";
+		stream << std::setfill('#') << setw(hash_count) << "" << std::setfill(' ') << " " << *it;
 	}
 }
 
@@ -345,7 +344,7 @@ std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
 void OutputJSONTemplate::print(ostream& stream, const Record *type, unsigned int depth) {
 	stream << endl;
 	stream << setw(depth * padding_size) << "";
-	stream << "# " << type->type_name();
+	stream << "# Record " << type->type_name();
 	if (key_name_.size()) {
 		write_description(stream, description_);
 		stream << endl << setw(depth * padding_size) << "" << key_name_ << " = ";
@@ -360,9 +359,7 @@ void OutputJSONTemplate::print(ostream& stream, const Record *type, unsigned int
 		stream << "{";
 		if (type->description().size()) {
 			size_setw_ = depth+1;
-			stream << endl;
-			stream << setw((depth + 1) * padding_size) << "" << "# record " << type->type_name();
-			write_description(stream, type->description());
+			write_description(stream, type->description(), 2);
 		}
 		stream << endl;
 		for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
@@ -400,14 +397,17 @@ void OutputJSONTemplate::print(ostream& stream, const Array *type, unsigned int 
 	stream << endl;
 	stream << setw(depth * padding_size) << "";
 
-	if (has_opt_prefix) {
-		stream << "OPT_";
+	if (key_name_.size()) {
+		if (has_opt_prefix) {
+			stream << "OPT_";
+		}
+		stream << key_name_ << " = ";
 	}
 
-	stream << key_name_ << " = ";
 	key_name_ = "";
+	description_ = "";
 	size_setw_ = depth + 1;
-	stream << "[" << endl;
+	stream << "[";
 
 	print(stream, type->data_->type_of_values_.get(), depth+1);
 	if (lower_size > 1) {
@@ -433,7 +433,7 @@ void OutputJSONTemplate::print(ostream& stream, const AbstractRecord *type, unsi
 	stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-    	key_name_ = rec_name;
+    	key_name_ = it->type_name() + "_" + rec_name;
     	description_ = it->description();
     	size_setw_ = depth;
 
@@ -555,14 +555,15 @@ void OutputJSONTemplate::print(ostream& stream, const FileName *type, unsigned i
 }
 
 
-void OutputJSONTemplate::write_description(std::ostream& stream, const string& str) {
+void OutputJSONTemplate::write_description(std::ostream& stream, const string& str, unsigned int hash_count) {
     boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
     boost::tokenizer<boost::char_separator<char> >::iterator it;
 
 	// For every \n add padding at beginning of the next line.
 	for(it = line_tokenizer.begin(); it != line_tokenizer.end(); ++it) {
 		stream << endl;
-		stream << setw(size_setw_ * padding_size) << "" << "# " << *it;
+		stream << setw(size_setw_ * padding_size) << "";
+		stream << std::setfill('#') << setw(hash_count) << "" << std::setfill(' ') << " " << *it;
 	}
 }
 
@@ -585,7 +586,7 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
 
 	// printout of value
 	if (value_.is_optional()) {
-		stream << empty_val << setw(padding_size) << "" << "# Optional value";
+		stream << empty_val << setw(padding_size) << "" << "# Optional key";
 	} else if (value_.has_value_at_read_time()) {
 		stream << empty_val << setw(padding_size) << "" << "# Read time value - " << value_.value();
 	} else if (invalid_val | has_quote) {

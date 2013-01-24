@@ -128,8 +128,12 @@ protected:
 
     /**
      * Write out a string with given padding of every new line.
+     *
+     * @param stream Output stream
+     * @param str Printed description
+     * @param hash_count Count of '#' chars in description
      */
-    virtual void write_description(std::ostream& stream, const string& str) = 0;
+    virtual void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1) = 0;
 
     void write_value(std::ostream& stream, Default dft);
 
@@ -165,7 +169,7 @@ protected:
 	void print(ostream& stream, const String *type, unsigned int depth = 0);
     void print(ostream& stream, const FileName *type, unsigned int depth = 0);
 
-    void write_description(std::ostream& stream, const string& str);
+    void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
 
 };
 
@@ -201,7 +205,7 @@ protected:
 	void print(ostream& stream, const String *type, unsigned int depth = 0);
     void print(ostream& stream, const FileName *type, unsigned int depth = 0);
 
-    void write_description(std::ostream& stream, const string& str);
+    void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
 
 private:
     /**
