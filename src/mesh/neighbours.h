@@ -167,11 +167,6 @@ public:
     double sigma;
 };
 
-// Input neigbouring codes
-#define BB_E         10     // two elements of same dim specified by eid
-#define BB_EL        11     // two elements ... specified by explicit eid and sid
-#define VB_ES        20     // compatible
-#define VV_2E        30     // noncompatible
 
 
 

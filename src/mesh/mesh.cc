@@ -29,6 +29,7 @@
  */
 
 #include <unistd.h>
+#include <set>
 
 
 #include "system/system.hh"
@@ -215,20 +216,7 @@ void Mesh::setup_topology(istream *in) {
     count_element_types();
 
     // topology
-    //node_to_element();
-    if (in) {
-        read_neighbours(*in);
-    } else if ( ! in_record_.is_empty() ) {
-        string ngh_file_name = in_record_.val<FilePath>("neighbouring");
-        ifstream ngh_in(  ngh_file_name.c_str(), std::ifstream::in );
-        read_neighbours(ngh_in);
-    } else {
-        return;
-    }
-
-    edge_to_side();
-
-    neigh_vb_to_element_and_side();
+    make_neighbours_and_edges();
     element_to_neigh_vb();
     create_external_boundary();
 
@@ -248,47 +236,6 @@ void Mesh::setup_topology(istream *in) {
 }
 
 
-/**
- *   Creates back references from nodes to elements.
- *
- *   TODO: This is not necessary after the topology setup so
- *   we should make that as an independent structure which can be easily deleted.
- */
-void Mesh::node_to_element()
-{
-    F_ENTRY;
-/*
-    int li;
-    NodeIter nod;
-    ElementIter ele;
-
-    xprintf( MsgVerb, "   Node to element... ");
-
-    // Set counter of elements in node to zero
-    FOR_NODES(this,  nod )
-        nod->n_elements = 0;
-    // Count elements
-    FOR_ELEMENTS(this,  ele )
-        FOR_ELEMENT_NODES( ele, li ) {
-            nod = ele->node[ li ];
-            (nod->n_elements)++;
-        }
-    // Allocate arrays
-    FOR_NODES(this,  nod ) {
-                if (nod->n_elements == 0)
-                        continue;
-            nod->element = (ElementIter *) xmalloc( nod->n_elements * sizeof( ElementIter ) );
-        nod->aux = 0;
-    }
-    // Set poiners in arrays
-    FOR_ELEMENTS(this,  ele )
-        FOR_ELEMENT_NODES( ele, li ) {
-            nod = ele->node[ li ];
-            nod->element[ nod->aux ] = ele;
-            (nod->aux)++;
-        }
-    xprintf( MsgVerb, "O.K.\n");*/
-}
 
 //
 void Mesh::count_side_types()
@@ -304,173 +251,139 @@ void Mesh::count_side_types()
 
 
 
-void Mesh::read_neighbours(istream &in) {
-    char line[LINE_SIZE];   // line of data file
-    unsigned int id;
-
-    xprintf( Msg, "Reading neighbours...A\n");
-    skip_to( in, "$Neighbours" );
-    in.getline(line, LINE_SIZE);
-
-    unsigned int n_neighs = atoi( xstrtok( line ) );
-    INPUT_CHECK( n_neighs > 0 ,"Number of neighbours  < 1 in read_neighbour_list()\n");
-    neighbours_.resize( n_neighs );
-
-    n_bb_neigh = 0;
-    n_vb_neigh = 0;
-
-    for(vector<Neighbour_both>::iterator ngh= neighbours_.begin();
-            ngh != neighbours_.end(); ++ngh ) {
-        in.getline(line, LINE_SIZE);
-
-        id              = atoi( xstrtok( line ) );
-        ngh->type            = atoi( xstrtok( NULL) );
-
-        switch( ngh->type ) {
-            case BB_E:
-                xprintf(UsrErr, "Not supported - Neighboring of type (10) - of elements of same dimension without local side number!\n");
-                break;
-            case BB_EL:
-                n_bb_neigh++;
-                ngh->n_sides = atoi( xstrtok( NULL) );
-                INPUT_CHECK(!( ngh->n_sides < 2 ),"Neighbour %d has bad number of elements: %d\n", id, ngh->n_sides );
-
-                ngh->eid = new int [ngh->n_sides];
-                ngh->sid = new int [ngh->n_sides];
-
-                for( int i = 0; i < ngh->n_sides; i++) {
-                    ngh->eid[ i ] = atoi( xstrtok( NULL) );
-                    ngh->sid[ i ] = atoi( xstrtok( NULL) );
-                }
-
-                break;
-            case VB_ES:
-                n_vb_neigh++;
-                ngh->n_sides = 2;
-                ngh->eid = new int [ngh->n_sides];
-                ngh->sid = new int [ngh->n_sides];
-
-                ngh->eid[ 0 ] = atoi( xstrtok( NULL) );
-                ngh->eid[ 1 ] = atoi( xstrtok( NULL) );
-                ngh->sid[ 0 ] = NDEF;
-                ngh->sid[ 1 ] = atoi( xstrtok( NULL) );
-
-                ngh->sigma = atof( xstrtok( NULL) );
-                break;
-            case VV_2E:
-                xprintf(UsrErr, "Not supported - Neighboring of type (30) - Noncompatible only elements!\n");
-                break;
-            default:
-                xprintf(UsrErr,"Neighbour %d is of the unsupported type %d\n", id, ngh->type );
-                break;
-        }
-    }
-    xprintf( Msg, " %d VB neighbours %d BB neigs. readed. ", n_vb_neigh, n_bb_neigh );
-}
-
-
-
-void Mesh::edge_to_side()
+void Mesh::make_neighbours_and_edges()
 {
-    F_ENTRY;
+	// for each node we make a list of elements that use this node
+	map<const Node*,vector<unsigned int> > node_elements;
 
-    struct Edge *edg;
-    Element *ele;
+	// create the node_elements map
+	FOR_ELEMENTS( this, e )
+		for (unsigned int n=0; n<e->n_nodes(); n++)
+			node_elements[e->node[n]].push_back(e->index());
 
-    xprintf( MsgVerb, "   Edge to side and back... \n");
+	// pointers to created edges
+	vector<Edge *> tmp_edges;
+	// Now we go through all element sides and create edges and neighbours
+	FOR_ELEMENTS( this, e )
+	{
+		for (unsigned int s=0; s<e->n_sides(); s++)
+		{
+			// skip sides that were already found
+			if (e->edges_[s] != NULL) continue;
 
-    // count edges (in NGHfile there are missing (??not sure) edges on boundary and between dimensions
-    unsigned int n_edges = n_sides();
-    for(vector<Neighbour_both>::iterator it= neighbours_.begin();
-        it != neighbours_.end(); ++it )
-        if ( it->type == BB_EL ) n_edges -= ( it->n_sides - 1 );
+			Neighbour neighbour;
+			bool is_neighbour = false;
+			unsigned int n_edg_sides = 0;
 
-    // create edge vector
-    edge.resize(n_edges);
-    xprintf( Msg, "Created  %d edges.\n.", n_edges );
+			// Find all elements that share this side.
+			// element_count contains number of nodes that are used by the respective element.
+			map<unsigned int,unsigned int> element_count;
+			set<const Node *> set_of_nodes;
+			for (unsigned n=0; n<e->side(s)->n_nodes(); n++)
+			{
+				set_of_nodes.insert(e->side(s)->node(n));
+				for (vector<unsigned int>::iterator eit=node_elements[e->side(s)->node(n)].begin();
+						eit!=node_elements[e->side(s)->node(n)].end(); eit++)
+					element_count[*eit]++;
+			}
 
-    // set edge, side connections
-    unsigned int i_edge=0;
-    for(vector<Neighbour_both>::iterator it= neighbours_.begin();
-            it != neighbours_.end(); ++it ) {
+			// Count the number of elements that share the whole side/edge.
+			for (map<unsigned int, unsigned int>::iterator ec=element_count.begin(); ec!=element_count.end(); ec++)
+				if (ec->second == e->side(s)->n_nodes())
+				{
+					if (element[ec->first].dim_ == e->dim_)
+						n_edg_sides++;
+					else if (element[ec->first].dim_ == e->dim_-1)
+					{
+						is_neighbour = true;
+						neighbour.element_ = &(element[ec->first]);
+						neighbour.sigma = 1;
+					}
+				}
 
-        if ( it->type != BB_EL ) continue;
+			if (is_neighbour)
+			{ // edge connects elements of different dimensions
+				for (map<unsigned int, unsigned int>::iterator ec=element_count.begin(); ec!=element_count.end(); ec++)
+					if (ec->second == e->side(s)->n_nodes())
+					{
+						Element *elem = &(element[ec->first]);
+						if (elem->dim_ == e->dim_)
+						{ // element with the same dimension: update edge
+							// find local side index on element ec->first
+							for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++)
+							{
+								SideIter si = elem->side(ecs);
+								int ni=0;
+								while (ni<si->n_nodes() && set_of_nodes.find(si->node(ni)) != set_of_nodes.end()) ni++;
+								if (ni>=si->n_nodes())
+								{
+									// create a new edge and neighbour for this side
+									Edge *edg = new Edge;
+									tmp_edges.push_back(edg);
+									edg->n_sides = 1;
+									edg->side_ = new struct SideIter[1];
+									edg->side_[0] = si;
+									elem->edges_[ecs] = edg;
+									neighbour.edge_ = edg;
+									vb_neighbours_.push_back(neighbour);
+									break;
+								}
+							}
+						}
+					}
+			} else { // edge connects only elements of the same dimension
+				// Allocate the array of sides.
+				Edge *edg = new Edge;
+				tmp_edges.push_back(edg);
+				edg->n_sides = n_edg_sides;
+				edg->side_ = new struct SideIter[edg->n_sides];
+				unsigned int i=0;
+				// initialize edge data
+				for (map<unsigned int, unsigned int>::iterator ec=element_count.begin(); ec!=element_count.end(); ec++)
+					if (ec->second == e->side(s)->n_nodes())
+					{
+						Element *elem = &(element[ec->first]);
 
-        edg = &( edge[i_edge++] );
+						if (elem->dim_ != e->dim_) continue;
 
-        // init edge (can init all its data), set element to edge, for Side iterators
-        edg->n_sides = it->n_sides;
-        edg->side_ = new SideIter [edg->n_sides];
+						// find local side index on element ec->first
+						for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++)
+						{
+							SideIter si = elem->side(ecs);
+							int ni=0;
+							while (ni<si->n_nodes() && set_of_nodes.find(si->node(ni)) != set_of_nodes.end()) ni++;
+							if (ni>=si->n_nodes())
+							{
+								edg->side_[i++] = si;
+								elem->edges_[ecs] = edg;
+								break;
+							}
+						}
+					}
+			}
+		}
+	}
 
-        for(int si=0; si < it->n_sides; si++) {
-            ele = element.find_id( it->eid[si] );
-            edg->side_[ si ] = ele->side( it->sid[ si ] );
-            ele->edges_[ it->sid[ si ] ] = edg;
-        }
-    }
+	// Now we can create the vector of edges, after we know its size
+	edge.resize(tmp_edges.size());
+	map<Edge*,Edge*> edge_map;
+	// update pointers to edges and free the temporary objects
+	for (unsigned int i=0; i<tmp_edges.size(); i++)
+	{
+		edge[i] = *(tmp_edges[i]);
+		edge_map[tmp_edges[i]] = &(edge[i]);
+		for (int s=0; s<edge[i].n_sides; s++)
+			edge[i].side_[s]->element()->edges_[edge[i].side_[s]->el_idx()] = &(edge[i]);
+		delete tmp_edges[i];
+	}
+	FOR_NEIGHBOURS(this, ngh)
+		ngh->edge_ = edge_map[ngh->edge_];
 
-    // now the external ones ( pair all remaining edges with external sides)
-    FOR_SIDES(this, sde) {
-        if ( sde->edge() == NULL ) {
-            edg = &( edge[i_edge++] );
-
-            // make external edges and edges on neighborings.
-            edg->n_sides = 1;
-            edg->side_ = new SideIter [ edg->n_sides ];
-            edg->side_[ 0 ] = sde;
-
-            sde->element()->edges_[sde->el_idx()] = edg;
-        }
-    }
-    ASSERT(i_edge == n_edges, "Actual number of edges %d do not match size %d of its array.\n", i_edge, n_edges);
-
-    //FOR_SIDES(mesh, side) ASSERT(side->edge != NULL, "Empty side %d !\n", side->id);
+	xprintf( Msg, "Created %d edges and %d neighbours.\n", edge.size(), vb_neighbours_.size() );
 }
 
 
 
-
-
-/**
- * Make
- ***/
-void Mesh::neigh_vb_to_element_and_side()
-{
-
-    vb_neighbours_.resize( n_vb_neigh );
-
-    ElementIter ele_lower, ele_higher;
-    Edge *edg;
-
-    xprintf( MsgVerb, "   Creating %d VB neighbours... ", n_vb_neigh);
-
-    vector<Neighbour>::iterator new_ngh = vb_neighbours_.begin();
-
-    for(vector<Neighbour_both>::iterator ngh= neighbours_.begin(); ngh != neighbours_.end(); ++ngh ) {
-
-        if ( ngh->type != VB_ES ) continue;
-
-        ele_lower = element.find_id( ngh->eid[0]);
-        ele_higher = element.find_id( ngh->eid[1] );
-        edg = ele_higher->side( ngh->sid[ 1 ] )->edge();
-
-        ASSERT(edg->n_sides == 1, "Edge with %d\n", edg->n_sides);
-        ASSERT( ele_higher == edg->side(0)->element(),"Diff els.\n");
-        new_ngh->reinit(  ele_lower, edg , ngh->sigma);
-
-
-        //DBGMSG(" %d %d -> %d %d\n", ngh->eid[0], ngh->eid[1],
-        //        new_ngh->element()->index(),
-        //        new_ngh->side()->element()->index());
-
-        ++new_ngh;
-    }
-
-    ASSERT( new_ngh == vb_neighbours_.end(), "Some VB neigbourings wasn't set.\n");
-
-
-    xprintf( MsgVerb, "O.K.\n");
-}
 
 
 /**
@@ -487,10 +400,12 @@ void Mesh::create_external_boundary()
         // is there any outer side
         bool outer=false;
         FOR_ELEMENT_SIDES(ele, si)
+        {
             if ( ele->side(si)->edge()->n_sides == 1) {
                 outer=true;
                 break;
             }
+        }
        if (outer) {
            // for elements on the boundary set boundaries_
            FOR_ELEMENT_SIDES(ele,si)

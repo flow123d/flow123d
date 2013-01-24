@@ -139,7 +139,9 @@ public:
      * Setup various links between mesh entities. Should be simplified.
      */
     void setup_topology(istream *in = NULL);
-    void read_neighbours(istream &in);
+
+    /// This replaces read_neighbours() in order to avoid using NGH preprocessor.
+    void make_neighbours_and_edges();
 
     /**
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
@@ -202,9 +204,6 @@ public:
     string bcd_fname_;
 private:
 
-    void node_to_element();
-    void edge_to_side();
-    void neigh_vb_to_element_and_side();
     void element_to_neigh_vb();
     void create_external_boundary();
 
