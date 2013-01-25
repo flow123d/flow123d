@@ -63,9 +63,21 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 
 
 template <int spacedim, class Value>
+void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, typename Value::return_type &value) {
+    Value ref(value);
+    ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
+    double *ptr=data_+(bulk_size_+boundary_idx)*n_components_;
+    for(unsigned int row=0; row < ref.n_rows(); row++)
+        for(unsigned int col=0; col < ref.n_cols(); col++, ptr++)
+            *(typename Value::element_type *)ptr = ref(row,col);
+}
+
+
+template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_time(double time) {
     ASSERT(mesh_, "Null mesh pointer, did you call set_mesh()?\n");
     ASSERT(data_, "Null data pointer.\n");
+    if (reader_ == NULL) return;
 
     GMSH_DataHeader search_header;
     search_header.actual=false;
@@ -100,15 +112,12 @@ void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh) {
 template <int spacedim, class Value>
 typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
-    if (boost::is_floating_point< typename Value::element_type>::value) {
+
         unsigned int idx = elm.idx();
         if (elm.is_boundary()) idx +=bulk_size_;
         idx*=n_components_;
 
         return Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
-    } else {
-        xprintf(UsrErr, "FieldElementwise is not implemented for discrete return types.\n");
-    }
 }
 
 
@@ -141,6 +150,7 @@ FieldElementwise<spacedim, Value>::~FieldElementwise() {
     if (data_ != NULL) delete [] data_;
     if (reader_ != NULL) delete reader_;
 }
+
 
 
 #endif /* FIELD_ELEMENTWISE_IMPL_HH_ */

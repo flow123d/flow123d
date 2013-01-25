@@ -26,6 +26,7 @@
 namespace BMI=::boost::multi_index;
 
 class RegionDB;
+class OldBcdInput;
 
 /**
  * Class that represents disjoint part of computational domain (or domains). It consists of one integer value
@@ -104,6 +105,7 @@ private:
     unsigned int idx_;
 
     friend class RegionDB;
+    friend class OldBcdInput;
 };
 
 

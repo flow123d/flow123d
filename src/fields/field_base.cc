@@ -52,3 +52,36 @@ INSTANCE_ALL(FieldElementwise)
 template class FieldAddPotential<3, FieldValue<0>::Scalar >;
 template class FieldAddPotential<2, FieldValue<0>::Scalar >;
 
+
+
+
+template <int spacedim, class Value>
+void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
+    FieldElementwise<spacedim, Value> *in_field=new FieldElementwise<spacedim, Value>(target.n_comp());
+    for(unsigned int i=0; i<Region::db().size(); i++)
+        if ( Region(i).is_boundary() ) target.set_field(Region(i), in_field);
+    target.set_mesh(mesh);
+
+}
+
+
+void OldBcdInput::read(const FilePath &flow_bcd, const FilePath &transport_bcd,
+        Mesh *mesh,
+        Field<3,FieldValue<3>::Enum > &flow_type,
+        Field<3,FieldValue<3>::Scalar > &flow_pressure,
+        Field<3,FieldValue<3>::Scalar > &flow_flux,
+        Field<3,FieldValue<3>::Scalar > &flow_sigma,
+        Field<3,FieldValue<3>::Enum > &trans_type,
+        Field<3,FieldValue<3>::Vector > &trans_conc)
+{
+/* - setup all fields set_mesh
+ * - read one flow file, fill fields, make ID list
+ * - read second file, check IDs agains ID list, fill fields
+ */
+    set_all(flow_type, mesh);
+    set_all(flow_pressure, mesh);
+    set_all(flow_flux, mesh);
+    set_all(flow_sigma, mesh);
+    set_all(trans_type, mesh);
+    set_all(trans_conc, mesh);
+}

@@ -140,9 +140,9 @@ struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>
 
 // Resolution of helper functions for raw constructor
 template <class RT> inline RT & set_raw_scalar(RT &val, double *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, int *raw_data) { return val;}
+template <class RT> inline RT & set_raw_scalar(RT &val, int *raw_data) { return *raw_data;}
 template <class RT> inline RT & set_raw_scalar(RT &val, string *raw_data) { return val;}
-template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return val;}
+template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return *raw_data;}
 
 template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { return val;}

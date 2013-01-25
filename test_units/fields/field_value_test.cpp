@@ -79,6 +79,21 @@ TEST(FieldValue_, construction_from_raw) {
         EXPECT_DOUBLE_EQ(1, double(val));
     }
     {
+        typedef FieldValue_<1,1,int> T; T::return_type x_val;
+        x_val=0;
+        int i_raw=10;
+        const T::return_type & val = T::from_raw(x_val, &i_raw);
+        EXPECT_DOUBLE_EQ(10, int(val));
+    }
+    {
+        typedef FieldValue_<1,1,FieldEnum> T; T::return_type x_val;
+        x_val=0;
+        FieldEnum i_raw=10;
+        const T::return_type & val = T::from_raw(x_val, &i_raw);
+        EXPECT_DOUBLE_EQ(10, FieldEnum(val));
+    }
+
+    {
         typedef FieldValue_<3,1,double> T; T::return_type x_val;
         x_val.zeros();
         const T::return_type & val = T::from_raw(x_val, raw_data);

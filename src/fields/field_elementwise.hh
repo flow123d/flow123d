@@ -21,21 +21,11 @@
  * Currently, we just use one vector for bulk and one for boundary elements.
  *
  * TODO:
- * - input type
- * - init form input - read either from GMSH or from text file
- * - value
- *
- * - ve FieldValues implement inline constructor:
- *   FieldValues_<...>( return_type &, double * raw_data)
- *   for double set internal reference to *raw_data
- *   for arma types set reference to return_type and set its internal pointer mem to raw_data
- *
- *   carfully test !!
- *
- *   this allows as store raw data while providing fast access
- * - next solve initialization problem
- *   reader:
- *   while header.time < time .. read data, save header data in GMSH reader
+ * - move raw access resolution functions from FieldValues_ into FieldElementwise
+ * - allow elementwise int or FieldEnum data with optimal storage buffer, this needs
+ *   templated GMSH reader
+ * - allow initialization of multiple fields by one reader
+ * - allow common storage for more elementwise fields to have values for one element on one place
  */
 
 #include "system/system.hh"
@@ -57,6 +47,11 @@ public:
     virtual void init_from_input(const Input::Record &rec);
 
     /**
+     * Set row of boundary data. Used to implement old BC input.
+     */
+    void set_data_row(unsigned int boundary_idx, typename Value::return_type &value);
+
+    /**
      * Update time and possibly update data from GMSH file.
      */
     virtual void set_time(double time);
@@ -65,6 +60,7 @@ public:
      * Has to be set before calling init_from_input.
      */
     virtual void set_mesh(Mesh *mesh);
+
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.

@@ -214,6 +214,7 @@ public:
     const IT::Default &get_default() const {return default_;}
     bool is_bc() const                  { return bc_;}
     bool is_enum_valued() const         { return enum_valued_;}
+    unsigned int n_comp() const         { return n_comp_;}
 
     /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
@@ -376,5 +377,20 @@ public:
 };
 
 
+
+class OldBcdInput {
+public:
+template <int spacedim, class Value>
+static void set_all( Field<spacedim,Value> &target, Mesh *mesh);
+
+static void read(const FilePath &flow_bcd, const FilePath &transport_bcd,
+        Mesh *mesh,
+        Field<3,FieldValue<3>::Enum > &flow_type,
+        Field<3,FieldValue<3>::Scalar > &flow_pressure,
+        Field<3,FieldValue<3>::Scalar > &flow_flux,
+        Field<3,FieldValue<3>::Scalar > &flow_sigma,
+        Field<3,FieldValue<3>::Enum > &trans_type,
+        Field<3,FieldValue<3>::Vector > &trans_conc);
+};
 
 #endif /* FUNCTION_BASE_HH_ */

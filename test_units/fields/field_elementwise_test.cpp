@@ -48,6 +48,7 @@ string input = R"INPUT(
 class FieldElementwiseTest : public testing::Test {
 public:
     typedef FieldElementwise<3, FieldValue<3>::Scalar > ScalarField;
+    typedef FieldElementwise<3, FieldValue<3>::Enum > EnumField;
     typedef FieldElementwise<3, FieldValue<3>::VectorFixed > VecFixField;
     typedef FieldElementwise<3, FieldValue<3>::Vector > VecField;
     typedef FieldElementwise<3, FieldValue<2>::TensorFixed > TensorField;
@@ -153,3 +154,25 @@ TEST_F(FieldElementwiseTest, tensor_fixed) {
     EXPECT_TRUE( match.min() );
 
 }
+
+TEST_F(FieldElementwiseTest, scalar_enum) {
+    EnumField field;
+    field.set_mesh(mesh);
+    field.set_time(0.0);
+
+    for(unsigned int i=0; i<6; i++) {
+        unsigned int val = i + ( i<4 ? 1 : 10 );
+        field.set_data_row(i, val );
+    }
+
+    for(unsigned int i=0; i < mesh->element.size(); i++) {
+        EXPECT_EQ( 0, field.value(point,mesh->element_accessor(i)) );
+    }
+    for(unsigned int i=0; i < 4; i++) {
+        EXPECT_EQ( i+1, field.value(point,mesh->element_accessor(i,true)) );
+    }
+    EXPECT_EQ( 14, field.value(point,mesh->element_accessor(4,true)) );
+    EXPECT_EQ( 15, field.value(point,mesh->element_accessor(5,true)) );
+}
+
+
