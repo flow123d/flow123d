@@ -140,7 +140,27 @@ public:
      */
     void setup_topology(istream *in = NULL);
 
-    /// This replaces read_neighbours() in order to avoid using NGH preprocessor.
+    /**
+     *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
+     *
+     *  TODO:
+     *  - Avoid maps:
+     *    1) node_elements can be vector, to get index from NodeIter call : mesh->node_vector.index(node_iter)
+     *       in future we replace pointers by indexes, this is also safer for reallocations
+     *    2) sort element vectors in node_elements
+     *    3) make independent function that takes list of nodes and find intersection of their element lists:
+     *       Mesh::intersect_element_lists(vector<unsigned int> &nodes_list, vector<unsigned int> &intersection_element_list)
+     *       since element_lists are sorted we can find intersection easily using e.g std::set_intersection algorithm
+     *       on the first pair of lists and then on remaining lists and resulting intersection list.
+     *
+     *    4) replace EdgeVector by std::vector<Edge>
+     *
+     *    5) need not to have temporary array for Edges, only postpone setting pointers in elements and set them
+     *       after edges are found; we can temporary save Edge index instead of pointer in Neigbours and elements
+     *
+     *    6) Try replace Edge * by indexes in Neigbours and elements (anyway we have mesh pointer in elements so it is accessible also from Neigbours)
+     *
+     */
     void make_neighbours_and_edges();
 
     /**
