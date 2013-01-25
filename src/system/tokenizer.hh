@@ -65,6 +65,13 @@ public:
      * either tabelator '\\t' or space ' '.
      */
     Tokenizer( std::istream &in);
+
+    /**
+     * Skip whole line if the beginning of the trimmed line match the given @p pattern string.
+     *
+     * TODO: Allow end line comments.
+     */
+    void set_comment_pattern( const std::string &pattern);
     /**
      * Skip forward to the line that match given string. 
      * The tokenizer is set to the begining of that line.
@@ -143,6 +150,12 @@ public:
     std::string position_msg() const;
 
     /**
+     * Read access to current input line.
+     */
+    inline const std::string &line() const
+        { return line_;}
+
+    /**
      * Destructor close the file if it was opened by tokenizer itself.
      */
     ~Tokenizer();
@@ -159,6 +172,9 @@ private:
     std::istream *in_;
     /// Current line
     std::string line_;
+    /// Possible comment pattern
+    std::string comment_pattern_;
+
     /// Number of liner read by the tokenizer.
     unsigned int line_counter_;
     unsigned int position_;

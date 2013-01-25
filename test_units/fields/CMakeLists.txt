@@ -38,8 +38,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     define_test(field_value)
     define_test(field_const)
     define_test(field_formula)
-    
-    
+    define_test(field_elementwise)
 endif()
 
 

@@ -84,6 +84,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh) {
     mesh_=mesh;
     bulk_size_=mesh_->element.size();
     n_entities_=mesh_->element.size() + mesh_->bc_elements.size();
+
     // allocate
     data_size_ = n_entities_ * n_components_;
     data_ = new double[data_size_];
@@ -97,7 +98,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh) {
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
     if (boost::is_floating_point< typename Value::element_type>::value) {
         unsigned int idx = elm.idx();
@@ -116,7 +117,7 @@ typename Value::return_type const & FieldElementwise<spacedim, Value>::value(con
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 

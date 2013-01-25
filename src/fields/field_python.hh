@@ -59,12 +59,12 @@ public:
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 
@@ -79,7 +79,7 @@ private:
     /**
      * Implementation.
      */
-    inline void set_value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, Value &value);
+    inline void set_value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm, Value &value);
 
 #ifdef HAVE_PYTHON
     PyObject *p_func_;

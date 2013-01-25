@@ -593,10 +593,12 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 vector<int> const & Mesh::all_elements_id() {
-    all_elements_id_.resize(n_all_input_elements_);
-    std::vector<int>::iterator all_it = all_elements_id_.begin();
-    unsigned int last_id = element.begin().id();
     if (all_elements_id_.size() ==0) {
+
+        all_elements_id_.resize(n_all_input_elements_);
+        std::vector<int>::iterator all_it = all_elements_id_.begin();
+        unsigned int last_id = element.begin().id();
+
         for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++all_it) {
             if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
             last_id=*all_it = it.id();

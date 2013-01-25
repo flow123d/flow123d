@@ -50,6 +50,7 @@ using namespace std;
 GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 : tok_(file_name)
 {
+    tok_.set_comment_pattern( "#");
     last_header.time=-numeric_limits<double>::infinity();
     last_header.actual=false;
 }
@@ -59,6 +60,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 GmshMeshReader::GmshMeshReader(std::istream &in)
 : tok_(in)
 {
+    tok_.set_comment_pattern( "#");
     last_header.time=-numeric_limits<double>::infinity();
     last_header.actual=false;
 }
@@ -245,50 +247,50 @@ void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
     using namespace boost;
     try {
         // string tags
-        tok.next_line();
-        unsigned int n_str = lexical_cast<unsigned int>(*tok);
+        tok.next_line(false);
+        unsigned int n_str = lexical_cast<unsigned int>(*tok); ++tok;
         head.field_name="";
         head.interpolation_scheme = "";
         if (n_str > 0) {
             tok.next_line(); n_str--;
-            head.field_name= *tok; //  unquoted by tokenizer if needed
+            head.field_name= *tok; ++tok; //  unquoted by tokenizer if needed
         }
         if (n_str > 0) {
             tok.next_line(); n_str--;
-            head.interpolation_scheme = *tok;
+            head.interpolation_scheme = *tok; ++tok;
         }
-        for(;n_str>0;n_str--) tok.next_line(); // skip possible remaining tags
+        for(;n_str>0;n_str--) tok.next_line(false); // skip possible remaining tags
 
         //real tags
         tok.next_line();
-        unsigned int n_real = lexical_cast<unsigned int>(*tok);
+        unsigned int n_real = lexical_cast<unsigned int>(*tok); ++tok;
         head.time=0.0;
         if (n_real>0) {
             tok.next_line(); n_real--;
-            head.time=lexical_cast<double>(*tok);
+            head.time=lexical_cast<double>(*tok); ++tok;
         }
-        for(;n_real>0;n_real--) tok.next_line();
+        for(;n_real>0;n_real--) tok.next_line(false);
 
         // int tags
         tok.next_line();
-        unsigned int n_int = lexical_cast<unsigned int>(*tok);
+        unsigned int n_int = lexical_cast<unsigned int>(*tok); ++tok;
         head.time_index=0;
         head.n_components=1;
         head.n_entities=0;
         head.partition_index=0;
         if (n_int>0) {
             tok.next_line(); n_int--;
-            head.time_index=lexical_cast<unsigned int>(*tok);
+            head.time_index=lexical_cast<unsigned int>(*tok); ++tok;
         }
         if (n_int>0) {
             tok.next_line(); n_int--;
-            head.n_components=lexical_cast<unsigned int>(*tok);
+            head.n_components=lexical_cast<unsigned int>(*tok); ++tok;
         }
         if (n_int>0) {
             tok.next_line(); n_int--;
-            head.n_entities=lexical_cast<unsigned int>(*tok);
+            head.n_entities=lexical_cast<unsigned int>(*tok); ++tok;
         }
-        for(;n_int>0;n_int--) tok.next_line();
+        for(;n_int>0;n_int--) tok.next_line(false);
     } catch (bad_lexical_cast &) {
                 xprintf(UsrErr, "Wrong format of the $ElementData header, %s.\n", tok.position_msg().c_str());
     }
@@ -306,13 +308,7 @@ void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
     vector<int>::const_iterator id_iter;
     double * data_ptr;
 
-
-    if (! last_header.actual && ! tok_.eof()) {
-        tok_.skip_to("$ElementData");
-    }
-    // here we are at position just after the header of $ElementData section
-    // that has been read into last_header
-    while (last_header.time < search_header.time) {
+    while ( last_header.time <= search_header.time*(1.0 + 2.0*numeric_limits<double>::epsilon()) ) {
         // here -last data are not actual
 
         if (last_header.actual) {
@@ -325,6 +321,7 @@ void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
             for (i_row = 0; i_row < last_header.n_entities; ++i_row)
                 try {
                     tok_.next_line();
+//                    DBGMSG("data line: %d %d '%s'\n", i_row, last_header.n_entities, tok_.line().c_str());
                     id = lexical_cast<unsigned int>(*tok_); ++tok_;
                     while (id_iter != el_ids.end() && *id_iter != id) ++id_iter; // skip initialization of some rows in data if ID is missing
                     if (id_iter == el_ids.end()) {
@@ -342,16 +339,17 @@ void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
                     xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
                 }
             // possibly skip remaining lines after break
-            while (i_row < last_header.n_entities) tok_.next_line(), ++i_row;
+            while (i_row < last_header.n_entities) tok_.next_line(false), ++i_row;
 
-            xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
+            xprintf(Msg, "time: %f; %d entities of field %s read.\n",
                     last_header.time, n_read, last_header.field_name.c_str());
         }
 
         // find next the data section of corresponding field name
+        last_header.field_name="";
         while (! tok_.eof() && last_header.field_name != search_header.field_name) {
-            tok_.skip_to("$ElementData");
-            read_data_header(tok_, last_header);
+            if ( tok_.skip_to("$ElementData") )
+                read_data_header(tok_, last_header);
         }
 
         if (tok_.eof()) {
@@ -370,12 +368,12 @@ void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
             if (last_header.n_components != search_header.n_components) {
                 xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
                         tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_components, search_header.n_components);
-                // last_header.n_components=search_header.n_components;
+                last_header.n_components=search_header.n_components;
             }
             if (last_header.n_entities != search_header.n_entities) {
                 xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
                         tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_entities, search_header.n_entities);
-                last_header.n_entities=search_header.n_entities;
+                // last_header.n_entities=search_header.n_entities;
             }
 
         }

@@ -150,7 +150,7 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
     set_value(p,elm, this->value_);
     return this->r_value_;
@@ -161,7 +161,7 @@ typename Value::return_type const & FieldPython<spacedim, Value>::value(const Po
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+void FieldPython<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
     ASSERT_SIZES( point_list.size(), value_list.size() );
@@ -176,7 +176,7 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point<spacedim
 * Returns one vector value in one given point.
 */
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, Value &value)
+void FieldPython<spacedim, Value>::set_value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm, Value &value)
 {
 #ifdef HAVE_PYTHON
     for(unsigned int i = 0; i < spacedim; i++) {

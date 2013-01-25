@@ -19,6 +19,7 @@ using namespace std;
 Tokenizer::Tokenizer(const FilePath &fp)
 : f_name_(fp),
   own_stream_(NULL),
+  comment_pattern_(""),
   line_counter_(0), position_(0),
   separator_("\\"," \t","\""),
   line_tokenizer_(line_,  separator_)
@@ -37,11 +38,16 @@ Tokenizer::Tokenizer( std::istream &in)
 : f_name_("__anonymous_stream__"),
   own_stream_(NULL),
   in_( &in ),
+  comment_pattern_(""),
   line_counter_(0), position_(0),
   separator_("\\"," \t","\""),
   line_tokenizer_(line_,  separator_)
 {}
 
+
+void Tokenizer::set_comment_pattern( const std::string &pattern) {
+    comment_pattern_=pattern;
+}
 
 
 bool Tokenizer::skip_to(const std::string& pattern, const std::string &end_search_pattern)
@@ -75,10 +81,12 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     // skip empty lines
     while ( ! eof() && line_ == "") {
         std::getline( *in_, line_);
+        line_counter_++;
         // check failure bits
         if (in_->bad()) xprintf(Err, "Can not read from stream, file: '%s', line: '%d'\n", f_name_.c_str(), line_num());
         boost::trim( line_ );
-        line_counter_++;
+        // if pattern is set and beginning of line match it
+        if (comment_pattern_.size() && 0==line_.compare(0, comment_pattern_.size(), comment_pattern_) ) line_="";
     }
     if (! in_->fail() ) { // allow only eof state after any getline
         set_tokenizer();

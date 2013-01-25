@@ -137,7 +137,7 @@ public:
         *  s having in part
         *
         */
-       virtual typename Value::return_type const &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)=0;
+       virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)=0;
 
        /**
         * Pure virtual method. At least this has to be implemented by descendants.
@@ -150,7 +150,7 @@ public:
         * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
         * but this overhead can be negligible for more complex fields as Python of Formula.
         */
-       virtual void value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+       virtual void value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
 
