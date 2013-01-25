@@ -35,11 +35,52 @@
 #include <string>
 #include <istream>
 #include <vector>
+#include <map>
+
 #include "system/tokenizer.hh"
 
 class Mesh;
 class GMSH_DataHeader;
 class FilePath;
+
+
+/***********************************
+ * Structure to store the information from a header of $ElementData section.
+ *
+ * Format of GMSH ASCII data sections
+ *
+   number-of-string-tags (== 2)
+     field_name
+     interpolation_scheme_name
+   number-of-real-tags (==1)
+     time_of_dataset
+   number-of-integer-tags
+     time_step_index (starting from zero)
+     number_of_field_components (1, 3, or 9 - i.e. 3d scalar, vector or tensor data)
+     number_of entities (nodes or elements)
+     partition_index (0 == no partition, not clear if GMSH support reading different partition from different files)
+   elm-number value ...
+*
+*/
+
+struct GMSH_DataHeader {
+    /// True if the stream position is just after the header.
+    /// False either before first header is found or at EOF.
+    bool actual;
+    std::string field_name;
+    /// Currently ont used
+    std::string interpolation_scheme;
+    double time;
+    /// Currently ont used
+    unsigned int time_index;
+    /// Number of values on one row
+    unsigned int n_components;
+    /// Number of rows
+    unsigned int n_entities;
+    /// ?? Currently ont used
+    unsigned int partition_index;
+};
+
 
 class GmshMeshReader {
 public:
@@ -66,12 +107,19 @@ public:
     void read_mesh(Mesh* mesh);
 
     /**
-     *  Reads ElementData section of opened GMSH file. Only scalar data are currently supported.
-     *  Given @p mesh parameter is used to identify element IDs. The output vector @p data, is
-     *  cleared and resized to the size equal to the number of elements in the mesh. Data are stored in the
-     *  natural ordering of the ilements in the @p mesh.
+     *  Reads ElementData sections of opened GMSH file. The file is serached for the $ElementData section with header
+     *  that match the given @p search_header (same field_name, time of the next section is the first greater then
+     *  that given in the @p search_header). If such section has not been yet read, we read the data section into
+     *  raw buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into
+     *  indexes to the raw buffer. The buffer must have size at least @p search_header.n_components * @p search_header.n_entities.
+     *  Indexes in the map must be smaller then @p search_header.n_entities.
+     *
+     *  Possible optimizations:
+     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
+     *  and just check that they comes in in correct order.
      */
-    void read_element_data(const std::string &field_name, std::vector<double> &data, Mesh *mesh);
+    void read_element_data( const GMSH_DataHeader &search_header,
+            double *data, std::vector<int> const & el_ids);
 
 private:
     /**
@@ -98,6 +146,8 @@ private:
 
     /// Tokenizer used for reading ASCII GMSH file format.
     Tokenizer tok_;
+    /// Last read header of ElementData section.
+    GMSH_DataHeader last_header;
 };
 
 #endif	/* _GMSHMESHREADER_H */

@@ -69,6 +69,36 @@ TEST(FieldValue_, speed_test_direct) {
    cout << val << endl;*/
 }
 
+TEST(FieldValue_, construction_from_raw) {
+
+    double raw_data[6]={1,2,3,4,5,6};
+    {
+        typedef FieldValue_<1,1,double> T; T::return_type x_val;
+        x_val=0;
+        const T::return_type & val = T::from_raw(x_val, raw_data);
+        EXPECT_DOUBLE_EQ(1, double(val));
+    }
+    {
+        typedef FieldValue_<3,1,double> T; T::return_type x_val;
+        x_val.zeros();
+        const T::return_type & val = T::from_raw(x_val, raw_data);
+        EXPECT_TRUE( arma::max(T::return_type("1 2 3") == T::return_type(val)) );
+    }
+    {
+        typedef FieldValue_<0,1,double> T; T::return_type x_val(2);
+        x_val.zeros();
+        const T::return_type & val = T::from_raw(x_val, raw_data);
+        EXPECT_TRUE( arma::max(T::return_type("1 2") == T::return_type(val)) );
+    }
+    {
+        typedef FieldValue_<2,3,double> T; T::return_type x_val;
+        x_val.zeros();
+        const T::return_type & val = T::from_raw(x_val, raw_data);
+        arma::umat match = (T::return_type("1 2 3; 4 5 6") == T::return_type(val));
+        EXPECT_TRUE( match.max());
+    }
+}
+
 
 
 string input = R"INPUT(

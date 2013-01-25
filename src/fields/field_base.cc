@@ -13,15 +13,8 @@
 #include "fields/field_formula_impl.hh"
 #include "fields/field_interpolated_p0_impl.hh"
 #include "fields/field_add_potential_impl.hh"
+#include "fields/field_elementwise_impl.hh"
 
-/*
-#define INSTANCE_FIELD_ALL_TYPES(field)    \
-template class field<3, FieldValue<0>::Discrete >;  \
-template class field<3, FieldValue<0>::Scalar >;    \
-template class field<3, FieldValue<0>::Vector >;        \
-template class field<3, FieldValue<3>::VectorFixed >;    \
-template class field<3, FieldValue<3>::TensorFixed >;     \
-*/
 
 
 // Implementation of FieldCommon
@@ -53,7 +46,9 @@ INSTANCE_ALL(BCField)
 INSTANCE_ALL(FieldConstant)
 INSTANCE_ALL(FieldPython)
 INSTANCE_ALL(FieldFormula)
+INSTANCE_ALL(FieldElementwise)
 //INSTANCE_ALL(FieldInterpolatedP0)
 
 template class FieldAddPotential<3, FieldValue<0>::Scalar >;
 template class FieldAddPotential<2, FieldValue<0>::Scalar >;
+

@@ -13,8 +13,6 @@
 #include "fields/field_base.hh"
 #include "mesh/point.hh"
 
-#include <string>
-using namespace std;
 
 /**
  * Class representing spatially constant fields.
@@ -29,6 +27,10 @@ public:
 
     static Input::Type::Record input_type;
 
+    /**
+     * Return Record for initialization of FieldConstant that is derived from AbstractRecord given by @p a_type
+     * and the individual elements of the possible Value (vector, tensor) have Input::Type @p eit.
+     */
     static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
 
     virtual void init_from_input(const Input::Record &rec);

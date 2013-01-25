@@ -137,6 +137,23 @@ struct ReturnType<0,1, FieldEnum> { typedef arma::Col<unsigned int> return_type;
 template <int NRows>
 struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>::template fixed<NRows> return_type; };
 
+
+// Resolution of helper functions for raw constructor
+template <class RT> inline RT & set_raw_scalar(RT &val, double *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &val, int *raw_data) { return val;}
+template <class RT> inline RT & set_raw_scalar(RT &val, string *raw_data) { return val;}
+template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return val;}
+
+template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
+template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { return val;}
+template <class RT> inline RT & set_raw_vec(RT &val, string *raw_data) { return val;}
+template <class RT> inline RT & set_raw_vec(RT &val, FieldEnum *raw_data) { return val;}
+
+template <class RT> inline RT & set_raw_fix(RT &val, double *raw_data) {  val = RT(raw_data); return val;}
+template <class RT> inline RT & set_raw_fix(RT &val, int *raw_data) { return val;}
+template <class RT> inline RT & set_raw_fix(RT &val, string *raw_data) { return val;}
+template <class RT> inline RT & set_raw_fix(RT &val, FieldEnum *raw_data) { return val;}
+
 } // namespace internal
 
 
@@ -148,7 +165,6 @@ struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>
  * ET is type of elements, n_cols and n_rows gives fixed dimensions of the tensor value (nx1 is vector, 1x1 is scalar,
  * 0x1 is variable size vector, 0x0 is variable size tensor (not implemented yet) )
  *
- * TODO: change (i,j) access to .at(i,j) access ( latter is without bound check)
  */
 template <int NRows, int NCols, class ET>
 class FieldValue_ {
@@ -181,6 +197,8 @@ public:
 
 
     inline FieldValue_(return_type &val) : value_(val) {}
+    inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
+
 
     void init_from_input( AccessType rec ) {
         Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
@@ -239,7 +257,7 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int j)
         { return value_.at(i,j); }
-    inline operator return_type()
+    inline operator return_type() const
         { return value_;}
 
 private:
@@ -272,6 +290,8 @@ public:
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
+    inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
+
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
     void set_n_comp(unsigned int) {};
@@ -281,7 +301,7 @@ public:
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
         { return internal::scalar_value_conversion(value_); }
-    inline operator return_type()
+    inline operator return_type() const
         { return value_;}
 
 private:
@@ -310,8 +330,11 @@ public:
             return IT::Array( ElementInputType(), 1);
         }
     }
+    inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
 
     inline FieldValue_(return_type &val) : value_(val) {}
+
+
     void init_from_input( AccessType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
@@ -336,7 +359,7 @@ public:
         { return value_.n_rows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline operator return_type()
+    inline operator return_type() const
         { return value_;}
 
 private:
@@ -365,7 +388,7 @@ public:
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
-
+    inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
     void init_from_input( AccessType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
@@ -390,7 +413,7 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline operator return_type()
+    inline operator return_type() const
         { return value_;}
 
 private:

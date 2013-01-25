@@ -21,6 +21,7 @@ using namespace std;
 #include "fields/field_python.hh"
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
+#include "fields/field_elementwise.hh"
 
 #include "fields/field_values.hh"
 
@@ -71,6 +72,7 @@ Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename 
     FieldPython<spacedim,Value>::get_input_type(type, element_input_type);
 #endif
     //FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
+    FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type);
 
     return type;
 }
@@ -92,6 +94,8 @@ FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(const
         func=new FieldConstant<spacedim,Value>(n_comp);
     } else if (rec.type() == FieldFormula<spacedim,Value>::input_type ) {
         func=new FieldFormula<spacedim,Value>(n_comp);
+    } else if (rec.type() == FieldElementwise<spacedim,Value>::input_type ) {
+        func=new FieldElementwise<spacedim,Value>(n_comp);
     } else {
         xprintf(PrgErr,"TYPE of Field is out of set of descendants. SHOULD NOT HAPPEN.\n");
     }

@@ -30,16 +30,18 @@
  * @date Created on October 3, 2010, 11:32 AM
  */
 
-#include "msh_gmshreader.h"
-
-#include "mesh/mesh.h"
-#include "mesh/nodes.hh"
 #include <istream>
 #include <string>
+#include <limits>
+
+#include "msh_gmshreader.h"
 
 #include "system/system.hh"
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
+
+#include "mesh/mesh.h"
+#include "mesh/nodes.hh"
 
 
 using namespace std;
@@ -47,13 +49,19 @@ using namespace std;
 
 GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 : tok_(file_name)
-{}
+{
+    last_header.time=-numeric_limits<double>::infinity();
+    last_header.actual=false;
+}
 
 
 
 GmshMeshReader::GmshMeshReader(std::istream &in)
 : tok_(in)
-{}
+{
+    last_header.time=-numeric_limits<double>::infinity();
+    last_header.actual=false;
+}
 
 
 
@@ -197,7 +205,8 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
     }
 
-    xprintf(Msg, " %d elements read. \n", mesh->n_elements());
+    mesh->n_all_input_elements_=mesh->element.size() + mesh->bc_elements.size();
+    xprintf(Msg, " %d bulk elements, %d boundary elements. \n", mesh->element.size(), mesh->bc_elements.size());
 }
 
 
@@ -230,119 +239,147 @@ void GmshMeshReader::read_physical_names(Tokenizer &tok) {
 }
 
 
-/***********************************
- * Format of GMSH ASCII data sections
- *
-   number-of-string-tags (== 2)
-     field_name
-     interpolation_scheme_name
-   number-of-real-tags (==1)
-     time_of_dataset
-   number-of-integer-tags
-     time_step_index (starting from zero)
-     number_of_field_components (1, 3, or 9 - i.e. 3d scalar, vector or tensor data)
-     number_of entities (nodes or elements)
-     partition_index (0 == no partition, not clear if GMSH support reading different partition from different files)
-   elm-number value ...
-
-*/
-
-
-/// Structure to which store the information form the header of data section.
-///
-struct GMSH_DataHeader {
-    string field_name;
-    string interpolation_scheme;
-    double time;
-    unsigned int time_index;
-    unsigned int n_components;
-    unsigned int n_entities;
-    unsigned int partition_index;
-};
-
 // Is assumed to be called just after tok.skip_to("..")
 // reads the header from the tokenizer @p tok and return it as the second parameter
 void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
     using namespace boost;
+    try {
+        // string tags
+        tok.next_line();
+        unsigned int n_str = lexical_cast<unsigned int>(*tok);
+        head.field_name="";
+        head.interpolation_scheme = "";
+        if (n_str > 0) {
+            tok.next_line(); n_str--;
+            head.field_name= *tok; //  unquoted by tokenizer if needed
+        }
+        if (n_str > 0) {
+            tok.next_line(); n_str--;
+            head.interpolation_scheme = *tok;
+        }
+        for(;n_str>0;n_str--) tok.next_line(); // skip possible remaining tags
 
-    // string tags
-    tok.next_line();
-    unsigned int n_str = lexical_cast<unsigned int>(*tok);
-    head.field_name="";
-    head.interpolation_scheme = "";
-    if (n_str > 0) {
-        tok.next_line(); n_str--;
-        head.field_name= *tok; //  unquoted by tokenizer if needed
-    }
-    if (n_str > 0) {
-        tok.next_line(); n_str--;
-        head.interpolation_scheme = *tok;
-    }
-    for(;n_str>0;n_str--) tok.next_line(); // skip possible remaining tags
+        //real tags
+        tok.next_line();
+        unsigned int n_real = lexical_cast<unsigned int>(*tok);
+        head.time=0.0;
+        if (n_real>0) {
+            tok.next_line(); n_real--;
+            head.time=lexical_cast<double>(*tok);
+        }
+        for(;n_real>0;n_real--) tok.next_line();
 
-    //real tags
-    tok.next_line();
-    unsigned int n_real = lexical_cast<unsigned int>(*tok);
-    head.time=0.0;
-    if (n_real>0) {
-        tok.next_line(); n_real--;
-        head.time=lexical_cast<double>(*tok);
+        // int tags
+        tok.next_line();
+        unsigned int n_int = lexical_cast<unsigned int>(*tok);
+        head.time_index=0;
+        head.n_components=1;
+        head.n_entities=0;
+        head.partition_index=0;
+        if (n_int>0) {
+            tok.next_line(); n_int--;
+            head.time_index=lexical_cast<unsigned int>(*tok);
+        }
+        if (n_int>0) {
+            tok.next_line(); n_int--;
+            head.n_components=lexical_cast<unsigned int>(*tok);
+        }
+        if (n_int>0) {
+            tok.next_line(); n_int--;
+            head.n_entities=lexical_cast<unsigned int>(*tok);
+        }
+        for(;n_int>0;n_int--) tok.next_line();
+    } catch (bad_lexical_cast &) {
+                xprintf(UsrErr, "Wrong format of the $ElementData header, %s.\n", tok.position_msg().c_str());
     }
-    for(;n_real>0;n_real--) tok.next_line();
-
-    // int tags
-    tok.next_line();
-    unsigned int n_int = lexical_cast<unsigned int>(*tok);
-    head.time_index=0;
-    head.n_components=1;
-    head.n_entities=0;
-    head.partition_index=0;
-    if (n_int>0) {
-        tok.next_line(); n_int--;
-        head.time_index=lexical_cast<unsigned int>(*tok);
-    }
-    if (n_int>0) {
-        tok.next_line(); n_int--;
-        head.n_components=lexical_cast<unsigned int>(*tok);
-    }
-    if (n_int>0) {
-        tok.next_line(); n_int--;
-        head.n_entities=lexical_cast<unsigned int>(*tok);
-    }
-    for(;n_int>0;n_int--) tok.next_line();
 }
 
 
 
-void GmshMeshReader::read_element_data( const  string &field_name, vector<double> &data, Mesh *mesh) {
+void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
+        double *data, std::vector<int> const & el_ids)
+{
+
     using namespace boost;
 
-    // find the data section
-    GMSH_DataHeader head;
-    head.field_name="";
-    while (! tok_.eof() && head.field_name!=field_name) {
+    unsigned int id, idx, n_read;
+    vector<int>::const_iterator id_iter;
+    double * data_ptr;
+
+
+    if (! last_header.actual && ! tok_.eof()) {
         tok_.skip_to("$ElementData");
-        read_data_header(tok_, head);
     }
+    // here we are at position just after the header of $ElementData section
+    // that has been read into last_header
+    while (last_header.time < search_header.time) {
+        // here -last data are not actual
 
-    INPUT_CHECK(head.field_name==field_name, "Can not find data field '%s' in input file '%s'.\n",
-            field_name.c_str(), tok_.f_name().c_str());
-    ASSERT( mesh , "Argument mesh is NULL.\n");
+        if (last_header.actual) {
+            // read data as we have correct header with already passed time
+            // we assume that data is big enough
 
-    // read the data
-    vector<double>(data).swap(data); // clear vector by swapping
-    data.reserve(head.n_entities);
-    int id;
-    double scalar_value;
-    for (unsigned int i = 0; i < head.n_entities; ++i) {
-        tok_.next_line();
-        id = lexical_cast<unsigned int>(*tok_); ++tok_;
-        scalar_value = lexical_cast<double>(*tok_); ++tok_;
+            n_read = 0;
+            id_iter=el_ids.begin();
+            unsigned int i_row;
+            for (i_row = 0; i_row < last_header.n_entities; ++i_row)
+                try {
+                    tok_.next_line();
+                    id = lexical_cast<unsigned int>(*tok_); ++tok_;
+                    while (id_iter != el_ids.end() && *id_iter != id) ++id_iter; // skip initialization of some rows in data if ID is missing
+                    if (id_iter == el_ids.end()) {
+                        xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is out of order. Skipping rest of data.\n",
+                                tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, id);
+                        break;
+                    }
+                    idx = id_iter - el_ids.begin();
+                    data_ptr = data + idx * search_header.n_components;
+                    for (unsigned int i_col =0; i_col < search_header.n_components; ++i_col, ++data_ptr) {
+                         *(data_ptr) = lexical_cast<double>(*tok_); ++tok_;
+                    }
+                    n_read++;
+                } catch (bad_lexical_cast &) {
+                    xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
+                }
+            // possibly skip remaining lines after break
+            while (i_row < last_header.n_entities) tok_.next_line(), ++i_row;
 
-        ElementFullIter ele = mesh->element.find_id(id);
-        data[ ele.index() ] = scalar_value;
-    }
+            xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
+                    last_header.time, n_read, last_header.field_name.c_str());
+        }
 
-    xprintf(Msg, " %d values of pressure read. O.K.\n", data.size());
+        // find next the data section of corresponding field name
+        while (! tok_.eof() && last_header.field_name != search_header.field_name) {
+            tok_.skip_to("$ElementData");
+            read_data_header(tok_, last_header);
+        }
+
+        if (tok_.eof()) {
+            if (! last_header.actual) {
+                // first call of the method, no data read
+                xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
+                        tok_.f_name().c_str(), search_header.field_name.c_str());
+                return;
+            } else {
+                // mark data as actual until inf
+                last_header.time=numeric_limits<double>::infinity(); //
+                return;
+            }
+        } else {
+            // check that the header is valid, try to correct
+            if (last_header.n_components != search_header.n_components) {
+                xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
+                        tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_components, search_header.n_components);
+                // last_header.n_components=search_header.n_components;
+            }
+            if (last_header.n_entities != search_header.n_entities) {
+                xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
+                        tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_entities, search_header.n_entities);
+                last_header.n_entities=search_header.n_entities;
+            }
+
+        }
+        last_header.actual=true;
+    } // time loop
 }
 

@@ -47,6 +47,7 @@
 // Forward declarations
 template <int spacedim>
 class ElementAccessor;
+class GmshMeshReader;
 
 
 
@@ -169,6 +170,7 @@ public:
      */
     void setup_materials( MaterialDatabase &base);
     void make_element_geometry();
+    vector<int> const &all_elements_id();
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -233,6 +235,15 @@ private:
     unsigned int n_bb_neigh, n_vb_neigh;
     vector<Neighbour_both> neighbours_;
 
+    /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
+    /// in input mesh file and has ID assigned.
+    ///
+    /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
+    vector<int> all_elements_id_;
+    /// Number of elements read from input.
+    unsigned int n_all_input_elements_;
+
+    friend class GmshMeshReader;
 };
 
 

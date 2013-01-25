@@ -584,9 +584,31 @@ void Mesh::make_intersec_elements() {
 
 }
 
+
+
 ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
     return ElementAccessor<3>(this, idx, boundary);
 }
+
+
+
+vector<int> const & Mesh::all_elements_id() {
+    all_elements_id_.resize(n_all_input_elements_);
+    std::vector<int>::iterator all_it = all_elements_id_.begin();
+    unsigned int last_id = element.begin().id();
+    if (all_elements_id_.size() ==0) {
+        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++all_it) {
+            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+            last_id=*all_it = it.id();
+        }
+        for(ElementFullIter it=bc_elements.begin(); all_it!=all_elements_id_.end(); ++it, ++all_it) {
+            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+            last_id=*all_it = it.id();
+        }
+    }
+    return all_elements_id_;
+}
+
 
 /*
 void Mesh::make_edge_list_from_neigh() {

@@ -68,6 +68,10 @@ public:
        static std::string template_name();
 
 
+       /**
+        * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
+        * given by element_input_type pointer.
+        */
        static Input::Type::AbstractRecord get_input_type(typename Value::ElementInputType *element_input_type=NULL);
 
        /**
