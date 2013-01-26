@@ -226,6 +226,8 @@ public:
     string bcd_fname_;
 private:
 
+    void intersect_element_lists(vector<unsigned int> &nodes_list, vector<unsigned int> &intersection_element_list);
+
     void element_to_neigh_vb();
     void create_external_boundary();
 
@@ -242,6 +244,9 @@ private:
     vector<int> all_elements_id_;
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
+
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements;
 
     friend class GmshMeshReader;
 };

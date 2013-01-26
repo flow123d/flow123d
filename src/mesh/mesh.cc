@@ -250,16 +250,36 @@ void Mesh::count_side_types()
 }
 
 
+void Mesh::intersect_element_lists(vector<unsigned int> &nodes_list, vector<unsigned int> &intersection_element_list)
+{
+	vector<unsigned int> tmp_list;
+	intersection_element_list.clear();
+	for (vector<unsigned int>::iterator ni = nodes_list.begin()+1; ni!=nodes_list.end(); ni++)
+	{
+		tmp_list = intersection_element_list;
+		intersection_element_list.clear();
+		set_intersection(tmp_list.begin(),
+				tmp_list.end(),
+				node_elements[*ni].begin(),
+				node_elements[*ni].end(),
+				intersection_element_list.begin());
+	}
+}
+
+
 
 void Mesh::make_neighbours_and_edges()
 {
 	// for each node we make a list of elements that use this node
-	map<const Node*,vector<unsigned int> > node_elements;
+	node_elements.resize(node_vector.size());
 
 	// create the node_elements map
 	FOR_ELEMENTS( this, e )
 		for (unsigned int n=0; n<e->n_nodes(); n++)
-			node_elements[e->node[n]].push_back(e->index());
+			node_elements[node_vector.index(e->node[n])].push_back(e->index());
+
+	for (vector<vector<unsigned int> >::iterator n=node_elements.begin(); n!=node_elements.end(); n++)
+		stable_sort(n->begin(), n->end());
 
 	// pointers to created edges
 	vector<Edge *> tmp_edges;
@@ -282,8 +302,9 @@ void Mesh::make_neighbours_and_edges()
 			for (unsigned n=0; n<e->side(s)->n_nodes(); n++)
 			{
 				set_of_nodes.insert(e->side(s)->node(n));
-				for (vector<unsigned int>::iterator eit=node_elements[e->side(s)->node(n)].begin();
-						eit!=node_elements[e->side(s)->node(n)].end(); eit++)
+				unsigned int node_index = node_vector.index(e->side(s)->node(n));
+				for (vector<unsigned int>::iterator eit=node_elements[node_index].begin();
+						eit!=node_elements[node_index].end(); eit++)
 					element_count[*eit]++;
 			}
 
