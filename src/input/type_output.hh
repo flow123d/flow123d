@@ -187,6 +187,7 @@ public:
 
 	void print(ostream& stream) {
 		key_name_ = "";
+		type_->set_reference( "/" );
 		OutputBase::print(stream);
 	}
 
@@ -222,8 +223,6 @@ private:
 
     /// temporary value of actually record type
     string key_name_;
-    /// temporary value of actually record description
-    string description_;
     /// temporary value of actually record value
     Default value_;
 };

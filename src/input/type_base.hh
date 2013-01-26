@@ -63,6 +63,8 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  *  @ingroup input_types
  */
 class TypeBase {
+	friend class OutputJSONTemplate;
+
 public:
     /**
      * In order to output documentation of complex types only once, we mark types that have printed their documentation.
@@ -144,6 +146,12 @@ public:
      */
     virtual bool valid_default(const string &str) const =0;
 
+    string reference() const
+    { return reference_; };
+
+    void set_reference(string ref) const
+    { reference_ = ref; };
+
 protected:
 
     /**
@@ -202,6 +210,9 @@ protected:
     static LazyObjectsSet &lazy_object_set();
 
     static bool was_constructed(const TypeBase * ptr);
+
+    /// Reference to first output in tree (used in repeated output)
+    mutable string reference_;
 
     friend class Array;
     friend class Record;

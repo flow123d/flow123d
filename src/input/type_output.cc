@@ -342,216 +342,287 @@ std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
 
 
 void OutputJSONTemplate::print(ostream& stream, const Record *type, unsigned int depth) {
-	stream << endl;
-	stream << setw(depth * padding_size) << "";
-	stream << "# Record " << type->type_name();
-	if (key_name_.size()) {
-		write_description(stream, description_);
-		stream << endl << setw(depth * padding_size) << "" << key_name_ << " = ";
-	} else {
-		stream << endl << setw(depth * padding_size) << "";
-	}
-
-	if (type->made_extensive_doc()) {
-		stream << "{REF=\" /.../" << type->type_name() << "\"}";
-	} else {
-		type->set_made_extensive_doc(true);
-		stream << "{";
-		if (type->description().size()) {
-			size_setw_ = depth+1;
-			write_description(stream, type->description(), 2);
-		}
-		stream << endl;
-		for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-	    	if (it->key_ == "TYPE") {
-	    		stream << endl;
-	    		stream << setw((depth + 1) * padding_size) << "" << "TYPE = \"" << type->type_name() << "\"";
-	    	} else {
-	    		key_name_ = it->key_;
-				description_ = it->description_;
-				size_setw_ = depth+1;
-				value_ = it->default_;
-				print(stream, it->type_.get(), depth+1);
+	switch (doc_type_) {
+		case key_record:
+			stream << "# Record " << type->type_name();
+			break;
+		case full_record:
+			stream << endl << setw(depth * padding_size) << "";
+			if (key_name_.size()) {
+				stream << key_name_ << " = ";
 			}
-			stream << endl;
-		}
-		stream << setw(depth * padding_size) << "" << "}";
+			if (type->made_extensive_doc()) {
+				stream << "{REF=\"" << type->reference() << "\"}";
+			} else {
+				type->set_made_extensive_doc(true);
+				stream << "{";
+				if (type->description().size()) {
+					size_setw_ = depth+1;
+					write_description(stream, type->description(), 2);
+				}
+				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+					it->type_.get()->set_reference( type->reference() + it->key_ + "/" );
+					if (it != type->begin()) {
+						stream << ",";
+					}
+					stream << endl;
+			    	if (it->key_ == "TYPE") {
+			    		stream << endl;
+			    		stream << setw((depth + 1) * padding_size) << "" << "TYPE = \"" << type->type_name() << "\"";
+			    	} else {
+			    		key_name_ = it->key_;
+						size_setw_ = depth+1;
+						value_ = it->default_;
+
+						doc_type_ = key_record;
+						stream << endl;
+						stream << setw((depth + 1) * padding_size) << "";
+						print(stream, it->type_.get(), depth+1);
+						write_description(stream, it->description_);
+						doc_type_ = full_record;
+						print(stream, it->type_.get(), depth+1);
+					}
+				}
+				stream << endl;
+				stream << setw(depth * padding_size) << "" << "}";
+			}
+
+			if (depth == 0) {
+				stream << endl;
+			}
+			break;
 	}
 
-	if (depth == 0) {
-		stream << endl;
-	}
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const Array *type, unsigned int depth) {
-	bool has_opt_prefix = value_.is_optional() | value_.has_value_at_read_time(); // key contains OPT_ prefix
-	unsigned int lower_size, upper_size;
-	get_array_sizes(*type, lower_size, upper_size);
+	switch (doc_type_) {
+		case key_record:
+			unsigned int lower_size, upper_size;
+			get_array_sizes(*type, lower_size, upper_size);
 
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# Array, size limits: [";
-	stream << lower_size << ", " << upper_size << "] ";
-	write_description(stream, description_);
+			stream << "# Array, size limits: [" << lower_size << ", " << upper_size << "] ";
+			break;
+		case full_record:
+			bool has_opt_prefix = value_.is_optional() | value_.has_value_at_read_time(); // key contains OPT_ prefix
 
-	stream << endl;
-	stream << setw(depth * padding_size) << "";
+			type->data_->type_of_values_.get()->set_reference( type->reference() );
 
-	if (key_name_.size()) {
-		if (has_opt_prefix) {
-			stream << "OPT_";
-		}
-		stream << key_name_ << " = ";
+			if (has_opt_prefix) {
+				stream << endl;
+				stream << setw(depth * padding_size) << "" << "# Optional key";
+			}
+
+			stream << endl;
+			stream << setw(depth * padding_size) << "";
+
+			if (key_name_.size()) {
+				if (has_opt_prefix) {
+					stream << "OPT_";
+				}
+				stream << key_name_ << " = " << "[";
+			} else {
+				stream << "[";
+			}
+
+			key_name_ = "";
+			size_setw_ = depth + 1;
+
+			doc_type_ = key_record;
+			stream << endl;
+			stream << setw((depth + 1) * padding_size) << "";
+			print(stream, type->data_->type_of_values_.get(), depth+1);
+
+			doc_type_ = full_record;
+			if ( ! (typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::Integer)
+					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::Double)
+					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::Bool)
+					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::String)
+					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::FileName)) ) {
+				print(stream, type->data_->type_of_values_.get(), depth+1);
+			}
+			//if (lower_size > 1) {
+			//	stream << "," << endl;
+			//	stream << setw((depth + 1) * padding_size) << "" << "< ";
+			//	if (lower_size == 2) stream << "1 more entry >";
+			//	else stream << (lower_size-1) << " more entries >";
+			//}
+
+			stream << endl;
+			stream << setw(depth * padding_size) << "" << "]";
+			break;
 	}
 
-	key_name_ = "";
-	description_ = "";
-	size_setw_ = depth + 1;
-	stream << "[";
-
-	print(stream, type->data_->type_of_values_.get(), depth+1);
-	if (lower_size > 1) {
-		stream << "," << endl;
-		stream << setw((depth + 1) * padding_size) << "" << "< ";
-		if (lower_size == 2) stream << "1 more entry >";
-		else stream << (lower_size-1) << " more entries >";
-	}
-
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "]";
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const AbstractRecord *type, unsigned int depth) {
-	string rec_name = key_name_;
+	switch (doc_type_) {
+		case key_record:
+			stream << "# abstract record " << type->type_name();
+			break;
+		case full_record:
+			string rec_name = key_name_;
 
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# abstract record " << type->type_name();
-	write_description(stream, description_);
-	stream << endl;
-	stream << setw(depth * padding_size) << "";
-	stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
+			stream << endl;
+			stream << setw(depth * padding_size) << "";
+			stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
-    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-    	key_name_ = it->type_name() + "_" + rec_name;
-    	description_ = it->description();
-    	size_setw_ = depth;
+		    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+		    	it->set_reference( type->reference() );
 
-    	if (it != type->begin_child_data()) {
-	    	stream << ",";
-		}
-    	print(stream, &*it, depth);
-    }
+		    	key_name_ = it->type_name() + "_" + rec_name;
+		    	size_setw_ = depth;
 
-    stream << endl;
+		    	if (it != type->begin_child_data()) {
+			    	stream << ",";
+				}
+		    	doc_type_ = key_record;
+		    	stream << endl;
+		    	stream << setw((depth) * padding_size) << "";
+		    	print(stream, &*it, depth);
+		    	write_description(stream, it->description());
+		    	doc_type_ = full_record;
+		    	print(stream, &*it, depth);
+		    }
+
+		    stream << endl;
+			break;
+	}
+
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const Selection *type, unsigned int depth) {
-	unsigned int max_size = 0; // maximal size for setw of description
+	switch (doc_type_) {
+		case key_record: {
+			unsigned int max_size = 0; // maximal size for setw of description
 
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# Selection of " << type->size() << " values:";
+			stream << "# Selection of " << type->size() << " values:";
 
-	for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
-		max_size = std::max(max_size, (unsigned int)(it->key_.size()) );
+			for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
+				max_size = std::max(max_size, (unsigned int)(it->key_.size()) );
+			}
+
+			for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
+				stream << endl;
+				stream << setw(depth * padding_size) << "" << "# \"" << it->key_ << "\"";
+		        if (it->description_ != "") {
+		        	stream << setw(max_size - it->key_.size()) << "" << " - " << it->description_ << "";
+		        }
+		    }
+
+			stream << endl;
+			stream << setw(depth * padding_size) << "";
+			stream << "# " << std::setfill('-') << setw(10) << "" << std::setfill(' ');
+			break;
+		}
+		case full_record:
+			print_default_value(stream, depth, "\"\"", false, true);
+			//if (value_.is_optional()) {
+			//	stream << setw(depth * padding_size) << "" << "OPT_" << key_name_ << " = \"\"" ;
+			//} else {
+			//	stream << setw(depth * padding_size) << "" << key_name_ << " = \"" << value_.value()<< "\"" ;
+			//}
+			break;
 	}
 
-	for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
-		stream << endl;
-		stream << setw(depth * padding_size) << "" << "# \"" << it->key_ << "\"";
-        if (it->description_ != "") {
-        	stream << setw(max_size - it->key_.size()) << "" << " - " << it->description_ << "";
-        }
-    }
-
-	stream << endl;
-	stream << setw(depth * padding_size) << "";
-	stream << "# " << std::setfill('-') << setw(10) << "" << std::setfill(' ');
-	write_description(stream, description_);
-	stream << endl;
-	if (value_.is_optional()) {
-		stream << setw(depth * padding_size) << "" << "OPT_" << key_name_ << " = \"\"" ;
-	} else {
-		stream << setw(depth * padding_size) << "" << key_name_ << " = \"" << value_.value()<< "\"" ;
-	}
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const Integer *type, unsigned int depth) {
-	// get bounds of integer
-	int lower_bound, upper_bound;
-	get_integer_bounds(*type, lower_bound, upper_bound);
+	switch (doc_type_) {
+		case key_record:
+			int lower_bound, upper_bound;
+			get_integer_bounds(*type, lower_bound, upper_bound);
+			stream << "# Integer in [" << lower_bound << ", " << upper_bound << "]";
+			break;
+		case full_record:
+			// test if value in value_.value() is not integer
+			stringstream ss(value_.value());
+			int i;
+			bool invalid_val = (ss >> i).fail();
 
-	// test if value in value_.value() is not integer
-	stringstream ss(value_.value());
-	int i;
-	bool invalid_val = (ss >> i).fail();
+			print_default_value(stream, depth, "0", invalid_val);
+			break;
+	}
 
-	// print output
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# Integer in [" << lower_bound << ", " << upper_bound << "]";
-	write_description(stream, description_);
-	print_default_value(stream, depth, "0", invalid_val);
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const Double *type, unsigned int depth) {
-	// get bounds of double
-	double lower_bound, upper_bound;
-	get_double_bounds(*type, lower_bound, upper_bound);
+	switch (doc_type_) {
+		case key_record:
+			double lower_bound, upper_bound;
+			get_double_bounds(*type, lower_bound, upper_bound);
 
-	// test if value in value_.value() is not double
-	stringstream ss(value_.value());
-	double d;
-	bool invalid_val = (ss >> d).fail();
+			stream << "# Double in [" << lower_bound << ", " << upper_bound << "]";
+			break;
+		case full_record:
+			// test if value in value_.value() is not double
+			stringstream ss(value_.value());
+			double d;
+			bool invalid_val = (ss >> d).fail();
 
-	// print output
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# Double in [" << lower_bound << ", " << upper_bound << "]";
-	write_description(stream, description_);
-	print_default_value(stream, depth, "0", invalid_val);
+			print_default_value(stream, depth, "0", invalid_val);
+			break;
+	}
+
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const Bool *type, unsigned int depth) {
-	// test if in value_.value() is stored boolean value
-	bool invalid_val = (value_.value() != "true") & (value_.value() != "false");
+	switch (doc_type_) {
+		case key_record:
+			stream << "# Boolean ";
+			break;
+		case full_record:
+			// test if in value_.value() is stored boolean value
+			bool invalid_val = (value_.value() != "true") & (value_.value() != "false");
 
-	// print output
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# Boolean ";
-	write_description(stream, description_);
-	print_default_value(stream, depth, "false", invalid_val);
+			print_default_value(stream, depth, "false", invalid_val);
+			break;
+	}
+
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const String *type, unsigned int depth) {
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# String ";
-	write_description(stream, description_);
-	print_default_value(stream, depth, "\"\"", false, true);
+	switch (doc_type_) {
+		case key_record:
+			stream << "# String ";
+			break;
+		case full_record:
+			print_default_value(stream, depth, "\"\"", false, true);
+			break;
+	}
+
 }
 
 
 void OutputJSONTemplate::print(ostream& stream, const FileName *type, unsigned int depth) {
-	stream << endl;
-	stream << setw(depth * padding_size) << "" << "# FileName of ";
+	switch (doc_type_) {
+		case key_record:
+			stream << "# FileName of ";
 
-	switch (type->get_file_type()) {
-	case ::FilePath::input_file:
-		stream << "input file";
-		break;
-	case ::FilePath::output_file:
-		stream << "output file";
-		break;
-	default:
-		stream << "file with unknown type";
-		break;
+			switch (type->get_file_type()) {
+			case ::FilePath::input_file:
+				stream << "input file";
+				break;
+			case ::FilePath::output_file:
+				stream << "output file";
+				break;
+			default:
+				stream << "file with unknown type";
+				break;
+			}
+			break;
+		case full_record:
+			print_default_value(stream, depth, "\"\"", false, true);
+			break;
 	}
 
-	write_description(stream, description_);
-	print_default_value(stream, depth, "\"\"", false, true);
 }
 
 
@@ -572,10 +643,14 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
 	stream << endl;
 	stream << setw(depth * padding_size) << "";
 	if (value_.is_optional() | value_.has_value_at_read_time()) {
-		// optional and read time values have key prefix OPT_
-		if (key_name_.size()) {
-			stream << "OPT_";
+		// optional and read time values have comment and key prefix OPT_
+		if (value_.is_optional()) {
+			stream << "# Optional key";
+		} else {
+			stream << "# Read time value - " << value_.value();
 		}
+		stream << endl;
+		stream << setw(depth * padding_size) << "" << "OPT_";
 	} else if (invalid_val & !value_.is_obligatory()) {
 		// comment of non obligatory invalid values
 		stream << "# ";
@@ -585,10 +660,8 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
 	}
 
 	// printout of value
-	if (value_.is_optional()) {
-		stream << empty_val << setw(padding_size) << "" << "# Optional key";
-	} else if (value_.has_value_at_read_time()) {
-		stream << empty_val << setw(padding_size) << "" << "# Read time value - " << value_.value();
+	if (value_.is_optional() | value_.has_value_at_read_time()) {
+		stream << empty_val;
 	} else if (invalid_val | has_quote) {
 		write_value(stream, value_);
 	} else {
