@@ -47,8 +47,12 @@ inline Side::Side(ElementIter ele, unsigned int set_lnum)
         return element_->mesh_;
     }
 
+    inline unsigned int Side::edge_idx() const {
+        return element_->edge_idx_[el_idx()];
+    }
+
     inline Edge * Side::edge() const {
-        return element_->edges_[el_idx()];
+        return &( mesh()->edges[ edge_idx() ] );
     }
 
     inline Boundary * Side::cond() const {

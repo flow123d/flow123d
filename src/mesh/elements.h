@@ -79,7 +79,7 @@ public:
 
     MaterialDatabase::Iter material; // Element's material
 
-    Edge **edges_; // Edges on sides
+    unsigned int *edge_idx_; // Edges on sides
     Boundary **boundaries_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
 

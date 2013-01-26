@@ -51,7 +51,7 @@ Element::Element()
   node(NULL),
 
   material(NULL),
-  edges_(NULL),
+  edge_idx_(NULL),
   boundaries_(NULL),
 
   n_neighs_vb(0),
@@ -76,11 +76,11 @@ Element::Element(unsigned int dim)
 {
     // allocate element arrays TODO: should be in mesh class
     node = new Node * [ n_nodes()];
-    edges_ = new Edge * [ n_sides()];
+    edge_idx_ = new unsigned int [ n_sides()];
     boundaries_ = new Boundary * [ n_sides()];
 
     FOR_ELEMENT_SIDES(this, si) {
-        edges_[ si ]=NULL;
+        edge_idx_[ si ]=-1;
         boundaries_[si] =NULL;
     }
 }

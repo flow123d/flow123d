@@ -182,12 +182,12 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
             ele->pid=partition_id;
 
             ele->node = new Node * [ele->n_nodes()];
-            ele->edges_ = new Edge * [ele->n_sides()];
+            ele->edge_idx_ = new unsigned int [ele->n_sides()];
             ele->boundaries_ = new Boundary * [ele->n_sides()];
             ele->mesh_ = mesh;
 
             FOR_ELEMENT_SIDES(ele, si) {
-                ele->edges_[ si ]=NULL;
+                ele->edge_idx_[ si ]=-1;
                 ele->boundaries_[si] =NULL;
             }
 

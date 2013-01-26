@@ -65,13 +65,13 @@ Neighbour_both::Neighbour_both()
 
 
 Neighbour::Neighbour()
-: edge_(NULL)
+: edge_idx_(-1)
 {}
 
-void Neighbour::reinit(ElementIter ele, Edge * edg, double sigma_in)
+void Neighbour::reinit(ElementIter ele, unsigned int edg_idx, double sigma_in)
 {
     element_=ele;
-    edge_=edg;
+    edge_idx_=edg_idx;
     sigma = sigma_in;
 }
 

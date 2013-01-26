@@ -298,7 +298,8 @@ void Mesh::make_neighbours_and_edges()
     create_node_element_lists();
 
 	// pointers to created edges
-	vector<Edge *> tmp_edges;
+	//vector<Edge *> tmp_edges;
+    edges.resize(0); // be sure that edges are empty
 
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
@@ -309,7 +310,7 @@ void Mesh::make_neighbours_and_edges()
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
-			if (e->edges_[s] != NULL) continue;
+			if (e->edge_idx_[s] != -1) continue;
 
 			Neighbour neighbour;
 			bool is_neighbour = false;
@@ -321,17 +322,6 @@ void Mesh::make_neighbours_and_edges()
 			for (unsigned n=0; n<e->side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e->side(s)->node(n));
 			intersect_element_lists(side_nodes, intersection_list);
 
-	/*		map<unsigned int,unsigned int> element_count;
-			set<const Node *> set_of_nodes;
-			for (unsigned n=0; n<e->side(s)->n_nodes(); n++)
-			{
-				set_of_nodes.insert(e->side(s)->node(n));
-				unsigned int node_index = node_vector.index(e->side(s)->node(n));
-				for (vector<unsigned int>::iterator eit=node_elements[node_index].begin();
-						eit!=node_elements[node_index].end(); eit++)
-					element_count[*eit]++;
-			}
-*/
 			// Count the number of elements that share the whole side/edge.
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
 					if (element[*isect].dim_ == e->dim_)
@@ -360,13 +350,14 @@ void Mesh::make_neighbours_and_edges()
                             if (ni>=si->n_nodes())
                             {
                                 // create a new edge and neighbour for this side
-                                Edge *edg = new Edge;
-                                tmp_edges.push_back(edg);
-                                edg->n_sides = 1;
-                                edg->side_ = new struct SideIter[1];
-                                edg->side_[0] = si;
-                                elem->edges_[ecs] = edg;
-                                neighbour.edge_ = edg;
+                                unsigned int edge_idx=edges.size();
+                                edges.resize(edge_idx+1);
+                                Edge &edg = edges.back();
+                                edg.n_sides = 1;
+                                edg.side_ = new struct SideIter[1];
+                                edg.side_[0] = si;
+                                elem->edge_idx_[ecs] = edge_idx;
+                                neighbour.edge_idx_ = edge_idx;
                                 vb_neighbours_.push_back(neighbour);
                                 break;
                             }
@@ -375,10 +366,12 @@ void Mesh::make_neighbours_and_edges()
 				}
 			} else { // edge connects only elements of the same dimension
 				// Allocate the array of sides.
-				Edge *edg = new Edge;
-				tmp_edges.push_back(edg);
-				edg->n_sides = n_edg_sides;
-				edg->side_ = new struct SideIter[edg->n_sides];
+
+				unsigned int edge_idx=edges.size();
+				edges.resize(edge_idx+1);
+				Edge &edg = edges.back();
+				edg.n_sides = n_edg_sides;
+				edg.side_ = new struct SideIter[edg.n_sides];
 				unsigned int i=0;
 				// initialize edge data
                 for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
@@ -395,8 +388,8 @@ void Mesh::make_neighbours_and_edges()
                             && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
                         if (ni>=si->n_nodes())
                         {
-                            edg->side_[i++] = si;
-                            elem->edges_[ecs] = edg;
+                            edg.side_[i++] = si;
+                            elem->edge_idx_[ecs] = edge_idx;
                             break;
                         }
                     }
@@ -406,21 +399,21 @@ void Mesh::make_neighbours_and_edges()
 	}   // for elements
 
 	// Now we can create the vector of edges, after we know its size
-	edge.resize(tmp_edges.size());
-	map<Edge*,Edge*> edge_map;
+	//edges.resize(tmp_edges.size());
+	//map<Edge*,Edge*> edge_map;
 	// update pointers to edges and free the temporary objects
-	for (unsigned int i=0; i<tmp_edges.size(); i++)
-	{
-		edge[i] = *(tmp_edges[i]);
-		edge_map[tmp_edges[i]] = &(edge[i]);
-		for (int s=0; s<edge[i].n_sides; s++)
-			edge[i].side_[s]->element()->edges_[edge[i].side_[s]->el_idx()] = &(edge[i]);
-		delete tmp_edges[i];
-	}
-	FOR_NEIGHBOURS(this, ngh)
-		ngh->edge_ = edge_map[ngh->edge_];
+	//for (unsigned int i=0; i<tmp_edges.size(); i++)
+	//{
+	//	edges[i] = *(tmp_edges[i]);
+		//edge_map[tmp_edges[i]] = &(edges[i]);
+		//for (int s=0; s<edges[i].n_sides; s++)
+		//	edges[i].side_[s]->element()->edge_idx_[edges[i].side_[s]->el_idx()] = i;
+	//	delete tmp_edges[i];
+	//}
+	//FOR_NEIGHBOURS(this, ngh)
+	//	ngh->edge_ = edge_map[ngh->edge_];
 
-	xprintf( Msg, "Created %d edges and %d neighbours.\n", edge.size(), vb_neighbours_.size() );
+	xprintf( Msg, "Created %d edges and %d neighbours.\n", edges.size(), vb_neighbours_.size() );
 }
 
 

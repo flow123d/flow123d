@@ -124,7 +124,7 @@ public:
     }
 
     inline unsigned int n_edges() const {
-        return edge.size();
+        return edges.size();
     }
 
     void read_intersections();
@@ -146,15 +146,8 @@ public:
      *
      *  TODO:
      *  - Avoid maps:
-     *    1) node_elements can be vector, to get index from NodeIter call : mesh->node_vector.index(node_iter)
-     *       in future we replace pointers by indexes, this is also safer for reallocations
-     *    2) sort element vectors in node_elements
-     *    3) make independent function that takes list of nodes and find intersection of their element lists:
-     *       Mesh::intersect_element_lists(vector<unsigned int> &nodes_list, vector<unsigned int> &intersection_element_list)
-     *       since element_lists are sorted we can find intersection easily using e.g std::set_intersection algorithm
-     *       on the first pair of lists and then on remaining lists and resulting intersection list.
      *
-     *    4) replace EdgeVector by std::vector<Edge>
+     *    4) replace EdgeVector by std::vector<Edge> (need not to know the size)
      *
      *    5) need not to have temporary array for Edges, only postpone setting pointers in elements and set them
      *       after edges are found; we can temporary save Edge index instead of pointer in Neigbours and elements
@@ -189,7 +182,7 @@ public:
     ElementVector bc_elements;
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
-    EdgeVector edge;
+    std::vector<Edge> edges;
 
     flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
@@ -303,8 +296,8 @@ for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
  * Provides for statement to iterate over the Edges of the Mesh. see FOR_ELEMENTS
  */
 #define FOR_EDGES(_mesh_,__i) \
-    for( EdgeFullIter __i( _mesh_->edge.begin() ); \
-        __i !=_mesh_->edge.end(); \
+    for( vector<Edge>::iterator __i = _mesh_->edges.begin(); \
+        __i !=_mesh_->edges.end(); \
         ++__i)
 
 #define FOR_SIDES(_mesh_, it) \

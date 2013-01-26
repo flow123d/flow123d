@@ -69,11 +69,13 @@ public:
 
     inline const Node * node(unsigned int i) const;
 
-    inline ElementFullIter element() const; // unfortunately we can not have const here, since there are plenty of ELEMENT_FULL_ITER
+    inline ElementFullIter element() const;
 
     inline Mesh * mesh() const;
 
-    inline Edge * edge() const;  // unfortunately we can not have const here, we need to convert it to Full iterator
+    inline unsigned int edge_idx() const;
+
+    inline Edge * edge() const;
 
     inline Boundary * cond() const;
 

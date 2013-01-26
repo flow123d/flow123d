@@ -522,7 +522,7 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
     gamma.resize(mesh_->boundary.size());
 
     // assemble integral over sides
-    FOR_EDGES( mesh_, edg ) //for(Neighbour *nb = mesh_->neighbour; nb != NULL; nb = nb->next)
+    FOR_EDGES( mesh_, edg )
     {
         // We have to skip edges of wrong dimension
     	//ASSERT_SIZES(edg->side(0)->element()->dim(), dim);
@@ -563,7 +563,7 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 				vec3 nv = fv_sb[s1]->normal_vector(0);
 
 				// set up the parameters for DG method
-				set_DG_parameters(edg, s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
+				set_DG_parameters(&(*edg), s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
 
 				int sd[2];
 				sd[0] = s1;
@@ -633,7 +633,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
     gamma.resize(mesh_->boundary.size());
 
     // assemble boundary integral
-    for (EdgeFullIter edge = mesh_->edge.begin(); edge != mesh_->edge.end(); ++edge)
+    FOR_EDGES(mesh_, edge)
     {
         if (edge->n_sides != 1 || edge->side(0)->dim() != dim-1) continue;
 
@@ -668,7 +668,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         calculate_dispersivity_tensor(side_K[0], side_velocity[0]);
 
         // set up the parameters for DG method
-        set_DG_parameters_edge(edge, side_q.size(), side_K, fe_values_side.normal_vector(0), alpha, advection, gamma_l, omega);
+        set_DG_parameters_edge(&(*edge), side_q.size(), side_K, fe_values_side.normal_vector(0), alpha, advection, gamma_l, omega);
         if (edge->side(0)->cond() != 0) {
             gamma[mesh_->boundary.full_iter(edge->side(0)->cond()).index()] = gamma_l;
         }

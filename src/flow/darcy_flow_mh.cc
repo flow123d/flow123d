@@ -247,8 +247,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base
             FOR_ELEMENTS(mesh_, ele) {
                 loc_idx[i++] = row_4_el[ele.index()];
             }
-            FOR_EDGES(mesh_, edg) {
-                loc_idx[i++] = row_4_edge[edg.index()];
+            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
+                loc_idx[i++] = row_4_edge[i_edg];
             }
             ASSERT( i==size,"Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
@@ -416,7 +416,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
         for (i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
-            edge_row = edge_rows[i] = row_4_edge[mesh_->edge.index(ele->side(i)->edge())];
+            edge_row = edge_rows[i] = row_4_edge[ele->side(i)->edge_idx()];
             bcd=ele->side(i)->cond();
 
             // gravity term on RHS
@@ -483,7 +483,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // current element pressure  and a connected edge pressure
             ngh= ele->neigh_vb[i];
             tmp_rows[0]=el_row;
-            tmp_rows[1]=row_4_edge[ mesh_->edge.index( ngh->edge() ) ];
+            tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
 
             double value = ngh->sigma * ngh->side()->metric();
 
@@ -593,8 +593,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 if (i == it_master_list->size()) { // master element
                     delta_i = delta_0;
                     left_map = arma::trans(master_map);
-                    left_idx[0] = row_4_edge[mesh_->edge.index(master_iter->side(0)->edge() )];
-                    left_idx[1] = row_4_edge[mesh_->edge.index(master_iter->side(1)->edge() )];
+                    left_idx[0] = row_4_edge[master_iter->side(0)->edge_idx()];
+                    left_idx[1] = row_4_edge[master_iter->side(1)->edge_idx()];
                     // Dirichlet bounndary conditions
                      if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) l_dirich[0]=1; else l_dirich[0]=0;
                      if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) l_dirich[1]=1; else l_dirich[1]=0;
@@ -605,9 +605,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     Intersection &isect=mesh_->intersections[(*it_master_list)[i]];
                     delta_i = isect.intersection_true_size();
                     left_map = arma::trans(slave_map);
-                    left_idx[0] = row_4_edge[mesh_->edge.index(isect.slave_iter()->side(0)->edge())];
-                    left_idx[1] = row_4_edge[mesh_->edge.index(isect.slave_iter()->side(1)->edge())];
-                    left_idx[2] = row_4_edge[mesh_->edge.index(isect.slave_iter()->side(2)->edge())];
+                    left_idx[0] = row_4_edge[isect.slave_iter()->side(0)->edge_idx()];
+                    left_idx[1] = row_4_edge[isect.slave_iter()->side(1)->edge_idx()];
+                    left_idx[2] = row_4_edge[isect.slave_iter()->side(2)->edge_idx()];
                     l_size = 3;
                 }
                 //columns
@@ -615,8 +615,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     if (j == it_master_list->size()) { // master element
                         delta_j = delta_0;
                         right_map = master_map;
-                        right_idx[0] = row_4_edge[mesh_->edge.index(master_iter->side(0)->edge())];
-                        right_idx[1] = row_4_edge[mesh_->edge.index(master_iter->side(1)->edge())];
+                        right_idx[0] = row_4_edge[master_iter->side(0)->edge_idx()];
+                        right_idx[1] = row_4_edge[master_iter->side(1)->edge_idx()];
                         // Dirichlet bounndary conditions
                          if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) r_dirich[0]=1; else r_dirich[0]=0;
                          if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) r_dirich[1]=1; else r_dirich[1]=0;
@@ -628,9 +628,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                         Intersection &isect=mesh_->intersections[(*it_master_list)[j]];
                         delta_j = isect.intersection_true_size();
                         right_map = slave_map;
-                        right_idx[0] = row_4_edge[mesh_->edge.index(isect.slave_iter()->side(0)->edge())];
-                        right_idx[1] = row_4_edge[mesh_->edge.index(isect.slave_iter()->side(1)->edge())];
-                        right_idx[2] = row_4_edge[mesh_->edge.index(isect.slave_iter()->side(2)->edge())];
+                        right_idx[0] = row_4_edge[isect.slave_iter()->side(0)->edge_idx()];
+                        right_idx[1] = row_4_edge[isect.slave_iter()->side(1)->edge_idx()];
+                        right_idx[2] = row_4_edge[isect.slave_iter()->side(2)->edge_idx()];
                         r_size = 3;
                     }
                     product = -mortar_sigma * left_map * delta_i * delta_j * right_map / delta_0;
@@ -758,11 +758,11 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
         vector<int> dirich(5,0);
         SideIter side1, side2;
 
-        idx[0] = row_4_edge[mesh_->edge.index(intersec->slave_iter()->side(0)->edge() )];
-        idx[1] = row_4_edge[mesh_->edge.index(intersec->slave_iter()->side(1)->edge() )];
-        idx[2] = row_4_edge[mesh_->edge.index(intersec->slave_iter()->side(2)->edge() )];
-        idx[3] = row_4_edge[mesh_->edge.index(intersec->master_iter()->side(0)->edge() )];
-        idx[4] = row_4_edge[mesh_->edge.index(intersec->master_iter()->side(1)->edge() )];
+        idx[0] = row_4_edge[intersec->slave_iter()->side(0)->edge_idx()];
+        idx[1] = row_4_edge[intersec->slave_iter()->side(1)->edge_idx()];
+        idx[2] = row_4_edge[intersec->slave_iter()->side(2)->edge_idx()];
+        idx[3] = row_4_edge[intersec->master_iter()->side(0)->edge_idx()];
+        idx[4] = row_4_edge[intersec->master_iter()->side(1)->edge_idx()];
 
         // Dirichlet bounndary conditions
         side1=intersec->master_iter()->side(0);
@@ -1045,11 +1045,11 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
     int edge_dim_weights[3] = { 100, 10, 1 };
     F_ENTRY;
 
+    i_edg=0;
     FOR_EDGES(mesh, edg) {
 
         // skip non-local edges
-        if (!edistr.is_local(edg.index()))
-            continue;
+        if (!edistr.is_local(i_edg))   continue;
 
         e_weight = edge_dim_weights[edg->side(0)->element()->dim() - 1];
         // for all connected elements
@@ -1060,17 +1060,17 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
 
             // for sides of connected element, excluding edge itself
             for(si=0; si<ele->n_sides(); si++) {
-                eid = mesh->edge.index(ele->side(si)->edge());
-                if (eid != edg.index())
-                    graph->set_edge(edg.index(), eid, e_weight);
+                eid = ele->side(si)->edge_idx();
+                if (eid != i_edg)
+                    graph->set_edge(i_edg, eid, e_weight);
             }
 
             // include connections from lower dim. edge
             // to the higher dimension
             for (i_neigh = 0; i_neigh < ele->n_neighs_vb; i_neigh++) {
-                eid = mesh->edge.index(ele->neigh_vb[i_neigh]->edge());
-                graph->set_edge(edg.index(), eid, e_weight);
-                graph->set_edge(eid, edg.index(), e_weight);
+                eid = ele->neigh_vb[i_neigh]->edge_idx();
+                graph->set_edge(i_edg, eid, e_weight);
+                graph->set_edge(eid, i_edg, e_weight);
             }
         }
         i_edg++;
@@ -1307,15 +1307,16 @@ void DarcyFlowMH_Steady::prepare_parallel() {
         {
             loc_i = 0;
             FOR_EDGES(mesh_, edg ) {
+                unsigned int i_edg = edg - mesh_->edges.begin();
                 // partition
                 e_idx = mesh_->element.index(edg->side(0)->element());
                 //xprintf(Msg,"Index of edge: %d first element: %d \n",edgid,e_idx);
-                if (init_edge_ds.is_local(edg.index())) {
+                if (init_edge_ds.is_local(i_edg)) {
                     // find (new) proc of the first element of the edge
                     loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
                 }
                 // id array
-                id_4_old[edg.index()] = edg.index();
+                id_4_old[i_edg] = i_edg;
             }
         }
         //    // make trivial part
@@ -1364,9 +1365,9 @@ void DarcyFlowMH_Steady::prepare_parallel() {
          }
          */
         id_4_old = new int[mesh_->n_edges()];
-        i = 0;
-        FOR_EDGES(mesh_, edg)
-            id_4_old[i++] = edg.index();
+
+        for(unsigned int i_edg=0; i_edg < mesh_->edges.size(); i_edg++)  id_4_old[i_edg] = i_edg;
+
         id_maps(mesh_->n_edges(), id_4_old, init_edge_ds, (int *) loc_part, edge_ds, edge_4_loc, row_4_edge);
         delete[] loc_part;
         delete[] id_4_old;
@@ -1386,7 +1387,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
                 if (init_el_ds.is_local(el.index())) {
                     // find (new) proc of the first edge of element
                     //DBGMSG("%d %d %d %d\n",iel,loc_i,el->side(0)->edge->id,edge_row_4_id[el->side(0)->edge->id]);
-                    i_edg=mesh_->edge.index(el->side(0)->edge()); // global index in old numbering
+                    i_edg=el->side(0)->edge_idx(); // global index in old numbering
                     loc_part[loc_i++] = edge_ds->get_proc(row_4_edge[i_edg]);
 
                 }
@@ -1478,8 +1479,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
             nsides = el->n_sides();
             for (i = 0; i < nsides; i++) {
                 side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
-                Edge *edg=el->side(i)->edge();
-		        edge_row = row_4_edge[mesh_->edge.index(edg)];
+		        edge_row = row_4_edge[el->side(i)->edge_idx()];
 
 		        global_row_4_sub_row->insert( side_row );
 		        global_row_4_sub_row->insert( edge_row );
@@ -1493,7 +1493,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
 
             for (i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
                 // mark this edge
-                edge_row = row_4_edge[mesh_->edge.index(el->neigh_vb[i_neigh]->edge() )];
+                edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
                 global_row_4_sub_row->insert( edge_row );
             }
         }
@@ -1663,7 +1663,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
          init_value=initial_pressure->element_value(ele.index());
 
          FOR_ELEMENT_SIDES(ele,i) {
-             edge_row = row_4_edge[mesh_->edge.index(ele->side(i)->edge())];
+             edge_row = row_4_edge[ele->side(i)->edge_idx()];
              // set new diagonal
              VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides(),ADD_VALUES);
              // set initial condition
@@ -1726,7 +1726,7 @@ void DarcyFlowLMH_Unsteady::postprocess() {
     // for every local edge take time term on digonal and add it to the corresponding flux
     for (i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
 
-      EdgeFullIter edg = mesh_->edge(edge_4_loc[i_loc]);
+      Edge * edg = &( mesh_->edges[ edge_4_loc[i_loc] ] );
         loc_edge_row = side_ds->lsize() + el_ds->lsize() + i_loc;
 
         new_pressure = (schur0->get_solution_array())[loc_edge_row];
