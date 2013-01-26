@@ -250,39 +250,59 @@ void Mesh::count_side_types()
 }
 
 
-void Mesh::intersect_element_lists(vector<unsigned int> &nodes_list, vector<unsigned int> &intersection_element_list)
+
+void Mesh::create_node_element_lists() {
+    // for each node we make a list of elements that use this node
+    node_elements.resize(node_vector.size());
+
+    FOR_ELEMENTS( this, e )
+        for (unsigned int n=0; n<e->n_nodes(); n++)
+            node_elements[node_vector.index(e->node[n])].push_back(e->index());
+
+    for (vector<vector<unsigned int> >::iterator n=node_elements.begin(); n!=node_elements.end(); n++)
+        stable_sort(n->begin(), n->end());
+}
+
+
+void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list)
 {
-	vector<unsigned int> tmp_list;
-	intersection_element_list.clear();
-	for (vector<unsigned int>::iterator ni = nodes_list.begin()+1; ni!=nodes_list.end(); ni++)
-	{
-		tmp_list = intersection_element_list;
-		intersection_element_list.clear();
-		set_intersection(tmp_list.begin(),
-				tmp_list.end(),
-				node_elements[*ni].begin(),
-				node_elements[*ni].end(),
-				intersection_element_list.begin());
-	}
+    if (nodes_list.size() == 0) {
+        intersection_element_list.clear();
+    } else if (nodes_list.size() == 1) {
+        intersection_element_list = node_elements[ nodes_list[0] ];
+	} else {
+	    vector<unsigned int>::const_iterator it1=nodes_list.begin();
+	    vector<unsigned int>::const_iterator it2=it1+1;
+	    intersection_element_list.resize( node_elements[*it1].size() ); // make enough space
+
+	    it1=set_intersection(
+                node_elements[*it1].begin(), node_elements[*it1].end(),
+                node_elements[*it2].begin(), node_elements[*it2].end(),
+                intersection_element_list.begin());
+        intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
+
+        for(;it2<nodes_list.end();++it2) {
+            it1=set_intersection(
+                    intersection_element_list.begin(), intersection_element_list.end(),
+                    node_elements[*it2].begin(), node_elements[*it2].end(),
+                    intersection_element_list.begin());
+            intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
+        }
+    }
 }
 
 
 
 void Mesh::make_neighbours_and_edges()
 {
-	// for each node we make a list of elements that use this node
-	node_elements.resize(node_vector.size());
-
-	// create the node_elements map
-	FOR_ELEMENTS( this, e )
-		for (unsigned int n=0; n<e->n_nodes(); n++)
-			node_elements[node_vector.index(e->node[n])].push_back(e->index());
-
-	for (vector<vector<unsigned int> >::iterator n=node_elements.begin(); n!=node_elements.end(); n++)
-		stable_sort(n->begin(), n->end());
+    create_node_element_lists();
 
 	// pointers to created edges
 	vector<Edge *> tmp_edges;
+
+	vector<unsigned int> side_nodes;
+	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
+
 	// Now we go through all element sides and create edges and neighbours
 	FOR_ELEMENTS( this, e )
 	{
@@ -297,7 +317,11 @@ void Mesh::make_neighbours_and_edges()
 
 			// Find all elements that share this side.
 			// element_count contains number of nodes that are used by the respective element.
-			map<unsigned int,unsigned int> element_count;
+			side_nodes.resize(e->side(s)->n_nodes());
+			for (unsigned n=0; n<e->side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e->side(s)->node(n));
+			intersect_element_lists(side_nodes, intersection_list);
+
+	/*		map<unsigned int,unsigned int> element_count;
 			set<const Node *> set_of_nodes;
 			for (unsigned n=0; n<e->side(s)->n_nodes(); n++)
 			{
@@ -307,51 +331,48 @@ void Mesh::make_neighbours_and_edges()
 						eit!=node_elements[node_index].end(); eit++)
 					element_count[*eit]++;
 			}
-
+*/
 			// Count the number of elements that share the whole side/edge.
-			for (map<unsigned int, unsigned int>::iterator ec=element_count.begin(); ec!=element_count.end(); ec++)
-				if (ec->second == e->side(s)->n_nodes())
-				{
-					if (element[ec->first].dim_ == e->dim_)
+            for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
+					if (element[*isect].dim_ == e->dim_)
 						n_edg_sides++;
-					else if (element[ec->first].dim_ == e->dim_-1)
+					else if (element[*isect].dim_ == e->dim_-1)
 					{
 						is_neighbour = true;
-						neighbour.element_ = &(element[ec->first]);
+						neighbour.element_ = &(element[*isect]);
 						neighbour.sigma = 1;
 					}
-				}
+		    }
 
-			if (is_neighbour)
-			{ // edge connects elements of different dimensions
-				for (map<unsigned int, unsigned int>::iterator ec=element_count.begin(); ec!=element_count.end(); ec++)
-					if (ec->second == e->side(s)->n_nodes())
-					{
-						Element *elem = &(element[ec->first]);
-						if (elem->dim_ == e->dim_)
-						{ // element with the same dimension: update edge
-							// find local side index on element ec->first
-							for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++)
-							{
-								SideIter si = elem->side(ecs);
-								int ni=0;
-								while (ni<si->n_nodes() && set_of_nodes.find(si->node(ni)) != set_of_nodes.end()) ni++;
-								if (ni>=si->n_nodes())
-								{
-									// create a new edge and neighbour for this side
-									Edge *edg = new Edge;
-									tmp_edges.push_back(edg);
-									edg->n_sides = 1;
-									edg->side_ = new struct SideIter[1];
-									edg->side_[0] = si;
-									elem->edges_[ecs] = edg;
-									neighbour.edge_ = edg;
-									vb_neighbours_.push_back(neighbour);
-									break;
-								}
-							}
-						}
-					}
+			if (is_neighbour) { // edge connects elements of different dimensions
+	            for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
+                    Element *elem = &(element[*isect]);
+                    if (elem->dim_ == e->dim_) {
+                        // element with the same dimension: update edge
+                        // find local side index on element ec->first
+                        for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
+                            SideIter si = elem->side(ecs);
+
+                            // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
+                            int ni=0;
+                            while ( ni < si->n_nodes()
+                                && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
+                            if (ni>=si->n_nodes())
+                            {
+                                // create a new edge and neighbour for this side
+                                Edge *edg = new Edge;
+                                tmp_edges.push_back(edg);
+                                edg->n_sides = 1;
+                                edg->side_ = new struct SideIter[1];
+                                edg->side_[0] = si;
+                                elem->edges_[ecs] = edg;
+                                neighbour.edge_ = edg;
+                                vb_neighbours_.push_back(neighbour);
+                                break;
+                            }
+                        }
+                    }
+				}
 			} else { // edge connects only elements of the same dimension
 				// Allocate the array of sides.
 				Edge *edg = new Edge;
@@ -360,30 +381,29 @@ void Mesh::make_neighbours_and_edges()
 				edg->side_ = new struct SideIter[edg->n_sides];
 				unsigned int i=0;
 				// initialize edge data
-				for (map<unsigned int, unsigned int>::iterator ec=element_count.begin(); ec!=element_count.end(); ec++)
-					if (ec->second == e->side(s)->n_nodes())
-					{
-						Element *elem = &(element[ec->first]);
+                for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
+                    Element *elem = &(element[*isect]);
 
-						if (elem->dim_ != e->dim_) continue;
+                    if (elem->dim_ != e->dim_) continue;
 
-						// find local side index on element ec->first
-						for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++)
-						{
-							SideIter si = elem->side(ecs);
-							int ni=0;
-							while (ni<si->n_nodes() && set_of_nodes.find(si->node(ni)) != set_of_nodes.end()) ni++;
-							if (ni>=si->n_nodes())
-							{
-								edg->side_[i++] = si;
-								elem->edges_[ecs] = edg;
-								break;
-							}
-						}
-					}
+                    // find local side index on element ec->first
+                    for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++)
+                    {
+                        SideIter si = elem->side(ecs);
+                        int ni=0;
+                        while ( ni < si->n_nodes()
+                            && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
+                        if (ni>=si->n_nodes())
+                        {
+                            edg->side_[i++] = si;
+                            elem->edges_[ecs] = edg;
+                            break;
+                        }
+                    }
+				}
 			}
-		}
-	}
+		} // for sides
+	}   // for elements
 
 	// Now we can create the vector of edges, after we know its size
 	edge.resize(tmp_edges.size());

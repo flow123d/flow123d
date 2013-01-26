@@ -224,9 +224,11 @@ public:
     
     string neigh_fname_;
     string bcd_fname_;
-private:
 
-    void intersect_element_lists(vector<unsigned int> &nodes_list, vector<unsigned int> &intersection_element_list);
+protected:
+
+    void create_node_element_lists();
+    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
 
     void element_to_neigh_vb();
     void create_external_boundary();
