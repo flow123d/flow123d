@@ -141,21 +141,7 @@ public:
      */
     void setup_topology(istream *in = NULL);
 
-    /**
-     *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
-     *
-     *  TODO:
-     *  - Avoid maps:
-     *
-     *    4) replace EdgeVector by std::vector<Edge> (need not to know the size)
-     *
-     *    5) need not to have temporary array for Edges, only postpone setting pointers in elements and set them
-     *       after edges are found; we can temporary save Edge index instead of pointer in Neigbours and elements
-     *
-     *    6) Try replace Edge * by indexes in Neigbours and elements (anyway we have mesh pointer in elements so it is accessible also from Neigbours)
-     *
-     */
-    void make_neighbours_and_edges();
+
 
     /**
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
@@ -220,8 +206,38 @@ public:
 
 protected:
 
+    /**
+     *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
+     *
+     *  TODO:
+     *  - Avoid maps:
+     *
+     *    4) replace EdgeVector by std::vector<Edge> (need not to know the size)
+     *
+     *    5) need not to have temporary array for Edges, only postpone setting pointers in elements and set them
+     *       after edges are found; we can temporary save Edge index instead of pointer in Neigbours and elements
+     *
+     *    6) Try replace Edge * by indexes in Neigbours and elements (anyway we have mesh pointer in elements so it is accessible also from Neigbours)
+     *
+     */
+    void make_neighbours_and_edges();
+    /**
+     * Create element lists for nodes in Mesh::nodes_elements.
+     */
     void create_node_element_lists();
+    /**
+     * Find intersection of element lists given by Mesh::node_elements for elements givne by @p nodes_list parameter.
+     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
+     * returned.
+     */
     void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
+    /**
+     * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
+     * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
+     * if more elements are found we report an user input error.
+     */
+    bool find_lower_dim_element(ElementVector&elements, vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
+
 
     void element_to_neigh_vb();
     void create_external_boundary();

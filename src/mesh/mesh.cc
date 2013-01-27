@@ -292,6 +292,34 @@ void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vecto
 }
 
 
+bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int> &element_list,
+        unsigned int dim, unsigned int &element_idx) {
+    bool is_neighbour = false;
+
+    vector<unsigned int>::iterator e_dest=element_list.begin();
+    for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele)
+        if (elements[*ele].dim_ == dim) { // keep only indexes of elements of same dimension
+            *e_dest=*ele;
+            ++e_dest;
+        } else if (elements[*ele].dim_ == dim-1) { // get only first element of lower dimension
+            if (is_neighbour) xprintf(UsrErr, "Too matching elements id: %d and id: %d in the same mesh.\n",
+                    elements(*ele).id(), elements(element_idx).id() );
+
+            is_neighbour = true;
+            element_idx = *ele;
+        }
+    element_list.resize( e_dest - element_list.begin());
+    return is_neighbour;
+}
+
+/**
+ * TODO:
+ * - use std::is_any for setting is_neigbour
+ * - possibly make appropriate constructors for Edge and Neighbour
+ * - check side!=-1 when searching neigbouring element
+ * - process bc_elements first, there should be no Neigh, but check it
+ *   set Edge and boundary there
+ */
 
 void Mesh::make_neighbours_and_edges()
 {
@@ -312,9 +340,6 @@ void Mesh::make_neighbours_and_edges()
 			// skip sides that were already found
 			if (e->edge_idx_[s] != -1) continue;
 
-			Neighbour neighbour;
-			bool is_neighbour = false;
-			unsigned int n_edg_sides = 0;
 
 			// Find all elements that share this side.
 			// element_count contains number of nodes that are used by the respective element.
@@ -322,25 +347,42 @@ void Mesh::make_neighbours_and_edges()
 			for (unsigned n=0; n<e->side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e->side(s)->node(n));
 			intersect_element_lists(side_nodes, intersection_list);
 
+			unsigned int ngh_element_idx;
+			bool is_neighbour = find_lower_dim_element(element, intersection_list, e->dim(), ngh_element_idx);
+
 			// Count the number of elements that share the whole side/edge.
+			/*
+            Neighbour neighbour_common;
+            bool is_neighbour = false;
+            unsigned int n_edg_sides = 0;
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
-					if (element[*isect].dim_ == e->dim_)
-						n_edg_sides++;
-					else if (element[*isect].dim_ == e->dim_-1)
-					{
-						is_neighbour = true;
-						neighbour.element_ = &(element[*isect]);
-						neighbour.sigma = 1;
-					}
+                if (element[*isect].dim_ == e->dim_)
+                    n_edg_sides++;
+                else if (element[*isect].dim_ == e->dim_-1)
+                {
+                    if (is_neighbour) xprintf(UsrErr, "Too matching elements id: %d and id: %d in the same mesh.\n",
+                            element[*isect].id(), e.id() );
+
+                    is_neighbour = true;
+                    neighbour_common.element_ = &(element[*isect]);
+                    neighbour_common.sigma = 1;
+                }
 		    }
+            */
+			Neighbour neighbour;
+			unsigned int n_edg_sides= intersection_list.size();
 
 			if (is_neighbour) { // edge connects elements of different dimensions
+			    neighbour.element_ = &(element[ngh_element_idx]);
+                neighbour.sigma = 1;
+
 	            for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
                     Element *elem = &(element[*isect]);
                     if (elem->dim_ == e->dim_) {
                         // element with the same dimension: update edge
                         // find local side index on element ec->first
                         for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
+                            if (elem->edge_idx_[ecs] != -1) continue;
                             SideIter si = elem->side(ecs);
 
                             // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
@@ -358,10 +400,12 @@ void Mesh::make_neighbours_and_edges()
                                 edg.side_[0] = si;
                                 elem->edge_idx_[ecs] = edge_idx;
                                 neighbour.edge_idx_ = edge_idx;
-                                vb_neighbours_.push_back(neighbour);
+                                vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
                                 break;
                             }
                         }
+                    } else {
+
                     }
 				}
 			} else { // edge connects only elements of the same dimension
