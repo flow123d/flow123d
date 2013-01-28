@@ -655,7 +655,8 @@ void DarcyFlowMHOutput::water_balance() {
     fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
     fprintf(balance_output_file,"[total balance]    [total outflow]     [total inflow]\n");
     FOR_BOUNDARIES(mesh_, bcd) {
-        double flux = dh.side_flux( *(bcd->side) );
+        // !! there can be more sides per one boundary
+        double flux = dh.side_flux( *(bcd->side()) );
         (*bcd_balance)[bcd->group] += flux;
 
         if (flux > 0) (*bcd_plus_balance)[bcd->group]+= flux;

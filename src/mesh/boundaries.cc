@@ -41,6 +41,17 @@ static void parse_boundary_line(struct Boundary*,char*);
 
 flow::VectorId<unsigned int> Boundary::id_to_bcd;
 
+
+Element * Boundary::bc_element() {
+    return &( mesh_->bc_elements[bc_ele_idx_] );
+}
+
+Edge * Boundary::edge() {
+    return &( mesh_->edges[edge_idx_] );
+}
+
+
+
 //=============================================================================
 // READ DATA OF BOUNDARY CONDITIONS
 //=============================================================================

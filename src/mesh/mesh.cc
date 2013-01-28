@@ -348,6 +348,52 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
+	for( ElementFullIter bc_ele = bc_elements.begin(); bc_ele != bc_elements.end(); ++bc_ele) {
+        // Find all elements that share this side.
+        side_nodes.resize(bc_ele->n_nodes());
+        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele->node[n]);
+        intersect_element_lists(side_nodes, intersection_list);
+        bool is_neighbour = find_lower_dim_element(element, intersection_list, bc_ele->dim() +1, ngh_element_idx);
+        if (is_neighbour) {
+            xprintf(UsrErr, "Boundary element match a regular element of lower dimension.\n");
+        } else {
+            last_edge_idx=edges.size();
+            edges.resize(last_edge_idx+1);
+            edg = &( edges.back() );
+            edg->n_sides = 0;
+            edg->side_ = new struct SideIter[ intersection_list.size() ];
+
+            // common boundary object
+            unsigned int bdr_idx=boundary_.size();
+            boundary_.resize(bdr_idx+1);
+            Boundary &bdr=boundary_.back();
+            bdr.bc_ele_idx_ = bc_ele.index();
+            bdr.edge_idx_ = last_edge_idx;
+            bdr.mesh_=this;
+
+            // for 1d boundaries there can be more then one 1d elements connected to the boundary element
+            // we do not detect this case later in the main search over bulk elements
+            for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect)  {
+                Element *elem = &(element[*isect]);
+                for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
+                    SideIter si = elem->side(ecs);
+                    if ( same_sides( si, side_nodes) ) {
+                        edg->side_[ edg->n_sides++ ] = si;
+                        elem->edge_idx_[ecs] = last_edge_idx;
+
+                        if (elem->boundary_idx_ == NULL) {
+                            elem->boundary_idx_ = new unsigned int [ elem->n_sides() ];
+                            std::fill( elem->boundary_idx_, elem->boundary_idx_ + elem->n_sides(), Mesh::undef_idx);
+                        }
+                        elem->boundary_idx_[ecs] = bdr_idx;
+                        break; // next element in intersection list
+                    }
+                }
+            }
+
+        }
+
+	}
 	// Now we go through all element sides and create edges and neighbours
 	FOR_ELEMENTS( this, e )
 	{
@@ -391,13 +437,14 @@ void Mesh::make_neighbours_and_edges()
                     e->boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
-                    Element * bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
+                    ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
                     bc_ele->init(e->dim()-1, this);
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
                     // fill Boundary object
-                    bdr.side = e->side(s);
-                    bdr.bc_element_ = bc_ele;
+                    bdr.edge_idx_ = last_edge_idx;
+                    bdr.bc_ele_idx_ = bc_ele.index();
+                    bdr.mesh_=this;
 
                     continue; // next side of element e
                 }
@@ -428,7 +475,7 @@ void Mesh::make_neighbours_and_edges()
                             edg->side_[ edg->n_sides++ ] = si;
                             elem->edge_idx_[ecs] = last_edge_idx;
                         }
-                        break;
+                        break; // next element from intersection list
                     }
                 } // search for side of other connected element
             } // connected elements

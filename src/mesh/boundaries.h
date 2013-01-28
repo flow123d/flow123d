@@ -31,6 +31,8 @@
 #define BOUNDARIES_H
 
 #include "mesh/mesh.h"
+#include "mesh/sides.h"
+#include "mesh/edges.h"
 #include "system/sys_vector.hh"
 
 
@@ -62,8 +64,20 @@ public:
      */
     static flow::VectorId<unsigned int> id_to_bcd;
 
-    inline ElementIter get_bc_element_iter() {
-        return bc_element_;
+    //inline ElementIter get_bc_element_iter() {
+    //    return bc_element_;
+    //}
+
+    /**
+     * Can not make this inline now.
+     */
+    Edge * edge();
+
+    Element * bc_element();
+
+    inline SideIter side() {
+        if (edge()->n_sides != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
+        return edge()->side_[0];
     }
 
     // Data readed from boundary conditions files (REMOVE)
@@ -74,8 +88,9 @@ public:
 
     int      group;     // Group of condition
     // Topology of the mesh
-    SideIter side;      // side, where prescribed
-    ElementIter bc_element_;  // in near future this should replace Boundary itself, when we remove BC data members
+    unsigned int    edge_idx_;    // more then one side can be at one boundary element
+    unsigned int    bc_ele_idx_;  // in near future this should replace Boundary itself, when we remove BC data members
+    Mesh *mesh_;
 
 };
 #define DIRICHLET   1

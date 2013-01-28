@@ -831,20 +831,20 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
     {
         vector<Boundary>::iterator b=mesh_->boundary_.begin()+ib;
 
-        cell = mesh_->element.full_iter(b->side->element());
+        cell = mesh_->element.full_iter(b->side()->element());
 
         if (cell->dim()!= dim) continue;
 
         // skip Neumann boundaries
         double elem_flux = 0;
-        for (int i=0; i<b->side->element()->n_sides(); i++)
-        	elem_flux += fabs( mh_dh->side_flux( *(b->side->element()->side(i)) ) );
-        if (mh_dh->side_flux( *(b->side) ) >= -tol_switch_dirichlet_neumann*elem_flux
+        for (int i=0; i<b->side()->element()->n_sides(); i++)
+        	elem_flux += fabs( mh_dh->side_flux( *(b->side()->element()->side(i)) ) );
+        if (mh_dh->side_flux( *(b->side()) ) >= -tol_switch_dirichlet_neumann*elem_flux
                 || (b->type == 2 /* Neuman*/ && b->flux == 0.0) ) continue;
 
         if (ib < bc->distribution()->begin() || ib > bc->distribution()->end()) continue;
 
-        fe_values_side.reinit(cell, b->side);
+        fe_values_side.reinit(cell, b->side());
         dh->get_dof_indices(cell, side_dof_indices);
 
         for (int i=0; i<fe->n_dofs(); i++)

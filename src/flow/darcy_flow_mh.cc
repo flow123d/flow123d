@@ -429,10 +429,10 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 if (bc_function) {
                     START_TIMER("FIND INTERPOLATION");
 
-                    if (fill_matrix) bc_function->set_element(bcd->get_bc_element_iter());
+                    if (fill_matrix) bc_function->set_element( bcd->bc_element() );
                     END_TIMER("FIND INTERPOLATION");
 
-                    double value=bc_function->value(bcd->get_bc_element_iter()->centre());
+                    double value=bc_function->value( bcd->bc_element()->centre() );
                     c_val = 0.0;
                     loc_side_rhs[i] -= value;
 
@@ -447,10 +447,10 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     ls->rhs_set_value(edge_row, -bcd->scalar);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
                 } else if ( bcd->type == NEUMANN ) {
-                    ls->rhs_set_value(edge_row, bcd->flux * bcd->side->metric());
+                    ls->rhs_set_value(edge_row, bcd->flux * bcd->bc_element()->measure());
                 } else if ( bcd->type == NEWTON )  {
-                    ls->rhs_set_value(edge_row, -bcd->side->metric() * bcd->sigma * bcd->scalar);
-                    ls->mat_set_value(edge_row, edge_row, -bcd->side->metric()*bcd->sigma );
+                    ls->rhs_set_value(edge_row, -bcd->bc_element()->measure() * bcd->sigma * bcd->scalar);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->bc_element()->measure()*bcd->sigma );
                 }
             }
             ls->mat_set_value(side_row, edge_row, c_val);
