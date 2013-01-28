@@ -78,6 +78,7 @@ public:
     inline Edge * edge() const;
 
     inline Boundary * cond() const;
+    inline unsigned int cond_idx() const;
 
     inline unsigned int el_idx() const;
 

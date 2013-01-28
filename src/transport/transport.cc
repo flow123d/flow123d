@@ -64,6 +64,7 @@
 
 // TODO: move partitioning into mesh_ and remove this include
 #include "flow/darcy_flow_mh.hh"
+#include "flow/old_bcd.hh"
 #include "input/accessors.hh"
 
 #include "coupling/time_governor.hh"
@@ -577,10 +578,12 @@ void ConvectionTransport::read_bc_vector() {
             bcd_id = atoi(xstrtok(line)); // scratch transport bcd id
             boundary_id = atoi(xstrtok(NULL));
             //        DBGMSG("transp b. id: %d\n",boundary_id);
-            boundary_index = mesh_->boundary.index( *(Boundary::id_to_bcd.find_id(boundary_id)) );
+            //if (OldBcdInput::instance()->bcd_ids_[i_bcd] != boundary_id) xprintf(UsrErr, "Incorrect flow ID in Transport BCD file: %d\n", boundary_id);
+            boundary_index = *(Boundary::id_to_bcd.find_id(bcd_id));
             INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
             for (sbi = 0; sbi < n_substances; sbi++) {
                 bcd_conc = atof(xstrtok(NULL));
+                DBGMSG(" b idx: %d sunst: %d conc: %f\n", boundary_index, sbi, bcd_conc);
                 VecSetValue(bcv[sbi], boundary_index, bcd_conc, INSERT_VALUES);
             }
         }
@@ -619,7 +622,6 @@ void ConvectionTransport::compute_one_step() {
     // proceed to actually computed time
     //time_->view("CONVECTION");
     time_->next_time();
-    DBGMSG("time: %f, soorp: %d\n", time_->t(), sorption);
 
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase
@@ -660,7 +662,6 @@ void ConvectionTransport::compute_one_step() {
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
     }
-    DBGMSG("time: %f, end\n", time_->t());
 }
 
 
@@ -790,7 +791,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             } else {
                 if (flux < 0.0) {
                     aij = -(flux / (elm->volume() * elm->material->por_m));
-                    j = BOUNDARY_FULL_ITER(mesh_, elm->side(si)->cond() ).index();
+                    j = elm->side(si)->cond_idx() ;
+                    DBGMSG("BCM, i: %d j:%d\n", new_i , j);
                     MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
                     // vyresit BC matrix !!!!
                     //   printf("side in elm:%d value:%f\n ",elm->id,svector->val[j-1]);

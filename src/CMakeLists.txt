@@ -127,6 +127,7 @@ set(sources_lib_non_system
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
+    flow/old_bcd.cc
 
     io/output.cc
     io/output_vtk.cc

@@ -100,7 +100,7 @@ Record Mesh::input_type
     .declare_key("neighbouring", FileName::input(), Default::obligatory(),
     		"File with mesh connectivity data.");
 
-
+const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh()
 {
@@ -218,7 +218,7 @@ void Mesh::setup_topology(istream *in) {
     // topology
     make_neighbours_and_edges();
     element_to_neigh_vb();
-    create_external_boundary();
+    //create_external_boundary();
 
     count_side_types();
 
@@ -244,9 +244,13 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-    FOR_SIDES(this,  sde )
+    //FOR_SIDES(this,  sde ) {
+    //    DBGMSG( "ele: %d edge: %d\n", sde->element().index(), sde->edge_idx());
+    //}
+    FOR_SIDES(this,  sde ) {
         if (sde->is_external()) n_exsides++;
         else n_insides++;
+    }
 }
 
 
@@ -312,6 +316,14 @@ bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int>
     return is_neighbour;
 }
 
+bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
+    // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
+    int ni=0;
+    while ( ni < si->n_nodes()
+        && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
+    return ( ni == si->n_nodes() );
+}
+
 /**
  * TODO:
  * - use std::is_any for setting is_neigbour
@@ -323,6 +335,10 @@ bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int>
 
 void Mesh::make_neighbours_and_edges()
 {
+    Neighbour neighbour;
+    Edge *edg;
+    unsigned int ngh_element_idx, last_edge_idx;
+
     create_node_element_lists();
 
 	// pointers to created edges
@@ -338,124 +354,87 @@ void Mesh::make_neighbours_and_edges()
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
-			if (e->edge_idx_[s] != -1) continue;
+			if (e->edge_idx_[s] != Mesh::undef_idx) continue;
 
 
 			// Find all elements that share this side.
-			// element_count contains number of nodes that are used by the respective element.
 			side_nodes.resize(e->side(s)->n_nodes());
 			for (unsigned n=0; n<e->side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e->side(s)->node(n));
 			intersect_element_lists(side_nodes, intersection_list);
 
-			unsigned int ngh_element_idx;
 			bool is_neighbour = find_lower_dim_element(element, intersection_list, e->dim(), ngh_element_idx);
-
-			// Count the number of elements that share the whole side/edge.
-			/*
-            Neighbour neighbour_common;
-            bool is_neighbour = false;
-            unsigned int n_edg_sides = 0;
-            for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
-                if (element[*isect].dim_ == e->dim_)
-                    n_edg_sides++;
-                else if (element[*isect].dim_ == e->dim_-1)
-                {
-                    if (is_neighbour) xprintf(UsrErr, "Too matching elements id: %d and id: %d in the same mesh.\n",
-                            element[*isect].id(), e.id() );
-
-                    is_neighbour = true;
-                    neighbour_common.element_ = &(element[*isect]);
-                    neighbour_common.sigma = 1;
-                }
-		    }
-            */
-			Neighbour neighbour;
-			unsigned int n_edg_sides= intersection_list.size();
 
 			if (is_neighbour) { // edge connects elements of different dimensions
 			    neighbour.element_ = &(element[ngh_element_idx]);
                 neighbour.sigma = 1;
+            } else { // edge connects only elements of the same dimension
+                // Allocate the array of sides.
+                last_edge_idx=edges.size();
+                edges.resize(last_edge_idx+1);
+                edg = &( edges.back() );
+                edg->n_sides = 0;
+                edg->side_ = new struct SideIter[ intersection_list.size() ];
 
-	            for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
-                    Element *elem = &(element[*isect]);
-                    if (elem->dim_ == e->dim_) {
-                        // element with the same dimension: update edge
-                        // find local side index on element ec->first
-                        for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
-                            if (elem->edge_idx_[ecs] != -1) continue;
-                            SideIter si = elem->side(ecs);
+                if (intersection_list.size() == 1) { // outer edge, create boundary object as well
+                    edg->n_sides=1;
+                    edg->side_[0] = e->side(s);
+                    e->edge_idx_[s] = last_edge_idx;
 
-                            // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
-                            int ni=0;
-                            while ( ni < si->n_nodes()
-                                && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
-                            if (ni>=si->n_nodes())
-                            {
-                                // create a new edge and neighbour for this side
-                                unsigned int edge_idx=edges.size();
-                                edges.resize(edge_idx+1);
-                                Edge &edg = edges.back();
-                                edg.n_sides = 1;
-                                edg.side_ = new struct SideIter[1];
-                                edg.side_[0] = si;
-                                elem->edge_idx_[ecs] = edge_idx;
-                                neighbour.edge_idx_ = edge_idx;
-                                vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
-                                break;
-                            }
-                        }
-                    } else {
-
+                    if (e->boundary_idx_ == NULL) {
+                        e->boundary_idx_ = new unsigned int [ e->n_sides() ];
+                        std::fill( e->boundary_idx_, e->boundary_idx_ + e->n_sides(), Mesh::undef_idx);
                     }
-				}
-			} else { // edge connects only elements of the same dimension
-				// Allocate the array of sides.
 
-				unsigned int edge_idx=edges.size();
-				edges.resize(edge_idx+1);
-				Edge &edg = edges.back();
-				edg.n_sides = n_edg_sides;
-				edg.side_ = new struct SideIter[edg.n_sides];
-				unsigned int i=0;
-				// initialize edge data
-                for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
-                    Element *elem = &(element[*isect]);
+                    unsigned int bdr_idx=boundary_.size();
+                    boundary_.resize(bdr_idx+1);
+                    Boundary &bdr=boundary_.back();
+                    e->boundary_idx_[s] = bdr_idx;
 
-                    if (elem->dim_ != e->dim_) continue;
+                    // fill boundary element
+                    Element * bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
+                    bc_ele->init(e->dim()-1, this);
+                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
-                    // find local side index on element ec->first
-                    for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++)
-                    {
-                        SideIter si = elem->side(ecs);
-                        int ni=0;
-                        while ( ni < si->n_nodes()
-                            && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
-                        if (ni>=si->n_nodes())
-                        {
-                            edg.side_[i++] = si;
-                            elem->edge_idx_[ecs] = edge_idx;
-                            break;
-                        }
-                    }
-				}
+                    // fill Boundary object
+                    bdr.side = e->side(s);
+                    bdr.bc_element_ = bc_ele;
+
+                    continue; // next side of element e
+                }
 			}
-		} // for sides
-	}   // for elements
 
-	// Now we can create the vector of edges, after we know its size
-	//edges.resize(tmp_edges.size());
-	//map<Edge*,Edge*> edge_map;
-	// update pointers to edges and free the temporary objects
-	//for (unsigned int i=0; i<tmp_edges.size(); i++)
-	//{
-	//	edges[i] = *(tmp_edges[i]);
-		//edge_map[tmp_edges[i]] = &(edges[i]);
-		//for (int s=0; s<edges[i].n_sides; s++)
-		//	edges[i].side_[s]->element()->edge_idx_[edges[i].side_[s]->el_idx()] = i;
-	//	delete tmp_edges[i];
-	//}
-	//FOR_NEIGHBOURS(this, ngh)
-	//	ngh->edge_ = edge_map[ngh->edge_];
+			// go through the elements connected to the edge or neighbour
+            for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
+                Element *elem = &(element[*isect]);
+                for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
+                    if (elem->edge_idx_[ecs] != Mesh::undef_idx) continue;
+                    SideIter si = elem->side(ecs);
+                    if ( same_sides( si, side_nodes) ) {
+                        if (is_neighbour) {
+                            // create a new edge and neighbour for this side, and element to the edge
+                            last_edge_idx=edges.size();
+                            edges.resize(last_edge_idx+1);
+                            edg = &( edges.back() );
+                            edg->n_sides = 1;
+                            edg->side_ = new struct SideIter[1];
+                            edg->side_[0] = si;
+                            elem->edge_idx_[ecs] = last_edge_idx;
+
+                            neighbour.edge_idx_ = last_edge_idx;
+
+                            vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
+                        } else {
+                            // connect the side to the edge, and side to the edge
+                            edg->side_[ edg->n_sides++ ] = si;
+                            elem->edge_idx_[ecs] = last_edge_idx;
+                        }
+                        break;
+                    }
+                } // search for side of other connected element
+            } // connected elements
+            ASSERT( is_neighbour || edg->n_sides == intersection_list.size(), "Some connected sides were not found.\n");
+		} // for element sides
+	}   // for elements
 
 	xprintf( Msg, "Created %d edges and %d neighbours.\n", edges.size(), vb_neighbours_.size() );
 }
@@ -469,6 +448,7 @@ void Mesh::make_neighbours_and_edges()
  */
 void Mesh::create_external_boundary()
 {
+    /*
     // set to non zero all pointers including boundary connected to lower dim elements
     // these have only one side per edge
     Boundary empty_boundary;
@@ -544,7 +524,7 @@ void Mesh::create_external_boundary()
                  ele->boundaries_[si] = bcd;
 
              }
-    }
+    }*/
 }
 
 

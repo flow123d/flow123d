@@ -378,22 +378,4 @@ public:
 
 
 
-class OldBcdInput {
-public:
-template <int spacedim, class Value>
-static void set_all( Field<spacedim,Value> &target, Mesh *mesh);
-
-template <int spacedim, class Value>
-static void set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val, Region bc_reg);
-
-static void read(const FilePath &flow_bcd, const FilePath &transport_bcd,
-        Mesh *mesh,
-        Field<3,FieldValue<3>::Enum > &flow_type,
-        Field<3,FieldValue<3>::Scalar > &flow_pressure,
-        Field<3,FieldValue<3>::Scalar > &flow_flux,
-        Field<3,FieldValue<3>::Scalar > &flow_sigma,
-        Field<3,FieldValue<3>::Enum > &trans_type,
-        Field<3,FieldValue<3>::Vector > &trans_conc);
-};
-
 #endif /* FUNCTION_BASE_HH_ */

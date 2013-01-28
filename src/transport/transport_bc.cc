@@ -30,6 +30,7 @@
 #include "system/xio.h"
 
 #include "transport/transport_bc.hh"
+#include "flow/old_bcd.hh"
 #include <iostream>
 #include <iomanip>
 
@@ -126,7 +127,9 @@ void TransportBC::read()
 			bcd_id = atoi(xstrtok(line)); // scratch transport bcd id
 			boundary_id = atoi(xstrtok(NULL));
 			//        DBGMSG("transp b. id: %d\n",boundary_id);
-			boundary_index =mesh_->boundary.index( *(Boundary::id_to_bcd.find_id(boundary_id)) );
+            //if (OldBcdInput::instance()->bcd_ids_[i_bcd] != boundary_id) xprintf(UsrErr, "Incorrect flow ID in Transport BCD file: %d\n", boundary_id);
+            //boundary_index = i_bcd;
+            boundary_index = *(Boundary::id_to_bcd.find_id(bcd_id));
 			INPUT_CHECK(boundary_index >= 0,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
 			for (sbi = 0; sbi < n_substances; sbi++) {
 				bcd_conc = atof(xstrtok(NULL));

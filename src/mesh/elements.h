@@ -48,9 +48,8 @@ class Element
 {
 public:
     Element();
-    Element(unsigned int dim);
-
-    void reinit(unsigned int dim);
+    Element(unsigned int dim, Mesh *mesh_in);
+    void init(unsigned int dim, Mesh *mesh_in);
 
     inline unsigned int dim() const;
     inline unsigned int index() const;
@@ -80,7 +79,7 @@ public:
     MaterialDatabase::Iter material; // Element's material
 
     unsigned int *edge_idx_; // Edges on sides
-    Boundary **boundaries_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
+    unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
@@ -92,7 +91,6 @@ public:
     unsigned int dim_;
 
 protected:
-
 
     double element_length_line();
     double element_area_triangle();

@@ -519,7 +519,7 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
     vector< vector<vec3> > side_velocity;
     double gamma_l, omega[2], transport_flux;
 
-    gamma.resize(mesh_->boundary.size());
+    gamma.resize(mesh_->boundary_.size());
 
     // assemble integral over sides
     FOR_EDGES( mesh_, edg )
@@ -630,7 +630,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
     vector< vector<vec3> > side_velocity;
     double gamma_l, omega[2], transport_flux;
 
-    gamma.resize(mesh_->boundary.size());
+    gamma.resize(mesh_->boundary_.size());
 
     // assemble boundary integral
     FOR_EDGES(mesh_, edge)
@@ -670,7 +670,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         // set up the parameters for DG method
         set_DG_parameters_edge(&(*edge), side_q.size(), side_K, fe_values_side.normal_vector(0), alpha, advection, gamma_l, omega);
         if (edge->side(0)->cond() != 0) {
-            gamma[mesh_->boundary.full_iter(edge->side(0)->cond()).index()] = gamma_l;
+            gamma[edge->side(0)->cond_idx()] = gamma_l;
         }
 
         // fluxes and penalty
@@ -827,8 +827,10 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
     unsigned int side_dof_indices[fe->n_dofs()];
     double local_rhs[fe->n_dofs()];
 
-    for (BoundaryFullIter b = mesh_->boundary.begin(); b != mesh_->boundary.end(); ++b)
+    for (unsigned int ib = 0; ib < mesh_->boundary_.size(); ib++)
     {
+        vector<Boundary>::iterator b=mesh_->boundary_.begin()+ib;
+
         cell = mesh_->element.full_iter(b->side->element());
 
         if (cell->dim()!= dim) continue;
@@ -840,7 +842,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
         if (mh_dh->side_flux( *(b->side) ) >= -tol_switch_dirichlet_neumann*elem_flux
                 || (b->type == 2 /* Neuman*/ && b->flux == 0.0) ) continue;
 
-        if (b.index() < bc->distribution()->begin() || b.index() > bc->distribution()->end()) continue;
+        if (ib < bc->distribution()->begin() || ib > bc->distribution()->end()) continue;
 
         fe_values_side.reinit(cell, b->side);
         dh->get_dof_indices(cell, side_dof_indices);
@@ -851,7 +853,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
             for (int k=0; k<side_q.size(); k++)
             {
                 local_rhs[i] += (
-                        +gamma[b.index()]*bc->get_array(0)[b.index()-bc->distribution()->begin()]
+                        +gamma[ib]*bc->get_array(0)[ib-bc->distribution()->begin()]
 //                       -advection*0.5*min(b->side->flux, 0)*bc_values[0][b.id()]
                                 )*fe_values_side.shape_value(i,k)*fe_values_side.JxW(k);
             }

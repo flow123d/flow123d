@@ -60,7 +60,7 @@ public:
      * Transport BCD refers through IDs to flow BCD, so we have to
      * store positions of Flow BCD items somewhere.
      */
-    static flow::VectorId<Boundary *> id_to_bcd;
+    static flow::VectorId<unsigned int> id_to_bcd;
 
     inline ElementIter get_bc_element_iter() {
         return bc_element_;

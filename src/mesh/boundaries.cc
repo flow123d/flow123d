@@ -32,13 +32,14 @@
 #include "system/xio.h"
 #include "mesh/boundaries.h"
 #include "mesh/mesh.h"
+#include "flow/old_bcd.hh"
 
 static struct Boundary *new_boundary(void);
 static void add_to_boundary_list(struct Mesh*,struct Boundary*);
 static void init_boundary_list(struct Mesh*);
 static void parse_boundary_line(struct Boundary*,char*);
 
-flow::VectorId<Boundary *> Boundary::id_to_bcd;
+flow::VectorId<unsigned int> Boundary::id_to_bcd;
 
 //=============================================================================
 // READ DATA OF BOUNDARY CONDITIONS
@@ -61,7 +62,8 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 	xfgets( line, LINE_SIZE - 2, in );
 
 	int n_boundaries = atoi( xstrtok( line) );
-	Boundary::id_to_bcd.reserve(n_boundaries);
+	//OldBcdInput::instance()->bcd_ids_.resize(n_boundaries);
+    Boundary::id_to_bcd.reserve(n_boundaries);
 
 	int group_number=0;
 
@@ -70,6 +72,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
         xfgets( line, LINE_SIZE - 2, in );
         // Parse the line
         bcd_id    = atoi( xstrtok( line) );
+        //OldBcdInput::instance()->bcd_ids_[i_bcd] = bcd_id;
         // DBGMSG("boundary id: %d \n",bcd_id);
 
         unsigned int type  = atoi( xstrtok( NULL) );
@@ -96,6 +99,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 break;
         }
 
+        unsigned int bcd_idx;
         unsigned int where  = atoi( xstrtok( NULL) );
         int eid, sid, n_exterior;
         SideIter sde;
@@ -110,6 +114,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 if( sid < 0 || sid >= ele->n_sides() )
                      xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", bcd_id, sid );
                 bcd = ele->side(sid) -> cond();
+                bcd_idx = ele->side(sid) -> cond_idx();
 
                 ASSERT( bcd != NULL, "Missing boundary object.");
                 bcd->type = type;
@@ -150,7 +155,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 break;
         }
         // DBGMSG("fbcd: %d %d %d %d \n", i_bcd, bcd - mesh->boundary.begin(), bcd->side->element().index(), bcd->side->el_idx() );
-        *(Boundary::id_to_bcd.add_item(bcd_id)) = bcd;
+        *(Boundary::id_to_bcd.add_item(bcd_id)) = bcd_idx;
 
 
         //TODO: if group is necessary set it for all bcd in case where == SIDE_E

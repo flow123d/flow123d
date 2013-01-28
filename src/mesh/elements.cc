@@ -52,7 +52,7 @@ Element::Element()
 
   material(NULL),
   edge_idx_(NULL),
-  boundaries_(NULL),
+  boundary_idx_(NULL),
 
   n_neighs_vb(0),
   neigh_vb(NULL),
@@ -63,28 +63,29 @@ Element::Element()
 }
 
 
-Element::Element(unsigned int dim)
-:  pid(0),
-
-  material(NULL),
-
-  n_neighs_vb(0),
-  neigh_vb(NULL),
-
-  dim_(dim)
-
+Element::Element(unsigned int dim, Mesh *mesh_in)
 {
-    // allocate element arrays TODO: should be in mesh class
-    node = new Node * [ n_nodes()];
-    edge_idx_ = new unsigned int [ n_sides()];
-    boundaries_ = new Boundary * [ n_sides()];
-
-    FOR_ELEMENT_SIDES(this, si) {
-        edge_idx_[ si ]=-1;
-        boundaries_[si] =NULL;
-    }
+    init(dim, mesh_in);
 }
 
+
+
+void Element::init(unsigned int dim, Mesh *mesh_in) {
+    pid=0;
+    material=NULL;
+    n_neighs_vb=0;
+    neigh_vb=NULL;
+    dim_=dim;
+    mesh_=mesh_in;
+
+    node = new Node * [ n_nodes()];
+    edge_idx_ = new unsigned int [ n_sides()];
+    boundary_idx_ = NULL;
+
+    FOR_ELEMENT_SIDES(this, si) {
+        edge_idx_[ si ]=Mesh::undef_idx;
+    }
+}
 
 
 /**

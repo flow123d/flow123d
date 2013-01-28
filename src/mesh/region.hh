@@ -165,7 +165,7 @@ add_set( const string& set_name, const RegionSet & set);
 RegionSet union( const string & set_name_1, const string & set_name_2); // sort + std::set_union
 RegionSet intersection( const string & set_name_1, const string & set_name_2);
 RegionSet difference( const string & set_name_1, const string & set_name_2);
-const Region & get_set(const string & set_name);
+const RegionSet & get_set(const string & set_name);
 void read_sets_from_input(Input::Record rec); // see structure of RegionDB::region_set_input_type
 
 region_sets = [

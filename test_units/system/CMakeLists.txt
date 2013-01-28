@@ -35,6 +35,7 @@ set(super_test_libs system_lib)
     
     define_test(exceptions)
     define_test(file_path)
+    define_test(backtrace)
     
     if (CMAKE_HAVE_CXX11)
         # reqires raw strings  

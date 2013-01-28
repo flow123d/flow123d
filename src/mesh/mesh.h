@@ -104,6 +104,7 @@ public:
 
 class Mesh {
 public:
+    static const unsigned int undef_idx=-1;
     static Input::Type::Record input_type;
 
     Input::Record in_record_;
@@ -120,7 +121,7 @@ public:
     }
 
     inline unsigned int n_boundaries() const {
-        return boundary.size();
+        return boundary_.size();
     }
 
     inline unsigned int n_edges() const {
@@ -161,7 +162,7 @@ public:
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
-    BoundaryVector boundary;
+    vector<Boundary> boundary_;
     /// vector of boundary elements - should replace 'boundary'
     /// TODO: put both bulk and bc elements (on zero level) to the same vector or make better map id->element for field inputs that use element IDs
     /// the avoid usage of ElementVector etc.
@@ -238,6 +239,11 @@ protected:
      */
     bool find_lower_dim_element(ElementVector&elements, vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
 
+    /**
+     * Returns true if side @p si has same nodes as in the list @p side_nodes.
+     */
+    bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
+
 
     void element_to_neigh_vb();
     void create_external_boundary();
@@ -291,8 +297,8 @@ protected:
 
 
 #define FOR_BOUNDARIES(_mesh_,i) \
-for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
-    i != _mesh_->boundary.end(); \
+for( std::vector<Boundary>::iterator i= _mesh_->boundary_.begin(); \
+    i != _mesh_->boundary_.end(); \
     ++i)
 
 /**
