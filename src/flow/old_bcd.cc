@@ -28,8 +28,8 @@ void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
 }
 
 template <int spacedim, class Value>
-void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val, Region bc_reg) {
-    static_cast<FieldElementwise<spacedim, Value> *>(target(bc_reg))->set_data_row(bcd_ele_idx, val);
+void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val) {
+    static_cast<FieldElementwise<spacedim, Value> *>(target(RegionDB::implicit_boundary))->set_data_row(bcd_ele_idx, val);
 }
 
 
@@ -56,28 +56,21 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
     set_all(flow_flux, mesh);
     set_all(flow_sigma, mesh);
 
-    // get any boundary region
-    Region bc_reg;
-    for(unsigned int i_reg=0; i_reg<Region::db().size(); i_reg++)
-        if (Region(i_reg).is_boundary()) {
-            bc_reg=Region(i_reg);
-            break;
-        }
-    if (! bc_reg.is_valid()) xprintf(PrgErr, "No boundary region.\n");
 
     Tokenizer tok(flow_bcd);
     try {
         double scalar, flux, sigma;
+        unsigned int id;
 
         tok.skip_to("$BoundaryConditions");
         tok.next_line(false);
         unsigned int n_boundaries = lexical_cast<unsigned int>(*tok); ++tok;
-        bcd_ids_.resize(n_boundaries);
 
         for(unsigned int i_bcd=0; i_bcd < n_boundaries; i_bcd++) {
             tok.next_line();
 
-            bcd_ids_[i_bcd] = lexical_cast<unsigned int>(*tok); ++tok;
+            id = lexical_cast<unsigned int>(*tok); ++tok;
+
             unsigned int type  = lexical_cast<unsigned int>(*tok); ++tok;
 
             switch( type ) {
@@ -97,7 +90,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     flux = 0.0;
                     break;
                 default :
-                    xprintf(UsrErr,"Unknown type of boundary condition - cond # %d, type %c\n", bcd_ids_[i_bcd], type );
+                    xprintf(UsrErr,"Unknown type of boundary condition - cond # %d, type %c\n", id, type );
                     break;
             }
 
@@ -115,12 +108,15 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     // find and set the side
                     ele = mesh->element.find_id( eid );
                     if( sid < 0 || sid >= ele->n_sides() )
-                         xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", bcd_ids_[i_bcd], sid );
+                         xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", id, sid );
+
                     bc_ele_idx = mesh->bc_elements.index( ele->side(sid) -> cond()->element() );
-                    set_field(flow_type,     bc_ele_idx, type,   bc_reg);
-                    set_field(flow_pressure, bc_ele_idx, scalar, bc_reg);
-                    set_field(flow_flux,     bc_ele_idx, flux,   bc_reg);
-                    set_field(flow_sigma,    bc_ele_idx, sigma,  bc_reg);
+                    id_2_bcd_[id]= bc_ele_idx;
+
+                    set_field(flow_type,     bc_ele_idx, type);
+                    set_field(flow_pressure, bc_ele_idx, scalar);
+                    set_field(flow_flux,     bc_ele_idx, flux);
+                    set_field(flow_sigma,    bc_ele_idx, sigma);
                     break;
                 case 3: // SIDE_E - BC given only by element, apply to all its sides
 
@@ -151,7 +147,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     */
                     break;
                 default:
-                    xprintf(UsrErr,"Unknown entity for boundary condition - cond # %d, ent. %c\n", bcd_ids_[i_bcd], where );
+                    xprintf(UsrErr,"Unknown entity for boundary condition - cond # %d, ent. %c\n", id, where );
                     break;
             }
             unsigned int n_tags  = lexical_cast<unsigned int>(*tok); ++tok;
@@ -182,13 +178,46 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
 }
 
 void OldBcdInput::read_transport(const FilePath &transport_bcd,
-            Field<3,FieldValue<3>::Enum > &trans_type,
             Field<3,FieldValue<3>::Vector > &trans_conc)
 {
-    set_all(trans_type, mesh_);
+    using namespace boost;
+
     set_all(trans_conc, mesh_);
+    unsigned int n_substances = trans_conc.n_comp();
+    FieldValue<3>::Vector::return_type ele_value(n_substances);
+
+    Tokenizer tok(transport_bcd);
+    try {
+        unsigned int bcd_id, boundary_id, bc_ele_idx;
+
+        tok.skip_to("$Transport_BCD");
+        tok.next_line(false);
+        unsigned int n_bcd = lexical_cast<unsigned int>(*tok); ++tok;
+        for (unsigned int i_bcd = 0; i_bcd < n_bcd; i_bcd++) {
+            tok.next_line();
+            bcd_id = lexical_cast<unsigned int>(*tok); ++tok;
+            boundary_id = lexical_cast<unsigned int>(*tok); ++tok;
+
+            map<unsigned int, unsigned int>::const_iterator it = id_2_bcd_.find(bcd_id);
+            if (it == id_2_bcd_.end())
+                xprintf(UsrErr,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
+            bc_ele_idx = it->second;
+
+            for (unsigned int sbi = 0; sbi < n_substances; sbi++)
+                ele_value[sbi] = lexical_cast<double>(*tok); ++tok;
+
+            set_field(trans_conc,     bc_ele_idx, ele_value);
+
+        }
 
 
+    } catch (bad_lexical_cast &) {
+        xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
+    } // flow bcd reader
+
+
+
+        // make bc filename
 
 
 }
