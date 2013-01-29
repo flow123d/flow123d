@@ -1,0 +1,9 @@
+$Transport_BCDFormat
+1.0	0	8
+$EndTransport_BCDFormat
+$Transport_BCD
+3
+0	0	 1.000000000000
+1	1	 0.000000000000
+2	2	 0.000000000000
+$EndTransport_BCD

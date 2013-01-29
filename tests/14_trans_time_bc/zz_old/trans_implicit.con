@@ -1,0 +1,84 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test14 - 2D transport with time variable boundarty", 
+    material = "./input/test14.mtr", 
+    mesh = {
+      mesh_file = "./input/test14.msh", 
+      neighbouring = "./input/test14.ngh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/test14.fbc", 
+      n_schurs = 2, 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07 
+      }
+    }, 
+ 
+    secondary_equation = {
+      TYPE = "AdvectionDiffusion_DG", 
+      bc_times = [
+        1, 
+        3, 
+        6, 
+        7
+      ], 
+      boundary_file = "./input/test14_tbc", 
+      initial_file = "./input/test14.tic", 
+      output = {
+        mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/system/output_streams/1"
+        }, 
+        save_step = 1.0
+      }, 
+
+      substances = [
+        "A"
+      ], 
+      dg_penalty=1e4,
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      },
+      time = {
+	end_time = 10.0, 
+	init_dt = 1.0
+      }
+    }
+  }, 
+
+  system = {
+    output_streams = [
+      {
+        file = "./test14.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport-implicit.pvd", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
+    material = "./input/test1.mtr", 
+    mesh = {
+      mesh_file = "./input/test1.msh", 
+      neighbouring = "./input/test1.ngh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/test1.fbc", 
+      n_schurs = 2, 
+      output = {
+        balance_output = "water_balance.out", 
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
+        piezo_head_p0 = "flow_output_stream", 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      } 
+    }
+  }, 
+
+  system = {
+    output_stream = {
+        file = "./test1.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
+  }
+}
