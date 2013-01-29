@@ -63,20 +63,21 @@ Element::Element()
 }
 
 
-Element::Element(unsigned int dim, Mesh *mesh_in)
+Element::Element(unsigned int dim, Mesh *mesh_in, Region reg)
 {
-    init(dim, mesh_in);
+    init(dim, mesh_in, reg);
 }
 
 
 
-void Element::init(unsigned int dim, Mesh *mesh_in) {
+void Element::init(unsigned int dim, Mesh *mesh_in, Region reg) {
     pid=0;
     material=NULL;
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
     mesh_=mesh_in;
+    region_=reg;
 
     node = new Node * [ n_nodes()];
     edge_idx_ = new unsigned int [ n_sides()];

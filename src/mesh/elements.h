@@ -48,8 +48,8 @@ class Element
 {
 public:
     Element();
-    Element(unsigned int dim, Mesh *mesh_in);
-    void init(unsigned int dim, Mesh *mesh_in);
+    Element(unsigned int dim, Mesh *mesh_in, Region reg);
+    void init(unsigned int dim, Mesh *mesh_in, Region reg);
 
     inline unsigned int dim() const;
     inline unsigned int index() const;

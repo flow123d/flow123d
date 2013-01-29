@@ -40,6 +40,18 @@ class OldBcdInput;
  */
 class Region {
 public:
+    enum RegionType {
+        bulk=false,
+        boundary=true
+    };
+
+    /**
+     * Create accessor from the index. Should be private since implementation specific.
+     * We need some way how to iterate over: all regions, boundary regions, bulk regions -
+     * solution: have specific RegionSets for these three cases.
+     */
+    Region(unsigned int index)
+    : idx_(index) {}
 
     /// Default region is undefined/invalid
     Region():idx_(undefined) {}
@@ -96,11 +108,7 @@ private:
     /// Global variable with information about all regions.
     static RegionDB db_;
 
-    /**
-     * Create accessor from the index. Private since implementation specific.
-     */
-    Region(unsigned int index)
-    : idx_(index) {}
+
 
     unsigned int idx_;
 
@@ -121,8 +129,8 @@ private:
  * - say if an region is in it
  * - iterate through its regions
  */
-class RegionSet {
-};
+//class RegionSet {
+//};
 
 
 /**
@@ -205,6 +213,11 @@ region_sets = [
 
 class RegionDB {
 public:
+    typedef std::vector<Region> RegionSet;
+
+    static Region implicit_bulk;
+    static Region implicit_boundary;
+
     static Input::Type::Record region_input_type;
     static Input::Type::Record region_set_input_type;
 
@@ -222,8 +235,7 @@ public:
 
 
     /// Default constructor
-    RegionDB()
-    : closed_(false), n_boundary_(0), n_bulk_(0)  {}
+    RegionDB();
 
     /**
      * Introduce an artificial limit to keep all material indexed arrays
@@ -290,6 +302,21 @@ public:
      */
     unsigned int bulk_size();
 
+    /**
+     * Returns list of boundary regions.
+     */
+    const RegionSet &boundary_regions();
+
+    /**
+     * Returns list of boundary regions.
+     */
+    const RegionSet &bulk_regions();
+    /**
+     * Returns list of boundary regions.
+     */
+    const RegionSet &all_regions();
+
+
 
 private:
     /// One item in region database
@@ -320,10 +347,10 @@ private:
                 BMI::ordered_unique< BMI::tag<ID>,    BMI::member<RegionItem, unsigned int, &RegionItem::id> >,
                 BMI::ordered_unique< BMI::tag<Label>, BMI::member<RegionItem, std::string, &RegionItem::label> >
             >
-    > RegionSet;
+    > RegionTable;
 
     /// Should be RegionSet that consist from all regions. After RegionSets are implemented.
-    RegionSet region_set_;
+    RegionTable region_set_;
 
     /// flag for closed database
     bool closed_;
@@ -331,6 +358,9 @@ private:
     unsigned int n_boundary_;
     /// Number of bulk regions
     unsigned int n_bulk_;
+
+    /// Make part of general RegionSet table.
+    RegionSet all, bulk, boundary;
 };
 
 

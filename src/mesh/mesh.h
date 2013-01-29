@@ -149,7 +149,11 @@ public:
      * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
      */
     void setup_materials( MaterialDatabase &base);
-    void make_element_geometry();
+    //void make_element_geometry();
+
+    /**
+     * Returns vector of ID numbers of elements from both element and bc_elements vectors.
+     */
     vector<int> const &all_elements_id();
 
 
@@ -171,7 +175,7 @@ public:
     /// Vector of MH edges, this should not be part of the geometrical mesh
     std::vector<Edge> edges;
 
-    flow::VectorId<int> bcd_group_id; // gives a index of group for an id
+    //flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
     /**
      * Vector of individual intersections of two elements.
@@ -185,6 +189,9 @@ public:
      */
     vector<vector<unsigned int> >  master_elements;
 
+    /**
+     * Vector of compatible neighbourings.
+     */
     vector<Neighbour> vb_neighbours_;
     int n_materials; // # of materials
 
@@ -202,8 +209,8 @@ public:
     // index into element node array
     vector< vector< vector<unsigned int> > > side_nodes;
     
-    string neigh_fname_;
-    string bcd_fname_;
+    //string neigh_fname_;
+    //string bcd_fname_;
 
 protected:
 

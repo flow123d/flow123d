@@ -177,8 +177,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
             } else {
                 ele = mesh->element.add_item(id);
             }
-            ele->init(dim, mesh);
-            ele->region_=region_idx;
+            ele->init(dim, mesh, region_idx);
             ele->pid=partition_id;
 
             unsigned int ni;

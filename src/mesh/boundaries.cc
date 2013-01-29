@@ -30,9 +30,10 @@
 
 #include "system/system.hh"
 #include "system/xio.h"
-#include "mesh/boundaries.h"
 #include "mesh/mesh.h"
-#include "flow/old_bcd.hh"
+#include "mesh/boundaries.h"
+
+//#include "flow/old_bcd.hh"
 
 static struct Boundary *new_boundary(void);
 static void add_to_boundary_list(struct Mesh*,struct Boundary*);
@@ -40,6 +41,13 @@ static void init_boundary_list(struct Mesh*);
 static void parse_boundary_line(struct Boundary*,char*);
 
 flow::VectorId<unsigned int> Boundary::id_to_bcd;
+
+
+Boundary::Boundary()
+: type(2), flux(0.0),
+  edge_idx_(Mesh::undef_idx), bc_ele_idx_(Mesh::undef_idx),
+  mesh_(NULL)
+{}
 
 
 Element * Boundary::bc_element() {
@@ -170,6 +178,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 
 
         //TODO: if group is necessary set it for all bcd in case where == SIDE_E
+        /*
         n_tags  = atoi( xstrtok( NULL) );
         if( n_tags > 0 ) {
             int group_id = atoi( xstrtok( NULL) );
@@ -180,7 +189,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 group_iter = mesh->bcd_group_id.add_item(group_id);
             }
             bcd->group = group_iter.index();   // in fact we do not use integres stored in the vector, but we use index
-        }
+        }*/
 
 
 	}

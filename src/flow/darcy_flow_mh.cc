@@ -189,8 +189,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base
         bc_function = FunctionBase<3>::function_factory(it_bc->val<AbstractRecord>("value"));
 
         // set bcd groups for correct water_balance
-        FOR_BOUNDARIES(mesh_, bcd) bcd->group=0;
-        mesh_->bcd_group_id.add_item(0);
+        //FOR_BOUNDARIES(mesh_, bcd) bcd->group=0;
+        //mesh_->bcd_group_id.add_item(0);
 
     } else {
         read_boundary(mesh_, in_rec.val<FilePath>("boundary_file", FilePath("NO_BCD_FILE", FilePath::input_file) ) );

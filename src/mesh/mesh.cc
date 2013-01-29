@@ -51,7 +51,6 @@
 // concentrations is in fact reimplemented in transport REMOVE it HERE
 
 // After removing non-geometrical things from mesh, this should be part of mash initializing.
-#include "mesh/topology.cc"
 #include "mesh/msh_reader.h"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
@@ -438,7 +437,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill boundary element
                     ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
-                    bc_ele->init(e->dim()-1, this);
+                    bc_ele->init(e->dim()-1, this, RegionDB::implicit_boundary);
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
                     // fill Boundary object

@@ -647,9 +647,9 @@ void DarcyFlowMHOutput::water_balance() {
     double bal;
     int c_water;
     struct Boundary *bcd;
-    std::vector<double> *bcd_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
-    std::vector<double> *bcd_plus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
-    std::vector<double> *bcd_minus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
+    std::vector<double> bcd_balance( Region::db().size(), 0.0 );
+    std::vector<double> bcd_plus_balance( Region::db().size(), 0.0 );
+    std::vector<double> bcd_minus_balance( Region::db().size(), 0.0 );
 
     fprintf(balance_output_file,"********************************\n");
     fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
@@ -657,21 +657,24 @@ void DarcyFlowMHOutput::water_balance() {
     FOR_BOUNDARIES(mesh_, bcd) {
         // !! there can be more sides per one boundary
         double flux = dh.side_flux( *(bcd->side()) );
-        (*bcd_balance)[bcd->group] += flux;
+        Region r = bcd->region();
+        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele %d, edg: %d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
+        unsigned int bc_region_idx=r.boundary_idx();
+        bcd_balance[bc_region_idx] += flux;
 
-        if (flux > 0) (*bcd_plus_balance)[bcd->group]+= flux;
-        else (*bcd_minus_balance)[bcd->group]+= flux;
+        if (flux > 0) bcd_plus_balance[bc_region_idx]+= flux;
+        else bcd_minus_balance[bc_region_idx]+= flux;
     }
 
 
-
-    for(int i=0; i < bcd_balance->size(); ++i)
-        fprintf(balance_output_file, "boundary #%d\t%g\t%g\t%g\n", mesh_->bcd_group_id(i).id(),
-                (*bcd_balance)[i],(*bcd_plus_balance)[i],(*bcd_minus_balance)[i]);
-
-    delete bcd_balance;
-    delete bcd_plus_balance;
-    delete bcd_minus_balance;
+    DBGMSG("DB size: %u\n", Region::db().size());
+    for(vector<Region>::const_iterator reg = Region::db().boundary_regions().begin();
+            reg != Region::db().boundary_regions().end(); ++reg) {
+            fprintf(balance_output_file, "boundary #%d\t%g\t%g\t%g\n", reg->idx()+1, reg->label().c_str(),
+                     bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
+//        fprintf(balance_output_file, "boundary id:%u label:'%s'\t%g\t%g\t%g\n", reg->id(), reg->label().c_str(),
+//                bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
+    }
 
     const FieldP0<double> *p_sources=darcy_flow->get_sources();
     if (p_sources != NULL) {

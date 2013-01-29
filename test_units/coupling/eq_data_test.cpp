@@ -107,11 +107,6 @@ const string eq_data_input = R"JSON(
 
 
 
-
-
-
-
-
 class SomeEquation : public testing::Test, EquationBase {
 public:
 

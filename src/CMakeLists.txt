@@ -74,7 +74,6 @@ set(sources_mesh_lib
     mesh/neighbours.cc
     mesh/nodes.cc
     mesh/sides.cc
-    mesh/topology.cc
     mesh/intersection.cc
 )
 

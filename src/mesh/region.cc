@@ -36,6 +36,13 @@ unsigned int Region::dim() const
 
 namespace IT=Input::Type;
 
+// adding implicit boundary and bulk regions
+// How to deal with dimension, clean solution is to have implicit region for every
+// dimension, or we can allow regions of mixed dimension
+Region RegionDB::implicit_bulk=Region::db().add_region(Region::undefined-1, "IMPLICIT BULK", 0, Region::bulk);
+Region RegionDB::implicit_boundary=Region::db().add_region(Region::undefined-2, "IMPLICIT BOUNDARY", 0, Region::boundary);
+
+
 IT::Record RegionDB::region_input_type =
         IT::Record("Region", "Definition of region of elements.")
         .declare_key("name",IT::String(), IT::Default::obligatory(),
@@ -62,6 +69,12 @@ IT::Record RegionDB::region_set_input_type =
                 "Defines region set as a difference of given pair of sets. Overrides previous keys.")
         .close();
 
+
+/// Default constructor
+RegionDB::RegionDB()
+: closed_(false), n_boundary_(0), n_bulk_(0)  {
+
+}
 
 
 Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
@@ -123,7 +136,7 @@ Region RegionDB::add_region(unsigned int id, unsigned int dim) {
 
 Region RegionDB::find_label(const std::string &label)
 {
-    RegionSet::index<Label>::type::iterator it_label = region_set_.get<Label>().find(label);
+    RegionTable::index<Label>::type::iterator it_label = region_set_.get<Label>().find(label);
     if (it_label==region_set_.get<Label>().end()  ) return Region();
     return Region(it_label->index);
 }
@@ -132,7 +145,7 @@ Region RegionDB::find_label(const std::string &label)
 
 Region RegionDB::find_id(unsigned int id)
 {
-    RegionSet::index<ID>::type::iterator it_id = region_set_.get<ID>().find(id);
+    RegionTable::index<ID>::type::iterator it_id = region_set_.get<ID>().find(id);
     if ( it_id==region_set_.get<ID>().end() ) return Region();
     return Region(it_id->index);
 }
@@ -141,24 +154,24 @@ Region RegionDB::find_id(unsigned int id)
 
 
 const std::string & RegionDB::get_label(unsigned int idx) const {
-    RegionSet::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
-    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %d\n", idx);
+    RegionTable::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
+    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %u\n", idx);
     return  it->label;
 }
 
 
 
 unsigned int RegionDB::get_id(unsigned int idx) const {
-    RegionSet::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
-    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %d\n", idx);
+    RegionTable::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
+    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %u\n", idx);
     return  it->id;
 }
 
 
 
 unsigned int RegionDB::get_dim(unsigned int idx) const {
-    RegionSet::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
-    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %d\n", idx);
+    RegionTable::index<Index>::type::iterator it = region_set_.get<Index>().find(idx);
+    ASSERT( it!= region_set_.get<Index>().end(), "No region with index: %u\n", idx);
     return  it->dim_;
 }
 
@@ -188,3 +201,14 @@ unsigned int RegionDB::bulk_size() {
     return n_bulk_;
 }
 
+
+
+const RegionDB::RegionSet &RegionDB::boundary_regions() {
+    if (boundary.size() == 0) {
+        for(unsigned int i=0; i< size(); i++) {
+            Region reg(i);
+            if (reg.is_boundary() && reg.boundary_idx() < n_boundary_) boundary.push_back(reg);
+        }
+    }
+    return boundary;
+}
