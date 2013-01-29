@@ -116,7 +116,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     ele = mesh->element.find_id( eid );
                     if( sid < 0 || sid >= ele->n_sides() )
                          xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", bcd_ids_[i_bcd], sid );
-                    bc_ele_idx = mesh->bc_elements.index( ele->side(sid) -> cond()->get_bc_element_iter() );
+                    bc_ele_idx = mesh->bc_elements.index( ele->side(sid) -> cond()->bc_element() );
                     set_field(flow_type,     bc_ele_idx, type,   bc_reg);
                     set_field(flow_pressure, bc_ele_idx, scalar, bc_reg);
                     set_field(flow_flux,     bc_ele_idx, flux,   bc_reg);
