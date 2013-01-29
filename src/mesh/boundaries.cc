@@ -50,7 +50,7 @@ Boundary::Boundary()
 {}
 
 
-Element * Boundary::bc_element() {
+Element * Boundary::element() {
     return &( mesh_->bc_elements[bc_ele_idx_] );
 }
 
