@@ -130,8 +130,13 @@ Application::Application( int argc,  char ** argv)
     if (! in_stream) {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
     }
-
-    json_reader.read_stream(in_stream, input_type );
+    try {
+      json_reader.read_stream(in_stream, input_type );
+    } catch (Input::JSONToStorage::ExcInputError &e ) {
+      e << Input::JSONToStorage::EI_File(fname); throw;
+    } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
+      e << Input::JSONToStorage::EI_File(fname); throw;
+    }  
 
     {
         using namespace Input;

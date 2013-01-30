@@ -111,20 +111,20 @@ protected:
 
 
     // type resolution like in json_to_storage
-    void print(ostream& stream, const TypeBase *type, unsigned int depth = 0);
+    void print(ostream& stream, const TypeBase *type, unsigned int depth);
 
 
     // following methods realize output in particular format
     // using getters from the base class OutputBase
-    virtual void print(ostream& stream, const Record *type, unsigned int depth = 0) = 0;
-    virtual void print(ostream& stream, const Array *type, unsigned int depth = 0) = 0;
-    virtual void print(ostream& stream, const AbstractRecord *type, unsigned int depth = 0) = 0;
-    virtual void print(ostream& stream, const Selection *type, unsigned int depth = 0) = 0;
-	virtual void print(ostream& stream, const Integer *type, unsigned int depth = 0) = 0;
-	virtual void print(ostream& stream, const Double *type, unsigned int depth = 0) = 0;
-	virtual void print(ostream& stream, const Bool *type, unsigned int depth = 0) = 0;
-	virtual void print(ostream& stream, const String *type, unsigned int depth = 0) = 0;
-    virtual void print(ostream& stream, const FileName *type, unsigned int depth = 0) = 0;
+    virtual void print(ostream& stream, const Record *type, unsigned int depth) = 0;
+    virtual void print(ostream& stream, const Array *type, unsigned int depth) = 0;
+    virtual void print(ostream& stream, const AbstractRecord *type, unsigned int depth) = 0;
+    virtual void print(ostream& stream, const Selection *type, unsigned int depth) = 0;
+	virtual void print(ostream& stream, const Integer *type, unsigned int depth) = 0;
+	virtual void print(ostream& stream, const Double *type, unsigned int depth) = 0;
+	virtual void print(ostream& stream, const Bool *type, unsigned int depth) = 0;
+	virtual void print(ostream& stream, const String *type, unsigned int depth) = 0;
+    virtual void print(ostream& stream, const FileName *type, unsigned int depth) = 0;
 
     /**
      * Write out a string with given padding of every new line.
@@ -157,17 +157,17 @@ public:
 
 protected:
 
-	void print(ostream& stream, const TypeBase *type, unsigned int depth = 0) { OutputBase::print(stream, type, depth); }
+	void print(ostream& stream, const TypeBase *type, unsigned int depth) { OutputBase::print(stream, type, depth); }
 
-    void print(ostream& stream, const Record *type, unsigned int depth = 0);
-    void print(ostream& stream, const Array *type, unsigned int depth = 0);
-    void print(ostream& stream, const AbstractRecord *type, unsigned int depth = 0);
-    void print(ostream& stream, const Selection *type, unsigned int depth = 0);
-	void print(ostream& stream, const Integer *type, unsigned int depth = 0);
-	void print(ostream& stream, const Double *type, unsigned int depth = 0);
-	void print(ostream& stream, const Bool *type, unsigned int depth = 0);
-	void print(ostream& stream, const String *type, unsigned int depth = 0);
-    void print(ostream& stream, const FileName *type, unsigned int depth = 0);
+    void print(ostream& stream, const Record *type, unsigned int depth);
+    void print(ostream& stream, const Array *type, unsigned int depth);
+    void print(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print(ostream& stream, const Selection *type, unsigned int depth);
+	void print(ostream& stream, const Integer *type, unsigned int depth);
+	void print(ostream& stream, const Double *type, unsigned int depth);
+	void print(ostream& stream, const Bool *type, unsigned int depth);
+	void print(ostream& stream, const String *type, unsigned int depth);
+    void print(ostream& stream, const FileName *type, unsigned int depth);
 
     void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
 
@@ -192,19 +192,19 @@ public:
 	}
 
 protected:
-	void print(ostream& stream, const TypeBase *type, unsigned int depth = 0) {
+	void print(ostream& stream, const TypeBase *type, unsigned int depth) {
 		OutputBase::print(stream, type, depth);
 	}
 
-    void print(ostream& stream, const Record *type, unsigned int depth = 0);
-    void print(ostream& stream, const Array *type, unsigned int depth = 0);
-    void print(ostream& stream, const AbstractRecord *type, unsigned int depth = 0);
-    void print(ostream& stream, const Selection *type, unsigned int depth = 0);
-	void print(ostream& stream, const Integer *type, unsigned int depth = 0);
-	void print(ostream& stream, const Double *type, unsigned int depth = 0);
-	void print(ostream& stream, const Bool *type, unsigned int depth = 0);
-	void print(ostream& stream, const String *type, unsigned int depth = 0);
-    void print(ostream& stream, const FileName *type, unsigned int depth = 0);
+    void print(ostream& stream, const Record *type, unsigned int depth);
+    void print(ostream& stream, const Array *type, unsigned int depth);
+    void print(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print(ostream& stream, const Selection *type, unsigned int depth);
+	void print(ostream& stream, const Integer *type, unsigned int depth);
+	void print(ostream& stream, const Double *type, unsigned int depth);
+	void print(ostream& stream, const Bool *type, unsigned int depth);
+	void print(ostream& stream, const String *type, unsigned int depth);
+    void print(ostream& stream, const FileName *type, unsigned int depth);
 
     void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
 

@@ -36,7 +36,7 @@
 #include "petscerror.h"
 #include <armadillo>
 
-
+/*
 #include "system/system.hh"
 
 #include "system/math_fce.h"
@@ -64,6 +64,42 @@
 
 #include "coupling/time_governor.hh"
 
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
+*/
+
+#include "../system/system.hh"
+
+#include "../system/math_fce.h"
+#include "../mesh/mesh.h"
+#include "../mesh/intersection.hh"
+#include "../la/distribution.hh"
+#include "../la/linsys.hh"
+#include "../la/solve.h"
+#include "../la/schur.hh"
+#include "../la/sparse_graph.hh"
+#include "../la/local_to_global_map.hh"
+#include "../field_p0.hh"
+
+#include "../system/file_path.hh"
+#include "mh_fe_values.hh"
+#include "darcy_flow_mh.hh"
+
+#include "darcy_flow_mh_output.hh"
+
+#include <limits>
+#include <set>
+#include <vector>
+#include <iostream>
+#include <iterator>
+
+#include "../coupling/time_governor.hh"
+
+#include "../fields/field_base.hh"
+#include "../fields/field_values.hh"
+
+
+
 
 namespace it = Input::Type;
 
@@ -85,6 +121,7 @@ it::Record DarcyFlowMH::bc_segment_rec
 
 //static Record bc_table_item_rec = BCTable::get_item_input_type( bc_type );
 
+/*
 it::AbstractRecord DarcyFlowMH::input_type
 	= it::AbstractRecord("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.")
         // declare keys common to all DarcyFlow classes
@@ -108,7 +145,51 @@ it::AbstractRecord DarcyFlowMH::input_type
                 "Method for coupling Darcy flow between dimensions." )
 	.declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
                 "Conductivity between dimensions." );
+//*/
 
+
+it::Selection DarcyFlowMH::EqData::bc_type_selection =
+              it::Selection("EqData_bc_Type")
+               .add_value(dirichlet, "dirichlet")
+               .add_value(neumann, "neumann")
+               .add_value(robin, "robin")
+               .add_value(total_flux, "total_flux");
+
+//new input type with FIELDS
+it::AbstractRecord DarcyFlowMH::input_type=
+        it::AbstractRecord("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.")
+        .declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
+                "Number of Schur complements to perform when solving MH sytem.")
+        .declare_key("solver", Solver::input_type, it::Default::obligatory(),
+                "Linear solver for MH problem.")
+        .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
+                "Parameters of output form MH module.")
+        .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
+                "Method for coupling Darcy flow between dimensions." )
+        .declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
+                "Conductivity between dimensions." )
+        
+        
+        .declare_key("sources_file", it::FileName::input(),
+                "File with water source field.")
+        .declare_key("sources_formula", it::String(),
+                "Formula to determine the source field.")
+        .declare_key("boundary_file", it::FileName::input(),it::Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
+                "File with boundary conditions for MH solver.")
+        .declare_key("boundary_conditions", bc_segment_rec, it::Default::optional(),
+                "Specification of boundary conditions.")
+        
+        //*
+        .declare_key("bc_data", it::Array(
+                DarcyFlowMH::EqData().boundary_input_type()
+                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                ), it::Default::obligatory(), ""  )
+        .declare_key("bulk_data", it::Array(
+                DarcyFlowMH::EqData().bulk_input_type()
+                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
+                ), it::Default::obligatory(), "");
+        //*/
+        
 
 it::Record DarcyFlowMH_Steady::input_type
     = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
@@ -131,6 +212,7 @@ it::Record DarcyFlowLMH_Unsteady::input_type
                                 "Time governor setting for the unsteady Darcy flow model.")
     .declare_key("initial_file", it::FileName::input(), it::Default::obligatory(),
                                         "File with initial condition for the pressure.");
+    
 
 
 
@@ -150,9 +232,21 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base
 : DarcyFlowMH(mesh_in, mat_base_in, in_rec)
 
 {
+    //connecting data fields with mesh
+    data.set_mesh(&mesh_in);
+    data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    
+    // steady time governor
+    time_ = new TimeGovernor();
+    
+    //initializing data fields at the beginning (time = 0)
+    data.set_time(*time_);
+   
+    //DBGMSG("conductivity %f", data.conductivity.value(point));
+    
     using namespace Input;
     F_ENTRY;
-
+    
     int ierr;
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
@@ -196,8 +290,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base
         read_boundary(mesh_, in_rec.val<FilePath>("boundary_file", FilePath("NO_BCD_FILE", FilePath::input_file) ) );
         bc_function=NULL;
     }
-    // time governor
-    time_ = new TimeGovernor();
+    
 
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
