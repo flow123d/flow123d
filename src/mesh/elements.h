@@ -67,8 +67,6 @@ public:
     inline Region region() { return region_; }
 
 
-    // Data readed from mesh file
-    Region  region_;
     //int      mid;       // Id # of material
     //int      rid;       // Id # of region
     int      pid;       // Id # of mesh partition
@@ -82,20 +80,19 @@ public:
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
 
-    Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
 
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
-    unsigned int dim_;
+
+    Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
 
 protected:
+    // Data readed from mesh file
+    Region  region_;
+    unsigned int dim_;
 
-    double element_length_line();
-    double element_area_triangle();
-    double element_volume_tetrahedron();
-    
     friend class GmshMeshReader;
 
 };

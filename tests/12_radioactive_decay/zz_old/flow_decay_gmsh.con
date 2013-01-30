@@ -1,0 +1,99 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient", 
+    material = "./input/flow_decay/sit_decay.mtr", 
+    mesh = {
+      mesh_file = "./input/flow_decay/sit_decay.msh", 
+      neighbouring = "./input/flow_decay/sit_decay.ngh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/flow_decay/sit_decay.fbc", 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream",  
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+      boundary_file = "./input/flow_decay/sit_decay.tbc", 
+      dual_porosity = false, 
+      initial_file = "./input/flow_decay/sit_decay.tic", 
+      output = {
+        mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/system/output_streams/1"
+        }, 
+        save_step = 0.5
+      }, 
+
+      sorption_enable = false, 
+      substances = [
+        "A", 
+        "B", 
+        "C", 
+        "D", 
+        "E", 
+        "F"
+      ], 
+      time = {
+        end_time = 10.0
+      },
+      
+      reactions = {
+        TYPE="LinearReactions",
+        decays = [
+          {
+            parent = "D",
+            half_life = 2.5,
+            products = [
+              "F"
+            ]
+          },
+          {
+            parent = "F",
+            half_life = 2.5,
+            products = [
+              "B"
+            ]
+          }
+        ]
+      }
+    } 
+  },
+  
+  
+  system = {
+    output_streams = [
+      {
+        file = "./decay.msh", 
+        format = {
+          TYPE = "gmsh", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport_decay.msh", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

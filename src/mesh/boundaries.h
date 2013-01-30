@@ -69,10 +69,10 @@ public:
      */
     Edge * edge();
 
-    Element * bc_element();
+    Element * element();
 
     Region region() {
-        return bc_element()->region();
+        return element()->region();
     }
 
     inline SideIter side() {

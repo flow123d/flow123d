@@ -1,0 +1,10 @@
+$MaterialFormat
+1.0	0	8
+$EndMaterialFormat
+$Materials
+	1
+	100	21	0.1
+$EndMaterials
+$Geometry
+        100     2       1.0
+$EndGeometry

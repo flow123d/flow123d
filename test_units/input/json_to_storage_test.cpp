@@ -107,7 +107,7 @@ TEST_F(InputJSONToStorageTest, Integer) {
     }
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "The value should be 'JSON int', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "The value should be 'JSON int', but we found.* 'JSON object'");
     }
 }
 
@@ -136,7 +136,7 @@ TEST_F(InputJSONToStorageTest, Double) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ExcInputError, "The value should be 'JSON real', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 }
 
@@ -161,7 +161,7 @@ TEST_F(InputJSONToStorageTest, Selection) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ExcInputError, "The value should be 'JSON string', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
     }
 }
 
@@ -179,7 +179,7 @@ TEST_F(InputJSONToStorageTest, String) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, str_type);} , ExcInputError, "The value should be 'JSON string', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, str_type);} , ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
     }
 }
 
@@ -196,7 +196,7 @@ TEST_F(InputJSONToStorageTest, Bool) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, bool_type);} , ExcInputError, "The value should be 'JSON bool', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, bool_type);} , ExcInputError, "The value should be 'JSON bool', but we found:.* 'JSON object'");
     }
 }
 
@@ -221,12 +221,12 @@ TEST_F(InputJSONToStorageTest, Array) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "The value should be 'JSON array', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "The value should be 'JSON array', but we found:.* 'JSON object'");
     }
 
     {
         stringstream ss("[ 3.2, {} ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "The value should be 'JSON real', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 
     {
@@ -245,13 +245,13 @@ TEST_F(InputJSONToStorageTest, Array) {
         EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
 
         stringstream ss1("{ key=3.2}");
-        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "The value should be 'JSON real', but we found type: 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 
     // test auto conversion failed
     {
         stringstream ss("3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "Automatic conversion to array not allowed. The value should be 'JSON array', but we found type: 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "Automatic conversion to array not allowed. The value should be 'JSON array', but we found:.* 'JSON real'");
     }
 }
 
@@ -280,7 +280,7 @@ TEST_F(InputJSONToStorageTest, Record) {
 
     {
         stringstream ss("[]");
-        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "The value should be 'JSON object', but we found type: 'JSON array'");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
     }
 
     {
@@ -306,7 +306,7 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_EQ(123, storage_->get_item(1)->get_int() );
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON int', but we found type: 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON int', but we found:.* 'JSON real'");
     }
 
     {
@@ -314,7 +314,7 @@ TEST_F(InputJSONToStorageTest, Record) {
         sub_rec.finish();
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON object', but we found type: 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON object', but we found:.* 'JSON real'");
     }
 
 
@@ -375,7 +375,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
     {   // Wrong derived value type
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "The value should be 'JSON real', but we found type: 'JSON string'");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
 
     }
 
@@ -393,7 +393,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
     {   // Wrong derived value type
         stringstream ss("[]");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "The value should be 'JSON object', but we found type: 'JSON array'");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
 
     }
 

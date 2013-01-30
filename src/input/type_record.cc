@@ -549,11 +549,11 @@ unsigned int AbstractRecord::child_size() const {
 
 
 AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
-    child_data_->list_of_childs.begin();
+    return child_data_->list_of_childs.begin();
 }
 
 AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
-    child_data_->list_of_childs.end();
+    return child_data_->list_of_childs.end();
 }
 
 

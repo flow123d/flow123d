@@ -48,6 +48,24 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+#include "../input/input_type.hh"
+
+#include <petscmat.h>
+#include "../system/sys_vector.hh"
+#include "../field_p0.hh"
+#include "../materials.hh"
+#include "../coupling/equation.hh"
+#include "mh_dofhandler.hh"
+#include "../functions/function_base.hh"
+//#include "functions/bc_table.hh"
+#include "../input/input_type.hh"
+
+
+#include "../fields/field_base.hh"
+#include "../fields/field_values.hh"
+#include "../fields/field_add_potential.hh"
+
+/*
 #include "input/input_type.hh"
 
 #include <petscmat.h>
@@ -58,6 +76,12 @@
 #include "flow/mh_dofhandler.hh"
 #include "functions/function_base.hh"
 //#include "functions/bc_table.hh"
+#include "input/input_type.hh"
+
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
+#include "fields/field_add_potential.hh"
+*/
 
 /// external types:
 class LinSys;
@@ -112,9 +136,66 @@ public:
 class DarcyFlowMH : public EquationBase {
 public:
     enum MortarMethod {
-        NoMortar =0,
+        NoMortar = 0,
         MortarP0 = 1,
         MortarP1 = 2
+    };
+    
+    /** @brief Data for steady/unsteady Darcy flow equation.
+     *  
+     */
+    class EqData : public EqDataBase {
+    public:
+
+        enum BC_type {
+            dirichlet,
+            neumann,
+            robin,
+            total_flux
+        };
+
+        static Input::Type::Selection bc_type_selection;
+
+        EqData() : EqDataBase("DarcyFlowMH") {
+            //ADD_FIELD(init_pressure, "Initial condition as pressure");
+            ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
+            ADD_FIELD(bc_type,"Boundary condition type, possible values:");
+                      bc_type.set_selection(&bc_type_selection);
+            ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
+            //ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components");
+            //          init_conc.set_n_comp(4);
+        }
+
+        Region read_boundary_list_item(Input::Record rec) {
+            Region region=EqDataBase::read_boundary_list_item(rec);
+            Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
+            if (field_it) {
+                //bc_pressure(region)->init_from_input(*field_it);
+                bc_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
+            }
+        }
+
+        Region read_bulk_list_item(Input::Record rec) {
+            Region region=EqDataBase::read_bulk_list_item(rec);
+        }
+
+
+       
+        Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
+        Field<3, FieldValue<3>::Scalar > conductivity;
+        Field<3, FieldValue<3>::Scalar > water_source_density;
+        Field<3, FieldValue<3>::Scalar > storativity;
+        
+         //Field<3, FieldValue<3>::Scalar > init_pressure;
+        //Field<3, FieldValue<3>::Vector > init_conc;
+        //Field<3, FieldValue<3>::Enum > sorption_type;
+
+        BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
+        BCField<3, FieldValue<3>::Scalar > bc_pressure; 
+        BCField<3, FieldValue<3>::Scalar > bc_flux;
+        BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+
+        arma::vec4 gravity_;
     };
 
 
@@ -159,18 +240,20 @@ protected:
     //virtual void integrate_sources();
 
 protected:
-    bool solution_changed_for_scatter;
+    ///Equation data consisting of fields.
+    //EqData data;
+    
+    //BoundaryData<DarcyFlowMH_BC> bc_data_;
+    FunctionBase<3> *bc_function;
     FieldP0<double> *sources;
+    
+    bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
     // value of sigma used in mortar couplings (TODO: make space depenedent and unify with compatible sigma, both given on lower dim domain)
     double mortar_sigma_;
-
-    //BoundaryData<DarcyFlowMH_BC> bc_data_;
-
-    FunctionBase<3> *bc_function;
 };
 
 

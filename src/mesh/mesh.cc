@@ -301,10 +301,10 @@ bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int>
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
     for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele)
-        if (elements[*ele].dim_ == dim) { // keep only indexes of elements of same dimension
+        if (elements[*ele].dim() == dim) { // keep only indexes of elements of same dimension
             *e_dest=*ele;
             ++e_dest;
-        } else if (elements[*ele].dim_ == dim-1) { // get only first element of lower dimension
+        } else if (elements[*ele].dim() == dim-1) { // get only first element of lower dimension
             if (is_neighbour) xprintf(UsrErr, "Too matching elements id: %d and id: %d in the same mesh.\n",
                     elements(*ele).id(), elements(element_idx).id() );
 

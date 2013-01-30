@@ -32,7 +32,7 @@ public:
     ElementAccessor(Mesh *mesh, unsigned int idx, bool boundary)
     : mesh_(mesh), boundary_(boundary), element_idx_(idx)
     {
-       dim_=element()->dim_;
+       dim_=element()->dim();
     }
 
     inline unsigned int dim() const
@@ -44,7 +44,7 @@ public:
     }
 
     inline Region region() const
-        { return element()->region_; }
+        { return element()->region(); }
 
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
     inline unsigned int region_id() const {

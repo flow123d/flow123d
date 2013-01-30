@@ -30,7 +30,7 @@ OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 void OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
 	type_->reset_doc_flags();
-	print(stream, type_);
+	print(stream, type_, depth_);
 }
 
 
@@ -153,7 +153,7 @@ void OutputText::print(ostream& stream, const Record *type, unsigned int depth) 
 		        write_value(stream, it->default_);
 		        stream << endl;
 		        stream << setw(padding_size + size_setw_) << "" <<"# is ";
-		        print(stream, it->type_.get());
+		        print(stream, it->type_.get(), 0);
 		        write_description(stream, it->description_);
 		        stream << endl;
 
@@ -182,7 +182,7 @@ void OutputText::print(ostream& stream, const Array *type, unsigned int depth) {
 		get_array_sizes(*type, lower_size, upper_size);
 		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
 		stream << setw(padding_size + size_setw_) << "" << "# ";
-		print(stream, type->data_->type_of_values_.get());
+		print(stream, type->data_->type_of_values_.get(), 0);
 		break;
 	case full_record:
 		print(stream, type->data_->type_of_values_.get(), depth);
@@ -212,6 +212,7 @@ void OutputText::print(ostream& stream, const AbstractRecord *type, unsigned int
             // descendants
             doc_type_ = key_record;
             for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+	        DBGMSG("iterator: %d\n", it - type->begin_child_data());
             	size_setw_ = 0;
                 stream << setw(padding_size) << "";
                 stream << "" << "Record '" << (*it).type_name() << "'";

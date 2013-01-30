@@ -1,0 +1,112 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient, VTK output test12", 
+    material = "./input/flow_decay/sit_decay.mtr", 
+    mesh = {
+      mesh_file = "./input/flow_decay/sit_decay.msh", 
+      neighbouring = "./input/flow_decay/sit_decay.ngh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/flow_decay/sit_decay.fbc", 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      }
+    },
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+      boundary_file = "./input/flow_decay/sit_decay.tbc", 
+      initial_file = "./input/flow_decay/sit_decay.tic", 
+      output = {
+        mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/system/output_streams/1"
+        }, 
+        save_step = 0.5
+      }, 
+      substances = [
+        "A", 
+        "B", 
+        "C", 
+        "D", 
+        "E"
+      ], 
+      time = {
+        end_time = 10.0
+      },
+      
+      reactions = {
+        TYPE="PadeApproximant",
+        matrix_exp_on = true,
+        nom_pol_deg = 3,
+        den_pol_deg = 3,
+        decays = [
+          {
+            parent = "A",
+            half_life = 1.3863,
+            products = [
+              "B"
+            ]
+          },
+          {
+            parent = "B",
+            half_life = 2.3105,
+            products = [
+              "C"
+            ]
+          },
+          {
+            parent = "C",
+            half_life = 1.5403,
+            products = [
+              "D"
+            ]
+          },
+          {
+            parent = "D",
+            half_life = 1.1552,
+            products = [
+              "E"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  
+  
+  system = {
+    output_streams = [
+      {
+        file = "./decay.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport_decay.pvd", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

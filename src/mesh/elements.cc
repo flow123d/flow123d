@@ -104,49 +104,29 @@ double Element::volume() {
  */
 double Element::measure() {
     switch (dim()) {
+        case 0:
+            return 1.0;
+            break;
         case 1:
-            return element_length_line();
+            return arma::norm(*(node[ 1 ]) - *(node[ 0 ]) , 2);
             break;
         case 2:
-            return element_area_triangle();
+            return
+                arma::norm(
+                    arma::cross(*(node[1]) - *(node[0]), *(node[2]) - *(node[0])),
+                    2
+                ) / 2.0 ;
             break;
         case 3:
-            return element_volume_tetrahedron();
+            return fabs(
+                arma::dot(
+                    arma::cross(*node[1] - *node[0], *node[2] - *node[0]),
+                    *node[3] - *node[0] )
+                ) / 6.0;
             break;
     }
 }
 
-/**
- * CALCULATE LENGTH OF LINEAR ELEMENT
- */
-
-double Element::element_length_line() {
-
-    return arma::norm(*(node[ 1 ]) - *(node[ 0 ]) , 2);
-}
-
-/**
- * CALCULATE AREA OF TRIANGULAR ELEMENT
- */
-double Element::element_area_triangle() {
-
-    return
-        arma::norm(
-            arma::cross(*(node[1]) - *(node[0]), *(node[2]) - *(node[0])),
-            2
-        ) / 2.0 ;
-}
-
-/**
- * CALCULATE VOLUME OF TETRAHEDRA ELEMENT
- */
-double Element::element_volume_tetrahedron() {
-    return fabs(
-        arma::dot(
-            arma::cross(*node[1] - *node[0], *node[2] - *node[0]),
-            *node[3] - *node[0] )
-        ) / 6.0;
-}
 
 /**
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT

@@ -1,0 +1,16 @@
+$MaterialFormat
+1.0	0	8
+$EndMaterialFormat
+$Materials
+	4
+	62	11	10
+	63	21	1
+	64	21	1
+	65	31	0.1
+$EndMaterials
+$Geometry
+	62	1	1
+	63	2	1
+	64	2	1
+$EndGeometry
+
