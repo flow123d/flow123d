@@ -41,7 +41,7 @@
 // following deps. should be removed
 #include "mesh/boundaries.h"
 #include "materials.hh"
-
+#include "mesh/accessors.hh"
 
 
 
@@ -231,6 +231,11 @@ const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node
         }
         xprintf(Warn, "Side not found.");
     }
+}
+
+ElementAccessor< 3 > Element::element_accessor()
+{
+  return mesh_->element_accessor( mesh_->element.index(this) );
 }
 
 

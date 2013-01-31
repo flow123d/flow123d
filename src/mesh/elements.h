@@ -35,11 +35,15 @@
 
 #include <materials.hh>
 
+template <int spacedim>
+class ElementAccessor;
 
 class Mesh;
 class Side;
 class SideIter;
 struct MaterialDatabase;
+
+
 
 //=============================================================================
 // STRUCTURE OF THE ELEMENT OF THE MESH
@@ -55,7 +59,10 @@ public:
     inline unsigned int index() const;
     unsigned int n_sides() const;    // Number of sides
     unsigned int n_nodes() const; // Number of nodes
-
+    
+    ///Gets ElementAccessor of this element
+    ElementAccessor<3> element_accessor();
+    
     double measure();
     double volume();
     arma::vec3 centre();
@@ -65,6 +72,9 @@ public:
     const Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
     inline SideIter side(const unsigned int loc_index);
     inline Region region() { return region_; }
+    
+    
+    
 
 
     //int      mid;       // Id # of material
