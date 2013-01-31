@@ -157,13 +157,13 @@ public:
         static Input::Type::Selection bc_type_selection;
 
         EqData() : EqDataBase("DarcyFlowMH") {
-            //ADD_FIELD(init_pressure, "Initial condition as pressure");
             ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
+            ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
+            ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
+            ADD_FIELD(init_pressure, "Initial condition as pressure");
             ADD_FIELD(bc_type,"Boundary condition type, possible values:");
                       bc_type.set_selection(&bc_type_selection);
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
-            //ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components");
-            //          init_conc.set_n_comp(4);
         }
 
         Region read_boundary_list_item(Input::Record rec) {
@@ -183,12 +183,11 @@ public:
        
         Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
+        Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
         Field<3, FieldValue<3>::Scalar > storativity;
         
-         //Field<3, FieldValue<3>::Scalar > init_pressure;
-        //Field<3, FieldValue<3>::Vector > init_conc;
-        //Field<3, FieldValue<3>::Enum > sorption_type;
+        Field<3, FieldValue<3>::Scalar > init_pressure;
 
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
@@ -223,6 +222,9 @@ public:
         mh_dh.set_solution(array);
        return mh_dh;
     }
+    
+    inline EqData &get_data()
+    {return data;}
 
 protected:
     void setup_velocity_vector() {

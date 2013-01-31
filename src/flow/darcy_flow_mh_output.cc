@@ -279,7 +279,7 @@ void DarcyFlowMHOutput::make_element_vector() {
         arma::vec3 flux_in_centre;
         flux_in_centre.zeros();
 
-        fe_values.update(ele);
+        fe_values.update(ele, darcy_flow->get_data().cond_anisothropy);
 
         for (int li = 0; li < ele->n_sides(); li++) {
             flux_in_centre += dh.side_flux( *(ele->side( li ) ) )

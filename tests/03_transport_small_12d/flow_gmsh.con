@@ -11,6 +11,19 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       boundary_file = "./input/test3.fbc", 
+
+      bulk_data = [
+        { rid = 17,
+          cond_anisothropy = 10
+        },
+        { rid = 18,
+          cond_anisothropy = 1
+        }
+      ],
+      
+      bc_data = [
+      ],
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"

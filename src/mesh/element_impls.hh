@@ -10,10 +10,6 @@
 
 #include "sides.h"
 #include "side_impl.hh"
-//#include "mesh/accessors.hh"
-
-//template <int spacedim>
-//class ElementAccessor;
 
 inline unsigned int Element::dim() const {
     return dim_;
@@ -40,10 +36,4 @@ inline unsigned int Element::n_sides() const {
 inline SideIter Element::side(const unsigned int loc_index) {
     return SideIter( Side(this, loc_index) );
 }
-
-/*
-inline ElementAccessor<3> Element::element_accessor(){
-  return mesh_->element_accessor( mesh_->element.index(this) );
-}
-//*/
 #endif /* ELEMENT_IMPLS_HH_ */

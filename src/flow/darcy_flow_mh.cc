@@ -241,8 +241,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base
     
     //initializing data fields at the beginning (time = 0)
     data.set_time(*time_);
-   
-    //DBGMSG("conductivity %f", data.conductivity.value(point));
+    //DBGMSG("conductivity %f", data.conductivity.value(arma::vec3("0 0.5 0.5")));
     
     using namespace Input;
     F_ENTRY;
@@ -505,7 +504,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides();
-        if (fill_matrix) fe_values.update(ele);
+        if (fill_matrix) fe_values.update(ele, data.cond_anisothropy);
 
         for (i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
@@ -1037,7 +1036,7 @@ void DarcyFlowMH_Steady::make_schur1() {
             el_row = row_4_el[el_4_loc[i_loc]];
            nsides = ele->n_sides();
 
-           fe_values.update( ele );
+           fe_values.update( ele, data.cond_anisothropy );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = mh_dh.side_dof( ele->side(i) ); // side ID
@@ -1061,7 +1060,7 @@ void DarcyFlowMH_Steady::make_schur1() {
             el_row = row_4_el[el_4_loc[i_loc]];
            nsides = ele->n_sides();
 
-           fe_values.update( ele );
+           fe_values.update( ele, data.cond_anisothropy );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix

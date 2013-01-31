@@ -12,6 +12,25 @@
       TYPE = "Steady_MH", 
       boundary_file = "./input/test1.fbc", 
       n_schurs = 2, 
+
+      bulk_data = [
+        { rid = 62,
+          cond_anisothropy = 10
+        },
+        { rid = 63,
+          cond_anisothropy = 1
+        },
+        { rid = 64,
+          cond_anisothropy = 1
+        },
+        { rid = 65,
+          cond_anisothropy = 0.1
+        }
+      ],
+      
+      bc_data = [
+      ],
+
       output = {
         balance_output = "water_balance.out", 
         output_stream = {
