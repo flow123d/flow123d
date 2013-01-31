@@ -38,11 +38,6 @@ namespace it = Input::Type;
 
 // ************************************************************************************************** implementation of FieldBase<...>
 
-template <int spacedim, class Value>
-it::AbstractRecord FieldBase<spacedim, Value>::input_type
-    = it::AbstractRecord("Field"+template_name(), "Abstract record for all time-space functions.")
-          .allow_auto_conversion("FieldConstant");
-
 
 template <int spacedim, class Value>
 FieldBase<spacedim, Value>::FieldBase(unsigned int n_comp)
@@ -61,9 +56,14 @@ string FieldBase<spacedim, Value>::template_name() {
 
 
 template <int spacedim, class Value>
+it::AbstractRecord FieldBase<spacedim, Value>::input_type
+    = it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+          .allow_auto_conversion("FieldConstant");
+
+
+template <int spacedim, class Value>
 Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename Value::ElementInputType *element_input_type) {
-    // jak sem dostat primo potomky
-    it::AbstractRecord type= it::AbstractRecord("Field", "Abstract record for all time-space functions.");
+    it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.");
     type.allow_auto_conversion("FieldConstant");
 
     FieldConstant<spacedim,Value>::get_input_type(type, element_input_type);
@@ -157,7 +157,7 @@ void FieldBase<spacedim, Value>::value_list(const std::vector< Point<spacedim> >
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: FieldCommonBase(false)
+: FieldCommonBase(false), mesh_(NULL)
 {
     this->enum_valued_ = boost::is_same<typename Value::element_type, FieldEnum>::value;
 }
@@ -213,9 +213,17 @@ void Field<spacedim, Value>::set_time(double time) {
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_mesh(Mesh *mesh) {
+    mesh_=mesh;
     for(unsigned int i=0; i < region_fields.size(); i++) {
         if (region_fields[i])  region_fields[i]->set_mesh(mesh);
     }
+}
+
+
+
+template<int spacedim, class Value>
+Mesh * Field<spacedim, Value>::mesh() {
+    return mesh_;
 }
 
 
@@ -230,7 +238,7 @@ FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm)
 
 
 template<int spacedim, class Value>
-inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)  {
+inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
     ASSERT_LESS(elm.region().idx(), region_fields.size() );
     ASSERT( region_fields[elm.region().idx()] , "Null field ptr on region %d, field: %s\n", elm.region().idx(), this->name_.c_str());
     return region_fields[elm.region().idx()]->value(p,elm);
@@ -239,7 +247,7 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 
 
 template<int spacedim, class Value>
-inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
     region_fields[elm.region().idx()]->value_list(point_list,elm, value_list);

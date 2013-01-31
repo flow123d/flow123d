@@ -54,7 +54,6 @@ public:
        static const unsigned int spacedim_=spacedim;
 
 
-
        /**
         * Kind of default constructor , with possible setting of the initial time.
         * Fields that returns variable size vectors accepts number of components @p n_comp.
@@ -67,10 +66,15 @@ public:
         */
        static std::string template_name();
 
+       /**
+        * Declaration of input type data member.
+        */
+       static Input::Type::AbstractRecord input_type;
 
        /**
         * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
-        * given by element_input_type pointer.
+        * given by element_input_type pointer. USE ONLY IF YOU CAN NOT USE
+        * static member FieldBase<...>::input_type.
         */
        static Input::Type::AbstractRecord get_input_type(typename Value::ElementInputType *element_input_type=NULL);
 
@@ -118,7 +122,7 @@ public:
         * TODO: think what kind of information we may need, is the next time value enough?
         */
        virtual double next_change_time()
-       { ASSERT(0, "Not implemented yet."); }
+       { ASSERT(0, "Not implemented yet."); return 0.0; }
 
        /**
         * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
@@ -153,11 +157,10 @@ public:
        virtual void value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
-
        /**
-        * Declaration of input type.
+        * Virtual destructor.
         */
-       static Input::Type::AbstractRecord input_type;
+       virtual ~FieldBase() {}
 
 
 protected:
@@ -239,6 +242,11 @@ public:
      *
      */
     virtual void set_mesh(Mesh *mesh) =0;
+
+    /**
+     * Virtual destructor.
+     */
+    virtual ~FieldCommonBase() {}
 
 protected:
     std::string name_;
@@ -340,6 +348,11 @@ public:
     virtual void set_mesh(Mesh *mesh);
 
     /**
+     * Getter for mesh of the field.
+     */
+    Mesh * mesh();
+
+    /**
      * Special field values spatially constant. Could allow optimization of tensor multiplication and
      * tensor or vector addition. field_result_ should be set in constructor and in set_time method of particular Field implementation.
      * We return value @p result_none, if the field is not initialized on the region of the given element accessor @p elm.
@@ -350,18 +363,19 @@ public:
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
      * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once. The base class implements
      * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
-    virtual void value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+    virtual void value_list(const std::vector< Point<spacedim> >  &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 private:
 
+    Mesh *mesh_;
     std::vector<FieldBaseType *> region_fields;
 };
 

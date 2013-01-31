@@ -38,7 +38,6 @@ void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele
 #define NEWTON      3
 
 void OldBcdInput::read_flow(const FilePath &flow_bcd,
-        Mesh *mesh,
         Field<3,FieldValue<3>::Enum > &flow_type,
         Field<3,FieldValue<3>::Scalar > &flow_pressure,
         Field<3,FieldValue<3>::Scalar > &flow_flux,
@@ -46,15 +45,19 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
 {
     using namespace boost;
 
-    mesh_=mesh;
+    // check that all fields has same mesh, reuse it for reader
+    mesh_=flow_type.mesh();
+    ASSERT(mesh_==flow_pressure.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_pressure).\n");
+    ASSERT(mesh_==flow_flux.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_flux).\n");
+    ASSERT(mesh_==flow_sigma.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_sigma).\n");
 /*
  * - read one flow file, fill fields, make ID list
  * - read second file, check IDs agains ID list, fill fields
  */
-    set_all(flow_type, mesh);
-    set_all(flow_pressure, mesh);
-    set_all(flow_flux, mesh);
-    set_all(flow_sigma, mesh);
+    set_all(flow_type, mesh_);
+    set_all(flow_pressure, mesh_);
+    set_all(flow_flux, mesh_);
+    set_all(flow_sigma, mesh_);
 
 
     Tokenizer tok(flow_bcd);
@@ -106,11 +109,11 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     sid = lexical_cast<unsigned int>(*tok); ++tok;
 
                     // find and set the side
-                    ele = mesh->element.find_id( eid );
+                    ele = mesh_->element.find_id( eid );
                     if( sid < 0 || sid >= ele->n_sides() )
                          xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", id, sid );
 
-                    bc_ele_idx = mesh->bc_elements.index( ele->side(sid) -> cond()->element() );
+                    bc_ele_idx = mesh_->bc_elements.index( ele->side(sid) -> cond()->element() );
                     id_2_bcd_[id]= bc_ele_idx;
 
                     set_field(flow_type,     bc_ele_idx, type);

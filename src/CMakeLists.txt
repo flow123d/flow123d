@@ -117,6 +117,7 @@ set (sources_lib_coupling
     coupling/time_governor.cc
 
    coupling/equation.cc
+       flow/old_bcd.cc
    # coupling/hc_explicit_sequential.cc
 )
 
@@ -126,7 +127,7 @@ set(sources_lib_non_system
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
-    flow/old_bcd.cc
+
 
     io/output.cc
     io/output_vtk.cc

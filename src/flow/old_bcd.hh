@@ -18,7 +18,6 @@ public:
     static OldBcdInput * instance();
 
     void read_flow(const FilePath &flow_bcd,
-        Mesh *mesh,
         Field<3,FieldValue<3>::Enum > &flow_type,
         Field<3,FieldValue<3>::Scalar > &flow_pressure,
         Field<3,FieldValue<3>::Scalar > &flow_flux,

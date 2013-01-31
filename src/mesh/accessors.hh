@@ -48,7 +48,7 @@ public:
 
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
     inline unsigned int region_id() const {
-        return element()->region_.id();
+        return element()->region().id();
     }
 
     //const BoundingBox &bounding_box();
