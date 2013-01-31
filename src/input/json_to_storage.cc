@@ -353,7 +353,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
             return storage_array;
 
         } else {
-            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found type: ")
+            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
                     << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType( record->desc()) );
         }
     }
@@ -386,7 +386,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
         }
     } else {
         if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
-            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found type: ")
+            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(abstr_rec->desc()) );
         } // else auto conversion
     }
@@ -431,7 +431,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
 
             return storage_array;
         } else {
-            THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be 'JSON array', but we found type: ")
+            THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be 'JSON array', but we found: ")
                     << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(array->desc()) );
         }
     }
@@ -455,7 +455,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Selection *se
         }
     }
 
-    THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found type: ")
+    THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found: ")
             << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(selection->desc())  );
 
     return NULL;
@@ -468,7 +468,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
     if (p.head()->type() == json_spirit::bool_type) {
         return new StorageBool( p.head()->get_bool() );
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON bool', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON bool', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(bool_type->desc())  );
     }
     return NULL;
@@ -488,7 +488,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_
         }
 
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON int', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON int', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(int_type->desc()) );
 
     }
@@ -506,7 +506,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *doubl
     } else if (p.head()->type() == json_spirit::int_type) {
         value = p.head()->get_int();
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON real', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON real', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(double_type->desc()) );
     }
 
@@ -531,7 +531,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
             THROW( ExcInputError() << EI_Specification("Output file can not be given by absolute path: '" + value + "'")
                             << EI_ErrorAddress(p) << EI_JSON_Type("") << EI_InputType(string_type->desc()) );
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(string_type->desc()) );
 
     }
