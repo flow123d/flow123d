@@ -90,16 +90,6 @@ void Element::init(unsigned int dim, Mesh *mesh_in, Region reg) {
 
 
 /**
- * SET THE "VOLUME" FIELD IN STRUCT ELEMENT
- */
-double Element::volume() {
-    double volume = measure() * material->size;
-    //INPUT_CHECK(!(volume < NUM_ZERO),
-    //        "Volume of the element is nearly zero (volume= %g)\n", volume);
-    return volume;
-}
-
-/**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
 double Element::measure() {

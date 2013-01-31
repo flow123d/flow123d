@@ -141,10 +141,10 @@ public:
         MortarP1 = 2
     };
     
-    /** @brief Data for steady/unsteady Darcy flow equation.
+    /** @brief Data for Darcy flow equation.
      *  
      */
-    class EqData : public EqDataBase {
+    class DarcyFlowEqData : public EqDataBase {
     public:
 
         enum BC_type {
@@ -156,11 +156,10 @@ public:
 
         static Input::Type::Selection bc_type_selection;
 
-        EqData() : EqDataBase("DarcyFlowMH") {
+        DarcyFlowEqData() : EqDataBase("DarcyFlowMH") {
             ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
             ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
             ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
-            ADD_FIELD(init_pressure, "Initial condition as pressure");
             ADD_FIELD(bc_type,"Boundary condition type, possible values:");
                       bc_type.set_selection(&bc_type_selection);
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
@@ -178,16 +177,12 @@ public:
         Region read_bulk_list_item(Input::Record rec) {
             Region region=EqDataBase::read_bulk_list_item(rec);
         }
-
-
        
         Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
         Field<3, FieldValue<3>::Scalar > storativity;
-        
-        Field<3, FieldValue<3>::Scalar > init_pressure;
 
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
@@ -223,7 +218,7 @@ public:
        return mh_dh;
     }
     
-    inline EqData &get_data()
+    inline DarcyFlowEqData &get_data()
     {return data;}
 
 protected:
@@ -241,9 +236,9 @@ protected:
     //virtual void balance();
     //virtual void integrate_sources();
 
-protected:
+protected:  
     ///Equation data consisting of fields.
-    EqData data;
+    DarcyFlowEqData data;
     
     //BoundaryData<DarcyFlowMH_BC> bc_data_;
     FunctionBase<3> *bc_function;
@@ -288,6 +283,14 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
+  
+    class EqData : public DarcyFlowMH::DarcyFlowEqData{
+    public:
+      
+      EqData() : DarcyFlowEqData() 
+      {}
+    };
+    
     DarcyFlowMH_Steady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
 
     static Input::Type::Record input_type;
@@ -381,6 +384,18 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
+  
+    class EqData : public DarcyFlowMH::DarcyFlowEqData{
+    public:
+      
+      EqData() : DarcyFlowEqData() {
+
+            ADD_FIELD(init_pressure, "Initial condition as pressure");
+        }
+        
+      Field<3, FieldValue<3>::Scalar > init_pressure;
+    };
+    
     DarcyFlowMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
@@ -412,6 +427,18 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
+  
+    class EqData : public DarcyFlowMH::DarcyFlowEqData{
+    public:
+      
+      EqData() : DarcyFlowEqData() {
+
+            ADD_FIELD(init_pressure, "Initial condition as pressure");
+        }
+        
+      Field<3, FieldValue<3>::Scalar > init_pressure;
+    };
+    
     DarcyFlowLMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 

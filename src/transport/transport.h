@@ -37,6 +37,9 @@
 #include "input/accessors.hh"
 #include "flow/mh_dofhandler.hh"
 
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
+
 
 struct BTC;
 class OutputTime;
@@ -90,6 +93,12 @@ public:
 	 * Updates CFL time step constrain.
 	 */
 	void set_flow_field_vector(const MH_DofHandler &dh);
+  
+  /** 
+   * @brief Sets pointer to data of other equations. 
+   * @param cross_section is pointer to cross_section data of Darcy flow equation
+   */
+  void set_cross_section(Field<3, FieldValue<3>::Scalar > *cross_section);
 
     /**
      * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
@@ -192,6 +201,7 @@ private:
     //double max_step;		              ///< Time step constrain given by CFL condition.
     //unsigned int time_level;              ///< Number of computed time steps.
 
+    Field<3, FieldValue<3>::Scalar > *cross_section;
     
     TimeMark::Type bc_mark_type_;       ///< TimeMark Type for reading time dependent boundary condition.
     //std::vector<double> bc_times;       ///< Times of reading time dependent boundary condition. Initial boundary condition is zero. 

@@ -10,6 +10,8 @@
 #include "semchem/semchem_interface.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 using namespace std;
 
@@ -72,7 +74,7 @@ it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_m
 
 
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
-	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL)
+	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL), cross_section(cross_section)
 {
 
   //temporary semchem output file name
@@ -94,6 +96,12 @@ Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpeci
   set_nr_of_elements(mesh_->n_elements());
   return;
 }
+
+void Semchem_interface::set_cross_section(Field< 3 , FieldValue< 3  >::Scalar >* cross_section)
+{
+  this->cross_section = cross_section;
+}
+
 
 /*Semchem_interface::~Semchem_interface(void)
 {
@@ -149,7 +157,10 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = (ppelm->volume()) * (ppelm->material->por_m); break;
+	  case 3 : pomoc = ppelm->measure() *
+                     cross_section->value(ppelm->centre(), ppelm->element_accessor() ) * 
+                     ppelm->material->por_m; 
+             break;
 	default:
 	  pomoc = 1.0;
    }
@@ -193,7 +204,10 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = ppelm->volume() * (ppelm->material->por_imm); break;
+	  case 3 : pomoc = ppelm->measure() *
+                     cross_section->value(ppelm->centre(), ppelm->element_accessor() ) * 
+                     ppelm->material->por_imm; 
+             break;
 	default:
 	  pomoc = 1.0;
     }
@@ -270,7 +284,7 @@ void Semchem_interface::set_el_4_loc(int *el_for_loc)
 
 void Semchem_interface::set_mesh_(Mesh *mesh)
 {
-	mesh_ = mesh;
+	Mesh* mesh_ = mesh;
 	return;
 }
 

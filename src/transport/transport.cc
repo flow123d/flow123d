@@ -69,6 +69,9 @@
 
 #include "coupling/time_governor.hh"
 
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
+
 
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
 : EquationBase(init_mesh, material_database, in_rec)
@@ -189,6 +192,12 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, MaterialDatabase &mate
     output_vector_gather();
 
 
+}
+
+
+void ConvectionTransport::set_cross_section(Field< 3 , FieldValue< 3  >::Scalar >* cross_section)
+{
+  this->cross_section = cross_section;
 }
 
 
@@ -778,8 +787,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                             if (edg->side(s) != elm->side(si)) {
                                 flux2 = mh_dh->side_flux( *(edg->side(s)));
                                 if ( flux2 > 0.0 ) {
-                                    aij = -(flux * flux2 / ( edg_flux * elm->volume()
-                                           * elm->material->por_m));
+                                    aij = -(flux * flux2 / ( edg_flux * elm->measure() *
+                                           cross_section->value(elm->centre(), elm->element_accessor() ) *
+                                           elm->material->por_m) );
                                     j = ELEMENT_FULL_ITER(mesh_, edg->side(s)->element()).index();
                                     new_j = row_4_el[j];
                                     MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
@@ -787,10 +797,14 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                             }
                 }
                 if (flux > 0.0)
-                    aii -= (flux / (elm->volume() * elm->material->por_m));
+                    aii -= (flux / (elm->measure() *
+                                    cross_section->value(elm->centre(), elm->element_accessor() ) * 
+                                    elm->material->por_m) );
             } else {
                 if (flux < 0.0) {
-                    aij = -(flux / (elm->volume() * elm->material->por_m));
+                    aij = -(flux / (elm->measure() *
+                                    cross_section->value(elm->centre(), elm->element_accessor() ) *
+                                    elm->material->por_m) );
                     j = elm->side(si)->cond_idx() ;
                     DBGMSG("BCM, i: %d j:%d\n", new_i , j);
                     MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
@@ -800,7 +814,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
                 }
                 if (flux > 0.0)
-                    aii -= (flux / (elm->volume() * elm->material->por_m));
+                    aii -= (flux / (elm->measure() *
+                                    cross_section->value(elm->centre(), elm->element_accessor() ) * 
+                                    elm->material->por_m) );
             }
         }  // end same dim     //ELEMENT_SIDES
 
@@ -813,7 +829,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
                     if (flux > 0.0) {
                         // volume source - out flow from higher dimension
-                        aij = flux / (elm->volume() * elm->material->por_m);
+                        aij = flux / (elm->measure() *
+                                      cross_section->value(elm->centre(), elm->element_accessor() ) * 
+                                      elm->material->por_m);
                         j = el2.index();
                         new_j = row_4_el[j];
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
@@ -822,13 +840,16 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     if (flux < 0.0) {
                         // volume drain - in flow to higher dimension
                         // in flow to higher dim.
-                        aij = -(flux / (el2->volume() * el2->material->por_m));
+                        aij = -(flux / (el2->measure() *
+                                        cross_section->value(el2->centre(), el2->element_accessor() ) * 
+                                        el2->material->por_m));
                         new_j = row_4_el[el2.index()];
                         MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
 
                         // diagonal drain
-                        aii += flux / (elm->volume() * elm->material->por_m);
-
+                        aii += flux / (elm->measure() *
+                                       cross_section->value(elm->centre(), elm->element_accessor() ) * 
+                                       elm->material->por_m);
                     }
 
                 //} // end comp model

@@ -148,7 +148,7 @@ it::AbstractRecord DarcyFlowMH::input_type
 //*/
 
 
-it::Selection DarcyFlowMH::EqData::bc_type_selection =
+it::Selection DarcyFlowMH::DarcyFlowEqData::bc_type_selection =
               it::Selection("EqData_bc_Type")
                .add_value(dirichlet, "dirichlet")
                .add_value(neumann, "neumann")
@@ -168,8 +168,6 @@ it::AbstractRecord DarcyFlowMH::input_type=
                 "Method for coupling Darcy flow between dimensions." )
         .declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
                 "Conductivity between dimensions." )
-        
-        
         .declare_key("sources_file", it::FileName::input(),
                 "File with water source field.")
         .declare_key("sources_formula", it::String(),
@@ -177,23 +175,20 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("boundary_file", it::FileName::input(),it::Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
                 "File with boundary conditions for MH solver.")
         .declare_key("boundary_conditions", bc_segment_rec, it::Default::optional(),
-                "Specification of boundary conditions.")
-        
-        //*
-        .declare_key("bc_data", it::Array(
-                DarcyFlowMH::EqData().boundary_input_type()
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
-                ), it::Default::obligatory(), ""  )
-        .declare_key("bulk_data", it::Array(
-                DarcyFlowMH::EqData().bulk_input_type()
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
-                ), it::Default::obligatory(), "");
-        //*/
-        
+                "Specification of boundary conditions.");
+
 
 it::Record DarcyFlowMH_Steady::input_type
     = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
-    .derive_from(DarcyFlowMH::input_type);
+    .derive_from(DarcyFlowMH::input_type)
+    .declare_key("bc_data", it::Array(
+                DarcyFlowMH_Steady::EqData().boundary_input_type()
+                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                ), it::Default::obligatory(), ""  )
+    .declare_key("bulk_data", it::Array(
+                DarcyFlowMH_Steady::EqData().bulk_input_type()
+                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
+                ), it::Default::obligatory(), "");
 
 
 it::Record DarcyFlowMH_Unsteady::input_type
@@ -202,7 +197,15 @@ it::Record DarcyFlowMH_Unsteady::input_type
 	.declare_key("time", TimeGovernor::input_type, it::Default::obligatory(),
                  "Time governor setting for the unsteady Darcy flow model.")
 	.declare_key("initial_file", it::FileName::input(), it::Default::obligatory(),
-                 "File with initial condition for the pressure.");
+                 "File with initial condition for the pressure.")
+  .declare_key("bc_data", it::Array(
+                DarcyFlowMH_Unsteady::EqData().boundary_input_type()
+                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                ), it::Default::obligatory(), ""  )
+  .declare_key("bulk_data", it::Array(
+                DarcyFlowMH_Unsteady::EqData().bulk_input_type()
+                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
+                ), it::Default::obligatory(), "");
 
 
 it::Record DarcyFlowLMH_Unsteady::input_type
@@ -211,10 +214,16 @@ it::Record DarcyFlowLMH_Unsteady::input_type
     .declare_key("time",         TimeGovernor::input_type, it::Default::obligatory(),
                                 "Time governor setting for the unsteady Darcy flow model.")
     .declare_key("initial_file", it::FileName::input(), it::Default::obligatory(),
-                                        "File with initial condition for the pressure.");
+                                        "File with initial condition for the pressure.")
+    .declare_key("bc_data", it::Array(
+                DarcyFlowLMH_Unsteady::EqData().boundary_input_type()
+                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                ), it::Default::obligatory(), ""  )
+    .declare_key("bulk_data", it::Array(
+                DarcyFlowLMH_Unsteady::EqData().bulk_input_type()
+                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
+                ), it::Default::obligatory(), "");
     
-
-
 
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
@@ -241,7 +250,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base
     
     //initializing data fields at the beginning (time = 0)
     data.set_time(*time_);
-    //DBGMSG("conductivity %f", data.conductivity.value(arma::vec3("0 0.5 0.5")));
     
     using namespace Input;
     F_ENTRY;
@@ -423,7 +431,9 @@ void DarcyFlowMH_Steady::postprocess() {
         ele = mesh_->element(el_4_loc[i_loc]);
         FOR_ELEMENT_SIDES(ele,i) {
             side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
-            values[i] = -1.0 * ele->volume() * sources->element_value(ele.index()) / ele->n_sides();
+            values[i] = -1.0 * ele->measure() *
+              data.cross_section.value(ele->centre(), ele->element_accessor()) * 
+              sources->element_value(ele.index()) / ele->n_sides();
         }
         VecSetValues(schur0->get_solution(), ele->n_sides(), side_rows, values, ADD_VALUES);
     }
@@ -560,7 +570,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
         // set sources
         if (sources != NULL) {
-            ls->rhs_set_value(el_row, -1.0 * ele->volume() * sources->element_value(ele.index()));
+            ls->rhs_set_value(el_row, -1.0 * ele->measure() *
+                              data.cross_section.value(ele->centre(), ele->element_accessor()) * 
+                              sources->element_value(ele.index()));
         }
 
         // D block: non-compatible conections and diagonal: element-element
@@ -1624,14 +1636,16 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, MaterialDatabase &mat_
     : DarcyFlowMH_Steady(mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
+    
+    //connecting data fields with mesh
+    data.set_mesh(&mesh_in);
+    data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+ 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
-    // time governor
-    //time_=new TimeGovernor(
-    //        0.0,
-    //        OptGetDbl("Global", "Stop_time", "1.0"),
-    //        *time_marks
-    //        );
-
+    
+    //initializing data fields at the beginning (time = 0)
+    data.set_time(*time_);
+    
     time_->fix_dt_until_mark();
     setup_time_term();
 
@@ -1711,14 +1725,15 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, MaterialDatabase &ma
     : DarcyFlowMH_Steady(mesh_in, mat_base_in, in_rec)
 {
     delete time_; // delete steady TG
-
+    
+    //connecting data fields with mesh
+    data.set_mesh(&mesh_in);
+    data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+ 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
-    // time governor
-    //time_=new TimeGovernor(
-    //        0.0,
-    //        OptGetDbl("Global", "Stop_time", "1.0"),
-    //        *time_marks
-    //        );
+    
+    //initializing data fields at the beginning (time = 0)
+    data.set_time(*time_);
 
     time_->fix_dt_until_mark();
     setup_time_term();
@@ -1757,7 +1772,9 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
          FOR_ELEMENT_SIDES(ele,i) {
              edge_row = row_4_edge[ele->side(i)->edge_idx()];
              // set new diagonal
-             VecSetValue(new_diagonal,edge_row,-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides(),ADD_VALUES);
+             VecSetValue(new_diagonal,edge_row, -ele->material->stor * ele->measure() *
+                          data.cross_section.value(ele->centre(), ele->element_accessor()) 
+                          /time_->dt()/ele->n_sides(),ADD_VALUES);
              // set initial condition
              VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides(),ADD_VALUES);
          }
@@ -1824,9 +1841,11 @@ void DarcyFlowLMH_Unsteady::postprocess() {
         new_pressure = (schur0->get_solution_array())[loc_edge_row];
         old_pressure = loc_prev_sol[loc_edge_row];
         FOR_EDGE_SIDES(edg,i) {
-          ele=edg->side(i)->element();
-          side_row=side_row_4_id[ mh_dh.side_dof( edg->side(i) ) ];
-          time_coef=-ele->material->stor*ele->volume() /time_->dt()/ele->n_sides();
+          ele = edg->side(i)->element();
+          side_row = side_row_4_id[ mh_dh.side_dof( edg->side(i) ) ];
+          time_coef = -ele->material->stor * ele->measure() *
+              data.cross_section.value(ele->centre(), ele->element_accessor()) 
+              /time_->dt()/ele->n_sides();
             VecSetValue(schur0->get_solution(), side_row, time_coef * (new_pressure - old_pressure), ADD_VALUES);
         }
     }

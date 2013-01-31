@@ -683,8 +683,11 @@ void DarcyFlowMHOutput::water_balance() {
         MaterialDatabase &mat_base = darcy_flow->material_base();
         std::vector<double> *src_balance = new std::vector<double>( mat_base.size(), 0.0 ); // initialize by zero
 
+        //element volume = element->measure() * EqData->cross_section
         FOR_ELEMENTS(mesh_, elm) {
-            (*src_balance)[mat_base.index(elm->material)] += elm->volume() * p_sources->element_value(elm.index());
+            (*src_balance)[mat_base.index(elm->material)] += elm->measure() * 
+                darcy_flow->get_data().cross_section.value(elm->centre(),elm->element_accessor()) * 
+                p_sources->element_value(elm.index());
         }
 
 

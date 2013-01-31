@@ -7,6 +7,7 @@
 #include "io/output.h"
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 
 /// external types:
@@ -107,6 +108,8 @@ public:
 	public:
 
 		EqData();
+    
+    Field<3, FieldValue<3>::Scalar > *cross_section;
 
 	};
 
@@ -124,19 +127,27 @@ public:
     static Input::Type::Record input_type;
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
-	virtual void update_solution();
-	//virtual void compute_one_step();
-	//virtual void compute_until();
-	void compute_internal_step();
-	void output_data();
-	 virtual void get_parallel_solution_vector(Vec &vc);
-	 virtual void get_solution_vector(double* &vector, unsigned int &size);
-	 void compute_until_save_time();
+    virtual void update_solution();
+    //virtual void compute_one_step();
+    //virtual void compute_until();
+    void compute_internal_step();
+    void output_data();
+    virtual void get_parallel_solution_vector(Vec &vc);
+    virtual void get_solution_vector(double* &vector, unsigned int &size);
+    void compute_until_save_time();
+   
+    /** 
+     * @brief Sets pointer to data of other equations. 
+     * TODO: there should be also passed the sigma parameter between dimensions 
+     * @param cross_section is pointer to cross_section data of Darcy flow equation
+     */
+    void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
+   
 protected:
 
 private:
 
-	 EqData data;
+    EqData data;
 
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;

@@ -134,6 +134,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         if (it->type() == TransportOperatorSplitting::input_type)
         {
             transport_reaction = new TransportOperatorSplitting(*mesh, *material_database, *it);
+            ((TransportOperatorSplitting*)transport_reaction)->set_eq_data( &(water->get_data().cross_section) );
         }
         else if (it->type() == TransportDG::input_type)
         {

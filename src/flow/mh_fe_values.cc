@@ -129,7 +129,6 @@ void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothr
 {
     double    val;
     SmallMtx2 loc=(SmallMtx2)(loc_matrix_);
-    ElementAccessor<3> ele_accessor = ele->element_accessor();
 
     INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     
@@ -141,7 +140,7 @@ void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothr
     //transforming the conductivity in 3D to resistivity in 1D
     //computing v_transpose * K_inverse * v
     val = arma::dot(line_vec, 
-                    (cond_anisothropy.value(ele->centre(), ele_accessor )).i() * line_vec)
+                    (cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i() * line_vec)
                     * ele->measure() / (3.0 * ele->material->size);
               
     loc[0][0] =  val;
@@ -160,7 +159,6 @@ void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothr
 //=============================================================================
 void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_anisothropy )
 {
-    ElementAccessor<3> ele_accessor = ele->element_accessor();
     double midpoint[ 3 ][ 2 ]; // Midpoints of element's sides
     double alfa[ 3 ];   //
     double beta[ 3 ];       //  |- Parametrs of basis functions
@@ -190,7 +188,7 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_ani
     r.col(1) = ey;
     
     //transforming 3D conductivity tensor to 2D resistance tensor
-    arma::mat resistance_tensor = r.t() * ((cond_anisothropy.value(ele->centre(), ele_accessor )).i() * r);
+    arma::mat resistance_tensor = r.t() * ((cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i() * r);
         
     //OBSOLETE
     //SmallMtx2 resistance_tensor = (SmallMtx2)(ele->material->hydrodynamic_resistence);
@@ -350,7 +348,6 @@ double MHFEValues::polynom_value_triangle( double poly[], double point[] )
 //=============================================================================
 void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_anisothropy )
 {
-    ElementAccessor<3> ele_accessor = ele->element_accessor();
     double alfa[ 4 ];
     double beta[ 4 ];       //  | Parametrs of basis functions
     double gama[ 4 ];       //  |
@@ -362,7 +359,7 @@ void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_
     INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     
     //transforming 3D conductivity tensor to 3D resistance tensor
-    arma::mat resistance_tensor = (cond_anisothropy.value(ele->centre(), ele_accessor )).i();
+    arma::mat resistance_tensor = (cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i();
         
     //OBSOLETE
     //SmallMtx3 resistance_tensor = (SmallMtx3)(ele->material->hydrodynamic_resistence);

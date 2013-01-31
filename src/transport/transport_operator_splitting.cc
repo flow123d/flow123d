@@ -244,3 +244,11 @@ void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &
 	convection->compute_one_step();
 };
 
+void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
+{
+  data.cross_section = cross_section;
+  if (convection != NULL) convection->set_cross_section(cross_section);
+  if (Semchem_reactions != NULL) Semchem_reactions->set_cross_section(cross_section);
+}
+
+

@@ -64,7 +64,6 @@ public:
     ElementAccessor<3> element_accessor();
     
     double measure();
-    double volume();
     arma::vec3 centre();
 
     unsigned int n_sides_by_dim(int side_dim);
