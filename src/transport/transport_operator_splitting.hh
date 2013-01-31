@@ -6,6 +6,7 @@
 #include <limits>
 #include "io/output.h"
 #include "flow/mh_dofhandler.hh"
+#include "fields/field_base.hh"
 
 
 /// external types:
@@ -32,6 +33,17 @@ class MaterialDatabase;
  */
 class TransportBase : public EquationBase{
 public:
+
+	class TransportEqData : public EqDataBase {
+	public:
+
+		TransportEqData(const std::string& eq_name);
+		virtual ~TransportEqData() {};
+
+		Field<3, FieldValue<3>::Vector> init_conc;
+
+	};
+
   TransportBase(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
     : EquationBase(mesh, mat_base, in_rec ), 
       mh_dh(NULL)
@@ -90,6 +102,14 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
+
+	class EqData : public TransportBase::TransportEqData {
+	public:
+
+		EqData();
+
+	};
+
     TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
     virtual ~TransportOperatorSplitting();
 
@@ -116,6 +136,8 @@ protected:
 
 private:
 
+	 EqData data;
+
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     Semchem_interface *Semchem_reactions;
@@ -124,5 +146,7 @@ private:
 
     TimeMark::Type output_mark_type;
 };
+
+
 
 #endif // TRANSPORT_OPERATOR_SPLITTING_HH_

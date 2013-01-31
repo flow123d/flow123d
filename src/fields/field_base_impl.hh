@@ -240,7 +240,7 @@ FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm)
 template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
     ASSERT_LESS(elm.region().idx(), region_fields.size() );
-    ASSERT( region_fields[elm.region().idx()] , "Null field ptr on region %d, field: %s\n", elm.region().idx(), this->name_.c_str());
+    ASSERT( region_fields[elm.region().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
     return region_fields[elm.region().idx()]->value(p,elm);
 }
 

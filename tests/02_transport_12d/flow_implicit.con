@@ -22,7 +22,16 @@
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }
+      },
+      bc_data=[],
+      bulk_data=[
+        { rid = 48,
+          cond_anisothropy = 10
+        },
+        { rid = 184,
+          cond_anisothropy = 1
+        }
+      ]
     },
 
     secondary_equation = {
@@ -50,7 +59,18 @@
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }
+      },
+      bc_data=[],
+      bulk_data=[
+        {
+          rid=48,
+          init_conc=0
+        },
+        {
+          rid=184,
+          init_conc=0
+        }
+      ]
     }
   }, 
 

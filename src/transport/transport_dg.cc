@@ -60,10 +60,17 @@ Record TransportDG::input_type
 	.declare_key("dg_penalty", Double(0), Default("0"),
 			"Penalty parameter influencing the discontinuity of the solution.")
     .declare_key("solver", Solver::input_type, Default::obligatory(),
-            "Linear solver for MH problem.");
+            "Linear solver for MH problem.")
+    .declare_key("bc_data", Array(TransportDG::EqData().boundary_input_type()),
+    		IT::Default::obligatory(), "")
+    .declare_key("bulk_data", Array(TransportDG::EqData().bulk_input_type()),
+    		IT::Default::obligatory(), "");
 
 
 using namespace arma;
+
+TransportDG::EqData::EqData() : TransportEqData("TransportDG")
+{}
 
 TransportDG::TransportDG(Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
         : TransportBase(init_mesh, material_database, in_rec),
@@ -81,11 +88,22 @@ TransportDG::TransportDG(Mesh & init_mesh, MaterialDatabase & material_database,
     solver_init(solver, in_rec.val<Input::AbstractRecord>("solver"));
 
 
+    /*
+     * Read names of transported substances.
+     */
+    in_rec.val<Input::Array>("substances").copy_to(substance_names);
+    n_substances = substance_names.size();
+
 
 
     /*
      * Set up physical parameters.
      */
+    data.set_mesh(&init_mesh);
+    data.init_conc.set_n_comp(n_substances);
+    data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    data.set_time(*time_);
+
     sigma  = in_rec.val<double>("sigma");
     alphaL = in_rec.val<double>("alpha_l");
     alphaT = in_rec.val<double>("alpha_t");
@@ -98,13 +116,7 @@ TransportDG::TransportDG(Mesh & init_mesh, MaterialDatabase & material_database,
     	alpha = max(1e0,1e0/Dm);
 
 
-    /*
-     * Read names of transported substances.
-     */
-    in_rec.val<Input::Array>("substances").copy_to(substance_names);
-    n_substances = substance_names.size();
-//    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
-//    read_subst_names();
+
 
     sorption = in_rec.val<bool>("sorption_enable");
     dual_porosity = in_rec.val<bool>("dual_porosity");
@@ -157,9 +169,8 @@ TransportDG::TransportDG(Mesh & init_mesh, MaterialDatabase & material_database,
     ls    = new LinSys_MPIAIJ(distr->lsize());
     ls_dt = new LinSys_MPIAIJ(distr->lsize());
 
-
-    // Read initial condition.
-    read_initial_condition(in_rec.val<FilePath>("initial_file"));
+    // set initial conditions
+    set_initial_condition();
 
     // possibly read boundary conditions
     if (bc->get_time_level() != -1)
@@ -1091,58 +1102,57 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
 
 
 
-void TransportDG::read_initial_condition(string concentration_fname)
+void TransportDG::set_initial_condition()
 {
-    FILE    *in;          // input file
-    char     line[ LINE_SIZE ]; // line of data file
-    int sbi,index, eid, i,n_concentrations;
-    double value;
-
-    in = xfopen( concentration_fname, "rt" );
-
-    skip_to( in, "$Concentrations" );
-    xfgets( line, LINE_SIZE - 2, in );
-    n_concentrations = atoi( xstrtok( line) );
-    INPUT_CHECK(!( n_concentrations < 1 ),"Number of concentrations < 1 in function read_concentration_list()\n");
-    INPUT_CHECK(!( mesh_->n_elements() != n_concentrations),"Different number of elements and concentrations\n");
-
     unsigned int maxndofs = max(fe1d->n_dofs(), max(fe2d->n_dofs(), fe3d->n_dofs()));
+    unsigned int dof_indices[maxndofs], nid, ndofs;
     double values[maxndofs];
-    unsigned int ndofs, dof_indices[maxndofs];
+    MappingP1<1,3> map1;
+    MappingP1<2,3> map2;
+    MappingP1<3,3> map3;
+    QGauss<1> q1(0);
+    QGauss<2> q2(0);
+    QGauss<3> q3(0);
+    FEValues<1,3> fv1d(map1, q1, *fe1d, update_quadrature_points);
+    FEValues<2,3> fv2d(map2, q2, *fe2d, update_quadrature_points);
+    FEValues<3,3> fv3d(map3, q3, *fe3d, update_quadrature_points);
 
-    for (i = 0; i < n_concentrations; i++)
+    FOR_ELEMENTS(mesh_, elem)
     {
-        xfgets( line, LINE_SIZE - 2, in );
-        ASSERT(!(line == NULL),"NULL as argument of function parse_concentration_line()\n");
-        eid   = atoi( xstrtok( line ) );
-        ElementFullIter cell = mesh_->element.find_id(eid);
+    	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
+    	vec3 point;
 
-        switch (cell->dim())
-        {
-        case 1:
-            dof_handler1d->get_dof_indices(cell, dof_indices);
-            ndofs = fe1d->n_dofs();
-            break;
-        case 2:
-            dof_handler2d->get_dof_indices(cell, dof_indices);
-            ndofs = fe2d->n_dofs();
-            break;
-        case 3:
-            dof_handler3d->get_dof_indices(cell, dof_indices);
-            ndofs = fe3d->n_dofs();
-            break;
-        }
-
-        for( sbi = 0; sbi < n_substances; sbi++ )
-        {
-            value = atof( xstrtok( NULL) );
-            for (int j=0; j<ndofs; j++)
-                values[j] = value;
-            if (sbi==0) VecSetValues(ls->get_solution(), ndofs, (int *)dof_indices, values, INSERT_VALUES);
-        }
+		switch (elem->dim())
+		{
+		case 1:
+			dof_handler1d->get_dof_indices(elem, dof_indices);
+			ndofs = fe1d->n_dofs();
+			fv1d.reinit(elem);
+			point = fv1d.point(0);
+			break;
+		case 2:
+			dof_handler2d->get_dof_indices(elem, dof_indices);
+			ndofs = fe2d->n_dofs();
+			fv2d.reinit(elem);
+			point = fv2d.point(0);
+			break;
+		case 3:
+			dof_handler3d->get_dof_indices(elem, dof_indices);
+			ndofs = fe3d->n_dofs();
+			fv3d.reinit(elem);
+			point = fv3d.point(0);
+			break;
+		default:
+			break;
+		}
+		double value = data.init_conc.value(point, ele_acc)(0);
+		FOR_ELEMENT_NODES(elem, nid)
+		{
+			values[nid] = value;
+		}
+		VecSetValues(ls->get_solution(), ndofs, (int *)dof_indices, values, INSERT_VALUES);
     }
 
-    xfclose( in );
     VecAssemblyBegin(ls->get_solution());
     VecAssemblyEnd(ls->get_solution());
 }

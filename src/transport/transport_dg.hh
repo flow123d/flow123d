@@ -79,6 +79,13 @@ class TransportDG : public TransportBase
 {
 public:
 
+	class EqData : public TransportBase::TransportEqData {
+	public:
+
+		EqData();
+
+	};
+
     /**
      * @brief Constructor.
      * @param init_mesh         computational mesh
@@ -313,15 +320,17 @@ private:
 
 
 	/**
-	 * @brief Reads the initial condition.
+	 * @brief Sets the initial condition.
 	 */
-	void read_initial_condition(string file_name);
+	void set_initial_condition();
 
 
 
+	EqData data;
 
 	/// @name Physical parameters
 	// @{
+
 	/// Longitudal dispersivity.
 	double alphaL;
 

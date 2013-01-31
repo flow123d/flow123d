@@ -85,6 +85,15 @@ Record TransportOperatorSplitting::input_type
                 "Initialization of per element reactions.");
 
 
+TransportBase::TransportEqData::TransportEqData(const std::string& eq_name) : EqDataBase(eq_name) {
+
+	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
+
+}
+
+
+TransportOperatorSplitting::EqData::EqData() : TransportEqData("TransportOperatorSplitting")
+{}
 
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
