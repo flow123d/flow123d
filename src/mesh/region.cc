@@ -212,3 +212,74 @@ const RegionDB::RegionSet &RegionDB::boundary_regions() {
     }
     return boundary;
 }
+
+
+void RegionDB::add_to_set( const string& set_name, RegionIdx region) {
+	std::map<std::string, RegionDB::RegionSet>::iterator it = sets_.find(set_name);
+
+	if (it == sets_.end()) {
+		RegionDB::RegionSet set;
+		set.push_back(region);
+
+		sets_.insert( std::make_pair(set_name, set) );
+	} else {
+		RegionDB::RegionSet & set = (*it).second;
+		if ( std::find(set.begin(), set.end(), region)!=set.end() ) {
+			set.push_back(region); // add region if doesn't exist
+		}
+	}
+}
+
+
+void RegionDB::add_set( const string& set_name, const RegionDB::RegionSet & set) {
+	if (sets_.find(set_name) != sets_.end()) {
+		sets_.erase(sets_.find(set_name));
+	}
+
+	sets_.insert( std::make_pair(set_name, set) );
+}
+
+
+RegionDB::RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_name_2) {
+	std::map<std::string, RegionDB::RegionSet>::iterator it_1 = sets_.find(set_name_1);
+	std::map<std::string, RegionDB::RegionSet>::iterator it_2 = sets_.find(set_name_2);
+	ASSERT( it_1 == sets_.end(), "No region set with name: %s\n", set_name_1);
+	ASSERT( it_2 == sets_.end(), "No region set with name: %s\n", set_name_2);
+
+	RegionDB::RegionSet set_union;
+	RegionDB::RegionSet & set_1 = (*it_1).second;
+	RegionDB::RegionSet & set_2 = (*it_2).second;
+	RegionDB::RegionSet::iterator it;
+
+	std::sort(set_1.begin(), set_1.end());
+	std::sort(set_2.begin(), set_2.end());
+	set_union.resize(set_1.size() + set_2.size());
+	it = std::set_union(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_union.begin());
+	set_union.resize(it - set_union.begin());
+
+	return set_union;
+}
+
+
+RegionDB::RegionSet RegionDB::intersection( const string & set_name_1, const string & set_name_2) {
+	// not implemented yet
+	return RegionDB::RegionSet();
+}
+
+
+RegionDB::RegionSet RegionDB::difference( const string & set_name_1, const string & set_name_2) {
+	// not implemented yet
+	return RegionDB::RegionSet();
+}
+
+
+const RegionDB::RegionSet & RegionDB::get_region_set(const string & set_name) {
+	std::map<std::string, RegionSet>::iterator it = sets_.find(set_name);
+	ASSERT( it == sets_.end(), "No region set with name: %s\n", set_name);
+	return (*it).second;
+}
+
+
+void RegionDB::read_sets_from_input(Input::Record rec) {
+	// not implemented yet
+}

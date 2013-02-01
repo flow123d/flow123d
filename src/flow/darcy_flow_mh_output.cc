@@ -668,7 +668,7 @@ void DarcyFlowMHOutput::water_balance() {
 
 
     DBGMSG("DB size: %u\n", Region::db().size());
-    for(vector<Region>::const_iterator reg = Region::db().boundary_regions().begin();
+    for(vector<RegionIdx>::const_iterator reg = Region::db().boundary_regions().begin();
             reg != Region::db().boundary_regions().end(); ++reg) {
             fprintf(balance_output_file, "boundary #%d\t%g\t%g\t%g\n", reg->idx()+1,
                      bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);

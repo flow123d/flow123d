@@ -17,6 +17,7 @@
 #include "system/exceptions.hh"
 
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -24,6 +25,61 @@
 #include <boost/multi_index/member.hpp>
 
 namespace BMI=::boost::multi_index;
+
+/**
+ *
+ */
+class RegionIdx {
+public:
+    /**
+     * Create accessor from the index. Should be private since implementation specific.
+     * We need some way how to iterate over: all regions, boundary regions, bulk regions -
+     * solution: have specific RegionSets for these three cases.
+     */
+	RegionIdx(unsigned int index)
+    : idx_(index) {}
+
+    /// Default region is undefined/invalid
+	RegionIdx():idx_(undefined) {}
+
+    /// Returns false if the region has undefined/invalid value
+    inline bool is_valid() const
+        { return idx_!=undefined;}
+
+    /// Returns a global index of the region.
+    inline unsigned int idx() const
+        { return idx_; }
+
+    /// Equality comparison operators for regions.
+    inline bool operator==(const RegionIdx &other) const
+        { return idx_ == other.idx_; }
+
+    /// Equality comparison operators for regions.
+    inline bool operator!=(const RegionIdx &other) const
+        { return idx_ != other.idx_; }
+
+    /// Compare operator for regions.
+    inline bool operator<(const RegionIdx &other) const
+        { return idx_ < other.idx_; }
+
+    /// Compare operator for regions.
+    inline bool operator<=(const RegionIdx &other) const
+        { return idx_ <= other.idx_; }
+
+    /// Compare operator for regions.
+    inline bool operator>(const RegionIdx &other) const
+        { return idx_ > other.idx_; }
+
+    /// Compare operator for regions.
+    inline bool operator>=(const RegionIdx &other) const
+        { return idx_ >= other.idx_; }
+
+protected:
+	unsigned int idx_;
+
+	/// index for undefined region
+    static const unsigned int undefined=0xffffffff;
+};
 
 class RegionDB;
 class OldBcdInput;
@@ -38,7 +94,7 @@ class OldBcdInput;
  * Implementation: currently we number bulk regions by odd indices and boundary regions by even indices.
  *
  */
-class Region {
+class Region : public RegionIdx {
 public:
     enum RegionType {
         bulk=false,
@@ -51,22 +107,22 @@ public:
      * solution: have specific RegionSets for these three cases.
      */
     Region(unsigned int index)
-    : idx_(index) {}
+    : RegionIdx::RegionIdx(index) {}
 
     /// Default region is undefined/invalid
-    Region():idx_(undefined) {}
+    Region() : RegionIdx::RegionIdx() {}
 
     /// Returns true if it is a Boundary region and false if it is a Bulk region.
     inline bool is_boundary() const
         { return !(idx_ & 1); }
 
-    /// Returns false if the region has undefined/invalid value
+/*    /// Returns false if the region has undefined/invalid value
     inline bool is_valid() const
         { return idx_!=undefined;}
 
     /// Returns a global index of the region.
     inline unsigned int idx() const
-        { return idx_; }
+        { return idx_; }*/
 
     /// Returns index of the region in the boundary set.
     inline unsigned int boundary_idx() const {
@@ -103,14 +159,12 @@ public:
         { return db_;}
 
 private:
-    /// index for undefined region
-    static const unsigned int undefined=0xffffffff;
     /// Global variable with information about all regions.
     static RegionDB db_;
 
 
 
-    unsigned int idx_;
+    //unsigned int idx_;
 
     friend class RegionDB;
     friend class OldBcdInput;
@@ -213,7 +267,7 @@ region_sets = [
 
 class RegionDB {
 public:
-    typedef std::vector<Region> RegionSet;
+    typedef std::vector<RegionIdx> RegionSet;
 
     static Region implicit_bulk;
     static Region implicit_boundary;
@@ -316,6 +370,37 @@ public:
      */
     const RegionSet &all_regions();
 
+    /*
+     * Add region to given set. Create the set if it does not exist.
+     *
+     * @param set_name Set to which it is added region
+     * @param region Added region
+     */
+    void add_to_set( const string& set_name, RegionIdx region);
+
+    /**
+     * Add a set into map, delete possible previous value.
+     *
+     * @param set_name Name of added set
+     * @param set Added RegionSet
+     */
+    void add_set( const string& set_name, const RegionSet & set);
+
+    RegionSet union_sets( const string & set_name_1, const string & set_name_2); // sort + std::set_union
+
+    RegionSet intersection( const string & set_name_1, const string & set_name_2);
+
+    RegionSet difference( const string & set_name_1, const string & set_name_2);
+
+    /**
+     * Get region set of specified name
+     *
+     * @param set_name Name of set
+     * @return RegionSet of specified name
+     */
+    const RegionSet & get_region_set(const string & set_name);
+
+    void read_sets_from_input(Input::Record rec); // see structure of RegionDB::region_set_input_type
 
 
 private:
@@ -358,6 +443,9 @@ private:
     unsigned int n_boundary_;
     /// Number of bulk regions
     unsigned int n_bulk_;
+
+    /// Map of region sets
+    std::map<std::string, RegionSet > sets_;
 
     /// Make part of general RegionSet table.
     RegionSet all, bulk, boundary;
