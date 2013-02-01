@@ -43,16 +43,15 @@
  */
 
 EquationBase::EquationBase()
-: mesh_(NULL), mat_base(NULL), time_(NULL),
+: mesh_(NULL), time_(NULL),
   equation_mark_type_(TimeGovernor::marks().new_mark_type()), //creating mark type for new equation
   input_record_()
 {}
 
 
 
-EquationBase::EquationBase(Mesh &mesh, MaterialDatabase &mat_base,const  Input::Record in_rec)
+EquationBase::EquationBase(Mesh &mesh, const  Input::Record in_rec)
 : mesh_(&mesh),
-  mat_base(&mat_base),
   time_(NULL),
   equation_mark_type_(TimeGovernor::marks().new_mark_type()), //creating mark type for new equation
   input_record_(in_rec)
@@ -232,6 +231,6 @@ EqDataBase::~EqDataBase() {}
  * Implementation of EquationNothing
  */
 
-EquationNothing::EquationNothing(Mesh &mesh, MaterialDatabase &mat_base)
-: EquationBase(mesh, mat_base, Input::Record() )
+EquationNothing::EquationNothing(Mesh &mesh)
+: EquationBase(mesh, Input::Record() )
 {}

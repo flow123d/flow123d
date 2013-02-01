@@ -8,7 +8,6 @@
 
 #include <vector>
 #include <input/input_type.hh>
-#include <input/accessors.hh>
 #include <reaction/isotherms.hh>
 
 class Mesh;
@@ -30,7 +29,7 @@ class Sorption: public Reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Sorption(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
+		Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
 		/**
 		*	Destructor.
 		*/

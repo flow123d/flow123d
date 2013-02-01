@@ -49,7 +49,6 @@
 #include "transport/transport.h"
 //#include "transport/sources.hh"
 #include "io/output.h"
-#include "materials.hh"
 #include "io/read_ini.h"
 //#include "ppfcs.h"
 //#include "btc.h" XX
@@ -73,8 +72,8 @@
 #include "fields/field_values.hh"
 
 
-ConvectionTransport::ConvectionTransport(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: EquationBase(init_mesh, material_database, in_rec)
+ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
+: EquationBase(init_mesh, in_rec)
 {
     F_ENTRY;
 
@@ -113,7 +112,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, MaterialDatabase &mate
     if (sorption == true)
         sub_problem += 2;
 
-    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
     make_transport_partitioning();
     alloc_transport_vectors();
     alloc_transport_structs_mpi();

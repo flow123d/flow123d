@@ -238,8 +238,8 @@ it::Record DarcyFlowLMH_Unsteady::input_type
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
-: DarcyFlowMH(mesh_in, mat_base_in, in_rec)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec)
+: DarcyFlowMH(mesh_in, in_rec)
 
 {
     //connecting data fields with mesh
@@ -1639,8 +1639,8 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // ========================
 // unsteady
 
-DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, MaterialDatabase &mat_base_in, const Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, mat_base_in, in_rec)
+DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
+    : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
     delete time_; // delete steady TG
     
@@ -1729,8 +1729,8 @@ void DarcyFlowMH_Unsteady::modify_system() {
 // ========================
 // unsteady
 
-DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, MaterialDatabase &mat_base_in, const  Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, mat_base_in, in_rec)
+DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record in_rec)
+    : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
     delete time_; // delete steady TG
     

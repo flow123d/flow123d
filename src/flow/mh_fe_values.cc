@@ -9,7 +9,7 @@
 #include "system/system.hh"
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
-#include "materials.hh"
+//#include "materials.hh"
 
 #include "mh_fe_values.hh"
 
@@ -186,13 +186,6 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_ani
     
     //transforming 3D conductivity tensor to 2D resistance tensor
     arma::mat resistance_tensor = r.t() * ((cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i() * r);
-        
-    //OBSOLETE
-    //SmallMtx2 resistance_tensor = (SmallMtx2)(ele->material->hydrodynamic_resistence);
-    //compares old and new resistance tensor 
-    //DBGMSG("my: %f %f %f %f \t orig: %f %f %f %f\n", 
-    //        my_resistance_tensor(0,0), my_resistance_tensor(0,1), my_resistance_tensor(1,0), my_resistance_tensor(1,1),
-    //        resistance_tensor[0][0], resistance_tensor[0][1], resistance_tensor[1][0], resistance_tensor[1][1] );
 
     node_coordinates_triangle( ele, nod_coor );
     side_midpoint_triangle( nod_coor, midpoint );

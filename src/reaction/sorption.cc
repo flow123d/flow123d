@@ -45,8 +45,8 @@ Record Sorption::input_type
 
 using namespace std;
 
-Sorption::Sorption(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-      : Reaction(init_mesh, material_database, in_rec, names)
+Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+      : Reaction(init_mesh, in_rec, names)
 {
 	prepare_inputs(in_rec);
 	//determine_crossection()

@@ -33,7 +33,6 @@
 #include <petscmat.h>
 #include "coupling/equation.hh"
 #include "transport/sources.hh"
-#include "materials.hh"
 #include "input/accessors.hh"
 #include "flow/mh_dofhandler.hh"
 
@@ -76,7 +75,7 @@ public:
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+        ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
 	/**
 	 * TODO: destructor
 	 */
@@ -138,7 +137,6 @@ public:
 
 
 private:
-
 
     /**
      * Assembly convection term part of the matrix and boundary matrix for application of boundary conditions.

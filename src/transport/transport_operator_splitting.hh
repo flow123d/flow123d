@@ -23,7 +23,6 @@ class Linear_reaction;
 //class Pade_approximant;
 class Semchem_interface;
 class ConvectionTransport;
-class MaterialDatabase;
 
 
 /**
@@ -45,8 +44,8 @@ public:
 
 	};
 
-  TransportBase(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
-    : EquationBase(mesh, mat_base, in_rec ), 
+  TransportBase(Mesh &mesh, const Input::Record in_rec)
+    : EquationBase(mesh, in_rec ),
       mh_dh(NULL)
     {}
 
@@ -74,8 +73,8 @@ public:
  */
 class TransportNothing : public TransportBase {
 public:
-   TransportNothing(Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : TransportBase(mesh_in, mat_base_in, Input::Record() )
+   TransportNothing(Mesh &mesh_in)
+    : TransportBase(mesh_in, Input::Record() )
     {
         // make module solved for ever
         time_=new TimeGovernor();
@@ -113,7 +112,7 @@ public:
 
 	};
 
-    TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
     virtual ~TransportOperatorSplitting();
 
     /**

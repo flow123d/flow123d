@@ -72,8 +72,8 @@ using namespace arma;
 TransportDG::EqData::EqData() : TransportEqData("TransportDG")
 {}
 
-TransportDG::TransportDG(Mesh & init_mesh, MaterialDatabase & material_database, const Input::Record &in_rec)
-        : TransportBase(init_mesh, material_database, in_rec),
+TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
+        : TransportBase(init_mesh, in_rec),
           advection(1e0),
           tol_switch_dirichlet_neumann(1e-5)
           // TODO: this should be dependent on precision of the Flow solution
@@ -117,10 +117,8 @@ TransportDG::TransportDG(Mesh & init_mesh, MaterialDatabase & material_database,
 
 
 
-
     sorption = in_rec.val<bool>("sorption_enable");
     dual_porosity = in_rec.val<bool>("dual_porosity");
-    mat_base->read_transport_materials(dual_porosity, sorption,n_substances);
 
     // distribute DOFs
     dof_handler1d = new DOFHandler<1,3>(mesh());

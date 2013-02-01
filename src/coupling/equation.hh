@@ -40,7 +40,6 @@
 #include <petscvec.h>
 
 class Mesh;
-class MaterialDatabase;
 class FieldCommonBase;
 class Region;
 
@@ -58,7 +57,7 @@ namespace Input {
  *
  * Computation of one time step (method compute_one_step() )  is split into update_solution() and choose_next_time().
  *
- * This class does not implement any constructor. In particular it does not initialize mesh, mat_base, and time. This has to be done in the constructor
+ * This class does not implement any constructor. In particular it does not initialize mesh and time. This has to be done in the constructor
  * of particular child class.
  *
  * Any constructor of child class should set solved = true. We assume, that after initialization an equation object stay solve in init time. For the first time step
@@ -80,7 +79,7 @@ public:
     /**
      * Common initialization constructor.
      */
-    EquationBase(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec);
+    EquationBase(Mesh &mesh, const Input::Record in_rec);
 
     /**
      * Require virtual destructor also for child classes.
@@ -155,13 +154,6 @@ public:
     }
 
     /**
-     * This getter method provides the material database of the model.
-     * TODO: Maybe it is better to have a database outside and use it to produce input fields.
-     */
-    inline  MaterialDatabase &material_base()
-        {return *mat_base;}
-
-    /**
      * Getter for equation time mark type.
      */
     inline TimeMark::Type mark_type()
@@ -179,7 +171,6 @@ public:
 
 protected:
     Mesh * mesh_;
-    MaterialDatabase * mat_base;
     TimeGovernor *time_;
     TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
@@ -320,7 +311,7 @@ protected:
 class EquationNothing : public EquationBase {
 
 public:
-    EquationNothing(Mesh &mesh, MaterialDatabase &mat_base);
+    EquationNothing(Mesh &mesh);
 
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
         vector = NULL;

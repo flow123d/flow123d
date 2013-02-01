@@ -32,8 +32,8 @@ class Reaction: public EquationBase
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		//Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const std::vector<string> &names); //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(double time_step, int nrOfElements, double ***ConcentrationMatrix);
-		Reaction(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const std::vector<string> &names);
+        
+		Reaction(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
 		/**
 		*	Destructor.
 		*/

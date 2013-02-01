@@ -89,10 +89,9 @@ public:
     /**
      * @brief Constructor.
      * @param init_mesh         computational mesh
-     * @param material_database material database
      * @param in_rec            input record
      */
-    TransportDG(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+    TransportDG(Mesh &init_mesh, const Input::Record &in_rec);
 
     /**
      * @brief Declare input record type for the equation TransportDG.

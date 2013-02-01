@@ -9,7 +9,6 @@
 #include "semchem/semchem_interface.hh"
 
 #include "system/system.hh"
-#include "materials.hh"
 #include "transport/transport.h"
 //#include "system/par_distribution.hh"
 #include "mesh/mesh.h"
@@ -27,10 +26,8 @@ AbstractRecord Reaction::input_type
 
 using namespace std;
 
-//Reaction::Reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const  vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-//      : EquationBase(marks, init_mesh, material_database, in_rec),
-Reaction::Reaction(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, const  vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-    : EquationBase(init_mesh, material_database, in_rec),
+Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+    : EquationBase(init_mesh, in_rec),
       dual_porosity_on(false), prev_conc(NULL), names_(names),
       time_step(1.0)
 {

@@ -193,8 +193,8 @@ public:
     };
 
 
-    DarcyFlowMH(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
-    : EquationBase(mesh, mat_base, in_rec), sources(NULL)
+    DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
+    : EquationBase(mesh, in_rec), sources(NULL)
     {}
 
     static Input::Type::Selection mh_mortar_selection;
@@ -288,7 +288,7 @@ public:
       {}
     };
     
-    DarcyFlowMH_Steady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
 
     static Input::Type::Record input_type;
 
@@ -401,7 +401,7 @@ public:
       Field<3, FieldValue<3>::Scalar > storativity;
     };
     
-    DarcyFlowMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+    DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
     //returns reference to equation data
@@ -451,7 +451,7 @@ public:
       Field<3, FieldValue<3>::Scalar > storativity;
     };
     
-    DarcyFlowLMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+    DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 
     //returns reference to equation data

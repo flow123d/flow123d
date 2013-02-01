@@ -37,8 +37,7 @@ class Pade_approximant: public Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		//Pade_approximant(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, Input::Record in_rec, vector<string> &names);
-		Pade_approximant(Mesh &mesh, MaterialDatabase &mat_base, Input::Record in_rec, vector<string> &names);
+		Pade_approximant(Mesh &mesh, Input::Record in_rec, vector<string> &names);
 
 		/**
 		*	Destructor.

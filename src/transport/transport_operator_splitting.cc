@@ -13,7 +13,6 @@
 #include <petscmat.h>
 #include "system/sys_vector.hh"
 #include "coupling/time_governor.hh"
-#include <materials.hh>
 #include "coupling/equation.hh"
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
@@ -96,20 +95,20 @@ TransportOperatorSplitting::EqData::EqData() : TransportEqData("TransportOperato
 {}
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: TransportBase(init_mesh, material_database, in_rec)
+TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
+: TransportBase(init_mesh, in_rec)
 {
 	Distribution *el_distribution;
 	int *el_4_loc;
 
     // double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
 
-	convection = new ConvectionTransport(*mesh_, *mat_base, in_rec);
+	convection = new ConvectionTransport(*mesh_, in_rec);
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
 		if (reactions_it->type() == Linear_reaction::input_type ) {
-	        decayRad =  new Linear_reaction(init_mesh, material_database, *reactions_it,
+	        decayRad =  new Linear_reaction(init_mesh, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
@@ -119,7 +118,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, Material
 	        Semchem_reactions = NULL;
 		} else
 	    if (reactions_it->type() == Pade_approximant::input_type ) {
-                decayRad = new Pade_approximant(init_mesh, material_database, *reactions_it,
+                decayRad = new Pade_approximant(init_mesh, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());

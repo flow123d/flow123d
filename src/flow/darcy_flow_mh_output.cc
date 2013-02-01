@@ -676,6 +676,7 @@ void DarcyFlowMHOutput::water_balance() {
 //                bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
     }
 
+    /*TODO: oprava  - iterace pres regiony, nikoli pres materialy
     const FieldP0<double> *p_sources=darcy_flow->get_sources();
     if (p_sources != NULL) {
 
@@ -695,6 +696,7 @@ void DarcyFlowMHOutput::water_balance() {
             fprintf(balance_output_file, "material #%d:\t% g\n", mat_base.get_id(mat), (*src_balance)[mat_base.index(mat)]);
         }
     }
+    */
 }
 //=============================================================================
 //
