@@ -156,7 +156,7 @@ public:
 
         static Input::Type::Selection bc_type_selection;
 
-        DarcyFlowEqData() : EqDataBase("DarcyFlowMH") {
+        DarcyFlowEqData(const std::string &name) : EqDataBase(name) {
             ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
             ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
             ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
@@ -218,8 +218,8 @@ public:
        return mh_dh;
     }
     
-    inline DarcyFlowEqData &get_data()
-    {return data;}
+    //returns reference to equation data
+    virtual DarcyFlowEqData &get_data() = 0;
 
 protected:
     void setup_velocity_vector() {
@@ -237,9 +237,6 @@ protected:
     //virtual void integrate_sources();
 
 protected:  
-    ///Equation data consisting of fields.
-    DarcyFlowEqData data;
-    
     //BoundaryData<DarcyFlowMH_BC> bc_data_;
     FunctionBase<3> *bc_function;
     FieldP0<double> *sources;
@@ -287,7 +284,7 @@ public:
     class EqData : public DarcyFlowMH::DarcyFlowEqData{
     public:
       
-      EqData() : DarcyFlowEqData() 
+      EqData() : DarcyFlowEqData("DarcyFlowMH_Steady") 
       {}
     };
     
@@ -298,6 +295,10 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
+    
+    //returns reference to equation data
+    virtual DarcyFlowMH::DarcyFlowEqData &get_data()
+    {return data;}
 
     /// postprocess velocity field (add sources)
     virtual void postprocess();
@@ -317,7 +318,6 @@ protected:
     void make_schur0();
     void make_schur1();
     void make_schur2();
-
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
@@ -363,6 +363,9 @@ protected:
         Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
         
         double mortar_sigma;
+        
+private:
+  EqData data;
 };
 
 
@@ -388,7 +391,7 @@ public:
     class EqData : public DarcyFlowMH::DarcyFlowEqData{
     public:
       
-      EqData() : DarcyFlowEqData() {
+      EqData() : DarcyFlowEqData("DarcyFlowMH_Unsteady") {
 
             ADD_FIELD(init_pressure, "Initial condition as pressure");
         }
@@ -399,11 +402,16 @@ public:
     DarcyFlowMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
+    //returns reference to equation data
+    virtual DarcyFlowMH::DarcyFlowEqData &get_data()
+    {return data;}
+    
     static Input::Type::Record input_type;
 protected:
     virtual void modify_system();
     void setup_time_term();
 private:
+    EqData data;
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
@@ -431,7 +439,7 @@ public:
     class EqData : public DarcyFlowMH::DarcyFlowEqData{
     public:
       
-      EqData() : DarcyFlowEqData() {
+      EqData() : DarcyFlowEqData("DarcyFlowLMH_Unsteady") {
 
             ADD_FIELD(init_pressure, "Initial condition as pressure");
         }
@@ -442,12 +450,17 @@ public:
     DarcyFlowLMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 
+    //returns reference to equation data
+    virtual DarcyFlowMH::DarcyFlowEqData &get_data()
+    {return data;}
+    
     static Input::Type::Record input_type;
 protected:
     virtual void modify_system();
     void setup_time_term();
     virtual void postprocess();
 private:
+    EqData data;
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
