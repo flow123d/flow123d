@@ -75,6 +75,8 @@ public:
         return element()->region();
     }
 
+    ElementAccessor<3> element_accessor();
+
     inline SideIter side() {
         if (edge()->n_sides != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
         return edge()->side_[0];

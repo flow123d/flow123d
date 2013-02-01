@@ -32,6 +32,7 @@
 #include "system/xio.h"
 #include "mesh/mesh.h"
 #include "mesh/boundaries.h"
+#include "mesh/accessors.hh"
 
 
 flow::VectorId<unsigned int> Boundary::id_to_bcd;
@@ -50,6 +51,11 @@ Element * Boundary::element() {
 
 Edge * Boundary::edge() {
     return &( mesh_->edges[edge_idx_] );
+}
+
+ElementAccessor<3> Boundary::element_accessor()
+{
+	return mesh_->element_accessor(bc_ele_idx_, true);
 }
 
 
