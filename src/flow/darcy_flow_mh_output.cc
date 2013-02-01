@@ -279,12 +279,12 @@ void DarcyFlowMHOutput::make_element_vector() {
         arma::vec3 flux_in_centre;
         flux_in_centre.zeros();
 
-        fe_values.update(ele, darcy_flow->get_data().cond_anisothropy);
+        fe_values.update(ele, darcy_flow->get_data().cond_anisothropy, darcy_flow->get_data().cross_section);
 
         for (int li = 0; li < ele->n_sides(); li++) {
             flux_in_centre += dh.side_flux( *(ele->side( li ) ) )
                               * fe_values.RT0_value( ele, ele->centre(), li )
-                              / ele->material->size;
+                              / darcy_flow->get_data().cross_section.value(ele->centre(), ele->element_accessor() );
         }
 
         for(int j=0;j<3;j++) ele_flux[i_side][j]=flux_in_centre[j];

@@ -56,7 +56,7 @@ public:
     {}
 
     inline Side(ElementIter ele, unsigned int set_lnum);
-    double metric() const;
+    double measure() const;
     arma::vec3 centre() const; // Centre of side
     arma::vec3 normal() const; // Vector of (generalized) normal
 

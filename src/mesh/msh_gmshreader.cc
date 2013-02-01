@@ -139,6 +139,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
             //  1 Line (2 nodes)
             //  2 Triangle (3 nodes)
             //  4 Tetrahedron (4 nodes)
+            // 15 Point (1 node)
             unsigned int type = lexical_cast<unsigned int>(*tok); ++tok;
             unsigned int dim;
             switch (type) {
@@ -150,6 +151,9 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
                     break;
                 case 4:
                     dim = 3;
+                    break;
+                case 15:
+                    dim = 0;
                     break;
                 default:
                     xprintf(UsrErr, "Element %d is of the unsupported type %d\n", id, type);
@@ -175,7 +179,10 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
             if (region_idx.is_boundary()) {
                 ele = mesh->bc_elements.add_item(id);
             } else {
-                ele = mesh->element.add_item(id);
+                if(dim == 0 )
+                    xprintf(Warn, "Bulk elements of zero size(dim=0) are not supported as elements.");
+                else
+                    ele = mesh->element.add_item(id);
             }
             ele->init(dim, mesh, region_idx);
             ele->pid=partition_id;

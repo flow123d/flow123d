@@ -4,31 +4,60 @@
     description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
     material = "./input/test1.mtr", 
     mesh = {
-      mesh_file = "./input/test1.msh", 
+      mesh_file = "./input/test1_new.msh", 
       neighbouring = "./input/test2.ngh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test1.fbc", 
+      boundary_file = "./input/test1_new_fbc.fbc", 
       n_schurs = 2, 
 
       bulk_data = [
-        { rid = 62,     #1Dchannel
+        { region = "1d_channel",
           cond_anisothropy = 10
         },
-        { rid = 63,     #2Dfraction
+        { region = "2d_fraction_1",
           cond_anisothropy = 1
         },
-        { rid = 64,     #2Dfraction
+        { region = "2d_fraction_2",
           cond_anisothropy = 1
-        }, 
-        { rid = 65,     #3Dcube
+        },
+        { region = "3d_cube",
           cond_anisothropy = 0.1
         }
       ],
       
-      bc_data = [],
+      bc_data = [
+        { region = ".1d_channel",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-y"
+          }
+        },
+        { region = ".2d_fraction_1",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-y"
+          }
+        },
+        { region = ".2d_fraction_2",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-y"
+          }
+        },
+        { region = ".3d_cube",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-y"
+          }
+        }
+      ],
 
       output = {
         balance_output = "water_balance.out", 

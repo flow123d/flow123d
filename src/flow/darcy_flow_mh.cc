@@ -36,7 +36,7 @@
 #include "petscerror.h"
 #include <armadillo>
 
-/*
+
 #include "system/system.hh"
 
 #include "system/math_fce.h"
@@ -66,8 +66,9 @@
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
-*/
+//*/
 
+/*
 #include "../system/system.hh"
 
 #include "../system/math_fce.h"
@@ -97,7 +98,7 @@
 
 #include "../fields/field_base.hh"
 #include "../fields/field_values.hh"
-
+//*/
 
 
 
@@ -514,7 +515,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides();
-        if (fill_matrix) fe_values.update(ele, data.cond_anisothropy);
+        if (fill_matrix) fe_values.update(ele, data.cond_anisothropy, data.cross_section);
 
         for (i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
@@ -549,15 +550,22 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     ls->rhs_set_value(edge_row, -bcd->scalar);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
                 } else if ( bcd->type == NEUMANN ) {
-                    ls->rhs_set_value(edge_row, bcd->flux * bcd->element()->measure() * ele->material->size);
+                    ls->rhs_set_value(edge_row, bcd->flux * bcd->element()->measure() * 
+                                      data.cross_section.value(ele->centre(), ele->element_accessor())
+                                     );
                 } else if ( bcd->type == NEWTON )  {
-                    ls->rhs_set_value(edge_row, -bcd->element()->measure() * ele->material->size * bcd->sigma * bcd->scalar);
-                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * ele->material->size *bcd->sigma );
+                    ls->rhs_set_value(edge_row, -bcd->element()->measure() *
+                                      data.cross_section.value(ele->centre(), ele->element_accessor()) *
+                                      bcd->sigma * bcd->scalar);
+                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * 
+                                      data.cross_section.value(ele->centre(), ele->element_accessor()) * 
+                                      bcd->sigma );
                 }
             }
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
         }
+
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
 
 
@@ -574,14 +582,14 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                               data.cross_section.value(ele->centre(), ele->element_accessor()) * 
                               sources->element_value(ele.index()));
         }
-
+        
         // D block: non-compatible conections and diagonal: element-element
         //for (i = 0; i < ele->d_row_count; i++)
         //    tmp_rows[i] = row_4_el[ele->d_el[i]];
         ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
 
         // D, E',E block: compatible connections: element-edge
-
+        
         for (i = 0; i < ele->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
@@ -589,7 +597,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
 
-            double value = ngh->sigma * ngh->side()->metric();
+            double value = ngh->sigma * ngh->side()->measure() * 
+                           data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );
 
             local_vb[0] = -value;   local_vb[1] = value;
             local_vb[2] = value;    local_vb[3] = -value;
@@ -607,9 +616,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 tmp_rows[2+i] = tmp_rows[1];
             }
         }
-
-
-
+        //DBGMSG(".............errrrr.............\n");
+        
         // add virtual values for schur complement allocation
         switch (n_schur_compls) {
         case 2:
@@ -649,9 +657,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     } else if (mortar_method_ == MortarP1) {
         mh_abstract_assembly_intersection();
     }  
-
-
 }
+
 
 /**
  * Works well but there is large error next to the boundary.
@@ -1048,7 +1055,7 @@ void DarcyFlowMH_Steady::make_schur1() {
             el_row = row_4_el[el_4_loc[i_loc]];
            nsides = ele->n_sides();
 
-           fe_values.update( ele, data.cond_anisothropy );
+           fe_values.update( ele, data.cond_anisothropy, data.cross_section );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = mh_dh.side_dof( ele->side(i) ); // side ID
@@ -1072,7 +1079,7 @@ void DarcyFlowMH_Steady::make_schur1() {
             el_row = row_4_el[el_4_loc[i_loc]];
            nsides = ele->n_sides();
 
-           fe_values.update( ele, data.cond_anisothropy );
+           fe_values.update( ele, data.cond_anisothropy, data.cross_section );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix
@@ -1685,7 +1692,8 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
         // set initial condition
         local_sol[i_loc_row] = initial_pressure->element_value(ele.index());
         // set new diagonal
-        local_diagonal[i_loc_row]=-ele->material->stor*ele->measure()/time_->dt();
+        local_diagonal[i_loc_row]= - data.storativity.value(ele->centre(), ele->element_accessor()) * 
+                                  ele->measure() / time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(schur0->get_matrix(), new_diagonal, ADD_VALUES);
@@ -1772,9 +1780,10 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
          FOR_ELEMENT_SIDES(ele,i) {
              edge_row = row_4_edge[ele->side(i)->edge_idx()];
              // set new diagonal
-             VecSetValue(new_diagonal,edge_row, -ele->material->stor * ele->measure() *
-                          data.cross_section.value(ele->centre(), ele->element_accessor()) 
-                          /time_->dt()/ele->n_sides(),ADD_VALUES);
+             VecSetValue(new_diagonal,edge_row, - ele->measure() *
+                          data.storativity.value(ele->centre(), ele->element_accessor()) *
+                          data.cross_section.value(ele->centre(), ele->element_accessor()) /
+                          time_->dt() / ele->n_sides(),ADD_VALUES);
              // set initial condition
              VecSetValue(schur0->get_solution(),edge_row,init_value/ele->n_sides(),ADD_VALUES);
          }
@@ -1843,9 +1852,10 @@ void DarcyFlowLMH_Unsteady::postprocess() {
         FOR_EDGE_SIDES(edg,i) {
           ele = edg->side(i)->element();
           side_row = side_row_4_id[ mh_dh.side_dof( edg->side(i) ) ];
-          time_coef = -ele->material->stor * ele->measure() *
-              data.cross_section.value(ele->centre(), ele->element_accessor()) 
-              /time_->dt()/ele->n_sides();
+          time_coef = - ele->measure() *
+              data.cross_section.value(ele->centre(), ele->element_accessor()) *
+              data.cross_section.value(ele->centre(), ele->element_accessor()) /
+              time_->dt() / ele->n_sides();
             VecSetValue(schur0->get_solution(), side_row, time_coef * (new_pressure - old_pressure), ADD_VALUES);
         }
     }

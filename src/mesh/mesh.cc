@@ -602,18 +602,20 @@ void Mesh::element_to_neigh_vb()
 }
 
 
-
+/*
 void Mesh::setup_materials( MaterialDatabase &base)
 {
-    xprintf( MsgVerb, "   Element to material... ")/*orig verb 5*/;
+  
+    xprintf( MsgVerb, "   Element to material... ");//orig verb 5;
     FOR_ELEMENTS(this, ele ) {
         ele->material=base.find_id(ele->region().id());
         INPUT_CHECK( ele->material != base.end(),
                 "Reference to undefined material %d in element %d\n", ele->region().id(), ele.id() );
     }
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    xprintf( MsgVerb, "O.K.\n");//orig verb 6
+  
 }
-
+*/
 
 void Mesh::read_intersections() {
 

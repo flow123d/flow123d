@@ -32,19 +32,19 @@ MHFEValues::~MHFEValues() {
 
 
 
-void MHFEValues::update(ElementFullIter ele, FieldType &cond_anisothropy) {
+void MHFEValues::update(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section) {
 
     ASSERT(!( ele == NULL ),"NULL as argument of function local_matrix()\n");
 
     switch( ele->dim() ) {
         case 1:
-            local_matrix_line( ele, cond_anisothropy );
+            local_matrix_line( ele, cond_anisothropy , cross_section);
             break;
         case 2:
-            local_matrix_triangle( ele, cond_anisothropy );
+            local_matrix_triangle( ele, cond_anisothropy, cross_section );
             break;
         case 3:
-            local_matrix_tetrahedron( ele, cond_anisothropy );
+            local_matrix_tetrahedron( ele, cond_anisothropy, cross_section );
             break;
     }
 
@@ -125,12 +125,10 @@ arma::vec3 MHFEValues::RT0_value(ElementFullIter ele, arma::vec3 point, unsigned
 //=============================================================================
 // CALCULATE LOCAL MARIX FOR LINEAR ELEMENT
 //=============================================================================
-void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothropy )
+void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section )
 {
     double    val;
     SmallMtx2 loc=(SmallMtx2)(loc_matrix_);
-
-    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     
     //getting vector on the line and normalizing it
     //it is the transformation matrix from 3D to 1D line of the 1D element
@@ -140,8 +138,9 @@ void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothr
     //transforming the conductivity in 3D to resistivity in 1D
     //computing v_transpose * K_inverse * v
     val = arma::dot(line_vec, 
-                    (cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i() * line_vec)
-                    * ele->measure() / (3.0 * ele->material->size);
+                    (cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i() * line_vec) *
+                     ele->measure() / 
+                     (3.0 * cross_section.value(ele->centre(), ele->element_accessor()) );
               
     loc[0][0] =  val;
     loc[1][1] =  val;
@@ -157,7 +156,7 @@ void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothr
 //=============================================================================
 // CALCULATE LOCAL MATRIX FOR TRIANGULAR ELEMENT
 //=============================================================================
-void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_anisothropy )
+void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section )
 {
     double midpoint[ 3 ][ 2 ]; // Midpoints of element's sides
     double alfa[ 3 ];   //
@@ -168,8 +167,6 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_ani
     int i, j;               // Loops' counters
     double nod_coor[ 3 ][ 2 ]; // Coordinates of nodes;
     SmallMtx3 loc=(SmallMtx3)(loc_matrix_);
-
-    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     
     // make rotated coordinate system with triangle in plane XY, origin in A and axes X == AB
     arma::vec3 ex(ele->node[1]->point() - ele->node[0]->point());
@@ -209,7 +206,8 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_ani
             p[ 1 ] = polynom_value_triangle( poly, midpoint[ 1 ] );
             p[ 2 ] = polynom_value_triangle( poly, midpoint[ 2 ] );
             loc[i][j] = gama[i] * gama[j] * ele->measure() *
-                    ( p[0] + p[1] + p[2] ) / (3.0 * ele->material->size);
+                    ( p[0] + p[1] + p[2] ) / 
+                    (3.0 * cross_section.value(ele->centre(), ele->element_accessor()) );
             loc[j][i] = loc[i][j];
         }
         for(i = 0; i < 3; i++) {
@@ -346,7 +344,7 @@ double MHFEValues::polynom_value_triangle( double poly[], double point[] )
 //=============================================================================
 // CALCULATE LOCAL MARIX FOR SIMPLEX ELEMENT
 //=============================================================================
-void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_anisothropy )
+void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section )
 {
     double alfa[ 4 ];
     double beta[ 4 ];       //  | Parametrs of basis functions
@@ -355,8 +353,6 @@ void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_
     double poly[ 10 ];      // Koeficients of polynomial
     int i, j;               // Loops' counters
     SmallMtx4 loc=(SmallMtx4)(loc_matrix_);
-
-    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
     
     //transforming 3D conductivity tensor to 3D resistance tensor
     arma::mat resistance_tensor = (cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i();
@@ -368,7 +364,7 @@ void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_
     //        my_resistance_tensor(0,0), my_resistance_tensor(0,1), my_resistance_tensor(1,0), my_resistance_tensor(1,1), 
     //       resistance_tensor[0][0], resistance_tensor[0][1], resistance_tensor[1][0], resistance_tensor[1][1] );
 
-    basis_functions_tetrahedron( ele, alfa, beta, gama, delta );
+    basis_functions_tetrahedron( ele, alfa, beta, gama, delta, cross_section);
     for( i = 0; i < 4; i++ )
         for( j = i; j < 4; j++ ) {
             calc_polynom_tetrahedron(
@@ -388,7 +384,7 @@ void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_
 //=============================================================================
 //
 //=============================================================================
-void MHFEValues::basis_functions_tetrahedron( ElementFullIter ele, double alfa[], double beta[],double gama[], double delta[] )
+void MHFEValues::basis_functions_tetrahedron( ElementFullIter ele, double alfa[], double beta[],double gama[], double delta[], FieldType_Scalar &cross_section )
 {
     int li;
     SideIter pSid;
@@ -398,7 +394,8 @@ void MHFEValues::basis_functions_tetrahedron( ElementFullIter ele, double alfa[]
         beta[ li ] = ele->node[ li ]->getY();
         gama[ li ] = ele->node[ li ]->getZ();
         pSid = ele->side( li );
-        delta[ li ] = 1.0 / ( pSid->metric() *
+        delta[ li ] = 1.0 / ( pSid->measure() * 
+            cross_section.value( ele->centre(), ele->element_accessor() ) *
             ( pSid->normal()[ 0 ] * pSid->centre()[ 0 ] +
               pSid->normal()[ 1 ] * pSid->centre()[ 1 ] +
               pSid->normal()[ 2 ] * pSid->centre()[ 2 ] -

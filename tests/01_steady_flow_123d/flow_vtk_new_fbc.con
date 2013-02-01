@@ -2,29 +2,28 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
-    material = "${INPUT}/test1.mtr", 
+    material = "./input/test1.mtr", 
     mesh = {
-      mesh_file = "${INPUT}/test1.msh", 
+      mesh_file = "./input/test1_new_fbc.msh", 
       neighbouring = "./input/test2.ngh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "${INPUT}/test1.fbc", 
+      boundary_file = "./input/test1_new_fbc.fbc", 
       n_schurs = 2, 
 
-      
       bulk_data = [
-        { rid = 62,	#1Dchannel
+        { region = "1d_channel",
           cond_anisothropy = 10
         },
-        { rid = 63, 	#2Dfraction
+        { region = "2d_fraction_1",
           cond_anisothropy = 1
         },
-        { rid = 64,	#2Dfraction
+        { region = "2d_fraction_2",
           cond_anisothropy = 1
-        }, 
-        { rid = 65,	#3Dcube
+        },
+        { region = "3d_cube",
           cond_anisothropy = 0.1
         }
       ],
@@ -35,28 +34,27 @@
         balance_output = "water_balance.out", 
         output_stream = {
           REF = "/system/output_stream"
-	}, 
+        }, 
         piezo_head_p0 = "flow_output_stream", 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        raw_flow_output = "./raw_output.txt", 
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }
+      } 
     }
   }, 
 
   system = {
     output_stream = {
-        file = "./test1.msh", 
+        file = "./test1.pvd", 
         format = {
-          TYPE = "gmsh", 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         name = "flow_output_stream"
       }
-  } 
+  }
 }

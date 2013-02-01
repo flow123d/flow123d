@@ -48,6 +48,7 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+/*
 #include "../input/input_type.hh"
 
 #include <petscmat.h>
@@ -64,8 +65,8 @@
 #include "../fields/field_base.hh"
 #include "../fields/field_values.hh"
 #include "../fields/field_add_potential.hh"
+//*/
 
-/*
 #include "input/input_type.hh"
 
 #include <petscmat.h>
@@ -81,7 +82,7 @@
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
-*/
+//*/
 
 /// external types:
 class LinSys;
@@ -182,7 +183,6 @@ public:
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
-        Field<3, FieldValue<3>::Scalar > storativity;
 
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
@@ -394,9 +394,11 @@ public:
       EqData() : DarcyFlowEqData("DarcyFlowMH_Unsteady") {
 
             ADD_FIELD(init_pressure, "Initial condition as pressure");
+            ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
         }
         
       Field<3, FieldValue<3>::Scalar > init_pressure;
+      Field<3, FieldValue<3>::Scalar > storativity;
     };
     
     DarcyFlowMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
@@ -442,9 +444,11 @@ public:
       EqData() : DarcyFlowEqData("DarcyFlowLMH_Unsteady") {
 
             ADD_FIELD(init_pressure, "Initial condition as pressure");
+            ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
         }
         
       Field<3, FieldValue<3>::Scalar > init_pressure;
+      Field<3, FieldValue<3>::Scalar > storativity;
     };
     
     DarcyFlowLMH_Unsteady(Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);

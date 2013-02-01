@@ -11,10 +11,12 @@
 #include "mesh/mesh_types.hh"
 #include <armadillo>
 
-#include "../fields/field_base.hh"
-#include "../fields/field_values.hh"
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 typedef Field<3, FieldValue<3>::TensorFixed > FieldType;
+typedef Field<3, FieldValue<3>::Scalar > FieldType_Scalar;
+
 //declared in system/math_fce.h
 typedef double SmallVec2_t[2];
 typedef SmallVec2_t *SmallMtx2;
@@ -26,7 +28,7 @@ class MHFEValues {
 public:
     MHFEValues();
     ~MHFEValues();
-    void update(ElementFullIter ele, FieldType &cond_anisothropy);
+    void update(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section);
     double * local_matrix();
     double * inv_local_matrix();
 
@@ -36,9 +38,9 @@ public:
     arma::vec3 RT0_value(ElementFullIter ele, arma::vec3 point, unsigned int face);
 
 private:
-    void local_matrix_line(ElementFullIter ele, FieldType &cond_anisothropy);
-    void local_matrix_triangle(ElementFullIter ele, FieldType &cond_anisothropy);
-    void local_matrix_tetrahedron(ElementFullIter ele, FieldType &cond_anisothropy);
+    void local_matrix_line(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section);
+    void local_matrix_triangle(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section);
+    void local_matrix_tetrahedron(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section);
 
 
     void node_coordinates_triangle( ElementFullIter ele, double nod[ 3 ][ 2 ] );
@@ -50,7 +52,7 @@ private:
                               double *alfa, double *beta, double *gama);
     void calc_polynom_triangle( double al_i, double be_i, double al_j, double be_j, arma::mat::fixed<2,2> a, double poly[] );
     double polynom_value_triangle( double poly[], double point[] );
-    void basis_functions_tetrahedron( ElementFullIter ele, double alfa[], double beta[],double gama[], double delta[]);
+    void basis_functions_tetrahedron( ElementFullIter ele, double alfa[], double beta[],double gama[], double delta[], FieldType_Scalar &cross_section);
     void calc_polynom_tetrahedron( double al_i, double be_i, double ga_i,
                                    double al_j, double be_j, double ga_j,
                                    arma::mat::fixed<3,3> a, double poly[] );

@@ -148,7 +148,7 @@ public:
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
      * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
      */
-    void setup_materials( MaterialDatabase &base);
+    //void setup_materials( MaterialDatabase &base);
     //void make_element_geometry();
 
     /**

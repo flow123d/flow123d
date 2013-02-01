@@ -91,7 +91,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         GmshMeshReader reader( in_record.val<Record>("mesh").val<FilePath>("mesh_file") );
         reader.read_mesh(mesh);
 
-        mesh->setup_materials(*material_database);
+        //mesh->setup_materials(*material_database);
         Profiler::instance()->set_task_info(
             "Description has to be set in main. by different method.",
             mesh->n_elements());
