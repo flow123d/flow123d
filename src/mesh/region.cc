@@ -212,3 +212,14 @@ const RegionDB::RegionSet &RegionDB::boundary_regions() {
     }
     return boundary;
 }
+
+
+const RegionDB::RegionSet &RegionDB::bulk_regions() {
+    if (bulk.size() == 0) {
+        for(unsigned int i=0; i < size(); i++) {
+            Region reg(i);
+            if (!reg.is_boundary() && reg.bulk_idx() < n_bulk_) bulk.push_back(reg);
+        }
+    }
+    return bulk;
+}

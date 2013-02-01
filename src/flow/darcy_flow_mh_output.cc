@@ -670,13 +670,32 @@ void DarcyFlowMHOutput::water_balance() {
     DBGMSG("DB size: %u\n", Region::db().size());
     for(vector<Region>::const_iterator reg = Region::db().boundary_regions().begin();
             reg != Region::db().boundary_regions().end(); ++reg) {
-            fprintf(balance_output_file, "boundary #%d\t%g\t%g\t%g\n", reg->idx()+1,
-                     bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
-//        fprintf(balance_output_file, "boundary id:%u label:'%s'\t%g\t%g\t%g\n", reg->id(), reg->label().c_str(),
-//                bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
+        fprintf(balance_output_file, "boundary id:%d label:'%s'\t%g\t%g\t%g\n", reg->id(), reg->label().c_str(),
+                bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
     }
 
-    /*TODO: oprava  - iterace pres regiony, nikoli pres materialy
+    //TODO: oprava  - iterace pres regiony, nikoli pres materialy
+    const FieldP0<double> *p_sources = darcy_flow->get_sources();
+    if (p_sources != NULL) {
+
+        fprintf(balance_output_file,"\nSource fluxes over material subdomains:\n");
+        std::vector<double> src_balance( Region::db().size(), 0.0 ); // initialize by zero
+
+        FOR_ELEMENTS(mesh_, elm) {
+            src_balance[elm->element_accessor().region().idx()] += elm->measure() * 
+                darcy_flow->get_data().cross_section.value(elm->centre(),elm->element_accessor()) * 
+                p_sources->element_value(elm.index());
+        }
+        
+        DBGMSG("DB size: %u\n", Region::db().size());
+        for(vector<Region>::const_iterator reg = Region::db().bulk_regions().begin();
+            reg != Region::db().bulk_regions().end(); ++reg) 
+          {
+            fprintf(balance_output_file, "region id:%d label:'%s'\t%g\n", reg->id(),
+                    reg->label().c_str(), src_balance[reg->idx()]);
+          }
+    }
+    /*
     const FieldP0<double> *p_sources=darcy_flow->get_sources();
     if (p_sources != NULL) {
 
