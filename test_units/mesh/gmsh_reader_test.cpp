@@ -33,7 +33,8 @@ TEST(GMSHReader, read_mesh_from_stream) {
 
 TEST(GMSHReader, read_mesh_from_file) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_input.msh", FilePath::input_file);
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 
     Mesh mesh;
     GmshMeshReader reader(mesh_file);

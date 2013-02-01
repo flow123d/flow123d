@@ -187,37 +187,34 @@ public:
     /**
      * Constructor, we denote if this is bulk or bc field.
      */
-    FieldCommonBase(bool bc)
-    : n_comp_(0),
-      bc_(bc),
-      element_selection_(NULL),
-      default_( IT::Default::obligatory()) {}
+    FieldCommonBase(bool bc);
 
     /**
      * Setters. We need to store these information into the Field itself during construction of an EqData class in order to
      * allow creation of Input::Type tree and initialization of all fields in the EqData class by generic functions.
      */
     /// Set name of the field, used for naming particular key in EqData record.
-    void set_name(const string & name)        { name_ =name; }
+    void set_name(const string & name);
     /// Set description of the field, used for description of corresponding key.
-    void set_desc(const string & desc)        { desc_=desc; }
-    void set_default(IT::Default &dflt)           { default_=dflt;}
+    void set_desc(const string & desc);
+    void set_default(IT::Default &dflt);
 
     /// Set number of components for run-time sized vectors.
-    void set_n_comp( unsigned int n_comp)     { n_comp_=n_comp; }
+    void set_n_comp( unsigned int n_comp);
     /// For Fields returning "Enum", we have to pass in corresponding Selection object.
-    void set_selection( Input::Type::Selection *element_selection)
-        { element_selection_=element_selection;}
+    void set_selection( Input::Type::Selection *element_selection);
+    void set_mesh(Mesh *mesh);
 
     /**
      * Getters.
      */
-    const std::string &name() const     { return name_;}
-    const std::string &desc() const     { return desc_;}
-    const IT::Default &get_default() const {return default_;}
-    bool is_bc() const                  { return bc_;}
-    bool is_enum_valued() const         { return enum_valued_;}
-    unsigned int n_comp() const         { return n_comp_;}
+    const std::string &name() const;
+    const std::string &desc() const;
+    const IT::Default &get_default() const;
+    bool is_bc() const;
+    bool is_enum_valued() const;
+    unsigned int n_comp() const;
+    Mesh * mesh() const;
 
     /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
@@ -239,14 +236,9 @@ public:
     virtual void set_time(double time) =0;
 
     /**
-     *
-     */
-    virtual void set_mesh(Mesh *mesh) =0;
-
-    /**
      * Virtual destructor.
      */
-    virtual ~FieldCommonBase() {}
+    virtual ~FieldCommonBase();
 
 protected:
     std::string name_;
@@ -257,6 +249,8 @@ protected:
     IT::Default default_;
     /// Is true if the value returned by the field is based on Enum (i.e. constant value is initialized by some Input::Type::Selection)
     bool enum_valued_;
+
+    Mesh *mesh_;
 };
 
 
@@ -343,16 +337,6 @@ public:
     void set_time(double time);
 
     /**
-     * Set mesh to all fields.
-     */
-    virtual void set_mesh(Mesh *mesh);
-
-    /**
-     * Getter for mesh of the field.
-     */
-    Mesh * mesh();
-
-    /**
      * Special field values spatially constant. Could allow optimization of tensor multiplication and
      * tensor or vector addition. field_result_ should be set in constructor and in set_time method of particular Field implementation.
      * We return value @p result_none, if the field is not initialized on the region of the given element accessor @p elm.
@@ -375,7 +359,7 @@ public:
 
 private:
 
-    Mesh *mesh_;
+
     std::vector<FieldBaseType *> region_fields;
 };
 

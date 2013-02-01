@@ -157,7 +157,7 @@ void FieldBase<spacedim, Value>::value_list(const std::vector< Point<spacedim> >
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: FieldCommonBase(false), mesh_(NULL)
+: FieldCommonBase(false)
 {
     this->enum_valued_ = boost::is_same<typename Value::element_type, FieldEnum>::value;
 }
@@ -198,32 +198,17 @@ void Field<spacedim, Value>::set_field(Region reg, FieldBaseType * field) {
 
     ASSERT_SIZES( field->n_comp() , this->n_comp_);
     region_fields[reg.idx()] = field;
+    region_fields[reg.idx()]->set_mesh( this->mesh_ );
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_time(double time) {
+    // TODO: check values
     for(unsigned int i=0; i < region_fields.size(); i++) {
         if (region_fields[i])  region_fields[i]->set_time(time);
         //else  xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d.\n", name_.c_str(), Region::db().get_id(i) );
     }
-}
-
-
-
-template<int spacedim, class Value>
-void Field<spacedim, Value>::set_mesh(Mesh *mesh) {
-    mesh_=mesh;
-    for(unsigned int i=0; i < region_fields.size(); i++) {
-        if (region_fields[i])  region_fields[i]->set_mesh(mesh);
-    }
-}
-
-
-
-template<int spacedim, class Value>
-Mesh * Field<spacedim, Value>::mesh() {
-    return mesh_;
 }
 
 

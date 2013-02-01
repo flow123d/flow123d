@@ -55,9 +55,6 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
-void count_element_types(Mesh*);
-void read_node_list(Mesh*);
-
 
 using namespace Input::Type;
 

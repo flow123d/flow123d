@@ -268,6 +268,8 @@ public:
 
     virtual Region read_bulk_list_item(Input::Record rec);
 
+    virtual ~EqDataBase();
+
 protected:
     EqDataBase();
 

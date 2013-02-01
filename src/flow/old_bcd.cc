@@ -47,6 +47,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
 
     // check that all fields has same mesh, reuse it for reader
     mesh_=flow_type.mesh();
+    ASSERT(mesh_ , "Null mesh pointer.\n");
     ASSERT(mesh_==flow_pressure.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_pressure).\n");
     ASSERT(mesh_==flow_flux.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_flux).\n");
     ASSERT(mesh_==flow_sigma.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_sigma).\n");
@@ -65,6 +66,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
         double scalar, flux, sigma;
         unsigned int id;
 
+        xprintf(Msg, "Reading old BCD file for flow: %s ...", tok.f_name().c_str());
         tok.skip_to("$BoundaryConditions");
         tok.next_line(false);
         unsigned int n_boundaries = lexical_cast<unsigned int>(*tok); ++tok;
@@ -101,7 +103,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
 
             unsigned int eid, sid, bc_ele_idx;
             ElementIter ele;
-            SideIter sde;
+            Boundary * bcd;
 
             switch( where ) {
                 case 2: // SIDE_EL - BC given by element and its local side number
@@ -112,7 +114,9 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     ele = mesh_->element.find_id( eid );
                     if( sid < 0 || sid >= ele->n_sides() )
                          xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", id, sid );
-
+                    bcd = ele->side(sid) -> cond();
+                    if (! bcd)
+                        xprintf(UsrErr, "Setting boundary condition %d for non-boundary side %d of element ID: %d\n", id, sid, eid);
                     bc_ele_idx = mesh_->bc_elements.index( ele->side(sid) -> cond()->element() );
                     id_2_bcd_[id]= bc_ele_idx;
 
@@ -173,8 +177,8 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                 bcd->group = group_iter.index();   // in fact we do not use integres stored in the vector, but we use index
             }
             */
-
         }
+        xprintf(Msg, "DONE\n");
     } catch (bad_lexical_cast &) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
     } // flow bcd reader
@@ -193,6 +197,7 @@ void OldBcdInput::read_transport(const FilePath &transport_bcd,
     try {
         unsigned int bcd_id, boundary_id, bc_ele_idx;
 
+        xprintf(Msg, "Reading old BCD file for transport: %s ...", tok.f_name().c_str());
         tok.skip_to("$Transport_BCD");
         tok.next_line(false);
         unsigned int n_bcd = lexical_cast<unsigned int>(*tok); ++tok;
@@ -213,6 +218,7 @@ void OldBcdInput::read_transport(const FilePath &transport_bcd,
 
         }
 
+        xprintf(Msg, "DONE\n");
 
     } catch (bad_lexical_cast &) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());

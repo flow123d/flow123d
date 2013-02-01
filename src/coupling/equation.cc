@@ -151,6 +151,7 @@ void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::I
 
 void EqDataBase::set_mesh(Mesh *mesh) {
     mesh_=mesh;
+    BOOST_FOREACH(FieldCommonBase * field, field_list) field->set_mesh( mesh_ );
 }
 
 
@@ -224,6 +225,8 @@ Region EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     return reg;
 }
 
+
+EqDataBase::~EqDataBase() {}
 
 /*****************************************************************************************
  * Implementation of EquationNothing
