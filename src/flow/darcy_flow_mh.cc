@@ -149,7 +149,7 @@ it::AbstractRecord DarcyFlowMH::input_type
 //*/
 
 
-it::Selection DarcyFlowMH::DarcyFlowEqData::bc_type_selection =
+it::Selection DarcyFlowMH::EqData::bc_type_selection =
               it::Selection("EqData_bc_Type")
                .add_value(dirichlet, "dirichlet")
                .add_value(neumann, "neumann")
@@ -185,6 +185,7 @@ it::Record DarcyFlowMH_Steady::input_type
     .declare_key("bc_data", it::Array(
                 DarcyFlowMH_Steady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                .declare_key("flow_old_bcd_file", IT::FileName::input(), "")
                 ), it::Default::obligatory(), ""  )
     .declare_key("bulk_data", it::Array(
                 DarcyFlowMH_Steady::EqData().bulk_input_type()
@@ -202,6 +203,7 @@ it::Record DarcyFlowMH_Unsteady::input_type
   .declare_key("bc_data", it::Array(
                 DarcyFlowMH_Unsteady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                .declare_key("flow_old_bcd_file", IT::FileName::input(), "")
                 ), it::Default::obligatory(), ""  )
   .declare_key("bulk_data", it::Array(
                 DarcyFlowMH_Unsteady::EqData().bulk_input_type()
@@ -219,12 +221,71 @@ it::Record DarcyFlowLMH_Unsteady::input_type
     .declare_key("bc_data", it::Array(
                 DarcyFlowLMH_Unsteady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                .declare_key("flow_old_bcd_file", IT::FileName::input(), "")
                 ), it::Default::obligatory(), ""  )
     .declare_key("bulk_data", it::Array(
                 DarcyFlowLMH_Unsteady::EqData().bulk_input_type()
                 .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
                 ), it::Default::obligatory(), "");
     
+
+
+
+
+
+
+
+DarcyFlowMH::EqData::EqData(const std::string &name)
+: EqDataBase(name)
+{
+    ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
+    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
+    ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
+    ADD_FIELD(bc_type,"Boundary condition type, possible values:");
+              bc_type.set_selection(&bc_type_selection);
+    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
+    ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
+}
+
+
+
+Region DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
+    Region region=EqDataBase::read_boundary_list_item(rec);
+    Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
+    if (field_it) {
+        DBGMSG("piezo head read_b_list_Data\n");
+
+        //bc_pressure(region)->init_from_input(*field_it);
+        bc_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
+    }
+    FilePath flow_bcd_file;
+    if (rec.opt_val("flow_old_bcd_file", flow_bcd_file) ) {
+        OldBcdInput::instance()->read_flow(flow_bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
+    }
+    return region;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
@@ -242,6 +303,9 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 : DarcyFlowMH(mesh_in, in_rec)
 
 {
+    using namespace Input;
+    F_ENTRY;
+
     //connecting data fields with mesh
     data.set_mesh(&mesh_in);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
@@ -251,9 +315,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     //initializing data fields at the beginning (time = 0)
     data.set_time(*time_);
-    
-    using namespace Input;
-    F_ENTRY;
     
     int ierr;
 
@@ -286,6 +347,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         sources->setup_from_function(*it_f);
     }
 
+    /*
     Iterator<Record> it_bc = in_rec.find<Record>("boundary_conditions");
     if (it_bc) {
         bc_function = FunctionBase<3>::function_factory(it_bc->val<AbstractRecord>("value"));
@@ -297,7 +359,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     } else {
         read_boundary(mesh_, in_rec.val<FilePath>("boundary_file", FilePath("NO_BCD_FILE", FilePath::input_file) ) );
         bc_function=NULL;
-    }
+    }*/
     
 
     // init paralel structures
@@ -516,6 +578,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides();
         if (fill_matrix) fe_values.update(ele, data.cond_anisothropy, data.cross_section);
+        double cross_section = data.cross_section.value(ele->centre(), ele->element_accessor());
 
         for (i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
@@ -529,6 +592,29 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             double c_val = 1.0;
 
             if (bcd) {
+                ElementAccessor<3> b_ele = bcd->element_accessor();
+                EqData::BC_Type type = (EqData::BC_Type)data.bc_type.value(b_ele.centre(), b_ele);
+                if ( type == EqData::dirichlet ) {
+                    c_val = 0.0;
+                    double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
+                    loc_side_rhs[i] -= bc_pressure;
+                    ls->rhs_set_value(edge_row, -bc_pressure);
+                    ls->mat_set_value(edge_row, edge_row, -1.0);
+
+                } else if ( type == EqData::neumann) {
+                    double bc_flux = data.bc_flux.value(b_ele.centre(), b_ele);
+                    ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
+
+                } else if ( type == EqData::robin) {
+                    double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_sigma = data.bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
+                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
+
+                } else {
+                    xprintf(UsrErr, "BC type not supported.\n");
+                }
+                /*
                 if (bc_function) {
                     START_TIMER("FIND INTERPOLATION");
 
@@ -560,7 +646,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * 
                                       data.cross_section.value(ele->centre(), ele->element_accessor()) * 
                                       bcd->sigma );
-                }
+                }*/
             }
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
@@ -707,8 +793,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     left_idx[0] = row_4_edge[master_iter->side(0)->edge_idx()];
                     left_idx[1] = row_4_edge[master_iter->side(1)->edge_idx()];
                     // Dirichlet bounndary conditions
-                     if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) l_dirich[0]=1; else l_dirich[0]=0;
-                     if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) l_dirich[1]=1; else l_dirich[1]=0;
+                    // if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) l_dirich[0]=1; else l_dirich[0]=0;
+                    // if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) l_dirich[1]=1; else l_dirich[1]=0;
                     l_size = 2;
                 } else {
                     l_dirich[0]=0;
@@ -729,8 +815,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                         right_idx[0] = row_4_edge[master_iter->side(0)->edge_idx()];
                         right_idx[1] = row_4_edge[master_iter->side(1)->edge_idx()];
                         // Dirichlet bounndary conditions
-                         if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) r_dirich[0]=1; else r_dirich[0]=0;
-                         if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) r_dirich[1]=1; else r_dirich[1]=0;
+                        // if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) r_dirich[0]=1; else r_dirich[0]=0;
+                        // if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) r_dirich[1]=1; else r_dirich[1]=0;
                         r_size = 2;
                     } else {
                         r_dirich[0]=0;
@@ -752,7 +838,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     }
                     for(int jj=0;jj<r_size;jj++) if (r_dirich[jj])
                         for(int ii=0;ii<l_size;ii++) {
-                            schur0->rhs_set_value(left_idx[ii], -master_iter->side(jj)->cond()->scalar * product(ii,jj));
+                            //schur0->rhs_set_value(left_idx[ii], -master_iter->side(jj)->cond()->scalar * product(ii,jj));
                             product(ii,jj)=0.0;
                         }
 
@@ -877,13 +963,13 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
 
         // Dirichlet bounndary conditions
         side1=intersec->master_iter()->side(0);
-        if (side1->cond() != NULL && side1->cond()->type == DIRICHLET) dirich[3]=1;
+        //if (side1->cond() != NULL && side1->cond()->type == DIRICHLET) dirich[3]=1;
         side2=intersec->master_iter()->side(1);
-        if (side2->cond() !=NULL && side2->cond()->type == DIRICHLET) dirich[4]=1;
+        //if (side2->cond() !=NULL && side2->cond()->type == DIRICHLET) dirich[4]=1;
         if (dirich[3]) {
             //DBGMSG("Boundary %d %f\n",idx[3],side1->cond()->scalar);
             for(int i=0;i<5;i++)  if (! dirich[i]) {
-                ls->rhs_set_value(idx[i], -side1->cond()->scalar * A(i,3));
+                //ls->rhs_set_value(idx[i], -side1->cond()->scalar * A(i,3));
                 A(i,3)=0; A(3,i)=0;
             }
             A(3,3)=0.0;
@@ -891,7 +977,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
         if (dirich[4]) {
             //DBGMSG("Boundary %d %f\n",idx[4],side2->cond()->scalar);
             for(int i=0;i<5;i++)  if (! dirich[i]) {
-                ls->rhs_set_value(idx[i], -side2->cond()->scalar * A(i,4));
+                //ls->rhs_set_value(idx[i], -side2->cond()->scalar * A(i,4));
                 A(i,4)=0; A(4,i)=0;
             }
             A(4,4)=0.0;

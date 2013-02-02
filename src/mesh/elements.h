@@ -67,8 +67,6 @@ public:
     arma::vec3 centre();
 
     unsigned int n_sides_by_dim(int side_dim);
-    //void *side_by_dim(int side_dim, unsigned int n);
-    const Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
     inline SideIter side(const unsigned int loc_index);
     inline Region region() { return region_; }
     

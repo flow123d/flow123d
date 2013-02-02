@@ -90,10 +90,10 @@ protected:
     class EqData : public EqDataBase {
     public:
         enum BC_type {
-            dirichlet,
-            neumann,
-            robin,
-            total_flux
+            dirichlet=1,
+            neumann=2,
+            robin=3,
+            total_flux=4
         };
 
         static IT::Selection bc_type_selection;
@@ -300,55 +300,19 @@ TEST_F(SomeEquation, values) {
 
 TEST_F(SomeEquation, old_bcd_input) {
     read_input(eq_data_old_bcd);
-    /*
+
     Point<3> p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
     DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
 
-    ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
-    EXPECT_EQ(37, el_1d.region_id());
-    ElementAccessor<3> el_2d=mesh->element_accessor(1); // region 38 "2D XY diagonal"
-    EXPECT_EQ(38, el_2d.region_id());
-    ElementAccessor<3> el_3d=mesh->element_accessor(3); // region 39 "3D back"
-    EXPECT_EQ(39, el_3d.region_id());
-    ElementAccessor<3> el_bc_top=mesh->element_accessor(0,true); // region 101 ".top side"
-    EXPECT_EQ(101, el_bc_top.region_id());
-    ElementAccessor<3> el_bc_bottom=mesh->element_accessor(2,true); // region 102 ".top side"
-    EXPECT_EQ(102, el_bc_bottom.region_id());
 
-    // bulk fields
-    EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
+    // Four bc elements are read with mesh, corresponding to BCD IDs:
+    // 7, 17, 10, 12
+    // The bcd IDs  order in the bc_vector: 7, 17, 10, 12, 0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15, 16
+    EXPECT_EQ(EqData::dirichlet, (EqData::BC_type)data.bc_type.value(p, mesh->element_accessor(4, true)));
+    EXPECT_DOUBLE_EQ(1.0, data.bc_pressure.value(p, mesh->element_accessor(4, true)) );
 
-    FieldValue<3>::TensorFixed::return_type value = data.cond_anisothropy.value(p, el_1d);
-    EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
-    EXPECT_DOUBLE_EQ( 0.0, value.at(0,1) );
-    EXPECT_DOUBLE_EQ( 0.0, value.at(0,2) );
-
-    EXPECT_DOUBLE_EQ( 0.0, value.at(1,0) );
-    EXPECT_DOUBLE_EQ( 1.0, value.at(1,1) );
-    EXPECT_DOUBLE_EQ( 0.0, value.at(1,2) );
-
-    EXPECT_DOUBLE_EQ( 0.0, value.at(2,0) );
-    EXPECT_DOUBLE_EQ( 0.0, value.at(2,1) );
-    EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
-
-    EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
-
-    // init_conc - variable length vector
-    FieldValue<3>::Vector::return_type conc = data.init_conc.value(p, el_1d);
-    EXPECT_EQ(1 ,conc.n_cols);
-    EXPECT_EQ(4 ,conc.n_rows);
-    EXPECT_DOUBLE_EQ(1 ,conc[0]);
-    EXPECT_DOUBLE_EQ(2 ,conc[1]);
-    EXPECT_DOUBLE_EQ(3 ,conc[2]);
-    EXPECT_DOUBLE_EQ(4 ,conc[3]);
-
-    //boundary fields
-    EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_top) );
-    EXPECT_DOUBLE_EQ(1.23, data.bc_pressure.value(p, el_bc_top) );    // pressure
-
-    EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_bottom) );
-    EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, el_bc_bottom) );    // piezo_head
-    */
+    EXPECT_EQ(EqData::dirichlet, (EqData::BC_type)data.bc_type.value(p, mesh->element_accessor(10, true)));
+    EXPECT_DOUBLE_EQ(7.0, data.bc_pressure.value(p, mesh->element_accessor(10, true)) );
 }

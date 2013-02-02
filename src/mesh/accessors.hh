@@ -13,6 +13,7 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include <armadillo>
 
 /**
  * Element accessor templated just by dimension of the embedding space, used by Fields.
@@ -42,6 +43,11 @@ public:
         if (boundary_) return &(mesh_->bc_elements[element_idx_]);
         else return &(mesh_->element[element_idx_]);
     }
+
+    inline arma::vec::fixed<spacedim> centre() const {
+        return element()->centre();
+    }
+
 
     inline Region region() const
         { return element()->region(); }

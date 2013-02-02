@@ -82,6 +82,7 @@
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
+#include "flow/old_bcd.hh"
 //*/
 
 /// external types:
@@ -145,39 +146,29 @@ public:
     /** @brief Data for Darcy flow equation.
      *  
      */
-    class DarcyFlowEqData : public EqDataBase {
+    class EqData : public EqDataBase {
     public:
 
-        enum BC_type {
-            dirichlet,
-            neumann,
-            robin,
-            total_flux
+        /**
+         * For compatibility with old BCD file we have to assign integer codes starting from 1.
+         */
+        enum BC_Type {
+            dirichlet=1,
+            neumann=2,
+            robin=3,
+            total_flux=4
         };
-
         static Input::Type::Selection bc_type_selection;
 
-        DarcyFlowEqData(const std::string &name) : EqDataBase(name) {
-            ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
-            ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
-            ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
-            ADD_FIELD(bc_type,"Boundary condition type, possible values:");
-                      bc_type.set_selection(&bc_type_selection);
-            ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
-        }
+        /// Collect all fields
+        EqData(const std::string &name=0);
 
-        Region read_boundary_list_item(Input::Record rec) {
-            Region region=EqDataBase::read_boundary_list_item(rec);
-            Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
-            if (field_it) {
-                //bc_pressure(region)->init_from_input(*field_it);
-                bc_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
-            }
-        }
-
-        Region read_bulk_list_item(Input::Record rec) {
-            Region region=EqDataBase::read_bulk_list_item(rec);
-        }
+        /**
+         * Overrides EqDataBase::read_boundary_list_item, implements reading of
+         * - bc_piezo_head key
+         * - flow_old_bcd_file
+         */
+        Region read_boundary_list_item(Input::Record rec);
        
         Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
@@ -219,7 +210,7 @@ public:
     }
     
     //returns reference to equation data
-    virtual DarcyFlowEqData &get_data() = 0;
+    virtual EqData &get_data() = 0;
 
 protected:
     void setup_velocity_vector() {
@@ -237,7 +228,6 @@ protected:
     //virtual void integrate_sources();
 
 protected:  
-    //BoundaryData<DarcyFlowMH_BC> bc_data_;
     FunctionBase<3> *bc_function;
     FieldP0<double> *sources;
     
@@ -281,10 +271,10 @@ class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
   
-    class EqData : public DarcyFlowMH::DarcyFlowEqData{
+    class EqData : public DarcyFlowMH::EqData {
     public:
       
-      EqData() : DarcyFlowEqData("DarcyFlowMH_Steady") 
+      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Steady")
       {}
     };
     
@@ -297,7 +287,7 @@ public:
     virtual void get_parallel_solution_vector(Vec &vector);
     
     //returns reference to equation data
-    virtual DarcyFlowMH::DarcyFlowEqData &get_data()
+    virtual DarcyFlowMH::EqData &get_data()
     {return data;}
 
     /// postprocess velocity field (add sources)
@@ -388,10 +378,10 @@ class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
-    class EqData : public DarcyFlowMH::DarcyFlowEqData{
+    class EqData : public DarcyFlowMH::EqData{
     public:
       
-      EqData() : DarcyFlowEqData("DarcyFlowMH_Unsteady") {
+      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Unsteady") {
 
             ADD_FIELD(init_pressure, "Initial condition as pressure");
             ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
@@ -405,7 +395,7 @@ public:
     DarcyFlowMH_Unsteady();
 
     //returns reference to equation data
-    virtual DarcyFlowMH::DarcyFlowEqData &get_data()
+    virtual DarcyFlowMH::DarcyFlowMH::EqData &get_data()
     {return data;}
     
     static Input::Type::Record input_type;
@@ -438,10 +428,10 @@ class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
-    class EqData : public DarcyFlowMH::DarcyFlowEqData{
+    class EqData : public DarcyFlowMH::EqData{
     public:
       
-      EqData() : DarcyFlowEqData("DarcyFlowLMH_Unsteady") {
+      EqData() : DarcyFlowMH::EqData("DarcyFlowLMH_Unsteady") {
 
             ADD_FIELD(init_pressure, "Initial condition as pressure");
             ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
@@ -455,7 +445,7 @@ public:
     DarcyFlowLMH_Unsteady();
 
     //returns reference to equation data
-    virtual DarcyFlowMH::DarcyFlowEqData &get_data()
+    virtual DarcyFlowMH::EqData &get_data()
     {return data;}
     
     static Input::Type::Record input_type;

@@ -92,9 +92,8 @@ Record Mesh::input_type
                     "List of regions sets whose regions will be marked as boundary.")
             .close(),
             Default::optional(),
-            "")
-    .declare_key("neighbouring", FileName::input(), Default::obligatory(),
-    		"File with mesh connectivity data.");
+            "");
+
 
 const unsigned int Mesh::undef_idx;
 

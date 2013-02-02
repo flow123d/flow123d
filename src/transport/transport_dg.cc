@@ -660,8 +660,9 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         // 1) postprocessing of flow solution, set flux DOFs to zero on Neuman boundaries
         // 2) modify following condition to select Neuman BC in transport if flux is smaller then tolerance of lin. solver * some const, or matrix diagonal (think carefully)
         //
-        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux
-                || (edge->side(0)->cond()->type == 2 /* Neuman*/ && edge->side(0)->cond()->flux == 0.0) ) continue;
+        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
+                // || (edge->side(0)->cond()->type == 2 /* Neuman*/ && edge->side(0)->cond()->flux == 0.0) )
+                // NEED FIX
 
         side_K.resize(edge->n_sides);
         side_velocity.resize(edge->n_sides);
@@ -851,8 +852,9 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
         double elem_flux = 0;
         for (int i=0; i<b->side()->element()->n_sides(); i++)
         	elem_flux += fabs( mh_dh->side_flux( *(b->side()->element()->side(i)) ) );
-        if (mh_dh->side_flux( *(b->side()) ) >= -tol_switch_dirichlet_neumann*elem_flux
-                || (b->type == 2 /* Neuman*/ && b->flux == 0.0) ) continue;
+        if (mh_dh->side_flux( *(b->side()) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
+                // || (b->type == 2 /* Neuman*/ && b->flux == 0.0) ) continue;
+                // NEED FIX
 
         fe_values_side.reinit(cell, b->side());
         dh->get_dof_indices(cell, side_dof_indices);

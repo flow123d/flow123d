@@ -194,7 +194,7 @@ endif()
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 #set_target_properties(system_lib PROPERTIES COMPILE_FLAGS "-std=gnu++0x")
 
 # when the precompiled headers are used in the future

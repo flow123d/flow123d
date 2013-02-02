@@ -39,8 +39,7 @@ flow::VectorId<unsigned int> Boundary::id_to_bcd;
 
 
 Boundary::Boundary()
-: type(2), flux(0.0),
-  edge_idx_(Mesh::undef_idx), bc_ele_idx_(Mesh::undef_idx),
+: edge_idx_(Mesh::undef_idx), bc_ele_idx_(Mesh::undef_idx),
   mesh_(NULL)
 {}
 
@@ -65,6 +64,7 @@ ElementAccessor<3> Boundary::element_accessor()
 //=============================================================================
 void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 {
+/*
 	FILE	*in;		  // input file
 	char     line[ LINE_SIZE ]; // line of data file
 //	int where;
@@ -74,7 +74,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh);
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_boundary_list()\n");
-	xprintf( Msg, "Reading boundary conditions...")/*orig verb 2*/;
+	xprintf( Msg, "Reading boundary conditions...");
 
 	in = xfopen( boundary_filename, "rt" );
 	skip_to( in, "$BoundaryConditions" );
@@ -190,14 +190,16 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 group_iter = mesh->bcd_group_id.add_item(group_id);
             }
             bcd->group = group_iter.index();   // in fact we do not use integres stored in the vector, but we use index
-        }*/
+        }
 
 
 	}
 
 	xfclose( in );
-	xprintf( MsgVerb, " %d conditions readed. ", mesh->n_boundaries() )/*orig verb 4*/;
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
+	xprintf( MsgVerb, " %d conditions readed. ", mesh->n_boundaries() );
+	xprintf( Msg, "O.K.\n");
+
+	*/
 }
 
 

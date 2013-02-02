@@ -38,10 +38,8 @@
  *  - Question: Support keys with multiple possible types:
  *    we declare more keys like: region_set_INTEGER, region_set_STRING, region_set_ARRAY, but user specify just
  *    region_set=..., and appropriate key is used.
- *  - NEED better access method for optional keys, so that we do not need to declare iterator. So better:
- *    if (rec.val( const string &key_name, TYPE & variable)) {
- *       ... use variable
- *    }
+ *
+ *  - non-polymorph inheritance of Records, in fact just copy of keys of one record to another + posibility to extend them
  *
  *  Notes:
  *  - copy constructors and usage of Pimpl idiom for more complex types is necessary due to usage of shared pointers - to create them we need copies

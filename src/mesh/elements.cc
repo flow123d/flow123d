@@ -115,6 +115,7 @@ double Element::measure() {
                 ) / 6.0;
             break;
     }
+    return 1.0;
 }
 
 
@@ -139,6 +140,7 @@ arma::vec3 Element::centre() {
 /**
  * Count element sides of the space dimension @p side_dim.
  */
+
 unsigned int Element::n_sides_by_dim(int side_dim)
 {
     if (side_dim == dim()) return 1;
@@ -149,79 +151,6 @@ unsigned int Element::n_sides_by_dim(int side_dim)
     return n;
 }
 
-/**
- * Return pointer to @p nth side/node/element (depending on the dimension @p side_dim).
- */
-/*
-void *Element::side_by_dim(int side_dim, unsigned int n)
-{
-    if (side_dim == 0)
-    {
-        // TODO: Maybe here we should also return a side?
-
-        return node[n];
-    }
-    else if (side_dim == dim)
-    {
-        ASSERT(n==0, "Number of side is out of range.");
-        return this;
-    }
-    else
-    {
-        unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides(); i++)
-        {
-            if (side(i)->dim() == side_dim)
-            {
-                if (count == n)
-                {
-                    return side(i);
-                }
-                else
-                {
-                    count++;
-                }
-            }
-        }
-        xprintf(Warn, "Side not found.");
-    }
-}
-*/
-
-/**
- * Return pointer to the @p node_id-th node of the side.
- */
-const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
-{
-    if (side_dim == 0)
-    {
-        return node[side_id];
-    }
-    else if (side_dim == dim())
-    {
-        ASSERT(side_id==0, "Number of side is out of range.");
-        return this->node[node_id];
-    }
-    else
-    {
-        unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides(); i++)
-        {
-            if (side(i)->dim() == side_dim)
-            {
-                if (count == side_id)
-                {
-                    return side(i)->node(node_id);
-                }
-                else
-                {
-                    count++;
-                }
-            }
-        }
-        xprintf(Warn, "Side not found.");
-    }
-}
 
 ElementAccessor< 3 > Element::element_accessor()
 {

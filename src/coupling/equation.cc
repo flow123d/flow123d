@@ -213,7 +213,6 @@ Region EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     BOOST_FOREACH(FieldCommonBase * field, field_list) {
         if (bc_regions == field->is_bc()) {
             Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>(field->name());
-            DBGMSG("reading field %s %d\n", field->name().c_str(), int(field_it) );
             if (field_it) {
                 field->set_from_input(reg,*field_it);
                 field->set_mesh(mesh_);

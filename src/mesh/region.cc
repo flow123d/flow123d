@@ -119,6 +119,7 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
                 else xprintf(PrgErr, "Rotten inconsistency.\n");
         }
     }
+    return Region(); // should not happen
 }
 
 
