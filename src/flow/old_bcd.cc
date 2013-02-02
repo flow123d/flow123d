@@ -198,6 +198,7 @@ void OldBcdInput::read_transport(const FilePath &transport_bcd,
         unsigned int bcd_id, boundary_id, bc_ele_idx;
 
         xprintf(Msg, "Reading old BCD file for transport: %s ...", tok.f_name().c_str());
+        if (tok.skip_to("$Transport_BCDFormat")) tok.next_line(false);
         tok.skip_to("$Transport_BCD");
         tok.next_line(false);
         unsigned int n_bcd = lexical_cast<unsigned int>(*tok); ++tok;

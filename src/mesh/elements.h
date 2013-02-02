@@ -83,7 +83,7 @@ public:
     // Type specific data
     Node** node;    // Element's nodes
 
-    MaterialDatabase::Iter material; // Element's material
+//    MaterialDatabase::Iter material; // Element's material
 
     unsigned int *edge_idx_; // Edges on sides
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries

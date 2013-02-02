@@ -38,7 +38,6 @@ class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
-class TransportBC;
 
 
 /**
@@ -130,6 +129,13 @@ public:
 	 * @brief Postprocesses the solution and writes to output file.
 	 */
 	void output_data();
+
+    /**
+     * @brief Sets pointer to data of other equations.
+     * TODO: there should be also passed the sigma parameter between dimensions
+     * @param cross_section is pointer to cross_section data of Darcy flow equation
+     */
+	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
 
 	/**
 	 * @brief Destructor.
@@ -368,17 +374,6 @@ private:
 	const double advection;
 	// @}
 
-
-	/// @name Boundary conditions
-	// @{
-
-	/// Time marks for boundary conditions.
-	TimeMark::Type bc_mark_type_;
-
-	/// Reader of boundary conditions.
-	TransportBC *bc;
-
-	// @}
 
 
 	/// @name Solution of algebraic system

@@ -29,6 +29,7 @@ std::string &scalar_value_conversion(StringTensor &ref) {
 
 template class FieldValue_<1,1,FieldEnum>;
 template class FieldValue_<1,1,int>;
+template class FieldValue_<0,1,int>;
 template class FieldValue_<1,1,double>;
 template class FieldValue_<0,1,double>;
 

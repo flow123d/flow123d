@@ -60,15 +60,29 @@
         TYPE = "Petsc", 
         accuracy = 1e-07
       },
-      bc_data=[],
+      bc_data=[
+        {
+          region="IMPLICIT BOUNDARY",
+          bc_conc={
+            TYPE="FieldFormula",
+            value="(1+sin(t))*0.5"
+          }
+        }
+      ],
       bulk_data=[
         {
           rid=48,
-          init_conc=0
+          init_conc={
+            TYPE="FieldFormula",
+            value="floor((13-x)/7)"
+          }
         },
         {
           rid=184,
-          init_conc=0
+          init_conc={
+            TYPE="FieldFormula",
+            value="floor((13-x)/7)"
+          }
         }
       ]
     }

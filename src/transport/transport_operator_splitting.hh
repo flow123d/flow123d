@@ -40,7 +40,22 @@ public:
 		TransportEqData(const std::string& eq_name);
 		virtual ~TransportEqData() {};
 
-		Field<3, FieldValue<3>::Vector> init_conc;
+        Region read_boundary_list_item(Input::Record rec);
+
+		Field<3, FieldValue<3>::Vector> init_conc; ///< Initial concentrations.
+		Field<3, FieldValue<3>::Scalar> por_m;     ///< Mobile porosity
+
+		/**
+		 * Boundary conditions (Dirichlet) for concentrations.
+		 * They are applied only in water inflow.
+		 */
+		BCField<3, FieldValue<3>::Vector> bc_conc;
+
+		/// Pointer to DarcyFlow field cross_section
+		Field<3, FieldValue<3>::Scalar > *cross_section;
+
+		int bc_time_level;
+		vector<double> bc_times;
 
 	};
 
@@ -107,9 +122,15 @@ public:
 	public:
 
 		EqData();
-    
-    Field<3, FieldValue<3>::Scalar > *cross_section;
 
+		Field<3, FieldValue<3>::Scalar> por_imm;   ///< Immobile porosity
+		Field<3, FieldValue<3>::Vector> alpha;	   ///< Coefficients of non-equilibrium exchange
+// TODO: sorp_type should be IntVector
+		Field<3, FieldValue<3>::Vector> sorp_type;///< Type of sorption for each substance
+		Field<3, FieldValue<3>::Vector> sorp_coef0;///< Coefficient of sorption for each substance
+		Field<3, FieldValue<3>::Vector> sorp_coef1;///< Coefficient of sorption for each substance
+		Field<3, FieldValue<3>::Scalar> phi;       ///< solid / solid mobile
+    
 	};
 
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
@@ -135,13 +156,13 @@ public:
     virtual void get_solution_vector(double* &vector, unsigned int &size);
     void compute_until_save_time();
    
-    /** 
-     * @brief Sets pointer to data of other equations. 
-     * TODO: there should be also passed the sigma parameter between dimensions 
+    /**
+     * @brief Sets pointer to data of other equations.
+     * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
     void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
-   
+
 protected:
 
 private:

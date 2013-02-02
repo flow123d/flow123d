@@ -439,6 +439,7 @@ struct FieldValue {
     typedef FieldValue_<1,1,double>         Scalar;
     typedef FieldValue_<spacedim,1,double>  VectorFixed;
     typedef FieldValue_<0,1,double>         Vector;
+    typedef FieldValue_<0,1,int>            IntVector;
     typedef FieldValue_<spacedim,spacedim,double> TensorFixed;
 };
 

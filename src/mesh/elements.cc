@@ -50,7 +50,7 @@ Element::Element()
 
   node(NULL),
 
-  material(NULL),
+//  material(NULL),
   edge_idx_(NULL),
   boundary_idx_(NULL),
 
@@ -72,7 +72,7 @@ Element::Element(unsigned int dim, Mesh *mesh_in, Region reg)
 
 void Element::init(unsigned int dim, Mesh *mesh_in, Region reg) {
     pid=0;
-    material=NULL;
+//    material=NULL;
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
