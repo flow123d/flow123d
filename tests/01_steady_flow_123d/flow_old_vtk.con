@@ -2,15 +2,12 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
-    material = "./input/test1.mtr", 
     mesh = {
-      mesh_file = "./input/test1.msh", 
-      neighbouring = "./input/test2.ngh"
+      mesh_file = "./input/old_mesh.msh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test1.fbc", 
       n_schurs = 2, 
 
       bulk_data = [
@@ -28,7 +25,11 @@
         }
       ],
       
-      bc_data = [],
+      bc_data = [
+        { region="IMPLICIT BOUNDARY",
+          flow_old_bcd_file="${INPUT}/old_mesh.fbc"
+        }
+      ],
 
       output = {
         balance_output = "water_balance.out", 

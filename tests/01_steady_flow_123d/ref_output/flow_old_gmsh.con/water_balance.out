@@ -1,4 +1,4 @@
 ********************************
 Boundary fluxes at time inf:
 [total balance]    [total outflow]     [total inflow]
-boundary #1	-4.79838e-11	2.2107	-2.2107
+boundary id:-3 label:'IMPLICIT BOUNDARY'	-2.40086e-11	2.2107	-2.2107

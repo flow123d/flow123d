@@ -49,8 +49,6 @@ it::AbstractRecord CouplingBase::input_type
     .declare_key("description",it::String(),
             "Short description of the solved problem.\n"
             "Is displayed in the main log, and possibly in other text output files.")
-	.declare_key("material", it::FileName::input(),it::Default::obligatory(),
-			"File with material information.")
 	.declare_key("mesh", Mesh::input_type, it::Default::obligatory(),
             "Computational mesh common to all equations.");
 
@@ -83,7 +81,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     //main_time_marks = new TimeMarks();
 
     // Material Database
-    material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
+    // material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
 
     // Read mesh
     {
@@ -251,7 +249,7 @@ void HC_ExplicitSequential::run_simulation()
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
     delete mesh;
-    delete material_database;
+    //delete material_database;
     delete water;
     delete water_output;
     delete transport_reaction;

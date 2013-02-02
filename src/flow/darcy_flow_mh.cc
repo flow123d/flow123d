@@ -173,8 +173,8 @@ it::AbstractRecord DarcyFlowMH::input_type=
                 "File with water source field.")
         .declare_key("sources_formula", it::String(),
                 "Formula to determine the source field.")
-        .declare_key("boundary_file", it::FileName::input(),it::Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
-                "File with boundary conditions for MH solver.")
+        //.declare_key("boundary_file", it::FileName::input(),it::Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
+        //        "File with boundary conditions for MH solver.")
         .declare_key("boundary_conditions", bc_segment_rec, it::Default::optional(),
                 "Specification of boundary conditions.");
 
