@@ -200,12 +200,12 @@ Region EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     // get the region
     if (it) {
         // try find region by label
-        reg = Region::db().find_label(*it);
+        reg = mesh_->region_db().find_label(*it);
         if (! reg.is_valid() ) xprintf(UsrErr, "Unknown region with label: '%s'\n", (*it).c_str());
     } else {
         // try find region by ID
         Input::Iterator<unsigned int> id_it = rec.find<unsigned int>("rid");
-        reg = Region::db().find_id(*id_it);
+        reg = mesh_->region_db().find_id(*id_it);
         if (! reg.is_valid() ) xprintf(UsrErr, "Unknown region with id: '%d'\n", *id_it);
     }
 

@@ -228,6 +228,7 @@ void Mesh::setup_topology(istream *in) {
         neighbours_.swap(empty_vec);
     }
 
+    region_db_.close();
 }
 
 
@@ -433,7 +434,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill boundary element
                     ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
-                    bc_ele->init(e->dim()-1, this, RegionDB::implicit_boundary);
+                    bc_ele->init(e->dim()-1, this, region_db_.implicit_boundary() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
                     // fill Boundary object

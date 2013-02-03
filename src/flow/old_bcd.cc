@@ -8,6 +8,7 @@
 
 #include "flow/old_bcd.hh"
 #include "fields/field_elementwise.hh"
+#include "mesh/region.hh"
 
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
@@ -21,15 +22,18 @@ OldBcdInput * OldBcdInput::instance() {
 template <int spacedim, class Value>
 void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
     FieldElementwise<spacedim, Value> *in_field=new FieldElementwise<spacedim, Value>(target.n_comp());
-    for(unsigned int i=0; i<Region::db().size(); i++)
-        if ( Region(i).is_boundary() ) target.set_field(Region(i), in_field);
+    const RegionSet & b_set = mesh->region_db().get_region_set("BOUNDARY");
+    for(RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
+        target.set_field( *reg, in_field);
     target.set_mesh(mesh);
 
 }
 
 template <int spacedim, class Value>
 void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val) {
-    static_cast<FieldElementwise<spacedim, Value> *>(target(RegionDB::implicit_boundary))->set_data_row(bcd_ele_idx, val);
+    static_cast<FieldElementwise<spacedim, Value> *>(
+            target( target.mesh()->region_db().implicit_boundary()) // take any pointer from the Field table, since all points to the same object
+            )->set_data_row(bcd_ele_idx, val);
 }
 
 

@@ -647,9 +647,9 @@ void DarcyFlowMHOutput::water_balance() {
     double bal;
     int c_water;
     struct Boundary *bcd;
-    std::vector<double> bcd_balance( Region::db().size(), 0.0 );
-    std::vector<double> bcd_plus_balance( Region::db().size(), 0.0 );
-    std::vector<double> bcd_minus_balance( Region::db().size(), 0.0 );
+    std::vector<double> bcd_balance( mesh_->region_db().size(), 0.0 );
+    std::vector<double> bcd_plus_balance( mesh_->region_db().size(), 0.0 );
+    std::vector<double> bcd_minus_balance( mesh_->region_db().size(), 0.0 );
 
     fprintf(balance_output_file,"********************************\n");
     fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
@@ -667,9 +667,9 @@ void DarcyFlowMHOutput::water_balance() {
     }
 
 
-    DBGMSG("DB size: %u\n", Region::db().size());
-    for(vector<RegionIdx>::const_iterator reg = Region::db().boundary_regions().begin();
-            reg != Region::db().boundary_regions().end(); ++reg) {
+    DBGMSG("DB size: %u\n", mesh_->region_db().size());
+    const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+    for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
         fprintf(balance_output_file, "boundary id:%d label:'%s'\t%g\t%g\t%g\n", reg->id(), reg->label().c_str(),
                 bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
     }
@@ -679,7 +679,7 @@ void DarcyFlowMHOutput::water_balance() {
     if (p_sources != NULL) {
 
         fprintf(balance_output_file,"\nSource fluxes over material subdomains:\n");
-        std::vector<double> src_balance( Region::db().size(), 0.0 ); // initialize by zero
+        std::vector<double> src_balance( mesh_->region_db().size(), 0.0 ); // initialize by zero
 
         FOR_ELEMENTS(mesh_, elm) {
             src_balance[elm->element_accessor().region().idx()] += elm->measure() * 
@@ -687,9 +687,9 @@ void DarcyFlowMHOutput::water_balance() {
                 p_sources->element_value(elm.index());
         }
         
-        DBGMSG("DB size: %u\n", Region::db().size());
-        for(vector<Region>::const_iterator reg = Region::db().bulk_regions().begin();
-            reg != Region::db().bulk_regions().end(); ++reg) 
+        DBGMSG("DB size: %u\n", mesh_->region_db().size());
+        const RegionSet & bulk_set = mesh_->region_db().get_region_set("BOUNDARY");
+        for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
           {
             fprintf(balance_output_file, "region id:%d label:'%s'\t%g\n", reg->id(),
                     reg->label().c_str(), src_balance[reg->idx()]);

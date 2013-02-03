@@ -52,10 +52,13 @@ public:
     inline Region region() const
         { return element()->region(); }
 
+    inline RegionIdx region_idx() const
+        { return element()->region_idx(); }
+
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
-    inline unsigned int region_id() const {
-        return element()->region().id();
-    }
+    //inline unsigned int region_id() const {
+    //    return region().id();
+    //}
 
     //const BoundingBox &bounding_box();
 

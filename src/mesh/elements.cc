@@ -63,21 +63,21 @@ Element::Element()
 }
 
 
-Element::Element(unsigned int dim, Mesh *mesh_in, Region reg)
+Element::Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg)
 {
     init(dim, mesh_in, reg);
 }
 
 
 
-void Element::init(unsigned int dim, Mesh *mesh_in, Region reg) {
+void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
     pid=0;
 //    material=NULL;
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
     mesh_=mesh_in;
-    region_=reg;
+    region_idx_=reg;
 
     node = new Node * [ n_nodes()];
     edge_idx_ = new unsigned int [ n_sides()];
@@ -157,6 +157,11 @@ ElementAccessor< 3 > Element::element_accessor()
   return mesh_->element_accessor( mesh_->element.index(this) );
 }
 
+
+
+Region Element::region() const {
+    return Region( region_idx_, mesh_->region_db());
+}
 
 
 #if 0

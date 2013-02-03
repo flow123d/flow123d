@@ -174,9 +174,10 @@ typename Field<spacedim,Value>::FieldBaseType * Field<spacedim,Value>::operator(
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_from_input(Region reg, const Input::AbstractRecord &rec) {
+    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields.size() == 0)
-        region_fields.resize(Region::db().size(), NULL);
+        region_fields.resize( this->mesh_->region_db().size(), NULL);
 
     if (region_fields[reg.idx()] != NULL) {
         delete region_fields[reg.idx()];
@@ -190,7 +191,7 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::set_field(Region reg, FieldBaseType * field) {
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields.size() == 0)
-        region_fields.resize(Region::db().size(), NULL);
+        region_fields.resize( this->mesh_->region_db().size(), NULL);
 
     if (region_fields[reg.idx()] != NULL) {
         delete region_fields[reg.idx()];
@@ -224,9 +225,9 @@ FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm)
 
 template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
-    ASSERT(elm.region().idx() < region_fields.size(), "Region idx out of range, field: %s\n", this->name_.c_str());
-    ASSERT( region_fields[elm.region().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
-    return region_fields[elm.region().idx()]->value(p,elm);
+    ASSERT(elm.region_idx().idx() < region_fields.size(), "Region idx out of range, field: %s\n", this->name_.c_str());
+    ASSERT( region_fields[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
+    return region_fields[elm.region_idx().idx()]->value(p,elm);
 }
 
 
@@ -235,7 +236,7 @@ template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-    region_fields[elm.region().idx()]->value_list(point_list,elm, value_list);
+    region_fields[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }
 
 

@@ -76,7 +76,7 @@ void GmshMeshReader::read_mesh(Mesh* mesh) {
     F_ENTRY;
 
     ASSERT( mesh , "Argument mesh is NULL.\n");
-    read_physical_names(tok_);
+    read_physical_names(tok_, mesh);
     read_nodes(tok_, mesh);
     read_elements(tok_, mesh);
     mesh->setup_topology();
@@ -157,6 +157,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
                     break;
                 default:
                     xprintf(UsrErr, "Element %d is of the unsupported type %d\n", id, type);
+                    break;
             }
 
             //get number of tags (at least 2)
@@ -175,7 +176,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
 
             // allocate element arrays TODO: should be in mesh class
             Element *ele;
-            Region region_idx = Region::db().add_region( region_id, dim );
+            RegionIdx region_idx = mesh->region_db_.add_region( region_id, dim );
             if (region_idx.is_boundary()) {
                 ele = mesh->bc_elements.add_item(id);
             } else {
@@ -209,7 +210,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh) {
 
 
 
-void GmshMeshReader::read_physical_names(Tokenizer &tok) {
+void GmshMeshReader::read_physical_names(Tokenizer &tok, Mesh * mesh) {
     using namespace boost;
 
     if (! tok.skip_to("$PhysicalNames", "$Nodes") ) return;
@@ -228,7 +229,7 @@ void GmshMeshReader::read_physical_names(Tokenizer &tok) {
             string name = *tok; ++tok;
 
             bool boundary =  ( name.size() != 0 && name[0] == '.' );
-            Region::db().add_region(id, name, dim, boundary);
+            mesh->region_db_.add_region(id, name, dim, boundary);
         }
 
     } catch (bad_lexical_cast &) {

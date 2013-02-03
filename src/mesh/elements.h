@@ -52,8 +52,8 @@ class Element
 {
 public:
     Element();
-    Element(unsigned int dim, Mesh *mesh_in, Region reg);
-    void init(unsigned int dim, Mesh *mesh_in, Region reg);
+    Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
+    void init(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
 
     inline unsigned int dim() const;
     inline unsigned int index() const;
@@ -68,7 +68,9 @@ public:
 
     unsigned int n_sides_by_dim(int side_dim);
     inline SideIter side(const unsigned int loc_index);
-    inline Region region() { return region_; }
+    Region region() const;
+    inline RegionIdx region_idx() const
+        { return region_idx_; }
     
     
     
@@ -97,12 +99,14 @@ public:
 
 protected:
     // Data readed from mesh file
-    Region  region_;
+    RegionIdx  region_idx_;
     unsigned int dim_;
 
     friend class GmshMeshReader;
 
 };
+
+
 
 
 #define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes();(j)++)

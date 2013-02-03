@@ -16,8 +16,8 @@
 #include "system/global_defs.h"
 #include "system/exceptions.hh"
 
-#include "input/input_type.hh"
-#include "input/accessors.hh"
+//#include "input/input_type.hh"
+//#include "input/accessors.hh"
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -26,21 +26,29 @@
 
 namespace BMI=::boost::multi_index;
 
+class Region;
+namespace Input {
+    namespace Type { class Record; }
+    class Record;
+}
+
 /**
  *
  */
 class RegionIdx {
 public:
-    /**
-     * Create accessor from the index. Should be private since implementation specific.
-     * We need some way how to iterate over: all regions, boundary regions, bulk regions -
-     * solution: have specific RegionSets for these three cases.
-     */
-	RegionIdx(unsigned int index)
-    : idx_(index) {}
+    enum RegionType {
+        bulk=false,
+        boundary=true
+    };
+
 
     /// Default region is undefined/invalid
 	RegionIdx():idx_(undefined) {}
+
+    /// Returns true if it is a Boundary region and false if it is a Bulk region.
+    inline bool is_boundary() const
+        { return !(idx_ & 1); }
 
     /// Returns false if the region has undefined/invalid value
     inline bool is_valid() const
@@ -50,6 +58,16 @@ public:
     inline unsigned int idx() const
         { return idx_; }
 
+    /// Returns index of the region in the boundary set.
+    inline unsigned int boundary_idx() const {
+        ASSERT( is_boundary(), "Try to get boundary index of a bulk region with internal idx: %d\n", idx_ );
+        return idx_ >> 1; }
+
+    /// Returns index of the region in the bulk set.
+    inline unsigned int bulk_idx() const {
+        ASSERT( ! is_boundary(), "Try to get bulk index of boundary region with internal idx: %d\n", idx_ );
+        return idx_ >> 1; }
+
     /// Equality comparison operators for regions.
     inline bool operator==(const RegionIdx &other) const
         { return idx_ == other.idx_; }
@@ -58,31 +76,28 @@ public:
     inline bool operator!=(const RegionIdx &other) const
         { return idx_ != other.idx_; }
 
-    /// Compare operator for regions.
-    inline bool operator<(const RegionIdx &other) const
-        { return idx_ < other.idx_; }
-
-    /// Compare operator for regions.
-    inline bool operator<=(const RegionIdx &other) const
-        { return idx_ <= other.idx_; }
-
-    /// Compare operator for regions.
-    inline bool operator>(const RegionIdx &other) const
-        { return idx_ > other.idx_; }
-
-    /// Compare operator for regions.
-    inline bool operator>=(const RegionIdx &other) const
-        { return idx_ >= other.idx_; }
 
 protected:
+    /**
+     * Create accessor from the index. Should be private since implementation specific.
+     * We need some way how to iterate over: all regions, boundary regions, bulk regions -
+     * solution: have specific RegionSets for these three cases.
+     */
+    RegionIdx(unsigned int index)
+    : idx_(index) {}
+
+    /**
+     * Internal region index. Regions of one RegionDB (corresponding to one mesh) forms more or less continuous sequence.
+     */
 	unsigned int idx_;
 
 	/// index for undefined region
     static const unsigned int undefined=0xffffffff;
+
+    friend class Region;
 };
 
 class RegionDB;
-class OldBcdInput;
 
 /**
  * Class that represents disjoint part of computational domain (or domains). It consists of one integer value
@@ -96,43 +111,18 @@ class OldBcdInput;
  */
 class Region : public RegionIdx {
 public:
-    enum RegionType {
-        bulk=false,
-        boundary=true
-    };
 
-    /**
-     * Create accessor from the index. Should be private since implementation specific.
-     * We need some way how to iterate over: all regions, boundary regions, bulk regions -
-     * solution: have specific RegionSets for these three cases.
-     */
-    Region(unsigned int index)
-    : RegionIdx::RegionIdx(index) {}
+
 
     /// Default region is undefined/invalid
-    Region() : RegionIdx::RegionIdx() {}
+    Region()
+    : RegionIdx(), db_(NULL)
+    {}
 
-    /// Returns true if it is a Boundary region and false if it is a Bulk region.
-    inline bool is_boundary() const
-        { return !(idx_ & 1); }
-
-/*    /// Returns false if the region has undefined/invalid value
-    inline bool is_valid() const
-        { return idx_!=undefined;}
-
-    /// Returns a global index of the region.
-    inline unsigned int idx() const
-        { return idx_; }*/
-
-    /// Returns index of the region in the boundary set.
-    inline unsigned int boundary_idx() const {
-        ASSERT( is_boundary(), "Try to get boundary index of bulk region: '%s' id: %d\n", label().c_str(), id() );
-        return idx_ >> 1; }
-
-    /// Returns index of the region in the bulk set.
-    inline unsigned int bulk_idx() const {
-        ASSERT( ! is_boundary(), "Try to get bulk index of boundary region: '%s' id: %d\n", label().c_str(), id() );
-        return idx_ >> 1; }
+    /// This should be used for construction from known RegionIdx. (e.g. in Mesh)
+    Region(RegionIdx r_idx, const RegionDB & db)
+    : RegionIdx(r_idx), db_(&db)
+    {}
 
     /// Returns label of the region (using RegionDB)
     std::string label() const;
@@ -151,24 +141,40 @@ public:
     inline bool operator!=(const Region &other) const
         { return idx_ != other.idx_; }
 
+    /// Conversion to RegionIdx class
+    inline operator RegionIdx() const {
+        return RegionIdx(this->idx_);
+    }
+
     /**
      * Returns static region database. Meant to be used for getting range of
      * global, boundary, and bulk region indices.
      */
-    static RegionDB &db()
-        { return db_;}
+    const RegionDB &db() {
+        return *db_;
+    }
 
 private:
+    /**
+     * Create accessor from the index. Should be private since implementation specific.
+     * We need some way how to iterate over: all regions, boundary regions, bulk regions -
+     * solution: have specific RegionSets for these three cases.
+     */
+    Region(unsigned int index, const RegionDB &db)
+    : RegionIdx(index), db_(&db)
+    {}
+
+
+    static bool comp(const Region &a, const Region &b)
+    { return a.idx_ < b.idx_; }
+
     /// Global variable with information about all regions.
-    static RegionDB db_;
-
-
-
-    //unsigned int idx_;
+    const RegionDB *db_;
 
     friend class RegionDB;
-    friend class OldBcdInput;
 };
+
+
 
 
 /**
@@ -185,7 +191,7 @@ private:
  */
 //class RegionSet {
 //};
-
+typedef std::vector<Region> RegionSet;
 
 /**
  * Class for conversion between an index and string label of an material.
@@ -267,10 +273,7 @@ region_sets = [
 
 class RegionDB {
 public:
-    typedef std::vector<RegionIdx> RegionSet;
 
-    static Region implicit_bulk;
-    static Region implicit_boundary;
 
     static Input::Type::Record region_input_type;
     static Input::Type::Record region_set_input_type;
@@ -318,12 +321,12 @@ public:
     /**
      * Returns a @p Region with given @p label. If it is not found it returns @p undefined Region.
      */
-    Region find_label(const std::string &label);
+    Region find_label(const std::string &label) const;
 
     /**
      * Returns a @p Region with given @p id. If it is not found it returns @p undefined Region.
      */
-    Region find_id(unsigned int id);
+    Region find_id(unsigned int id) const;
 
     /**
      * Return original label for given index @p idx.
@@ -346,29 +349,28 @@ public:
     /**
      * Returns maximal index + 1
      */
-    unsigned int size();
+    unsigned int size() const;
     /**
      * Returns total number boundary regions.
      */
-    unsigned int boundary_size();
+    unsigned int boundary_size() const;
     /**
      * Returns total number bulk regions.
      */
-    unsigned int bulk_size();
+    unsigned int bulk_size() const;
 
     /**
-     * Returns list of boundary regions.
+     * Returns implicit bulk region.
      */
-    const RegionSet &boundary_regions();
+    Region implicit_bulk() const
+    { return implicit_bulk_; }
 
     /**
-     * Returns list of boundary regions.
+     * Returns implicit bulk region.
      */
-    const RegionSet &bulk_regions();
-    /**
-     * Returns list of boundary regions.
-     */
-    const RegionSet &all_regions();
+    Region implicit_boundary() const
+    { return implicit_boundary_; }
+
 
     /*
      * Add region to given set. Create the set if it does not exist.
@@ -376,7 +378,7 @@ public:
      * @param set_name Set to which it is added region
      * @param region Added region
      */
-    void add_to_set( const string& set_name, RegionIdx region);
+    void add_to_set( const string& set_name, Region region);
 
     /**
      * Add a set into map, delete possible previous value.
@@ -398,7 +400,7 @@ public:
      * @param set_name Name of set
      * @return RegionSet of specified name
      */
-    const RegionSet & get_region_set(const string & set_name);
+    const RegionSet & get_region_set(const string & set_name) const;
 
     void read_sets_from_input(Input::Record rec); // see structure of RegionDB::region_set_input_type
 
@@ -437,7 +439,7 @@ private:
     /// Should be RegionSet that consist from all regions. After RegionSets are implemented.
     RegionTable region_set_;
 
-    /// flag for closed database
+    /// flag for closed database, no regions can be added, but you can add region sets
     bool closed_;
     /// Number of boundary regions
     unsigned int n_boundary_;
@@ -449,6 +451,12 @@ private:
 
     /// Make part of general RegionSet table.
     RegionSet all, bulk, boundary;
+
+    /**
+     * Implicit bulk and boundary regions. For GMSH mesh format only implicit_boundary is used for boundary elements
+     * that are not explicitly in the mesh file.
+     */
+    Region implicit_bulk_, implicit_boundary_;
 };
 
 
