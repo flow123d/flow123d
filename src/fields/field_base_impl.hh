@@ -26,6 +26,7 @@ using namespace std;
 #include "fields/field_values.hh"
 
 #include "input/input_type.hh"
+#include "input/json_to_storage.hh"
 
 
 namespace it = Input::Type;
@@ -205,10 +206,25 @@ void Field<spacedim, Value>::set_field(Region reg, FieldBaseType * field) {
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_time(double time) {
-    // TODO: check values
-    for(unsigned int i=0; i < region_fields.size(); i++) {
-        if (region_fields[i])  region_fields[i]->set_time(time);
-        //else  xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d.\n", name_.c_str(), Region::db().get_id(i) );
+    if (region_fields.size() == 0)
+        region_fields.resize( this->mesh_->region_db().size(), NULL);
+
+    const RegionSet & all_set = this->mesh_->region_db().get_region_set("ALL");
+    for( RegionSet::const_iterator reg = all_set.begin(); reg!=all_set.end(); ++reg) {
+        if (reg->is_boundary() == this->bc_) {  // for regions that match type of the field domain
+            if (region_fields[reg->idx()] == NULL) {
+                // try to use default
+                if (this->default_.has_value_at_declaration()) {
+                    Input::JSONToStorage reader;
+                    Input::Type::AbstractRecord a_rec_type = make_input_tree();
+                    reader.read_from_default(this->default_.value(), a_rec_type );
+                    set_from_input(*reg, reader.get_root_interface<Input::AbstractRecord>() );
+                } else {
+                    xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d.\n", name_.c_str(), reg->id() );
+                }
+            }
+            region_fields[reg->idx()]->set_time(time);
+        }
     }
 }
 

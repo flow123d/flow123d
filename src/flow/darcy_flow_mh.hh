@@ -153,6 +153,7 @@ public:
          * For compatibility with old BCD file we have to assign integer codes starting from 1.
          */
         enum BC_Type {
+            none=0,
             dirichlet=1,
             neumann=2,
             robin=3,

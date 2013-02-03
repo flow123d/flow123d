@@ -115,42 +115,12 @@ it::Record DarcyFlowMH::bc_segment_rec
 	= it::Record("DarcyFlowMH_BC_Type", "Boundary condition for DaryFlowMH equation.")
     .declare_key("value", FunctionBase<3>::input_type, it::Default::obligatory(),
             "Value of scalar Dirichlet BC.");
-//BCTable::set_input_type_for_dirichlet( bc_type );
-//BCTable::set_input_type_for_neumman( bc_type );
-//BCTable::set_input_type_for_newton( bc_type );
-//bc_type.no_more_descendants();
 
-//static Record bc_table_item_rec = BCTable::get_item_input_type( bc_type );
-
-/*
-it::AbstractRecord DarcyFlowMH::input_type
-	= it::AbstractRecord("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.")
-        // declare keys common to all DarcyFlow classes
-        //rec.declare_key("boundary_condition", Array( bc_table_item_rec), Default::obligatory(),
-        //        "Table of boundary conditions for BC segments.");
-	.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
-                "Number of Schur complements to perform when solving MH sytem.")
-    .declare_key("sources_file", it::FileName::input(),
-                "File with water source field.")
-	.declare_key("sources_formula", it::String(),
-                "Formula to determine the source field.")
-	.declare_key("boundary_file", it::FileName::input(),it::Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
-                "File with boundary conditions for MH solver.")
-	.declare_key("boundary_conditions", bc_segment_rec, it::Default::optional(),
-                "Specification of boundary conditions.")
-	.declare_key("solver", Solver::input_type, it::Default::obligatory(),
-                "Linear solver for MH problem.")
-	.declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
-                "Parameters of output form MH module.")
-	.declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
-                "Method for coupling Darcy flow between dimensions." )
-	.declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
-                "Conductivity between dimensions." );
-//*/
 
 
 it::Selection DarcyFlowMH::EqData::bc_type_selection =
               it::Selection("EqData_bc_Type")
+               .add_value(none, "none")
                .add_value(dirichlet, "dirichlet")
                .add_value(neumann, "neumann")
                .add_value(robin, "robin")
@@ -172,11 +142,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("sources_file", it::FileName::input(),
                 "File with water source field.")
         .declare_key("sources_formula", it::String(),
-                "Formula to determine the source field.")
-        //.declare_key("boundary_file", it::FileName::input(),it::Default::read_time("Obsolete.Obligatory if 'boundary_condition' is not given."),
-        //        "File with boundary conditions for MH solver.")
-        .declare_key("boundary_conditions", bc_segment_rec, it::Default::optional(),
-                "Specification of boundary conditions.");
+                "Formula to determine the source field.");
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -241,11 +207,11 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
     ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
     ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
     ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
-    ADD_FIELD(bc_type,"Boundary condition type, possible values:");
+    ADD_FIELD(bc_type,"Boundary condition type, possible values:", it::Default("none") );
               bc_type.set_selection(&bc_type_selection);
-    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
-    ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
+    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.", it::Default("0.0"));
+    ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.", it::Default("0.0") );
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", it::Default("0.0") );
 }
 
 
@@ -594,7 +560,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 EqData::BC_Type type = (EqData::BC_Type)data.bc_type.value(b_ele.centre(), b_ele);
-                if ( type == EqData::dirichlet ) {
+                if ( type == EqData::none) {
+                    // homogeneous neumann
+                } else if ( type == EqData::dirichlet ) {
                     c_val = 0.0;
                     double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
                     loc_side_rhs[i] -= bc_pressure;
@@ -614,39 +582,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 } else {
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
-                /*
-                if (bc_function) {
-                    START_TIMER("FIND INTERPOLATION");
-
-                    if (fill_matrix) bc_function->set_element( bcd->element() );
-                    END_TIMER("FIND INTERPOLATION");
-
-                    double value=bc_function->value( bcd->element()->centre() );
-                    c_val = 0.0;
-                    loc_side_rhs[i] -= value;
-
-                    ls->rhs_set_value(edge_row, -value);
-                    ls->mat_set_value(edge_row, edge_row, -1.0);
-
-                } else
-                if ( bcd->type == DIRICHLET ) {
-                    c_val = 0.0;
-                    loc_side_rhs[i] -= bcd->scalar;
-
-                    ls->rhs_set_value(edge_row, -bcd->scalar);
-                    ls->mat_set_value(edge_row, edge_row, -1.0);
-                } else if ( bcd->type == NEUMANN ) {
-                    ls->rhs_set_value(edge_row, bcd->flux * bcd->element()->measure() * 
-                                      data.cross_section.value(ele->centre(), ele->element_accessor())
-                                     );
-                } else if ( bcd->type == NEWTON )  {
-                    ls->rhs_set_value(edge_row, -bcd->element()->measure() *
-                                      data.cross_section.value(ele->centre(), ele->element_accessor()) *
-                                      bcd->sigma * bcd->scalar);
-                    ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * 
-                                      data.cross_section.value(ele->centre(), ele->element_accessor()) * 
-                                      bcd->sigma );
-                }*/
             }
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);

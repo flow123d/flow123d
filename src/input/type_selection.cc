@@ -54,7 +54,7 @@ const Selection & Selection::close() const {
 
 bool Selection::valid_default(const string &str) const {
     if (! has_name(str))
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(desc()));
     return true;
 }
 
@@ -99,8 +99,9 @@ int Selection::from_default(const string &str) const {
     try {
         return name_to_int(str);
     } catch (ExcSelectionKeyNotFound &e) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(desc()));
     }
+    return -1;
 }
 
 

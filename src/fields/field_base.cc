@@ -35,7 +35,7 @@ void FieldCommonBase::set_name(const string & name)
 { name_ =name; }
 void FieldCommonBase::set_desc(const string & desc)
 { desc_=desc; }
-void FieldCommonBase::set_default(IT::Default &dflt)
+void FieldCommonBase::set_default(const IT::Default &dflt)
 { default_=dflt;}
 void FieldCommonBase::set_n_comp( unsigned int n_comp)
 { n_comp_=n_comp; }
