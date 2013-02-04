@@ -176,6 +176,11 @@ private:
     void finished_check() const;
 
     /**
+     * Used in error messaged, where we can not use desc(), which can lead to infinite loop due to TYPE selection of AbstractRecord.
+     */
+    string key_list() const;
+
+    /**
      * Actual Selection data.
      */
     class SelectionData  {
@@ -186,6 +191,7 @@ private:
         {}
 
         void add_value(const int value, const std::string &key, const std::string &description);
+
 
         /// Name of the Selection.
         string type_name_;

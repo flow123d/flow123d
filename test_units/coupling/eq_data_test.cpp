@@ -36,6 +36,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 #include "flow/old_bcd.hh"
+#include <armadillo>
 
 using namespace std;
 namespace IT=Input::Type;
@@ -77,7 +78,8 @@ const string eq_data_old_bcd = R"JSON(
 { 
   bc_data=[
       { rid=101,
-        flow_old_bcd_file="coupling/simplest_cube.fbc"
+        flow_old_bcd_file="coupling/simplest_cube.fbc",
+        transport_old_bcd_file="coupling/transport.fbc"  
       }
   ],
   bulk_data=[] 
@@ -100,11 +102,12 @@ protected:
 
         EqData(const string & name="") : EqDataBase(name) {
             ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", IT::Default("1.0"));
-            ADD_FIELD(bc_type,"Boundary condition type, possible values:");
+            ADD_FIELD(bc_type,"Boundary condition type, possible values:", IT::Default("dirichlet") );
                       bc_type.set_selection(&bc_type_selection);
-            ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
-            ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
-            ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
+            ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.", IT::Default("0.0"));
+            ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.",  IT::Default("0.0"));
+            ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.",  IT::Default("0.0"));
+            ADD_FIELD(bc_conc, "BC concentration", IT::Default("0.0") );
         }
 
         Region read_boundary_list_item(Input::Record rec) {
@@ -114,9 +117,12 @@ protected:
                 //bc_pressure(region)->init_from_input(*field_it);
                 bc_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
             }
-            FilePath flow_bcd_file;
-            if (rec.opt_val("flow_old_bcd_file", flow_bcd_file) ) {
-                OldBcdInput::instance()->read_flow(flow_bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
+            FilePath bcd_file;
+            if (rec.opt_val("flow_old_bcd_file", bcd_file) ) {
+                OldBcdInput::instance()->read_flow(bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
+            }
+            if (rec.opt_val("transport_old_bcd_file", bcd_file) )  {
+                OldBcdInput::instance()->read_transport( bcd_file, bc_conc );
             }
             return region;
         }
@@ -129,6 +135,7 @@ protected:
                                                      // tj. potrebuju umet pridat dalsi klice a dalsi inicializace i po generickych funkcich
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+        BCField<3, FieldValue<3>::Vector > bc_conc;
 
 
 
@@ -153,8 +160,8 @@ public:
     public:
 
         EqData() : SomeEquationBase::EqData("SomeEquation") {
-            ADD_FIELD(init_pressure, "Initial condition as pressure");
-            ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components");
+            ADD_FIELD(init_pressure, "Initial condition as pressure", IT::Default("0.0") );
+            ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", IT::Default("0.0") );
         }
 
         Region read_bulk_list_item(Input::Record rec) {
@@ -201,6 +208,8 @@ protected:
         TimeGovernor tg(0.0, 1.0);
 
         data.init_conc.set_n_comp(4);        // set number of substances posibly read from elsewhere
+        data.bc_conc.set_n_comp(4);
+
         /* Regions in the test mesh:
          * $PhysicalNames
             6
@@ -233,6 +242,7 @@ IT::Record SomeEquation::input_type=
                 SomeEquation::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::input_type, "" )
                 .declare_key("flow_old_bcd_file", IT::FileName::input(), "")
+                .declare_key("transport_old_bcd_file", IT::FileName::input(), "")
                 ), IT::Default::obligatory(), ""  )
         .declare_key("bulk_data", IT::Array(
                 SomeEquation::EqData().bulk_input_type()
@@ -240,7 +250,7 @@ IT::Record SomeEquation::input_type=
                 ), IT::Default::obligatory(), ""  );
 
 
-/*
+
 TEST_F(SomeEquation, values) {
     read_input(eq_data_input);
     // cout << Input::Type::OutputText(&SomeEquation::input_type) << endl;
@@ -251,15 +261,15 @@ TEST_F(SomeEquation, values) {
     DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
 
     ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
-    EXPECT_EQ(37, el_1d.region_id());
+    EXPECT_EQ(37, el_1d.region().id());
     ElementAccessor<3> el_2d=mesh->element_accessor(1); // region 38 "2D XY diagonal"
-    EXPECT_EQ(38, el_2d.region_id());
+    EXPECT_EQ(38, el_2d.region().id());
     ElementAccessor<3> el_3d=mesh->element_accessor(3); // region 39 "3D back"
-    EXPECT_EQ(39, el_3d.region_id());
+    EXPECT_EQ(39, el_3d.region().id());
     ElementAccessor<3> el_bc_top=mesh->element_accessor(0,true); // region 101 ".top side"
-    EXPECT_EQ(101, el_bc_top.region_id());
+    EXPECT_EQ(101, el_bc_top.region().id());
     ElementAccessor<3> el_bc_bottom=mesh->element_accessor(2,true); // region 102 ".top side"
-    EXPECT_EQ(102, el_bc_bottom.region_id());
+    EXPECT_EQ(102, el_bc_bottom.region().id());
 
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
@@ -295,7 +305,7 @@ TEST_F(SomeEquation, values) {
     EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_bottom) );
     EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, el_bc_bottom) );    // piezo_head
 }
-*/
+
 
 
 TEST_F(SomeEquation, old_bcd_input) {
@@ -312,7 +322,19 @@ TEST_F(SomeEquation, old_bcd_input) {
     // The bcd IDs  order in the bc_vector: 7, 17, 10, 12, 0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14, 15, 16
     EXPECT_EQ(EqData::dirichlet, (EqData::BC_type)data.bc_type.value(p, mesh->element_accessor(4, true)));
     EXPECT_DOUBLE_EQ(1.0, data.bc_pressure.value(p, mesh->element_accessor(4, true)) );
+    arma::vec value = data.bc_conc.value(p, mesh->element_accessor(4, true));
+    EXPECT_DOUBLE_EQ(1.0, value(0) );
+    EXPECT_DOUBLE_EQ(11.0, value(1) );
+    EXPECT_DOUBLE_EQ(21.0, value(2) );
+    EXPECT_DOUBLE_EQ(31.0, value(3) );
 
     EXPECT_EQ(EqData::dirichlet, (EqData::BC_type)data.bc_type.value(p, mesh->element_accessor(10, true)));
     EXPECT_DOUBLE_EQ(7.0, data.bc_pressure.value(p, mesh->element_accessor(10, true)) );
+    value = data.bc_conc.value(p, mesh->element_accessor(10, true));
+    EXPECT_DOUBLE_EQ(7.0, value(0) );
+    EXPECT_DOUBLE_EQ(17.0, value(1) );
+    EXPECT_DOUBLE_EQ(27.0, value(2) );
+    EXPECT_DOUBLE_EQ(37.0, value(3) );
+
+
 }

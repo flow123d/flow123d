@@ -33,6 +33,8 @@ string input = R"INPUT(
 
 
 TEST(Field, init_from_default) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh mesh;

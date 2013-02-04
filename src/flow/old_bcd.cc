@@ -216,8 +216,9 @@ void OldBcdInput::read_transport(const FilePath &transport_bcd,
                 xprintf(UsrErr,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
             bc_ele_idx = it->second;
 
-            for (unsigned int sbi = 0; sbi < n_substances; sbi++)
+            for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
                 ele_value[sbi] = lexical_cast<double>(*tok); ++tok;
+            }
 
             set_field(trans_conc,     bc_ele_idx, ele_value);
 
