@@ -12,6 +12,7 @@
 #include "system/exceptions.hh"
 
 #include "input/input_type.hh"
+#include "input/type_base.hh"
 #include "input/accessors.hh"
 #include <boost/foreach.hpp>
 
@@ -249,18 +250,11 @@ void RegionDB::add_set( const string& set_name, const RegionSet & set) {
 
 
 RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_name_2) {
-	std::map<std::string, RegionSet>::iterator it_1 = sets_.find(set_name_1);
-	std::map<std::string, RegionSet>::iterator it_2 = sets_.find(set_name_2);
-	ASSERT( it_1 == sets_.end(), "No region set with name: %s\n", set_name_1.c_str());
-	ASSERT( it_2 == sets_.end(), "No region set with name: %s\n", set_name_2.c_str());
-
 	RegionSet set_union;
-	RegionSet & set_1 = (*it_1).second;
-	RegionSet & set_2 = (*it_2).second;
+	RegionSet set_1, set_2;
 	RegionSet::iterator it;
 
-	std::stable_sort(set_1.begin(), set_1.end(), Region::comp);
-	std::stable_sort(set_2.begin(), set_2.end(), Region::comp);
+	prepare_sets(set_name_1, set_name_2, set_1, set_2);
 	set_union.resize(set_1.size() + set_2.size());
 	it = std::set_union(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_union.begin(), Region::comp);
 	set_union.resize(it - set_union.begin());
@@ -270,14 +264,45 @@ RegionSet RegionDB::union_sets( const string & set_name_1, const string & set_na
 
 
 RegionSet RegionDB::intersection( const string & set_name_1, const string & set_name_2) {
-	// not implemented yet
-	return RegionSet();
+	RegionSet set_insec;
+	RegionSet set_1, set_2;
+	RegionSet::iterator it;
+
+	prepare_sets(set_name_1, set_name_2, set_1, set_2);
+	set_insec.resize(set_1.size() + set_2.size());
+	it = std::set_intersection(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_insec.begin(), Region::comp);
+	set_insec.resize(it - set_insec.begin());
+
+	return set_insec;
 }
 
 
 RegionSet RegionDB::difference( const string & set_name_1, const string & set_name_2) {
-	// not implemented yet
-	return RegionSet();
+	RegionSet set_diff;
+	RegionSet set_1, set_2;
+	RegionSet::iterator it;
+
+	prepare_sets(set_name_1, set_name_2, set_1, set_2);
+	set_diff.resize(set_1.size() + set_2.size());
+	it = std::set_difference(set_1.begin(), set_1.end(), set_2.begin(), set_2.end(), set_diff.begin(), Region::comp);
+	set_diff.resize(it - set_diff.begin());
+
+	return set_diff;
+}
+
+
+void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_2,
+		RegionSet & set_1, RegionSet & set_2) {
+	std::map<std::string, RegionSet>::iterator it_1 = sets_.find(set_name_1);
+	std::map<std::string, RegionSet>::iterator it_2 = sets_.find(set_name_2);
+	ASSERT( it_1 == sets_.end(), "No region set with name: %s\n", set_name_1.c_str());
+	ASSERT( it_2 == sets_.end(), "No region set with name: %s\n", set_name_2.c_str());
+
+	set_1 = (*it_1).second;
+	set_2 = (*it_2).second;
+
+	std::stable_sort(set_1.begin(), set_1.end(), Region::comp);
+	std::stable_sort(set_2.begin(), set_2.end(), Region::comp);
 }
 
 
@@ -289,5 +314,22 @@ const RegionSet & RegionDB::get_region_set(const string & set_name) const {
 
 
 void RegionDB::read_sets_from_input(Input::Record rec) {
-	// not implemented yet
+	string set_name = rec.val<string>("name");
+	Input::Array region_ids = rec.val<Input::Array>("region_ids");
+	Input::Array region_labels = rec.val<Input::Array>("region_labels");
+
+	ASSERT( region_ids.size() != region_labels.size(), "Size of arrays region_ids and region_labels must be same\n");
+
+	vector<int> id_values; // ? unsigned int
+	vector<string> label_values;
+	RegionSet region_set;
+
+	region_ids.copy_to(id_values);
+	region_labels.copy_to(label_values);
+	for (unsigned int i=0; i<id_values.size(); ++i) {
+		Region reg(id_values[i], *this);
+		region_set.push_back(reg);
+	}
+
+	add_set(set_name, region_set);
 }

@@ -457,6 +457,12 @@ private:
      * that are not explicitly in the mesh file.
      */
     Region implicit_bulk_, implicit_boundary_;
+
+    /**
+     * Prepare region sets for union, intersection and difference operation.
+     * Get sets of names set_name_1 and set_name_2 and sort them
+     */
+    void prepare_sets( const string & set_name_1, const string & set_name_2, RegionSet & set_1, RegionSet & set_2);
 };
 
 

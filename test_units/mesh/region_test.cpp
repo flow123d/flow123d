@@ -7,6 +7,9 @@
 
 #include <gtest/gtest.h>
 #include "mesh/region.hh"
+#include "input/type_base.hh"
+#include "input/type_output.hh"
+#include "input/json_to_storage.hh"
 
 TEST(Region, all) {
     RegionDB    region_db;
@@ -72,4 +75,51 @@ TEST(Region, all) {
 
 }
 
+const string read_sets_json = R"JSON(
+{
+	name = "test_set",
+	region_ids= 
+	[
+	   0,
+       3,
+       4
+	],
+	
+	region_labels = 
+	[
+	   "label_0",
+       "label_3",
+       "label_4"
+	] 
+}
+)JSON";
+
+TEST(Region, read_sets_from_input) {
+	using namespace Input::Type;
+
+	Record region_set_input_type =
+		Record("RegionSet", "Definition of one region set.")
+		.declare_key("name", String(), Default::obligatory(),
+				"Unique name of the region set.")
+		.declare_key("region_ids", Array( Integer(0)),
+				"List of region ID numbers that has to be added to the region set.")
+		.declare_key("region_labels", Array( String()),
+				"List of labels of the regions that has to be added to the region set.")
+		/*.declare_key("union", Array( String(), 2,2),
+				"Defines region set as a union of given pair of sets. Overrides previous keys.")
+		.declare_key("intersection", Array( String(), 2,2),
+				"Defines region set as an intersection of given pair of sets. Overrides previous keys.")
+		.declare_key("difference", Array( String(), 2,2),
+				"Defines region set as a difference of given pair of sets. Overrides previous keys.")*/
+		.close();
+
+	Input::JSONToStorage json_reader;
+	stringstream ss(read_sets_json.c_str());
+	json_reader.read_stream(ss, region_set_input_type);
+	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+
+	RegionDB region_db;
+	region_db.read_sets_from_input(i_rec);
+
+}
 
