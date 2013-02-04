@@ -52,6 +52,7 @@ public:
     typedef FieldElementwise<3, FieldValue<3>::VectorFixed > VecFixField;
     typedef FieldElementwise<3, FieldValue<3>::Vector > VecField;
     typedef FieldElementwise<3, FieldValue<2>::TensorFixed > TensorField;
+    typedef FieldElementwise<3, FieldValue<3>::EnumVector > EnumVector;
 
     virtual void SetUp() {
         // setup FilePath directories
@@ -176,3 +177,32 @@ TEST_F(FieldElementwiseTest, scalar_enum) {
 }
 
 
+TEST_F(FieldElementwiseTest, vector_enum) {
+    EnumVector field(2);
+    field.set_mesh(mesh);
+    field.set_time(0.0);
+
+    for(unsigned int i=0; i<6; i++) {
+        arma::uvec val(2);
+        val[0] = i + ( i<4 ? 1 : 10 );
+        val[1] = i + ( i<4 ? 1 : 10 ) + 100;
+        field.set_data_row(i, val );
+    }
+
+    for(unsigned int i=0; i < mesh->element.size(); i++) {
+        arma::uvec val = field.value(point,mesh->element_accessor(i));
+        EXPECT_EQ( 0,  val[0]);
+        EXPECT_EQ( 0,  val[1]);
+    }
+    for(unsigned int i=0; i < 4; i++) {
+        arma::uvec val = field.value(point,mesh->element_accessor(i,true));
+        EXPECT_EQ( i+1,  val[0]);
+        EXPECT_EQ( i+101,  val[1]);
+    }
+    arma::uvec val = field.value(point,mesh->element_accessor(4,true));
+    EXPECT_EQ( 14,  val[0]);
+    EXPECT_EQ( 114,  val[1]);
+    val = field.value(point,mesh->element_accessor(5,true));
+    EXPECT_EQ( 15,  val[0]);
+    EXPECT_EQ( 115,  val[1]);
+}

@@ -145,14 +145,14 @@ template <class RT> inline RT & set_raw_scalar(RT &val, string *raw_data) { retu
 template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return *raw_data;}
 
 template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
-template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { return val;}
+template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 template <class RT> inline RT & set_raw_vec(RT &val, string *raw_data) { return val;}
-template <class RT> inline RT & set_raw_vec(RT &val, FieldEnum *raw_data) { return val;}
+template <class RT> inline RT & set_raw_vec(RT &val, FieldEnum *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 
 template <class RT> inline RT & set_raw_fix(RT &val, double *raw_data) {  val = RT(raw_data); return val;}
-template <class RT> inline RT & set_raw_fix(RT &val, int *raw_data) { return val;}
+template <class RT> inline RT & set_raw_fix(RT &val, int *raw_data) { val = RT(raw_data); return val;}
 template <class RT> inline RT & set_raw_fix(RT &val, string *raw_data) { return val;}
-template <class RT> inline RT & set_raw_fix(RT &val, FieldEnum *raw_data) { return val;}
+template <class RT> inline RT & set_raw_fix(RT &val, FieldEnum *raw_data) { val = RT(raw_data); return val;}
 
 } // namespace internal
 
@@ -436,6 +436,7 @@ struct FieldValue {
     // typedefs for possible field values
     typedef FieldValue_<1,1,int>            Integer;
     typedef FieldValue_<1,1, FieldEnum>     Enum;
+    typedef FieldValue_<0,1, FieldEnum>     EnumVector;
     typedef FieldValue_<1,1,double>         Scalar;
     typedef FieldValue_<spacedim,1,double>  VectorFixed;
     typedef FieldValue_<0,1,double>         Vector;

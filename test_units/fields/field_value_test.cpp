@@ -72,6 +72,9 @@ TEST(FieldValue_, speed_test_direct) {
 TEST(FieldValue_, construction_from_raw) {
 
     double raw_data[6]={1,2,3,4,5,6};
+    FieldEnum ui_raw[6]={10, 20, 30 ,40, 50, 60};
+    int i_raw[6]={10, 20, 30 ,40, 50, 60};
+    // scalars
     {
         typedef FieldValue_<1,1,double> T; T::return_type x_val;
         x_val=0;
@@ -81,18 +84,17 @@ TEST(FieldValue_, construction_from_raw) {
     {
         typedef FieldValue_<1,1,int> T; T::return_type x_val;
         x_val=0;
-        int i_raw=10;
-        const T::return_type & val = T::from_raw(x_val, &i_raw);
+        const T::return_type & val = T::from_raw(x_val, i_raw);
         EXPECT_DOUBLE_EQ(10, int(val));
     }
     {
         typedef FieldValue_<1,1,FieldEnum> T; T::return_type x_val;
         x_val=0;
-        FieldEnum i_raw=10;
-        const T::return_type & val = T::from_raw(x_val, &i_raw);
+        const T::return_type & val = T::from_raw(x_val, ui_raw);
         EXPECT_DOUBLE_EQ(10, FieldEnum(val));
     }
 
+    // vectors
     {
         typedef FieldValue_<3,1,double> T; T::return_type x_val;
         x_val.zeros();
@@ -106,11 +108,27 @@ TEST(FieldValue_, construction_from_raw) {
         EXPECT_TRUE( arma::min(T::return_type("1 2") == T::return_type(val)) );
     }
     {
+        typedef FieldValue_<0,1,FieldEnum> T; T::return_type x_val(2);
+        x_val.zeros();
+        const T::return_type & val = T::from_raw(x_val, ui_raw);
+        cout << T::return_type(val);
+        EXPECT_TRUE( arma::min(T::return_type("10 20") == T::return_type(val)) );
+    }
+    {
+        typedef FieldValue_<0,1,int> T; T::return_type x_val(2);
+        x_val.zeros();
+        const T::return_type & val = T::from_raw(x_val, i_raw);
+        cout << T::return_type(val);
+        EXPECT_TRUE( arma::min(T::return_type("10 20") == T::return_type(val)) );
+    }
+
+    // tensor
+    {
         typedef FieldValue_<2,3,double> T; T::return_type x_val;
         x_val.zeros();
         const T::return_type & val = T::from_raw(x_val, raw_data);
         arma::umat match = (T::return_type("1 3 5; 2 4 6") == T::return_type(val));
-        cout << T::return_type(val);
+
         EXPECT_TRUE( match.min());
     }
 }

@@ -79,6 +79,7 @@ template class field<dim_from, FieldValue<dim_to>::TensorFixed >;               
 //first dimension independent values then dimension dependent
 #define INSTANCE_TO_ALL(field, dim_from) \
 template class field<dim_from, FieldValue<0>::Enum >;                       \
+template class field<dim_from, FieldValue<0>::EnumVector >;                \
 template class field<dim_from, FieldValue<0>::Integer >;                       \
 template class field<dim_from, FieldValue<0>::Scalar >;                       \
 template class field<dim_from, FieldValue<0>::Vector >;                         \
