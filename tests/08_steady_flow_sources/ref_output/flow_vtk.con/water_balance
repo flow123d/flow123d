@@ -1,10 +1,22 @@
-********************************
-Boundary fluxes at time inf:
-                                           	[total balance]	[total outflow]	[total inflow]
-boundary id:-3  label: IMPLICIT BOUNDARY   	            0	            0	            0
-boundary id:2   label: .plane_boundary     	      10.5912	      10.5912	            0
-# total balance       10.5912	            0	      10.5912
+# ---------------------------------------- WATER BALANCE ----------------------------------------
+# Time of computed water balance: inf
 
-Source fluxes over material subdomains:		[total balance]
-region id:-2  label: IMPLICIT BULK       	            0
-region id:1   label: plane               	      10.6684
+
+# Boundary water balance:
+# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
+# -----------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY          0             0             0             inf           
+  2             .plane_boundary            10.5912       10.5912       0             inf           
+# -----------------------------------------------------------------------------------------------
+# total boundary balance                   10.5912       10.5912       0             
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [total_balance]                            [time]        
+# -----------------------------------------------------------------------------------------------
+  -2            IMPLICIT BULK              0                                         inf           
+  1             plane                      10.6684                                   inf           
+# -----------------------------------------------------------------------------------------------
+# total sources balance                    10.6684       
+
+
