@@ -186,7 +186,7 @@ public:
 
 
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec), sources(NULL)
+    : EquationBase(mesh, in_rec)
     {}
 
     static Input::Type::Selection mh_mortar_selection;
@@ -194,9 +194,6 @@ public:
     static Input::Type::Record bc_segment_rec;
     static Input::Type::AbstractRecord bc_input_type;
     static std::vector<Input::Type::Record> bc_input_types;
-
-    FieldP0<double>  * get_sources()
-        { return sources; }
 
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }
@@ -229,8 +226,7 @@ protected:
     //virtual void integrate_sources();
 
 protected:  
-    FunctionBase<3> *bc_function;
-    FieldP0<double> *sources;
+    //FunctionBase<3> *bc_function;
     
     bool solution_changed_for_scatter;
     Vec velocity_vector;
@@ -381,12 +377,7 @@ public:
   
     class EqData : public DarcyFlowMH::EqData{
     public:
-      
-      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Unsteady") {
-
-            ADD_FIELD(init_pressure, "Initial condition as pressure");
-            ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
-        }
+      EqData();
         
       Field<3, FieldValue<3>::Scalar > init_pressure;
       Field<3, FieldValue<3>::Scalar > storativity;
@@ -432,11 +423,7 @@ public:
     class EqData : public DarcyFlowMH::EqData{
     public:
       
-      EqData() : DarcyFlowMH::EqData("DarcyFlowLMH_Unsteady") {
-
-            ADD_FIELD(init_pressure, "Initial condition as pressure");
-            ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
-        }
+      EqData();
         
       Field<3, FieldValue<3>::Scalar > init_pressure;
       Field<3, FieldValue<3>::Scalar > storativity;

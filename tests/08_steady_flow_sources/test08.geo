@@ -1,7 +1,7 @@
 ChL=0.05;
 // Default 2d algo (1) and MeshAdapt (4) produce nonsymetric mesh
 // Delaunay (5) produce symmetric mesh
-Mesh.Algorithm=4;
+Mesh.Algorithm=5;
 
 Point(1) = {-1,-1,0,ChL};
 Point(2) = {-1,1,0,ChL};
@@ -16,5 +16,6 @@ Line(8) = {4,1};
 Line Loop(9) = {5,6,7,8};
 Plane Surface(10) = {9};
 
-Physical Surface(100) = {10};
+Physical Surface("plane") = {10};
 
+Physical Line(".plane_boundary") = {6, 7, 8, 5};

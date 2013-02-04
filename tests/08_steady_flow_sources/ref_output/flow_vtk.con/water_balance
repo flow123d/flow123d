@@ -1,7 +1,10 @@
 ********************************
 Boundary fluxes at time inf:
-[total balance]    [total outflow]     [total inflow]
-boundary #1	10.5822	10.5822	0
+                                           	[total balance]	[total outflow]	[total inflow]
+boundary id:-3  label: IMPLICIT BOUNDARY   	            0	            0	            0
+boundary id:2   label: .plane_boundary     	      10.5912	      10.5912	            0
+# total balance       10.5912	            0	      10.5912
 
-Source fluxes over material subdomains:
-material #100:	 10.6686
+Source fluxes over material subdomains:		[total balance]
+region id:-2  label: IMPLICIT BULK       	            0
+region id:1   label: plane               	      10.6684

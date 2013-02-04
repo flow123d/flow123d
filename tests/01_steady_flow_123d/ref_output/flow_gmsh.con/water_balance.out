@@ -1,0 +1,8 @@
+********************************
+Boundary fluxes at time inf:
+[total balance]    [total outflow]     [total inflow]
+boundary id:-3 label:'IMPLICIT BOUNDARY'	0	0	0
+boundary id:8 label:'.1d_channel'	-2.4826e-05	1.05424	-1.05426
+boundary id:6 label:'.2d_fraction_1'	5.59198e-06	0.102171	-0.102165
+boundary id:7 label:'.2d_fraction_2'	0	0	0
+boundary id:5 label:'.3d_cube'	0	0	0

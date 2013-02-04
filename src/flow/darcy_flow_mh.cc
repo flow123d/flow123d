@@ -138,11 +138,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
                 "Method for coupling Darcy flow between dimensions." )
         .declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
-                "Conductivity between dimensions." )
-        .declare_key("sources_file", it::FileName::input(),
-                "File with water source field.")
-        .declare_key("sources_formula", it::String(),
-                "Formula to determine the source field.");
+                "Conductivity between dimensions." );
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -207,6 +203,7 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
     ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
     ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
     ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
+    ADD_FIELD(water_source_density, "Water source density.", Input::Type::Default("0.0"));
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", it::Default("none") );
               bc_type.set_selection(&bc_type_selection);
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.", it::Default("0.0"));
@@ -233,6 +230,19 @@ Region DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
 }
 
 
+DarcyFlowMH_Unsteady::EqData::EqData()
+  : DarcyFlowMH::EqData("DarcyFlowMH_Unsteady") 
+{
+    ADD_FIELD(init_pressure, "Initial condition as pressure");
+    ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
+}
+
+DarcyFlowLMH_Unsteady::EqData::EqData()
+  : DarcyFlowMH::EqData("DarcyFlowLMH_Unsteady") 
+ {
+    ADD_FIELD(init_pressure, "Initial condition as pressure");
+    ADD_FIELD(storativity,"Storativity.", Input::Type::Default("1.0"));
+}
 
 
 
@@ -300,18 +310,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     schur2   = NULL;
     IA1      = NULL;
     IA2      = NULL;
-
-    Iterator<FilePath> it = in_rec.find<FilePath>("sources_file");
-    if (it) {
-        sources= new FieldP0<double>(mesh_);
-        sources->read_field(*it,string("$Sources"));
-    }
-
-    Iterator<string> it_f = in_rec.find<string>("sources_formula");
-    if (it_f) {
-        sources= new FieldP0<double>(mesh_);
-        sources->setup_from_function(*it_f);
-    }
 
     /*
     Iterator<Record> it_bc = in_rec.find<Record>("boundary_conditions");
@@ -445,10 +443,8 @@ void DarcyFlowMH_Steady::update_solution() {
     solution_changed_for_scatter=true;
 }
 
-void DarcyFlowMH_Steady::postprocess() {
-    if (sources == NULL)
-        return;
-
+void DarcyFlowMH_Steady::postprocess() 
+{
     int i_loc, side_rows[4];
     double values[4];
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -462,7 +458,8 @@ void DarcyFlowMH_Steady::postprocess() {
             side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
             values[i] = -1.0 * ele->measure() *
               data.cross_section.value(ele->centre(), ele->element_accessor()) * 
-              sources->element_value(ele.index()) / ele->n_sides();
+              data.water_source_density.value(ele->centre(), ele->element_accessor()) /
+              ele->n_sides();
         }
         VecSetValues(schur0->get_solution(), ele->n_sides(), side_rows, values, ADD_VALUES);
     }
@@ -598,11 +595,10 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
 
         // set sources
-        if (sources != NULL) {
-            ls->rhs_set_value(el_row, -1.0 * ele->measure() *
-                              data.cross_section.value(ele->centre(), ele->element_accessor()) * 
-                              sources->element_value(ele.index()));
-        }
+        ls->rhs_set_value(el_row, -1.0 * ele->measure() *
+                          data.cross_section.value(ele->centre(), ele->element_accessor()) * 
+                          data.water_source_density.value(ele->centre(), ele->element_accessor()) );
+        
         
         // D block: non-compatible conections and diagonal: element-element
         //for (i = 0; i < ele->d_row_count; i++)

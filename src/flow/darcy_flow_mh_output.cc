@@ -644,78 +644,62 @@ void DarcyFlowMHOutput::water_balance() {
     if (balance_output_file == NULL) return;
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
+    //computing water balance over boundaries
     double bal;
     int c_water;
     struct Boundary *bcd;
-    std::vector<double> bcd_balance( mesh_->region_db().size(), 0.0 );
-    std::vector<double> bcd_plus_balance( mesh_->region_db().size(), 0.0 );
-    std::vector<double> bcd_minus_balance( mesh_->region_db().size(), 0.0 );
+    std::vector<double> bcd_balance( mesh_->region_db().boundary_size(), 0.0 );
+    std::vector<double> bcd_plus_balance( mesh_->region_db().boundary_size(), 0.0 );
+    std::vector<double> bcd_minus_balance( mesh_->region_db().boundary_size(), 0.0 );
 
     fprintf(balance_output_file,"********************************\n");
     fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
-    fprintf(balance_output_file,"[total balance]    [total outflow]     [total inflow]\n");
+    fprintf(balance_output_file,"%43s\t[total balance]\t[total outflow]\t[total inflow]\n","");
     FOR_BOUNDARIES(mesh_, bcd) {
         // !! there can be more sides per one boundary
         double flux = dh.side_flux( *(bcd->side()) );
         Region r = bcd->region();
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele %d, edg: %d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
-        unsigned int bc_region_idx=r.boundary_idx();
+        unsigned int bc_region_idx = r.boundary_idx();
         bcd_balance[bc_region_idx] += flux;
 
-        if (flux > 0) bcd_plus_balance[bc_region_idx]+= flux;
-        else bcd_minus_balance[bc_region_idx]+= flux;
+        if (flux > 0) bcd_plus_balance[bc_region_idx] += flux;
+        else bcd_minus_balance[bc_region_idx] += flux;
     }
-
-
-    DBGMSG("DB size: %u\n", mesh_->region_db().size());
+    //printing water balance over boundaries
+    DBGMSG("DB[boundary] size: %u\n", mesh_->region_db().boundary_size());
     const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+    double total_balance = 0,
+           total_inflow = 0,
+           total_outflow = 0; 
     for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
-        fprintf(balance_output_file, "boundary id:%d label:'%s'\t%g\t%g\t%g\n", reg->id(), reg->label().c_str(),
-                bcd_balance[reg->idx()], bcd_plus_balance[reg->idx()], bcd_minus_balance[reg->idx()]);
+        //DBGMSG("writing reg->idx() and id() and boundary_idx(): %d\t%d\t%d\n", reg->idx(), reg->id(), reg->boundary_idx());
+        total_balance += bcd_balance[reg->boundary_idx()];
+        total_inflow += bcd_plus_balance[reg->boundary_idx()];
+        total_outflow += bcd_minus_balance[reg->boundary_idx()];
+        fprintf(balance_output_file, "boundary id:%-3d label: %-20s\t%13g\t%13g\t%13g\n", reg->id(), reg->label().c_str(),
+                bcd_balance[reg->boundary_idx()], bcd_plus_balance[reg->boundary_idx()], bcd_minus_balance[reg->boundary_idx()]);
     }
+    fprintf(balance_output_file, "# total balance %13g\t%13g\t%13g\n",
+                total_balance, total_outflow, total_inflow);
 
-    //TODO: oprava  - iterace pres regiony, nikoli pres materialy
-    const FieldP0<double> *p_sources = darcy_flow->get_sources();
-    if (p_sources != NULL) {
-
-        fprintf(balance_output_file,"\nSource fluxes over material subdomains:\n");
-        std::vector<double> src_balance( mesh_->region_db().size(), 0.0 ); // initialize by zero
-
-        FOR_ELEMENTS(mesh_, elm) {
-            src_balance[elm->element_accessor().region().idx()] += elm->measure() * 
-                darcy_flow->get_data().cross_section.value(elm->centre(),elm->element_accessor()) * 
-                p_sources->element_value(elm.index());
-        }
-        
-        DBGMSG("DB size: %u\n", mesh_->region_db().size());
-        const RegionSet & bulk_set = mesh_->region_db().get_region_set("BOUNDARY");
-        for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
-          {
-            fprintf(balance_output_file, "region id:%d label:'%s'\t%g\n", reg->id(),
-                    reg->label().c_str(), src_balance[reg->idx()]);
-          }
+    //computing water balance of sources
+    fprintf(balance_output_file,"\nSource fluxes over material subdomains:\t\t[total balance]\n");
+    std::vector<double> src_balance( mesh_->region_db().size(), 0.0 ); // initialize by zero
+    FOR_ELEMENTS(mesh_, elm) {
+      src_balance[elm->element_accessor().region().idx()] += elm->measure() * 
+            darcy_flow->get_data().cross_section.value(elm->centre(), elm->element_accessor()) * 
+            darcy_flow->get_data().water_source_density.value(elm->centre(), elm->element_accessor());
     }
-    /*
-    const FieldP0<double> *p_sources=darcy_flow->get_sources();
-    if (p_sources != NULL) {
-
-        fprintf(balance_output_file,"\nSource fluxes over material subdomains:\n");
-        MaterialDatabase &mat_base = darcy_flow->material_base();
-        std::vector<double> *src_balance = new std::vector<double>( mat_base.size(), 0.0 ); // initialize by zero
-
-        //element volume = element->measure() * EqData->cross_section
-        FOR_ELEMENTS(mesh_, elm) {
-            (*src_balance)[mat_base.index(elm->material)] += elm->measure() * 
-                darcy_flow->get_data().cross_section.value(elm->centre(),elm->element_accessor()) * 
-                p_sources->element_value(elm.index());
-        }
-
-
-        FOR_MATERIALS_IT(mat_base, mat) {
-            fprintf(balance_output_file, "material #%d:\t% g\n", mat_base.get_id(mat), (*src_balance)[mat_base.index(mat)]);
-        }
-    }
-    */
+  
+    //printing water balance of sources
+    DBGMSG("DB size: %u\n", mesh_->region_db().size());
+    const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
+    for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
+      {
+        fprintf(balance_output_file, "region id:%-3d label: %-20s\t%13g\n", reg->id(),
+                reg->label().c_str(), src_balance[reg->idx()]);
+      }
 }
 //=============================================================================
 //
