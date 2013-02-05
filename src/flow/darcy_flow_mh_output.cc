@@ -60,7 +60,7 @@ it::Record DarcyFlowMHOutput::input_type
                     "Output stream for P1 approximation of the pressure field.")
     .declare_key("piezo_head_p0", it::String(),
                     "Output stream for P0 approximation of the piezometric head field.")
-    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance"),
+    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
                     "Output file for water balance table.")
     .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                     "Output file with raw data form MH module.");

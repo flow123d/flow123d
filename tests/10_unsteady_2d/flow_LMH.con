@@ -11,7 +11,7 @@
 
       bulk_data = [
         {
-            rid = 100,
+            region = "plane",
             cond_anisothropy = 0.02,
             init_pressure = 0,          #default
             storativity = 1             #default
@@ -19,8 +19,13 @@
       ],
 
       bc_data = [
-        { region="IMPLICIT BOUNDARY",
-          flow_old_bcd_file="${INPUT}/test10.fbc"
+        { region = ".bc_inflow",
+          bc_type = "dirichlet",
+          bc_pressure = 100  
+        },
+        { region = ".bc_outflow",
+          bc_type = "dirichlet",
+          bc_pressure = 0  
         }
       ],
 

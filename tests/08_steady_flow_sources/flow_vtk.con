@@ -2,10 +2,8 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test8 - Steady flow with sources", 
-    material = "./input/test08.mtr", 
     mesh = {
-      mesh_file = "./input/test08.msh", 
-      neighbouring = "./input/test08.ngh"
+      mesh_file = "${INPUT}/test08.msh"
     }, 
 
     primary_equation = {
