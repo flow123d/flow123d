@@ -241,11 +241,10 @@ void RegionDB::add_to_set( const string& set_name, Region region) {
 
 
 void RegionDB::add_set( const string& set_name, const RegionSet & set) {
-	if (sets_.find(set_name) != sets_.end()) {
-		sets_.erase(sets_.find(set_name));
+    // add region only if it is not in the set
+    if (sets_.find(set_name) == sets_.end()) {
+	    sets_.insert( std::make_pair(set_name, set) );
 	}
-
-	sets_.insert( std::make_pair(set_name, set) );
 }
 
 
@@ -318,7 +317,27 @@ void RegionDB::read_sets_from_input(Input::Record rec) {
 	Input::Array region_ids = rec.val<Input::Array>("region_ids");
 	Input::Array region_labels = rec.val<Input::Array>("region_labels");
 
-	ASSERT( region_ids.size() != region_labels.size(), "Size of arrays region_ids and region_labels must be same\n");
+	//ASSERT( region_ids.size() != region_labels.size(), "Size of arrays region_ids and region_labels must be same\n");
+
+	/*
+	  Input::Array region_ids;
+	  if (rec.opt_val("region_ids", region_ids) ) {
+	    ... add regions
+	        // for int_item in region_ids -> RegionDB.find_id(int_item) ... bud prida nalezany region pomoci add_to_set, nebo chyba
+
+	  }
+
+	  if (rec.opt_val("region_labels", region_labels)) {
+    // ... podobne pro region_labels, s pouzitim RegionDB::find_label
+
+	  }
+
+	  if (rec.opt_val("union", ...) ) {
+	   ...
+	   if (region_set.size() != 0) xprintf(Warn, "Overwriting previous initialization of region set 'NAME' by union operation.");
+	  }
+	 */
+
 
 	vector<int> id_values; // ? unsigned int
 	vector<string> label_values;

@@ -58,20 +58,6 @@
 
 using namespace Input::Type;
 
-Record BoundarySegment::input_type
-    = Record("BoundarySegment","Record with specification of boundary segments,\n"
-            "i.e. subsets of the domain boundary where we prescribe one boundary condition.\n"
-            "Currently very GMSH oriented. (NOT IMPLEMENTED YET)")
-    .declare_key("physical_domains", Array(Integer(0)),
-                "Numbers of physical domains (submeshes) that forms a segment and that "
-                "will be removed from the computational mesh.")
-    .declare_key("elements", Array(Integer(0)),
-                        "Numbers of elements that forms a segment and that "
-                        "will be removed from the computational mesh.")
-    .declare_key("sides", Array( Array(Integer(0), 2,2) ),
-                        "Pairs [ element, local_side] specifying sides that are part of the boundary segment."
-                        "Sides are NOT removed from computation.");
-
 
 Record Mesh::input_type
 	= Record("Mesh","Record with mesh related data." )
@@ -81,18 +67,8 @@ Record Mesh::input_type
 	        "List of additional region definitions not contained in the mesh.")
 	.declare_key("sets", Array( RegionDB::region_set_input_type), Default::optional(),
 	        "List of region set definitions.")
-    .declare_key("boundary",
-            Record( "BoundaryLists", "Lists of boundary regions and sets.\n "
-                    "All regions with name starting with period '.' are automatically treated as boundary regions.")
-            .declare_key("ids", Array( Integer(0) ), Default::optional(),
-                    "List with ID numbers of boundary regions.")
-            .declare_key("labels", Array( String() ), Default::optional(),
-                    "List of labels of boundary regions.")
-            .declare_key("sets", Array( String() ), Default::optional(),
-                    "List of regions sets whose regions will be marked as boundary.")
-            .close(),
-            Default::optional(),
-            "");
+	.close();
+
 
 
 const unsigned int Mesh::undef_idx;

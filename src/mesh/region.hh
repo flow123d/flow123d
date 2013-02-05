@@ -250,7 +250,12 @@ region_sets = [
  * - MODIFICATION IN MESH AND READER:
  * Mesh reading proccess:
  * 1) Read PhysicalNames form GMSH file, populate RegionDB (DONE in GMSH reader, may need small modifications)
- * 2) Read region definitions from the input, see RegionDB::region_input_type
+ * 2) Read region definitions from the input, see
+ *
+ * typedef std::map<unsigned int, unsigned int> MapElementIDToRegionID;
+ * RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
+ *
+ *
  *    (TODO in RegionDB, also creates (and return to Mesh) element regions modification map: std::map< unsigned int, RegionIdx>
  *     that maps element IDs to the new region names, GMSH reader should have setter method to accept this map
  *     and modify the elements during reading)
