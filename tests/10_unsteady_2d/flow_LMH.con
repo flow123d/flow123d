@@ -2,16 +2,28 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid", 
-    material = "./input/test10.mtr", 
     mesh = {
-      mesh_file = "./input/test10.msh", 
-      neighbouring = "./input/test10.ngh"
+      mesh_file = "${INPUT}/test10.msh"
     }, 
 
     primary_equation = {
       TYPE = "Unsteady_LMH", 
-      boundary_file = "./input/test10.fbc", 
-      initial_file = "./input/pressure_initial.in", 
+
+      bulk_data = [
+        {
+            rid = 100,
+            cond_anisothropy = 0.02,
+            init_pressure = 0,          #default
+            storativity = 1             #default
+        }
+      ],
+
+      bc_data = [
+        { region="IMPLICIT BOUNDARY",
+          flow_old_bcd_file="${INPUT}/test10.fbc"
+        }
+      ],
+
       n_schurs = 2, 
       output = {
         output_stream = {

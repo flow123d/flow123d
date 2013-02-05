@@ -48,42 +48,19 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
-/*
-#include "../input/input_type.hh"
-
-#include <petscmat.h>
-#include "../system/sys_vector.hh"
-#include "../field_p0.hh"
-#include "../materials.hh"
-#include "../coupling/equation.hh"
-#include "mh_dofhandler.hh"
-#include "../functions/function_base.hh"
-//#include "functions/bc_table.hh"
-#include "../input/input_type.hh"
-
-
-#include "../fields/field_base.hh"
-#include "../fields/field_values.hh"
-#include "../fields/field_add_potential.hh"
-//*/
-
 #include "input/input_type.hh"
 
 #include <petscmat.h>
 #include "system/sys_vector.hh"
-#include <field_p0.hh>
-#include <materials.hh>
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
-#include "functions/function_base.hh"
-//#include "functions/bc_table.hh"
 #include "input/input_type.hh"
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
 #include "flow/old_bcd.hh"
-//*/
+
 
 /// external types:
 class LinSys;
@@ -93,33 +70,6 @@ class SchurComplement;
 class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
-
-
-
-class DarcyFlowMH_BC {
-public:
-    static Input::Type::AbstractRecord &get_input_type();
-};
-
-class BC_Dirichlet : public DarcyFlowMH_BC {
-public:
-    static Input::Type::Record input_type;
-    FunctionBase<3> *value;
-};
-
-class BC_Neumann : public DarcyFlowMH_BC {
-public:
-    static Input::Type::Record input_type;
-    FunctionBase<3> *flux;
-};
-
-class BC_Newton : public DarcyFlowMH_BC {
-public:
-    static Input::Type::Record input_type;
-    FunctionBase<3> *sigma;
-    FunctionBase<3> *value;
-};
-
 
 
 /**
@@ -180,6 +130,11 @@ public:
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+        
+        //TODO: these belong to Unsteady flow classes
+        //as long as Unsteady is descendant from Steady, these cannot be transfered..
+        Field<3, FieldValue<3>::Scalar > init_pressure;
+        Field<3, FieldValue<3>::Scalar > storativity;
 
         arma::vec4 gravity_;
     };
@@ -351,7 +306,6 @@ protected:
         
         double mortar_sigma;
         
-private:
   EqData data;
 };
 
@@ -375,6 +329,7 @@ class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
+    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
     class EqData : public DarcyFlowMH::EqData{
     public:
       EqData();
@@ -382,20 +337,21 @@ public:
       Field<3, FieldValue<3>::Scalar > init_pressure;
       Field<3, FieldValue<3>::Scalar > storativity;
     };
+    //*/
     
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
     //returns reference to equation data
-    virtual DarcyFlowMH::DarcyFlowMH::EqData &get_data()
-    {return data;}
+    //virtual DarcyFlowMH::DarcyFlowMH::EqData &get_data()
+    //{return data;}
     
     static Input::Type::Record input_type;
 protected:
     virtual void modify_system();
     void setup_time_term();
+    
 private:
-    EqData data;
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
@@ -420,6 +376,7 @@ class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
+    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
     class EqData : public DarcyFlowMH::EqData{
     public:
       
@@ -428,13 +385,14 @@ public:
       Field<3, FieldValue<3>::Scalar > init_pressure;
       Field<3, FieldValue<3>::Scalar > storativity;
     };
+    //*/
     
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 
     //returns reference to equation data
-    virtual DarcyFlowMH::EqData &get_data()
-    {return data;}
+    //virtual DarcyFlowMH::EqData &get_data()
+    //{return data;}
     
     static Input::Type::Record input_type;
 protected:
@@ -442,7 +400,6 @@ protected:
     void setup_time_term();
     virtual void postprocess();
 private:
-    EqData data;
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;

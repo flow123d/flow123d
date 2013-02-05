@@ -135,15 +135,22 @@ void EqDataBase::set_time(const TimeGovernor &time) {
 
 
 
-void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_region) {
+void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions) {
     // read input up to given time
     while( it != list.end() && time.ge( it->val<double>("time") ) ) {
-        if (bc_region) read_boundary_list_item(*it);
+        if (bc_regions) 
+        {
+          read_boundary_list_item(*it);
+        }
         else read_bulk_list_item(*it);
         ++it;
     }
     // check validity of fields and set current time
-    BOOST_FOREACH(FieldCommonBase * field, field_list) field->set_time( time.t() );
+    BOOST_FOREACH(FieldCommonBase * field, field_list) 
+    {
+      if (bc_regions == field->is_bc())
+        field->set_time( time.t() );
+    }
 }
 
 
@@ -208,7 +215,7 @@ Region EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
         reg = mesh_->region_db().find_id(*id_it);
         if (! reg.is_valid() ) xprintf(UsrErr, "Unknown region with id: '%d'\n", *id_it);
     }
-
+    
     // init all fields on this region
     BOOST_FOREACH(FieldCommonBase * field, field_list) {
         if (bc_regions == field->is_bc()) {

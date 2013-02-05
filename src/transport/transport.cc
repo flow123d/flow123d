@@ -43,6 +43,7 @@
 
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 
 #include "system/math_fce.h"
 #include "mesh/mesh.h"

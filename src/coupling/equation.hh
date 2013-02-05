@@ -266,9 +266,9 @@ protected:
 
     void check_times(Input::Array &list);
 
-    void set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_region);
+    void set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions);
 
-    Region read_list_item(Input::Record rec, bool bc_region);
+    Region read_list_item(Input::Record rec, bool bc_regions);
 
     /// Pointer to mesh where the equation data fields live.
     Mesh *mesh_;
