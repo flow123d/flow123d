@@ -307,7 +307,7 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 
 const RegionSet & RegionDB::get_region_set(const string & set_name) const {
 	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
-	ASSERT( it == sets_.end(), "No region set with name: %s\n", set_name.c_str());
+	ASSERT( it != sets_.end(), "No region set with name: %s\n", set_name.c_str());
 	return (*it).second;
 }
 

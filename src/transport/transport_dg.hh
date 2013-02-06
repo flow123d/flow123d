@@ -82,6 +82,7 @@ public:
 	public:
 
 		EqData();
+		Region read_boundary_list_item(Input::Record rec);
 
 	};
 
@@ -136,6 +137,8 @@ public:
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
 	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
+
+	virtual EqData *get_data() { return &data; }
 
 	/**
 	 * @brief Destructor.

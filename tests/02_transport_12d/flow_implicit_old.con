@@ -4,13 +4,11 @@
     description = "Test2 - Transport implicit 1D-2D (convection, dispersion)", 
     material = "./input/test2.mtr", 
     mesh = {
-      mesh_file = "./input/test2.msh", 
-      neighbouring = "./input/test2.ngh"
+      mesh_file = "./input/test2.msh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test2.fbc", 
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -23,20 +21,26 @@
         TYPE = "Petsc", 
         accuracy = 1e-07
       },
-      bc_data=[],
+      bc_data=[
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test2.fbc"
+        }
+      ],
       bulk_data=[
         { rid = 48,
-          cond_anisothropy = 10
+          cond_anisothropy = 10,
+          cross_section = 1
         },
         { rid = 184,
-          cond_anisothropy = 1
+          cond_anisothropy = 1,
+          cross_section = 1
         }
       ]
     },
 
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
-      boundary_file = "./input/test2.tbc", 
       initial_file = "./input/test2.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
@@ -61,15 +65,20 @@
         accuracy = 1e-07
       },
       bc_data=[
-        { region="IMPLICIT BOUNDARY",
+        { 
+          region="IMPLICIT BOUNDARY",
           old_boundary_file = "./input/test2.tbc"
-        },
-        { rid=48 },
-        { rid=184 }
+        }
       ],
       bulk_data=[
-        { rid=48 },
-        { rid=184 }
+        {
+          rid=48,
+          por_m = 0.25
+        },
+        {
+          rid=184,
+          por_m = 0.25
+        }
       ]
     }
   }, 

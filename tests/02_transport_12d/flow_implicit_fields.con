@@ -36,7 +36,6 @@
 
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
-      boundary_file = "./input/test2.tbc", 
       initial_file = "./input/test2.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 

@@ -41,6 +41,7 @@
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "input/accessors.hh"
+#include "flow/old_bcd.hh"
 
 
 using namespace Input::Type;
@@ -75,9 +76,29 @@ using namespace arma;
 TransportDG::EqData::EqData() : TransportEqData("TransportDG")
 {}
 
+Region TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
+    FilePath bcd_file;
+    if (rec.opt_val("old_boundary_file", bcd_file) ) {
+    	Input::Iterator<Input::Array> bc_it = rec.find<Input::Array>("bc_times");
+    	if (bc_it) bc_it->copy_to(bc_times);
+
+    	if (bc_times.size() == 0) {
+    		bc_time_level = -1;
+    	} else {
+            stringstream name_str;
+            name_str << (string)bcd_file << "_" << setfill('0') << setw(3) << bc_time_level;
+            bcd_file = FilePath(name_str.str(), FilePath::input_file);
+            bc_time_level++;
+        }
+        OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
+    }
+    return EqDataBase::read_boundary_list_item(rec);
+}
+
 TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
         : TransportBase(init_mesh, in_rec),
           advection(1e0),
+          mass_matrix(0),
           tol_switch_dirichlet_neumann(1e-5)
           // TODO: this should be dependent on precision of the Flow solution
           // see also remark in BC application
@@ -160,15 +181,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     ls    = new LinSys_MPIAIJ(distr->lsize());
     ls_dt = new LinSys_MPIAIJ(distr->lsize());
 
-    // TODO: Move assembly of mass matrix to update_solution().
-    // assemble mass matrix
-    ls_dt->start_allocation();
-    assemble_mass_matrix();
-    ls_dt->start_add_assembly();
-    assemble_mass_matrix();
-    ls_dt->finalize();
-    mass_matrix = ls_dt->get_matrix();
-
     // set initial conditions
     set_initial_condition();
 
@@ -194,7 +206,7 @@ TransportDG::~TransportDG()
 }
 
 
-void TransportDG::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
+void TransportDG::set_eq_data(Field< 3, FieldValue<3>::Scalar > *cross_section)
 {
   data.cross_section = cross_section;
 }
@@ -203,6 +215,17 @@ void TransportDG::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
 
 void TransportDG::update_solution()
 {
+	if (mass_matrix == NULL)
+	{
+	    // assemble mass matrix
+	    ls_dt->start_allocation();
+	    assemble_mass_matrix();
+	    ls_dt->start_add_assembly();
+	    assemble_mass_matrix();
+	    ls_dt->finalize();
+	    mass_matrix = ls_dt->get_matrix();
+	}
+
     time_->next_time();
     time_->view();
     data.set_time(*time_);
@@ -407,8 +430,11 @@ void TransportDG::assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,
 
         dh->get_dof_indices(cell, dof_indices);
 
+        arma::vec3 p = cell->centre();
+        ElementAccessor<3> ele_acc = cell->element_accessor();
+
         // cross-section is assumed constant on element
-        double elem_csec = data.cross_section->value(cell->centre(), cell->element_accessor());
+        double elem_csec = data.cross_section->value(p, ele_acc);
 
         // assemble the local stiffness and mass matrix
         for (int i=0; i<ndofs; i++)

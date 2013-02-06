@@ -98,13 +98,13 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     n_substances = substance_name.size();
     INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
 
-    data->set_mesh(&init_mesh);
     data->init_conc.set_n_comp(n_substances);
     data->bc_conc.set_n_comp(n_substances);
     data->alpha.set_n_comp(n_substances);
     data->sorp_type.set_n_comp(n_substances);
     data->sorp_coef0.set_n_comp(n_substances);
     data->sorp_coef1.set_n_comp(n_substances);
+    data->set_mesh(&init_mesh);
     data->init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     data->set_time(*time_);
 
@@ -128,10 +128,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
     set_initial_condition();
-
-
-
-    // read times of time dependent boundary condition and check the input files
     set_boundary_conditions();
 
 
@@ -514,9 +510,15 @@ void ConvectionTransport::set_boundary_conditions()
     {
     	Boundary *b = &(mesh_->boundary_[ibcd]);
 
-		arma::vec value = data->bc_conc.value(b->element()->centre(), b->element_accessor());
+    	arma::vec3 p = b->element()->centre();
+    	ElementAccessor<3> ele_acc = b->element_accessor();
+
+		arma::vec value = data->bc_conc.value(p, ele_acc);
 		for (unsigned int sbi=0; sbi<n_substances; sbi++)
+		{
 			VecSetValue(bcv[sbi], mesh_->bc_elements.index(b->element()), value(sbi), INSERT_VALUES);
+		}
+//		xprintf(MsgDbg, "BC subst %d elem %d value %f\n", 0, mesh_->bc_elements.index(b->element()), value(0));
     }
 
     for (unsigned int sbi=0; sbi<n_substances; sbi++)

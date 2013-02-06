@@ -137,7 +137,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         else if (it->type() == TransportDG::input_type)
         {
             transport_reaction = new TransportDG(*mesh, *it);
-            ((TransportDG*)transport_reaction)->set_eq_data( &water->get_data().cross_section);
+            ((TransportDG*)transport_reaction)->set_eq_data( &(water->get_data().cross_section));
         }
         else
         {

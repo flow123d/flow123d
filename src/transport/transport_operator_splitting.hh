@@ -40,8 +40,6 @@ public:
 		TransportEqData(const std::string& eq_name);
 		virtual ~TransportEqData() {};
 
-        Region read_boundary_list_item(Input::Record rec);
-
 		Field<3, FieldValue<3>::Vector> init_conc; ///< Initial concentrations.
 		Field<3, FieldValue<3>::Scalar> por_m;     ///< Mobile porosity
 
@@ -59,13 +57,14 @@ public:
 
 	};
 
-  TransportBase(Mesh &mesh, const Input::Record in_rec)
+    TransportBase(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec ),
       mh_dh(NULL)
     {}
 
-    static Input::Type::AbstractRecord input_type;
-    static Input::Type::Record input_type_output_record;
+
+    virtual TransportEqData *get_data() = 0;
+
 
     /**
      * This method takes sequential PETSc vector of side velocities and update
@@ -77,6 +76,9 @@ public:
         mh_dh=&dh;
     }
     virtual void output_data() =0;
+
+    static Input::Type::AbstractRecord input_type;
+    static Input::Type::Record input_type_output_record;
 
     const MH_DofHandler *mh_dh;
 };
@@ -107,6 +109,8 @@ public:
     virtual void set_velocity_field(Vec &velocity_field) {};
 
     virtual void output_data() {};
+
+    virtual TransportEqData *get_data() { return 0; };
 };
 
 
@@ -122,6 +126,9 @@ public:
 	public:
 
 		EqData();
+		virtual ~EqData() {};
+
+        Region read_boundary_list_item(Input::Record rec);
 
 		Field<3, FieldValue<3>::Scalar> por_imm;   ///< Immobile porosity
 		Field<3, FieldValue<3>::Vector> alpha;	   ///< Coefficients of non-equilibrium exchange
@@ -162,6 +169,8 @@ public:
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
     void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
+
+    virtual EqData *get_data() { return &data; };
 
 protected:
 

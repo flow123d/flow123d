@@ -97,12 +97,13 @@ TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
 {
 
 	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", Default("0"));
 	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
 
 }
 
 
-Region TransportBase::TransportEqData::read_boundary_list_item(Input::Record rec) {
+Region TransportOperatorSplitting::EqData::read_boundary_list_item(Input::Record rec) {
     FilePath bcd_file;
     if (rec.opt_val("old_boundary_file", bcd_file) ) {
     	Input::Iterator<Input::Array> bc_it = rec.find<Input::Array>("bc_times");
@@ -128,11 +129,10 @@ TransportOperatorSplitting::EqData::EqData() : TransportEqData("TransportOperato
 {
 	ADD_FIELD(por_imm, "Immobile porosity", Default("0"));
 	ADD_FIELD(alpha, "Coefficients of non-equilibrium exchange.", Default("0"));
-	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", Default("0"));
-	ADD_FIELD(sorp_type, "Type of sorption.", Default("0"));
+	ADD_FIELD(sorp_type, "Type of sorption.", Default("1"));
 	ADD_FIELD(sorp_coef0, "Coefficient of sorption.", Default("0"));
 	ADD_FIELD(sorp_coef1, "Coefficient of sorption.", Default("0"));
-	ADD_FIELD(phi, "Solid / solid mobile", Default("1"));
+	ADD_FIELD(phi, "Solid / solid mobile.", Default("0.5"));
 
 }
 
