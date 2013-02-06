@@ -518,8 +518,8 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
                 for (int k=0; k<q.size(); k++)
                 {
                     local_matrix[i*ndofs+j] += (dot(K[k]*fe_values.shape_grad(j,k),fe_values.shape_grad(i,k))
-                                               +dot(fe_values.shape_grad(j,k),velocity[k])*fe_values.shape_value(i,k)*por_m
-//                                               +divergence[k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*por_m
+                                               +dot(fe_values.shape_grad(j,k),velocity[k])*fe_values.shape_value(i,k)*advection/por_m
+//                                               +divergence[k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*advection/por_m
                                                )*fe_values.JxW(k);
                 }
 

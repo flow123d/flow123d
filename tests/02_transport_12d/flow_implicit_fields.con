@@ -2,15 +2,12 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test2 - Transport implicit 1D-2D (convection, dispersion)", 
-    material = "./input/test2.mtr", 
     mesh = {
-      mesh_file = "./input/test2.msh", 
-      neighbouring = "./input/test2.ngh"
+      mesh_file = "./input/test2.msh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test2.fbc", 
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -23,7 +20,12 @@
         TYPE = "Petsc", 
         accuracy = 1e-07
       },
-      bc_data=[],
+      bc_data=[
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test2.fbc"
+        }
+      ],
       bulk_data=[
         { rid = 48,
           cond_anisothropy = 10
@@ -73,15 +75,17 @@
           rid=48,
           init_conc={
             TYPE="FieldFormula",
-            value="floor((13-x)/7)"
-          }
+            value="(1+sin(x)*sin(y))*0.5"
+          },
+          por_m = 0.25
         },
         {
           rid=184,
           init_conc={
             TYPE="FieldFormula",
-            value="floor((13-x)/7)"
-          }
+            value="(1+sin(x)*sin(y))*0.5"
+          },
+          por_m = 0.25
         }
       ]
     }

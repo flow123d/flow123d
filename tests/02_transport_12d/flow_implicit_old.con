@@ -2,7 +2,6 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test2 - Transport implicit 1D-2D (convection, dispersion)", 
-    material = "./input/test2.mtr", 
     mesh = {
       mesh_file = "./input/test2.msh"
     }, 
@@ -67,7 +66,8 @@
       bc_data=[
         { 
           region="IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test2.tbc"
+          bc_conc=1
+#          old_boundary_file = "./input/test2.tbc"
         }
       ],
       bulk_data=[

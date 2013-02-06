@@ -2,15 +2,12 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test2 - Transport 1D-2D (convection, dual porosity, sorption)", 
-    material = "./input/test2.mtr", 
     mesh = {
-      mesh_file = "./input/test2.msh", 
-      neighbouring = "./input/test2.ngh"
+      mesh_file = "./input/test2.msh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test2.fbc", 
 
       bulk_data = [
         { rid = 48,
@@ -22,6 +19,10 @@
       ],
       
       bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test2.fbc"
+        }
       ],
 
       output = {
@@ -56,6 +57,25 @@
         "A", 
         "B"
       ], 
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+#          old_boundary_file = "./input/test2.tbc"
+          bc_conc = 1
+        }
+      ],
+      bulk_data = [
+        {
+          rid = 48,
+          init_conc = 0,
+          por_m = 0.25
+        },
+        {
+          rid = 184,
+          init_conc = 0,
+          por_m = 0.25
+        }
+      ]
       time = {
         end_time = 5.0
       }

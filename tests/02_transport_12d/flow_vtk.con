@@ -2,7 +2,6 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test2 - Transport 1D-2D (convection, dual porosity, sorption)", 
-    material = "./input/test2.mtr", 
     mesh = {
       mesh_file = "./input/test2.msh"
     }, 
@@ -47,8 +46,9 @@
 
       bc_data=[
         { 
-          rid=48,
-          old_boundary_file = "./input/test2.tbc"
+          region="IMPLICIT BOUNDARY",
+#          old_boundary_file = "./input/test2.tbc"
+          bc_conc = 1
         }
       ],
       bulk_data=[
