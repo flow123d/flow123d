@@ -76,22 +76,38 @@ TEST(Region, all) {
 }
 
 const string read_sets_json = R"JSON(
-{
-	name = "test_set",
-	region_ids= 
-	[
-	   0,
-       3,
-       4
-	],
-	
-	region_labels = 
-	[
-	   "label_0",
-       "label_3",
-       "label_4"
-	] 
-}
+[
+	{
+		name = "test_set_1",
+		region_ids= 
+		[
+		   0,
+		   3,
+		   4
+		],
+		region_labels = 
+		[
+		   "label_1",
+		   "label_2"
+		] 
+	},
+	{
+		name = "test_set_2",
+		region_ids= 
+		[
+		   5,
+		   8
+		] 
+	},
+	{
+		name = "test_set_3",
+		union= 
+		[
+		   "set_1",
+		   "set_2"
+		] 
+	}
+]
 )JSON";
 
 TEST(Region, read_sets_from_input) {
@@ -105,21 +121,23 @@ TEST(Region, read_sets_from_input) {
 				"List of region ID numbers that has to be added to the region set.")
 		.declare_key("region_labels", Array( String()),
 				"List of labels of the regions that has to be added to the region set.")
-		/*.declare_key("union", Array( String(), 2,2),
+		.declare_key("union", Array( String(), 2,2),
 				"Defines region set as a union of given pair of sets. Overrides previous keys.")
 		.declare_key("intersection", Array( String(), 2,2),
 				"Defines region set as an intersection of given pair of sets. Overrides previous keys.")
 		.declare_key("difference", Array( String(), 2,2),
-				"Defines region set as a difference of given pair of sets. Overrides previous keys.")*/
+				"Defines region set as a difference of given pair of sets. Overrides previous keys.")
 		.close();
+
+	Array region_set_array(region_set_input_type, 0, 4294967295);
 
 	Input::JSONToStorage json_reader;
 	stringstream ss(read_sets_json.c_str());
-	json_reader.read_stream(ss, region_set_input_type);
-	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+	json_reader.read_stream(ss, region_set_array);
+	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;
-	region_db.read_sets_from_input(i_rec);
+	region_db.read_sets_from_input(i_arr);
 
 }
 

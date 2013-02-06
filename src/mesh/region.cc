@@ -307,23 +307,92 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 
 const RegionSet & RegionDB::get_region_set(const string & set_name) const {
 	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
-	ASSERT( it != sets_.end(), "No region set with name: %s\n", set_name.c_str());
+	ASSERT( it == sets_.end(), "No region set with name: %s\n", set_name.c_str());
 	return (*it).second;
 }
 
 
-void RegionDB::read_sets_from_input(Input::Record rec) {
-	string set_name = rec.val<string>("name");
-	Input::Array region_ids = rec.val<Input::Array>("region_ids");
-	Input::Array region_labels = rec.val<Input::Array>("region_labels");
+void RegionDB::read_sets_from_input(Input::Array arr) {
+	for (Input::Iterator<Input::Record> it = arr.begin<Input::Record>();
+			it != arr.end();
+			++it) {
 
-	//ASSERT( region_ids.size() != region_labels.size(), "Size of arrays region_ids and region_labels must be same\n");
+		Input::Record rec = (*it);
+		string set_name;
+		Input::Array region_ids, region_labels;
+		Input::Array union_names, intersection_names, difference_names;
+		RegionSet region_set;
+
+		rec.opt_val("name", set_name);
+
+		if (rec.opt_val("region_ids", region_ids) ) {
+			for (Input::Iterator<unsigned int> it_ids = region_ids.begin<unsigned int>();
+					it_ids != region_ids.end();
+			        ++it_ids) {
+				Region reg = find_id(*it_ids);
+				if (reg.is_valid()) {
+					region_set.push_back(reg);
+				} else {
+					xprintf(Err, "Region with id %d doesn't exist.\n", (*it_ids));
+				}
+			}
+		}
+
+		if (rec.opt_val("region_labels", region_labels) ) {
+			for (Input::Iterator<string> it_labels = region_labels.begin<string>();
+					it_labels != region_labels.end();
+			        ++it_labels) {
+				Region reg = find_label(*it_labels);
+				if (reg.is_valid()) {
+					region_set.push_back(reg);
+				} else {
+					xprintf(Err, "Region with label %s doesn't exist.\n", (*it_labels).c_str());
+				}
+			}
+		}
+
+		if (rec.opt_val("union", union_names) ) {
+
+			if (region_set.size() != 0) {
+				xprintf(Warn, "Overwriting previous initialization of region set '%s' by union operation.\n", set_name.c_str());
+			}
+
+			Input::Iterator<string> union_set_1 = union_names.begin<string>();
+			Input::Iterator<string> union_set_2 = ++(union_names.begin<string>());
+			region_set = union_sets( (*union_set_1), (*union_set_2) );
+		}
+
+		if (rec.opt_val("intersection", intersection_names) ) {
+
+			if (region_set.size() != 0) {
+				xprintf(Warn, "Overwriting previous initialization of region set '%s' by intersection operation.\n", set_name.c_str());
+			}
+
+			Input::Iterator<string> intersection_set_1 = intersection_names.begin<string>();
+			Input::Iterator<string> intersection_set_2 = ++(intersection_names.begin<string>());
+			region_set = intersection( (*intersection_set_1), (*intersection_set_2) );
+		}
+
+		if (rec.opt_val("difference", difference_names) ) {
+
+			if (region_set.size() != 0) {
+				xprintf(Warn, "Overwriting previous initialization of region set '%s' by difference operation.\n", set_name.c_str());
+			}
+
+			Input::Iterator<string> difference_set_1 = difference_names.begin<string>();
+			Input::Iterator<string> difference_set_2 = ++(difference_names.begin<string>());
+			region_set = difference( (*difference_set_1), (*difference_set_2) );
+		}
+
+		add_set(set_name, region_set);
+	}
 
 	/*
 	  Input::Array region_ids;
 	  if (rec.opt_val("region_ids", region_ids) ) {
 	    ... add regions
-	        // for int_item in region_ids -> RegionDB.find_id(int_item) ... bud prida nalezany region pomoci add_to_set, nebo chyba
+	        // for int_item in region_ids -> RegionDB.find_id(int_item)
+	        // ... bud prida nalezany region pomoci add_to_set, nebo chyba
 
 	  }
 
@@ -337,18 +406,8 @@ void RegionDB::read_sets_from_input(Input::Record rec) {
 	   if (region_set.size() != 0) xprintf(Warn, "Overwriting previous initialization of region set 'NAME' by union operation.");
 	  }
 	 */
+}
 
-
-	vector<int> id_values; // ? unsigned int
-	vector<string> label_values;
-	RegionSet region_set;
-
-	region_ids.copy_to(id_values);
-	region_labels.copy_to(label_values);
-	for (unsigned int i=0; i<id_values.size(); ++i) {
-		Region reg(id_values[i], *this);
-		region_set.push_back(reg);
-	}
-
-	add_set(set_name, region_set);
+void RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map) {
+	// not implemented yet
 }

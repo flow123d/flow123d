@@ -30,6 +30,7 @@ class Region;
 namespace Input {
     namespace Type { class Record; }
     class Record;
+    class Array;
 }
 
 /**
@@ -192,6 +193,11 @@ private:
 //class RegionSet {
 //};
 typedef std::vector<Region> RegionSet;
+
+/**
+ * Map representing the relevance of elements to regions
+ */
+typedef std::map<unsigned int, unsigned int> MapElementIDToRegionID;
 
 /**
  * Class for conversion between an index and string label of an material.
@@ -407,7 +413,9 @@ public:
      */
     const RegionSet & get_region_set(const string & set_name) const;
 
-    void read_sets_from_input(Input::Record rec); // see structure of RegionDB::region_set_input_type
+    void read_sets_from_input(Input::Array arr);
+
+    void read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
 
 
 private:
