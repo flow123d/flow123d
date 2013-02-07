@@ -41,7 +41,6 @@
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      boundary_file = "./input/test2.tbc",  
       initial_file = "./input/test2.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
@@ -67,13 +66,23 @@
       bulk_data = [
         {
           rid = 48,
-          init_conc = 0,
-          por_m = 0.25
+          por_m = 0.25,
+          por_imm = 0.25,
+          alpha = [0.01, 0.01],
+          phi = 0.5,
+          sorp_type = [1, 2],
+          sorp_coef0 = [0.02, 0.02],
+          sorp_coef1 = [0, 0.5]
         },
         {
           rid = 184,
-          init_conc = 0,
-          por_m = 0.25
+          por_m = 0.25,
+          por_imm = 0.25,
+          alpha = [0.01, 0.01],
+          phi = 0.5,
+          sorp_type = [1, 2],
+          sorp_coef0 = [0.02, 0.02],
+          sorp_coef1 = [0, 0.5]
         }
       ]
       time = {
