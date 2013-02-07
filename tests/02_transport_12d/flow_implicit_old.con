@@ -66,8 +66,7 @@
       bc_data=[
         { 
           region="IMPLICIT BOUNDARY",
-          bc_conc=1
-#          old_boundary_file = "./input/test2.tbc"
+          old_boundary_file = "./input/test2.tbc"
         }
       ],
       bulk_data=[
