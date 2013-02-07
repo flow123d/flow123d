@@ -181,7 +181,6 @@ protected:
     //virtual void integrate_sources();
 
 protected:  
-    //FunctionBase<3> *bc_function;
     
     bool solution_changed_for_scatter;
     Vec velocity_vector;

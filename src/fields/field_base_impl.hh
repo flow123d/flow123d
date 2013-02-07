@@ -183,7 +183,7 @@ void Field<spacedim, Value>::set_from_input(Region reg, const Input::AbstractRec
     if (region_fields[reg.idx()] != NULL) {
         delete region_fields[reg.idx()];
     }
-    //DBGMSG("region initialize id: %d name: %s\n",reg.idx(),this->name_.c_str());
+    //DBGMSG("reginit id: %d label:%s name: %s\n",reg.idx(), reg.label().c_str(), this->name_.c_str());
     region_fields[reg.idx()] = FieldBaseType::function_factory(rec, this->n_comp_);
 }
 

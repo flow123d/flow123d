@@ -129,7 +129,9 @@ void EqDataBase::set_time(const TimeGovernor &time) {
      * - read records from arrays until we reach greater time then actual
      * - update fields (delete the previous, use mekae factory for the new one.
      */
+    //DBGMSG("set_time: boundary\n");
     set_time(time, boundary_input_array_, boundary_it_, true);
+    //DBGMSG("set_time: bulk\n");
     set_time(time, bulk_input_array_, bulk_it_, false);
 }
 
@@ -145,6 +147,7 @@ void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::I
         else read_bulk_list_item(*it);
         ++it;
     }
+    //DBGMSG("checking validity\n");
     // check validity of fields and set current time
     BOOST_FOREACH(FieldCommonBase * field, field_list) 
     {

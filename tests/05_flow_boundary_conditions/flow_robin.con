@@ -19,7 +19,7 @@
       bc_data = [
         { region = ".bc_south",
           bc_type = "robin",
-          bc_flux = {
+          bc_pressure = {
             TYPE = "FieldFormula",
             value = "-2*x"
           },
@@ -37,7 +37,8 @@
           bc_pressure = {
             TYPE = "FieldFormula",
             value = "3*x"
-          }
+          },
+          bc_robin_sigma = 0.5
         },
         { region = ".bc_west",
           bc_type = "dirichlet",

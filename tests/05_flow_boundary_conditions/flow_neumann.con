@@ -33,7 +33,7 @@
         },
         { region = ".bc_north",
           bc_type = "neumann",
-          bc_pressure = {
+          bc_flux = {
             TYPE = "FieldFormula",
             value = "-x"
           }
