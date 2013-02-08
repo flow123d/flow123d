@@ -108,7 +108,8 @@ FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(const
 
 template <int spacedim, class Value>
 void FieldBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
-    xprintf(PrgErr, "The function do not support initialization from input.\n");
+    xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
+            typeid(this).name());
 }
 
 

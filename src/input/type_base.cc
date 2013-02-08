@@ -244,6 +244,8 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     }
 }
 
+// explicit instantiation
+
 #define ARRAY_CONSTRUCT(TYPE) \
 template Array::Array(const TYPE &type, unsigned int min_size, unsigned int max_size)
 

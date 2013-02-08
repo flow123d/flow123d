@@ -78,29 +78,20 @@ TEST(Region, all) {
 const string read_sets_json = R"JSON(
 [
 	{
-		name = "test_set_1",
-		region_ids= 
-		[
-		   0,
-		   3,
-		   4
-		],
+		name = "set_1",
+		region_ids= [ 2, 1 ],
 		region_labels = 
 		[
-		   "label_1",
+		   "label_3",
 		   "label_2"
 		] 
 	},
 	{
-		name = "test_set_2",
-		region_ids= 
-		[
-		   5,
-		   8
-		] 
+		name = "set_2",
+		region_ids= 0 
 	},
 	{
-		name = "test_set_3",
+		name = "set_3",
 		union= 
 		[
 		   "set_1",
@@ -111,33 +102,31 @@ const string read_sets_json = R"JSON(
 )JSON";
 
 TEST(Region, read_sets_from_input) {
-	using namespace Input::Type;
-
-	Record region_set_input_type =
-		Record("RegionSet", "Definition of one region set.")
-		.declare_key("name", String(), Default::obligatory(),
-				"Unique name of the region set.")
-		.declare_key("region_ids", Array( Integer(0)),
-				"List of region ID numbers that has to be added to the region set.")
-		.declare_key("region_labels", Array( String()),
-				"List of labels of the regions that has to be added to the region set.")
-		.declare_key("union", Array( String(), 2,2),
-				"Defines region set as a union of given pair of sets. Overrides previous keys.")
-		.declare_key("intersection", Array( String(), 2,2),
-				"Defines region set as an intersection of given pair of sets. Overrides previous keys.")
-		.declare_key("difference", Array( String(), 2,2),
-				"Defines region set as a difference of given pair of sets. Overrides previous keys.")
-		.close();
-
-	Array region_set_array(region_set_input_type, 0, 4294967295);
 
 	Input::JSONToStorage json_reader;
 	stringstream ss(read_sets_json.c_str());
-	json_reader.read_stream(ss, region_set_array);
+	Input::Type::Array region_set_array_input_type( RegionDB::region_set_input_type );
+	json_reader.read_stream( ss,  region_set_array_input_type);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;
+	Region r0=region_db.add_region(0, "label_0", 1, false);
+	Region r1=region_db.add_region(1, "label_1", 1, false);
+	Region r2=region_db.add_region(2, "label_2", 2, false);
+	Region r3=region_db.add_region(3, "label_3", 2, true);
+	Region r4=region_db.add_region(4, "label_4", 3, false);
+
 	region_db.read_sets_from_input(i_arr);
 
+	EXPECT_EQ( 2,region_db.get_region_set("set_1")[0].id() );
+    EXPECT_EQ( 1,region_db.get_region_set("set_1")[1].id() );
+    EXPECT_EQ( 3,region_db.get_region_set("set_1")[2].id() );
+
+    EXPECT_EQ(0, region_db.get_region_set("set_2")[0].id() );
+
+    EXPECT_EQ(0, region_db.get_region_set("set_3")[0].id() );
+    EXPECT_EQ(1, region_db.get_region_set("set_3")[1].id() );
+    EXPECT_EQ(2, region_db.get_region_set("set_3")[2].id() );
+    EXPECT_EQ(3, region_db.get_region_set("set_3")[3].id() );
 }
 
