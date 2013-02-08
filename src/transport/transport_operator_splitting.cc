@@ -48,8 +48,6 @@ AbstractRecord TransportBase::input_type
 			"Model of sorption.")
 	.declare_key("dual_porosity", Bool(), Default("false"),
 			"Dual porosity model.")
-	.declare_key("initial_file", FileName::input(), Default::obligatory(),
-			"Input file with initial concentrations.")
 	.declare_key("sources_file", FileName::input(), Default::optional(),
 			"File with data for the source term in the transport equation.")
 	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),

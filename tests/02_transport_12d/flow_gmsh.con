@@ -41,7 +41,6 @@
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      initial_file = "./input/test2.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {

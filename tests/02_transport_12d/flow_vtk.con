@@ -42,7 +42,6 @@
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      initial_file = "./input/test2.tic", 
 
       bc_data=[
         { 
