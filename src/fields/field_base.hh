@@ -339,11 +339,6 @@ public:
     Field();
 
     /**
-     * Direct read access to the table of Field pointers on regions.
-     */
-    FieldBaseType * operator() (Region reg);
-
-    /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
@@ -355,6 +350,18 @@ public:
     IT::AbstractRecord make_input_tree() {
         return get_input_type_resolution<FieldBaseType>( this->element_selection_ ,boost::is_same<typename Value::element_type, FieldEnum>());
     }
+
+    /**
+     * By this method you can allow that the field need not to be set on regions (and times) where the given @p control_field is
+     * FieldConstant and has value in given @p value_list. We check this in the set_time method. Through this mechanism we
+     * can switch of e.g. boundary data fields according to the type of the boundary condition.
+     */
+    void disable_where(const Field<spacedim, typename FieldValue<spacedim>::Enum > *control_field, const vector<FieldEnum> &value_list);
+
+    /**
+     * Direct read access to the table of Field pointers on regions.
+     */
+    FieldBaseType * operator() (Region reg);
 
     /**
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
@@ -373,6 +380,12 @@ public:
      *  and call set_time for every field in the field list.
      */
     void set_time(double time);
+
+    /**
+     * If the field returns a FieldEnum and is constant on the given region, the method return true and
+     * set @p value to the constant value on the given region. Otherwise (non constant field, other return type) it returns false.
+     */
+    bool get_constant_enum_value(RegionIdx r_idx,  FieldEnum &value) const;
 
     /**
      * Special field values spatially constant. Could allow optimization of tensor multiplication and
@@ -397,8 +410,16 @@ public:
 
 private:
 
+    /**
+     * If this pointer is set, turn off check of initialization in the set_time method on the regions
+     * where the method get_constant_enum_value of the constrol field returns value from @p no_check_values_.
+     */
+    const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
+    std::vector<FieldEnum> no_check_values_;
 
-    std::vector<FieldBaseType *> region_fields;
+    std::vector<FieldBaseType *> region_fields_;
+
+
 };
 
 

@@ -92,6 +92,7 @@ protected:
     class EqData : public EqDataBase {
     public:
         enum BC_type {
+            none=0,
             dirichlet=1,
             neumann=2,
             robin=3,
@@ -102,11 +103,14 @@ protected:
 
         EqData(const string & name="") : EqDataBase(name) {
             ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", IT::Default("1.0"));
-            ADD_FIELD(bc_type,"Boundary condition type, possible values:", IT::Default("dirichlet") );
+            ADD_FIELD(bc_type,"Boundary condition type, possible values:", IT::Default("none") );
                       bc_type.set_selection(&bc_type_selection);
-            ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.", IT::Default("0.0"));
-            ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.",  IT::Default("0.0"));
-            ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.",  IT::Default("0.0"));
+            ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
+            bc_pressure.disable_where( &bc_type, {none, neumann} );
+            ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
+            bc_flux.disable_where( &bc_type, {none, dirichlet, robin} );
+            ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
+            bc_robin_sigma.disable_where( &bc_type, {none, dirichlet, neumann} );
             ADD_FIELD(bc_conc, "BC concentration", IT::Default("0.0") );
         }
 
@@ -146,6 +150,7 @@ protected:
 
 IT::Selection SomeEquationBase::EqData::bc_type_selection =
               IT::Selection("EqData_bc_Type")
+               .add_value(none, "none")
                .add_value(dirichlet, "dirichlet")
                .add_value(neumann, "neumann")
                .add_value(robin, "robin")

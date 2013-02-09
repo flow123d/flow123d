@@ -14,6 +14,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
+#include "fields/field_constant.hh"
 
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -31,7 +32,17 @@ string input = R"INPUT(
 }
 )INPUT";
 
-
+/* Regions in the test mesh:
+ * $PhysicalNames
+    6
+    1       37      "1D diagonal"
+    2       38      "2D XY diagonal"
+    2       101     ".top side"
+    2       102     ".bottom side"
+    3       39      "3D back"
+    3       40      "3D front"
+    $EndPhysicalNames
+ */
 TEST(Field, init_from_default) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -51,7 +62,7 @@ TEST(Field, init_from_default) {
 
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
-        EXPECT_DEATH( { scalar_field.value(p, mesh.element_accessor(0,true)); }, "Null field ptr on region id: 101, field:" );
+        EXPECT_DEATH( { scalar_field.value(p, mesh.element_accessor(0,true)); }, "Null field ptr " );
     }
     {
         BCField<3, FieldValue<3>::Scalar > scalar_field;
@@ -80,3 +91,67 @@ TEST(Field, init_from_default) {
 
 }
 
+
+TEST(Field, no_check) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    enum {
+        dirichlet,
+        neumann,
+        robin
+    };
+    // test optional checking in the set_time method
+    BCField<3, FieldValue<3>::Enum > bc_type;
+    bc_type.set_name("bc_type");
+
+    BCField<3, FieldValue<3>::Scalar > bc_value;
+    bc_value.set_name("bc_value");
+    bc_value.disable_where( &bc_type, { neumann} );
+
+    BCField<3, FieldValue<3>::Scalar > bc_flux;
+    bc_flux.set_name("bc_flux");
+    bc_flux.disable_where( &bc_type, { dirichlet, robin } );
+
+    BCField<3, FieldValue<3>::Scalar > bc_sigma;
+    bc_sigma.set_name("bc_sigma");
+    bc_sigma.disable_where( &bc_type, { dirichlet, neumann} );
+
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh mesh;
+    GmshMeshReader( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).read_mesh(&mesh);
+
+    bc_type.set_mesh(&mesh);
+    bc_flux.set_mesh(&mesh);
+    bc_value.set_mesh(&mesh);
+    bc_sigma.set_mesh(&mesh);
+
+    /*
+    1       37      "1D diagonal"
+    2       38      "2D XY diagonal"
+    2       101     ".top side"
+    2       102     ".bottom side"
+    3       39      "3D back"
+    3       40      "3D front"
+     */
+
+    typedef FieldConstant<3, FieldValue<3>::Scalar > SConst;
+    typedef FieldConstant<3, FieldValue<3>::Enum > EConst;
+    auto neumann_type = EConst().set_value(neumann);
+    auto robin_type = EConst().set_value(robin);
+    auto one = SConst().set_value(1.0);
+
+    bc_type.set_field(mesh.region_db().find_id(101), & neumann_type );
+    bc_flux.set_field(mesh.region_db().find_id(101), & one );
+
+    bc_type.set_field(mesh.region_db().find_id(102), & robin_type );
+    bc_value.set_field(mesh.region_db().find_id(102), & one );
+    bc_sigma.set_field(mesh.region_db().find_id(102), & one );
+
+    bc_type.set_field(mesh.region_db().find_id(-3), & neumann_type );
+    bc_flux.set_field(mesh.region_db().find_id(-3), & one );
+
+    bc_type.set_time(0.0);
+    bc_flux.set_time(0.0);
+    bc_value.set_time(0.0);
+    bc_sigma.set_time(0.0);
+}
