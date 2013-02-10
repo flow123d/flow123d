@@ -85,7 +85,7 @@ protected:
      * solution: have specific RegionSets for these three cases.
      */
     RegionIdx(unsigned int index)
-    : idx_(index) {}
+    : idx_(index) { }
 
     /**
      * Internal region index. Regions of one RegionDB (corresponding to one mesh) forms more or less continuous sequence.
@@ -322,6 +322,12 @@ public:
      *
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+
+    /**
+     * As the previous, but generates automatic if region is boundary or not.
+     * The specification of this region is given in 'additional region definitions' section of the input file.
+     */
+    Region add_region(unsigned int id, const std::string &label, unsigned int dim);
 
     /**
      * As the previous, but generates automatic label of form 'region_ID' if the region with same ID is not already present. Set bulk region.

@@ -124,9 +124,9 @@ TEST(Region, read_sets_from_input) {
 
     EXPECT_EQ(0, region_db.get_region_set("set_2")[0].id() );
 
-    EXPECT_EQ(0, region_db.get_region_set("set_3")[0].id() );
-    EXPECT_EQ(1, region_db.get_region_set("set_3")[1].id() );
-    EXPECT_EQ(2, region_db.get_region_set("set_3")[2].id() );
-    EXPECT_EQ(3, region_db.get_region_set("set_3")[3].id() );
+    EXPECT_EQ(3, region_db.get_region_set("set_3")[0].id() );
+    EXPECT_EQ(0, region_db.get_region_set("set_3")[1].id() );
+    EXPECT_EQ(1, region_db.get_region_set("set_3")[2].id() );
+    EXPECT_EQ(2, region_db.get_region_set("set_3")[3].id() );
 }
 

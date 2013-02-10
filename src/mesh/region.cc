@@ -129,6 +129,19 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
 
 
 
+Region RegionDB::add_region(unsigned int id, const std::string &label, unsigned int dim) {
+	if (label.size() != 0) {
+		bool boundary = label[0] == '.';
+		return add_region(id, label, dim, boundary);
+	}
+    // else
+    stringstream ss;
+    ss << "region_" << id;
+	return add_region(id, ss.str(), dim, false);
+}
+
+
+
 Region RegionDB::add_region(unsigned int id, unsigned int dim) {
     Region r_id = find_id(id);
     if (r_id.is_valid()) return add_region(id, r_id.label(), dim, r_id.is_boundary() );
@@ -294,8 +307,8 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 		RegionSet & set_1, RegionSet & set_2) {
 	std::map<std::string, RegionSet>::iterator it_1 = sets_.find(set_name_1);
 	std::map<std::string, RegionSet>::iterator it_2 = sets_.find(set_name_2);
-	ASSERT( it_1 == sets_.end(), "No region set with name: %s\n", set_name_1.c_str());
-	ASSERT( it_2 == sets_.end(), "No region set with name: %s\n", set_name_2.c_str());
+	ASSERT( it_1 != sets_.end(), "No region set with name: %s\n", set_name_1.c_str());
+	ASSERT( it_2 != sets_.end(), "No region set with name: %s\n", set_name_2.c_str());
 
 	set_1 = (*it_1).second;
 	set_2 = (*it_2).second;
@@ -409,5 +422,32 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 }
 
 void RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map) {
-	// not implemented yet
+	map.clear();
+
+	for (Input::Iterator<Input::Record> it = region_list.begin<Input::Record>();
+				it != region_list.end();
+				++it) {
+
+		Input::Record rec = (*it);
+		string region_name;
+		unsigned int region_id;
+		Input::Array element_list;
+
+		rec.opt_val("name", region_name);
+		rec.opt_val("id", region_id);
+		add_region(region_id, region_name, 0);
+
+		if (rec.opt_val("element_list", element_list) ) {
+			for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
+					it_element != element_list.end();
+			        ++it_element) {
+				std::map<unsigned int, unsigned int>::iterator it_map = map.find((*it_element));
+				if (it_map == map.end()) {
+					map.insert( std::make_pair((*it_element), region_id) );
+				} else {
+					xprintf(Warn, "Element with id %s can't be added more than once.\n", (*it_element));
+				}
+			}
+		}
+	}
 }
