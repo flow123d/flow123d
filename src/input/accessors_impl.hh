@@ -180,6 +180,11 @@ inline IteratorBase::operator bool() const {
 
 
 
+inline unsigned int IteratorBase::idx() const {
+    return index_;
+}
+
+
 /******************************************************************************************
  * Implementation of Input::Iterator<Type>
  */

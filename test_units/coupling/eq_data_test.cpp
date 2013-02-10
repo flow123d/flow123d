@@ -114,12 +114,12 @@ protected:
             ADD_FIELD(bc_conc, "BC concentration", IT::Default("0.0") );
         }
 
-        Region read_boundary_list_item(Input::Record rec) {
-            Region region=EqDataBase::read_boundary_list_item(rec);
+        RegionSet read_boundary_list_item(Input::Record rec) {
+            RegionSet domain=EqDataBase::read_boundary_list_item(rec);
             Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
             if (field_it) {
                 //bc_pressure(region)->init_from_input(*field_it);
-                bc_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
+                BOOST_FOREACH(Region reg, domain) bc_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
             }
             FilePath bcd_file;
             if (rec.opt_val("flow_old_bcd_file", bcd_file) ) {
@@ -128,7 +128,7 @@ protected:
             if (rec.opt_val("transport_old_bcd_file", bcd_file) )  {
                 OldBcdInput::instance()->read_transport( bcd_file, bc_conc );
             }
-            return region;
+            return domain;
         }
 
         Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
@@ -169,14 +169,15 @@ public:
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", IT::Default("0.0") );
         }
 
-        Region read_bulk_list_item(Input::Record rec) {
-            Region region=EqDataBase::read_bulk_list_item(rec);
+        RegionSet read_bulk_list_item(Input::Record rec) {
+            RegionSet domain=EqDataBase::read_bulk_list_item(rec);
             Input::AbstractRecord piezo_head_rec;
             if (rec.opt_val("init_piezo_head", piezo_head_rec) ) {
-                init_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, piezo_head_rec) );
+                BOOST_FOREACH(Region reg, domain)
+                        init_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, piezo_head_rec) );
             }
 
-            return region;
+            return domain;
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;

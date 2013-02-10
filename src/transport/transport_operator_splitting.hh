@@ -128,7 +128,7 @@ public:
 		EqData();
 		virtual ~EqData() {};
 
-        Region read_boundary_list_item(Input::Record rec);
+        RegionSet read_boundary_list_item(Input::Record rec);
 
 		Field<3, FieldValue<3>::Scalar> por_imm;   ///< Immobile porosity
 		Field<3, FieldValue<3>::Vector> alpha;	   ///< Coefficients of non-equilibrium exchange

@@ -440,6 +440,11 @@ public:
      */
     inline operator bool() const;
 
+    /**
+     * Return index in an array or record.
+     */
+    inline unsigned int idx() const;
+
 protected:
     const StorageBase *storage_;
     unsigned int index_;

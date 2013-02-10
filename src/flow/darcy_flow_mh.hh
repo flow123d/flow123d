@@ -119,7 +119,7 @@ public:
          * - bc_piezo_head key
          * - flow_old_bcd_file
          */
-        Region read_boundary_list_item(Input::Record rec);
+        RegionSet read_boundary_list_item(Input::Record rec);
        
         Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
         Field<3, FieldValue<3>::Scalar > conductivity;

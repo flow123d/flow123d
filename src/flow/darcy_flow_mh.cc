@@ -35,6 +35,7 @@
 #include "petscao.h"
 #include "petscerror.h"
 #include <armadillo>
+#include <boost/foreach.hpp>
 
 
 #include "system/system.hh"
@@ -160,9 +161,18 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", it::Default("none") );
               bc_type.set_selection(&bc_type_selection);
-    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.", it::Default("0.0"));
-    ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.", it::Default("0.0") );
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", it::Default("0.0") );
+
+    ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
+    std::vector<FieldEnum> list; list.push_back(none); list.push_back(neumann);
+    bc_pressure.disable_where(& bc_type, list );
+
+    ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
+    list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(robin);
+    bc_flux.disable_where(& bc_type, list );
+
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
+    list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(neumann);
+    bc_flux.disable_where(& bc_type, list );
     
     //these are for unsteady
     ADD_FIELD(init_pressure, "Initial condition as pressure", it::Default("0.0") );
@@ -171,20 +181,22 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
 
 
 
-Region DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
-    Region region=EqDataBase::read_boundary_list_item(rec);
-    Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
-    if (field_it) {
-        DBGMSG("piezo head read_b_list_Data\n");
-
-        //bc_pressure(region)->init_from_input(*field_it);
-        bc_pressure.set_field(region, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
+RegionSet DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
+    RegionSet domain=EqDataBase::read_boundary_list_item(rec);
+    Input::AbstractRecord field_a_rec;
+    if (rec.opt_val("bc_piezo_head", field_a_rec)) {
+        BOOST_FOREACH(Region reg, domain)
+                bc_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
+    }
+    if (rec.opt_val("init_piezo_head", field_a_rec)) {
+        BOOST_FOREACH(Region reg, domain)
+                init_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
     }
     FilePath flow_bcd_file;
     if (rec.opt_val("flow_old_bcd_file", flow_bcd_file) ) {
         OldBcdInput::instance()->read_flow(flow_bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
     }
-    return region;
+    return domain;
 }
 
 /* TODO: this can be applied when Unstedy is no longer descendant from Steady

@@ -88,17 +88,24 @@ IT::Record EqDataBase::generic_input_type(bool bc_regions) {
 
     if (bc_regions) {
         rec_name = equation_name_ + "_BoundaryData";
-        description = "Record to set BOUNDARY fields of equation '" + equation_name_ + "' on given region set at given time.";
+        description = "Record to set BOUNDARY fields of the equation '" + equation_name_ + "'.\n"
+                "The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\n"
+                "and after the time given by the key 'time'. The field setting can be overridden by\n"
+                " any " + rec_name + " record that comes later in the boundary data array.";
     } else {
         rec_name = equation_name_ + "_BulkData";
-        description = "Record to set BULK fields of equation '" + equation_name_ + "' on given region set at given time.";
+        description = "Record to set BULK fields of the equation '" + equation_name_ + "'.\n"
+                "The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r_set'\n"
+                "and after the time given by the key 'time'. The field setting can be overridden by\n"
+                " any " + rec_name + " record that comes later in the bulk data array.";
     }
     IT::Record rec = IT::Record(rec_name, description)
-                     .declare_key("region", IT::String(), "Region label")
-                     .declare_key("rid", IT::Integer(0), "Region ID (alternative to region label)" )
+                     .declare_key("r_set", IT::String(), "Name of region set where to set fields.")
+                     .declare_key("region", IT::String(), "Label of the region where to set fields. ")
+                     .declare_key("rid", IT::Integer(0), "ID of the region where to set fields." )
                      .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
-                             "Apply field setting in this record at given time.\n"
-                             "These times has to form increasing sequence.");
+                             "Apply field setting in this record after this time.\n"
+                             "These times has to form an increasing sequence.");
 
     BOOST_FOREACH(FieldCommonBase * field, field_list)
         if (bc_regions == field->is_bc()) {
@@ -190,33 +197,40 @@ void EqDataBase::init_from_input(Input::Array bulk_list, Input::Array bc_list) {
 
 
 
-Region EqDataBase::read_boundary_list_item(Input::Record rec) {
+RegionSet EqDataBase::read_boundary_list_item(Input::Record rec) {
     return read_list_item(rec, true);
 }
 
 
 
-Region EqDataBase::read_bulk_list_item(Input::Record rec) {
+RegionSet EqDataBase::read_bulk_list_item(Input::Record rec) {
     return read_list_item(rec, false);
 }
 
 
 
 
-Region EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
-    Input::Iterator<string> it = rec.find<string>("region");
-    Region reg;
+RegionSet EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
+    RegionSet domain;
+    std::string name;
+    unsigned int id;
+    if (rec.opt_val("r_set", name)) {
+        domain = mesh_->region_db().get_region_set(name);
 
-    // get the region
-    if (it) {
-        // try find region by label
-        reg = mesh_->region_db().find_label(*it);
-        if (! reg.is_valid() ) xprintf(UsrErr, "Unknown region with label: '%s'\n", (*it).c_str());
+    } else if (rec.opt_val("region", name)) {
+        domain.push_back( mesh_->region_db().find_label(name) );    // try find region by label
+        if (! domain[0].is_valid() ) xprintf(UsrErr, "Unknown region with label: '%s'\n", name.c_str());
+
+    } else if (rec.opt_val("rid", id)) {
+        domain.push_back( mesh_->region_db().find_id(id) );         // try find region by ID
+        if (! domain[0].is_valid() ) xprintf(UsrErr, "Unknown region with id: '%d'\n", id);
+
     } else {
-        // try find region by ID
-        Input::Iterator<unsigned int> id_it = rec.find<unsigned int>("rid");
-        reg = mesh_->region_db().find_id(*id_it);
-        if (! reg.is_valid() ) xprintf(UsrErr, "Unknown region with id: '%d'\n", *id_it);
+        if (bc_regions) {
+            xprintf(UsrErr, "Missing domain specification in BOUNDARY record, item %d, equation %s\n", boundary_it_.idx(), equation_name_.c_str());
+        } else {
+            xprintf(UsrErr, "Missing domain specification in BULK record, item %d, equation %s\n", bulk_it_.idx(), equation_name_.c_str());
+        }
     }
     
     // init all fields on this region
@@ -224,13 +238,13 @@ Region EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
         if (bc_regions == field->is_bc()) {
             Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>(field->name());
             if (field_it) {
-                field->set_from_input(reg,*field_it);
+                BOOST_FOREACH(Region reg, domain) field->set_from_input(reg,*field_it);
                 field->set_mesh(mesh_);
             }
         }
     }
 
-    return reg;
+    return domain;
 }
 
 

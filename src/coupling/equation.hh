@@ -42,6 +42,7 @@
 class Mesh;
 class FieldCommonBase;
 class Region;
+typedef std::vector<Region> RegionSet;
 
 
 namespace Input {
@@ -255,9 +256,9 @@ public:
     /**
      * Reads input from one region - one time descriptor.
      */
-    virtual Region read_boundary_list_item(Input::Record rec);
+    virtual RegionSet read_boundary_list_item(Input::Record rec);
 
-    virtual Region read_bulk_list_item(Input::Record rec);
+    virtual RegionSet read_bulk_list_item(Input::Record rec);
 
     virtual ~EqDataBase();
 
@@ -268,7 +269,7 @@ protected:
 
     void set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions);
 
-    Region read_list_item(Input::Record rec, bool bc_regions);
+    RegionSet read_list_item(Input::Record rec, bool bc_regions);
 
     /// Pointer to mesh where the equation data fields live.
     Mesh *mesh_;

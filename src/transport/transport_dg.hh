@@ -82,7 +82,7 @@ public:
 	public:
 
 		EqData();
-		Region read_boundary_list_item(Input::Record rec);
+		RegionSet read_boundary_list_item(Input::Record rec);
 
 	};
 

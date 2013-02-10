@@ -76,9 +76,9 @@ using namespace arma;
 TransportDG::EqData::EqData() : TransportEqData("TransportDG")
 {}
 
-Region TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
+RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
 	// Base method EqDataBase::read_boundary_list_item must be called first!
-	Region region = EqDataBase::read_boundary_list_item(rec);
+	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
     FilePath bcd_file;
     if (rec.opt_val("old_boundary_file", bcd_file) ) {
     	Input::Iterator<Input::Array> bc_it = rec.find<Input::Array>("bc_times");
@@ -94,7 +94,7 @@ Region TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
         }
         OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
     }
-    return region;
+    return domain;
 }
 
 TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
