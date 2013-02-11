@@ -6,7 +6,6 @@
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "system/system.hh"
-#include "materials.hh"
 #include "transport/transport.h"
 //#include "system/par_distribution.hh"
 #include "la/distribution.hh"
@@ -44,8 +43,8 @@ using namespace std;
 
 //Pade_approximant::Pade_approximant(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
 //    : Linear_reaction(marks, init_mesh, material_database, in_rec, names)
-Pade_approximant::Pade_approximant(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-      : Linear_reaction(init_mesh, material_database, in_rec, names)
+Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+      : Linear_reaction(init_mesh, in_rec, names)
 {
 	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
 	den_pol_deg = in_rec.val<int>("den_pol_deg");

@@ -197,6 +197,13 @@ public:
     void read_stream(istream &in, const Type::TypeBase &root_type);
 
     /**
+     * Read a storage from given default value using method storage_from_default.
+     *
+     * Maybe we should rather should make independent reader class for deafult strings.
+     */
+    void read_from_default( const string &default_str, const Type::TypeBase &root_type);
+
+    /**
      * Returns the root accessor. The template type \p T should correspond
      * to the kind of the input type at root of the declaration tree.
      */

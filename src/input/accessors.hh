@@ -174,12 +174,32 @@ public:
     template <class Ret>
     inline const Ret val(const string &key, const Ret default_val) const;
 
+
     /**
      * Returns iterator to the key if it exists or NULL Iterator if it doesn't.
      * This method must be used for keys which are optional or has default value provided at read time.
      */
     template <class Ret>
     inline Iterator<Ret> find(const string &key) const;
+
+    /**
+     * This has similar function as the previous method, but simpler usage in some cases. You has to provide reference to the variable @p value
+     * where the value of an optional @p key should be placed. If the key in not present in the input the value of @p value is not changed
+     * and the method returns false. If the key has a value the method returns true. Typical usage:
+     * @code
+     * double param;
+     * string other_param;
+     * if (rec.opt_val("optional_param", param) ) {
+     *      use_param(param);
+     * } else if (rec.opt_val("other_param", other_param) ) {
+     *      use_other_param(other_param);
+     * } else {
+     *      ... error, no value for param
+     * }
+     * @endcode
+     */
+    template <class Ret>
+    inline bool opt_val(const string &key, Ret &value) const;
 
     /**
      * Returns true if the accessor is empty (after default constructor).
@@ -419,6 +439,11 @@ public:
      * Implicit conversion to bool. Returns true if iterator points to non-null storage.
      */
     inline operator bool() const;
+
+    /**
+     * Return index in an array or record.
+     */
+    inline unsigned int idx() const;
 
 protected:
     const StorageBase *storage_;

@@ -59,14 +59,14 @@
 // CALCULATE METRICS OF THE SIDE
 //=============================================================================
 
-double Side::metric() const {
+double Side::measure() const {
     switch ( dim() ) {
         case 0:
-            return 1.0 * element_->material->size;
+            return 1.0;
         case 1: {
             arma::vec3 diff = node(1)->point();
             diff -= node(0)->point();
-            return arma::norm( diff , 2 ) * element_->material->size;
+            return arma::norm( diff , 2 );
         }
         case 2: {
             arma::vec3 diff0 = node(1)->point() - node(0)->point();

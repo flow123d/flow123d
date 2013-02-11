@@ -167,6 +167,46 @@ This test verifies the same features as the test 02 does but on a simpler geomet
 
 
 %=====================================================
+%                   TEST  05
+%=====================================================
+
+\section{Test 05 -- Darcy flow boundary conditions}
+\label{sec:test05}
+There are three types of boundary conditions -- Dirichlet, Neumann and Robin that are tested. All three test have the same geometry and boundary conditions are derived from the same analytical solution.
+
+We will prescribe analytical solution $u=xy$ of Laplace equation $-\Lapl{}u = 0$.
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+  \end{itemize}
+
+\subsection*{Geometry and boundary conditions}
+The geometry is simple -- square plane in xy coordinates with corner points [0,0] and [1,1]. Each side has its own boundary regions called \verb0.bc_south0, \verb0.bc_east0, \verb0.bc_north0, \verb0.bc_west0.
+
+\textbf{Dirichlet test.} All sides have pressure prescribed. These are south: $u_D=0$; east: $u_D=y$; north: $u_D=x$; west: $u_D=0$.
+
+\textbf{Neumann test.} Two sides have pressure prescribed for the Dirichlet boundary condition: east: $u_D=y$; west: $u_D=0$. Two other sides have flux prescribed: south: $q_N=x$; north $q_N=-x$.
+
+\textbf{Robin test.} Two sides have pressure prescribed  for the Dirichlet boundary condition: east: $u_D=y$; west: $u_D=0$.
+For Robin boundary condition we get from the equation boundary pressure
+\begin{equation} 
+u_R=\frac{1+\sigma_R}{\sigma_R}x. 
+\end{equation}
+We choose $\sigma_R=0.5$ and then we get $u_R=-2x$ on the south side and $u_R=3x$ on the north side. 
+
+\subsection*{Parameters}
+\begin{itemize}
+  \item \textbf{Conductivity:} on region \verb0plane0 is $1.0$.
+  \item \textbf{Thickness:} on region \verb0plane0 is by default 1.0~$L$.
+  \item There are no other regions, no transport so there are not any other parameters.
+\end{itemize}
+
+\subsection*{Verification}
+This test verifies prescribing different types boundary conditions.
+
+
+
+%=====================================================
 %                   TEST  8
 %=====================================================
 

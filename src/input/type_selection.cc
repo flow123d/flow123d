@@ -54,7 +54,7 @@ const Selection & Selection::close() const {
 
 bool Selection::valid_default(const string &str) const {
     if (! has_name(str))
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
     return true;
 }
 
@@ -99,8 +99,16 @@ int Selection::from_default(const string &str) const {
     try {
         return name_to_int(str);
     } catch (ExcSelectionKeyNotFound &e) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
     }
+    return -1;
+}
+
+
+string Selection::key_list() const {
+    ostringstream os;
+    for(unsigned int i=0; i<size(); i++) os << "'" <<data_->keys_[i].key_ << "' ";
+    return os.str();
 }
 
 
@@ -125,6 +133,10 @@ void Selection::SelectionData::add_value(const int value, const std::string &key
     Key tmp_key = { new_idx, key, description, value };
     keys_.push_back(tmp_key);
 }
+
+
+
+
 
 } // closing namespace Type
 } // close namespace Input

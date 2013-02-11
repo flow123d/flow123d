@@ -75,16 +75,19 @@ public:
         return element()->region();
     }
 
+    ElementAccessor<3> element_accessor();
+
+
     inline SideIter side() {
         if (edge()->n_sides != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
         return edge()->side_[0];
     }
 
     // Data readed from boundary conditions files (REMOVE)
-    int      type;      // Type of boundary condition
-    double   scalar;    // Scalar - for Dirichlet's or Newton's type
-    double   flux;      // Flux - for Neumann's type or source
-    double   sigma;     // Sigma koef. - for Newton's type
+    //int      type;      // Type of boundary condition
+    //double   scalar;    // Scalar - for Dirichlet's or Newton's type
+    //double   flux;      // Flux - for Neumann's type or source
+    //double   sigma;     // Sigma koef. - for Newton's type
 
     //int      group;     // Group of condition
     // Topology of the mesh

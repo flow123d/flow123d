@@ -5,6 +5,8 @@
 #include "la/distribution.hh"
 #include <string.h>
 #include <./input/input_type.hh>
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 class Distribution;
 
@@ -99,6 +101,15 @@ class Semchem_interface
 		*	Semchem interface is the tool to call a simulation of chemical reactions as a part of transport model. timeStep defines the length of time step for simulation of chemical reactions. nrOfSpecies is the number of transported species. dualPorosity defines type of porosity in examinated soil.
 		*/
 		Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity); //(int nrOfElements, double ***ConcentrationMatrix, Mesh *mesh);
+		/** 
+     * @brief Sets pointer to data of other equations. 
+     * @param cross_section is pointer to cross_section data of Darcy flow equation
+     */
+    void set_cross_section(Field<3, FieldValue<3>::Scalar> *cross_section);
+
+    void set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por_m_,
+    		Field<3, FieldValue<3>::Scalar> *por_imm_,
+    		Field<3, FieldValue<3>::Scalar> *phi_);
 		/**
 		*	This method has been prepared to enable simulation of chemical reactions via Semchem. porTyp defines type of porosity. ppelm is a pointer to element we want to simulate chemistry in. poradi is ID of such element. conc is a pointer to threedimensional array full of doubles.
 		*/
@@ -176,5 +187,12 @@ class Semchem_interface
 		*	It enables to change local IDs of elements in mesh into global IDs.
 		*/
 		int *el_4_loc;
+    /**
+     * pointer to cross_section data (gets from flow->transport->semchem), for computing element volume
+     */
+    Field<3, FieldValue<3>::Scalar > *cross_section;
+
+    /// pointers to sorption fields from transport
+    Field<3, FieldValue<3>::Scalar > *por_m, *por_imm, *phi;
 };
 #endif

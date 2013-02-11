@@ -2,15 +2,26 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test14 - 2D transport with time variable boundary", 
-    material = "./input/test14.mtr", 
     mesh = {
-      mesh_file = "./input/test14.msh", 
-      neighbouring = "./input/test14.ngh"
+      mesh_file = "./input/test14.msh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test14.fbc", 
+
+      bulk_data = [
+        { rid = 100,
+          cond_anisothropy = 0.1
+        }
+      ],
+    
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test14.fbc"
+        }
+      ],
+
       n_schurs = 2, 
       output = {
         output_stream = {
@@ -28,14 +39,36 @@
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      bc_times = [
-        1, 
-        3, 
-        6, 
-        7
-      ], 
-      boundary_file = "./input/test14_tbc", 
-      initial_file = "./input/test14.tic", 
+    
+      bulk_data = [
+        { rid = 100,
+          init_conc = 0
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test14_tbc_000",
+          time = 1
+        },
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test14_tbc_001",
+          time = 3
+        },
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test14_tbc_002",
+          time = 6
+        },
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test14_tbc_003",
+          time = 7
+        }
+      ],
+
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {

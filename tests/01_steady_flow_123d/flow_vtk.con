@@ -2,16 +2,63 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
-    material = "./input/test1.mtr", 
     mesh = {
-      mesh_file = "./input/test1.msh", 
-      neighbouring = "./input/test1.ngh"
+      mesh_file = "./input/test1_new.msh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test1.fbc", 
       n_schurs = 2, 
+
+      bulk_data = [
+        { region = "1d_channel",
+          cond_anisothropy = 10
+        },
+        { region = "2d_fraction_1",
+          cond_anisothropy = 1
+        },
+        { region = "2d_fraction_2",
+          cond_anisothropy = 1
+        },
+        { region = "3d_cube",
+          cond_anisothropy = 0.1
+        }
+      ],
+      
+      bc_data = [
+        { region = ".1d_channel",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        { region = ".2d_fraction_1",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        { region = ".2d_fraction_2",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        { region = ".3d_cube",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        { region = "IMPLICIT BOUNDARY",
+          bc_pressure = 0.0
+        }
+      ],
+
       output = {
         balance_output = "water_balance.out", 
         output_stream = {

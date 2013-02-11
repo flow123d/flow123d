@@ -26,6 +26,7 @@ using namespace std;
 #include "fields/field_values.hh"
 
 #include "input/input_type.hh"
+#include "input/json_to_storage.hh"
 
 
 namespace it = Input::Type;
@@ -37,11 +38,6 @@ namespace it = Input::Type;
 
 
 // ************************************************************************************************** implementation of FieldBase<...>
-
-template <int spacedim, class Value>
-it::AbstractRecord FieldBase<spacedim, Value>::input_type
-    = it::AbstractRecord("Field"+template_name(), "Abstract record for all time-space functions.")
-          .allow_auto_conversion("FieldConstant");
 
 
 template <int spacedim, class Value>
@@ -61,9 +57,14 @@ string FieldBase<spacedim, Value>::template_name() {
 
 
 template <int spacedim, class Value>
+it::AbstractRecord FieldBase<spacedim, Value>::input_type
+    = it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+          .allow_auto_conversion("FieldConstant");
+
+
+template <int spacedim, class Value>
 Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename Value::ElementInputType *element_input_type) {
-    // jak sem dostat primo potomky
-    it::AbstractRecord type= it::AbstractRecord("Field", "Abstract record for all time-space functions.");
+    it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.");
     type.allow_auto_conversion("FieldConstant");
 
     FieldConstant<spacedim,Value>::get_input_type(type, element_input_type);
@@ -107,7 +108,8 @@ FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(const
 
 template <int spacedim, class Value>
 void FieldBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
-    xprintf(PrgErr, "The function do not support initialization from input.\n");
+    xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
+            typeid(this).name());
 }
 
 
@@ -157,7 +159,7 @@ void FieldBase<spacedim, Value>::value_list(const std::vector< Point<spacedim> >
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: FieldCommonBase(false)
+: FieldCommonBase(false), no_check_control_field_(NULL)
 {
     this->enum_valued_ = boost::is_same<typename Value::element_type, FieldEnum>::value;
 }
@@ -165,23 +167,33 @@ Field<spacedim,Value>::Field()
 
 
 template<int spacedim, class Value>
+void Field<spacedim, Value>::disable_where(const Field<spacedim, typename FieldValue<spacedim>::Enum > *control_field, const vector<FieldEnum> &value_list) {
+    no_check_control_field_=control_field;
+    no_check_values_=value_list;
+}
+
+
+
+template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBaseType * Field<spacedim,Value>::operator() (Region reg) {
-    ASSERT_LESS(reg.idx(), this->region_fields.size());
-    return this->region_fields[reg.idx()];
+    ASSERT_LESS(reg.idx(), this->region_fields_.size());
+    return this->region_fields_[reg.idx()];
 }
 
 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_from_input(Region reg, const Input::AbstractRecord &rec) {
+    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
-    if (region_fields.size() == 0)
-        region_fields.resize(Region::db().size(), NULL);
+    if (region_fields_.size() == 0)
+        region_fields_.resize( this->mesh_->region_db().size(), NULL);
 
-    if (region_fields[reg.idx()] != NULL) {
-        delete region_fields[reg.idx()];
+    if (region_fields_[reg.idx()] != NULL) {
+        delete region_fields_[reg.idx()];
     }
-    region_fields[reg.idx()] = FieldBaseType::function_factory(rec, this->n_comp_);
+    //DBGMSG("reginit id: %d label:%s name: %s\n",reg.idx(), reg.label().c_str(), this->name_.c_str());
+    region_fields_[reg.idx()] = FieldBaseType::function_factory(rec, this->n_comp_);
 }
 
 
@@ -189,40 +201,82 @@ void Field<spacedim, Value>::set_from_input(Region reg, const Input::AbstractRec
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_field(Region reg, FieldBaseType * field) {
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
-    if (region_fields.size() == 0)
-        region_fields.resize(Region::db().size(), NULL);
+    if (region_fields_.size() == 0)
+        region_fields_.resize( this->mesh_->region_db().size(), NULL);
 
-    if (region_fields[reg.idx()] != NULL) {
-        delete region_fields[reg.idx()];
+    if (region_fields_[reg.idx()] != NULL) {
+        delete region_fields_[reg.idx()];
     }
 
     ASSERT_SIZES( field->n_comp() , this->n_comp_);
-    region_fields[reg.idx()] = field;
+    region_fields_[reg.idx()] = field;
+    region_fields_[reg.idx()]->set_mesh( this->mesh_ );
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_time(double time) {
-    for(unsigned int i=0; i < region_fields.size(); i++) {
-        if (region_fields[i])  region_fields[i]->set_time(time);
-        //else  xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d.\n", name_.c_str(), Region::db().get_id(i) );
+    if (region_fields_.size() == 0)
+        region_fields_.resize( this->mesh_->region_db().size(), NULL);
+
+    const RegionSet & all_set = this->mesh_->region_db().get_region_set("ALL");
+    for( RegionSet::const_iterator reg = all_set.begin(); reg!=all_set.end(); ++reg) {
+        if (reg->is_boundary() == this->bc_) {  // for regions that match type of the field domain
+            if (region_fields_[reg->idx()] == NULL) {
+                // is the check turned off?
+                if (no_check_control_field_) {
+                    FieldEnum value;
+                    if (no_check_control_field_->get_constant_enum_value(*reg, value)
+                        && ( std::find(no_check_values_.begin(), no_check_values_.end(), value)
+                             != no_check_values_.end() )
+                       ) continue; // the field is not needed on this region
+                    //  else perform the check
+                }
+                // try to use default
+                if (this->default_.has_value_at_declaration()) {
+                    Input::JSONToStorage reader;
+                    Input::Type::AbstractRecord a_rec_type = make_input_tree();
+                    reader.read_from_default(this->default_.value(), a_rec_type );
+                    set_from_input(*reg, reader.get_root_interface<Input::AbstractRecord>() );
+                } else {
+                    xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n", name_.c_str(), reg->id(), reg->label().c_str() );
+                }
+            }
+            region_fields_[reg->idx()]->set_time(time);
+        }
     }
+}
+
+
+// helper functions
+template<int spacedim, class FieldBaseType>
+FieldEnum get_constant_enum_value_dispatch(FieldBaseType *region_field,  const boost::true_type&) {
+    return region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
+}
+
+template<int spacedim,class FieldBaseType>
+FieldEnum get_constant_enum_value_dispatch(FieldBaseType *region_field,  const boost::false_type&) {
+    return 0;
 }
 
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_mesh(Mesh *mesh) {
-    for(unsigned int i=0; i < region_fields.size(); i++) {
-        if (region_fields[i])  region_fields[i]->set_mesh(mesh);
+bool Field<spacedim,Value>::get_constant_enum_value(RegionIdx r_idx,  FieldEnum &value) const {
+    if (boost::is_same<typename Value::return_type, FieldEnum>::value) {
+        FieldBaseType *region_field = region_fields_[r_idx.idx()];
+        if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
+            value = get_constant_enum_value_dispatch<spacedim>(region_field, boost::is_same<typename Value::return_type, FieldEnum>() );
+            return true;
+        }
     }
+    return false;
 }
-
 
 
 template<int spacedim, class Value>
 FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
-    FieldBaseType *f = region_fields[elm.region().idx()];
+    FieldBaseType *f = region_fields_[elm.region().idx()];
     if (f) return f->field_result();
     else return result_none;
 }
@@ -230,19 +284,19 @@ FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm)
 
 
 template<int spacedim, class Value>
-inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm)  {
-    ASSERT_LESS(elm.region().idx(), region_fields.size() );
-    ASSERT( region_fields[elm.region().idx()] , "Null field ptr on region %d, field: %s\n", elm.region().idx(), this->name_.c_str());
-    return region_fields[elm.region().idx()]->value(p,elm);
+inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
+    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx out of range, field: %s\n", this->name_.c_str());
+    ASSERT( region_fields_[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
+    return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }
 
 
 
 template<int spacedim, class Value>
-inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
+inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-    region_fields[elm.region().idx()]->value_list(point_list,elm, value_list);
+    region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }
 
 

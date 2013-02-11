@@ -33,9 +33,12 @@
 #include <petscmat.h>
 #include "coupling/equation.hh"
 #include "transport/sources.hh"
-#include "materials.hh"
 #include "input/accessors.hh"
 #include "flow/mh_dofhandler.hh"
+#include "transport/transport_operator_splitting.hh"
+
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 
 struct BTC;
@@ -73,7 +76,7 @@ public:
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+        ConvectionTransport(Mesh &init_mesh, TransportOperatorSplitting::EqData &init_data, const Input::Record &in_rec);
 	/**
 	 * TODO: destructor
 	 */
@@ -90,16 +93,18 @@ public:
 	 * Updates CFL time step constrain.
 	 */
 	void set_flow_field_vector(const MH_DofHandler &dh);
+  
+  /** 
+   * @brief Sets pointer to data of other equations. 
+   * @param cross_section is pointer to cross_section data of Darcy flow equation
+   */
+  void set_cross_section(Field<3, FieldValue<3>::Scalar > *cross_section);
 
     /**
      * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
      */
     void set_target_time(double target_time);
 
-	/**
-	 * Read time dependent boundary condition and update boundary source vectors.
-	 */
-	void read_bc_vector();
 	/**
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
@@ -130,7 +135,6 @@ public:
 
 private:
 
-
     /**
      * Assembly convection term part of the matrix and boundary matrix for application of boundary conditions.
      *
@@ -149,23 +153,19 @@ private:
     void create_transport_matrix_mpi();
 	void make_transport_partitioning(); //
 //	void alloc_transport(struct Problem *problem);
-	void read_initial_condition(string fname); //
+	void set_initial_condition();
 	void read_concentration_sources();
+	void set_boundary_conditions();
 
-	/**
-	 * Compose file name for boundary condition at given level.
-	 * For level -1 use original fixed file name.
-	 */
-	std::string make_bc_file_name(int level);
 	/**
 	 * Finish explicit transport matrix (time step scaling)
 	 */
 	void transport_matrix_step_mpi(double time_step); //
 
-	void transport_dual_porosity( int elm_pos, MaterialDatabase::Iter material, int sbi); //
-	void transport_sorption(int elm_pos, MaterialDatabase::Iter mtr, int sbi); //
-	void compute_sorption(double conc_avg, vector<double> &sorp_coef, int sorp_type, double *concx, double *concx_sorb, double Nv,
-	        double N); //
+	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
+	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
+	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, int sorp_type,
+			double *concx, double *concx_sorb, double Nv, double N); //
 	//void compute_concentration_sources(int sbi);
 
 //	void get_reaction(int i,oReaction *reaction); //
@@ -192,11 +192,9 @@ private:
     //double max_step;		              ///< Time step constrain given by CFL condition.
     //unsigned int time_level;              ///< Number of computed time steps.
 
-    
-    TimeMark::Type bc_mark_type_;       ///< TimeMark Type for reading time dependent boundary condition.
-    //std::vector<double> bc_times;       ///< Times of reading time dependent boundary condition. Initial boundary condition is zero. 
-    //                                    ///< Helps with constructing time marks.
-    unsigned int bc_time_level;         ///< Index into bc_times vector.
+	TransportOperatorSplitting::EqData *data;
+
+    Field<3, FieldValue<3>::Scalar > *cross_section;
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;

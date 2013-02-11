@@ -13,6 +13,7 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include <armadillo>
 
 /**
  * Element accessor templated just by dimension of the embedding space, used by Fields.
@@ -43,13 +44,21 @@ public:
         else return &(mesh_->element[element_idx_]);
     }
 
+    inline arma::vec::fixed<spacedim> centre() const {
+        return element()->centre();
+    }
+
+
     inline Region region() const
         { return element()->region(); }
 
+    inline RegionIdx region_idx() const
+        { return element()->region_idx(); }
+
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
-    inline unsigned int region_id() const {
-        return element()->region_.id();
-    }
+    //inline unsigned int region_id() const {
+    //    return region().id();
+    //}
 
     //const BoundingBox &bounding_box();
 

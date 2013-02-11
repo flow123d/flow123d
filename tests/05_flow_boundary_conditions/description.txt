@@ -1,0 +1,30 @@
+TEST05 - Dirichlet/Neumann/Robin boundary condition for Darcy flow
+
+- three tests on different types of flow bc
+- the same geometry, mesh and analytic solution
+- boundary conditions are derived from exact solution
+
+geometry:
+- square in xy coordinates with corner points [0,0] and [1,1]
+- each side has its own boundary - south,east,north,west
+
+exact solution:
+- u = xy
+
+Dirichlet test - flow_dirichlet.con:
+- all sides have dirichlet bc 
+- south: 0; east: y; north: x; west: 0            (pressure)
+
+Neumann test - flow_neumann.con:
+- two sides have dirichlet bc: east: y; west: 0   (pressure)
+- two sides have neumann bc: south: x; north -x   (flux)
+
+Robin test - flow_robin.con: 
+- two sides have dirichlet bc: east: y; west: 0   (pressure)
+
+- after replacement boundary pressure is u_r=(1+sigma)/sigma*x
+- two sides have robin bc: south: -2x; north 3x   (pressure)
+- sigma is chosen to be 0.5
+
+results:
+- difference from the exact solution can be shown in paraview (saved state)

@@ -85,6 +85,8 @@ protected:
         main->declare_key("file_input", FileName::input(),Default::obligatory(), "description");
         main->declare_key("optional_int", Integer(), "");
         main->declare_key("selection", *selection_ptr, Default::obligatory(), "");
+        main->declare_key("default_int", Integer(), Default("1234"), "");
+        main->declare_key("optional_int2", Integer(), "");
         main->finish();
         }
 
@@ -119,7 +121,7 @@ protected:
             desc_b->new_item(2,new StorageDouble(3.45));
 
 
-            StorageArray * main_array = new StorageArray(13);
+            StorageArray * main_array = new StorageArray(15);
             main_array->new_item(0, sub_rec->deep_copy());
             main_array->new_item(1, sub_array_int->deep_copy());
             main_array->new_item(2, sub_array_sub_rec->deep_copy());
@@ -133,6 +135,8 @@ protected:
             main_array->new_item(10, new StorageString("input/${INPUT}/input_subdir/input.in"));
             main_array->new_item(11, new StorageNull());
             main_array->new_item(12, new StorageInt(1));
+            main_array->new_item(13, new StorageInt(1234));
+            main_array->new_item(14, new StorageInt(12345));
 
             // check copy constructors and pimpl implementation of Record
             delete sub_array_int;
@@ -238,6 +242,25 @@ TEST_F(InputInterfaceTest, RecordFind) {
             "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='Ss';");
     EXPECT_THROW( {record.find<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
+}
+
+TEST_F(InputInterfaceTest, Record_opt_val) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    using namespace Input;
+
+    Record record(storage, *main);
+
+    // read obligatory or default key
+    int value;
+    EXPECT_TRUE(record.opt_val("some_integer", value));
+    EXPECT_EQ(456, value);
+    EXPECT_TRUE(record.opt_val("default_int", value));
+    EXPECT_EQ(1234, value);
+
+    // read optional key
+    EXPECT_FALSE(record.opt_val("optional_int", value));
+    EXPECT_TRUE(record.opt_val("optional_int2", value));
+    EXPECT_EQ(12345, value);
 }
 
 

@@ -2,15 +2,30 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test2 - Transport 1D-2D (convection, dual porosity, sorption)", 
-    material = "./input/test2.mtr", 
     mesh = {
-      mesh_file = "./input/test2.msh", 
-      neighbouring = "./input/test2.ngh"
+      mesh_file = "./input/test2.msh"
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test2.fbc", 
+
+      bulk_data = [
+        { rid = 48,
+          cond_anisothropy = 10,
+          cross_section = 1
+        },
+        { rid = 184,
+          cond_anisothropy = 1,
+          cross_section = 1
+        }
+      ],
+      
+      bc_data = [
+        { region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test2.fbc"
+        }
+      ],
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -27,8 +42,36 @@
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      boundary_file = "./input/test2.tbc",  
-      initial_file = "./input/test2.tic", 
+
+      bc_data=[
+        { 
+          region="IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test2.tbc"
+        }
+      ],
+      bulk_data=[
+        {
+          rid=48,
+          por_m = 0.25,
+          por_imm = 0.25,
+          alpha = [0.01, 0.01],
+          phi = 0.5,
+          sorp_type = [1, 2],
+          sorp_coef0 = [0.02, 0.02],
+          sorp_coef1 = [0, 0.5]
+        },
+        {
+          rid=184,
+          por_m = 0.25,
+          por_imm = 0.25,
+          alpha = [0.01, 0.01],
+          phi = 0.5,
+          sorp_type = [1, 2],
+          sorp_coef0 = [0.02, 0.02],
+          sorp_coef1 = [0, 0.5]
+        }
+      ]
+
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {

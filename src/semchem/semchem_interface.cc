@@ -10,6 +10,8 @@
 #include "semchem/semchem_interface.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 using namespace std;
 
@@ -72,7 +74,7 @@ it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_m
 
 
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
-	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL)
+	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL), cross_section(cross_section)
 {
 
   //temporary semchem output file name
@@ -94,6 +96,21 @@ Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpeci
   set_nr_of_elements(mesh_->n_elements());
   return;
 }
+
+void Semchem_interface::set_cross_section(Field< 3 , FieldValue< 3  >::Scalar >* cross_section)
+{
+  this->cross_section = cross_section;
+}
+
+void Semchem_interface::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por_m_,
+		Field<3, FieldValue<3>::Scalar> *por_imm_,
+		Field<3, FieldValue<3>::Scalar> *phi_)
+{
+	por_m = por_m_;
+	por_imm = por_imm_;
+	phi = phi_;
+}
+
 
 /*Semchem_interface::~Semchem_interface(void)
 {
@@ -133,6 +150,9 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    double **conc_mob_arr = conc[MOBILE];
    double **conc_immob_arr = conc[IMMOBILE];
    double pomoc, n;
+   double el_por_m = por_m->value(ppelm->centre(), ppelm->element_accessor());
+   double el_por_imm = por_imm->value(ppelm->centre(), ppelm->element_accessor());
+   double el_phi = phi->value(ppelm->centre(), ppelm->element_accessor());
 
    vystupni_soubor = fw_chem;
    //==================================================================
@@ -144,18 +164,21 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
   //==================================================================
    // ----------------- NEJPRVE PRO MOBILNI PORY ----------------------
    //==================================================================
-   n = (ppelm->material->por_m) / (1 - ppelm->material->por_m); //asi S/V jako zze splocha
+   n = (el_por_m) / (1 - el_por_m); //asi S/V jako zze splocha
 
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = (ppelm->volume()) * (ppelm->material->por_m); break;
+	  case 3 : pomoc = ppelm->measure() *
+                     cross_section->value(ppelm->centre(), ppelm->element_accessor() ) * 
+                     el_por_m;
+             break;
 	default:
 	  pomoc = 1.0;
    }
 
    G_prm.objem = pomoc; //objem * mobilni: porozita
-   G_prm.splocha = (pomoc / ppelm->material->por_m) * (ppelm->material->phi) * (1 - ppelm->material->por_m - ppelm->material->por_imm);
+   G_prm.splocha = (pomoc / el_por_m) * (el_phi) * (1 - el_por_m - el_por_imm);
    celkova_molalita=0.0;
    poc_krok=1;
 
@@ -193,12 +216,15 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = ppelm->volume() * (ppelm->material->por_imm); break;
+	  case 3 : pomoc = ppelm->measure() *
+                     cross_section->value(ppelm->centre(), ppelm->element_accessor() ) * 
+                     el_por_imm;
+             break;
 	default:
 	  pomoc = 1.0;
     }
    G_prm.objem = pomoc;
-   G_prm.splocha = (pomoc / ppelm->material->por_imm) * (1 - ppelm->material->phi) * (1 - ppelm->material->por_m - ppelm->material->por_imm);
+   G_prm.splocha = (pomoc / el_por_imm) * (1 - el_phi) * (1 - el_por_m - el_por_imm);
    celkova_molalita = 0.0;
    poc_krok=1;
    
@@ -270,7 +296,7 @@ void Semchem_interface::set_el_4_loc(int *el_for_loc)
 
 void Semchem_interface::set_mesh_(Mesh *mesh)
 {
-	mesh_ = mesh;
+	Mesh* mesh_ = mesh;
 	return;
 }
 

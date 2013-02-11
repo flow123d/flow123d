@@ -23,7 +23,11 @@ class FieldConstant : public FieldBase<spacedim, Value>
 {
 public:
 
+    /**
+     * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
+     */
     FieldConstant(unsigned int n_comp=0);
+
 
     static Input::Type::Record input_type;
 
@@ -33,7 +37,17 @@ public:
      */
     static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
 
+    /**
+     * Smart setter from the given value to return.
+     */
+    FieldConstant<spacedim, Value> &set_value(const typename Value::return_type &val);
+
+    /**
+     * This method initialize actual value of the field given from the given Input::Record @p rec.
+     */
     virtual void init_from_input(const Input::Record &rec);
+
+
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.

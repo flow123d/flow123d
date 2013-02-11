@@ -6,6 +6,8 @@
 #include <limits>
 #include "io/output.h"
 #include "flow/mh_dofhandler.hh"
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 
 /// external types:
@@ -21,7 +23,6 @@ class Linear_reaction;
 //class Pade_approximant;
 class Semchem_interface;
 class ConvectionTransport;
-class MaterialDatabase;
 
 
 /**
@@ -32,13 +33,38 @@ class MaterialDatabase;
  */
 class TransportBase : public EquationBase{
 public:
-  TransportBase(Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
-    : EquationBase(mesh, mat_base, in_rec ), 
+
+	class TransportEqData : public EqDataBase {
+	public:
+
+		TransportEqData(const std::string& eq_name);
+		virtual ~TransportEqData() {};
+
+		Field<3, FieldValue<3>::Vector> init_conc; ///< Initial concentrations.
+		Field<3, FieldValue<3>::Scalar> por_m;     ///< Mobile porosity
+
+		/**
+		 * Boundary conditions (Dirichlet) for concentrations.
+		 * They are applied only in water inflow.
+		 */
+		BCField<3, FieldValue<3>::Vector> bc_conc;
+
+		/// Pointer to DarcyFlow field cross_section
+		Field<3, FieldValue<3>::Scalar > *cross_section;
+
+		int bc_time_level;
+		vector<double> bc_times;
+
+	};
+
+    TransportBase(Mesh &mesh, const Input::Record in_rec)
+    : EquationBase(mesh, in_rec ),
       mh_dh(NULL)
     {}
 
-    static Input::Type::AbstractRecord input_type;
-    static Input::Type::Record input_type_output_record;
+
+    virtual TransportEqData *get_data() = 0;
+
 
     /**
      * This method takes sequential PETSc vector of side velocities and update
@@ -51,6 +77,9 @@ public:
     }
     virtual void output_data() =0;
 
+    static Input::Type::AbstractRecord input_type;
+    static Input::Type::Record input_type_output_record;
+
     const MH_DofHandler *mh_dh;
 };
 
@@ -61,8 +90,8 @@ public:
  */
 class TransportNothing : public TransportBase {
 public:
-   TransportNothing(Mesh &mesh_in, MaterialDatabase &mat_base_in)
-    : TransportBase(mesh_in, mat_base_in, Input::Record() )
+   TransportNothing(Mesh &mesh_in)
+    : TransportBase(mesh_in, Input::Record() )
     {
         // make module solved for ever
         time_=new TimeGovernor();
@@ -80,6 +109,8 @@ public:
     virtual void set_velocity_field(Vec &velocity_field) {};
 
     virtual void output_data() {};
+
+    virtual TransportEqData *get_data() { return 0; };
 };
 
 
@@ -90,7 +121,26 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-    TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+
+	class EqData : public TransportBase::TransportEqData {
+	public:
+
+		EqData();
+		virtual ~EqData() {};
+
+        RegionSet read_boundary_list_item(Input::Record rec);
+
+		Field<3, FieldValue<3>::Scalar> por_imm;   ///< Immobile porosity
+		Field<3, FieldValue<3>::Vector> alpha;	   ///< Coefficients of non-equilibrium exchange
+// TODO: sorp_type should be IntVector
+		Field<3, FieldValue<3>::Vector> sorp_type;///< Type of sorption for each substance
+		Field<3, FieldValue<3>::Vector> sorp_coef0;///< Coefficient of sorption for each substance
+		Field<3, FieldValue<3>::Vector> sorp_coef1;///< Coefficient of sorption for each substance
+		Field<3, FieldValue<3>::Scalar> phi;       ///< solid / solid mobile
+    
+	};
+
+    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
     virtual ~TransportOperatorSplitting();
 
     /**
@@ -104,17 +154,29 @@ public:
     static Input::Type::Record input_type;
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
-	virtual void update_solution();
-	//virtual void compute_one_step();
-	//virtual void compute_until();
-	void compute_internal_step();
-	void output_data();
-	 virtual void get_parallel_solution_vector(Vec &vc);
-	 virtual void get_solution_vector(double* &vector, unsigned int &size);
-	 void compute_until_save_time();
+    virtual void update_solution();
+    //virtual void compute_one_step();
+    //virtual void compute_until();
+    void compute_internal_step();
+    void output_data();
+    virtual void get_parallel_solution_vector(Vec &vc);
+    virtual void get_solution_vector(double* &vector, unsigned int &size);
+    void compute_until_save_time();
+   
+    /**
+     * @brief Sets pointer to data of other equations.
+     * TODO: there should be also passed the sigma parameter between dimensions
+     * @param cross_section is pointer to cross_section data of Darcy flow equation
+     */
+    void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
+
+    virtual EqData *get_data() { return &data; };
+
 protected:
 
 private:
+
+    EqData data;
 
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
@@ -124,5 +186,7 @@ private:
 
     TimeMark::Type output_mark_type;
 };
+
+
 
 #endif // TRANSPORT_OPERATOR_SPLITTING_HH_

@@ -214,9 +214,9 @@ using namespace Input::Type;
     EXPECT_EQ(10, int_sel.from_default("ten") );
     EXPECT_EQ(0, int_sel.from_default("zero") );
     EXPECT_THROW_WHAT( { int_sel.from_default("two"); }, ExcWrongDefault,
-            "Default value .* do not match type: 'Integer selection';" );
+            "Default value .* do not match type: " );
     EXPECT_THROW_WHAT( { int_sel.from_default("10"); }, ExcWrongDefault,
-            "Default value .* do not match type: 'Integer selection';" );
+            "Default value .* do not match type: " );
 
     EXPECT_EQ(10, int_sel.name_to_int("ten"));
 

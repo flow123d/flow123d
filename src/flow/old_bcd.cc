@@ -8,6 +8,7 @@
 
 #include "flow/old_bcd.hh"
 #include "fields/field_elementwise.hh"
+#include "mesh/region.hh"
 
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
@@ -17,19 +18,22 @@ OldBcdInput * OldBcdInput::instance() {
     return obcd;
 }
 
-
+// set all regions of the given Field<...> @p target
 template <int spacedim, class Value>
 void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
     FieldElementwise<spacedim, Value> *in_field=new FieldElementwise<spacedim, Value>(target.n_comp());
-    for(unsigned int i=0; i<Region::db().size(); i++)
-        if ( Region(i).is_boundary() ) target.set_field(Region(i), in_field);
+    const RegionSet & b_set = mesh->region_db().get_region_set("BOUNDARY");
+    for(RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
+        target.set_field( *reg, in_field);
     target.set_mesh(mesh);
 
 }
 
 template <int spacedim, class Value>
 void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val) {
-    static_cast<FieldElementwise<spacedim, Value> *>(target(RegionDB::implicit_boundary))->set_data_row(bcd_ele_idx, val);
+    static_cast<FieldElementwise<spacedim, Value> *>(
+            target( some_bc_region_ )
+            )->set_data_row(bcd_ele_idx, val);
 }
 
 
@@ -38,7 +42,6 @@ void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele
 #define NEWTON      3
 
 void OldBcdInput::read_flow(const FilePath &flow_bcd,
-        Mesh *mesh,
         Field<3,FieldValue<3>::Enum > &flow_type,
         Field<3,FieldValue<3>::Scalar > &flow_pressure,
         Field<3,FieldValue<3>::Scalar > &flow_flux,
@@ -46,15 +49,20 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
 {
     using namespace boost;
 
-    mesh_=mesh;
+    // check that all fields has same mesh, reuse it for reader
+    mesh_=flow_type.mesh();
+    ASSERT(mesh_ , "Null mesh pointer.\n");
+    ASSERT(mesh_==flow_pressure.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_pressure).\n");
+    ASSERT(mesh_==flow_flux.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_flux).\n");
+    ASSERT(mesh_==flow_sigma.mesh(), "Fields initialized by OldBcdInput has different meshes (flow_sigma).\n");
 /*
  * - read one flow file, fill fields, make ID list
  * - read second file, check IDs agains ID list, fill fields
  */
-    set_all(flow_type, mesh);
-    set_all(flow_pressure, mesh);
-    set_all(flow_flux, mesh);
-    set_all(flow_sigma, mesh);
+    set_all(flow_type, mesh_);
+    set_all(flow_pressure, mesh_);
+    set_all(flow_flux, mesh_);
+    set_all(flow_sigma, mesh_);
 
 
     Tokenizer tok(flow_bcd);
@@ -62,6 +70,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
         double scalar, flux, sigma;
         unsigned int id;
 
+        xprintf(Msg, "Reading old BCD file for flow: %s ...", tok.f_name().c_str());
         tok.skip_to("$BoundaryConditions");
         tok.next_line(false);
         unsigned int n_boundaries = lexical_cast<unsigned int>(*tok); ++tok;
@@ -98,7 +107,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
 
             unsigned int eid, sid, bc_ele_idx;
             ElementIter ele;
-            SideIter sde;
+            Boundary * bcd;
 
             switch( where ) {
                 case 2: // SIDE_EL - BC given by element and its local side number
@@ -106,12 +115,15 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     sid = lexical_cast<unsigned int>(*tok); ++tok;
 
                     // find and set the side
-                    ele = mesh->element.find_id( eid );
+                    ele = mesh_->element.find_id( eid );
                     if( sid < 0 || sid >= ele->n_sides() )
                          xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", id, sid );
-
-                    bc_ele_idx = mesh->bc_elements.index( ele->side(sid) -> cond()->element() );
+                    bcd = ele->side(sid) -> cond();
+                    if (! bcd)
+                        xprintf(UsrErr, "Setting boundary condition %d for non-boundary side %d of element ID: %d\n", id, sid, eid);
+                    bc_ele_idx = mesh_->bc_elements.index( ele->side(sid) -> cond()->element() );
                     id_2_bcd_[id]= bc_ele_idx;
+                    if ( ! some_bc_region_.is_valid() ) some_bc_region_ = ele->side(sid) -> cond()->element()->region();
 
                     set_field(flow_type,     bc_ele_idx, type);
                     set_field(flow_pressure, bc_ele_idx, scalar);
@@ -170,8 +182,8 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                 bcd->group = group_iter.index();   // in fact we do not use integres stored in the vector, but we use index
             }
             */
-
         }
+        xprintf(Msg, "DONE\n");
     } catch (bad_lexical_cast &) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
     } // flow bcd reader
@@ -190,6 +202,8 @@ void OldBcdInput::read_transport(const FilePath &transport_bcd,
     try {
         unsigned int bcd_id, boundary_id, bc_ele_idx;
 
+        xprintf(Msg, "Reading old BCD file for transport: %s ...", tok.f_name().c_str());
+        if (tok.skip_to("$Transport_BCDFormat")) tok.next_line(false);
         tok.skip_to("$Transport_BCD");
         tok.next_line(false);
         unsigned int n_bcd = lexical_cast<unsigned int>(*tok); ++tok;
@@ -203,13 +217,15 @@ void OldBcdInput::read_transport(const FilePath &transport_bcd,
                 xprintf(UsrErr,"Wrong boundary index %d for bcd id %d in transport bcd file!", boundary_id, bcd_id);
             bc_ele_idx = it->second;
 
-            for (unsigned int sbi = 0; sbi < n_substances; sbi++)
+            for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
                 ele_value[sbi] = lexical_cast<double>(*tok); ++tok;
+            }
 
             set_field(trans_conc,     bc_ele_idx, ele_value);
 
         }
 
+        xprintf(Msg, "DONE\n");
 
     } catch (bad_lexical_cast &) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());

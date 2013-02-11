@@ -127,6 +127,9 @@ public:
     inline unsigned int n_edges() const {
         return edges.size();
     }
+    inline const RegionDB &region_db() const {
+        return region_db_;
+    }
 
     void read_intersections();
     void make_intersec_elements();
@@ -148,7 +151,7 @@ public:
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
      * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
      */
-    void setup_materials( MaterialDatabase &base);
+    //void setup_materials( MaterialDatabase &base);
     //void make_element_geometry();
 
     /**
@@ -208,9 +211,9 @@ public:
     // for every side node 0 .. D
     // index into element node array
     vector< vector< vector<unsigned int> > > side_nodes;
+
     
-    //string neigh_fname_;
-    //string bcd_fname_;
+
 
 protected:
 
@@ -271,6 +274,8 @@ protected:
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
+
+    RegionDB region_db_;
 
     friend class GmshMeshReader;
 };

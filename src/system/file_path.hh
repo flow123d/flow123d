@@ -44,7 +44,10 @@ public:
         output_file
     };
 
-
+    /**
+     * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
+     */
+    FilePath() : abs_file_path("/__NO_FILE_NAME_GIVEN__") {}
 
     /**
      * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.

@@ -37,7 +37,7 @@
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
-
+#include "system/sys_profiler.hh"
 #include "input/input_type.hh"
 
 
@@ -49,8 +49,6 @@ it::AbstractRecord CouplingBase::input_type
     .declare_key("description",it::String(),
             "Short description of the solved problem.\n"
             "Is displayed in the main log, and possibly in other text output files.")
-	.declare_key("material", it::FileName::input(),it::Default::obligatory(),
-			"File with material information.")
 	.declare_key("mesh", Mesh::input_type, it::Default::obligatory(),
             "Computational mesh common to all equations.");
 
@@ -83,7 +81,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     //main_time_marks = new TimeMarks();
 
     // Material Database
-    material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
+    // material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
 
     // Read mesh
     {
@@ -91,7 +89,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         GmshMeshReader reader( in_record.val<Record>("mesh").val<FilePath>("mesh_file") );
         reader.read_mesh(mesh);
 
-        mesh->setup_materials(*material_database);
+        //mesh->setup_materials(*material_database);
         Profiler::instance()->set_task_info(
             "Description has to be set in main. by different method.",
             mesh->n_elements());
@@ -116,11 +114,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
     if (prim_eq.type() == DarcyFlowMH_Steady::input_type ) {
-            water = new DarcyFlowMH_Steady(*mesh, *material_database, prim_eq);
+            water = new DarcyFlowMH_Steady(*mesh, prim_eq);
     } else if (prim_eq.type() == DarcyFlowMH_Unsteady::input_type ) {
-            water = new DarcyFlowMH_Unsteady(*mesh, *material_database, prim_eq);
+            water = new DarcyFlowMH_Unsteady(*mesh, prim_eq);
     } else if (prim_eq.type() == DarcyFlowLMH_Unsteady::input_type ) {
-            water = new DarcyFlowLMH_Unsteady(*mesh, *material_database, prim_eq);
+            water = new DarcyFlowLMH_Unsteady(*mesh, prim_eq);
     } else {
             xprintf(UsrErr,"Equation type not implemented.");
     }
@@ -133,11 +131,13 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     if (it) {
         if (it->type() == TransportOperatorSplitting::input_type)
         {
-            transport_reaction = new TransportOperatorSplitting(*mesh, *material_database, *it);
+            transport_reaction = new TransportOperatorSplitting(*mesh, *it);
+            ((TransportOperatorSplitting*)transport_reaction)->set_eq_data( &(water->get_data().cross_section) );
         }
         else if (it->type() == TransportDG::input_type)
         {
-            transport_reaction = new TransportDG(*mesh, *material_database, *it);
+            transport_reaction = new TransportDG(*mesh, *it);
+            ((TransportDG*)transport_reaction)->set_eq_data( &(water->get_data().cross_section));
         }
         else
         {
@@ -145,7 +145,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         }
 
     } else {
-        transport_reaction = new TransportNothing(*mesh, *material_database);
+        transport_reaction = new TransportNothing(*mesh);
     }
 }
 
@@ -249,7 +249,7 @@ void HC_ExplicitSequential::run_simulation()
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
     delete mesh;
-    delete material_database;
+    //delete material_database;
     delete water;
     delete water_output;
     delete transport_reaction;

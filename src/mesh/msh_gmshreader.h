@@ -128,7 +128,7 @@ private:
      * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
      * assign regions to the boundary and are not used in actual FEM computations.
      */
-    void read_physical_names(Tokenizer &in);
+    void read_physical_names(Tokenizer &in, Mesh * mesh);
 
     /**
      * private method for reading of nodes

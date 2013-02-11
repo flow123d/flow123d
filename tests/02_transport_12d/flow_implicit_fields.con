@@ -1,0 +1,115 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test2 - Transport implicit 1D-2D (convection, dispersion)", 
+    mesh = {
+      mesh_file = "./input/test2.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      },
+      bc_data=[
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test2.fbc"
+        }
+      ],
+      bulk_data=[
+        { rid = 48,
+          cond_anisothropy = 10
+        },
+        { rid = 184,
+          cond_anisothropy = 1
+        }
+      ]
+    },
+
+    secondary_equation = {
+      TYPE = "AdvectionDiffusion_DG", 
+      output = {
+        mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/system/output_streams/1"
+        }, 
+        save_step = 0.5
+      },
+
+      dual_porosity = true, 
+      sorption_enable = true, 
+      substances = [
+        "A", 
+        "B"
+      ], 
+      time = {
+        end_time = 5.0,
+	init_dt = 0.5
+      },
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      },
+      bc_data=[
+        {
+          region="IMPLICIT BOUNDARY",
+          bc_conc={
+            TYPE="FieldFormula",
+            value="(1+sin(t))*0.5"
+          }
+        }
+      ],
+      bulk_data=[
+        {
+          rid=48,
+          init_conc={
+            TYPE="FieldFormula",
+            value="(1+sin(x)*sin(y))*0.5"
+          },
+          por_m = 0.25
+        },
+        {
+          rid=184,
+          init_conc={
+            TYPE="FieldFormula",
+            value="(1+sin(x)*sin(y))*0.5"
+          },
+          por_m = 0.25
+        }
+      ]
+    }
+  }, 
+
+  system = {
+    output_streams = [
+      {
+        file = "./test2.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport-implicit.pvd", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

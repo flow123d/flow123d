@@ -5,6 +5,9 @@
  *      Author: jiri
  */
 
+#include <iostream>
+#include <iomanip>
+
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
@@ -13,11 +16,11 @@
 #include <petscmat.h>
 #include "system/sys_vector.hh"
 #include "coupling/time_governor.hh"
-#include <materials.hh>
 #include "coupling/equation.hh"
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
+#include "flow/old_bcd.hh"
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
@@ -45,12 +48,6 @@ AbstractRecord TransportBase::input_type
 			"Model of sorption.")
 	.declare_key("dual_porosity", Bool(), Default("false"),
 			"Dual porosity model.")
-	.declare_key("initial_file", FileName::input(), Default::obligatory(),
-			"Input file with initial concentrations.")
-	.declare_key("boundary_file", FileName::input(), Default::obligatory(),
-			"Input file with boundary conditions.")
-	.declare_key("bc_times", Array(Double()), Default::optional(),
-			"Times for changing the boundary conditions.")
 	.declare_key("sources_file", FileName::input(), Default::optional(),
 			"File with data for the source term in the transport equation.")
 	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
@@ -82,25 +79,79 @@ Record TransportOperatorSplitting::input_type
             " via. operator splitting.")
     .derive_from(TransportBase::input_type)
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
-                "Initialization of per element reactions.");
+                "Initialization of per element reactions.")
+    .declare_key("bc_data", Array(TransportOperatorSplitting::EqData().boundary_input_type()
+    		.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
+    		.declare_key("bc_times", Array(Double()), Default::optional(),
+    				"Times for changing the boundary conditions (obsolete).")
+    		), IT::Default::obligatory(), "")
+    .declare_key("bulk_data", Array(TransportOperatorSplitting::EqData().bulk_input_type()),
+    		IT::Default::obligatory(), "");
+
+
+TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
+: EqDataBase(eq_name),
+  bc_time_level(-1)
+{
+
+	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", Default("0"));
+	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
+
+}
+
+
+RegionSet TransportOperatorSplitting::EqData::read_boundary_list_item(Input::Record rec) {
+	// Base method EqDataBase::read_boundary_list_item must be called first!
+	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
+    FilePath bcd_file;
+    if (rec.opt_val("old_boundary_file", bcd_file) ) {
+        // TODO: remove bc_times key
+    	Input::Iterator<Input::Array> bc_it = rec.find<Input::Array>("bc_times");
+    	if (bc_it) bc_it->copy_to(bc_times);
+
+    	if (bc_times.size() == 0) {
+    		bc_time_level = -1;
+    	} else {
+            stringstream name_str;
+            name_str << (string)bcd_file << "_" << setfill('0') << setw(3) << bc_time_level;
+            bcd_file = FilePath(name_str.str(), FilePath::input_file);
+            bc_time_level++;
+        }
+        OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
+    }
+    return domain;
+}
 
 
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: TransportBase(init_mesh, material_database, in_rec)
+TransportOperatorSplitting::EqData::EqData() : TransportEqData("TransportOperatorSplitting")
+{
+	ADD_FIELD(por_imm, "Immobile porosity", Default("0"));
+	ADD_FIELD(alpha, "Coefficients of non-equilibrium exchange.", Default("0"));
+	ADD_FIELD(sorp_type, "Type of sorption.", Default("1"));
+	ADD_FIELD(sorp_coef0, "Coefficient of sorption.", Default("0"));
+	ADD_FIELD(sorp_coef1, "Coefficient of sorption.", Default("0"));
+	ADD_FIELD(phi, "Solid / solid mobile.", Default("0.5"));
+
+}
+
+
+TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
+: TransportBase(init_mesh, in_rec)
 {
 	Distribution *el_distribution;
 	int *el_4_loc;
 
     // double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
 
-	convection = new ConvectionTransport(*mesh_, *mat_base, in_rec);
+	convection = new ConvectionTransport(*mesh_, data, in_rec);
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
 		if (reactions_it->type() == Linear_reaction::input_type ) {
-	        decayRad =  new Linear_reaction(init_mesh, material_database, *reactions_it,
+	        decayRad =  new Linear_reaction(init_mesh, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
@@ -110,7 +161,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, Material
 	        Semchem_reactions = NULL;
 		} else
 	    if (reactions_it->type() == Pade_approximant::input_type ) {
-                decayRad = new Pade_approximant(init_mesh, material_database, *reactions_it,
+                decayRad = new Pade_approximant(init_mesh, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
@@ -234,4 +285,15 @@ void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
 void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
 	convection->compute_one_step();
 };
+
+void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
+{
+  data.cross_section = cross_section;
+  if (convection != NULL) convection->set_cross_section(cross_section);
+  if (Semchem_reactions != NULL) {
+	  Semchem_reactions->set_cross_section(cross_section);
+	  Semchem_reactions->set_sorption_fields(&data.por_m, &data.por_imm, &data.phi);
+  }
+}
+
 

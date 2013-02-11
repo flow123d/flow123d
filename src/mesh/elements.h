@@ -35,11 +35,15 @@
 
 #include <materials.hh>
 
+template <int spacedim>
+class ElementAccessor;
 
 class Mesh;
 class Side;
 class SideIter;
 struct MaterialDatabase;
+
+
 
 //=============================================================================
 // STRUCTURE OF THE ELEMENT OF THE MESH
@@ -48,23 +52,28 @@ class Element
 {
 public:
     Element();
-    Element(unsigned int dim, Mesh *mesh_in, Region reg);
-    void init(unsigned int dim, Mesh *mesh_in, Region reg);
+    Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
+    void init(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
 
     inline unsigned int dim() const;
     inline unsigned int index() const;
     unsigned int n_sides() const;    // Number of sides
     unsigned int n_nodes() const; // Number of nodes
-
+    
+    ///Gets ElementAccessor of this element
+    ElementAccessor<3> element_accessor();
+    
     double measure();
-    double volume();
     arma::vec3 centre();
 
     unsigned int n_sides_by_dim(int side_dim);
-    //void *side_by_dim(int side_dim, unsigned int n);
-    const Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
     inline SideIter side(const unsigned int loc_index);
-    inline Region region() { return region_; }
+    Region region() const;
+    inline RegionIdx region_idx() const
+        { return region_idx_; }
+    
+    
+    
 
 
     //int      mid;       // Id # of material
@@ -74,7 +83,7 @@ public:
     // Type specific data
     Node** node;    // Element's nodes
 
-    MaterialDatabase::Iter material; // Element's material
+//    MaterialDatabase::Iter material; // Element's material
 
     unsigned int *edge_idx_; // Edges on sides
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
@@ -90,12 +99,14 @@ public:
 
 protected:
     // Data readed from mesh file
-    Region  region_;
+    RegionIdx  region_idx_;
     unsigned int dim_;
 
     friend class GmshMeshReader;
 
 };
+
+
 
 
 #define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes();(j)++)

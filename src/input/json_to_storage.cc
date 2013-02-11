@@ -236,6 +236,30 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
 }
 
 
+
+void JSONToStorage::read_from_default( const string &default_str, const Type::TypeBase &root_type) {
+    namespace io = boost::iostreams;
+    F_ENTRY;
+
+    if (envelope != NULL) {
+        delete envelope;
+        envelope=NULL;
+    }
+
+    // finish all lazy input types
+    Input::Type::TypeBase::lazy_finish();
+
+    root_type_ = &root_type;
+    storage_ =  make_storage_from_default(default_str, &root_type);
+    envelope =  new StorageArray(1);
+    envelope->new_item(0,storage_);
+
+    ASSERT(  storage_ != NULL, "Internal error in JSON reader, the storage pointer is NULL after reading the stream.\n");
+
+}
+
+
+
 /********************************************
  * Implementation of private part of JSONToStorage - make_storage dispatch
  */
@@ -289,6 +313,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
         xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
     }
 
+    return new StorageNull();
 }
 
 

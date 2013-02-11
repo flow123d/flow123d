@@ -41,7 +41,7 @@
 // following deps. should be removed
 #include "mesh/boundaries.h"
 #include "materials.hh"
-
+#include "mesh/accessors.hh"
 
 
 
@@ -50,7 +50,7 @@ Element::Element()
 
   node(NULL),
 
-  material(NULL),
+//  material(NULL),
   edge_idx_(NULL),
   boundary_idx_(NULL),
 
@@ -63,21 +63,21 @@ Element::Element()
 }
 
 
-Element::Element(unsigned int dim, Mesh *mesh_in, Region reg)
+Element::Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg)
 {
     init(dim, mesh_in, reg);
 }
 
 
 
-void Element::init(unsigned int dim, Mesh *mesh_in, Region reg) {
+void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
     pid=0;
-    material=NULL;
+//    material=NULL;
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
     mesh_=mesh_in;
-    region_=reg;
+    region_idx_=reg;
 
     node = new Node * [ n_nodes()];
     edge_idx_ = new unsigned int [ n_sides()];
@@ -88,16 +88,6 @@ void Element::init(unsigned int dim, Mesh *mesh_in, Region reg) {
     }
 }
 
-
-/**
- * SET THE "VOLUME" FIELD IN STRUCT ELEMENT
- */
-double Element::volume() {
-    double volume = measure() * material->size;
-    //INPUT_CHECK(!(volume < NUM_ZERO),
-    //        "Volume of the element is nearly zero (volume= %g)\n", volume);
-    return volume;
-}
 
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
@@ -125,6 +115,7 @@ double Element::measure() {
                 ) / 6.0;
             break;
     }
+    return 1.0;
 }
 
 
@@ -149,6 +140,7 @@ arma::vec3 Element::centre() {
 /**
  * Count element sides of the space dimension @p side_dim.
  */
+
 unsigned int Element::n_sides_by_dim(int side_dim)
 {
     if (side_dim == dim()) return 1;
@@ -159,80 +151,17 @@ unsigned int Element::n_sides_by_dim(int side_dim)
     return n;
 }
 
-/**
- * Return pointer to @p nth side/node/element (depending on the dimension @p side_dim).
- */
-/*
-void *Element::side_by_dim(int side_dim, unsigned int n)
-{
-    if (side_dim == 0)
-    {
-        // TODO: Maybe here we should also return a side?
 
-        return node[n];
-    }
-    else if (side_dim == dim)
-    {
-        ASSERT(n==0, "Number of side is out of range.");
-        return this;
-    }
-    else
-    {
-        unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides(); i++)
-        {
-            if (side(i)->dim() == side_dim)
-            {
-                if (count == n)
-                {
-                    return side(i);
-                }
-                else
-                {
-                    count++;
-                }
-            }
-        }
-        xprintf(Warn, "Side not found.");
-    }
-}
-*/
-
-/**
- * Return pointer to the @p node_id-th node of the side.
- */
-const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
+ElementAccessor< 3 > Element::element_accessor()
 {
-    if (side_dim == 0)
-    {
-        return node[side_id];
-    }
-    else if (side_dim == dim())
-    {
-        ASSERT(side_id==0, "Number of side is out of range.");
-        return this->node[node_id];
-    }
-    else
-    {
-        unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides(); i++)
-        {
-            if (side(i)->dim() == side_dim)
-            {
-                if (count == side_id)
-                {
-                    return side(i)->node(node_id);
-                }
-                else
-                {
-                    count++;
-                }
-            }
-        }
-        xprintf(Warn, "Side not found.");
-    }
+  return mesh_->element_accessor( mesh_->element.index(this) );
 }
 
+
+
+Region Element::region() const {
+    return Region( region_idx_, mesh_->region_db());
+}
 
 
 #if 0

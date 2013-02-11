@@ -55,25 +55,8 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
-void count_element_types(Mesh*);
-void read_node_list(Mesh*);
-
 
 using namespace Input::Type;
-
-Record BoundarySegment::input_type
-    = Record("BoundarySegment","Record with specification of boundary segments,\n"
-            "i.e. subsets of the domain boundary where we prescribe one boundary condition.\n"
-            "Currently very GMSH oriented. (NOT IMPLEMENTED YET)")
-    .declare_key("physical_domains", Array(Integer(0)),
-                "Numbers of physical domains (submeshes) that forms a segment and that "
-                "will be removed from the computational mesh.")
-    .declare_key("elements", Array(Integer(0)),
-                        "Numbers of elements that forms a segment and that "
-                        "will be removed from the computational mesh.")
-    .declare_key("sides", Array( Array(Integer(0), 2,2) ),
-                        "Pairs [ element, local_side] specifying sides that are part of the boundary segment."
-                        "Sides are NOT removed from computation.");
 
 
 Record Mesh::input_type
@@ -84,20 +67,9 @@ Record Mesh::input_type
 	        "List of additional region definitions not contained in the mesh.")
 	.declare_key("sets", Array( RegionDB::region_set_input_type), Default::optional(),
 	        "List of region set definitions.")
-    .declare_key("boundary",
-            Record( "BoundaryLists", "Lists of boundary regions and sets.\n "
-                    "All regions with name starting with period '.' are automatically treated as boundary regions.")
-            .declare_key("ids", Array( Integer(0) ), Default::optional(),
-                    "List with ID numbers of boundary regions.")
-            .declare_key("labels", Array( String() ), Default::optional(),
-                    "List of labels of boundary regions.")
-            .declare_key("sets", Array( String() ), Default::optional(),
-                    "List of regions sets whose regions will be marked as boundary.")
-            .close(),
-            Default::optional(),
-            "")
-    .declare_key("neighbouring", FileName::input(), Default::obligatory(),
-    		"File with mesh connectivity data.");
+	.close();
+
+
 
 const unsigned int Mesh::undef_idx;
 
@@ -232,6 +204,7 @@ void Mesh::setup_topology(istream *in) {
         neighbours_.swap(empty_vec);
     }
 
+    region_db_.close();
 }
 
 
@@ -437,7 +410,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill boundary element
                     ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
-                    bc_ele->init(e->dim()-1, this, RegionDB::implicit_boundary);
+                    bc_ele->init(e->dim()-1, this, region_db_.implicit_boundary_region() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
                     // fill Boundary object
@@ -605,18 +578,20 @@ void Mesh::element_to_neigh_vb()
 }
 
 
-
+/*
 void Mesh::setup_materials( MaterialDatabase &base)
 {
-    xprintf( MsgVerb, "   Element to material... ")/*orig verb 5*/;
+  
+    xprintf( MsgVerb, "   Element to material... ");//orig verb 5;
     FOR_ELEMENTS(this, ele ) {
         ele->material=base.find_id(ele->region().id());
         INPUT_CHECK( ele->material != base.end(),
                 "Reference to undefined material %d in element %d\n", ele->region().id(), ele.id() );
     }
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    xprintf( MsgVerb, "O.K.\n");//orig verb 6
+  
 }
-
+*/
 
 void Mesh::read_intersections() {
 

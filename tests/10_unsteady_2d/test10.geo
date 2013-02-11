@@ -16,5 +16,7 @@ Line(8) = {4,1};
 Line Loop(9) = {5,6,7,8};
 Plane Surface(10) = {9};
 
-Physical Surface(100) = {10};
+Physical Surface("plane") = {10};
 
+Physical Line(".bc_inflow") = {7};
+Physical Line(".bc_outflow") = {5};

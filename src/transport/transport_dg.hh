@@ -38,7 +38,6 @@ class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
-class TransportBC;
 
 
 /**
@@ -79,13 +78,20 @@ class TransportDG : public TransportBase
 {
 public:
 
+	class EqData : public TransportBase::TransportEqData {
+	public:
+
+		EqData();
+		RegionSet read_boundary_list_item(Input::Record rec);
+
+	};
+
     /**
      * @brief Constructor.
      * @param init_mesh         computational mesh
-     * @param material_database material database
      * @param in_rec            input record
      */
-    TransportDG(Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+    TransportDG(Mesh &init_mesh, const Input::Record &in_rec);
 
     /**
      * @brief Declare input record type for the equation TransportDG.
@@ -124,6 +130,15 @@ public:
 	 * @brief Postprocesses the solution and writes to output file.
 	 */
 	void output_data();
+
+    /**
+     * @brief Sets pointer to data of other equations.
+     * TODO: there should be also passed the sigma parameter between dimensions
+     * @param cross_section is pointer to cross_section data of Darcy flow equation
+     */
+	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
+
+	virtual EqData *get_data() { return &data; }
 
 	/**
 	 * @brief Destructor.
@@ -313,15 +328,17 @@ private:
 
 
 	/**
-	 * @brief Reads the initial condition.
+	 * @brief Sets the initial condition.
 	 */
-	void read_initial_condition(string file_name);
+	void set_initial_condition();
 
 
 
+	EqData data;
 
 	/// @name Physical parameters
 	// @{
+
 	/// Longitudal dispersivity.
 	double alphaL;
 
@@ -360,17 +377,6 @@ private:
 	const double advection;
 	// @}
 
-
-	/// @name Boundary conditions
-	// @{
-
-	/// Time marks for boundary conditions.
-	TimeMark::Type bc_mark_type_;
-
-	/// Reader of boundary conditions.
-	TransportBC *bc;
-
-	// @}
 
 
 	/// @name Solution of algebraic system

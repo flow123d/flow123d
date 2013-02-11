@@ -34,7 +34,7 @@ class Linear_reaction: public Reaction
          *  TODO: parameter description
          */
 		//Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
-		Linear_reaction(Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
+		Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
 		/**
 		*	Destructor.
 		*/

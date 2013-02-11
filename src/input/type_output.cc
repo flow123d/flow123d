@@ -212,7 +212,6 @@ void OutputText::print(ostream& stream, const AbstractRecord *type, unsigned int
             // descendants
             doc_type_ = key_record;
             for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-	        DBGMSG("iterator: %d\n", it - type->begin_child_data());
             	size_setw_ = 0;
                 stream << setw(padding_size) << "";
                 stream << "" << "Record '" << (*it).type_name() << "'";

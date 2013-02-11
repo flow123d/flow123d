@@ -117,6 +117,7 @@ set (sources_lib_coupling
     coupling/time_governor.cc
 
    coupling/equation.cc
+       flow/old_bcd.cc
    # coupling/hc_explicit_sequential.cc
 )
 
@@ -126,7 +127,7 @@ set(sources_lib_non_system
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
-    flow/old_bcd.cc
+
 
     io/output.cc
     io/output_vtk.cc
@@ -140,7 +141,6 @@ set(sources_lib_non_system
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
-    transport/transport_bc.cc
     transport/transport_dg.cc
     transport/sources.cc
 
@@ -194,7 +194,7 @@ endif()
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 #set_target_properties(system_lib PROPERTIES COMPILE_FLAGS "-std=gnu++0x")
 
 # when the precompiled headers are used in the future

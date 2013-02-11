@@ -66,10 +66,10 @@ template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, typename Value::return_type &value) {
     Value ref(value);
     ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
-    double *ptr=data_+(bulk_size_+boundary_idx)*n_components_;
+    typename Value::element_type *ptr=(typename Value::element_type *) ( data_+(bulk_size_+boundary_idx)*n_components_);
     for(unsigned int row=0; row < ref.n_rows(); row++)
         for(unsigned int col=0; col < ref.n_cols(); col++, ptr++)
-            *(typename Value::element_type *)ptr = ref(row,col);
+            *ptr = ref(row,col);
 }
 
 
