@@ -106,7 +106,8 @@ it::Record DarcyFlowMH_Steady::input_type
     .derive_from(DarcyFlowMH::input_type)
     .declare_key("bc_data", it::Array(
                 DarcyFlowMH_Steady::EqData().boundary_input_type()
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
+                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
+                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
                 .declare_key("flow_old_bcd_file", it::FileName::input(), "")
                 ), it::Default::obligatory(), ""  )
     .declare_key("bulk_data", it::Array(
