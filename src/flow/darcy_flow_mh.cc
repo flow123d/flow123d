@@ -173,7 +173,7 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(neumann);
-    bc_flux.disable_where(& bc_type, list );
+    bc_robin_sigma.disable_where(& bc_type, list );
     
     //these are for unsteady
     ADD_FIELD(init_pressure, "Initial condition as pressure", it::Default("0.0") );
