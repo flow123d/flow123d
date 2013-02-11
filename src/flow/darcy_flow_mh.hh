@@ -120,6 +120,12 @@ public:
          * - flow_old_bcd_file
          */
         RegionSet read_boundary_list_item(Input::Record rec);
+        
+        /**
+         * Overrides EqDataBase::read_bulk_list_item, implements reading of
+         * - init_piezo_head key
+         */
+        RegionSet read_bulk_list_item(Input::Record rec);
        
         Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
         Field<3, FieldValue<3>::Scalar > conductivity;

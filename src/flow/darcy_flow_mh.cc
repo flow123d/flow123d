@@ -107,11 +107,12 @@ it::Record DarcyFlowMH_Steady::input_type
     .declare_key("bc_data", it::Array(
                 DarcyFlowMH_Steady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
                 .declare_key("flow_old_bcd_file", it::FileName::input(), "")
                 ), it::Default::obligatory(), ""  )
     .declare_key("bulk_data", it::Array(
-                DarcyFlowMH_Steady::EqData().bulk_input_type() ), it::Default::obligatory(), "");
+                DarcyFlowMH_Steady::EqData().bulk_input_type() 
+                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
+                ), it::Default::obligatory(), "");
 
 
 it::Record DarcyFlowMH_Unsteady::input_type
@@ -189,13 +190,19 @@ RegionSet DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
         BOOST_FOREACH(Region reg, domain)
                 bc_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
     }
-    if (rec.opt_val("init_piezo_head", field_a_rec)) {
-        BOOST_FOREACH(Region reg, domain)
-                init_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
-    }
     FilePath flow_bcd_file;
     if (rec.opt_val("flow_old_bcd_file", flow_bcd_file) ) {
         OldBcdInput::instance()->read_flow(flow_bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
+    }
+    return domain;
+}
+
+RegionSet DarcyFlowMH::EqData::read_bulk_list_item(Input::Record rec) {
+    RegionSet domain=EqDataBase::read_bulk_list_item(rec);
+    Input::AbstractRecord field_a_rec;
+    if (rec.opt_val("init_piezo_head", field_a_rec)) {
+        BOOST_FOREACH(Region reg, domain)
+                init_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
     }
     return domain;
 }
