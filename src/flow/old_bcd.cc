@@ -18,7 +18,7 @@ OldBcdInput * OldBcdInput::instance() {
     return obcd;
 }
 
-
+// set all regions of the given Field<...> @p target
 template <int spacedim, class Value>
 void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
     FieldElementwise<spacedim, Value> *in_field=new FieldElementwise<spacedim, Value>(target.n_comp());
@@ -32,7 +32,7 @@ void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
 template <int spacedim, class Value>
 void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val) {
     static_cast<FieldElementwise<spacedim, Value> *>(
-            target( target.mesh()->region_db().implicit_boundary()) // take any pointer from the Field table, since all points to the same object
+            target( some_bc_region_ )
             )->set_data_row(bcd_ele_idx, val);
 }
 
@@ -123,6 +123,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                         xprintf(UsrErr, "Setting boundary condition %d for non-boundary side %d of element ID: %d\n", id, sid, eid);
                     bc_ele_idx = mesh_->bc_elements.index( ele->side(sid) -> cond()->element() );
                     id_2_bcd_[id]= bc_ele_idx;
+                    if ( ! some_bc_region_.is_valid() ) some_bc_region_ = ele->side(sid) -> cond()->element()->region();
 
                     set_field(flow_type,     bc_ele_idx, type);
                     set_field(flow_pressure, bc_ele_idx, scalar);

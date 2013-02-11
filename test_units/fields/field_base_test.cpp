@@ -104,16 +104,20 @@ TEST(Field, no_check) {
     BCField<3, FieldValue<3>::Enum > bc_type;
     bc_type.set_name("bc_type");
 
+    std::vector<FieldEnum> list;
     BCField<3, FieldValue<3>::Scalar > bc_value;
     bc_value.set_name("bc_value");
-    bc_value.disable_where( &bc_type, { neumann} );
+    list.clear(); list.push_back(neumann);
+    bc_value.disable_where( &bc_type, list );
 
     BCField<3, FieldValue<3>::Scalar > bc_flux;
     bc_flux.set_name("bc_flux");
-    bc_flux.disable_where( &bc_type, { dirichlet, robin } );
+    list.clear(); list.push_back(dirichlet); list.push_back(robin);
+    bc_flux.disable_where( &bc_type, list );
 
     BCField<3, FieldValue<3>::Scalar > bc_sigma;
     bc_sigma.set_name("bc_sigma");
+    list.clear(); list.push_back(dirichlet); list.push_back(neumann);
     bc_sigma.disable_where( &bc_type, { dirichlet, neumann} );
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

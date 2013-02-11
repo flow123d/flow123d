@@ -76,10 +76,16 @@ RegionDB::RegionDB()
     // adding implicit boundary and bulk regions
     // How to deal with dimension, clean solution is to have implicit region for every
     // dimension, or we can allow regions of mixed dimension
-    implicit_bulk_ = add_region(Region::undefined-1, "IMPLICIT BULK", 0, Region::bulk);
-    implicit_boundary_ = add_region(Region::undefined-2, "IMPLICIT BOUNDARY", 0, Region::boundary);
+    //implicit_bulk_ = add_region(Region::undefined-1, "IMPLICIT BULK", 0, Region::bulk);
+    //implicit_boundary_ = ;
 
 }
+
+
+Region RegionDB::implicit_boundary_region() {
+    return add_region(Region::undefined-2, "IMPLICIT BOUNDARY", 0, Region::boundary);
+}
+
 
 
 Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, bool boundary) {

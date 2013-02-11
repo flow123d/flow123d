@@ -37,6 +37,7 @@ private:
     void set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val);
 
     Mesh *mesh_;
+    Region  some_bc_region_;
 };
 
 

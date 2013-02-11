@@ -3,6 +3,15 @@
  *
  *  Created on: Nov 27, 2012
  *      Author: jb
+ *
+ *  TODO:
+ *  - komentar k RegionIdx
+ *  - presun enum RegionType do public Region - komentar + pouzit v kodu
+ *  - komentar k typdef RegionSet
+ *  - presun MapElementIDToRegionID do RegionDB
+ *  - dodelat intersection, differecne
+ *  - test element map
+ *
  */
 
 #ifndef REGION_HH_
@@ -16,9 +25,6 @@
 #include "system/global_defs.h"
 #include "system/exceptions.hh"
 
-//#include "input/input_type.hh"
-//#include "input/accessors.hh"
-
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
@@ -26,7 +32,9 @@
 
 namespace BMI=::boost::multi_index;
 
+// forward declarations
 class Region;
+class RegionDB;
 namespace Input {
     namespace Type { class Record; }
     class Record;
@@ -98,7 +106,7 @@ protected:
     friend class Region;
 };
 
-class RegionDB;
+
 
 /**
  * Class that represents disjoint part of computational domain (or domains). It consists of one integer value
@@ -121,6 +129,7 @@ public:
     {}
 
     /// This should be used for construction from known RegionIdx. (e.g. in Mesh)
+    /// Do not use unless you can not get Region in other way.
     Region(RegionIdx r_idx, const RegionDB & db)
     : RegionIdx(r_idx), db_(&db)
     {}
@@ -133,14 +142,6 @@ public:
 
     /// Returns dimension of the region.
     unsigned int dim() const;
-
-    /// Equality comparison operators for regions.
-    inline bool operator==(const Region &other) const
-        { return idx_ == other.idx_; }
-
-    /// Equality comparison operators for regions.
-    inline bool operator!=(const Region &other) const
-        { return idx_ != other.idx_; }
 
     /// Conversion to RegionIdx class
     inline operator RegionIdx() const {
@@ -181,17 +182,7 @@ private:
 /**
  * Class representing a set of regions.
  * CAn be used  to set function(field) on more regions at once, possibly across meshes
- *
- * TODO:
- * Desired properties:
- * - can construct itself from input, from a list
- *   of regions (given by label or id)
- * - support set operations
- * - say if an region is in it
- * - iterate through its regions
  */
-//class RegionSet {
-//};
 typedef std::vector<Region> RegionSet;
 
 /**
@@ -285,8 +276,9 @@ region_sets = [
 class RegionDB {
 public:
 
-
+    /// COMMENT
     static Input::Type::Record region_input_type;
+    /// COMMENT
     static Input::Type::Record region_set_input_type;
 
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
@@ -379,15 +371,13 @@ public:
     /**
      * Returns implicit bulk region.
      */
-    Region implicit_bulk() const
-    { return implicit_bulk_; }
+    //Region implicit_bulk() const
+    //{ return implicit_bulk_; }
 
     /**
      * Returns implicit bulk region.
      */
-    Region implicit_boundary() const
-    { return implicit_boundary_; }
-
+    Region implicit_boundary_region();
 
     /*
      * Add region to given set. Create the set if it does not exist.
@@ -405,10 +395,13 @@ public:
      */
     void add_set( const string& set_name, const RegionSet & set);
 
+    /// COMMENT
     RegionSet union_sets( const string & set_name_1, const string & set_name_2); // sort + std::set_union
 
+    /// COMMENT
     RegionSet intersection( const string & set_name_1, const string & set_name_2);
 
+    /// COMMENT
     RegionSet difference( const string & set_name_1, const string & set_name_2);
 
     /**
@@ -419,8 +412,10 @@ public:
      */
     const RegionSet & get_region_set(const string & set_name) const;
 
+    /// COMMENT
     void read_sets_from_input(Input::Array arr);
 
+    /// COMMENT
     void read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
 
 

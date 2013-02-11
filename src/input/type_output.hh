@@ -82,6 +82,19 @@ namespace Type {
  *   - jak je reseno potlaceni opakovaneho vypisovani Recordu, je mozno odstranit reset_doc_flags z TypeBase
  *   - pri dalsich upravach v exceptions zkusit predavat v EI smart_ptr na TypeBase, nicmene na miste vyvolani fce by muselo byt
  *     make_shared, aby se vytvorila kopie spravneho typu. (faktycky je potreba objekt Type kopirovat jinak nevim, ze mi ho nekdo neodalokuje.
+ *
+ *
+ *
+ *  value = <OBLIGATORY>
+ *          #    is String (generic)
+            # String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
+            # For vector values, you can use just one string to enter homogeneous vector.
+            # For square NxN-matrix values, you can use:
+            # * array of strings of size N to enter diagonal matrix
+            # * array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
+            # * just one string to enter (spatially variable) multiple of the unit matrix.
+            # Formula can contain variables x,y,z,t and usual operators and functions.
+ *
  */
 
 class OutputBase {

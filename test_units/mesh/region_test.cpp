@@ -13,6 +13,8 @@
 
 TEST(Region, all) {
     RegionDB    region_db;
+    region_db.add_region(0,"nothing_bc", 0, true);
+    region_db.add_region(1,"nothing_bulk", 0, false);
 
     {
     Region r=region_db.add_region(1001,"top", 2,true);
