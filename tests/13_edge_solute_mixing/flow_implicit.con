@@ -3,15 +3,32 @@
     TYPE = "SequentialCoupling", 
     description = "Test13 - mixing of substances on edges and 
 		   quantitative test on trivial transport problem.", 
-    material = "input/test13.mtr", 
     mesh = {
-      mesh_file = "input/test13.msh", 
-      neighbouring = "input/test13.ngh"
+      mesh_file = "input/test13.msh" 
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "input/test13.fbc", 
+
+      bulk_data = [
+        {   rid = 17,
+            cond_anisothropy = 1.0
+        },
+        {   rid = 18,
+            cond_anisothropy = 0.1
+        },
+        {   rid = 19,
+            cond_anisothropy = 1.0
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test13.fbc"
+        }
+      ],
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -28,9 +45,26 @@
 
     secondary_equation = {
 	TYPE = "AdvectionDiffusion_DG", 
-      
-	boundary_file = "input/test13.tbc",  
-	initial_file = "input/test13.tic", 
+
+    bulk_data = [
+        { rid = 17,
+          init_conc = 0
+        },
+        { rid = 18,
+          init_conc = 0
+        },
+        { rid = 19,
+          init_conc = 0
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test13.tbc"
+        }
+      ],
+
 	output = {
 	    mobile_p0 = "transport_output_stream", 
 	    output_stream = {

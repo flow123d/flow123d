@@ -214,7 +214,7 @@ RegionSet EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     RegionSet domain;
     std::string name;
     unsigned int id;
-    if (rec.opt_val("r_set", name)) {
+    if (rec.opt_val("r_set", name)) {     
         domain = mesh_->region_db().get_region_set(name);
 
     } else if (rec.opt_val("region", name)) {

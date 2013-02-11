@@ -541,14 +541,13 @@ void ConvectionTransport::compute_one_step() {
     MaterialDatabase::Iter material;
     int sbi;
 
-    // possibly read boundary conditions
-
-    set_boundary_conditions();
-
     // proceed to actually computed time
     //time_->view("CONVECTION");
     time_->next_time();
     data->set_time(*time_);
+    
+    // possibly read boundary conditions
+    set_boundary_conditions();
 
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase

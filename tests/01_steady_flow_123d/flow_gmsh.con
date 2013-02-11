@@ -3,7 +3,25 @@
     TYPE = "SequentialCoupling", 
     description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
     mesh = {
-      mesh_file = "./input/test1_new.msh"
+      mesh_file = "./input/test1_new.msh",
+      sets = [
+        {
+            name = "fractions",
+            region_labels = [
+                "2d_fraction_1",
+                "2d_fraction_2"
+            ]
+        },
+        {
+            name = "dirichlet_boundary",
+            region_labels = [
+                ".1d_channel",
+                ".2d_fraction_1",
+                ".2d_fraction_2",
+                ".3d_cube"
+            ]
+        }
+      ]
     }, 
 
     primary_equation = {
@@ -14,6 +32,10 @@
         { region = "1d_channel",
           cond_anisothropy = 10
         },
+          # using region set
+#        { r_set = "fractions",  
+#          cond_anisothropy = 1
+#        },
         { region = "2d_fraction_1",
           cond_anisothropy = 1
         },
@@ -58,6 +80,50 @@
           bc_pressure = 0.0
         }
       ],
+
+comment = {
+      bc_data = [
+          # using region set
+         {  r_set = "dirichlet_boundary",
+            bc_type = "dirichlet",
+            bc_pressure = {
+                TYPE = "FieldFormula",
+                value = "x-z"
+            }
+        },
+#        { region = ".1d_channel",
+#          bc_type = "dirichlet",
+#          bc_pressure = {
+#            TYPE = "FieldFormula",
+#            value = "x-z"
+#          }
+#        },
+#        { region = ".2d_fraction_1",
+#          bc_type = "dirichlet",
+#          bc_pressure = {
+#            TYPE = "FieldFormula",
+#            value = "x-z"
+#          }
+#        },
+#        { region = ".2d_fraction_2",
+#          bc_type = "dirichlet",
+#          bc_pressure = {
+#            TYPE = "FieldFormula",
+#            value = "x-z"
+#          }
+#        },
+#        { region = ".3d_cube",
+#          bc_type = "dirichlet",
+#          bc_pressure = {
+#            TYPE = "FieldFormula",
+#            value = "x-z"
+#          }
+#        },
+        { region = "IMPLICIT BOUNDARY",
+          bc_pressure = 0.0
+        }
+      ]
+},
 
       output = {
         balance_output = "water_balance.out", 
