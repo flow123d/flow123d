@@ -129,7 +129,7 @@ public:
 	 */
 	double ***get_out_conc();
     vector<string> &get_substance_names();
-    TransportSources *transportsources;
+//    TransportSources *transportsources;
     const MH_DofHandler *mh_dh;
 
 
@@ -156,6 +156,7 @@ private:
 	void set_initial_condition();
 	void read_concentration_sources();
 	void set_boundary_conditions();
+	Vec compute_concentration_sources(unsigned int subst_i, double *conc);
 
 	/**
 	 * Finish explicit transport matrix (time step scaling)
@@ -195,6 +196,9 @@ private:
 	TransportOperatorSplitting::EqData *data;
 
     Field<3, FieldValue<3>::Scalar > *cross_section;
+
+    double *sources_corr;
+    Vec v_sources_corr;
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;

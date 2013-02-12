@@ -104,6 +104,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     data->sorp_type.set_n_comp(n_substances);
     data->sorp_coef0.set_n_comp(n_substances);
     data->sorp_coef1.set_n_comp(n_substances);
+    data->sources_density.set_n_comp(n_substances);
+    data->sources_sigma.set_n_comp(n_substances);
+    data->sources_conc.set_n_comp(n_substances);
     data->set_mesh(&init_mesh);
     data->init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     data->set_time(*time_);
@@ -146,14 +149,14 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     n_reaction = 0;
 */
 
-    Input::Iterator<FilePath> sources_it = in_rec.find<FilePath>("sources_file");
-
-    if (sources_it) {
-        transportsources = new TransportSources( n_substances, *el_ds );
-        transportsources->read_concentration_sources( string(* sources_it), row_4_el, mesh_);
-    } else {
-        transportsources = NULL;
-    }
+//    Input::Iterator<FilePath> sources_it = in_rec.find<FilePath>("sources_file");
+//
+//    if (sources_it) {
+//        transportsources = new TransportSources( n_substances, *el_ds );
+//        transportsources->read_concentration_sources( string(* sources_it), row_4_el, mesh_);
+//    } else {
+//        transportsources = NULL;
+//    }
 
 
 
@@ -397,6 +400,11 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     // if( rank == 0)
     vconc_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
+    sources_corr = new double[el_ds->lsize()];
+
+    ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), PETSC_DECIDE,
+            sources_corr, &v_sources_corr);
+
     // TODO: should be replaced by Distribution(Block) or better remove whole boundary matrix with these vectors
 
     lb_col = (int*) xmalloc(np * sizeof(int)); // local rows in BM
@@ -536,6 +544,34 @@ void ConvectionTransport::set_boundary_conditions()
 }
 
 
+//=============================================================================
+// COMPUTE SOURCES
+//=============================================================================
+Vec ConvectionTransport::compute_concentration_sources(unsigned int subst_i, double *conc) {
+
+    double conc_diff;
+    for (int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+
+    	ElementAccessor<3> ele_acc = mesh_->element_accessor(el_ds->begin() + i_loc);
+    	arma::vec3 p = mesh_->element(el_ds->begin() + i_loc)->centre();
+
+        conc_diff = data->sources_conc.value(p, ele_acc)(subst_i) - conc[i_loc];
+        if ( conc_diff > 0.0)
+            sources_corr[i_loc] = data->sources_density.value(p, ele_acc)(subst_i)
+                                 +conc_diff * data->sources_sigma.value(p, ele_acc)(subst_i);
+        else
+            sources_corr[i_loc] = data->sources_density.value(p, ele_acc)(subst_i);
+
+       // cout << i_loc << " c:" << conc[i_loc] << " sc:" << sources_conc[subst_i][i_loc] << " sd:"
+       //      << sources_density[subst_i][i_loc] << " ss:" << sources_sigma[subst_i][i_loc] << " cr:"
+       //      << sources_corr[i_loc] << endl;
+    }
+
+    return v_sources_corr;
+
+}
+
+
 void ConvectionTransport::compute_one_step() {
 
     MaterialDatabase::Iter material;
@@ -551,18 +587,18 @@ void ConvectionTransport::compute_one_step() {
 
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase
-        if (transportsources != NULL) {
+//        if (transportsources != NULL) {
             //DBGMSG("component: %d\n", sbi);
 
             //if (vcumulative_corr[sbi][10] >0) { int i =1;}
             //if (bcvcorr[sbi][10] >0) { int i =1;}
             //if (conc[sbi][10] >0) { int i =1;}
             VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi],
-                    transportsources->compute_concentration_sources(sbi, conc[MOBILE][sbi] )
+                    compute_concentration_sources(sbi, conc[MOBILE][sbi] )
                     );
-        } else {
-            VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
-        }
+//        } else {
+//            VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
+//        }
 
         //VecView(vpconc[sbi],PETSC_VIEWER_STDOUT_SELF);
 
