@@ -53,9 +53,6 @@
             TYPE = "FieldFormula",
             value = "x-z"
           }
-        },
-        { region = "IMPLICIT BOUNDARY",
-          bc_pressure = 0.0
         }
       ],
 

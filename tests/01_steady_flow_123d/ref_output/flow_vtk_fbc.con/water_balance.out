@@ -13,7 +13,6 @@
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  -2            IMPLICIT BULK              0                                         inf           
   1             1d_channel                 0                                         inf           
   2             2d_fraction_1              0                                         inf           
   3             2d_fraction_2              0                                         inf           

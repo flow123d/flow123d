@@ -5,9 +5,9 @@
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          0             0             0             0             
   2             .bc_inflow                 0             0             0             0             
   3             .bc_outflow                0             0             0             0             
+  -3            IMPLICIT BOUNDARY          0             0             0             0             
 # -----------------------------------------------------------------------------------------------
 # total boundary balance                   0             0             0             
 
@@ -15,7 +15,6 @@
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  -2            IMPLICIT BULK              0                                         0             
   1             plane                      0                                         0             
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
@@ -28,17 +27,16 @@
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          1.53112e-12   1.54669e-12   -1.55682e-14  0.1           
   2             .bc_inflow                 -27.4127      0             -27.4127      0.1           
   3             .bc_outflow                6.20298e-21   6.20298e-21   0             0.1           
+  -3            IMPLICIT BOUNDARY          1.53059e-12   1.54617e-12   -1.55856e-14  0.1           
 # -----------------------------------------------------------------------------------------------
-# total boundary balance                   -27.4127      1.54669e-12   -27.4127      
+# total boundary balance                   -27.4127      1.54617e-12   -27.4127      
 
 
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  -2            IMPLICIT BULK              0                                         0.1           
   1             plane                      0                                         0.1           
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
@@ -51,17 +49,16 @@
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          2.18662e-12   2.20089e-12   -1.42655e-14  0.2           
   2             .bc_inflow                 -18.5087      0             -18.5087      0.2           
   3             .bc_outflow                8.25947e-16   8.25947e-16   0             0.2           
+  -3            IMPLICIT BOUNDARY          2.19146e-12   2.2058e-12    -1.43435e-14  0.2           
 # -----------------------------------------------------------------------------------------------
-# total boundary balance                   -18.5087      2.20171e-12   -18.5087      
+# total boundary balance                   -18.5087      2.20663e-12   -18.5087      
 
 
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  -2            IMPLICIT BULK              0                                         0.2           
   1             plane                      0                                         0.2           
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
@@ -74,17 +71,16 @@
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          2.33741e-12   2.41376e-12   -7.63484e-14  0.3           
   2             .bc_inflow                 -14.9202      0             -14.9202      0.3           
   3             .bc_outflow                1.39065e-12   1.39065e-12   0             0.3           
+  -3            IMPLICIT BOUNDARY          2.33745e-12   2.41314e-12   -7.56942e-14  0.3           
 # -----------------------------------------------------------------------------------------------
-# total boundary balance                   -14.9202      3.8044e-12    -14.9202      
+# total boundary balance                   -14.9202      3.80379e-12   -14.9202      
 
 
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  -2            IMPLICIT BULK              0                                         0.3           
   1             plane                      0                                         0.3           
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
@@ -97,9 +93,9 @@
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          2.3343e-12    2.49996e-12   -1.65665e-13  0.4           
   2             .bc_inflow                 -12.8432      0             -12.8432      0.4           
   3             .bc_outflow                2.31128e-10   2.31128e-10   0             0.4           
+  -3            IMPLICIT BOUNDARY          2.33388e-12   2.49975e-12   -1.65866e-13  0.4           
 # -----------------------------------------------------------------------------------------------
 # total boundary balance                   -12.8432      2.33628e-10   -12.8432      
 
@@ -107,7 +103,6 @@
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  -2            IMPLICIT BULK              0                                         0.4           
   1             plane                      0                                         0.4           
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
@@ -120,9 +115,9 @@
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          2.28661e-12   2.52855e-12   -2.41947e-13  0.5           
   2             .bc_inflow                 -11.4458      0             -11.4458      0.5           
   3             .bc_outflow                9.42667e-09   9.42667e-09   0             0.5           
+  -3            IMPLICIT BOUNDARY          2.29394e-12   2.53564e-12   -2.41699e-13  0.5           
 # -----------------------------------------------------------------------------------------------
 # total boundary balance                   -11.4458      9.4292e-09    -11.4458      
 
@@ -130,7 +125,6 @@
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  -2            IMPLICIT BULK              0                                         0.5           
   1             plane                      0                                         0.5           
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
