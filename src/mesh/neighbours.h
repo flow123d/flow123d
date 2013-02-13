@@ -122,25 +122,6 @@ class SideIter;
 
 
 
-
-/*
- *  Class for both types of input neigbours. Only temporary
- */
-class Neighbour_both
-{
-public:
-    Neighbour_both();
-
-    int   type;         // Type
-    int   n_sides;      // # of neighbouring sides
-
-    int  *sid;      // id numbers of neighbouring sides
-    int  *eid;      // id numbers of neighbouring elements
-    double  sigma;      // transition coefficient
-};
-
-
-
 /**
  * Class only for VB neighbouring.
  */

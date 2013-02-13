@@ -185,10 +185,7 @@ private:
  */
 typedef std::vector<Region> RegionSet;
 
-/**
- * Map representing the relevance of elements to regions
- */
-typedef std::map<unsigned int, unsigned int> MapElementIDToRegionID;
+
 
 /**
  * Class for conversion between an index and string label of an material.
@@ -275,6 +272,10 @@ region_sets = [
 
 class RegionDB {
 public:
+    /**
+     * Map representing the relevance of elements to regions
+     */
+    typedef std::map<unsigned int, unsigned int> MapElementIDToRegionID;
 
     /// COMMENT
     static Input::Type::Record region_input_type;
@@ -304,13 +305,19 @@ public:
     static const unsigned int max_n_regions = 64000;
 
     /**
-     * Add new region into database and return its index. This requires full
-     * specification of the region that is given in PhysicalNames section of the GMSH MSH format.
-     * If the region is already in the DB, check consistency of label and id and return its index.
+     * This method adds new region into the database and returns its index. This requires full
+     * specification of the region that is given in PhysicalNames section of the GMSH MSH format
+     * or in Mesh input record.
      *
-     * Parameter @p id is any non-negative integer that is unique for the region over all meshes used in the simulation,
-     * parameter @p label is unique string identifier of the region, @p dim is dimension of reference elements in the region
-     * and @p boundary is true if the region consist of boundary elements (where one can apply boundary condition).
+     * If ID or label are found in the DB, we distinguish following cases:
+     * 1)  ID is found, label is not found : warning ID has already assigned label
+     * 2)  ID is not found, label is found : report error - assigning same label to different IDs
+     * 3)  both ID and label are found, in same region : check remaining data, return existing region
+     * 4)                             , in different   : warning ID has already assigned label
+     *
+     * Parameter @p id is any unique non-negative integer, parameter @p label is unique string identifier of the region,
+     * @p dim is dimension of reference elements in the region and @p boundary is true if the region consist of boundary elements
+     * (where one can apply boundary condition).
      *
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);

@@ -47,8 +47,9 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
 
     Mesh mesh;
-    GmshMeshReader reader(mesh_file);
-    reader.read_mesh(&mesh);
+    ifstream in(string(mesh_file).c_str());
+    mesh.read_gmsh_from_stream(in);
+
 
     EXPECT_EQ(9, mesh.n_elements());
     EXPECT_EQ(18, mesh.bc_elements.size());

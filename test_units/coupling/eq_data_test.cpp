@@ -198,8 +198,8 @@ protected:
 
         FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
         mesh= new Mesh;
-        GmshMeshReader mesh_reader(mesh_file);
-        mesh_reader.read_mesh(mesh);
+        ifstream in(string( mesh_file ).c_str());
+        mesh->read_gmsh_from_stream(in);
 
 
     }
@@ -227,6 +227,7 @@ protected:
             3       40      "3D front"
             $EndPhysicalNames
          */
+
         data.set_mesh(mesh);
         data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
         data.set_time(tg);

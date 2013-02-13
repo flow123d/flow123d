@@ -96,9 +96,10 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
 
     if (r_id.is_valid() && r_label.is_valid()) {
         // both iterators are valid; check they are same, and match new values
-        if (r_id.idx() != r_label.idx() ) THROW(ExcInconsistentAdd()
-                << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(r_id.label()) << EI_IDOfOtherLabel(r_label.id())
-                );
+        if (r_id.idx() != r_label.idx() ) {
+            // different region
+            xprintf(Warn, "Can not assign label '%s' to ID %d, it already has label: '%s'.\n", label.c_str(), id, r_id.label().c_str());
+        }
 
         if ( r_id.dim() != dim || r_id.is_boundary() != boundary ) {
             //DBGMSG("dims: %d %d, bc: %d %d\n", r_id.dim(),dim, r_id.is_boundary(), boundary);
@@ -120,10 +121,9 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
                 return Region(index, *this);
             }
         } else {
-            if ( r_id.is_valid() ) THROW(ExcInconsistentAdd()
-                    << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(r_id.label())
-                    );
-            else
+            if ( r_id.is_valid() ) {
+                xprintf(Warn, "Can not assign label '%s' to ID %d, it already has label: '%s'.\n", label.c_str(), id, r_id.label().c_str());
+            } else
                 if (r_label.is_valid() ) THROW(ExcInconsistentAdd()
                         << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(r_label.id())
                         );
@@ -435,18 +435,16 @@ void RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToR
 				++it) {
 
 		Input::Record rec = (*it);
-		string region_name;
-		unsigned int region_id;
-		Input::Array element_list;
-
-		rec.opt_val("name", region_name);
-		rec.opt_val("id", region_id);
+		string region_name = rec.val<string>("name");
+		unsigned int region_id = rec.val<unsigned int>("id");
 		add_region(region_id, region_name, 0);
 
+        Input::Array element_list;
 		if (rec.opt_val("element_list", element_list) ) {
 			for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
 					it_element != element_list.end();
 			        ++it_element) {
+
 				std::map<unsigned int, unsigned int>::iterator it_map = map.find((*it_element));
 				if (it_map == map.end()) {
 					map.insert( std::make_pair((*it_element), region_id) );

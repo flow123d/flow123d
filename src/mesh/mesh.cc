@@ -176,37 +176,51 @@ void Mesh::count_element_types() {
         }
 }
 
-/**
- *  Setup whole topology for read mesh.
- */
-void Mesh::setup_topology(istream *in) {
-    F_ENTRY;
-    Mesh *mesh=this;
 
+void Mesh::read_gmsh_from_stream(istream &in) {
+
+    GmshMeshReader reader(in);
+    reader.read_mesh(this);
+    setup_topology();
+}
+
+
+
+void Mesh::init_from_input() {
+    F_ENTRY;
+
+    Input::Array region_list;
+    RegionDB::MapElementIDToRegionID el_to_reg_map;
+
+    // create regions from our input
+    if (in_record_.opt_val("regions", region_list)) {
+        region_db_.read_regions_from_input(region_list, el_to_reg_map);
+    }
+    // read raw mesh, add regions from GMSH file
+    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+    reader.read_mesh(this, &el_to_reg_map);
+    // possibly add implicit_boundary region, close region_db_.
+    setup_topology();
+    // create sets
+    Input::Array set_list;
+    if (in_record_.opt_val("sets", set_list)) {
+        region_db_.read_sets_from_input(set_list);
+    }
+}
+
+
+
+
+void Mesh::setup_topology() {
+    F_ENTRY;
 
     count_element_types();
-
-    // topology
     make_neighbours_and_edges();
     element_to_neigh_vb();
-    //create_external_boundary();
-
     count_side_types();
-
-
-
-    xprintf(MsgVerb, "Topology O.K.\n")/*orig verb 4*/;
-
-
-    // cleanup
-    {
-        vector<Neighbour_both> empty_vec;
-        neighbours_.swap(empty_vec);
-    }
 
     region_db_.close();
 }
-
 
 
 //

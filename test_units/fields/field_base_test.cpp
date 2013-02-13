@@ -44,12 +44,15 @@ string input = R"INPUT(
     $EndPhysicalNames
  */
 TEST(Field, init_from_default) {
+    DBGMSG("here\n");
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh mesh;
-    GmshMeshReader( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).read_mesh(&mesh);
+    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
+    mesh.read_gmsh_from_stream(in);
+
     Point<3> p("1 2 3");
 
     {
@@ -64,6 +67,7 @@ TEST(Field, init_from_default) {
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
         EXPECT_DEATH( { scalar_field.value(p, mesh.element_accessor(0,true)); }, "Null field ptr " );
     }
+
     {
         BCField<3, FieldValue<3>::Scalar > scalar_field;
 
@@ -118,11 +122,13 @@ TEST(Field, no_check) {
     BCField<3, FieldValue<3>::Scalar > bc_sigma;
     bc_sigma.set_name("bc_sigma");
     list.clear(); list.push_back(dirichlet); list.push_back(neumann);
-    bc_sigma.disable_where( &bc_type, { dirichlet, neumann} );
+    bc_sigma.disable_where( &bc_type, list );
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
     Mesh mesh;
-    GmshMeshReader( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).read_mesh(&mesh);
+    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
+    mesh.read_gmsh_from_stream(in);
 
     bc_type.set_mesh(&mesh);
     bc_flux.set_mesh(&mesh);

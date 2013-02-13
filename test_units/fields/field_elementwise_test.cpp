@@ -60,8 +60,8 @@ public:
 
         FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
         mesh= new Mesh;
-        GmshMeshReader mesh_reader(mesh_file);
-        mesh_reader.read_mesh(mesh);
+        ifstream in(string( mesh_file ).c_str());
+        mesh->read_gmsh_from_stream(in);
 
         Input::Type::Record  rec_type("Test","");
         rec_type.declare_key("scalar", ScalarField::input_type, Input::Type::Default::obligatory(),"" );

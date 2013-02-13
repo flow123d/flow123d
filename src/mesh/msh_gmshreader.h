@@ -37,11 +37,14 @@
 #include <vector>
 #include <map>
 
+
 #include "system/tokenizer.hh"
+#include "mesh/region.hh"
 
 class Mesh;
 class GMSH_DataHeader;
 class FilePath;
+
 
 
 /***********************************
@@ -104,7 +107,7 @@ public:
     /**
      *  Reads @p mesh from the GMSH file.
      */
-    void read_mesh(Mesh* mesh);
+    void read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
 
     /**
      *  Reads ElementData sections of opened GMSH file. The file is serached for the $ElementData section with header
@@ -137,7 +140,7 @@ private:
     /**
      * private method for reading of elements - in process of implementation
      */
-    void read_elements(Tokenizer &in, Mesh*);
+    void read_elements(Tokenizer &in, Mesh*, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
     /**
      *
      */

@@ -141,9 +141,13 @@ public:
         return vb_neighbours_.size();
     }
     /**
-     * Setup various links between mesh entities. Should be simplified.
+     *
      */
-    void setup_topology(istream *in = NULL);
+    void read_gmsh_from_stream(istream &in);
+    /**
+     * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
+     */
+    void init_from_input();
 
 
 
@@ -254,6 +258,11 @@ protected:
      */
     bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
 
+    /**
+     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
+     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
+     */
+    void setup_topology();
 
     void element_to_neigh_vb();
     void create_external_boundary();
@@ -262,7 +271,6 @@ protected:
     void count_side_types();
 
     unsigned int n_bb_neigh, n_vb_neigh;
-    vector<Neighbour_both> neighbours_;
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
     /// in input mesh file and has ID assigned.
