@@ -42,15 +42,14 @@ namespace Input {
 }
 
 /**
- *
+ * Base class that contains information about region:
+ * 1) contains integer value that specifies region
+ * 2) detects if region is valid
+ * 3) detects if the region is the bulk or boundary
+ * 4) detects boundary index of boundary region or bulk index of bulk region
  */
 class RegionIdx {
 public:
-    enum RegionType {
-        bulk=false,
-        boundary=true
-    };
-
 
     /// Default region is undefined/invalid
 	RegionIdx():idx_(undefined) {}
@@ -121,6 +120,13 @@ protected:
 class Region : public RegionIdx {
 public:
 
+	/**
+	 * Types of region in mesh (bulk or boundary)
+	 */
+    enum RegionType {
+        bulk=false,
+        boundary=true
+    };
 
 
     /// Default region is undefined/invalid
@@ -166,7 +172,7 @@ private:
     : RegionIdx(index), db_(&db)
     {}
 
-
+    /// Comparative method of two regions
     static bool comp(const Region &a, const Region &b)
     { return a.idx_ < b.idx_; }
 
@@ -180,8 +186,10 @@ private:
 
 
 /**
- * Class representing a set of regions.
+ * Type representing a set of regions.
  * CAn be used  to set function(field) on more regions at once, possibly across meshes
+ *
+ * Regions stored in region set are always unique
  */
 typedef std::vector<Region> RegionSet;
 
@@ -277,9 +285,13 @@ public:
      */
     typedef std::map<unsigned int, unsigned int> MapElementIDToRegionID;
 
-    /// COMMENT
+    /**
+     * Format of input record which defined elements and their affiliation to region sets
+     */
     static Input::Type::Record region_input_type;
-    /// COMMENT
+    /**
+     * Format of input record which defined regions and their affiliation to region sets
+     */
     static Input::Type::Record region_set_input_type;
 
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
@@ -348,28 +360,34 @@ public:
      * Return original label for given index @p idx.
      */
     const std::string &get_label(unsigned int idx) const;
+
     /**
      * Return original ID for given index @p idx.
      */
     unsigned int get_id(unsigned int idx) const;
+
     /**
      * Return dimension of region with given index @p idx.
      */
     unsigned int get_dim(unsigned int idx) const;
+
     /**
      * Close this class for adding labels. This is necessary to return correct size
      * for material indexed arrays and vectors. After calling this method you can
      * call method @p size and method @p idx_of_label rise an exception for any unknown label.
      */
     void close();
+
     /**
      * Returns maximal index + 1
      */
     unsigned int size() const;
+
     /**
      * Returns total number boundary regions.
      */
     unsigned int boundary_size() const;
+
     /**
      * Returns total number bulk regions.
      */
@@ -402,13 +420,31 @@ public:
      */
     void add_set( const string& set_name, const RegionSet & set);
 
-    /// COMMENT
-    RegionSet union_sets( const string & set_name_1, const string & set_name_2); // sort + std::set_union
+    /**
+     * Get RegionSets of specified names and create their union
+     *
+     * @param set_name_1 Name of first RegionSet
+     * @param set_name_2 Name of second RegionSet
+     * @return RegionSet created of union operation
+     */
+    RegionSet union_sets( const string & set_name_1, const string & set_name_2);
 
-    /// COMMENT
+    /**
+     * Get RegionSets of specified names and create their intersection
+     *
+     * @param set_name_1 Name of first RegionSet
+     * @param set_name_2 Name of second RegionSet
+     * @return RegionSet created of intersection operation
+     */
     RegionSet intersection( const string & set_name_1, const string & set_name_2);
 
-    /// COMMENT
+    /**
+     * Get RegionSets of specified names and create their difference
+     *
+     * @param set_name_1 Name of first RegionSet
+     * @param set_name_2 Name of second RegionSet
+     * @return RegionSet created of difference operation
+     */
     RegionSet difference( const string & set_name_1, const string & set_name_2);
 
     /**
@@ -419,10 +455,21 @@ public:
      */
     const RegionSet & get_region_set(const string & set_name) const;
 
-    /// COMMENT
+    /**
+     * Reads region sets defined by user in input file
+     * Format of input record is defined in variable RegionDB::region_set_input_type
+     *
+     * @param arr Array input records which define region sets
+     */
     void read_sets_from_input(Input::Array arr);
 
-    /// COMMENT
+    /**
+     * Reads elements and their affiliation to region sets defined by user in input file
+     * Format of input record is defined in variable RegionDB::region_input_type
+     *
+     * @param region_list Array input records which define region sets and elements
+     * @param map Map to which is loaded data
+     */
     void read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map);
 
 

@@ -94,10 +94,30 @@ const string read_sets_json = R"JSON(
 	},
 	{
 		name = "set_3",
+		region_ids= [ 4, 2, 3 ] 
+	},
+	{
+		name = "set_4",
 		union= 
 		[
 		   "set_1",
 		   "set_2"
+		] 
+	},
+	{
+		name = "set_5",
+		difference= 
+		[
+		   "set_1",
+		   "set_3"
+		] 
+	},
+	{
+		name = "set_6",
+		intersection= 
+		[
+		   "set_1",
+		   "set_3"
 		] 
 	}
 ]
@@ -120,15 +140,64 @@ TEST(Region, read_sets_from_input) {
 
 	region_db.read_sets_from_input(i_arr);
 
-	EXPECT_EQ( 2,region_db.get_region_set("set_1")[0].id() );
-    EXPECT_EQ( 1,region_db.get_region_set("set_1")[1].id() );
-    EXPECT_EQ( 3,region_db.get_region_set("set_1")[2].id() );
+	EXPECT_EQ(3, region_db.get_region_set("set_1").size() );
+	EXPECT_EQ(2, region_db.get_region_set("set_1")[0].id() );
+    EXPECT_EQ(1, region_db.get_region_set("set_1")[1].id() );
+    EXPECT_EQ(3, region_db.get_region_set("set_1")[2].id() );
 
+    EXPECT_EQ(1, region_db.get_region_set("set_2").size() );
     EXPECT_EQ(0, region_db.get_region_set("set_2")[0].id() );
 
-    EXPECT_EQ(3, region_db.get_region_set("set_3")[0].id() );
-    EXPECT_EQ(0, region_db.get_region_set("set_3")[1].id() );
-    EXPECT_EQ(1, region_db.get_region_set("set_3")[2].id() );
-    EXPECT_EQ(2, region_db.get_region_set("set_3")[3].id() );
+	EXPECT_EQ(3, region_db.get_region_set("set_3").size() );
+	EXPECT_EQ(4, region_db.get_region_set("set_3")[0].id() );
+    EXPECT_EQ(2, region_db.get_region_set("set_3")[1].id() );
+    EXPECT_EQ(3, region_db.get_region_set("set_3")[2].id() );
+
+    EXPECT_EQ(4, region_db.get_region_set("set_4").size() );
+    EXPECT_EQ(3, region_db.get_region_set("set_4")[0].id() );
+    EXPECT_EQ(0, region_db.get_region_set("set_4")[1].id() );
+    EXPECT_EQ(1, region_db.get_region_set("set_4")[2].id() );
+    EXPECT_EQ(2, region_db.get_region_set("set_4")[3].id() );
+
+    EXPECT_EQ(1, region_db.get_region_set("set_5").size() );
+    EXPECT_EQ(1, region_db.get_region_set("set_5")[0].id() );
+
+    EXPECT_EQ(2, region_db.get_region_set("set_6").size() );
+    EXPECT_EQ(3, region_db.get_region_set("set_6")[0].id() );
+    EXPECT_EQ(2, region_db.get_region_set("set_6")[1].id() );
 }
 
+const string read_element_map_json = R"JSON(
+[
+	{
+		name = "label_0",
+		id = 0,
+		element_list = [0, 5, 9]
+	},
+	{
+		name = "label_1",
+		id = 1,
+		element_list = [8, 5, 3, 1]
+	}
+]
+)JSON";
+
+TEST(Region, read_element_map_from_input) {
+
+	Input::JSONToStorage json_reader;
+	stringstream ss(read_element_map_json.c_str());
+	Input::Type::Array element_map_array_input_type( RegionDB::region_input_type );
+	json_reader.read_stream( ss,  element_map_array_input_type);
+	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
+
+	RegionDB region_db;
+	RegionDB::MapElementIDToRegionID map;
+	region_db.read_regions_from_input(i_arr, map);
+
+	EXPECT_EQ(0, ( *(map.find(0)) ).second );
+	EXPECT_EQ(1, ( *(map.find(1)) ).second );
+	EXPECT_EQ(1, ( *(map.find(3)) ).second );
+	EXPECT_EQ(0, ( *(map.find(5)) ).second );
+	EXPECT_EQ(1, ( *(map.find(8)) ).second );
+	EXPECT_EQ(0, ( *(map.find(9)) ).second );
+}

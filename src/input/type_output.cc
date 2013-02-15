@@ -152,7 +152,7 @@ void OutputText::print(ostream& stream, const Record *type, unsigned int depth) 
 		        stream << setw(padding_size) << "" << it->key_ << " = ";
 		        write_value(stream, it->default_);
 		        stream << endl;
-		        stream << setw(padding_size + size_setw_) << "" <<"# is ";
+		        stream << setw(padding_size + size_setw_) << "" <<"#### is ";
 		        print(stream, it->type_.get(), 0);
 		        write_description(stream, it->description_);
 		        stream << endl;
@@ -181,7 +181,7 @@ void OutputText::print(ostream& stream, const Array *type, unsigned int depth) {
 
 		get_array_sizes(*type, lower_size, upper_size);
 		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
-		stream << setw(padding_size + size_setw_) << "" << "# ";
+		stream << setw(padding_size + size_setw_) << "" << "#### ";
 		print(stream, type->data_->type_of_values_.get(), 0);
 		break;
 	case full_record:
@@ -361,7 +361,12 @@ void OutputJSONTemplate::print(ostream& stream, const Record *type, unsigned int
 					write_description(stream, type->description(), 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					it->type_.get()->set_reference( type->reference() + it->key_ + "/" );
+					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
+						it->type_.get()->set_reference( type->reference() + "#" + it->key_ + "/" );
+					} else if ( !(typeid(*(it->type_.get())) == typeid(Type::Record))
+							| (it->type_.get()->reference().size() == 0) ) {
+						it->type_.get()->set_reference( type->reference() + it->key_ + "/" );
+					}
 					if (it != type->begin()) {
 						stream << ",";
 					}
@@ -407,7 +412,9 @@ void OutputJSONTemplate::print(ostream& stream, const Array *type, unsigned int 
 		case full_record:
 			bool has_opt_prefix = value_.is_optional() | value_.has_value_at_read_time(); // key contains OPT_ prefix
 
-			type->data_->type_of_values_.get()->set_reference( type->reference() );
+			if (type->data_->type_of_values_.get()->reference().size() == 0) {
+				type->data_->type_of_values_.get()->set_reference( type->reference() );
+			}
 
 			if (has_opt_prefix) {
 				stream << endl;
@@ -465,12 +472,19 @@ void OutputJSONTemplate::print(ostream& stream, const AbstractRecord *type, unsi
 		case full_record:
 			string rec_name = key_name_;
 
+			std::vector<string> refs;
+			string reference(type->reference());
+			boost::split(refs, reference, boost::is_any_of("#"));
+		    ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
+
 			stream << endl;
 			stream << setw(depth * padding_size) << "";
 			stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
 		    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		    	it->set_reference( type->reference() );
+		    	if (it->reference().size() == 0) {
+		    		it->set_reference( refs[0] + it->type_name() + "_" + refs[1] );
+		    	}
 
 		    	key_name_ = it->type_name() + "_" + rec_name;
 		    	size_setw_ = depth;
@@ -486,6 +500,7 @@ void OutputJSONTemplate::print(ostream& stream, const AbstractRecord *type, unsi
 		    	doc_type_ = full_record;
 		    	print(stream, &*it, depth);
 		    }
+		    type->set_reference( refs[0] + refs[1] );
 
 		    stream << endl;
 			break;

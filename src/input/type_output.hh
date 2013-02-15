@@ -97,10 +97,24 @@ namespace Type {
  *
  */
 
+/**
+ * Base virtual class for create text documentation and JSON template
+ */
 class OutputBase {
 public:
+	/**
+	 * Constructor
+	 *
+	 * @param type Stores input sequence
+	 * @param depth Depth of output
+	 */
     OutputBase(const TypeBase *type, unsigned int depth = 0);
 
+    /**
+     * Print output
+     *
+     * @param stream Stream of output
+     */
     void print(ostream& stream);
 
 protected:
@@ -148,6 +162,11 @@ protected:
      */
     virtual void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1) = 0;
 
+    /**
+     * Write value stored in dft.
+     *
+     * Enclose value in quotes if it's needed or write info that value is optional or obligatory.
+     */
     void write_value(std::ostream& stream, Default dft);
 
     /// Object for which is created printout
@@ -162,6 +181,9 @@ protected:
 
 };
 
+/**
+ * Class for create text documentation
+ */
 class OutputText : public OutputBase {
 public:
 	OutputText(const TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
@@ -193,7 +215,9 @@ protected:
 std::ostream& operator<<(std::ostream& stream, OutputText type_output);
 
 
-
+/**
+ * Class for create and JSON template documentation
+ */
 class OutputJSONTemplate : public OutputBase {
 public:
 	OutputJSONTemplate(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}

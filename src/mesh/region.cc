@@ -350,7 +350,9 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 			        ++it_ids) {
 				Region reg = find_id(*it_ids);
 				if (reg.is_valid()) {
-					region_set.push_back(reg);
+					if ( std::find(region_set.begin(), region_set.end(), reg)==region_set.end() ) {
+						region_set.push_back(reg); // add region if doesn't exist
+					}
 				} else {
 					xprintf(Err, "Region with id %d doesn't exist.\n", (*it_ids));
 				}
@@ -363,7 +365,9 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 			        ++it_labels) {
 				Region reg = find_label(*it_labels);
 				if (reg.is_valid()) {
-					region_set.push_back(reg);
+					if ( std::find(region_set.begin(), region_set.end(), reg)==region_set.end() ) {
+						region_set.push_back(reg); // add region if doesn't exist
+					}
 				} else {
 					xprintf(Err, "Region with label %s doesn't exist.\n", (*it_labels).c_str());
 				}
@@ -449,7 +453,7 @@ void RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToR
 				if (it_map == map.end()) {
 					map.insert( std::make_pair((*it_element), region_id) );
 				} else {
-					xprintf(Warn, "Element with id %s can't be added more than once.\n", (*it_element));
+					xprintf(Warn, "Element with id %u can't be added more than once.\n", (*it_element));
 				}
 			}
 		}
