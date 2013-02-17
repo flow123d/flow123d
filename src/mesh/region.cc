@@ -94,40 +94,41 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
     Region r_id = find_id(id);
     Region r_label=find_label(label);
 
-    if (r_id.is_valid() && r_label.is_valid()) {
-        // both iterators are valid; check they are same, and match new values
-        if (r_id.idx() != r_label.idx() ) {
-            // different region
+    if (r_id.is_valid()) {
+        if (r_id != r_label)
             xprintf(Warn, "Can not assign label '%s' to ID %d, it already has label: '%s'.\n", label.c_str(), id, r_id.label().c_str());
-        }
 
-        if ( r_id.dim() != dim || r_id.is_boundary() != boundary ) {
-            //DBGMSG("dims: %d %d, bc: %d %d\n", r_id.dim(),dim, r_id.is_boundary(), boundary);
+        // check boundary
+        if ( r_id.is_boundary() != boundary ) {
             THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
         }
-        return r_id;
-    } else {
-        // check that both finds failed
-        if (! r_id.is_valid() && ! r_label.is_valid() ) {
-            // if DB is open add new entry
-            if (closed_)  THROW( ExcAddingIntoClosed() << EI_Label(label) <<EI_ID(id) );
-            else {
-                unsigned int index;
-                if (boundary) (index = (n_boundary_ <<1)), n_boundary_++;
-                else (index = (n_bulk_ << 1)+1),  n_bulk_++;
-                if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
-                if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
-                   THROW( ExcCantAdd()  << EI_Label(label) <<EI_ID(id) );
-                return Region(index, *this);
+        // check dimension
+        if (r_id.dim() != dim) {
+            if (r_id.dim() == 0) {
+                RegionItem item(r_id.idx(), r_id.id(), r_id.label(), dim);
+                region_set_.replace(
+                        region_set_.get<Index>().find( r_id.idx() ),
+                        item);
             }
-        } else {
-            if ( r_id.is_valid() ) {
-                xprintf(Warn, "Can not assign label '%s' to ID %d, it already has label: '%s'.\n", label.c_str(), id, r_id.label().c_str());
-            } else
-                if (r_label.is_valid() ) THROW(ExcInconsistentAdd()
-                        << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(r_label.id())
-                        );
-                else xprintf(PrgErr, "Rotten inconsistency.\n");
+            else THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
+        }
+        return r_id;
+    } else
+    if (r_label.is_valid()) {
+        // ID is free, not label
+        THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(r_label.id()) );
+    } else {
+        // if DB is open add new entry
+        if (closed_)
+            THROW( ExcAddingIntoClosed() << EI_Label(label) <<EI_ID(id) );
+        else {
+            unsigned int index;
+            if (boundary) (index = (n_boundary_ <<1)), n_boundary_++;
+            else (index = (n_bulk_ << 1)+1),  n_bulk_++;
+            if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
+            if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
+               THROW( ExcCantAdd()  << EI_Label(label) <<EI_ID(id) );
+            return Region(index, *this);
         }
     }
     return Region(); // should not happen

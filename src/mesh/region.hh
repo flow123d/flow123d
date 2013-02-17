@@ -12,6 +12,7 @@
  *  - dodelat intersection, differecne
  *  - test element map
  *
+ *  - zkontrolovat chybove hlasky a ASSERTY, co z toho by melo byt pres exception?
  */
 
 #ifndef REGION_HH_

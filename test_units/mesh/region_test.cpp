@@ -73,6 +73,12 @@ TEST(Region, all) {
     EXPECT_EQ(4, region_db.boundary_size());
     EXPECT_EQ(3, region_db.bulk_size());
 
+    RegionSet bulk = region_db.get_region_set("BULK");
+    EXPECT_EQ(3,bulk.size());
+    EXPECT_EQ(1, bulk[0].id());
+    EXPECT_EQ(1002, bulk[1].id());
+    EXPECT_EQ(1003, bulk[2].id());
+
     EXPECT_DEATH( { region_db.add_region(1006,"side_", 2, true);}, "Can not add to closed region DB.");
 
 }

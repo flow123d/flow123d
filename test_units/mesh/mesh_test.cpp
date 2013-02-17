@@ -10,6 +10,9 @@
 #include "mesh/msh_gmshreader.h"
 #include <iostream>
 #include <vector>
+#include "mesh/accessors.hh"
+#include "input/json_to_storage.hh"
+#include "input/accessors.hh"
 
 using namespace std;
 
@@ -67,5 +70,43 @@ TEST(MeshTopology, make_neighbours_and_edges) {
 
     //check neighbours
     EXPECT_EQ(6, mesh.n_vb_neighbours() );
+
+}
+
+
+// Test input for mesh
+const string mesh_input = R"JSON(
+{ 
+  mesh_file="mesh/simplest_cube.msh",
+  regions=[{id=3000, name="new region", element_list=[6,7]},
+           {id=37, name="1D rename"}],
+  sets=[{name="3D", region_ids=[39,40]}]
+}
+)JSON";
+
+TEST(Mesh, init_from_input) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    Input::JSONToStorage reader;
+    std::stringstream in(mesh_input);
+    reader.read_stream( in, Mesh::input_type );
+    Mesh mesh( reader.get_root_interface<Input::Record>() );
+    mesh.init_from_input();
+
+    EXPECT_EQ( 37, mesh.element_accessor(0).region().id() );
+    EXPECT_EQ( "1D rename", mesh.element_accessor(0).region().label() );
+
+    EXPECT_EQ( 38, mesh.element_accessor(1).region().id() );
+    EXPECT_EQ( 38, mesh.element_accessor(2).region().id() );
+    EXPECT_EQ( 39, mesh.element_accessor(3).region().id() );
+    EXPECT_EQ( 39, mesh.element_accessor(4).region().id() );
+    EXPECT_EQ( 3000, mesh.element_accessor(5).region().id() );
+    EXPECT_EQ( 3000, mesh.element_accessor(6).region().id() );
+    EXPECT_EQ( 40, mesh.element_accessor(7).region().id() );
+    EXPECT_EQ( 40, mesh.element_accessor(8).region().id() );
+
+    RegionSet set = mesh.region_db().get_region_set("3D");
+    EXPECT_EQ( 39, set[0].id() );
+    EXPECT_EQ( 40, set[1].id() );
 
 }

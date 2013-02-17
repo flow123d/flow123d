@@ -54,6 +54,9 @@ const string eq_data_input = R"JSON(
       },
       { region="2D XY diagonal",
         init_pressure=2.2
+      },
+      { r_set="BULK",
+        bulk_set_field=5.7
       }          
   ],
   bc_data=[
@@ -82,7 +85,11 @@ const string eq_data_old_bcd = R"JSON(
         transport_old_bcd_file="coupling/transport.fbc"  
       }
   ],
-  bulk_data=[] 
+  bulk_data=[
+      { r_set="BULK",
+        bulk_set_field=0.0
+      } 
+  ] 
 }
 )JSON";
 
@@ -167,6 +174,7 @@ public:
         EqData() : SomeEquationBase::EqData("SomeEquation") {
             ADD_FIELD(init_pressure, "Initial condition as pressure", IT::Default("0.0") );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", IT::Default("0.0") );
+            ADD_FIELD(bulk_set_field, "");
         }
 
         RegionSet read_bulk_list_item(Input::Record rec) {
@@ -182,6 +190,7 @@ public:
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Vector > init_conc;
+        Field<3, FieldValue<3>::Scalar > bulk_set_field;
     };
 
 public:
@@ -200,8 +209,6 @@ protected:
         mesh= new Mesh;
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
-
-
     }
 
     void read_input(const string &input) {
@@ -267,6 +274,7 @@ TEST_F(SomeEquation, values) {
 
     DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
 
+    // check element accessors
     ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
     EXPECT_EQ(37, el_1d.region().id());
     ElementAccessor<3> el_2d=mesh->element_accessor(1); // region 38 "2D XY diagonal"
@@ -304,6 +312,11 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ(2 ,conc[1]);
     EXPECT_DOUBLE_EQ(3 ,conc[2]);
     EXPECT_DOUBLE_EQ(4 ,conc[3]);
+
+    // bulk_set_filed - test setting on region set, test setting field without default value
+    EXPECT_EQ( 5.7, data.bulk_set_field.value(p, el_1d) );
+    EXPECT_EQ( 5.7, data.bulk_set_field.value(p, el_2d) );
+    EXPECT_EQ( 5.7, data.bulk_set_field.value(p, el_3d) );
 
     //boundary fields
     EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_top) );

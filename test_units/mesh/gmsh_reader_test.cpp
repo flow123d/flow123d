@@ -28,6 +28,7 @@ TEST(GMSHReader, read_mesh_from_stream) {
     reader.read_mesh(&mesh);
 
     EXPECT_EQ(9, mesh.n_elements());
+
 }
 
 
