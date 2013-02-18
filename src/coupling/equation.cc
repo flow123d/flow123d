@@ -239,6 +239,7 @@ RegionSet EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
             Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>(field->name());
             if (field_it) {
                 BOOST_FOREACH(Region reg, domain) field->set_from_input(reg,*field_it);
+                //DBGMSG("set mesh field: %s\n", field->name().c_str() );
                 field->set_mesh(mesh_);
             }
         }

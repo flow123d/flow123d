@@ -242,6 +242,7 @@ void Field<spacedim, Value>::set_time(double time) {
                     xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n", name_.c_str(), reg->id(), reg->label().c_str() );
                 }
             }
+            region_fields_[reg->idx()]->set_mesh(this->mesh_);
             region_fields_[reg->idx()]->set_time(time);
         }
     }
