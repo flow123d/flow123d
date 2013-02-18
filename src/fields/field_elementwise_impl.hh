@@ -93,6 +93,9 @@ void FieldElementwise<spacedim, Value>::set_time(double time) {
 
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh) {
+    // set mesh only once
+    if (mesh_ != NULL) return;
+
     mesh_=mesh;
     bulk_size_=mesh_->element.size();
     n_entities_=mesh_->element.size() + mesh_->bc_elements.size();

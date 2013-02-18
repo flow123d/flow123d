@@ -57,7 +57,8 @@ public:
     virtual void set_time(double time);
 
     /**
-     * Has to be set before calling init_from_input.
+     * Has to be set before calling init_from_input. This also
+     * allocate and initialize internal buffer. Do nothing if mesh is already set.
      */
     virtual void set_mesh(Mesh *mesh);
 
