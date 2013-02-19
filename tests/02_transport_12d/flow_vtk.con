@@ -52,6 +52,7 @@
       bulk_data=[
         {
           rid=48,
+          init_conc = 0,
           por_m = 0.25,
           por_imm = 0.25,
           alpha = [0.01, 0.01],
@@ -62,6 +63,7 @@
         },
         {
           rid=184,
+          init_conc = 0,
           por_m = 0.25,
           por_imm = 0.25,
           alpha = [0.01, 0.01],
