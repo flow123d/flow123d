@@ -864,10 +864,15 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
     FESideValues<dim,3> fe_values_side(map, side_q, *fe, update_values | update_side_JxW_values | update_quadrature_points);
     unsigned int side_dof_indices[fe->n_dofs()];
     double local_rhs[fe->n_dofs()];
+    int rank;
+
+    //TODO: distribution of BC elements
+    // BC are now set only by process 0
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank != 0) return;
 
     for (unsigned int ib = 0; ib < mesh_->boundary_.size(); ib++)
     {
-//    	TODO: distribution of BC elements
 //    	if (ib < bc->distribution()->begin() || ib > bc->distribution()->end()) continue;
 
     	vector<Boundary>::iterator b=mesh_->boundary_.begin()+ib;
