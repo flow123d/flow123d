@@ -88,16 +88,63 @@ template <class T> class Iterator;
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
  *
+ * To get full path of an accessor we need:
+ * - root Input::Type
+ * - whole path through the storage
+ *
  * TODO:
- * - store root TypeBase + array of iterator indices into Storage + cast from Abstract to Record
- * - at every level needs to copy internal vector, can be prohibitive only for
- *   large array of records ( one may need FastRecord accessor )
- * - possibly one can explicitly drop passing the address in constructor of an accessor/iterator
+ * - need way how to pass the InputAddress object to new accessor/iterator
+ * - accessors may use last pointer in the InputAddress (rather Input::Path)
+ *   instead its own. solution use Address instead of StorageBase pointer in all accessors.
  *
  */
-class InputAddress {
+class Address {
 public:
+    /**
+     * Basic constructor. We forbids default one since we always need the root input type.
+     */
+    Address(const StorageBase * storage_root, Input::Type *type_root);
+
+    /**
+     * Copy constructor.
+     * TODO: For optimization we can
+     * use one vector of storage pointers shared (using shared_ptr) by all accessors along the path.
+     */
+    Address(const Address &other);
+
+    /**
+     * Dive deeper in the storage tree following index @p idx. Assumes that actual node
+     * is an StorageArray, has to be asserted.
+     */
+    void down(unsigned int idx);
+
+    /**
+     * Getter. Returns actual storage node.
+     */
+    inline const StorageBase * storage_head() const
+        { return path_[actual_node_]; }
+
+    /**
+     * Produce a full address, i.e. sequence of keys and indices separated by '/',
+     * that leads from the root storage and root Input::Type::TypeBase to the actual node in the storage
+     * that is path_[actual_node_].
+     */
+    std::string make_full_address()
+
 private:
+    /**
+     * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
+     * TODO: Possibly can be shared.
+     */
+    std::vector<const StorageBase *> path_;
+    /**
+     * Actual node in the @p path_. Currently the last element, useful for shared @p path_ vector.
+     */
+    unsigned int actual_node_;
+    /**
+     * Root Input::Type.
+     */
+    Input::Type::TypeBase *root_type;
 };
 
 /**
