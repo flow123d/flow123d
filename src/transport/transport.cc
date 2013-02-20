@@ -552,8 +552,8 @@ Vec ConvectionTransport::compute_concentration_sources(unsigned int subst_i, dou
     double conc_diff;
     for (int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
 
-    	ElementAccessor<3> ele_acc = mesh_->element_accessor(el_ds->begin() + i_loc);
-    	arma::vec3 p = mesh_->element(el_ds->begin() + i_loc)->centre();
+    	ElementAccessor<3> ele_acc = mesh_->element_accessor(el_4_loc[i_loc]);
+    	arma::vec3 p = ele_acc.centre();
 
         conc_diff = data->sources_conc.value(p, ele_acc)(subst_i) - conc[i_loc];
         if ( conc_diff > 0.0)
@@ -593,8 +593,8 @@ void ConvectionTransport::compute_one_step() {
             //if (vcumulative_corr[sbi][10] >0) { int i =1;}
             //if (bcvcorr[sbi][10] >0) { int i =1;}
             //if (conc[sbi][10] >0) { int i =1;}
-            VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi],
-                    compute_concentration_sources(sbi, conc[MOBILE][sbi] )
+    	VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi],
+    			compute_concentration_sources(sbi, conc[MOBILE][sbi] )
                     );
 //        } else {
 //            VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
