@@ -157,10 +157,6 @@ set(sources_lib_non_system
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
-    transport/sources.cc
-
-    materials.cc
-    field_p0.cc
 
     coupling/hc_explicit_sequential.cc
 )

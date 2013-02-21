@@ -27,7 +27,7 @@
 
 add_custom_target( field_test )
 set(super_test "field_test")
-set(super_test_libs field_lib mesh_lib new_mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(super_test_libs field_lib mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)

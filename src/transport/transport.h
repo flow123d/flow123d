@@ -39,7 +39,6 @@
 
 #include <petscmat.h>
 #include "coupling/equation.hh"
-#include "transport/sources.hh"
 #include "input/accessors.hh"
 #include "flow/mh_dofhandler.hh"
 #include "transport/transport_operator_splitting.hh"

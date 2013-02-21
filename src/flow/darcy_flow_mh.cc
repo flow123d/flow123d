@@ -40,7 +40,6 @@
 
 #include "system/system.hh"
 
-#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "mesh/intersection.hh"
 #include "la/distribution.hh"

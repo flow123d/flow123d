@@ -38,7 +38,7 @@
 
 // following deps. should be removed
 #include "mesh/boundaries.h"
-#include "materials.hh"
+//#include "materials.hh"
 #include "mesh/accessors.hh"
 
 

@@ -8,7 +8,7 @@
 #include "reaction/pade_approximant.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include "materials.hh"
+
 #include "transport/transport.h"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"

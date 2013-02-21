@@ -27,30 +27,17 @@
  * @ingroup transport
  * @brief  Transport
  *
- * @todo
- * - podrobne komentare k funkcim
- * - extremne podrobny komentar ke strukture/objektu
- *   zejmena komentar k prerekvizitam
- *   popis jak transport funguje
- * - udelat z toho objekt
- * - oddelit output -> transport_output
- *   objekt pro transport by jen pocital koncentrace
  *
  */
-//#include <cmath>
-//#include "system/system.hh"
-//#include "xio.h"
-
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-//#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "transport/transport.h"
-//#include "transport/sources.hh"
+
 #include "io/output.h"
-#include "io/read_ini.h"
+
 //#include "ppfcs.h"
 //#include "btc.h" XX
 //#include "reaction.h" XX
@@ -574,7 +561,7 @@ Vec ConvectionTransport::compute_concentration_sources(unsigned int subst_i, dou
 
 void ConvectionTransport::compute_one_step() {
 
-    MaterialDatabase::Iter material;
+    //MaterialDatabase::Iter material;
     int sbi;
 
     // proceed to actually computed time

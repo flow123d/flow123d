@@ -18,8 +18,8 @@ typedef Field<3, FieldValue<3>::TensorFixed > FieldType;
 typedef Field<3, FieldValue<3>::Scalar > FieldType_Scalar;
 
 //declared in system/math_fce.h
-typedef double SmallVec2_t[2];
-typedef SmallVec2_t *SmallMtx2;
+//typedef double SmallVec2_t[2];
+//typedef SmallVec2_t *SmallMtx2;
 
 /**
  * Temporary class to remove MH calculations (basis functions and leading local matrix) from geometrical mesh.

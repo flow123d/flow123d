@@ -33,7 +33,7 @@
 #include "mesh/nodes.hh"
 #include "mesh/region.hh"
 
-#include <materials.hh>
+//#include <materials.hh>
 
 template <int spacedim>
 class ElementAccessor;
@@ -72,18 +72,11 @@ public:
     inline RegionIdx region_idx() const
         { return region_idx_; }
     
-    
-    
-
-
-    //int      mid;       // Id # of material
-    //int      rid;       // Id # of region
     int      pid;       // Id # of mesh partition
 
     // Type specific data
     Node** node;    // Element's nodes
 
-//    MaterialDatabase::Iter material; // Element's material
 
     unsigned int *edge_idx_; // Edges on sides
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries

@@ -27,7 +27,7 @@
 
 add_custom_target( mesh_all_test )
 set(super_test "mesh_all_test")
-set(super_test_libs new_mesh_lib mesh_lib system_lib  )
+set(super_test_libs mesh_lib system_lib  )
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)

@@ -49,13 +49,14 @@ void MHFEValues::update(ElementFullIter ele, FieldType &cond_anisothropy, FieldT
     }
 
     // matrix inverse
+    /*
     double det = MatrixInverse(loc_matrix_, inv_loc_matrix_, ele->n_sides() );
     if (fabs(det) < NUM_ZERO) {
         xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
         PrintSmallMatrix(loc_matrix_, ele->n_sides());
         xprintf(Err,"det: %30.18e \n",det);
     }
-
+*/
 }
 
 
