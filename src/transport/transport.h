@@ -25,6 +25,13 @@
  * @file
  * @brief ???
  *
+ *
+ * TODO:
+ * - remove transport_sources
+ * - in create_transport_matric_mpi, there there is condition edge_flow > ZERO
+ *   this makes matrix sparser, but can lead to elements without outflow and other problems
+ *   when there are big differences in fluxes, more over it doesn't work if overall flow is very small
+ *
  */
 
 #ifndef TRANSPORT_H_

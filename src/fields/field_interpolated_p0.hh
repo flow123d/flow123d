@@ -34,10 +34,10 @@
 #include "mesh/mesh_types.hh"
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
-#include "new_mesh/bih_tree.hh"
-#include "new_mesh/ngh/include/abscissa.h"
-#include "new_mesh/ngh/include/triangle.h"
-#include "new_mesh/ngh/include/tetrahedron.h"
+#include "mesh/bih_tree.hh"
+#include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/tetrahedron.h"
 
 
 template <int spacedim, class Value>

@@ -8,7 +8,7 @@
 #ifndef ACCESSORS_HH_
 #define ACCESSORS_HH_
 
-#include "new_mesh/bounding_box.hh"
+#include "mesh/bounding_box.hh"
 #include "mesh/mesh_types.hh"
 #include "mesh/region.hh"
 #include "mesh/elements.h"

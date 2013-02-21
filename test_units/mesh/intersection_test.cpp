@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include "system/system.hh"
-#include "new_mesh/ngh/include/point.h"
-#include "new_mesh/ngh/include/intersection.h"
-//#include "new_mesh/ngh/include/point.h"
+#include "mesh/ngh/include/point.h"
+#include "mesh/ngh/include/intersection.h"
+//#include "mesh/ngh/include/point.h"
 
 #define DEBUG
 

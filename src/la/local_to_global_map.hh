@@ -11,7 +11,10 @@
 #include <set>
 #include <vector>
 
-#include "system/boost_include.h"
+/// Using Boost shared pointer.
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
+
 #include "system/system.hh"
 #include "system/global_defs.h"
 

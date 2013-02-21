@@ -29,11 +29,9 @@
  */
 
 #include <vector>
-
 #include <string>
 
 #include "system/system.hh"
-#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "elements.h"
 #include "element_impls.hh"

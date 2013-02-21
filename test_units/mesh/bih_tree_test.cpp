@@ -13,7 +13,7 @@
 
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-#include "new_mesh/bih_tree.hh"
+#include "mesh/bih_tree.hh"
 
 
 /// Generates random double number in interval <fMin, fMax>

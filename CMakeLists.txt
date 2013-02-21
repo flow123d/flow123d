@@ -421,6 +421,3 @@ else()
 endif()
 
 
-### add target for interpolation binary
-add_executable(interpolation src/interpolation/interpolation_main.cc)
-target_link_libraries(interpolation  system_lib functions_lib new_mesh_lib ${Armadillo_LIBRARIES})

@@ -30,7 +30,6 @@
  */
 
 #include "system/system.hh"
-#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "sides.h"
 #include "mesh/mesh_types.hh"

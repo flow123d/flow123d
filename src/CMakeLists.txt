@@ -75,6 +75,25 @@ set(sources_mesh_lib
     mesh/nodes.cc
     mesh/sides.cc
     mesh/intersection.cc
+    
+    mesh/bounding_box.cc
+    mesh/bih_node.cc
+    mesh/bih_tree.cc
+    
+    mesh/ngh/src/abscissa.cpp
+    mesh/ngh/src/bisector.cpp
+    mesh/ngh/src/intersection.cpp
+    mesh/ngh/src/intersectionLocal.cpp
+    mesh/ngh/src/mathfce.cpp
+    mesh/ngh/src/matrix.cpp
+    mesh/ngh/src/plain.cpp
+    mesh/ngh/src/point.cpp
+    mesh/ngh/src/polygon.cpp
+    mesh/ngh/src/system.cpp
+    mesh/ngh/src/tetrahedron.cpp
+    mesh/ngh/src/triangle.cpp
+    mesh/ngh/src/vector.cpp
+    mesh/ngh/src/vertex.cpp
 )
 
 set(sources_fem_lib
@@ -87,10 +106,6 @@ set(sources_fem_lib
     fem/mapping_p1.cc
 )
 
-set(sources_lib_new_mesh
-    new_mesh/multi_mesh.cc
-    new_mesh/point.cc
-    )
 
 set(sources_lib_la
 	la/distribution.cc
@@ -107,9 +122,9 @@ set(sources_lib_field
     fields/field_base.cc
 )
 
-set(sources_lib_functions
-    functions/discrete_function.cc   
-)    
+#set(sources_lib_functions
+#    functions/discrete_function.cc   
+#)    
 
 set (sources_lib_coupling
 
@@ -160,31 +175,6 @@ set(sources_lib_semchem
 )
 
 
-set(sources_lib_new_mesh
-    new_mesh/multi_mesh.cc
-    new_mesh/point.cc
-#    new_mesh/bounding_interval_hierarchy.cc
-    new_mesh/bounding_box.cc
-    new_mesh/bih_node.cc
-    new_mesh/bih_tree.cc
-    
-    new_mesh/ngh/src/abscissa.cpp
-    new_mesh/ngh/src/bisector.cpp
-    new_mesh/ngh/src/intersection.cpp
-    new_mesh/ngh/src/intersectionLocal.cpp
-    new_mesh/ngh/src/mathfce.cpp
-    new_mesh/ngh/src/matrix.cpp
-    new_mesh/ngh/src/plain.cpp
-    new_mesh/ngh/src/point.cpp
-    new_mesh/ngh/src/polygon.cpp
-    new_mesh/ngh/src/system.cpp
-    new_mesh/ngh/src/tetrahedron.cpp
-    new_mesh/ngh/src/triangle.cpp
-    new_mesh/ngh/src/vector.cpp
-    new_mesh/ngh/src/vertex.cpp
-    
-    )
-
 
 # add individual libraries
 
@@ -195,7 +185,7 @@ endif()
 # system_lib
 add_library(system_lib ${sources_lib_system})
 target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
-#set_target_properties(system_lib PROPERTIES COMPILE_FLAGS "-std=gnu++0x")
+
 
 # when the precompiled headers are used in the future
 #if (${PRECOMPILED_HEADERS})
@@ -209,10 +199,6 @@ add_library(input_lib ${sources_lib_input})
 target_link_libraries(input_lib 
     system_lib json_spirit)
 
-# new_mesh_lib
-add_library(new_mesh_lib ${sources_lib_new_mesh})
-target_link_libraries(new_mesh_lib 
-    system_lib armadillo ${Boost_LIBRARIES})    
     
 # la_lib
 add_library(la_lib ${sources_lib_la})
@@ -233,13 +219,8 @@ target_link_libraries(fem_lib
 # field_lib  
 add_library(field_lib ${sources_lib_field})
 target_link_libraries(field_lib
-    system_lib input_lib fparser new_mesh_lib mesh_lib armadillo  ${Boost_LIBRARIES})
+    system_lib input_lib fparser mesh_lib armadillo  ${Boost_LIBRARIES})
  
-# functions_lib  
-add_library(functions_lib ${sources_lib_functions})
-target_link_libraries(functions_lib
-    system_lib input_lib mesh_lib armadillo  ${Boost_LIBRARIES})
-
 # coupling_lib  
 add_library(coupling_lib ${sources_lib_coupling})
 target_link_libraries(coupling_lib
@@ -248,7 +229,7 @@ target_link_libraries(coupling_lib
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    functions_lib fem_lib new_mesh_lib mesh_lib la_lib semchem  input_lib system_lib
+    fem_lib mesh_lib la_lib semchem  input_lib system_lib
     coupling_lib fparser  armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib

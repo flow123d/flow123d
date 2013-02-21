@@ -45,7 +45,7 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#include "system/math_fce.h"
+//#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "transport/transport.h"
 //#include "transport/sources.hh"
@@ -735,7 +735,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 if (flux < 0.0) {
                     edg = elm->side(si)->edge();
                     edg_flux = edge_flow[ elm->side(si)->edge_idx() ];
-                    if ( edg_flux > ZERO)
+                    //if ( edg_flux > 1e-12)
                         FOR_EDGE_SIDES(edg,s)
                             // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                             // These edges on these sides should have just one side
@@ -755,7 +755,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 if (flux < 0.0) {
                     aij = -(flux / (elm->measure() * csection * por_m) );
                     j = elm->side(si)->cond_idx() ;
-                    DBGMSG("BCM, i: %d j:%d\n", new_i , j);
+                    // DBGMSG("BCM, i: %d j:%d\n", new_i , j);
                     MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
                     // vyresit BC matrix !!!!
                     //   printf("side in elm:%d value:%f\n ",elm->id,svector->val[j-1]);
@@ -1050,6 +1050,7 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
     double NR, pNR, cz, tcz;
     //double lZero = 0.0000001;
     double ad = 1e4;
+    double tolerence = 1e-8;
     int i;
 
     pNR = 0;
@@ -1069,7 +1070,7 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
         {
             NR -= (NR + ((NR > cz) ? Kx * pow(NR, parameter) : tcz * NR) - conc_avg) / (1 + ((NR > cz) ? parameter * Kx * pow(NR,
                     parameter - 1) : tcz));
-            if ((NR <= cz) || (fabs(NR - pNR) < ZERO))
+            if ((NR <= cz) || (fabs(NR - pNR) < tolerence * NR ) )
                 break;
             pNR = NR;
             //                if(NR < 0) printf("\n%f\t",NR);
@@ -1082,7 +1083,7 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
         for (i = 0; i < 5; i++) //Newton Raphson iteration cycle
         {
             NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
-            if (fabs(NR - pNR) < ZERO)
+            if (fabs(NR - pNR) < tolerence *NR)
                 break;
             pNR = NR;
         }
