@@ -103,7 +103,7 @@ public:
     /**
      * Basic constructor. We forbids default one since we always need the root input type.
      */
-    Address(const StorageBase * storage_root, Input::Type *type_root);
+    Address(const StorageBase * storage_root, Type::TypeBase *type_root);
 
     /**
      * Copy constructor.
@@ -129,7 +129,7 @@ public:
      * that leads from the root storage and root Input::Type::TypeBase to the actual node in the storage
      * that is path_[actual_node_].
      */
-    std::string make_full_address()
+    std::string make_full_address();
 
 private:
     /**
