@@ -2,16 +2,33 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "Test15 - 2D unsteady flow LM", 
-    material = "./input/test15.mtr", 
+
     mesh = {
-      mesh_file = "./input/test15.msh", 
-      neighbouring = "./input/test15.ngh"
+      mesh_file = "./input/test15.msh" 
     }, 
 
     primary_equation = {
       TYPE = "Unsteady_LMH", 
-      boundary_file = "./input/test15.fbc", 
-      initial_file = "./input/pressure_initial.in", 
+
+      bulk_data = [
+        { rid = 100,
+          cond_anisothropy = 1,         #default
+          cross_section = 1,            #default
+          water_source_density = {
+            TYPE = "FieldFormula",
+            value = "-x"
+          },
+          init_piezo_head = 0
+        }
+      ],
+    
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test15.fbc"
+        }
+      ],
+
       n_schurs = 2, 
       output = {
         output_stream = {
@@ -28,7 +45,7 @@
         TYPE = "Petsc", 
         accuracy = 1e-07 
       }, 
-      sources_formula = "-x", 
+
       time = {
         REF = "../../time"
       }
@@ -36,12 +53,27 @@
 
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
-      bc_times = [
-        0.0, 
-        0.2
-      ], 
-      boundary_file = "./input/test15_tbc", 
-      initial_file = "./input/test15.tic", 
+      
+      bulk_data = [
+        { rid = 100,
+          init_conc = 0,
+          d_m = 1e-6
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test15_tbc_000",
+          time = 0.0
+        },
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test15_tbc_001",
+          time = 0.2
+        }
+      ],
+      
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -51,8 +83,7 @@
           REF = "/problem/save_step"
         }
       }, 
-      dual_porosity = false, 
-      sorption_enable = false, 
+
       substances = [
         "conc"
       ], 
@@ -66,6 +97,7 @@
     }, 
 
     save_step = 0.1, 
+
     time = {
       end_time = 2.0, 
       init_dt = 0.1

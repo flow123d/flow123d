@@ -29,21 +29,42 @@
  */
 
 #include "system/system.hh"
-#include "mesh/boundaries.h"
+#include "system/xio.h"
 #include "mesh/mesh.h"
+#include "mesh/boundaries.h"
+#include "mesh/accessors.hh"
 
-static struct Boundary *new_boundary(void);
-static void add_to_boundary_list(struct Mesh*,struct Boundary*);
-static void init_boundary_list(struct Mesh*);
-static void parse_boundary_line(struct Boundary*,char*);
 
-flow::VectorId<Boundary *> Boundary::id_to_bcd;
+flow::VectorId<unsigned int> Boundary::id_to_bcd;
+
+
+Boundary::Boundary()
+: edge_idx_(Mesh::undef_idx), bc_ele_idx_(Mesh::undef_idx),
+  mesh_(NULL)
+{}
+
+
+Element * Boundary::element() {
+    return &( mesh_->bc_elements[bc_ele_idx_] );
+}
+
+Edge * Boundary::edge() {
+    return &( mesh_->edges[edge_idx_] );
+}
+
+ElementAccessor<3> Boundary::element_accessor()
+{
+	return mesh_->element_accessor(bc_ele_idx_, true);
+}
+
+
 
 //=============================================================================
 // READ DATA OF BOUNDARY CONDITIONS
 //=============================================================================
 void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 {
+/*
 	FILE	*in;		  // input file
 	char     line[ LINE_SIZE ]; // line of data file
 //	int where;
@@ -53,14 +74,15 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(mesh);
 
 	ASSERT(!( mesh == NULL ),"NULL as argument of function read_boundary_list()\n");
-	xprintf( Msg, "Reading boundary conditions...")/*orig verb 2*/;
+	xprintf( Msg, "Reading boundary conditions...");
 
 	in = xfopen( boundary_filename, "rt" );
 	skip_to( in, "$BoundaryConditions" );
 	xfgets( line, LINE_SIZE - 2, in );
 
 	int n_boundaries = atoi( xstrtok( line) );
-	Boundary::id_to_bcd.reserve(n_boundaries);
+	//OldBcdInput::instance()->bcd_ids_.resize(n_boundaries);
+    Boundary::id_to_bcd.reserve(n_boundaries);
 
 	int group_number=0;
 
@@ -69,6 +91,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
         xfgets( line, LINE_SIZE - 2, in );
         // Parse the line
         bcd_id    = atoi( xstrtok( line) );
+        //OldBcdInput::instance()->bcd_ids_[i_bcd] = bcd_id;
         // DBGMSG("boundary id: %d \n",bcd_id);
 
         unsigned int type  = atoi( xstrtok( NULL) );
@@ -95,6 +118,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 break;
         }
 
+        unsigned int bcd_idx;
         unsigned int where  = atoi( xstrtok( NULL) );
         int eid, sid, n_exterior;
         SideIter sde;
@@ -109,6 +133,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 if( sid < 0 || sid >= ele->n_sides() )
                      xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", bcd_id, sid );
                 bcd = ele->side(sid) -> cond();
+                bcd_idx = ele->side(sid) -> cond_idx();
 
                 ASSERT( bcd != NULL, "Missing boundary object.");
                 bcd->type = type;
@@ -127,7 +152,8 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 n_exterior=0;
                 FOR_ELEMENT_SIDES(ele, li) {
                     sde = ele->side( li );
-                    if ( bcd=sde->cond() ) {
+                    bcd=sde->cond();
+                    if (bcd) {
 
                         if (n_exterior > 0) {
                             xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
@@ -149,10 +175,11 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                 break;
         }
         // DBGMSG("fbcd: %d %d %d %d \n", i_bcd, bcd - mesh->boundary.begin(), bcd->side->element().index(), bcd->side->el_idx() );
-        *(Boundary::id_to_bcd.add_item(bcd_id)) = bcd;
+        *(Boundary::id_to_bcd.add_item(bcd_id)) = bcd_idx;
 
 
         //TODO: if group is necessary set it for all bcd in case where == SIDE_E
+        /*
         n_tags  = atoi( xstrtok( NULL) );
         if( n_tags > 0 ) {
             int group_id = atoi( xstrtok( NULL) );
@@ -169,8 +196,10 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 	}
 
 	xfclose( in );
-	xprintf( MsgVerb, " %d conditions readed. ", mesh->n_boundaries() )/*orig verb 4*/;
-	xprintf( Msg, "O.K.\n")/*orig verb 2*/;
+	xprintf( MsgVerb, " %d conditions readed. ", mesh->n_boundaries() );
+	xprintf( Msg, "O.K.\n");
+
+	*/
 }
 
 

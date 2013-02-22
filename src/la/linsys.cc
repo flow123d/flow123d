@@ -38,7 +38,7 @@
 /**
  *  @brief Constructs a parallel system with given local size.
  *
- *  By the parameter @param vec_lsize we initialize distribution of the rhs and solution vectors.
+ *  By the parameter @p vec_lsize we initialize distribution of the rhs and solution vectors.
  *  For MPIAIJ matrix this is also distribution of its rows, but for IS matrix this is only size of
  *  principial local part without interface.
  */

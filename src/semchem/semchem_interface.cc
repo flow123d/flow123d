@@ -3,12 +3,15 @@
 #include "reaction/reaction.hh"
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 #include "io/read_ini.h"
 
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
 
 using namespace std;
 
@@ -20,16 +23,12 @@ struct TS_lat 	*P_lat;
 struct TS_che	*P_che;
 
 //---------------------------------------------------------------------------
+namespace it = Input::Type;
 
-Input::Type::Record & Specie::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("Isotope", "Definition of information about a single isotope.");
-
-	if (!rec.is_finished()) {
-		rec.declare_key("identifier", Integer(), Default::obligatory(),
-						"Identifier of the isotope.");
-		rec.declare_key("half_life", Double(), Default::obligatory(),
+it::Record Specie::input_type = it::Record("Isotope", "Definition of information about a single isotope.")
+	.declare_key("identifier", it::Integer(), it::Default::obligatory(),
+						"Identifier of the isotope.")
+	.declare_key("half_life", it::Double(), it::Default::obligatory(),
 						"Half life parameter.");
 		/*rec.declare_key("next", Array(Integer()), Default(0),
 						"Identifiers of childern in decay chain.");
@@ -38,25 +37,14 @@ Input::Type::Record & Specie::get_input_type()
 		rec.declare_key("kinetic constant", Double(), Default(1.0),
 						"Kinetic conxtant appropriate to described first order reaction.");*/
 
-		rec.finish();
-	}
-	return rec;
-}
 
-Input::Type::Record & General_reaction::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("Isotope", "Definition of information about a single isotope.");
-
-	if (!rec.is_finished()) {
-	    rec.derive_from(Reaction::get_input_type());
-
+it::Record General_reaction::input_type = it::Record("Isotope", "Definition of information about a single isotope.")
+	.derive_from(Reaction::input_type)
         //rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
         //        "Description of general chemical reactions.");
-
-		rec.declare_key("identifier", Integer(), Default::obligatory(),
-						"Identifier of the isotope.");
-		rec.declare_key("half_life", Double(), Default::obligatory(),
+	.declare_key("identifier", it::Integer(), it::Default::obligatory(),
+						"Identifier of the isotope.")
+	.declare_key("half_life", it::Double(), it::Default::obligatory(),
 						"Half life parameter.");
 		/*rec.declare_key("next", Array(Integer()), Default(0),
 						"Identifiers of childern in decay chain.");
@@ -65,46 +53,28 @@ Input::Type::Record & General_reaction::get_input_type()
 		rec.declare_key("kinetic constant", Double(), Default(1.0),
 						"Kinetic conxtant appropriate to described first order reaction.");*/
 
-		rec.finish();
-	}
-	return rec;
-}
 
-Input::Type::AbstractRecord & Semchem_interface::get_input_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("Semchem_module", "Declares infos valid for all reactions.");
-
-	if (!rec.is_finished()) {
-		rec.declare_key("precision", Integer(), Default::obligatory(), //(1),
-						"How accurate should the simulation be, decimal places(?).");
-		rec.declare_key("temperature", Double(), Default::obligatory(), //(298.0),
-						"Isothermal reaction, thermodynamic temperature.");
-		rec.declare_key("temp_Gf", Double(), Default::obligatory(), //(298.0),
-						"Thermodynamic parameter.");
-		rec.declare_key("param_Afi", Double(), Default::obligatory(), //(0.391475),
-						"Thermodynamic parameter.");
-		rec.declare_key("param_b", Double(), Default::obligatory(), //(1.2),
-						"Thermodynamic parameter.");
-		rec.declare_key("epsilon", Double(), Default::obligatory(), //(1.2),
-						"Thermodynamic parameter.");
-		rec.declare_key("time_steps", Integer(), Default::obligatory(), //(10),
-						"Simulation parameter.");
-		rec.declare_key("slow_kinetic_steps", Integer(), Default::obligatory(), //(1),
+it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_module", "Declares infos valid for all reactions.")
+	.declare_key("precision", it::Integer(), it::Default::obligatory(), //(1),
+						"How accurate should the simulation be, decimal places(?).")
+	.declare_key("temperature", it::Double(), it::Default::obligatory(), //(298.0),
+						"Isothermal reaction, thermodynamic temperature.")
+	.declare_key("temp_gf", it::Double(), it::Default::obligatory(), //(298.0),
+						"Thermodynamic parameter.")
+	.declare_key("param_afi", it::Double(), it::Default::obligatory(), //(0.391475),
+						"Thermodynamic parameter.")
+	.declare_key("param_b", it::Double(), it::Default::obligatory(), //(1.2),
+						"Thermodynamic parameter.")
+	.declare_key("epsilon", it::Double(), it::Default::obligatory(), //(1.2),
+						"Thermodynamic parameter.")
+	.declare_key("time_steps", it::Integer(), it::Default::obligatory(), //(10),
+						"Simulation parameter.")
+	.declare_key("slow_kinetic_steps", it::Integer(), it::Default::obligatory(), //(1),
 						"Simulation parameter.");
 
-		rec.finish();
-
-		//TransportOperatorSplitting::get_input_type();
-		//TransportDG::get_input_type();
-
-		rec.no_more_descendants();
-	}
-	return rec;
-}
 
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
-	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL)
+	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL), cross_section(cross_section)
 {
 
   //temporary semchem output file name
@@ -126,6 +96,21 @@ Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpeci
   set_nr_of_elements(mesh_->n_elements());
   return;
 }
+
+void Semchem_interface::set_cross_section(Field< 3 , FieldValue< 3  >::Scalar >* cross_section)
+{
+  this->cross_section = cross_section;
+}
+
+void Semchem_interface::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por_m_,
+		Field<3, FieldValue<3>::Scalar> *por_imm_,
+		Field<3, FieldValue<3>::Scalar> *phi_)
+{
+	por_m = por_m_;
+	por_imm = por_imm_;
+	phi = phi_;
+}
+
 
 /*Semchem_interface::~Semchem_interface(void)
 {
@@ -165,6 +150,9 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    double **conc_mob_arr = conc[MOBILE];
    double **conc_immob_arr = conc[IMMOBILE];
    double pomoc, n;
+   double el_por_m = por_m->value(ppelm->centre(), ppelm->element_accessor());
+   double el_por_imm = por_imm->value(ppelm->centre(), ppelm->element_accessor());
+   double el_phi = phi->value(ppelm->centre(), ppelm->element_accessor());
 
    vystupni_soubor = fw_chem;
    //==================================================================
@@ -176,18 +164,21 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
   //==================================================================
    // ----------------- NEJPRVE PRO MOBILNI PORY ----------------------
    //==================================================================
-   n = (ppelm->material->por_m) / (1 - ppelm->material->por_m); //asi S/V jako zze splocha
+   n = (el_por_m) / (1 - el_por_m); //asi S/V jako zze splocha
 
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = (ppelm->volume()) * (ppelm->material->por_m); break;
+	  case 3 : pomoc = ppelm->measure() *
+                     cross_section->value(ppelm->centre(), ppelm->element_accessor() ) * 
+                     el_por_m;
+             break;
 	default:
 	  pomoc = 1.0;
    }
 
    G_prm.objem = pomoc; //objem * mobilni: porozita
-   G_prm.splocha = (pomoc / ppelm->material->por_m) * (ppelm->material->phi) * (1 - ppelm->material->por_m - ppelm->material->por_imm);
+   G_prm.splocha = (pomoc / el_por_m) * (el_phi) * (1 - el_por_m - el_por_imm);
    celkova_molalita=0.0;
    poc_krok=1;
 
@@ -225,12 +216,15 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
-	  case 3 : pomoc = ppelm->volume() * (ppelm->material->por_imm); break;
+	  case 3 : pomoc = ppelm->measure() *
+                     cross_section->value(ppelm->centre(), ppelm->element_accessor() ) * 
+                     el_por_imm;
+             break;
 	default:
 	  pomoc = 1.0;
     }
    G_prm.objem = pomoc;
-   G_prm.splocha = (pomoc / ppelm->material->por_imm) * (1 - ppelm->material->phi) * (1 - ppelm->material->por_m - ppelm->material->por_imm);
+   G_prm.splocha = (pomoc / el_por_imm) * (1 - el_phi) * (1 - el_por_m - el_por_imm);
    celkova_molalita = 0.0;
    poc_krok=1;
    
@@ -302,7 +296,7 @@ void Semchem_interface::set_el_4_loc(int *el_for_loc)
 
 void Semchem_interface::set_mesh_(Mesh *mesh)
 {
-	mesh_ = mesh;
+	Mesh* mesh_ = mesh;
 	return;
 }
 

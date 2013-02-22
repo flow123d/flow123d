@@ -77,8 +77,6 @@ void system_init( MPI_Comm comm,const  string &log_filename )
     ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
     ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
 
-    DBGMSG("MPI size: %d rank: %d\n",sys_info.n_proc,sys_info.my_proc);
-
     // determine logfile name or switch it off
     stringstream log_name;
 

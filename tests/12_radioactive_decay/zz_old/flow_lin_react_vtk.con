@@ -1,0 +1,91 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test12 - radioactive decay simulation, long decay chain with biffurcation", 
+    material = "./input/flow_lin_react/sit_lin_react.mtr", 
+    mesh = {
+      mesh_file = "./input/flow_lin_react/sit_lin_react.msh", 
+      neighbouring = "./input/flow_lin_react/sit_lin_react.ngh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/flow_lin_react/sit_lin_react.fbc", 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream",  
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+      boundary_file = "./input/flow_lin_react/sit_lin_react.tbc", 
+      initial_file = "./input/flow_lin_react/sit_lin_react.tic", 
+      output = {
+        mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/system/output_streams/1"
+        }, 
+        save_step = 0.5
+      }, 
+
+      dual_porosity = false, 
+      sorption_enable = false, 
+      substances = [
+        "A", 
+        "B", 
+        "C", 
+        "D", 
+        "E", 
+        "F"
+      ], 
+      time = {
+        end_time = 10.0
+      },
+      
+      reactions = {
+        TYPE="LinearReactions",
+        decays = [
+          {
+            parent = "D",
+            kinetic = 0.277258872,
+            products = [
+              "E"
+            ]
+          }
+        ]
+      } 
+    }
+  },
+  
+  system = {
+    output_streams = [
+      {
+        file = "./lin_react.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport_lin_react.pvd", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

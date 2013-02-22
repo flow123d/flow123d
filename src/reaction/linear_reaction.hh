@@ -22,18 +22,19 @@ class Linear_reaction: public Reaction
 {
 	public:
 		/*
-	 	* Static method for new input data types input
+	 	* Static variable for new input data types input
 		*/
-		static Input::Type::Record &get_input_type();
+		static Input::Type::Record input_type;
 		/*
-	 	* Static method gets information about particular decay step
+	 	* Static variable gets information about particular decay step
 		*/
-		static Input::Type::Record & get_one_decay_substep();
+		static Input::Type::Record input_type_one_decay_substep;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
+		//Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
+		Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
 		/**
 		*	Destructor.
 		*/
@@ -48,7 +49,7 @@ class Linear_reaction: public Reaction
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		//virtual
-		void compute_one_step(void);
+		virtual void compute_one_step(void);
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/

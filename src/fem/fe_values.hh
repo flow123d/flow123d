@@ -416,9 +416,9 @@ public:
      * cell-independent data.
      *
      * @param _mapping The mapping between the reference and actual cell.
-	 * @param _sub_quadrature The quadrature rule on the side.
-	 * @param _fe The finite element.
-	 * @param _flags The update flags.
+     * @param _sub_quadrature The quadrature rule on the side.
+     * @param _fe The finite element.
+     * @param flags The update flags.
      */
     FESideValues(Mapping<dim,spacedim> &_mapping,
              Quadrature<dim-1> &_sub_quadrature,

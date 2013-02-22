@@ -93,9 +93,30 @@ inline Iterator<Ret> Record::find(const string &key) const {
         e << EI_CPPRequiredType(typeid(Ret).name()) << EI_KeyName(key);
         throw;
     }
-
 }
 
+template <class Ret>
+inline bool Record::opt_val(const string &key, Ret &value) const {
+    try {
+        Type::Record::KeyIter key_it = record_type_.key_iterator(key);
+        Iterator<Ret> it=Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
+        if (it) {
+            value = *it;
+        } else {
+            return false;
+        }
+    }
+    // we catch all possible exceptions
+    catch (Type::Record::ExcRecordKeyNotFound & e) {
+        throw;
+    }
+    catch (ExcTypeMismatch & e) {
+        e << EI_CPPRequiredType(typeid(Ret).name()) << EI_KeyName(key);
+        throw;
+    }
+
+    return true;
+}
 
 
 /******************************************************************************************
@@ -103,7 +124,7 @@ inline Iterator<Ret> Record::find(const string &key) const {
  */
 
 template <class ValueType>
-Iterator<ValueType> Array::begin() const {
+inline Iterator<ValueType> Array::begin() const {
     try {
         return Iterator<ValueType>(array_type_.get_sub_type(), storage_, 0);
     }
@@ -157,6 +178,11 @@ inline IteratorBase::operator bool() const {
     return ( s && ! s->is_null() );
 }
 
+
+
+inline unsigned int IteratorBase::idx() const {
+    return index_;
+}
 
 
 /******************************************************************************************

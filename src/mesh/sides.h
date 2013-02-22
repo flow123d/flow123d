@@ -56,7 +56,7 @@ public:
     {}
 
     inline Side(ElementIter ele, unsigned int set_lnum);
-    double metric() const;
+    double measure() const;
     arma::vec3 centre() const; // Centre of side
     arma::vec3 normal() const; // Vector of (generalized) normal
 
@@ -69,13 +69,16 @@ public:
 
     inline const Node * node(unsigned int i) const;
 
-    inline ElementFullIter element() const; // unfortunately we can not have const here, since there are plenty of ELEMENT_FULL_ITER
+    inline ElementFullIter element() const;
 
     inline Mesh * mesh() const;
 
-    inline Edge * edge() const;  // unfortunately we can not have const here, we need to convert it to Full iterator
+    inline unsigned int edge_idx() const;
+
+    inline Edge * edge() const;
 
     inline Boundary * cond() const;
+    inline unsigned int cond_idx() const;
 
     inline unsigned int el_idx() const;
 

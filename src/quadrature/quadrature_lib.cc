@@ -27,6 +27,7 @@
  *  @author Jan Stebel
  */
 
+#include "system/global_defs.h"
 #include "system/system.hh"
 #include "quadrature/quadrature_lib.hh"
 

@@ -44,6 +44,12 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
+// Forward declarations
+template <int spacedim>
+class ElementAccessor;
+class GmshMeshReader;
+
+
 
 #define ELM  0
 #define BC  1
@@ -89,7 +95,7 @@
 
 class BoundarySegment {
 public:
-    static Input::Type::Record get_input_type();
+    static Input::Type::Record input_type;
 };
 
 //=============================================================================
@@ -98,7 +104,8 @@ public:
 
 class Mesh {
 public:
-    static Input::Type::Record get_input_type();
+    static const unsigned int undef_idx=-1;
+    static Input::Type::Record input_type;
 
     Input::Record in_record_;
 
@@ -114,11 +121,14 @@ public:
     }
 
     inline unsigned int n_boundaries() const {
-        return boundary.size();
+        return boundary_.size();
     }
 
     inline unsigned int n_edges() const {
-        return edge.size();
+        return edges.size();
+    }
+    inline const RegionDB &region_db() const {
+        return region_db_;
     }
 
     void read_intersections();
@@ -131,23 +141,30 @@ public:
         return vb_neighbours_.size();
     }
     /**
-     * Setup various links between mesh entities. Should be simplified.
+     *
      */
-    void setup_topology(istream *in = NULL);
-    void read_neighbours(istream &in);
+    void read_gmsh_from_stream(istream &in);
+    /**
+     * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
+     */
+    void init_from_input();
+
+
 
     /**
      * This set pointers from elements to materials. Mesh should store only material IDs of indices.
      * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
      */
-    void setup_materials( MaterialDatabase &base);
-    void make_element_geometry();
+    //void setup_materials( MaterialDatabase &base);
+    //void make_element_geometry();
 
-    // Files
-    // DF - Move to ConstantDB
-    // char *geometry_fname; // Name of file of nodes and elems
-    // char *concentration_fname;//Name of file of concentration
-    // char *transport_bcd_fname;//Name of file of transport BCD
+    /**
+     * Returns vector of ID numbers of elements from both element and bc_elements vectors.
+     */
+    vector<int> const &all_elements_id();
+
+
+    ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
@@ -156,14 +173,16 @@ public:
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
-    BoundaryVector boundary;
+    vector<Boundary> boundary_;
     /// vector of boundary elements - should replace 'boundary'
-    std::vector<Element> bc_elements;
+    /// TODO: put both bulk and bc elements (on zero level) to the same vector or make better map id->element for field inputs that use element IDs
+    /// the avoid usage of ElementVector etc.
+    ElementVector bc_elements;
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
-    EdgeVector edge;
+    std::vector<Edge> edges;
 
-    flow::VectorId<int> bcd_group_id; // gives a index of group for an id
+    //flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
     /**
      * Vector of individual intersections of two elements.
@@ -177,6 +196,9 @@ public:
      */
     vector<vector<unsigned int> >  master_elements;
 
+    /**
+     * Vector of compatible neighbourings.
+     */
     vector<Neighbour> vb_neighbours_;
     int n_materials; // # of materials
 
@@ -193,14 +215,55 @@ public:
     // for every side node 0 .. D
     // index into element node array
     vector< vector< vector<unsigned int> > > side_nodes;
-    
-    string neigh_fname_;
-    string bcd_fname_;
-private:
 
-    void node_to_element();
-    void edge_to_side();
-    void neigh_vb_to_element_and_side();
+    
+
+
+protected:
+
+    /**
+     *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
+     *
+     *  TODO:
+     *  - Avoid maps:
+     *
+     *    4) replace EdgeVector by std::vector<Edge> (need not to know the size)
+     *
+     *    5) need not to have temporary array for Edges, only postpone setting pointers in elements and set them
+     *       after edges are found; we can temporary save Edge index instead of pointer in Neigbours and elements
+     *
+     *    6) Try replace Edge * by indexes in Neigbours and elements (anyway we have mesh pointer in elements so it is accessible also from Neigbours)
+     *
+     */
+    void make_neighbours_and_edges();
+    /**
+     * Create element lists for nodes in Mesh::nodes_elements.
+     */
+    void create_node_element_lists();
+    /**
+     * Find intersection of element lists given by Mesh::node_elements for elements givne by @p nodes_list parameter.
+     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
+     * returned.
+     */
+    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
+    /**
+     * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
+     * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
+     * if more elements are found we report an user input error.
+     */
+    bool find_lower_dim_element(ElementVector&elements, vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
+
+    /**
+     * Returns true if side @p si has same nodes as in the list @p side_nodes.
+     */
+    bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
+
+    /**
+     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
+     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
+     */
+    void setup_topology();
+
     void element_to_neigh_vb();
     void create_external_boundary();
 
@@ -208,8 +271,21 @@ private:
     void count_side_types();
 
     unsigned int n_bb_neigh, n_vb_neigh;
-    vector<Neighbour_both> neighbours_;
 
+    /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
+    /// in input mesh file and has ID assigned.
+    ///
+    /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
+    vector<int> all_elements_id_;
+    /// Number of elements read from input.
+    unsigned int n_all_input_elements_;
+
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements;
+
+    RegionDB region_db_;
+
+    friend class GmshMeshReader;
 };
 
 
@@ -241,8 +317,8 @@ private:
 
 
 #define FOR_BOUNDARIES(_mesh_,i) \
-for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
-    i != _mesh_->boundary.end(); \
+for( std::vector<Boundary>::iterator i= _mesh_->boundary_.begin(); \
+    i != _mesh_->boundary_.end(); \
     ++i)
 
 /**
@@ -262,8 +338,8 @@ for( BoundaryFullIter i( _mesh_->boundary.begin() ); \
  * Provides for statement to iterate over the Edges of the Mesh. see FOR_ELEMENTS
  */
 #define FOR_EDGES(_mesh_,__i) \
-    for( EdgeFullIter __i( _mesh_->edge.begin() ); \
-        __i !=_mesh_->edge.end(); \
+    for( vector<Edge>::iterator __i = _mesh_->edges.begin(); \
+        __i !=_mesh_->edges.end(); \
         ++__i)
 
 #define FOR_SIDES(_mesh_, it) \

@@ -1,0 +1,41 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test8 - Steady flow with sources", 
+    material = "./input/test08.mtr", 
+    mesh = {
+      mesh_file = "./input/test08.msh", 
+      neighbouring = "./input/test08.ngh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/test08.fbc", 
+      output = {
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      }, 
+      sources_formula = "2*(1-x^2)+2*(1-y^2)"
+    } 
+  }, 
+
+  system = {
+    output_stream =
+      {
+        file = "./flow.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      } 
+  } 
+}

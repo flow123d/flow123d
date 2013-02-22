@@ -1,7 +1,0 @@
-********************************
-Boundary fluxes at time inf:
-[total balance]    [total outflow]     [total inflow]
-boundary #1	10.5822	10.5822	0
-
-Source fluxes over material subdomains:
-material #100:	 10.6686

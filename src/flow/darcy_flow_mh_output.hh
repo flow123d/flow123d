@@ -65,7 +65,7 @@ public:
     DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
-    static Input::Type::Record get_input_type();
+    static Input::Type::Record input_type;
 
     void postprocess();
 

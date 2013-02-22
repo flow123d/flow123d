@@ -1,15 +1,31 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "[u'test3', u'deska,', u'diagonalni', u'tok']", 
-    material = "./input/test3.mtr", 
+    description = "Test3 - Transport implicit 1D-2D, (convection, dispersion)", 
     mesh = {
-      mesh_file = "./input/test3.msh", 
-      neighbouring = "./input/test3.ngh"
+      mesh_file = "./input/test3.msh"
     }, 
+
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test3.fbc", 
+
+      bulk_data = [
+        { rid = 17,
+          cond_anisothropy = 10,
+          cross_section = 1
+        },
+        { rid = 18,
+          cond_anisothropy = 1,
+          cross_section = 1
+        }
+      ],
+      
+      bc_data = [
+        { region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test3.fbc"
+        }
+      ],
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -23,11 +39,34 @@
         accuracy = 1e-07
       }
     }, 
+
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
-      boundary_file = "./input/test3.tbc", 
+
+      bulk_data = [
+        { rid = 17,
+          init_conc = 0,
+          por_m = 0.25
+        },
+        { rid = 18,
+          init_conc = 0,
+          por_m = 0.25
+        }
+      ],
+      
+      bc_data = [
+        { region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/test3.tbc"
+        }
+      ],
+
       dual_porosity = true, 
-      initial_file = "./input/test3.tic", 
+      sorption_enable = true, 
+      substances = [
+        "age", 
+        "U235"
+      ], 
+
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -35,14 +74,11 @@
         }, 
         save_step = 0.1
       }, 
-      sorption_enable = true, 
-      substances = [
-        "age", 
-        "U235"
-      ], 
+
+      
       time = {
         end_time = 1.0, 
-	init_dt = 0.1
+        init_dt = 0.1
       },
       solver = {
         TYPE = "Petsc", 
@@ -50,6 +86,7 @@
       }
     }
   }, 
+
   system = {
     output_streams = [
       {

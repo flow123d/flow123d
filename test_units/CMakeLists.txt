@@ -34,9 +34,11 @@ macro(define_test class_name)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}_test")
   set(test_valgrind "${class_name}_valgrind")
+  message(STATUS "${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
   
   # executable rule
-  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} ) 
+  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
+  #set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS}")
   target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
 
   # rule to run the test
@@ -110,8 +112,10 @@ add_subdirectory("input")
 add_subdirectory("la")
 add_subdirectory("system")
 add_subdirectory("functions")
+add_subdirectory("fields")
 add_subdirectory("quadrature")
 add_subdirectory("mesh")
+add_subdirectory("coupling")
 
 
 

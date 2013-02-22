@@ -33,13 +33,37 @@
 #include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
-#include "field_p0.hh"
 #include "system/system.hh"
-#include "io_namehandler.hh"
+
 #include <vector>
 
 #include "io/output.h"
+#include <iostream>
+#include <sstream>
+#include <string>
 
+
+
+namespace it = Input::Type;
+
+it::Record DarcyFlowMHOutput::input_type
+	= it::Record("DarcyMHOutput", "Parameters of MH output.")
+	.declare_key("save_step", it::Double(0.0), it::Default("1.0"),
+                    "Regular step between MH outputs.")
+    .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
+                    "Parameters of output stream.")
+    .declare_key("velocity_p0", it::String(),
+                    "Output stream for P0 approximation of the velocity field.")
+    .declare_key("pressure_p0", it::String(),
+                    "Output stream for P0 approximation of the pressure field.")
+    .declare_key("pressure_p1", it::String(),
+                    "Output stream for P1 approximation of the pressure field.")
+    .declare_key("piezo_head_p0", it::String(),
+                    "Output stream for P0 approximation of the piezometric head field.")
+    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
+                    "Output file for water balance table.")
+    .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
+                    "Output file with raw data form MH module.");
 
 
 
@@ -73,7 +97,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
-    output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time();
+    output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
     marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
             darcy_flow->time().end_time(), output_mark_type );
     DBGMSG("end create output\n");
@@ -85,42 +109,16 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     // optionally open raw output file
     Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
 
-    if (it) {
-        cout << "raw out: " << string(*it) << endl;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (it && rank==0) {
+        xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
         raw_output_file = xfopen(*it, "wt");
     }
 
 }
 
-Input::Type::Record DarcyFlowMHOutput::get_input_type() {
-        using namespace Input::Type;
-        static Record rec("DarcyMHOutput", "Parameters of MH output.");
 
-        if (!rec.is_finished()) {
-
-            rec.declare_key("save_step", Double(0.0), Default("1.0"),
-                    "Regular step between MH outputs.");
-            rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-                    "Parameters of output stream.");
-            rec.declare_key("velocity_p0", String(),
-                    "Output stream for P0 approximation of the velocity field.");
-            rec.declare_key("pressure_p0", String(),
-                    "Output stream for P0 approximation of the pressure field.");
-            rec.declare_key("pressure_p1", String(),
-                    "Output stream for P1 approximation of the pressure field.");
-            rec.declare_key("piezo_head_p0", String(),
-                    "Output stream for P0 approximation of the piezometric head field.");
-
-            rec.declare_key("balance_output", FileName::output(), Default("water_balance"),
-                    "Output file for water balance table.");
-
-            rec.declare_key("raw_flow_output", FileName::output(), Default::optional(),
-                    "Output file with raw data form MH module.");
-
-            rec.finish();
-        }
-        return rec;
-}
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
     //if (output_writer != NULL) delete output_writer;
@@ -164,6 +162,9 @@ void DarcyFlowMHOutput::output()
     std::string eleVectorUnit = "L/T";
 
     unsigned int result = 0;
+
+    // skip initial output for steady solver
+    if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
 
     if (darcy_flow->time().is_current(output_mark_type)) {
 
@@ -280,12 +281,12 @@ void DarcyFlowMHOutput::make_element_vector() {
         arma::vec3 flux_in_centre;
         flux_in_centre.zeros();
 
-        fe_values.update(ele);
+        fe_values.update(ele, darcy_flow->get_data().cond_anisothropy, darcy_flow->get_data().cross_section);
 
         for (int li = 0; li < ele->n_sides(); li++) {
             flux_in_centre += dh.side_flux( *(ele->side( li ) ) )
                               * fe_values.RT0_value( ele, ele->centre(), li )
-                              / ele->material->size;
+                              / darcy_flow->get_data().cross_section.value(ele->centre(), ele->element_accessor() );
         }
 
         for(int j=0;j<3;j++) ele_flux[i_side][j]=flux_in_centre[j];
@@ -645,50 +646,103 @@ void DarcyFlowMHOutput::water_balance() {
     if (balance_output_file == NULL) return;
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
+    //BOUNDARY
     double bal;
     int c_water;
     struct Boundary *bcd;
-    std::vector<double> *bcd_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
-    std::vector<double> *bcd_plus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
-    std::vector<double> *bcd_minus_balance = new std::vector<double>( mesh_->bcd_group_id.size(), 0.0 );
+    std::vector<double> bcd_balance( mesh_->region_db().boundary_size(), 0.0 );
+    std::vector<double> bcd_plus_balance( mesh_->region_db().boundary_size(), 0.0 );
+    std::vector<double> bcd_minus_balance( mesh_->region_db().boundary_size(), 0.0 );
 
-    fprintf(balance_output_file,"********************************\n");
-    fprintf(balance_output_file,"Boundary fluxes at time %f:\n",darcy_flow->time().t());
-    fprintf(balance_output_file,"[total balance]    [total outflow]     [total inflow]\n");
+    using namespace std;
+    //printing the head of water balance file
+    unsigned int c = 5; //column number without label
+    unsigned int w = 14;  //column width
+    unsigned int wl = 2*(w-5)+7;  //label column width
+    stringstream s; //helpful stringstream
+    string bc_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s\n",
+           bc_format = "%*s%-*d%-*s  %-*g%-*g%-*g%-*g\n",
+           bc_total_format = "# %-*s%-*g%-*g%-*g\n\n\n";
+    s << setw((w*c+wl-15)/2) << setfill('-') << "-"; //drawing half line
+    fprintf(balance_output_file,"# %s WATER BALANCE %s\n",s.str().c_str(), s.str().c_str());
+    fprintf(balance_output_file,"# Time of computed water balance: %f\n\n\n",darcy_flow->time().t());
+    
+    fprintf(balance_output_file,"# Boundary water balance:\n");
+    fprintf(balance_output_file,bc_head_format.c_str(),w,"[boundary_id]",wl,"[label]",
+                            w,"[total_balance]",w,"[total_outflow]",w,"[total_inflow]",w,"[time]");
+    s.clear();
+    s.str(std::string());
+    s << setw(w*c+wl) << setfill('-') << "-"; 
+    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
+    
+    //computing water balance over boundaries
     FOR_BOUNDARIES(mesh_, bcd) {
-        double flux = dh.side_flux( *(bcd->side) );
-        (*bcd_balance)[bcd->group] += flux;
+        // !! there can be more sides per one boundary
+        double flux = dh.side_flux( *(bcd->side()) );
+        Region r = bcd->region();
+        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
+        unsigned int bc_region_idx = r.boundary_idx();
+        bcd_balance[bc_region_idx] += flux;
 
-        if (flux > 0) (*bcd_plus_balance)[bcd->group]+= flux;
-        else (*bcd_minus_balance)[bcd->group]+= flux;
+        if (flux > 0) bcd_plus_balance[bc_region_idx] += flux;
+        else bcd_minus_balance[bc_region_idx] += flux;
     }
-
-
-
-    for(int i=0; i < bcd_balance->size(); ++i)
-        fprintf(balance_output_file, "boundary #%d\t%g\t%g\t%g\n", mesh_->bcd_group_id(i).id(),
-                (*bcd_balance)[i],(*bcd_plus_balance)[i],(*bcd_minus_balance)[i]);
-
-    delete bcd_balance;
-    delete bcd_plus_balance;
-    delete bcd_minus_balance;
-
-    const FieldP0<double> *p_sources=darcy_flow->get_sources();
-    if (p_sources != NULL) {
-
-        fprintf(balance_output_file,"\nSource fluxes over material subdomains:\n");
-        MaterialDatabase &mat_base = darcy_flow->material_base();
-        std::vector<double> *src_balance = new std::vector<double>( mat_base.size(), 0.0 ); // initialize by zero
-
-        FOR_ELEMENTS(mesh_, elm) {
-            (*src_balance)[mat_base.index(elm->material)] += elm->volume() * p_sources->element_value(elm.index());
-        }
-
-
-        FOR_MATERIALS_IT(mat_base, mat) {
-            fprintf(balance_output_file, "material #%d:\t% g\n", mat_base.get_id(mat), (*src_balance)[mat_base.index(mat)]);
-        }
+    //printing water balance over boundaries
+    DBGMSG("DB[boundary] size: %u\n", mesh_->region_db().boundary_size());
+    const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
+    double total_balance = 0, // for computing total balance on boundary
+           total_inflow = 0,
+           total_outflow = 0; 
+    for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
+        //DBGMSG("writing reg->idx() and id() and boundary_idx(): %d\t%d\t%d\n", reg->idx(), reg->id(), reg->boundary_idx());
+        total_balance += bcd_balance[reg->boundary_idx()];
+        total_outflow += bcd_plus_balance[reg->boundary_idx()];
+        total_inflow += bcd_minus_balance[reg->boundary_idx()];
+        fprintf(balance_output_file, bc_format.c_str(),2,"",w,reg->id(),wl,reg->label().c_str(),
+                w, bcd_balance[reg->boundary_idx()], w, bcd_plus_balance[reg->boundary_idx()],
+                w, bcd_minus_balance[reg->boundary_idx()], w, darcy_flow->time().t());
     }
+    //total boundary balance
+    fprintf(balance_output_file,"# %s\n",s.str().c_str());  // drawing long line
+    fprintf(balance_output_file, bc_total_format.c_str(),w+wl+2,"total boundary balance",
+                w,total_balance, w, total_outflow, w, total_inflow);
+
+    
+    //SOURCES
+    string src_head_format = "# %-*s%-*s%-*s%-*s%-*s\n",
+           src_format = "%*s%-*d%-*s  %-*g%-*s%-*g\n",
+           src_total_format = "# %-*s%-*g\n\n\n";
+    //computing water balance of sources
+    fprintf(balance_output_file,"# Source fluxes over material subdomains:\n");   //head
+    fprintf(balance_output_file,src_head_format.c_str(),w,"[region_id]",wl,"[label]", 
+                            w,"[total_balance]",2*w,"",w,"[time]");
+    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //long line
+    std::vector<double> src_balance( mesh_->region_db().bulk_size(), 0.0 ); // initialize by zero
+    FOR_ELEMENTS(mesh_, elm) {
+      //DBGMSG("writing reg->idx() and id() and bulk_idx(): %d\t%d\t%d\n", 
+      //       elm->element_accessor().region().idx(), 
+      //       elm->element_accessor().region().id(),
+      //       elm->element_accessor().region().bulk_idx());
+      src_balance[elm->element_accessor().region().bulk_idx()] += elm->measure() * 
+            darcy_flow->get_data().cross_section.value(elm->centre(), elm->element_accessor()) * 
+            darcy_flow->get_data().water_source_density.value(elm->centre(), elm->element_accessor());
+    }
+  
+    total_balance = 0;
+    //printing water balance of sources
+    DBGMSG("DB[bulk] size: %u\n", mesh_->region_db().bulk_size());
+    const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
+    for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
+      {
+        total_balance += src_balance[reg->bulk_idx()];
+        //"%*s%-*d%-*s  %-*g%-*s%-*g\n";
+        fprintf(balance_output_file, src_format.c_str(), 2,"", w, reg->id(), wl,
+                reg->label().c_str(), w, src_balance[reg->bulk_idx()],2*w,"", w,darcy_flow->time().t());
+      }
+    //total sources balance
+    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
+    fprintf(balance_output_file, src_total_format.c_str(),w+wl+2,"total sources balance",
+                w,total_balance);
 }
 //=============================================================================
 //

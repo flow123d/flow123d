@@ -13,7 +13,7 @@
 
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-#include "new_mesh/bih_tree.hh"
+#include "mesh/bih_tree.hh"
 
 
 /// Generates random double number in interval <fMin, fMax>
@@ -24,10 +24,10 @@ double f_rand(double fMin, double fMax) {
 
 
 /// Gets count of intersected elements with bounding box
-int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &boundingBoxes) {
-	int insecElements = 0;
+unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &boundingBoxes) {
+	unsigned int insecElements = 0;
 
-	for (int i=0; i<boundingBoxes.size(); i++) {
+	for (unsigned int i=0; i<boundingBoxes.size(); i++) {
 		if (bb.intersection(boundingBoxes[i])) insecElements++;
 	}
 
@@ -42,26 +42,33 @@ int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &boundingBo
  *  - tests intersection with bounding box out of mesh
  *  - tests intersection with three bounding boxes in mesh
  */
-void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
-	int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
+void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
+	unsigned int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
 	double avgDepth;
 	Mesh mesh;
-	GmshMeshReader reader;
+	GmshMeshReader reader(meshFile);
 	BoundingBox bb;
 	arma::vec3 min, max;
-	std::vector<int> searchedElements;
+	std::vector<unsigned int> searchedElements;
 
-	reader.read(meshFile, &mesh);
+	reader.read_mesh(&mesh);
 
 	// creates tree and tests its basic parameters
 	BIHTree bt(&mesh, elementLimit);
 	bt.get_tree_params(maxDepth, minDepth, avgDepth, leafNodesCount, innerNodesCount, sumElements);
+	// For ideal case the node count should be comparable to total number of elements devided
+	// by number of elements in leaf nodes. In this test we check that the overhead is not
+	// too big. Empirical test showed, that for big meshes the actual number of nodes is
+	// 3.7 * ideal number of nodes
 	EXPECT_LT( (leafNodesCount + innerNodesCount) , 4 * (mesh.n_elements() / elementLimit) );
+	// Check  the conditions that limit growth of the redundancy of elements in nodes
+	// The condition says that number of elements in the child node has to have number of elements less then
+	// 0.8 * (number of elements in parent node).
 	EXPECT_LT( maxDepth, (log2(elementLimit) - log2(mesh.n_elements())) / log2(0.8) );
 
 	// tests of intersection with bounding box out of mesh
 	bb.set_bounds(arma::vec3("0 0 1.01"), arma::vec3("0.1 0.1 1.05"));
-	bt.find_elements(bb, searchedElements);
+	bt.find_bounding_box(bb, searchedElements);
 	EXPECT_EQ(0, searchedElements.size());
 
 	// tests of intersection with bounding box in mesh near point [-1, -1, -1]
@@ -70,8 +77,8 @@ void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
 		max(i) = f_rand(-0.96, -0.94);
 	}
 	bb.set_bounds(min, max);
-	bt.find_elements(bb, searchedElements);
-	insecSize = get_intersection_count(bb, bt.get_elements());
+	bt.find_bounding_box(bb, searchedElements);
+	insecSize = get_intersection_count(bb, bt.get_elements()); // get intersections by linear search
 	EXPECT_EQ(searchedElements.size(), insecSize);
 
 	// tests of intersection with bounding box in mesh near point [0, 0, 0]
@@ -80,7 +87,7 @@ void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
 		max(i) = f_rand(+0.01, +0.03);
 	}
 	bb.set_bounds(min, max);
-	bt.find_elements(bb, searchedElements);
+	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
 
@@ -90,10 +97,20 @@ void create_test_tree(FilePath &meshFile, int elementLimit = 20) {
 		max(i) = f_rand(0.11 + i * 0.4, 0.13 + i * 0.4);
 	}
 	bb.set_bounds(min, max);
-	bt.find_elements(bb, searchedElements);
+	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
 
+	// tests of intersection with point in mesh near point [0.2, 0.3, 0.4]
+	insecSize = 0;
+	for (int i=0; i<3; i++) {
+		min(i) = f_rand(0.18 + i * 0.1, 0.22 + i * 0.1);
+	}
+	bt.find_point(min, searchedElements);
+	for (unsigned int i=0; i<bt.get_elements().size(); i++) {
+		if ( bt.get_elements()[i].contains_point(min) ) insecSize++;
+	}
+	EXPECT_EQ(searchedElements.size(), insecSize);
 }
 
 

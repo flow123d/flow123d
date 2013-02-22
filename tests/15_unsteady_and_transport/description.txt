@@ -9,7 +9,7 @@ setting:
 rectangle (0,1)x(0,16)
 flow: zero dirichlet BC for x=0, zero Neuman else, source = -x
 conductivity 1.0
-storativity 1.0
+storativity 1.0 - WRONG - there is no storativity used
 near x=0 pressure is = -tx
          velocity is = t
 

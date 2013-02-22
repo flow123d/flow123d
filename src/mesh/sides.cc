@@ -30,43 +30,23 @@
  */
 
 #include "system/system.hh"
-#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "sides.h"
 #include "mesh/mesh_types.hh"
-
-// following deps. should be removed
-#include "mesh/boundaries.h"
-#include "materials.hh"
-
-
-
-
-//static void calc_side_rhs_dens(struct Side*, struct Problem*, Mesh*);
-
-
-
-
-
-
-
-//=============================================================================
-// CALCULATE PROPERTIES OF ALL SIDES OF THE MESH
-//=============================================================================
 
 
 //=============================================================================
 // CALCULATE METRICS OF THE SIDE
 //=============================================================================
 
-double Side::metric() const {
+double Side::measure() const {
     switch ( dim() ) {
         case 0:
-            return 1.0 * element_->material->size;
+            return 1.0;
         case 1: {
             arma::vec3 diff = node(1)->point();
             diff -= node(0)->point();
-            return arma::norm( diff , 2 ) * element_->material->size;
+            return arma::norm( diff , 2 );
         }
         case 2: {
             arma::vec3 diff0 = node(1)->point() - node(0)->point();
@@ -163,36 +143,6 @@ arma::vec3 Side::centre() const {
     return barycenter;
 }
 
-
-//======BP F.��r===============================================================
-// CALCULATE VALUE ON THE RHS (Density)
-//=============================================================================
-void calc_side_rhs_dens(struct Side* sde, struct Problem* problem, Mesh* mesh) {
-    /*
-
-    ASSERT(!((sde == NULL) || (problem == NULL) || (mesh == NULL)), "NULL argument to calc_side_rhs_dens()");
-
-    Transport *transport = problem->transport;
-    int n_subst = mesh->n_substances;
-    ElementFullIter ele = ELEMENT_FULL_ITER(sde->element);
-
-    ASSERT(!(ele == NULL), "Element of the side %d not defined\n", sde->id);
-
-    // compute total density of dissolved matter
-    double sss = 0.0;
-    for (int sbi = 0; sbi < n_subst; sbi++)
-        sss += transport->substance_density_scale[sbi] * transport->out_conc[MOBILE][sbi][ele.index()];
-
-    //xprintf( MsgVerb, " %f ", ele->start_conc->conc[0] );
-    ele->rhs[sde->lnum] += (ele->centre[2] - sde->centre[2]) * (1 + sss
-            / (ConstantDB::getInstance()->getDouble("Rho")));
-    // * (1 + ele->start_conc->conc[0] / ConstantDB::getInstance()->getDouble("Rho"));
-    //xprintf( MsgVerb, " %f ", (ele->centre[ 2 ] - sde->centre[ 2 ])
-    /*  for( sbi = 0; sbi < n_subst; sbi++ ) {
-     xprintf( MsgVerb, "%d %f %f \n", sbi, ele->conc [0] , ele->start_conc->conc[ sbi ] );
-     }        */
-
-}
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -17,59 +17,6 @@ namespace Input {
 using namespace std;
 using namespace internal;
 
-/********************************************
- * Implementation of public part of JSONToStorage
- */
-
-JSONToStorage::JSONToStorage()
-:storage_(NULL), root_type_(NULL), envelope(NULL)
-{
-    /* from json_spirit_value.hh:
-     * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
-     */
-    json_type_names.push_back("JSON object");
-    json_type_names.push_back("JSON array");
-    json_type_names.push_back("JSON string");
-    json_type_names.push_back("JSON bool");
-    json_type_names.push_back("JSON int");
-    json_type_names.push_back("JSON real");
-    json_type_names.push_back("JSON null");
-}
-
-
-void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
-    namespace io = boost::iostreams;
-
-    F_ENTRY;
-
-    if (envelope != NULL) {
-        delete envelope;
-        envelope=NULL;
-    }
-
-    io::filtering_istream filter_in;
-
-    filter_in.push(uncommenting_filter());
-    filter_in.push(in);
-
-    JSONPath::Node node;
-
-    try {
-        json_spirit::read_or_throw( filter_in, node);
-    } catch (json_spirit::Error_position &e ) {
-        THROW( ExcNotJSONFormat() << EI_JSONLine(e.line_) << EI_JSONColumn(e.column_) << EI_JSONReason(e.reason_));
-    }
-
-    JSONPath root_path(node);
-
-    root_type_ = &root_type;
-    storage_ = make_storage(root_path, root_type_);
-    envelope =  new StorageArray(1);
-    envelope->new_item(0,storage_);
-
-    ASSERT(  storage_ != NULL, "Internal error in JSON reader, the storage pointer is NULL after reading the stream.\n");
-
-}
 
 
 /********************************************
@@ -232,6 +179,88 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
 
 
 /********************************************
+ * Implementation of public part of JSONToStorage
+ */
+
+JSONToStorage::JSONToStorage()
+:storage_(NULL), root_type_(NULL), envelope(NULL)
+{
+    /* from json_spirit_value.hh:
+     * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
+     */
+    json_type_names.push_back("JSON object");
+    json_type_names.push_back("JSON array");
+    json_type_names.push_back("JSON string");
+    json_type_names.push_back("JSON bool");
+    json_type_names.push_back("JSON int");
+    json_type_names.push_back("JSON real");
+    json_type_names.push_back("JSON null");
+}
+
+
+void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
+    namespace io = boost::iostreams;
+
+    F_ENTRY;
+
+    if (envelope != NULL) {
+        delete envelope;
+        envelope=NULL;
+    }
+
+    // finish all lazy input types
+    Input::Type::TypeBase::lazy_finish();
+
+    io::filtering_istream filter_in;
+
+    filter_in.push(uncommenting_filter());
+    filter_in.push(in);
+
+    JSONPath::Node node;
+
+
+    try {
+        json_spirit::read_or_throw( filter_in, node);
+    } catch (json_spirit::Error_position &e ) {
+        THROW( ExcNotJSONFormat() << EI_JSONLine(e.line_) << EI_JSONColumn(e.column_) << EI_JSONReason(e.reason_));
+    }
+
+    JSONPath root_path(node);
+
+    root_type_ = &root_type;
+    storage_ = make_storage(root_path, root_type_);
+    envelope =  new StorageArray(1);
+    envelope->new_item(0,storage_);
+
+    ASSERT(  storage_ != NULL, "Internal error in JSON reader, the storage pointer is NULL after reading the stream.\n");
+}
+
+
+
+void JSONToStorage::read_from_default( const string &default_str, const Type::TypeBase &root_type) {
+    namespace io = boost::iostreams;
+    F_ENTRY;
+
+    if (envelope != NULL) {
+        delete envelope;
+        envelope=NULL;
+    }
+
+    // finish all lazy input types
+    Input::Type::TypeBase::lazy_finish();
+
+    root_type_ = &root_type;
+    storage_ =  make_storage_from_default(default_str, &root_type);
+    envelope =  new StorageArray(1);
+    envelope->new_item(0,storage_);
+
+    ASSERT(  storage_ != NULL, "Internal error in JSON reader, the storage pointer is NULL after reading the stream.\n");
+
+}
+
+
+
+/********************************************
  * Implementation of private part of JSONToStorage - make_storage dispatch
  */
 
@@ -284,6 +313,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
         xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
     }
 
+    return new StorageNull();
 }
 
 
@@ -322,13 +352,14 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
         return storage_array;
 
     } else {
-        stringstream ss;
-        ss << p;
-        xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
+
 
         Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
         if ( auto_key_it != record->end() ) {
             // try auto conversion
+            stringstream ss;
+            ss << p;
+            xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
 
             StorageArray *storage_array = new StorageArray(record->size());
             for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
@@ -347,7 +378,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
             return storage_array;
 
         } else {
-            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found type: ")
+            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
                     << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType( record->desc()) );
         }
     }
@@ -363,8 +394,10 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
     if (p.head()->type() == json_spirit::obj_type) {
 
         JSONPath type_path(p);
-        if ( type_path.down("TYPE") == NULL) {
-            THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
+        if ( type_path.down("TYPE") == NULL ) {
+            if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
+                THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
+            } // else auto conversion
         } else {
             try {
                 // convert to base type to force type dispatch and reference chatching
@@ -377,10 +410,18 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
             }
         }
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found type: ")
+        if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
+            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(abstr_rec->desc()) );
-
+        } // else auto conversion
     }
+
+    // perform automatic conversion
+    stringstream ss;
+    ss << p;
+    xprintf(Warn, "Automatic conversion to abstract record at address: %s\n", ss.str().c_str() );
+
+    return make_storage(p, abstr_rec->get_default_descendant() );
 }
 
 
@@ -415,7 +456,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
 
             return storage_array;
         } else {
-            THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be 'JSON array', but we found type: ")
+            THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be 'JSON array', but we found: ")
                     << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(array->desc()) );
         }
     }
@@ -439,7 +480,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Selection *se
         }
     }
 
-    THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found type: ")
+    THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found: ")
             << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(selection->desc())  );
 
     return NULL;
@@ -452,7 +493,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
     if (p.head()->type() == json_spirit::bool_type) {
         return new StorageBool( p.head()->get_bool() );
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON bool', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON bool', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(bool_type->desc())  );
     }
     return NULL;
@@ -472,7 +513,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_
         }
 
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON int', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON int', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(int_type->desc()) );
 
     }
@@ -490,7 +531,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *doubl
     } else if (p.head()->type() == json_spirit::int_type) {
         value = p.head()->get_int();
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON real', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON real', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(double_type->desc()) );
     }
 
@@ -515,7 +556,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
             THROW( ExcInputError() << EI_Specification("Output file can not be given by absolute path: '" + value + "'")
                             << EI_ErrorAddress(p) << EI_JSON_Type("") << EI_InputType(string_type->desc()) );
     } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found type: ")
+        THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(string_type->desc()) );
 
     }
@@ -526,6 +567,15 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
 StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
+        if (typeid(*type) == typeid(Type::AbstractRecord) ) {
+            // an auto-convertible AbstractRecord can be initialized form default value
+            const Type::AbstractRecord *a_record = static_cast<const Type::AbstractRecord *>(type);
+
+            if (a_record->begin()->default_.has_value_at_declaration() )
+                make_storage_from_default( dflt_str, a_record->get_default_descendant() );
+            else
+                xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", typeid(type).name());
+        } else
         if (typeid(*type) == typeid(Type::Record) ) {
             // an auto-convertible Record can be initialized form default value
             const Type::Record *record = static_cast<const Type::Record *>(type);
@@ -547,7 +597,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
 
                 return storage_array;
             } else {
-                xprintf(Err,"Can not initialize (non-auto-convertible) Record '%s' by default value\n", typeid(type).name());
+                xprintf(PrgErr,"Can not initialize (non-auto-convertible) Record '%s' by default value\n", typeid(type).name());
             }
         } else
         if (typeid(*type) == typeid(Type::Array) ) {
@@ -559,7 +609,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
                 storage_array->new_item(0, make_storage_from_default(dflt_str, &sub_type) );
                 return storage_array;
             } else {
-                xprintf(Err,"Can not initialize Array '%s' by default value, size 1 not allowed.\n", typeid(type).name());
+                xprintf(PrgErr,"Can not initialize Array '%s' by default value, size 1 not allowed.\n", typeid(type).name());
             }
 
         } else
@@ -579,7 +629,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
             if (string_type != NULL ) return new StorageString( string_type->from_default(dflt_str) );
 
             // default error
-            xprintf(Err,"Can not store default value for type: %s\n", typeid(type).name());
+            xprintf(PrgErr,"Can not store default value for type: %s\n", typeid(type).name());
         }
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration

@@ -38,7 +38,6 @@ class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
-class TransportBC;
 
 
 /**
@@ -79,18 +78,25 @@ class TransportDG : public TransportBase
 {
 public:
 
+	class EqData : public TransportBase::TransportEqData {
+	public:
+
+		EqData();
+		RegionSet read_boundary_list_item(Input::Record rec);
+
+	};
+
     /**
      * @brief Constructor.
-     * @param marks				TimeMarks.
-     * @param init_mesh			Computational mesh.
-     * @param material_database	Material database.
+     * @param init_mesh         computational mesh
+     * @param in_rec            input record
      */
-    TransportDG(TimeMarks &marks,  Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec);
+    TransportDG(Mesh &init_mesh, const Input::Record &in_rec);
 
     /**
      * @brief Declare input record type for the equation TransportDG.
      */
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     /**
      * @brief Computes the solution in one time instant.
@@ -112,7 +118,9 @@ public:
 
 	/**
 	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 *
+	 * 
+         * @param dh mixed hybrid dof handler
+         * 
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
@@ -122,6 +130,15 @@ public:
 	 * @brief Postprocesses the solution and writes to output file.
 	 */
 	void output_data();
+
+    /**
+     * @brief Sets pointer to data of other equations.
+     * TODO: there should be also passed the sigma parameter between dimensions
+     * @param cross_section is pointer to cross_section data of Darcy flow equation
+     */
+	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
+
+	virtual EqData *get_data() { return &data; }
 
 	/**
 	 * @brief Destructor.
@@ -240,10 +257,10 @@ private:
 	/**
 	 * @brief Calculates the velocity divergence on a given @p dim dimensional cell.
 	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed divergence (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
+	 * @param cell       The cell.
+	 * @param divergence The computed divergence (at quadrature points).
+	 * @param fv         The FEValues class providing the quadrature points
+	 *                   and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
 	void calculate_velocity_divergence(typename DOFHandler<dim,3>::CellIterator cell, std::vector<double> &divergence, FEValuesBase<dim,3> &fv);
@@ -311,15 +328,17 @@ private:
 
 
 	/**
-	 * @brief Reads the initial condition.
+	 * @brief Sets the initial condition.
 	 */
-	void read_initial_condition(string file_name);
+	void set_initial_condition();
 
 
 
+	EqData data;
 
 	/// @name Physical parameters
 	// @{
+
 	/// Longitudal dispersivity.
 	double alphaL;
 
@@ -358,17 +377,6 @@ private:
 	const double advection;
 	// @}
 
-
-	/// @name Boundary conditions
-	// @{
-
-	/// Time marks for boundary conditions.
-	TimeMark::Type bc_mark_type_;
-
-	/// Reader of boundary conditions.
-	TransportBC *bc;
-
-	// @}
 
 
 	/// @name Solution of algebraic system

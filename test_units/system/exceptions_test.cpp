@@ -15,13 +15,15 @@
 #include <typeinfo>
 
 
-
+// Using a class with overloaded "<<" operator inside exception's messages.
 class SomeClass {
-
 };
-
 std::ostream & operator<<( std::ostream & stream, const SomeClass & sc)
 { return (stream << "Reporting SomeClass"); }
+
+
+
+// Declare ERR_INFO types and exceptions to test.
 
 TYPEDEF_ERR_INFO( EI_StringValue, std::string );
 TYPEDEF_ERR_INFO( EI_IntValue, int );
@@ -33,7 +35,7 @@ DECLARE_EXCEPTION(ExcClass, << "Class exception :" << EI_SomeClass::qval );
 
 
 
-// Test exception with EI_::qval
+// Test exception with EI_::qval - quoted value
 TEST(Exceptions, String) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {
@@ -110,7 +112,7 @@ std::ostream & operator<<( std::ostream & stream, const SomeClass & sc)
 { return (stream << "Reporting Inner::SomeClass"); }
 
 } // namespace Inner
-
+//----------------------------------------------------------------------------
 
 // Test exception and ErrorInfo declared inside class inside namespace.
 TEST(Exceptions, InnerClass) {
@@ -138,9 +140,9 @@ public:
 
 TYPEDEF_ERR_INFO( EI_BlackBox, BlackBox );
 DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "stored is value of type " << EI_BlackBox::ref(_exc).eval() );
+//----------------------------------------------------------------------------
 
-
-// Test calling a method to get error mesage form ErrorInfo object. Using EI_ref(_exc).
+// Test calling a method to get error message from ErrorInfo object. Using EI_ref(_exc).
 TEST(Exceptions, GettingValue) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     try {

@@ -172,8 +172,9 @@ public:
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, JSONPath);
-    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::val << " at address: " << EI_ErrorAddress::val <<"\n"
-                                            << EI_Specification::val << EI_JSON_Type::qval << "\n"
+    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval <<"\n"
+                                            << EI_Specification::val << "\n"
+                                            << "JSON type: " << EI_JSON_Type::qval << "\n"
                                             << "Expected type:\n" << EI_InputType::val );
 
 
@@ -194,6 +195,13 @@ public:
      * store the data into private storage tree using \p StorageBase classes.
      */
     void read_stream(istream &in, const Type::TypeBase &root_type);
+
+    /**
+     * Read a storage from given default value using method storage_from_default.
+     *
+     * Maybe we should rather should make independent reader class for deafult strings.
+     */
+    void read_from_default( const string &default_str, const Type::TypeBase &root_type);
 
     /**
      * Returns the root accessor. The template type \p T should correspond

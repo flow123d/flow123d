@@ -9,7 +9,7 @@
 #include "system/system.hh"
 #include "system/math_fce.h"
 #include "mesh/mesh.h"
-#include "materials.hh"
+//#include "materials.hh"
 
 #include "mh_fe_values.hh"
 
@@ -32,30 +32,31 @@ MHFEValues::~MHFEValues() {
 
 
 
-void MHFEValues::update(ElementFullIter ele) {
+void MHFEValues::update(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section) {
 
     ASSERT(!( ele == NULL ),"NULL as argument of function local_matrix()\n");
 
     switch( ele->dim() ) {
         case 1:
-            local_matrix_line( ele );
+            local_matrix_line( ele, cond_anisothropy , cross_section);
             break;
         case 2:
-            local_matrix_triangle( ele );
+            local_matrix_triangle( ele, cond_anisothropy, cross_section );
             break;
         case 3:
-            local_matrix_tetrahedron( ele );
+            local_matrix_tetrahedron( ele, cond_anisothropy, cross_section );
             break;
     }
 
     // matrix inverse
+    /*
     double det = MatrixInverse(loc_matrix_, inv_loc_matrix_, ele->n_sides() );
     if (fabs(det) < NUM_ZERO) {
         xprintf(Warn,"Singular local matrix of the element %d\n",ele.id());
         PrintSmallMatrix(loc_matrix_, ele->n_sides());
         xprintf(Err,"det: %30.18e \n",det);
     }
-
+*/
 }
 
 
@@ -125,15 +126,23 @@ arma::vec3 MHFEValues::RT0_value(ElementFullIter ele, arma::vec3 point, unsigned
 //=============================================================================
 // CALCULATE LOCAL MARIX FOR LINEAR ELEMENT
 //=============================================================================
-void MHFEValues::local_matrix_line(ElementFullIter ele )
+void MHFEValues::local_matrix_line(ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section )
 {
-    double      val;
+    double    val;
     SmallMtx2 loc=(SmallMtx2)(loc_matrix_);
-
-    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
-    SmallMtx1 resistance_tensor = (SmallMtx1)(ele->material->hydrodynamic_resistence);
-
-    val= (resistance_tensor[0][0]) * ele->measure() / (3.0 * ele->material->size);
+    
+    //getting vector on the line and normalizing it
+    //it is the transformation matrix from 3D to 1D line of the 1D element
+    arma::vec3 line_vec = ele->node[1]->point() - ele->node[0]->point();
+    line_vec /= arma::norm(line_vec,2);
+    
+    //transforming the conductivity in 3D to resistivity in 1D
+    //computing v_transpose * K_inverse * v
+    val = arma::dot(line_vec, 
+                    (cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i() * line_vec) *
+                     ele->measure() / 
+                     (3.0 * cross_section.value(ele->centre(), ele->element_accessor()) );
+              
     loc[0][0] =  val;
     loc[1][1] =  val;
     loc[0][1] = - val / 2.0;
@@ -148,7 +157,7 @@ void MHFEValues::local_matrix_line(ElementFullIter ele )
 //=============================================================================
 // CALCULATE LOCAL MATRIX FOR TRIANGULAR ELEMENT
 //=============================================================================
-void MHFEValues::local_matrix_triangle( ElementFullIter ele )
+void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section )
 {
     double midpoint[ 3 ][ 2 ]; // Midpoints of element's sides
     double alfa[ 3 ];   //
@@ -159,9 +168,25 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele )
     int i, j;               // Loops' counters
     double nod_coor[ 3 ][ 2 ]; // Coordinates of nodes;
     SmallMtx3 loc=(SmallMtx3)(loc_matrix_);
+    
+    // make rotated coordinate system with triangle in plane XY, origin in A and axes X == AB
+    arma::vec3 ex(ele->node[1]->point() - ele->node[0]->point());
+    ex /= arma::norm(ex,2);
 
-    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
-    SmallMtx2 resistance_tensor = (SmallMtx2)(ele->material->hydrodynamic_resistence);
+    arma::vec3 ac(ele->node[2]->point() - ele->node[0]->point());
+    arma::vec3 ez = arma::cross(ex, ac);
+    ez /= norm(ez,2);
+
+    arma::vec3 ey = arma::cross(ez,ex);
+    ey /= arma::norm(ey, 2);
+            
+    //transformation matrix from 3D to 2D plane of the 2D element
+    arma::mat r(3,2);
+    r.col(0) = ex;
+    r.col(1) = ey;
+    
+    //transforming 3D conductivity tensor to 2D resistance tensor
+    arma::mat resistance_tensor = r.t() * ((cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i() * r);
 
     node_coordinates_triangle( ele, nod_coor );
     side_midpoint_triangle( nod_coor, midpoint );
@@ -175,7 +200,8 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele )
             p[ 1 ] = polynom_value_triangle( poly, midpoint[ 1 ] );
             p[ 2 ] = polynom_value_triangle( poly, midpoint[ 2 ] );
             loc[i][j] = gama[i] * gama[j] * ele->measure() *
-                    ( p[0] + p[1] + p[2] ) / (3.0 * ele->material->size);
+                    ( p[0] + p[1] + p[2] ) / 
+                    (3.0 * cross_section.value(ele->centre(), ele->element_accessor()) );
             loc[j][i] = loc[i][j];
         }
         for(i = 0; i < 3; i++) {
@@ -273,23 +299,25 @@ void MHFEValues::bas_func_0_triangle( double x0, double y0,
 // CALCULATE POLYNOM OF SCALAR PRODUCT
 //=============================================================================
 void MHFEValues::calc_polynom_triangle( double al_i, double be_i, double al_j, double be_j,
-                        SmallMtx2 a, double poly[] )
+                        arma::mat::fixed<2,2> a, double poly[] )
 {
-        poly[ 0 ] =   a[ 0 ][ 0 ] * al_i * al_j +
-              a[ 0 ][ 1 ] * be_i * al_j +
-              a[ 1 ][ 0 ] * al_i * be_j +
-                      a[ 1 ][ 1 ] * be_i * be_j;
-        poly[ 1 ] = ( a[ 0 ][ 0 ] * al_i +
-              a[ 0 ][ 0 ] * al_j +
-              a[ 0 ][ 1 ] * be_i +
-              a[ 1 ][ 0 ] * be_j ) * -1.0;
-        poly[ 2 ] = ( a[ 1 ][ 1 ] * be_i +
-              a[ 1 ][ 1 ] * be_j +
-              a[ 1 ][ 0 ] * al_i +
-              a[ 0 ][ 1 ] * al_j ) * -1.0;
-        poly[ 3 ] =   a[ 0 ][ 0 ];
-        poly[ 4 ] =   a[ 0 ][ 1 ] + a[ 1 ][ 0 ];
-        poly[ 5 ] =   a[ 1 ][ 1 ];
+        poly[ 0 ] =   a( 0,0 ) * al_i * al_j +
+                      a( 0,1 ) * be_i * al_j +
+                      a( 1,0 ) * al_i * be_j +
+                      a( 1,1 ) * be_i * be_j;
+                      
+        poly[ 1 ] = ( a( 0,0 ) * al_i +
+                      a( 0,0 ) * al_j +
+                      a( 0,1 ) * be_i +
+                      a( 1,0 ) * be_j ) * -1.0;
+                      
+        poly[ 2 ] = ( a( 1,1 ) * be_i +
+                      a( 1,1 ) * be_j +
+                      a( 1,0 ) * al_i +
+                      a( 0,1) * al_j ) * -1.0;
+        poly[ 3 ] =   a( 0,0 );
+        poly[ 4 ] =   a( 0,1 ) + a( 1,0 );
+        poly[ 5 ] =   a( 1,1 );
 }
 //=============================================================================
 // CALCULATE VALUE OF POLYNOM IN GIVEN POINT
@@ -310,7 +338,7 @@ double MHFEValues::polynom_value_triangle( double poly[], double point[] )
 //=============================================================================
 // CALCULATE LOCAL MARIX FOR SIMPLEX ELEMENT
 //=============================================================================
-void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele )
+void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele, FieldType &cond_anisothropy, FieldType_Scalar &cross_section )
 {
     double alfa[ 4 ];
     double beta[ 4 ];       //  | Parametrs of basis functions
@@ -319,11 +347,18 @@ void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele )
     double poly[ 10 ];      // Koeficients of polynomial
     int i, j;               // Loops' counters
     SmallMtx4 loc=(SmallMtx4)(loc_matrix_);
+    
+    //transforming 3D conductivity tensor to 3D resistance tensor
+    arma::mat resistance_tensor = (cond_anisothropy.value(ele->centre(), ele->element_accessor() )).i();
+        
+    //OBSOLETE
+    //SmallMtx3 resistance_tensor = (SmallMtx3)(ele->material->hydrodynamic_resistence);
+    //compares old and new resistance tensor 
+    //DBGMSG("my: %f %f %f %f\t orig: %f %f %f %f\n", 
+    //        my_resistance_tensor(0,0), my_resistance_tensor(0,1), my_resistance_tensor(1,0), my_resistance_tensor(1,1), 
+    //       resistance_tensor[0][0], resistance_tensor[0][1], resistance_tensor[1][0], resistance_tensor[1][1] );
 
-    INPUT_CHECK( ele->material->dimension == ele->dim() , "Dimension %d of material doesn't match dimension %d of element %d.\n");
-    SmallMtx3 resistance_tensor = (SmallMtx3)(ele->material->hydrodynamic_resistence);
-
-    basis_functions_tetrahedron( ele, alfa, beta, gama, delta );
+    basis_functions_tetrahedron( ele, alfa, beta, gama, delta, cross_section);
     for( i = 0; i < 4; i++ )
         for( j = i; j < 4; j++ ) {
             calc_polynom_tetrahedron(
@@ -343,7 +378,7 @@ void MHFEValues::local_matrix_tetrahedron( ElementFullIter ele )
 //=============================================================================
 //
 //=============================================================================
-void MHFEValues::basis_functions_tetrahedron( ElementFullIter ele, double alfa[], double beta[],double gama[], double delta[] )
+void MHFEValues::basis_functions_tetrahedron( ElementFullIter ele, double alfa[], double beta[],double gama[], double delta[], FieldType_Scalar &cross_section )
 {
     int li;
     SideIter pSid;
@@ -353,7 +388,8 @@ void MHFEValues::basis_functions_tetrahedron( ElementFullIter ele, double alfa[]
         beta[ li ] = ele->node[ li ]->getY();
         gama[ li ] = ele->node[ li ]->getZ();
         pSid = ele->side( li );
-        delta[ li ] = 1.0 / ( pSid->metric() *
+        delta[ li ] = 1.0 / ( pSid->measure() * 
+            cross_section.value( ele->centre(), ele->element_accessor() ) *
             ( pSid->normal()[ 0 ] * pSid->centre()[ 0 ] +
               pSid->normal()[ 1 ] * pSid->centre()[ 1 ] +
               pSid->normal()[ 2 ] * pSid->centre()[ 2 ] -
@@ -367,51 +403,51 @@ void MHFEValues::basis_functions_tetrahedron( ElementFullIter ele, double alfa[]
 //=============================================================================
 void MHFEValues::calc_polynom_tetrahedron( double al_i, double be_i, double ga_i,
                                double al_j, double be_j, double ga_j,
-                               double a[ 3 ][ 3 ], double poly[] )
+                               arma::mat::fixed<3,3> a, double poly[] )
 {
     // Constant term
-        poly[ 0 ] =   a[ 0 ][ 0 ] * al_i * al_j +
-              a[ 0 ][ 1 ] * be_i * al_j +
-              a[ 0 ][ 2 ] * ga_i * al_j +
-              a[ 1 ][ 0 ] * al_i * be_j +
-              a[ 1 ][ 1 ] * be_i * be_j +
-              a[ 1 ][ 2 ] * ga_i * be_j +
-              a[ 2 ][ 0 ] * al_i * ga_j +
-              a[ 2 ][ 1 ] * be_i * ga_j +
-              a[ 2 ][ 2 ] * ga_i * ga_j;
+  poly[ 0 ] =   a( 0,0 ) * al_i * al_j +
+                a( 0,1 ) * be_i * al_j +
+                a( 0,2 ) * ga_i * al_j +
+                a( 1,0 ) * al_i * be_j +
+                a( 1,1 ) * be_i * be_j +
+                a( 1,2 ) * ga_i * be_j +
+                a( 2,0 ) * al_i * ga_j +
+                a( 2,1 ) * be_i * ga_j +
+                a( 2,2 ) * ga_i * ga_j;
     // Term with x
-    poly[ 1 ] = ( a[ 0 ][ 0 ] * al_i +
-              a[ 0 ][ 1 ] * be_i +
-              a[ 0 ][ 2 ] * ga_i +
-              a[ 0 ][ 0 ] * al_j +
-              a[ 1 ][ 0 ] * be_j +
-              a[ 2 ][ 0 ] * ga_j ) * -1.0;
+  poly[ 1 ] = ( a( 0,0 ) * al_i +
+                a( 0,1 ) * be_i +
+                a( 0,2 ) * ga_i +
+                a( 0,0 ) * al_j +
+                a( 1,0 ) * be_j +
+                a( 2,0 ) * ga_j ) * -1.0;
     // Term with y
-    poly[ 2 ] = ( a[ 1 ][ 0 ] * al_i +
-              a[ 1 ][ 1 ] * be_i +
-              a[ 1 ][ 2 ] * ga_i +
-              a[ 0 ][ 1 ] * al_j +
-              a[ 1 ][ 1 ] * be_j +
-              a[ 2 ][ 1 ] * ga_j ) * -1.0;
+  poly[ 2 ] = ( a( 1,0 ) * al_i +
+                a( 1,1 ) * be_i +
+                a( 1,2 ) * ga_i +
+                a( 0,1 ) * al_j +
+                a( 1,1 ) * be_j +
+                a( 2,1 ) * ga_j ) * -1.0;
     // Term with z
-    poly[ 3 ] = ( a[ 2 ][ 0 ] * al_i +
-              a[ 2 ][ 1 ] * be_i +
-              a[ 2 ][ 2 ] * ga_i +
-              a[ 0 ][ 2 ] * al_j +
-              a[ 1 ][ 2 ] * be_j +
-              a[ 2 ][ 2 ] * ga_j ) * -1.0;
+  poly[ 3 ] = ( a( 2,0 ) * al_i +
+                a( 2,1 ) * be_i +
+                a( 2,2 ) * ga_i +
+                a( 0,2 ) * al_j +
+                a( 1,2 ) * be_j +
+                a( 2,2 ) * ga_j ) * -1.0;
     // Term with xy
-    poly[ 4 ] =   a[ 0 ][ 1 ] + a[ 1 ][ 0 ];
+    poly[ 4 ] =   a( 0,1 ) + a( 1,0 );
     // Term with xz
-    poly[ 5 ] =   a[ 0 ][ 2 ] + a[ 2 ][ 0 ];
+    poly[ 5 ] =   a( 0,2 ) + a( 2,0 );
     // Term with yz
-    poly[ 6 ] =   a[ 1 ][ 2 ] + a[ 2 ][ 1 ];
+    poly[ 6 ] =   a( 1,2 ) + a( 2,1 );
     // Term with x^2
-    poly[ 7 ] =   a[ 0 ][ 0 ];
+    poly[ 7 ] =   a( 0,0 );
     // Term with y^2
-    poly[ 8 ] =   a[ 1 ][ 1 ];
+    poly[ 8 ] =   a( 1,1 );
     // Term with z^2
-    poly[ 9 ] =   a[ 2 ][ 2 ];
+    poly[ 9 ] =   a( 2,2 );
 }
 //=============================================================================
 // CALCULATE INTEGRAL OF QUADRATICAL POLYNOM OVER TETRAHEDRON

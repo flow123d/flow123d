@@ -57,8 +57,8 @@ public:
      *
      * COLLECTIVE
      * @param size Local size on calling processor.
-     * @param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
      */
+    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
     Distribution(const unsigned int size);
 
     /**
@@ -67,8 +67,8 @@ public:
      * NOT COLLECTIVE, but still use MPI to provide information about processors.
      *
      * @param sizes Int array with sizes.
-     * @param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
      */
+    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
     Distribution(const unsigned int * const sizes);
 
     /**
@@ -76,8 +76,8 @@ public:
      *
      * NOT COLLECTIVE, but still use MPI to provide information about processors.
      * @param petsc_vector
-     * @param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
      */
+    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
     Distribution(const Vec &petsc_vector);
 
     /**
@@ -86,8 +86,8 @@ public:
      * NOT COLLECTIVE, but still use MPI to provide information about processors.
      * @param type Either Block or Localized distribution of indices.
      * @param global_size Total number of indices to distribute.
-     * @param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
      */
+    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
     Distribution(const SpecialDistribution type,unsigned int global_size);
 
     /**

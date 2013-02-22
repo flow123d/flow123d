@@ -2,15 +2,26 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient, VTK output test12", 
-    material = "./input/flow_decay/sit_decay.mtr", 
     mesh = {
-      mesh_file = "./input/flow_decay/sit_decay.msh", 
-      neighbouring = "./input/flow_decay/sit_decay.ngh"
+      mesh_file = "./input/flow_decay/sit_decay.msh"
     }, 
     
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/flow_decay/sit_decay.fbc", 
+
+      bulk_data = [
+        { rid = 1,
+          cond_anisothropy = 0.01
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/flow_decay/sit_decay.fbc"
+        }
+      ],
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -27,8 +38,21 @@
     
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      boundary_file = "./input/flow_decay/sit_decay.tbc", 
-      initial_file = "./input/flow_decay/sit_decay.tic", 
+
+      bulk_data = [
+        { rid = 1,
+          init_conc = 
+            [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000]
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/flow_decay/sit_decay.tbc"
+        }
+      ],
+
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {

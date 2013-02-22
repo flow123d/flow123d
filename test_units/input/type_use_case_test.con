@@ -1,0 +1,18 @@
+{
+global_mesh = "some.msh",
+
+equations= 
+[
+   {
+      TYPE="EquationA",
+      mesh={REF:"/global_mesh"},
+      parameter_a=3.14 
+   },
+   {
+      TYPE="EquationB",
+      mesh={REF:"/global_mesh"},
+      parameter_b=314,
+      substances = [ "Rn", "Cs", "I", "C" ]
+   }   
+]
+}

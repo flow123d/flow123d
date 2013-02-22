@@ -29,31 +29,28 @@
  */
 
 #include <vector>
-
 #include <string>
 
 #include "system/system.hh"
-#include "system/math_fce.h"
 #include "mesh/mesh.h"
 #include "elements.h"
 #include "element_impls.hh"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"
-#include "materials.hh"
-
+//#include "materials.hh"
+#include "mesh/accessors.hh"
 
 
 
 Element::Element()
-: mid(0),
-  pid(0),
+:  pid(0),
 
   node(NULL),
 
-  material(NULL),
-  edges_(NULL),
-  boundaries_(NULL),
+//  material(NULL),
+  edge_idx_(NULL),
+  boundary_idx_(NULL),
 
   n_neighs_vb(0),
   neigh_vb(NULL),
@@ -64,89 +61,61 @@ Element::Element()
 }
 
 
-Element::Element(unsigned int dim)
-: mid(0),
-  pid(0),
-
-  material(NULL),
-
-  n_neighs_vb(0),
-  neigh_vb(NULL),
-
-  dim_(dim)
-
+Element::Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg)
 {
-    // allocate element arrays TODO: should be in mesh class
+    init(dim, mesh_in, reg);
+}
+
+
+
+void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
+    pid=0;
+//    material=NULL;
+    n_neighs_vb=0;
+    neigh_vb=NULL;
+    dim_=dim;
+    mesh_=mesh_in;
+    region_idx_=reg;
+
     node = new Node * [ n_nodes()];
-    edges_ = new Edge * [ n_sides()];
-    boundaries_ = new Boundary * [ n_sides()];
+    edge_idx_ = new unsigned int [ n_sides()];
+    boundary_idx_ = NULL;
 
     FOR_ELEMENT_SIDES(this, si) {
-        edges_[ si ]=NULL;
-        boundaries_[si] =NULL;
+        edge_idx_[ si ]=Mesh::undef_idx;
     }
 }
 
-
-
-/**
- * SET THE "VOLUME" FIELD IN STRUCT ELEMENT
- */
-double Element::volume() {
-    double volume = measure() * material->size;
-    //INPUT_CHECK(!(volume < NUM_ZERO),
-    //        "Volume of the element is nearly zero (volume= %g)\n", volume);
-    return volume;
-}
 
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
 double Element::measure() {
     switch (dim()) {
+        case 0:
+            return 1.0;
+            break;
         case 1:
-            return element_length_line();
+            return arma::norm(*(node[ 1 ]) - *(node[ 0 ]) , 2);
             break;
         case 2:
-            return element_area_triangle();
+            return
+                arma::norm(
+                    arma::cross(*(node[1]) - *(node[0]), *(node[2]) - *(node[0])),
+                    2
+                ) / 2.0 ;
             break;
         case 3:
-            return element_volume_tetrahedron();
+            return fabs(
+                arma::dot(
+                    arma::cross(*node[1] - *node[0], *node[2] - *node[0]),
+                    *node[3] - *node[0] )
+                ) / 6.0;
             break;
     }
+    return 1.0;
 }
 
-/**
- * CALCULATE LENGTH OF LINEAR ELEMENT
- */
-
-double Element::element_length_line() {
-
-    return arma::norm(*(node[ 1 ]) - *(node[ 0 ]) , 2);
-}
-
-/**
- * CALCULATE AREA OF TRIANGULAR ELEMENT
- */
-double Element::element_area_triangle() {
-
-    return
-        arma::norm(
-            arma::cross(*(node[1]) - *(node[0]), *(node[2]) - *(node[0])),
-            2
-        ) / 2.0 ;
-}
-
-/**
- * CALCULATE VOLUME OF TETRAHEDRA ELEMENT
- */
-double Element::element_volume_tetrahedron() {
-    return fabs(
-        arma::dot(
-            arma::cross(*node[1] - *node[0], *node[2] - *node[0]),
-            *node[3] - *node[0] )
-        ) / 6.0;
-}
 
 /**
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
@@ -169,6 +138,7 @@ arma::vec3 Element::centre() {
 /**
  * Count element sides of the space dimension @p side_dim.
  */
+
 unsigned int Element::n_sides_by_dim(int side_dim)
 {
     if (side_dim == dim()) return 1;
@@ -179,80 +149,17 @@ unsigned int Element::n_sides_by_dim(int side_dim)
     return n;
 }
 
-/**
- * Return pointer to @p nth side/node/element (depending on the dimension @p side_dim).
- */
-/*
-void *Element::side_by_dim(int side_dim, unsigned int n)
-{
-    if (side_dim == 0)
-    {
-        // TODO: Maybe here we should also return a side?
 
-        return node[n];
-    }
-    else if (side_dim == dim)
-    {
-        ASSERT(n==0, "Number of side is out of range.");
-        return this;
-    }
-    else
-    {
-        unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides(); i++)
-        {
-            if (side(i)->dim() == side_dim)
-            {
-                if (count == n)
-                {
-                    return side(i);
-                }
-                else
-                {
-                    count++;
-                }
-            }
-        }
-        xprintf(Warn, "Side not found.");
-    }
-}
-*/
-
-/**
- * Return pointer to the @p node_id-th node of the side.
- */
-const Node *Element::side_node(int side_dim, unsigned int side_id, unsigned node_id)
+ElementAccessor< 3 > Element::element_accessor()
 {
-    if (side_dim == 0)
-    {
-        return node[side_id];
-    }
-    else if (side_dim == dim())
-    {
-        ASSERT(side_id==0, "Number of side is out of range.");
-        return this->node[node_id];
-    }
-    else
-    {
-        unsigned int count = 0;
-        for (unsigned int i=0; i<n_sides(); i++)
-        {
-            if (side(i)->dim() == side_dim)
-            {
-                if (count == side_id)
-                {
-                    return side(i)->node(node_id);
-                }
-                else
-                {
-                    count++;
-                }
-            }
-        }
-        xprintf(Warn, "Side not found.");
-    }
+  return mesh_->element_accessor( mesh_->element.index(this) );
 }
 
+
+
+Region Element::region() const {
+    return Region( region_idx_, mesh_->region_db());
+}
 
 
 #if 0

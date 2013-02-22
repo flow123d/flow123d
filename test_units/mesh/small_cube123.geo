@@ -47,6 +47,9 @@ Volume(40) = {40};
 Surface Loop(42) = {32, 26, 15, 24, 34, 36};
 Volume(42) = {42};
 
-Physical Line(37) = {20};
-Physical Surface(38) = {34, 36};
-Physical Volume(39) = {40, 42};
+// 1d_diagonal=43
+Physical Line("1d_diagonal") = {20};
+// 2d_surfaces=44
+Physical Surface("2d_surfaces") = {34, 36};
+// main_volume=45
+Physical Volume("main_volume") = {40, 42};

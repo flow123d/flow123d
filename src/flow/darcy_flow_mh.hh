@@ -52,13 +52,15 @@
 
 #include <petscmat.h>
 #include "system/sys_vector.hh"
-#include "time_governor.hh"
-#include <field_p0.hh>
-#include <materials.hh>
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
-#include "functions/function_base.hh"
-//#include "functions/bc_table.hh"
+#include "input/input_type.hh"
+
+#include "fields/field_base.hh"
+#include "fields/field_values.hh"
+#include "fields/field_add_potential.hh"
+#include "flow/old_bcd.hh"
+
 
 /// external types:
 class LinSys;
@@ -68,33 +70,6 @@ class SchurComplement;
 class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
-
-
-
-class DarcyFlowMH_BC {
-public:
-    static Input::Type::AbstractRecord &get_input_type();
-};
-
-class BC_Dirichlet : public DarcyFlowMH_BC {
-public:
-    static Input::Type::Record &get_input_type();
-    FunctionBase<3> *value;
-};
-
-class BC_Neumann : public DarcyFlowMH_BC {
-public:
-    static Input::Type::Record &get_input_type();
-    FunctionBase<3> *flux;
-};
-
-class BC_Newton : public DarcyFlowMH_BC {
-public:
-    static Input::Type::Record &get_input_type();
-    FunctionBase<3> *sigma;
-    FunctionBase<3> *value;
-};
-
 
 
 /**
@@ -113,23 +88,73 @@ public:
 class DarcyFlowMH : public EquationBase {
 public:
     enum MortarMethod {
-        NoMortar =0,
+        NoMortar = 0,
         MortarP0 = 1,
         MortarP1 = 2
     };
+    
+    /** @brief Data for Darcy flow equation.
+     *  
+     */
+    class EqData : public EqDataBase {
+    public:
+
+        /**
+         * For compatibility with old BCD file we have to assign integer codes starting from 1.
+         */
+        enum BC_Type {
+            none=0,
+            dirichlet=1,
+            neumann=2,
+            robin=3,
+            total_flux=4
+        };
+        static Input::Type::Selection bc_type_selection;
+
+        /// Collect all fields
+        EqData(const std::string &name=0);
+
+        /**
+         * Overrides EqDataBase::read_boundary_list_item, implements reading of
+         * - bc_piezo_head key
+         * - flow_old_bcd_file
+         */
+        RegionSet read_boundary_list_item(Input::Record rec);
+        
+        /**
+         * Overrides EqDataBase::read_bulk_list_item, implements reading of
+         * - init_piezo_head key
+         */
+        RegionSet read_bulk_list_item(Input::Record rec);
+       
+        Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
+        Field<3, FieldValue<3>::Scalar > conductivity;
+        Field<3, FieldValue<3>::Scalar > cross_section;
+        Field<3, FieldValue<3>::Scalar > water_source_density;
+
+        BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
+        BCField<3, FieldValue<3>::Scalar > bc_pressure; 
+        BCField<3, FieldValue<3>::Scalar > bc_flux;
+        BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+        
+        //TODO: these belong to Unsteady flow classes
+        //as long as Unsteady is descendant from Steady, these cannot be transfered..
+        Field<3, FieldValue<3>::Scalar > init_pressure;
+        Field<3, FieldValue<3>::Scalar > storativity;
+
+        arma::vec4 gravity_;
+    };
 
 
-    DarcyFlowMH(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec)
-    : EquationBase(marks, mesh, mat_base, in_rec), sources(NULL)
+    DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
+    : EquationBase(mesh, in_rec)
     {}
 
-    static Input::Type::Selection & get_mh_mortar_selection();
-    static Input::Type::AbstractRecord &get_input_type();
-    static Input::Type::AbstractRecord &get_bc_input_type();
-    static std::vector<Input::Type::Record> &get_bc_input_types();
-
-    FieldP0<double>  * get_sources()
-        { return sources; }
+    static Input::Type::Selection mh_mortar_selection;
+    static Input::Type::AbstractRecord input_type;
+    static Input::Type::Record bc_segment_rec;
+    static Input::Type::AbstractRecord bc_input_type;
+    static std::vector<Input::Type::Record> bc_input_types;
 
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }
@@ -142,6 +167,9 @@ public:
         mh_dh.set_solution(array);
        return mh_dh;
     }
+    
+    //returns reference to equation data
+    virtual EqData &get_data() = 0;
 
 protected:
     void setup_velocity_vector() {
@@ -158,19 +186,15 @@ protected:
     //virtual void balance();
     //virtual void integrate_sources();
 
-protected:
+protected:  
+    
     bool solution_changed_for_scatter;
-    FieldP0<double> *sources;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
     // value of sigma used in mortar couplings (TODO: make space depenedent and unify with compatible sigma, both given on lower dim domain)
     double mortar_sigma_;
-
-    //BoundaryData<DarcyFlowMH_BC> bc_data_;
-
-    FunctionBase<3> *bc_function;
 };
 
 
@@ -188,7 +212,7 @@ protected:
  * where
  * - @f$ q @f$ is flux @f$[ms^{-1}]@f$ for 3d, @f$[m^2s^{-1}]@f$ for 2d and @f$[m^3s^{-1}]@f$ for 1d.
  * - @f$ \mathbf{K} @f$ is hydraulic tensor ( its orientation for 2d, 1d case is questionable )
- * - @f$ h = \frac{\pi}{\rho_0 g}+z @f$ is pressures head, @f$ \pi, \rho_0, g @f$ are the pressure, water density, and acceleration of gravity , respectively.
+ * - @f$ h = \frac{\pi}{\rho_0 g}+z @f$ is pressure head, @f$ \pi, \rho_0, g @f$ are the pressure, water density, and acceleration of gravity , respectively.
  *   Assumes gravity force acts counter to the direction of the @f$ z @f$ axis.
  * - @f$ R @f$ is destity or gravity variability coefficient. For density driven flow it should be
  * @f[
@@ -203,13 +227,25 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-    DarcyFlowMH_Steady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+  
+    class EqData : public DarcyFlowMH::EqData {
+    public:
+      
+      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Steady")
+      {}
+    };
+    
+    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
 
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
+    
+    //returns reference to equation data
+    virtual DarcyFlowMH::EqData &get_data()
+    {return data;}
 
     /// postprocess velocity field (add sources)
     virtual void postprocess();
@@ -229,7 +265,6 @@ protected:
     void make_schur0();
     void make_schur1();
     void make_schur2();
-
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
@@ -275,6 +310,8 @@ protected:
         Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
         
         double mortar_sigma;
+        
+  EqData data;
 };
 
 
@@ -296,13 +333,29 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+  
+    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
+    class EqData : public DarcyFlowMH::EqData{
+    public:
+      EqData();
+        
+      Field<3, FieldValue<3>::Scalar > init_pressure;
+      Field<3, FieldValue<3>::Scalar > storativity;
+    };
+    //*/
+    
+    DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
-    static Input::Type::Record &get_input_type();
+    //returns reference to equation data
+    //virtual DarcyFlowMH::DarcyFlowMH::EqData &get_data()
+    //{return data;}
+    
+    static Input::Type::Record input_type;
 protected:
     virtual void modify_system();
     void setup_time_term();
+    
 private:
     Vec steady_diagonal;
     Vec steady_rhs;
@@ -327,10 +380,26 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-    DarcyFlowLMH_Unsteady(TimeMarks &marks,Mesh &mesh, MaterialDatabase &mat_base_in, const Input::Record in_rec);
+  
+    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
+    class EqData : public DarcyFlowMH::EqData{
+    public:
+      
+      EqData();
+        
+      Field<3, FieldValue<3>::Scalar > init_pressure;
+      Field<3, FieldValue<3>::Scalar > storativity;
+    };
+    //*/
+    
+    DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
 
-    static Input::Type::Record &get_input_type();
+    //returns reference to equation data
+    //virtual DarcyFlowMH::EqData &get_data()
+    //{return data;}
+    
+    static Input::Type::Record input_type;
 protected:
     virtual void modify_system();
     void setup_time_term();

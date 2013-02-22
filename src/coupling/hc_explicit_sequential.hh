@@ -39,7 +39,6 @@
 
 class DarcyFlowMH;
 class DarcyFlowMHOutput;
-class TimeMarks;
 class Mesh;
 class EquationBase;
 class TransportBase;
@@ -51,7 +50,7 @@ class MaterialDatabase;
  */
 class CouplingBase {
 public:
-    static Input::Type::AbstractRecord &get_input_type();
+    static Input::Type::AbstractRecord input_type;
 
 };
 
@@ -62,7 +61,7 @@ public:
  */
 class HC_ExplicitSequential : public CouplingBase {
 public:
-    static Input::Type::Record &get_input_type();
+    static Input::Type::Record input_type;
 
     HC_ExplicitSequential(Input::Record in_record,
             Input::Iterator<Input::Array> output_streams);
@@ -75,10 +74,7 @@ private:
     Mesh *mesh;
 
     /// Material database to provide various material dependent data
-    MaterialDatabase *material_database;
-
-    /// one global time marks table
-    TimeMarks * main_time_marks;
+    //MaterialDatabase *material_database;
 
     /// steady or unsteady water flow simulator based on MH scheme
     DarcyFlowMH *water;

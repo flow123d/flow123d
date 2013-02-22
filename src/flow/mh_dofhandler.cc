@@ -38,8 +38,8 @@ double MH_DofHandler::side_flux(const Side &side) const {
 
 /// temporary replacement for DofHandler accessor, scalar (pressure) on edge of the side
 double MH_DofHandler::side_scalar(const Side &side) const {
-    Edge * edg = side.edge();
-    return mh_solution[ side.mesh()->n_sides() + side.mesh()->n_elements() + side.mesh()->edge.index( edg )];
+    unsigned int i_edg = side.edge_idx();
+    return mh_solution[ side.mesh()->n_sides() + side.mesh()->n_elements() + i_edg ];
 }
 
 

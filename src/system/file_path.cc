@@ -6,8 +6,7 @@
  */
 
 #include "file_path.hh"
-#include "system/system.hh"
-#include "system/exceptions.hh"
+#include "system.hh"
 
 
 // static data members

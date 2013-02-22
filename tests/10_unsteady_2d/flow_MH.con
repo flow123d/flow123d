@@ -1,17 +1,34 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "[u'2D', u'unsteady', u'flow', u'MH']", 
-    material = "./input/test10.mtr", 
+    description = "Test10 - Unsteady flow in 2D, Mixed Hybrid method", 
     mesh = {
-      mesh_file = "./input/test10.msh", 
-      neighbouring = "./input/test10.ngh"
+      mesh_file = "${INPUT}/test10.msh"
     }, 
 
     primary_equation = {
       TYPE = "Unsteady_MH", 
-      boundary_file = "./input/test10.fbc", 
-      initial_file = "./input/pressure_initial.in", 
+
+      bulk_data = [
+        {
+            region = "plane",
+            cond_anisothropy = 0.02,
+            init_pressure = 0,          #default
+            storativity = 1             #default
+        }
+      ],
+
+      bc_data = [
+        { region = ".bc_inflow",
+          bc_type = "dirichlet",
+          bc_pressure = 100  
+        },
+        { region = ".bc_outflow",
+          bc_type = "dirichlet",
+          bc_pressure = 0  
+        }
+      ],
+
       n_schurs = 2, 
       output = {
         output_stream = {
@@ -19,7 +36,7 @@
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream",
-	velocity_p0 = "flow_output_stream",
+        velocity_p0 = "flow_output_stream",
         save_step = {
           REF = "/problem/save_step"
         } 
@@ -34,7 +51,6 @@
       }
     }, 
 
-    secondary_equation_save = null,
     save_step = 0.1, 
     time = {
       end_time = 0.5, 

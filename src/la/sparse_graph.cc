@@ -29,6 +29,7 @@
  *
  */
 
+#include "system/global_defs.h"
 #include "system/system.hh"
 #include "la/distribution.hh"
 #include "sparse_graph.hh"

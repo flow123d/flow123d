@@ -32,7 +32,7 @@
 #include "system/system.hh"
 #include "neighbours.h"
 #include "mesh/mesh.h"
-
+/*
 static void parse_neighbour_line(struct Neighbour*,char*);
 static char supported_neighbour_type(int);
 static void neighbour_type_specific(struct Neighbour* , char * line );
@@ -40,7 +40,7 @@ static void neighbour_type_specific(struct Neighbour* , char * line );
 static void neighbour_specs_bb_el(struct Neighbour*, char * line );
 static void neighbour_specs_vb_es(struct Neighbour*, char * line );
 static void neighbour_specs_vv_2e(struct Neighbour*);
-
+*/
 
 //=============================================================================
 // READ DATA OF ALL NEIGHBOURS
@@ -53,6 +53,7 @@ void read_neighbour_list(Mesh* mesh)
 //=============================================================================
 // INIT DATA OF NEIGHBOUR
 //=============================================================================
+/*
 Neighbour_both::Neighbour_both()
 {
 	type        = NDEF;
@@ -62,16 +63,16 @@ Neighbour_both::Neighbour_both()
 
 	sigma        = 0.0;
 }
-
+*/
 
 Neighbour::Neighbour()
-: edge_(NULL)
+: edge_idx_(-1)
 {}
 
-void Neighbour::reinit(ElementIter ele, Edge * edg, double sigma_in)
+void Neighbour::reinit(ElementIter ele, unsigned int edg_idx, double sigma_in)
 {
     element_=ele;
-    edge_=edg;
+    edge_idx_=edg_idx;
     sigma = sigma_in;
 }
 

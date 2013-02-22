@@ -31,8 +31,10 @@
 #include <petsc.h>
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
+#include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
 #include "io/output.h"
@@ -65,13 +67,31 @@
 static void main_convert_to_output();
 
 
+
+namespace it = Input::Type;
+
+// this should be part of a system class containing all support information
+//static Record system_rec("System", "Record with general support data.");
+//system_rec.finish();
+it::Record Application::input_type
+    = it::Record("Root", "Root record of JSON input for Flow123d.")
+    //main_rec.declare_key("system", system_rec, "");
+    .declare_key("problem", CouplingBase::input_type, it::Default::obligatory(),
+    		"Simulation problem to be solved.")
+    .declare_key("pause_after_run", it::Bool(), it::Default("false"),
+    		"If true, the program will wait for key press before it terminates.")
+    .declare_key("output_streams", it::Array( OutputTime::input_type ),
+    		"Array of formated output streams to open.");
+
+
+
 Application::Application( int argc,  char ** argv)
 : main_input_dir_("."),
   main_input_filename_(""),
   log_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
-  use_profiler(true)
+  use_profiler(false)
 {
 
     // parse our own command line arguments, leave others for PETSc
@@ -82,11 +102,11 @@ Application::Application( int argc,  char ** argv)
     PetscErrorCode ierr;
     ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
-    DBGMSG("log: %s\n", log_filename_.c_str());
     system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
+    use_profiler=true;
     Profiler::initialize(PETSC_COMM_WORLD);
-    START_TIMER("WHOLE PROGRAM");
+
 
     // Say Hello
     // make strings from macros in order to check type
@@ -95,21 +115,28 @@ Application::Application( int argc,  char ** argv)
     string branch(_PROGRAM_BRANCH_);
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
     
+    int mpi_size;
+    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
     xprintf(Msg, "This is Flow123d, version %s rev: %s\n", version.c_str(),revision.c_str());
-    xprintf(Msg, "Build: %s \n", build.c_str() );
+    xprintf(Msg, "Build: %s MPI size: %d\n", build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 
 
     // read main input file
     Input::JSONToStorage json_reader;
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    DBGMSG("Reading file %s.\n", fname.c_str() );
+    DBGMSG("Reading main input file %s.\n", fname.c_str() );
     std::ifstream in_stream(fname.c_str());
     if (! in_stream) {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
     }
-
-    json_reader.read_stream(in_stream, get_input_type() );
+    try {
+      json_reader.read_stream(in_stream, input_type );
+    } catch (Input::JSONToStorage::ExcInputError &e ) {
+      e << Input::JSONToStorage::EI_File(fname); throw;
+    } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
+      e << Input::JSONToStorage::EI_File(fname); throw;
+    }  
 
     {
         using namespace Input;
@@ -123,7 +150,7 @@ Application::Application( int argc,  char ** argv)
         // read record with problem configuration
         Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
 
-        if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
+        if (i_problem.type() == HC_ExplicitSequential::input_type ) {
 
             // try to find "output_streams" record
             Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
@@ -154,6 +181,8 @@ Application::Application( int argc,  char ** argv)
 
     }
 
+    free_and_exit();
+
 }
 
 
@@ -164,12 +193,12 @@ Application::Application( int argc,  char ** argv)
  * @brief Main flow initialization
  * @param[in] argc       command line argument count
  * @param[in] argv       command line arguments
- * @param[out] goal      Flow computation goal
- * @param[out] ini_fname Init file name
- *
+
  * TODO: this parsing function should be in main.cc
  *
  */
+//@param[out] ini_fname Init file name
+//@param[out] goal      Flow computation goal
 void Application::parse_cmd_line(const int argc, char ** argv) {
     namespace po = boost::program_options;
 
@@ -196,7 +225,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("log,l", po::value< string >(), "Set base name for log files.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-        ("full_doc", "Produce full structure of the main input file.");
+        ("full_doc", "Produce full structure of the main input file.")
+        ("JSON_template", "Creates file 'flow_input_template.con' with description of the input structure in valid CON file format.");
     ;
 
     // parse the command line
@@ -227,7 +257,15 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
-        cout << get_input_type() << "\n";
+        Input::Type::TypeBase::lazy_finish();
+        cout << Input::Type::OutputText(&input_type);
+        //input_type.documentation(cout, Input::Type::TypeBase::full_after_record);
+        free_and_exit();
+    }
+
+    if (vm.count("JSON_template")) {
+        Input::Type::TypeBase::lazy_finish();
+        cout << Input::Type::OutputJSONTemplate(&input_type);
         free_and_exit();
     }
 
@@ -276,7 +314,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
             log_filename_ = ""; // use default
         }
     }
-    DBGMSG("log: %d %s\n", vm.count("log_filename"), log_filename_.c_str());
 
     // TODO: catch specific exceptions and output usage messages
 }
@@ -284,35 +321,14 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
 
-Input::Type::Record &  Application::get_input_type() {
-    using namespace Input::Type;
-
-    // this should be part of a system class containing all support information
-    //static Record system_rec("System", "Record with general support data.");
-    //system_rec.finish();
-
-
-    static Record main_rec("Root", "Root record of JSON input for Flow123d.");
-    //main_rec.declare_key("system", system_rec, "");
-
-    if (!main_rec.is_finished()) {
-        main_rec.declare_key("problem", CouplingBase::get_input_type(), Default::obligatory(),
-            "Simulation problem to be solved.");
-        main_rec.declare_key("pause_after_run", Bool(), Default("false"),
-                "If true, the program will wait for key press before it terminates.");
-        main_rec.declare_key("output_streams", Array( OutputTime::get_input_type() ),
-                "Array of formated output streams to open.");
-        main_rec.finish();
-    }
-
-    return main_rec;
-}
-
 
 void Application::free_and_exit() {
     //close the Profiler
-    if (use_profiler) Profiler::instance()->output();
-    Profiler::uninitialize();
+    DBGMSG("prof: %d\n", use_profiler);
+    if (use_profiler) {
+        Profiler::instance()->output();
+        Profiler::uninitialize();
+    }
 
     xterminate(false);
 }

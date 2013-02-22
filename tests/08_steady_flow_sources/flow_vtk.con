@@ -1,15 +1,32 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "test08", 
-    material = "./input/test08.mtr", 
+    description = "Test8 - Steady flow with sources", 
     mesh = {
-      mesh_file = "./input/test08.msh", 
-      neighbouring = "./input/test08.ngh"
+      mesh_file = "${INPUT}/test08.msh"
     }, 
+
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test08.fbc", 
+
+      bulk_data = [
+        { region = "plane",
+          cond_anisothropy = 1,
+          water_source_density = {
+            TYPE = "FieldFormula",
+            value = "2*(1-x^2)+2*(1-y^2)"
+          }
+        }
+      ],
+      
+      bc_data = [
+        { region = ".plane_boundary",
+          bc_type = "dirichlet",
+          bc_pressure = 0
+        } 
+      ],
+      
+
       output = {
         output_stream = {
           REF = "/system/output_stream"
@@ -21,10 +38,10 @@
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }, 
-      sources_formula = "2*(1-x^2)+2*(1-y^2)"
+      }
     } 
   }, 
+
   system = {
     output_stream =
       {

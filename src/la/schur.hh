@@ -38,16 +38,15 @@ class LinSys;
 /**
  * @brief Schur complement class for a PETSC based linear system
  *
- * *  TODO:
+ *  TODO:
  *  - make derived classes for MPI and MATIS matrices
+ *  - make LinSys have its own solve method
  *  - make consistent work cycle:
  *    1) Constructor only takes original system and index set of reduced block
  *    2) solve - takes inv_a as parameter , optional parameter different_structure
  *       - when called first call form_schur without reuse of matrices, latter calls use reuse
  *       - different_structure is set -> either inv_a or orig_linsys structure changed
  *         has to call destruction of auxiliar matricies and call initial phase of form_schur
- * - make LinSys have its own solve method
- * -
  */
 
 typedef enum SchurState {

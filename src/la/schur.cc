@@ -52,7 +52,7 @@
 
 /**
  *  Create Schur complement system.
- *  @param[in] Orig  : original system
+ *  @param[in] orig  : original system
  *  @param[in] inv_a : inversion of the A block
  *  @param[in] ia    : index set of the A block,
  *   default continuous given by inv_a:

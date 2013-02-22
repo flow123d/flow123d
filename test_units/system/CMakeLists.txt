@@ -10,7 +10,7 @@
 # 
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
+# See the GNU General Public License for more detail
 #
 # You should have received a copy of the GNU General Public License along with this program; if not,
 # write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
@@ -30,10 +30,18 @@ set(super_test "system_test")
 set(super_test_libs system_lib)
 
 
-
-define_mpi_test(profiler 1)
-#define_mpi_test(profiler 2)
-
+    define_mpi_test(profiler 1)
+    define_mpi_test(profiler 2)
+    
+    define_test(exceptions)
+    define_test(file_path)
+    define_test(backtrace)
+    
+    if (CMAKE_HAVE_CXX11)
+        # reqires raw strings  
+        define_test(system_func)
+        define_test(tokenizer)
+    endif (CMAKE_HAVE_CXX11)  
 
 
 

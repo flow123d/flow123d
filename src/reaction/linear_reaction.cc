@@ -7,54 +7,44 @@
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "system/system.hh"
-#include "materials.hh"
+#include "system/sys_profiler.hh"
+
 #include "transport/transport.h"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
 //class Padde_approximant;
 
-Input::Type::Record & Linear_reaction::get_one_decay_substep()
-{
-	using namespace Input::Type;
-	static Record rec("Substep", "Equation for reading information about radioactive decays.");
+using namespace Input::Type;
 
-	if(!rec.is_finished()){
-		rec.declare_key("parent", String(), Default::obligatory(),
-				"Identifier of an isotope.");
-        rec.declare_key("half_life", Double(), Default::optional(),
-                "Half life of the parent substance.");
-        rec.declare_key("kinetic", Double(), Default::optional(),
-                "Kinetic constants describing first order reactions.");
-		rec.declare_key("products", Array(String()), Default::obligatory(),
-				"Identifies isotopes which decays parental atom to.");
-		rec.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
+Record Linear_reaction::input_type_one_decay_substep
+	= Record("Substep", "Equation for reading information about radioactive decays.")
+	.declare_key("parent", String(), Default::obligatory(),
+				"Identifier of an isotope.")
+    .declare_key("half_life", Double(), Default::optional(),
+                "Half life of the parent substance.")
+    .declare_key("kinetic", Double(), Default::optional(),
+                "Kinetic constants describing first order reactions.")
+    .declare_key("products", Array(String()), Default::obligatory(),
+				"Identifies isotopes which decays parental atom to.")
+	.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
 				"Decay chain branching percentage.");
-		rec.finish();
-	}
-	return rec;
-}
 
-Input::Type::Record & Linear_reaction::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("LinearReactions", "Information for a decision about the way to simulate radioactive decay.");
 
-	if (!rec.is_finished()) {
-	    rec.derive_from( Reaction::get_input_type() );
-        rec.declare_key("decays", Array( Linear_reaction::get_one_decay_substep() ), Default::obligatory(),
-                "Description of particular decay chain substeps.");
-		rec.declare_key("matrix_exp_on", Bool(), Default("false"),
+Record Linear_reaction::input_type
+	= Record("LinearReactions", "Information for a decision about the way to simulate radioactive decay.")
+	.derive_from( Reaction::input_type )
+    .declare_key("decays", Array( Linear_reaction::input_type_one_decay_substep ), Default::obligatory(),
+                "Description of particular decay chain substeps.")
+	.declare_key("matrix_exp_on", Bool(), Default("false"),
 				"Enables to use Pade approximant of matrix exponential.");
-		rec.finish();
-	}
-	return rec;
-}
+
 
 using namespace std;
 
-Linear_reaction::Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-	: Reaction(marks, init_mesh, material_database, in_rec, names), reaction_matrix(NULL)
+Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+      : Reaction(init_mesh, in_rec, names),
+      reaction_matrix(NULL)
 {
 
 	//Input::Array names_array = in_rec.val<Input::Array>("substances");
@@ -88,7 +78,7 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 {
 	int rows, cols;
 
-	cout << "We are going to allocate reaction matrix" << endl;
+	DBGMSG("We are going to allocate reaction matrix\n");
 	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
 	for(rows = 0; rows < n_substances(); rows++){
 		reaction_matrix[rows] = (double *)xmalloc(n_substances() * sizeof(double));
@@ -99,7 +89,8 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 		 else           	reaction_matrix[rows][cols] = 0.0;
 	 }
 	}
-	print_reaction_matrix();
+
+	//print_reaction_matrix();
 	return reaction_matrix;
 }
 
@@ -169,7 +160,7 @@ double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are 
             reaction_matrix[index_par][ substance_ids[i_decay][i_product] ]
                                        = (1 - pow(0.5, rel_step))* bifurcation[i_decay][i_product-1];
     }
-    print_reaction_matrix(); //just for control print
+    // print_reaction_matrix(); //just for control print
     return reaction_matrix;
 }
 
@@ -295,6 +286,7 @@ void Linear_reaction::set_time_step(double new_timestep)
 
 void Linear_reaction::compute_one_step(void)
 {
+    //DBGMSG("decay step\n");
     if (reaction_matrix == NULL)   return;
 
     START_TIMER("decay_step");
@@ -351,6 +343,7 @@ void Linear_reaction::print_reaction_matrix(void)
 {
 	int cols,rows;
 
+	DBGMSG("r mat: %p\n", reaction_matrix);
 	if(reaction_matrix != NULL){
 		xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_step);
 		for(rows = 0; rows < n_substances(); rows++){

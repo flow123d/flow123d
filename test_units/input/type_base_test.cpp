@@ -102,24 +102,26 @@ using namespace Input::Type;
  */
 TEST(InputTypeArray, all_methods) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     // construction
     Array arr_int(Integer(),1,8);
     Array arr_arr_dbl( Array( Double() ));
 
     Record rec_2("record_type_2", "desc");
-    rec_2.finish();
+    rec_2.close();
 
     Array arr_rec_shared_ptr( rec_2 );
 
     Selection sel("Singular set.");
-    sel.finish();
+    sel.close();
 
     Array arr_of_sel( sel );
 
+    Input::Type::TypeBase::lazy_finish();
+
     // get_sub_type
-    EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type());
+    EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // boost::smart_ptr assert fails
 
     // operator ==
     EXPECT_NE( arr_int, Array( Double() ) );
@@ -140,6 +142,9 @@ using namespace Input::Type;
     arr_int.valid_default("100");
     EXPECT_THROW_WHAT( {arr_int.valid_default("1.5");}, ExcWrongDefault,
             "Default value '1.5' do not match type:" );
+    EXPECT_THROW_WHAT( {Array( Double(), 2 ).valid_default("3.2"); }, ExcWrongDefault,
+                  "Default value '3.2' do not match type: 'array_of_Double';"
+                 );
 
 }
 
@@ -163,8 +168,8 @@ using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Selection *sel1= new Selection("Colors");
-    Selection sel2;
-    sel2=*sel1;
+    Selection sel2=*sel1;
+    //sel2=*sel1;
 
 
     sel1->add_value(blue, "blue");
@@ -178,13 +183,15 @@ using namespace Input::Type;
 
 
     sel2.add_value(green,"green");
-    sel2.finish();
+    sel2.close();
     EXPECT_DEATH( {sel2.add_value(yellow,"y");}, "in finished Selection type:");
 
     Selection sel3;
-#ifdef DEBUG_ASSERTS
-    EXPECT_DEATH( {sel3.add_value(1,"one");}, "Empty Selection handle." );
-#endif
+    EXPECT_TRUE( sel3.is_finished());
+    EXPECT_EQ("EmptySelection", sel3.type_name());
+//#ifdef DEBUG_ASSERTS
+//    EXPECT_DEATH( {sel3.add_value(1,"one");}, "Empty Selection handle." );
+//#endif
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
@@ -200,17 +207,16 @@ using namespace Input::Type;
     Selection int_sel("Integer selection");
     int_sel.add_value(10, "ten");
     int_sel.add_value(0,"zero");
-    int_sel.finish();
+    int_sel.close();
 
 
     // Selection defaults
     EXPECT_EQ(10, int_sel.from_default("ten") );
     EXPECT_EQ(0, int_sel.from_default("zero") );
     EXPECT_THROW_WHAT( { int_sel.from_default("two"); }, ExcWrongDefault,
-            "Default value .* do not match type: 'Integer selection';" );
+            "Default value .* do not match type: " );
     EXPECT_THROW_WHAT( { int_sel.from_default("10"); }, ExcWrongDefault,
-            "Default value .* do not match type: 'Integer selection';" );
-
+            "Default value .* do not match type: " );
 
     EXPECT_EQ(10, int_sel.name_to_int("ten"));
 
@@ -239,7 +245,7 @@ Record output_record("OutputRecord",
             "Simulation time of first output.");
     output_record.declare_key("data_description", String(), Default::optional(),
             "");
-    output_record.finish();
+    output_record.close();
 } // delete local variables
 
 Record array_record("RecordOfArrays",
@@ -255,7 +261,7 @@ Record array_record("RecordOfArrays",
          "Desc. of array");
  array_record.declare_key("array_of_str_1", Array( String() ), Default::optional(),
              "Desc. of array");
- array_record.finish();
+ array_record.close();
 }
 
 
@@ -267,14 +273,14 @@ Record array_record("RecordOfArrays",
 
  {
      Record other_record("OtherRecord","desc");
-     other_record.finish();
+     other_record.close();
 
      record_record.declare_key("sub_rec_1", other_record, "key desc");
 
      // recursion
      //record_record->declare_key("sub_rec_2", record_record, "Recursive key.");
 
-     record_record.finish();
+     record_record.close();
  }
 
  Selection sel("Colors");
@@ -284,7 +290,7 @@ Record array_record("RecordOfArrays",
      sel.add_value(black,"black");
      sel.add_value(red,"red");
      sel.add_value(green,"green");
-     sel.finish();
+     sel.close();
  }
 
  Record main("MainRecord", "The main record of flow.");
@@ -293,8 +299,8 @@ Record array_record("RecordOfArrays",
  main.declare_key("color", sel, "My favourite color.");
  main.declare_key("color1", sel, "My second favourite color.");
  main.declare_key("array_record", array_record, "no commment on array_record");
- main.finish();
+ main.close();
 
 
- main.documentation(cout, TypeBase::full_after_record);
+// main.documentation(cout, TypeBase::full_after_record);
 }

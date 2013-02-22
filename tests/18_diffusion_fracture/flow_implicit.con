@@ -1,5 +1,4 @@
 {
-  COMMENT_Stop_time = "1275", 
   problem = {
     TYPE = "SequentialCoupling", 
     description = "[u'test18:', u'diffusion', u'through', u'fractures']", 
@@ -8,6 +7,7 @@
       mesh_file = "./input/test18.msh", 
       neighbouring = "./input/test18.ngh"
     }, 
+
     primary_equation = {
       TYPE = "Steady_MH", 
       boundary_file = "./input/test18.fbc", 
@@ -17,54 +17,47 @@
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        save_step = {
-          REF = "/problem/save_step"
-        }, 
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }, 
-      time = {
-        REF = "../../time"
       }
     }, 
-    save_step = 0.001, 
+ 
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
       boundary_file = "./input/test18.tbc", 
-      dual_porosity = true, 
       initial_file = "./input/test18.tic", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
           REF = "/system/output_streams/1"
         }, 
-        save_step = {
-          REF = "/problem/save_step"
-        }
+        save_step = 0.001
       }, 
+
+      dual_porosity = true, 
       sorption_enable = true, 
-      substances = [
-        "A", 
-        "B"
-      ], 
+      dg_penalty = 1e2,
       d_m = 1e-4,
       sigma = 1e1,
+
+      substances = [
+        "A"
+      ], 
+
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-7
       }, 
       time = {
-        REF = "../../time"
+	end_time = 0.01, 
+	init_dt = 0.001
       }
-    }, 
-    time = {
-      end_time = 0.01, 
-      init_dt = 0.001
     }
   }, 
+
   system = {
     output_streams = [
       {
@@ -85,82 +78,6 @@
         }, 
         name = "transport_output_stream"
       }
-    ], 
-    pause_after_run = false
-  }, 
-  zz_not_supported = {
-    constants = {
-      g = 9.8100000000000005, 
-      rho = 1000
-    }, 
-    density = {
-      density_implicit = true, 
-      density_max_iter = 21, 
-      eps_iter = 0, 
-      write_iterations = false
-    }, 
-    input = {
-      file_type = 1
-    }, 
-    output = {
-      btc_elms = 80, 
-      cross_section = false, 
-      cs_params = [
-        0.050000000000000003, 
-        2, 
-        0, 
-        0.050000000000000003, 
-        0, 
-        0, 
-        0.0050000000000000001
-      ], 
-      fcs_params = [
-        1, 
-        0, 
-        0, 
-        -11, 
-        1
-      ], 
-      output_elm_type = 1, 
-      output_file_2 = "./test18.tmp", 
-      output_file_type = "1", 
-      pos_set_view = 1, 
-      pos_view_params = [
-        0, 
-        0, 
-        0, 
-        0.80000000000000004, 
-        0.80000000000000004, 
-        0.80000000000000004, 
-        0.224, 
-        0.224
-      ], 
-      specify_elm_type = false, 
-      write_ftrans_out = "False"
-    }, 
-    "solver parameters": {
-      a_tol = 9.9999999999999994e-12, 
-      be_tol = 9.9999999999999998e-17, 
-      ilu_cpiv = 0, 
-      ilu_droptol = 1.0000000000000001e-05, 
-      ilu_dskip = 0, 
-      ilu_lfil = -1, 
-      ilu_milu = 0, 
-      max_it = 100, 
-      precond = "ilu", 
-      r_tol = 9.9999999999999998e-20, 
-      restart = 20, 
-      scaling = "mc29_30", 
-      sor_omega = 1.0, 
-      stop_crit = "backerr", 
-      stop_test = 1
-    }, 
-    transport = {
-      substances_density_scales = [
-        1, 
-        1, 
-        1
-      ]
-    }
+    ]
   }
 }

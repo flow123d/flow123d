@@ -31,13 +31,19 @@
 #define ELEMENTS_H
 
 #include "mesh/nodes.hh"
-#include <materials.hh>
+#include "mesh/region.hh"
 
+//#include <materials.hh>
+
+template <int spacedim>
+class ElementAccessor;
 
 class Mesh;
 class Side;
 class SideIter;
 struct MaterialDatabase;
+
+
 
 //=============================================================================
 // STRUCTURE OF THE ELEMENT OF THE MESH
@@ -46,58 +52,54 @@ class Element
 {
 public:
     Element();
-    Element(unsigned int dim);
-
-    void reinit(unsigned int dim);
+    Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
+    void init(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
 
     inline unsigned int dim() const;
     inline unsigned int index() const;
     unsigned int n_sides() const;    // Number of sides
     unsigned int n_nodes() const; // Number of nodes
-
+    
+    ///Gets ElementAccessor of this element
+    ElementAccessor<3> element_accessor();
+    
     double measure();
-    double volume();
     arma::vec3 centre();
 
     unsigned int n_sides_by_dim(int side_dim);
-    //void *side_by_dim(int side_dim, unsigned int n);
-    const Node *side_node(int side_dim, unsigned int side_id, unsigned node_id);
     inline SideIter side(const unsigned int loc_index);
-
-
-
-    // Data readed from mesh file
-    int      mid;       // Id # of material
-    //int      rid;       // Id # of region
+    Region region() const;
+    inline RegionIdx region_idx() const
+        { return region_idx_; }
+    
     int      pid;       // Id # of mesh partition
 
     // Type specific data
     Node** node;    // Element's nodes
 
-    MaterialDatabase::Iter material; // Element's material
 
-    Edge **edges_; // Edges on sides
-    Boundary **boundaries_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
+    unsigned int *edge_idx_; // Edges on sides
+    unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
 
-    Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
 
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
-    unsigned int dim_;
+
+    Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
 
 protected:
+    // Data readed from mesh file
+    RegionIdx  region_idx_;
+    unsigned int dim_;
 
-
-    double element_length_line();
-    double element_area_triangle();
-    double element_volume_tetrahedron();
-    
     friend class GmshMeshReader;
 
 };
+
+
 
 
 #define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes();(j)++)

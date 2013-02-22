@@ -40,7 +40,11 @@
 #include <petscvec.h>
 
 class Mesh;
-class MaterialDatabase;
+class FieldCommonBase;
+class Region;
+typedef std::vector<Region> RegionSet;
+
+
 namespace Input {
     class Record;
 }
@@ -54,7 +58,7 @@ namespace Input {
  *
  * Computation of one time step (method compute_one_step() )  is split into update_solution() and choose_next_time().
  *
- * This class does not implement any constructor. In particular it does not initialize mesh, mat_base, and time. This has to be done in the constructor
+ * This class does not implement any constructor. In particular it does not initialize mesh and time. This has to be done in the constructor
  * of particular child class.
  *
  * Any constructor of child class should set solved = true. We assume, that after initialization an equation object stay solve in init time. For the first time step
@@ -66,9 +70,17 @@ namespace Input {
 class EquationBase {
 public:
     /**
+     * Default constructor. Necessary to make tests fixtures for equations.
+     * TODO:
+     * Replace setting all in constructor with appropriate getters and setters.
+     * Make appropriate checks if key ingredients are initialized.
+     */
+    EquationBase();
+
+    /**
      * Common initialization constructor.
      */
-    EquationBase(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base, const Input::Record in_rec);
+    EquationBase(Mesh &mesh, const Input::Record in_rec);
 
     /**
      * Require virtual destructor also for child classes.
@@ -102,10 +114,16 @@ public:
         {time_->fix_dt_until_mark();}
 
     /**
-     * Set external constrain for time governor of the equation.
+     * Set external upper time step constrain for time governor of the equation.
      */
-    virtual void set_time_step_constrain(double dt)
-        {time_->set_constrain(dt);}
+    virtual void set_time_upper_constraint(double dt)
+        {time_->set_upper_constraint(dt);}
+        
+    /**
+     * Set external lower time step constrain for time governor of the equation.
+     */
+    virtual void set_time_lower_constraint(double dt)
+        {time_->set_lower_constraint(dt);}
 
     /**
      * Basic getter method returns constant TimeGovernor reference which provides full read access to the time information.
@@ -137,13 +155,6 @@ public:
     }
 
     /**
-     * This getter method provides the material database of the model.
-     * TODO: Maybe it is better to have a database outside and use it to produce input fields.
-     */
-    inline  MaterialDatabase &material_base()
-        {return *mat_base;}
-
-    /**
      * Getter for equation time mark type.
      */
     inline TimeMark::Type mark_type()
@@ -160,14 +171,140 @@ public:
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
 protected:
-
-    Mesh * const mesh_;
-    MaterialDatabase * mat_base;
-    TimeMarks * const time_marks;
+    Mesh * mesh_;
     TimeGovernor *time_;
     TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
 };
+
+
+
+/**
+ * Base class for a data subclasses of equations. We suggest following structure of an equation class:
+ * @code
+ *      class SomeEquation : public EqBase {
+ *          class EqData : public EqDataBase {
+ *          ...
+ *          }
+ *          ...
+ *      }
+ * @endcode
+ * The @p SomeEquation::EqData class should be used to introduce all necessary data of the equation in terms of bulk (Field)
+ * and boundary (BCField) fields. The base class EqDataBase implements some common operations with these fields as
+ * construction of the Input::Type objects, reading fields from the input and calling set_time methods.
+ */
+class EqDataBase {
+public:
+
+    /**
+     * The only constructor. The name of the equation has to be provided by parameter @p eq_name.
+     */
+    EqDataBase(const std::string& eq_name);
+
+    /**
+     * Adds given field into list of fields for group operations on fields.
+     * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
+     * @p d_val with default value. This method is rather called through the macro ADD_FIELD
+     */
+    void add_field( FieldCommonBase *field, const string &name, const string &desc, Input::Type::Default d_val= Input::Type::Default::optional() );
+
+    /**
+     * This method returns a Record for
+     * - @p eq_class_name should be name of the particular equation class, the name of bulk data record has form:
+     *   'EqName_BulkData' and record for boundary data has name 'EqName_BoundaryData'. However, these names has
+     *   only documentation purpose since these records are not descendants of an AbstractRecord.
+     */
+    Input::Type::Record generic_input_type(bool bc_regions);
+
+    /**
+     * Return Input::Type for field descriptor record. The key 'bulk_data' of an equation should be declared as
+     * Array of this record.
+     */
+    virtual Input::Type::Record bulk_input_type();
+
+    /**
+     * Return Input::Type for field descriptor record. The key 'boundary_data' of an equation should be declared as
+     * Array of this record.
+     */
+    virtual Input::Type::Record boundary_input_type();
+
+    /**
+     * Actualize fields for actual state of the time governor. We assume that this method is called
+     * before the actual time in time governor is solved.
+     *
+     * - call set_time, which should read up to the first bigger time
+     * - check that all fields are initialized
+     *
+     */
+    virtual void set_time(const TimeGovernor &time);
+
+    /**
+     * Set mesh pointer in EqDataBase so that it can be set in  those fields that needs it.
+     * The mesh has to be set before initialization of fields from input.
+     */
+    void set_mesh(Mesh *mesh);
+
+    /**
+     * Accepts accessors to both data lists,
+     * Do not initialize the fields, you have to call set_time.
+     *
+     * - read arrays and check correct sequence of times, save the input accessors for both lists
+     *
+     */
+    void init_from_input(Input::Array bulk_list, Input::Array bc_list);
+
+    /**
+     * Reads input from one region - one time descriptor.
+     */
+    virtual RegionSet read_boundary_list_item(Input::Record rec);
+
+    virtual RegionSet read_bulk_list_item(Input::Record rec);
+
+    virtual ~EqDataBase();
+
+protected:
+    EqDataBase();
+
+    void check_times(Input::Array &list);
+
+    void set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions);
+
+    RegionSet read_list_item(Input::Record rec, bool bc_regions);
+
+    /// Pointer to mesh where the equation data fields live.
+    Mesh *mesh_;
+    /// Equation name. Used to name input type records.
+    std::string equation_name_;
+    /// List of all fields.
+    std::vector<FieldCommonBase *> field_list;
+
+    /// Accessors to to bulk and boundary input arrays.
+    Input::Array bulk_input_array_, boundary_input_array_;
+    /// Iterators into these arrays pointing to the first unprocessed item.
+    Input::Iterator<Input::Record> bulk_it_, boundary_it_;
+};
+
+
+/**
+ * Macro to simplify call of EqDataBase::add_field method. Two forms are supported:
+ *
+ * ADD_FIELD(some_field, description);
+ * ADD_FIELD(some_field, description, Default);
+ *
+ * The first form adds name "some_field" to the field member some_field, also adds description of the field. No default
+ * value is specified, so the user must initialize the field on all regions (This is checked at the end of the method
+ * EqDataBase::init_from_input.
+ *
+ * The second form adds also default value to the field, that is Default(".."), or Default::read_time(), other default value specifications are
+ * meaningless. The automatic conversion to FieldConst is used, e.g.  Default::("0.0") is automatically converted to
+ * { TYPE="FieldConst", value=[ 0.0 ] } for a vector valued field, so you get zero vector on output on regions with default value.
+ */
+#define ADD_FIELD(name, ...)                   add_field(&name, string(#name), __VA_ARGS__)
+
+
+
+
+
 
 /**
  * Demonstration of empty equation class, which can be used if user turns off some equation in the model.
@@ -175,7 +312,7 @@ protected:
 class EquationNothing : public EquationBase {
 
 public:
-    EquationNothing(TimeMarks &marks, Mesh &mesh, MaterialDatabase &mat_base);
+    EquationNothing(Mesh &mesh);
 
     virtual void get_solution_vector(double * &vector, unsigned int &size) {
         vector = NULL;

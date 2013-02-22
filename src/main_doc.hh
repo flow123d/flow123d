@@ -69,7 +69,7 @@
  *
  * <b> @ref transport_mod "Transport" </b> module with model of chemical substances transport.
  *
- * <b> @ref rections_mod Reactions </b> module.
+ * <b> @ref reactions_mod "Reactions" </b> module.
  *
  * @ref Authors "List of Contributors"
  *

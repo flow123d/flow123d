@@ -13,20 +13,9 @@
 #include "type_base.hh"
 #include "type_selection.hh"
 
-/**
- * Macro to create a key object. The reason for this is twofold:
- * 1) We may use it to implement compile time computed hashes for faster access to the data.
- * 2) We can store line, function, filename where the key where used in order to report more specific error messages.
- */
-#define KEY(name) #name
-
 
 namespace Input {
 namespace Type {
-
-
-
-
 
 
 /** *********************************************************************************************************************************
@@ -48,6 +37,8 @@ namespace Type {
  * @ingroup input_types
  */
 class Default {
+	friend class OutputJSONTemplate;
+
 private:
     /**
      * Possible types of default values.
@@ -59,7 +50,6 @@ private:
         no_default_obligatory_type     ///< No default value, obligatory key.
     };
 public:
-
 
     /**
      * Constructor with given default value (at declaration time)
@@ -83,7 +73,6 @@ public:
      */
     static Default read_time(const std::string & description)
     { return Default(default_at_read_time, description); }
-
 
     /**
      * Factory function to make an empty default value which is obligatory.
@@ -109,7 +98,6 @@ public:
      */
     static Default optional()
     { return Default(no_default_optional_type); }
-
 
     /**
      * Returns true if the default value is or will be available when someone tries to read the value.
@@ -154,8 +142,7 @@ private:
     /**
      * Constructor for other types then 'declaration'.
      */
-    Default(enum DefaultType type, const string &value = "");
-
+    Default(enum DefaultType type, const std::string &value = "");
 };
 
 
@@ -171,6 +158,9 @@ class AbstractRecord;
  * @ingroup input_types
  */
 class Record : public TypeBase {
+	friend class OutputBase;
+	friend class OutputText;
+
 public:
 
     /*
@@ -179,8 +169,6 @@ public:
     TYPEDEF_ERR_INFO( EI_Record, Record );
     TYPEDEF_ERR_INFO( EI_RecordName, const string);
     DECLARE_EXCEPTION( ExcRecordKeyNotFound, << "Key " << EI_KeyName::qval <<" not found in Record:\n" <<  EI_Record::val );
-    DECLARE_EXCEPTION( ExcDeriveNonEmpty, << "Can not derive from Record " << EI_RecordName::qval << " into "
-            "non-empty Record:\n" << EI_Record::val );
 
     /**
      *  Structure for description of one key in record.
@@ -192,6 +180,7 @@ public:
         string key_;                                ///< Key identifier.
         string description_;                        ///< Key description in context of particular Record type.
         boost::shared_ptr<const TypeBase> type_;    ///< Type of the key.
+        const TypeBase *p_type;						///< Pointer to the key type (needed for lazy evaluation).
         Default default_;                      ///< Default, type and possibly value itself.
         bool derived;                               ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
     };
@@ -204,10 +193,16 @@ public:
     /**
      * Default constructor. Empty handle.
      */
-    Record() {}
+    Record();
 
     /**
-     * Basic constructor. You has to provide \p type_name of the new declared Record type and
+     * Copy constructor. We allow only copies of non-empty records.
+     */
+    Record(const Record & other);
+
+
+    /**
+     * Basic constructor. You have to provide \p type_name of the new declared Record type and
      * its \p description.
      */
     Record(const string & type_name_in, const string & description);
@@ -216,7 +211,7 @@ public:
      * Method to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
      * in the @p parent. You are free to overwrite copied keys, but you can not delete them.
      */
-    void derive_from(AbstractRecord parent);
+    Record &derive_from(AbstractRecord &parent);
 
     /**
      * Allows shorter input of the Record providing only value of the \p from_key given as the parameter.
@@ -226,41 +221,37 @@ public:
      * If the input reader come across the Record in declaration tree, but there is not 'record-like' input, it
      * save default values into storage tree and tries to match the input with the type of the \p from_key.
      */
-    void allow_auto_conversion(const string &from_key);
+    Record &allow_auto_conversion(const string &from_key);
 
     /**
-     * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type, default value by parameter @p default_value, and with given
-     * @p description. The parameter @p type has to be any of descendants of TypeBase.
-     *
+     * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type,
+     * default value by parameter @p default_value, and with given @p description.
+     * The parameter @p type has a descendant of TypeBase. If @p type is an instance of Record, Selection, or AbstractRecord,
+     * we support references to static objects of these types that may not be yet constructed at the point when the declare_key method
+     * is called. This method can detect this case and postpone completion of the key.
      */
     template <class KeyType>
-    void declare_key(const string &key,
-                            const KeyType &type,
+    Record &declare_key(const string &key, const KeyType &type,
                             const Default &default_value, const string &description);
+
 
     /**
      * Same as previous method but without given default value (same as Default() - optional key )
      */
     template <class KeyType>
-    void declare_key(const string &key,
-                            const KeyType &type,
+    Record &declare_key(const string &key,const KeyType &type,
                             const string &description);
 
     /**
-     * Finish declaration of the Record type. Now further declarations can be added.
+     *  Can be used to close the Record for further declarations of keys.
      */
-    void finish();
+    const Record &close() const;
+
 
     /**
      * Implements @p TypeBase::is_finished.
      */
     virtual bool is_finished() const;
-
-
-    /**
-     * @brief Implements @p Type:TypeBase::documentation.
-     */
-    virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
 
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
@@ -270,11 +261,14 @@ public:
     /// Record type name getter.
     virtual string type_name() const;
 
+    /// Record description getter.
+    virtual string description() const;
+
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
-    virtual void valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const;
 
     /// Class comparison and Record type name comparision.
     virtual bool operator==(const TypeBase &other) const;
@@ -323,38 +317,71 @@ public:
      */
     inline unsigned int size() const;
 
+    /**
+     * Returns value of made_extensive_doc in the SelectionData
+     */
+    inline bool made_extensive_doc() const;
+
+    /**
+     * Sets value of made_extensive_doc in the SelectionData
+     */
+    inline void set_made_extensive_doc(bool val) const;
+
+    /**
+     * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
+     */
+    bool finish() const;
 
 protected:
+
+
+    /// Check that given default value is valid for given type of the key.
+    bool check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const;
 
     /**
      * Assertion for non-empty Type::Record handle.
      */
-    inline void empty_check() const {
-        ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
-    }
+    //inline void empty_check() const {
+    //    ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
+    //}
 
     /**
      * Assertion for finished Type::Record.
      */
     inline void finished_check() const {
-        empty_check();
+        if (! is_finished()) {
+            DBGMSG("Record not finished!\n");
+        }
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
     /**
+     * Actually perform registration in the parent AbstractRecord and copy keys from it.
+     */
+    void make_derive_from(AbstractRecord &parent) const;
+
+    /**
      * Internal data class.
      */
-    class RecordData {
+    class RecordData  {
     public:
         RecordData(const string & type_name_in, const string & description);
 
+        /**
+         * Declares a key and stores its type. The type parameter has to be finished at the call of declare_key().
+         * If the parameter @p type_temporary is NULL, the parameter @p type provides pointer to
+         * already finished type that will be assigned to the key. On the other hand, if @p type_temporary is not NULL,
+         * only this raw pointer is stored and key is fully completed later through TypeBase::lazy_finish().
+         */
         void declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
+                         const TypeBase *type_temporary,
                          const Default &default_value, const string &description);
 
-        std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
 
-        void  reset_doc_flags() const;
+        Record::KeyIter auto_conversion_key_iter() const;
+
+        //void  reset_doc_flags() const;
 
         /// Database of valid keys
         std::map<KeyHash, unsigned int> key_to_index;
@@ -363,10 +390,27 @@ protected:
         /// Keys in order as they where declared.
         std::vector<struct Key> keys;
 
-
         /// Description of the whole record type.
         const string description_;
         const string type_name_;
+
+        /**
+         * Temporary reference to the parent AbstractRecord object.
+         * After the parent is initialized, the current object is
+         * finalized by finish().
+         */
+        AbstractRecord *p_parent_;
+
+        /// Permanent pointer to parent AbstractRecord, necessary for output.
+        boost::shared_ptr<AbstractRecord> parent_ptr_;
+
+        /**
+         * Auxiliary variable which saves the shared_ptr to the actual RecordData.
+         * It is shared_ptr version of 'this' ptr.
+         * It is used in the finish() method of RecordData for derived types, where
+         * we need to make instance of Record from method of RecordData class.
+         */
+        //boost::shared_ptr<RecordData> descendant_data_;
 
         /**
          * This flag is set to true when documentation of the Record was called with extensive==true
@@ -376,16 +420,29 @@ protected:
          */
         mutable bool made_extensive_doc;
 
+        /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
 
-        int auto_conversion_key;
+        /// If record is closed, we do not allow any further declare_key calls.
+        bool closed_;
+
+        /// True for derived records after make_derived.
+        bool derived_;
+
+        /**
+         * Initial value is = -1, when allow_auto_conversion is called we set this to 0.
+         * Final value can be assigned just after possible inheritance copy of keys from parent AbstractRecord.
+         */
+        int auto_conversion_key_idx;
+        /**
+         * Name of key to use for auto conversion.
+         */
+        std::string auto_conversion_key;
 
     };
 
-
     /// Data handle.
     boost::shared_ptr<RecordData> data_;
-
 };
 
 /**
@@ -455,10 +512,55 @@ protected:
 
 public:
     /**
+     * Public typedef of constant iterator into array of keys.
+     */
+    typedef std::vector< Record >::const_iterator ChildDataIter;
+
+    /**
+     * Default constructor.
+     */
+    AbstractRecord();
+
+    /**
+     * Copy constructor. We check that other is non empty.
+     */
+    AbstractRecord(const AbstractRecord& other);
+
+
+    /**
      * Basic constructor. You has to provide \p type_name of the new declared Record type and
      * its \p description.
      */
     AbstractRecord(const string & type_name_in, const string & description);
+
+
+    /**
+     * Allows shorter input of the AbstractRecord providing the default value to the "TYPE" key.
+     * If the input reader come across the AbstractRecord in the declaration tree and the input
+     * is not 'record-like' with specified value for TYPE, it tries to use the descendant Record specified by
+     * @p type_default parameter of this method. Further auto conversion of such Record may be possible.
+     */
+    AbstractRecord &allow_auto_conversion(const string &type_default);
+
+    /**
+     * Same as Record::declare_key but returning reference to AbstractRecord.
+     */
+    template <class KeyType>
+    AbstractRecord &declare_key(const string &key, const KeyType &type,
+                            const Default &default_value, const string &description);
+    /**
+     * Same as previous method but without given default value (same as Default() - optional key )
+     */
+    template <class KeyType>
+    AbstractRecord &declare_key(const string &key, const KeyType &type,
+                            const string &description);
+
+    /**
+     *  Can be used to close the AbstractRecord for further declarations of keys.
+     */
+    inline AbstractRecord &close() {
+        Record::close(); return *this; }
+
 
     /**
      * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
@@ -467,16 +569,15 @@ public:
      */
     void no_more_descendants();
 
-
-    /**
-     * @brief Implements @p Type:TypeBase::documentation.
-     */
-    virtual std::ostream& documentation(std::ostream& stream, DocType extensive=full_along, unsigned int pad=0) const;
-
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
     virtual void  reset_doc_flags() const;
+    /**
+     * The default string can initialize an Record if the record is auto-convertible
+     * and the string is valid default value for the auto conversion key.
+     */
+    virtual bool valid_default(const string &str) const;
 
     /**
      * Returns reference to the inherited Record with given name.
@@ -490,20 +591,38 @@ public:
     const Record  &get_descendant(unsigned int idx) const;
 
     /**
+     * Returns default descendant if TYPE key has default value, otherwise returns empty Record.
+     */
+    const Record * get_default_descendant() const;
+
+    /**
      * Returns reference to Selection type of the implicit key TYPE.
      */
     const Selection &get_type_selection() const;
 
+    /**
+     * Returns number of keys in the child_data_.
+     */
+    unsigned int child_size() const;
 
+    /**
+     * Container-like access to the data of the Record. Returns iterator to the first data.
+     */
+    ChildDataIter begin_child_data() const;
+
+    /**
+     * Container-like access to the data of the Record. Returns iterator to the last data.
+     */
+    ChildDataIter end_child_data() const;
+
+protected:
     /**
      * This method intentionally have no implementation to
      * prevents deriving an AbstractRecord form other AbstractRecord.
      * In such a case the linker should report an undefined reference.
      */
-    void derive_from(AbstractRecord parent);
+    Record &derive_from(AbstractRecord &parent);
 
-
-protected:
     /// Actual data of the AbstractRecord.
     boost::shared_ptr<ChildData> child_data_;
 
@@ -513,8 +632,6 @@ protected:
     void add_descendant(const Record &subrec);
 
     friend class Record;
-
-
 };
 
 
@@ -522,55 +639,6 @@ protected:
  * Implementation
  */
 
-template <class KeyType>
-void Record::declare_key(const string &key,
-                        const KeyType &type,
-                        const Default &default_value, const string &description)
-{
-    // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
-
-    empty_check();
-    if (is_finished() ) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name().c_str());
-
-    // If KeyType is not derived from Scalar, we check emptiness of the default value.
-    //if (boost::is_same<Record, KeyType>::value && typedefault_value.has_value() )
-    //    xprintf(Err, "Default value for non scalar type in declaration of key: %s in Record type: %s \n", key.c_str(), type_name().c_str() );
-
-    if (! is_valid_identifier(key))
-        xprintf(PrgErr, "Invalid key identifier %s in declaration of Record type: %s\n", key.c_str(), type_name().c_str());
-
-    // We do not allow declaration with unfinished type. The only exception is internal "TYPE"
-    // key defined by AbstractRecord.
-    if ( ! type.is_finished() )
-        xprintf(PrgErr, "Unfinished type of declaring key: %s in Record type: %s\n", key.c_str(), type_name().c_str() );
-
-    // check validity of possibly given default value
-    if ( default_value.has_value_at_declaration() ) {
-
-        try {
-            type.valid_default( default_value.value() );
-        } catch (ExcWrongDefault & e) {
-            e << EI_KeyName(key);
-            throw;
-        }
-    }
-
-    // make our own copy of type object allocated at heap (could be expensive, but we don't care)
-    boost::shared_ptr<const KeyType> type_copy = boost::make_shared<KeyType>(type);
-
-    data_->declare_key(key, type_copy, default_value, description);
-}
-
-
-
-template <class KeyType>
-void Record::declare_key(const string &key,
-                        const KeyType &type,
-                        const string &description)
-{
-    declare_key(key,type, Default::optional(), description);
-}
 
 
 
@@ -639,6 +707,17 @@ inline unsigned int Record::size() const {
     ASSERT( data_->keys.size() == data_->key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", data_->key_to_index.size(), data_->keys.size());
     return data_->keys.size();
 }
+
+
+inline bool Record::made_extensive_doc() const {
+	return data_->made_extensive_doc;
+}
+
+
+inline void Record::set_made_extensive_doc(bool val) const {
+	data_->made_extensive_doc = val;
+}
+
 
 
 

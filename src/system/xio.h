@@ -42,7 +42,7 @@
 #ifndef XIO_H_
 #define XIO_H_
 
-#include <cstdio>
+#include "global_defs.h"
 #include "system/system.hh"
 
 //! @brief XIO library extensions

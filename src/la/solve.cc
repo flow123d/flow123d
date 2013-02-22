@@ -37,8 +37,11 @@
 #include <petscviewer.h>
 
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
+#include "system/xio.h"
+
+
 #include "la/distribution.hh"
-#include "io_namehandler.hh"
 #include "la/solve.h"
 #include "la/linsys.hh"
 
@@ -61,6 +64,26 @@ static void isol_params_init(ISOL_params *par);
 static void write_sys_isol( struct Solver *solver );
 
 
+namespace it = Input::Type;
+
+it::AbstractRecord Solver::input_type = it::AbstractRecord("Solver", "Solver setting.")
+    .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"),
+                "Absolute residual tolerance.")
+    .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
+                "Relative residual tolerance (to initial error).")
+    .declare_key("max_it", it::Integer(0), it::Default("10000"),
+                "Maximum number of outer iterations of the linear solver.");
+
+
+it::Record Solver::input_type_petsc = it::Record("Petsc", "Solver setting.")
+    .derive_from(Solver::input_type)
+    .declare_key("options", it::String(), it::Default(""),  "Options passed to the petsc instead of default setting.");
+
+
+it::Record Solver::input_type_bddc = it::Record("Bddc", "Solver setting.")
+    .derive_from(Solver::input_type);
+
+
 
 //==============================================================================
 /*!	@brief	Initialize a solver structure
@@ -69,6 +92,7 @@ static void write_sys_isol( struct Solver *solver );
  *  Possibly initialize specific solver parameters.
  *
  *  @param[in] solver already allocated structure to be initialized
+ *  @param[in] in_rec input record
  */
 void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     double solver_accurancy;
@@ -76,11 +100,11 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     F_ENTRY;
 	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
 
-	if (in_rec.type() == Solver::get_input_type_petsc() )  {
+	if (in_rec.type() == Solver::input_type_petsc )  {
 	    solver->type = PETSC_SOLVER;
 	    solver->params  = Input::Record(in_rec).val<string>("options");
 	} else
-	if (in_rec.type() == Solver::get_input_type_bddc() ) {
+	if (in_rec.type() == Solver::input_type_bddc ) {
 	    solver->type = PETSC_MATIS_SOLVER;
 	} else {
 	    xprintf(UsrErr,"Unsupported solver: %s\n", in_rec.type().type_name().c_str());
@@ -116,50 +140,6 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
 }
 
 
-
-Input::Type::AbstractRecord & Solver::get_input_type() {
-    using namespace Input::Type;
-    static AbstractRecord rec("Solver", "Solver setting.");
-
-    if (!rec.is_finished()) {
-        rec.declare_key("a_tol", Double(0.0), Default("1.0e-9"),
-                "Absolute residual tolerance.");
-        rec.declare_key("r_tol", Double(0.0, 1.0), Default("1.0e-7"),
-                "Relative residual tolerance (to initial error).");
-        rec.declare_key("max_it", Integer(0), Default("10000"),
-                "Maximum number of outer iterations of the linear solver.");
-        rec.finish();
-
-        Solver::get_input_type_petsc();
-        Solver::get_input_type_bddc();
-
-        rec.no_more_descendants();
-    }
-    return rec;
-}
-
-Input::Type::Record & Solver::get_input_type_petsc() {
-    using namespace Input::Type;
-    static Record rec("Petsc", "Solver setting.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(Solver::get_input_type());
-        rec.declare_key("options", String(), Default(""),  "Options passed to the petsc instead of default setting.");
-        rec.finish();
-    }
-    return rec;
-}
-
-Input::Type::Record & Solver::get_input_type_bddc() {
-    using namespace Input::Type;
-    static Record rec("Bddc", "Solver setting.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(Solver::get_input_type());
-        rec.finish();
-    }
-    return rec;
-}
 
 
 //=============================================================================
@@ -387,7 +367,8 @@ void solver_petsc(Solver *solver)
 	   } else {
 	       // serial setting
               if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
+                  petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix  -pc_factor_fill 6.0";
+                  //petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
               else
                   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
 	   }
@@ -468,14 +449,17 @@ void solver_petsc(Solver *solver)
 	KSPSetOperators(System, sys->get_matrix(), sys->get_matrix(), DIFFERENT_NONZERO_PATTERN);
 	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
 	KSPSetFromOptions(System);
+
+	START_TIMER("iteration");
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);
 
 	// TODO: make solver part of LinSyt, and make gatter for num of it
-	xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", Reason, nits);
-    Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
+	xprintf(Msg,"convergence reason %d, number of iterations is %d\n", Reason, nits);
+    ADD_CALLS(nits);
 	KSPDestroy(&System);
+	END_TIMER("iteration");
 
 }
 

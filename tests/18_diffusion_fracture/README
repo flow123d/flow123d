@@ -3,3 +3,7 @@ Test problem 18
 verification of:
 -implicit transport (diffusion)
 -diffusion through fractures (multidimensional connection 1D-2D)
+
+
+
+- mesh was generated from .geo in GMSH with "refine by splitting" in several steps

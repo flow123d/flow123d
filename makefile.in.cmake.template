@@ -1,4 +1,3 @@
-
 ### PETSC library ###################################################################
 # The Flow123 requires PETSC library (3.2.x), you have to set 
 # the location of PETSC and used PETSC architecture unless you
@@ -10,13 +9,23 @@
 set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
 set(PETSC_ARCH "gcc_O3")
 
+###
+# Uncomment this if PETSC are detected, but tests during configuration fail. 
+# (Cygwin, parallel systems with obligatory mpirun execution)
+# set (PETSC_EXECUTABLE_RUNS YES)
+
+
+### Build setting ####################################################################
+
+
 ### verbose mode ####
 # option to produce more verbose compiling
-# for the same result tou can call make with VERBOSE=1
+# for the same result you can call make with VERBOSE=1
 # e.g.
 # make VERBOSE=1 all
 
 #set(CMAKE_VERBOSE_MAKEFILE on)
+
 
 ### set compiler ###
 # g++ is automatically detected and used
@@ -25,21 +34,47 @@ set(PETSC_ARCH "gcc_O3")
 # It is worth to try.
 # set( CMAKE_CXX_COMPILER "clang++")
 
-### Build configuration  ####
+
+### USING CCACHE ###
+# If you have installed 'ccache' package, you can enjoy faster builds by setting 
+# variable CCACHE_CXX_COMPILER to "ccache __your_favourite_c++_compiler__".
+# The helper script is created in the build directory.
+#
+# ccache works even if you use "make clean-all" command (that's the main advantage).
+# Just the first time build with ccache is slower.
+# To clean the ccache files, use command: 
+# $ ccache -C
+# More info and download at: http://ccache.samba.org/
+#
+# set (CCACHE_CXX_COMPILER "ccache /usr/bin/c++")
+
+
+### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
-# "debug" set flags: "-g -pg -DDEBUG"
+# "debug" set flags: "-g -DDEBUG"
 # "release" set flags: "-O3 -DNODEBUG"
 #
-# you can override these settings through variable CC_FLAGS
 
-set(CMAKE_BUILD_TYPE debug)
+set(FLOW_BUILD_TYPE debug)
 
-# Uncomment this for CygWIN compiled PETSc (CMAKE fails to detect it properly)
-# set (PETSC_EXECUTABLE_RUNS YES)
 
-#set(CC_FLAGS "-O3 -DNODEBUG -pg ")
+# you can override these settings through variable FLOW_CC_FLAGS
+#
+# Flow recognize  following definitions:
+# NODEBUG					- all debug options off
+# DEBUG						- all debug options on
+# DEBUG_MESSAGES
+# DEBUG_ASSERTS
+# DEBUG_PROFILER
+# DEBUG_FUNCTION_STACK
+# HAVE_CXX11				- support for requested C++11 features (constexpr)
+#
+# e.g. :
+#set(FLOW_CC_FLAGS "-O3 -DNODEBUG -pg ")
 
-### External Projects directory
+
+
+### External Projects directory ##########################################################
 #
 # The directory where possible external projects should be stored and built.
 # The default location is ${PROJECT_SOURCE_DIR}/external_projects.

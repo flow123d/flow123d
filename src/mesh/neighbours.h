@@ -122,25 +122,6 @@ class SideIter;
 
 
 
-
-/*
- *  Class for both types of input neigbours. Only temporary
- */
-class Neighbour_both
-{
-public:
-    Neighbour_both();
-
-    int   type;         // Type
-    int   n_sides;      // # of neighbouring sides
-
-    int  *sid;      // id numbers of neighbouring sides
-    int  *eid;      // id numbers of neighbouring elements
-    double  sigma;      // transition coefficient
-};
-
-
-
 /**
  * Class only for VB neighbouring.
  */
@@ -149,10 +130,12 @@ class Neighbour
 public:
     Neighbour();
 
-    void reinit(ElementIter ele, Edge * edg, double sigma_in);
+    void reinit(ElementIter ele, unsigned int edg_idx, double sigma_in);
 
     // side of the edge in higher dim. mesh
     inline SideIter side();
+
+    inline unsigned int edge_idx();
 
     // edge of higher dimensional mesh in VB neigh.
     inline Edge *edge();
@@ -161,17 +144,12 @@ public:
     inline ElementIter element();
 
 //private:
-    Edge *edge_;  // edge
+    unsigned int edge_idx_;  // edge
     ElementIter element_;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
     double sigma;
 };
 
-// Input neigbouring codes
-#define BB_E         10     // two elements of same dim specified by eid
-#define BB_EL        11     // two elements ... specified by explicit eid and sid
-#define VB_ES        20     // compatible
-#define VV_2E        30     // noncompatible
 
 
 

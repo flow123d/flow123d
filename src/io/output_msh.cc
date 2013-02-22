@@ -32,6 +32,24 @@
 #include "system/xio.h"
 #include "mesh/mesh.h"
 
+
+using namespace Input::Type;
+
+Record OutputMSH::input_type
+	= Record("gmsh", "Parameters of gmsh output format.")
+	// It is derived from abstract class
+	.derive_from(OutputFormat::input_type);
+
+// TODO: Remove or adjust the following code.
+//	// The variant
+//	static Selection variant_sel("GMSH variant");
+//	    variant_sel.add_value(OutputMSH::VARIANT_ASCII, "ascii",
+//	    		"ASCII variant of GMSH file format");
+//	    variant_sel.add_value(OutputMSH::VARIANT_BINARY, "binary",
+//	    		"Binary variant of GMSH file format (not supported yet)");
+//	    variant_sel.finish();
+
+
 void OutputMSH::write_msh_header(void)
 {
     ofstream &file = this->output->get_base_file();
@@ -70,7 +88,7 @@ void OutputMSH::write_msh_topology(void)
         // element_id element_type 3_other_tags material region partition
         file << ELEM_FULL_ITER(mesh, elm).index() + 1
              << " " << gmsh_simplex_types_[ elm->dim() ]
-             << " 3 " << elm->mid << " " << elm->mid << " " << elm->pid;
+             << " 3 " << elm->region().id() << " " << elm->region().id() << " " << elm->pid;
 
         FOR_ELEMENT_NODES(elm, i)
             file << " " << NODE_FULL_ITER(mesh, elm->node[i]).index() + 1;
@@ -319,26 +337,4 @@ OutputMSH::~OutputMSH()
     this->write_tail();
 }
 
-Input::Type::Record & OutputMSH::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("gmsh", "Parameters of gmsh output format.");
 
-	if (!rec.is_finished()) {
-
-		// It is derived from abstract class
-		rec.derive_from(OutputFormat::get_input_type());
-
-		// The variant
-		static Selection variant_sel("GMSH variant");
-	    variant_sel.add_value(OutputMSH::VARIANT_ASCII, "ascii",
-	    		"ASCII variant of GMSH file format");
-	    variant_sel.add_value(OutputMSH::VARIANT_BINARY, "binary",
-	    		"Binary variant of GMSH file format (not supported yet)");
-	    variant_sel.finish();
-
-		rec.finish();
-	}
-
-	return rec;
-}

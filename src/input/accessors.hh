@@ -5,20 +5,15 @@
  *      Author: jb
  *
  *
+ *  TODO:
+ *  - decide which part of interface has to be optimized ( probably nothing until we
+ *    implement reader for HDF5, XML or large Raw data files, and try to use the same input interface for input of large data)
+ *  - then make inlined only neccessary functions  and carefully move as much as possible into accessors.cc including explicit instantiation of
+ *    support classes. This should speedup compilation of the code that use the accessors.
  *
-
- *  - presun vhodnych casti do *.cc
- *  - dokumentace
- *  - implementace operator -> without alocation (shared_ptr), i.e. put Accesors into Iterators
- *    Create corresponding acessor at construction of the iterator.
+ *  - implement operator -> without allocation (shared_ptr), i.e. put Accesors into Iterators
+ *    Create corresponding accessor at construction of the iterator.
  *
- *  !!! how to pass instance of descendant of TypeBase through EI -
- *  - can not pass it directly since TypeBase is not copyconstructable
- *  - can not use shared_ptr for same reason
- *  - can not use C pointers since the refered object can be temporary
- *  solutions:
- *   - consistently move TypeBase to Pimpl design
- *   - provide virtual function make_copy, that returns valid shared_ptr
  */
 
 #ifndef INPUT_INTERFACE_HH_
@@ -59,12 +54,98 @@ TYPEDEF_ERR_INFO( EI_AccessorName, const string );
 DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_AccessorName::val << " from StorageNull.");
 
 
+/**
+ * Class that works as base type of all enum types. We need it to return integer from a Selection input without
+ * knowing exact enum type. This class contains int and is convertible to int.
+ *
+ * Usage example:
+ * @CODE
+ *
+ *      // in some general read function that do not know BCTypeEnum
+ *      int bc_type_int = record.val<Enum>("bc_type_selection_key");
+ *      ...
+ *      // outside of general function
+ *      enum { dirichlet, neumann, newton } BCTypeEnum;
+ *      BCTypeEnum bc_type = bc_typ_int;
+ * @ENDCODE
+ *
+ */
+class Enum {
+public:
+    Enum() : val_(0) {}
+    Enum(int v) :val_(v) {}
+    operator int() {return val_;}
+    operator unsigned int() {return val_;}
+private:
+    int val_;
+};
+
 
 // Forward declaration
 class IteratorBase;
 template <class T> class Iterator;
 
+/**
+ * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
+ *
+ * To get full path of an accessor we need:
+ * - root Input::Type
+ * - whole path through the storage
+ *
+ * TODO:
+ * - need way how to pass the InputAddress object to new accessor/iterator
+ * - accessors may use last pointer in the InputAddress (rather Input::Path)
+ *   instead its own. solution use Address instead of StorageBase pointer in all accessors.
+ *
+ */
+class Address {
+public:
+    /**
+     * Basic constructor. We forbids default one since we always need the root input type.
+     */
+    Address(const StorageBase * storage_root, Type::TypeBase *type_root);
 
+    /**
+     * Copy constructor.
+     * TODO: For optimization we can
+     * use one vector of storage pointers shared (using shared_ptr) by all accessors along the path.
+     */
+    Address(const Address &other);
+
+    /**
+     * Dive deeper in the storage tree following index @p idx. Assumes that actual node
+     * is an StorageArray, has to be asserted.
+     */
+    void down(unsigned int idx);
+
+    /**
+     * Getter. Returns actual storage node.
+     */
+    inline const StorageBase * storage_head() const
+        { return path_[actual_node_]; }
+
+    /**
+     * Produce a full address, i.e. sequence of keys and indices separated by '/',
+     * that leads from the root storage and root Input::Type::TypeBase to the actual node in the storage
+     * that is path_[actual_node_].
+     */
+    std::string make_full_address();
+
+private:
+    /**
+     * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
+     * TODO: Possibly can be shared.
+     */
+    std::vector<const StorageBase *> path_;
+    /**
+     * Actual node in the @p path_. Currently the last element, useful for shared @p path_ vector.
+     */
+    unsigned int actual_node_;
+    /**
+     * Root Input::Type.
+     */
+    Input::Type::TypeBase *root_type;
+};
 
 /**
  * @brief Accessor to the data with type \p Type::Record.
@@ -104,23 +185,14 @@ class Record {
 
 public:
     /**
-     * Default constructor creates an accessor to an empty storage.
+     * Default constructor.
      */
-    Record()
-    : record_type_("Empty Record",""), storage_( NULL )
-    {
-            record_type_.finish();
-    }
-
-
+    Record();
 
     /**
      * Copy constructor.
      */
-    Record(const Record &rec)
-    : record_type_(rec.record_type_), storage_(rec.storage_)
-    {}
-
+    Record(const Record &rec);
 
     /**
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
@@ -149,12 +221,32 @@ public:
     template <class Ret>
     inline const Ret val(const string &key, const Ret default_val) const;
 
+
     /**
      * Returns iterator to the key if it exists or NULL Iterator if it doesn't.
      * This method must be used for keys which are optional or has default value provided at read time.
      */
     template <class Ret>
     inline Iterator<Ret> find(const string &key) const;
+
+    /**
+     * This has similar function as the previous method, but simpler usage in some cases. You has to provide reference to the variable @p value
+     * where the value of an optional @p key should be placed. If the key in not present in the input the value of @p value is not changed
+     * and the method returns false. If the key has a value the method returns true. Typical usage:
+     * @code
+     * double param;
+     * string other_param;
+     * if (rec.opt_val("optional_param", param) ) {
+     *      use_param(param);
+     * } else if (rec.opt_val("other_param", other_param) ) {
+     *      use_other_param(other_param);
+     * } else {
+     *      ... error, no value for param
+     * }
+     * @endcode
+     */
+    template <class Ret>
+    inline bool opt_val(const string &key, Ret &value) const;
 
     /**
      * Returns true if the accessor is empty (after default constructor).
@@ -188,20 +280,12 @@ public:
     /**
      * Default constructor creates an accessor to an empty storage.
      */
-    AbstractRecord()
-    : record_type_("DummyType",""), storage_( NULL )
-    {
-            record_type_.finish();
-            record_type_.no_more_descendants();
-    }
+    AbstractRecord();
 
     /**
      * Copy constructor.
      */
-    AbstractRecord(const AbstractRecord &rec)
-    : record_type_(rec.record_type_), storage_(rec.storage_)
-    {}
-
+    AbstractRecord(const AbstractRecord &rec);
 
     /**
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
@@ -213,18 +297,21 @@ public:
      * Implicit conversion to the \p Input::Record accessor. You can use \p Input::AbstractRecord in the same
      * way as the \p Input::Record.
      */
-    operator Record();
-
+    operator Record() const;
 
     /**
      * Returns particular type selected from input. You can use it to construct particular type.
      *
      * @code
+     * class MyClass {
+     *      MyClass( Input::Record );
+     * }
+     *
      * if (abstract_record.type() == MyClass.get_input_type())
-     *      my_class = new MyClass(abstract_record);        // here the conversion to Input::Record is used
+     *      my_class = new MyClass(abstract_record);        // here the implicit conversion to Input::Record is used
      * @endcode
      */
-    Input::Type::Record type();
+    Input::Type::Record type() const;
 
 
 private:
@@ -273,16 +360,12 @@ public:
     /**
      * Default constructor, empty accessor.
      */
-    Array()
-    : array_type_(Type::Bool()), storage_( NULL )
-    {}
+    Array();
 
     /**
      * Copy constructor.
      */
-    Array(const Array &ar)
-    : array_type_(ar.array_type_), storage_(ar.storage_)
-    {}
+    Array(const Array &ar);
 
     /**
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
@@ -295,7 +378,7 @@ public:
     * read from the array. Only types supported by Input::Interface::Iterator can be used.
     */
    template <class ValueType>
-   Iterator<ValueType> begin() const;
+   inline Iterator<ValueType> begin() const;
 
    /**
     * Returns end iterator common to all iterators inner types.
@@ -321,6 +404,8 @@ private:
 
     /// Pointer to the corresponding array storage object.
     const StorageBase *storage_;
+
+    static StorageArray empty_storage_;
 };
 
 
@@ -402,6 +487,11 @@ public:
      */
     inline operator bool() const;
 
+    /**
+     * Return index in an array or record.
+     */
+    inline unsigned int idx() const;
+
 protected:
     const StorageBase *storage_;
     unsigned int index_;
@@ -436,6 +526,9 @@ public:
     typedef typename internal::TypeDispatch<DispatchType>::InputType InputType;
 
 
+    /// Iterator is not default constructible.
+    Iterator() : IteratorBase(NULL, 0) {}
+
     /**
      * Constructor with Type of data
      */
@@ -453,15 +546,11 @@ public:
 
     /**
      *  Dereference operator can be used only for iterators to accessors Record, AbstractRecord, and Array.
-     *
-     *  TODO: make this without memory allocation.
      */
     inline OutputType *operator ->() const;
 
 
 private:
-    /// Iterator is not default constructible.
-    Iterator();
 
     /**
      * Check that Type::TypeBase reference is in fact object of InputType
@@ -503,7 +592,7 @@ template<> struct TD<float> { typedef double OT; };
 // generic implementation accepts only enum types
 template< class T>
 struct TypeDispatch {
-    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
+    BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
     //BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
 
     typedef T TmpType;

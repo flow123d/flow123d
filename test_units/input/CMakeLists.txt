@@ -35,6 +35,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     ### define_test(enum_macro)
     
     define_test(type_base)
+    define_test(type_output)
     define_test(type_record)
     
     define_test(storage)
@@ -42,6 +43,8 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     define_test(json_to_storage)
     define_test(input_interface)
     define_test(type_use_case)
+    
+    define_test(lazy_types)
 
 endif()
 

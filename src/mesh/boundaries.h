@@ -30,7 +30,9 @@
 #ifndef BOUNDARIES_H
 #define BOUNDARIES_H
 
-#include "mesh/mesh.h"
+//#include "mesh/mesh.h"
+#include "mesh/sides.h"
+#include "mesh/edges.h"
 #include "system/sys_vector.hh"
 
 
@@ -45,6 +47,7 @@
  * neighbor with another element or when it belongs to an segment.
  */
 
+class Element;
 
 //=============================================================================
 // STRUCTURE OF THE BOUNDARY CONDITION
@@ -52,30 +55,45 @@
 class Boundary
 {
 public:
-    Boundary()
-    : group(0), type(2), flux(0.0)
-    {}
     /**
      * temporary solution for old type BCD.
      * Transport BCD refers through IDs to flow BCD, so we have to
      * store positions of Flow BCD items somewhere.
      */
-    static flow::VectorId<Boundary *> id_to_bcd;
+    static flow::VectorId<unsigned int> id_to_bcd;
 
-    inline ElementIter get_bc_element_iter() {
-        return bc_element_;
+    Boundary();
+
+    /**
+     * Can not make this inline now.
+     */
+    Edge * edge();
+
+    Element * element();
+
+    Region region() {
+        return element()->region();
+    }
+
+    ElementAccessor<3> element_accessor();
+
+
+    inline SideIter side() {
+        if (edge()->n_sides != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
+        return edge()->side_[0];
     }
 
     // Data readed from boundary conditions files (REMOVE)
-    int      type;      // Type of boundary condition
-    double   scalar;    // Scalar - for Dirichlet's or Newton's type
-    double   flux;      // Flux - for Neumann's type or source
-    double   sigma;     // Sigma koef. - for Newton's type
+    //int      type;      // Type of boundary condition
+    //double   scalar;    // Scalar - for Dirichlet's or Newton's type
+    //double   flux;      // Flux - for Neumann's type or source
+    //double   sigma;     // Sigma koef. - for Newton's type
 
-    int      group;     // Group of condition
+    //int      group;     // Group of condition
     // Topology of the mesh
-    SideIter side;      // side, where prescribed
-    ElementIter bc_element_;  // in near future this should replace Boundary itself, when we remove BC data members
+    unsigned int    edge_idx_;    // more then one side can be at one boundary element
+    unsigned int    bc_ele_idx_;  // in near future this should replace Boundary itself, when we remove BC data members
+    Mesh *mesh_;
 
 };
 #define DIRICHLET   1

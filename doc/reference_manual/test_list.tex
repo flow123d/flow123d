@@ -169,11 +169,11 @@ There are acutally two different cases computed in this test. Dual porosity and 
 
 The coefficient of diffusive transfer through the fractures (means between the fracture and the surrounding material) is set to zero so the substance can be transported only along the fractures.
 
-The domain is two-dimensional slice through a part of a relief which is cutted by several one-dimensional fractures.
+The domain is two-dimensional slice through a part of a relief which which involves several one-dimensional fractures.
 
 Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
 
-Dirichlet boundary condition for transport is prescribed on both sides as it is for flow boundary condition. The value of concentration is 1.0 for both substances. Initial concentration of the substances is zero in the whole area. 
+Dirichlet boundary condition for transport is prescribed on both sides as it is for flow boundary condition and the value of concentration is 1.0 for both substances. Initial concentration of the substances is zero in the whole area. 
 
 This test verifies explicitly computed transport considering only convection with dual porosity and sorption and implicitly computed transport considering both convection and dispersion. Transport through 1D-2D element connections is computed in addition to the first test.
 

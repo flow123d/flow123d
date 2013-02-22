@@ -30,8 +30,11 @@
  *
  */
 
+#include <math.h>
+#include "global_defs.h"
 #include "system/system.hh"
 #include "system/math_fce.h"
+
 
 static double Det2( SmallMtx2 a);
 static double Inverse2(SmallMtx2 a,SmallMtx2 b);

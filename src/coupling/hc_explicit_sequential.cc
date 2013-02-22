@@ -34,37 +34,37 @@
 #include "transport/transport_operator_splitting.hh"
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
-#include "time_marks.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
-
+#include "system/sys_profiler.hh"
 #include "input/input_type.hh"
 
 
-Input::Type::AbstractRecord &CouplingBase::get_input_type() {
-    F_ENTRY;
-    using namespace Input::Type;
-    static AbstractRecord rec("Problem",
-            "The root record of description of particular the problem to solve.");
+namespace it = Input::Type;
 
-    if (! rec.is_finished()) {
-        rec.declare_key("description",String(),
+it::AbstractRecord CouplingBase::input_type
+    = it::AbstractRecord("Problem",
+    		"The root record of description of particular the problem to solve.")
+    .declare_key("description",it::String(),
             "Short description of the solved problem.\n"
-            "Is displayed in the main log, and possibly in other text output files.");
-        rec.declare_key("material", FileName::input(),Default::obligatory(),
-                        "File with material information.");
-        rec.declare_key("mesh", Mesh::get_input_type(), Default::obligatory(),
+            "Is displayed in the main log, and possibly in other text output files.")
+	.declare_key("mesh", Mesh::input_type, it::Default::obligatory(),
             "Computational mesh common to all equations.");
-            rec.finish();
 
-        HC_ExplicitSequential::get_input_type();
 
-        rec.no_more_descendants();
-    }
+it::Record HC_ExplicitSequential::input_type
+    = it::Record("SequentialCoupling",
+            "Record with data for a general sequential coupling.\n")
+    .derive_from( CouplingBase::input_type )
+	.declare_key("time", TimeGovernor::input_type, it::Default::optional(),
+			"Simulation time frame and time step.")
+	.declare_key("primary_equation", DarcyFlowMH::input_type, it::Default::obligatory(),
+			"Primary equation, have all data given.")
+	.declare_key("secondary_equation", TransportBase::input_type,
+			"The equation that depends (the velocity field) on the result of the primary equation.");
 
-    return rec;
-}
+
 
 
 /**
@@ -78,18 +78,17 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     using namespace Input;
 
     // Initialize Time Marks
-    main_time_marks = new TimeMarks();
+    //main_time_marks = new TimeMarks();
 
     // Material Database
-    material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
+    // material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
 
     // Read mesh
     {
-        GmshMeshReader reader;
         mesh = new Mesh( in_record.val<Record>("mesh") );
-        reader.read( in_record.val<Record>("mesh").val<FilePath>("mesh_file"), mesh);
+        mesh->init_from_input();
 
-        mesh->setup_materials(*material_database);
+        //mesh->setup_materials(*material_database);
         Profiler::instance()->set_task_info(
             "Description has to be set in main. by different method.",
             mesh->n_elements());
@@ -113,12 +112,12 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
 
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
-    if (prim_eq.type() == DarcyFlowMH_Steady::get_input_type() ) {
-            water = new DarcyFlowMH_Steady(*main_time_marks, *mesh, *material_database, prim_eq);
-    } else if (prim_eq.type() == DarcyFlowMH_Unsteady::get_input_type() ) {
-            water = new DarcyFlowMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
-    } else if (prim_eq.type() == DarcyFlowLMH_Unsteady::get_input_type() ) {
-            water = new DarcyFlowLMH_Unsteady(*main_time_marks, *mesh, *material_database, prim_eq);
+    if (prim_eq.type() == DarcyFlowMH_Steady::input_type ) {
+            water = new DarcyFlowMH_Steady(*mesh, prim_eq);
+    } else if (prim_eq.type() == DarcyFlowMH_Unsteady::input_type ) {
+            water = new DarcyFlowMH_Unsteady(*mesh, prim_eq);
+    } else if (prim_eq.type() == DarcyFlowLMH_Unsteady::input_type ) {
+            water = new DarcyFlowLMH_Unsteady(*mesh, prim_eq);
     } else {
             xprintf(UsrErr,"Equation type not implemented.");
     }
@@ -129,13 +128,15 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
     if (it) {
-        if (it->type() == TransportOperatorSplitting::get_input_type())
+        if (it->type() == TransportOperatorSplitting::input_type)
         {
-            transport_reaction = new TransportOperatorSplitting(*main_time_marks, *mesh, *material_database, *it);
+            transport_reaction = new TransportOperatorSplitting(*mesh, *it);
+            ((TransportOperatorSplitting*)transport_reaction)->set_eq_data( &(water->get_data().cross_section) );
         }
-        else if (it->type() == TransportDG::get_input_type())
+        else if (it->type() == TransportDG::input_type)
         {
-            transport_reaction = new TransportDG(*main_time_marks, *mesh, *material_database, *it);
+            transport_reaction = new TransportDG(*mesh, *it);
+            ((TransportDG*)transport_reaction)->set_eq_data( &(water->get_data().cross_section));
         }
         else
         {
@@ -143,27 +144,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         }
 
     } else {
-        transport_reaction = new TransportNothing(*main_time_marks, *mesh, *material_database);
+        transport_reaction = new TransportNothing(*mesh);
     }
-}
-
-Input::Type::Record &HC_ExplicitSequential::get_input_type() {
-    F_ENTRY;
-    using namespace Input::Type;
-    static Record rec("SequentialCoupling",
-            "Record with data for a general sequential coupling.\n");
-
-    if (! rec.is_finished() ) {
-        rec.derive_from( CouplingBase::get_input_type() );
-        rec.declare_key("time", TimeGovernor::get_input_type(), Default::optional(),
-                "Simulation time frame and time step.");
-        rec.declare_key("primary_equation", DarcyFlowMH::get_input_type(), Default::obligatory(),
-                "Primary equation, have all data given.");
-        rec.declare_key("secondary_equation", TransportBase::get_input_type(),
-                "The equation that depends (the velocity field) on the result of the primary equation.");
-        rec.finish();
-    }
-    return rec;
 }
 
 
@@ -187,6 +169,7 @@ void HC_ExplicitSequential::run_simulation()
     // theta = 0.5   velocity from center of transport interval ( mimic Crank-Nicholson)
     // theta = 1.0   velocity from end of transport interval (partialy explicit scheme)
     const double theta=0.5;
+    
 
     double velocity_interpolation_time;
     bool velocity_changed;
@@ -214,13 +197,17 @@ void HC_ExplicitSequential::run_simulation()
 
     while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
 
-        transport_reaction->set_time_step_constrain(water->time().dt());
+        transport_reaction->set_time_upper_constraint(water->time().dt());
         // in future here could be re-estimation of transport planed time according to
         // evolution of the velocity field. Consider the case w_dt << t_dt and velocity almost constant in time
         // which suddenly rise in time 3*w_dt. First we the planed transport time step t_dt could be quite big, but
         // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
         velocity_interpolation_time= theta * transport_reaction->planned_time() + (1-theta) * transport_reaction->solved_time();
-
+        
+        // printing water and transport times every step
+        //xprintf(Msg,"HC_EXPL_SEQ: velocity_interpolation_time: %f, water_time: %f transport time: %f\n", 
+        //        velocity_interpolation_time, water->time().t(), transport_reaction->time().t());
+         
         // if transport is off, transport should return infinity solved and planned times so that
         // only water branch takes the place
         if (water->solved_time() < velocity_interpolation_time) {
@@ -229,6 +216,8 @@ void HC_ExplicitSequential::run_simulation()
             water_output->postprocess();
             // here possibly save solution from water for interpolation in time
 
+            //water->time().view("WATER");     //show water time governor
+            
             water_output->output();
 
             water->choose_next_time();
@@ -246,6 +235,9 @@ void HC_ExplicitSequential::run_simulation()
                 velocity_changed = false;
             }
             transport_reaction->update_solution();
+            
+            //transport_reaction->time().view("TRANSPORT");        //show transport time governor
+            
             transport_reaction->output_data();
         }
 
@@ -256,8 +248,7 @@ void HC_ExplicitSequential::run_simulation()
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
     delete mesh;
-    delete material_database;
-    delete main_time_marks;
+    //delete material_database;
     delete water;
     delete water_output;
     delete transport_reaction;

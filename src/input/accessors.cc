@@ -16,6 +16,18 @@ namespace Input {
  */
 
 
+Record::Record()
+: record_type_(), storage_( NULL )
+{}
+
+
+
+Record::Record(const Record &rec)
+: record_type_(rec.record_type_), storage_(rec.storage_)
+{}
+
+
+
 Record::Record(const StorageBase *store, const Type::Record type)
 : record_type_(type), storage_(store)
 {
@@ -24,9 +36,24 @@ Record::Record(const StorageBase *store, const Type::Record type)
 }
 
 
+
+
 /*****************************************************************************
  * Implementation of the class Input::AbstractRecord
  */
+
+AbstractRecord::AbstractRecord()
+: record_type_(), storage_( NULL )
+{}
+
+
+
+AbstractRecord::AbstractRecord(const AbstractRecord &rec)
+: record_type_(rec.record_type_), storage_(rec.storage_)
+{}
+
+
+
 AbstractRecord::AbstractRecord(const StorageBase *store, const Type::AbstractRecord type)
 : record_type_(type), storage_(store)
 {
@@ -36,12 +63,12 @@ AbstractRecord::AbstractRecord(const StorageBase *store, const Type::AbstractRec
 
 
 
-AbstractRecord::operator Record()
+AbstractRecord::operator Record() const
 { return Record(storage_,type()); }
 
 
 
-Input::Type::Record AbstractRecord::type()
+Input::Type::Record AbstractRecord::type() const
 {
     unsigned int type_id = storage_->get_item(0)->get_int();
     return record_type_.get_descendant(type_id);
@@ -52,6 +79,18 @@ Input::Type::Record AbstractRecord::type()
 /*****************************************************************************
  * Implementation of the class Input::Array
  */
+
+
+Array::Array()
+: array_type_(Type::Bool()), storage_( &empty_storage_ )
+{}
+
+
+Array::Array(const Array &ar)
+: array_type_(ar.array_type_), storage_(ar.storage_)
+{}
+
+
 Array::Array(const StorageBase *store, const Type::Array type)
 : array_type_(type), storage_(store)
 {
@@ -59,8 +98,13 @@ Array::Array(const StorageBase *store, const Type::Array type)
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("Array") );
 }
 
+StorageArray Array::empty_storage_ = StorageArray(0);
 
-
+/*****************************************************************************
+ * Explicit instantiation of accessor's templates
+ *
+ * .. TODO
+ */
 
 
 

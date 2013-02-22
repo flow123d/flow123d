@@ -6,55 +6,45 @@
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "system/system.hh"
-#include "materials.hh"
 #include "transport/transport.h"
 //#include "system/par_distribution.hh"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
-Input::Type::Record & Pade_approximant::get_one_decay_substep()
-{
-	using namespace Input::Type;
-	static Record rec("Substep", "Equation for reading information about radioactive decays.");
 
-	if(!rec.is_finished()){
-		rec.declare_key("parent", String(), Default::obligatory(),
-				"Identifier of an isotope.");
-        rec.declare_key("half_life", Double(), Default::optional(),
-                "Half life of the parent substance.");
-        rec.declare_key("kinetic", Double(), Default::optional(),
-                "Kinetic constants describing first order reactions.");
-		rec.declare_key("products", Array(String()), Default::obligatory(),
-				"Identifies isotopes which decays parental atom to.");
-		rec.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
+using namespace Input::Type;
+
+Record Pade_approximant::input_type_one_decay_substep
+	= Record("Substep", "Equation for reading information about radioactive decays.")
+	.declare_key("parent", String(), Default::obligatory(),
+				"Identifier of an isotope.")
+    .declare_key("half_life", Double(), Default::optional(),
+                "Half life of the parent substance.")
+    .declare_key("kinetic", Double(), Default::optional(),
+                "Kinetic constants describing first order reactions.")
+	.declare_key("products", Array(String()), Default::obligatory(),
+				"Identifies isotopes which decays parental atom to.")
+	.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
 				"Decay chain branching percentage.");
-		rec.finish();
-	}
-	return rec;
-}
 
-Input::Type::Record & Pade_approximant::get_input_type()
-{
-	using namespace Input::Type;
-	static Record rec("PadeApproximant", "Abstract record with an information about pade approximant parameters.");
 
-	if (!rec.is_finished()) {
-	    rec.derive_from( Reaction::get_input_type() );
-        rec.declare_key("decays", Array( Pade_approximant::get_one_decay_substep() ), Default::obligatory(),
-                "Description of particular decay chain substeps.");
-		rec.declare_key("nom_pol_deg", Integer(), Default("2"),
-				"Polynomial degree of the nominator of Pade approximant.");
-		rec.declare_key("den_pol_deg", Integer(), Default("2"),
+Record Pade_approximant::input_type
+	= Record("PadeApproximant", "Abstract record with an information about pade approximant parameters.")
+	.derive_from( Reaction::input_type )
+    .declare_key("decays", Array( Pade_approximant::input_type_one_decay_substep ), Default::obligatory(),
+                "Description of particular decay chain substeps.")
+	.declare_key("nom_pol_deg", Integer(), Default("2"),
+				"Polynomial degree of the nominator of Pade approximant.")
+	.declare_key("den_pol_deg", Integer(), Default("2"),
 				"Polynomial degree of the nominator of Pade approximant");
-		rec.finish();
-	}
-	return rec;
-}
+
 
 using namespace std;
 
-Pade_approximant::Pade_approximant(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-			:Linear_reaction(marks, init_mesh, material_database, in_rec, names)
+//Pade_approximant::Pade_approximant(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+//    : Linear_reaction(marks, init_mesh, material_database, in_rec, names)
+Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+      : Linear_reaction(init_mesh, in_rec, names)
 {
 	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
 	den_pol_deg = in_rec.val<int>("den_pol_deg");

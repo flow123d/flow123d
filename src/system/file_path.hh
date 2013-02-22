@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "exceptions.hh"
+#include "system/exceptions.hh"
 
 //#include "input/json_to_storage.hh"
 
@@ -44,7 +44,10 @@ public:
         output_file
     };
 
-
+    /**
+     * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
+     */
+    FilePath() : abs_file_path("/__NO_FILE_NAME_GIVEN__") {}
 
     /**
      * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.
@@ -63,7 +66,7 @@ public:
      * Set:
      * - working directory (used only if the output directory is relative)
      * - root directory (of the main input file)
-     * - input directory to replace ${INPUT} placeholder
+     * - input directory to replace ${INPUT} place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
     static void set_io_dirs(const string working_dir, const string root_input,const string input,const string output);
@@ -86,7 +89,7 @@ public:
      * @endcode
      *
      * @param[in]   key Key of new item.
-     * @param[in]   val Value of new item.
+     * @param[in]   value Value of new item.
      */
     static void add_placeholder(string key,string value);
 

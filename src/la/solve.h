@@ -90,9 +90,9 @@ typedef enum {
  **************************************************************/
 struct  Solver {
 public:
-    static Input::Type::AbstractRecord &get_input_type();
-    static Input::Type::Record &get_input_type_petsc();
-    static Input::Type::Record &get_input_type_bddc();
+    static Input::Type::AbstractRecord input_type;
+    static Input::Type::Record input_type_petsc;
+    static Input::Type::Record input_type_bddc;
 
     int some_func();
 

@@ -12,50 +12,67 @@ namespace Type {
 
 using std::string;
 
-void Selection::add_value(const int value, const std::string &key, const std::string &description) {
-    empty_check();
+Selection::Selection()
+: data_(boost::make_shared<SelectionData>("EmptySelection"))
+{
+    close();
+}
+
+
+
+Selection::Selection(const Selection& other)
+: Scalar(other), data_(other.data_)
+{
+    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
+}
+
+
+
+Selection::Selection(const string &name)
+: data_(boost::make_shared<SelectionData>(name))
+{
+    TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
+}
+
+
+
+Selection &Selection::add_value(const int value, const std::string &key, const std::string &description) {
     if (is_finished())
         xprintf(PrgErr, "Declaration of new name: %s in finished Selection type: %s\n", key.c_str(), type_name().c_str());
 
     data_->add_value(value, key, description);
+    return *this;
+}
+
+
+const Selection & Selection::close() const {
+    data_->finished=true;
+    return *this;
 }
 
 
 
-void Selection::finish() {
-    empty_check();
-    data_->finished = true;
+bool Selection::valid_default(const string &str) const {
+    if (! has_name(str))
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
+    return true;
 }
-
 
 
 bool Selection::is_finished() const {
-    empty_check();
     return data_->finished;
 }
 
 
 
-std::ostream& Selection::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const {
-    if (!is_finished())
-        xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
-    return data_->documentation(stream, extensive, pad);
-}
-
-
-
 void Selection::reset_doc_flags() const {
-    if (data_.use_count() != 0)
-        data_->made_extensive_doc = false;
+   data_->made_extensive_doc = false;
 }
 
 
 
 string Selection::type_name() const {
-    if (data_.use_count() == 0)
-        return "empty_selection_handle";
-    else
-        return data_->type_name_;
+   return data_->type_name_;
 }
 
 
@@ -82,15 +99,21 @@ int Selection::from_default(const string &str) const {
     try {
         return name_to_int(str);
     } catch (ExcSelectionKeyNotFound &e) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName( type_name() + " with values: "+key_list() ));
     }
+    return -1;
+}
+
+
+string Selection::key_list() const {
+    ostringstream os;
+    for(unsigned int i=0; i<size(); i++) os << "'" <<data_->keys_[i].key_ << "' ";
+    return os.str();
 }
 
 
 
 void Selection::SelectionData::add_value(const int value, const std::string &key, const std::string &description) {
-    F_ENTRY;
-
     KeyHash key_h = TypeBase::key_hash(key);
     if (key_to_index_.find(key_h) != key_to_index_.end()) {
         xprintf(PrgErr, "Name '%s' already exists in Selection: %s\n", key.c_str(), type_name_.c_str());
@@ -112,31 +135,6 @@ void Selection::SelectionData::add_value(const int value, const std::string &key
 }
 
 
-
-std::ostream& Selection::SelectionData::documentation(std::ostream& stream, DocType extensive, unsigned int pad) const
-{
-
-    if (extensive == record_key) {
-        stream << "Selection '" << type_name_ << "' of " << keys_.size() << " values.";
-    } else
-    if (! made_extensive_doc) {
-        made_extensive_doc = true;
-        pad=0;
-
-        stream << endl << "Selection '" << type_name_ << "' of " << keys_.size() << " values." << endl;
-        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
-        // keys
-        for (keys_const_iterator it = keys_.begin(); it != keys_.end(); ++it) {
-            stream << setw(4) << "" << it->key_ << " = " << it->value;
-            if (it->description_ != "")
-                stream << " (" << it->description_ << ")";
-            stream << endl;
-        }
-        stream << setw(pad) << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type_name_ << endl;
-    }
-
-    return stream;
-}
 
 
 

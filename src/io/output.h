@@ -205,8 +205,8 @@ public:
     /**
      * \brief Constructor of the Output object
      *
-     * \param[in] *_mesh    The pointer at Mesh
-     * \param[in] *fname    The name of the output file
+     * \param[in] mesh    The pointer at Mesh
+     * \param[in] filename    The name of the output file
      */
     Output(Mesh *mesh, string filename);
 
@@ -496,8 +496,8 @@ public:
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
-     * \param[in]   *_mesh  The pointer at mesh object.
-     * \param[in]   &in_rec The reference on the input record
+     * \param[in]   mesh  The pointer at mesh object.
+     * \param[in]   in_rec The reference on the input record
      */
     OutputTime(Mesh *mesh, const Input::Record &in_rec);
 
@@ -510,9 +510,9 @@ public:
     /**
      * \brief The specification of output stream
      *
-     * \return This method returns record for output stream
+     * \return This variable defines record for output stream
      */
-    static Input::Type::Record & get_input_type();
+    static Input::Type::Record input_type;
 
 
     /**
@@ -590,7 +590,6 @@ public:
      * \param[in] name  The name of data
      * \param[in] unit  The units of data
      * \param[in] *data The pointer at data (array of int, float or double)
-     * \param[in] size  The size of array (number of values)
      *
      * \return This function returns 1, when data were registered. This function
      * returns 0, when it wasn't able to register data (number of values isn't
@@ -611,7 +610,6 @@ public:
      * \param[in] name  The name of data
      * \param[in] unit  The units of data
      * \param[in] *data The pointer at data (array of int, float or double)
-     * \param[in] size  The size of array (number of values)
      *
      * \return This function returns 1, when data were registered. This function
      * returns 0, when it wasn't able to register data (number of values isn't
@@ -924,7 +922,7 @@ public:
 	virtual int write_head(void) { return 0; }
 	virtual int write_tail(void) { return 0; }
 
-	static Input::Type::AbstractRecord &get_input_type();
+	static Input::Type::AbstractRecord input_type;
 };
 
 inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)

@@ -5,18 +5,22 @@
  *      Author: jiri
  */
 
+#include <iostream>
+#include <iomanip>
+
 #include "system/system.hh"
-#include "io_namehandler.hh"
+#include "system/sys_profiler.hh"
+#include "system/xio.h"
 
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
 #include "system/sys_vector.hh"
-#include <time_governor.hh>
-#include <materials.hh>
+#include "coupling/time_governor.hh"
 #include "coupling/equation.hh"
 #include "transport/transport.h"
 #include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
+#include "flow/old_bcd.hh"
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
@@ -31,91 +35,127 @@
 #include "input/accessors.hh"
 
 
-Input::Type::AbstractRecord & TransportBase::get_input_type()
-{
-	using namespace Input::Type;
-	static AbstractRecord rec("Transport", "Secondary equation for transport of substances.");
+using namespace Input::Type;
 
-	if (!rec.is_finished()) {
-	    rec.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-	                    "Time governor setting for the transport model.");
-        rec.declare_key("substances", Array(String()), Default::obligatory(),
-                        "Names of transported substances.");
-
+AbstractRecord TransportBase::input_type
+	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
+	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
+			"Time governor setting for the transport model.")
+	.declare_key("substances", Array(String()), Default::obligatory(),
+			"Names of transported substances.")
 	    // input data
-	    rec.declare_key("sorption_enable", Bool(), Default("false"),
-						                "Model of sorption.");
-		rec.declare_key("dual_porosity", Bool(), Default("false"),
-						                "Dual porosity model.");
-
-		rec.declare_key("initial_file", FileName::input(), Default::obligatory(),
-						                "Input file with initial concentrations.");
-		rec.declare_key("boundary_file", FileName::input(), Default::obligatory(),
-						                "Input file with boundary conditions.");
-		rec.declare_key("bc_times", Array(Double()), Default::optional(),
-				 	 	                "Times for changing the boundary conditions.");
-		rec.declare_key("sources_file", FileName::input(), Default::optional(),
-		                                "File with data for the source term in the transport equation.");
-        rec.declare_key("output", TransportBase::get_input_type_output_record(), Default::obligatory(),
-                                        "Parameters of output stream.");
-
-		rec.finish();
-
-		TransportOperatorSplitting::get_input_type();
-		TransportDG::get_input_type();
-
-		rec.no_more_descendants();
-	}
-	return rec;
-}
+	.declare_key("sorption_enable", Bool(), Default("false"),
+			"Model of sorption.")
+	.declare_key("dual_porosity", Bool(), Default("false"),
+			"Dual porosity model.")
+	.declare_key("sources_file", FileName::input(), Default::optional(),
+			"File with data for the source term in the transport equation.")
+	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
+			"Parameters of output stream.");
 
 
+Record TransportBase::input_type_output_record
+	= Record("TransportOutput", "Output setting for transport equations.")
+	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+			"Parameters of output stream.")
+	.declare_key("save_step", Double(0.0), Default::obligatory(),
+			"Interval between outputs.")
+	.declare_key("output_times", Array(Double(0.0)),
+			"Explicit array of output times (can be combined with 'save_step'.")
+	.declare_key("conc_mobile_p0", String(),
+			"Name of output stream for P0 approximation of the concentration in mobile phase.")
+	.declare_key("conc_immobile_p0", String(),
+			"Name of output stream for P0 approximation of the concentration in immobile phase.")
+	.declare_key("conc_mobile_sorbed_p0", String(),
+			"Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.")
+	.declare_key("conc_immobile_sorbed_p0", String(),
+			"Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
 
-Input::Type::Record & TransportBase::get_input_type_output_record()
+
+Record TransportOperatorSplitting::input_type
+	= Record("TransportOperatorSplitting",
+            "Explicit FVM transport (no diffusion)\n"
+            "coupled with reaction and sorption model (ODE per element)\n"
+            " via. operator splitting.")
+    .derive_from(TransportBase::input_type)
+	.declare_key("reactions", Reaction::input_type, Default::optional(),
+                "Initialization of per element reactions.")
+    .declare_key("bc_data", Array(TransportOperatorSplitting::EqData().boundary_input_type()
+    		.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
+    		.declare_key("bc_times", Array(Double()), Default::optional(),
+    				"Times for changing the boundary conditions (obsolete).")
+    		), IT::Default::obligatory(), "")
+    .declare_key("bulk_data", Array(TransportOperatorSplitting::EqData().bulk_input_type()),
+    		IT::Default::obligatory(), "");
+
+
+TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
+: EqDataBase(eq_name),
+  bc_time_level(-1)
 {
-    using namespace Input::Type;
-    static Record out_rec("TransportOutput", "Output setting for transport equations.");
 
-    if (!out_rec.is_finished()) {
-        out_rec.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-                "Parameters of output stream.");
+	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", Default("0"));
+	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
 
-        out_rec.declare_key("save_step", Double(0.0), Default::obligatory(),
-                "Interval between outputs.");
-
-        out_rec.declare_key("output_times", Array(Double(0.0)),
-                        "Explicit array of output times (can be combined with 'save_step'.");
-
-        out_rec.declare_key("conc_mobile_p0", String(),
-                        "Name of output stream for P0 approximation of the concentration in mobile phase.");
-        out_rec.declare_key("conc_immobile_p0", String(),
-                                "Name of output stream for P0 approximation of the concentration in immobile phase.");
-        out_rec.declare_key("conc_mobile_sorbed_p0", String(),
-                                "Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.");
-        out_rec.declare_key("conc_immobile_sorbed_p0", String(),
-                                "Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
-
-        out_rec.finish();
-
-    }
-    return out_rec;
 }
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, const Input::Record &in_rec)
-: TransportBase(marks, init_mesh, material_database, in_rec)
+RegionSet TransportOperatorSplitting::EqData::read_boundary_list_item(Input::Record rec) {
+	// Base method EqDataBase::read_boundary_list_item must be called first!
+	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
+    FilePath bcd_file;
+    if (rec.opt_val("old_boundary_file", bcd_file) ) {
+        // TODO: remove bc_times key
+    	Input::Iterator<Input::Array> bc_it = rec.find<Input::Array>("bc_times");
+    	if (bc_it) bc_it->copy_to(bc_times);
+
+    	if (bc_times.size() == 0) {
+    		bc_time_level = -1;
+    	} else {
+            stringstream name_str;
+            name_str << (string)bcd_file << "_" << setfill('0') << setw(3) << bc_time_level;
+            bcd_file = FilePath(name_str.str(), FilePath::input_file);
+            bc_time_level++;
+        }
+        OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
+    }
+    return domain;
+}
+
+
+
+
+TransportOperatorSplitting::EqData::EqData() : TransportEqData("TransportOperatorSplitting")
+{
+	ADD_FIELD(por_imm, "Immobile porosity", Default("0"));
+	ADD_FIELD(alpha, "Coefficients of non-equilibrium exchange.", Default("0"));
+	ADD_FIELD(sorp_type, "Type of sorption.", Default("1"));
+	ADD_FIELD(sorp_coef0, "Coefficient of sorption.", Default("0"));
+	ADD_FIELD(sorp_coef1, "Coefficient of sorption.", Default("0"));
+	ADD_FIELD(phi, "Solid / solid mobile.", Default("0.5"));
+
+	ADD_FIELD(sources_density, "Density of transport sources.", Default("0"));
+	ADD_FIELD(sources_sigma, "", Default("0"));
+	ADD_FIELD(sources_conc, "Concentration sources.", Default("0"));
+
+}
+
+
+TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
+: TransportBase(init_mesh, in_rec)
 {
 	Distribution *el_distribution;
 	int *el_4_loc;
 
     // double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
 
-	convection = new ConvectionTransport(marks, *mesh_, *mat_base, in_rec);
+	convection = new ConvectionTransport(*mesh_, data, in_rec);
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
-		if (reactions_it->type() == Linear_reaction::get_input_type() ) {
-	        decayRad =  new Linear_reaction(marks, init_mesh, material_database, *reactions_it,
+		if (reactions_it->type() == Linear_reaction::input_type ) {
+	        decayRad =  new Linear_reaction(init_mesh, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
@@ -124,8 +164,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 
 	        Semchem_reactions = NULL;
 		} else
-	    if (reactions_it->type() == Pade_approximant::get_input_type() ) {
-	        decayRad = new Pade_approximant(marks, init_mesh, material_database, *reactions_it,
+	    if (reactions_it->type() == Pade_approximant::input_type ) {
+                decayRad = new Pade_approximant(init_mesh, *reactions_it,
 	                                        convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
@@ -133,7 +173,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 	        Semchem_reactions = NULL;
 	    } else
-	    if (reactions_it->type() == Semchem_interface::get_input_type() ) {
+	    if (reactions_it->type() == Semchem_interface::input_type ) {
 	        Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	        Semchem_reactions->set_el_4_loc(el_4_loc);
 	        Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
@@ -144,11 +184,11 @@ TransportOperatorSplitting::TransportOperatorSplitting(TimeMarks &marks, Mesh &i
 	    decayRad = NULL;
 	    Semchem_reactions = NULL;
 	}
+	
+        time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), this->mark_type());
+        output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
 
-	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), *time_marks, this->mark_type());
-	output_mark_type = this->mark_type() | time_marks->type_fixed_time() | time_marks->type_output();
-
-    time_marks->add_time_marks(0.0,
+        time_->marks().add_time_marks(0.0,
             in_rec.val<Input::Record>("output").val<double>("save_step"),
             time_->end_time(), output_mark_type );
 	// TODO: this has to be set after construction of transport matrix !!
@@ -187,44 +227,26 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 }
 
 
-Input::Type::Record &TransportOperatorSplitting::get_input_type()
-{
-    using namespace Input::Type;
-    static Record rec("TransportOperatorSplitting",
-            "Explicit FVM transport (no diffusion)\n"
-            "coupled with reaction and sorption model (ODE per element)\n"
-            " via. operator splitting.");
-
-    if (!rec.is_finished()) {
-        rec.derive_from(TransportBase::get_input_type());
-        rec.declare_key("reactions", Reaction::get_input_type(), Default::optional(),
-                "Initialization of per element reactions.");
-
-        rec.finish();
-    }
-    return rec;
-}
-
 
 
 void TransportOperatorSplitting::output_data(){
 
     if (time_->is_current(output_mark_type)) {
+        DBGMSG("\nTOS: output time: %f\n", time_->t());
         convection->output_vector_gather();
         field_output->write_data(time_->t());
     }
 }
 
-void TransportOperatorSplitting::read_simulation_step(double sim_step) {
-	time_->set_constrain(sim_step);
-}
 
 
 void TransportOperatorSplitting::update_solution() {
 
 
     time_->next_time();
-	convection->set_target_time(time_->t());
+    //time_->view("TOS");    //show time governor
+    
+    convection->set_target_time(time_->t());
 
 	if (decayRad) decayRad->set_time_step(convection->time().estimate_dt());
 	//if (decayRad) static_cast<Pade_approximant *>  (decayRad)->set_time_step(convection->time().estimate_dt());
@@ -232,22 +254,24 @@ void TransportOperatorSplitting::update_solution() {
 	// TODO: update Semchem time step here!!
 	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
-    xprintf( Msg, "t: %f (TOS)                  cfl_dt: %f ", convection->time().t(), convection->time().estimate_dt() );
+        
+    xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n", 
+             time_->t(), convection->time().t(), convection->time().estimate_dt() );
+    
     START_TIMER("transport_steps");
     int steps=0;
     while ( convection->time().lt(time_->t()) )
     {
         steps++;
 	    // one internal step
-	    //xprintf( Msg, "Time : %f\n", convection->time().t() );
 	    convection->compute_one_step();
 	    // Calling linear reactions and Semchem, temporarily commented
 	    if(decayRad) decayRad->compute_one_step();
 	    if (Semchem_reactions) Semchem_reactions->compute_one_step();
 	}
     END_TIMER("transport_steps");
-    //DBGMSG("conv time: %f TOS time: %f\n", convection->time().t(), time_->t());
-    xprintf( Msg, " steps: %d\n",steps);
+    
+    xprintf( Msg, "CONVECTION: steps: %d\n",steps);
 }
 
 
@@ -265,4 +289,15 @@ void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
 void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
 	convection->compute_one_step();
 };
+
+void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
+{
+  data.cross_section = cross_section;
+  if (convection != NULL) convection->set_cross_section(cross_section);
+  if (Semchem_reactions != NULL) {
+	  Semchem_reactions->set_cross_section(cross_section);
+	  Semchem_reactions->set_sorption_fields(&data.por_m, &data.por_imm, &data.phi);
+  }
+}
+
 

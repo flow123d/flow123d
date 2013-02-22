@@ -12,10 +12,12 @@
 #include "system/system.hh"
 #include "system/exceptions.hh"
 #include "system/file_path.hh"
+//#include "lazy_types.hh"
 
 
 #include <limits>
 #include <ios>
+#include <set>
 #include <map>
 #include <vector>
 #include <string>
@@ -61,55 +63,48 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  *  @ingroup input_types
  */
 class TypeBase {
-public:
-    /// Possible types of documentation output
-    enum DocType {
-        record_key,             ///<    Short type description as part of key description.
-        full_after_record,      ///<    Detail description of complex types after the record.
-        full_along              ///<    Detail description of the type itself as part of the error messages (no descendants).
-    };
-    /**
-     * Default constructor. Set all types finished after construction.
-     */
-    TypeBase() {}
-    /**
-     * @brief Implementation of documentation printing mechanism.
-     *
-     * It writes documentation into given stream @p stream. With @p extensive==0, it should print the description
-     * about two lines long, while for @p extensive>0 it outputs full documentation. For value 1 it do not
-     * output documentation of subtypes, while for value 2 it calls decumentations of subtypes recursively.
-     *
-     * This is primarily used for documentation of Record types where we first
-     * describe all keys of an Record with short descriptions and then we call recursively extensive documentation
-     * for sub types that was not fully described yet. Further, we provide method @p reset_doc_flags to reset
-     * all flags marking the already printed documentations. Parameter @p pad is used for correct indentation.
-     *
-     * TODO: Make specialized class for output of the declaration tree into various output formats.
-     * Search the tree by BFS instead of DFS (current implementation).
-     *
-     */
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const = 0;
+	friend class OutputJSONTemplate;
 
+public:
     /**
      * In order to output documentation of complex types only once, we mark types that have printed their documentation.
      * This method turns these marks off for the whole type subtree.
      */
     virtual void  reset_doc_flags() const =0;
 
-    /// Returns true if the type is fully specified. In particular for Record and Selection, it returns true after @p finish() method is called.
+    /**
+     * Returns true if the type is fully specified and ready for read access. For Record and Array types
+     * this say nothing about child types referenced in particular type object.
+     * In particular for Record and Selection, it returns true after @p finish() method is called.
+     *
+     */
     virtual bool is_finished() const
     {return true;}
 
     /// Returns an identification of the type. Useful for error messages.
-    virtual string type_name() const  =0;
+    virtual string type_name() const  { return "TypeBase"; }
 
     /**
-     * Returns string with Type extensive documentation.
+     * Returns string with Type extensive documentation. We need this to pass Type description at
+     * throw points since the Type object can be deallocated during stack unrolling so it is not good idea to pass
+     * pointer. Maybe we can pass smart pointers. Actually this method is used in various exceptions in json_to_storage.
+     *
+     * Some old note on this topic:
+     *    !!! how to pass instance of descendant of TypeBase through EI -
+     *  - can not pass it directly since TypeBase is not copyconstructable
+     *  - can not use shared_ptr for same reason
+     *  - can not use C pointers since the refered object can be temporary
+     *  solutions:
+     *   - consistently move TypeBase to Pimpl design
+     *   - provide virtual function make_copy, that returns valid shared_ptr
+     *
      */
     string desc() const;
 
+
+
     /**
-     * Comparison of types. It compares kind of type (Intteger, Double, String, REcord, ..), for complex types
+     * Comparison of types. It compares kind of type (Integer, Double, String, Record, ..), for complex types
      * it also compares names. For arrays compare subtypes.
      */
     virtual bool operator==(const TypeBase &other) const
@@ -119,24 +114,58 @@ public:
     bool operator!=(const TypeBase & other) const
         { return ! (*this == other); }
 
-    /// Empty virtual destructor.
-    virtual ~TypeBase( void ) {}
+    /**
+     *  Destructor removes type object from lazy_object_set.
+     */
+    virtual ~TypeBase();
+
+
+
+    /// Finishes all registered lazy types.
+    static void lazy_finish();
+
+
+    /**
+     * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
+     * These input types are typically defined by means
+     * of static variables, whose order of initialization is not known a priori. Since e.g. a Record can link to other
+     * input types through its keys, these input types cannot be accessed directly at the initialization phase.
+     * The remaining part of initialization can be done later, typically from main(), by calling the method finish().
+     *
+     * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
+     * are still raw pointers to not constructed objects the method returns false.
+     */
+    virtual bool finish() const
+    { return true; };
 
     /**
      * For types that can be initialized from a default string, this method check
      * validity of the default string. For invalid string an exception is thrown.
+     *
+     * Return false if the validity can not be decided due to presence of unconstructed types (Record, Selection)
      */
-    virtual void valid_default(const string &str) const
-    { }
+    virtual bool valid_default(const string &str) const =0;
+
+    string reference() const
+    { return reference_; };
+
+    void set_reference(string ref) const
+    { reference_ = ref; };
 
 protected:
-    /**
-     * Write out a string with given padding of every new line.
-     */
-    static std::ostream& write_description(std::ostream& stream, const string& str, unsigned int pad);
 
     /**
-     * Type of hash values used in associative array that translates key names to indices in a record.
+     * Default constructor. Register type object into lazy_object_set.
+     */
+    TypeBase();
+
+    /**
+     * Copy constructor. Register type object into lazy_object_set.
+     */
+    TypeBase(const TypeBase& other);
+
+    /**
+     * Type of hash values used in associative array that translates key names to indices in Record and Selection.
      *
      * For simplicity, we currently use whole strings as "hash".
      */
@@ -153,7 +182,40 @@ protected:
      */
     static bool is_valid_identifier(const string& key);
 
+    /**
+     * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
+     * LazyType. When all static variables are initialized, the method LazyTypes::instance().finish() can be called
+     * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
+     * Selections have to be finished after all other types since they are used by AbstractRecords to register all
+     * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
+     *
+     * This is list of unique instances that may contain raw pointers to possibly not yet constructed
+     * (static) objects. Unique instance is the instance that creates unique instance of the data class in pimpl idiom.
+     * These has to be completed/finished before use.
+     *
+     */
+    typedef std::vector< boost::shared_ptr<TypeBase> > LazyTypeVector;
 
+    /**
+     * The reference to the singleton instance of @p lazy_type_list.
+     */
+    static LazyTypeVector &lazy_type_list();
+
+    /**
+     * Set of  pointers to all constructed (even temporaries) lazy types. This list contains ALL instances
+     * (including copies and empty handles) of lazy types.
+     */
+    typedef std::set<const TypeBase *> LazyObjectsSet;
+
+    static LazyObjectsSet &lazy_object_set();
+
+    static bool was_constructed(const TypeBase * ptr);
+
+    /// Reference to first output in tree (used in repeated output)
+    mutable string reference_;
+
+    friend class Array;
+    friend class Record;
 };
 
 /**
@@ -163,7 +225,8 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 
 class Record;
-class SelectionBase;
+class Selection;
+
 
 /**
  * @brief Class for declaration of inputs sequences.
@@ -181,6 +244,27 @@ class SelectionBase;
  * @ingroup input_types
  */
 class Array : public TypeBase {
+	friend class OutputBase;
+	friend class OutputText;
+	friend class OutputJSONTemplate;
+
+protected:
+
+    class ArrayData  {
+    public:
+
+    	ArrayData(unsigned int min_size, unsigned int max_size)
+    	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
+    	{}
+
+    	bool finish();
+
+    	boost::shared_ptr<const TypeBase> type_of_values_;
+    	unsigned int lower_bound_, upper_bound_;
+    	const TypeBase *p_type_of_values;
+    	bool finished;
+
+    };
 
 public:
     /**
@@ -188,34 +272,22 @@ public:
      * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
      */
     template <class ValueType>
-    inline Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() )
-    : lower_bound_(min_size), upper_bound_(max_size)
-    {
-        // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-        BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
+    Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
-        ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+    /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
+    virtual bool finish() const;
 
-        if ( ! type.is_finished())
-            xprintf(PrgErr, "Unfinished type '%s' used in declaration of Array.\n", type.type_name().c_str() );
-
-        boost::shared_ptr<const ValueType> type_copy = boost::make_shared<ValueType>(type);
-        type_of_values_ = type_copy;
-        //set_type_impl(type, boost::is_base_of<TypeBase,ValueType>() );
-    }
-
-
+    virtual bool is_finished() const {
+        return data_->finished; }
 
     /// Getter for the type of array items.
-    inline const TypeBase &get_sub_type() const
-        { return *type_of_values_; }
+    inline const TypeBase &get_sub_type() const {
+        ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
+        return *data_->type_of_values_; }
 
     /// Checks size of particular array.
-    inline bool match_size(unsigned int size) const
-        { return size >=lower_bound_ && size<=upper_bound_; }
-
-    /// @brief Implements @p Type::TypeBase::documentation.
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
+    inline bool match_size(unsigned int size) const {
+        return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
     virtual void  reset_doc_flags() const;
@@ -231,13 +303,15 @@ public:
      *  that is initialized by given default value. So this method check
      *  if the default value is valid for the sub type of the array.
      */
-    virtual void valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const;
 
 protected:
 
-    boost::shared_ptr<const TypeBase> type_of_values_;
-    unsigned int lower_bound_, upper_bound_;
-
+    /// Handle to the actual array data.
+    boost::shared_ptr<ArrayData> data_;
+private:
+    /// Forbids default constructor in order to prevent empty data_.
+    Array();
 };
 
 
@@ -266,12 +340,11 @@ public:
     Bool()
     {}
 
-    virtual void valid_default(const string &str) const;
-
     bool from_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
+
+    virtual bool valid_default(const string &str) const;
 };
 
 
@@ -283,6 +356,8 @@ public:
  * @ingroup input_types
  */
 class Integer : public Scalar {
+	friend class OutputBase;
+
 public:
     Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
@@ -297,13 +372,12 @@ public:
      * As before but also returns converted integer in @p value.
      */
     int from_default(const string &str) const;
-
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual void valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const;
 
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
+
     int lower_bound_, upper_bound_;
 
 };
@@ -317,6 +391,8 @@ private:
  * @ingroup input_types
  */
 class Double : public Scalar {
+	friend class OutputBase;
+
 public:
     Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
@@ -327,17 +403,18 @@ public:
      */
     bool match(double value) const;
 
+    /// Implements  @p Type::TypeBase::valid_defaults.
+    virtual bool valid_default(const string &str) const;
+
     /**
      * As before but also returns converted integer in @p value.
      */
     double from_default(const string &str) const;
 
-    /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual void valid_default(const string &str) const;
-
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 private:
+
+
     double lower_bound_, upper_bound_;
 
 };
@@ -351,18 +428,19 @@ private:
  */
 class String : public Scalar {
 public:
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0) const;
     virtual string type_name() const;
 
-    virtual void valid_default(const string &str) const;
+
 
     string from_default(const string &str) const;
-
 
     /**
      * Particular descendants can check validity of the string.
      */
     virtual bool match(const string &value) const;
+
+    /// Implements  @p Type::TypeBase::valid_defaults.
+    virtual bool valid_default(const string &str) const;
 };
 
 
@@ -388,7 +466,6 @@ public:
     static FileName output()
     { return FileName(::FilePath::output_file); }
 
-    virtual std::ostream& documentation(std::ostream& stream, DocType=full_along, unsigned int pad=0)  const;
     virtual string type_name() const;
 
     virtual bool operator==(const TypeBase &other) const

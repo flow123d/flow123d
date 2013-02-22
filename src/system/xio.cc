@@ -29,7 +29,7 @@
  *         stdio functions working with files (not stdin, stdout, stderr) should be replaced
  *         by their equivalents from XIO library.
  *
- *         @created 6.4.2010
+ * @date 6.4.2010
  * @author Jiri Jenicek
  * @todo Better error handling ( perror()? strerror()? )
  *

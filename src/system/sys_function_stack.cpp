@@ -29,13 +29,11 @@
  *
  */
 
-#include <vector>
-
 #include "sys_function_stack.hh"
 
 namespace flow
 {
     ///definition of global variables for stacktrace storage
-    std::vector<Trace_helper> Trace::program_stack(16); //start with 16 slots for trace, should be enough to avoid reallocation
-    int Trace::stack_depth = 0;
+    std::vector<Trace_helper> * Trace::program_stack; //start with 16 slots for trace, should be enough to avoid reallocation
+    int Trace::stack_depth = -1;
 }

@@ -31,84 +31,435 @@
 #include <fstream>
 #include <iomanip>
 
-
 #include <sys/param.h>
 
 #include "sys_profiler.hh"
-#include "system/system.hh"
 #include "system/system.hh"
 #include <boost/format.hpp>
 
 #include "system/file_path.hh"
 
+
+#include "mpi.h"
+/*
+ * These should be replaced by using boost MPI interface
+ */
+int MPI_Functions::sum(int* val, MPI_Comm comm) {
+        int total = 0;
+        MPI_Reduce(val, &total, 1, MPI_INT, MPI_SUM, 0, comm);
+        return total;
+    }
+
+double MPI_Functions::sum(double* val, MPI_Comm comm) {
+        double total = 0;
+        MPI_Reduce(val, &total, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+        return total;
+    }
+
+int MPI_Functions::min(int* val, MPI_Comm comm) {
+        int min = 0;
+        MPI_Reduce(val, &min, 1, MPI_INT, MPI_MIN, 0, comm);
+        return min;
+    }
+
+double MPI_Functions::min(double* val, MPI_Comm comm) {
+        double min = 0;
+        MPI_Reduce(val, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+        return min;
+    }
+
+int MPI_Functions::max(int* val, MPI_Comm comm) {
+        int max = 0;
+        MPI_Reduce(val, &max, 1, MPI_INT, MPI_MAX, 0, comm);
+        return max;
+    }
+
+double MPI_Functions::max(double* val, MPI_Comm comm) {
+        double max = 0;
+        MPI_Reduce(val, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+        return max;
+    }
+
+
+#ifdef DEBUG_PROFILER
+/*********************************************************************************************
+ * Implementation of class Timer
+ */
+
+Timer::Timer(const CodePoint &cp, int parent)
+: start_time(0),
+  cumul_time(0),
+  call_count(0),
+  start_count(0),
+  code_point_(&cp),
+  full_hash_(cp.hash_),
+  hash_idx_(cp.hash_idx_),
+  parent_timer(parent),
+  total_allocated_(0),
+  total_deallocated_(0)
+{
+    for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=-1;
+}
+
+
+/*
+ * Standard C++ clock() function measure the time spent in calling process, not the wall time,
+ * that is exactly what I want. Disadvantage is that it has small resolution about 10 ms.
+ *
+ * For more precise wall clock timer one can use:
+ * time(&begin);
+ * time(&end);
+ * cout << "Time elapsed: " << difftime(end, begin) << " seconds"<< endl;
+ */
+Timer::TimeData Timer::get_time() {
+    return clock();
+}
+
+
+
+double Timer::cumulative_time() const
+{
+    return 1000.0 * double(cumul_time) / CLOCKS_PER_SEC;
+}
+
+
+
+void Timer::start() {
+    if (start_count == 0) start_time = get_time();
+    call_count++;
+    start_count++;
+}
+
+
+
+void Timer::update() {
+    TimeData time = get_time();
+    cumul_time += time - start_time;
+}
+
+
+
+bool Timer::stop(bool forced) {
+
+    if (forced) start_count=1;
+
+    if (start_count == 1) {
+        TimeData time = get_time();
+        cumul_time += time - start_time;
+        start_count--;
+        return true;
+    } else {
+        start_count--;
+    }
+    return false;
+}
+
+
+
+void Timer::add_child(int child_index, const Timer &child)
+{
+    unsigned int idx = child.hash_idx_;
+    if (child_timers[idx] >0) {
+        unsigned int i=idx;
+        do {
+            i=( i < max_n_childs ? i+1 : 0);
+        } while (i!=idx && child_timers[i] >0);
+        ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag() );
+        idx=i;
+    }
+    child_timers[idx] = child_index;
+}
+
+
+
+string Timer::code_point_str() const {
+    return boost::str( boost::format("%s:%d, %s()") % code_point_->file_ % code_point_->line_ % code_point_->func_ );
+}
+
+
+/***********************************************************************************************
+ * Implementation of Profiler
+ */
+
+
+
+
+
+
 Profiler* Profiler::_instance = NULL;
+CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
 
-void pad_string(string *str, int length) {
-    if (length > str->size())
-        str->insert(str->size(), length - str->size(), ' ');
+
+
+void Profiler::initialize(MPI_Comm communicator)
+{
+
+    if (!_instance)
+        _instance = new Profiler(communicator);
+    else
+        xprintf(Warn, "The profiler already initialized.\n");
+
 }
 
-Profiler::Profiler(MPI_Comm comm) {
-    F_ENTRY;
 
-    id = 0;
-    communicator = comm;
-    MPI_Comm_rank(communicator, &(id));
+Profiler::Profiler(MPI_Comm comm)
+: actual_node(0),
+  communicator_(comm),
+  task_size_(1),
+  start_time( time(NULL) )
 
-    actual_node = root = new Timer("", NULL);
-    root->start(0);
+{
+#ifdef DEBUG_PROFILER
+    MPI_Comm_rank(communicator_, &(mpi_rank_));
 
-    start_clock = clock();
-    start_time = time(NULL);
+    static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
+    timers_.push_back( Timer(main_cp, 0) );
+    timers_[0].start();
+#endif
 }
+
+
+
+
+void Profiler::set_task_info(string description, int size) {
+    task_description_ = description;
+    task_size_ = size;
+}
+
+
+
+void Profiler::set_program_info(string program_name, string program_version, string branch, string revision, string build) {
+    flow_name_ = program_name;
+    flow_version_ = program_version;
+    flow_branch_ = branch;
+    flow_revision_ = revision;
+    flow_build_ = build;
+}
+
+
+
+int  Profiler::start_timer(const CodePoint &cp) {
+
+    int child_idx = find_child(cp);
+    if (child_idx < 0) {
+        // tag not present - create new timer
+        child_idx=timers_.size();
+        timers_.push_back( Timer(cp, actual_node) );
+        timers_[actual_node].add_child(child_idx , timers_.back() );
+    }
+
+    timers_[child_idx].start();
+    actual_node=child_idx;
+
+    return actual_node;
+}
+
+
+
+int Profiler::find_child(const CodePoint &cp) {
+    Timer &timer =timers_[actual_node];
+    int idx = cp.hash_idx_;
+    int child_idx;
+    do {
+        child_idx=timer.child_timers[idx];
+
+        if (child_idx < 0) break; // tag is not there
+
+        ASSERT_LESS( child_idx, timers_.size());
+        if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
+        idx = ( idx==Timer::max_n_childs ? 0 : idx+1 );
+    } while (idx != cp.hash_idx_); // passed through whole array
+    return -1;
+}
+
+
+
+void Profiler::stop_timer(const CodePoint &cp) {
+#ifdef DEBUG
+    // check that all childrens are closed
+    Timer &timer=timers_[actual_node];
+    for(unsigned int i=0; i < Timer::max_n_childs; i++)
+        if (timer.child_timers[i] >0)
+            ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag(), timer.tag() );
+#endif
+
+    if ( cp.hash_ != timers_[actual_node].full_hash_) {
+        DBGMSG("close '%s' actual '%s'\n", cp.tag_, timers_[actual_node].tag());
+        // timer to close is not actual - we search for it above actual
+        for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer) {
+            DBGMSG("cmp close '%s' idx '%s'\n", cp.tag_, timers_[node].tag());
+            if ( cp.hash_ == timers_[node].full_hash_) {
+                // found above - close all nodes between
+                for(; actual_node != node; actual_node=timers_[actual_node].parent_timer) {
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag());
+                    timers_[actual_node].stop(true);
+                }
+                // close 'node' itself
+                timers_[actual_node].stop(false);
+                actual_node=timers_[actual_node].parent_timer;
+                return;
+            }
+        }
+        // node not found - do nothing
+        return;
+    }
+    // node to close match the actual
+    timers_[actual_node].stop(false);
+    actual_node=timers_[actual_node].parent_timer;
+}
+
+
+
+void Profiler::stop_timer(int timer_index) {
+    if (timer_index <0) timer_index=actual_node;
+    ASSERT_LESS( timer_index, timers_.size() );
+
+    if (! timers_[timer_index].running() ) return;
+
+    if ( timer_index != actual_node ) {
+        // timer to close is not actual - we search for it above actual
+        for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
+            if ( timer_index == node) {
+                // found above - close all nodes between
+                for(; actual_node != node; actual_node=timers_[actual_node].parent_timer) {
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag(), timers_[actual_node].tag());
+                    timers_[actual_node].stop(true);
+                }
+                // close 'node' itself
+                timers_[actual_node].stop(false);
+                actual_node=timers_[actual_node].parent_timer;
+                return;
+            }
+        // node not found - do nothing
+        return;
+    }
+
+    // node to close match the actual
+    timers_[actual_node].stop(false);
+    actual_node=timers_[actual_node].parent_timer;
+}
+
+
+
+void Profiler::add_calls(unsigned int n_calls) {
+    timers_[actual_node].call_count += n_calls-1;
+}
+
+
+
+void Profiler::notify_malloc(const size_t size) {
+    timers_[actual_node].total_allocated_ += size;
+}
+
+
+
+void Profiler::notify_free(const size_t size) {
+    timers_[actual_node].total_deallocated_ += size;
+}
+
+
+
+
+
+
+void Profiler::add_timer_info(vector<vector<string> > &timers_info, int timer_idx, int indent, double parent_time) {
+
+    Timer &timer = timers_[timer_idx];
+
+    ASSERT( timer_idx >=0, "Wrong timer index %d.\n", timer_idx);
+    ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
+
+    int numproc;
+    MPI_Comm_size(communicator_, &numproc);
+
+    int call_count = timer.call_count;
+    int call_count_min = MPI_Functions::min(&call_count, communicator_);
+    int call_count_max = MPI_Functions::max(&call_count, communicator_);
+    int call_count_sum = MPI_Functions::sum(&call_count, communicator_);
+
+    double cumul_time = timer.cumulative_time() / 1000; // in seconds
+    double cumul_time_min = MPI_Functions::min(&cumul_time, communicator_);
+    double cumul_time_max = MPI_Functions::max(&cumul_time, communicator_);
+    double cumul_time_sum = MPI_Functions::sum(&cumul_time, communicator_);
+
+    if (timer_idx == 0) parent_time = cumul_time_sum;
+
+    vector<string> info;
+    double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
+    string tree_info = string(2*indent, ' ') +
+                       boost::str( boost::format("[%.1f] ") % percent )+
+                       timer.tag();
+    info.push_back( tree_info );
+
+    info.push_back( boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " ")) );
+    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_max) ) );
+    info.push_back( boost::str(boost::format("%.2f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1)) );
+    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum / call_count_sum) ) );
+    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum) ) );
+    info.push_back( timer.code_point_str() );
+
+    timers_info.push_back(info);
+
+    for (int i = 0; i < Timer::max_n_childs; i++)
+        if (timer.child_timers[i] > 0)
+            add_timer_info(timers_info, timer.child_timers[i], indent + 1, cumul_time_sum);
+}
+
+
+
+void Profiler::update_running_timers() {
+    for(int node=actual_node; node !=0; node = timers_[node].parent_timer)
+        timers_[node].update();
+    timers_[0].update();
+}
+
 
 
 void Profiler::output(ostream &os) {
+
     const int column_space = 3;
 
-
-    if (root) {
-        root->forced_end(get_time()); //stop all running timers
-    }
-
     //wait until profiling on all processors is finished
-    MPI_Barrier(this->communicator);
+    MPI_Barrier(this->communicator_);
+    update_running_timers();
 
-    vector < vector<string>* >* timersInfo = new vector < vector<string>*>();
-    add_timer_info(timersInfo, root, 0);
+    vector < vector<string> > timers_info(1);
+
+    // add header into timers_info table !!
+    timers_info[0].push_back( "tag tree");
+    timers_info[0].push_back( "calls");
+    timers_info[0].push_back( "Tmax");
+    timers_info[0].push_back( "max/min");
+    timers_info[0].push_back( "T/calls");
+    timers_info[0].push_back( "Ttotal");
+    timers_info[0].push_back( "code_point");
+
+    add_timer_info(timers_info, 0, 0, 0.0);
 
     //create profiler output only once (on the first processor)
-    if (this->id == 0) {
+    if (mpi_rank_ == 0) {
 
-        int maxTagLength = 0;
-        int maxCallCountLength = 0;
-        int maxTimeLength = 0;
-        int maxMinMaxLength = 0;
-
-        for (int i = 0; i < timersInfo->size(); i++) {
-            for (int j = 0; j < timersInfo->at(i)->size(); j++) {
-                string str = timersInfo->at(i)->at(j);
-                int size = str.size();
-
-                switch (j) {
-                    case 0:
-                        maxTagLength = max(maxTagLength, size);
-                        break;
-                    case 1:
-                        maxCallCountLength = max(5, max(maxCallCountLength, size));
-                        break;
-                    case 2:
-                        maxTimeLength = max(4, max(maxTimeLength, size));
-                        break;
-                    case 3:
-                        maxMinMaxLength = max(7, max(maxMinMaxLength, size));
-                        break;
+        // compute with of columns
+        vector<unsigned int> width(timers_info[0].size(),0);
+        for (int i = 0; i < timers_info.size(); i++)
+            for (int j = 0; j < timers_info[i].size(); j++) width[j] = max( width[j] , (unsigned int)timers_info[i][j].size() );
+        // detect common path of code points
+        unsigned int common_length=timers_info[1].back().size();
+        for (int i = 2; i < timers_info.size(); i++) {
+            common_length = min( common_length, (unsigned int) timers_info[i].back().size() );
+            for (unsigned int j = 0; j < common_length; j++ ) {
+                if (timers_info[1].back().at(j) != timers_info[i].back().at(j)) {
+                    common_length = j;
+                    break;
                 }
             }
         }
+        // remove common path
+        for (int i = 1; i < timers_info.size(); i++) timers_info[i].back().erase(0, common_length);
+
 
         int mpi_size;
-        MPI_Comm_size(this->communicator, &mpi_size);
+        MPI_Comm_size(this->communicator_, &mpi_size);
 
         time_t end_time = time(NULL);
 
@@ -136,45 +487,41 @@ void Profiler::output(ostream &os) {
         os << "Run started at: " << start_time_string << endl;
         os << "Run finished at: " << end_time_string << endl;
 
-        os << setfill ('-') << setw (40) << "" << endl;
+        os << setfill ('-') << setw (80) << "" << endl;
         os.fill(' ');
 
-        // header
-        os << left << setw(maxTagLength) << "tag tree" << setw(column_space) << ""
-           << setw(maxCallCountLength) << "calls" << setw(column_space) << ""
-           << setw(maxTimeLength) << "time" << setw(column_space) << ""
-           << setw(maxMinMaxLength) << "min/max" << setw(column_space) << ""
-           << "subframes" << endl;
+        // print header
+        for(int j=0; j< timers_info[0].size(); j++)
+            os << left << setw(width[j]) << timers_info[0][j] << setw(column_space) << "";
+        os << endl;
 
-        os << setfill ('-') << setw (40) << "" << endl;
+        os << setfill ('-') << setw (80) << "" << endl;
         os.fill(' ');
 
-        for (int i = 0; i < timersInfo->size(); i++) {
-            vector<string>* info = timersInfo->at(i);
+        for (int i = 1; i < timers_info.size(); i++) {
+            for(int j=0; j< timers_info[i].size(); j++) {
+                // first and last item are left aligned
+                if (j==0 || j==timers_info[i].size()-1 ) os << left; else os<<right;
+                os << setw(width[j]) << timers_info[i][j] << setw(column_space) << "";
+            }
 
-            os << left << setw(maxTagLength) << info->at(0)         << setw(column_space) << ""        // tag
-               << setw(maxCallCountLength) << info->at(1)   << setw(column_space) << ""       // calls
-               << setw(maxTimeLength) << info->at(2)        << setw(column_space) << ""       // time
-               << setw(maxMinMaxLength) << info->at(3)      << setw(column_space) << "";     // min/max
-            if (info->size() > 4)
-               os << info->at(4);                           // subframes
             os << endl;
         }
+
     }
 }
 
 
 
 void Profiler::output() {
-#ifdef DEBUG_PROFILER
             char filename[PATH_MAX];
             strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
             string full_fname =  FilePath(string(filename), FilePath::output_file);
 
+            DBGMSG("output into: %s\n", full_fname.c_str());
             ofstream os(full_fname.c_str());
             output(os);
             os.close();
-#endif
 }
 
 
@@ -182,276 +529,30 @@ void Profiler::output() {
 void Profiler::uninitialize()
 {
     if (_instance) {
+        ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
+                _instance->timers_[_instance->actual_node].tag());
+        _instance->stop_timer(0);
+        delete _instance;
+        _instance = NULL;
+    }
+}
+
+#else // def DEBUG_PROFILER
+
+Profiler* Profiler::_instance = NULL;
+
+void Profiler::initialize(MPI_Comm communicator) {
+    if (!_instance) _instance = new Profiler();
+}
+
+void Profiler::uninitialize() {
+    if (_instance)  {
         delete _instance;
         _instance = NULL;
     }
 }
 
 
-void Profiler::set_timer_subframes(string tag, int n_subframes) {
+#endif // def DEBUG_PROFILER
 
-    map<string, Timer*>::const_iterator i = tag_map.find(tag);
 
-    if (i != tag_map.end() && i->second->tag() == tag) {
-        i->second->subframes(n_subframes);
-    }
-    else
-    {
-        ASSERT(false, "Wrong timer tag while setting timer subframes");
-    }
-}
-
-void Profiler::add_timer_info(vector<vector<string>*>* timersInfo, Timer* timer, int indent) {
-
-    if (timer->tag().size() > 0) {
-        int numproc;
-        MPI_Comm_size(communicator, &numproc);
-
-        int callCount = timer->call_count();
-        int callCountMin = MPI_Functions::min(&callCount, communicator);
-        int callCountMax = MPI_Functions::max(&callCount, communicator);
-
-        double cumulTime = timer->cumulative_time() / 1000;
-        double cumulTimeMin = MPI_Functions::min(&cumulTime, communicator);
-        double cumulTimeMax = MPI_Functions::max(&cumulTime, communicator);
-        double cumulTimeSum = MPI_Functions::sum(&cumulTime, communicator);
-
-        string spaces = "";
-        pad_string(&spaces, indent);
-
-        vector<string>* info = new vector<string > ();
-        info->push_back(spaces + timer->tag());
-        info->push_back(boost::str(boost::format("%i%s") % callCount % (callCountMin != callCountMax ? "*" : "")));
-        info->push_back(boost::str(boost::format("%.2f") % (cumulTimeSum / numproc)));
-        info->push_back(boost::str(boost::format("%.2f") % (cumulTimeMax > 0.000001 ? cumulTimeMin / cumulTimeMax : 1)));
-        if (timer->subframes() >= 0)
-            info->push_back(boost::str(boost::format("%i") % timer->subframes()));
-
-        timersInfo->push_back(info);
-    }
-
-    for (int i = 0; i < timer->child_timers_list()->size(); i++) {
-        add_timer_info(timersInfo, timer->child_timers_list()->at(i), timer->tag().size() == 0 ? 0 : indent + 1);
-    }
-}
-
-
-
-void Profiler::set_task_info(string description, int size) {
-    task_description_ = description;
-    task_size_ = size;
-}
-
-
-
-void Profiler::set_program_info(string program_name, string program_version, string branch, string revision, string build) {
-    flow_name_ = program_name;
-    flow_version_ = program_version;
-    flow_branch_ = branch;
-    flow_revision_ = revision;
-    flow_build_ = build;
-}
-
-
-
-Timer *  Profiler::start_timer(const string &tag) {
-
-    ASSERT(actual_node, "No active timing node!");
-
-    map<string, Timer*>::const_iterator i = tag_map.find(tag);
-
-    if (i == tag_map.end()) { //the key was not found
-
-        Timer *tmr = new Timer(tag, actual_node);
-        tmr->start(get_time());
-        tag_map.insert(std::make_pair(tag, tmr));
-
-        actual_node->insert_child(tmr);
-
-        actual_node = tmr;
-
-    }
-    else {
-        i->second->start(get_time());
-
-        actual_node = i->second;
-    }
-
-    return actual_node;
-}
-
-void Profiler::stop_timer(const string &tag) {
-
-    /**
-     * - check if tag match tag of actual timing object, if not print warning and proceed to matchin parent, while closing all open timings
-     * - else close actual timing and proceed to the parent node in profiling tree
-     */
-
-    ASSERT(actual_node, "No active timing node!");
-
-    if (tag == "") {
-        //don't allow to close the root timer
-        if (actual_node != root) {
-            //close actual timing and all of its children
-            if (actual_node->end(get_time())) {
-
-                actual_node = actual_node->parent();
-            }
-        }
-    }
-
-    else if (actual_node->tag() == tag) {
-        //close actual timing and all of its children
-        if (actual_node->end(get_time())) {
-
-            actual_node = actual_node->parent();
-        }
-    }
-    else {
-        map<string, Timer*>::const_iterator i = tag_map.find(tag);
-        if (i != tag_map.end()) {
-            if (i->second->end(get_time())) {
-                actual_node = i->second->parent();
-            }
-        }
-        else {
-            //ERROR - the key has not been found
-        }
-    }
-
-}
-
-double Profiler::get_time() {
-    return 1000 * ((double) (clock() - start_clock)) / CLOCKS_PER_SEC;
-}
-
-
-
-
-
-void Profiler::notify_malloc(const size_t size) {
-    actual_node->add_to_total_allocated(size);
-}
-
-
-
-void Profiler::notify_free(const size_t size) {
-    actual_node->add_to_total_deallocated(size);
-}
-
-
-
-
-Timer::Timer(string tag, Timer* parent)
-: total_allocated_(0), total_deallocated_(0)
-{
-
-    timer_tag = tag;
-    running = false;
-    parent_timer = parent;
-    start_count = 0;
-    start_time = 0;
-    cumul_time = 0;
-    count = 0;
-    sub_frames = 0;
-}
-
-void Timer::start(double time) {
-    F_ENTRY;
-
-    count++;
-    start_count++;
-    if (!running) {
-
-        start_time = time;
-        running = true;
-    }
-}
-
-bool Timer::end(double time) {
-    //close the timer only if start() has been called as many times as end()
-
-    start_count = MAX(start_count - 1, 0);
-    if (start_count == 0) {
-        this->stop(time);
-        return true;
-    }
-
-    return false;
-}
-
-void Timer::forced_end(double time) {
-    start_count = 0;
-    this->stop(time);
-}
-
-void Timer::stop(double time) {
-    if (running && start_count == 0) {
-        running = false;
-        cumul_time += time - start_time;
-        //force to close all of its children
-        //we use forced end because start() could have been called more times than end()
-        for (int i = 0; i < child_timers.size(); i++) {
-            child_timers.at(i)->forced_end(time);
-        }
-    }
-}
-
-void Timer::insert_child(Timer* child) {
-    child_timers.push_back(child);
-}
-
-/*****************************************************************
- * implementation of TimerFrame
- */
-
-/*
-TimerFrame::TimerFrame(string tag) {
-    this->_parent = NULL;
-    this->closed = false;
-
-    map<string, TimerFrame*>::iterator i = TimerFrame::frames()->find(tag);
-    if (i == TimerFrame::frames()->end()) { //not found
-        TimerFrame::frames()->insert(std::make_pair(tag, this));
-    }
-    else {
-        this->_parent = i->second;
-        i->second = this;
-    }
-
-    this->tag = tag;
-    Profiler::instance()->start(tag);
-}
-
-TimerFrame::~TimerFrame() {
-    close();
-}
-
-void TimerFrame::close() {
-
-    if (closed)
-        return;
-
-    closed = true;
-
-    map<string, TimerFrame*>::iterator i = TimerFrame::frames()->find(this->tag);
-    if (i != TimerFrame::frames()->end() && i->second == this) {
-        if (this->parent() != NULL) {
-            i->second = this->parent();
-        }
-        else {
-            TimerFrame::frames()->erase(tag);
-        }
-
-        Profiler::instance()->end(tag);
-    }
-}
-
-void TimerFrame::endTimer(string tag) {
-
-    map<string, TimerFrame*>::const_iterator i = _frames.find(tag);
-    if (i != _frames.end()) {
-        i->second->close(); //manually close (we call close because it not a good idea to call destructor explicitly)
-    }
-}
-*/

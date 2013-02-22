@@ -1,0 +1,54 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid", 
+    material = "./input/test10.mtr", 
+    mesh = {
+      mesh_file = "./input/test10.msh", 
+      neighbouring = "./input/test10.ngh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Unsteady_LMH", 
+      boundary_file = "./input/test10.fbc", 
+      initial_file = "./input/pressure_initial.in", 
+      n_schurs = 2, 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+	velocity_p0 = "flow_output_stream",
+        save_step = {
+          REF = "/problem/save_step"
+        }
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07, 
+        parameters = ""
+      }, 
+      time = {
+        REF = "../../time"
+      }
+    }, 
+  
+    save_step = 0.1, 
+    time = {
+      end_time = 0.5, 
+      init_dt = 0.01
+    }
+  },
+ 
+  system = {
+    output_streams = {
+        file = "./test10.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+    }
+  }
+}

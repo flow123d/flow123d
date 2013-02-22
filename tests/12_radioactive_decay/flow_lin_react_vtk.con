@@ -1,16 +1,27 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "radioactive decay simulation, long decay chain with biffurcation, VTK output, test11", 
-    material = "./input/flow_lin_react/sit_lin_react.mtr", 
+    description = "Test12 - radioactive decay simulation, long decay chain with biffurcation", 
     mesh = {
-      mesh_file = "./input/flow_lin_react/sit_lin_react.msh", 
-      neighbouring = "./input/flow_lin_react/sit_lin_react.ngh"
+      mesh_file = "./input/flow_lin_react/sit_lin_react.msh"
     }, 
     
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/flow_lin_react/sit_lin_react.fbc", 
+
+      bulk_data = [
+        { rid = 1,
+          cond_anisothropy = 0.01
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/flow_lin_react/sit_lin_react.fbc"
+        }
+      ],
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -27,9 +38,21 @@
     
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
-      boundary_file = "./input/flow_lin_react/sit_lin_react.tbc", 
-      dual_porosity = false, 
-      initial_file = "./input/flow_lin_react/sit_lin_react.tic", 
+
+       bulk_data = [
+        { rid = 1,
+          init_conc = 
+            [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.06000000]
+        }
+      ],
+
+      bc_data = [
+        {
+          region = "IMPLICIT BOUNDARY",
+          old_boundary_file = "./input/flow_lin_react/sit_lin_react.tbc"
+        }
+      ],
+
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -37,6 +60,8 @@
         }, 
         save_step = 0.5
       }, 
+
+      dual_porosity = false, 
       sorption_enable = false, 
       substances = [
         "A", 
@@ -57,14 +82,13 @@
             parent = "D",
             kinetic = 0.277258872,
             products = [
-              "F"
+              "E"
             ]
           }
         ]
       } 
-    } # sec. eq.
-  }, # problem 
-  
+    }
+  },
   
   system = {
     output_streams = [
