@@ -122,9 +122,6 @@ set(sources_lib_field
     fields/field_base.cc
 )
 
-#set(sources_lib_functions
-#    functions/discrete_function.cc   
-#)    
 
 set (sources_lib_coupling
 

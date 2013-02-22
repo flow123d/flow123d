@@ -63,7 +63,6 @@ void FieldAddPotential<spacedim, Value>::value_list (const std::vector< Point<sp
 
 template <int spacedim, class Value>
 FieldAddPotential<spacedim, Value>::~FieldAddPotential() {
-    delete inner_field_;
 }
 
 

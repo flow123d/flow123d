@@ -126,7 +126,7 @@ TEST(FieldPython, read_from_input) {
     reader.read_stream( ss, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-    VectorField  *flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), 0.0);
+    auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), 0.0);
     {
         Point<2> point_1, point_2;
         point_1(0)=1.0; point_1(1)= pi / 2.0;
@@ -144,8 +144,7 @@ TEST(FieldPython, read_from_input) {
         EXPECT_DOUBLE_EQ( 1, result[1]);
     }
 
-    cout << "field_file" << endl;
-    ScalarField  *conc=ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("field_file"), 0.0);
+    auto conc=ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("field_file"), 0.0);
     {
         Point<3> point_1, point_2;
         point_1(0)=1; point_1(1)=0; point_1(2)=0;

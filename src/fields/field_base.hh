@@ -23,6 +23,7 @@
 
 #include <string>
 #include <boost/type_traits.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -81,9 +82,10 @@ public:
        /**
         * This static method gets accessor to abstract record with function input,
         * dispatch to correct constructor and initialize appropriate function object from the input.
-        * Returns pointer to  FunctionBase<>.
+        * Returns shared pointer to  FunctionBase<>.
         */
-       static FieldBase<spacedim, Value> *function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
+       static boost::shared_ptr< FieldBase<spacedim, Value> >
+           function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
 
        /**
         *  Function can provide way to initialize itself from the input data.
@@ -228,7 +230,7 @@ public:
     /**
      * Abstract method for initialization of the field on one region.
      */
-    virtual void set_from_input(Region reg, const Input::AbstractRecord &rec) =0;
+    virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
 
     /**
      * Abstract method to update field to the new time.
@@ -361,19 +363,19 @@ public:
     /**
      * Direct read access to the table of Field pointers on regions.
      */
-    FieldBaseType * operator() (Region reg);
+    boost::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
      * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
      */
-    void set_from_input(Region reg, const Input::AbstractRecord &rec);
+    void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec);
 
     /**
-     * Assigns @p field to the given region @p reg. Caller is responsible for correct construction of given field
-     * and may not delete it. The pointer is deleted by the Field object itself. Use this method only if necessary.
+     * Assigns @p field to the given region @p reg. Caller is responsible for correct construction of given field.
+     * Use this method only if necessary.
      */
-    void set_field(Region reg, FieldBaseType * field);
+    void set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field);
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions
@@ -417,7 +419,7 @@ private:
     const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
     std::vector<FieldEnum> no_check_values_;
 
-    std::vector<FieldBaseType *> region_fields_;
+    std::vector< boost::shared_ptr< FieldBaseType > > region_fields_;
 
 
 };

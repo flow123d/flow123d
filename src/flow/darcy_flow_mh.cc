@@ -187,10 +187,8 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
 RegionSet DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
     RegionSet domain=EqDataBase::read_boundary_list_item(rec);
     Input::AbstractRecord field_a_rec;
-    if (rec.opt_val("bc_piezo_head", field_a_rec)) {
-        BOOST_FOREACH(Region reg, domain)
-                bc_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
-    }
+    if (rec.opt_val("bc_piezo_head", field_a_rec))
+                bc_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
     FilePath flow_bcd_file;
     if (rec.opt_val("flow_old_bcd_file", flow_bcd_file) ) {
         OldBcdInput::instance()->read_flow(flow_bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
@@ -202,8 +200,7 @@ RegionSet DarcyFlowMH::EqData::read_bulk_list_item(Input::Record rec) {
     RegionSet domain=EqDataBase::read_bulk_list_item(rec);
     Input::AbstractRecord field_a_rec;
     if (rec.opt_val("init_piezo_head", field_a_rec)) {
-        BOOST_FOREACH(Region reg, domain)
-                init_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
+                init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
     }
     return domain;
 }
