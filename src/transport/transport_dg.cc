@@ -685,8 +685,10 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         // temporary solution: check zero Neuman BC in water
         //
         // Solution:
-        // 1) postprocessing of flow solution, set flux DOFs to zero on Neuman boundaries
-        // 2) modify following condition to select Neuman BC in transport if flux is smaller then tolerance of lin. solver * some const, or matrix diagonal (think carefully)
+        // 1) postprocessing of flow solution, set flux DOFs to zero on Neuman boundaries (DO NOT HELP - e.g. in case
+        //    of Dirichlet boundary condition but flow parallel to the boundary
+        // 2) modify following condition to select Neuman BC in transport if flux is smaller then tolerance of lin. solver * some const,
+        //    or matrix diagonal (think carefully)
         //
         if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
                 // || (edge->side(0)->cond()->type == 2 /* Neuman*/ && edge->side(0)->cond()->flux == 0.0) )

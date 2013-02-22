@@ -155,6 +155,8 @@ it::Record DarcyFlowLMH_Unsteady::input_type
 DarcyFlowMH::EqData::EqData(const std::string &name)
 : EqDataBase(name)
 {
+    gravity_ = arma::vec4("0 0 -1 0"); // gravity vector + constant shift of values
+
     ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
     ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
     ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
