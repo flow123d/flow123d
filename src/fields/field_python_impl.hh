@@ -10,6 +10,7 @@
 
 
 #include <boost/type_traits.hpp>
+#include "fields/field_python.hh"
 
 /// Implementation.
 

@@ -120,6 +120,7 @@ set(sources_lib_la
 set(sources_lib_field
     fields/field_values.cc
     fields/field_base.cc
+    fields/field_other.cc
 )
 
 
