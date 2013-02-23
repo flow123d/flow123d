@@ -98,8 +98,10 @@ public:
         * since some fields (FieldFormula, FieldPython) provides naturally time dependent functions other fields like (FieldConstant, ...), however,
         * can be equipped by various time interpolation schemes. In future, we obviously need interpolation of variable order so that
         * we can use ODE integrators of higher order.
+        *
+        * The method returns true if the value of the field change in the new time step.
         */
-       virtual void set_time(double time);
+       virtual bool set_time(double time);
 
        /**
         * Is used only by some Field imlementations, but can be used to check validity of incomming ElementAccessor in value methods.
@@ -217,6 +219,7 @@ public:
     bool is_enum_valued() const;
     unsigned int n_comp() const;
     Mesh * mesh() const;
+    bool changed() const;
 
     /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
@@ -233,9 +236,9 @@ public:
     virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
 
     /**
-     * Abstract method to update field to the new time.
+     * Abstract method to update field to the new time. Return resulting value of @p changed_during_set_time_.
      */
-    virtual void set_time(double time) =0;
+    virtual bool set_time(double time) =0;
 
     /**
      * Virtual destructor.
@@ -277,6 +280,14 @@ protected:
      * Pointer to the mesh on which the field lives.
      */
     Mesh *mesh_;
+    /**
+     * Is true if the values of the field has changed during last set_time() call.
+     */
+    bool changed_during_set_time_;
+    /**
+     * Set by other methods (namely set_field() and set_from_input()) that modify the field before the set_time is called.
+     */
+    bool changed_from_last_set_time_;
 };
 
 
@@ -381,7 +392,7 @@ public:
      * Check that whole field list is set, possibly use default values for unset regions
      *  and call set_time for every field in the field list.
      */
-    void set_time(double time);
+    bool set_time(double time);
 
     /**
      * If the field returns a FieldEnum and is constant on the given region, the method return true and
@@ -419,8 +430,10 @@ private:
     const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
     std::vector<FieldEnum> no_check_values_;
 
+    /**
+     * Table with pointers to fields on individual regions.
+     */
     std::vector< boost::shared_ptr< FieldBaseType > > region_fields_;
-
 
 };
 

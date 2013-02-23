@@ -27,7 +27,9 @@ FieldCommonBase::FieldCommonBase(bool bc)
   bc_(bc),
   element_selection_(NULL),
   default_( IT::Default::obligatory()),
-  mesh_(NULL)
+  mesh_(NULL),
+  changed_during_set_time_(true), // safe value, we do not miss possible update
+  changed_from_last_set_time_(false)
 {}
 
 // setters
@@ -61,6 +63,8 @@ unsigned int FieldCommonBase::n_comp() const
 { return n_comp_; }
 Mesh * FieldCommonBase::mesh() const
 { return mesh_; }
+bool FieldCommonBase::changed() const
+{ return changed_during_set_time_; }
 
 
 FieldCommonBase::~FieldCommonBase() {}

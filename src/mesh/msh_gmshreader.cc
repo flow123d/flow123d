@@ -300,7 +300,7 @@ void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
 
 
 
-void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
+void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
         double *data, std::vector<int> const & el_ids)
 {
 
@@ -311,11 +311,11 @@ void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
     double * data_ptr;
 
     while ( last_header.time <= search_header.time*(1.0 + 2.0*numeric_limits<double>::epsilon()) ) {
-        // here -last data are not actual
+        // @p data buffer is not actual anymore
 
         if (last_header.actual) {
-            // read data as we have correct header with already passed time
-            // we assume that data is big enough
+            // read @p data buffer as we have correct header with already passed time
+            // we assume that @p data buffer is big enough
 
             n_read = 0;
             id_iter=el_ids.begin();
@@ -345,6 +345,8 @@ void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
 
             xprintf(Msg, "time: %f; %d entities of field %s read.\n",
                     last_header.time, n_read, last_header.field_name.c_str());
+
+            search_header.actual = true; // use input header to indicate modification of @p data buffer
         }
 
         // find next the data section of corresponding field name
@@ -380,6 +382,7 @@ void GmshMeshReader::read_element_data( const GMSH_DataHeader &search_header,
 
         }
         last_header.actual=true;
+
     } // time loop
 }
 

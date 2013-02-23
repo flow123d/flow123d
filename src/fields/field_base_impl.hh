@@ -118,8 +118,9 @@ void FieldBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
 
 
 template <int spacedim, class Value>
-void FieldBase<spacedim, Value>::set_time(double time) {
+bool FieldBase<spacedim, Value>::set_time(double time) {
     time_ = time;
+    return false; // no change
 }
 
 
@@ -190,6 +191,7 @@ Field<spacedim,Value>::operator[] (Region reg)
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
     ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
+    if (domain.size() == 0) return;
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields_.size() == 0)
         region_fields_.resize( this->mesh_->region_db().size() );
@@ -198,12 +200,15 @@ void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input
     // following dosn't lead to a memory leak since we use shared_ptr,
     // if the previous pointer was the last one the pointed field is correctly freed
     BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
+    changed_from_last_set_time_=true;
 }
 
 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field) {
+    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
+    if (domain.size() == 0) return;
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields_.size() == 0)
         region_fields_.resize( this->mesh_->region_db().size() );
@@ -211,11 +216,12 @@ void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_pt
     ASSERT_SIZES( field->n_comp() , this->n_comp_);
     field->set_mesh( this->mesh_ );
     BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
+    changed_from_last_set_time_=true;
 }
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_time(double time) {
+bool Field<spacedim, Value>::set_time(double time) {
     if (region_fields_.size() == 0)
         region_fields_.resize( this->mesh_->region_db().size() );
 
@@ -254,9 +260,13 @@ void Field<spacedim, Value>::set_time(double time) {
         if (reg.is_boundary() == this->bc_ && region_fields_[reg.idx()] ) {      // for regions that match type of the field domain
                                                                                  // NULL pointers are only on "no_check" regions
             region_fields_[reg.idx()]->set_mesh(this->mesh_);
-            region_fields_[reg.idx()]->set_time(time);
+            this->changed_from_last_set_time_ = this->changed_from_last_set_time_ ||
+                    region_fields_[reg.idx()]->set_time(time);
         }
 
+    this->changed_during_set_time_ = this->changed_from_last_set_time_;
+    this->changed_from_last_set_time_ = false;
+    return this->changed_during_set_time_;
 }
 
 

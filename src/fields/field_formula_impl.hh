@@ -67,7 +67,7 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::set_time(double time) {
+bool FieldFormula<spacedim, Value>::set_time(double time) {
     this->time_=time;
 
     std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
@@ -86,7 +86,7 @@ void FieldFormula<spacedim, Value>::set_time(double time) {
 
             parser_matrix_[row][col].Optimize();
         }
-
+    return true; // TODO: check if the fromula contains 't' variable, and return true only in that case
 }
 
 
