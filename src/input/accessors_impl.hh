@@ -25,7 +25,7 @@ inline const Ret Record::val(const string &key) const {
                 "The key '%s' is declared as optional or with default value at read time,"
                 " you have to use Record::find instead.\n", key.c_str());
 
-        Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
+        Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
         return *it;
     }
     // we catch all possible exceptions
@@ -55,7 +55,7 @@ inline const Ret Record::val(const string &key, const Ret default_val ) const {
                 "The key %s is not declared with default value at read time,"
                 " you have to use Record::val or Record::find instead.\n", key.c_str());
 
-        Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
+        Iterator<Ret> it = Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
         if (it)
             return *it;
         else
@@ -83,7 +83,7 @@ template <class Ret>
 inline Iterator<Ret> Record::find(const string &key) const {
     try {
         Type::Record::KeyIter key_it = record_type_.key_iterator(key);
-        return Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
+        return Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
     }
     // we catch all possible exceptions
     catch (Type::Record::ExcRecordKeyNotFound & e) {
@@ -99,7 +99,7 @@ template <class Ret>
 inline bool Record::opt_val(const string &key, Ret &value) const {
     try {
         Type::Record::KeyIter key_it = record_type_.key_iterator(key);
-        Iterator<Ret> it=Iterator<Ret>( *(key_it->type_), storage_, key_it->key_index);
+        Iterator<Ret> it=Iterator<Ret>( *(key_it->type_), address_, key_it->key_index);
         if (it) {
             value = *it;
         } else {
@@ -126,7 +126,7 @@ inline bool Record::opt_val(const string &key, Ret &value) const {
 template <class ValueType>
 inline Iterator<ValueType> Array::begin() const {
     try {
-        return Iterator<ValueType>(array_type_.get_sub_type(), storage_, 0);
+        return Iterator<ValueType>(array_type_.get_sub_type(), address_, 0);
     }
     catch (ExcTypeMismatch & e) {
         e << EI_CPPRequiredType(typeid(ValueType).name()) << EI_KeyName("begin()");
@@ -137,13 +137,13 @@ inline Iterator<ValueType> Array::begin() const {
 
 
 inline IteratorBase Array::end() const {
-    return IteratorBase(storage_,storage_->get_array_size());
+    return IteratorBase(address_, address_->storage_head()->get_array_size());
 }
 
 
 
 inline unsigned int Array::size() const {
-    return storage_->get_array_size();
+    return address_->storage_head()->get_array_size();
 }
 
 
@@ -164,7 +164,7 @@ void Array::copy_to(Container &out) const {
  */
 
 inline bool IteratorBase::operator == (const IteratorBase &that) const
-        { return ( storage_  == that.storage_  && index_ == that.index_); }
+        { return ( address_->storage_head()  == that.address_->storage_head()  && index_ == that.index_); }
 
 
 
@@ -174,7 +174,7 @@ inline bool IteratorBase::operator != (const IteratorBase &that) const
 
 
 inline IteratorBase::operator bool() const {
-    const StorageBase *s = storage_->get_item(index_);
+    const StorageBase *s = address_->storage_head()->get_item(index_);
     return ( s && ! s->is_null() );
 }
 
@@ -199,11 +199,11 @@ inline Iterator<T> & Iterator<T>::operator ++() {
 template<class T>
 inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
-    const StorageBase *s = storage_->get_item(index_);
+	const Address *a = address_->down(index_);
 
-    ASSERT(s, "NULL pointer in storage!!! \n");
+    ASSERT(a->storage_head(), "NULL pointer in storage!!! \n");
 
-    return internal::TypeDispatch < DispatchType > ::value(s, type_);
+    return internal::TypeDispatch < DispatchType > ::value(a, type_);
 }
 
 template<class T>

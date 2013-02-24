@@ -103,7 +103,8 @@ public:
     /**
      * Basic constructor. We forbids default one since we always need the root input type.
      */
-    Address(const StorageBase * storage_root, Type::TypeBase *type_root);
+    Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
+    : root_type_(type_root), actual_storage_(storage_root) {}
 
     /**
      * Copy constructor.
@@ -116,13 +117,13 @@ public:
      * Dive deeper in the storage tree following index @p idx. Assumes that actual node
      * is an StorageArray, has to be asserted.
      */
-    void down(unsigned int idx);
+    const Address* down(unsigned int idx) const;
 
     /**
      * Getter. Returns actual storage node.
      */
     inline const StorageBase * storage_head() const
-        { return path_[actual_node_]; }
+        { return actual_storage_; }
 
     /**
      * Produce a full address, i.e. sequence of keys and indices separated by '/',
@@ -136,15 +137,19 @@ private:
      * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
      * TODO: Possibly can be shared.
      */
-    std::vector<const StorageBase *> path_;
+    std::vector<unsigned int> path_;
     /**
      * Actual node in the @p path_. Currently the last element, useful for shared @p path_ vector.
      */
     unsigned int actual_node_;
     /**
+     * Actual storage
+     */
+    const StorageBase * actual_storage_;
+    /**
      * Root Input::Type.
      */
-    Input::Type::TypeBase *root_type;
+    const Input::Type::TypeBase *root_type_;
 };
 
 /**
@@ -198,7 +203,7 @@ public:
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
      * type specification of the record given by parameter \p type.
      */
-    Record(const StorageBase *store, const Type::Record type);
+    Record(const Address *address, const Type::Record type);
 
     /**
      * Returns value of given @p key if the declared key type (descendant of @p Input:Type:TypeBase) is convertible to the C++
@@ -252,7 +257,7 @@ public:
      * Returns true if the accessor is empty (after default constructor).
      */
     inline bool is_empty() const
-    { return (storage_ == NULL); }
+    { return (address_->storage_head() == NULL); }
 
 
 private:
@@ -260,7 +265,10 @@ private:
     Input::Type::Record record_type_ ;
 
     /// Pointer to the corresponding array storage object.
-    const StorageBase *storage_;
+    //const StorageBase *storage_;
+
+    /// Contains address and relationships with record ancestor
+    const Address *address_;
 };
 
 
@@ -291,7 +299,7 @@ public:
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
      * type specification of the record given by parameter \p type.
      */
-    AbstractRecord(const StorageBase *store, const Type::AbstractRecord type);
+    AbstractRecord(const Address *address, const Type::AbstractRecord type);
 
     /**
      * Implicit conversion to the \p Input::Record accessor. You can use \p Input::AbstractRecord in the same
@@ -319,7 +327,10 @@ private:
     Input::Type::AbstractRecord record_type_ ;
 
     /// Pointer to the corresponding array storage object.
-    const StorageBase *storage_;
+    //const StorageBase *storage_;
+
+    /// Contains address and relationships with abstract record ancestor
+    const Address *address_;
 };
 
 
@@ -371,7 +382,7 @@ public:
      * Constructs the accessor providing pointer \p store to storage node with list of data of the record and
      * type specification of the record given by parameter \p type.
      */
-    Array(const StorageBase *store, const Type::Array type);
+    Array(const Address *address, const Type::Array type);
 
    /**
     * Returns iterator to the first element of input array. The template parameter is C++ type you want to
@@ -403,9 +414,14 @@ private:
     Input::Type::Array array_type_ ;
 
     /// Pointer to the corresponding array storage object.
-    const StorageBase *storage_;
+    //const StorageBase *storage_;
+
+    /// Contains address and relationships with array ancestor
+    const Address *address_;
 
     static StorageArray empty_storage_;
+
+    static Address empty_address_;
 };
 
 
@@ -473,8 +489,8 @@ public:
     /**
      * Constructor of iterator without type and dereference methods.
      */
-    IteratorBase(const StorageBase *storage, const unsigned int index)
-    : storage_(storage), index_(index)
+    IteratorBase(const Address *address, const unsigned int index)
+    : address_(address), index_(index)
     {}
 
     /// Comparison of two Iterators. Do no compare types only position in the storage
@@ -495,6 +511,7 @@ public:
 protected:
     const StorageBase *storage_;
     unsigned int index_;
+    const Address *address_;
 };
 
 
@@ -532,8 +549,8 @@ public:
     /**
      * Constructor with Type of data
      */
-    Iterator(const Input::Type::TypeBase &type,const StorageBase *storage, const unsigned int index)
-    : IteratorBase(storage, index), type_( type_check_and_convert(type))
+    Iterator(const Input::Type::TypeBase &type,const Address *address, const unsigned int index)
+    : IteratorBase(address, index), type_( type_check_and_convert(type))
     {}
 
     /// Prefix. Advance operator.
@@ -573,7 +590,6 @@ private:
 
 
 
-
 namespace internal {
 
 /**
@@ -599,7 +615,7 @@ struct TypeDispatch {
 
     typedef Input::Type::Selection InputType;
     typedef const TmpType ReadType;
-    static inline ReadType value(const StorageBase *s, const InputType&) { return ReadType( s->get_int() ); }
+    static inline ReadType value(const Address *a, const InputType&) { return ReadType( a->storage_head()->get_int() ); }
 };
 
 
@@ -608,7 +624,7 @@ struct TypeDispatch<int> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
     typedef int TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_int(); }
+    static inline ReadType value(const Address *a, const InputType&) { return a->storage_head()->get_int(); }
 };
 
 template<>
@@ -616,7 +632,7 @@ struct TypeDispatch<bool> {
     typedef Input::Type::Bool InputType;
     typedef const bool ReadType;
     typedef int TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_bool(); }
+    static inline ReadType value(const Address *a, const InputType&) { return a->storage_head()->get_bool(); }
 };
 
 template<>
@@ -624,7 +640,7 @@ struct TypeDispatch<double> {
     typedef Input::Type::Double InputType;
     typedef const double ReadType;
     typedef int TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_double(); }
+    static inline ReadType value(const Address *a, const InputType&) { return a->storage_head()->get_double(); }
 };
 
 
@@ -633,7 +649,7 @@ struct TypeDispatch<string> {
     typedef Input::Type::String InputType;
     typedef const string ReadType;
     typedef int TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType&) { return s->get_string(); }
+    static inline ReadType value(const Address *a, const InputType&) { return a->storage_head()->get_string(); }
 };
 
 
@@ -642,8 +658,7 @@ struct TypeDispatch<AbstractRecord> {
     typedef Input::Type::AbstractRecord InputType;
     typedef AbstractRecord ReadType;
     typedef AbstractRecord TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType& t) { return AbstractRecord(s, t); }
-
+    static inline ReadType value(const Address *a, const InputType& t) { return AbstractRecord(a, t); }
 };
 
 
@@ -652,8 +667,7 @@ struct TypeDispatch<Record> {
     typedef Input::Type::Record InputType;
     typedef Record ReadType;
     typedef Record TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType& t) { return Record(s, t); }
-
+    static inline ReadType value(const Address *a, const InputType& t) { return Record(a,t); }
 };
 
 
@@ -662,7 +676,7 @@ struct TypeDispatch<Array> {
     typedef Input::Type::Array InputType;
     typedef Array ReadType;
     typedef Array TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType& t) { return Array(s,t); }
+    static inline ReadType value(const Address *a, const InputType& t) { return Array(a,t); }
 
 };
 
@@ -671,7 +685,7 @@ struct TypeDispatch<FilePath> {
     typedef Input::Type::FileName InputType;
     typedef FilePath ReadType;
     typedef int TmpType;
-    static inline ReadType value(const StorageBase *s, const InputType& t) { return FilePath(s->get_string(), t.get_file_type() ); }
+    static inline ReadType value(const Address *a, const InputType& t) { return FilePath(a->storage_head()->get_string(), t.get_file_type() ); }
 
 };
 
