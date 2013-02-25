@@ -137,13 +137,13 @@ inline Iterator<ValueType> Array::begin() const {
 
 
 inline IteratorBase Array::end() const {
-    return IteratorBase(address_, address_->storage_head()->get_array_size());
+    return IteratorBase(address_, address_.storage_head()->get_array_size());
 }
 
 
 
 inline unsigned int Array::size() const {
-    return address_->storage_head()->get_array_size();
+    return address_.storage_head()->get_array_size();
 }
 
 
@@ -164,7 +164,7 @@ void Array::copy_to(Container &out) const {
  */
 
 inline bool IteratorBase::operator == (const IteratorBase &that) const
-        { return ( address_->storage_head()  == that.address_->storage_head()  && index_ == that.index_); }
+        { return ( address_.storage_head()  == that.address_.storage_head()  && index_ == that.index_); }
 
 
 
@@ -174,7 +174,7 @@ inline bool IteratorBase::operator != (const IteratorBase &that) const
 
 
 inline IteratorBase::operator bool() const {
-    const StorageBase *s = address_->storage_head()->get_item(index_);
+    const StorageBase *s = address_.storage_head()->get_item(index_);
     return ( s && ! s->is_null() );
 }
 
@@ -199,9 +199,10 @@ inline Iterator<T> & Iterator<T>::operator ++() {
 template<class T>
 inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
-	const Address *a = address_->down(index_);
+	Address a( address_ );
+    a.down(index_);
 
-    ASSERT(a->storage_head(), "NULL pointer in storage!!! \n");
+    ASSERT(a.storage_head(), "NULL pointer in storage!!! \n");
 
     return internal::TypeDispatch < DispatchType > ::value(a, type_);
 }

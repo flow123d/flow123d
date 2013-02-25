@@ -6,18 +6,56 @@
  */
 
 
-
+#include <boost/make_shared.hpp>
 #include "input/accessors.hh"
 
 
 namespace Input {
+
+/*****************************************************************************
+ * Implementation of the class Input::Address
+ */
+
+Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
+: data_( boost::make_shared<AddressData>() )
+{
+   data_->root_type_ = type_root;
+   data_->root_storage_ =storage_root;
+   actual_storage_ = storage_root;
+   actual_node_=0;
+}
+
+
+
+Address::Address(const Address& other)
+: data_(other.data_),
+  actual_node_( other.actual_node_),
+  actual_storage_( other.actual_storage_)
+{}
+
+
+void Address::down(unsigned int idx) {
+    actual_storage_ = actual_storage_->get_item(idx);
+    actual_node_++;
+    data_->path_.push_back(idx);
+}
+
+
+std::string Address::make_full_address() {
+    std::string address = "/";
+    //dodelat
+
+    return address;
+}
+
+
 /*****************************************************************************
  * Implementation of the class Input::Record
  */
 
 
 Record::Record()
-: record_type_(), address_( NULL )
+: record_type_(), address_( Array::empty_address_ )
 {}
 
 
@@ -28,10 +66,10 @@ Record::Record(const Record &rec)
 
 
 
-Record::Record(const Address *address, const Type::Record type)
+Record::Record(const Address &address, const Type::Record type)
 : record_type_(type), address_(address)
 {
-    if (address->storage_head()->is_null())
+    if (address.storage_head()->is_null())
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("Record") );
 }
 
@@ -43,7 +81,7 @@ Record::Record(const Address *address, const Type::Record type)
  */
 
 AbstractRecord::AbstractRecord()
-: record_type_(), address_( NULL )
+: record_type_(), address_( Array::empty_address_ )
 {}
 
 
@@ -54,10 +92,10 @@ AbstractRecord::AbstractRecord(const AbstractRecord &rec)
 
 
 
-AbstractRecord::AbstractRecord(const Address *address, const Type::AbstractRecord type)
+AbstractRecord::AbstractRecord(const Address &address, const Type::AbstractRecord type)
 : record_type_(type), address_(address)
 {
-    if (address->storage_head()->is_null())
+    if (address.storage_head()->is_null())
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("AbstractRecord") );
 }
 
@@ -70,7 +108,7 @@ AbstractRecord::operator Record() const
 
 Input::Type::Record AbstractRecord::type() const
 {
-    unsigned int type_id = address_->storage_head()->get_item(0)->get_int();
+    unsigned int type_id = address_.storage_head()->get_item(0)->get_int();
     return record_type_.get_descendant(type_id);
 }
 
@@ -82,7 +120,7 @@ Input::Type::Record AbstractRecord::type() const
 
 
 Array::Array()
-: array_type_(Type::Bool()), address_( &empty_address_ )
+: array_type_(Type::Bool()), address_( empty_address_ )
 {}
 
 
@@ -91,46 +129,19 @@ Array::Array(const Array &ar)
 {}
 
 
-Array::Array(const Address *address, const Type::Array type)
+Array::Array(const Address &address, const Type::Array type)
 : array_type_(type), address_(address)
 {
-    if (address->storage_head()->is_null())
+    if (address.storage_head()->is_null())
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("Array") );
 }
 
 StorageArray Array::empty_storage_ = StorageArray(0);
 
-Address Array::empty_address_ = Address( new StorageArray(0), new Input::Type::Array(Type::Bool()) );
+Address Array::empty_address_ = Address( &Array::empty_storage_, NULL );
 
 
 
-/*****************************************************************************
- * Implementation of the class Input::Address
- */
-
-Address::Address(const Address& other) {
-	root_type_ = other.root_type_;
-	actual_storage_ = other.actual_storage_;
-	actual_node_ = other.actual_node_;
-	path_ = other.path_;
-}
-
-
-const Address* Address::down(unsigned int idx) const {
-	Address address(actual_storage_->get_item(idx), root_type_);
-	address.path_ = path_;
-	address.path_.push_back(idx);
-
-	return &address;
-}
-
-
-std::string Address::make_full_address() {
-	std::string address = "/";
-	//dodelat
-
-	return address;
-}
 
 
 
