@@ -172,7 +172,8 @@ TEST_F(InputInterfaceTest, RecordVal) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
-    Record record(storage, *main);
+    Address addr(storage, main);
+    Record record(addr, *main);
 
     // read scalar keys
     int i;
@@ -224,7 +225,8 @@ TEST_F(InputInterfaceTest, RecordFind) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
-    Record record(storage, *main);
+    Address addr(storage, main);
+    Record record(addr, *main);
 
     // read scalar keys
 
@@ -248,7 +250,8 @@ TEST_F(InputInterfaceTest, Record_opt_val) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
-    Record record(storage, *main);
+    Address addr(storage, main);
+    Record record(addr, *main);
 
     // read obligatory or default key
     int value;
@@ -275,7 +278,8 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
-    Record record(storage, *main);
+    Address addr(storage, main);
+    Record record(addr, *main);
     Array array = record.val<Array>("array_of_int");
 
     std::vector<int> vec_int;
@@ -331,7 +335,8 @@ TEST_F(InputInterfaceTest, ReadFromAbstract) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
-    Record record(storage, *main);
+    Address addr(storage, main);
+    Record record(addr, *main);
 
     {
         AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_1");
