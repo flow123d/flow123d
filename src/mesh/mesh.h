@@ -66,27 +66,27 @@ class GmshMeshReader;
  * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
  */
 #define FOR_NODES(_mesh_, i) \
-    for( NodeFullIter i( _mesh_->node_vector.begin() ); \
-        i != _mesh_->node_vector.end(); \
+    for( NodeFullIter i( (_mesh_)->node_vector.begin() ); \
+        i != (_mesh_)->node_vector.end(); \
         ++i)
 
 /**
  * Macro for conversion form Iter to FullIter for nodes.
  */
 #define NODE_FULL_ITER(_mesh_,i) \
-    _mesh_->node_vector.full_iter(i)
+    (_mesh_)->node_vector.full_iter(i)
 
 /**
  * Macro to get "NULL" ElementFullIter.
  */
 #define NODE_FULL_ITER_NULL(_mesh_) \
-    NodeFullIter(_mesh_->node_vector)
+    NodeFullIter((_mesh_)->node_vector)
 
 /**
  * Macro for conversion form Iter to FullIter for elements.
  */
 #define ELEM_FULL_ITER(_mesh_,i) \
-    _mesh_->element.full_iter(i)
+    (_mesh_)->element.full_iter(i)
 
 
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
@@ -299,59 +299,59 @@ protected:
  * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
  */
 #define FOR_ELEMENTS(_mesh_,__i) \
-    for( ElementFullIter __i( _mesh_->element.begin() ); \
-        __i != _mesh_->element.end(); \
+    for( ElementFullIter __i( (_mesh_)->element.begin() ); \
+        __i != (_mesh_)->element.end(); \
         ++__i)
 
 /**
  * Macro for conversion form Iter to FullIter for elements.
  */
 #define ELEMENT_FULL_ITER(_mesh_,i) \
-    _mesh_->element.full_iter(i)
+    (_mesh_)->element.full_iter(i)
 
 /**
  * Macro to get "NULL" ElementFullIter.
  */
 #define ELEMENT_FULL_ITER_NULL(_mesh_) \
-    ElementFullIter(_mesh_->element)
+    ElementFullIter((_mesh_)->element)
 
 
 #define FOR_BOUNDARIES(_mesh_,i) \
-for( std::vector<Boundary>::iterator i= _mesh_->boundary_.begin(); \
-    i != _mesh_->boundary_.end(); \
+for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
+    i != (_mesh_)->boundary_.end(); \
     ++i)
 
 /**
  * Macro for conversion form Iter to FullIter for boundaries.
  */
 #define BOUNDARY_FULL_ITER(_mesh_,i) \
-    _mesh_->boundary.full_iter(i)
+    (_mesh_)->boundary.full_iter(i)
 
 /**
  * Macro to get "NULL" BoundaryFullIter.
  */
 #define BOUNDARY_NULL(_mesh_) \
-    BoundaryFullIter(_mesh_->boundary)
+    BoundaryFullIter((_mesh_)->boundary)
 
 
 /**
  * Provides for statement to iterate over the Edges of the Mesh. see FOR_ELEMENTS
  */
 #define FOR_EDGES(_mesh_,__i) \
-    for( vector<Edge>::iterator __i = _mesh_->edges.begin(); \
-        __i !=_mesh_->edges.end(); \
+    for( vector<Edge>::iterator __i = (_mesh_)->edges.begin(); \
+        __i !=(_mesh_)->edges.end(); \
         ++__i)
 
 #define FOR_SIDES(_mesh_, it) \
-    FOR_ELEMENTS(_mesh_, ele)  \
+    FOR_ELEMENTS((_mesh_), ele)  \
         for(SideIter it = ele->side(0); it->el_idx() < ele->n_sides(); ++it)
 
 #define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 
 
 #define FOR_NEIGHBOURS(_mesh_, it) \
-    for( std::vector<Neighbour>::iterator it = _mesh_->vb_neighbours_.begin(); \
-         (it)!= _mesh_->vb_neighbours_.end(); ++it)
+    for( std::vector<Neighbour>::iterator it = (_mesh_)->vb_neighbours_.begin(); \
+         (it)!= (_mesh_)->vb_neighbours_.end(); ++it)
 
 #define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
 #define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
