@@ -27,7 +27,7 @@
 
 add_custom_target( mesh_all_test )
 set(super_test "mesh_all_test")
-set(super_test_libs mesh_lib system_lib  )
+set(super_test_libs field_lib mesh_lib system_lib  )
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -37,6 +37,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     define_test(gmsh_reader)
     define_test(intersection)
     define_test(bih_tree)
+    define_test(intersection_1_3)
     define_test(mesh)
     
     #define_test(generic_node)

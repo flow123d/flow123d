@@ -134,26 +134,25 @@ protected:
 	 * Calculate pressures in triangle element
 	 */
 	void calculate_triangle_pressure(TTriangle &element);
-
 	/**
 	 * Calculate pressures in abscissa element
 	 */
 	void calculate_abscissa_pressure(TAbscissa &element);
-
+public:
 	/**
 	 * Create tetrahedron from element
 	 */
-	void createTetrahedron(Element *ele, TTetrahedron &te);
+	static void createTetrahedron(Element *ele, TTetrahedron &te);
 
 	/**
 	 * Create triangle from element
 	 */
-	void createTriangle(Element *ele, TTriangle &tr);
+	static void createTriangle(Element *ele, TTriangle &tr);
 
 	/**
 	 * Create abscissa from element
 	 */
-	void createAbscissa(Element *ele, TAbscissa &ab);
+	static void createAbscissa(Element *ele, TAbscissa &ab);
 };
 
 
