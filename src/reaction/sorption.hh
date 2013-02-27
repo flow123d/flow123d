@@ -10,21 +10,62 @@
 #include <input/input_type.hh>
 #include <reaction/isotherms.hh>
 
+#include "fields/field_base.hh"
+
 class Mesh;
 class Distribution;
 class Reaction;
+class Isotherm;
 
-class Sorption: public Reaction
+enum Sorption_type {
+	none = 0,
+	Linear = 1,
+	Langmuir = 2,
+	Freundlich = 3
+};
+
+class Sorption:  public Reaction
 {
 	public:
+		class EqData : public EqDataBase // should be written in class Sorption
+		{
+			/**
+			 * 	Sorption type specifies a kind of isothermal description of adsorption.
+			 */
+
+			static Input::Type::Selection sorption_type_selection;
+
+			/// Collect all fields
+			EqData(const std::string &name=0);
+
+			/**
+			 * Overrides EqDataBase::read_bulk_list_item, implements reading of
+			 * - init_piezo_head key
+			 */
+			//RegionSet read_bulk_list_item(Input::Record rec);
+
+			Field<3, FieldValue<3>::Enum > sorption_type; // Discrete need Selection for initialization.
+			Field<3, FieldValue<3>::Scalar > nr_of_points; // Number of required mass-balance crossection.
+			Field<3, FieldValue<3>::Scalar > region_ident; // Rock matrix identifier.
+			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
+			Field<3, FieldValue<3>::Scalar > slopes; // Linear sorption parameters.
+			Field<3, FieldValue<3>::Scalar > omegas; // Langmuir sorption multiplication parameters.
+			Field<3, FieldValue<3>::Scalar > alphas; // Langmuir sorption coeficients alpha (in fraction).
+
+		};
+
 		/*
 	 	* Static variable for new input data types input
 		*/
 		static Input::Type::Record input_type;
+		/**
+		* Static variable for new input data types input
+		*/
+		static Input::Type::Record input_type_isotherm;
 		/*
 	 	* Static variable gets information about particular sorption parameters in selected region
 		*/
-		static Input::Type::Record input_type_isotherm;
+		//static Input::Type::Record input_type_isotherm;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
@@ -34,7 +75,6 @@ class Sorption: public Reaction
 		*	Destructor.
 		*/
 		~Sorption(void);
-
 		/**
 		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
@@ -45,72 +85,96 @@ class Sorption: public Reaction
 		*/
 		//virtual
 		virtual void compute_one_step(void);
-		/**
-		*	Following time_step setting methods are obsolete for computation of equilibrial sorption.
-		*/
-		//void set_time_step(double new_timestep, Input::Record in_rec);
-		//virtual void set_time_step(Input::Record in_rec);
-		//virtual
-		//void set_time_step(double time_step);
 	protected:
-
 		/**
 		*	This method disables to use constructor without parameters.
 		*/
 		Sorption();
 		/**
-		*	Fuction reads necessery informations to describe sorption and to set substance indices.
+		*	Fuction reads necessery informations to describe sorption and to set substance indices. obsolete
 		*/
-		void prepare_inputs(Input::Record in_rec);
+		void set_parameters(Input::Record in_rec);
 		/**
-		*	For printing indices of species which sorbe.
+		* 	Method reads inputs and computes ekvidistant distributed points on all the selected isotherm.
 		*/
-		void print_indices(int dec_nr, int n_subst);
+		void compute_isotherms(Input::Record in_rec);
 		/**
-		*	For printing parameters of isotherms under consideration.
+		*	For printing parameters of isotherms under consideration, not necessary to store
 		*/
-		void print_sorption_parameters(int n_subst);
+		void print_sorption_parameters(void);
 		/**
 		*	Function determines intersections between an isotherm and conservation of mass describing lines.
 		*/
-		void determine_crossections(int k_points);
+		void determine_crossections(void);
 		/**
 		* 	Rotates either intersections or all the [c_a,c_s] points around origin.
 		*/
-		void rotate_points(double angle, double **points);
+		void rotate_point(double angle, std::vector<std::vector<double>> points);
 		/**
 		* 	Makes projection of rotated datapoints on rotated isotherm. Use interpolation.
 		*/
 		void interpolate_datapoints(void);
 		/**
-		*	Sequence of integers describing an order of substances participating sorption.
+		* 	Number of regions.
 		*/
-		std::vector <unsigned int> substance_ids;
+		int nr_of_regions;
 		/**
-		* 	Critical concentrations solvable in water.
+		* 	Number of substances.
 		*/
-		std::vector <double> c_aq_max;
+		int nr_of_substances;
 		/**
-		* 	Area identifiers where sorptions take place
+		* 	Indentifier of the region where sorption take place. region_id
 		*/
-		std::vector <unsigned int> areas;
+		std::vector<unsigned int> region_ids;
 		/**
-		* 	Types of predefined isotherms.
+		* 	Density of the rock-matrix.
 		*/
-		std::vector<string> types;
+		std::vector<double> rock_dens;
 		/**
-		*	Linear isotherm tangential direction, slopes.
+		*	Identifier of the substance undergoing sorption.
 		*/
-		std::vector<double> directs;
+		std::vector<unsigned int> substance_ids;
 		/**
-		* 	Langmuirs' multiplication coefficients and alpha parameters.
+		* 	Molar masses of dissolved species (substances)
 		*/
-		std::vector<std::vector<double> > coefs;
+		std::vector<double> molar_masses;
 		/**
-		*	Two dimensional array contains intersections between isotherms and mass balance lines.
+		* 	Density of the solvent.
 		*/
-		std::vector<std::vector<std::vector<double> > >isotherms;
-		
+		double solvent_dens;
+		/**
+		* 	Critical concentrations of species dissolved in water.
+		*/
+		std::vector<double> c_aq_max;
+		/**
+		*	Linear isotherm tangential direction, slope. //Up to |nr_of_species x nr_of_regions| parameters, obsolete
+		*/
+		//std::vector<std::vector<double> >directs;
+		double slope;
+		/**
+		* 	Langmuirs' multiplication coefficient.
+		*/
+		double omega;
+		/**
+		* 	Langmuirs' isotherm alpha parameters.
+		*/
+		double alpha;
+		/**
+		*	Four dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in various rock matrix enviroments Up to |nr_of_region x nr_of_substances x 2 x n_points| doubles.
+		*/
+		std::vector<std::vector<std::vector<std::vector<double> > > > isotherm;
+		/**
+		* 	Specifies sorption type.
+		*/
+		std::vector<std::vector<Sorption_type> > type;
+		/**
+		* 	Information about an angle of rotation of the system of coordinates.
+		*/
+		std::vector<std::vector<double> > angle;
+		/**
+		* 	Number of points as the base for interpolation.
+		*/
+		std::vector<std::vector<int> > n_points;
 };
 
 #endif

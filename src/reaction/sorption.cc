@@ -13,26 +13,52 @@
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
+namespace it=Input::Type;
+
+Sorption::EqData::EqData(const std::string &name)
+: EqDataBase(name)
+{
+    ADD_FIELD(nr_of_points, "Number of crossections allong isotherm", Input::Type::Default("10"));
+    ADD_FIELD(region_ident, "Rock matrix area identifier.", Input::Type::Default("0"));
+    ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
+
+    ADD_FIELD(sorption_type,"Considered adsorption is described by selected isotherm.", it::Default("none") );
+              sorption_type.set_selection(&sorption_type_selection);
+
+    ADD_FIELD(slopes,"Directions of linear isotherm.",it::Default("0.0"));
+    std::vector<FieldEnum> list; list.push_back(none); list.push_back(Langmuir);
+    slopes.disable_where(& sorption_type, list );
+
+    ADD_FIELD(omegas,"Langmuir isotherm multiplication parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
+    list.clear(); list.push_back(none); list.push_back(Linear);
+    omegas.disable_where(& sorption_type, list );
+
+    ADD_FIELD(alphas,"Langmuir isotherm alpha parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
+    list.clear(); list.push_back(none); list.push_back(Linear);
+    alphas.disable_where(& sorption_type, list );
+}
+
+/*RegionSet Sorption::EqData::read_bulk_list_item(Input::Record rec) {
+    RegionSet domain=EqDataBase::read_bulk_list_item(rec);
+    Input::AbstractRecord field_a_rec;
+    if (rec.opt_val("init_piezo_head", field_a_rec)) {
+                init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
+    }
+    return domain;
+}*/
+
 using namespace Input::Type;
 
-Record Sorption::input_type_isotherm // input_type_one_decay_substep
+Record Sorption::input_type_isotherm // region independent parameters
 	= Record("Isotherm", "Equation for reading information about limmited solubility affected sorption.")
 	.declare_key("specie", String(), Default::obligatory(),
 				"Identifier of a sorbing isotope.")
 	.declare_key("molar_mass", Double(), Default("1.0"),
 				"Molar mass.")
-    .declare_key("region", Integer(), Default::optional(), // not considered at first
-                "Arrea where considered sorption appears.")
-    .declare_key("type", String(), Default::obligatory(), // this item is obsolete may be
-                "Declaration of an isotherm type either lang or lin.")
-    .declare_key("direction", Double(), Default("0.0"), // parameter of a linear isotherm
-				"Defines a slope of a linear isotherm.")
-	.declare_key("omega", Double(), Default("1.0"), // multiplicative parameter of a langmuir isotherm
-							"Defines a multiplicative parameter omega of a langmuir isotherm c_s = omega * (alpha*c_a)/(1- alpha*c_a).")
-	.declare_key("alpha", Double(), Default("0.0"), // parameter of a langmuir isotherm
-				"Defines a parameter alpha of a langmuir isotherm c_s = omega * (alpha*c_a)/(1- alpha*c_a).")
 	.declare_key("solvable", Double(), Default("1.0"),   // concentration limit for a solubility of the specie under concideration
-				"Solubility limit.");
+				"Solubility limit.")
+	.declare_key("substeps", Integer(), Default("10"),
+				"Number of equidistant substeps, molar mass and isotherm intersections");
 
 
 Record Sorption::input_type
@@ -41,110 +67,61 @@ Record Sorption::input_type
     .declare_key("sorptions", Array( Sorption::input_type_isotherm ), Default::obligatory(),
                 "Description of particular sorption cases under consideration.");
 
-
 using namespace std;
 
-Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-      : Reaction(init_mesh, in_rec, names)
+Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
+	: Reaction(init_mesh, in_rec, names)
 {
-	prepare_inputs(in_rec);
+	nr_of_regions = 1; // temporarirly suppresed //material_database.size();
+	nr_of_substances = names.size();
+
+	//both following operations connected together in compute_isotherm(..) method
+	//prepare_inputs(in_rec);
 	//determine_crossection()
-}
-
-/*Sorption::~Sorption()
-{
-	//int i, rows, n_subst;
-	//
-	//release_reaction_matrix();
-}*/
-
-double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorptions are realized just for one element.
-{
-    int cols, rows;
-
-    //  Measurements [c_a,c_s] will be rotated
-    //  Rotated measurements must be projected on rotated isotherm
-    //  Projections need to be transformed back to original CS
-
-    /*if (reaction_matrix == NULL) return concentrations;
-
-	for(cols = 0; cols < n_substances(); cols++){
-		prev_conc[cols] = concentrations[cols][loc_el];
-		concentrations[cols][loc_el] = 0.0;
-	}
-
-	for(rows = 0; rows < n_substances(); rows++){
-        for(cols = 0; cols < n_substances(); cols++){
-            concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
-        }
-    }*/
-
-	return concentrations;
-}
-
-void Sorption::compute_one_step(void) // Computes sorption simulation over all the elements.
-{
-    //DBGMSG("decay step\n");
-    //if (reaction_matrix == NULL)   return;
-
-    /*START_TIMER("sorption_step");
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
-	 {
-	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
-	    if (dual_porosity_on == true) {
-	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
-	    }
-
-	 }
-    END_TIMER("sorption_step");*/
-	 return;
-}
-
-
-void Sorption::print_sorption_parameters(int nr_of_substances) {
-    int i;
-
-    xprintf(Msg, "\nSorption parameters are defined as:");
-    for (i = 0; i < (nr_of_substances - 1); i++) {
-        if (i < (nr_of_substances - 2)) ; //cout << " " << half_lives[i] <<",";
-        	// describing table header
-        	// name(specie)
-        	// molar mass
-        	// isotherm type
-        	// region
-        	// parameter(s)
-        	// solubility limit
-            //xprintf(Msg, " %f", half_lives[i]);
-        if (i == (nr_of_substances - 2)) ; //cout << " " << half_lives[i] <<"\n";
-            // xprintf(Msg, " %f\n", this->half_lives[i]);
-    }
+	//compute_isotherms(in_rec);
 }
 
 // TODO: check duplicity of parents
 //       raise warning if sum of ratios is not one
-void Sorption::prepare_inputs(Input::Record in_rec)
+void Sorption::compute_isotherms(Input::Record in_rec)
 {
     unsigned int idx;
 
 	Input::Array sorption_array = in_rec.val<Input::Array>("sorptions");
+	/*n_points = in_rec.val<int>("substeps");
 
-	substance_ids.resize( sorption_array.size() );
-	//half_lives.resize( sorption_array.size() );
-	//bifurcation.resize( sorption_array.size() );
+	isotherms.resize(nr_of_regions*nr_of_substances);
+	for(int i = 0; i < nr_of_regions; i++)
+	{
+		for(int j = 0; j < nr_of_substances; j++)
+		{
+			isotherms[i][j] = 0; //initialization
+		}
+	}
 
 	int i_sorption=0;
 	for (Input::Iterator<Input::Record> sorp_it = sorption_array.begin<Input::Record>(); sorp_it != sorption_array.end(); ++sorp_it, ++i_sorption)
 	{
-		//region determining part
-		/*Input::Iterator<double> it_hl = sorp_it->find<double>("half_life");
-		if (it_hl) {
-		   half_lives[i_sorption] = *it_hl;
+		//isotherm determining part
+		int region_id = sorp_it->find<int>("region");
+		int substance_id = sorp_it->find<int>("specie");
+		isotherms[region_id][specie_id] = new Isotherm(init_mesh, *sorp_it, names);
+		(&isotherms[region_id][specie_id])->set_parameters(*sorp_it);
+		determine_crossections(n_points);//
+		rotate_points(0.70711, isotherms[region_id][substance_id]);*/
+
+		//Sorption_type sorption_type = sorp_it->find<enum Sorption_type>("type");
+		/*double slope = sorp_it->find<double>("direction");
+		if (slope > 0.0) {
+		   ; //intersections of an isotherm with mass balance lines can be found exactly
 		} else {
-		   it_hl = sorp_it->find<double>("kinetic");
-		   if (it_hl) {
-			   half_lives[i_sorption] = log(2)/(*it_hl);
+		   double alpha = sorp_it->find<double>("alpha");
+		   double omega = sorp_it->find<double>("omega");
+		   if ((alpha == -1.0) || (omega == -1.0)) {
+			   xprintf(UsrErr, "Some of parameters for isotherm are either missing or incorect.\n");
 		   } else {
-		    xprintf(UsrErr, "Missing half-life or kinetic in the %d-th reaction.\n", i_sorption);
+			   int substance_id = sorp_it->find<int>("specie");
+			   int region_id = sorp_it->find<int>("region");
 		  }
 		}*/
 
@@ -179,20 +156,84 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 
 		// Molar mass of particular adsorbent.
 
-	}
+	//}
 }
 
-void Sorption::determine_crossections(int k_points)
+double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorptions are realized just for one element.
+{
+    int cols, rows;
+
+    //  If intersections of isotherm with mass balance lines are known, then interpolate.
+    	//  Measurements [c_a,c_s] will be rotated
+    	//  Rotated measurements must be projected on rotated isotherm, interpolate_datapoints()
+    	//  Projections need to be transformed back to original CS
+    //	If intersections are not known then solve the problem analytically (toms748_solve).
+
+    //*if (reaction_matrix == NULL) return concentrations;
+
+	/*for(cols = 0; cols < n_substances(); cols++){
+		prev_conc[cols] = concentrations[cols][loc_el];
+		concentrations[cols][loc_el] = 0.0;
+	}*/
+
+	/*for(rows = 0; rows < n_substances(); rows++){
+        for(cols = 0; cols < n_substances(); cols++){
+            concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
+        }
+    }*/
+
+	return concentrations;
+}
+
+void Sorption::compute_one_step(void) // Computes sorption simulation over all the elements.
+{
+    //DBGMSG("decay step\n");
+    //if (reaction_matrix == NULL)   return;
+
+    /*START_TIMER("sorption_step");
+	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	 {
+	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
+	    if (dual_porosity_on == true) {
+	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
+	    }
+
+	 }
+    END_TIMER("sorption_step");*/
+	 return;
+}
+
+
+void Sorption::print_sorption_parameters(void)
+{
+
+    xprintf(Msg, "\nSorption parameters are defined as:");
+    /*for (int i = 0; i < (nr_of_substances - 1); i++) {
+        if (i < (nr_of_substances - 2)) ; //cout << " " << half_lives[i] <<",";
+        	// describing table header
+        	// name(specie)
+        	// molar mass
+        	// isotherm type
+        	// region
+        	// parameter(s)
+        	// solubility limit
+            //xprintf(Msg, " %f", half_lives[i]);
+        if (i == (nr_of_substances - 2)) ; //cout << " " << half_lives[i] <<"\n";
+            // xprintf(Msg, " %f\n", this->half_lives[i]);
+    }*/
+}
+
+void Sorption::determine_crossections(void)
 {
 	;
 }
 
-void rotate_points(double angle, double **points)
+void Sorption::rotate_point(double angle, std::vector<std::vector<double> > points)
 {
 	;
 }
 
-void interpolate_datapoints(void)
+void Sorption::interpolate_datapoints(void)
 {
 	;
 }
