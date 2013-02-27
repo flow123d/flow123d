@@ -109,7 +109,7 @@ class Sorption:  public Reaction
 		/**
 		* 	Rotates either intersections or all the [c_a,c_s] points around origin.
 		*/
-		void rotate_point(double angle, std::vector<std::vector<double>> points);
+		void rotate_point(double angle, std::vector<std::vector<double> > points);
 		/**
 		* 	Makes projection of rotated datapoints on rotated isotherm. Use interpolation.
 		*/
