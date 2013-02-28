@@ -51,6 +51,7 @@ class Sorption:  public Reaction
 			Field<3, FieldValue<3>::Scalar > slopes; // Linear sorption parameters.
 			Field<3, FieldValue<3>::Scalar > omegas; // Langmuir sorption multiplication parameters.
 			Field<3, FieldValue<3>::Scalar > alphas; // Langmuir sorption coeficients alpha (in fraction).
+			Field<3, FieldValue<3>::Scalar > solvent_density; // Solvent density.
 
 		};
 
@@ -91,9 +92,9 @@ class Sorption:  public Reaction
 		*/
 		Sorption();
 		/**
-		*	Fuction reads necessery informations to describe sorption and to set substance indices. obsolete
+		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
-		void set_parameters(Input::Record in_rec);
+		void prepare_inputs(Input::Record in_rec);
 		/**
 		* 	Method reads inputs and computes ekvidistant distributed points on all the selected isotherm.
 		*/
@@ -127,9 +128,9 @@ class Sorption:  public Reaction
 		*/
 		std::vector<unsigned int> region_ids;
 		/**
-		* 	Density of the rock-matrix.
+		* 	Density of the rock-matrix. Depends on region.
 		*/
-		std::vector<double> rock_dens;
+		//std::vector<double> rock_dens;
 		/**
 		*	Identifier of the substance undergoing sorption.
 		*/
@@ -139,42 +140,42 @@ class Sorption:  public Reaction
 		*/
 		std::vector<double> molar_masses;
 		/**
-		* 	Density of the solvent.
+		* 	Density of the solvent. Could be done region dependent, easily.
 		*/
-		double solvent_dens;
+		//double solvent_dens;
 		/**
 		* 	Critical concentrations of species dissolved in water.
 		*/
 		std::vector<double> c_aq_max;
 		/**
-		*	Linear isotherm tangential direction, slope. //Up to |nr_of_species x nr_of_regions| parameters, obsolete
+		*	Linear isotherm tangential direction, slope. //Up to |nr_of_species x nr_of_regions| parameters. Depends on region.
 		*/
 		//std::vector<std::vector<double> >directs;
-		double slope;
+		//double slope;
 		/**
-		* 	Langmuirs' multiplication coefficient.
+		* 	Langmuirs' multiplication coefficient. Depends on region.
 		*/
-		double omega;
+		//double omega;
 		/**
-		* 	Langmuirs' isotherm alpha parameters.
+		* 	Langmuirs' isotherm alpha parameters. Depends on region.
 		*/
-		double alpha;
+		//double alpha;
 		/**
-		*	Four dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in various rock matrix enviroments Up to |nr_of_region x nr_of_substances x 2 x n_points| doubles.
+		*	Five dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in various rock matrix enviroments. Up to |2 (mobile|immobile) x nr_of_region x nr_of_substances x 2 (coordinates) x n_points| doubles.
 		*/
-		std::vector<std::vector<std::vector<std::vector<double> > > > isotherm;
+		std::vector<std::vector<std::vector<std::vector<std::vector<double> > > > > isotherm;
 		/**
-		* 	Specifies sorption type.
+		* 	Specifies sorption type. Depends on region.
 		*/
-		std::vector<std::vector<Sorption_type> > type;
+		//std::vector<std::vector<Sorption_type> > type;
 		/**
-		* 	Information about an angle of rotation of the system of coordinates.
+		* 	Information about an angle of rotation of the system of coordinates. |2 (mobile|immobile) x nr_of_region x nr_of_substances| doubles. Radians.
 		*/
-		std::vector<std::vector<double> > angle;
+		std::vector<std::vector<std::vector<double> > > angle;
 		/**
-		* 	Number of points as the base for interpolation.
+		* 	Number of points as the base for interpolation. Depends on region.
 		*/
-		std::vector<std::vector<int> > n_points;
+		//std::vector<std::vector<int> > n_points;
 };
 
 #endif

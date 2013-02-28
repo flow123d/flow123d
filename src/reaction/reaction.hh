@@ -15,7 +15,7 @@
 //class Mesh;
 class Distribution;
 
-enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch};
+enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Sorption};
 
 class Reaction: public EquationBase
 {

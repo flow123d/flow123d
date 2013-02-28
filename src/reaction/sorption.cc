@@ -21,20 +21,21 @@ Sorption::EqData::EqData(const std::string &name)
     ADD_FIELD(nr_of_points, "Number of crossections allong isotherm", Input::Type::Default("10"));
     ADD_FIELD(region_ident, "Rock matrix area identifier.", Input::Type::Default("0"));
     ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
+    ADD_FIELD(solvent_density, "Solvent density.", Input::Type::Default("1.0"));
 
     ADD_FIELD(sorption_type,"Considered adsorption is described by selected isotherm.", it::Default("none") );
               sorption_type.set_selection(&sorption_type_selection);
 
-    ADD_FIELD(slopes,"Directions of linear isotherm.",it::Default("0.0"));
-    std::vector<FieldEnum> list; list.push_back(none); list.push_back(Langmuir);
+    ADD_FIELD(slopes,"Directions of linear isotherm.");
+    std::vector<FieldEnum> list; list.push_back(none); list.push_back(Langmuir); list.push_back(Freundlich);
     slopes.disable_where(& sorption_type, list );
 
     ADD_FIELD(omegas,"Langmuir isotherm multiplication parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
-    list.clear(); list.push_back(none); list.push_back(Linear);
+    list.clear(); list.push_back(none); list.push_back(Linear); list.push_back(Freundlich);
     omegas.disable_where(& sorption_type, list );
 
     ADD_FIELD(alphas,"Langmuir isotherm alpha parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
-    list.clear(); list.push_back(none); list.push_back(Linear);
+    list.clear(); list.push_back(none); list.push_back(Linear); list.push_back(Freundlich);
     alphas.disable_where(& sorption_type, list );
 }
 
@@ -72,13 +73,105 @@ using namespace std;
 Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: Reaction(init_mesh, in_rec, names)
 {
-	nr_of_regions = 1; // temporarirly suppresed //material_database.size();
+	nr_of_regions = init_mesh.n_materials;
 	nr_of_substances = names.size();
 
 	//both following operations connected together in compute_isotherm(..) method
 	//prepare_inputs(in_rec);
 	//determine_crossection()
 	//compute_isotherms(in_rec);
+}
+
+void Sorption::prepare_inputs(Input::Record in_rec)
+{
+    unsigned int idx;
+
+	Input::Array sorption_array = in_rec.val<Input::Array>("sorptions");
+
+	//Simple vectors holding  common informations.
+	region_ids.resize( sorption_array.size() ); // ( nr_of_regions );
+	substance_ids.resize(sorption_array.size()); // ( nr_of_substances );
+	molar_masses.resize( nr_of_substances );
+	c_aq_max.resize( nr_of_substances );
+	//Multidimensional array angle
+	angle.resize(2*nr_of_regions*nr_of_substances); //|2 (mobile|immobile) x nr_of_region x nr_of_substances| doubles. Radians.
+	for(int i_mob = 0; i_mob < 2; i_mob++)
+	{
+		//angle[i_mob].resize(nr_of_regions);
+		for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+		{
+			//angle[i_mob][i_reg].resize(nr_of_substances);
+			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+			{
+				angle[i_mob][i_reg][i_subst] = 0.0;
+			}
+		}
+	}
+	//Multidimensional array angle
+	isotherm.resize(2); //Up to |2 (mobile|immobile) x nr_of_region x nr_of_substances x 2 (coordinates) x n_points| doubles.
+	for(int i_mob = 0; i_mob < 2; i_mob++)
+	{
+		isotherm[i_mob].resize(nr_of_regions);
+		for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+		{
+			//angle[i_mob][i_reg].resize(nr_of_substances);
+			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+			{
+				isotherm[i_mob][i_reg][i_subst].resize(2);
+				for(int i_xy = 0; i_xy < 2; i_xy++)
+				{
+					; //Here we need to get n_points from EqData somehow.
+				}
+			}
+		}
+	}
+
+	int i_sorp=0;
+	for (Input::Iterator<Input::Record> sorp_it = sorption_array.begin<Input::Record>(); sorp_it != sorption_array.end(); ++sorp_it, ++i_sorp)
+	{
+		int idx;
+		double mol_mass, solub;
+
+		//indices determining part
+		string specie_name = sorp_it->val<string>("specie");
+		idx = find_subst_name(specie_name);
+		if (idx >= n_substances())
+		{
+			substance_ids[i_sorp] = idx;
+		}else{
+			//xprintf(UsrErr,"Unknown name %s of substance undergoing the %d-th sorption.\n", specie_name, i_sorp);
+			xprintf(UsrErr,"Unknown name (identifier) of the substance undergoing the %d-th sorption.\n", i_sorp);
+		}
+
+		// solubulity limit
+		solub = sorp_it->val<double>("solubility");
+		if (solub > 0.0) {
+		   c_aq_max[idx] = solub;
+		} else {
+			//xprintf(UsrErr, "Unknown solubility limit of substance %s undergoing the %d-th sorption.\n", specie_name, i_sorp);
+			xprintf(UsrErr, "Unknown solubility limit of the substance undergoing the %d-th sorption.\n", i_sorp);
+		}
+
+		//molar masses determining part
+		mol_mass = sorp_it->val<double>("molar_mass");
+		if (mol_mass) {
+		   molar_masses[idx] = mol_mass;
+		} else {
+			//xprintf(UsrErr, "Unknown molar mass of substance %s undergoing the %d-th sorption.\n", specie_name, i_sorp);
+			xprintf(UsrErr, "Unknown molar mass of the substance undergoing the %d-th sorption.\n", i_sorp);
+		}
+
+		//region determining part
+		idx = sorp_it->val<int>("region");
+		if(idx)
+		{
+			region_ids[i_sorp] = idx;
+		}else{
+			xprintf(UsrErr, "Undefined region identifier where the %d-th sorption takes place.\n", i_sorp);
+		}
+
+	}
+
 }
 
 // TODO: check duplicity of parents
@@ -88,7 +181,7 @@ void Sorption::compute_isotherms(Input::Record in_rec)
     unsigned int idx;
 
 	Input::Array sorption_array = in_rec.val<Input::Array>("sorptions");
-	/*n_points = in_rec.val<int>("substeps");
+	/*
 
 	isotherms.resize(nr_of_regions*nr_of_substances);
 	for(int i = 0; i < nr_of_regions; i++)
@@ -103,6 +196,7 @@ void Sorption::compute_isotherms(Input::Record in_rec)
 	for (Input::Iterator<Input::Record> sorp_it = sorption_array.begin<Input::Record>(); sorp_it != sorption_array.end(); ++sorp_it, ++i_sorption)
 	{
 		//isotherm determining part
+		n_points = in_rec.val<int>("substeps");
 		int region_id = sorp_it->find<int>("region");
 		int substance_id = sorp_it->find<int>("specie");
 		isotherms[region_id][specie_id] = new Isotherm(init_mesh, *sorp_it, names);
@@ -163,6 +257,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 {
     int cols, rows;
 
+    //	Identify loc_el region.
     //  If intersections of isotherm with mass balance lines are known, then interpolate.
     	//  Measurements [c_a,c_s] will be rotated
     	//  Rotated measurements must be projected on rotated isotherm, interpolate_datapoints()
