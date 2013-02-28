@@ -42,13 +42,15 @@ TEST(FieldValue_, all) {
  * direct   : 121ms
  */
 
+#define STEPS (100*1000*1000)
+
 TEST(FieldValue_, speed_test_interface) {
-/*
-   typedef FieldValue_<1,1, double> T;
+
+    typedef FieldValue_<1,1, double> T;
    double r_val;
 
 
-   for(int step=0;step < 100000000; step++) {
+   for(int step=0;step < STEPS; step++) {
        T val(r_val);
 
        for(int row=0;row< val.n_cols(); ++row)
@@ -56,17 +58,16 @@ TEST(FieldValue_, speed_test_interface) {
                val(row,col)+=step;
    }
    cout << r_val << endl;
-*/
 }
 
 TEST(FieldValue_, speed_test_direct) {
-/*
+
    double val;
 
-   for(int step=0;step < 100000000; step++) {
+   for(int step=0;step < STEPS; step++) {
        val+=step;
    }
-   cout << val << endl;*/
+   cout << val << endl;
 }
 
 TEST(FieldValue_, construction_from_raw) {

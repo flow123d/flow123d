@@ -70,11 +70,13 @@ std::string type_name_(std::string);
 std::string type_name_(FieldEnum);
 
 
-double &scalar_value_conversion(double &ref);
-int &scalar_value_conversion(int &ref);
-FieldEnum &scalar_value_conversion(FieldEnum &ref);
-std::string &scalar_value_conversion(StringTensor &ref);
-
+inline double &scalar_value_conversion(double &ref) {return ref;}
+inline int &scalar_value_conversion(int &ref) {return ref;}
+inline FieldEnum &scalar_value_conversion(FieldEnum &ref) {return ref;}
+inline std::string &scalar_value_conversion(StringTensor &ref) {
+    ASSERT( ref.n_rows==1 , "Converting StringTensor(n,m) too std::string with m!=1 or n!=1.");
+    return ref.at(0,0);
+}
 
 
 /**
