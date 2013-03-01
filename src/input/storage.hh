@@ -24,7 +24,7 @@
  * copy the json_spirit tree into it.
  */
 
-#include "system/system.hh"
+//#include "system/system.hh"
 #include "system/exceptions.hh"
 
 namespace Input {

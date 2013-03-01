@@ -118,7 +118,15 @@
 
 #ifdef DEBUG_ASSERTS
 
-#define ASSERT(i,...)   do { if (!(i))  xprintf(PrgErr,__VA_ARGS__); } while (0)
+#include "system/exceptions.hh"
+
+#define ASSERT(i,...)   do {\
+    if (!(i))  {\
+        char msg[1024];\
+        sprintf( msg, __VA_ARGS__);\
+        THROW( ExcAssertMsg() << EI_Message(std::string(msg)) );\
+    }} while (0)
+
 #define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
 
 #else

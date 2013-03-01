@@ -170,3 +170,28 @@ TEST(InputException, all) {
 
     EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
 }
+
+//------------------------------------------------------------------------
+// Test stack trace
+void zero()  { THROW(ExcString() << EI_StringValue("BOOM!")); }
+void one()   { zero(); }
+void two()   { one(); }
+void three() { two(); }
+TEST(Exceptions, stack_trace) {
+    try {
+        three();
+    } catch (ExcString &e) {
+        std::cerr << e.what();
+    }
+
+}
+
+#include "system/global_defs.h"
+//------------------------------------------------------------------------
+// Test ASSERT using exceptions.
+TEST(Exceptions, assert_msg) {
+
+    int zero=1;
+    EXPECT_THROW_WHAT( {ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
+
+}

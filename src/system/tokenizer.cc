@@ -10,6 +10,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+#include "system/global_defs.h"
 #include "system/system.hh"
 #include "system/tokenizer.hh"
 #include "system/file_path.hh"
