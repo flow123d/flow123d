@@ -2,6 +2,7 @@
 #include <cstring>
 #include <stdlib.h>
 #include <math.h>
+#include <boost/foreach.hpp>
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
@@ -18,25 +19,25 @@ namespace it=Input::Type;
 Sorption::EqData::EqData(const std::string &name)
 : EqDataBase(name)
 {
-    ADD_FIELD(nr_of_points, "Number of crossections allong isotherm", Input::Type::Default("10"));
-    ADD_FIELD(region_ident, "Rock matrix area identifier.", Input::Type::Default("0"));
+    //ADD_FIELD(nr_of_points, "Number of crossections allong isotherm", Input::Type::Default("10"));
+    //ADD_FIELD(region_ident, "Rock matrix area identifier.", Input::Type::Default("0"));
     ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
-    ADD_FIELD(solvent_density, "Solvent density.", Input::Type::Default("1.0"));
+    //ADD_FIELD(solvent_density, "Solvent density.", Input::Type::Default("1.0"));
 
     ADD_FIELD(sorption_type,"Considered adsorption is described by selected isotherm.", it::Default("none") );
               sorption_type.set_selection(&sorption_type_selection);
 
-    ADD_FIELD(slopes,"Directions of linear isotherm.");
-    std::vector<FieldEnum> list; list.push_back(none); list.push_back(Langmuir); list.push_back(Freundlich);
-    slopes.disable_where(& sorption_type, list );
+    ADD_FIELD(scale,"Directions of linear isotherm.");
+    //std::vector<FieldEnum> list; list.push_back(none); list.push_back(Langmuir); list.push_back(Freundlich);
+    //slopes.disable_where(& sorption_type, list );
 
-    ADD_FIELD(omegas,"Langmuir isotherm multiplication parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
-    list.clear(); list.push_back(none); list.push_back(Linear); list.push_back(Freundlich);
-    omegas.disable_where(& sorption_type, list );
+    //ADD_FIELD(omegas,"Langmuir isotherm multiplication parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
+    //list.clear(); list.push_back(none); list.push_back(Linear); list.push_back(Freundlich);
+    //omegas.disable_where(& sorption_type, list );
 
-    ADD_FIELD(alphas,"Langmuir isotherm alpha parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
-    list.clear(); list.push_back(none); list.push_back(Linear); list.push_back(Freundlich);
-    alphas.disable_where(& sorption_type, list );
+    ADD_FIELD(alpha,"Langmuir isotherm alpha parameters in c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
+    //list.clear(); list.push_back(none); list.push_back(Linear); list.push_back(Freundlich);
+    //alphas.disable_where(& sorption_type, list );
 }
 
 /*RegionSet Sorption::EqData::read_bulk_list_item(Input::Record rec) {
@@ -172,6 +173,19 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 
 	}
 
+}
+
+void Sorption::precompute_isotherm_tables() {
+    BOOST_FOREACH(const Region & reg, this->mesh_->region_db().get_region_set("BULK")) {
+        arma::Col<unsigned int> sorption_type_vec;
+        arma::Col<double> scale_vec, alpha_vec;
+        if (data_.sorption_type.get_const_value(reg, sorption_type_vec))
+        if (data_.scale.get_const_value(reg, scale_vec))
+        if (data_.alpha.get_const_value(reg, alpha_vec)) {
+            // precompute isotherm
+        }
+        // else leave isotherm empty for this region
+    }
 }
 
 // TODO: check duplicity of parents

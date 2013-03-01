@@ -200,6 +200,18 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 
 
+template <int spacedim, class Value>
+bool Field<spacedim, Value>::get_const_value(Region reg, typename Value::return_type &value) {
+    boost::shared_ptr< FieldBaseType > region_field = operator[](reg);
+    if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
+        region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
     boost::shared_ptr<FieldBaseType> field = FieldBaseType::function_factory(rec, this->n_comp_);

@@ -33,6 +33,11 @@
 
 #include "fields/field_values.hh"
 
+template <int spacedim, class Value>
+class FieldConstant;
+
+
+
 
 /// Result type have sense only for larger Value types like vectors and tensors.
 typedef enum  {
@@ -358,6 +363,12 @@ public:
      * Direct read access to the table of Field pointers on regions.
      */
     boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+
+    /**
+     * If the field on given region @p reg is exists and is of type FieldConstant<...> the method sets
+     * parameter @p value to the constant value of the field and returns true. Otherwise it returns false and value of the @p value parameter remains untouched.
+     */
+    bool get_const_value(Region reg, typename Value::return_type &value);
 
     /**
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates

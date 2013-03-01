@@ -29,6 +29,7 @@ class Sorption:  public Reaction
 	public:
 		class EqData : public EqDataBase // should be written in class Sorption
 		{
+		public:
 			/**
 			 * 	Sorption type specifies a kind of isothermal description of adsorption.
 			 */
@@ -44,14 +45,14 @@ class Sorption:  public Reaction
 			 */
 			//RegionSet read_bulk_list_item(Input::Record rec);
 
-			Field<3, FieldValue<3>::Enum > sorption_type; // Discrete need Selection for initialization.
-			Field<3, FieldValue<3>::Scalar > nr_of_points; // Number of required mass-balance crossection.
-			Field<3, FieldValue<3>::Scalar > region_ident; // Rock matrix identifier.
+			Field<3, FieldValue<3>::EnumVector > sorption_type; // Discrete need Selection for initialization.
+			//Field<3, FieldValue<3>::Scalar > nr_of_points; // Number of required mass-balance crossection.
+			//Field<3, FieldValue<3>::Vector > region_ident; // Rock matrix identifier.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
-			Field<3, FieldValue<3>::Scalar > slopes; // Linear sorption parameters.
-			Field<3, FieldValue<3>::Scalar > omegas; // Langmuir sorption multiplication parameters.
-			Field<3, FieldValue<3>::Scalar > alphas; // Langmuir sorption coeficients alpha (in fraction).
-			Field<3, FieldValue<3>::Scalar > solvent_density; // Solvent density.
+			Field<3, FieldValue<3>::Vector > scale;  // Scale parameter for linear and Langmuir isotherm
+			//Field<3, FieldValue<3>::Scalar > omegas; // Langmuir sorption multiplication parameters.
+			Field<3, FieldValue<3>::Vector > alpha; // Langmuir sorption coeficients alpha (in fraction).
+			//Field<3, FieldValue<3>::Scalar > solvent_density; // Solvent density.
 
 		};
 
@@ -91,6 +92,10 @@ class Sorption:  public Reaction
 		*	This method disables to use constructor without parameters.
 		*/
 		Sorption();
+		/**
+		 *
+		 */
+		void precompute_isotherm_tables();
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
@@ -176,6 +181,8 @@ class Sorption:  public Reaction
 		* 	Number of points as the base for interpolation. Depends on region.
 		*/
 		//std::vector<std::vector<int> > n_points;
+
+		EqData data_;
 };
 
 #endif
