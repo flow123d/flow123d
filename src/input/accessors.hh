@@ -149,6 +149,11 @@ public:
      */
     std::string make_full_address();
 
+    /**
+     * Empty instance of class, used in default constructors
+     */
+    static Address empty_address_;
+
 private:
     /**
      * Shared part of address.
@@ -276,9 +281,6 @@ private:
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
 
-    /// Pointer to the corresponding array storage object.
-    //const StorageBase *storage_;
-
     /// Contains address and relationships with record ancestor
     Address address_;
 };
@@ -337,9 +339,6 @@ public:
 private:
     /// Corresponding Type::AbstractRecord object.
     Input::Type::AbstractRecord record_type_ ;
-
-    /// Pointer to the corresponding array storage object.
-    //const StorageBase *storage_;
 
     /// Contains address and relationships with abstract record ancestor
     Address address_;
@@ -421,19 +420,14 @@ public:
    template <class Container>
    void copy_to(Container &out) const;
 
-   // MOVE to different place.
-   static Address empty_address_;
+   static StorageArray empty_storage_;
+
 private:
     /// Corresponding Type::Array.
     Input::Type::Array array_type_ ;
 
-    /// Pointer to the corresponding array storage object.
-    //const StorageBase *storage_;
-
     /// Contains address and relationships with array ancestor
     Address address_;
-
-    static StorageArray empty_storage_;
 
 
 };
@@ -523,7 +517,6 @@ public:
     inline unsigned int idx() const;
 
 protected:
-    const StorageBase *storage_;
     unsigned int index_;
     Address address_;
 };
@@ -558,7 +551,7 @@ public:
 
 
     /// Iterator is not default constructible.
-    Iterator() : IteratorBase( Array::empty_address_, 0) {}
+    Iterator() : IteratorBase( Address::empty_address_, 0) {}
 
     /**
      * Constructor with Type of data
