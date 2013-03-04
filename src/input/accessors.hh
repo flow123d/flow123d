@@ -94,10 +94,16 @@ template <class T> class Iterator;
  * - whole path through the storage
  *
  * TODO:
- * - need way how to pass the InputAddress object to new accessor/iterator
- * - accessors may use last pointer in the InputAddress (rather Input::Path)
- *   instead its own. solution use Address instead of StorageBase pointer in all accessors.
+ * - allow Address with NULL pointers, allow default constructor
+ * - How we can get Address with NULL pointer to storage?
+ *   - default constructor (should be called only by empty accessors)
+ *     see if we can not get empty accessor in json_to_storage
+ *     => empty address is error in program
+ *   - test NULL pointers in Address::Address(.., ..) constructor
+ *   - down ( pokud storage nemuze vracet null , tak zde take nedostaneme null)
  *
+ * - find all places where we use Address::storage_head(), check NULL pointer there
+ * - where we need StorageArray::new_item() and if we can replace it by add_item()
  */
 class Address {
 private:
@@ -420,6 +426,7 @@ public:
    template <class Container>
    void copy_to(Container &out) const;
 
+   /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;
 
 private:

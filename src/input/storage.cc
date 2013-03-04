@@ -106,6 +106,7 @@ void StorageArray::new_item(unsigned int index, StorageBase* item) {
 const StorageBase * StorageArray::get_item(const unsigned int index) const {
     if ( index >= array_.size() )
         xprintf(Err, "Index %d out of array of size: %d", index, array_.size());
+    ASSERT( array_[index] != NULL, "Null pointer in storage.");
     return array_[index];
 }
 
