@@ -13,8 +13,10 @@
 
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
+#include "mesh/elements.h"
 #include "transport/transport.h" //because of definition of constants MOBILE, IMMOBILE,
 
+const double pi = 3.1415;
 namespace it=Input::Type;
 
 Sorption::EqData::EqData(const std::string &name)
@@ -67,7 +69,7 @@ using namespace Input::Type;
 Record Sorption::input_type
 	= Record("Sorptions", "Information about all the limited solubility affected sorptions.")
 	.derive_from( Reaction::input_type )
-	.declare_key("water_dens", Double(), Default("1.0"),
+	.declare_key("solv_dens", Double(), Default("1.0"),
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("10"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
@@ -89,6 +91,8 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 {
 	nr_of_regions = init_mesh.n_materials;
 	nr_of_substances = names.size();
+	nr_of_points = in_rec.val<int>("substeps");
+	solvent_dens = in_rec.val<int>("solv_dens");
 
 	TimeGovernor tg(0.0, 1.0);
 
@@ -115,20 +119,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	substance_ids.resize(sorption_array.size()); // ( nr_of_substances );
 	molar_masses.resize( nr_of_substances );
 	c_aq_max.resize( nr_of_substances );
-	//Multidimensional array angle, initialization
-	angle.resize(nr_of_regions*nr_of_substances); //|nr_of_region x nr_of_substances| doubles. Radians.
-	//for(int i_mob = 0; i_mob < 2; i_mob++)
-	//{
-		//angle[i_mob].resize(nr_of_regions);
-		for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
-		{
-			//angle[i_mob][i_reg].resize(nr_of_substances);
-			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
-			{
-				angle[i_reg][i_subst] = 0.0;
-			}
-		}
-	//}
+
 	//Multidimensional array isotherm, initialization
 	isotherm.resize(nr_of_regions*nr_of_substances*nr_of_points); //Up to |nr_of_region x nr_of_substances x n_points| doubles.
 	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
@@ -136,7 +127,6 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 		//isotherm[i_mob].resize(nr_of_regions);
 		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 		{
-			//angle[i_mob][i_reg].resize(nr_of_substances);
 			for(int i_point = 0; i_point < nr_of_points; i_point++)
 			{
 				isotherm[i_reg][i_subst][i_point] = 0;
@@ -190,11 +180,6 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 
 	}
 
-}
-
-void Sorption::compute_angles(void)
-{
-	; //Compute coordinate system rotation angles from region specific data.
 }
 
 void Sorption::precompute_isotherm_tables() {
@@ -289,11 +274,37 @@ void Sorption::compute_isotherms(Input::Record in_rec)
 	//}
 }
 
+//void Sorption::compute_rot_coefs(ElementFullIter elem, int spec_id)
+void Sorption::compute_rot_coefs(double porosity, double rock_density, int spec_id)
+{
+	//Computes coordinate system rotation matrix coeficient from elements specific data. Cycle must run either over elements.
+	//double porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+	//double rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
+
+	rot_coefs[0] = porosity*solvent_dens;
+	rot_coefs[1] = molar_masses[spec_id]*(porosity-1)*rock_density;
+
+	return;
+}
+
+void Sorption::switch_rot_coefs(void)
+{
+	double hlp;
+
+	hlp = rot_coefs[0];
+	rot_coefs[0] = rot_coefs[1];
+	rot_coefs[1] = hlp;
+
+	return;
+}
+
 double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorptions are realized just for one element.
 {
-    //int cols, rows;
-    double porosity;
-    int reg_id;
+    ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);;
+    double porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+    double rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());;
+    double k_rep;
+    int reg_id; //must be achieved from mesh_[loc_el] or something like this
     //std::vector<std::vector<double> > previous_conc; //to backup either {MOBILE, MOBILE_SORB} or {IMMOBILE, IMMOBILE_SORB} concentrations
     std::vector<double> previous_conc; //to backup either {MOBILE, MOBILE_SORB} or {IMMOBILE, IMMOBILE_SORB} concentrations
     previous_conc.resize(2);
@@ -307,21 +318,27 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 
     //*if (reaction_matrix == NULL) return concentrations;
 
-    porosity = 0.1; //must be changed using accesors
-
 	std::vector<double> rot_point;
 	rot_point.resize(2);
 
     for(int i_subst = 0; i_subst < n_substances(); i_subst++){
+
+    	//porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+    	//rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
+    	k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
 
 		previous_conc[0] = concentration_matrix[MOBILE][i_subst][loc_el];
 		//concentration_matrix[MOBILE][i_subst][loc_el] = 0.0;
 		previous_conc[1] = concentration_matrix[MOBILE_SORB][i_subst][loc_el];
 		//concentration_matrix[MOBILE_SORB][i_subst][loc_el] = 0.0;
 
-		rot_point = rotate_point(angle[reg_id][i_subst], previous_conc); //counterclockwise rotation to mass balancing coordination system
+		compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
+		rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
 		rot_point[2] = interpolate_datapoint(rot_point, reg_id, i_subst); // interpolation in mass ballancing coordination system
-		previous_conc = rotate_point((-1.0)*angle[reg_id][i_subst], rot_point); //clockwise rotation back to original coodinate system
+		switch_rot_coefs();
+		previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
+		previous_conc[0] *= k_rep; // scaling needs to be done here
+		previous_conc[1] *=k_rep;
 		concentration_matrix[MOBILE][i_subst][loc_el] = previous_conc[0];
 		concentration_matrix[MOBILE_SORB][i_subst][loc_el] = previous_conc[1];
 
@@ -331,9 +348,16 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 			previous_conc[0] = concentration_matrix[IMMOBILE][i_subst][loc_el];
 			previous_conc[1] = concentration_matrix[IMMOBILE_SORB][i_subst][loc_el];
 
-			rot_point = rotate_point(angle[reg_id][i_subst], previous_conc); //counterclockwise rotation to mass balancing coordination system
+			porosity = data_.immob_porosity.value(elem->centre(),elem->element_accessor());
+	    	k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
+
+	    	compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
+			rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
 			rot_point[2] = interpolate_datapoint(rot_point, reg_id, i_subst); // interpolation in mass ballancing coordination system
-			previous_conc = rotate_point((-1.0)*angle[reg_id][i_subst], rot_point); //clockwise rotation back to original coodinate system
+			switch_rot_coefs();
+			previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
+			previous_conc[0] *= k_rep; // scaling needs to be done here
+			previous_conc[1] *=k_rep;
 			concentration_matrix[IMMOBILE][i_subst][loc_el] = previous_conc[0];
 			concentration_matrix[IMMOBILE_SORB][i_subst][loc_el] = previous_conc[1];
 		}
@@ -382,12 +406,13 @@ void Sorption::determine_crossections(void)
 	;
 }
 
-std::vector<double> Sorption::rotate_point(double angle, std::vector<double> point)
+std::vector<double> Sorption::rotate_point(std::vector<double> point)
 {
 	std::vector<double> rot_point;
+	rot_point.resize(2);
 
-	rot_point[1] = cos(angle)*point[1] - sin(angle)*point[2];
-	rot_point[2] = sin(angle)*point[1] + cos(angle)*point[2];
+	rot_point[0] = rot_coefs[0]*point[0] - rot_coefs[1]*point[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
+	rot_point[1] = rot_coefs[1]*point[0] + rot_coefs[0]*point[1]; //coordinate y^R or c_s^R (sorbed == solid)
 
 	return rot_point;
 }

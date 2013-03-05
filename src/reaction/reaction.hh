@@ -110,6 +110,10 @@ class Reaction: public EquationBase
 		*/
 		double ***concentration_matrix;
 		/**
+		* No idea what it does.
+		*/
+		int *el_4_loc;
+		/**
 		*	Pointer to reference to distribution of elements between processors.
 		*/
 		Distribution *distribution;

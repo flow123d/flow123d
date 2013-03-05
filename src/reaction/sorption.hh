@@ -101,9 +101,13 @@ class Sorption:  public Reaction
 		*/
 		void prepare_inputs(Input::Record in_rec);
 		/**
-		* 	Computes angles for rotation of the coordinate system from region affected inputs.
+		* 	Computes coeficients for the matrix mutiplication based rotation of the coordinate system from region affected inputs.
 		*/
-		void compute_angles(void);
+		void compute_rot_coefs(double porosity, double rock_density, int spec_id);
+		/**
+		* 	It is used to switch rotation matrix entries for the counterclockwise rotation of the system of coordinates.
+		*/
+		void switch_rot_coefs(void);
 		/**
 		* 	Method reads inputs and computes ekvidistant distributed points on all the selected isotherm.
 		*/
@@ -119,7 +123,7 @@ class Sorption:  public Reaction
 		/**
 		* 	Rotates either intersections or all the [c_a,c_s] points around origin. May be, angle is obsolete
 		*/
-		std::vector<double> rotate_point(double angle, std::vector<double> points);
+		std::vector<double> rotate_point(std::vector<double> points);
 		/**
 		* 	Makes projection of rotated datapoints on rotated isotherm. Uses interpolation.
 		*/
@@ -136,6 +140,10 @@ class Sorption:  public Reaction
 		* 	Number of substances.
 		*/
 		int nr_of_substances;
+		/**
+		* 	Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
+		*/
+		int nr_of_points;
 		/**
 		* 	Indentifier of the region where sorption take place. region_id
 		*/
@@ -155,7 +163,7 @@ class Sorption:  public Reaction
 		/**
 		* 	Density of the solvent. Could be done region dependent, easily.
 		*/
-		//double solvent_dens;
+		double solvent_dens;
 		/**
 		* 	Critical concentrations of species dissolved in water.
 		*/
@@ -194,10 +202,9 @@ class Sorption:  public Reaction
 		*/
 		//std::vector<std::vector<Sorption_type> > type;
 		/**
-		* 	Information about an angle of rotation of the system of coordinates. Values are negative because of counterclockwise direction of rotation.
-		* 	|nr_of_region x nr_of_substances| doubles. Radians.
+		* 	Coeficients contained in coordination system rotating matrix.
 		*/
-		std::vector<std::vector<double> > angle;
+		std::vector<double> rot_coefs;
 		/**
 		* 	Number of points as the base for interpolation. Depends on region.
 		*/
@@ -210,10 +217,6 @@ class Sorption:  public Reaction
 		* 	Temporary step_length in rotated system of coordinates. Should be |nr_of_region x nr_of_substances| matrix later.
 		*/
 		double step_length;
-		/**
-		* 	Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
-		*/
-		int nr_of_points;
 };
 
 #endif
