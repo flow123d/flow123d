@@ -282,7 +282,7 @@ void Sorption::compute_rot_coefs(double porosity, double rock_density, int spec_
 	//double rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
 
 	rot_coefs[0] = porosity*solvent_dens;
-	rot_coefs[1] = molar_masses[spec_id]*(porosity-1)*rock_density;
+	rot_coefs[1] = molar_masses[spec_id]*(1-porosity)*rock_density;
 
 	return;
 }
@@ -292,22 +292,59 @@ void Sorption::switch_rot_coefs(void)
 	double hlp;
 
 	hlp = rot_coefs[0];
-	rot_coefs[0] = rot_coefs[1];
+	rot_coefs[0] = (-1.0)*rot_coefs[1];
 	rot_coefs[1] = hlp;
+
+	return;
+}
+
+void Sorption::handle_datapoints(double rock_density, double porosity, std::vector<double> &prev_conc, std::vector<double> isotherm, int reg_id_nr, int i_subst)
+{
+	double k_rep, coef_hlp;
+	int iso_ind_floor, iso_ind_ceil;
+	std::vector<double> rot_point;
+	rot_point.resize(2);
+
+	k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
+	//compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
+	rot_coefs[0] = porosity*solvent_dens;
+	rot_coefs[1] = molar_masses[i_subst]*(1-porosity)*rock_density;
+	//rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
+	rot_point[0] = rot_coefs[0]*prev_conc[0] + rot_coefs[1]*prev_conc[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
+	rot_point[1] = rot_coefs[1]*prev_conc[0] + rot_coefs[0]*prev_conc[1]; //coordinate y^R or c_s^R (sorbed == solid)
+	//rot_point[1] = interpolate_datapoint(rot_point, reg_id_nr, i_subst); // interpolation in mass ballancing coordination system
+	iso_ind_floor = (int)(rot_point[1]/(step_length)); iso_ind_ceil = iso_ind_floor + 1;
+	rot_point[1] = isotherm[iso_ind_floor] + (rot_point[0] - isotherm[iso_ind_floor])*(isotherm[iso_ind_ceil] - isotherm[iso_ind_floor])/step_length;
+	//switch_rot_coefs();
+	coef_hlp = rot_coefs[0];
+	rot_coefs[0] = (-1.0)*rot_coefs[1];
+	rot_coefs[1] = coef_hlp;
+	//previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
+	prev_conc[0] = rot_coefs[0]*rot_point[0] + rot_coefs[1]*rot_point[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
+	prev_conc[1] = rot_coefs[1]*rot_point[0] + rot_coefs[0]*rot_point[1]; //coordinate y^R or c_s^R (sorbed == solid)
+
+	prev_conc[0] *= k_rep; // scaling needs to be done here
+	prev_conc[1] *= k_rep;
 
 	return;
 }
 
 double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorptions are realized just for one element.
 {
-    ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);;
-    double porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
-    double rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());;
+    ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
+    double mob_porosity, immob_porosity; // = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+    double rock_density; // = data_.rock_density.value(elem->centre(),elem->element_accessor());
     double k_rep;
-    int reg_id; //must be achieved from mesh_[loc_el] or something like this
+    Region region = elem->region();
+    int reg_id_nr = region.idx(); //->region_->reg_id;
     //std::vector<std::vector<double> > previous_conc; //to backup either {MOBILE, MOBILE_SORB} or {IMMOBILE, IMMOBILE_SORB} concentrations
     std::vector<double> previous_conc; //to backup either {MOBILE, MOBILE_SORB} or {IMMOBILE, IMMOBILE_SORB} concentrations
     previous_conc.resize(2);
+
+	std::vector<double> rot_point;
+	rot_point.resize(2);
+    //double prev_conc_mob, prev_cocnc_mob_sorb; //aqueous and sorbed/precipitated concentration of specie in mobile pore
+    //double prev_conc_immob, prev_conc_immob_sorb; //aqueous and sorbed/precipitated concentration of specie in immobile pore
 
     //	Identify loc_el region.
     //  If intersections of isotherm with mass balance lines are known, then interpolate.
@@ -316,51 +353,64 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     	//  Projections need to be transformed back to original CS
     //	If intersections are not known then solve the problem analytically (toms748_solve).
 
-    //*if (reaction_matrix == NULL) return concentrations;
-
-	std::vector<double> rot_point;
-	rot_point.resize(2);
-
-    for(int i_subst = 0; i_subst < n_substances(); i_subst++){
-
-    	//porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
-    	//rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
-    	k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
-
-		previous_conc[0] = concentration_matrix[MOBILE][i_subst][loc_el];
-		//concentration_matrix[MOBILE][i_subst][loc_el] = 0.0;
-		previous_conc[1] = concentration_matrix[MOBILE_SORB][i_subst][loc_el];
-		//concentration_matrix[MOBILE_SORB][i_subst][loc_el] = 0.0;
-
-		compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
-		rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
-		rot_point[2] = interpolate_datapoint(rot_point, reg_id, i_subst); // interpolation in mass ballancing coordination system
-		switch_rot_coefs();
-		previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
-		previous_conc[0] *= k_rep; // scaling needs to be done here
-		previous_conc[1] *=k_rep;
-		concentration_matrix[MOBILE][i_subst][loc_el] = previous_conc[0];
-		concentration_matrix[MOBILE_SORB][i_subst][loc_el] = previous_conc[1];
-
-		if(dual_porosity_on)
+	if( data_.rock_density.get_const_value(region, rock_density)) // constant value of rock density over whole the region
+	{
+	    //rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
+		if(data_.mob_porosity.get_const_value(region, mob_porosity)) // constant values of porosity over whole the region
 		{
-			//The same as above repeated for immobile pores
-			previous_conc[0] = concentration_matrix[IMMOBILE][i_subst][loc_el];
-			previous_conc[1] = concentration_matrix[IMMOBILE_SORB][i_subst][loc_el];
+		    //double porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+			for(int i_subst = 0; i_subst < n_substances(); i_subst++)
+			{
 
-			porosity = data_.immob_porosity.value(elem->centre(),elem->element_accessor());
-	    	k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
+				//porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+				//rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
 
-	    	compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
-			rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
-			rot_point[2] = interpolate_datapoint(rot_point, reg_id, i_subst); // interpolation in mass ballancing coordination system
-			switch_rot_coefs();
-			previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
-			previous_conc[0] *= k_rep; // scaling needs to be done here
-			previous_conc[1] *=k_rep;
-			concentration_matrix[IMMOBILE][i_subst][loc_el] = previous_conc[0];
-			concentration_matrix[IMMOBILE_SORB][i_subst][loc_el] = previous_conc[1];
+				previous_conc[0] = concentration_matrix[MOBILE][i_subst][loc_el];
+				//concentration_matrix[MOBILE][i_subst][loc_el] = 0.0;
+				previous_conc[1] = concentration_matrix[MOBILE_SORB][i_subst][loc_el];
+				//concentration_matrix[MOBILE_SORB][i_subst][loc_el] = 0.0;
+
+				handle_datapoints( rock_density, mob_porosity, previous_conc, isotherm[reg_id_nr][i_subst], reg_id_nr, i_subst); // instead of following commented code
+				/*k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
+				compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
+				rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
+				rot_point[1] = interpolate_datapoint(rot_point, reg_id_nr, i_subst); // interpolation in mass ballancing coordination system
+				switch_rot_coefs();
+				previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
+				previous_conc[0] *= k_rep; // scaling needs to be done here
+				previous_conc[1] *=k_rep;*/
+				concentration_matrix[MOBILE][i_subst][loc_el] = previous_conc[0];
+				concentration_matrix[MOBILE_SORB][i_subst][loc_el] = previous_conc[1];
+			}
+		}else{
+			cout << "It is not possible in this time to compute sorption if the porosity is not constant over whole the region " << reg_id_nr << endl;
 		}
+		if(dual_porosity_on && data_.immob_porosity.get_const_value(region, immob_porosity))
+		{
+			//porosity = data_.immob_porosity.value(elem->centre(),elem->element_accessor());
+			for(int i_subst = 0; i_subst < n_substances(); i_subst++)
+			{
+				//The same as above repeated for immobile pores
+				previous_conc[0] = concentration_matrix[IMMOBILE][i_subst][loc_el];
+				previous_conc[1] = concentration_matrix[IMMOBILE_SORB][i_subst][loc_el];
+
+				handle_datapoints( rock_density, immob_porosity, previous_conc, isotherm[reg_id_nr][i_subst], reg_id_nr, i_subst); // instead of following commented code
+				/*k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
+	    		compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
+				rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
+				rot_point[1] = interpolate_datapoint(rot_point, reg_id_nr, i_subst); // interpolation in mass ballancing coordination system
+				switch_rot_coefs();
+				previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
+				previous_conc[0] *= k_rep; // scaling needs to be done here
+				previous_conc[1] *=k_rep;*/
+				concentration_matrix[IMMOBILE][i_subst][loc_el] = previous_conc[0];
+				concentration_matrix[IMMOBILE_SORB][i_subst][loc_el] = previous_conc[1];
+			}
+		}else{
+			cout << "It is not possible in this time to compute sorption in immobile pores if the dual porosity  is not constant over whole the region " << reg_id_nr << endl;
+		}
+	}else{
+		cout << "It is not possible in this time to compute sorption in if the rock density is not constant over whole the region " << reg_id_nr << endl;
 	}
 
 	return concentrations;
@@ -411,7 +461,7 @@ std::vector<double> Sorption::rotate_point(std::vector<double> point)
 	std::vector<double> rot_point;
 	rot_point.resize(2);
 
-	rot_point[0] = rot_coefs[0]*point[0] - rot_coefs[1]*point[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
+	rot_point[0] = rot_coefs[0]*point[0] + rot_coefs[1]*point[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
 	rot_point[1] = rot_coefs[1]*point[0] + rot_coefs[0]*point[1]; //coordinate y^R or c_s^R (sorbed == solid)
 
 	return rot_point;

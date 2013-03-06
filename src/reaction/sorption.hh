@@ -133,6 +133,10 @@ class Sorption:  public Reaction
 		*/
 		double set_step_length(void);
 		/**
+		* 	Sets the entries of rotation matrix. Rotates datapoints. Projects them on isotherm. Rotates them back and scales the result.
+		*/
+		void handle_datapoints(double rock_density, double porosity, std::vector<double> &prev_conc, std::vector<double> isotherm, int reg_id_nr, int i_subst);
+		/**
 		* 	Number of regions.
 		*/
 		int nr_of_regions;
