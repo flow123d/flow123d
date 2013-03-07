@@ -19,7 +19,7 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(Boost
     DOWNLOAD_DIR ${EXTERNAL_BOOST_DIR} 
-    URL \"http://dev.nti.tul.cz/~brezina/flow123d_libraries/boost_1_50_0.tar.gz\"
+    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/boost_1_50_0.tar.gz\"
     SOURCE_DIR ${EXTERNAL_BOOST_DIR}/src
     BINARY_DIR ${EXTERNAL_BOOST_DIR}/src
     CONFIGURE_COMMAND ${EXTERNAL_BOOST_DIR}/src/bootstrap.sh --prefix=${EXTERNAL_BOOST_DIR} --with-libraries=program_options,serialization
