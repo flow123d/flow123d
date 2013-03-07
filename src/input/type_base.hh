@@ -8,13 +8,6 @@
 #ifndef TYPE_BASE_HH_
 #define TYPE_BASE_HH_
 
-
-#include "system/system.hh"
-#include "system/exceptions.hh"
-#include "system/file_path.hh"
-//#include "lazy_types.hh"
-
-
 #include <limits>
 #include <ios>
 #include <set>
@@ -28,6 +21,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
+
+#include "system/global_defs.h"
+#include "system/system.hh"
+#include "system/exceptions.hh"
+#include "system/file_path.hh"
 
 
 

@@ -15,14 +15,6 @@ std::string type_name_(int)  { return "Int"; }
 std::string type_name_(std::string) { return "String"; }
 std::string type_name_(FieldEnum) { return "Enum"; }
 
-double &scalar_value_conversion(double &ref) {return ref;}
-int &scalar_value_conversion(int &ref) {return ref;}
-FieldEnum &scalar_value_conversion(FieldEnum &ref) {return ref;}
-std::string &scalar_value_conversion(StringTensor &ref) {
-    ASSERT( ref.n_rows==1 , "Converting StringTensor(n,m) too std::string with m!=1 or n!=1.");
-    return ref.at(0,0);
-}
-
 
 } // namespace internal
 

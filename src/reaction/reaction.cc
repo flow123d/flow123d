@@ -58,10 +58,11 @@ void Reaction::compute_one_step(void)
 }
 
 
-void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc)
+void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
 	concentration_matrix = ConcentrationMatrix;
 	distribution = conc_distr;
+	el_4_loc = el_4_loc_;
 	return;
 }
 

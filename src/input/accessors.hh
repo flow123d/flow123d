@@ -94,10 +94,16 @@ template <class T> class Iterator;
  * - whole path through the storage
  *
  * TODO:
- * - need way how to pass the InputAddress object to new accessor/iterator
- * - accessors may use last pointer in the InputAddress (rather Input::Path)
- *   instead its own. solution use Address instead of StorageBase pointer in all accessors.
+ * - allow Address with NULL pointers, allow default constructor
+ * - How we can get Address with NULL pointer to storage?
+ *   - default constructor (should be called only by empty accessors)
+ *     see if we can not get empty accessor in json_to_storage
+ *     => empty address is error in program
+ *   - test NULL pointers in Address::Address(.., ..) constructor
+ *   - down ( pokud storage nemuze vracet null , tak zde take nedostaneme null)
  *
+ * - find all places where we use Address::storage_head(), check NULL pointer there
+ * - where we need StorageArray::new_item() and if we can replace it by add_item()
  */
 class Address {
 private:
@@ -148,6 +154,11 @@ public:
      * that is path_[actual_node_].
      */
     std::string make_full_address();
+
+    /**
+     * Empty instance of class, used in default constructors
+     */
+    static Address empty_address_;
 
 private:
     /**
@@ -276,9 +287,6 @@ private:
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
 
-    /// Pointer to the corresponding array storage object.
-    //const StorageBase *storage_;
-
     /// Contains address and relationships with record ancestor
     Address address_;
 };
@@ -337,9 +345,6 @@ public:
 private:
     /// Corresponding Type::AbstractRecord object.
     Input::Type::AbstractRecord record_type_ ;
-
-    /// Pointer to the corresponding array storage object.
-    //const StorageBase *storage_;
 
     /// Contains address and relationships with abstract record ancestor
     Address address_;
@@ -421,19 +426,15 @@ public:
    template <class Container>
    void copy_to(Container &out) const;
 
-   // MOVE to different place.
-   static Address empty_address_;
+   /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
+   static StorageArray empty_storage_;
+
 private:
     /// Corresponding Type::Array.
     Input::Type::Array array_type_ ;
 
-    /// Pointer to the corresponding array storage object.
-    //const StorageBase *storage_;
-
     /// Contains address and relationships with array ancestor
     Address address_;
-
-    static StorageArray empty_storage_;
 
 
 };
@@ -523,7 +524,6 @@ public:
     inline unsigned int idx() const;
 
 protected:
-    const StorageBase *storage_;
     unsigned int index_;
     Address address_;
 };
@@ -558,7 +558,7 @@ public:
 
 
     /// Iterator is not default constructible.
-    Iterator() : IteratorBase( Array::empty_address_, 0) {}
+    Iterator() : IteratorBase( Address::empty_address_, 0) {}
 
     /**
      * Constructor with Type of data

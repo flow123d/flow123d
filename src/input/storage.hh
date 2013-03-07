@@ -24,13 +24,16 @@
  * copy the json_spirit tree into it.
  */
 
-#include "system/system.hh"
+#include <iostream>
+#include <string>
+#include <vector>
 #include "system/exceptions.hh"
+
 
 namespace Input {
 
-TYPEDEF_ERR_INFO( EI_RequestedType, const string);
-TYPEDEF_ERR_INFO( EI_StoredType, const string);
+TYPEDEF_ERR_INFO( EI_RequestedType, const std::string);
+TYPEDEF_ERR_INFO( EI_StoredType, const std::string);
 DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "Storage type mismatch. You want value of type "
                                           << EI_RequestedType::qval << " but stored is value of type "
                                           << EI_StoredType::qval);
@@ -62,7 +65,7 @@ public:
     virtual unsigned int get_array_size() const;
 
     virtual StorageBase *deep_copy()=0;
-    virtual void print(ostream &stream, int pad=0) const =0;
+    virtual void print(std::ostream &stream, int pad=0) const =0;
 
     virtual ~StorageBase();
 
@@ -81,12 +84,12 @@ public:
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
-    virtual void print(ostream &stream, int pad=0) const;
+    virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageArray();
 private:
     /// Forbids default constructor to have array set to NULL.
     StorageArray();
-    vector<StorageBase *> array_;
+    std::vector<StorageBase *> array_;
 };
 
 
@@ -96,7 +99,7 @@ public:
     virtual bool get_bool() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
-    virtual void print(ostream &stream, int pad=0) const;
+    virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageBool();
 private:
     bool value_;
@@ -108,7 +111,7 @@ public:
     virtual int get_int() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
-    virtual void print(ostream &stream, int pad=0) const;
+    virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageInt();
 
 private:
@@ -121,7 +124,7 @@ public:
     virtual double get_double() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
-    virtual void print(ostream &stream, int pad=0) const;
+    virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageDouble();
 
 private:
@@ -130,21 +133,21 @@ private:
 
 class StorageString : public StorageBase {
 public:
-    StorageString(const string & value);
-    virtual const string & get_string() const;
+    StorageString(const std::string & value);
+    virtual const std::string & get_string() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
-    virtual void print(ostream &stream, int pad=0) const;
+    virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageString();
 
 private:
-    string value_;
+    std::string value_;
 };
 
 class StorageNull : public StorageBase {
     virtual bool is_null() const;
     virtual StorageBase *deep_copy();
-    virtual void print(ostream &stream, int pad=0) const;
+    virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageNull();
 
 };

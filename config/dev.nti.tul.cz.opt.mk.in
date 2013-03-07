@@ -1,19 +1,21 @@
 ## Directory containing installation of PETSC
-PETSC_DIR=/home/tester.flow123d/petsc-3.0.0-p12
+set(PETSC_DIR "/home/tester.flow123d/petsc-3.2-p4")
 ## Architecture of PETSC
-PETSC_ARCH=flow_g
+set(PETSC_ARCH "linux-gnu-c-O3")
 
-## Set up name of machine
-#MACHINE=
 
-## This is directory, where flow123d is be built
-BUILD_DIR=bitten_tmp
+set(CMAKE_C_COMPILER "/usr/bin/gcc44")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++44")
+set(EXTERNAL_PROJECT_DIR "$ENV{HOME}/external_projects/JB_1.7_inputs") 
 
-## Compile arguments
-FLOW_CFLAGS=-O3
+set(CMAKE_BUILD_TYPE release)
 
-## Debug information
-#USE_NODEBUG=-DNODEBUG
-#USE_PRINTALL=-DMPI_PRINTALL
+# NODEBUG                                       - all debug options off
+# DEBUG                                         - all debug options on
+# DEBUG_MESSAGES
+# DEBUG_ASSERTS
+# DEBUG_PROFILER
+# DEBUG_FUNCTION_STACK
+# HAVE_CXX11                            - support for requested C++11 features (constexpr)
 
-MAKE_JOBS=2
+set(FLOW_CC_FLAGS "-O3 -DDEBUG_PROFILER")

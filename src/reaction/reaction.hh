@@ -15,7 +15,7 @@
 //class Mesh;
 class Distribution;
 
-enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch};
+enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Sorption};
 
 class Reaction: public EquationBase
 {
@@ -109,6 +109,10 @@ class Reaction: public EquationBase
 		*	Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
 		*/
 		double ***concentration_matrix;
+		/**
+		* No idea what it does.
+		*/
+		int *el_4_loc;
 		/**
 		*	Pointer to reference to distribution of elements between processors.
 		*/

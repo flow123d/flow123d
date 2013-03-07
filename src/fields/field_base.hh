@@ -33,6 +33,11 @@
 
 #include "fields/field_values.hh"
 
+template <int spacedim, class Value>
+class FieldConstant;
+
+
+
 
 /// Result type have sense only for larger Value types like vectors and tensors.
 typedef enum  {
@@ -294,25 +299,6 @@ protected:
 
 
 
-///Helper function.
-template <class FieldBaseType>
-IT::AbstractRecord get_input_type_resolution(
-        Input::Type::Selection *sel,  const boost::true_type&)
-{
-    ASSERT( sel, "NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
-    // create nonlocal copy that live as long as the object instance
-    //rec = boost::make_shared<IT::AbstractRecord>(FieldBaseType::get_input_type(sel));
-    return FieldBaseType::get_input_type(sel);
-}
-template <class FieldBaseType>
-IT::AbstractRecord get_input_type_resolution(
-        Input::Type::Selection *sel,  const boost::false_type&)
-{
-    return FieldBaseType::get_input_type(NULL);
-}
-
-
-
 
 
 /**
@@ -352,17 +338,19 @@ public:
     Field();
 
     /**
-     * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
-     * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
+     * Returns reference to input type of particular field instance, this is static member @p input_type of the corresponding FieldBase class
+     * (i.e. with same template parameters). However, for fields returning "Enum" we have to create whole unique Input::Type hierarchy using following method
+     * @p meka_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::AbstractRecord &get_input_type() {
-        return FieldBaseType::input_type;
-    }
+    IT::AbstractRecord &get_input_type();
 
-    IT::AbstractRecord make_input_tree() {
-        return get_input_type_resolution<FieldBaseType>( this->element_selection_ ,boost::is_same<typename Value::element_type, FieldEnum>());
-    }
+    /**
+     * For fields returning "enum", i.e. with @p Value == FieldEnum, the input type (meaning whole input_Type tree of the field) depends on the
+     * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
+     * that was set through @p FieldBaseCommon::set_selection() method.
+     */
+    IT::AbstractRecord make_input_tree();
 
     /**
      * By this method you can allow that the field need not to be set on regions (and times) where the given @p control_field is
@@ -375,6 +363,12 @@ public:
      * Direct read access to the table of Field pointers on regions.
      */
     boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+
+    /**
+     * If the field on given region @p reg is exists and is of type FieldConstant<...> the method sets
+     * parameter @p value to the constant value of the field and returns true. Otherwise it returns false and value of the @p value parameter remains untouched.
+     */
+    bool get_const_value(Region reg, typename Value::return_type &value);
 
     /**
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
@@ -445,8 +439,29 @@ private:
 template<int spacedim, class Value>
 class BCField : public Field<spacedim, Value> {
 public:
-    BCField() { this->bc_=true; }
+    BCField();
 };
+
+
+/****************************************************************************************
+ * Inlined methods of Field< ... >
+ */
+
+template<int spacedim, class Value>
+inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
+    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx out of range, field: %s\n", this->name_.c_str());
+    ASSERT( region_fields_[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
+    return region_fields_[elm.region_idx().idx()]->value(p,elm);
+}
+
+
+
+template<int spacedim, class Value>
+inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+                   std::vector<typename Value::return_type>  &value_list)
+{
+    region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
+}
 
 
 

@@ -253,6 +253,7 @@ void GetIntersection(const TAbscissa &A, const TBisector &B,
 void GetIntersection(const TAbscissa &A, const TBisector &B, IntersectionLocal * &insec) {
     double t1, t2;
     TPosition pos;
+    insec = NULL;
 
     GetIntersection(A, B, pos, t1, t2);
     if ( pos == intersecting ) {

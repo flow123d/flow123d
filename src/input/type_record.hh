@@ -704,7 +704,8 @@ inline bool Record::has_key(const string& key) const
 
 inline unsigned int Record::size() const {
     finished_check();
-    ASSERT( data_->keys.size() == data_->key_to_index.size(), "Sizes of Type:Record doesn't match. (map: %d vec: %d)\n", data_->key_to_index.size(), data_->keys.size());
+    ASSERT( data_->keys.size() == data_->key_to_index.size(),
+            "Sizes of Type:Record doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index.size(), data_->keys.size());
     return data_->keys.size();
 }
 

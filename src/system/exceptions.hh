@@ -9,16 +9,11 @@
 #ifndef EXCEPTIONS_HH_
 #define EXCEPTIONS_HH_
 
-/**
- * @brief Basic exceptions used in Flow123d.
- *
- * We are using boost::exceptions .
- */
 
 #include <boost/exception/all.hpp>
 #include <iostream>
+#include <string>
 
-#include "global_defs.h"
 
 
 /**
@@ -38,29 +33,60 @@ namespace internal {
 }
 
 /**
- * Basic exception for Flow123d's exceptions. When deriving particular exceptions always use virtual inheritance:
+ * Basic exception class. We use boost::exception as parent in order to allow passing
+ * some data through the exception object from the throw point to the catch point.
+ * See DECLARE_EXCEPTION macro for usage.
+ *
+ * When deriving particular exceptions always use virtual inheritance:
  * @code
  *      struct my_exception : virtual flow_excepiton {};
  * @endcode
  *
- * TODO: Implement different header for Internal and User errors.
- * TODO: Implement stack output (GNU or ours)
  */
-struct ExceptionBase : virtual std::exception, virtual boost::exception
+class ExceptionBase : public virtual std::exception, public virtual boost::exception
 {
-    void print_exc_data(std::ostream &out) const;
-    virtual void print_info(std::ostringstream &out) const;
+public:
+    /// Default constructor, calls fill_stacktrace.
+    ExceptionBase();
+    /// Copy constructor, performs deep copy of stacktrace.
+    ExceptionBase(const ExceptionBase &other);
+    /// Call GNU backtrace if available, save call stack information into @p stacktrace member.
+    void fill_stacktrace();
+    /// Prints formated stacktrace into given stream @p out.
+    void print_stacktrace(std::ostream &out) const;
+    /**
+     * Purely virtual method, that should be implemented by descendants. Prints specific erro message into
+     * stream @p out. In particular you can use macros DECLARE_EXCEPTION or INPUT_EXCEPTION for easy decalrations.
+     */
+    virtual void print_info(std::ostringstream &out) const=0;
+    /**
+     *  Overloaded method for output the exception message if it is not catched.
+     *  Implements composition of complex message including diagnostic informations and stack trace.
+     *  Should not be overloded in descendant classes. Use @p print_info instead.
+     */
     virtual const char * what () const throw ();
+    /// Destructor, possibly free stacktrace.
+    virtual ~ExceptionBase() throw ();
+
+private:
+
+    /// Array of backtrace frames returned by glibc backtrace_symbols.
+    char ** stacktrace;
+
+    /// Size of stacktrace table - number of frames.
+    int n_stacktrace_frames;
 };
 
 /**
- * This should be used as a base class for all exceptions that are due to incorrect input form the program user.
- *
- * TODO: Implement kind error messages for this case.
+ * Base class for "input exceptions" that are exceptions caused by incorrect input form the user
+ * not by some internal error.
  */
-struct InputException : virtual ExceptionBase
+class InputException : public virtual ExceptionBase
 {
+public:
     virtual const char * what () const throw ();
+    virtual ~InputException() throw ();
+
 };
 
 
@@ -70,13 +96,13 @@ struct InputException : virtual ExceptionBase
  * output relevant data.
  * Example:
  * @code
- *      TYPEDEF_ERR_INFO( EI_Dim1Mismatch, int)
- *      TYPEDEF_ERR_INFO( EI_Dim2Mismatch, int)
+ *      TYPEDEF_ERR_INFO( EI_Dim1Mismatch, int);
+ *      TYPEDEF_ERR_INFO( EI_Dim2Mismatch, int);
  *      DECLARE_EXCEPTION( ExcDimensionMismatch, << "Dimensions dim1=" << EI_Dim1Missmatch::val << " and dim2=" << EI_Dim2Mismatch::val << " should be same.");
  * @endcode
  */
 #define DECLARE_EXCEPTION( ExcName, Format)                                 \
-struct ExcName : virtual ::ExceptionBase {                                  \
+struct ExcName : public virtual ::ExceptionBase {                                  \
      virtual void print_info(std::ostringstream &out) const {                     \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                         \
@@ -93,7 +119,7 @@ struct ExcName : virtual ::ExceptionBase {                                  \
  * This should be used for all exceptions due to wrong input from user.
  */
 #define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
-struct ExcName : virtual ::InputException {                                   \
+struct ExcName : public virtual ::InputException {                                   \
      virtual void print_info(std::ostringstream &out) const {                     \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                                     \
@@ -191,53 +217,57 @@ struct ExcName : virtual ::InputException {                                   \
  *
  *
  */
-
+#define TYPEDEF_ERR_INFO(EI_Type, Type)       typedef EI< struct EI_Type##_TAG, Type > EI_Type
 
 /**
  * This class should not be used directly but through macro TYPEDEF_ERR_INFO.
  * It is derived from boost::error_info<tag, type> and similarly as its parent it
- * is tailored for passing a value of type @p Type from the place of throw of an exception to
- * the catch place. Compared to boost::error_info it provides manipulators @p val and @p qval
- * which can by used in formating exception message to the ExcStream. The first manipulator evaluates to
- * directly to the ouput of the stored value, while @p qval puts the output into single quotas.
+ * is tailored for passing a value of type @p Type from the throw point to
+ * the catch point. Compared to boost::error_info it provides manipulators @p val and @p qval
+ * which can by used in formating exception message to the ExcStream. The first manipulator evaluates
+ * directly to the output of the stored value, while @p qval puts the output into single quotas.
  *
  * The static function @p ref can be used when you want to extract and output some particular information
- * from the passed value. However, if no value is given at throw side this function simply aborts. There is
+ * from the passed value. However, if no value is given at throw point this function simply aborts. There is
  * probably no way how to make the check and still keep flexibility in manipulation with the result of @p ref
  * function.
+ *
+ * For usage see documentation of @p TYPEDEF_ERR_INFO mecro.
  */
 template<class Tag, class Type>
 class EI : public boost::error_info< Tag, Type > {
 public:
     typedef typename boost::error_info< Tag, Type> ErrorInfo;
 
+    /// Construction from given value, that has to bee passed to the catch point.
     EI(Type const & value) : ErrorInfo(value) {}
+    /**
+     * Stream manipulator used to output the stored value. We have to use special stream ExcStream, that
+     * has overloaded << operator in order to support manipulators 'val' and 'qval'.
+     */
     static internal::ExcStream & val(internal::ExcStream & es);
+    /**
+     * Stream manipulator for output of quoted value.
+     */
     static internal::ExcStream & qval(internal::ExcStream & es);
 
+    /**
+     * Returns reference to stored value in given exception object @p e.
+     * Check validity of the value.
+     */
+    static Type const & ref( ExceptionBase const &e);
 
-    static Type const & ref( ExceptionBase const &e)
-        {
-            Type const * val_ptr = boost::get_error_info< ErrorInfo > (e);
-            if (! val_ptr) {
-                // try to printout unfinished ErrStream
-                std::cerr << "------------------------------------------------------------------------------\n";
-                std::cerr << " Fatal Error - dereferencing null pointer when formating an exception message.\n";
-                std::cerr << "------------------------------------------------------------------------------\n";
-                std::cerr << "** Diagnosting Informations **\n";
-                std::cerr <<  boost::diagnostic_information_what( e );
-                abort();
-            }
-            return *val_ptr;
-        }
-    inline static Type const * ptr( ExceptionBase const &e)
-        { return boost::get_error_info< ErrorInfo > (e); }
+    /**
+     * Similar to the previous but returns pointer to the stored value and check nothing.
+     */
+    static Type const * ptr( ExceptionBase const &e);
 
 };
 
 
 
-#define TYPEDEF_ERR_INFO(EI_Type, Type)       typedef EI< struct EI_Type##_TAG, Type > EI_Type
+
+
 
 
 
@@ -316,6 +346,17 @@ internal::ExcStream & operator<<(internal::ExcStream & estream, typename EI<Tag,
 
 } // namespace internal
 
+
+/**
+ * Assert exception with an string message.
+ */
+TYPEDEF_ERR_INFO( EI_Message, std::string);
+DECLARE_EXCEPTION( ExcAssertMsg, << "Violated Assert! " << EI_Message::val);
+
+
+
+
+
 /***********************************************************************
  * Implementation of templated method
  */
@@ -327,12 +368,36 @@ internal::ExcStream & EI<Tag, Type>::val(internal::ExcStream & es) {
     return es;
 }
 
+
+
 template <class Tag, class Type>
 internal::ExcStream & EI<Tag, Type>::qval(internal::ExcStream & es) {
     es.stream_  << internal::NullOutputEnvelope<Type>
         ( ptr(es.exc_), true );
     return es;
 }
+
+
+template <class Tag, class Type>
+Type const & EI<Tag, Type>::ref( ExceptionBase const &e)
+    {
+        Type const * val_ptr = boost::get_error_info< ErrorInfo > (e);
+        if (! val_ptr) {
+            // try to printout unfinished ErrStream
+            std::cerr << "------------------------------------------------------------------------------\n";
+            std::cerr << " Fatal Error - dereferencing null pointer when formating an exception message.\n";
+            std::cerr << "------------------------------------------------------------------------------\n";
+            std::cerr << "** Diagnosting Informations **\n";
+            std::cerr <<  boost::diagnostic_information_what( e );
+            abort();
+        }
+        return *val_ptr;
+    }
+
+
+template <class Tag, class Type>
+Type const * EI<Tag, Type>::ptr( ExceptionBase const &e)
+   { return boost::get_error_info< ErrorInfo > (e); }
 
 
 /**

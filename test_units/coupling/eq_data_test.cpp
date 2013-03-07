@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 
 #include "input/input_type.hh"
 #include "input/type_output.hh"
@@ -125,8 +126,7 @@ protected:
             RegionSet domain=EqDataBase::read_boundary_list_item(rec);
             Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
             if (field_it) {
-                //bc_pressure(region)->init_from_input(*field_it);
-                BOOST_FOREACH(Region reg, domain) bc_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, * field_it) );
+                bc_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, * field_it) );
             }
             FilePath bcd_file;
             if (rec.opt_val("flow_old_bcd_file", bcd_file) ) {
@@ -181,8 +181,7 @@ public:
             RegionSet domain=EqDataBase::read_bulk_list_item(rec);
             Input::AbstractRecord piezo_head_rec;
             if (rec.opt_val("init_piezo_head", piezo_head_rec) ) {
-                BOOST_FOREACH(Region reg, domain)
-                        init_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, piezo_head_rec) );
+                        init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, piezo_head_rec) );
             }
 
             return domain;

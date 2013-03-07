@@ -245,11 +245,13 @@ public:
     void set_mesh(Mesh *mesh);
 
     /**
-     * Accepts accessors to both data lists,
-     * Do not initialize the fields, you have to call set_time.
+     * Set bulk and boundary region data list accessors.
+     * The method takes accessor @p bulk_list of an input array containing records with
+     * definition of fields on individual regions (Region data list) and similar accessor @p
+     * bc_list with Region data list for boundary fields. The method do not initialize fields
+     * from the lists this is done in set_time.
      *
-     * - read arrays and check correct sequence of times, save the input accessors for both lists
-     *
+     * Either of accessors can be empty. You can get an empty accessor by default constructor Input::Array().
      */
     void init_from_input(Input::Array bulk_list, Input::Array bc_list);
 
