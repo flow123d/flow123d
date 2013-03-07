@@ -341,33 +341,11 @@ void Record::RecordData::declare_key(const string &key,
     key_to_index_const_iter it = key_to_index.find(key_h);
     if ( it == key_to_index.end() ) {
        key_to_index.insert( std::make_pair(key_h, keys.size()) );
-       //does not work with intel c++ compiler
-       Key tmp_key = { (unsigned int)keys.size(), key, description, type, type_temporary, default_value, false};
-       /*
-       Key tmp_key;   
-       tmp_key.key_index = (unsigned int)keys.size();
-       tmp_key.key_ = key;
-       tmp_key.description_ = description;
-       tmp_key.type_ = type;
-       tmp_key.p_type = type_temporary;
-       tmp_key.default_ = default_value;
-       tmp_key.derived = false;
-        */  
+       Key tmp_key = { (unsigned int)keys.size(), key, description, type, type_temporary, default_value, false}; 
        keys.push_back(tmp_key);
     } else {
        if (keys[it->second].derived) {
-        //does not work with intel c++ compiler
         Key tmp_key = { it->second, key, description, type, type_temporary, default_value, false};
-        /*
-        Key tmp_key;   
-        tmp_key.key_index = it->second;
-        tmp_key.key_ = key;
-        tmp_key.description_ = description;
-        tmp_key.type_ = type;
-        tmp_key.p_type = type_temporary;
-        tmp_key.default_ = default_value;
-        tmp_key.derived = false;
-       */
         keys[ it->second ] = tmp_key;
        } else {
            xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
