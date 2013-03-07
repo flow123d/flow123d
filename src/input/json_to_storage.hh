@@ -275,7 +275,8 @@ protected:
 template <class T>
 T JSONToStorage::get_root_interface() const
 {
-    return *(Iterator<T>( *root_type_, envelope, 0));
+	Address a(envelope, root_type_);
+    return *(Iterator<T>( *root_type_, a, 0));
 }
 
 

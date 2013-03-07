@@ -54,7 +54,7 @@ public:
     /**
      * Update time and possibly update data from GMSH file.
      */
-    virtual void set_time(double time);
+    virtual bool set_time(double time);
 
     /**
      * Has to be set before calling init_from_input. This also

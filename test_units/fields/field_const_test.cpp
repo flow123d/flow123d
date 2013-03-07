@@ -54,7 +54,7 @@ TEST(FieldConst, read_from_input) {
     point_2(0)= 2.0; point_2(1)= 4.0;
     ElementAccessor<2> elm;
 
-    VectorField  *conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
+    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
     {
         arma::vec result;
 
@@ -69,7 +69,7 @@ TEST(FieldConst, read_from_input) {
         EXPECT_DOUBLE_EQ( 3.4, result[2]);
     }
 
-    TensorField  *cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"));
+    auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"));
     {
         arma::mat::fixed<3,3> result;
 

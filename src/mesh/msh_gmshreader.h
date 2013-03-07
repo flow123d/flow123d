@@ -116,12 +116,13 @@ public:
      *  raw buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into
      *  indexes to the raw buffer. The buffer must have size at least @p search_header.n_components * @p search_header.n_entities.
      *  Indexes in the map must be smaller then @p search_header.n_entities.
+     *  If the @p data buffer is updated we set search_header.actual to true.
      *
      *  Possible optimizations:
      *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
      *  and just check that they comes in in correct order.
      */
-    void read_element_data( const GMSH_DataHeader &search_header,
+    void read_element_data( GMSH_DataHeader &search_header,
             double *data, std::vector<int> const & el_ids);
 
 private:

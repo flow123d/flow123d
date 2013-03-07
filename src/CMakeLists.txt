@@ -120,11 +120,9 @@ set(sources_lib_la
 set(sources_lib_field
     fields/field_values.cc
     fields/field_base.cc
+    fields/field_other.cc
 )
 
-#set(sources_lib_functions
-#    functions/discrete_function.cc   
-#)    
 
 set (sources_lib_coupling
 

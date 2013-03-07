@@ -9,6 +9,7 @@
 #define FIELD_ADD_POTENTIAL_HH_
 
 #include <armadillo>
+#include <boost/shared_ptr.hpp>
 
 /**
  * This field is meant to be used to implement two possibilities for initialization of pressure fields in
@@ -45,7 +46,7 @@ public:
 
 private:
     /// Field to which we add linear potential.
-    FieldBase<spacedim, Value> *inner_field_;
+    boost::shared_ptr< FieldBase<spacedim, Value> > inner_field_;
     /// Potential gradient.
     arma::vec::fixed<spacedim> grad_;
     /// Potential constant term.

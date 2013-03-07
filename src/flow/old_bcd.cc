@@ -12,6 +12,8 @@
 
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
+#include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 OldBcdInput * OldBcdInput::instance() {
     static OldBcdInput *obcd = new OldBcdInput;
@@ -21,18 +23,18 @@ OldBcdInput * OldBcdInput::instance() {
 // set all regions of the given Field<...> @p target
 template <int spacedim, class Value>
 void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
-    FieldElementwise<spacedim, Value> *in_field=new FieldElementwise<spacedim, Value>(target.n_comp());
-    const RegionSet & b_set = mesh->region_db().get_region_set("BOUNDARY");
-    for(RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
-        target.set_field( *reg, in_field);
+    boost::shared_ptr< FieldElementwise<spacedim, Value> > in_field
+        = boost::make_shared< FieldElementwise<spacedim, Value> >(target.n_comp());
+
+    target.set_field( mesh->region_db().get_region_set("BOUNDARY"), in_field);
     target.set_mesh(mesh);
 
 }
 
 template <int spacedim, class Value>
 void OldBcdInput::set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val) {
-    static_cast<FieldElementwise<spacedim, Value> *>(
-            target( some_bc_region_ )
+    boost::static_pointer_cast< FieldElementwise<spacedim, Value> >(
+            target[ some_bc_region_ ]
             )->set_data_row(bcd_ele_idx, val);
 }
 

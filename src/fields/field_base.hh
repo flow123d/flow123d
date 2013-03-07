@@ -23,6 +23,7 @@
 
 #include <string>
 #include <boost/type_traits.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -81,9 +82,10 @@ public:
        /**
         * This static method gets accessor to abstract record with function input,
         * dispatch to correct constructor and initialize appropriate function object from the input.
-        * Returns pointer to  FunctionBase<>.
+        * Returns shared pointer to  FunctionBase<>.
         */
-       static FieldBase<spacedim, Value> *function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
+       static boost::shared_ptr< FieldBase<spacedim, Value> >
+           function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
 
        /**
         *  Function can provide way to initialize itself from the input data.
@@ -96,8 +98,10 @@ public:
         * since some fields (FieldFormula, FieldPython) provides naturally time dependent functions other fields like (FieldConstant, ...), however,
         * can be equipped by various time interpolation schemes. In future, we obviously need interpolation of variable order so that
         * we can use ODE integrators of higher order.
+        *
+        * The method returns true if the value of the field change in the new time step.
         */
-       virtual void set_time(double time);
+       virtual bool set_time(double time);
 
        /**
         * Is used only by some Field imlementations, but can be used to check validity of incomming ElementAccessor in value methods.
@@ -215,6 +219,7 @@ public:
     bool is_enum_valued() const;
     unsigned int n_comp() const;
     Mesh * mesh() const;
+    bool changed() const;
 
     /**
      * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
@@ -228,12 +233,12 @@ public:
     /**
      * Abstract method for initialization of the field on one region.
      */
-    virtual void set_from_input(Region reg, const Input::AbstractRecord &rec) =0;
+    virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
 
     /**
-     * Abstract method to update field to the new time.
+     * Abstract method to update field to the new time. Return resulting value of @p changed_during_set_time_.
      */
-    virtual void set_time(double time) =0;
+    virtual bool set_time(double time) =0;
 
     /**
      * Virtual destructor.
@@ -275,6 +280,14 @@ protected:
      * Pointer to the mesh on which the field lives.
      */
     Mesh *mesh_;
+    /**
+     * Is true if the values of the field has changed during last set_time() call.
+     */
+    bool changed_during_set_time_;
+    /**
+     * Set by other methods (namely set_field() and set_from_input()) that modify the field before the set_time is called.
+     */
+    bool changed_from_last_set_time_;
 };
 
 
@@ -361,25 +374,25 @@ public:
     /**
      * Direct read access to the table of Field pointers on regions.
      */
-    FieldBaseType * operator() (Region reg);
+    boost::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
      * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
      */
-    void set_from_input(Region reg, const Input::AbstractRecord &rec);
+    void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec);
 
     /**
-     * Assigns @p field to the given region @p reg. Caller is responsible for correct construction of given field
-     * and may not delete it. The pointer is deleted by the Field object itself. Use this method only if necessary.
+     * Assigns @p field to the given region @p reg. Caller is responsible for correct construction of given field.
+     * Use this method only if necessary.
      */
-    void set_field(Region reg, FieldBaseType * field);
+    void set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field);
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions
      *  and call set_time for every field in the field list.
      */
-    void set_time(double time);
+    bool set_time(double time);
 
     /**
      * If the field returns a FieldEnum and is constant on the given region, the method return true and
@@ -417,8 +430,10 @@ private:
     const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
     std::vector<FieldEnum> no_check_values_;
 
-    std::vector<FieldBaseType *> region_fields_;
-
+    /**
+     * Table with pointers to fields on individual regions.
+     */
+    std::vector< boost::shared_ptr< FieldBaseType > > region_fields_;
 
 };
 
@@ -434,5 +449,41 @@ public:
 };
 
 
+
+
+
+/****************************************************************************
+ *  Macros for explicit instantiation of particular field class template.
+ */
+
+
+// Instantiation of fields with values dependent of the dimension of range space
+#define INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_to)                                                               \
+template class field<dim_from, FieldValue<dim_to>::VectorFixed >;                       \
+template class field<dim_from, FieldValue<dim_to>::TensorFixed >;                       \
+
+// Instantiation of fields with domain in the ambient space of dimension @p dim_from
+#define INSTANCE_TO_ALL(field, dim_from) \
+template class field<dim_from, FieldValue<0>::Enum >;                       \
+template class field<dim_from, FieldValue<0>::EnumVector >;                \
+template class field<dim_from, FieldValue<0>::Integer >;                       \
+template class field<dim_from, FieldValue<0>::Scalar >;                       \
+template class field<dim_from, FieldValue<0>::Vector >;                         \
+\
+INSTANCE_DIM_DEP_VALUES( field, dim_from, 2) \
+INSTANCE_DIM_DEP_VALUES( field, dim_from, 3) \
+
+//#define INSTANCE_ALL(field) \
+//INSTANCE_TO_ALL(field, 0) \
+//INSTANCE_TO_ALL( field, 1) \
+///INSTANCE_TO_ALL( field, 2) \
+//INSTANCE_TO_ALL( field, 3)
+
+// All instances of one field class template @p field.
+// currently we need only fields on 3D ambient space (and 2D for some tests)
+// so this is to save compilation time and avoid memory problems on the test server
+#define INSTANCE_ALL(field) \
+INSTANCE_TO_ALL( field, 2)  \
+INSTANCE_TO_ALL( field, 3)
 
 #endif /* FUNCTION_BASE_HH_ */

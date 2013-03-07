@@ -155,6 +155,8 @@ it::Record DarcyFlowLMH_Unsteady::input_type
 DarcyFlowMH::EqData::EqData(const std::string &name)
 : EqDataBase(name)
 {
+    gravity_ = arma::vec4("0 0 -1 0"); // gravity vector + constant shift of values
+
     ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
     ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
     ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
@@ -185,10 +187,8 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
 RegionSet DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
     RegionSet domain=EqDataBase::read_boundary_list_item(rec);
     Input::AbstractRecord field_a_rec;
-    if (rec.opt_val("bc_piezo_head", field_a_rec)) {
-        BOOST_FOREACH(Region reg, domain)
-                bc_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
-    }
+    if (rec.opt_val("bc_piezo_head", field_a_rec))
+                bc_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
     FilePath flow_bcd_file;
     if (rec.opt_val("flow_old_bcd_file", flow_bcd_file) ) {
         OldBcdInput::instance()->read_flow(flow_bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
@@ -200,8 +200,7 @@ RegionSet DarcyFlowMH::EqData::read_bulk_list_item(Input::Record rec) {
     RegionSet domain=EqDataBase::read_bulk_list_item(rec);
     Input::AbstractRecord field_a_rec;
     if (rec.opt_val("init_piezo_head", field_a_rec)) {
-        BOOST_FOREACH(Region reg, domain)
-                init_pressure.set_field(reg, new FieldAddPotential<3, FieldValue<3>::Scalar >( this->gravity_, field_a_rec) );
+                init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
     }
     return domain;
 }

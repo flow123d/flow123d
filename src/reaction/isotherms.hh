@@ -39,7 +39,6 @@ private:
 	double direct;
 };
 
-
 // Equation for intersection points for any isotherm
 template <class Func>
 class CrossFunction {
@@ -81,7 +80,7 @@ private:
 };
 
 template <class Func>
-class CrossSolve { // where to place this function, probably instead of determine_crossection instead in sorption.cc
+class CrossSolve { // where to place this function, probably inside of determine_crossection instead in sorption.cc
 public:
 	CrossSolve(const Func &func_, double porosity_, double rho_rock_, double rho_water_, double adsorbent_molar_mass_, int n_points_, double slope_)
 	: func(func_), porosity(porosity_), rho_rock(rho_rock_), rho_water(rho_water_), adsorbent_molar_mass(adsorbent_molar_mass_), n_points(n_points_), slope(slope_) {}

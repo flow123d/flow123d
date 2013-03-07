@@ -42,7 +42,7 @@ public:
 
     virtual void init_from_input(const Input::Record &rec);
 
-    virtual void set_time(double time);
+    virtual bool set_time(double time);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.

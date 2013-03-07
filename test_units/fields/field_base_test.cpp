@@ -44,7 +44,6 @@ string input = R"INPUT(
     $EndPhysicalNames
  */
 TEST(Field, init_from_default) {
-    DBGMSG("here\n");
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -147,19 +146,22 @@ TEST(Field, no_check) {
 
     typedef FieldConstant<3, FieldValue<3>::Scalar > SConst;
     typedef FieldConstant<3, FieldValue<3>::Enum > EConst;
-    auto neumann_type = EConst().set_value(neumann);
-    auto robin_type = EConst().set_value(robin);
-    auto one = SConst().set_value(1.0);
+    auto neumann_type = boost::make_shared<EConst>();
+    neumann_type->set_value(neumann);
+    auto robin_type = boost::make_shared<EConst>();
+    robin_type->set_value(robin);
+    auto one = boost::make_shared<SConst>();
+    one->set_value(1.0);
 
-    bc_type.set_field(mesh.region_db().find_id(101), & neumann_type );
-    bc_flux.set_field(mesh.region_db().find_id(101), & one );
+    bc_type.set_field(RegionSet(1, mesh.region_db().find_id(101)), neumann_type );
+    bc_flux.set_field(RegionSet(1, mesh.region_db().find_id(101)), one );
 
-    bc_type.set_field(mesh.region_db().find_id(102), & robin_type );
-    bc_value.set_field(mesh.region_db().find_id(102), & one );
-    bc_sigma.set_field(mesh.region_db().find_id(102), & one );
+    bc_type.set_field(RegionSet(1, mesh.region_db().find_id(102)), robin_type );
+    bc_value.set_field(RegionSet(1, mesh.region_db().find_id(102)), one );
+    bc_sigma.set_field(RegionSet(1, mesh.region_db().find_id(102)), one );
 
-    bc_type.set_field(mesh.region_db().find_id(-3), & neumann_type );
-    bc_flux.set_field(mesh.region_db().find_id(-3), & one );
+    bc_type.set_field(RegionSet(1, mesh.region_db().find_id(-3)), neumann_type );
+    bc_flux.set_field(RegionSet(1, mesh.region_db().find_id(-3)), one );
 
     bc_type.set_time(0.0);
     bc_flux.set_time(0.0);

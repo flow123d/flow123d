@@ -66,7 +66,8 @@ Record Mesh::input_type
 	.declare_key("regions", Array( RegionDB::region_input_type ), Default::optional(),
 	        "List of additional region definitions not contained in the mesh.")
 	.declare_key("sets", Array( RegionDB::region_set_input_type), Default::optional(),
-	        "List of region set definitions.")
+	        "List of region set definitions. There are three region sets implicitly defined:\n"
+	        "ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
 	.close();
 
 

@@ -74,10 +74,10 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
 
 
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::set_time(double time) {
+bool FieldElementwise<spacedim, Value>::set_time(double time) {
     ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
     ASSERT(data_, "Null data pointer.\n");
-    if (reader_ == NULL) return;
+    if (reader_ == NULL) return false;
 
     GMSH_DataHeader search_header;
     search_header.actual=false;
@@ -87,6 +87,7 @@ void FieldElementwise<spacedim, Value>::set_time(double time) {
     search_header.time=time;
 
     reader_->read_element_data(search_header, data_, mesh_->all_elements_id() );
+    return search_header.actual;
 }
 
 

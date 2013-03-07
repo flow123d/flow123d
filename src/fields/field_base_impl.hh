@@ -14,6 +14,8 @@ using namespace std;
 
 #include <boost/type_traits.hpp>
 #include <boost/format.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 
 #include "fields/field_base.hh"
@@ -81,22 +83,23 @@ Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename 
 
 
 template <int spacedim, class Value>
-FieldBase<spacedim, Value> *  FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
+boost::shared_ptr< FieldBase<spacedim, Value> >
+FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
 {
-    FieldBase<spacedim, Value> *func;
+    boost::shared_ptr< FieldBase<spacedim, Value> > func;
 
     if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
 //        func= new FieldInterpolatedP0<spacedim,Value>(n_comp);
 #ifdef HAVE_PYTHON
     } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
-        func= new FieldPython<spacedim, Value>(n_comp);
+        func=boost::make_shared< FieldPython<spacedim, Value> >(n_comp);
 #endif
     } else if (rec.type() == FieldConstant<spacedim, Value>::input_type ) {
-        func=new FieldConstant<spacedim,Value>(n_comp);
+        func=boost::make_shared< FieldConstant<spacedim,Value> >(n_comp);
     } else if (rec.type() == FieldFormula<spacedim,Value>::input_type ) {
-        func=new FieldFormula<spacedim,Value>(n_comp);
+        func=boost::make_shared< FieldFormula<spacedim,Value> >(n_comp);
     } else if (rec.type() == FieldElementwise<spacedim,Value>::input_type ) {
-        func=new FieldElementwise<spacedim,Value>(n_comp);
+        func=boost::make_shared< FieldElementwise<spacedim,Value> >(n_comp);
     } else {
         xprintf(PrgErr,"TYPE of Field is out of set of descendants. SHOULD NOT HAPPEN.\n");
     }
@@ -115,8 +118,9 @@ void FieldBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
 
 
 template <int spacedim, class Value>
-void FieldBase<spacedim, Value>::set_time(double time) {
+bool FieldBase<spacedim, Value>::set_time(double time) {
     time_ = time;
+    return false; // no change
 }
 
 
@@ -175,7 +179,9 @@ void Field<spacedim, Value>::disable_where(const Field<spacedim, typename FieldV
 
 
 template<int spacedim, class Value>
-typename Field<spacedim,Value>::FieldBaseType * Field<spacedim,Value>::operator() (Region reg) {
+boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
+Field<spacedim,Value>::operator[] (Region reg)
+{
     ASSERT_LESS(reg.idx(), this->region_fields_.size());
     return this->region_fields_[reg.idx()];
 }
@@ -183,80 +189,95 @@ typename Field<spacedim,Value>::FieldBaseType * Field<spacedim,Value>::operator(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_from_input(Region reg, const Input::AbstractRecord &rec) {
+void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
     ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
+    if (domain.size() == 0) return;
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields_.size() == 0)
-        region_fields_.resize( this->mesh_->region_db().size(), NULL);
+        region_fields_.resize( this->mesh_->region_db().size() );
 
-    if (region_fields_[reg.idx()] != NULL) {
-        delete region_fields_[reg.idx()];
-    }
-    //DBGMSG("reginit id: %d label:%s name: %s\n",reg.idx(), reg.label().c_str(), this->name_.c_str());
-    region_fields_[reg.idx()] = FieldBaseType::function_factory(rec, this->n_comp_);
+    boost::shared_ptr<FieldBaseType> field = FieldBaseType::function_factory(rec, this->n_comp_);
+    // following dosn't lead to a memory leak since we use shared_ptr,
+    // if the previous pointer was the last one the pointed field is correctly freed
+    BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
+    changed_from_last_set_time_=true;
 }
 
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_field(Region reg, FieldBaseType * field) {
+void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field) {
+    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
+    if (domain.size() == 0) return;
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields_.size() == 0)
-        region_fields_.resize( this->mesh_->region_db().size(), NULL);
-
-    if (region_fields_[reg.idx()] != NULL) {
-        delete region_fields_[reg.idx()];
-    }
+        region_fields_.resize( this->mesh_->region_db().size() );
 
     ASSERT_SIZES( field->n_comp() , this->n_comp_);
-    region_fields_[reg.idx()] = field;
-    region_fields_[reg.idx()]->set_mesh( this->mesh_ );
+    field->set_mesh( this->mesh_ );
+    BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
+    changed_from_last_set_time_=true;
 }
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_time(double time) {
+bool Field<spacedim, Value>::set_time(double time) {
     if (region_fields_.size() == 0)
-        region_fields_.resize( this->mesh_->region_db().size(), NULL);
+        region_fields_.resize( this->mesh_->region_db().size() );
 
-    const RegionSet & all_set = this->mesh_->region_db().get_region_set("ALL");
-    for( RegionSet::const_iterator reg = all_set.begin(); reg!=all_set.end(); ++reg) {
-        if (reg->is_boundary() == this->bc_) {  // for regions that match type of the field domain
-            if (region_fields_[reg->idx()] == NULL) {
-                // is the check turned off?
-                if (no_check_control_field_) {
+    // check there are no empty field pointers, collect regions to be initialized from default value
+    RegionSet regions_to_init; // empty vector
+
+    BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
+        if (reg.is_boundary() == this->bc_) {      // for regions that match type of the field domain
+            if (! region_fields_[reg.idx()] ) {    // null field ptr
+                if (no_check_control_field_) {      // is the check turned off?
                     FieldEnum value;
-                    if (no_check_control_field_->get_constant_enum_value(*reg, value)
+                    if (no_check_control_field_->get_constant_enum_value(reg, value)
                         && ( std::find(no_check_values_.begin(), no_check_values_.end(), value)
                              != no_check_values_.end() )
-                       ) continue; // the field is not needed on this region
-                    //  else perform the check
+                       ) continue;                  // the field is not needed on this region
                 }
-                // try to use default
-                if (this->default_.has_value_at_declaration()) {
-                    Input::JSONToStorage reader;
-                    Input::Type::AbstractRecord a_rec_type = make_input_tree();
-                    reader.read_from_default(this->default_.value(), a_rec_type );
-                    set_from_input(*reg, reader.get_root_interface<Input::AbstractRecord>() );
+
+                if (this->default_.has_value_at_declaration()) {    // try to use default
+                    regions_to_init.push_back( reg );
                 } else {
-                    xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n", name_.c_str(), reg->id(), reg->label().c_str() );
+                    xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n", name_.c_str(), reg.id(), reg.label().c_str() );
                 }
             }
-            region_fields_[reg->idx()]->set_mesh(this->mesh_);
-            region_fields_[reg->idx()]->set_time(time);
         }
+
+    // possibly set from default value
+    if ( regions_to_init.size() ) {
+        Input::JSONToStorage reader;
+        Input::Type::AbstractRecord a_rec_type = make_input_tree();
+        reader.read_from_default(this->default_.value(), a_rec_type );
+        set_from_input( regions_to_init, reader.get_root_interface<Input::AbstractRecord>() );
     }
+
+    // set mesh and time
+    BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
+        if (reg.is_boundary() == this->bc_ && region_fields_[reg.idx()] ) {      // for regions that match type of the field domain
+                                                                                 // NULL pointers are only on "no_check" regions
+            region_fields_[reg.idx()]->set_mesh(this->mesh_);
+            this->changed_from_last_set_time_ = this->changed_from_last_set_time_ ||
+                    region_fields_[reg.idx()]->set_time(time);
+        }
+
+    this->changed_during_set_time_ = this->changed_from_last_set_time_;
+    this->changed_from_last_set_time_ = false;
+    return this->changed_during_set_time_;
 }
 
 
 // helper functions
 template<int spacedim, class FieldBaseType>
-FieldEnum get_constant_enum_value_dispatch(FieldBaseType *region_field,  const boost::true_type&) {
+FieldEnum get_constant_enum_value_dispatch(boost::shared_ptr< FieldBaseType > region_field,  const boost::true_type&) {
     return region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
 }
 
 template<int spacedim,class FieldBaseType>
-FieldEnum get_constant_enum_value_dispatch(FieldBaseType *region_field,  const boost::false_type&) {
+FieldEnum get_constant_enum_value_dispatch(boost::shared_ptr< FieldBaseType > region_field,  const boost::false_type&) {
     return 0;
 }
 
@@ -265,7 +286,7 @@ FieldEnum get_constant_enum_value_dispatch(FieldBaseType *region_field,  const b
 template<int spacedim, class Value>
 bool Field<spacedim,Value>::get_constant_enum_value(RegionIdx r_idx,  FieldEnum &value) const {
     if (boost::is_same<typename Value::return_type, FieldEnum>::value) {
-        FieldBaseType *region_field = region_fields_[r_idx.idx()];
+        boost::shared_ptr< FieldBaseType > region_field = region_fields_[r_idx.idx()];
         if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
             value = get_constant_enum_value_dispatch<spacedim>(region_field, boost::is_same<typename Value::return_type, FieldEnum>() );
             return true;
@@ -277,7 +298,7 @@ bool Field<spacedim,Value>::get_constant_enum_value(RegionIdx r_idx,  FieldEnum 
 
 template<int spacedim, class Value>
 FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
-    FieldBaseType *f = region_fields_[elm.region().idx()];
+    boost::shared_ptr< FieldBaseType > f = region_fields_[elm.region().idx()];
     if (f) return f->field_result();
     else return result_none;
 }
