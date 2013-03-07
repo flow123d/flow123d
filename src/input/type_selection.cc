@@ -130,7 +130,15 @@ void Selection::SelectionData::add_value(const int value, const std::string &key
     key_to_index_.insert(std::make_pair(key_h, new_idx));
     value_to_index_.insert(std::make_pair(value, new_idx));
 
+    //does not work with intel c++ compiler
     Key tmp_key = { new_idx, key, description, value };
+    /*
+    Key tmp_key;        
+    tmp_key.key_index = new_idx;
+    tmp_key.key_ = key;
+    tmp_key.description_ = description;
+    tmp_key.value = value;
+    */      
     keys_.push_back(tmp_key);
 }
 
