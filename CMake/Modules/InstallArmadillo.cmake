@@ -36,7 +36,7 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(Armadillo
     DOWNLOAD_DIR ${EXTERNAL_ARMADILLO_DIR} 
-    URL \"http://dev.nti.tul.cz/~brezina/flow123d_libraries/armadillo-3.4.3.tar.gz\"
+    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/armadillo-3.4.3.tar.gz\"
     SOURCE_DIR ${EXTERNAL_ARMADILLO_DIR}/src
     BINARY_DIR ${EXTERNAL_ARMADILLO_DIR}/src
     PATCH_COMMAND patch ${EXTERNAL_ARMADILLO_DIR}/src/CMakeLists.txt ${PROJECT_SOURCE_DIR}/third_party/armadillo_patch

@@ -60,35 +60,35 @@ void OutputBase::get_double_bounds(Double dbl, double &lower , double &upper ) {
 
 void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth) {
 	if (typeid(*type) == typeid(Type::Record)) {
-		print(stream, static_cast<const Type::Record *>(type), depth );
+		print_impl(stream, static_cast<const Type::Record *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
-		print(stream, static_cast<const Type::Array *>(type), depth );
+		print_impl(stream, static_cast<const Type::Array *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::AbstractRecord)) {
-		print(stream, static_cast<const Type::AbstractRecord *>(type), depth );
+		print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
-		print(stream, static_cast<const Type::Selection *>(type), depth );
+		print_impl(stream, static_cast<const Type::Selection *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Integer)) {
-		print(stream, static_cast<const Type::Integer *>(type), depth );
+		print_impl(stream, static_cast<const Type::Integer *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Double)) {
-		print(stream, static_cast<const Type::Double *>(type), depth );
+		print_impl(stream, static_cast<const Type::Double *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Bool)) {
-		print(stream, static_cast<const Type::Bool *>(type), depth );
+		print_impl(stream, static_cast<const Type::Bool *>(type), depth );
 	} else {
 		const Type::FileName * file_name_type = dynamic_cast<const Type::FileName *>(type);
         if (file_name_type != NULL ) {
-        	print(stream, file_name_type, depth );
+        	print_impl(stream, file_name_type, depth );
         	return;
         }
 
 		const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) {
-        	print(stream, string_type, depth );
+        	print_impl(stream, string_type, depth );
         	return;
         }
 
@@ -113,7 +113,7 @@ void OutputBase::write_value(std::ostream& stream, Default dft) {
  * implementation of OutputText
  */
 
-void OutputText::print(ostream& stream, const Record *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Record *type, unsigned int depth) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
 	}
@@ -173,7 +173,7 @@ void OutputText::print(ostream& stream, const Record *type, unsigned int depth) 
 }
 
 
-void OutputText::print(ostream& stream, const Array *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Array *type, unsigned int depth) {
 
 	switch (doc_type_) {
 	case key_record:
@@ -191,7 +191,7 @@ void OutputText::print(ostream& stream, const Array *type, unsigned int depth) {
 }
 
 
-void OutputText::print(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
 	// Print documentation of abstract record
 	switch (doc_type_) {
 	case key_record:
@@ -233,7 +233,7 @@ void OutputText::print(ostream& stream, const AbstractRecord *type, unsigned int
 }
 
 
-void OutputText::print(ostream& stream, const Selection *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
 	}
@@ -264,7 +264,7 @@ void OutputText::print(ostream& stream, const Selection *type, unsigned int dept
 }
 
 
-void OutputText::print(ostream& stream, const Integer *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		int lower_bound, upper_bound;
 		get_integer_bounds(*type, lower_bound, upper_bound);
@@ -273,7 +273,7 @@ void OutputText::print(ostream& stream, const Integer *type, unsigned int depth)
 }
 
 
-void OutputText::print(ostream& stream, const Double *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Double *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		double lower_bound, upper_bound;
 		get_double_bounds(*type, lower_bound, upper_bound);
@@ -282,21 +282,21 @@ void OutputText::print(ostream& stream, const Double *type, unsigned int depth) 
 }
 
 
-void OutputText::print(ostream& stream, const Bool *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		stream << "Bool";
 	}
 }
 
 
-void OutputText::print(ostream& stream, const String *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const String *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		stream << "String (generic)";
 	}
 }
 
 
-void OutputText::print(ostream& stream, const FileName *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
 	if (doc_type_ == key_record) {
 		stream << "FileName of ";
 
@@ -341,7 +341,7 @@ std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
  */
 
 
-void OutputJSONTemplate::print(ostream& stream, const Record *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			stream << "# Record " << type->type_name();
@@ -401,7 +401,7 @@ void OutputJSONTemplate::print(ostream& stream, const Record *type, unsigned int
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const Array *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			unsigned int lower_size, upper_size;
@@ -464,7 +464,7 @@ void OutputJSONTemplate::print(ostream& stream, const Array *type, unsigned int 
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			stream << "# abstract record " << type->type_name();
@@ -509,7 +509,7 @@ void OutputJSONTemplate::print(ostream& stream, const AbstractRecord *type, unsi
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const Selection *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record: {
 			unsigned int max_size = 0; // maximal size for setw of description
@@ -546,7 +546,7 @@ void OutputJSONTemplate::print(ostream& stream, const Selection *type, unsigned 
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const Integer *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			int lower_bound, upper_bound;
@@ -566,7 +566,7 @@ void OutputJSONTemplate::print(ostream& stream, const Integer *type, unsigned in
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const Double *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const Double *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			double lower_bound, upper_bound;
@@ -587,7 +587,7 @@ void OutputJSONTemplate::print(ostream& stream, const Double *type, unsigned int
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const Bool *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			stream << "# Boolean ";
@@ -603,7 +603,7 @@ void OutputJSONTemplate::print(ostream& stream, const Bool *type, unsigned int d
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const String *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const String *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			stream << "# String ";
@@ -616,7 +616,7 @@ void OutputJSONTemplate::print(ostream& stream, const String *type, unsigned int
 }
 
 
-void OutputJSONTemplate::print(ostream& stream, const FileName *type, unsigned int depth) {
+void OutputJSONTemplate::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record:
 			stream << "# FileName of ";

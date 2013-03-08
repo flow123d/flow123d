@@ -75,7 +75,7 @@ using namespace Input::Type;
 
    // test correct finishing.
 #ifdef DEBUG_ASSERTS
-   EXPECT_DEATH( {rec.size();}, "Asking for information of unfinished Record type");
+   EXPECT_THROW_WHAT( {rec.size();}, ExcAssertMsg , "Asking for information of unfinished Record type");
 #endif
 
 /*

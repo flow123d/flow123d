@@ -7,6 +7,7 @@
 
 
 #include <boost/make_shared.hpp>
+#include <boost/lexical_cast.hpp>
 #include "input/accessors.hh"
 
 
@@ -15,6 +16,16 @@ namespace Input {
 /*****************************************************************************
  * Implementation of the class Input::Address
  */
+
+Address::Address()
+: data_(boost::make_shared<AddressData>()),
+  actual_node_( 0 ),
+  actual_storage_( NULL)
+{
+   data_->root_type_ = NULL;
+   data_->root_storage_ = NULL;
+}
+
 
 Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
 : data_( boost::make_shared<AddressData>() )
@@ -35,35 +46,35 @@ Address::Address(const Address& other)
 
 
 void Address::down(unsigned int idx) {
-    actual_storage_ = actual_storage_->get_item(idx);
+	actual_storage_ = actual_storage_->get_item(idx);
     actual_node_++;
     data_->path_.push_back(idx);
 }
 
 
 std::string Address::make_full_address() {
-    std::string address = "/";
+    std::string address = "";
     const StorageBase * storage = data_->root_storage_;
     const Type::TypeBase * input_type = data_->root_type_;
 
-    for (int i = 0; i < data_->path_.size(); i++) {
+    for (int i = 0; i < actual_node_; i++) {
     	storage = storage->get_item(data_->path_[i]);
 
     	// dispatch types
         if (typeid(*input_type) == typeid(Type::Record)) {
         	const Type::Record * rec = static_cast<const Type::Record *>(input_type);
         	Type::Record::KeyIter it = rec->begin() + data_->path_[i];
-        	address = address + it->key_ + "/";
+        	address = address + "/" + it->key_;
         	input_type = it->type_.get();
         } else
 		if (typeid(*input_type) == typeid(Type::AbstractRecord)) {
 			const Type::AbstractRecord * a_rec = static_cast<const Type::AbstractRecord *>(input_type);
-			const StorageArray * storage_arr = static_cast<const StorageArray *>(storage);
 			const StorageInt * storage_type = static_cast<const StorageInt *>(storage->get_item(0));
 			input_type = & a_rec->get_descendant(storage_type->get_int());
 		} else
 		if (typeid(*input_type) == typeid(Type::Array)) {
 			const Type::Array * arr = static_cast<const Type::Array *>(input_type);
+			address = address + "/" + boost::lexical_cast<std::string>(data_->path_[i]);
 			input_type = & arr->get_sub_type();
 		}
     }
@@ -72,8 +83,6 @@ std::string Address::make_full_address() {
 }
 
 
-Address Address::empty_address_ = Address( &Array::empty_storage_, NULL );
-
 
 /*****************************************************************************
  * Implementation of the class Input::Record
@@ -81,7 +90,7 @@ Address Address::empty_address_ = Address( &Array::empty_storage_, NULL );
 
 
 Record::Record()
-: record_type_(), address_( Address::empty_address_ )
+: record_type_(), address_( Address() )
 {}
 
 
@@ -107,7 +116,7 @@ Record::Record(const Address &address, const Type::Record type)
  */
 
 AbstractRecord::AbstractRecord()
-: record_type_(), address_( Address::empty_address_ )
+: record_type_(), address_( Address() )
 {}
 
 
@@ -146,7 +155,7 @@ Input::Type::Record AbstractRecord::type() const
 
 
 Array::Array()
-: array_type_(Type::Bool()), address_( Address::empty_address_ )
+: array_type_(Type::Bool()), address_( Address() )
 {}
 
 
@@ -161,9 +170,6 @@ Array::Array(const Address &address, const Type::Array type)
     if (address.storage_head()->is_null())
         THROW( ExcAccessorForNullStorage() << EI_AccessorName("Array") );
 }
-
-StorageArray Array::empty_storage_ = StorageArray(0);
-
 
 
 

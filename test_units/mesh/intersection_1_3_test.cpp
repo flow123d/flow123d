@@ -22,7 +22,8 @@
 // Test rychlosti algoritmu, pro vyhledávání průsečíků sítě line_cube.msh
 TEST(intersections, 1d_3d){
 	unsigned int elementLimit = 20;
-	FilePath mesh_file("line_cube2.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
+	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
 	Mesh mesh_krychle;
 	GmshMeshReader reader(mesh_file);
 	BoundingBox bb;
@@ -32,10 +33,11 @@ TEST(intersections, 1d_3d){
 
 	BIHTree bt(&mesh_krychle, elementLimit);
 
-	/*Profiler::initialize(MPI_COMM_WORLD);
-	START_TIMER("Inter");*/
+	Profiler::initialize(MPI_COMM_WORLD);
+	{
+	    START_TIMER("Inter");
 
-	FOR_ELEMENTS(&mesh_krychle, elm) {
+	    FOR_ELEMENTS(&mesh_krychle, elm) {
 	         if (elm->dim() == 1) {
 	        	TAbscissa ta;
 	        	FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createAbscissa(elm, ta);
@@ -60,10 +62,12 @@ TEST(intersections, 1d_3d){
 	        		}
 
 	         }
-	       }
-	/*END_TIMER("Inter");
+	     }
+	}
+        
 	Profiler::instance()->output(cout);
-	Profiler::uninitialize();*/
+        
+	Profiler::uninitialize();
 
 	xprintf(Msg, "Test is complete\n");
 
