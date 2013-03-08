@@ -27,6 +27,7 @@
 
 #include "mesh/bih_tree.hh"
 #include "mesh/bih_node.hh"
+#include "system/global_defs.h"
 #include <ctime>
 
 #define DEBUG
@@ -68,6 +69,7 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 	while (queue_.size()) {
 		BIHNode child[BIHNode::child_count];
 		arma::vec6 childCoors[BIHNode::child_count];
+		ASSERT(queue_.front() < nodes_.size(), "Idx %d out of nodes_ of size %d.\n", queue_.front(), nodes_.size());
 		BIHNode & actual_node = nodes_[queue_.front()];
 
 		// mark node as leaf
@@ -109,7 +111,7 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 		// put nodes into vectors
 		test_new_level();
 		for (int i=0; i<BIHNode::child_count; i++) {
-			actual_node.child_[i] = nodes_.size();
+		    nodes_[queue_.front()].child_[i] = nodes_.size(); // can not use actual_node, since it can be invalid due to reallocation of nodes_
 			queue_.push_back(nodes_.size());
 			queue_coors_.push_back(childCoors[i]);
 			nodes_.push_back(child[i]);

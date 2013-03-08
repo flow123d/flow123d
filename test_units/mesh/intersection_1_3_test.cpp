@@ -13,15 +13,17 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "fields/field_interpolated_p0.hh"
+#include "system/sys_profiler.hh"
 
 //#include "new_mesh/ngh/include/point.h"
 
 #define DEBUG
 
-// muj test
+// Test rychlosti algoritmu, pro vyhledávání průsečíků sítě line_cube.msh
 TEST(intersections, 1d_3d){
 	unsigned int elementLimit = 20;
-	FilePath mesh_file("line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
+	FilePath mesh_file("mesh/line_cube2.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
 	Mesh mesh_krychle;
 	GmshMeshReader reader(mesh_file);
 	BoundingBox bb;
@@ -31,12 +33,11 @@ TEST(intersections, 1d_3d){
 
 	BIHTree bt(&mesh_krychle, elementLimit);
 
-	//bb.set_bounds(arma::vec3("0 0 0"), arma::vec3("1 1 1"));
-	//bt.find_elements(bb, searchedElements);
+	Profiler::initialize(MPI_COMM_WORLD);
+	{
+	    START_TIMER("Inter");
 
-	//START_TIMER("vypocet_intersection_1_3");
-
-	FOR_ELEMENTS(&mesh_krychle, elm) {
+	    FOR_ELEMENTS(&mesh_krychle, elm) {
 	         if (elm->dim() == 1) {
 	        	TAbscissa ta;
 	        	FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createAbscissa(elm, ta);
@@ -61,11 +62,14 @@ TEST(intersections, 1d_3d){
 	        		}
 
 	         }
-	       }
+	     }
+	}
+        
+	Profiler::instance()->output(cout);
+        
+	Profiler::uninitialize();
 
-	//END_TIMER("vypocet_intersection_1_3");
-
-	xprintf(Msg, "Test - intersection is hexagon\n");
+	xprintf(Msg, "Test is complete\n");
 
 }
 
