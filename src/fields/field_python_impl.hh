@@ -101,7 +101,9 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(const string &func_name)
 {
 #ifdef HAVE_PYTHON
-    p_func_ = PyObject_GetAttrString(p_module_, func_name.c_str() );
+    char* func_char;
+    std::strcpy(func_char, func_name.c_str());
+    p_func_ = PyObject_GetAttrString(p_module_, func_char );
     if (! p_func_) {
         if (PyErr_Occurred()) PyErr_Print();
         xprintf(UsrErr, "Field '%s' not found in the python module: %s\n", func_name.c_str(), PyModule_GetName(p_module_) );

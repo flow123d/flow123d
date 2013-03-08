@@ -416,7 +416,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  flow123d_lib semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS} semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
