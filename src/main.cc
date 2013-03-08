@@ -93,7 +93,6 @@ Application::Application( int argc,  char ** argv)
   passed_argv_(0),
   use_profiler(false)
 {
-
     // parse our own command line arguments, leave others for PETSc
     parse_cmd_line(argc, argv);
 
@@ -120,7 +119,6 @@ Application::Application( int argc,  char ** argv)
     xprintf(Msg, "This is Flow123d, version %s rev: %s\n", version.c_str(),revision.c_str());
     xprintf(Msg, "Build: %s MPI size: %d\n", build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
-
 
     // read main input file
     Input::JSONToStorage json_reader;

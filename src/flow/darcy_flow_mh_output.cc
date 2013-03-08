@@ -34,6 +34,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 
 #include <vector>
 
@@ -136,7 +137,6 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
 //=============================================================================
 
 void DarcyFlowMHOutput::postprocess() {
-
     //make_side_flux();
 
     /*  writes scalar values to mesh - cannot be moved to output!
@@ -158,6 +158,7 @@ void DarcyFlowMHOutput::postprocess() {
 
 void DarcyFlowMHOutput::output()
 {
+    START_TIMER("DARCY OUTPUT");
     std::string eleVectorName = "velocity_elements";
     std::string eleVectorUnit = "L/T";
 
@@ -395,7 +396,7 @@ void DarcyFlowMHOutput::make_sides_scalar() {
 
 void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     F_ENTRY;
-
+    
     double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
 
     /** Iterators */
@@ -642,7 +643,6 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
 
 void DarcyFlowMHOutput::water_balance() {
     F_ENTRY;
-
     if (balance_output_file == NULL) return;
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
@@ -764,7 +764,7 @@ double calc_water_balance(Mesh* mesh, int c_water) {
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
     if (raw_output_file == NULL) return;
-
+    
     char dbl_fmt[ 16 ]= "%.8g ";
     // header
     xfprintf( raw_output_file, "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n");

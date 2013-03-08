@@ -73,6 +73,7 @@ it::Record HC_ExplicitSequential::input_type
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         Input::Iterator<Input::Array> output_streams)
 {
+    START_TIMER("HC constructor");
     F_ENTRY;
     int i=0;
     using namespace Input;
@@ -162,7 +163,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
 
 void HC_ExplicitSequential::run_simulation()
 {
-
+    START_TIMER("HC run simulation");
     // following should be specified in constructor:
     // value for velocity interpolation :
     // theta = 0     velocity from beginning of transport interval (fully explicit method)

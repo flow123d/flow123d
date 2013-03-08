@@ -176,6 +176,7 @@ void solver_set_type( Solver *solver )
 
 void solve_system( struct Solver *solver, struct LinSys *system )
 {
+START_TIMER("solve_system");
 /// set command line for external solvers
 #define SET_GENERIC_CALL sprintf( cmdline, "%s %s",solver->executable,solver->params.c_str())
 #define SET_MATLAB_CALL sprintf( cmdline, "matlab -r solve" )
@@ -450,7 +451,7 @@ void solver_petsc(Solver *solver)
 	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
 	KSPSetFromOptions(System);
 
-	START_TIMER("iteration");
+	START_TIMER("iteration-PETSC solver");
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);

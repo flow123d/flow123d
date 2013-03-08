@@ -251,8 +251,10 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 {
     using namespace Input;
     F_ENTRY;
+    START_TIMER("Darcy constructor");
 
     //connecting data fields with mesh
+    START_TIMER("data init");
     data.set_mesh(&mesh_in);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     
@@ -261,6 +263,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     //initializing data fields at the beginning (time = 0)
     data.set_time(*time_);
+    END_TIMER("data init");
     
     int ierr;
 
@@ -271,16 +274,18 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         n_schur_compls = 2;
     }
 
+    START_TIMER("solver init");
     solver = new (Solver);
     solver_init(solver, in_rec.val<AbstractRecord>("solver"));
-
+    END_TIMER("solver init");
+    
     solution = NULL;
     schur0   = NULL;
     schur1   = NULL;
     schur2   = NULL;
     IA1      = NULL;
     IA2      = NULL;
-
+    
     /*
     Iterator<Record> it_bc = in_rec.find<Record>("boundary_conditions");
     if (it_bc) {
@@ -295,7 +300,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         bc_function=NULL;
     }*/
     
-
+    START_TIMER("paralel init");
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
     ierr += MPI_Comm_size(PETSC_COMM_WORLD, &(np));
@@ -315,12 +320,14 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     prepare_parallel();
 
+    END_TIMER("paralel init");
     //side_ds->view();
     //el_ds->view();
     //edge_ds->view();
 
     make_schur0();
 
+    START_TIMER("prepare paralel");
     // prepare Scatter form parallel to sequantial in original numbering
     {
             IS is_par, is_loc;
@@ -356,7 +363,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
             ISDestroy(&(is_loc));
         }
     solution_changed_for_scatter=true;
-
+    
+    END_TIMER("prepare paralel");
 }
 
 
@@ -415,6 +423,7 @@ void DarcyFlowMH_Steady::update_solution() {
 
 void DarcyFlowMH_Steady::postprocess() 
 {
+    START_TIMER("postprocess");
     int i_loc, side_rows[4];
     double values[4];
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -1698,6 +1707,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
 }
 
 void DarcyFlowMH_Unsteady::modify_system() {
+  START_TIMER("modify system");
   if (time_->is_changed_dt()) {
       MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
 
