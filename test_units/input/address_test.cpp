@@ -8,6 +8,7 @@
 #include "input/accessors.hh"
 #include "input/type_output.hh"
 #include "input/json_to_storage.hh"
+#include "input/storage.hh"
 
 namespace IT = Input::Type;
 
@@ -22,6 +23,34 @@ public:
 
 	void declare_descendant(const Record &subrec) {
 		add_descendant(subrec);
+	}
+};
+
+/**
+ * Child class of Input::Record
+ * Contains public method for get Address object
+ */
+class IRecordTest : public Input::Record {
+public:
+	IRecordTest(const Input::Record &rec) : Input::Record(rec)
+	{}
+
+	Input::Address &get_address() {
+		return address_;
+	}
+};
+
+/**
+ * Child class of Input::Address
+ * Contains public method for get root storage object
+ */
+class AddressTest : public Input::Address {
+public:
+	AddressTest(const Address& other) : Input::Address(other)
+	{}
+
+	const Input::StorageBase * get_storage() const {
+		return data_->root_storage_;
 	}
 };
 
@@ -109,4 +138,23 @@ TEST(InputAddress, address_output_test) {
 	json_reader.read_stream( ss,  root_record);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
+	IRecordTest rec_test(i_rec);
+	AddressTest addr_test(rec_test.get_address());
+	Input::Address a_root(addr_test.get_storage(), &root_record);
+	Input::Address a_problem(a_root);
+	a_problem.down(0);
+	Input::Address a_seq_coupling(a_problem);
+	a_seq_coupling.down(0);
+	Input::Address a_regions(a_seq_coupling);
+	a_regions.down(3);
+	Input::Address a_element_list(a_regions);
+	a_element_list.down(2);
+	Input::Address a_element_1(a_element_list);
+	a_element_1.down(1);
+
+	EXPECT_EQ("/problem", a_problem.make_full_address());
+	EXPECT_EQ("/problem", a_seq_coupling.make_full_address());
+	EXPECT_EQ("/problem/regions", a_regions.make_full_address());
+	EXPECT_EQ("/problem/regions/element_list", a_element_list.make_full_address());
+	EXPECT_EQ("/problem/regions/element_list/1", a_element_1.make_full_address());
 }

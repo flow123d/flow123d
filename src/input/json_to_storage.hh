@@ -187,6 +187,9 @@ public:
 
     /**
      * Default constructor. Do nothing.
+     *
+     * Do not use instance with NULL storage_.
+     * Call read_stream or other such method which fills storage_ after creating this object.
      */
     JSONToStorage();
 

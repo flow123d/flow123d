@@ -106,7 +106,7 @@ template <class T> class Iterator;
  * - where we need StorageArray::new_item() and if we can replace it by add_item()
  */
 class Address {
-private:
+protected:
     struct AddressData {
         /**
          * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
@@ -124,6 +124,13 @@ private:
     };
 
 public:
+    /**
+     * Empty constructor.
+     *
+     * Constructor should be called only by empty accessors.
+     */
+    Address();
+
     /**
      * Basic constructor. We forbids default one since we always need the root input type.
      */
@@ -155,12 +162,8 @@ public:
      */
     std::string make_full_address();
 
-    /**
-     * Empty instance of class, used in default constructors
-     */
-    static Address empty_address_;
 
-private:
+protected:
     /**
      * Shared part of address.
      */
@@ -214,6 +217,8 @@ class Record {
 public:
     /**
      * Default constructor.
+     *
+     * Constructor uses empty Address which causes error in program, Address has to be filled.
      */
     Record();
 
@@ -283,7 +288,7 @@ public:
     { return (address_.storage_head() == NULL); }
 
 
-private:
+protected:
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
 
@@ -306,7 +311,9 @@ private:
 class AbstractRecord {
 public:
     /**
-     * Default constructor creates an accessor to an empty storage.
+     * Default constructor creates an empty accessor.
+     *
+     * Constructor uses empty Address which causes error in program, Address has to be filled.
      */
     AbstractRecord();
 
@@ -387,6 +394,8 @@ class Array {
 public:
     /**
      * Default constructor, empty accessor.
+     *
+     * Constructor uses empty Address which causes error in program, Address has to be filled.
      */
     Array();
 
@@ -425,9 +434,6 @@ public:
     */
    template <class Container>
    void copy_to(Container &out) const;
-
-   /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
-   static StorageArray empty_storage_;
 
 private:
     /// Corresponding Type::Array.
@@ -557,8 +563,12 @@ public:
     typedef typename internal::TypeDispatch<DispatchType>::InputType InputType;
 
 
-    /// Iterator is not default constructible.
-    Iterator() : IteratorBase( Address::empty_address_, 0) {}
+    /**
+     * Iterator is not default constructible.
+     *
+     * Constructor uses empty Address which causes error in program, Address has to be filled.
+     */
+    Iterator() : IteratorBase( Address(), 0) {}
 
     /**
      * Constructor with Type of data
