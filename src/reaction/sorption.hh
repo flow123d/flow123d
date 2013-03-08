@@ -17,7 +17,7 @@ class Distribution;
 class Reaction;
 class Isotherm;
 
-enum Sorption_type {
+enum SorptionType {
 	none = 0,
 	Linear = 1,
 	Langmuir = 2,
