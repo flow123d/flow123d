@@ -8,18 +8,19 @@
 #ifndef SORPTION_IMPL_HH_
 #define SORPTION_IMPL_HH_
 
+#include <boost/math/tools/roots.hpp>
 
 /**
  * Functor for Langmuir isotherm.
  */
 class Langmuir {
 public:
-    Langmuir( double mult_coef, double alpha) : alpha(alpha), mult_coef(mult_coef) {}
+    Langmuir( double mult_coef, double alpha) : alpha(alpha), mult_coef_(mult_coef) {}
 
-    double operator()( double x) { return mult_coef*(alpha * x)/(1+alpha*x); }
+    double operator()( double x) { return mult_coef_*(alpha * x)/(1+alpha*x); }
 
 private:
-    double mult_coef;
+    double mult_coef_;
     double alpha;
 };
 
@@ -29,12 +30,12 @@ private:
  */
 class Linear {
 public:
-    Linear(double mult_coef) : direct(mult_coef) {}
+    Linear(double mult_coef) : mult_coef_(mult_coef) {}
 
-    double operator()(double x) { return direct*x; }
+    double operator()(double x) { return mult_coef_*x; }
 
 private:
-    double direct;
+    double mult_coef_;
 };
 
 
@@ -48,13 +49,13 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-    void reinit(double rock_density, double porosity, double molar_mass);
+    void reinit(double rock_density, double aqua_density, double porosity, double molar_mass, double c_aqua_limit);
 
     /**
      *
      */
     template<class Func>
-    void make_table(const Func &isotherm);
+    void make_table(const Func &isotherm, int n_points);
 
     /**
      * Find new values for concentrations @p c_aqua, @p c_sorbed that has same total mass and lies on the
@@ -62,16 +63,15 @@ public:
      */
     template<class Func>
     void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm);
-
     /**
      * Update concentrations.
      */
-    inline void update_conc(double &c_aqua, double &c_sorbed);
+    inline bool compute_projection(double &c_aqua, double &c_sorbed);
 private:
 
-    /// coefficient that convert soluted concentration to mass; rho_aqua*porosity
+    /// coefficient that convert soluted concentration to mass; rho_aqua*porosity = k_W
     double scale_aqua;
-    /// coefficient that convert adsorbed molar concentration to mass; molar_weight * rho_rock * (1 - porosity)
+    /// coefficient that convert adsorbed molar concentration to mass; molar_weight * rho_rock * (1 - porosity) = k_H
     double scale_sorbed;
     /// reciprocal values divided by 2
     double inv_scale_aqua, inv_scale_sorbed;
@@ -91,35 +91,38 @@ private:
 
 
 
-void Isotherm::reinit(double rock_density, double porosity, double molar_mass, double c_aqua_limit) {
+void Isotherm::reinit(double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
+{
     // set class variables
     scale_aqua = porosity * rho_aqua;
     scale_sorbed = (1-porosity) * rock_density * molar_mass;
     inv_scale_aqua = 1/scale_aqua/2;
     inv_scale_sorbed = 1/scale_sorbed/2;
     c_aqua_limit_=c_aqua_limit;
-}
+};
 
 
 
-inline bool Isotherm::update_conc(double &c_aqua, double &c_sorbed) {
-
+inline bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as glass
+{
     double total_mass = scale_aqua* c_aqua + scale_sorbed * c_sorbed;
     unsigned int i_total_mass = total_mass / total_mass_step;
     if (i_total_mass < 0) return false;
     if (i_total_mass < interpolation_table.size()) {
-        double rot_sorbed = interpolation_table[i_total_mass]; // TODO: linear interpolaton
-        c_aqua = (total_mass - rot_sorbed) * inv_scale_aqua;
-        c_sorbed = (total_mass + rot_sorbed) * inv_scale_sorbed;
+    	int iso_ind_floor, iso_ind_ceil;
+    	iso_ind_floor = (int)(total_mass/(total_mass_step)); iso_ind_ceil = iso_ind_floor + 1;
+    	double rot_sorbed = interpolation_table[iso_ind_floor] + (total_mass - iso_ind_floor*total_mass_step)*(interpolation_table[iso_ind_ceil] - interpolation_table[iso_ind_floor])/total_mass_step;
+        c_aqua = (total_mass + rot_sorbed) * inv_scale_aqua;
+        c_sorbed = (total_mass - rot_sorbed) * inv_scale_sorbed;
         return true;
     } else {
-        if (c_aqua_limit > 0.0) {
-            c_sorbed = (total_mass - scale_c_aqua* c_aqua_limit)/scale_sorbed;
-            c_aqua = c_aqua_limit;
+        if (c_aqua_limit_ > 0.0) {
+            c_sorbed = (total_mass - scale_aqua* c_aqua_limit_)/scale_sorbed;
+            c_aqua = c_aqua_limit_;
         } else return false;
     }
     return false;
-}
+};
 
 
 /**
@@ -131,42 +134,45 @@ inline bool Isotherm::update_conc(double &c_aqua, double &c_sorbed) {
  *  X is total mass , Y
  */
 template <class Func>
-class CrossFunction {
+class CrossFunction
+{
 public:
-    CrossFunction(const Func &func,  double total_mass, double scale_aqua, double scale_sorbed)
-    : func(func_), total_mass(total_mass_), scale_aqua(scale_aqua), scale_sorbed(scale_sorbed) {}
-
+    CrossFunction(const Func &func_,  double total_mass, double scale_aqua, double scale_sorbed)
+    : func(func_), total_mass_(total_mass), scale_aqua(scale_aqua), scale_sorbed(scale_sorbed) {}
 
     double operator()( double conc_aqua) {
-        return scale_sorbed * func( conc_aqua ) - total_mass + scale_aqua * conc_aqua;
+        return scale_sorbed * func( conc_aqua ) - total_mass_ + scale_aqua * conc_aqua; // that is the  selected isotherm
     }
 private:
     Func func;
-    double total_mass, scale_sorbed, scale_aqua;
+    double total_mass_, scale_sorbed, scale_aqua;
 };
 
 
 template<class Func>
-void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) {
-
-    double total_mass = scale_aqua*c_aqua + scale_sorbed * c_sorbed;
-    CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed);
-    pair<double,double> solution = boost::math::tools::toms748_solve(
-                                                eq_func, 0, total_mass / scale_aqua,
-                                                boost::math::tools::eps_tolerance<double>(60), 100);
-    c_sorbed = (total_mass - scale_aqua * solution.first) / c_sorbed;
-}
-
-
-
+void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm)
+{
+    double mass_limit;
+    if (c_aqua_limit_ >0) {
+        mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*isotherm(c_aqua_limit_);
+    } else {
+        mass_limit = scale_aqua + scale_sorbed;// set mass_limit from max conc = 1, needs to be computed somehow else
+    }
+	double total_mass = scale_aqua*c_aqua + scale_sorbed * c_sorbed;
+    CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed); // equation desribing one point on the isotherm
+    pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0, mass_limit, boost::math::tools::eps_tolerance<double>(60), 100);
+    //c_sorbed = (total_mass - scale_aqua * solution.first) / scale_sorbed;
+    c_aqua = (total_mass - scale_sorbed * solution.first) / scale_aqua;
+    c_sorbed = (total_mass - scale_aqua * solution.second) / scale_sorbed;
+};
 
 template<class Func>
-void Isotherm::make_table(const Func &isotherm) {
+void Isotherm::make_table(const Func &isotherm, int n_steps) {
     double mass_limit;
-    if (c_aqua_limit >0) {
-        // set mass_limit from c_aqua_limit
+    if (c_aqua_limit_ >0) {
+        mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*isotherm(c_aqua_limit_);
     } else {
-        // set mass_limit from max conc = 1
+        mass_limit = scale_aqua + scale_sorbed;// set mass_limit from max conc = 1, needs to be computed somehow else
     }
     total_mass_step = mass_limit / n_steps;
     double mass = total_mass_step; // we need not to save value for zero mass, it is zero
@@ -176,7 +182,7 @@ void Isotherm::make_table(const Func &isotherm) {
         solve_conc(c_aqua, c_sorbed, isotherm);
         interpolation_table.push_back( c_sorbed * scale_sorbed - c_aqua * scale_aqua);
     }
-}
+};
 
 
 #endif /* SORPTION_IMPL_HH_ */

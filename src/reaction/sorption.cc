@@ -8,6 +8,7 @@
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "reaction/sorption.hh"
+#include "reaction/sorption_impl.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
@@ -43,28 +44,9 @@ Sorption::EqData::EqData(const std::string &name)
     //alphas.disable_where(& sorption_type, list );
     ADD_FIELD(mob_porosity,"Mobile porosity of the rock matrix.");
     ADD_FIELD(immob_porosity,"Immobile porosity of the rock matrix.", Input::Type::Default("0.0"));
-    //ADD_FIELD(specie,"Names of species undergiong sorption.", Input::Type::Default("0.0"));
 }
 
-/*RegionSet Sorption::EqData::read_bulk_list_item(Input::Record rec) {
-    RegionSet domain=EqDataBase::read_bulk_list_item(rec);
-    Input::AbstractRecord field_a_rec;
-    if (rec.opt_val("init_piezo_head", field_a_rec)) {
-                init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
-    }
-    return domain;
-}*/
-
 using namespace Input::Type;
-
-/*Record Sorption::input_type_isotherm // region independent parameters
-	= Record("Isotherm", "Equation for reading information about limmited solubility affected sorption.")
-	.declare_key("specie", String(), Default::obligatory(),
-				"Identifier of a sorbing isotope.")
-	.declare_key("molar_mass", Double(), Default("1.0"),
-				"Molar mass.")
-	.declare_key("solvable", Double(), Default("1.0"),   // concentration limit for a solubility of the specie under concideration
-				"Solubility limit.");*/
 
 Record Sorption::input_type
 	= Record("Sorptions", "Information about all the limited solubility affected sorptions.")
@@ -93,6 +75,32 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	nr_of_substances = names.size();
 	nr_of_points = in_rec.val<int>("substeps");
 	solvent_dens = in_rec.val<int>("solv_dens");
+	//Simple vectors holding  common informations.
+	region_ids.resize( nr_of_regions ); // ( nr_of_regions );
+	substance_ids.resize(nr_of_substances); // ( nr_of_substances );
+	molar_masses.resize( nr_of_substances );
+	c_aq_max.resize( nr_of_substances );
+	//isotherms array resized bellow
+	isotherms_mob.resize(nr_of_regions*nr_of_substances);
+	if(dual_porosity_on) isotherms_immob.resize(nr_of_regions*nr_of_substances);
+	//Multidimensional array isotherm
+	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+	{
+		//isotherm[i_mob].resize(nr_of_regions);
+		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+		{
+
+			//Isotherm iso_hlp();
+			Isotherm (*isotherms_mob[i_reg][i_subst])();
+			//----------------------------------------
+			//Isotherm *iso_hlp = new Isotherm();
+			//isotherms_mob[i_reg][i_subst] = iso_hlp;
+			//----------------------------------------
+			//isotherms[i_reg][i_subst].reinit(rock_dens[i_subst], solvent_dens, double porosity, double molar_mass, double c_aqua_limit);
+			//isotherms_mob[i_reg][i_subst].intersections.resize(n_points); // obsolete nonsense
+			if(dual_porosity_on) Isotherm (*isotherms_immob[i_reg][i_subst])(); // obsolete nonsense
+		}
+	}
 
 	TimeGovernor tg(0.0, 1.0);
 
@@ -102,10 +110,9 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     data_.set_mesh(&init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"),Input::Array() );
     data_.set_time(tg);
-	//both following operations connected together in compute_isotherm(..) method
-	//prepare_inputs(in_rec);
-	//determine_crossection()
-	//compute_isotherms(in_rec);
+
+    //cycle over regions and species to create particular isotherms_mob and isotherms_immob objects of Isotherm type
+    	//Isotherm(double rock_density,double solvent_density, double porosity, double molar_mass, double step_length);
 }
 
 void Sorption::prepare_inputs(Input::Record in_rec)
@@ -114,25 +121,20 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 
 	Input::Array sorption_array = in_rec.val<Input::Array>("sorptions");
 
-	//Simple vectors holding  common informations.
-	region_ids.resize( sorption_array.size() ); // ( nr_of_regions );
-	substance_ids.resize(sorption_array.size()); // ( nr_of_substances );
-	molar_masses.resize( nr_of_substances );
-	c_aq_max.resize( nr_of_substances );
-
 	//Multidimensional array isotherm, initialization
-	isotherm.resize(nr_of_regions*nr_of_substances*nr_of_points); //Up to |nr_of_region x nr_of_substances x n_points| doubles.
-	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+	/*for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
 	{
 		//isotherm[i_mob].resize(nr_of_regions);
 		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 		{
+			//isotherms[i_reg][i_subst].set_step_length(c_)
 			for(int i_point = 0; i_point < nr_of_points; i_point++)
 			{
-				isotherm[i_reg][i_subst][i_point] = 0;
+				isotherms_mob[i_reg][i_subst].intersections[i_point] = 0;
+				if(dual_porosity_on)isotherms_mob[i_reg][i_subst].intersections[i_point] = 0;
 			}
 		}
-	}
+	}*/
 
 	int i_sorp = 0;
 	for (Input::Iterator<Input::Record> sorp_it = sorption_array.begin<Input::Record>(); sorp_it != sorption_array.end(); ++sorp_it, ++i_sorp)
@@ -182,7 +184,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 
 }
 
-void Sorption::precompute_isotherm_tables() {
+/*void Sorption::precompute_isotherm_tables() {
     BOOST_FOREACH(const Region & reg, this->mesh_->region_db().get_region_set("BULK")) {
         arma::Col<unsigned int> sorption_type_vec;
         arma::Col<double> scale_vec, alpha_vec;
@@ -193,141 +195,39 @@ void Sorption::precompute_isotherm_tables() {
         }
         // else leave isotherm empty for this region
     }
-}
+}*/
 
 // TODO: check duplicity of parents
 //       raise warning if sum of ratios is not one
-void Sorption::compute_isotherms(Input::Record in_rec)
+
+/*void Sorption::handle_datapoints(double rock_density, double porosity, std::vector<double> &prev_conc, std::vector<double> isotherm, int reg_id_nr, int i_subst)
 {
-    unsigned int idx;
-
-	Input::Array sorption_array = in_rec.val<Input::Array>("sorptions");
-	/*
-
-	isotherms.resize(nr_of_regions*nr_of_substances);
-	for(int i = 0; i < nr_of_regions; i++)
-	{
-		for(int j = 0; j < nr_of_substances; j++)
-		{
-			isotherms[i][j] = 0; //initialization
-		}
-	}
-
-	int i_sorption=0;
-	for (Input::Iterator<Input::Record> sorp_it = sorption_array.begin<Input::Record>(); sorp_it != sorption_array.end(); ++sorp_it, ++i_sorption)
-	{
-		//isotherm determining part
-		n_points = in_rec.val<int>("substeps");
-		int region_id = sorp_it->find<int>("region");
-		int substance_id = sorp_it->find<int>("specie");
-		isotherms[region_id][specie_id] = new Isotherm(init_mesh, *sorp_it, names);
-		(&isotherms[region_id][specie_id])->set_parameters(*sorp_it);
-		determine_crossections(n_points);//
-		rotate_points(0.70711, isotherms[region_id][substance_id]);*/
-
-		//Sorption_type sorption_type = sorp_it->find<enum Sorption_type>("type");
-		/*double slope = sorp_it->find<double>("direction");
-		if (slope > 0.0) {
-		   ; //intersections of an isotherm with mass balance lines can be found exactly
-		} else {
-		   double alpha = sorp_it->find<double>("alpha");
-		   double omega = sorp_it->find<double>("omega");
-		   if ((alpha == -1.0) || (omega == -1.0)) {
-			   xprintf(UsrErr, "Some of parameters for isotherm are either missing or incorect.\n");
-		   } else {
-			   int substance_id = sorp_it->find<int>("specie");
-			   int region_id = sorp_it->find<int>("region");
-		  }
-		}*/
-
-		//isotherm type determining part
-		/*string parent_name = sorp_it->val<string>("type");
-		Input::Array product_array = sorp_it->val<Input::Array>("products");
-		Input::Array ratio_array = sorp_it->val<Input::Array>("branch_ratios"); // has default value [ 1.0 ]*/
-
-		// linear isotherm direction (slope)
-		/*if (product_array.size() > 0)   substance_ids[i_sorption].resize( product_array.size()+1 );
-		else			xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_sorption);*/
-
-
-		// multiplicative coefficient omega for Langmuir isotherm, c_s = omega*(alpha*c_a)/(1 - alpha*c_a)
-		/*idx = find_subst_name(parent_name);
-		if (idx < n_substances())	substance_ids[i_sorption][0] = idx;
-		else                		xprintf(UsrErr,"Wrong name of parent substance in the %d-th reaction.\n", i_sorption);*/
-
-		// alpha parameter for Langmuir isotherm, c_s = omega*(alpha*c_a)/(1 - alpha*c_a)
-		/*unsigned int i_product = 1;
-		for(Input::Iterator<string> product_it = product_array.begin<string>(); product_it != product_array.end(); ++product_it, i_product++)
-		{
-			idx = find_subst_name(*product_it);
-			if (idx < n_substances())   substance_ids[i_sorption][i_product] = idx;
-			else                    	xprintf(Msg,"Wrong name of %d-th product in the %d-th reaction.\n", i_product-1 , i_sorption);
-		}*/
-
-		//Critical concentrations solvable in water.
-        /*if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation[i_sorption] );
-        else            xprintf(UsrErr,"Number of branches %d has to match number of products %d in the %d-th reaction.\n",
-                                       ratio_array.size(), product_array.size(), i_sorption);*/
-
-		// Molar mass of particular adsorbent.
-
-	//}
-}
-
-//void Sorption::compute_rot_coefs(ElementFullIter elem, int spec_id)
-void Sorption::compute_rot_coefs(double porosity, double rock_density, int spec_id)
-{
-	//Computes coordinate system rotation matrix coeficient from elements specific data. Cycle must run either over elements.
-	//double porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
-	//double rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
-
-	rot_coefs[0] = porosity*solvent_dens;
-	rot_coefs[1] = molar_masses[spec_id]*(1-porosity)*rock_density;
-
-	return;
-}
-
-void Sorption::switch_rot_coefs(void)
-{
-	double hlp;
-
-	hlp = rot_coefs[0];
-	rot_coefs[0] = (-1.0)*rot_coefs[1];
-	rot_coefs[1] = hlp;
-
-	return;
-}
-
-void Sorption::handle_datapoints(double rock_density, double porosity, std::vector<double> &prev_conc, std::vector<double> isotherm, int reg_id_nr, int i_subst)
-{
-	double k_rep, coef_hlp;
+	double coef_hlp, conc_hlp;
 	int iso_ind_floor, iso_ind_ceil;
 	std::vector<double> rot_point;
 	rot_point.resize(2);
 
-	k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
 	//compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
 	rot_coefs[0] = porosity*solvent_dens;
 	rot_coefs[1] = molar_masses[i_subst]*(1-porosity)*rock_density;
 	//rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
-	rot_point[0] = rot_coefs[0]*prev_conc[0] + rot_coefs[1]*prev_conc[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
-	rot_point[1] = rot_coefs[1]*prev_conc[0] + rot_coefs[0]*prev_conc[1]; //coordinate y^R or c_s^R (sorbed == solid)
+	rot_point[0] = rot_coefs[0]*prev_conc[0] + rot_coefs[1]*prev_conc[1]; //coordinate x^R or c_a^R or m'_x(aqueous == dissolved)
 	//rot_point[1] = interpolate_datapoint(rot_point, reg_id_nr, i_subst); // interpolation in mass ballancing coordination system
-	iso_ind_floor = (int)(rot_point[1]/(step_length)); iso_ind_ceil = iso_ind_floor + 1;
+	iso_ind_floor = (int)(rot_point[0]/(step_length)); iso_ind_ceil = iso_ind_floor + 1;
 	rot_point[1] = isotherm[iso_ind_floor] + (rot_point[0] - isotherm[iso_ind_floor])*(isotherm[iso_ind_ceil] - isotherm[iso_ind_floor])/step_length;
 	//switch_rot_coefs();
 	coef_hlp = rot_coefs[0];
 	rot_coefs[0] = (-1.0)*rot_coefs[1];
 	rot_coefs[1] = coef_hlp;
-	//previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
-	prev_conc[0] = rot_coefs[0]*rot_point[0] + rot_coefs[1]*rot_point[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
-	prev_conc[1] = rot_coefs[1]*rot_point[0] + rot_coefs[0]*rot_point[1]; //coordinate y^R or c_s^R (sorbed == solid)
 
-	prev_conc[0] *= k_rep; // scaling needs to be done here
-	prev_conc[1] *= k_rep;
+	//=========================================================
+	//		Alternative to backward rotation and scaling
+	//=========================================================
+	prev_conc[0] = (rot_point[0] + rot_point[1])/(2*rot_coef[0]); // coordinate x^R or c_a^R (aqueous == dissolved)
+	prev_conc[1] = (rot_point[0] - rot_point[1])/(2*rot_coef[1]); // coordinate y^R or c_s^R (sorbed == solid)
 
 	return;
-}
+}*/
 
 double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorptions are realized just for one element.
 {
@@ -337,14 +237,6 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     double k_rep;
     Region region = elem->region();
     int reg_id_nr = region.idx(); //->region_->reg_id;
-    //std::vector<std::vector<double> > previous_conc; //to backup either {MOBILE, MOBILE_SORB} or {IMMOBILE, IMMOBILE_SORB} concentrations
-    std::vector<double> previous_conc; //to backup either {MOBILE, MOBILE_SORB} or {IMMOBILE, IMMOBILE_SORB} concentrations
-    previous_conc.resize(2);
-
-	std::vector<double> rot_point;
-	rot_point.resize(2);
-    //double prev_conc_mob, prev_cocnc_mob_sorb; //aqueous and sorbed/precipitated concentration of specie in mobile pore
-    //double prev_conc_immob, prev_conc_immob_sorb; //aqueous and sorbed/precipitated concentration of specie in immobile pore
 
     //	Identify loc_el region.
     //  If intersections of isotherm with mass balance lines are known, then interpolate.
@@ -355,56 +247,20 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 
 	if( data_.rock_density.get_const_value(region, rock_density)) // constant value of rock density over whole the region
 	{
-	    //rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
 		if(data_.mob_porosity.get_const_value(region, mob_porosity)) // constant values of porosity over whole the region
 		{
-		    //double porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
 			for(int i_subst = 0; i_subst < n_substances(); i_subst++)
 			{
-
-				//porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
-				//rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
-
-				previous_conc[0] = concentration_matrix[MOBILE][i_subst][loc_el];
-				//concentration_matrix[MOBILE][i_subst][loc_el] = 0.0;
-				previous_conc[1] = concentration_matrix[MOBILE_SORB][i_subst][loc_el];
-				//concentration_matrix[MOBILE_SORB][i_subst][loc_el] = 0.0;
-
-				handle_datapoints( rock_density, mob_porosity, previous_conc, isotherm[reg_id_nr][i_subst], reg_id_nr, i_subst); // instead of following commented code
-				/*k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
-				compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
-				rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
-				rot_point[1] = interpolate_datapoint(rot_point, reg_id_nr, i_subst); // interpolation in mass ballancing coordination system
-				switch_rot_coefs();
-				previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
-				previous_conc[0] *= k_rep; // scaling needs to be done here
-				previous_conc[1] *=k_rep;*/
-				concentration_matrix[MOBILE][i_subst][loc_el] = previous_conc[0];
-				concentration_matrix[MOBILE_SORB][i_subst][loc_el] = previous_conc[1];
+				isotherms_mob[reg_id_nr][i_subst].compute_projection(concentration_matrix[IMMOBILE][i_subst][loc_el], concentration_matrix[IMMOBILE_SORB][i_subst][loc_el]);
 			}
 		}else{
 			cout << "It is not possible in this time to compute sorption if the porosity is not constant over whole the region " << reg_id_nr << endl;
 		}
 		if(dual_porosity_on && data_.immob_porosity.get_const_value(region, immob_porosity))
 		{
-			//porosity = data_.immob_porosity.value(elem->centre(),elem->element_accessor());
 			for(int i_subst = 0; i_subst < n_substances(); i_subst++)
 			{
-				//The same as above repeated for immobile pores
-				previous_conc[0] = concentration_matrix[IMMOBILE][i_subst][loc_el];
-				previous_conc[1] = concentration_matrix[IMMOBILE_SORB][i_subst][loc_el];
-
-				handle_datapoints( rock_density, immob_porosity, previous_conc, isotherm[reg_id_nr][i_subst], reg_id_nr, i_subst); // instead of following commented code
-				/*k_rep = 1/((porosity - 1)*(porosity - 1)*molar_masses[i_subst]*molar_masses[i_subst]*rock_density*rock_density + porosity*porosity*solvent_dens*solvent_dens);
-	    		compute_rot_coefs(porosity, rock_density, i_subst); // computes rotation matrix entries
-				rot_point = rotate_point(previous_conc); //counterclockwise rotation to mass balancing coordination system
-				rot_point[1] = interpolate_datapoint(rot_point, reg_id_nr, i_subst); // interpolation in mass ballancing coordination system
-				switch_rot_coefs();
-				previous_conc = rotate_point(rot_point); //clockwise rotation back to original coodinate system
-				previous_conc[0] *= k_rep; // scaling needs to be done here
-				previous_conc[1] *=k_rep;*/
-				concentration_matrix[IMMOBILE][i_subst][loc_el] = previous_conc[0];
-				concentration_matrix[IMMOBILE_SORB][i_subst][loc_el] = previous_conc[1];
+				isotherms_immob[reg_id_nr][i_subst].compute_projection(concentration_matrix[IMMOBILE][i_subst][loc_el], concentration_matrix[IMMOBILE_SORB][i_subst][loc_el]);
 			}
 		}else{
 			cout << "It is not possible in this time to compute sorption in immobile pores if the dual porosity  is not constant over whole the region " << reg_id_nr << endl;
@@ -422,9 +278,6 @@ void Sorption::compute_one_step(void) // Computes sorption simulation over all t
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix[0], loc_el); //MOBILE and IMMOBILE 	computed
-	    if (dual_porosity_on == true) {
-	     this->compute_reaction(concentration_matrix[1], loc_el); //IMMOBILE
-	    }
 
 	 }
     END_TIMER("sorption_step");
@@ -451,35 +304,36 @@ void Sorption::print_sorption_parameters(void)
     }*/
 }
 
-void Sorption::determine_crossections(void)
+/*Isotherm::Isotherm(double rock_density,double solvent_density, double porosity, double molar_mass, double step_length)
 {
-	;
+	k_W = porosity*solvent_density;
+	k_H = molar_mass*(1-porosity)*rock_density;
 }
 
-std::vector<double> Sorption::rotate_point(std::vector<double> point)
-{
-	std::vector<double> rot_point;
-	rot_point.resize(2);
-
-	rot_point[0] = rot_coefs[0]*point[0] + rot_coefs[1]*point[1]; //coordinate x^R or c_a^R (aqueous == dissolved)
-	rot_point[1] = rot_coefs[1]*point[0] + rot_coefs[0]*point[1]; //coordinate y^R or c_s^R (sorbed == solid)
-
-	return rot_point;
-}
-
-double Sorption::interpolate_datapoint(std::vector<double> rot_point, int region, int specie)
+void Isotherm::compute_projection(double &c_aq, double &c_sorb)
 {
 	int iso_ind_floor, iso_ind_ceil;
-	double interp_val;
+	double conc_hlp = c_aq;
 
-	if((rot_point.size()) > 2) xprintf(UsrErr, "Just two coordinates are expected as a parameter for the function interpolate_datapoints(rot_point).\n");
-	iso_ind_floor = (int)(rot_point[1]/(step_length)); iso_ind_ceil = iso_ind_floor + 1;
-	interp_val = isotherm[region][specie][iso_ind_floor] + (rot_point[1] - isotherm[region][specie][iso_ind_floor])*(isotherm[region][specie][iso_ind_ceil] - isotherm[region][specie][iso_ind_floor])/step_length;
+	//coordinates are transformed
+	conc_hlp = c_aq;
+	c_aq = k_W*c_aq + k_H*c_sorb; //coordinate x^R or c_a^R (aqueous == dissolved)
 
-	return interp_val;
+	//interpolation is realized
+	iso_ind_floor = (int)(c_aq/(step_length)); iso_ind_ceil = iso_ind_floor + 1;
+	c_sorb = intersections[iso_ind_floor] + (c_aq - iso_ind_floor*step_length)*(intersections[iso_ind_ceil] - intersections[iso_ind_floor])/step_length;
+
+	//tarnsformation back to original coordination system
+	conc_hlp = c_aq;
+	c_aq = (c_aq + c_sorb)/(2*k_W); // coordinate x or c_a (aqueous == dissolved)
+	c_sorb = (conc_hlp - c_sorb)/(2*k_H); // coordinate y or c_s (sorbed == solid)
+
+	return;
 }
 
-double Sorption::set_step_length(void)
+void Isotherm::set_step_length(double c_aq_max, int n_steps)
 {
-	;
-}
+	double c_sorb_max; //= some value
+
+	step_length = (k_W*c_aq_max + k_H*c_sorb_max)/n_steps;
+}*/

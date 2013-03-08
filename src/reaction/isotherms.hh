@@ -63,7 +63,8 @@ public:
 	: func(func_), c_aq_max(c_aq_max_), n_points(n_points_), slope(slope_) {}
 
 	std::vector<double> total_mass; //size needs to be specified
-	double *operator ()(void){
+	//double *operator ()(void){
+	std::vector<double> *operator ()(void){
 		double MaxTotalMass;
 		MaxTotalMass = slope*c_aq_max + func(c_aq_max);
 
