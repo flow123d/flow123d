@@ -18,22 +18,22 @@ namespace Input {
  */
 
 Address::Address()
-: data_(boost::make_shared<AddressData>()),
-  actual_node_( 0 ),
-  actual_storage_( NULL)
+: data_(boost::make_shared<AddressData>())
 {
    data_->root_type_ = NULL;
-   data_->root_storage_ = NULL;
+   data_->root_storage_ = new StorageArray(0);
+   actual_storage_ = new StorageArray(0);
+   actual_node_ = 0;
 }
 
 
 Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
 : data_( boost::make_shared<AddressData>() )
 {
-   data_->root_type_ = type_root;
-   data_->root_storage_ =storage_root;
-   actual_storage_ = storage_root;
-   actual_node_=0;
+    data_->root_type_ = type_root;
+    data_->root_storage_ = storage_root;
+    actual_storage_ = storage_root;
+    actual_node_ = 0;
 }
 
 
