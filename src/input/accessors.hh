@@ -54,6 +54,9 @@ DECLARE_EXCEPTION( ExcTypeMismatch, << "Key:" << EI_KeyName::qval
 TYPEDEF_ERR_INFO( EI_AccessorName, const string );
 DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_AccessorName::val << " from StorageNull.");
 
+// throwed in Address
+TYPEDEF_ERR_INFO( EI_ParamName, const string);
+DECLARE_EXCEPTION( ExcAddressNullPointer, << "NULL pointer in " << EI_ParamName::val << " parameter.");
 
 /**
  * Class that works as base type of all enum types. We need it to return integer from a Selection input without

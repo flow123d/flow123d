@@ -137,12 +137,16 @@ inline Iterator<ValueType> Array::begin() const {
 
 
 inline IteratorBase Array::end() const {
-    return IteratorBase(address_, address_.storage_head()->get_array_size());
+	ASSERT(address_.storage_head(), "NULL pointer in storage!!! \n");
+
+	return IteratorBase(address_, address_.storage_head()->get_array_size());
 }
 
 
 
 inline unsigned int Array::size() const {
+	ASSERT(address_.storage_head(), "NULL pointer in storage!!! \n");
+
     return address_.storage_head()->get_array_size();
 }
 
@@ -174,7 +178,9 @@ inline bool IteratorBase::operator != (const IteratorBase &that) const
 
 
 inline IteratorBase::operator bool() const {
-    const StorageBase *s = address_.storage_head()->get_item(index_);
+	ASSERT(address_.storage_head(), "NULL pointer in storage!!! \n");
+
+	const StorageBase *s = address_.storage_head()->get_item(index_);
     return ( s && ! s->is_null() );
 }
 
