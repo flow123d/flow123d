@@ -561,13 +561,17 @@ Vec ConvectionTransport::compute_concentration_sources(unsigned int subst_i, dou
 
 void ConvectionTransport::compute_one_step() {
 
+    START_TIMER("convection-one step");
     //MaterialDatabase::Iter material;
     int sbi;
 
     // proceed to actually computed time
     //time_->view("CONVECTION");
     time_->next_time();
+    
+    START_TIMER("data reinit")
     data->set_time(*time_);
+    END_TIMER("data reinit")
     
     // possibly read boundary conditions
     set_boundary_conditions();
@@ -610,6 +614,7 @@ void ConvectionTransport::compute_one_step() {
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
     }
+    END_TIMER("convection-one step");
 }
 
 

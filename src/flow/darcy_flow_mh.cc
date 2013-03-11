@@ -380,6 +380,11 @@ void DarcyFlowMH_Steady::update_solution() {
     if (time_->is_end()) return;
 
     time_->next_time();
+    
+    START_TIMER("data reinit");
+    //reinitializing data fields after time step
+    data.set_time(*time_);
+    END_TIMER("data reinit");
 
     xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());
     //time_->view("DARCY"); //time governor information output
@@ -1799,6 +1804,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 }
 
 void DarcyFlowLMH_Unsteady::modify_system() {
+    START_TIMER("modify system");
     if (time_->is_changed_dt()) {
         MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
         VecScale(new_diagonal, time_->last_dt()/time_->dt());

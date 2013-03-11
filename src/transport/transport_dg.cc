@@ -30,6 +30,7 @@
 #include "petscmat.h"
 #include <armadillo>
 #include "system/xio.h"
+#include "system/sys_profiler.hh"
 #include "transport/transport_dg.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
@@ -217,6 +218,7 @@ void TransportDG::set_eq_data(Field< 3, FieldValue<3>::Scalar > *cross_section)
 
 void TransportDG::update_solution()
 {
+  START_TIMER("DG-ONE STEP");
 	if (mass_matrix == NULL)
 	{
 	    // assemble mass matrix
@@ -229,8 +231,11 @@ void TransportDG::update_solution()
 	}
 
     time_->next_time();
-    time_->view();
+    time_->view("TDG");
+    
+    START_TIMER("data reinit");
     data.set_time(*time_);
+    END_TIMER("data reinit");
     
     // TODO: assemble system matrix only if velocity flux or boundary conditions changed
 //    if (flux_changed || (bc->get_time_level() != -1 && time_->is_current(bc_mark_type_)))
@@ -300,6 +305,8 @@ void TransportDG::update_solution()
     solve_system(solver, ls);
 
     //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
+    
+    END_TIMER("DG-ONE STEP");
 }
 
 
@@ -342,11 +349,11 @@ void TransportDG::output_data()
 
     if (!time_->is_current(output_mark_type)) return;
 
-
+    START_TIMER("DG-OUTPUT");
     // gather the solution from all processors
     IS is;
-	VecScatter output_scatter;
-	int row_ids[distr->size()];
+    VecScatter output_scatter;
+    int row_ids[distr->size()];
 	Vec solution_vec[n_substances];
 
 	for (int i=0; i<n_substances; i++)
@@ -400,14 +407,18 @@ void TransportDG::output_data()
 
     for (int i=0; i<n_substances; i++)
     	VecDestroy(&solution_vec[i]);
+    
+    END_TIMER("DG-OUTPUT");
 }
 
 
 void TransportDG::assemble_mass_matrix()
 {
+  START_TIMER("assemble_mass");
 	assemble_mass_matrix(dof_handler1d, fe1d);
 	assemble_mass_matrix(dof_handler2d, fe2d);
 	assemble_mass_matrix(dof_handler3d, fe3d);
+  END_TIMER("assemble_mass");
 }
 
 
@@ -460,6 +471,7 @@ void TransportDG::assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,
 
 void TransportDG::assemble_stiffness_matrix()
 {
+  START_TIMER("assemble_stiffness");
 	assemble_volume_integrals<1>(dof_handler1d, fe1d);
 	assemble_fluxes_boundary<1>(dof_handler1d, 0, fe1d, 0);
 	assemble_fluxes_element_element<1>(dof_handler1d, 0, fe1d, 0);
@@ -474,6 +486,7 @@ void TransportDG::assemble_stiffness_matrix()
     assemble_fluxes_boundary<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
     assemble_fluxes_element_element<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
     assemble_fluxes_element_side<3>(dof_handler3d, dof_handler2d, fe3d, fe2d);
+  END_TIMER("assemble_stiffness");
 }
 
 

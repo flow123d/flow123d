@@ -258,7 +258,7 @@ void TransportOperatorSplitting::update_solution() {
     xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n", 
              time_->t(), convection->time().t(), convection->time().estimate_dt() );
     
-    START_TIMER("transport_steps");
+    START_TIMER("TOS-ONE STEP");
     int steps=0;
     while ( convection->time().lt(time_->t()) )
     {
@@ -269,7 +269,7 @@ void TransportOperatorSplitting::update_solution() {
 	    if(decayRad) decayRad->compute_one_step();
 	    if (Semchem_reactions) Semchem_reactions->compute_one_step();
 	}
-    END_TIMER("transport_steps");
+    END_TIMER("TOS-ONE STEP");
     
     xprintf( Msg, "CONVECTION: steps: %d\n",steps);
 }

@@ -86,9 +86,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
 
     // Read mesh
     {
+        START_TIMER("MESH READING");
         mesh = new Mesh( in_record.val<Record>("mesh") );
         mesh->init_from_input();
-
+        END_TIMER("MESH READING");
+        
         //mesh->setup_materials(*material_database);
         Profiler::instance()->set_task_info(
             "Description has to be set in main. by different method.",
