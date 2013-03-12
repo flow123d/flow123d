@@ -10,6 +10,8 @@
 
 #include <boost/math/tools/roots.hpp>
 
+enum SorptionType;
+
 /**
  * Functor for Langmuir isotherm.
  */
@@ -49,7 +51,7 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-    void reinit(double rock_density, double aqua_density, double porosity, double molar_mass, double c_aqua_limit);
+    void reinit(enum SorptionType, double rock_density, double aqua_density, double porosity, double molar_mass, double c_aqua_limit);
 
     /**
      *
@@ -67,8 +69,15 @@ public:
      * Update concentrations.
      */
     inline bool compute_projection(double &c_aqua, double &c_sorbed);
+    /**
+    *	Enables to get private parameter.
+    */
+    double get_scale_aqua(void);
+    /**
+    *	Enables to get private parameter.
+    */
+    double get_scale_sorbed(void);
 private:
-
     /// coefficient that convert soluted concentration to mass; rho_aqua*porosity = k_W
     double scale_aqua;
     /// coefficient that convert adsorbed molar concentration to mass; molar_weight * rho_rock * (1 - porosity) = k_H
@@ -77,6 +86,8 @@ private:
     double inv_scale_aqua, inv_scale_sorbed;
     /// Limit concentration in solution, we model coagulation as adsorption
     double c_aqua_limit_;
+    /// Type of isotherm
+    SorptionType sorption_type;
     /**
      * Interpolation table of isotherm in the rotated coordinates.
      * The X axes of rotated system is total mass, the Y axes is perpendicular.
@@ -86,14 +97,12 @@ private:
      * Step on the rotated X axes (total mass).
      */
     double total_mass_step;
-
 };
 
-
-
-void Isotherm::reinit(double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
+void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
 {
     // set class variables
+	sorption_type = sorp_type;
     scale_aqua = porosity * rho_aqua;
     scale_sorbed = (1-porosity) * rock_density * molar_mass;
     inv_scale_aqua = 1/scale_aqua/2;
@@ -168,7 +177,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 
 template<class Func>
 void Isotherm::make_table(const Func &isotherm, int n_steps) {
-    double mass_limit;
+    double mass_limit, c_aqua, c_sorbed;
     if (c_aqua_limit_ >0) {
         mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*isotherm(c_aqua_limit_);
     } else {
@@ -184,5 +193,14 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) {
     }
 };
 
+double Isotherm::get_scale_aqua(void)
+{
+	return scale_aqua;
+};
+
+double Isotherm::get_scale_sorbed(void)
+{
+	return scale_sorbed;
+};
 
 #endif /* SORPTION_IMPL_HH_ */

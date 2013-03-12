@@ -51,7 +51,7 @@ using namespace Input::Type;
 Record Sorption::input_type
 	= Record("Sorptions", "Information about all the limited solubility affected sorptions.")
 	.derive_from( Reaction::input_type )
-	.declare_key("solv_dens", Double(), Default("1.0"),
+	.declare_key("solvent_dens", Double(), Default("1.0"),
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("10"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
@@ -71,117 +71,115 @@ using namespace std;
 Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: Reaction(init_mesh, in_rec, names)
 {
-	nr_of_regions = init_mesh.n_materials;
-	nr_of_substances = names.size();
-	nr_of_points = in_rec.val<int>("substeps");
-	solvent_dens = in_rec.val<int>("solv_dens");
-	//Simple vectors holding  common informations.
-	region_ids.resize( nr_of_regions ); // ( nr_of_regions );
-	substance_ids.resize(nr_of_substances); // ( nr_of_substances );
-	molar_masses.resize( nr_of_substances );
-	c_aq_max.resize( nr_of_substances );
-	//isotherms array resized bellow
-	isotherms_mob.resize(nr_of_regions*nr_of_substances);
-	if(dual_porosity_on) isotherms_immob.resize(nr_of_regions*nr_of_substances);
-	//Multidimensional array isotherm
-	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
-	{
-		//isotherm[i_mob].resize(nr_of_regions);
-		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
-		{
-
-			//Isotherm iso_hlp();
-			Isotherm (*isotherms_mob[i_reg][i_subst])();
-			//----------------------------------------
-			//Isotherm *iso_hlp = new Isotherm();
-			//isotherms_mob[i_reg][i_subst] = iso_hlp;
-			//----------------------------------------
-			//isotherms[i_reg][i_subst].reinit(rock_dens[i_subst], solvent_dens, double porosity, double molar_mass, double c_aqua_limit);
-			//isotherms_mob[i_reg][i_subst].intersections.resize(n_points); // obsolete nonsense
-			if(dual_porosity_on) Isotherm (*isotherms_immob[i_reg][i_subst])(); // obsolete nonsense
-		}
-	}
-
 	TimeGovernor tg(0.0, 1.0);
 
     //data.init_conc.set_n_comp(4);        // set number of substances posibly read from elsewhere
     //data.bc_conc.set_n_comp(4);
 
     data_.set_mesh(&init_mesh);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"),Input::Array() );
+    //Input::Array isotherms =
+    		data_.init_from_input( in_rec.val<Input::Array>("bulk_data"),Input::Array() );
     data_.set_time(tg);
 
-    //cycle over regions and species to create particular isotherms_mob and isotherms_immob objects of Isotherm type
-    	//Isotherm(double rock_density,double solvent_density, double porosity, double molar_mass, double step_length);
-}
+    Input::Array sorptions_array = in_rec.val<Input::Array>("bulk_data"); // no idea how to get infos from data_.init_from_input( in_rec.val<Input::Array>("bulk_data"),Input::Array() );
 
-void Sorption::prepare_inputs(Input::Record in_rec)
-{
-    unsigned int idx;
+	nr_of_regions = init_mesh.n_materials;
+	nr_of_substances = names.size();
+	nr_of_points = in_rec.val<int>("substeps");
 
-	Input::Array sorption_array = in_rec.val<Input::Array>("sorptions");
+	//Simple vectors holding  common informations.
+	region_ids.resize( nr_of_regions ); // ( nr_of_regions );
+	substance_ids.resize(nr_of_substances); // ( nr_of_substances );
+	molar_masses.resize( nr_of_substances );
+	c_aq_max.resize( nr_of_substances );
 
-	//Multidimensional array isotherm, initialization
-	/*for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+	//common data for all the isotherms loaded bellow
+	solvent_dens = in_rec.val<double>("solvent_dens");
+
+	Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_masses");
+	//molar_masses = in_rec.val<Array(Double())>("molar_masses");
+	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
+	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of sorbing species %d.\n",
+	                                       molar_mass_array.size(), molar_masses.size());
+	//c_aq_max = in_rec.val<Array(Double())>("solubility");
+
+	Input::Array solub_limit_array = in_rec.val<Input::Array>("solubility");
+	if (solub_limit_array.size() == c_aq_max.size() )   solub_limit_array.copy_to( c_aq_max );
+	  else  xprintf(UsrErr,"Number of given solubility limits %d has to match number of sorbing species %d.\n",
+	                                       solub_limit_array.size(), c_aq_max.size());
+
+	Input::Array species_array = in_rec.val<Input::Array>("species");
+	unsigned int idx, i_spec = 1;
+	for(Input::Iterator<string> spec_iter = species_array.begin<string>(); spec_iter != species_array.end(); ++spec_iter, i_spec++)
 	{
-		//isotherm[i_mob].resize(nr_of_regions);
-		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
-		{
-			//isotherms[i_reg][i_subst].set_step_length(c_)
-			for(int i_point = 0; i_point < nr_of_points; i_point++)
-			{
-				isotherms_mob[i_reg][i_subst].intersections[i_point] = 0;
-				if(dual_porosity_on)isotherms_mob[i_reg][i_subst].intersections[i_point] = 0;
-			}
-		}
-	}*/
-
-	int i_sorp = 0;
-	for (Input::Iterator<Input::Record> sorp_it = sorption_array.begin<Input::Record>(); sorp_it != sorption_array.end(); ++sorp_it, ++i_sorp)
-	{
-		int idx;
-		double mol_mass, solub;
-
-		//indices determining part
-		string specie_name = sorp_it->val<string>("specie");
-		idx = find_subst_name(specie_name);
-		if (idx < n_substances())
-		{
-			substance_ids[i_sorp] = idx;
-		}else{
-			//xprintf(UsrErr,"Unknown name %s of substance undergoing the %d-th sorption.\n", specie_name, i_sorp);
-			xprintf(UsrErr,"Unknown name (identifier) of the substance undergoing the %d-th sorption.\n", i_sorp);
-		}
-
-		// solubulity limit
-		solub = sorp_it->val<double>("solubility");
-		if (solub > 0.0) {
-		   c_aq_max[idx] = solub;
-		} else {
-			//xprintf(UsrErr, "Unknown solubility limit of substance %s undergoing the %d-th sorption.\n", specie_name, i_sorp);
-			xprintf(UsrErr, "Unknown solubility limit of the substance undergoing the %d-th sorption.\n", i_sorp);
-		}
-
-		//molar masses determining part
-		mol_mass = sorp_it->val<double>("molar_mass");
-		if (mol_mass) {
-		   molar_masses[idx] = mol_mass;
-		} else {
-			//xprintf(UsrErr, "Unknown molar mass of substance %s undergoing the %d-th sorption.\n", specie_name, i_sorp);
-			xprintf(UsrErr, "Unknown molar mass of the substance undergoing the %d-th sorption.\n", i_sorp);
-		}
-
-		//region determining part
-		idx = sorp_it->val<int>("region");
-		if(idx)
-		{
-			region_ids[i_sorp] = idx;
-		}else{
-			xprintf(UsrErr, "Undefined region identifier where the %d-th sorption takes place.\n", i_sorp);
-		}
-
+		idx = find_subst_name(*spec_iter);
+		if (idx < n_substances())   substance_ids[i_spec] = idx;
+		else	xprintf(Msg,"Wrong name of %d-th sorbing specie.\n", i_spec);
 	}
 
+	//isotherms array resized bellow
+	//isotherms_mob.resize(nr_of_regions*nr_of_substances);
+	isotherms_mob.resize(nr_of_regions);
+	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+	{
+		isotherms_mob[i_reg].resize(nr_of_substances);
+	}
+	if(dual_porosity_on)
+	{
+		//isotherms_immob.resize(nr_of_regions*nr_of_substances);
+		isotherms_immob.resize(nr_of_regions);
+			for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+			{
+				isotherms_immob[i_reg].resize(nr_of_substances);
+			}
+	}
+
+	// list of types of isotherms in particular regions
+	std::vector<SorptionType> iso_type; iso_type.resize(nr_of_substances);
+	//Multidimensional array
+	int i_reg = 0;
+	for(Input::Iterator<Input::Record> reg_iter = sorptions_array.begin<Input::Record>(); reg_iter != sorptions_array.end(); ++reg_iter, i_reg++)
+	{
+		// list of types of isotherms in particular regions, initialization
+		Input::Array sorption_types_array = reg_iter->val<Input::Array>("sorption_types");
+		if (sorption_types_array.size() == iso_type.size() )   sorption_types_array.copy_to( iso_type );
+		  else  xprintf(UsrErr,"Number of sorption types %d has to match number of sorbing species %d.\n",
+		                                       sorption_types_array.size(), iso_type.size());
+		//isotherm[i_mob].resize(nr_of_regions);
+		double rock_density = reg_iter->val<double>("rock_density");
+		double mobile_porosity = reg_iter->val<double>("mob_porosity");
+		double immobile_porosity = reg_iter->val<double>("immob_porosity");
+
+		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+		{
+			// reinit isotherm, what about to define a type of isotherm in reinit
+			isotherms_mob[i_reg][i_subst].reinit(iso_type[i_subst],rock_density,solvent_dens,mobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
+			//precompute necessary multiplication coefficient
+			double k = isotherms_mob[i_reg][i_subst].get_scale_sorbed()/isotherms_mob[i_reg][i_subst].get_scale_aqua();
+			//create temporary class Linear object
+			//Linear lin_iso(k);
+			switch (iso_type[i_subst])
+			{
+			 case 1: //Linear:
+				//call appropriate function for isotherm descritption
+				//isotherms_mob[i_reg][i_subst].make_table(lin_iso, nr_of_points);
+			 break;
+			 case 2: //Langmuir:
+			 	 ;
+			 break;
+			 case 3: //Freundlich:
+				 ;
+			 break;
+			 default:
+				xprintf(UsrErr, "Unknown type of sorption of %d-th specie in %d-th region.\n", i_subst, i_reg);
+			}
+			if(dual_porosity_on)
+			{
+				//Isotherm (*isotherms_immob[i_reg][i_subst])();
+				isotherms_immob[i_reg][i_subst].reinit(iso_type[i_subst],rock_density,solvent_dens,immobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
+			}
+		}
+	}
 }
 
 /*void Sorption::precompute_isotherm_tables() {
@@ -303,37 +301,3 @@ void Sorption::print_sorption_parameters(void)
             // xprintf(Msg, " %f\n", this->half_lives[i]);
     }*/
 }
-
-/*Isotherm::Isotherm(double rock_density,double solvent_density, double porosity, double molar_mass, double step_length)
-{
-	k_W = porosity*solvent_density;
-	k_H = molar_mass*(1-porosity)*rock_density;
-}
-
-void Isotherm::compute_projection(double &c_aq, double &c_sorb)
-{
-	int iso_ind_floor, iso_ind_ceil;
-	double conc_hlp = c_aq;
-
-	//coordinates are transformed
-	conc_hlp = c_aq;
-	c_aq = k_W*c_aq + k_H*c_sorb; //coordinate x^R or c_a^R (aqueous == dissolved)
-
-	//interpolation is realized
-	iso_ind_floor = (int)(c_aq/(step_length)); iso_ind_ceil = iso_ind_floor + 1;
-	c_sorb = intersections[iso_ind_floor] + (c_aq - iso_ind_floor*step_length)*(intersections[iso_ind_ceil] - intersections[iso_ind_floor])/step_length;
-
-	//tarnsformation back to original coordination system
-	conc_hlp = c_aq;
-	c_aq = (c_aq + c_sorb)/(2*k_W); // coordinate x or c_a (aqueous == dissolved)
-	c_sorb = (conc_hlp - c_sorb)/(2*k_H); // coordinate y or c_s (sorbed == solid)
-
-	return;
-}
-
-void Isotherm::set_step_length(double c_aq_max, int n_steps)
-{
-	double c_sorb_max; //= some value
-
-	step_length = (k_W*c_aq_max + k_H*c_sorb_max)/n_steps;
-}*/
