@@ -426,6 +426,7 @@ void SparseGraphMETIS::partition(int *part)
 
             DBGMSG("Graph edge cut: %d\n",edgecut);
         }
+        MPI_Bcast( part, n_vtx, MPI_INT, 0, vtx_distr.get_comm() );
     }
 }
 

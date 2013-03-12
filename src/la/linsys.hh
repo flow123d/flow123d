@@ -149,6 +149,11 @@ public:
         ASSERT( false, "Function load_mesh is not implemented for linsys type %d \n.", this -> type );
     }
 
+    virtual void load_diagonal( std::map<int,double> & diag )
+    {
+        ASSERT( false, "Function load_diagonal is not implemented for linsys type %d \n.", this -> type );
+    }
+
     /**
      *  Returns global system size.
      */

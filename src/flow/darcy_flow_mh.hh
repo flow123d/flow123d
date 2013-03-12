@@ -99,6 +99,8 @@ public:
        return mh_dh;
     }
 
+    virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
+
 protected:
     void setup_velocity_vector() {
         double *velocity_array;
@@ -155,6 +157,7 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
+    void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
 
     /// postprocess velocity field (add sources)
     virtual void postprocess();
@@ -201,7 +204,7 @@ protected:
 	int	*row_4_edge;		//< edge index to matrix row
 	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
 
-
+        std::vector<int> element_part;  //< for aech element, index of subdomain
 
 	// MATIS related arrays
         std::vector<double>   solution_;                 //< sequantial scattered solution vector

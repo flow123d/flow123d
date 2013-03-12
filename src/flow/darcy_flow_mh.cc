@@ -274,6 +274,13 @@ void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_s
     ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
+void  DarcyFlowMH_Steady::get_partitioning_vector(int * &elem_part, unsigned &lelem_part)
+{
+    elem_part=&(element_part[0]);
+    lelem_part = element_part.size();
+    ASSERT(elem_part != NULL, "Requested vector is not allocated!\n");
+}
+
 void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 {
     vec=schur0->get_solution();
@@ -316,6 +323,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
+    std::map<int,double> subdomain_diagonal_map;
     F_ENTRY;
 
     //DBGPRINT_INT("side_row_4_id",mesh->max_side_id+1,side_row_4_id);
@@ -358,6 +366,14 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             }
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
+
+            // update matrix for weights in BDDCML
+            if ( ls->type == LinSys::BDDC ) {
+               double val_side =  (fe_values.local_matrix())[i*nsides+i];
+               double val_edge =  -1./ (fe_values.local_matrix())[i*nsides+i];
+               subdomain_diagonal_map.insert( std::make_pair( side_row, val_side ) );
+               subdomain_diagonal_map.insert( std::make_pair( edge_row, val_edge ) );
+            }
         }
         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
 
@@ -395,6 +411,17 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
 
+            // update matrix for weights in BDDCML
+            if ( ls->type == LinSys::BDDC ) {
+               int ind = tmp_rows[1];
+               double new_val = value;
+               std::map<int,double>::iterator it = subdomain_diagonal_map.find( ind );
+               if ( it != subdomain_diagonal_map.end() ) {
+                  new_val = new_val + it->second;
+               }
+               subdomain_diagonal_map.insert( std::make_pair( ind, new_val ) );
+            }
+
             if (n_schur_compls == 2) {
                 // for 2. Schur: N dim edge is conected with N dim element =>
                 // there are nz between N dim edge and N-1 dim edges of the element
@@ -406,6 +433,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 tmp_rows[2+i] = tmp_rows[1];
             }
         }
+
 
 
 
@@ -424,6 +452,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
         }
     }
+
+    if ( ls->type == LinSys::BDDC ) {
+       ls->load_diagonal( subdomain_diagonal_map );
+    }
+
     //if (! mtx->ins_mod == ALLOCATE ) {
     //    MatAssemblyBegin(mtx->A,MAT_FINAL_ASSEMBLY);
     //    MatAssemblyEnd(mtx->A,MAT_FINAL_ASSEMBLY);
@@ -596,12 +629,14 @@ void DarcyFlowMH_Steady::make_schur0() {
 
                // compute mean on the diagonal
                double coef = 0.;
+               // version for rho scaling
                int dim =  el->material->dimension;
                // trace computation
                for ( int i = 0; i < dim; i++) {
                    coef = coef + el->material->hydrodynamic_resistence[i*dim + i];
                }
                coef = coef / static_cast<double>(dim);
+
                ASSERT( coef > 0.,
                        "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
                element_permeability.push_back( 1. / coef );
@@ -1101,11 +1136,15 @@ void DarcyFlowMH_Steady::prepare_parallel() {
         xprintf(Msg,"Compute optimal partitioning of elements.\n");
 
         // prepare dual graph
-        Distribution init_el_ds(Distribution::Block, mesh_->n_elements());  // initial distr.
-        SparseGraph *element_graph= new SparseGraphPETSC(init_el_ds);
-        loc_part = new int[init_el_ds.lsize()];                                     // partitionig in initial distribution
+        //Distribution init_el_ds(Distribution::Block, mesh_->n_elements());  // initial distr.
+        //SparseGraph *element_graph= new SparseGraphPETSC(init_el_ds);
+        SparseGraph *element_graph   = new SparseGraphMETIS(mesh_->n_elements());                     // graph for partitioning
+        Distribution init_el_ds = element_graph->get_distr();  // initial distr.
+        //loc_part = new int[init_el_ds.lsize()];                                     // partitionig in initial distribution
+        loc_part = new int[mesh_->n_elements()];                                     // partitionig in initial distribution
+        //std::vector<int> loc_part(init_el_ds.lsize());                                  // partitionig in initial distribution
 
-        make_element_connection_graph(mesh_, element_graph);
+        make_element_connection_graph(mesh_, element_graph, true);
 
 	//element_graph->view();
 
@@ -1114,12 +1153,21 @@ void DarcyFlowMH_Steady::prepare_parallel() {
         element_graph->partition(loc_part);
         //DBGPRINT_INT("loc_part",init_el_ds.lsize(),loc_part);
 
+        //ASSERT ( init_el_ds.lsize() == mesh_->n_elements(),
+        //         "The array should have size of global number of elements." );
+        // copy loc_part into element_part
+        element_part.resize( mesh_->n_elements() );
+        for ( int ind = 0; ind < mesh_->n_elements() ; ind++ ) {
+           element_part[ind] = loc_part[ind];
+        }
+
+        MPI_Barrier( init_el_ds.get_comm() );
         // prepare parallel distribution of dofs linked to elements
         id_4_old = new int[mesh_->n_elements()];
         i = 0;
         FOR_ELEMENTS(mesh_, el)
             id_4_old[i++] = el.index();
-        id_maps(mesh_->element.size(), id_4_old, init_el_ds, loc_part, el_ds,
+        id_maps(mesh_->n_elements(), id_4_old, init_el_ds, loc_part, el_ds,
                 el_4_loc, row_4_el);
         //DBGPRINT_INT("el_4_loc",el_ds->lsize(),el_4_loc);
         //xprintf(Msg,"Number of elements in subdomain %d \n",el_ds->lsize());

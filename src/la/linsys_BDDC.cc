@@ -145,6 +145,12 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
 
 }
 
+void LinSys_BDDC::load_diagonal( std::map<int,double> & diag )
+{
+    // simply pass the data to BDDCML solver
+    bddcml_ -> loadDiagonal( diag );
+}
+
 void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {
     namespace ublas = boost::numeric::ublas;
@@ -200,8 +206,8 @@ int LinSys_BDDC::solve( )
                                                 //!< ( 0 - only fatal errors reported, 
                                                 //!<   1 - mild output, 
                                                 //!<   2 - detailed output )
-    int                 maxIt          = 1000;  //!< maximum number of iterations
-    int                 ndecrMax       = 30;    //!< maximum number of iterations with non-decreasing residual 
+    int                 maxIt          = 5000;  //!< maximum number of iterations
+    int                 ndecrMax       = 100;    //!< maximum number of iterations with non-decreasing residual 
                                                 //!< ( used to stop diverging process )
     bool                use_adaptive   = false; //!< should adaptive BDDC be used?
 

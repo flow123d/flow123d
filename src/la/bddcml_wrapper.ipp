@@ -165,6 +165,22 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const i
 }
 
 //------------------------------------------------------------------------------
+/** Routine for loading raw mesh data into the solver - for cases of strange meshes, 
+ * where these are not Mesh or Grid objects, user can create own raw description
+ * to exploit the flexibility of mesh format underlaying BDDCML.
+ */
+void la::BddcmlWrapper::loadDiagonal( std::map<int,double> & diag )
+{
+
+    diag_ = diag;
+
+    // change the state
+    //diagLoaded_     = true;
+
+    return;
+}
+
+//------------------------------------------------------------------------------
 /** Routine for preparing MATRIX assembly. It reserves memory in triplet.
  */
 void la::BddcmlWrapper::prepareMatAssembly( unsigned numElements, unsigned elMatSize )
@@ -393,6 +409,17 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     int la = a_sparse.size();
 
+    int lsub_diagonal = numDofsSub_;
+    std::vector<double> sub_diagonal( lsub_diagonal, 0. );
+    for ( std::map<int,double>::iterator it = diag_.begin(); it != diag_.end(); ++it ){
+        indRow = it->first;
+        Global2LocalMap_::iterator pos = global2LocalDofMap_.find( static_cast<unsigned> ( indRow ) );
+        ASSERT( pos != global2LocalDofMap_.end(),
+                       "Cannot remap index %d to local indices. \n ", indRow );
+        indRowLoc = static_cast<int> ( pos -> second );
+        sub_diagonal[indRowLoc] = it->second;
+    }
+
     // remove const attribute
     int numDofsInt    = static_cast<int> ( numDofs_ );
     int numDofsSubInt = static_cast<int> ( numDofsSub_ );
@@ -426,7 +453,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
                                   &(sol_[0]), &lsol,
                                   &matrixTypeInt, &(i_sparse[0]), &(j_sparse[0]), &(a_sparse[0]), &la, &isMatAssembledInt,
                                   &(userConstraints[0]),&lUserConstraints1,&lUserConstraints2,
-                                  &(element_data_[0]),&lelement_data1,&lelement_data2 );
+                                  &(element_data_[0]),&lelement_data1,&lelement_data2,
+                                  &(sub_diagonal[0]), &lsub_diagonal );
     i_sparse.clear();
     j_sparse.clear();
     a_sparse.clear();

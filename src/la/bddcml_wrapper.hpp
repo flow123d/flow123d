@@ -107,6 +107,8 @@ public:
                       const std::vector<double> & element_data,
                       const int meshDim = 0 );
 
+    void loadDiagonal( std::map<int,double> & diag );
+
     //! Prepare assembly of matrix - reserve space in underlying coordinate matrix object
     void prepareMatAssembly( unsigned numElements, unsigned elMatSize );
 
@@ -252,6 +254,7 @@ private:
 
     la::MatrixCoo<int,double>  coo_;       //!< matrix in coordinate format (COO)
     bool                 isMatAssembled_;  //!< true if matrix is assembled
+    std::map<int,double> diag_;            //!< diagonal of subdomain matrix in sparse format and global numbers
 
     std::vector<double>  rhsVec_;          //!< vector with RHS values restricted to subdomain, i.e. values are repeated at shared nodes
     double               normRhs_;         //!< norm of the global right-hand side

@@ -142,6 +142,15 @@ void DarcyFlowMHOutput::output()
         result = output_writer->register_elem_data
                 ("pressure_elements","L",ele_pressure);
         //xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
+        
+        int *partitioning;
+        unsigned    lpartitioning;
+        darcy_flow->get_partitioning_vector( partitioning, lpartitioning );
+        int    lpartitioning_int = static_cast<int>( lpartitioning );
+        if (lpartitioning_int > 0 ) {
+           result = output_writer->register_elem_data
+                   ("substructure","", partitioning, lpartitioning_int);
+        }
 
         if (output_piezo_head) {
             result = output_writer->register_elem_data
