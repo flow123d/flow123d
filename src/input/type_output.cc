@@ -27,10 +27,11 @@ OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 
 
 
-void OutputBase::print(ostream& stream) {
+ostream&  OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
 	type_->reset_doc_flags();
 	print(stream, type_, depth_);
+	return stream;
 }
 
 
@@ -106,6 +107,23 @@ void OutputBase::write_value(std::ostream& stream, Default dft) {
 	}
 }
 
+void OutputBase::write_description(std::ostream& stream, const string& str,
+        unsigned int padding, unsigned int hash_count) {
+    boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
+    boost::tokenizer<boost::char_separator<char> >::iterator it;
+
+    // For every \n add padding at beginning of the next line.
+    for(it = line_tokenizer.begin(); it != line_tokenizer.end(); ++it) {
+        stream << endl;
+        stream << setw(padding) << "";
+        stream << std::setfill('#') << setw(hash_count) << "" << std::setfill(' ') << " " << *it;
+    }
+}
+
+
+
+
+
 
 
 
@@ -154,7 +172,7 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 		        stream << endl;
 		        stream << setw(padding_size + size_setw_) << "" <<"#### is ";
 		        print(stream, it->type_.get(), 0);
-		        write_description(stream, it->description_);
+		        write_description(stream, it->description_, padding_size+size_setw_);
 		        stream << endl;
 
 		    }
@@ -215,7 +233,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             	size_setw_ = 0;
                 stream << setw(padding_size) << "";
                 stream << "" << "Record '" << (*it).type_name() << "'";
-                write_description(stream, it->description());
+                write_description(stream, it->description(), padding_size+size_setw_);
                 stream << endl;
             }
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
@@ -315,30 +333,19 @@ void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int 
 }
 
 
-void OutputText::write_description(std::ostream& stream, const string& str, unsigned int hash_count) {
-    boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
-    boost::tokenizer<boost::char_separator<char> >::iterator it;
 
-	// For every \n add padding at beginning of the next line.
-	for(it = line_tokenizer.begin(); it != line_tokenizer.end(); ++it) {
-		stream << endl;
-		stream << setw(padding_size + size_setw_) << "";
-		stream << std::setfill('#') << setw(hash_count) << "" << std::setfill(' ') << " " << *it;
-	}
-}
-
-
-std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
-	type_output.print(stream);
-	stream << endl;
-	return stream;
-}
 
 
 
 /*******************************************************************
  * implementation of OutputJSONTemplate
  */
+
+ostream& OutputJSONTemplate::print(ostream& stream) {
+    key_name_ = "";
+    type_->set_reference( "/" );
+    return OutputBase::print(stream);
+}
 
 
 void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigned int depth) {
@@ -383,7 +390,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 						stream << endl;
 						stream << setw((depth + 1) * padding_size) << "";
 						print(stream, it->type_.get(), depth+1);
-						write_description(stream, it->description_);
+						write_description(stream, it->description_, padding_size*size_setw_);
 						doc_type_ = full_record;
 						print(stream, it->type_.get(), depth+1);
 					}
@@ -496,7 +503,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 		    	stream << endl;
 		    	stream << setw((depth) * padding_size) << "";
 		    	print(stream, &*it, depth);
-		    	write_description(stream, it->description());
+		    	write_description(stream, it->description(), padding_size*size_setw_);
 		    	doc_type_ = full_record;
 		    	print(stream, &*it, depth);
 		    }
@@ -641,18 +648,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const FileName *type, unsig
 }
 
 
-void OutputJSONTemplate::write_description(std::ostream& stream, const string& str, unsigned int hash_count) {
-    boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
-    boost::tokenizer<boost::char_separator<char> >::iterator it;
-
-	// For every \n add padding at beginning of the next line.
-	for(it = line_tokenizer.begin(); it != line_tokenizer.end(); ++it) {
-		stream << endl;
-		stream << setw(size_setw_ * padding_size) << "";
-		stream << std::setfill('#') << setw(hash_count) << "" << std::setfill(' ') << " " << *it;
-	}
-}
-
 
 void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth, string empty_val, bool invalid_val, bool has_quote) {
 	stream << endl;
@@ -685,12 +680,222 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
 }
 
 
-std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output) {
-	type_output.print(stream);
-	stream << endl;
-	return stream;
+
+/*******************************************************************
+ * implementation of OutputLatex
+ */
+
+ostream& OutputLatex::print(ostream& stream) {
+    return OutputBase::print(stream);
 }
 
+
+void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int depth) {
+    if (! type->is_finished()) {
+        xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
+    }
+
+    switch (doc_type_) {
+    case key_record:
+        stream << type->type_name() << " type";
+        break;
+    case full_record:
+        if (! type->made_extensive_doc()) {
+            type->set_made_extensive_doc(true);
+
+            // header
+            stream << endl <<"\\record_type{" << type->type_name() << "}";
+
+            // parent record
+            if (type->data_->parent_ptr_) {
+                stream << "{" << type->data_->parent_ptr_->type_name() <<"}";
+            } else {
+                stream << "{}";
+            }
+
+            // reducible to key
+            Record::KeyIter key_it = type->auto_conversion_key_iter();
+            if (key_it != type->end()) {
+                stream << "{" << key_it->key_ << "}";
+            } else {
+                stream << "{}";
+            }
+            stream << endl << type->description();
+            stream << endl;
+
+            // keys
+            doc_type_ = key_record;
+            for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+                stream << "\\keyitem{" << it->key_ << "}";
+
+                stream << "{";
+                print(stream, it->type_.get(), 0);
+                stream << "}";
+
+                if (it->default_.is_obligatory()) {
+                    stream << "{<OBLIGATORY>}";
+                } else if (it->default_.is_optional()) {
+                    stream << "{<OPTIONAL>}";
+                } else if (it->default_.has_value_at_read_time()) {
+                    stream << "{<" << it->default_.value() << ">}";
+                } else {
+                    stream << "{" << it->default_.value() << "}";
+                }
+
+                stream << endl << it->description_ << "%" << endl;
+            }
+
+            // Full documentation of embedded record types.
+            doc_type_ = full_record;
+            if (depth_ == 0 || depth_ > depth) {
+                for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+                    print(stream, it->type_.get(), depth+1);
+                }
+            }
+        }
+        break;
+    }
+}
+
+
+
+
+void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+
+    switch (doc_type_) {
+    case key_record:
+        unsigned int lower_size, upper_size;
+
+        get_array_sizes(*type, lower_size, upper_size);
+        stream << "Array [" << lower_size << ": " << upper_size << "] of type: ";
+        print(stream, type->data_->type_of_values_.get(), 0);
+        break;
+    case full_record:
+        print(stream, type->data_->type_of_values_.get(), depth);
+        break;
+    }
+}
+
+
+void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+    // Print documentation of abstract record
+    switch (doc_type_) {
+    case key_record:
+        stream << type->type_name() << " abstract type";
+        break;
+    case full_record:
+        if (! type->made_extensive_doc()) {
+
+            // Extensive description
+            type->set_made_extensive_doc(true);
+
+            // header
+            stream << endl << "\\abstract_type{"  << type->type_name() << "}";
+            stream << endl;
+            stream << type->description() << "%" << endl;
+            // descendants
+            doc_type_ = key_record;
+            for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+                stream << "\\descendant{" << (*it).type_name() << "}" << endl;
+            }
+
+            // Full documentation of embedded record types.
+            doc_type_ = full_record;
+            if (depth_ == 0 || depth_ > depth) {
+                for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+                    print(stream, &*it, depth+1);
+                }
+            }
+        }
+        break;
+    }
+}
+
+
+void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
+    if (! type->is_finished()) {
+        xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
+    }
+
+    switch (doc_type_) {
+    case key_record:
+        stream << "Selection " << type->type_name();
+        break;
+    case full_record:
+        if (! type->made_extensive_doc()) {
+            type->set_made_extensive_doc(true);
+
+            stream << "\\selection_type{" << type->type_name() << "}" <<endl;
+            // keys
+            for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
+                stream << "\\keyitem{" <<  it->key_ << "}{" << it->value << "}" << endl;
+                stream << it->description_  << endl;
+            }
+        }
+        break;
+    }
+}
+
+
+void OutputLatex::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
+    if (doc_type_ == key_record) {
+        int lower_bound, upper_bound;
+        get_integer_bounds(*type, lower_bound, upper_bound);
+        stream << "Integer in [" << lower_bound << ", " << upper_bound << "]";
+    }
+}
+
+
+void OutputLatex::print_impl(ostream& stream, const Double *type, unsigned int depth) {
+    if (doc_type_ == key_record) {
+        double lower_bound, upper_bound;
+        get_double_bounds(*type, lower_bound, upper_bound);
+        stream << "Double in [" << lower_bound << ", " << upper_bound << "]";
+    }
+}
+
+
+void OutputLatex::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
+    if (doc_type_ == key_record) {
+        stream << "Bool";
+    }
+}
+
+
+void OutputLatex::print_impl(ostream& stream, const String *type, unsigned int depth) {
+    if (doc_type_ == key_record) {
+        stream << "String (generic)";
+    }
+}
+
+
+void OutputLatex::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
+    if (doc_type_ == key_record) {
+        switch (type->get_file_type()) {
+        case ::FilePath::input_file:
+            stream << "input file name";
+            break;
+        case ::FilePath::output_file:
+            stream << "output file name";
+            break;
+        }
+    }
+}
+
+
+
+
+std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
+    return type_output.print(stream) << endl;
+}
+
+std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output) {
+    return type_output.print(stream) << endl;
+}
+
+std::ostream& operator<<(std::ostream& stream, OutputLatex type_output) {
+    return type_output.print(stream) << endl;
+}
 
 } // closing namespace Type
 } // closing namespace Input

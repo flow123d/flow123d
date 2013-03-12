@@ -104,6 +104,12 @@ Record array_record("RecordOfArrays",
  OutputJSONTemplate output_json( &main, 0);
  output_json.print(cout);
 
+ cout << endl;
+ cout << "## " << "OutputLatex printout" << endl;
+
+ cout << OutputLatex(&main) << endl;
+
+
 }
 
 TEST(OutputTypeAbstractRecord, abstract_record_test) {

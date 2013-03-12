@@ -12,8 +12,10 @@ set(PETSC_ARCH "gcc_O3")
 ###
 # If PETSC are found but do not compile, it is probably due to some undefined references (usually nonstandard compiler libraries)
 # see file: BUILD_DIR/CMakeFiles/CMakeError.log 
-# and set following variable to add missing libraries using -L and -l parameters
-set( PETSC_ADDITIONAL_LIBS "-L/opt/intel/Compiler/11.1/046/lib/ia64  -lpthreads")
+# and set following variable to add missing libraries using -L and -l parameters.
+#
+# e.g. Some PETSC installations have missing pthread library. So we use (assuming libpthread.a placed in /usr/lib):
+# set( PETSC_ADDITIONAL_LIBS "-lpthread")
 
 
 ### Build setting ####################################################################

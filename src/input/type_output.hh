@@ -98,34 +98,41 @@ namespace Type {
  */
 
 /**
- * Base virtual class for create text documentation and JSON template
+ * Base abstract class for output description of the Input::Type tree.
+ * Output into various formats is implemented by derived classes.
+ *
+ * Usage:
+ * cout << OutputText( &my_record, 3) << "konec" << endl;
+ *
  */
 class OutputBase {
 public:
-	/**
-	 * Constructor
-	 *
-	 * @param type Stores input sequence
-	 * @param depth Depth of output
-	 */
-    OutputBase(const TypeBase *type, unsigned int depth = 0);
 
     /**
-     * Print output
-     *
-     * @param stream Stream of output
+     * Performs output of the documentation into given @p stream.
+     * Returns reference to the same stream.
      */
-    void print(ostream& stream);
+    virtual ostream& print(ostream& stream);
 
 protected:
-    /// Padding of new level of printout
-    static const unsigned int padding_size = 4;
-
     /// Types of documentation output
     enum DocumentationType {
-    	key_record,
-    	full_record
+        key_record,
+        full_record
     };
+
+    /// Padding of new level of printout, used where we use indentation.
+    static const unsigned int padding_size = 4;
+
+
+    /**
+     * Constructor
+     *
+     * @param type Stores input sequence
+     * @param depth Depth of output
+     */
+    OutputBase(const TypeBase *type, unsigned int depth = 0);
+
 
     // destructor
     virtual ~OutputBase();
@@ -137,12 +144,16 @@ protected:
     void get_double_bounds(Double dbl, double &lower , double &upper );
 
 
-    // type resolution like in json_to_storage
+    /**
+     * Perform resolution according to actual @p type (using typeid) and call particular print_impl method.
+     */
     void print(ostream& stream, const TypeBase *type, unsigned int depth);
 
 
-    // following methods realize output in particular format
-    // using getters from the base class OutputBase
+    /**
+     *  following methods realize output in particular format
+     *  using getters from the base class OutputBase
+     */
     virtual void print_impl(ostream& stream, const Record *type, unsigned int depth) = 0;
     virtual void print_impl(ostream& stream, const Array *type, unsigned int depth) = 0;
     virtual void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) = 0;
@@ -160,7 +171,12 @@ protected:
      * @param str Printed description
      * @param hash_count Count of '#' chars in description
      */
-    virtual void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1) = 0;
+    //virtual void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1) = 0;
+    /**
+     * Output indented multi-line string.
+     */
+    void write_description(std::ostream& stream, const string& str, unsigned int padding, unsigned int hash_count = 1);
+
 
     /**
      * Write value stored in dft.
@@ -168,6 +184,8 @@ protected:
      * Enclose value in quotes if it's needed or write info that value is optional or obligatory.
      */
     void write_value(std::ostream& stream, Default dft);
+
+
 
     /// Object for which is created printout
     const TypeBase *type_;
@@ -180,6 +198,9 @@ protected:
     unsigned int size_setw_;
 
 };
+
+
+/**********************************************************************************************************************/
 
 /**
  * Class for create text documentation
@@ -200,15 +221,13 @@ protected:
 	void print_impl(ostream& stream, const String *type, unsigned int depth);
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
-    void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
 
 };
 
-/**
- * Usage:
- * cout << OutputText( &my_record, 3) << "konec" << endl;
- */
-std::ostream& operator<<(std::ostream& stream, OutputText type_output);
+
+
+
+
 
 
 /**
@@ -216,18 +235,23 @@ std::ostream& operator<<(std::ostream& stream, OutputText type_output);
  */
 class OutputJSONTemplate : public OutputBase {
 public:
+    /**
+     * Constructor for output of the input type tree with root @p type.
+     * The input type tree is searched by DFS algorithm into @p depth.
+     */
 	OutputJSONTemplate(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
-	void print(ostream& stream) {
-		key_name_ = "";
-		type_->set_reference( "/" );
-		OutputBase::print(stream);
-	}
+	/**
+	 * Perform output of the documentation into given stream.
+	 */
+	ostream& print(ostream& stream);
 
 protected:
+	// Need to implement the resolution function. Just call that in the base class.
 	void print(ostream& stream, const TypeBase *type, unsigned int depth) {
 		OutputBase::print(stream, type, depth);
 	}
+
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
@@ -239,7 +263,7 @@ protected:
 	void print_impl(ostream& stream, const String *type, unsigned int depth);
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
-    void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
+    //void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
 
 private:
     /**
@@ -261,7 +285,61 @@ private:
 };
 
 
+
+
+/**
+ * Class for create and Latex documentation
+ */
+class OutputLatex : public OutputBase {
+public:
+    OutputLatex(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+
+    ostream & print(ostream& stream);
+
+protected:
+    // Need to implement the resolution function. Just call that in the base class.
+    void print(ostream& stream, const TypeBase *type, unsigned int depth) {
+        OutputBase::print(stream, type, depth);
+    }
+
+    void print_impl(ostream& stream, const Record *type, unsigned int depth);
+    void print_impl(ostream& stream, const Array *type, unsigned int depth);
+    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const Selection *type, unsigned int depth);
+    void print_impl(ostream& stream, const Integer *type, unsigned int depth);
+    void print_impl(ostream& stream, const Double *type, unsigned int depth);
+    void print_impl(ostream& stream, const Bool *type, unsigned int depth);
+    void print_impl(ostream& stream, const String *type, unsigned int depth);
+    void print_impl(ostream& stream, const FileName *type, unsigned int depth);
+
+
+private:
+    /**
+     * Prints value according to DefaultType
+     * Respects obligatory, optional and read time flag
+     *
+     * @param stream Output stream
+     * @param depth Depth of output
+     * @param empty_val Default empty value (zero for numeric types, empty string ...)
+     * @param invalid_val Flag if value is invalid for its type
+     * @param has_quote Flag if value is enclosed in quotes
+     */
+    void print_default_value(ostream& stream, unsigned int depth, string empty_val, bool invalid_val, bool has_quote = false);
+
+    /// temporary value of actually record type
+    //string key_name_;
+    /// temporary value of actually record value
+    //Default value_;
+};
+
+
+/**
+ * Overrides output operator for simple output of the input type tree.
+ */
+std::ostream& operator<<(std::ostream& stream, OutputText type_output);
 std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);
+std::ostream& operator<<(std::ostream& stream, OutputLatex type_output);
+
 
 
 } // closing namespace Type

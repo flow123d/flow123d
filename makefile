@@ -110,6 +110,10 @@ testall:
 # Create doxygen documentation
 online-doc:
 	make -C doc/doxy doc
+	
+gen-doc:	flow123d
+	bin/flow123d --latex_doc | grep -v "DBG" > doc/reference_manual/input_reference.tex
+		
 
 clean_tests:
 	make -C tests clean

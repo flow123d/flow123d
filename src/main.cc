@@ -223,8 +223,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("log,l", po::value< string >(), "Set base name for log files.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-        ("full_doc", "Produce full structure of the main input file.")
-        ("JSON_template", "Creates file 'flow_input_template.con' with description of the input structure in valid CON file format.");
+        ("full_doc", "Prints full structure of the main input file.")
+        ("JSON_template", "Prints description of the main input file as a valid CON file.")
+        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.");
     ;
 
     // parse the command line
@@ -264,6 +265,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("JSON_template")) {
         Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputJSONTemplate(&input_type);
+        free_and_exit();
+    }
+
+    if (vm.count("latex_doc")) {
+        Input::Type::TypeBase::lazy_finish();
+        cout << Input::Type::OutputLatex(&input_type);
         free_and_exit();
     }
 

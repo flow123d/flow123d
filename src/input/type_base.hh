@@ -245,6 +245,7 @@ class Array : public TypeBase {
 	friend class OutputBase;
 	friend class OutputText;
 	friend class OutputJSONTemplate;
+	friend class OutputLatex;
 
 protected:
 

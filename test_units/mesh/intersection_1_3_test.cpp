@@ -23,7 +23,7 @@
 TEST(intersections, 1d_3d){
 	unsigned int elementLimit = 20;
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
-	FilePath mesh_file("mesh/line_cube2.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
+	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
 	Mesh mesh_krychle;
 	GmshMeshReader reader(mesh_file);
 	BoundingBox bb;
