@@ -350,8 +350,14 @@ void Mesh::make_neighbours_and_edges()
         intersect_element_lists(side_nodes, intersection_list);
         bool is_neighbour = find_lower_dim_element(element, intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
-            xprintf(UsrErr, "Boundary element match a regular element of lower dimension.\n");
+            xprintf(UsrErr, "Boundary element (id: %d) match a regular element (id: %d) of lower dimension.\n",
+                    bc_ele.id(), element(ngh_element_idx).id());
         } else {
+            if (intersection_list.size() == 0) {
+                // no matching dim+1 element found
+                xprintf(Warn, "Lonely boundary element, id: %d, dimension %d.\n", bc_ele.id(), bc_ele->dim());
+                continue; // skip the boundary element
+            }
             last_edge_idx=edges.size();
             edges.resize(last_edge_idx+1);
             edg = &( edges.back() );
