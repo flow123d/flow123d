@@ -19,9 +19,9 @@ class Isotherm;
 
 enum SorptionType {
 	none = 0,
-	Linear = 1,
-	Langmuir = 2,
-	Freundlich = 3
+	linear = 1,
+	langmuir = 2,
+	freundlich = 3
 };
 
 class Sorption:  public Reaction

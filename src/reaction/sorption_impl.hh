@@ -17,9 +17,18 @@ enum SorptionType;
  */
 class Langmuir {
 public:
+	/**
+	* 	Original constructor, Langmuir( double mult_coef, double alpha) : alpha(alpha), mult_coef_(mult_coef) {}
+	*/
     Langmuir( double mult_coef, double alpha) : alpha(alpha), mult_coef_(mult_coef) {}
-
-    double operator()( double x) { return mult_coef_*(alpha * x)/(1+alpha*x); }
+    /**
+    * 	Destructor.
+    */
+    ~Langmuir(void);
+    /**
+    * 	Mysterious operator.
+    */
+    double operator()( double x) { return mult_coef_*(alpha * x)/(alpha*x - 1); }
 
 private:
     double mult_coef_;
@@ -32,13 +41,31 @@ private:
  */
 class Linear {
 public:
+	/**
+	* 	Original constructor, Linear(double mult_coef) : mult_coef_(mult_coef) {}
+	*/
     Linear(double mult_coef) : mult_coef_(mult_coef) {}
-
-    double operator()(double x) { return mult_coef_*x; }
+    /**
+    * 	Destructor.
+    */
+    //~Linear(void);
+	/**
+	* 	Just the test to define multiplication coefficient other way.
+	*/
+	//void reinit(double mult_coef);
+    /**
+    * 	Mysterious operator.
+    */
+    double operator()(double x) { return (mult_coef_*x); }
 
 private:
     double mult_coef_;
 };
+
+/*void Linear::reinit(double mult_coef)
+{
+	mult_coef_ = mult_coef;
+};*/
 
 
 /**
@@ -52,19 +79,18 @@ public:
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
     void reinit(enum SorptionType, double rock_density, double aqua_density, double porosity, double molar_mass, double c_aqua_limit);
-
     /**
      *
      */
     template<class Func>
-    void make_table(const Func &isotherm, int n_points);
+    void make_table(const Func &isotherm, int n_points); // const Func &isotherm
 
     /**
      * Find new values for concentrations @p c_aqua, @p c_sorbed that has same total mass and lies on the
      * @p isotherm (functor object).
      */
     template<class Func>
-    void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm);
+    void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm); // const Func &isotherm
     /**
      * Update concentrations.
      */
@@ -126,7 +152,7 @@ inline bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //cle
         return true;
     } else {
         if (c_aqua_limit_ > 0.0) {
-            c_sorbed = (total_mass - scale_aqua* c_aqua_limit_)/scale_sorbed;
+            c_sorbed = (total_mass - scale_aqua* c_aqua_limit_)*inv_scale_sorbed;
             c_aqua = c_aqua_limit_;
         } else return false;
     }
@@ -159,16 +185,17 @@ private:
 
 
 template<class Func>
-void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm)
+void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // const Func &isotherm
 {
     double mass_limit;
+    double f_max = isotherm(c_aqua_limit_);
     if (c_aqua_limit_ >0) {
-        mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*isotherm(c_aqua_limit_);
+        mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*f_max; // isotherm(c_aqua_limit_);
     } else {
         mass_limit = scale_aqua + scale_sorbed;// set mass_limit from max conc = 1, needs to be computed somehow else
     }
 	double total_mass = scale_aqua*c_aqua + scale_sorbed * c_sorbed;
-    CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed); // equation desribing one point on the isotherm
+    CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed); // equation describing one point on the isotherm
     pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0, mass_limit, boost::math::tools::eps_tolerance<double>(60), 100);
     //c_sorbed = (total_mass - scale_aqua * solution.first) / scale_sorbed;
     c_aqua = (total_mass - scale_sorbed * solution.first) / scale_aqua;
@@ -176,10 +203,11 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 };
 
 template<class Func>
-void Isotherm::make_table(const Func &isotherm, int n_steps) {
+void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &isotherm, int n_steps
     double mass_limit, c_aqua, c_sorbed;
+    double f_max = isotherm(c_aqua_limit_);
     if (c_aqua_limit_ >0) {
-        mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*isotherm(c_aqua_limit_);
+        mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*f_max; //isotherm(c_aqua_limit_);
     } else {
         mass_limit = scale_aqua + scale_sorbed;// set mass_limit from max conc = 1, needs to be computed somehow else
     }
