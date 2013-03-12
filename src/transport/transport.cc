@@ -569,9 +569,9 @@ void ConvectionTransport::compute_one_step() {
     //time_->view("CONVECTION");
     time_->next_time();
     
-    START_TIMER("data reinit")
+    START_TIMER("data reinit");
     data->set_time(*time_);
-    END_TIMER("data reinit")
+    END_TIMER("data reinit");
     
     // possibly read boundary conditions
     set_boundary_conditions();
