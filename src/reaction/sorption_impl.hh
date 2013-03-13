@@ -52,7 +52,7 @@ public:
 	/**
 	* 	Just the test to define multiplication coefficient other way.
 	*/
-	//void reinit(double mult_coef);
+	void reinit(double mult_coef);
     /**
     * 	Mysterious operator.
     */
@@ -62,10 +62,11 @@ private:
     double mult_coef_;
 };
 
-/*void Linear::reinit(double mult_coef)
+void Linear::reinit(double mult_coef)
 {
 	mult_coef_ = mult_coef;
-};*/
+	return;
+};
 
 
 /**
@@ -188,7 +189,8 @@ template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // const Func &isotherm
 {
     double mass_limit;
-    double f_max = isotherm(c_aqua_limit_);
+    Func &iso_hlp = const_cast<Func &>(isotherm);
+    double f_max = iso_hlp(c_aqua_limit_);
     if (c_aqua_limit_ >0) {
         mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*f_max; // isotherm(c_aqua_limit_);
     } else {
@@ -196,7 +198,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
     }
 	double total_mass = scale_aqua*c_aqua + scale_sorbed * c_sorbed;
     CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed); // equation describing one point on the isotherm
-    pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0, mass_limit, boost::math::tools::eps_tolerance<double>(60), 100);
+    pair<double,double> solution; //= boost::math::tools::toms748_solve(eq_func, 0, mass_limit, boost::math::tools::eps_tolerance<double>(60), 100);
     //c_sorbed = (total_mass - scale_aqua * solution.first) / scale_sorbed;
     c_aqua = (total_mass - scale_sorbed * solution.first) / scale_aqua;
     c_sorbed = (total_mass - scale_aqua * solution.second) / scale_sorbed;
@@ -205,7 +207,9 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 template<class Func>
 void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &isotherm, int n_steps
     double mass_limit, c_aqua, c_sorbed;
-    double f_max = isotherm(c_aqua_limit_);
+    Func &iso_hlp = const_cast<Func &>(isotherm);
+    //double f_max = isotherm(c_aqua_limit_);
+    double f_max = iso_hlp(c_aqua_limit_);
     if (c_aqua_limit_ >0) {
         mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*f_max; //isotherm(c_aqua_limit_);
     } else {
@@ -216,7 +220,7 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
     for(int i=0; i< n_steps;i++, mass+=total_mass_step) {
         double c_aqua = mass * inv_scale_aqua;
         double c_sorbed = mass * inv_scale_sorbed;
-        solve_conc(c_aqua, c_sorbed, isotherm);
+        solve_conc(c_aqua, c_sorbed, isotherm); //isotherm);
         interpolation_table.push_back( c_sorbed * scale_sorbed - c_aqua * scale_aqua);
     }
 };

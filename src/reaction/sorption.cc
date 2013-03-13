@@ -164,20 +164,21 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 			isotherms_mob[i_reg][i_subst].reinit(iso_type[i_subst],rock_density,solvent_dens,mobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
 			switch (iso_type[i_subst])
 			{
-			 case 0:
+			 case none: // 0:
 			 {
 				 xprintf(Msg,"No sorption is considered for %d-th specie in %d-th region.", i_subst, i_reg);
 			 }
-			 case 1: //Linear:
+			 break;
+			 case linear: // 1:
 			 {
 				// precompute necessary multiplication coefficient
 				double k = mult_param[i_subst]*isotherms_mob[i_reg][i_subst].get_scale_sorbed()/isotherms_mob[i_reg][i_subst].get_scale_aqua();
 				// define isotherm
-				Linear obj_isotherm(k);
-				//isotherms_mob[i_reg][i_subst].make_table(obj_isotherm, nr_of_points);
+				const Linear obj_isotherm(k);
+				isotherms_mob[i_reg][i_subst].make_table(obj_isotherm, nr_of_points);
 			 }
 			 break;
-			 case 2: //Langmuir:
+			 case langmuir: // 2:
 			 {
 				//precompute necessary coefficient
 			 	double omega = mult_param[i_subst]*isotherms_mob[i_reg][i_subst].get_scale_sorbed();// double;
@@ -186,7 +187,7 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 				//isotherms_mob[i_reg][i_subst].make_table(obj_isotherm, nr_of_points);
 			 }
 			 break;
-			 case 3: //Freundlich:
+			 case freundlich: // 3:
 			 {
 				;
 			 }
