@@ -21,8 +21,8 @@ Address::Address()
 : data_(boost::make_shared<AddressData>())
 {
    data_->root_type_ = NULL;
-   data_->root_storage_ = new StorageArray(0);
-   actual_storage_ = new StorageArray(0);
+   data_->root_storage_ = &Array::empty_storage_;
+   actual_storage_ = &Array::empty_storage_;
    actual_node_ = 0;
 }
 
@@ -30,10 +30,10 @@ Address::Address()
 Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
 : data_( boost::make_shared<AddressData>() )
 {
-    if (storage_root->is_null())
+    if (storage_root == NULL)
         THROW( ExcAddressNullPointer() << EI_AccessorName("storage_root") );
-    //if (!type_root || type_root == NULL)
-    //    THROW( ExcAddressNullPointer() << EI_AccessorName("type_root") );
+    if (!type_root || type_root == NULL)
+        THROW( ExcAddressNullPointer() << EI_AccessorName("type_root") );
 
     data_->root_type_ = type_root;
     data_->root_storage_ = storage_root;
@@ -114,6 +114,11 @@ Record::Record(const Address &address, const Type::Record type)
 }
 
 
+Input::Address & Record::get_address()
+{
+	return address_;
+}
+
 
 
 /*****************************************************************************
@@ -148,12 +153,15 @@ AbstractRecord::operator Record() const
 
 Input::Type::Record AbstractRecord::type() const
 {
-    ASSERT(address_.storage_head(), "NULL pointer in storage!!! \n");
-
     unsigned int type_id = address_.storage_head()->get_item(0)->get_int();
     return record_type_.get_descendant(type_id);
 }
 
+
+Input::Address & AbstractRecord::get_address()
+{
+	return address_;
+}
 
 
 /*****************************************************************************
@@ -179,6 +187,13 @@ Array::Array(const Address &address, const Type::Array type)
 }
 
 
+Input::Address & Array::get_address()
+{
+	return address_;
+}
+
+
+StorageArray Array::empty_storage_ = StorageArray(0);
 
 
 /*****************************************************************************

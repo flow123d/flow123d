@@ -229,6 +229,13 @@ TEST_F(InputInterfaceTest, RecordFind) {
     Address addr(storage, main);
     Record record(addr, *main);
 
+    Address addr_child_rec(addr);
+    addr_child_rec.down(0);
+    Address addr_child_int(addr_child_rec);
+    addr_child_int.down(1);
+    EXPECT_EQ("/some_record", addr_child_rec.make_full_address());
+    EXPECT_EQ("/some_record/some_integer", addr_child_int.make_full_address());
+
     // read scalar keys
 
     Iterator<int> it = record.find<int>("some_integer");

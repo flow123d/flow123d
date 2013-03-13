@@ -183,7 +183,7 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
  */
 
 JSONToStorage::JSONToStorage()
-:storage_(NULL), root_type_(NULL), envelope(NULL)
+:storage_(&Array::empty_storage_), root_type_(NULL), envelope(NULL)
 {
     /* from json_spirit_value.hh:
      * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };

@@ -278,6 +278,8 @@ protected:
 template <class T>
 T JSONToStorage::get_root_interface() const
 {
+	ASSERT(envelope, "NULL pointer to storage object envelope!!! \n");
+
 	Address a(envelope, root_type_);
     return *(Iterator<T>( *root_type_, a, 0));
 }
