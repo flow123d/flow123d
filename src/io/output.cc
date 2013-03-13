@@ -169,8 +169,10 @@ OutputData::~OutputData()
 
 Output::Output(Mesh *_mesh, string fname)
 {
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
 
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
@@ -208,9 +210,11 @@ Output::Output(Mesh *_mesh, string fname)
 
 Output::~Output()
 {
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
+    
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
@@ -248,7 +252,7 @@ Output::~Output()
 
 int Output::write_head(void)
 {
-	if(this->output_format != NULL) {
+    if(this->output_format != NULL) {
         return this->output_format->write_head();
     }
     return 0;
@@ -256,7 +260,7 @@ int Output::write_head(void)
 
 int Output::write_tail(void)
 {
-	if(this->output_format != NULL) {
+    if(this->output_format != NULL) {
         return this->output_format->write_tail();
     }
     return 0;
@@ -264,11 +268,14 @@ int Output::write_tail(void)
 
 int Output::write_data()
 {
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
+    
     if (rank!=0) return 1;
 
-	if(this->output_format != NULL) {
+    if(this->output_format != NULL) {
         return this->output_format->write_data();
     }
     return 0;
