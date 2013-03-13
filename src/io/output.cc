@@ -329,11 +329,17 @@ OutputTime *OutputTime::is_created(const Input::Record &in_rec)
 
 OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 {
-    output_format=NULL;
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    this->output_format=NULL;
+    
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
+    
+    //TODO: multi-process output
     if (rank!=0) return;
 
+    
     OutputTime::output_streams_count++;
 
     std::vector<OutputData> *node_data;
@@ -410,7 +416,7 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     } else {
     	this->output_format = new OutputVTK(this);
     }
-
+    
 }
 
 OutputTime::~OutputTime(void)
@@ -420,18 +426,26 @@ OutputTime::~OutputTime(void)
 int OutputTime::write_data(double time)
 {
     int ret = 0;
+    
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
 
-    DBGMSG("write_data before MPI rank test\n");
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank != 0 ) return 0;
-    DBGMSG("write_data AFTER MPI rank test\n");
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); 
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
+    
+    DBGMSG("OutputTime::write_data(time) - MPI rank test done: rank=%d\n",rank);
+    
+    //TODO: multi-process output
 
-    if(this->output_format != NULL) {
-    	ret = this->output_format->write_data(time);
-    	this->current_step++;
+    if (rank == 0 )
+    { 
+      DBGMSG("write output on process of rank=%d", rank);
+      if(this->output_format != NULL) {
+        ret = this->output_format->write_data(time);
+        this->current_step++;
+      }
     }
-
+    
     return ret;
 }
 

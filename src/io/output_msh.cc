@@ -250,15 +250,15 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 int OutputMSH::write_data(void)
 {
     xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output->get_base_filename().c_str());
-
-    this->write_msh_header();
-
+    
+    this->write_msh_header(); 
+    
     this->write_msh_geometry();
 
     this->write_msh_topology();
-
+    
     this->write_msh_node_data(0.0, 0);
-
+    
     this->write_msh_elem_data(0.0, 0);
 
     xprintf(MsgLog, "O.K.\n");
@@ -284,9 +284,8 @@ int OutputMSH::write_head(void)
 int OutputMSH::write_data(double time)
 {
     xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output->get_base_filename().c_str());
-
+        
     this->write_msh_node_data(time, this->output_time->current_step);
-
     this->write_msh_elem_data(time, this->output_time->current_step);
 
     // It seems that flush is not enough on some crapy hardware

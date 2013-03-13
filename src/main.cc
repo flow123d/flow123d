@@ -67,7 +67,6 @@
 static void main_convert_to_output();
 
 
-
 namespace it = Input::Type;
 
 // this should be part of a system class containing all support information
@@ -105,8 +104,7 @@ Application::Application( int argc,  char ** argv)
 
     use_profiler=true;
     Profiler::initialize(PETSC_COMM_WORLD);
-
-
+    
     // Say Hello
     // make strings from macros in order to check type
     string version(_PROGRAM_VERSION_);

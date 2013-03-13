@@ -93,7 +93,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
       
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
+<<<<<<< .mine
+
+
+=======
       
+>>>>>>> .r2207
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
@@ -105,14 +110,31 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     PetscErrorCode ierr;
     PetscMPIInt rank;
 
+<<<<<<< .mine
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
+=======
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     
     if( rank == 0)
     {
+>>>>>>> .r2207
 
+<<<<<<< .mine
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    
+    //TODO: multi_process output
+    if( rank == 0)
+    {
+      
       // temporary solution for balance output
       balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
+=======
+      // temporary solution for balance output
+      balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
+>>>>>>> .r2207
 
       { // local iterator it
         // optionally open raw output file
@@ -124,7 +146,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
         }
       }
 
+<<<<<<< .mine
     } //end of rank == 0
+
+=======
+    } //end of rank == 0
+>>>>>>> .r2207
 }
 
 
@@ -167,15 +194,28 @@ void DarcyFlowMHOutput::postprocess() {
 void DarcyFlowMHOutput::output()
 {
     START_TIMER("DARCY OUTPUT");
-    std::string eleVectorName = "velocity_elements";
-    std::string eleVectorUnit = "L/T";
 
-    unsigned int result = 0;
+    PetscErrorCode ierr;
+    PetscMPIInt rank = 0;
 
-    // skip initial output for steady solver
-    if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); 
+    ASSERT(ierr == 0,"Error in MPI_Comm_rank.");
+    
+    //TODO: multi_process output
+  
+    if(rank == 0)
+    {
+      std::string eleVectorName = "velocity_elements";
+      std::string eleVectorUnit = "L/T";
 
-    if (darcy_flow->time().is_current(output_mark_type)) {
+      unsigned int result = 0;
+    
+      //cout << "DMHO_output: rank: " << rank << "\t output_writer: " << output_writer << endl;
+    
+      // skip initial output for steady solver
+      if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
+
+      if (darcy_flow->time().is_current(output_mark_type)) {
 
         make_element_vector();
         //make_sides_scalar();
@@ -184,6 +224,7 @@ void DarcyFlowMHOutput::output()
 
         //make_neighbour_flux();
 
+        DBGMSG("water_balance()\n");
         water_balance();
 
         //compute_l2_difference();
@@ -211,10 +252,14 @@ void DarcyFlowMHOutput::output()
         // consider begining of the interval of actual result as the output time. Or use
         // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
         if (time == TimeGovernor::inf_time) time = 0.0;
+        
+        DBGMSG("calling output_writer->write_data(%f)\n", time);
         output_writer->write_data(time);
 
+        DBGMSG("calling output_internal_flow_data()\n");
         output_internal_flow_data();
-    }
+      }
+    } //end of rank == 0
 }
 
 //=============================================================================

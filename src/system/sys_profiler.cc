@@ -282,7 +282,6 @@ void Profiler::stop_timer(const CodePoint &cp) {
         if (timer.child_timers[i] >0)
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag(), timer.tag() );
 #endif
-
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
         DBGMSG("close '%s' actual '%s'\n", cp.tag_, timers_[actual_node].tag());
         // timer to close is not actual - we search for it above actual

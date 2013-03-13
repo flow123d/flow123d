@@ -423,6 +423,7 @@ void DarcyFlowMH_Steady::update_solution() {
     //    PetscViewerDestroy(solViewer);
     //}
     solution_changed_for_scatter=true;
+    DBGMSG("solution updated\n");
 }
 
 void DarcyFlowMH_Steady::postprocess() 
