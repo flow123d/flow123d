@@ -75,48 +75,56 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 {
     F_ENTRY;
     using namespace Input;
-
+    
+    
     // setup output
-    //output_writer = new OutputTime(mesh_, Record(in_rec).val<Record>("output_stream"));
+    // output_writer = new OutputTime(mesh_, Record(in_rec).val<Record>("output_stream"));
     output_writer = OutputStream(mesh_, Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
     node_pressure.resize(mesh_->node_vector.size());
 
-    {
-        Iterator<string> it = in_rec.find<string>("piezo_head_p0");
-        output_piezo_head=bool(it);
-
-        DBGMSG("piezo set: %d \n", output_piezo_head);
+    { //local iterator it
+      Iterator<string> it = in_rec.find<string>("piezo_head_p0");
+      output_piezo_head=bool(it);
+      DBGMSG("piezo set: %d \n", output_piezo_head);
     }
-
+      
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
-
-
-
+      
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
     marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
-            darcy_flow->time().end_time(), output_mark_type );
+          darcy_flow->time().end_time(), output_mark_type );
     DBGMSG("end create output\n");
 
+      
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
 
-    // temporary solution for balance output
-    balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    
+    if( rank == 0)
+    {
 
-    // optionally open raw output file
-    Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
+      // temporary solution for balance output
+      balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (it && rank==0) {
-        xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
-        raw_output_file = xfopen(*it, "wt");
-    }
+      { // local iterator it
+        // optionally open raw output file
+        Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
+    
+        if (it) {
+          xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
+          raw_output_file = xfopen(*it, "wt");
+        }
+      }
 
+    } //end of rank == 0
 }
 
 
@@ -284,13 +292,15 @@ void DarcyFlowMHOutput::make_element_vector() {
 
         fe_values.update(ele, darcy_flow->get_data().cond_anisothropy, darcy_flow->get_data().cross_section);
 
-        for (int li = 0; li < ele->n_sides(); li++) {
+        for (unsigned int li = 0; li < ele->n_sides(); li++) {
             flux_in_centre += dh.side_flux( *(ele->side( li ) ) )
                               * fe_values.RT0_value( ele, ele->centre(), li )
                               / darcy_flow->get_data().cross_section.value(ele->centre(), ele->element_accessor() );
         }
 
-        for(int j=0;j<3;j++) ele_flux[i_side][j]=flux_in_centre[j];
+        for(unsigned int j=0; j<3; j++) 
+            ele_flux[i_side][j]=flux_in_centre[j];
+        
         i_side++;
     }
 
@@ -432,7 +442,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     /**first pass - calculate sums (weights)*/
     if (count_elements){
         FOR_ELEMENTS(mesh_, ele)
-            for (int li = 0; li < ele->n_nodes(); li++) {
+            for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li]; //!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
@@ -447,7 +457,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     }
     if (count_sides){
         FOR_SIDES(mesh_, side) {
-            for (int li = 0; li < side->n_nodes(); li++) {
+            for (unsigned int li = 0; li < side->n_nodes(); li++) {
                 node = side->node(li);//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
                 dist = sqrt(
@@ -465,7 +475,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     /**second pass - calculate scalar  */
     if (count_elements){
         FOR_ELEMENTS(mesh_, ele)
-            for (int li = 0; li < ele->n_nodes(); li++) {
+            for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li];//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
@@ -482,7 +492,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
     }
     if (count_sides) {
         FOR_SIDES(mesh_, side) {
-            for (int li = 0; li < side->n_nodes(); li++) {
+            for (unsigned int li = 0; li < side->n_nodes(); li++) {
                 node = side->node(li);//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
@@ -647,8 +657,6 @@ void DarcyFlowMHOutput::water_balance() {
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     //BOUNDARY
-    double bal;
-    int c_water;
     struct Boundary *bcd;
     std::vector<double> bcd_balance( mesh_->region_db().boundary_size(), 0.0 );
     std::vector<double> bcd_plus_balance( mesh_->region_db().boundary_size(), 0.0 );
@@ -744,10 +752,11 @@ void DarcyFlowMHOutput::water_balance() {
     fprintf(balance_output_file, src_total_format.c_str(),w+wl+2,"total sources balance",
                 w,total_balance);
 }
-//=============================================================================
-//
-//=============================================================================
 
+//=============================================================================
+// UNUSED FUNCTION
+//=============================================================================
+/*
 double calc_water_balance(Mesh* mesh, int c_water) {
     double rc;
     struct Boundary *bcd;
@@ -756,6 +765,7 @@ double calc_water_balance(Mesh* mesh, int c_water) {
 
     return rc;
 }
+*/
 
 /*
  * Output of internal flow data.
@@ -774,7 +784,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
-    int i;
+    unsigned int i;
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
         //xfprintf( raw_output_file, "%d ", cit);

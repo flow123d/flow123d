@@ -15,7 +15,7 @@ void MH_DofHandler::reinit(Mesh *mesh) {
 
     unsigned int i_side_global=0;
     FOR_ELEMENTS(mesh, ele) {
-        for(int i_lside=0; i_lside < ele->n_sides(); i_lside++)
+        for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
             elem_side_to_global[ele.index()][i_lside] = i_side_global++;
     }
 }
