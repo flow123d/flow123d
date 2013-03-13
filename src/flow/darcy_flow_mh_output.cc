@@ -76,9 +76,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     F_ENTRY;
     using namespace Input;
     
-    
     // setup output
-    // output_writer = new OutputTime(mesh_, Record(in_rec).val<Record>("output_stream"));
+    // for process of rank != 0 is set to NULL
     output_writer = OutputStream(mesh_, Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
@@ -93,12 +92,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
       
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
-<<<<<<< .mine
-
-
-=======
-      
->>>>>>> .r2207
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
@@ -110,18 +103,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     PetscErrorCode ierr;
     PetscMPIInt rank;
 
-<<<<<<< .mine
-    PetscErrorCode ierr;
-    PetscMPIInt rank;
-=======
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
-    
-    if( rank == 0)
-    {
->>>>>>> .r2207
-
-<<<<<<< .mine
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     
@@ -131,10 +112,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
       
       // temporary solution for balance output
       balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
-=======
-      // temporary solution for balance output
-      balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
->>>>>>> .r2207
 
       { // local iterator it
         // optionally open raw output file
@@ -146,12 +123,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
         }
       }
 
-<<<<<<< .mine
     } //end of rank == 0
-
-=======
-    } //end of rank == 0
->>>>>>> .r2207
 }
 
 
@@ -196,7 +168,7 @@ void DarcyFlowMHOutput::output()
     START_TIMER("DARCY OUTPUT");
 
     PetscErrorCode ierr;
-    PetscMPIInt rank = 0;
+    PetscMPIInt rank;
 
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); 
     ASSERT(ierr == 0,"Error in MPI_Comm_rank.");

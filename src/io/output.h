@@ -927,8 +927,13 @@ public:
 
 inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    PetscErrorCode ierr;
+    PetscMPIInt rank;
+    
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    
+    //TODO: multi_process output
     if (rank != 0) {
         return NULL;
     }
