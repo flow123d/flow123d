@@ -300,6 +300,12 @@ else(PETSC_FOUND)
 endif(PETSC_FOUND)
 
 
+# Our ouwn find module for BDDCML
+# TODO: extrac type of fortran decorations from 
+# make.inc or use CMake + module FortranCInterface in BDDCML
+find_package(BDDCML REQUIRED)
+add_definitions("-DAdd_")
+
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
@@ -357,6 +363,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
+    ${BDDCML_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}

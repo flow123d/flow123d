@@ -110,9 +110,10 @@ set(sources_fem_lib
 set(sources_lib_la
 	la/distribution.cc
 	la/local_to_global_map.cc
-    la/schur.cc
+    #la/schur.cc
     la/solve.cc
-    la/linsys.cc
+    la/linsys_BDDC.cc
+    la/linsys_PETSC.cc
     la/sparse_graph.cc
 )
 
@@ -198,7 +199,7 @@ target_link_libraries(input_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES} ${BDDCML_LIBRARIES})
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})

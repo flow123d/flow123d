@@ -170,6 +170,10 @@ public:
     
     //returns reference to equation data
     virtual EqData &get_data() = 0;
+    
+    
+    virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
+
 
 protected:
     void setup_velocity_vector() {
@@ -242,6 +246,7 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
+    void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
     
     //returns reference to equation data
     virtual DarcyFlowMH::EqData &get_data()
@@ -263,8 +268,8 @@ protected:
     void mh_abstract_assembly_intersection();
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
     void make_schur0();
-    void make_schur1();
-    void make_schur2();
+//    void make_schur1();
+//    void make_schur2();
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
@@ -294,11 +299,12 @@ protected:
 	int	*row_4_edge;		//< edge index to matrix row
 	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
 
-
+        std::vector<int> element_part;  //< for aech element, index of subdomain
 
 	// MATIS related arrays
-    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
-	ISLocalToGlobalMapping map_side_local_to_global; //< PETSC mapping form local SIDE indices of subdomain to global indices
+        std::vector<double>   solution_;                 //< sequantial scattered solution vector
+        std::vector<unsigned> solver_indices_;           //< renumbering of unknowns in the global vector
+        std::vector<int>      global_row_4_sub_row;      //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
