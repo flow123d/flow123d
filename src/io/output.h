@@ -164,7 +164,7 @@ typedef std::vector<OutputData> OutputDataVec;
  */
 class Output {
 public:
-    /*
+    /**
      * \brief Temporary definition for storing data (C++ vector of double scalars)
      */
     typedef std::vector<double> ScalarFloatVector;
@@ -311,19 +311,21 @@ public:
 
     void set_data_file(ofstream *_data_file) { data_file = _data_file; };
 
+    
     typedef enum {
         NONE = 0,
         GMSH = 1,
         VTK = 2,
     } OutFileFormat;
 
-    OutFileFormat file_format;
-
-    OutputFormat *output_format;
-
+    OutFileFormat   file_format;
+    OutputFormat    *output_format;
     string          *name;              ///< Name of output stream
 
 protected:
+  
+    int             rank;               ///< MPI rank of process (is tested in methods)
+  
     // Protected setters for descendant
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
     void set_base_file(ofstream *_base_file) { base_file = _base_file; };
@@ -339,7 +341,7 @@ private:
     struct OutScalar *node_scalar;      // Temporary solution
     struct OutScalar *element_scalar;   // Temporary solution
     struct OutVector *element_vector;   // Temporary solution
-
+    
     ofstream        *base_file;         ///< Base output stream
     string          *base_filename;     ///< Name of base output file
     string          *data_filename;     ///< Name of data output file
@@ -361,14 +363,12 @@ int Output::register_node_data(std::string name,
         _Data *data,
         uint size)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+    return 0;
+  }
 
     if(mesh->node_vector.size() == size) {
         int found = 0;
@@ -390,14 +390,12 @@ int Output::register_elem_data(std::string name,
         _Data *data,
         uint size)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+    return 0;
+  }
 
     if(mesh->element.size() == size) {
         int found = 0;
@@ -418,14 +416,12 @@ int Output::register_node_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+    return 0;
+  }
 
     if(mesh->node_vector.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
@@ -443,14 +439,12 @@ int Output::register_elem_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+  return 0;
+  }
 
     if(mesh->element.size() == data.size()) {
         OutputData *out_data = new OutputData(name, unit, data);
@@ -657,16 +651,14 @@ int OutputTime::register_node_data(std::string name,
         _Data *data,
         uint size)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	int found = 0;
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+    return 0;
+  }
 
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
+    int found = 0;
+    
     std::vector<OutputData> *node_data = get_node_data();
     Mesh *mesh = get_mesh();
 
@@ -702,16 +694,14 @@ int OutputTime::register_corner_data(std::string name,
         _Data *data,
         uint size)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int found = 0;
-
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
+    int found = 0;
+    
     /* TODO: It's not possible to check easily correct number of corners, so
      * skipping for now. */
 
@@ -745,16 +735,14 @@ int OutputTime::register_elem_data(std::string name,
         _Data *data,
         unsigned int size)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+    return 0;
+  }
+
     int found = 0;
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
+    
     std::vector<OutputData> *elem_data = get_elem_data();
     Mesh *mesh = get_mesh();
 
@@ -788,16 +776,13 @@ int OutputTime::register_node_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+    return 0;
+  }
+
     int found = 0;
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
     std::vector<OutputData> *node_data = get_node_data();
     Mesh *mesh = get_mesh();
 
@@ -831,16 +816,14 @@ int OutputTime::register_corner_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int found = 0;
-
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
-
+    
+    int found = 0;
+    
     /* TODO: It's not possible to check easily correct number of corners, so
      * skipping for now. */
 
@@ -872,16 +855,14 @@ int OutputTime::register_elem_data(std::string name,
         std::string unit,
         std::vector<_Data> &data)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  /* It's possible now to do output to the file only in the first process */
+  if(rank!=0) {
+    /* TODO: do something, when support for Parallel VTK is added */
+    return 0;
+  }
+
     int found = 0;
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
+    
     std::vector<OutputData> *elem_data = get_elem_data();
     Mesh *mesh = get_mesh();
 
@@ -927,18 +908,25 @@ public:
 
 inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)
 {
-    int ierr, rank;
-    
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
-    
-    //TODO: multi_process output
-    if (rank != 0) {
-        return NULL;
-    }
+    // object is created for all processes, master process is checked in methods
 
+    // checking if the output stream ahs been already created
     OutputTime *output_time = OutputTime::is_created(in_rec);
 
+    // testing rank of process
+    int ierr, rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
+    
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        
+        // object is created always created 
+        // but this one with rank !=0 is with limited functions
+        output_time = new OutputTime(mesh, in_rec);
+    }
+    
     /* When this record doesn't exist, then create new one */
     if(output_time == NULL) {
         /* Realloc array of output_streams */

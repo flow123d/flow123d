@@ -169,10 +169,9 @@ OutputData::~OutputData()
 
 Output::Output(Mesh *_mesh, string fname)
 {
-    PetscErrorCode ierr;
-    PetscMPIInt rank;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
+    int ierr;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
@@ -209,12 +208,7 @@ Output::Output(Mesh *_mesh, string fname)
 }
 
 Output::~Output()
-{
-    PetscErrorCode ierr;
-    PetscMPIInt rank;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
-    
+{   
     /* It's possible now to do output to the file only in the first process */
     if(rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
@@ -252,6 +246,12 @@ Output::~Output()
 
 int Output::write_head(void)
 {
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+    
     if(this->output_format != NULL) {
         return this->output_format->write_head();
     }
@@ -260,6 +260,12 @@ int Output::write_head(void)
 
 int Output::write_tail(void)
 {
+     /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+    
     if(this->output_format != NULL) {
         return this->output_format->write_tail();
     }
@@ -268,12 +274,11 @@ int Output::write_tail(void)
 
 int Output::write_data()
 {
-    PetscErrorCode ierr;
-    PetscMPIInt rank;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
-    
-    if (rank!=0) return 1;
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
 
     if(this->output_format != NULL) {
         return this->output_format->write_data();
@@ -338,13 +343,15 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 {
     this->output_format=NULL;
     
-    PetscErrorCode ierr;
-    PetscMPIInt rank;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
+    int ierr;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     
-    //TODO: multi-process output
-    if (rank!=0) return;
+    /* It's possible now to do output to the file only in the first process */
+    if(rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
 
     
     OutputTime::output_streams_count++;
@@ -428,25 +435,23 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 
 OutputTime::~OutputTime(void)
 {
+    /* It's possible now to do output to the file only in the first process */
+    //if(rank!=0) {
+      /* TODO: do something, when support for Parallel VTK is added */
+    //  return;
+    //}
 }
 
 int OutputTime::write_data(double time)
 {
     int ret = 0;
     
-    PetscErrorCode ierr;
-    PetscMPIInt rank;
-
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); 
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank");
-    
-    DBGMSG("OutputTime::write_data(time) - MPI rank test done: rank=%d\n",rank);
-    
-    //TODO: multi-process output
+    // It's possible now to do output to the file only in the first process 
+    // TODO: do something, when support for Parallel VTK is added 
 
     if (rank == 0 )
     { 
-      DBGMSG("write output on process of rank=%d", rank);
+      DBGMSG("write output on process of rank=%d\n", rank);
       if(this->output_format != NULL) {
         ret = this->output_format->write_data(time);
         this->current_step++;

@@ -77,7 +77,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     using namespace Input;
     
     // setup output
-    // for process of rank != 0 is set to NULL
+    // is created for every MPI process
     output_writer = OutputStream(mesh_, Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
@@ -100,8 +100,13 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     DBGMSG("end create output\n");
 
       
+    // testing MPI rank so that the files are opened only once
+    /* When calling methods water_balance() and output_internal_flow_data()
+     * it is tested if the file == NULL.
+     * And it will be NULL for all processes except rank==0.
+     */
+    
     int ierr, rank;
-
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     
@@ -166,71 +171,58 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("DARCY OUTPUT");
 
-    PetscErrorCode ierr;
-    PetscMPIInt rank;
+    std::string eleVectorName = "velocity_elements";
+    std::string eleVectorUnit = "L/T";
 
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); 
-    ASSERT(ierr == 0,"Error in MPI_Comm_rank.");
+    unsigned int result = 0;
     
-    //TODO: multi_process output
-  
-    if(rank == 0)
-    {
-      std::string eleVectorName = "velocity_elements";
-      std::string eleVectorUnit = "L/T";
-
-      unsigned int result = 0;
+    //cout << "DMHO_output: rank: " << rank << "\t output_writer: " << output_writer << endl;
     
-      //cout << "DMHO_output: rank: " << rank << "\t output_writer: " << output_writer << endl;
-    
-      // skip initial output for steady solver
-      if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
+    // skip initial output for steady solver
+    if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
 
-      if (darcy_flow->time().is_current(output_mark_type)) {
+    if (darcy_flow->time().is_current(output_mark_type)) {
 
-        make_element_vector();
-        //make_sides_scalar();
+      make_element_vector();
+      //make_sides_scalar();
 
-        make_node_scalar_param(node_pressure);
+      make_node_scalar_param(node_pressure);
 
-        //make_neighbour_flux();
+      //make_neighbour_flux();
 
-        DBGMSG("water_balance()\n");
-        water_balance();
+      DBGMSG("water_balance()\n");
+      water_balance();
 
-        //compute_l2_difference();
+      //compute_l2_difference();
 
-        result = output_writer->register_node_data
-                ("pressure_nodes","L", node_pressure);
-        //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
+      result = output_writer->register_node_data
+              ("pressure_nodes","L", node_pressure);
+      //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
 
-        result = output_writer->register_elem_data
-                ("pressure_elements","L",ele_pressure);
-        //xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
+      result = output_writer->register_elem_data
+              ("pressure_elements","L",ele_pressure);
+      //xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
 
-        if (output_piezo_head) {
-            result = output_writer->register_elem_data
-                        ("piezo_head_elements","L",ele_piezo_head);
-        }
-
-        result = output_writer->register_elem_data("velocity_elements", "L/T", ele_flux);
-        //xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
-
-        //double time  = min(darcy_flow->solved_time(), 1.0E200);
-        double time  = darcy_flow->solved_time();
-
-        // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
-        // consider begining of the interval of actual result as the output time. Or use
-        // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
-        if (time == TimeGovernor::inf_time) time = 0.0;
-        
-        DBGMSG("calling output_writer->write_data(%f)\n", time);
-        output_writer->write_data(time);
-
-        DBGMSG("calling output_internal_flow_data()\n");
-        output_internal_flow_data();
+      if (output_piezo_head) {
+          result = output_writer->register_elem_data
+                      ("piezo_head_elements","L",ele_piezo_head);
       }
-    } //end of rank == 0
+
+      result = output_writer->register_elem_data("velocity_elements", "L/T", ele_flux);
+      //xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
+
+      //double time  = min(darcy_flow->solved_time(), 1.0E200);
+      double time  = darcy_flow->solved_time();
+
+      // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
+      // consider begining of the interval of actual result as the output time. Or use
+      // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
+      if (time == TimeGovernor::inf_time) time = 0.0;
+       
+      output_writer->write_data(time);
+      
+      output_internal_flow_data();
+    }
 }
 
 //=============================================================================
