@@ -48,7 +48,7 @@ include (ResolveCompilerPaths)
 # Extract include paths and libraries from compile command line
 resolve_LIBRARIES(BDDCML_LIBS "${BDDCML_LINK_SEQ}")
 # Extract BLOPEX object files 
-STRING(REGEX MATCHALL "[^ ]*\\.o" BLOPEX_OBJS ${BDDCML_LINK_SEQ})
+STRING(REGEX MATCHALL "[^ ]*\\.o" BLOPEX_OBJS "${BDDCML_LINK_SEQ}")
 message(STATUS "BOBJ: ${BLOPEX_OBJS}")
 #STRING(REGEX REPLACE <regular_expression>  <replace_expression> <output variable>  <input> [<input>...])
 # ATTENTION: input has to be quoted otherwise it interprets contens of variable, in particular run REGEX on every item in ; separated list
