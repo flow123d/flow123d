@@ -189,6 +189,8 @@ template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // const Func &isotherm
 {
     double mass_limit;
+    boost::uintmax_t max_iter=100;
+    boost::math::tools::eps_tolerance<double> toler(60);
     Func &iso_hlp = const_cast<Func &>(isotherm);
     double f_max = iso_hlp(c_aqua_limit_);
     if (c_aqua_limit_ >0) {
@@ -198,8 +200,9 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
     }
 	double total_mass = scale_aqua*c_aqua + scale_sorbed * c_sorbed;
     CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed); // equation describing one point on the isotherm
-    pair<double,double> solution; //= boost::math::tools::toms748_solve(eq_func, 0, mass_limit, boost::math::tools::eps_tolerance<double>(60), 100);
+    pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0.0, 10.0, toler, max_iter);
     //c_sorbed = (total_mass - scale_aqua * solution.first) / scale_sorbed;
+    //PROBABLY COMPLETELY WRONG, SOLUTION IS AN INTERVAL CONTAINING SOLUTION
     c_aqua = (total_mass - scale_sorbed * solution.first) / scale_aqua;
     c_sorbed = (total_mass - scale_aqua * solution.second) / scale_sorbed;
 };

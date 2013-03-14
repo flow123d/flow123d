@@ -162,7 +162,7 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 		{
 			// reinit isotherm, what about to define a type of isotherm in reinit
 			isotherms_mob[i_reg][i_subst].reinit(iso_type[i_subst],rock_density,solvent_dens,mobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
-			switch (iso_type[i_subst])
+			switch(iso_type[i_subst])
 			{
 			 case none: // 0:
 			 {
