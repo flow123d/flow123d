@@ -44,6 +44,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     define_test(input_interface)
     define_test(type_use_case)
     define_test(address)
+    define_test(reference)
     
     define_test(lazy_types)
 

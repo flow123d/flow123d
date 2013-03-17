@@ -121,6 +121,11 @@ public:
      */
     string str();
 
+    /**
+     * Put actual address to previous_references_ set
+     */
+    void put_address();
+
 private:
     /**
      * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
@@ -129,6 +134,7 @@ private:
      */
     vector< pair<int, string> > path_;
     vector<const Node *> nodes_;
+    std::set<string> previous_references_;
 
 
 };

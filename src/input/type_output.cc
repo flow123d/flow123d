@@ -343,7 +343,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int 
 
 ostream& OutputJSONTemplate::print(ostream& stream) {
     key_name_ = "";
-    type_->set_reference( "/" );
+    type_->set_reference( "" );
     return OutputBase::print(stream);
 }
 
@@ -365,14 +365,14 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 				stream << "{";
 				if (type->description().size()) {
 					size_setw_ = depth+1;
-					write_description(stream, type->description(), 2);
+					write_description(stream, type->description(), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
 					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
-						it->type_.get()->set_reference( type->reference() + "#" + it->key_ + "/" );
+						it->type_.get()->set_reference( type->reference() + "/" + "#" + it->key_ );
 					} else if ( !(typeid(*(it->type_.get())) == typeid(Type::Record))
 							| (it->type_.get()->reference().size() == 0) ) {
-						it->type_.get()->set_reference( type->reference() + it->key_ + "/" );
+						it->type_.get()->set_reference( type->reference() + "/" + it->key_ );
 					}
 					if (it != type->begin()) {
 						stream << ",";

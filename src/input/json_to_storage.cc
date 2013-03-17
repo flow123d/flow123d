@@ -106,6 +106,13 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
     string address = ref_address + '/';
     string tmp_str;
 
+    std::set<string>::iterator it = previous_references_.find(ref_address);
+    if (it == previous_references_.end()) {
+    	previous_references_.insert(ref_address);
+    } else {
+    	xprintf(PrgErr, "JSON input contains cyclic reference: %s.\n", ref_address.c_str());
+    }
+
     while ( ( new_pos=address.find('/',pos) ) != string::npos ) {
         tmp_str = address.substr(pos, new_pos - pos);
         // DBGMSG("adr: '%s' tstr '%s' pos:%d npos:%d\n", address.c_str(), tmp_str.c_str(), pos, new_pos  );
@@ -168,6 +175,12 @@ string JSONPath::str() {
     stringstream ss;
     output(ss);
     return ss.str();
+}
+
+
+
+void JSONPath::put_address() {
+	previous_references_.insert(str());
 }
 
 
@@ -276,9 +289,9 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
 
         // dereference and take data from there
         JSONPath ref_path = p.find_ref_node(ref_address);
-        cout << ref_path << endl;
         return make_storage( ref_path, type );
     }
+    p.put_address();
 
     // return Null storage if there is null on the current location
     if (p.head()->type() == json_spirit::null_type)
