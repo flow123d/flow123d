@@ -34,10 +34,10 @@
 \usepackage{longtable}
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
+\usepackage{etoolbox}
 
 \usepackage{fancyvrb}	% extended verbatim environments (for examples of IO files)
 \usepackage{hyperref}   % hypertext capabilities, should by last package
-
 \hypersetup{backref,colorlinks=true}  %setup hyperef package
 
 \newcommand{\vari}[1]{{\it #1}}
@@ -152,7 +152,8 @@ project ``Advanced Remediation Technologies and Processes Center'' 1M0554
 \parindent=0pt
 \parskip=1ex
 
-\chapter{Overview}
+\section{}
+\chapter{Quick start}
 
 Flow123D is a software for simulation of water flow and reactionary solute transport in a heterogeneous 
 porous and fractured medium. In particular it is suited for simulation of underground processes in a granite rock massive.
@@ -276,12 +277,19 @@ The output files can be either \verb'*.msh' files accepted by the GMSH or one ca
 In the following chapter, we briefly describe structure of individual input files in particular the main INI file. In the last chapter, we describe
 mathematical models and numerical methods used in the Flow123d.
 
-\input{JSON_input}
+
+\chapter{Mathematical models of physical reality}
+
+\chapter{Numerical methods}
+\input{convection}
+
+\input{decay}
+\input{semchem}
+
 
 \chapter{File formats}
-\section{Flow123D ini file format}
-
-\input{flow_ini}
+%\section{Input format}
+\input{JSON_input}
 
 \section{Other input files}
 \input{input_files.tex}
@@ -293,16 +301,167 @@ mathematical models and numerical methods used in the Flow123d.
 %\input{pos_12}   
 
 
-\chapter{Mathematical models}
-
-\input{convection}
-
-\input{decay}
-\input{semchem}
-
+\chapter{Test and tutorial problems}
 \input{tests}
 
+\chapter{Main input file reference}
+% support macros
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RecordType environment
+%
+% usage:
+% \begin{RecordType}
+%       {<record name>}                 % name of the record, used for header and for hypertarget in form IT::<record name>
+%       {<parent abstract record>}      % possible parent abstract record
+%       {<default conversion key>}      % possible auto conversion key
+%       {<link>}                        % possible hyperlink into hand written text
+%       {< record description>}         % description of the record
+%
+%       \KeyItem{<name>}                % name of the key
+%               {<type>}                % type of the key 
+%               {<default value>}       % type of default value and possibly the value itself
+%               {<link>}                %  possible hyperlink to hand written text
+%               {<key description>}     % description of the key
+%       ...
+% \end{RecordType}
+
+\def\AddDoc#1{}
+
+\newenvironment{RecordType}[5]
+{
+ \ifstrequal{#4}{\relax}{%
+    % turn off
+    \begingroup
+    \gdef\KeyItem##1##2##3##4##5{}
+ }{
+    \par
+    \vskip 2ex
+    \hrule%
+    \vskip 0.3ex
+    \hrule
+    \noindent%
+    record: {\bf #1}%
+    \ifstrempty{#2}{}{ implements abstract type: #2}%
+    \ifstrempty{#3}{}{ constructible from key: #3}%
+    {#4}
+    \par%
+    \vskip 0.5ex
+    \hrule%
+    \vskip 0.3ex
+    \hrule
+    {#5}
+    \begingroup%records of steady field type which we describe right now 
+    \addtolength{\leftskip}{3em}%
+    %
+    \gdef\KeyItem##1##2##3##4##5{%
+        \par
+        \vskip 0.3ex
+        %\hrule%
+        \noindent%
+        \hspace{-3em}{\bf\tt ##1} = {\it \textless ##2\textgreater}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
+        \par
+        Default: {##3} \hfill [##4]
+        \par
+        {##5}
+    }%
+  }
+}{%
+  \vskip 2ex  
+  \endgroup%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% AbstractType environment
+%
+% usage:
+% \begin{AbstractType}
+%       {<record name>}
+%       {<default descendant>}
+%       {<link>}
+%       {<description>}         % Description paragraph of the abstract type.
+%       \Descendant{<type name>}
+% \end{AbstractType}
+
+\newenvironment{AbstractType}[3]
+{\par
+ \vskip 2ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ \noindent%
+ abstract type: {\bf #1}%
+ \ifstrempty{#2}{}{ default descendant: #2}%
+ \par%
+ \vskip 0.5ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ #3
+ \par\noindent
+ Descendants:
+ \par
+ \begingroup%records of steady field type which we describe right now 
+  \addtolength{\leftskip}{3em}%
+  %
+  \gdef\Descendant##1{%
+    \par
+    \vskip 0.3ex
+    %\hrule%
+    \noindent%
+    \hspace{-3em}{\bf\tt ##1}%
+    \par
+  }%
+}{%
+  \vskip 0.7ex  
+  \endgroup%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SelectionType environment
+%
+% usage:
+% \begin{SelectionType}{<selection name>}    
+%       \KeyItem{<value name>}{<value>}
+%       Key value description.
+% \end{SelectionType}
+
+\newenvironment{SelectionType}[1]
+{\par
+ \vskip 2ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ \noindent%
+ selection type: {\bf #1}%
+ \par%
+ \vskip 0.5ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ Possible values:
+ \par
+ \begingroup%records of steady field type which we describe right now 
+  \addtolength{\leftskip}{3em}%
+  %
+  \gdef\KeyItem##1##2{%
+    \par
+    \vskip 0.3ex
+    %\hrule%
+    \noindent%
+    \hspace{-3em}{\bf\tt ##1} : { ##2 }%%
+    \par
+  }%
+}{%
+  \vskip 0.7ex  
+  \endgroup%
+}
+
+
+% generated file
+\input{input_reference}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

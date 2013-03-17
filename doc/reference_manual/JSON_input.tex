@@ -1,8 +1,12 @@
 
 
-\chapter{New input files}
-The input consists of the root input file given as the parameter on the command line and possibly several other 
-files with large input data. In this section we shall describe format of the input files. At first, we specify syntax of
+\section{Input files}
+In this section we shall describe whole structure of the program input, namely the structure of the root input file. File formats of other files used for input
+of the mesh or large field data (e.g. the GMSH file format) are described in separate sections. 
+The program input consists of the root input file given as the parameter on the command line and possibly several other 
+files with large input data. The root input file is in so called CON file format that is a slight extension of the JSON file format.
+
+In this section we shall describe format of the input files. At first, we specify syntax of
 an extension to the JSON file format. Then we set rules for input of more specific data constructs. We continue by description of general scheme for input of
 boundary conditions and material time-space variable data. And finally, we describe setting of particular equations and their solvers.
 
@@ -19,7 +23,7 @@ the existing functionality. Second, we want to propose a new way how to input ge
 As this is a draft version there are lot of remarks, suggestions and questions in square brackets. Some keys are marked OBSOLETE, which means that 
 we want to replace them by something else.
 
-\section{Root file format}
+\subsection{CON file format}
 The root input file is in the Humanized JSON file format. That is the JSON file format with few syntax extensions and several semantic rules particular to
 Flow123d. The syntax extensions are
 \begin{enumerate}
@@ -75,7 +79,7 @@ to start a one line comment. Everything up to the new line will be ignored and r
 
 [What about multiple line strings? (Should be allowed)]
 
-\subsection{Special keys}
+\subsection{CONSpecial keys}
 Apart from small extensions of JSON syntax, we impose further general rules on the interpretation of the input files by Flow123d reader.
 First, the capital only keywords  
 have a special meaning for Flow JSON reader. On the other hand, we use only small caps for keys interpreted through the reader.
@@ -236,6 +240,10 @@ string type. Default value specification can be:
 \end{description}
 
 [? polymorphic record types]
+
+
+
+
 
 
 \section{Record types for input of data fields}
@@ -509,6 +517,8 @@ inside \verb'problem'.
  field data for equations.]
 
 \begin{recordtype}{System}{}
+Description. ůlkajs efůlakd fůlakds fůropi pwnfvpweiurv evm úqoiefmv lksdm vúqoierrv lakfdsvkjweroivlksdmvaoirrf vúm a v ve lkvůqekfv ú
+jf ais i qkd ffo qk dfůjhaopdif  u wqwddff if j khr if
 \keyitem{pause\_after\_run}{bool}{no}
 Wait for press of Enter after run. Good for Windows users, but dangerous for batch computations. 
 Should be rather an command-line option.

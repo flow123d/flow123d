@@ -24,8 +24,7 @@
  * @endcode
  * EI_SomeValue is a error_info object for transfer of values form throw point to catch point. See EI<Tag,Type> class template.
  */
-#define THROW(whole_exception_expr) \
-    BOOST_THROW_EXCEPTION( whole_exception_expr)
+#define THROW(whole_exception_expr) BOOST_THROW_EXCEPTION( whole_exception_expr)
 
 
 namespace internal {

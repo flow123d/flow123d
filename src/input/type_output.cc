@@ -3,7 +3,13 @@
  */
 
 #include "input/type_output.hh"
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/iostreams/operations.hpp> // put
 
+#include <string>
+#include <limits>
 
 namespace Input {
 namespace Type {
@@ -685,8 +691,71 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
  * implementation of OutputLatex
  */
 
+namespace internal {
+class output_filter : public boost::iostreams::multichar_output_filter {
+public:
+    template<typename Sink>
+    std::streamsize write(Sink& snk, const char* s, streamsize n)
+    {
+        std::streamsize n_out = 0;
+        while (n != 0) {
+            --n;
+            if (s[0] == '_' || s[0] == '$') {
+                boost::iostreams::put(snk,'\\');
+            }
+            boost::iostreams::put(snk, *s++); ++n_out;
+        }
+        return n_out;
+    }
+};
+
+
+
+template <class T>
+ostream & print_range(ostream& stream, T range_min, T range_max) {
+    T min_val = std::numeric_limits<T>::min();
+    T max_val = std::numeric_limits<T>::max();
+    if (min_val > 0) min_val = -max_val;
+
+    if (range_min != min_val) {
+        if (range_max != max_val) stream << "[" << range_min << ", " << range_max << "]";
+        else stream << "[" << range_min << ", ]";
+    } else {
+        if (range_max != max_val) {
+            cout << "DBG" << range_max << " " << max_val << " " << max_val-range_max << endl;
+            stream << "[ ," << range_max << "]";
+        }
+    }
+    return stream;
+}
+
+
+std::string hyper_target( const std::string &prefix, const std::string &str) {
+    string label=prefix + "::" + str;
+    boost::replace_all(label, "_", "-");
+    boost::replace_all(label, ">", "");
+    // \hyperlink{<prefix>::str}{str}
+    return "\\hypertarget{" + label + "}{" + str +"}";
+}
+
+std::string hyper_link( const std::string &prefix, const std::string &str) {
+    string label=prefix + "::" + str;
+    boost::replace_all(label, "_", "-");
+    boost::replace_all(label, ">", "");
+    // \hyperlink{<prefix>::str}{str}
+    return "\\hyperlink{" + label + "}{" + str +"}";
+}
+
+} // namespace internal
+
+
+
 ostream& OutputLatex::print(ostream& stream) {
-    return OutputBase::print(stream);
+    boost::iostreams::filtering_ostream out;
+    out.push(internal::output_filter());
+    out.push(stream);
+    OutputBase::print(out);
+    return stream;
 }
 
 
@@ -697,18 +766,19 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
 
     switch (doc_type_) {
     case key_record:
-        stream << type->type_name() << " type";
+        stream << "record: " << internal::hyper_link("IT", type->type_name());
         break;
     case full_record:
         if (! type->made_extensive_doc()) {
             type->set_made_extensive_doc(true);
 
             // header
-            stream << endl <<"\\record_type{" << type->type_name() << "}";
+            stream << endl <<"\\begin{RecordType}{"
+                   << internal::hyper_target("IT", type->type_name()) << "}";
 
             // parent record
             if (type->data_->parent_ptr_) {
-                stream << "{" << type->data_->parent_ptr_->type_name() <<"}";
+                stream << "{" << internal::hyper_link("IT", type->data_->parent_ptr_->type_name()) <<"}";
             } else {
                 stream << "{}";
             }
@@ -716,39 +786,44 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
             // reducible to key
             Record::KeyIter key_it = type->auto_conversion_key_iter();
             if (key_it != type->end()) {
-                stream << "{" << key_it->key_ << "}";
+                stream << "{" << internal::hyper_link( type->type_name(), key_it->key_) << "}";
             } else {
                 stream << "{}";
             }
-            stream << endl << type->description();
+            // add info and description
+            stream << "{\\AddDoc{" << type->type_name() +"}}{"  << type->description() << "}";
             stream << endl;
 
             // keys
             doc_type_ = key_record;
             for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-                stream << "\\keyitem{" << it->key_ << "}";
 
+                stream << "\\KeyItem{" << internal::hyper_target( type->type_name(), it->key_) << "}";
                 stream << "{";
                 print(stream, it->type_.get(), 0);
                 stream << "}";
 
                 if (it->default_.is_obligatory()) {
-                    stream << "{<OBLIGATORY>}";
+                    stream << "{\\textless\\it obligatory\\textgreater}";
                 } else if (it->default_.is_optional()) {
-                    stream << "{<OPTIONAL>}";
+                    stream << "{\\textless\\it optional\\textgreater}";
                 } else if (it->default_.has_value_at_read_time()) {
-                    stream << "{<" << it->default_.value() << ">}";
+                    stream << "{\"" << it->default_.value() << "\"}";
                 } else {
                     stream << "{" << it->default_.value() << "}";
                 }
 
-                stream << endl << it->description_ << "%" << endl;
+                stream << "{\\AddDoc{" << type->type_name() << "::" << it->key_ << "}}{"
+                       << it->description_ << "}" << endl;
             }
+
+            stream << "\\end{RecordType}" << endl;
 
             // Full documentation of embedded record types.
             doc_type_ = full_record;
             if (depth_ == 0 || depth_ > depth) {
                 for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+                    if (it->key_ == "TYPE") continue;
                     print(stream, it->type_.get(), depth+1);
                 }
             }
@@ -767,7 +842,9 @@ void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int de
         unsigned int lower_size, upper_size;
 
         get_array_sizes(*type, lower_size, upper_size);
-        stream << "Array [" << lower_size << ": " << upper_size << "] of type: ";
+        stream << "Array ";
+        internal::print_range<unsigned int>(stream, lower_size, upper_size);
+        stream << " of ";
         print(stream, type->data_->type_of_values_.get(), 0);
         break;
     case full_record:
@@ -781,7 +858,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
     // Print documentation of abstract record
     switch (doc_type_) {
     case key_record:
-        stream << type->type_name() << " abstract type";
+        stream << "abstract type: " << internal::hyper_link("IT",type->type_name());
         break;
     case full_record:
         if (! type->made_extensive_doc()) {
@@ -790,14 +867,24 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
             type->set_made_extensive_doc(true);
 
             // header
-            stream << endl << "\\abstract_type{"  << type->type_name() << "}";
-            stream << endl;
-            stream << type->description() << "%" << endl;
+            stream << endl << "\\begin{AbstractType}{"
+                   << internal::hyper_target("IT", type->type_name() ) << "}";
+            const Record *default_desc = type->get_default_descendant();
+            if (default_desc) {
+                stream << "{" << internal::hyper_link( "IT", default_desc->type_name()) << "}";
+            } else {
+                stream << "{}";
+            }
+            // add info and description
+            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << type->description() << "}" << endl;
+
             // descendants
             doc_type_ = key_record;
             for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-                stream << "\\descendant{" << (*it).type_name() << "}" << endl;
+                stream << "\\Descendant{" << internal::hyper_link( "IT", (*it).type_name() ) << "}" << endl;
             }
+            stream << "\\end{AbstractType}" << endl;
+
 
             // Full documentation of embedded record types.
             doc_type_ = full_record;
@@ -806,6 +893,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
                     print(stream, &*it, depth+1);
                 }
             }
+
         }
         break;
     }
@@ -819,18 +907,22 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
 
     switch (doc_type_) {
     case key_record:
-        stream << "Selection " << type->type_name();
+        if ( type->type_name().find("TYPE") != string::npos ) {
+            stream<< "selection: " << type->type_name();
+        } else {
+            stream<< "selection: " << internal::hyper_link( "IT", type->type_name() );
+        }
         break;
     case full_record:
         if (! type->made_extensive_doc()) {
             type->set_made_extensive_doc(true);
 
-            stream << "\\selection_type{" << type->type_name() << "}" <<endl;
+            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}" <<endl;
             // keys
             for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
-                stream << "\\keyitem{" <<  it->key_ << "}{" << it->value << "}" << endl;
-                stream << it->description_  << endl;
+                stream << "\\KeyItem{" <<  ( it->key_ ) << "}{" << it->description_ << "}" << endl;
             }
+            stream << "\\end{SelectionType}" << endl;
         }
         break;
     }
@@ -841,7 +933,8 @@ void OutputLatex::print_impl(ostream& stream, const Integer *type, unsigned int 
     if (doc_type_ == key_record) {
         int lower_bound, upper_bound;
         get_integer_bounds(*type, lower_bound, upper_bound);
-        stream << "Integer in [" << lower_bound << ", " << upper_bound << "]";
+        stream << "Integer ";
+        internal::print_range<int>(stream, lower_bound, upper_bound);
     }
 }
 
@@ -850,7 +943,8 @@ void OutputLatex::print_impl(ostream& stream, const Double *type, unsigned int d
     if (doc_type_ == key_record) {
         double lower_bound, upper_bound;
         get_double_bounds(*type, lower_bound, upper_bound);
-        stream << "Double in [" << lower_bound << ", " << upper_bound << "]";
+        stream << "Double ";
+        internal::print_range<double>(stream, lower_bound, upper_bound);
     }
 }
 
@@ -885,13 +979,18 @@ void OutputLatex::print_impl(ostream& stream, const FileName *type, unsigned int
 
 
 
+
 std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
     return type_output.print(stream) << endl;
 }
 
+
+
 std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output) {
     return type_output.print(stream) << endl;
 }
+
+
 
 std::ostream& operator<<(std::ostream& stream, OutputLatex type_output) {
     return type_output.print(stream) << endl;
