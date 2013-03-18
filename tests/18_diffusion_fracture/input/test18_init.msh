@@ -1,7 +1,13 @@
-$ConcentrationFormat
-1.0	0	8
-$EndConcentrationFormat
-$Concentrations
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$ElementData
+1
+"concentration"
+0
+3
+0
+1
 19
 19	 0.000000000000	 
 20	 0.000000000000	 
@@ -22,4 +28,4 @@ $Concentrations
 35	 0.000000000000	 
 36	 0.000000000000	 
 37	 1.000000000000	
-$EndConcentrations
+$EndElementData

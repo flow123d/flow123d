@@ -42,7 +42,8 @@
 
       bulk_data = [
         { rid = 100,
-          init_conc = 0
+          init_conc = 0,
+          dg_penalty = 1e4
         }
       ],
 
@@ -80,7 +81,6 @@
       substances = [
         "A"
       ], 
-      dg_penalty=1e4,
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07

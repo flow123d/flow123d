@@ -52,14 +52,6 @@ Record TransportDG::input_type
 	.derive_from(TransportBase::input_type)
 	.declare_key("sigma", Double(), Default("0"),
 			"Coefficient of diffusive transfer through fractures.")
-	.declare_key("alpha_l", Double(), Default("0"),
-			"Longitudal dispersivity.")
-	.declare_key("alpha_t", Double(), Default("0"),
-			"Transversal dispersivity.")
-	.declare_key("d_m", Double(), Default("1e-6"),
-			"Molecular diffusivity.")
-	.declare_key("dg_penalty", Double(0), Default("0"),
-			"Penalty parameter influencing the discontinuity of the solution.")
     .declare_key("solver", Solver::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
     .declare_key("bc_data", Array(TransportDG::EqData().boundary_input_type()
@@ -75,7 +67,12 @@ Record TransportDG::input_type
 using namespace arma;
 
 TransportDG::EqData::EqData() : TransportEqData("TransportDG")
-{}
+{
+	ADD_FIELD(disp_l, "Longitudal dispersivity.", Default("0"));
+	ADD_FIELD(disp_t, "Transversal dispersivity.", Default("0"));
+	ADD_FIELD(diff_m, "Molecular diffusivity.", Default("1e-6"));
+	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution.", Default("0"));
+}
 
 RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
 	// Base method EqDataBase::read_boundary_list_item must be called first!
@@ -133,17 +130,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data.set_time(*time_);
 
     sigma  = in_rec.val<double>("sigma");
-    alphaL = in_rec.val<double>("alpha_l");
-    alphaT = in_rec.val<double>("alpha_t");
-    Dm 	   = in_rec.val<double>("d_m");
-
-
-    // Set up the numerical penalty parameter
-    alpha = in_rec.val<double>("dg_penalty");
-    if (Dm != 0 && alpha == 0)
-    	alpha = max(1e0,1e0/Dm);
-
-
 
     sorption = in_rec.val<bool>("sorption_enable");
     dual_porosity = in_rec.val<bool>("dual_porosity");
@@ -502,10 +488,14 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
     typename DOFHandler<dim,3>::CellIterator cell = dh->begin_cell();
     vector<mat33> K;
     vector<vec3> velocity;
-    vector<double> divergence;
+    vector<double> divergence, Dm, alphaL, alphaT;
     const unsigned int ndofs = fe->n_dofs();
     unsigned int dof_indices[ndofs];
     PetscScalar local_matrix[ndofs*ndofs];
+
+    Dm.resize(q.size());
+    alphaL.resize(q.size());
+    alphaT.resize(q.size());
 
 	// assemble integral over elements
     for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
@@ -516,8 +506,15 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
         fv_rt.reinit(cell);
         
         calculate_velocity(cell, velocity, fv_rt);
-        calculate_dispersivity_tensor(K, velocity);
         calculate_velocity_divergence(cell, divergence, fv_rt);
+
+        for (int k=0; k<q.size(); k++)
+        {
+        	Dm[k] = data.diff_m.value(fe_values.point(k), cell->element_accessor());
+        	alphaL[k] = data.disp_l.value(fe_values.point(k), cell->element_accessor());
+        	alphaT[k] = data.disp_t.value(fe_values.point(k), cell->element_accessor());
+        }
+        calculate_dispersivity_tensor(K, velocity, Dm, alphaL, alphaT);
 
         double por_m = data.por_m.value(cell->centre(), cell->element_accessor());
 
@@ -563,6 +560,8 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
     PetscScalar local_matrix[ndofs*ndofs], local_rhs[ndofs];
     vector< vector<mat33> > side_K;
     vector< vector<vec3> > side_velocity;
+    vector< vector<double> > Dm, alphaL, alphaT;
+    vector<double> dg_penalty;
     double gamma_l, omega[2], transport_flux;
 
     gamma.resize(mesh_->boundary_.size());
@@ -578,6 +577,10 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
         fv_sb.resize(edg->n_sides);
         side_K.resize(edg->n_sides);
         side_velocity.resize(edg->n_sides);
+        Dm.resize(edg->n_sides);
+        alphaL.resize(edg->n_sides);
+        alphaT.resize(edg->n_sides);
+        dg_penalty.resize(edg->n_sides);
 
         if (side_dof_indices.size() < edg->n_sides)
             for (int i=side_dof_indices.size(); i<edg->n_sides; i++)
@@ -585,7 +588,8 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 
         if (fe_values_side.size() < edg->n_sides)
             for (int sid=fe_values_side.size(); sid<edg->n_sides; sid++)
-                fe_values_side.push_back(new FESideValues<dim,3>(map, side_q, *fe, update_values | update_gradients | update_side_JxW_values | update_normal_vectors));
+                fe_values_side.push_back(new FESideValues<dim,3>(map, side_q, *fe, update_values | update_gradients
+                		| update_side_JxW_values | update_normal_vectors | update_quadrature_points));
 
 		for (int sid=0; sid<edg->n_sides; sid++)
 		{
@@ -594,7 +598,17 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 			fe_values_side[sid]->reinit(cell, edg->side(0));
 			fsv_rt.reinit(cell, edg->side(0));
 			calculate_velocity(cell, side_velocity[sid], fsv_rt);
-			calculate_dispersivity_tensor(side_K[sid], side_velocity[sid]);
+			Dm[sid].resize(side_q.size());
+			alphaL[sid].resize(side_q.size());
+			alphaT[sid].resize(side_q.size());
+			for (int k=0; k<side_q.size(); k++)
+			{
+				Dm[sid][k] = data.diff_m.value(fe_values_side[sid]->point(k), cell->element_accessor());
+				alphaL[sid][k] = data.disp_l.value(fe_values_side[sid]->point(k), cell->element_accessor());
+				alphaT[sid][k] = data.disp_t.value(fe_values_side[sid]->point(k), cell->element_accessor());
+			}
+			dg_penalty[sid] = data.dg_penalty.value(cell->centre(), cell->element_accessor());
+			calculate_dispersivity_tensor(side_K[sid], side_velocity[sid], Dm[sid], alphaL[sid], alphaT[sid]);
 			fv_sb[sid] = fe_values_side[sid];
 		}
 
@@ -609,7 +623,7 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 				vec3 nv = fv_sb[s1]->normal_vector(0);
 
 				// set up the parameters for DG method
-				set_DG_parameters(&(*edg), s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), alpha, advection, gamma_l, omega, transport_flux);
+				set_DG_parameters(&(*edg), s1, s2, side_q.size(), side_K, -fv_sb[1]->normal_vector(0), Dm, dg_penalty, advection, gamma_l, omega, transport_flux);
 
 				int sd[2];
 				sd[0] = s1;
@@ -668,17 +682,21 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
     MappingP1<dim-1,3> map_vb;
     QGauss<dim-1> side_q(2);
     FE_RT0<dim,3> fe_rt;
-    FESideValues<dim,3> fe_values_side(map, side_q, *fe, update_values | update_gradients | update_side_JxW_values | update_normal_vectors);
+    FESideValues<dim,3> fe_values_side(map, side_q, *fe, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     FESideValues<dim,3> fsv_rt(map, side_q, fe_rt, update_values | update_normal_vectors | update_side_JxW_values);
     typename DOFHandler<dim,3>::CellIterator cell = dh->begin_cell();
     const unsigned int ndofs = fe->n_dofs();
     unsigned int side_dof_indices[ndofs];
     PetscScalar local_matrix[ndofs*ndofs], local_rhs[ndofs];
-    vector< vector<mat33> > side_K;
-    vector< vector<vec3> > side_velocity;
-    double gamma_l, omega[2], transport_flux;
+    vector<mat33> side_K;
+    vector<vec3> side_velocity;
+    vector<double> Dm, alphaL, alphaT;
+    double dg_penalty, gamma_l, omega[2], transport_flux;
 
     gamma.resize(mesh_->boundary_.size());
+    Dm.resize(side_q.size());
+    alphaL.resize(side_q.size());
+    alphaT.resize(side_q.size());
 
     // assemble boundary integral
     FOR_EDGES(mesh_, edge)
@@ -707,19 +725,23 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
                 // || (edge->side(0)->cond()->type == 2 /* Neuman*/ && edge->side(0)->cond()->flux == 0.0) )
                 // NEED FIX
 
-        side_K.resize(edge->n_sides);
-        side_velocity.resize(edge->n_sides);
-
         cell = mesh().element.full_iter(edge->side(0)->element());
         dh->get_dof_indices(cell, side_dof_indices);
         fe_values_side.reinit(cell, edge->side(0));
         fsv_rt.reinit(cell, edge->side(0));
 
-        calculate_velocity(cell, side_velocity[0], fsv_rt);
-        calculate_dispersivity_tensor(side_K[0], side_velocity[0]);
+        calculate_velocity(cell, side_velocity, fsv_rt);
+        for (int k=0; k<side_q.size(); k++)
+        {
+        	Dm[k] = data.diff_m.value(fe_values_side.point(k), cell->element_accessor());
+        	alphaL[k] = data.disp_l.value(fe_values_side.point(k), cell->element_accessor());
+        	alphaT[k] = data.disp_t.value(fe_values_side.point(k), cell->element_accessor());
+        }
+        calculate_dispersivity_tensor(side_K, side_velocity, Dm, alphaL, alphaT);
 
         // set up the parameters for DG method
-        set_DG_parameters_edge(&(*edge), side_q.size(), side_K, fe_values_side.normal_vector(0), alpha, advection, gamma_l, omega);
+        dg_penalty = data.dg_penalty.value(cell->centre(), cell->element_accessor());
+        set_DG_parameters_boundary(&(*edge), side_q.size(), side_K, fe_values_side.normal_vector(0), dg_penalty, advection, gamma_l, omega);
         if (edge->side(0)->cond() != 0) {
             gamma[edge->side(0)->cond_idx()] = gamma_l;
         }
@@ -975,7 +997,7 @@ void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::Cell
 
 
 
-void TransportDG::calculate_dispersivity_tensor(vector<mat33> &K, vector<vec3> &velocity)
+void TransportDG::calculate_dispersivity_tensor(vector<mat33> &K, vector<vec3> &velocity, vector<double> &Dm, vector<double> &alphaL, vector<double> &alphaT)
 {
     double vnorm;
 
@@ -988,11 +1010,11 @@ void TransportDG::calculate_dispersivity_tensor(vector<mat33> &K, vector<vec3> &
         if (fabs(vnorm)>1e-6)
             for (int i=0; i<3; i++)
                 for (int j=0; j<3; j++)
-                    K[k](i,j) = velocity[k][i]*velocity[k][j]/vnorm*(alphaL-alphaT);
+                    K[k](i,j) = velocity[k][i]*velocity[k][j]/vnorm*(alphaL[k]-alphaT[k]);
         else
             K[k].zeros();
 
-        K[k] += eye(3,3)*(Dm + alphaT*vnorm);
+        K[k] += eye(3,3)*(Dm[k] + alphaT[k]*vnorm);
     }
 }
 
@@ -1003,7 +1025,8 @@ void TransportDG::set_DG_parameters(const Edge *edg,
             const unsigned int n_points,
             const vector< vector<mat33> > &K,
             const vec3 &normal_vector,
-            const double alpha,
+            const vector<vector<double> > &Dm,
+            const vector<double> &alpha,
             const double advection,
             double &gamma,
             double *omega,
@@ -1012,6 +1035,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
     double delta[2];
     double h = 0;
     double fluxes[edg->n_sides];
+    double local_alpha, min_dm;
 
     ASSERT(edg->side(s1)->valid(), "Invalid side of an edge.");
     SideIter s = edg->side(s1);
@@ -1059,6 +1083,15 @@ void TransportDG::set_DG_parameters(const Edge *edg,
 
     gamma = 0.5*advection*fabs(transport_flux);
 
+
+    // determine local DG penalty
+    min_dm = Dm[s1][0];
+    for (int k=0; k<n_points; k++)
+    	min_dm = min(min(Dm[s1][k], Dm[s2][k]), min_dm);
+    local_alpha = max(alpha[s1], alpha[s2]);
+    if (local_alpha == 0 && min_dm != 0)
+    	local_alpha = max(1e0,1e0/min_dm);
+
     if (s1 == s2)
     {
         omega[0] = 1;
@@ -1069,7 +1102,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
             delta[0] += dot(K[s1][k]*normal_vector,normal_vector);
         delta[0] /= n_points;
 
-        gamma += alpha/h*delta[0];
+        gamma += local_alpha/h*delta[0];
     }
     else
     {
@@ -1087,7 +1120,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
         {
             omega[0] = delta[1]/delta_sum;
             omega[1] = delta[0]/delta_sum;
-            gamma += alpha*delta[0]*delta[1]/(delta_sum*h);
+            gamma += local_alpha*delta[0]*delta[1]/(delta_sum*h);
         }
         else
             for (int i=0; i<2; i++) omega[i] = 0;
@@ -1100,9 +1133,9 @@ void TransportDG::set_DG_parameters(const Edge *edg,
 
 
 
-void TransportDG::set_DG_parameters_edge(const Edge *edge,
+void TransportDG::set_DG_parameters_boundary(const Edge *edge,
             const unsigned int n_points,
-            const vector< vector<mat33> > &K,
+            const vector<mat33> &K,
             const vec3 &normal_vector,
             const double alpha,
             const double advection,
@@ -1132,7 +1165,7 @@ void TransportDG::set_DG_parameters_edge(const Edge *edge,
 	// delta is set to the average value of Kn.n on the side
 	delta[0] = 0;
 	for (int k=0; k<n_points; k++)
-		delta[0] += dot(K[0][k]*normal_vector,normal_vector);
+		delta[0] += dot(K[k]*normal_vector,normal_vector);
 	delta[0] /= n_points;
 
 	gamma += alpha/h*delta[0];

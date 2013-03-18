@@ -84,6 +84,11 @@ public:
 		EqData();
 		RegionSet read_boundary_list_item(Input::Record rec);
 
+		Field<3, FieldValue<3>::Scalar> disp_l;     ///< Longitudal dispersivity.
+		Field<3, FieldValue<3>::Scalar> disp_t;     ///< Transversal dispersivity.
+		Field<3, FieldValue<3>::Scalar> diff_m;     ///< Molecular diffusivity.
+		Field<3, FieldValue<3>::Scalar> dg_penalty; ///< Penalty enforcing inter-element continuity of solution.
+
 	};
 
     /**
@@ -270,8 +275,12 @@ private:
 	 *
 	 * @param K        The computed dispersivity tensor.
 	 * @param velocity The velocity field (at quadrature points).
+	 * @param Dm       Molecular diffusivities.
+	 * @param alphaL   Longitudal dispersivities.
+	 * @param alphaT   Transversal dispersivities.
 	 */
-	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity);
+	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity,
+			vector<double> &Dm, vector<double> &alphaL, vector<double> &alphaT);
 
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.
@@ -297,7 +306,8 @@ private:
 	        const unsigned int n_points,
 	        const std::vector< std::vector<arma::mat33> > &K,
 	        const arma::vec3 &normal_vector,
-	        const double alpha,
+	        const std::vector<std::vector<double> > &Dm,
+	        const vector<double> &alpha,
 	        const double advection,
 	        double &gamma,
 	        double *omega,
@@ -317,9 +327,9 @@ private:
 	 * @param gamma				Computed penalty parameters.
 	 * @param omega				Computed weights.
 	 */
-	void set_DG_parameters_edge(const Edge *edge,
+	void set_DG_parameters_boundary(const Edge *edge,
 	            const unsigned int n_points,
-	            const std::vector< vector<arma::mat33> > &K,
+	            const std::vector<arma::mat33> &K,
 	            const arma::vec3 &normal_vector,
 	            const double alpha,
 	            const double advection,
@@ -338,15 +348,6 @@ private:
 
 	/// @name Physical parameters
 	// @{
-
-	/// Longitudal dispersivity.
-	double alphaL;
-
-	/// Transversal dispersivity.
-	double alphaT;
-
-	/// Molecular diffusivity.
-	double Dm;
 
 	/// Coefficient of diffusive transfer.
 	double sigma;
@@ -369,9 +370,6 @@ private:
 	// @{
 	/// Penalty parameters.
 	std::vector<double> gamma;
-
-	/// coefficient affecting inter-element continuity due to dispersion
-	double alpha;
 
 	/// coefficient of advection/transport (0=no advection)
 	const double advection;
