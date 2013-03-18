@@ -741,7 +741,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
 
         // set up the parameters for DG method
         dg_penalty = data.dg_penalty.value(cell->centre(), cell->element_accessor());
-        set_DG_parameters_boundary(&(*edge), side_q.size(), side_K, fe_values_side.normal_vector(0), dg_penalty, advection, gamma_l, omega);
+        set_DG_parameters_boundary(&(*edge), side_q.size(), side_K, fe_values_side.normal_vector(0), dg_penalty, Dm[0], advection, gamma_l, omega);
         if (edge->side(0)->cond() != 0) {
             gamma[edge->side(0)->cond_idx()] = gamma_l;
         }
@@ -1138,6 +1138,7 @@ void TransportDG::set_DG_parameters_boundary(const Edge *edge,
             const vector<mat33> &K,
             const vec3 &normal_vector,
             const double alpha,
+            const double Dm,
             const double advection,
             double &gamma,
             double *omega)
@@ -1168,7 +1169,11 @@ void TransportDG::set_DG_parameters_boundary(const Edge *edge,
 		delta[0] += dot(K[k]*normal_vector,normal_vector);
 	delta[0] /= n_points;
 
-	gamma += alpha/h*delta[0];
+	double local_alpha;
+	if (alpha == 0 && Dm != 0)
+		local_alpha = max(1e0,1e0/Dm);
+
+	gamma += local_alpha/h*delta[0];
 }
 
 

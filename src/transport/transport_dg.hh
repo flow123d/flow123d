@@ -332,6 +332,7 @@ private:
 	            const std::vector<arma::mat33> &K,
 	            const arma::vec3 &normal_vector,
 	            const double alpha,
+	            const double Dm,
 	            const double advection,
 	            double &gamma,
 	            double *omega);
