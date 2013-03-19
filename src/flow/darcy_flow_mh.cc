@@ -160,6 +160,7 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
     ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
     ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
     ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
+    ADD_FIELD(sigma, "Transition coefficient between dimensions.", Input::Type::Default("1.0"));
     ADD_FIELD(water_source_density, "Water source density.", Input::Type::Default("0.0"));
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", it::Default("none") );
@@ -597,7 +598,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
 
-            double value = ngh->sigma * ngh->side()->measure() * 
+            double value = data.sigma.value( ngh->element()->centre(), ngh->element()->element_accessor()) * ngh->side()->measure() *
                            data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );
 
             local_vb[0] = -value;   local_vb[1] = value;
