@@ -449,10 +449,6 @@
 \AddDoc{AdvectionDiffusion\_DG::sources\_file}
 \AddDoc{AdvectionDiffusion\_DG::output}
 \AddDoc{AdvectionDiffusion\_DG::sigma}
-\AddDoc{AdvectionDiffusion\_DG::alpha\_l}
-\AddDoc{AdvectionDiffusion\_DG::alpha\_t}
-\AddDoc{AdvectionDiffusion\_DG::d\_m}
-\AddDoc{AdvectionDiffusion\_DG::dg\_penalty}
 \AddDoc{AdvectionDiffusion\_DG::solver}
 \AddDoc{AdvectionDiffusion\_DG::bc\_data}
 \AddDoc{AdvectionDiffusion\_DG::bulk\_data}
@@ -471,3 +467,7 @@
 \AddDoc{TransportDG\_BulkData::time}
 \AddDoc{TransportDG\_BulkData::init\_conc}
 \AddDoc{TransportDG\_BulkData::por\_m}
+\AddDoc{TransportDG\_BulkData::disp\_l}
+\AddDoc{TransportDG\_BulkData::disp\_t}
+\AddDoc{TransportDG\_BulkData::diff\_m}
+\AddDoc{TransportDG\_BulkData::dg\_penalty}

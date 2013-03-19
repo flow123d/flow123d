@@ -918,10 +918,6 @@ These times has to form an increasing sequence.}
 \KeyItem{\hypertarget{AdvectionDiffusion-DG::sources-file}{sources\_file}}{input file name}{\textless\it optional\textgreater}{}{File with data for the source term in the transport equation.}
 \KeyItem{\hypertarget{AdvectionDiffusion-DG::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
 \KeyItem{\hypertarget{AdvectionDiffusion-DG::sigma}{sigma}}{Double }{0}{}{Coefficient of diffusive transfer through fractures.}
-\KeyItem{\hypertarget{AdvectionDiffusion-DG::alpha-l}{alpha\_l}}{Double }{0}{}{Longitudal dispersivity.}
-\KeyItem{\hypertarget{AdvectionDiffusion-DG::alpha-t}{alpha\_t}}{Double }{0}{}{Transversal dispersivity.}
-\KeyItem{\hypertarget{AdvectionDiffusion-DG::d-m}{d\_m}}{Double }{1e-6}{}{Molecular diffusivity.}
-\KeyItem{\hypertarget{AdvectionDiffusion-DG::dg-penalty}{dg\_penalty}}{Double [0, ]}{0}{}{Penalty parameter influencing the discontinuity of the solution.}
 \KeyItem{\hypertarget{AdvectionDiffusion-DG::solver}{solver}}{abstract type: \hyperlink{IT::Solver}{Solver}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
 \KeyItem{\hypertarget{AdvectionDiffusion-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hypertarget{AdvectionDiffusion-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{\textless\it obligatory\textgreater}{}{}
@@ -952,5 +948,9 @@ and after the time given by the key 'time'. The field setting can be overridden 
 These times has to form an increasing sequence.}
 \KeyItem{\hypertarget{TransportDG-BulkData::init-conc}{init\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentrations.}
 \KeyItem{\hypertarget{TransportDG-BulkData::por-m}{por\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Mobile porosity}
+\KeyItem{\hypertarget{TransportDG-BulkData::disp-l}{disp\_l}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Longitudal dispersivity.}
+\KeyItem{\hypertarget{TransportDG-BulkData::disp-t}{disp\_t}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transversal dispersivity.}
+\KeyItem{\hypertarget{TransportDG-BulkData::diff-m}{diff\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Molecular diffusivity.}
+\KeyItem{\hypertarget{TransportDG-BulkData::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution.}
 \end{RecordType}
 
