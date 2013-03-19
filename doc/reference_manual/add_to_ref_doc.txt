@@ -145,6 +145,7 @@
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::cond\_anisothropy}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::cross\_section}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::conductivity}
+\AddDoc{DarcyFlowMH\_Steady\_BulkData::sigma}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::water\_source\_density}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::init\_pressure}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::storativity}
@@ -246,6 +247,7 @@
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::cond\_anisothropy}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::cross\_section}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::conductivity}
+\AddDoc{DarcyFlowMH\_Steady\_BulkData::sigma}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::water\_source\_density}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::init\_pressure}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::storativity}
@@ -327,6 +329,7 @@
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::cond\_anisothropy}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::cross\_section}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::conductivity}
+\AddDoc{DarcyFlowMH\_Steady\_BulkData::sigma}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::water\_source\_density}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::init\_pressure}
 \AddDoc{DarcyFlowMH\_Steady\_BulkData::storativity}
