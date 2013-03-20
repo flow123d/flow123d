@@ -77,7 +77,7 @@ void GmshMeshReader::read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionI
     F_ENTRY;
     
     //not working with test_units sofar (profiler needs to be improved)
-    //START_TIMER("read mesh");
+    START_TIMER("read mesh");
     
     ASSERT( mesh , "Argument mesh is NULL.\n");
     read_physical_names(tok_, mesh);

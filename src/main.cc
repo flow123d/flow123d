@@ -103,7 +103,7 @@ Application::Application( int argc,  char ** argv)
     system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
     use_profiler=true;
-    Profiler::initialize(PETSC_COMM_WORLD);
+    Profiler::initialize();
     
     // Say Hello
     // make strings from macros in order to check type
@@ -329,7 +329,7 @@ void Application::free_and_exit() {
     //close the Profiler
     DBGMSG("prof: %d\n", use_profiler);
     if (use_profiler) {
-        Profiler::instance()->output();
+        Profiler::instance()->output(PETSC_COMM_WORLD);
         Profiler::uninitialize();
     }
 

@@ -325,7 +325,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //side_ds->view();
     //el_ds->view();
     //edge_ds->view();
-
+    
     make_schur0();
 
     START_TIMER("prepare paralel");
@@ -1024,6 +1024,9 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 // lokalni elementy -> lokalni sides -> jejich id -> jejich radky
 // TODO: reuse IA a Schurova doplnku
 void DarcyFlowMH_Steady::make_schur1() {
+    
+    START_TIMER("Schur 1");
+  
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     MHFEValues fe_values;
 
@@ -1031,7 +1034,7 @@ void DarcyFlowMH_Steady::make_schur1() {
     PetscErrorCode err;
 
     F_ENTRY;
-    START_TIMER("Schur 1");
+    START_TIMER("schur1 - create,inverse");
 
     // check type of LinSys
     if (schur0->type == LinSys::MAT_IS) {
@@ -1090,9 +1093,16 @@ void DarcyFlowMH_Steady::make_schur1() {
 
     MatAssemblyBegin(IA1, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(IA1, MAT_FINAL_ASSEMBLY);
-
+    
+    END_TIMER("schur1 - create,inverse");
+    
+    
+    START_TIMER("schur1 - form");
+    
     schur1->form_schur();
     schur1->set_spd();
+    
+    END_TIMER("schur1 - form");
 }
 
 /*******************************************************************************

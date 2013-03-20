@@ -15,6 +15,8 @@
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
 
+#include "system/sys_profiler.hh"
+
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
@@ -58,6 +60,8 @@ public:
         // setup FilePath directories
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
+        Profiler::initialize();
+        
         FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
         mesh= new Mesh;
         ifstream in(string( mesh_file ).c_str());

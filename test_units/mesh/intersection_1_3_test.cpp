@@ -33,7 +33,7 @@ TEST(intersections, 1d_3d){
 
 	BIHTree bt(&mesh_krychle, elementLimit);
 
-	Profiler::initialize(MPI_COMM_WORLD);
+	Profiler::initialize();
 	{
 	    START_TIMER("Inter");
 
@@ -65,7 +65,7 @@ TEST(intersections, 1d_3d){
 	     }
 	}
         
-	Profiler::instance()->output(cout);
+	Profiler::instance()->output(MPI_COMM_WORLD, cout);
         
 	Profiler::uninitialize();
 

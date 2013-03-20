@@ -182,7 +182,7 @@ void Mesh::count_element_types() {
 void Mesh::read_gmsh_from_stream(istream &in) {
   
     //not working with test_units sofar (profiler needs to be improved)
-    //START_TIMER("READING MESH - from_stream");
+    START_TIMER("READING MESH - from_stream");
     
     GmshMeshReader reader(in);
     reader.read_mesh(this);
@@ -194,7 +194,7 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     F_ENTRY;
     //not working with test_units sofar (profiler needs to be improved)
-    //START_TIMER("READING MESH - init_from_input");
+    START_TIMER("READING MESH - init_from_input");
     
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;
@@ -221,7 +221,7 @@ void Mesh::init_from_input() {
 void Mesh::setup_topology() {
     F_ENTRY;
     //not working with test_units sofar (profiler needs to be improved)
-    //START_TIMER("setup topology");
+    START_TIMER("setup topology");
     
     count_element_types();
     make_neighbours_and_edges();
@@ -313,7 +313,7 @@ bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int>
 
 bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
     // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
-    int ni=0;
+    unsigned int ni=0;
     while ( ni < si->n_nodes()
         && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
     return ( ni == si->n_nodes() );
@@ -684,7 +684,7 @@ void Mesh::make_intersec_elements() {
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
      sizes[i->master_iter().index()]++;
      master_elements.resize(n_elements());
-     for(int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
+     for(unsigned int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
 
      // fill intersec_elements
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )

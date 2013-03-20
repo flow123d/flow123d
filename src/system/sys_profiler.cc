@@ -191,27 +191,24 @@ CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__
 
 
 
-void Profiler::initialize(MPI_Comm communicator)
+void Profiler::initialize()
 {
 
     if (!_instance)
-        _instance = new Profiler(communicator);
+        _instance = new Profiler();
     else
         xprintf(Warn, "The profiler already initialized.\n");
 
 }
 
 
-Profiler::Profiler(MPI_Comm comm)
+Profiler::Profiler()
 : actual_node(0),
-  communicator_(comm),
   task_size_(1),
   start_time( time(NULL) )
 
 {
 #ifdef DEBUG_PROFILER
-    MPI_Comm_rank(communicator_, &(mpi_rank_));
-
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
@@ -361,7 +358,7 @@ void Profiler::notify_free(const size_t size) {
 
 
 
-void Profiler::add_timer_info(vector<vector<string> > &timers_info, int timer_idx, int indent, double parent_time) {
+void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_info, int timer_idx, int indent, double parent_time) {
 
     Timer &timer = timers_[timer_idx];
 
@@ -369,17 +366,17 @@ void Profiler::add_timer_info(vector<vector<string> > &timers_info, int timer_id
     ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
 
     int numproc;
-    MPI_Comm_size(communicator_, &numproc);
+    MPI_Comm_size(comm, &numproc);
 
     int call_count = timer.call_count;
-    int call_count_min = MPI_Functions::min(&call_count, communicator_);
-    int call_count_max = MPI_Functions::max(&call_count, communicator_);
-    int call_count_sum = MPI_Functions::sum(&call_count, communicator_);
+    int call_count_min = MPI_Functions::min(&call_count, comm);
+    int call_count_max = MPI_Functions::max(&call_count, comm);
+    int call_count_sum = MPI_Functions::sum(&call_count, comm);
 
     double cumul_time = timer.cumulative_time() / 1000; // in seconds
-    double cumul_time_min = MPI_Functions::min(&cumul_time, communicator_);
-    double cumul_time_max = MPI_Functions::max(&cumul_time, communicator_);
-    double cumul_time_sum = MPI_Functions::sum(&cumul_time, communicator_);
+    double cumul_time_min = MPI_Functions::min(&cumul_time, comm);
+    double cumul_time_max = MPI_Functions::max(&cumul_time, comm);
+    double cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
 
     if (timer_idx == 0) parent_time = cumul_time_sum;
 
@@ -401,7 +398,7 @@ void Profiler::add_timer_info(vector<vector<string> > &timers_info, int timer_id
 
     for (int i = 0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] > 0)
-            add_timer_info(timers_info, timer.child_timers[i], indent + 1, cumul_time_sum);
+            add_timer_info(comm, timers_info, timer.child_timers[i], indent + 1, cumul_time_sum);
 }
 
 
@@ -414,13 +411,17 @@ void Profiler::update_running_timers() {
 
 
 
-void Profiler::output(ostream &os) {
+void Profiler::output(MPI_Comm comm, ostream &os) {
 
     const int column_space = 3;
 
     //wait until profiling on all processors is finished
-    MPI_Barrier(this->communicator_);
+    MPI_Barrier(comm);
     update_running_timers();
+    
+    int ierr, mpi_rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank); 
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
 
     vector < vector<string> > timers_info(1);
 
@@ -433,10 +434,10 @@ void Profiler::output(ostream &os) {
     timers_info[0].push_back( "Ttotal");
     timers_info[0].push_back( "code_point");
 
-    add_timer_info(timers_info, 0, 0, 0.0);
+    add_timer_info(comm, timers_info, 0, 0, 0.0);
 
     //create profiler output only once (on the first processor)
-    if (mpi_rank_ == 0) {
+    if (mpi_rank == 0) {
 
         // compute with of columns
         vector<unsigned int> width(timers_info[0].size(),0);
@@ -458,7 +459,7 @@ void Profiler::output(ostream &os) {
 
 
         int mpi_size;
-        MPI_Comm_size(this->communicator_, &mpi_size);
+        MPI_Comm_size(comm, &mpi_size);
 
         time_t end_time = time(NULL);
 
@@ -512,14 +513,14 @@ void Profiler::output(ostream &os) {
 
 
 
-void Profiler::output() {
+void Profiler::output(MPI_Comm comm) {
             char filename[PATH_MAX];
             strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
             string full_fname =  FilePath(string(filename), FilePath::output_file);
 
             DBGMSG("output into: %s\n", full_fname.c_str());
             ofstream os(full_fname.c_str());
-            output(os);
+            output(comm, os);
             os.close();
 }
 
@@ -540,7 +541,7 @@ void Profiler::uninitialize()
 
 Profiler* Profiler::_instance = NULL;
 
-void Profiler::initialize(MPI_Comm communicator) {
+void Profiler::initialize() {
     if (!_instance) _instance = new Profiler();
 }
 

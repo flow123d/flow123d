@@ -13,6 +13,7 @@
 #include "mesh/accessors.hh"
 #include "input/json_to_storage.hh"
 #include "input/accessors.hh"
+#include "system/sys_profiler.hh"
 
 using namespace std;
 
@@ -49,6 +50,8 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
 
+    Profiler::initialize();
+    
     Mesh mesh;
     ifstream in(string(mesh_file).c_str());
     mesh.read_gmsh_from_stream(in);
