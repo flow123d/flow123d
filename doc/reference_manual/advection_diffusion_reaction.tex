@@ -64,9 +64,9 @@ Other quantities are:
 It is related to the \emph{microscopic} water velocity $\vc v$ $[m\,s^{-1}]$ by the relation $\vc q^d = \th\delta^d\vc v$.
 \item The hydrodynamic dispersivity tensor $\D^i$ $[m^2 s^{-1}]$ has the form
 \[
-  \D^i =D_m^i \tau \tn I + \abs{\vc v}\big(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \big) \frac{\vc v \times \vc v}{\abs{\vc v}^2},
+  \D^i =D_m^i \tau \tn I + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \times \vc v}{\abs{\vc v}^2}\right),
 \]
-representing (isotropic) molecular diffusion, and dispersion in longitudal and transversal direction to the flow.
+which represents (isotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
 Here $D_m^i$ $[m^2\,s^{-1}]$ is the molecular diffusion coefficient of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ and $\alpha_T^i$ is the longitudal and the transversal dispersivity $[m]$, respectively.
 The value of $D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
 For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cite{marsily,domenico_schwartz}.
@@ -104,23 +104,22 @@ Transport of substances is considered also on interfaces of physical domains wit
 Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega^{d+1}$ and $\Omega^d$, respectively, the comunication on the interface between $\Omega^{d+1}$ and $\Omega^d$ is described by:
 \begin{equation}
   \label{e:inter_dim_flux}
-  q^c = \delta^{d+1}\sigma^c (c_{d+1} - c_d) + \begin{cases}q^w c_{d+1} & \mbox{ if }q^w\ge 0,\\q^w c_d & \mbox{ if }q^w<0,\end{cases}
+  q^c = \delta^{d+1}\sigma^c (\th^{d+1} c_{d+1} - \th^d c_d) + \begin{cases}q^w c_{d+1} & \mbox{ if }q^w\ge 0,\\q^w c_d & \mbox{ if }q^w<0,\end{cases}
 \end{equation}
 where
 \begin{itemize}
 \item $q^c$ $[kg\, m^{-d}\,s^{-1}]$ is the density of concentration flux from $\Omega^{d+1}$ to $\Omega^d$,
-\item $\sigma^c$ $[m\,s^{-1}]$ is a transition parameter, (hint: $\sigma^c \approx\frac{\delta^{d+1}}{\delta^d}|\D|$?)
+\item $\sigma^c$ $[m\,s^{-1}]$ is a transition parameter.
+Its nonzero value causes mass exchange between dimensions whenever the concentrations differ.
+It is recommended to set either $\sigma^c=0$ (exchange due to transport only) or $\sigma^c \approx\frac{\delta^{d+1}}{\delta^d}|\D|$.
 \item $q^w$ $[m^{3-d}\,s^{-1}]$ is the water flux from $\Omega^{d+1}$ to $\Omega^d$.
 \end{itemize}
-Equation \eqref{e:inter_dim_flux} is incorporated as a boundary condition for the problem on $\Omega^{d+1}$:
-$$ -\th\delta^{d+1}\D\nabla c_{d+1}\cdot\vc n + q^w c_{d+1} = q^c %\quad\Leftrightarrow\quad -\th\D\nabla c_{d+1} = (\sigma^c+(q^w)^-)(c_{d+1}-c_d)
-, $$
-% where $f^-=\max(-f,0)$ is the negative part of $f$,
-and a source term in $\Omega^d$:
-\begin{equation}
+Equation \eqref{e:inter_dim_flux} is incorporated as the total flux boundary condition for the problem on $\Omega^{d+1}$ and a source term in $\Omega^d$:
+\begin{align}
+-\th\delta^{d+1}\D\nabla c_{d+1}\cdot\vc n + q^w c_{d+1} &= q^c,\\
 \label{e:FC}
-F^c_d = (\sigma^c+\abs{q^w})(c_{d+1}-c_d).
-\end{equation}
+F_C^d &= q^c.
+\end{align}
 
 
 
