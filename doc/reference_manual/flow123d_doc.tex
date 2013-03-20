@@ -1,6 +1,6 @@
 % Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
 %
-% Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+% Please make a following reference to Flow123d on your project site if you use the program for any purpose,
 % especially for academic research:
 % Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
 %
@@ -14,31 +14,24 @@
 % You should have received a copy of the GNU General Public License along with this program; if not,
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 %
-%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % use PDFLatex to compile this
 %
 
 \documentclass[12pt,a4paper]{report}
 
-%%% remove comment delimiter ('%') and specify encoding parameter if required,
-%%% see TeX documentation for additional info (cp1252-Western,cp1251-Cyrillic)
-%\usepackage[cp1252]{inputenc}
-
-%%% remove comment delimiter ('%') and select language if required
-%\usepackage[english,spanish]{babel}
-%\usepackage{czech}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{array}
 \usepackage{longtable}
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
+\usepackage{fancyvrb}   % extended verbatim environments (for examples of IO files)
+
 \usepackage{etoolbox}
 
-\usepackage{fancyvrb}	% extended verbatim environments (for examples of IO files)
-\usepackage{hyperref}   % hypertext capabilities, should by last package
-\hypersetup{backref,colorlinks=true}  %setup hyperef package
+\usepackage{flow_doc}
 
 \newcommand{\vari}[1]{{\it #1}}
 \newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
@@ -83,11 +76,11 @@
 \def\div{{\rm div}}
 \def\Lapl{\Delta}
 \def\grad{\nabla}
+\def\Real{{\mathbf R}}
+
 
 %% ini_table members
 
-%%% remove comment delimiter ('%') and specify parameters if required
-%\usepackage[dvips]{graphics}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DOCUMENT
 %% set specific page layout
@@ -278,10 +271,39 @@ In the following chapter, we briefly describe structure of individual input file
 mathematical models and numerical methods used in the Flow123d.
 
 
-\chapter{Mathematical models of physical reality}
+\chapter{Mathematical models \\of physical reality}
 
-\chapter{Numerical methods}
+Flow123d provides models for Dary flow in porous media as well as for the transport and reactions of soluted substances. In this section, we describe 
+mathematical formulations of these models together with physical meaning and units of all involved quantities. Common and unique feature of all models is support of
+domains with mixed dimension. Let $\Omega_{3} \subset \Real^3$ be an open set representing continuum approximation of porous and fractured medium.
+Similarly, we consider open set $\Omega_2\subset \Real^2$ representing 2D fractures and open set $\Omega_1\subset \Real^3$ of 1D channels or preferential paths 
+(see Fig \ref{fig:multi-dim}).
+We assume that $\Omega_2$ and $\Omega_1$ are polygonal. For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
+that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elements are simplexes that is tetrahedrons, triangles and lines.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=10cm]{ground_fractures}
+\label{fig:multi-dim}
+\end{figure}
+
+Present numerical methods requires meshes satisfying the compatibility conditions
+\begin{equation}
+        T_{d-1}^i \cap T_d \subset \mathcal{F}_d,   \qquad \text{where } \mathcal{F}_d = \bigcup_{k} \partial T_{d}^{k}
+\end{equation}
+and
+\begin{equation}
+        T_{d-1}^i \cap \mathcal{F}_d    \text{ is either $T_{d-1}^i$ or $\emptyset$}    
+\end{equation}
+for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. That is the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
+match their sides or they poke out of $\Omega_d$. 
+
+\input{darcy_flow}
+
+
 \input{convection}
+\chapter{Numerical methods}
+
 
 \input{decay}
 \input{semchem}
@@ -306,158 +328,6 @@ mathematical models and numerical methods used in the Flow123d.
 
 \chapter{Main input file reference}
 % support macros
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RecordType environment
-%
-% usage:
-% \begin{RecordType}
-%       {<record name>}                 % name of the record, used for header and for hypertarget in form IT::<record name>
-%       {<parent abstract record>}      % possible parent abstract record
-%       {<default conversion key>}      % possible auto conversion key
-%       {<link>}                        % possible hyperlink into hand written text
-%       {< record description>}         % description of the record
-%
-%       \KeyItem{<name>}                % name of the key
-%               {<type>}                % type of the key 
-%               {<default value>}       % type of default value and possibly the value itself
-%               {<link>}                %  possible hyperlink to hand written text
-%               {<key description>}     % description of the key
-%       ...
-% \end{RecordType}
-
-\def\AddDoc#1{}
-
-\newenvironment{RecordType}[5]
-{
- \ifstrequal{#4}{\relax}{%
-    % turn off
-    \begingroup
-    \gdef\KeyItem##1##2##3##4##5{}
- }{
-    \par
-    \vskip 2ex
-    \hrule%
-    \vskip 0.3ex
-    \hrule
-    \noindent%
-    record: {\bf #1}%
-    \ifstrempty{#2}{}{ implements abstract type: #2}%
-    \ifstrempty{#3}{}{ constructible from key: #3}%
-    {#4}
-    \par%
-    \vskip 0.5ex
-    \hrule%
-    \vskip 0.3ex
-    \hrule
-    {#5}
-    \begingroup%records of steady field type which we describe right now 
-    \addtolength{\leftskip}{3em}%
-    %
-    \gdef\KeyItem##1##2##3##4##5{%
-        \par
-        \vskip 0.3ex
-        %\hrule%
-        \noindent%
-        \hspace{-3em}{\bf\tt ##1} = {\it \textless ##2\textgreater}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
-        \par
-        Default: {##3} \hfill [##4]
-        \par
-        {##5}
-    }%
-  }
-}{%
-  \vskip 2ex  
-  \endgroup%
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% AbstractType environment
-%
-% usage:
-% \begin{AbstractType}
-%       {<record name>}
-%       {<default descendant>}
-%       {<link>}
-%       {<description>}         % Description paragraph of the abstract type.
-%       \Descendant{<type name>}
-% \end{AbstractType}
-
-\newenvironment{AbstractType}[3]
-{\par
- \vskip 2ex
- \hrule%
- \vskip 0.3ex
- \hrule
- \noindent%
- abstract type: {\bf #1}%
- \ifstrempty{#2}{}{ default descendant: #2}%
- \par%
- \vskip 0.5ex
- \hrule%
- \vskip 0.3ex
- \hrule
- #3
- \par\noindent
- Descendants:
- \par
- \begingroup%records of steady field type which we describe right now 
-  \addtolength{\leftskip}{3em}%
-  %
-  \gdef\Descendant##1{%
-    \par
-    \vskip 0.3ex
-    %\hrule%
-    \noindent%
-    \hspace{-3em}{\bf\tt ##1}%
-    \par
-  }%
-}{%
-  \vskip 0.7ex  
-  \endgroup%
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SelectionType environment
-%
-% usage:
-% \begin{SelectionType}{<selection name>}    
-%       \KeyItem{<value name>}{<value>}
-%       Key value description.
-% \end{SelectionType}
-
-\newenvironment{SelectionType}[1]
-{\par
- \vskip 2ex
- \hrule%
- \vskip 0.3ex
- \hrule
- \noindent%
- selection type: {\bf #1}%
- \par%
- \vskip 0.5ex
- \hrule%
- \vskip 0.3ex
- \hrule
- Possible values:
- \par
- \begingroup%records of steady field type which we describe right now 
-  \addtolength{\leftskip}{3em}%
-  %
-  \gdef\KeyItem##1##2{%
-    \par
-    \vskip 0.3ex
-    %\hrule%
-    \noindent%
-    \hspace{-3em}{\bf\tt ##1} : { ##2 }%%
-    \par
-  }%
-}{%
-  \vskip 0.7ex  
-  \endgroup%
-}
 
 
 % generated file

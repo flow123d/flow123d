@@ -13,7 +13,7 @@
 # every pattern in <file_in> is replaced by the line form <rules> file that contains the same pattern.
 # That means <file_in> is the new list of patterns, but rules are reused where it is possible.
 
-set -x
+#set -x
 # file_in
 RULES="$1"
 RULES_DOUBLE_BS="$1.double"

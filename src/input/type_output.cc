@@ -710,7 +710,10 @@ public:
 };
 
 
-
+/**
+ * Prints range specification for Array size, Integer, and Double. Omit natural bounds (very long),
+ * Omit whole specification if  both limits are natural.
+ */
 template <class T>
 ostream & print_range(ostream& stream, T range_min, T range_max) {
     T min_val = std::numeric_limits<T>::min();
@@ -729,21 +732,37 @@ ostream & print_range(ostream& stream, T range_min, T range_max) {
     return stream;
 }
 
-
+/**
+ * Make \HTRaised{prefix::str}. Hyper target raised to scroll to correct position.
+ */
 std::string hyper_target( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
     // \hyperlink{<prefix>::str}{str}
-    return "\\hypertarget{" + label + "}{" + str +"}";
+    return "\\HTRaised{" + label + "}{" + str + "}";
 }
 
+/**
+ * Make \hyperlink{prefix::str, str}.
+ */
 std::string hyper_link( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
     // \hyperlink{<prefix>::str}{str}
     return "\\hyperlink{" + label + "}{" + str +"}";
+}
+
+/**
+ * Make bidirectional link.
+ */
+std::string hyper_B( const std::string &prefix, const std::string &str) {
+    string label=prefix + "::" + str;
+    boost::replace_all(label, "_", "-");
+    boost::replace_all(label, ">", "");
+    // \hyperlink{<prefix>::str}{str}
+    return "\\hyperB{" + label + "}{" + str +"}";
 }
 
 } // namespace internal
@@ -798,7 +817,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
             doc_type_ = key_record;
             for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
 
-                stream << "\\KeyItem{" << internal::hyper_target( type->type_name(), it->key_) << "}";
+                stream << "\\KeyItem{" << internal::hyper_B( type->type_name(), it->key_) << "}";
                 stream << "{";
                 print(stream, it->type_.get(), 0);
                 stream << "}";
