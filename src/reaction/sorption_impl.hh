@@ -10,7 +10,12 @@
 
 #include <boost/math/tools/roots.hpp>
 
-enum SorptionType;
+enum SorptionType {
+	none = 0,
+	linear = 1,
+	langmuir = 2,
+	freundlich = 3
+};
 
 /**
  * Functor for Langmuir isotherm.
@@ -24,7 +29,7 @@ public:
     /**
     * 	Destructor.
     */
-    ~Langmuir(void);
+    ~Langmuir(void){}
     /**
     * 	Mysterious operator.
     */
@@ -45,10 +50,6 @@ public:
 	* 	Original constructor, Linear(double mult_coef) : mult_coef_(mult_coef) {}
 	*/
     Linear(double mult_coef) : mult_coef_(mult_coef) {}
-    /**
-    * 	Destructor.
-    */
-    //~Linear(void);
 	/**
 	* 	Just the test to define multiplication coefficient other way.
 	*/
@@ -202,9 +203,12 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
     CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed); // equation describing one point on the isotherm
     pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0.0, 10.0, toler, max_iter);
     //c_sorbed = (total_mass - scale_aqua * solution.first) / scale_sorbed;
-    //PROBABLY COMPLETELY WRONG, SOLUTION IS AN INTERVAL CONTAINING SOLUTION
-    c_aqua = (total_mass - scale_sorbed * solution.first) / scale_aqua;
-    c_sorbed = (total_mass - scale_aqua * solution.second) / scale_sorbed;
+    //PROBABLY COMPLETELY WRONG, SOLUTION IS AN INTERVAL CONTAINING SOLUTION, because of that following two lines are commented
+    //c_aqua = (total_mass - scale_sorbed * solution.first) / scale_aqua;
+    //c_sorbed = (total_mass - scale_aqua * solution.second) / scale_sorbed;
+    //MUST BE REPARED, LATER.
+    c_aqua = 1.0;
+    c_sorbed = 1.0;
 };
 
 template<class Func>

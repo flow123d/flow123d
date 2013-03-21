@@ -25,6 +25,8 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
+#include "reaction/isotherm.hh"
+#include "reaction/sorption.hh"
 
 #include "semchem/semchem_interface.hh"
 
@@ -155,34 +157,49 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
 		if (reactions_it->type() == Linear_reaction::input_type ) {
-	        decayRad =  new Linear_reaction(init_mesh, *reactions_it,
-	                                        convection->get_substance_names());
+	        decayRad =  new Linear_reaction(init_mesh, *reactions_it, convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
 	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
 	        Semchem_reactions = NULL;
+	        sorptions = NULL;
 		} else
 	    if (reactions_it->type() == Pade_approximant::input_type ) {
-                decayRad = new Pade_approximant(init_mesh, *reactions_it,
-	                                        convection->get_substance_names());
+                decayRad = new Pade_approximant(init_mesh, *reactions_it, convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
 	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+
 	        Semchem_reactions = NULL;
+	        sorptions = NULL;
 	    } else
 	    if (reactions_it->type() == Semchem_interface::input_type ) {
 	        Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	        Semchem_reactions->set_el_4_loc(el_4_loc);
 	        Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
-	    } else {
+
+	        decayRad = NULL;
+	        sorptions = NULL;
+	    } else
+	    if (reactions_it->type() == Sorption::input_type ){
+	    	sorptions = new Sorption(init_mesh, *reactions_it, convection->get_substance_names());
+	        convection->get_par_info(el_4_loc, el_distribution);
+	        sorptions->set_dual_porosity(convection->get_dual_porosity());
+
+	        sorptions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+
+	        decayRad = NULL;
+	        Semchem_reactions = NULL;
+	    }else{
 	        xprintf(UsrErr, "Wrong reaction type.\n");
 	    }
 	} else {
 	    decayRad = NULL;
 	    Semchem_reactions = NULL;
+	    sorptions = NULL;
 	}
 	
         time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), this->mark_type());
@@ -222,6 +239,7 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
     //delete field_output;
     delete convection;
     if (decayRad) delete decayRad;
+    if (sorptions) delete sorptions;
     if (Semchem_reactions) delete Semchem_reactions;
     delete time_;
 }
@@ -249,8 +267,7 @@ void TransportOperatorSplitting::update_solution() {
     convection->set_target_time(time_->t());
 
 	if (decayRad) decayRad->set_time_step(convection->time().estimate_dt());
-	//if (decayRad) static_cast<Pade_approximant *>  (decayRad)->set_time_step(convection->time().estimate_dt());
-	//cout << "recent time step value is " << decayRad->get_time_step() << endl;
+	if (sorptions) sorptions->set_time_step(convection->time().estimate_dt());
 	// TODO: update Semchem time step here!!
 	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
@@ -267,7 +284,8 @@ void TransportOperatorSplitting::update_solution() {
 	    convection->compute_one_step();
 	    // Calling linear reactions and Semchem, temporarily commented
 	    if(decayRad) decayRad->compute_one_step();
-	    if (Semchem_reactions) Semchem_reactions->compute_one_step();
+	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
+	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step
 	}
     END_TIMER("TOS-ONE STEP");
     

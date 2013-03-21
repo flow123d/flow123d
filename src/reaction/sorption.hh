@@ -8,21 +8,21 @@
 
 #include <vector>
 #include <input/input_type.hh>
-//#include <reaction/isotherms.hh>
 
 #include "fields/field_base.hh"
+//#include "reaction/isotherms.hh"
 
 class Mesh;
 class Distribution;
 class Reaction;
 class Isotherm;
 
-enum SorptionType {
+/*enum SorptionType {
 	none = 0,
 	linear = 1,
 	langmuir = 2,
 	freundlich = 3
-};
+};*/
 
 class Sorption:  public Reaction
 {
@@ -75,7 +75,23 @@ class Sorption:  public Reaction
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		//virtual
-		virtual void compute_one_step(void);
+		void compute_one_step(void);
+		/**
+		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
+		*/
+		void set_time_step(double new_timestep);
+		/**
+		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
+		*/
+		void set_time_step(Input::Record in_rec);
+		/**
+		* Meaningless inherited methods.
+		*/
+		virtual void update_solution(void);
+		virtual void choose_next_time(void);
+		virtual void set_time_step_constrain(double dt);
+		virtual void get_parallel_solution_vector(Vec &vc);
+		virtual void get_solution_vector(double* &vector, unsigned int &size);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
@@ -146,7 +162,7 @@ class Sorption:  public Reaction
 		/**
 		* 	Temporary step_length in rotated system of coordinates. Should be |nr_of_region x nr_of_substances| matrix later.
 		*/
-		double step_length;
+		//double step_length;
 };
 
 #endif
