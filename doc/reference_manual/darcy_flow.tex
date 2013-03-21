@@ -1,0 +1,124 @@
+
+\section{Darcy flow model}
+We consider simplest model for the velocity of the steady or unsteady flow in porous and fractured medium given by 
+Darcy low:
+\begin{equation}
+    \label{eq:darcy}
+    \vc v = -\tn K \grad H \quad\text{on }\Omega_d,\ \text{for $d=1,2,3$}.
+\end{equation}
+We drop the dimension index of quantities in equations if it is same as the dimension of the set where the equation holds.
+In \eqref{eq:darcy}, $\vc v_d$ \units{}{1}{-1} is \href{http://en.wikipedia.org/wiki/Superficial_velocity}{the superficial velocity},
+$\tn K_d$ is the conductivity tensor, and $H_d$ \units{}{1}{} is the piezometric head. The velocity is related to the flux $\vc q_d$ 
+with units \units{}{4-d}{-1} through
+\[
+    \vc q_d = \delta_d \vc v_d.
+\]
+where 
+\hyperA{DarcyFlowMH-Steady-BulkData::cross-section}{$\delta_d$} 
+\units{}{3-d}{} is a cross section coefficient, in particular $\delta_3=1$, $\delta_2$ \units{}{1}{} is the thickness of a fracture, and $\delta_1$ \units{}{2}{} is the cross-section of a channel.
+The flux $q_d$ is the volume of the liquid (water) that pass through a unit square ($d=3$),
+unit line ($d=2$), or through a point ($d=1$) per one second. 
+The conductivity tensor is given by the product \penalty-500
+$\tn K_d = k_d \tn A_d$, where 
+\hyperA{DarcyFlowMH-Steady-BulkData::conductivity}{$k_d>0$} is the hydraulic conductivity \units{}{1}{-1} and 
+\hyperA{DarcyFlowMH-Steady-BulkData::cond-anisothropy}{$A_d$} is 
+$3x3$ dimensionless anisotropy tensor which has to be symmetric and positive definite. The piezometric-head $H_d$ has units \units{}{1}{} and is related to the pressure head
+$h_d$ by $H_d = h_d + z$ assuming that the gravity force acts in negative direction of the $z$-axes. 
+Combining these relations we get Darcy low in the form:
+\begin{equation}
+    \label{eq:darcy_flux}
+    \vc q = -\delta k\tn A \grad (h+z)  \qquad\text{on }\Omega_d,\ \text{for $d=1,2,3$}.
+\end{equation}
+
+Next, we employ continuity equation for saturated porous medium:
+\begin{equation}
+    \label{eq:continuity}
+    \prtl_t (S\, h) + \div \vc q = F \qquad \text{on }\Omega_d,\ \text{for $d=1,2,3$},
+\end{equation}
+where $S_d$ is the storativity and $F_d$ is a source term. In our setting the principal unknowns of the system 
+(\ref{eq:darcy_flux}, \ref{eq:continuity}) are the pressure head $h_d$ and the flux $\vc q_d$.
+
+
+The storativity 
+\hyperA{DarcyFlowMH-Steady-BulkData::storativity}{$S_d>0$} or the volumetric specific storage \units{}{-1}{} can be expressed as
+\begin{equation}
+  S_d = \gamma_w(\beta_r + \nu \beta_w),
+\end{equation}
+where $\gamma_w$ \units{1}{-2}{-2} is the specific weight of water, $\nu$ is the porosity $[-]$, $\beta_r$ is compressibility of the bulk material of the pores (rock)
+and $\beta_w$ is compressibility of the water both with units \units{-1}{1}{-2}. For steady problems we set $S_d=0$ for all dimensions $d=1,2,3$.
+The source term $F_d$ \units{}{3-d}{-1} on the right hand side of \eqref{eq:continuity} consists of the volume density of prescribed sources 
+\hyperA{DarcyFlowMH-Steady-BulkData::water-source-density}{$f_d$} \units{}{}{-1} and flux from higher dimension. 
+Exact formula is slightly different for every dimension and will be discussed presently.
+
+On $\Omega_3$ we simply have $F_3  = f_3$ \units{}{}{-1}.
+
+On the set $\Omega_2 \cap \Omega_3$ the fracture is surrounded by one 3D surface from every side (or just one surface since we allow also 2D models on the boundary).
+On $\prtl\Omega_3 \cap \Omega_2$ we prescribe boundary condition of Robin type
+\begin{align*}
+        \vc{q}_3\cdot \vc n^{+} &= q_{32}^{+} =\sigma_{3}^{+} (h_3^{+}-h_2),\\
+        \vc{q}_3\cdot \vc n^{-} &= q_{32}^{-} =\sigma_{3}^{-} (h_3^{-}-h_2),
+\end{align*}
+where $\vc{q}_3\cdot\vc n^{+/-}$ \units{}{1}{-1} is the outflow from $\Omega_3$, $h_3^{+/-}$ is
+a trace of the pressure head on $\Omega_3$, $h_2$ is the pressure head on $\Omega_2$, and 
+$\sigma_{3}^{+/-}=\sigma_{32}$ \units{}{}{-1} is the transition coefficient that will be discussed later. 
+On the other hand, the sum of the interchange fluxes $\vc{q}_{32}^{+/-}$ forms
+a volume source on $\Omega_2$.  Therefore $F_2$ \units{}{1}{-1} on the right hand side of \eqref{eq:continuity} is
+given by
+\begin{equation}
+   \label{source_2D}
+   F_2 = \delta_2 f_2 + (q_{32}^{+} + q_{32}^{-}).
+\end{equation}
+
+The communication between $\Omega_2$  and  $\Omega_1$ is similar.  However, in the 3D ambient space,
+an 1D channel can join multiple 2D fractures $1,\dots, n$. Therefore, we have $n$
+independent outflows from $\Omega_2$:
+\begin{equation*}
+        \vc{q}_2\cdot \vc n^{i} = q_{21}^{i} =\sigma_{2}^{i} (h_2^{i}-h_1),
+\end{equation*}
+where $\sigma_2^{i}=\delta_2^{i}\sigma_{21}$ \units{}{1}{-1} is the transition coefficient integrated over 
+the width of the fracture $i$. Sum of the fluxes forms part of $F_1$ \units{}{2}{-1}
+\begin{equation}
+   \label{source_1D}
+   F_1 = \delta_1 f_1 + \sum_{i} q_{21}^{i}. 
+\end{equation}
+The transition coefficients 
+\hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_d$} \units{}{3-d}{-1} are independent parameters in our setting however in practice
+they should be related to the conductivity in direction (or plane) perpendicular to the fracture (channel). According to 
+\cite{martin_modeling_2005} one can use
+\[
+  \sigma_3 = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_2^{i} = \frac{2\delta_2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
+\]
+where $\vc n_2$ is normal to the fracture (sign doesn't matter) and $\vc n_1^i$ is normal to the channel that is tangential to the fracture $i$.
+
+In order to obtain unique solution we have to prescribe boundary conditions. Currently we support three basic 
+\hyperA{DarcyFlowMH-Steady-BoundaryData::bc-type}{types of boundary condition}. 
+Consider disjoint decomposition of the boundary
+\[
+    \prtl\Omega_d = \Gamma_d^D \cap \Gamma_d^N \cap \Gamma_d^R
+\]
+into Dirichlet, Neumann, and Robin parts. We prescribe
+\begin{align}
+    h_d &= h_d^D        &&\text{ on }\Gamma_d^D,\\
+    \vc q_d \cdot \vc n &= q_d^N         &&\text{ on }\Gamma_d^N,\\
+    \vc q_d \cdot \vc n &= \sigma_d^R ( h_d - h_d^R)     &&\text{ on }\Gamma_d^R.
+\end{align}
+where 
+\hyperA{DarcyFlowMH-Steady-BoundaryData::bc-pressure}{$h_d^D$, $h_d^R$} 
+is the prescribed pressure head \units{}{1}{}, which alternatively can be prescribed through the piezometric head 
+\hyperA{DarcyFlowMH-Steady-BoundaryData::bc-piezo-head}{$H_d^D$, $H_d^R$} 
+respectively. 
+\hyperA{DarcyFlowMH-Steady-BoundaryData::bc-flux}{$q_d^N$} 
+is the prescribed surface density of the boundary outflow \units{}{4-d}{-1}, and  
+\hyperA{DarcyFlowMH-Steady-BoundaryData::bc-robin-sigma}{$\sigma_d^R$} 
+is the transition coefficient \units{}{3-d}{-1}.
+The problem is well posed only if there is Dirichlet or Robin boundary condition on every component of the set $\Omega_1 \cup \Omega_2 \cup \Omega_3$ and $\sigma_d >0$ for 
+$d=2,3$.
+
+For unsteady problems one has to specify initial condition in terms of initial pressure head 
+\hyperA{DarcyFlowMH-Steady-BulkData::init-pressure}{$h_d^0$} 
+or initial piezometric head 
+\hyperA{DarcyFlowMH-Steady-BulkData::init-piezo-head}{$H_d^0$}.
+
+
+
+
