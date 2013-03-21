@@ -24,6 +24,8 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
+#include "system/sys_profiler.hh"
+
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
@@ -201,6 +203,7 @@ protected:
     EqData data;
 
     virtual void SetUp() {
+        Profiler::initialize();
         data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 

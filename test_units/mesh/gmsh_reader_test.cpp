@@ -10,12 +10,16 @@
 #include <sstream>
 #include <string>
 
+#include "system/sys_profiler.hh"
+
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
 
 
 TEST(GMSHReader, read_mesh_from_stream) {
+    Profiler::initialize();
+    
     string fname = string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh";
     ifstream ifs( fname.c_str() );
     if (! ifs) cout << "Can not open file!" << endl;
@@ -33,6 +37,8 @@ TEST(GMSHReader, read_mesh_from_stream) {
 
 
 TEST(GMSHReader, read_mesh_from_file) {
+    Profiler::initialize();
+    
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
