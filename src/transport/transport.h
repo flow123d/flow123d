@@ -135,6 +135,7 @@ public:
 	 */
 	double ***get_out_conc();
     vector<string> &get_substance_names();
+    double *get_sources(int sbi);
 //    TransportSources *transportsources;
     const MH_DofHandler *mh_dh;
 

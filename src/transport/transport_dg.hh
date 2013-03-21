@@ -145,6 +145,10 @@ public:
 
 	virtual EqData *get_data() { return &data; }
 
+	unsigned int n_substances() { return n_subst; };
+
+	vector<string> &substance_names() { return subst_names; };
+
 	/**
 	 * @brief Destructor.
 	 */
@@ -343,6 +347,14 @@ private:
 	 */
 	void set_initial_condition();
 
+	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+
+	template<unsigned int dim>
+	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance,
+			DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+
+	void calc_elem_sources(vector< vector<double> > &src_balance);
+
 
 
 	EqData data;
@@ -354,10 +366,10 @@ private:
 	double sigma;
 
 	/// Number of transported substances.
-	int n_substances;
+	int n_subst;
 
 	/// Names of transported substances.
-	std::vector<string> substance_names;
+	std::vector<string> subst_names;
 
 	/// True if sorption is considered.
 	bool sorption;

@@ -115,8 +115,8 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     /*
      * Read names of transported substances.
      */
-    in_rec.val<Input::Array>("substances").copy_to(substance_names);
-    n_substances = substance_names.size();
+    in_rec.val<Input::Array>("substances").copy_to(subst_names);
+    n_subst = subst_names.size();
 
 
 
@@ -124,8 +124,8 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
      * Set up physical parameters.
      */
     data.set_mesh(&init_mesh);
-    data.init_conc.set_n_comp(n_substances);
-    data.bc_conc.set_n_comp(n_substances);
+    data.init_conc.set_n_comp(n_subst);
+    data.bc_conc.set_n_comp(n_subst);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     data.set_time(*time_);
 
@@ -154,13 +154,12 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     Input::Record output_rec = in_rec.val<Input::Record>("output");
     //transport_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
     transport_output = OutputStream(mesh_, output_rec.val<Input::Record>("output_stream"));
-    output_solution.resize(n_substances);
-    for (int i=0; i<n_substances; i++)
+    output_solution.resize(n_subst);
+    for (int i=0; i<n_subst; i++)
     {
         output_solution[i] = new double[distr->size()];
-        transport_output->register_corner_data<double>(substance_names[i], "M/L^3", output_solution[i], distr->size());
+        transport_output->register_corner_data<double>(subst_names[i], "M/L^3", output_solution[i], distr->size());
     }
-
 
     // set time marks for writing the output
     output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
@@ -185,13 +184,13 @@ TransportDG::~TransportDG()
     delete solver;
     delete ls;
     delete ls_dt;
-    for (int i=0; i<n_substances; i++)
+    for (int i=0; i<n_subst; i++)
     {
     	delete[] output_solution[i];
     }
 
     gamma.clear();
-    substance_names.clear();
+    subst_names.clear();
 }
 
 
@@ -290,6 +289,8 @@ void TransportDG::update_solution()
     // solve
     solve_system(solver, ls);
 
+    mass_balance();
+
     //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
     
     END_TIMER("DG-ONE STEP");
@@ -336,13 +337,14 @@ void TransportDG::output_data()
     if (!time_->is_current(output_mark_type)) return;
 
     START_TIMER("DG-OUTPUT");
+
     // gather the solution from all processors
     IS is;
     VecScatter output_scatter;
     int row_ids[distr->size()];
-	Vec solution_vec[n_substances];
+	Vec solution_vec[n_subst];
 
-	for (int i=0; i<n_substances; i++)
+	for (int i=0; i<n_subst; i++)
 		VecCreateSeq(PETSC_COMM_SELF, ls->size(), &solution_vec[i]);
 
 	for (int i=0; i<distr->size(); i++)
@@ -350,7 +352,7 @@ void TransportDG::output_data()
 
 	ISCreateGeneral(PETSC_COMM_SELF, ls->size(), row_ids, PETSC_COPY_VALUES, &is); //WithArray
 	VecScatterCreate(ls->get_solution(), is, solution_vec[0], PETSC_NULL, &output_scatter);
-	for (int sbi = 0; sbi < n_substances; sbi++)
+	for (int sbi = 0; sbi < n_subst; sbi++)
 	{
 		VecScatterBegin(output_scatter, ls->get_solution(), solution_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(output_scatter, ls->get_solution(), solution_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
@@ -391,7 +393,7 @@ void TransportDG::output_data()
 		transport_output->write_data(time_->t());
     }
 
-    for (int i=0; i<n_substances; i++)
+    for (int i=0; i<n_subst; i++)
     	VecDestroy(&solution_vec[i]);
     
     END_TIMER("DG-OUTPUT");
@@ -1169,7 +1171,7 @@ void TransportDG::set_DG_parameters_boundary(const Edge *edge,
 		delta[0] += dot(K[k]*normal_vector,normal_vector);
 	delta[0] /= n_points;
 
-	double local_alpha;
+	double local_alpha = alpha;
 	if (alpha == 0 && Dm != 0)
 		local_alpha = max(1e0,1e0/Dm);
 
@@ -1228,6 +1230,90 @@ void TransportDG::set_initial_condition()
     VecAssemblyBegin(ls->get_solution());
     VecAssemblyEnd(ls->get_solution());
 }
+
+
+
+void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
+{
+	calc_fluxes<1>(bcd_balance, bcd_plus_balance, bcd_minus_balance, dof_handler1d, fe1d);
+	calc_fluxes<2>(bcd_balance, bcd_plus_balance, bcd_minus_balance, dof_handler2d, fe2d);
+	calc_fluxes<3>(bcd_balance, bcd_plus_balance, bcd_minus_balance, dof_handler3d, fe3d);
+}
+
+template<unsigned int dim>
+void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance,
+		DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
+{
+	QGauss<dim-1> q(2);
+	MappingP1<dim,3> map;
+	FE_RT0<dim,3> fe_rt;
+	FESideValues<dim,3> fe_values(map, q, *fe, update_values | update_gradients | update_side_JxW_values | update_quadrature_points);
+	FESideValues<dim,3> fsv_rt(map, q, fe_rt, update_values | update_normal_vectors | update_side_JxW_values);
+	unsigned int ndofs = dh->n_local_dofs();
+	unsigned int dof_indices[ndofs];
+	DOFHandler<1,3>::CellIterator cell = dh->begin_cell();
+	vector<double> Dm(q.size()), alphaL(q.size()), alphaT(q.size());
+	vector<vec3> side_velocity(q.size());
+	double conc;
+	vec3 c_grad;
+	vector<mat33> D(q.size());
+
+    FOR_BOUNDARIES(mesh_, bcd) {
+
+    	if (bcd->side()->dim() != dim-1) continue;
+
+        // !! there can be more sides per one boundary
+
+        cell = bcd->side()->element();
+
+		double water_flux = mh_dh->side_flux(*(bcd->side()))/bcd->side()->measure();
+		double mass_flux = 0;
+
+		fe_values.reinit(cell, *(bcd->side()));
+		fsv_rt.reinit(cell, *(bcd->side()));
+		dh->get_dof_indices(cell, dof_indices);
+
+		calculate_velocity(cell, side_velocity, fsv_rt);
+		for (unsigned int k=0; k<q.size(); k++)
+		{
+			Dm[k] = data.diff_m.value(fe_values.point(k), cell->element_accessor());
+			alphaL[k] = data.disp_l.value(fe_values.point(k), cell->element_accessor());
+			alphaT[k] = data.disp_t.value(fe_values.point(k), cell->element_accessor());
+		}
+		calculate_dispersivity_tensor(D, side_velocity, Dm, alphaL, alphaT);
+
+		for (unsigned int k=0; k<q.size(); k++)
+		{
+			double por_m = data.por_m.value(fe_values.point(k), cell->element_accessor());
+			conc = 0;
+			c_grad.zeros();
+			for (unsigned int i=0; i<ndofs; i++)
+			{
+				conc += fe_values.shape_value(i,k)*ls->get_solution_array()[dof_indices[i]];
+				c_grad += fe_values.shape_grad(i,k)*ls->get_solution_array()[dof_indices[i]];
+			}
+
+			mass_flux += (dot(-D[k]*c_grad,fsv_rt.normal_vector(k)) + advection/por_m*water_flux*conc)*fe_values.JxW(k);
+		}
+
+        Region r = bcd->region();
+        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
+        unsigned int bc_region_idx = r.boundary_idx();
+        bcd_balance[0][bc_region_idx] += mass_flux;
+
+        if (mass_flux > 0) bcd_plus_balance[0][bc_region_idx] += mass_flux;
+        else bcd_minus_balance[0][bc_region_idx] += mass_flux;
+    }
+
+}
+
+void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance)
+{
+}
+
+
+
+
 
 
 

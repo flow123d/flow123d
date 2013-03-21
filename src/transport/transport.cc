@@ -236,6 +236,11 @@ vector<string> &ConvectionTransport::get_substance_names(){
 	return substance_name;
 }
 
+double *ConvectionTransport::get_sources(int sbi) {
+	compute_concentration_sources(sbi, conc[MOBILE][sbi] );
+	return sources_corr;
+}
+
 
 
 //=============================================================================

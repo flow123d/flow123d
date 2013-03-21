@@ -58,10 +58,8 @@ public:
 
 	};
 
-    TransportBase(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec ),
-      mh_dh(NULL)
-    {}
+    TransportBase(Mesh &mesh, const Input::Record in_rec);
+    virtual ~TransportBase();
 
 
     virtual TransportEqData *get_data() = 0;
@@ -78,10 +76,27 @@ public:
     }
     virtual void output_data() =0;
 
+    /**
+     * Calculate mass balance: flux through boundary and volume sources
+     */
+    void mass_balance();
+
+    virtual unsigned int n_substances() = 0;
+
+    virtual vector<string> &substance_names() = 0;
+
     static Input::Type::AbstractRecord input_type;
     static Input::Type::Record input_type_output_record;
 
     const MH_DofHandler *mh_dh;
+
+protected:
+
+    virtual void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) = 0;
+    virtual void calc_elem_sources(vector<vector<double> > &src_balance) = 0;
+
+    FILE *balance_output_file;
+
 };
 
 
@@ -112,6 +127,16 @@ public:
     virtual void output_data() {};
 
     virtual TransportEqData *get_data() { return 0; };
+
+    unsigned int n_substances() { return 0; };
+
+    vector<string> &substance_names() {};
+
+
+private:
+
+    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) {};
+    void calc_elem_sources(vector<vector<double> > &src_balance) {};
 };
 
 
@@ -168,6 +193,11 @@ public:
     virtual void get_parallel_solution_vector(Vec &vc);
     virtual void get_solution_vector(double* &vector, unsigned int &size);
     void compute_until_save_time();
+
+    unsigned int n_substances();
+    vector<string> &substance_names();
+
+
    
     /**
      * @brief Sets pointer to data of other equations.
@@ -178,9 +208,12 @@ public:
 
     virtual EqData *get_data() { return &data; };
 
-protected:
+
 
 private:
+
+    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+    void calc_elem_sources(vector<vector<double> > &src_balance);
 
     EqData data;
 
@@ -192,6 +225,7 @@ private:
     OutputTime *field_output;
 
     TimeMark::Type output_mark_type;
+
 };
 
 
