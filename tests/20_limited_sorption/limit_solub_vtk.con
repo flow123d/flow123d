@@ -1,0 +1,108 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test20 - langmuir sorption simulation", 
+    material = "./input/sit_sorp.mtr", 
+    mesh = {
+      mesh_file = "./input/sit_sorp.msh", 
+      neighbouring = "./input/sit_sorp.ngh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      boundary_file = "./input/sit_sorp.fbc", 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+	velocity_p0 = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-07
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+      boundary_file = "./input/sit_sorp.tbc", 
+      initial_file = "./input/sit_sorp.tic", 
+      output = {
+        mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/system/output_streams/1"
+        }, 
+        save_step = 0.5
+      }, 
+
+      dual_porosity = false,
+      sorption_enable = false, 
+      substances = [
+        "A", 
+        "B", 
+        "C", 
+        "D", 
+        "E", 
+        "F", 
+        "G", 
+        "H"
+      ], 
+      time = {
+        end_time = 10.0
+      },
+      
+      reactions = {
+        TYPE="Sorptions";
+        solvent_dens = 1.0,
+        species = ["A","B","C","D","F","G"],
+        molar_masses = [5.0, 32.0, 23.1, 12.0, 25.0, 17.0],
+        solubility = [0.5, 0.2, 0.3, 0.1, 0.3, 0.7],
+        bulk_data = [
+          {
+            region_id = 48,
+            mob_porosity = 0.02,
+            immob_porosity = 0.001,
+            rock_density = 9.25,
+            sorption_types = [1, 2, 3, 1, 0, 0],
+            mult_coefs = [0.02, 0.02, 0.03, 0.01, 0, 0],
+            second_params = [0, 0.5, 0.25, 0, 0, 0]
+          },
+          {
+            region_id = 184,
+            mob_porosity = 0.01,
+            immob_porosity = 0.005,
+            rock_density = 10.0,
+            sorption_types = [1, 0, 0, 3, 2, 0],
+            mult_coefs = [0.04, 0, 0, 0.03, 0.03, 0],
+            second_params = [0, 0, 0, 0.15, 0.52, 0]
+          }
+        ]
+      }
+    } 
+  }, 
+  
+  system = {
+    output_streams = [
+      {
+        file = "./sorption.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport_sorption.pvd", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}
