@@ -56,8 +56,7 @@
       
       bulk_data = [
         { rid = 100,
-          init_conc = 0,
-          d_m = 1e-6
+          init_conc = 0
         }
       ],
 

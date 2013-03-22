@@ -70,8 +70,8 @@ TransportDG::EqData::EqData() : TransportEqData("TransportDG")
 {
 	ADD_FIELD(disp_l, "Longitudal dispersivity.", Default("0"));
 	ADD_FIELD(disp_t, "Transversal dispersivity.", Default("0"));
-	ADD_FIELD(diff_m, "Molecular diffusivity.", Default("1e-6"));
-	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution.", Default("0"));
+	ADD_FIELD(diff_m, "Molecular diffusivity.", Default("0"));
+	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution.", Default("1.0"));
 }
 
 RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
@@ -1056,7 +1056,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
     double delta[2];
     double h = 0;
     double fluxes[edg->n_sides];
-    double local_alpha, min_dm;
+    double local_alpha;
 
     ASSERT(edg->side(s1)->valid(), "Invalid side of an edge.");
     SideIter s = edg->side(s1);
@@ -1106,12 +1106,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
 
 
     // determine local DG penalty
-    min_dm = Dm[s1][0];
-    for (int k=0; k<n_points; k++)
-    	min_dm = min(min(Dm[s1][k], Dm[s2][k]), min_dm);
     local_alpha = max(alpha[s1], alpha[s2]);
-    if (local_alpha == 0 && min_dm != 0)
-    	local_alpha = max(1e0,1e0/min_dm);
 
     if (s1 == s2)
     {
@@ -1189,13 +1184,7 @@ void TransportDG::set_DG_parameters_boundary(const Edge *edge,
 		delta[0] += dot(K[k]*normal_vector,normal_vector);
 	delta[0] /= n_points;
 
-	double local_alpha = alpha;
-	if (alpha == 0 && Dm != 0)
-		local_alpha = max(1e0,1e0/Dm);
-	else
-		local_alpha = alpha;
-
-	gamma += local_alpha/h*delta[0];
+	gamma += alpha/h*delta[0];
 }
 
 

@@ -57,20 +57,16 @@
             gmsh_file = "./input/test18_fine_init.msh",
             field_name = "concentration"
           },
-          por_m = 0.25,
-          diff_m = 1e-4,
-          dg_penalty = 1e0
+          por_m = 0.25
         },
         {
           rid = 24,
           init_conc = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "./input/test18_fine_init.msh",
-            field_name = "concentration"
+            TYPE = "FieldFormula",
+            value = "if(x>=0.45&x<0.55 & y>0.3&y<0.4,1,0)"
           },
-          por_m = 0.25,
-          diff_m = 1e-4,
-          dg_penalty = 1e0
+          por_m = 0.25
+          diff_m = 1e-6
         }
       ],
 

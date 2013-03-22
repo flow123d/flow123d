@@ -84,7 +84,8 @@
             TYPE="FieldFormula",
             value="(1+sin(x)*sin(y))*0.5"
           },
-          por_m = 0.25
+          por_m = 0.25,
+          diff_m = 1e-1
         }
       ]
     }
