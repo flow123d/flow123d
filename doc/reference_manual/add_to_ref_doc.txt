@@ -359,7 +359,6 @@
 \AddDoc{AdvectionDiffusion\_DG::dual\_porosity}
 \AddDoc{AdvectionDiffusion\_DG::sources\_file}
 \AddDoc{AdvectionDiffusion\_DG::output}
-\AddDoc{AdvectionDiffusion\_DG::sigma}
 \AddDoc{AdvectionDiffusion\_DG::solver}
 \AddDoc{AdvectionDiffusion\_DG::bc\_data}
 \AddDoc{AdvectionDiffusion\_DG::bulk\_data}
@@ -409,6 +408,7 @@
 \AddDoc{TransportDG\_BulkData::disp\_l}
 \AddDoc{TransportDG\_BulkData::disp\_t}
 \AddDoc{TransportDG\_BulkData::diff\_m}
+\AddDoc{TransportDG\_BulkData::sigma\_c}
 \AddDoc{TransportDG\_BulkData::dg\_penalty}
 \AddDoc{TransportOperatorSplitting}
 \AddDoc{TransportOperatorSplitting::TYPE}

@@ -50,8 +50,6 @@ using namespace Input::Type;
 Record TransportDG::input_type
 	= Record("AdvectionDiffusion_DG", "DG solver for transport with diffusion.")
 	.derive_from(TransportBase::input_type)
-	.declare_key("sigma", Double(), Default("0"),
-			"Coefficient of diffusive transfer through fractures.")
     .declare_key("solver", Solver::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
     .declare_key("bc_data", Array(TransportDG::EqData().boundary_input_type()
@@ -71,6 +69,7 @@ TransportDG::EqData::EqData() : TransportEqData("TransportDG")
 	ADD_FIELD(disp_l, "Longitudal dispersivity.", Default("0"));
 	ADD_FIELD(disp_t, "Transversal dispersivity.", Default("0"));
 	ADD_FIELD(diff_m, "Molecular diffusivity.", Default("0"));
+	ADD_FIELD(sigma_c, "Coefficient of diffusive transfer through fractures.", Default("0"));
 	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution.", Default("1.0"));
 }
 
@@ -127,8 +126,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data.bc_conc.set_n_comp(n_subst);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     data.set_time(*time_);
-
-    sigma  = in_rec.val<double>("sigma");
 
     sorption = in_rec.val<bool>("sorption_enable");
     dual_porosity = in_rec.val<bool>("dual_porosity");
@@ -834,10 +831,11 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 		// flux from the higher dimension to the lower one
 		transport_flux = mh_dh->side_flux( *(nb->side()) )/nb->side()->measure();
 
-		double por_m[2], csection;
+		double por_m[2], csection, sigma;
 		por_m[0] = data.por_m.value(nb->element()->centre(), nb->element()->element_accessor());
 		por_m[1] = data.por_m.value(nb->side()->centre(), cell->element_accessor());
 		csection = data.cross_section->value(nb->side()->centre(), cell->element_accessor());
+		sigma = data.sigma_c.value(nb->side()->centre(), nb->element()->element_accessor());
 
 		// set transmission condition for dim-1
 		for (int j=0; j<fv_sb[0]->n_dofs(); j++)
@@ -1118,7 +1116,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
             delta[0] += dot(K[s1][k]*normal_vector,normal_vector);
         delta[0] /= n_points;
 
-        gamma += local_alpha/h*(delta[0]+sigma);
+        gamma += local_alpha/h*(delta[0]);
     }
     else
     {
@@ -1136,7 +1134,7 @@ void TransportDG::set_DG_parameters(const Edge *edg,
         {
             omega[0] = delta[1]/delta_sum;
             omega[1] = delta[0]/delta_sum;
-            gamma += local_alpha/h*(delta[0]*delta[1]/delta_sum + sigma);
+            gamma += local_alpha/h*(delta[0]*delta[1]/delta_sum);
         }
         else
             for (int i=0; i<2; i++) omega[i] = 0;

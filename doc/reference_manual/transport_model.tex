@@ -87,7 +87,7 @@ Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega_{d+1
 where
 \begin{itemize}
 \item $q^c$ \units{1}{-d}{-1} is the density of concentration flux from $\Omega_{d+1}$ to $\Omega_d$,
-\item $\sigma^c$ \units{}{1}{-1} is a \hyperA{AdvectionDiffusion-DG::sigma}{transition parameter}.
+\item $\sigma^c$ \units{}{1}{-1} is a \hyperA{TransportDG-BulkData::sigma-c}{transition parameter}.
 Its nonzero value causes mass exchange between dimensions whenever the concentrations differ.
 It is recommended to set either $\sigma^c=0$ (exchange due to water flux only) or, similarly as in \eqref{e:sigma_law},
 \[

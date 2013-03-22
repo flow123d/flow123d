@@ -766,7 +766,6 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::sources-file}{sources\_file}}{input file name}{\textless\it optional\textgreater}{}{File with data for the source term in the transport equation.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::sigma}{sigma}}{Double }{0}{}{Coefficient of diffusive transfer through fractures.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::solver}{solver}}{abstract type: \hyperlink{IT::Solver}{Solver}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{\textless\it obligatory\textgreater}{}{}
@@ -859,6 +858,7 @@ These times has to form an increasing sequence.}
 \KeyItem{\hyperB{TransportDG-BulkData::disp-l}{disp\_l}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Longitudal dispersivity.}
 \KeyItem{\hyperB{TransportDG-BulkData::disp-t}{disp\_t}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transversal dispersivity.}
 \KeyItem{\hyperB{TransportDG-BulkData::diff-m}{diff\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Molecular diffusivity.}
+\KeyItem{\hyperB{TransportDG-BulkData::sigma-c}{sigma\_c}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Coefficient of diffusive transfer through fractures.}
 \KeyItem{\hyperB{TransportDG-BulkData::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution.}
 \end{RecordType}
 

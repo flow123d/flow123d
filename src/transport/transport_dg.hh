@@ -87,6 +87,7 @@ public:
 		Field<3, FieldValue<3>::Scalar> disp_l;     ///< Longitudal dispersivity.
 		Field<3, FieldValue<3>::Scalar> disp_t;     ///< Transversal dispersivity.
 		Field<3, FieldValue<3>::Scalar> diff_m;     ///< Molecular diffusivity.
+		Field<3, FieldValue<3>::Scalar> sigma_c;    ///< Transition parameter for diffusive transfer on fractures.
 		Field<3, FieldValue<3>::Scalar> dg_penalty; ///< Penalty enforcing inter-element continuity of solution.
 
 	};
@@ -360,9 +361,6 @@ private:
 
 	/// @name Physical parameters
 	// @{
-
-	/// Coefficient of diffusive transfer.
-	double sigma;
 
 	/// Number of transported substances.
 	int n_subst;

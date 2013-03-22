@@ -18,7 +18,7 @@
       bulk_data = [
         { rid = 20,
           cond_anisothropy = 10,
-          cross_section = 1
+          cross_section = 1e-1
         },
         { rid = 24,
           cond_anisothropy = 1,
@@ -45,7 +45,7 @@
 
       bc_data = [
         { region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test18_fine.tbc"
+          bc_conc=0
         }
       ],
       
@@ -57,7 +57,8 @@
             gmsh_file = "./input/test18_fine_init.msh",
             field_name = "concentration"
           },
-          por_m = 0.25
+          por_m = 0.25,
+          sigma_c = 1e1
         },
         {
           rid = 24,
@@ -66,7 +67,6 @@
             value = "if(x>=0.45&x<0.55 & y>0.3&y<0.4,1,0)"
           },
           por_m = 0.25
-          diff_m = 1e-6
         }
       ],
 
@@ -79,7 +79,6 @@
       }, 
 
       dual_porosity = true, 
-      sigma = 1e1,
 
       substances = [
         "A"
