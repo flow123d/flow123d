@@ -43,12 +43,11 @@ Default::Default(const std::string & value)
     boost::algorithm::trim(value_);
 }
 
+
+
 Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
-{
-    if (type_ == no_default_obligatory_type) value_="OBLIGATORY";
-    if (type_ == no_default_optional_type) value_="OPTIONAL";
-}
+{}
 
 
 /**********************************************************************************

@@ -19,6 +19,7 @@
 
 const double pi = 3.1415;
 namespace it=Input::Type;
+
 it::Selection Sorption::EqData::sorption_type_selection = it::Selection("SorptionType")
 .add_value(none,"none","No sorption considered")
 .add_value(linear,"linear","Linear isotherm described sorption considered.")
@@ -124,7 +125,6 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 
 Sorption::~Sorption(void)
 {
-	;
 }
 
 void Sorption::prepare_inputs(Input::Record in_rec)

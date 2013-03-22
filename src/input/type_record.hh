@@ -83,8 +83,8 @@ public:
      *      some_record.declare_key("some_key",Integer(),Default::obligatory(),"description");
      * @endcode
      */
-    static Default obligatory()
-    { return Default(no_default_obligatory_type); }
+    inline static Default obligatory()
+    { return Default(no_default_obligatory_type, "OBLIGATORY"); }
 
     /**
      * Factory function to make an empty default value which is optional.
@@ -96,8 +96,8 @@ public:
      *      some_record.declare_key("some_key",Integer(),Default::optional(),"description");
      * @endcode
      */
-    static Default optional()
-    { return Default(no_default_optional_type); }
+    inline static Default optional()
+    { return Default(no_default_optional_type, "OPTIONAL"); }
 
     /**
      * Returns true if the default value is or will be available when someone tries to read the value.
@@ -142,7 +142,7 @@ private:
     /**
      * Constructor for other types then 'declaration'.
      */
-    Default(enum DefaultType type, const std::string &value = "");
+    Default(enum DefaultType type, const std::string &value);
 };
 
 

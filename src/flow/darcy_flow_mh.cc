@@ -79,7 +79,7 @@ it::Selection DarcyFlowMH::mh_mortar_selection
 
 it::Selection DarcyFlowMH::EqData::bc_type_selection =
               it::Selection("EqData_bc_Type")
-               .add_value(none, "none")
+               .add_value(none, "none", "Homogeneous Neoumann BC.")
                .add_value(dirichlet, "dirichlet")
                .add_value(neumann, "neumann")
                .add_value(robin, "robin")
