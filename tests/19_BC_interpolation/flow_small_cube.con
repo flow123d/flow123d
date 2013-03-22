@@ -16,7 +16,7 @@
             mesh="input/large_mesh.msh",
             raw_data="input/raw_output_large.txt"
           }  
-        }         
+        },
       n_schurs = 2, 
       output = {
         balance_output = "water_balance.out", 

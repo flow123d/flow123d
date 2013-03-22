@@ -8,7 +8,7 @@
 
 % define a target command to check that target is defined 
 \def\RegisterTarget#1{%
-    \expandafter\def\csname #1\endcsname{}%
+    \expandafter\gdef\csname #1\endcsname{}%
 }
 % replacement for \hypertarget that scroll to correct line
 \def\HTRaised#1{%

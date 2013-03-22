@@ -13,8 +13,8 @@
         {
             region = "plane",
             cond_anisothropy = 0.02,
-            init_pressure = 0,          #default
-            storativity = 1             #default
+            init_pressure = 0,          // default
+            storativity = 1             // default
         }
       ],
 
