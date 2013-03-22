@@ -4,14 +4,14 @@ We consider simplest model for the velocity of the steady or unsteady flow in po
 Darcy low:
 \begin{equation}
     \label{eq:darcy}
-    \vc v = -\tn K \grad H \quad\text{on }\Omega_d,\ \text{for $d=1,2,3$}.
+    \vc w = -\tn K \grad H \quad\text{on }\Omega_d,\ \text{for $d=1,2,3$}.
 \end{equation}
 We drop the dimension index of quantities in equations if it is same as the dimension of the set where the equation holds.
-In \eqref{eq:darcy}, $\vc v_d$ \units{}{1}{-1} is \href{http://en.wikipedia.org/wiki/Superficial_velocity}{the superficial velocity},
+In \eqref{eq:darcy}, $\vc w_d$ \units{}{1}{-1} is \href{http://en.wikipedia.org/wiki/Superficial_velocity}{the superficial velocity},
 $\tn K_d$ is the conductivity tensor, and $H_d$ \units{}{1}{} is the piezometric head. The velocity is related to the flux $\vc q_d$ 
 with units \units{}{4-d}{-1} through
 \[
-    \vc q_d = \delta_d \vc v_d.
+    \vc q_d = \delta_d \vc w_d.
 \]
 where 
 \hyperA{DarcyFlowMH-Steady-BulkData::cross-section}{$\delta_d$} 
@@ -86,6 +86,7 @@ The transition coefficients
 they should be related to the conductivity in direction (or plane) perpendicular to the fracture (channel). According to 
 \cite{martin_modeling_2005} one can use
 \[
+\label{e:sigma_law}
   \sigma_3 = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_2^{i} = \frac{2\delta_2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
 \]
 where $\vc n_2$ is normal to the fracture (sign doesn't matter) and $\vc n_1^i$ is normal to the channel that is tangential to the fracture $i$.

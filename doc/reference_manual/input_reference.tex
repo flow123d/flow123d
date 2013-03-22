@@ -106,9 +106,13 @@ ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bu
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::OutputFormat}{OutputFormat}}{}{}{Format of output stream and possible parameters.}
-\Descendant{\hyperlink{IT::vtk}{vtk}}
 \Descendant{\hyperlink{IT::gmsh}{gmsh}}
+\Descendant{\hyperlink{IT::vtk}{vtk}}
 \end{AbstractType}
+
+\begin{RecordType}{\HTRaised{IT::gmsh}{gmsh}}{\hyperlink{IT::OutputFormat}{OutputFormat}}{}{}{Parameters of gmsh output format.}
+\KeyItem{\hyperB{gmsh::TYPE}{TYPE}}{selection: OutputFormat\_TYPE\_selection}{gmsh}{}{Sub-record selection.}
+\end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::vtk}{vtk}}{\hyperlink{IT::OutputFormat}{OutputFormat}}{}{}{Parameters of vtk output format.}
 \KeyItem{\hyperB{vtk::TYPE}{TYPE}}{selection: OutputFormat\_TYPE\_selection}{vtk}{}{Sub-record selection.}
@@ -126,10 +130,6 @@ ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bu
 \KeyItem{none}{Data in VTK file format are not compressed}
 \KeyItem{zlib}{Data in VTK file format are compressed using zlib (not supported yet)}
 \end{SelectionType}
-
-\begin{RecordType}{\HTRaised{IT::gmsh}{gmsh}}{\hyperlink{IT::OutputFormat}{OutputFormat}}{}{}{Parameters of gmsh output format.}
-\KeyItem{\hyperB{gmsh::TYPE}{TYPE}}{selection: OutputFormat\_TYPE\_selection}{gmsh}{}{Sub-record selection.}
-\end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::MH-MortarMethod}{MH\_MortarMethod}}
 \KeyItem{None}{Mortar space: P0 on elements of lower dimension.}
@@ -172,7 +172,7 @@ For square NxN-matrix values, you can use:
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::EqData-bc-Type}{EqData\_bc\_Type}}
-\KeyItem{none}{}
+\KeyItem{none}{Homogeneous Neoumann BC.}
 \KeyItem{dirichlet}{}
 \KeyItem{neumann}{}
 \KeyItem{robin}{}
@@ -754,23 +754,22 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Transport}{Transport}}{}{}{Secondary equation for transport of substances.}
-\Descendant{\hyperlink{IT::TransportOperatorSplitting}{TransportOperatorSplitting}}
 \Descendant{\hyperlink{IT::AdvectionDiffusion-DG}{AdvectionDiffusion\_DG}}
+\Descendant{\hyperlink{IT::TransportOperatorSplitting}{TransportOperatorSplitting}}
 \end{AbstractType}
 
-\begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting}{TransportOperatorSplitting}}{\hyperlink{IT::Transport}{Transport}}{}{}{Explicit FVM transport (no diffusion)
-coupled with reaction and sorption model (ODE per element)
- via. operator splitting.}
-\KeyItem{\hyperB{TransportOperatorSplitting::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{TransportOperatorSplitting}{}{Sub-record selection.}
-\KeyItem{\hyperB{TransportOperatorSplitting::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the transport model.}
-\KeyItem{\hyperB{TransportOperatorSplitting::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of transported substances.}
-\KeyItem{\hyperB{TransportOperatorSplitting::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
-\KeyItem{\hyperB{TransportOperatorSplitting::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
-\KeyItem{\hyperB{TransportOperatorSplitting::sources-file}{sources\_file}}{input file name}{\textless\it optional\textgreater}{}{File with data for the source term in the transport equation.}
-\KeyItem{\hyperB{TransportOperatorSplitting::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
-\KeyItem{\hyperB{TransportOperatorSplitting::reactions}{reactions}}{abstract type: \hyperlink{IT::Reactions}{Reactions}}{\textless\it optional\textgreater}{}{Initialization of per element reactions.}
-\KeyItem{\hyperB{TransportOperatorSplitting::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{TransportOperatorSplitting::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-BulkData}{TransportOperatorSplitting\_BulkData}}{\textless\it obligatory\textgreater}{}{}
+\begin{RecordType}{\HTRaised{IT::AdvectionDiffusion-DG}{AdvectionDiffusion\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for transport with diffusion.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{AdvectionDiffusion\_DG}{}{Sub-record selection.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the transport model.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of transported substances.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::sources-file}{sources\_file}}{input file name}{\textless\it optional\textgreater}{}{File with data for the source term in the transport equation.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::sigma}{sigma}}{Double }{0}{}{Coefficient of diffusive transfer through fractures.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::solver}{solver}}{abstract type: \hyperlink{IT::Solver}{Solver}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{\textless\it obligatory\textgreater}{}{}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::TransportOutput}{TransportOutput}}{}{}{}{Output setting for transport equations.}
@@ -783,59 +782,18 @@ coupled with reaction and sorption model (ODE per element)
 \KeyItem{\hyperB{TransportOutput::conc-immobile-sorbed-p0}{conc\_immobile\_sorbed\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.}
 \end{RecordType}
 
-\begin{AbstractType}{\HTRaised{IT::Reactions}{Reactions}}{}{}{Equation for reading information about simple chemical reactions.}
-\Descendant{\hyperlink{IT::LinearReactions}{LinearReactions}}
-\Descendant{\hyperlink{IT::PadeApproximant}{PadeApproximant}}
-\Descendant{\hyperlink{IT::Isotope}{Isotope}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::LinearReactions}{LinearReactions}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Information for a decision about the way to simulate radioactive decay.}
-\KeyItem{\hyperB{LinearReactions::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{LinearReactions}{}{Sub-record selection.}
-\KeyItem{\hyperB{LinearReactions::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
-\KeyItem{\hyperB{LinearReactions::matrix-exp-on}{matrix\_exp\_on}}{Bool}{false}{}{Enables to use Pade approximant of matrix exponential.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::Substep}{Substep}}{}{}{}{Equation for reading information about radioactive decays.}
-\KeyItem{\hyperB{Substep::parent}{parent}}{String (generic)}{\textless\it obligatory\textgreater}{}{Identifier of an isotope.}
-\KeyItem{\hyperB{Substep::half-life}{half\_life}}{Double }{\textless\it optional\textgreater}{}{Half life of the parent substance.}
-\KeyItem{\hyperB{Substep::kinetic}{kinetic}}{Double }{\textless\it optional\textgreater}{}{Kinetic constants describing first order reactions.}
-\KeyItem{\hyperB{Substep::products}{products}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Identifies isotopes which decays parental atom to.}
-\KeyItem{\hyperB{Substep::branch-ratios}{branch\_ratios}}{Array  of Double }{1.0}{}{Decay chain branching percentage.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::PadeApproximant}{PadeApproximant}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Abstract record with an information about pade approximant parameters.}
-\KeyItem{\hyperB{PadeApproximant::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{PadeApproximant}{}{Sub-record selection.}
-\KeyItem{\hyperB{PadeApproximant::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
-\KeyItem{\hyperB{PadeApproximant::nom-pol-deg}{nom\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant.}
-\KeyItem{\hyperB{PadeApproximant::den-pol-deg}{den\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::Substep}{Substep}}{}{}{}{Equation for reading information about radioactive decays.}
-\KeyItem{\hyperB{Substep::parent}{parent}}{String (generic)}{\textless\it obligatory\textgreater}{}{Identifier of an isotope.}
-\KeyItem{\hyperB{Substep::half-life}{half\_life}}{Double }{\textless\it optional\textgreater}{}{Half life of the parent substance.}
-\KeyItem{\hyperB{Substep::kinetic}{kinetic}}{Double }{\textless\it optional\textgreater}{}{Kinetic constants describing first order reactions.}
-\KeyItem{\hyperB{Substep::products}{products}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Identifies isotopes which decays parental atom to.}
-\KeyItem{\hyperB{Substep::branch-ratios}{branch\_ratios}}{Array  of Double }{1.0}{}{Decay chain branching percentage.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::Isotope}{Isotope}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Definition of information about a single isotope.}
-\KeyItem{\hyperB{Isotope::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{Isotope}{}{Sub-record selection.}
-\KeyItem{\hyperB{Isotope::identifier}{identifier}}{Integer }{\textless\it obligatory\textgreater}{}{Identifier of the isotope.}
-\KeyItem{\hyperB{Isotope::half-life}{half\_life}}{Double }{\textless\it obligatory\textgreater}{}{Half life parameter.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'TransportOperatorSplitting'.
+\begin{RecordType}{\HTRaised{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'TransportDG'.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
- any TransportOperatorSplitting\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
+ any TransportDG\_BoundaryData record that comes later in the boundary data array.}
+\KeyItem{\hyperB{TransportDG-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{TransportDG-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{TransportDG-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{TransportDG-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
 These times has to form an increasing sequence.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Boundary conditions for concentrations.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::old-boundary-file}{old\_boundary\_file}}{input file name}{\textless\it optional\textgreater}{}{Input file with boundary conditions (obsolete).}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::bc-times}{bc\_times}}{Array  of Double }{\textless\it optional\textgreater}{}{Times for changing the boundary conditions (obsolete).}
+\KeyItem{\hyperB{TransportDG-BoundaryData::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Boundary conditions for concentrations.}
+\KeyItem{\hyperB{TransportDG-BoundaryData::old-boundary-file}{old\_boundary\_file}}{input file name}{\textless\it optional\textgreater}{}{Input file with boundary conditions (obsolete).}
+\KeyItem{\hyperB{TransportDG-BoundaryData::bc-times}{bc\_times}}{Array  of Double }{\textless\it optional\textgreater}{}{Times for changing the boundary conditions (obsolete).}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{\AddDoc{Field:R3 $\rightarrow$ Real[n]}}{Abstract record for all time-space functions.}
@@ -887,6 +845,93 @@ Formula can contain variables x,y,z,t and usual operators and functions.}
 \KeyItem{\hyperB{FieldInterpolatedP0::raw-data}{raw\_data}}{input file name}{\textless\it obligatory\textgreater}{}{File with raw output from flow calculation. Currently we can interpolate only pressure.}
 \end{RecordType}
 
+\begin{RecordType}{\HTRaised{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'TransportDG'.
+The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
+and after the time given by the key 'time'. The field setting can be overridden by
+ any TransportDG\_BulkData record that comes later in the bulk data array.}
+\KeyItem{\hyperB{TransportDG-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{TransportDG-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{TransportDG-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{TransportDG-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
+These times has to form an increasing sequence.}
+\KeyItem{\hyperB{TransportDG-BulkData::init-conc}{init\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentrations.}
+\KeyItem{\hyperB{TransportDG-BulkData::por-m}{por\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Mobile porosity}
+\KeyItem{\hyperB{TransportDG-BulkData::disp-l}{disp\_l}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Longitudal dispersivity.}
+\KeyItem{\hyperB{TransportDG-BulkData::disp-t}{disp\_t}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transversal dispersivity.}
+\KeyItem{\hyperB{TransportDG-BulkData::diff-m}{diff\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Molecular diffusivity.}
+\KeyItem{\hyperB{TransportDG-BulkData::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting}{TransportOperatorSplitting}}{\hyperlink{IT::Transport}{Transport}}{}{}{Explicit FVM transport (no diffusion)
+coupled with reaction and sorption model (ODE per element)
+ via. operator splitting.}
+\KeyItem{\hyperB{TransportOperatorSplitting::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{TransportOperatorSplitting}{}{Sub-record selection.}
+\KeyItem{\hyperB{TransportOperatorSplitting::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the transport model.}
+\KeyItem{\hyperB{TransportOperatorSplitting::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of transported substances.}
+\KeyItem{\hyperB{TransportOperatorSplitting::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
+\KeyItem{\hyperB{TransportOperatorSplitting::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
+\KeyItem{\hyperB{TransportOperatorSplitting::sources-file}{sources\_file}}{input file name}{\textless\it optional\textgreater}{}{File with data for the source term in the transport equation.}
+\KeyItem{\hyperB{TransportOperatorSplitting::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
+\KeyItem{\hyperB{TransportOperatorSplitting::reactions}{reactions}}{abstract type: \hyperlink{IT::Reactions}{Reactions}}{\textless\it optional\textgreater}{}{Initialization of per element reactions.}
+\KeyItem{\hyperB{TransportOperatorSplitting::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{TransportOperatorSplitting::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-BulkData}{TransportOperatorSplitting\_BulkData}}{\textless\it obligatory\textgreater}{}{}
+\end{RecordType}
+
+\begin{AbstractType}{\HTRaised{IT::Reactions}{Reactions}}{}{}{Equation for reading information about simple chemical reactions.}
+\Descendant{\hyperlink{IT::Isotope}{Isotope}}
+\Descendant{\hyperlink{IT::PadeApproximant}{PadeApproximant}}
+\Descendant{\hyperlink{IT::LinearReactions}{LinearReactions}}
+\end{AbstractType}
+
+\begin{RecordType}{\HTRaised{IT::Isotope}{Isotope}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Definition of information about a single isotope.}
+\KeyItem{\hyperB{Isotope::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{Isotope}{}{Sub-record selection.}
+\KeyItem{\hyperB{Isotope::identifier}{identifier}}{Integer }{\textless\it obligatory\textgreater}{}{Identifier of the isotope.}
+\KeyItem{\hyperB{Isotope::half-life}{half\_life}}{Double }{\textless\it obligatory\textgreater}{}{Half life parameter.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::PadeApproximant}{PadeApproximant}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Abstract record with an information about pade approximant parameters.}
+\KeyItem{\hyperB{PadeApproximant::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{PadeApproximant}{}{Sub-record selection.}
+\KeyItem{\hyperB{PadeApproximant::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
+\KeyItem{\hyperB{PadeApproximant::nom-pol-deg}{nom\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant.}
+\KeyItem{\hyperB{PadeApproximant::den-pol-deg}{den\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::Substep}{Substep}}{}{}{}{Equation for reading information about radioactive decays.}
+\KeyItem{\hyperB{Substep::parent}{parent}}{String (generic)}{\textless\it obligatory\textgreater}{}{Identifier of an isotope.}
+\KeyItem{\hyperB{Substep::half-life}{half\_life}}{Double }{\textless\it optional\textgreater}{}{Half life of the parent substance.}
+\KeyItem{\hyperB{Substep::kinetic}{kinetic}}{Double }{\textless\it optional\textgreater}{}{Kinetic constants describing first order reactions.}
+\KeyItem{\hyperB{Substep::products}{products}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Identifies isotopes which decays parental atom to.}
+\KeyItem{\hyperB{Substep::branch-ratios}{branch\_ratios}}{Array  of Double }{1.0}{}{Decay chain branching percentage.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::LinearReactions}{LinearReactions}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Information for a decision about the way to simulate radioactive decay.}
+\KeyItem{\hyperB{LinearReactions::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{LinearReactions}{}{Sub-record selection.}
+\KeyItem{\hyperB{LinearReactions::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
+\KeyItem{\hyperB{LinearReactions::matrix-exp-on}{matrix\_exp\_on}}{Bool}{false}{}{Enables to use Pade approximant of matrix exponential.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::Substep}{Substep}}{}{}{}{Equation for reading information about radioactive decays.}
+\KeyItem{\hyperB{Substep::parent}{parent}}{String (generic)}{\textless\it obligatory\textgreater}{}{Identifier of an isotope.}
+\KeyItem{\hyperB{Substep::half-life}{half\_life}}{Double }{\textless\it optional\textgreater}{}{Half life of the parent substance.}
+\KeyItem{\hyperB{Substep::kinetic}{kinetic}}{Double }{\textless\it optional\textgreater}{}{Kinetic constants describing first order reactions.}
+\KeyItem{\hyperB{Substep::products}{products}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Identifies isotopes which decays parental atom to.}
+\KeyItem{\hyperB{Substep::branch-ratios}{branch\_ratios}}{Array  of Double }{1.0}{}{Decay chain branching percentage.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'TransportOperatorSplitting'.
+The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
+and after the time given by the key 'time'. The field setting can be overridden by
+ any TransportOperatorSplitting\_BoundaryData record that comes later in the boundary data array.}
+\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
+These times has to form an increasing sequence.}
+\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Boundary conditions for concentrations.}
+\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::old-boundary-file}{old\_boundary\_file}}{input file name}{\textless\it optional\textgreater}{}{Input file with boundary conditions (obsolete).}
+\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::bc-times}{bc\_times}}{Array  of Double }{\textless\it optional\textgreater}{}{Times for changing the boundary conditions (obsolete).}
+\end{RecordType}
+
 \begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-BulkData}{TransportOperatorSplitting\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'TransportOperatorSplitting'.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
@@ -907,50 +952,5 @@ These times has to form an increasing sequence.}
 \KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sources-density}{sources\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Density of transport sources.}
 \KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sources-sigma}{sources\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{}
 \KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sources-conc}{sources\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Concentration sources.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::AdvectionDiffusion-DG}{AdvectionDiffusion\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for transport with diffusion.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{AdvectionDiffusion\_DG}{}{Sub-record selection.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the transport model.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of transported substances.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::sources-file}{sources\_file}}{input file name}{\textless\it optional\textgreater}{}{File with data for the source term in the transport equation.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::sigma}{sigma}}{Double }{0}{}{Coefficient of diffusive transfer through fractures.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::solver}{solver}}{abstract type: \hyperlink{IT::Solver}{Solver}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{AdvectionDiffusion-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{\textless\it obligatory\textgreater}{}{}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'TransportDG'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any TransportDG\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{TransportDG-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
-These times has to form an increasing sequence.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Boundary conditions for concentrations.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::old-boundary-file}{old\_boundary\_file}}{input file name}{\textless\it optional\textgreater}{}{Input file with boundary conditions (obsolete).}
-\KeyItem{\hyperB{TransportDG-BoundaryData::bc-times}{bc\_times}}{Array  of Double }{\textless\it optional\textgreater}{}{Times for changing the boundary conditions (obsolete).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'TransportDG'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any TransportDG\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{TransportDG-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{TransportDG-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{TransportDG-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{TransportDG-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
-These times has to form an increasing sequence.}
-\KeyItem{\hyperB{TransportDG-BulkData::init-conc}{init\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentrations.}
-\KeyItem{\hyperB{TransportDG-BulkData::por-m}{por\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Mobile porosity}
-\KeyItem{\hyperB{TransportDG-BulkData::disp-l}{disp\_l}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Longitudal dispersivity.}
-\KeyItem{\hyperB{TransportDG-BulkData::disp-t}{disp\_t}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transversal dispersivity.}
-\KeyItem{\hyperB{TransportDG-BulkData::diff-m}{diff\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Molecular diffusivity.}
-\KeyItem{\hyperB{TransportDG-BulkData::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution.}
 \end{RecordType}
 
