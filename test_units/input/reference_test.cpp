@@ -2,7 +2,8 @@
  * reference_test.cpp
  */
 
-#include <gtest/gtest.h>
+//#include <gtest/gtest.h>
+#include <gtest_throw_what.hh>
 
 #include "input/type_base.hh"
 #include "input/accessors.hh"
@@ -11,23 +12,56 @@
 
 namespace IT = Input::Type;
 
-const string read_input_json = R"JSON(
+const string valid_record_json = R"JSON(
 {
 	data = {
 		name = "Some name",
         ids = [0, 5, 12 ],
         description = "Some text",
-        value = {REF="/data"}
+        value = {
+            some_boolean = false,
+            val_description = {REF="/data/description"}
+        }
 	},
 	pause_after_run = false
 }
 )JSON";
 
-TEST(InputStorage, reference_test) {
-    IT::Record value_rec("value", "Test record, not in JSON");
+const string cyclic_record_json = R"JSON(
+{
+	data = {
+		name = "Some name",
+        ids = [0, 5, 12 ],
+        description = "Some text",
+        value = {REF="/data/value"}
+	},
+	pause_after_run = false
+}
+)JSON";
+
+const string cyclic_array_json = R"JSON(
+{
+	data = {
+		name = "Some name",
+        ids = [0, 5, {REF="/data/ids/2"} ],
+        description = "Some text",
+        value = {
+            some_boolean = false,
+            val_description = "Short description"
+        }
+	},
+	pause_after_run = false
+}
+)JSON";
+
+
+IT::Record get_type_record() {
+    IT::Record value_rec("value", "Record with boolean value");
     {
     	value_rec.declare_key("some_boolean", IT::Bool(), IT::Default("false"),
              "Some boolean value.");
+    	value_rec.declare_key("val_description", IT::String(), IT::Default::optional(),
+             "Description of value.");
     	value_rec.close();
     }
 
@@ -53,10 +87,38 @@ TEST(InputStorage, reference_test) {
 		root_record.close();
 	}
 
+	return root_record;
+}
 
-    Input::JSONToStorage json_reader;
-	stringstream ss(read_input_json.c_str());
-	EXPECT_DEATH( { json_reader.read_stream( ss,  root_record); },
-			"JSON input contains cyclic reference:");
+
+
+TEST(JSONReference, valid_reference_rec_test) {
+	using namespace Input;
+
+    JSONToStorage json_reader;
+	stringstream ss(valid_record_json.c_str());
+	json_reader.read_stream( ss, get_type_record());
+    //EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, std::exception, //ExcCyclicReference
+	//		"User Error: JSON contains cyclic reference {REF=\"/data\"} at address '/data/value'.");
 	// Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+}
+
+TEST(JSONReference, cyclic_reference_rec_test) {
+	using namespace Input;
+
+    JSONToStorage json_reader;
+	stringstream ss(cyclic_record_json.c_str());
+    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, std::exception, //ExcCyclicReference
+			"User Error: JSON contains cyclic reference {REF=\"/data/value\"} at address '/data/value'.");
+	// Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+}
+
+TEST(JSONReference, cyclic_reference_arr_test) {
+	using namespace Input;
+
+    JSONToStorage json_reader;
+	stringstream ss(cyclic_array_json.c_str());
+	//json_reader.read_stream( ss, get_type_record());
+    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, std::exception, //ExcCyclicReference
+			"User Error: JSON contains cyclic reference {REF=\"/data/ids/2\"} at address '/data/ids/2'.");
 }

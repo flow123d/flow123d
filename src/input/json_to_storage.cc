@@ -108,9 +108,9 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
 
     std::set<string>::iterator it = previous_references_.find(ref_address);
     if (it == previous_references_.end()) {
-    	previous_references_.insert(ref_address);
+    	ref_path.previous_references_.insert(ref_address);
     } else {
-    	xprintf(PrgErr, "JSON input contains cyclic reference: %s.\n", ref_address.c_str());
+    	THROW( ExcCyclicReference() << EI_RefAddress(*this) << EI_RefStr(ref_address) );
     }
 
     while ( ( new_pos=address.find('/',pos) ) != string::npos ) {
@@ -181,6 +181,10 @@ string JSONPath::str() {
 
 void JSONPath::put_address() {
 	previous_references_.insert(str());
+	/*cout << "PUT ADDRESS: " << previous_references_.size() << " " << str() << endl;
+	for (std::set<string>::iterator it = previous_references_.begin(); it!=previous_references_.end(); ++it)
+		cout << (*it) << " - ";
+	cout << endl << endl;*/
 }
 
 
@@ -291,7 +295,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
         JSONPath ref_path = p.find_ref_node(ref_address);
         return make_storage( ref_path, type );
     }
-    p.put_address();
+    //p.put_address();
 
     // return Null storage if there is null on the current location
     if (p.head()->type() == json_spirit::null_type)
