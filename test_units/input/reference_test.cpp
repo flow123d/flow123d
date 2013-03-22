@@ -108,9 +108,8 @@ TEST(JSONReference, cyclic_reference_rec_test) {
 
     JSONToStorage json_reader;
 	stringstream ss(cyclic_record_json.c_str());
-    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, std::exception, //ExcCyclicReference
-			"User Error: JSON contains cyclic reference {REF='/data/value'} at address '/data/value'.");
-	// Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, JSONPath::ExcCyclicReference,
+			"User Error: JSON contains cyclic reference REF='/data/value' at address '/data/value'.");
 }
 
 TEST(JSONReference, cyclic_reference_arr_test) {
@@ -118,7 +117,6 @@ TEST(JSONReference, cyclic_reference_arr_test) {
 
     JSONToStorage json_reader;
 	stringstream ss(cyclic_array_json.c_str());
-	//json_reader.read_stream( ss, get_type_record());
-    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, std::exception, //ExcCyclicReference
-			"User Error: JSON contains cyclic reference {REF='/data/ids/2'} at address '/data/ids/2'.");
+    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, JSONPath::ExcCyclicReference,
+			"User Error: JSON contains cyclic reference REF='/data/ids/2' at address '/data/ids/2'.");
 }

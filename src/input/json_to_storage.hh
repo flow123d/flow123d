@@ -64,7 +64,7 @@ public:
             << "Reference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
             << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
     DECLARE_INPUT_EXCEPTION(ExcCyclicReference,
-            << "JSON contains cyclic reference {REF='" << EI_RefStr::val << "'} at address " << EI_RefAddress::qval << "." );
+            << "JSON contains cyclic reference REF='" << EI_RefStr::val << "' at address " << EI_RefAddress::qval << "." );
 
 
 
