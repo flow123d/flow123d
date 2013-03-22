@@ -282,9 +282,12 @@ private:
 	 * @param Dm       Molecular diffusivities.
 	 * @param alphaL   Longitudal dispersivities.
 	 * @param alphaT   Transversal dispersivities.
+	 * @param porosity  Porosities.
+	 * @param cross_cut Cross-cuts of higher dimension.
 	 */
 	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity,
-			vector<double> &Dm, vector<double> &alphaL, vector<double> &alphaT);
+			vector<double> &Dm, vector<double> &alphaL, vector<double> &alphaT, vector<double> &porosity,
+			vector<double> &cross_cut);
 
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.
@@ -298,7 +301,6 @@ private:
 	 * 							(assumed constant along the side).
 	 * @param alpha				Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
-	 * @param advection			Coefficient of advection/transport (0=no advection).
 	 * @param gamma				Computed penalty parameters.
 	 * @param omega				Computed weights.
 	 * @param transport_flux	Computed flux from side 1 to side 2.
@@ -312,7 +314,6 @@ private:
 	        const arma::vec3 &normal_vector,
 	        const std::vector<std::vector<double> > &Dm,
 	        const vector<double> &alpha,
-	        const double advection,
 	        double &gamma,
 	        double *omega,
 	        double &transport_flux);
@@ -327,7 +328,6 @@ private:
 	 * @param normal_vector		Normal vector (assumed constant along the edge).
 	 * @param alpha				Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
-	 * @param advection			Coefficient of advection/transport (0=no advection).
 	 * @param gamma				Computed penalty parameters.
 	 * @param omega				Computed weights.
 	 */
@@ -337,7 +337,6 @@ private:
 	            const arma::vec3 &normal_vector,
 	            const double alpha,
 	            const double Dm,
-	            const double advection,
 	            double &gamma,
 	            double *omega);
 
@@ -384,8 +383,6 @@ private:
 	/// Penalty parameters.
 	std::vector<double> gamma;
 
-	/// coefficient of advection/transport (0=no advection)
-	const double advection;
 	// @}
 
 
