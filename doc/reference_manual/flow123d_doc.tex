@@ -27,9 +27,10 @@
 \usepackage{longtable}
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
-\usepackage{fancyvrb}   % extended verbatim environments (for examples of IO files)
+\usepackage{caption}
+\usepackage{subcaption}
 
-\usepackage{etoolbox}
+\usepackage{fancyvrb}   % extended verbatim environments (for examples of IO files)
 
 \usepackage{flow_doc}
 
@@ -185,27 +186,51 @@ On the Linux system the program can be started either directly or through a scri
 \end{verbatim}
 the program requires one argument after switch \verb'-s' which is the name of the principal input file. Full list of possible command line arguments is as follows.
 
+%  --help                  produce help message
+%  -s [ --solve ] arg      Main input file to solve.
+%  -i [ --input_dir ] arg  Directory for the ${INPUT} placeholder in the main 
+%                          input file.
+%  -o [ --output_dir ] arg Directory for all produced output files.
+%  -l [ --log ] arg        Set base name for log files.
+%  --no_log                Turn off logging.
+%  --no_profiler           Turn off profiler output.
+%  --full_doc              Prints full structure of the main input file.
+%  --JSON_template         Prints description of the main input file as a valid 
+%                          CON file.
+%  --latex_doc             Prints description of the main input file in Latex 
+                          format using particular macros.
+
+
 \begin{description}
- \item[-s {\bf\it file}] \hfill\\
- 	 Set principal INI input file. All relative paths in the INI file are relative against current directory.
- \item[-S {\bf\it file}] \hfill\\
- 	Set principal INI input file. All relative paths in the INI file are relative against directory of the INI file. This is equivalent
-to change directory to the directory of the INI file at the start of the program.
- \item[-i {\bf\it path}] \hfill\\
- 	When there is string \verb"${INPUT}" %$
-  	in the any path in the INI file, it will be replaced by given {\it path}.
- \item[-o {\bf\it path}] \hfill\\
- 	Every relative path for any output file will be relative to this {\it path}. 
- \item[-l {\bf\it [file\_name]}] \hfill\\
- 	Set base name of log files or turn logging off if no file name is given.
-
+ \item[{\tt --help}] \hfill\\
+        Parameters interpreted by Flow123d.Remaining parameters are passed to PETSC.
+ \item[{\tt -s, --solve} {\it file}] \hfill\\
+ 	 Set principal CON input file. All relative paths in the CON file are relative against current directory.
+ %\item[-S {\bf\it file}] \hfill\\
+ %	Set principal INI input file. All relative paths in the INI file are relative against directory of the INI file. This is equivalent
+ %to change directory to the directory of the INI file at the start of the program.
+ \item[{\tt -i, --input\_dir} {\it directory}] \hfill\\
+ 	The place holder \verb"${INPUT}" %$
+  	used in the path of an input file will be replaced by given {\it directory}.
+ \item[{\tt -o, --output\_dir} {\it directory}] \hfill\\
+ 	All paths for output files will be relative to this {\it directory}. 
+ \item[{\tt -l, --log} {\it file\_name}] \hfill\\
+ 	Set base name of log files.
+ \item[{\tt --no\_log}] \hfill\\
+        Turn off logging.
+ \item[{\tt --no\_profiler}] \hfill\\
+        Turn off profiler output.
+ \item[{\tt --full\_doc}] \hfill\\
+        Prints full structure of the main input file.
+ \item[{\tt --JSON\_template}] \hfill\\
+        Prints description of the main input file as a valid CON file template.
 \end{description}
-
 All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solver. In order to get list of supported options 
-use parameter \verb'-help'.
+use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
 
 
-Alternatively, you can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. This script accepts the same parameters as the program itself
+Alternatively, you can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. 
+This script accepts the same parameters as the program itself
 and further following additional parameters:
 
 \begin{description}
@@ -224,8 +249,10 @@ and further following additional parameters:
   	Stdout and stderr will be redirected to {\it out file}.
 \end{description}
 
-On the Windows system we use Cygwin libraries in other to emulate Linux API. Therefore you have to keep the Cygwin libraries within the same direcotry as the program executable.
-The Windows package that can be downloaded from project web page contains both the Cygwin libraries and the mpiexec command for starting parallel jobs on the Windows workstations.
+On the Windows system we use Cygwin libraries in other to emulate Linux API.
+Therefore you have to keep the Cygwin libraries within the same direcotry as the program executable.
+The Windows package that can be downloaded from project web page contains both the Cygwin libraries
+and the mpiexec command for starting parallel jobs on the Windows workstations.
 
 Then you can start the sequential run by the command:
 \begin{verbatim}
@@ -238,32 +265,33 @@ or the parallel run by the command:
 The program accepts the same parameters as the Linux version, but there is no script similar to \verb'flow123d.sh' for the Windows system.
 
 
-\subsection{Structure of input}
+\subsection{Example of the main input}
+The principal input file of the program is a CON (C++ object notation) file. The basic syntax of the file is same as in the JSON file format,
+however you can use unqouted key names, \verb'=' instead of \verb':', \verb'//' for one line and \verb'/* */' for multiline comments.
+Further common features used in the main input file are described in Section \ref{sec:main_input}. Here, we shall 
+provide commented input for an tutorial problem (\verb'tests/03_transport_small_12d').
 
-The principal input file of the program is an INI file which contains names of other necessary input files.
-Those are the file with calculation mesh (\verb'*.msh'), the file with specification of adjacency between dimensions (\verb'*.ngh'),
-the file with material description (\verb'*.mtr') and the file with boundary conditions for the water flow problem (\verb'*.bcd').
-For unsteady water flow you have to specify file with initial condition for the pressure (key \verb'Input/Initial') and optionally one can introduce 
-file with water sources (key \verb'Input/Sources').
+We consider simple 2D probelm with a branching 1D fracture. 
 
-In the case of transport simulation one have to specify also the file with transport boundary conditions (\verb'*.tbc') 
-and the file with transport initial condition
-for individual substances (\verb'*.tic').
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[scale=0.4]{./03_flow.pdf}
+        % 03_flow.pdf: 508x402 pixel, 72dpi, 17.92x14.18 cm, bb=0 0 508 402
+        \caption{Elementwise pressure head and velocity field (triangles).}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[scale=0.4]{./03_trans.pdf}
+        % 03_trans.pdf: 509x402 pixel, 72dpi, 17.96x14.18 cm, bb=0 0 509 402
+        \caption{Propagation of concentration 1 from top and right (inflow) part of boundary.}
+    \end{subfigure}
+    \caption{Results of the tutorial problem.}
+\end{figure}
 
- \begin{figure}[h]
-    \begin{center}
-      \includegraphics[scale=0.7]{schema.pdf} % 
-      \caption{Preparation of input files.}
-      \label{obr3}
-    \end{center}
-  \end{figure}
 
-
-For the preparation of input files we use several utilities (see Figure \ref{obr3}). 
-We usually begin with a \verb'*.geo' file as a description of the domain geometry. This come as an input for the GMSH mesh generator, which produce 
-the mesh file. Then we run program \verb'ngh' to produce adjacency file. Finally we can use program \verb'bcd' for the preparation of files with
-boundary and initial conditions. The file with material properties has to be created manually, preferably by modifying some of the example problems.
-The programs \verb'ngh' and \verb'bcd' are distributed together with flow123d with their own limited documentation.
 
 The output files can be either \verb'*.msh' files accepted by the GMSH or one can use VTK format that can be post-processed by Paraview.
 
@@ -302,11 +330,11 @@ match their sides or they poke out of $\Omega_d$.
 
 
 %\input{convection}
-\chapter{Numerical methods}
+%\chapter{Numerical methods}
 
 
-\input{decay}
-\input{semchem}
+%\input{decay}
+%\input{semchem}
 
 
 \chapter{File formats}
@@ -316,15 +344,14 @@ match their sides or they poke out of $\Omega_d$.
 \section{Other input files}
 \input{input_files.tex}
 
-
 \section{Output files}
 \input{output}
 %\input{tso_10} 
 %\input{pos_12}   
 
 
-\chapter{Test and tutorial problems}
-\input{tests}
+%\chapter{Test and tutorial problems}
+%\input{tests}
 
 \chapter{Main input file reference}
 % support macros

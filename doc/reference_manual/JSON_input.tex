@@ -1,6 +1,7 @@
 
 
 \section{Input files}
+
 In this section we shall describe whole structure of the program input, namely the structure of the root input file. File formats of other files used for input
 of the mesh or large field data (e.g. the GMSH file format) are described in separate sections. 
 The program input consists of the root input file given as the parameter on the command line and possibly several other 
@@ -40,6 +41,7 @@ For those who are not familiar with the JSON file format, we give the brief desc
 which is merely a data structure written in the text, and the {\it C++ object}, i.e. instance of some class. 
 
 \subsection{Humanized JSON}
+\label{sec:main_input}
 The JSON format consists of four kind of basic entities: 
 {\it null} token, {\it true} and {\it false} tokens, {\it number}, {\it string}. {\it Number} is either integer or float point number 
 possibly in the exponential form and {\it string} is any sequence of characters quoted in \verb'""' (backslash \verb"\" is used as escape character and 

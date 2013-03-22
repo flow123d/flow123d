@@ -38,11 +38,11 @@ Sorption::EqData::EqData(const std::string &name)
               sorption_types.set_selection(&sorption_type_selection);
 
     ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.");
-    std::vector<FieldEnum> list; list.push_back(none); //SorptionType
-    mult_coefs.disable_where(&sorption_types, list ); //function disable where requires different parameters
+    //std::vector<FieldEnum> list; list.push_back(none); //SorptionType
+    //mult_coefs.disable_where(&sorption_types, list ); //function disable where requires different parameters
 
     ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
-    list.clear(); list.push_back(none); list.push_back(linear);
+    //list.clear(); list.push_back(none); list.push_back(linear);
     //alphas.disable_where(&sorption_types, list );
 
     ADD_FIELD(mob_porosity,"Mobile porosity of the rock matrix.");
