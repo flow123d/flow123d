@@ -76,13 +76,12 @@
     record: {\bf #1}%
     \ifstrempty{#2}{}{ implements abstract type: #2}%
     \ifstrempty{#3}{}{ constructible from key: #3}%
-    {#4}
     \par%
     \vskip 0.5ex
     \hrule%
     \vskip 0.3ex
     \hrule
-    {#5}
+    {#5#4}
     \begingroup%records of steady field type which we describe right now 
     \addtolength{\leftskip}{3em}%
     %
@@ -93,9 +92,9 @@
         \noindent%
         \hspace{-3em}{\bf\tt ##1} = {\it \textless ##2\textgreater}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
         \par
-        Default: {##3} \hfill [##4]
+        Default: {##3}
         \par
-        {##5}
+        {##5##4}
     }%
   }
 }{%

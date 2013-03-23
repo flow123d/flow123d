@@ -268,6 +268,7 @@ The program accepts the same parameters as the Linux version, but there is no sc
 
 
 \subsection{Tutorial problem}
+\subsubsection{CON file format}
 The main input file use slightly extended JSON file format which together with some particular constructs forms a CON (C++ object notation) file format. 
 Main extensions of the JSON are unquoted key names (as long as they do not contain whitespaces), possibility to use \verb'=' instead of \verb':' 
 and C++ comments, i.e. \verb'//' for the one line and \verb'/* */' for the multi-line comment. In CON file format, we prefere to call JSON objects as ``records'' and we introduce also ``abstract records''
@@ -276,6 +277,7 @@ The usual keys are in lower case and without spaces (using underscores instead),
 there are few special upper case keys that are interpreted by the reader: \verb'REF' key for references, \verb'TYPE' key for specifing actual type of an abstract record.
 For detailed description see Section \ref{sec:main_input}.
 
+\subsubsection{Geometry}
 In the following, we shall provide commented input for the tutorial problem (\verb'tests/03_transport_small_12d/flow_vtk.con').
 We consider simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). To prepare the mesh file we use the \href{http://geuz.org/gmsh/}{GMSH software}.
 First, we construct the geometry file. In our case the geometry consists of: 
@@ -362,6 +364,7 @@ composed of all 1D regions i.e. representing the whole fracture. Other keys of t
 defining new regions in terms of element numbers (e.g to have leakage on single element), 
 defining boundary regions, and set operations with region sets, see Section \ref{} for details.
 
+\subsubsection{Flow setting}
 Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
 setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
 The conductivity will be $1$ on the 2D domain and $10$ on the 1D domain.
@@ -374,8 +377,8 @@ These are currently the default values.
       TYPE = "Steady_MH", 
 
       bulk_data = [
-        { r_set = "1d_domain", cond_anisothropy = 10 },
-        { region = "2d",       cond_anisothropy = 1  }
+        { r_set = "1d_domain", conductivity = 10 },
+        { region = "2d",       conductivity = 1  }
       ],
       
       bc_data = [
@@ -397,11 +400,88 @@ These are currently the default values.
 \end{Verbatim}
 On line 11, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybird
 solver for unsteady probelems. On lines 16 -- 19, we set mathematical fields that lives on the computational domain 
-(i.e. the bulk domain) in the case of 
+(i.e. the bulk domain), we set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{bulk fields} has appropriate default values.
+On lines 21 -- 26, we set fields for boundary conditions. We use implicitely defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
+pressure head. In this case, the field is not of the implicit type ``FieldConstant'', so we must specify the type of the field ``FieldFormula''. Se Section \ref{} for other 
+\hyperlink{IT::DarcyFlowMH-Steady-BulkData}{boundary fields}. On lines 28 -- 33, we specify which output fields should be written into which output stream (that means particular output file, with given format).
+Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
+Notice the reference used on line 29 pointing to the definition of the output streams at the end of the file. Finally, we specify type of the linear solver and its tolerance.
 
+
+
+\subsubsection{Transport setting}
 We also consider subsequent transport problem with the porosity $\theta = 0.25$ and zero initial concentration. The boundary condition is equal to $1$ and is automatically applied only on the 
-inflow part of the boundary. There is also some adsorption and dual porosity model in this particular test case, but we do not discuss this topic here since it dosn't intrinsicaly 
-influence the result, se Section \ref{} for the description. On Figure \ref{fig:tutorial} you can see results, the pressure and the velocity field on the left and the concentration at time $t=0.9$ on the right.
+inflow part of the boundary. There is also some adsorption and dual porosity model in this particular test case, but we do not discuss this topic here for the sake of simplicity,
+see Section \ref{} for the description. 
+
+\begin{Verbatim}[numbers=left, firstnumber=last]
+     secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+
+      dual_porosity = true, 
+      sorption_enable = true, 
+      substances = [ "age", "U235" ],
+      
+      bulk_data = [
+        { r_set = "ALL",
+          init_conc = 0,
+          por_m = 0.25,
+          por_imm = 0.25,
+          alpha = [0.01, 0.01],
+          phi = 0.5,
+          sorp_type = [1, 2],
+          sorp_coef0 = [0.02, 0.02],
+          sorp_coef1 = [0, 0.5]
+        }
+      ],
+      
+      bc_data = [
+        { r_set = "BOUNDARY",
+          bc_conc = 1.0
+        }
+      ],
+
+      output = {
+        output_stream = { REF = "/system/output_streams/1" },
+        save_step = 0.01,
+        mobile_p0 = "transport_output_stream"
+      }, 
+
+      time = { end_time = 1.0 }
+    } // secondary_equation
+  }, // problem
+\end{Verbatim}
+For the transport problem we use implementation called ``TransportOperatorSplitting'' which is explicit finite volume solver of the convection equation (without diffusion), 
+the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model. Both these are switched on as we can see on lines 40, 41. On the next line, 
+we set names of transported substances, here it is the age of the water and the uranium 235. On lines 44 -- 55, we set the bulk fields in particular the porosity 'por\_m' and the initial concentrations 
+( one for every substance ). However, on line 46, we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
+On line 53, we can see vector that set different adsorption coefficients for the two substances. Then, on lines 57 -- 61, we set the boundary fields namely the concentration on the inflow part of the boundary.
+We need not to specify type of the condition since currently this is the only one available. In the output record we have to specify the save step (line 65) for the output fields. And finally,
+we have to set the time setting, here only the end time of the simulation since the step size is determined from the CFL condition, however you can set smaller time step if you want.
+
+\subsubsection{Output streams and results}
+\begin{Verbatim}[numbers=left, firstnumber=last]
+  system = {
+    output_streams = [
+      {
+        file = "test3.pvd", 
+        format = { TYPE = "vtk", variant = "ascii" },
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "test3-transport.pvd", 
+        format = { TYPE = "vtk", variant = "ascii" },
+        name = "transport_output_stream"
+      }
+    ]
+  }
+} 
+\end{Verbatim}
+The end of the input file contains declaration of two output streams, on for the flow problem and one for the transport problem. Currently, we support output into VTK format and GMSH data format.
+On Figure \ref{fig:tutorial} you can see the results, the pressure and the velocity field on the left and the concentration of U235 at time $t=0.9$ on the right. Even if the pressure gradient is
+the same on the 2D domain as on the fracture, the velocity field is ten times faster on the fracture. Since porosity is same, the substance is transported faster by the fracture and
+then appears in the bottom left 2D domain before the main wave propagating solely through the 2D domain.
+
 
 \begin{figure}
     \centering
@@ -409,7 +489,7 @@ influence the result, se Section \ref{} for the description. On Figure \ref{fig:
         \centering
         \includegraphics[scale=0.4]{./03_flow.pdf}
         % 03_flow.pdf: 508x402 pixel, 72dpi, 17.92x14.18 cm, bb=0 0 508 402
-        \caption{Elementwise pressure head and velocity field (triangles).}
+        \caption{Elementwise pressure head\\and velocity field (triangles).}
         \label{fig:tut-flow}
     \end{subfigure}
     ~
@@ -417,7 +497,7 @@ influence the result, se Section \ref{} for the description. On Figure \ref{fig:
         \centering
         \includegraphics[scale=0.4]{./03_trans.pdf}
         % 03_trans.pdf: 509x402 pixel, 72dpi, 17.96x14.18 cm, bb=0 0 509 402
-        \caption{Propagation of concentration 1 from top and right (inflow) part of boundary.}
+        \caption{Propagation of U235 from the inflow part of the boundary.}
         \label{fig:tut-trans}
     \end{subfigure}
     \caption{Results of the tutorial problem.}
