@@ -35,7 +35,8 @@ void MHFEValues::update(ElementFullIter ele, FieldType &anisotropy, FieldType_Sc
 
     ASSERT(!( ele == NULL ),"NULL as argument of function local_matrix()\n");
 
-    double scale = conductivity.value( ele->centre(), ele->element_accessor() ) / cross_section.value( ele->centre(), ele->element_accessor() );
+    double scale = 1/ conductivity.value( ele->centre(), ele->element_accessor() ) / cross_section.value( ele->centre(), ele->element_accessor() );
+    //DBGMSG("scale: %g\n", scale);
     switch( ele->dim() ) {
         case 1:
             local_matrix_line( ele, anisotropy , scale);
