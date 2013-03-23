@@ -127,7 +127,7 @@ public:
          */
         RegionSet read_bulk_list_item(Input::Record rec);
        
-        Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
+        Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;

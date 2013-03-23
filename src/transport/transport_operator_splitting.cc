@@ -107,7 +107,7 @@ TransportBase::TransportBase(Mesh &mesh, const Input::Record in_rec)
 : EquationBase(mesh, in_rec ),
   mh_dh(NULL)
 {
-	balance_output_file = xfopen("./mass_balance.txt", "wt");
+	balance_output_file = xfopen( FilePath("mass_balance.txt", FilePath::output_file), "wt");
 }
 
 TransportBase::~TransportBase()

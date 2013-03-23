@@ -30,20 +30,20 @@
 
       bulk_data = [
         { region = "1d_channel",
-          cond_anisothropy = 10
+          anisotropy = 10
         },
         // using region set
 //        { r_set = "fractions",  
-//          cond_anisothropy = 1
+//          anisotropy = 1
 //        },
         { region = "2d_fraction_1",
-          cond_anisothropy = 1
+          anisotropy = 1
         },
         { region = "2d_fraction_2",
-          cond_anisothropy = 1
+          anisotropy = 1
         },
         { region = "3d_cube",
-          cond_anisothropy = 0.1
+          anisotropy = 0.1
         }
       ],
       

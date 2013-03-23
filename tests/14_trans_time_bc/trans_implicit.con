@@ -11,7 +11,7 @@
 
       bulk_data = [
         { rid = 100,
-          cond_anisothropy = 0.1
+          anisotropy = 0.1
         }
       ],
     

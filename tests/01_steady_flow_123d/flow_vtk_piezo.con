@@ -18,13 +18,13 @@
 
       bulk_data = [
         { region = "1d_channel",
-          cond_anisothropy = 10
+          anisotropy = 10
         },
         { r_set = "all_2d",
-          cond_anisothropy = 1
+          anisotropy = 1
         },
         { region = "3d_cube",
-          cond_anisothropy = 0.1
+          anisotropy = 0.1
         }
       ],
       

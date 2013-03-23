@@ -291,7 +291,7 @@ TEST_F(SomeEquation, values) {
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
 
-    FieldValue<3>::TensorFixed::return_type value = data.cond_anisothropy.value(p, el_1d);
+    FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
     EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,1) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,2) );

@@ -12,7 +12,7 @@
 
       bulk_data = [
         { rid = 100,
-          cond_anisothropy = 1,         // default
+          anisotropy = 1,         // default
           cross_section = 1,            // default
           water_source_density = {
             TYPE = "FieldFormula",

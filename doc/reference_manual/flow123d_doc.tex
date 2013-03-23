@@ -32,6 +32,8 @@
 
 \usepackage{fancyvrb}   % extended verbatim environments (for examples of IO files)
 
+\usepackage{multicol}
+
 \usepackage{flow_doc}
 
 \newcommand{\vari}[1]{{\it #1}}
@@ -265,14 +267,141 @@ or the parallel run by the command:
 The program accepts the same parameters as the Linux version, but there is no script similar to \verb'flow123d.sh' for the Windows system.
 
 
-\subsection{Example of the main input}
-The principal input file of the program is a CON (C++ object notation) file. The basic syntax of the file is same as in the JSON file format,
-however you can use unquoted key names, \verb'=' instead of \verb':' and C++ comments, i.e. \verb'//' for the one line and \verb'/* */' for the multi-line comment.
-Further common features used in the main input file are described in Section \ref{sec:main_input}. Here, we shall 
-provide commented input for the tutorial problem (\verb'tests/03_transport_small_12d').
+\subsection{Tutorial problem}
+The main input file use slightly extended JSON file format which together with some particular constructs forms a CON (C++ object notation) file format. 
+Main extensions of the JSON are unquoted key names (as long as they do not contain whitespaces), possibility to use \verb'=' instead of \verb':' 
+and C++ comments, i.e. \verb'//' for the one line and \verb'/* */' for the multi-line comment. In CON file format, we prefere to call JSON objects as ``records'' and we introduce also ``abstract records''
+that mimics C++ abstract classes, the arrays of an CON file have only alements of the same type (possibly using abstract record types for polymorphism). 
+The usual keys are in lower case and without spaces (using underscores instead),
+there are few special upper case keys that are interpreted by the reader: \verb'REF' key for references, \verb'TYPE' key for specifing actual type of an abstract record.
+For detailed description see Section \ref{sec:main_input}.
 
-We consider simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). The flow is driven only by the pressure gradient,
-no gravity. The gradient 
+In the following, we shall provide commented input for the tutorial problem (\verb'tests/03_transport_small_12d/flow_vtk.con').
+We consider simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). To prepare the mesh file we use the \href{http://geuz.org/gmsh/}{GMSH software}.
+First, we construct the geometry file. In our case the geometry consists of: 
+\begin{itemize}
+ \item one physical 2D domain corresponding to the whole square
+ \item three 1D physical domains of the fracture
+ \item four 1D boundary physical domains of the 2d domain
+ \item three 0D boundary physical domains of the 1d domain
+\end{itemize}
+In this simple example, we can in fact combine physical domains in every group, however we use this more complex setting for
+demonstration purposes. Using GMSH graphical interface we can prepare the GEO file where physical domains are referenced by numbers, then we use 
+any text editor and replace numbers with string labels in such a way that the labels of boundary physical domains start with the dot character. 
+These are the domains where we would not do any calculations but use them for setting boundary conditions.
+Finally, we get the GEO file like this:
+
+\begin{multicols}{2}
+{\small
+\begin{Verbatim}[numbers=left]
+cl1 = 0.16;
+Point(1) = {0, 1, 0, cl1};
+Point(2) = {1, 1, 0, cl1};
+Point(3) = {1, 0, 0, cl1};
+Point(4) = {0, 0, 0, cl1};
+Point(6) = {0.25, -0, 0, cl1};
+Point(7) = {0, 0.25, 0, cl1};
+Point(8) = {0.5, 0.5, -0, cl1};
+Point(9) = {0.75, 1, 0, cl1};
+Line(19) = {9, 8};
+Line(20) = {7, 8};
+Line(21) = {8, 6};
+Line(22) = {2, 3};
+Line(23) = {2, 9};
+Line(24) = {9, 1};
+Line(25) = {1, 7};
+Line(26) = {7, 4};
+Line(27) = {4, 6};
+Line(28) = {6, 3};
+\end{Verbatim}
+\columnbreak
+\begin{Verbatim}[numbers=left, firstnumber=last]
+Line Loop(30) = {20, -19, 24, 25};
+Plane Surface(30) = {30};
+Line Loop(32) = {23, 19, 21, 28, -22};
+Plane Surface(32) = {32};
+Line Loop(34) = {26, 27, -21, -20};
+Plane Surface(34) = {34};
+Physical Point(".1d_top") = {9};
+Physical Point(".1d_left") = {7};
+Physical Point(".1d_bottom") = {6};
+Physical Line("1d_upper") = {19};
+Physical Line("1d_lower") = {21};
+Physical Line("1d_left_branch") = {20};
+Physical Line(".2d_top") = {23, 24};
+Physical Line(".2d_right") = {22};
+Physical Line(".2d_bottom") = {27, 28};
+Physical Line(".2d_left") = {25, 26};
+Physical Surface("2d") = {30, 32, 34};
+\end{Verbatim}
+}
+\end{multicols}
+
+Notice the labeled physical domains on lines 26 -- 36. Then we just set the discretization step \verb'cl1' and use GMSH to create the mesh file.
+The mesh file contains as the 'bulk' elements where we perform calculations as the 'boundary' elements (on boundary physical domains) where we only set boundary conditions.
+
+\pagebreak
+Having the computational mesh, we can create the main input file with description of our problem. 
+\begin{Verbatim}[numbers=left]
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Transport 1D-2D, (convection, dual porosity, sorption)", 
+    mesh = {
+      mesh_file = "./input/mesh_with_boundary.msh",
+      sets = [
+          { name="1d_domain", 
+            region_labels = [ "1d_upper", "1d_lower", "1d_left_branch" ]
+          }
+        ]
+    },  
+\end{Verbatim}
+The file starts with particular problem type, currently the type ``SequantialCoupling'' is suported, and textual problem description.
+Next, we specify the computational mesh, here it consists of the name of the mesh file and declaration of one {\it region set} 
+composed of all 1D regions i.e. representing the whole fracture. Other keys of the mesh record allows lebeling regions given only by numbers, 
+defining new regions in terms of element numbers (e.g to have leakage on single element), 
+defining boundary regions, and set operations with region sets, see Section \ref{} for details.
+
+Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
+setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
+The conductivity will be $1$ on the 2D domain and $10$ on the 1D domain.
+The fracture width will be $\delta_1=1$ (quite unnatural) as well as the transition parameter 
+$\sigma_2 = 1$ which describes a ``conductivity'' between dimensions. 
+These are currently the default values.
+
+\begin{Verbatim}[numbers=left, firstnumber=last]
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      bulk_data = [
+        { r_set = "1d_domain", cond_anisothropy = 10 },
+        { region = "2d",       cond_anisothropy = 1  }
+      ],
+      
+      bc_data = [
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "x+y" }
+        }
+      ],
+
+      output = {
+        output_stream = { REF = "/system/output_streams/0" }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      
+      solver = { TYPE = "Petsc", accuracy = 1e-07 }
+    }, // primary equation
+\end{Verbatim}
+On line 11, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybird
+solver for unsteady probelems. On lines 16 -- 19, we set mathematical fields that lives on the computational domain 
+(i.e. the bulk domain) in the case of 
+
+We also consider subsequent transport problem with the porosity $\theta = 0.25$ and zero initial concentration. The boundary condition is equal to $1$ and is automatically applied only on the 
+inflow part of the boundary. There is also some adsorption and dual porosity model in this particular test case, but we do not discuss this topic here since it dosn't intrinsicaly 
+influence the result, se Section \ref{} for the description. On Figure \ref{fig:tutorial} you can see results, the pressure and the velocity field on the left and the concentration at time $t=0.9$ on the right.
 
 \begin{figure}
     \centering

@@ -157,7 +157,7 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
 {
     gravity_ = arma::vec4("0 0 -1 0"); // gravity vector + constant shift of values
 
-    ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
+    ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
     ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
     ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", Input::Type::Default("1.0"));
@@ -524,7 +524,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides();
-        if (fill_matrix) fe_values.update(ele, data.cond_anisothropy, data.cross_section);
+        if (fill_matrix) fe_values.update(ele, data.anisotropy, data.cross_section, data.conductivity);
         double cross_section = data.cross_section.value(ele->centre(), ele->element_accessor());
 
         for (i = 0; i < nsides; i++) {
@@ -1055,7 +1055,7 @@ void DarcyFlowMH_Steady::make_schur1() {
         
            nsides = ele->n_sides();
 
-           fe_values.update( ele, data.cond_anisothropy, data.cross_section );
+           fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = mh_dh.side_dof( ele->side(i) ); // side ID
@@ -1080,7 +1080,7 @@ void DarcyFlowMH_Steady::make_schur1() {
 
            nsides = ele->n_sides();
 
-           fe_values.update( ele, data.cond_anisothropy, data.cross_section );
+           fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix

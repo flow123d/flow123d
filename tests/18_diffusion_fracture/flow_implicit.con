@@ -17,11 +17,11 @@
       
       bulk_data = [
         { rid = 48,
-          cond_anisothropy = 10,
+          anisotropy = 10,
           cross_section = 1
         },
         { rid = 184,
-          cond_anisothropy = 1,
+          anisotropy = 1,
           cross_section = 1
         }
       ],

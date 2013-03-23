@@ -28,10 +28,10 @@
       ],
       bulk_data=[
         { rid = 48,
-          cond_anisothropy = 10
+          anisotropy = 10
         },
         { rid = 184,
-          cond_anisothropy = 1
+          anisotropy = 1
         }
       ]
     },
