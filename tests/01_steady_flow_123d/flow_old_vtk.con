@@ -11,16 +11,16 @@
       n_schurs = 2, 
 
       bulk_data = [
-        { rid = 62,     //1Dchannel
+        { rid = 62,     // 1D channel
           cond_anisothropy = 10
         },
-        { rid = 63,     //2Dfraction
+        { rid = 63,     // 2D fraction
           cond_anisothropy = 1
         },
-        { rid = 64,     //2Dfraction
+        { rid = 64,     // 2D fraction
           cond_anisothropy = 1
         }, 
-        { rid = 65,     //3Dcube
+        { rid = 65,     // 3D cube
           cond_anisothropy = 0.1
         }
       ],

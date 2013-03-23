@@ -267,11 +267,12 @@ The program accepts the same parameters as the Linux version, but there is no sc
 
 \subsection{Example of the main input}
 The principal input file of the program is a CON (C++ object notation) file. The basic syntax of the file is same as in the JSON file format,
-however you can use unqouted key names, \verb'=' instead of \verb':', \verb'//' for one line and \verb'/* */' for multiline comments.
+however you can use unquoted key names, \verb'=' instead of \verb':' and C++ comments, i.e. \verb'//' for the one line and \verb'/* */' for the multi-line comment.
 Further common features used in the main input file are described in Section \ref{sec:main_input}. Here, we shall 
-provide commented input for an tutorial problem (\verb'tests/03_transport_small_12d').
+provide commented input for the tutorial problem (\verb'tests/03_transport_small_12d').
 
-We consider simple 2D probelm with a branching 1D fracture. 
+We consider simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). The flow is driven only by the pressure gradient,
+no gravity. The gradient 
 
 \begin{figure}
     \centering
@@ -280,6 +281,7 @@ We consider simple 2D probelm with a branching 1D fracture.
         \includegraphics[scale=0.4]{./03_flow.pdf}
         % 03_flow.pdf: 508x402 pixel, 72dpi, 17.92x14.18 cm, bb=0 0 508 402
         \caption{Elementwise pressure head and velocity field (triangles).}
+        \label{fig:tut-flow}
     \end{subfigure}
     ~
     \begin{subfigure}[b]{0.45\textwidth}
@@ -287,8 +289,10 @@ We consider simple 2D probelm with a branching 1D fracture.
         \includegraphics[scale=0.4]{./03_trans.pdf}
         % 03_trans.pdf: 509x402 pixel, 72dpi, 17.96x14.18 cm, bb=0 0 509 402
         \caption{Propagation of concentration 1 from top and right (inflow) part of boundary.}
+        \label{fig:tut-trans}
     \end{subfigure}
     \caption{Results of the tutorial problem.}
+    \label{fig:tutorial}
 \end{figure}
 
 
