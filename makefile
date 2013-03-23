@@ -59,7 +59,7 @@ cmake: build/CMakeCache.txt  create_unit_test_links
 
 
 
-build_all: build_flow123d  ngh
+build_all: build_flow123d
 
 flow123d:  build_flow123d  install
 
@@ -148,12 +148,6 @@ gen_doc: $(DOC_DIR)/input_reference.tex
 
 clean_tests:
 	make -C tests clean
-
-ngh:
-	make -C bin/ngh all
-
-bcd:
-	make -C bin/bcd all
 
 clean_util:
 	make -C bin/bcd clean
