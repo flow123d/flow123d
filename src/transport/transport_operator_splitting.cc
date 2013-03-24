@@ -318,7 +318,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	        decayRad = NULL;
 	        sorptions = NULL;
-/*	    } 	    else
+	    } else
 	    if (reactions_it->type() == Sorption::input_type ){
 	    	sorptions = new Sorption(init_mesh, *reactions_it, convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
@@ -327,8 +327,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	        sorptions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
 	        decayRad = NULL;
-	        Semchem_reactions = NULL;*/
-	    }else{
+	        Semchem_reactions = NULL;
+	    } else{
 	        xprintf(UsrErr, "Wrong reaction type.\n");
 	    }
 	} else {

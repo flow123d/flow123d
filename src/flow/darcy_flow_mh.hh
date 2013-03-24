@@ -112,7 +112,7 @@ public:
         static Input::Type::Selection bc_type_selection;
 
         /// Collect all fields
-        EqData(const std::string &name=0);
+        EqData(const std::string &name="");
 
         /**
          * Overrides EqDataBase::read_boundary_list_item, implements reading of

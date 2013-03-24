@@ -27,8 +27,8 @@ it::Selection Sorption::EqData::sorption_type_selection = it::Selection("Sorptio
 .add_value(freundlich,"freundlich","Freundlich isotherm described sorption considered");
 //.finish();
 
-Sorption::EqData::EqData(const std::string &name)
-: EqDataBase(name)
+Sorption::EqData::EqData()
+: EqDataBase("Sorption")
 {
     //ADD_FIELD(nr_of_points, "Number of crossections allong isotherm", Input::Type::Default("10"));
     //ADD_FIELD(region_ident, "Rock matrix area identifier.", Input::Type::Default("0"));

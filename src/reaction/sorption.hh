@@ -37,7 +37,7 @@ class Sorption:  public Reaction
 			static Input::Type::Selection sorption_type_selection;
 
 			/// Collect all fields
-			EqData(const std::string &name=0);
+			EqData();
 
 			/**
 			 * Overrides EqDataBase::read_bulk_list_item, implements reading of
