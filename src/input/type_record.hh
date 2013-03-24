@@ -159,8 +159,6 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
-	friend class OutputText;
-	friend class OutputLatex;
 
 public:
 

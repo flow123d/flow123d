@@ -121,6 +121,35 @@ protected:
         full_record
     };
 
+    /**
+     * Structure for flags about output of one TypeBase object in input tree
+     */
+    struct Key {
+    	unsigned int key_index;
+    	string key_;
+    	mutable bool extensive_doc_;
+    	mutable string reference_;
+    };
+
+    /**
+     * Public typedef of constant iterator into array of keys.
+     */
+    typedef std::vector<struct Key>::const_iterator KeyIter;
+
+
+    /**
+     * Type of hash values used in associative array that translates key names to indices in Record and Selection.
+     *
+     * For simplicity, we currently use whole strings as "hash".
+     */
+    typedef string KeyHash;
+
+    /// Hash function.
+    inline static KeyHash key_hash(const string &str) {
+        return (str);
+    }
+
+
     /// Padding of new level of printout, used where we use indentation.
     static const unsigned int padding_size = 4;
 
@@ -142,6 +171,8 @@ protected:
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     void get_integer_bounds(Integer integer, int &lower , int &upper );
     void get_double_bounds(Double dbl, double &lower , double &upper );
+    void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
+    void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
 
 
     /**
@@ -179,6 +210,68 @@ protected:
 
 
     /**
+     * Interface to mapping key -> index in doc_flags_. Returns index (in continuous array) for given key.
+     */
+    inline unsigned int key_index(const string& key) const;
+
+    /**
+     * Returns iterator to the key struct for given key string.
+     */
+    inline KeyIter key_iterator(const string& key) const;
+
+    /**
+     * Returns iterator to the key struct for given key string.
+     *
+     */
+    inline bool has_key_iterator(const string& key, KeyIter &it) const;
+
+    /**
+     * Container-like access to the keys of the OutputData. Returns iterator to the first key.
+     */
+    inline KeyIter begin() const;
+
+    /**
+     * Container-like access to the keys of the OutputData. Returns iterator to the last key.
+     */
+    inline KeyIter end() const;
+
+    /**
+     * Returns true if the OutputData contains key with given name.
+     */
+    inline bool has_key(const string& key) const;
+
+    /**
+     * Returns number of keys of OutputData.
+     */
+    inline unsigned int size() const;
+
+    /**
+     * Returns true if the OutputData contains key with given name and key has true flag extensive_doc_.
+     */
+    inline bool has_key_extensive(const string& key) const;
+
+    /**
+     * Returns reference_ string of key with given name.
+     */
+    inline const string get_reference(const string& key) const;
+
+    /**
+     * Set reference_ string of key with given name.
+     */
+    inline void set_reference(const string& key, const string& ref);
+
+    /**
+     * Set value to extensive_doc_ flag of key with given name.
+     */
+    inline void set_extensive_flag(const string& key, bool val = true);
+
+    /**
+     * Remove key with given name from OutputData.
+     */
+    inline void remove_key(const string& key);
+
+
+    /**
      * Write value stored in dft.
      *
      * Enclose value in quotes if it's needed or write info that value is optional or obligatory.
@@ -196,6 +289,29 @@ protected:
 
     /// temporary value for printout of description (used in std::setw function)
     unsigned int size_setw_;
+
+    /**
+     * Internal data class
+     */
+    class OutputData {
+    public:
+    	bool declare_key(string key, bool extensive_doc, string reference);
+
+    	bool declare_key(string key);
+
+    	void clear();
+
+    	/// Database of valid keys
+        std::map<KeyHash, unsigned int> key_to_index;
+        typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
+
+        /// Keys in order as they where declared.
+        std::vector<struct Key> keys;
+
+    };
+
+    /// map contained pairs key - reference of processed elements to output
+    OutputData doc_flags_;
 
 };
 

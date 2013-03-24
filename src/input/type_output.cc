@@ -36,6 +36,8 @@ OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 ostream&  OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
 	type_->reset_doc_flags();
+	doc_flags_.clear();
+	doc_flags_.declare_key(type_->type_name(), false, "");
 	print(stream, type_, depth_);
 	return stream;
 }
@@ -62,6 +64,16 @@ void OutputBase::get_integer_bounds(Integer integer, int &lower , int &upper ) {
 void OutputBase::get_double_bounds(Double dbl, double &lower , double &upper ) {
 	lower = dbl.lower_bound_;
 	upper = dbl.upper_bound_;
+}
+
+
+void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
+	parent_ptr = rec.data_->parent_ptr_;
+}
+
+
+void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
+	arr_type = array.data_->type_of_values_;
 }
 
 
@@ -127,6 +139,128 @@ void OutputBase::write_description(std::ostream& stream, const string& str,
 }
 
 
+inline unsigned int OutputBase::key_index(const string& key) const {
+    KeyHash key_h = key_hash(key);
+    OutputData::key_to_index_const_iter it = doc_flags_.key_to_index.find(key_h);
+    if (it != doc_flags_.key_to_index.end()) return it->second;
+
+    //THROW( ExcRecordKeyNotFound() << EI_KeyName(key) << EI_Record(*this) );
+
+    return size();
+}
+
+
+inline OutputBase::KeyIter OutputBase::key_iterator(const string& key) const {
+	return begin() + key_index(key);
+}
+
+
+inline bool OutputBase::has_key_iterator(const string& key, KeyIter &it) const {
+    KeyHash key_h = key_hash(key);
+    OutputData::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(key_h);
+    if (data_it == doc_flags_.key_to_index.end()) {
+        return false;
+    } else {
+        it = begin()+data_it->second;
+        return true;
+    }
+}
+
+
+inline OutputBase::KeyIter OutputBase::begin() const {
+	return doc_flags_.keys.begin();
+}
+
+
+inline OutputBase::KeyIter OutputBase::end() const {
+	return doc_flags_.keys.end();
+}
+
+
+inline bool OutputBase::has_key(const string& key) const {
+	return key_iterator(key) != end();
+}
+
+
+inline unsigned int OutputBase::size() const {
+	return doc_flags_.keys.size();
+}
+
+
+inline bool OutputBase::has_key_extensive(const string& key) const {
+	if ( has_key(key) ) {
+		return ( *key_iterator(key) ).extensive_doc_;
+	}
+	return false;
+}
+
+
+inline const string OutputBase::get_reference(const string& key) const {
+	KeyHash key_h = key_hash(key);
+	OutputData::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(key_h);
+
+	ASSERT(data_it != doc_flags_.key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in get_reference method!\n", key.c_str());
+
+	KeyIter it = begin()+data_it->second;
+	return (*it).reference_;
+}
+
+
+inline void OutputBase::set_reference(const string& key, const string& ref) {
+	KeyHash key_h = key_hash(key);
+	OutputData::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(key_h);
+
+	ASSERT(data_it != doc_flags_.key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in set_reference method!\n", key.c_str());
+
+	KeyIter it = begin()+data_it->second;
+	(*it).reference_ = ref;
+}
+
+
+inline void OutputBase::set_extensive_flag(const string& key, bool val) {
+	ASSERT(has_key(key), "Invalid key '%s' in OutputBase::OutputData object in set_extensive_flag method!\n", key.c_str());
+
+	( *key_iterator(key) ).extensive_doc_ = true;
+}
+
+
+inline void OutputBase::remove_key(const string& key) {
+	ASSERT(has_key(key), "Invalid key '%s' in OutputBase::OutputData object during removal the key!\n", key.c_str());
+
+	doc_flags_.key_to_index.erase(doc_flags_.key_to_index.find(key));
+	doc_flags_.keys.erase(doc_flags_.keys.begin() + key_index(key));
+}
+
+
+
+
+/*******************************************************************
+ * implementation of OutputBase::OutputData
+ */
+
+
+bool OutputBase::OutputData::declare_key(string key, bool extensive_doc, string reference) {
+	KeyHash key_h = key_hash(key);
+	key_to_index_const_iter it = key_to_index.find(key_h);
+	if ( it == key_to_index.end() ) {
+	   key_to_index.insert( std::make_pair(key_h, keys.size()) );
+	   Key tmp_key = { (unsigned int)keys.size(), key, extensive_doc, reference};
+	   keys.push_back(tmp_key);
+	   return true;
+	}
+	return false;
+}
+
+
+bool OutputBase::OutputData::declare_key(string key) {
+	return declare_key(key, true, "");
+}
+
+
+void OutputBase::OutputData::clear() {
+	key_to_index.erase(key_to_index.begin(), key_to_index.end());
+	keys.erase(keys.begin(), keys.end());
+}
 
 
 
@@ -155,8 +289,10 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 			stream << "" << "Record '" << type->type_name() << "'";
 
 			// parent record
-			if (type->data_->parent_ptr_) {
-				stream << ", implementation of " << type->data_->parent_ptr_->type_name();
+			boost::shared_ptr<AbstractRecord> parent_ptr;
+			get_parent_ptr(*type, parent_ptr);
+			if (parent_ptr) {
+				stream << ", implementation of " << parent_ptr->type_name();
 			}
 
 			// reducible to key
@@ -198,6 +334,8 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 
 
 void OutputText::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+	boost::shared_ptr<const TypeBase> array_type;
+	get_array_type(*type, array_type);
 
 	switch (doc_type_) {
 	case key_record:
@@ -206,10 +344,10 @@ void OutputText::print_impl(ostream& stream, const Array *type, unsigned int dep
 		get_array_sizes(*type, lower_size, upper_size);
 		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
 		stream << setw(padding_size + size_setw_) << "" << "#### ";
-		print(stream, type->data_->type_of_values_.get(), 0);
+		print(stream, array_type.get(), 0);
 		break;
 	case full_record:
-		print(stream, type->data_->type_of_values_.get(), depth);
+		print(stream, array_type.get(), depth);
 		break;
 	}
 }
@@ -349,7 +487,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int 
 
 ostream& OutputJSONTemplate::print(ostream& stream) {
     key_name_ = "";
-    type_->set_reference( "" );
+    //type_->set_reference( "" );
     return OutputBase::print(stream);
 }
 
@@ -364,21 +502,33 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 			if (key_name_.size()) {
 				stream << key_name_ << " = ";
 			}
-			if (type->made_extensive_doc()) {
-				stream << "{REF=\"" << type->reference() << "\"}";
+			//if (type->made_extensive_doc()) {
+			if ( has_key_extensive(type->type_name()) ) {
+				//stream << "{REF=\"" << type->reference() << "\"}";
+				stream << "{REF=\"" << get_reference(type->type_name()) << "\"}";
 			} else {
-				type->set_made_extensive_doc(true);
+				type->set_made_extensive_doc(true); //delete
+				set_extensive_flag(type->type_name());
+				string ref = get_reference(type->type_name());
+
 				stream << "{";
 				if (type->description().size()) {
 					size_setw_ = depth+1;
 					write_description(stream, type->description(), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
+					/*if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
 						it->type_.get()->set_reference( type->reference() + "/" + "#" + it->key_ );
 					} else if ( !(typeid(*(it->type_.get())) == typeid(Type::Record))
 							| (it->type_.get()->reference().size() == 0) ) {
 						it->type_.get()->set_reference( type->reference() + "/" + it->key_ );
+					} */
+					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
+						doc_flags_.declare_key( it->type_.get()->type_name(), false, ref + "/" + "#" + it->key_ );
+					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
+							| (typeid(*(it->type_.get())) == typeid(Type::Array))
+							| (typeid(*(it->type_.get())) == typeid(Type::Selection)) ) {
+						doc_flags_.declare_key( it->type_.get()->type_name(), false, ref + "/" + it->key_ );
 					}
 					if (it != type->begin()) {
 						stream << ",";
@@ -424,9 +574,17 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			break;
 		case full_record:
 			bool has_opt_prefix = value_.is_optional() | value_.has_value_at_read_time(); // key contains OPT_ prefix
+			boost::shared_ptr<const TypeBase> array_type;
 
-			if (type->data_->type_of_values_.get()->reference().size() == 0) {
-				type->data_->type_of_values_.get()->set_reference( type->reference() );
+			get_array_type(*type, array_type);
+
+			/*if (array_type.get()->reference().size() == 0) {
+				array_type.get()->set_reference( type->reference() + "/0" );
+			} */
+			if ( (typeid(*(array_type.get())) == typeid(Type::Record))
+					| (typeid(*(array_type.get())) == typeid(Type::AbstractRecord))
+					| (typeid(*(array_type.get())) == typeid(Type::Array))) {
+				doc_flags_.declare_key( array_type.get()->type_name(), false, get_reference(type->type_name()) + "/0");
 			}
 
 			if (has_opt_prefix) {
@@ -452,15 +610,15 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			doc_type_ = key_record;
 			stream << endl;
 			stream << setw((depth + 1) * padding_size) << "";
-			print(stream, type->data_->type_of_values_.get(), depth+1);
+			print(stream, array_type.get(), depth+1);
 
 			doc_type_ = full_record;
-			if ( ! (typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::Integer)
-					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::Double)
-					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::Bool)
-					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::String)
-					| typeid( *(type->data_->type_of_values_.get()) ) == typeid(Type::FileName)) ) {
-				print(stream, type->data_->type_of_values_.get(), depth+1);
+			if ( ! (typeid( *(array_type.get()) ) == typeid(Type::Integer)
+					| typeid( *(array_type.get()) ) == typeid(Type::Double)
+					| typeid( *(array_type.get()) ) == typeid(Type::Bool)
+					| typeid( *(array_type.get()) ) == typeid(Type::String)
+					| typeid( *(array_type.get()) ) == typeid(Type::FileName)) ) {
+				print(stream, array_type.get(), depth+1);
 			}
 			//if (lower_size > 1) {
 			//	stream << "," << endl;
@@ -486,18 +644,20 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			string rec_name = key_name_;
 
 			std::vector<string> refs;
-			string reference(type->reference());
+			//string reference(type->reference());
+			string reference(get_reference(type->type_name()));
 			boost::split(refs, reference, boost::is_any_of("#"));
 		    ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
 
-			stream << endl;
+		    stream << endl;
 			stream << setw(depth * padding_size) << "";
 			stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
 		    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		    	if (it->reference().size() == 0) {
+		    	/*if (it->reference().size() == 0) {
 		    		it->set_reference( refs[0] + it->type_name() + "_" + refs[1] );
-		    	}
+		    	} */
+		    	doc_flags_.declare_key( it->type_name(), false, refs[0] + it->type_name() + "_" + refs[1] );
 
 		    	key_name_ = it->type_name() + "_" + rec_name;
 		    	size_setw_ = depth;
@@ -513,9 +673,11 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 		    	doc_type_ = full_record;
 		    	print(stream, &*it, depth);
 		    }
-		    type->set_reference( refs[0] + refs[1] );
+		    //type->set_reference( refs[0] + refs[1] );
+		    set_reference(type->type_name(), refs[0] + refs[1]);
+		    remove_key(type->type_name());
 
-		    stream << endl;
+		    //stream << endl;
 			break;
 	}
 
@@ -796,8 +958,10 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                    << internal::hyper_target("IT", type->type_name()) << "}";
 
             // parent record
-            if (type->data_->parent_ptr_) {
-                stream << "{" << internal::hyper_link("IT", type->data_->parent_ptr_->type_name()) <<"}";
+            boost::shared_ptr<AbstractRecord> parent_ptr;
+            get_parent_ptr(*type, parent_ptr);
+            if (parent_ptr) {
+                stream << "{" << internal::hyper_link("IT", parent_ptr->type_name()) <<"}";
             } else {
                 stream << "{}";
             }
@@ -855,6 +1019,8 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
 
 
 void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+	boost::shared_ptr<const TypeBase> array_type;
+	get_array_type(*type, array_type);
 
     switch (doc_type_) {
     case key_record:
@@ -864,10 +1030,10 @@ void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int de
         stream << "Array ";
         internal::print_range<unsigned int>(stream, lower_size, upper_size);
         stream << " of ";
-        print(stream, type->data_->type_of_values_.get(), 0);
+        print(stream, array_type.get(), 0);
         break;
     case full_record:
-        print(stream, type->data_->type_of_values_.get(), depth);
+        print(stream, array_type.get(), depth);
         break;
     }
 }
