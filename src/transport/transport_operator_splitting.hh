@@ -32,7 +32,7 @@ class ConvectionTransport;
  * Here one has to specify methods for setting or getting data particular to
  * transport equations.
  */
-class TransportBase : public EquationBase{
+class TransportBase : public EquationBase {
 public:
 
 	class TransportEqData : public EqDataBase {

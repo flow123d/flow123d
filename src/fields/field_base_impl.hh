@@ -216,17 +216,6 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
     boost::shared_ptr<FieldBaseType> field = FieldBaseType::function_factory(rec, this->n_comp_);
     set_field(domain, field);
-    /*
-    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
-    if (domain.size() == 0) return;
-    // initialize table if it is empty, we assume that the RegionDB is closed at this moment
-    if (region_fields_.size() == 0)
-        region_fields_.resize( this->mesh_->region_db().size() );
-
-    // following dosn't lead to a memory leak since we use shared_ptr,
-    // if the previous pointer was the last one the pointed field is correctly freed
-    BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
-    changed_from_last_set_time_=true;*/
 }
 
 
@@ -290,9 +279,9 @@ bool Field<spacedim, Value>::set_time(double time) {
                     region_fields_[reg.idx()]->set_time(time);
         }
 
-    this->changed_during_set_time_ = this->changed_from_last_set_time_;
+    this->changed_during_set_time = this->changed_from_last_set_time_;
     this->changed_from_last_set_time_ = false;
-    return this->changed_during_set_time_;
+    return this->changed_during_set_time;
 }
 
 

@@ -250,6 +250,11 @@ public:
      */
     virtual ~FieldCommonBase();
 
+    /**
+     * Is true if the values of the field has changed during last set_time() call.
+     */
+    bool changed_during_set_time;
+
 protected:
     /**
      * Name of the particular field. Used to name the key in the Field list Record.
@@ -285,10 +290,7 @@ protected:
      * Pointer to the mesh on which the field lives.
      */
     Mesh *mesh_;
-    /**
-     * Is true if the values of the field has changed during last set_time() call.
-     */
-    bool changed_during_set_time_;
+
     /**
      * Set by other methods (namely set_field() and set_from_input()) that modify the field before the set_time is called.
      */

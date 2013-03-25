@@ -485,7 +485,6 @@ void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &
 void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
 {
   data.cross_section = cross_section;
-  if (convection != NULL) convection->set_cross_section(cross_section);
   if (Semchem_reactions != NULL) {
 	  Semchem_reactions->set_cross_section(cross_section);
 	  Semchem_reactions->set_sorption_fields(&data.por_m, &data.por_imm, &data.phi);
