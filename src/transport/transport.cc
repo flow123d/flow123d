@@ -425,7 +425,7 @@ void ConvectionTransport::set_boundary_conditions()
     for (unsigned int sbi=0; sbi<n_substances; sbi++)
     	VecAssemblyEnd(bcvcorr[sbi]);
 
-    for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt());
+    //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt());
 }
 
 
@@ -531,13 +531,13 @@ void ConvectionTransport::set_target_time(double target_time)
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix
-        for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt()/time_->estimate_dt());
+        //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt()/time_->estimate_dt());
         MatShift(tm, -1.0);
         MatScale(tm, time_->dt()/time_->estimate_dt() );
         MatShift(tm, 1.0);
     } else {
         // scale fresh convection term matrix
-        for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+        //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
         MatScale(tm, time_->estimate_dt());
         MatShift(tm, 1.0);
     }
