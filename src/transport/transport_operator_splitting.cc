@@ -119,15 +119,14 @@ TransportBase::~TransportBase()
 void TransportBase::mass_balance() {
     F_ENTRY;
 
-    //BOUNDARY
-    struct Boundary *bcd;
-    vector<vector<double> > bcd_balance;
-    vector<vector<double> > bcd_plus_balance;
-    vector<vector<double> >bcd_minus_balance;
+    // First we compute the quantities, then on process 0 we write the output
 
-    bcd_balance.resize(n_substances());
-    bcd_plus_balance.resize(n_substances());
-    bcd_minus_balance.resize(n_substances());
+    vector<vector<double> > bcd_balance(n_substances()),
+    		bcd_plus_balance(n_substances()),
+    		bcd_minus_balance(n_substances()),
+    		src_balance(n_substances());
+
+
     for (int i=0; i<n_substances(); i++)
     {
     	bcd_balance[i].resize(mesh_->region_db().boundary_size());
@@ -139,10 +138,61 @@ void TransportBase::mass_balance() {
     		bcd_plus_balance[i][j] = 0;
     		bcd_minus_balance[i][j] = 0;
     	}
-    }
 
-    using namespace std;
-    //printing the head of water balance file
+    	src_balance[i].resize( mesh_->region_db().bulk_size());
+		for (unsigned int j=0; j<src_balance[i].size(); j++)
+			src_balance[i][j] = 0;
+	}
+    //computing mass fluxes over boundaries and elements
+    calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
+	calc_elem_sources(src_balance);
+
+
+	// gather results from processes and sum them up
+	int nsubst = n_substances();
+	int bcd_size = mesh_->region_db().boundary_size();
+	int blk_size = mesh_->region_db().bulk_size();
+	int buf_size = nsubst*(3*bcd_size + blk_size);
+	double sendbuffer[buf_size], recvbuffer[buf_size];
+
+	// prepare sendbuffer
+	for (int i=0; i<nsubst; i++)
+	{
+		for (int j=0; j<bcd_size; j++)
+		{
+			sendbuffer[i*3*bcd_size+           j] = bcd_balance[i][j];
+			sendbuffer[i*3*bcd_size+  bcd_size+j] = bcd_plus_balance[i][j];
+			sendbuffer[i*3*bcd_size+2*bcd_size+j] = bcd_minus_balance[i][j];
+		}
+		for (int j=0; j<blk_size; j++)
+			sendbuffer[nsubst*3*bcd_size+j] = src_balance[i][j];
+	}
+	MPI_Reduce(&sendbuffer,recvbuffer,buf_size,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
+
+	int rank;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	if (rank != 0) return;
+
+	// update balance vectors
+	for (int i=0; i<nsubst; i++)
+	{
+		for (int j=0; j<bcd_size; j++)
+		{
+			bcd_balance[i][j]       = recvbuffer[i*3*bcd_size+           j];
+			bcd_plus_balance[i][j]  = recvbuffer[i*3*bcd_size+  bcd_size+j];
+			bcd_minus_balance[i][j] = recvbuffer[i*3*bcd_size+2*bcd_size+j];
+		}
+		for (int j=0; j<blk_size; j++)
+			src_balance[i][j] = recvbuffer[nsubst*3*bcd_size+j];
+	}
+
+
+	vector<double> bcd_total_balance(n_substances(), 0.), // for computing total balance on boundary
+			bcd_total_inflow(n_substances(), 0.),
+			bcd_total_outflow(n_substances(), 0.),
+			src_total_balance(n_substances(), 0.);
+
+    //printing the head of mass balance file
     unsigned int c = 6; //column number without label
     unsigned int w = 14;  //column width
     unsigned int wl = 2*(w-5)+7;  //label column width
@@ -154,7 +204,8 @@ void TransportBase::mass_balance() {
     fprintf(balance_output_file,"# %s MASS BALANCE %s\n",s.str().c_str(), s.str().c_str());
     fprintf(balance_output_file,"# Time of computed mass balance: %f\n\n\n",time().t());
 
-    fprintf(balance_output_file,"# Boundary water balance:\n");
+    //BOUNDARY
+    fprintf(balance_output_file,"# Boundary mass balance:\n");
     fprintf(balance_output_file,bc_head_format.c_str(),w,"[boundary_id]",wl,"[label]",
                             w,"[substance]",w,"[total_balance]",w,"[total_outflow]",w,"[total_inflow]",w,"[time]");
     s.clear();
@@ -162,21 +213,17 @@ void TransportBase::mass_balance() {
     s << setw(w*c+wl) << setfill('-') << "-";
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
 
-    //computing mass fluxes over boundaries
-    calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
 
     //printing mass fluxes over boundaries
     DBGMSG("DB[boundary] size: %u\n", mesh_->region_db().boundary_size());
     const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
-    vector<double> total_balance(n_substances(), 0.), // for computing total balance on boundary
-           total_inflow(n_substances(), 0.),
-           total_outflow(n_substances(), 0.);
+
     for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
         //DBGMSG("writing reg->idx() and id() and boundary_idx(): %d\t%d\t%d\n", reg->idx(), reg->id(), reg->boundary_idx());
     	for (int sbi=0; sbi<n_substances(); sbi++) {
-			total_balance[sbi] += bcd_balance[sbi][reg->boundary_idx()];
-			total_outflow[sbi] += bcd_plus_balance[sbi][reg->boundary_idx()];
-			total_inflow[sbi] += bcd_minus_balance[sbi][reg->boundary_idx()];
+    		bcd_total_balance[sbi] += bcd_balance[sbi][reg->boundary_idx()];
+    		bcd_total_outflow[sbi] += bcd_plus_balance[sbi][reg->boundary_idx()];
+    		bcd_total_inflow[sbi] += bcd_minus_balance[sbi][reg->boundary_idx()];
 			fprintf(balance_output_file, bc_format.c_str(),2,"",w,reg->id(),wl,reg->label().c_str(),
 					w, substance_names()[sbi].c_str(),w, bcd_balance[sbi][reg->boundary_idx()],
 					w, bcd_plus_balance[sbi][reg->boundary_idx()],
@@ -187,7 +234,7 @@ void TransportBase::mass_balance() {
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  // drawing long line
     for (int sbi=0; sbi<n_substances(); sbi++)
     	fprintf(balance_output_file, bc_total_format.c_str(),w+wl,"total boundary balance",
-                w+2,substance_names()[sbi].c_str(),w,total_balance[sbi], w, total_outflow[sbi], w, total_inflow[sbi]);
+                w+2,substance_names()[sbi].c_str(),w,bcd_total_balance[sbi], w, bcd_total_outflow[sbi], w, bcd_total_inflow[sbi]);
     fprintf(balance_output_file, "\n\n");
 
 
@@ -200,18 +247,6 @@ void TransportBase::mass_balance() {
     fprintf(balance_output_file,src_head_format.c_str(),w,"[region_id]",wl,"[label]",
                             w,"[substance]",w,"[total_balance]",2*w,"",w,"[time]");
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  //long line
-    std::vector<std::vector<double> > src_balance;
-
-    src_balance.resize(n_substances());
-    for (int sbi=0; sbi<n_substances(); sbi++)
-    {
-    	src_balance[sbi].resize( mesh_->region_db().bulk_size());
-    	total_balance[sbi] = 0;
-    	for (unsigned int j=0; j<src_balance[sbi].size(); j++)
-    		src_balance[sbi][j] = 0;
-    }
-
-    calc_elem_sources(src_balance);
 
     //printing water balance of sources
     DBGMSG("DB[bulk] size: %u\n", mesh_->region_db().bulk_size());
@@ -220,7 +255,7 @@ void TransportBase::mass_balance() {
     {
     	for (int sbi=0; sbi<n_substances(); sbi++)
     	{
-			total_balance[sbi] += src_balance[sbi][reg->bulk_idx()];
+			src_total_balance[sbi] += src_balance[sbi][reg->bulk_idx()];
 			//"%*s%-*d%-*s  %-*g%-*s%-*g\n";
 			fprintf(balance_output_file, src_format.c_str(), 2,"", w, reg->id(), wl,
 					reg->label().c_str(), w, substance_names()[sbi].c_str(),
@@ -231,7 +266,7 @@ void TransportBase::mass_balance() {
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
     for (int sbi=0; sbi<n_substances(); sbi++)
     	fprintf(balance_output_file, src_total_format.c_str(),w+wl,"total sources balance",
-                w+2,substance_names()[sbi].c_str(),w,total_balance[sbi]);
+                w+2,substance_names()[sbi].c_str(),w,src_total_balance[sbi]);
     fprintf(balance_output_file, "\n\n");
 }
 
@@ -470,19 +505,23 @@ vector<string> &TransportOperatorSplitting::substance_names()
 
 void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
 {
-	convection->output_vector_gather();
-
-	double ***solution = convection->get_out_conc();
+	double ***solution = convection->get_conc();
+	int *el_4_loc, *row_4_el;
+	Distribution *el_ds;
 	double mass_flux[n_substances()];
+
+	convection->get_par_info(el_4_loc, el_ds);
+	row_4_el = convection->get_row_4_el();
 
     FOR_BOUNDARIES(mesh_, bcd) {
 
         // !! there can be more sides per one boundary
+    	int index = row_4_el[bcd->side()->element().index()];
+    	if (!el_ds->is_local(index)) continue;
 
 		double water_flux = mh_dh->side_flux(*(bcd->side()));
-		double por_m = data.por_m.value(bcd->side()->element()->centre(), bcd->side()->element()->element_accessor());
 		for (int sbi=0; sbi<n_substances(); sbi++)
-			mass_flux[sbi] = water_flux/por_m*solution[MOBILE][sbi][bcd->side()->element()->index()];
+			mass_flux[sbi] = water_flux*solution[MOBILE][sbi][index-el_ds->begin()];
 
         Region r = bcd->region();
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
@@ -501,12 +540,22 @@ void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balanc
 
 void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &src_balance)
 {
+	int *el_4_loc, *row_4_el;
+	Distribution *el_ds;
+
+	convection->get_par_info(el_4_loc, el_ds);
+	row_4_el = convection->get_row_4_el();
+
 	for (int sbi=0; sbi<n_substances(); sbi++)
 	{
 		double *sources = convection->get_sources(sbi);
 
 		FOR_ELEMENTS(mesh_,elem)
-			src_balance[sbi][elem->element_accessor().region().bulk_idx()] += sources[elem.index()]*elem->measure();
+		{
+			int index = row_4_el[elem.index()];
+			if (el_ds->is_local(index))
+				src_balance[sbi][elem->element_accessor().region().bulk_idx()] += sources[index-el_ds->begin()]*elem->measure();
+		}
 	}
 }
 

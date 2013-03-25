@@ -127,6 +127,7 @@ public:
 	bool get_dual_porosity();
 	int get_n_substances();
 	int *get_el_4_loc();
+	int *get_row_4_el();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
 	/**
@@ -134,6 +135,7 @@ public:
 	 * TODO: Maybe this should be made by get_solution_vector, but here we have matrix of arrays.
 	 */
 	double ***get_out_conc();
+	double ***get_conc();
     vector<string> &get_substance_names();
     double *get_sources(int sbi);
 //    TransportSources *transportsources;

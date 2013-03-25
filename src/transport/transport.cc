@@ -232,6 +232,10 @@ double ***ConvectionTransport::get_out_conc(){
 	return out_conc;
 }
 
+double ***ConvectionTransport::get_conc(){
+	return conc;
+}
+
 vector<string> &ConvectionTransport::get_substance_names(){
 	return substance_name;
 }
@@ -1318,6 +1322,10 @@ bool ConvectionTransport::get_dual_porosity(){
 
 int *ConvectionTransport::get_el_4_loc(){
 	return el_4_loc;
+}
+
+int *ConvectionTransport::get_row_4_el(){
+	return row_4_el;
 }
 
 int ConvectionTransport::get_n_substances() {

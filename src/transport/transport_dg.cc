@@ -1269,8 +1269,6 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 
     	if (bcd->side()->dim() != dim-1) continue;
 
-        // !! there can be more sides per one boundary
-
         cell = bcd->side()->element();
 
 		double water_flux = mh_dh->side_flux(*(bcd->side()))/bcd->side()->measure();
@@ -1297,8 +1295,9 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 			c_grad.zeros();
 			for (unsigned int i=0; i<ndofs; i++)
 			{
-				conc += fe_values.shape_value(i,k)*ls->get_solution_array()[dof_indices[i]];
-				c_grad += fe_values.shape_grad(i,k)*ls->get_solution_array()[dof_indices[i]];
+				if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
+				conc += fe_values.shape_value(i,k)*ls->get_solution_array()[dof_indices[i]-distr->begin()];
+				c_grad += fe_values.shape_grad(i,k)*ls->get_solution_array()[dof_indices[i]-distr->begin()];
 			}
 
 			mass_flux += (-csection[k]*por_m[k]*dot(D[k]*c_grad,fsv_rt.normal_vector(k)) + water_flux*conc)*fe_values.JxW(k);
