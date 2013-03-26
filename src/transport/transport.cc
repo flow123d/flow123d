@@ -411,7 +411,7 @@ void ConvectionTransport::set_boundary_conditions()
 
                         arma::vec value = data->bc_conc.value( b->element()->centre(), b->element_accessor() );
                         for (unsigned int sbi=0; sbi<n_substances; sbi++)
-                            VecSetValue(bcvcorr[sbi], new_i, value(sbi) * aij, ADD_VALUES);
+                            VecSetValue(bcvcorr[sbi], new_i, value[sbi] * aij, ADD_VALUES);
                     }
                 }
             }
@@ -425,7 +425,10 @@ void ConvectionTransport::set_boundary_conditions()
     for (unsigned int sbi=0; sbi<n_substances; sbi++)
     	VecAssemblyEnd(bcvcorr[sbi]);
 
-    //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt());
+    for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt());
+
+    //VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
+    //exit(0);
 }
 
 
@@ -472,7 +475,8 @@ void ConvectionTransport::compute_one_step() {
     END_TIMER("data reinit");
     
     // possibly read boundary conditions
-    if (data->bc_conc.changed_during_set_time) set_boundary_conditions();
+    //if (data->bc_conc.changed_during_set_time)
+        set_boundary_conditions();
 
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase
