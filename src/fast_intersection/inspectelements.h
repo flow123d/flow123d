@@ -17,8 +17,10 @@ private:
 	vector<bool> projeti;
 
 public:
-	inline InspectElements(unsigned int size){
-		projeti.reserve(size);
+	inline InspectElements(unsigned int size)
+	: projeti(size, false)
+	{
+		//projeti.reserve(size);
 		/*
 		 * init:
 		 * for(unsigned i = 0; i < size; i++){

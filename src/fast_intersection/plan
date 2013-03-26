@@ -1,0 +1,111 @@
+konzultace: hlavni cyklus + cyklus pres frontu
+====================================
+Sousedi steny:
+  
+SideIter elm_side = elem->side(i_side);
+Edge * edg = elm_side->edge();
+for(unsigned int i=0; i < edg->n_sides) {
+  SideIter other_side=edg->side(i);
+  if (other_side != elm_side) {
+    // sousedni stena
+    
+  }
+}  
+
+===========================
+Plan dalsiho postupu po zmereni rychlosti stromoveho vyhledavani a ngh pruniku:
+  
+Zakladni algoritmus:
+
+1) - najdu neprojity 1D element (cyklus pres vsechny 1D elementy + oznacovani elementu (stejne dlouhy vektor))
+   - spoctu jeho prunik s nejakym 3D -> objekt pruniku obsahuje: indexy obou elementu + lokalni souradnice (pouzit tridu z ngh)
+   
+2) vytvorim frontu of ProlongationPoint - trida s informaci o bodu ze ktereho mam dale pokracovat:
+   - bud je na hranici 1D elementu , pak potrebuju: Intersection kterou prodluzuju + index bodu v intersection + stena 1D elementu pres kterou pokracuju
+   - nebo je to na hranici 3D elementu, pak potrebuju: Intersection + index prodluzovaneho bodu + stena 3d elementu
+3) opakovane vybiram z fronty a mam dva lgoritmy jeden na 1d a druhy na 3d prolongaci, pokud vylezu ze 3d site, musim otestovat prunik 1d elementu pomoci 
+   stromu, abych si byl jisty, ze uz zadny dalsi prunik s 3d siti nema
+
+  
+===========================================================================
+1) vytvorit sit sestavajici z:
+      3d krychle (diskretizachi parametr h3)
+      site 1d elementu (vetvici se usecky (spojeni 3 a 4), nesouvisla stuktura, kruznice), samostatny diskretizacni parametr h1
+      diskretizacni parametry jsou soucasti definice bodu v geo souboru
+      
+2) do testu intersection_test.cpp pridat novy test:
+  
+   1) nacteni vyvorene site pomoci gmsh_readru (viz. gmsh_reader_test nebo bih_tree_test)
+   2) vytvoreni BIH tree nad siti (viz. bih_tree_test)
+   3) pruchod siti pomoci makra:
+       FOR_ELEMENTS(mesh, elm) {
+         if (elm->dim() == 1) {
+            - create Abscissa (viz. viz. src/functions/function_interpolated_p0_impl.hh)
+            - vypocet bounding boxu (metoda abscissa.get_bounding_box() )
+            - vyhledani potencionalnich pronikajicich 3d elementu pomoci stromu , find_elements
+            - pro kazdy 3d element vytvoreni TTetrahedron + vypocet GetIntersection(abscissa, tetrahedron, type, measure)
+              (viz. function_interpolated_p0_impl.hh, calculate_abscisa_pressure )
+         }
+       }  
+3) pomoci START_TIMER, END_TIMER zmerit dobu nalezeni vsech pruniku, viz. system/profiler_test.cpp
+   
+13.12. --------------------------------------------------------------
+* ngh od vytvorene site
+* novy unittest v mesh adresari
+  v nem:
+* necist sit a nacis NGH
+
+
+8.11. -------------------------------------
+
+- Linux
+- GMSH - zkusit si udelat sit obsahujici 3d a 1d
+
+
+
+
+========================================
+1) Subversion - klient TortoiseSVN
+2) CygWin - cmake, g++, make, subversion
+3) checkout (stazeni) vyvojove vetve Flow123d: https://dev.nti.tul.cz/repos/flow123d/trunk
+
+4) rozdeleni zdrojaku do vice souboru - pouziti cmake
+
+   pretizene operatory << :
+     
+     
+   class Bod {
+   public:
+      print(std::ostream s) const;
+   }
+   
+   std::ostream & operator << ( ostream s, const Bod &b) { b.print(s); }
+
+5) Armadillo - linearni algebra 
+
+
+----------------
+6) Vetev ve Flow123d, tridy provazujici geometricke entity a elementy ruzne dimenze ( to by mela byt spis moje a DF prace)
+7a) mereni rychlosti a pametovych naroku soucasnych algoritmu, 
+7) Pro jasne definovane rozhrani site: 
+   - pomocny vypocet Pluckerovych souradnic
+   - efektivni algoritmy pro hledani pruseciku ( pruchod do sirky -alespon dohledani vsech pruniku trojuhelnika pokud jeden naleznu)
+   
+   
+Trida intersection by mel byt jen docasna, s obecnou informaci o pruseciku 
+(tj. lokalni souradnice prunikoveho polygonu na obou simplexech - co prunik dvou simplexu ?)
+
+
+
+Navrh algoritmu:
+  
+  
+# hledani sousednosti 2d - 3d
+    # pro nahodny 2d element najdu 3d se kterym ma prusecik (pomoci stromu tj. log(n))
+    # prochazim do sirky 2d sit a dohledavam 3d prvky, pro nalezene pruseciky zaznamenam ppruseciky 2d elemenu se stenami 3d site
+      elementarni operace je:
+      pro dany 3d element a 2d element, najdi prunik, pokud znam uz jeho cast (otazka jak to mit ulozene - polygon lokalnich souradnic na obou simplexech,
+      globalni cisla elementu nikoliv pointery)
+           
+           
+2) hledani sousednosti 1d - 3d, pritom
