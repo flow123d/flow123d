@@ -67,7 +67,7 @@ public:
     arma::vec3 centre();
 
     unsigned int n_sides_by_dim(int side_dim);
-    inline SideIter side(const unsigned int loc_index);
+    inline SideIter side(const unsigned int loc_index); // D
     Region region() const;
     inline RegionIdx region_idx() const
         { return region_idx_; }
@@ -75,7 +75,7 @@ public:
     int      pid;       // Id # of mesh partition
 
     // Type specific data
-    Node** node;    // Element's nodes
+    Node** node;    // Element's nodes // D
 
 
     unsigned int *edge_idx_; // Edges on sides

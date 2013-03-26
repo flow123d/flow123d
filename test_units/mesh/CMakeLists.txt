@@ -39,6 +39,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     define_test(bih_tree)
     define_test(intersection_1_3)
     define_test(mesh)
+    define_test(fast_intersection_1_3)
     
     #define_test(generic_node)
     
