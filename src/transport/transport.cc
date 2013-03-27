@@ -425,7 +425,7 @@ void ConvectionTransport::set_boundary_conditions()
     for (unsigned int sbi=0; sbi<n_substances; sbi++)
     	VecAssemblyEnd(bcvcorr[sbi]);
 
-    for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt());
+    for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
 
     //VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
     //exit(0);
@@ -466,17 +466,20 @@ void ConvectionTransport::compute_one_step() {
     //MaterialDatabase::Iter material;
     int sbi;
 
-    // proceed to actually computed time
-    //time_->view("CONVECTION");
-    time_->next_time();
-    
     START_TIMER("data reinit");
     data->set_time(*time_);
     END_TIMER("data reinit");
-    
+
     // possibly read boundary conditions
     //if (data->bc_conc.changed_during_set_time)
-        set_boundary_conditions();
+    set_boundary_conditions();
+
+
+    // proceed to actually computed time
+    //time_->view("CONVECTION");
+    time_->next_time(); // explicit scheme use values from previous time and then set then new time
+
+
 
     for (sbi = 0; sbi < n_substances; sbi++) {
         // one step in MOBILE phase
