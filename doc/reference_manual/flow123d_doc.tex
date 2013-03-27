@@ -111,7 +111,7 @@
 \vspace{160pt}
 
 \textbf{\Huge{
-FLOW123D - draft, scheme of new inputs
+Flow123d
 }}
 
 \vspace{1cm}
@@ -126,19 +126,34 @@ Documentation of file formats \\
 and brief user manual.
 }}
 
+\vspace{9cm}
 
-\vspace{7cm}
 
-\noindent \textbf{\Large{Liberec, 2011}}
+
+
+\noindent \textbf{\Large{Liberec, 2012}}
 
 \vspace{1cm}
-
-{\bf Acknowledgement.} This work was realized under the state  subsidy of the Czech Republic within the research and development 
-project ``Advanced Remediation Technologies and Processes Center'' 1M0554 
--- Program of Research Centers PP2-D01 supported by Ministry of Education.
+\pagebreak
 \end{center}
-\noindent 
 
+\noindent
+{\bf Authors} (of version 1.7.0)
+
+\vspace{3ex}    
+\noindent
+Jan B\v rezina, Jan Stebel, Ji\v r\' i Hn\' idek, David Flanderka, Pavel Exner, Luk\' a\v s Zedek
+
+\vspace{3cm}
+\noindent
+{\bf Acknowledgement}
+
+\vspace{3ex}
+\noindent
+
+
+
+\pagebreak
 \noindent
 
 \tableofcontents
@@ -148,7 +163,6 @@ project ``Advanced Remediation Technologies and Processes Center'' 1M0554
 \parindent=0pt
 \parskip=1ex
 
-\section{}
 \chapter{Quick start}
 
 Flow123D is a software for simulation of water flow and reactionary solute transport in a heterogeneous 
@@ -177,7 +191,7 @@ The program is implemented in C/C++ using essentially PETSC library for linear a
 in parallel using MPI environment. 
 
 The program is distributed under GNU GPL v. 3 license and is available on the project web page:
-http://dev.nti.tul.cz/trac/flow123d
+\url{http://dev.nti.tul.cz/trac/flow123d}
 
 \section{Basic usage}
 
@@ -277,10 +291,14 @@ and C++ comments, i.e. \verb'//' for a one line and \verb'/* */' for a multi-lin
 that mimic C++ abstract classes, arrays of a CON file have only elements of the same type (possibly using abstract record types for polymorphism). 
 The usual keys are in lower case and without spaces (using underscores instead),
 there are few special upper case keys that are interpreted by the reader: \verb'REF' key for references, \verb'TYPE' key for specifing actual type of an abstract record.
-For detailed description see Section \ref{sec:main_input}.
+For detailed description see Section \ref{sec:CONformat}.
 
 \subsubsection{Geometry}
-In the following, we shall provide a commented input for the tutorial problem (\verb'tests/03_transport_small_12d/flow_vtk.con').
+In the following, we shall provide a commented input for the tutorial problem:
+\begin{verbatim}
+tests/03_transport_small_12d/flow_vtk.con
+\end{verbatim}
+
 We consider a~simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). To prepare a~mesh file we use the \href{http://geuz.org/gmsh/}{GMSH software}.
 First, we construct a~geometry file. In our case the geometry consists of: 
 \begin{itemize}
@@ -360,11 +378,11 @@ Having the computational mesh, we can create the main input file with the descri
         ]
     },  
 \end{Verbatim}
-The file starts with a particular problem type selection, currently the type ``SequentialCoupling'' is supported, and a textual problem description.
+The file starts with a particular problem type selection, currently only the type \verb'SequentialCoupling' is supported, and a textual problem description.
 Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one {\it region set} 
 composed of all 1D regions i.e. representing the whole fracture. Other keys of the mesh record allow labeling regions given only by numbers, 
 defining new regions in terms of element numbers (e.g to have leakage on single element), 
-defining boundary regions, and set operations with region sets, see Section \ref{} for details.
+defining boundary regions, and set operations with region sets, see Section \ref{sec:Mesh} for details.
 
 \subsubsection{Flow setting}
 Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
@@ -403,9 +421,11 @@ These are currently the default values.
 On line 11, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
 solver for unsteady problems. On lines 16 -- 19, we set mathematical fields that live on the computational domain 
 (i.e. the bulk domain), we set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{bulk fields} have appropriate default values.
-On lines 21 -- 26, we set fields for boundary conditions. We use implicitely defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
-pressure head. In this case, the field is not of the implicit type ``FieldConstant'', so we must specify the type of the field ``FieldFormula''. See Section \ref{} for other 
-\hyperlink{IT::DarcyFlowMH-Steady-BulkData}{boundary fields}. On lines 28 -- 33, we specify which output fields should be written into which output stream (that means particular output file, with given format).
+On lines 21 -- 26, we set fields for boundary conditions (\hyperlink{IT::DarcyFlowMH-Steady-BulkData}{{\tt bc\_data}}). 
+We use implicitely defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
+pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE=FieldFormula}.
+See Section \ref{sec:Fields} for other field types. 
+On lines 28 -- 33, we specify which output fields should be written into which output stream (that means particular output file, with given format).
 Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
 Notice the reference used on line 29 pointing to the definition of the output streams at the end of the file. Finally, we specify type of the linear solver and its tolerance.
 
@@ -413,8 +433,8 @@ Notice the reference used on line 29 pointing to the definition of the output st
 
 \subsubsection{Transport setting}
 We also consider subsequent transport problem with the porosity $\theta = 0.25$ and zero initial concentration. The boundary condition is equal to $1$ and is automatically applied only on the 
-inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case, but we do not discuss this topic here for the sake of simplicity,
-see Section \ref{} for the description. 
+inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case, but we do not discuss this topic here for the sake of simplicity.
+%see Section \ref{} for the description. 
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
      secondary_equation = {
@@ -527,7 +547,10 @@ that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elem
 \begin{figure}[h]
 \centering
 \includegraphics[width=10cm]{ground_fractures}
-\label{fig:multi-dim}
+\caption{
+    \label{fig:multi-dim}
+    Scheme of a problem with domains of multiple dimensions.
+}
 \end{figure}
 
 Present numerical methods requires meshes satisfying the compatibility conditions
@@ -558,10 +581,8 @@ match their sides or they poke out of $\Omega_d$.
 %\section{Input format}
 \input{JSON_input}
 
-\section{Other input files}
 \input{input_files.tex}
 
-\section{Output files}
 \input{output}
 %\input{tso_10} 
 %\input{pos_12}   
@@ -571,6 +592,7 @@ match their sides or they poke out of $\Omega_d$.
 %\input{tests}
 
 \chapter{Main input file reference}
+\label{chapter:input-tree-reference}
 % support macros
 
 

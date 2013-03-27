@@ -11,7 +11,7 @@
 
       bulk_data = [
         { rid = 100,
-          anisotropy = 0.1
+          conductivity = 0.1
         }
       ],
     

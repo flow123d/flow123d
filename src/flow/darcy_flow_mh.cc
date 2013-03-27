@@ -157,9 +157,9 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
 {
     gravity_ = arma::vec4("0 0 -1 0"); // gravity vector + constant shift of values
 
-    ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
-    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
-    ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
+    ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", Input::Type::Default("1.0"));
+    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0") );
+    ADD_FIELD(conductivity, "Isotropic conductivity scalar.", Input::Type::Default("1.0") );
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", Input::Type::Default("1.0"));
     ADD_FIELD(water_source_density, "Water source density.", Input::Type::Default("0.0"));
     

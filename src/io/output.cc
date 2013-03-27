@@ -41,13 +41,13 @@
 using namespace Input::Type;
 
 Record OutputTime::input_type
-	= Record("OutputStrem", "Parameters of output.")
+	= Record("OutputStream", "Parameters of output.")
 	// The name
 	.declare_key("name", String(), Default::obligatory(),
 			"The name of this stream. Used to reference the output stream.")
 	// The stream
 	.declare_key("file", FileName::output(), Default::obligatory(),
-			"File path to the output stream.")
+			"File path to the connected output file.")
 	// The format
 	.declare_key("format", OutputFormat::input_type, Default::optional(),
 			"Format of output stream and possible parameters.");

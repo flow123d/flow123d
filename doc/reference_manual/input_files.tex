@@ -15,515 +15,65 @@
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
 
-\subsection{Mesh file format version 2.0}
+\section{Mesh and data file format MSH ASCII}
 \label{mesh_file}
 
-The only supported format for the computational mesh is MSH ASCII format produced 
+Currently, the only supported format for the computational mesh is MSH ASCII format used
 by the GMSH software. You can find its documentation on:
 
 \url{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}
 
-Comments concerning Flow123d:
-\begin{itemize}
-  \item Every inconsistency of the file stops the calculation.
-    These are:
-      \begin{itemize}
-        \item Existence of nodes with the same \vari{node-number}.
-        \item Existence of elements with the same \vari{elm-number}.
-        \item Reference to non-existing node.
-        \item Reference to non-existing material (see below).
-        \item Difference between \vari{number-of-nodes} and actual number of
-          lines in nodes' section.
-        \item Difference between \vari{number-of-elements} and actual number of
-          lines in elements' section.
-      \end{itemize}
-  \item By default Flow123d assumes meshes with \vari{number-of-tags} = 3. 
-    \begin{description}
-    \item[\vari{tag1}] is number of material (reference to {\tt
-    .MTR} file) in the element.
-    \item[\vari{tag2}] is number of geometry region in which the element lies. 
-    \item[\vari{tag3}] is partition number (CURRENTLY NOT USED).
-    \end{description}
-    In accordance with specification of GMSH mesh format.
-  \item Currently, line (\vari{type} = 1), triangle (\vari{type} = 2) and
-    tetrahedron (\vari{type} = 4) are the only supported types
-    of elements. Existence of an element of different type stops the calculation.
-  \item Wherever possible, we use the file extension {\tt .MSH}. It is not
-    required, but highly recomended.
-  \item This file format can be used also for storing simple dicrete scalar or vector fields. We support output
-   into this format (see Section \ref{section_output})
-\end{itemize}
+The scheme of the file is as follows:
+\begin{verbatim}
+$MeshFormat
+<format version>
+$EndMeshFormat
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Neighbouring file format, version 1.0}
-\label{ngh_file}
+$PhysicalNames
+<number of items>
+<dimension>     <region ID>     <region label>
+...
+$EndPhysicalNames
 
-The file is divided in two sections, header and data.
-The extension {\tt .NGH} is highly recomended for files of this type.
-\begin{fileformat}
-\$NeighbourFormat\\
-  1.0 \vari{file-type} \vari{data-size}\\
-\$EndNeighbourFormat\\
-\$Neighbours\\
-  \vari{number-of-neighbours}\\
-  \vari{neighbour-number} \vari{type} \vari{$<$type-specific-data$>$}\\
-  \dots\\
-\$EndNeighbours\\
-\end{fileformat}
-where
+$Nodes
+<number of nodes>
+<node ID> <X coord> <Y coord> <Z coord>
+...
+$EndNodes
+
+$Elements
+<number of elements>
+<element ID> <element shape> <n of tags> <tags> <nodes>
+...
+$EndElements
+
+$ElementData
+<n of string tags>
+    <field name>
+    <interpolation scheme>
+<n of double tags>
+    <time>
+<n of integer tags>
+    <time step index>
+    <n of components>
+    <n of items>
+    <partition index>
+<element ID> <component 1> <component 2> ...
+...
+$EndElementData
+\end{verbatim}
+Detailed description of individual sections:
 \begin{description}
- \ditem{file-type}{int} --- is equal 0 for the ASCII file format.
- \ditem{data-size}{int} --- the size of the floating point numbers used in
-  the file. Usually \vari{data-size} = sizeof(double).
- \ditem{number-of-neighbours}{int} --- Number of neighbouring defined in the
-  file.
- \ditem{neighbour-number}{int} --- is the number (index) of the n-th
-  neighbouring. These numbers do not have to be given in a consecutive (or even an
-  ordered) way. Each number has to be given only onece, multiple definition
-  are treated as inconsistency of the file and cause stopping the
-  calculation.
- \ditem{type}{int} --- is type of the neighbouring. 
- \ditem{$<$type-specific-data$>$}{} --- format of this list depends on the
-  \vari{type}.
+ \item[{\tt PhysicalNames}] --- assign labels to region IDs
+ \item[{\tt Nodes}] --- {\tt <number of nodes>} is also number of data lines that follows. 
+    Node IDs are unique but need not to form an aritmetic sequance. Coordinates are float numbers.
+ \item[{\tt Elements}] --- Element IDs are unique but need not to form an aritmetic sequence. 
+    {\tt <element shape>} is integer code of the shape, we support only points (15), lines (1), triangles (2), and tetrahedrons (4).
+    Default number of tags is 3. The first is the region ID, the second is ID of the geometrical entity (that was used in original geometry file from which the mesh was generated),
+    and the third tag is the partition number. {\tt nodes} is list of node IDs with size according to the element shape.
+ \item[{\tt ElementData}] --- the header has 2 string tags, 1 double tag, and 4 integer tags with default meaning. For the purpose of the \verb'FieldElementwise' the tags
+    \verb'<field name>', \verb'<n of components>', and \verb'<n of items>' are obligatory.
 \end{description}
-\subsection*{Types of neighbouring and their specific data}
-    \begin{description}
-      \ditem{type =}{10} --- ``Edge with common nodes'', i.e. sides of
-        elements with common nodes. (Possible many elements)
-      \ditem{type =}{11} --- ``Edge with specified sides'', i.e. sides of
-        the edge are explicitly defined. (Possible many elements)
-      \ditem{type =}{20} --- ``Compatible'', i.e. volume of an element with a
-        side of another element. (Only two elements)
-      \ditem{type =}{30} --- ``Non-compatible'' i.e. volume od an element with
-        volume of another element. (Only two elements)
-   \end{description}
-   \begin{tabular}{|c|l|l|}
-      \hline
-      \vari{type} & \vari{type-specific-data} & Description \\
-      \hline
-      \hline
-      10 & \vari{n\_elm} \vari{eid1} \vari{eid2} \dots & number of elements
-      and their ids \\
-      \hline
-      11 & \vari{n\_sid} \vari{eid1} \vari{sid1} \vari{eid2} \vari{sid2} \dots
-      & number of sides, their elements and local ids \\
-      \hline
-      20 & \vari{eid1} \vari{eid2} \vari{sid2} \vari{coef} & Elm 1 has to have
-      lower dimension\\
-      \hline 
-      30 & \vari{eid1} \vari{eid2} \vari{coef} & Elm 1 has to have
-      lower dimension\\
-      \hline
-   \end{tabular}
-
-   \vari{coef} is of the {\tt double} type, other variables are {\tt int}s.
-\subsection*{Comments concerning {\tt Flow123d}:}
-\begin{itemize}
-  \item Every inconsistency or error in the {\tt .NGH} file causes stopping
-    the calculation. These are especially:
-    \begin{itemize}
-      \item Multiple usage of the same \vari{neighbour-number}.
-      \item Difference between \vari{number-of-neighbours} and actual number
-        of data lines.
-      \item Reference to nonexisting element.
-      \item Nonsence number of side.
-    \end{itemize}
-  \item The variables \vari{sid?} must be nonegative and lower than the number
-    of sides of the particular element. 
-\end{itemize}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Material properties file format, version 1.0}
-\label{material_file}
-
-The file is divided in two sections, header and data.
-The extension {\tt .MTR} is highly recomended for files of this type.
-\begin{fileformat}
-\$MaterialFormat\\
-  1.0 \vari{file-type} \vari{data-size}\\
-\$EndMaterialFormat\\
-\$Materials\\
-  \vari{number-of-materials}\\
-  \vari{material-number} \vari{material-type} \vari{$<$material-type-specific-data$>$}
-  \vari{[text]}\\
-  \dots\\
-\$EndMaterials \\
-\$Storativity \\
-  \vari{material-number} \vari{$<$storativity-coefficient$>$}
-  \vari{[text]}\\
-  \dots\\
-\$EndStorativity \\
-\$Geometry\\
-  \vari{material-number} \vari{geometry-type} \vari{$<$geometry-type-specific-coefficient$>$}
-  \vari{[text]}\\
-  \dots\\
-\$EndGeometry \\
-\$Sorption\\
-  \vari{material-number} \vari{substance-id} \vari{sorption-type} \vari{$<$sorption-type-specific-data$>$}
-  \vari{[text]}\\
-  \dots\\
-\$EndSorption \\
-\$SorptionFraction\\
-  \vari{material-number} \vari{$<$sorption-fraction-coefficient$>$}
-  \vari{[text]}\\
-  \dots\\
-\$EndSorptionFraction \\
-\$DualPorosity\\
-  \vari{material-number} \vari{$<$mobile-porosity-coefficient$>$} \vari{$<$immobile-porosity-coefficient$>$}
-  \vari{$<$nonequillibrium-coefficient-substance(0)$>$} \dots \vari{$<$nonequilibrium-coefficient-substance(n-1)$>$} 
-  \vari{[text]}\\
-  \dots\\
-\$EndDualPorosity \\
-
-\$Reactions\\
-  \vari{reaction-type} \vari{$<$reaction-type-specific-coefficient$>$} 
-  \vari{[text]}\\
-  \dots\\
-\$EndReactions \\
-
-\end{fileformat}
-where:
-\begin{description}
- \ditem{file-type}{int} --- is equal 0 for the ASCII file format.
- \ditem{data-size}{int} --- the size of the floating point numbers used in
-  the file. Usually \vari{data-size} = sizeof(double).
- \ditem{number-of-materials}{int} --- Number of materials defined in the
-  file.
- \ditem{material-number}{int} --- is the number (index) of the n-th
-  material. These numbers do not have to be given in a consecutive (or even an
-  ordered) way. Each number has to be given only onece, multiple definition
-  are treated as inconsistency of the file and cause stopping the
-  calculation (exception \$Sorption section).
- \ditem{material-type}{int} --- is type of the material, see table.
- \ditem{$<$material-type-specific-data $>$}{} --- format of this list depends on the
-  \vari{material~-~type}.
- \ditem{$<$storativity-coefficient$>$}{double} --- coefficient of storativity  
- \ditem{geometry-type}{int} --- type of complement dimension parameter (only for 1D and 2D material), 
- for 1D element is supported type 1 - cross-section area, for 2D element is supported type 2
- - thickness.  
- \ditem{$<$geometry-type-specific-coefficient$>$}{double} --- cross-section for 1D
- element or thickness for 2D element. 
- 
- \ditem{substance-id}{int} --- refers to number of transported substance, numbering starts on \vari{0}.
- \ditem{sorption-type}{int} --- type 1 - linear sorption isotherm,
-                             type 2 - Freundlich sorption isotherm,
-                             type 3 - Langmuir sorption isotherm.
- \ditem{$<$sorption-type-specific-data $>$}{} --- format of this list depends on the
-  \vari{sorption~-~type}, see table. 
-  
- Note: Section \$Sorption is needed for calculation only if \vari{Sorption} is
-   turned on in the \vari{ini} file.
- 
- \ditem{$<$sorption-fraction-coefficient$>$}{double} --- ratio of the "mobile" solid surface in the contact with "mobile" water to the total solid
- surface (this parameter (section) is needed for calculation only if \vari{Dual\_porosity} and \vari{Sorption} is 
- together turned on in the ini file).                        
-  
- \ditem{$<$mobile-porosity-coefficient$>$}{double} --- ratio of the mobile pore volume to the
- total volume (this parameter is needed only if \vari{Transport\_on} is turned on in the ini file).  
-                       
- \ditem{$<$immobile-porosity-coefficient$>$}{double} --- ratio of the immobile pore volu-me to the
- total pore volume (this parameter is needed only if \vari{Dual\_porosity} is turned on in the ini file).                      
- 
- \ditem{$<$nonequilibrium-coefficient-substance(i)$>$}{double} --- nonequilibrium
- coefficient for substance i, $ \forall i \in \langle 0, n-1 \rangle $ where $n$ is
- number of transported substances (this parameter is needed only if \vari{Dual\_porosity} is turned on in the ini file).
- 
- \ditem{reaction-type}{int} --- type 0 - zero order reaction
-                                             
- \ditem{$<$reaction-type-specific-data $>$}{} --- format of this list depends on the
-  \vari{reaction~-~type}, see table. 
-
-    \begin{tabular}{|c|l|l|}
-      \hline
-      \vari{material-type} & \vari{material-type-specific-data} & Description \\
-      \hline
-      \hline
-      11 & $k$ & 
-        $\mathbf{K}=(k)$ \\
-      \hline 
-      -11 & $a$ &
-        $\mathbf{A}=\mathbf{K}^{-1}=(a)$ \\
-      \hline 
-      21 & $k$ &
-       $\mathbf{K}=\left(\begin{array}{cc} k & 0 \\ 0 & k\end{array}\right)$ \\
-      \hline
-      22 & $k_{x}\quad k_{y}$ &
-       $\mathbf{K}=\left(\begin{array}{cc} k_x & 0 \\ 0 & k_y\end{array}\right)$ \\
-      \hline
-       23 & $k_{x}\quad k_{y}\quad k_{xy} $ & 
-        $\mathbf{K}=\left(\begin{array}{cc} k_x & k_{xy} \\ k_{xy} & k_y\end{array}\right)$ \\
-      \hline
-       -21 & $a$  & 
-        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{cc} a & 0 \\ 0 & a\end{array}\right)$ \\
-      \hline
-       -22 & $a_{x}\quad a_{y}$ & 
-        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{cc} a_x & 0 \\ 0 & a_y\end{array}\right)$ \\
-      \hline 
-       -23 & $a_{x}\quad a_{y}\quad a_{xy} $ &
-        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{cc} a_x & a_{xy} \\ a_{xy} & a_y\end{array}\right)$ \\
-      \hline
-      31 & $k$ &
-       $\mathbf{K}=\left(\begin{array}{ccc} k & 0 & 0 \\ 0 & k & 0 \\ 0 & 0 & k \end{array}\right)$ \\
-      \hline
-      33 & $k_{x}\quad k_{y}$\quad $k_{z}$ &
-       $\mathbf{K}=\left(\begin{array}{ccc} k_x & 0 & 0 \\ 0 & k_y & 0 \\ 0 & 0
-       & k_z \end{array}\right)$ \\
-      \hline
-       36 & $k_{x}\quad k_{y}\quad k_{z}\quad k_{xy}\quad k_{xz}\quad k_{yz}$ & 
-        $\mathbf{K}=\left(\begin{array}{ccc} k_x    & k_{xy} & k_{xz} \\ 
-                                            k_{xy} & k_y    & k_{yz} \\
-                                            k_{xz} & k_{yz} & k_z \end{array}\right)$ \\
-      \hline
-      -31 & $a$ &
-       $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{ccc} a & 0 & 0 \\ 0 & a & 0 \\ 0 & 0 & a \end{array}\right)$ \\
-      \hline
-      -33 & $a_{x}\quad a_{y}$\quad $a_{z}$ &
-       $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{ccc} a_x & 0 & 0 \\ 0 & a_y & 0 \\ 0 & 0
-       & a_z \end{array}\right)$ \\
-      \hline
-      -36 & $a_{x}\quad a_{y}\quad a_{z}\quad a_{xy}\quad a_{xz}\quad a_{yz}$ & 
-        $\mathbf{A}=\mathbf{K}^{-1}=\left(\begin{array}{ccc} a_x    & a_{xy} & a_{xz} \\ 
-                                            a_{xy} & a_y    & a_{yz} \\
-                                            a_{xz} & a_{yz} & a_z \end{array}\right)$ \\
-      \hline
-    \end{tabular}
-
-    Note: all variables ( $k$, $k_{x}$, $k_{y}$, $k_{z}$, $k_{xy}$, $k_{xz}$,
-    $k_{yz}$, $a$, $a_{x}$, $a_{y}$, $a_{z}$, $a_{xy}$, $a_{xz}$, $a_{yz}$ ) are of the {\tt double} type.
-    
-    
- \begin{tabular}{|c|l|l|}
-      \hline
-      \vari{sorption-type} & \vari{sorption-type-specific-data} & Description \\
-      \hline
-      \hline
-      1 & $k_D [1]$ & 
-        $s = k_D c$ \\
-      \hline 
-      2 & $k_F [(L^{-3} \cdot M^{1})^{(1-\alpha)}] \quad \alpha [1]$  &
-        $s = k_F c^{\alpha}$ \\
-      \hline 
-      3 & $K_L [L^{3} \cdot M^{-1}] \quad s^{max} [L^{-3} \cdot M^{1}]$ &
-       $s=\frac{K_{L} s^{max}_{} \ c}{1+K^{}_{L} c} $ \\
-      \hline
-\end{tabular}
-
-Note: all variables ( $k_D$, $k_F$, $\alpha$, $K_L$, $s^{max}$ ) are of the {\tt double} type.   
-
- \begin{tabular}{|c|l|l|}
-      \hline
-      \vari{reaction-type} & \vari{reaction-type-specific-data} & Description \\
-      \hline
-      \hline
-      0 & $\textrm{\it{substance-id}}[1] \qquad k [M \cdot L^{-3} \cdot T^{-1}] $ & 
-        $\frac{\partial c_m^{[\textrm{\it{substance-id}}]}}{\partial t} =  k $ \\
-      \hline 
-%      2 & $k_F [(L^{-3} \cdot M^{1})^{(1-\alpha)}] \quad \alpha [1]$  &
-%        $s = k_F c^{\alpha}$ \\
-%      \hline 
-%      3 & $K_L [L^{3} \cdot M^{-1}] \quad s^{max} [L^{-3} \cdot M^{1}]$ &
-%       $s=\frac{K_{L} s^{max}_{} \ c}{1+K^{}_{L} c} $ \\
-%      \hline
-\end{tabular}
-
-Where $c_m^{[\textrm{\it{substance-id}}]}$ is mobile concentration of substance with id $\textrm{\it{substance-id}}$ and $\Delta t $ is the internal transport time step defined by CFL condition.
-
- \ditem{text}{char[]} --- is a text description of the material, up to 256
-   chars. This parameter is optional.
-\end{description}
-\subsection*{Comments concerning {\tt Flow123d}:}
-\begin{itemize}
-  \item If \vari{number-of-materials} differs from actual number of material
-    lines in the file, it stops the calculation.
-\end{itemize}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Boundary conditions file format, version 1.0}
-\label{boundary_file}
-
-The file is divided in two sections, header and data.
-\begin{fileformat}
-\$BoundaryFormat\\
-  1.0 \vari{file-type} \vari{data-size}\\
-\$EndBoundaryFormat\\
-\$BoundaryConditions\\
-  \vari{number-of-conditions}\\
-  \vari{condition-number} \vari{type} \vari{$<$type-specific-data$>$}
-  \vari{where} \vari{$<$where-data$>$}
-  \vari{number-of-tags} \vari{$<$tags$>$} \vari{[text]}\\
-  \dots\\
-\$EndBoundaryConditions\\
-\end{fileformat}
-where
-\begin{description}
- \ditem{file-type}{int} --- is equal 0 for the ASCII file format.
- \ditem{data-size}{int} --- the size of the floating point numbers used in
-  the file. Usually \vari{data-size} = sizeof(double).
- \ditem{number-of-conditions}{int} --- Number of boundary conditions defined in the
-  file.
- \ditem{condition-number}{int} --- is the number (index) of the n-th boundary
-  condition. These numbers do not have to be given in a consecutive (or even an
-  ordered) way. Each number has to be given only onece, multiple definition
-  are treated as inconsistency of the file and cause stopping the
-  calculation.
- \ditem{type}{int} --- is type of the boundary condition. See below for
-   definitions of the types.
- \ditem{$<$type-specific-data$>$}{} --- format of this list depends on the
-   \vari{type}. See below for specification of the \vari{type-specific-data}
-   for particular types of the boundary conditions.
- \ditem{where}{int} --- defines the way, how the place for the contidion is
-   prescribed. See below for details.
- \ditem{$<$where-data$>$}{} --- format of this list depends on \vari{where}
-   and actually defines the place for the condition. See below for details.
- \ditem{number-of-tags}{int} --- number of integer tags of the boundary
-  condition. It can be zero.
- \ditem{$<$ tags $>$}{{\vari{number-of-tags}*}int} --- list of tags of the
-   boundary condition. Values are
-   separated by spaces or tabs. By default we set
-   \vari{number-of-tags}=1, where \vari{tag1} defines group of boundary
-   conditions, "type of water" in our jargon. This can be used to calculate total fluxes through 
-   the boundary group.
- \ditem{[text]}{char[]} --- arbitrary text, description of the fracture, notes,
-   etc., up to 256 chars. This is an optional parameter.
-\end{description}
-\subsection*{Types of boundary conditions and their data}
-    \begin{description}
-      \ditem{type =}{1} --- Boundary condition of the Dirichlet's type
-      \ditem{type =}{2} --- Boundary condition of the Neumann's type
-      \ditem{type =}{3} --- Boundary condition of the Newton's type
-   \end{description}
-   \begin{tabular}{|c|l|l|}
-      \hline
-      \vari{type} & \vari{type-specific-data} & Description \\
-      \hline
-      \hline
-      1 & \vari{scalar} & Prescribed value of pressure  (in meters [m]) \\
-      \hline
-      2 & \vari{flux} & Prescribed value of flux through the boundary \\
-      \hline 
-      3 & \vari{scalar} \vari{sigma} & Scalar value and the $\sigma$
-      coefficient \\
-      \hline
-   \end{tabular}
-
-   \vari{scalar}, \vari{flux} and \vari{sigma} are of the {\tt double} type.
-\subsection*{Ways of defining the place for the boundary condition}
-    \begin{description}
-      \ditem{where =}{1} --- Condition on a node
-      \ditem{where =}{2} --- Condition on a (generalized) side
-      \ditem{where =}{3} --- Condition on side for element with only one
-        external side. 
-   \end{description}
-   \begin{tabular}{|c|l|l|}
-     \hline
-     \vari{where} & \vari{$<$where-data$>$} & Description \\
-     \hline
-     \hline
-     1 & \vari{node-id} & Node id number, according to {\tt .MSH} file \\
-     \hline
-     2 & \vari{elm-id} \vari{sid-id} & Elm. id number, local number of side \\
-     \hline
-     3 & \vari{elm-id} & Elm. id number \\
-     \hline
-   \end{tabular}
-
-     The variables \vari{node-id}, \vari{elm-id}, \vari{sid-id} are of the
-     {\tt int} type. 
-   
-   %------------------------------------------------------------
-\subsection*{Comments concerning {\tt Flow123d}:}
-\begin{itemize}
-  \item We assume homegemous Neumman's condition as the default one. Therefore
-    we do not need to prescribe conditions on the whole boundary.
-  \item If the condition is given on the inner edge, it is treated as an error
-    and stops calculation.
-  \item Any inconsistence in the file stops calculation. (Bad number of
-    conditions, multiple definition of condition, reference to non-existing
-    node, etc.)
-  \item At least one of the conditions has to be of the Dirichlet's or
-    Newton's type. This is well-known fact from the theory of the PDE's.
-  \item Local numbers of sides for \vari{where} = 2 must be lower than the 
-    number of sides of the particular element and greater then or equal to zero.
-  \item The element specified for \vari{where} = 3 must have only one external
-    side, otherwise the program stops.
-\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Transport boundary conditions file format, version 1.0}
-\label{transport_boundary_file}
-
-The file is divided in two sections, header and data.
-\begin{fileformat}
-\$Transport\_BCDFormat\\
-1.0 \vari{file-type} \vari{data-size}\\
-\$EndTransport\_BCDFormat\\
-\$Transport\_BCD\\
-  \vari{number-of-conditions}\\
-  \vari{transport-condition-number} \vari{boundary-condition-number} \vari{value1} \vari{value2} \dots\\
-\$EndTransport\_BCD
-\end{fileformat}
-
-where
-\begin{description}
-\ditem{file-type}{int} - is equal 0 for the ASCII file format.
-\ditem{data-size}{int} - the size of the floating point numbers used in the file. Usually data-size = sizeof(double)
-\ditem{number-of-conditions}{int} - Number of conditions defined in the file.
-\ditem{transport-condition-number}{int} - is the number (index) of the n-th transport condition. These numbers do not have to be given in a consecutive (or even an ordered) way. Each number has to be given only once, multiple definition are treated as inconsistency of the file and cause stopping the calculation.
-\ditem{boundary-condition-number}{int} - id number of the boundary-condition where transport boundary condition is prescribed.
-\ditem{valueN}{double} - prescribed boundary concentration of substance $N$ (should be from interval $[0,1]$).
-\end{description}
-
-Comments concerning FLOW123d:
-        Number of transport boundary conditions has to be same as number of boundary conditions. Program stops computation in the other case.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Element data file format, version 1.0}
-\label{element_data_file}
-
-Several input data fields are given as constant scalars on every element. In particular this is used for water sources, initial condition of pressure,
-initial condition for concentrations and substance sources in transport. Common file format of these files is:
-
-\begin{fileformat}
-\$FieldName\\
-  \vari{number-of-lines}\\
-  \vari{eid} \vari{value1} \vari{value2} \dots\\
-  \dots\\ 
-\$EndFieldName\\
-\end{fileformat}
-where
-\begin{description}
- \item[{\tt \$FieldName}] --- Unique name of the input field. Since all field data are enclosed by \verb'$FieldName' and \verb'$EndFieldName' one can even have different fields in one common file.
- \ditem{number-of-sources}{int} --- Number of data lines that has to match number of elements in the mesh.
- \ditem{eid}{int} --- is id-number of the element (in the input mesh file).
- \ditem{valueN}{double} --- list of field values. Number of values is specific for each particular type of input.
-\end{description}
-
-Description of individual input fields.
-\begin{description}
- \item[water sources] FieldName=\verb'Sources', there is only one value per line --- the density of water source on the element.
- \item[pressure initial condition] FieldName=\verb'PressureHead', there is only one value per line --- the initial pressure value on the element.
- \item[substance sources] FieldName=\verb'TransportSources', number of values is 3 times number of substances. The density of one substance source is given by formula:
-\[
-   f = d + \sigma(c - c_N)
-\]
-where $f$ is total source, the first term  is fixed Neuman-like source density $d$. The second term is Newton-like source density, where $\sigma$ is transmisitvity, 
-$c$ is actual concentration, and $c_N$ is prescribed concentration. For every substance there is triplet of three parameters: $d$, $\sigma$, $c_N$. The order of substances is 
-same as in the main INI file.
-
- \item[concentration initial conditions] FieldName=\verb'Concentrations', number of values equal to number of transported substances, the order of substances is 
-same as in the main INI file.
-\end{description}
-
-\subsection*{Comments concerning {\tt Flow123d}:}
-\begin{itemize}
-  \item Every inconsistency or error in the {\tt .SRC} file causes stopping
-    the calculation. These are especially:
-    \begin{itemize}
-      \item Difference between \vari{number-of-lines} and actual number
-        of data lines.
-      \item Reference to nonexisting element.
-    \end{itemize}
-\end{itemize}
