@@ -149,12 +149,9 @@ gen_doc: $(DOC_DIR)/input_reference.tex
 clean_tests:
 	make -C tests clean
 
-clean_util:
-	make -C bin/bcd clean
-	make -C bin/ngh clean
 
 lbuild=linux_build
-linux_package: clean clean_tests clean_util all bcd ngh
+linux_package: #clean clean_tests all
 	# copy bin
 	rm -rf $(lbuild)
 	mkdir -p $(lbuild)/bin/mpich
@@ -165,10 +162,6 @@ linux_package: clean clean_tests clean_util all bcd ngh
 	# copy doc
 	mkdir $(lbuild)/doc
 	cp -r doc/articles doc/reference_manual/flow123d_doc.pdf doc/petsc_options_help $(lbuild)/doc
-	mkdir $(lbuild)/doc/ngh
-	mkdir $(lbuild)/doc/bcd
-	cp bin/ngh/doc/* $(lbuild)/doc/ngh
-	cp bin/bcd/doc/* $(lbuild)/doc/bcd
 	# copy tests
 	cp -r tests $(lbuild)
 
