@@ -55,16 +55,15 @@ public:
 
     TYPEDEF_ERR_INFO(EI_ErrorAddress, JSONPath);
     TYPEDEF_ERR_INFO(EI_RefAddress, JSONPath);
+    TYPEDEF_ERR_INFO(EI_JsonFile, const string);
     TYPEDEF_ERR_INFO(EI_RefStr, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     DECLARE_INPUT_EXCEPTION(ExcRefOfWrongType,
             << "Reference at address "
             << EI_ErrorAddress::qval << " has wrong type, should by string.");
     DECLARE_INPUT_EXCEPTION(ExcReferenceNotFound,
-            << "Reference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
+            << "Error in input file: " << EI_JsonFile::qval << "\nReference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
             << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
-    DECLARE_INPUT_EXCEPTION(ExcCyclicReference,
-            << "JSON contains cyclic reference REF='" << EI_RefStr::val << "' at address " << EI_RefAddress::qval << "." );
 
 
 

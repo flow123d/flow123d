@@ -110,7 +110,8 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
     if (it == previous_references_.end()) {
     	ref_path.previous_references_.insert(ref_address);
     } else {
-    	THROW( ExcCyclicReference() << EI_RefAddress(*this) << EI_RefStr(ref_address) );
+    	THROW( ExcReferenceNotFound() << EI_RefAddress(*this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+    	       << EI_Specification("cannot follow reference") );
     }
 
     while ( ( new_pos=address.find('/',pos) ) != string::npos ) {
@@ -184,7 +185,7 @@ void JSONPath::put_address() {
 	/*cout << "PUT ADDRESS: " << previous_references_.size() << " " << str() << endl;
 	for (std::set<string>::iterator it = previous_references_.begin(); it!=previous_references_.end(); ++it)
 		cout << (*it) << " - ";
-	cout << endl << endl;*/
+	cout << endl << endl; */
 }
 
 
@@ -337,16 +338,24 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *record)
 {
     if (p.head()->type() == json_spirit::obj_type) {
-        const json_spirit::mObject & j_map = p.head()->get_obj();
-        // json_spirit::mObject::const_iterator map_it;
+    	const json_spirit::mObject & j_map = p.head()->get_obj();
+    	std::set<string> keys_to_processed;
+        json_spirit::mObject::const_iterator map_it;
+        std::set<string>::iterator set_it;
 
-        // cout << "rec:" << endl;
-        // for( map_it = j_map.begin(); map_it != j_map.end(); ++map_it)
-        //    cout << map_it->first << endl;
+        for( map_it = j_map.begin(); map_it != j_map.end(); ++map_it) {
+           keys_to_processed.insert(map_it->first);
+        }
 
         StorageArray *storage_array = new StorageArray(record->size());
         // check individual keys
         for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
+        	// remove processed key from keys_to_processed
+        	set_it = keys_to_processed.find(it->key_);
+        	if (set_it != keys_to_processed.end()) {
+        		keys_to_processed.erase(set_it);
+        	}
+
             if (p.down(it->key_) != NULL) {
                 // key on input => check & use it
                 storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
@@ -364,6 +373,10 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
                     storage_array->new_item(it->key_index, new StorageNull() );
                 }
             }
+        }
+
+        for( set_it = keys_to_processed.begin(); set_it != keys_to_processed.end(); ++set_it) {
+        	xprintf(Warn, "Key '%s' in record '%s' was not retrieved from input JSON file.\n", (*set_it).c_str(), record->type_name().c_str() );
         }
 
         return storage_array;
