@@ -4,37 +4,44 @@
  *  Created on: 11.3.2013
  *      Author: viktor
  *
- *      Uchováva informaci o všech elementech v sítí, jestli jsme je již prošli nebo ne
- *      Do konstruktoru přidá velikost sítě všech elementů
- *      metoda set_element nastaví konkrétní element, že jsme ho prošli
- *      metoda projety_element vrací informaci, jestli jsme už prošli daný element
  */
 
-#include <vector>
+
+#include <gtest/gtest.h>
+#include "system/system.hh"
+#include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
+#include "mesh/bih_tree.hh"
+#include "fields/field_interpolated_p0.hh"
+#include "system/sys_profiler.hh"
+
+#include "fast_intersection/IntersectionLocal.h"
+#include "fast_intersection/ProlongationPoint.h"
+#include <queue>
+
 
 class InspectElements {
-private:
-	vector<bool> projeti;
 
 public:
-	inline InspectElements(unsigned int size)
-	: projeti(size, false)
-	{
-		//projeti.reserve(size);
-		/*
-		 * init:
-		 * for(unsigned i = 0; i < size; i++){
-		 * projeti[i] = false;
-		 * }
-		 *
-		 * */
-	}
-	inline ~InspectElements(){}
+	InspectElements();
 
-	inline void set_element(unsigned int index){
-		projeti[index] = true;
-	}
-	inline bool projety_element(unsigned int index){
-		return projeti[index];
-	}
+	InspectElements(Mesh* sit_);
+
+	void calculate_intersections();
+
+	~InspectElements();
+
+	vector<Intersection_Local> getIntersections();
+
+private:
+	// information of all elements if element was inspected
+	std::vector<bool> projeti;
+	// vector of all intersections
+	std::vector<Intersection_Local> all_intersection;
+
+	std::queue<ProlongationPoint> ppoint;
+
+	Mesh* sit;
+
+
 };
