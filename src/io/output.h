@@ -81,7 +81,10 @@ public:
     int             num;        ///< Number of values in vector/array
 
 
-    OutputData() {};            ///< Un-named constructor can't be called directly
+    /**
+     * Un-named constructor can't be called directly
+     */
+    OutputData() {};
 
     string* getName(void) { return name; };
     string* getUnits(void) { return units; };
@@ -470,28 +473,34 @@ protected:
 private:
 public:
     /**
-     * \brief Array of pointer at OutputTime
+     * \brief Vector of pointers at OutputTime
      */
-    static OutputTime **output_streams;
+    static std::vector<OutputTime*> output_streams;
 
     /**
-     * \brief The count of instances
-     */
-    static int output_streams_count;
-
-    /**
-     * \brief Does OutputStream with same name and filename exist? When this
-     * record is already created, then it returns pointer at this record. When
-     * this record doesn' exixt, then it returns NULL pointer.
+     * \brief Does OutputStream with same name and filename exist?
      *
+     * When this record is already created, then it returns pointer at
+     * coresponding OutputTime. When this record doesn't exixt, then
+     * it create new OutputTime object and it puts this object to the
+     * array of OutputTime pointers
+     *
+     * \param[in] *mesh   The pointer at mesh object.
+     * \param[in] in_rec  The reference at the input record
      */
-    static OutputTime *is_created(const Input::Record &in_rec);
+    static OutputTime *output_stream(Mesh *mesh, const Input::Record &in_rec);
+
+    /**
+     * \brief This method delete all object instances of class OutputTime stored
+     * in output_streams vector
+     */
+    static void destroy_all(void);
 
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
-     * \param[in]   mesh  The pointer at mesh object.
-     * \param[in]   in_rec The reference on the input record
+     * \param[in] *mesh  The pointer at mesh object.
+     * \param[in] in_rec The reference on the input record
      */
     OutputTime(Mesh *mesh, const Input::Record &in_rec);
 
@@ -518,17 +527,23 @@ public:
      * data are not at the same address, but name of the data has to be same.
      * Own data will be written to the file, when write_data() method will be called.
      *
-     * \param[in] name  The name of data
-     * \param[in] unit  The units of data
-     * \param[in] *data The pointer at data (array of int, float or double)
-     * \param[in] size  The size of array (number of values)
+     * \param[in] name      The name of data
+     * \param[in] unit      The units of data
+     * \param[in] in_rec    The reference on the input record
+     * \param[in] *data     The pointer at data (array of int, float or double)
+     * \param[in] size      The size of array (number of values)
      *
      * \return This function returns 1, when data were registered. This function
      * returns 0, when it wasn't able to register data (number of values isn't
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_node_data(std::string name, std::string unit, _Data *data, unsigned int size);
+    static int register_node_data(Mesh *mesh,
+            std::string name,
+    		std::string unit,
+    		const Input::Record &in_rec,
+    		_Data *data,
+    		unsigned int size);
 
     /**
      * \brief This function register data on corners of triangles.
@@ -541,6 +556,7 @@ public:
      *
      * \param[in] name  The name of data
      * \param[in] unit  The units of data
+     * \param[in] in_rec    The reference on the input record
      * \param[in] *data The pointer at data (array of int, float or double)
      * \param[in] size  The size of array (number of values)
      *
@@ -549,7 +565,12 @@ public:
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_corner_data(std::string name, std::string unit, _Data *data, unsigned int size);
+    static int register_corner_data(Mesh *mesh,
+            std::string name,
+    		std::string unit,
+    		const Input::Record &in_rec,
+    		_Data *data,
+    		unsigned int size);
 
     /**
      * \brief This function register data on elements.
@@ -570,7 +591,12 @@ public:
      * same as number of elements).
      */
     template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, _Data *data, unsigned int size);
+    static int register_elem_data(Mesh *mesh,
+            std::string name,
+    		std::string unit,
+    		const Input::Record &in_rec,
+    		_Data *data,
+    		unsigned int size);
 
     /**
      * \brief This function register data on nodes.
@@ -590,7 +616,11 @@ public:
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_node_data(std::string name, std::string unit, std::vector<_Data> &data);
+    static int register_node_data(Mesh *mesh,
+            std::string name,
+    		std::string unit,
+    		const Input::Record &in_rec,
+    		std::vector<_Data> &data);
 
     /**
      * \brief This function register data on corners of triangles.
@@ -610,7 +640,11 @@ public:
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_corner_data(std::string name, std::string unit, std::vector<_Data> &data);
+    static int register_corner_data(Mesh *mesh,
+            std::string name,
+    		std::string unit,
+    		const Input::Record &in_rec,
+    		std::vector<_Data> &data);
 
     /**
      * \brief Register vector of data on elements.
@@ -629,7 +663,11 @@ public:
      * not the same.
      */
     template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, std::vector<_Data> &data);
+    static int register_elem_data(Mesh *mesh,
+            std::string name,
+    		std::string unit,
+    		const Input::Record &in_rec,
+    		std::vector<_Data> &data);
 
     /**
      * \brief This is virtual method. Every file format should specify its own
@@ -645,22 +683,25 @@ public:
 
 };
 
+
 template <typename _Data>
-int OutputTime::register_node_data(std::string name,
+int OutputTime::register_node_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         _Data *data,
         uint size)
 {
-  /* It's possible now to do output to the file only in the first process */
-  if(rank!=0) {
-    /* TODO: do something, when support for Parallel VTK is added */
-    return 0;
-  }
+    OutputTime *output_time = OutputTime::output_stream(mesh, in_rec);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
 
     int found = 0;
-    
-    std::vector<OutputData> *node_data = get_node_data();
-    Mesh *mesh = get_mesh();
+    std::vector<OutputData> *node_data = output_time->get_node_data();
 
     ASSERT(mesh->node_vector.size() == size,
             "mesh->node_vector.size(): %d != size: %d",
@@ -689,24 +730,26 @@ int OutputTime::register_node_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_corner_data(std::string name,
+int OutputTime::register_corner_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         _Data *data,
         uint size)
 {
+    OutputTime *output_time = OutputTime::output_stream(mesh, in_rec);
+
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(output_time == NULL || output_time->rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
     int found = 0;
-    
+    std::vector<OutputData> *corner_data = output_time->get_corner_data();
+
     /* TODO: It's not possible to check easily correct number of corners, so
      * skipping for now. */
-
-    std::vector<OutputData> *corner_data = get_corner_data();
-    Mesh *mesh = get_mesh();
 
     for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
             od_iter != corner_data->end();
@@ -730,21 +773,23 @@ int OutputTime::register_corner_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_elem_data(std::string name,
+int OutputTime::register_elem_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         _Data *data,
         unsigned int size)
 {
-  /* It's possible now to do output to the file only in the first process */
-  if(rank!=0) {
-    /* TODO: do something, when support for Parallel VTK is added */
-    return 0;
-  }
+    OutputTime *output_time = OutputTime::output_stream(mesh, in_rec);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
 
     int found = 0;
-    
-    std::vector<OutputData> *elem_data = get_elem_data();
-    Mesh *mesh = get_mesh();
+    std::vector<OutputData> *elem_data = output_time->get_elem_data();
 
     ASSERT(mesh->element.size() == size,
             "mesh->element.size(): %d != size: %d",
@@ -772,19 +817,22 @@ int OutputTime::register_elem_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_node_data(std::string name,
+int OutputTime::register_node_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         std::vector<_Data> &data)
 {
-  /* It's possible now to do output to the file only in the first process */
-  if(rank!=0) {
-    /* TODO: do something, when support for Parallel VTK is added */
-    return 0;
-  }
+    OutputTime *output_time = OutputTime::output_stream(mesh, in_rec);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
 
     int found = 0;
-    std::vector<OutputData> *node_data = get_node_data();
-    Mesh *mesh = get_mesh();
+    std::vector<OutputData> *node_data = output_time->get_node_data();
 
     ASSERT(mesh->node_vector.size() == data.size(),
             "mesh->node_vector.size(): %d != size: %d",
@@ -812,23 +860,25 @@ int OutputTime::register_node_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_corner_data(std::string name,
+int OutputTime::register_corner_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         std::vector<_Data> &data)
 {
+    OutputTime *output_time = OutputTime::output_stream(mesh, in_rec);
+
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(output_time == NULL || output_time->rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
     
     int found = 0;
-    
+    std::vector<OutputData> *corner_data = output_time->get_corner_data();
+
     /* TODO: It's not possible to check easily correct number of corners, so
      * skipping for now. */
-
-    std::vector<OutputData> *corner_data = get_corner_data();
-    Mesh *mesh = get_mesh();
 
     for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
             od_iter != corner_data->end();
@@ -851,20 +901,22 @@ int OutputTime::register_corner_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_elem_data(std::string name,
+int OutputTime::register_elem_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         std::vector<_Data> &data)
 {
-  /* It's possible now to do output to the file only in the first process */
-  if(rank!=0) {
-    /* TODO: do something, when support for Parallel VTK is added */
-    return 0;
-  }
+    OutputTime *output_time = OutputTime::output_stream(mesh, in_rec);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
 
     int found = 0;
-    
-    std::vector<OutputData> *elem_data = get_elem_data();
-    Mesh *mesh = get_mesh();
+    std::vector<OutputData> *elem_data = output_time->get_elem_data();
 
     ASSERT(mesh->element.size() == data.size(),
             "mesh->element.size(): %d != size: %d",
@@ -906,6 +958,7 @@ public:
 	static Input::Type::AbstractRecord input_type;
 };
 
+#if 0
 inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)
 {
     // object is created for all processes, master process is checked in methods
@@ -941,5 +994,6 @@ inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)
 
     return output_time;
 }
+#endif
 
 #endif

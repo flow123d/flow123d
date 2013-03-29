@@ -149,12 +149,17 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // TODO: Add corresponding record to the in_rec
     Input::Record output_rec = in_rec.val<Input::Record>("output");
     //transport_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
-    transport_output = OutputStream(mesh_, output_rec.val<Input::Record>("output_stream"));
+    transport_output = OutputTime::output_stream(mesh_, output_rec.val<Input::Record>("output_stream"));
+
     output_solution.resize(n_subst);
     for (int i=0; i<n_subst; i++)
     {
         output_solution[i] = new double[distr->size()];
-        transport_output->register_corner_data<double>(subst_names[i], "M/L^3", output_solution[i], distr->size());
+        for(int j=0; j<distr->size(); j++) {
+            output_solution[i][j] = 0.0;
+        }
+        OutputTime::register_corner_data<double>(mesh_, subst_names[i], "M/L^3",
+                output_rec.val<Input::Record>("output_stream"), output_solution[i], distr->size());
     }
 
     // set time marks for writing the output
@@ -359,10 +364,9 @@ void TransportDG::output_data()
 	// on the main processor fill the output array and save to file
     if (distr->myp() == 0)
     {
-    	int id = 0, nid;
+    	int corner_id = 0, node_id;
 
     	VecGetArray(solution_vec[0], &solution);
-
     	FOR_ELEMENTS(mesh_, elem)
 		{
     		switch (elem->dim())
@@ -379,14 +383,19 @@ void TransportDG::output_data()
     		default:
     			break;
     		}
-    		FOR_ELEMENT_NODES(elem, nid)
+
+    		FOR_ELEMENT_NODES(elem, node_id)
     		{
-    			output_solution[0][id] = solution[dof_indices[nid]];
-    			id++;
+    		    // TODO: copy other substances too (not only first one)
+    			output_solution[0][corner_id] = solution[dof_indices[node_id]];
+    			corner_id++;
     		}
 		}
 
-		transport_output->write_data(time_->t());
+		if(transport_output) {
+			xprintf(MsgLog, "transport DG: write_data()\n");
+			transport_output->write_data(time_->t());
+		}
     }
 
     for (int i=0; i<n_subst; i++)

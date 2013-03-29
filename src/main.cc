@@ -160,14 +160,7 @@ Application::Application( int argc,  char ** argv)
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
             if (rank == 0) {
                 // free all output streams
-                if(OutputTime::output_streams != NULL) {
-                    for(int i=0; i<OutputTime::output_streams_count; i++) {
-                        delete OutputTime::output_streams[i];
-                    }
-                    xfree(OutputTime::output_streams);
-                    OutputTime::output_streams = NULL;
-                    OutputTime::output_streams_count = 0;
-                }
+                OutputTime::destroy_all();
             }
 
             delete problem;

@@ -106,11 +106,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
         // Other output streams can be created on the fly and added to the array
         // of output streams
         if(output_streams) {
-            for (Input::Iterator<Input::Record> output_stream = (*output_streams).begin<Input::Record>();
-                    output_stream != (*output_streams).end();
-                    i++, ++output_stream)
+            for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
+                    output_stream_rec != (*output_streams).end();
+                    i++, ++output_stream_rec)
             {
-                OutputTime::output_streams[i] = OutputStream(mesh, *output_stream);
+                OutputTime::output_stream(mesh, *output_stream_rec);
             }
         }
     }

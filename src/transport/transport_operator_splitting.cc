@@ -389,17 +389,18 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Input::Record output_rec = in_rec.val<Input::Record>("output");
 
 	//field_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
-	field_output = OutputStream(mesh_, output_rec.val<Input::Record>("output_stream"));
+	field_output = OutputTime::output_stream(mesh_, output_rec.val<Input::Record>("output_stream"));
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
          std::string subst_name = substance_name[subst_id] + "_mobile";
          double *data = out_conc[MOBILE][subst_id];
-         field_output->register_elem_data<double>(subst_name, "M/L^3", data , mesh_->n_elements());
+         OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
+                 output_rec.val<Input::Record>("output_stream"), data , mesh_->n_elements());
     }
     // write initial condition
     convection->output_vector_gather();
-    field_output->write_data(time_->t());
+    if(field_output) field_output->write_data(time_->t());
 
 }
 
@@ -421,7 +422,7 @@ void TransportOperatorSplitting::output_data(){
     if (time_->is_current(output_mark_type)) {
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         convection->output_vector_gather();
-        field_output->write_data(time_->t());
+        if(field_output) field_output->write_data(time_->t());
         mass_balance();
     }
 }

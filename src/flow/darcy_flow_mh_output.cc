@@ -75,20 +75,20 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 {
     F_ENTRY;
     using namespace Input;
+    unsigned int result = 0;
     
     // setup output
     // is created for every MPI process
-    output_writer = OutputStream(mesh_, Record(in_rec).val<Record>("output_stream"));
+    output_writer = OutputTime::output_stream(mesh_, Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
     node_pressure.resize(mesh_->node_vector.size());
 
-    { //local iterator it
-      Iterator<string> it = in_rec.find<string>("piezo_head_p0");
-      output_piezo_head=bool(it);
-      DBGMSG("piezo set: %d \n", output_piezo_head);
-    }
+    //local iterator it
+    Iterator<string> it = in_rec.find<string>("piezo_head_p0");
+    output_piezo_head=bool(it);
+    DBGMSG("piezo set: %d \n", output_piezo_head);
       
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
@@ -113,19 +113,33 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     //TODO: multi_process output
     if( rank == 0)
     {
-      
-      // temporary solution for balance output
-      balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
-      { // local iterator it
-        // optionally open raw output file
-        Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
-    
-        if (it) {
-          xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
-          raw_output_file = xfopen(*it, "wt");
+        result = OutputTime::register_node_data
+                (mesh_, "pressure_nodes", "L", in_rec.val<Input::Record>("output_stream"), node_pressure);
+
+        result = OutputTime::register_elem_data
+                (mesh_, "pressure_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_pressure);
+
+        if (output_piezo_head) {
+            result = OutputTime::register_elem_data
+                    (mesh_, "piezo_head_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_piezo_head);
         }
-      }
+
+        result = OutputTime::register_elem_data
+                (mesh_, "velocity_elements", "L/T", in_rec.val<Input::Record>("output_stream"), ele_flux);
+
+        // temporary solution for balance output
+        balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
+
+        { // local iterator it
+            // optionally open raw output file
+            Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
+
+            if (it) {
+                xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
+                raw_output_file = xfopen(*it, "wt");
+            }
+        }
 
     } //end of rank == 0
 }
@@ -174,8 +188,6 @@ void DarcyFlowMHOutput::output()
     std::string eleVectorName = "velocity_elements";
     std::string eleVectorUnit = "L/T";
 
-    unsigned int result = 0;
-    
     //cout << "DMHO_output: rank: " << rank << "\t output_writer: " << output_writer << endl;
     
     // skip initial output for steady solver
@@ -195,22 +207,6 @@ void DarcyFlowMHOutput::output()
 
       //compute_l2_difference();
 
-      result = output_writer->register_node_data
-              ("pressure_nodes","L", node_pressure);
-      //xprintf(Msg, "Register_node_data - result: %i, node size: %i\n", result,  mesh_->node_vector.size());
-
-      result = output_writer->register_elem_data
-              ("pressure_elements","L",ele_pressure);
-      //xprintf(Msg, "Register_elem_data scalars - result: %i\n", result);
-
-      if (output_piezo_head) {
-          result = output_writer->register_elem_data
-                      ("piezo_head_elements","L",ele_piezo_head);
-      }
-
-      result = output_writer->register_elem_data("velocity_elements", "L/T", ele_flux);
-      //xprintf(Msg, "Register_elem_data vectors - result: %i\n", result);
-
       //double time  = min(darcy_flow->solved_time(), 1.0E200);
       double time  = darcy_flow->solved_time();
 
@@ -219,7 +215,7 @@ void DarcyFlowMHOutput::output()
       // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
       if (time == TimeGovernor::inf_time) time = 0.0;
        
-      output_writer->write_data(time);
+      if(output_writer) output_writer->write_data(time);
       
       output_internal_flow_data();
     }

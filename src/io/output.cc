@@ -210,7 +210,7 @@ Output::Output(Mesh *_mesh, string fname)
 Output::~Output()
 {   
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return;
     }
@@ -247,7 +247,7 @@ Output::~Output()
 int Output::write_head(void)
 {
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
@@ -275,7 +275,7 @@ int Output::write_tail(void)
 int Output::write_data()
 {
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
@@ -313,12 +313,65 @@ static inline void fix_GMSH_file_name(string *fname)
 
 
 /* Initialize static member of the class */
-OutputTime** OutputTime::output_streams = NULL;
+std::vector<OutputTime*> OutputTime::output_streams;
 
-/* Initialize static member of the class */
-int OutputTime::output_streams_count = 0;
+// Destroy all objects
+void OutputTime::destroy_all(void)
+{
+    // Delete all objects
+    for(std::vector<OutputTime*>::iterator ot_iter = OutputTime::output_streams.begin();
+        ot_iter != OutputTime::output_streams.end();
+        ++ot_iter)
+    {
+        delete *ot_iter;
+    }
+
+    OutputTime::output_streams.clear();
+}
+
+OutputTime *OutputTime::output_stream(Mesh *mesh,
+        const Input::Record &in_rec)
+{
+    // testing rank of process
+    int ierr, rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
+
+    OutputTime *output_time = NULL;
+    string name = in_rec.val<string>("name");
+
+    xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank != 0) {
+        xprintf(MsgLog, "NOT MASTER PROC\n");
+        /* TODO: do something, when support for Parallel VTK is added */
+        return NULL;
+    }
+
+    // Try to find existing object
+    for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
+            output_iter != OutputTime::output_streams.end();
+            ++output_iter)
+    {
+        if( *(*output_iter)->name == name) {
+            xprintf(MsgLog, "FOUND\n");
+            return *output_iter;
+        }
+    }
+
+    xprintf(MsgLog, "NOT FOUND. Creating new ... ");
+
+    output_time = new OutputTime(mesh, in_rec);
+    OutputTime::output_streams.push_back(output_time);
+
+    xprintf(MsgLog, "DONE\n");
+
+    return output_time;
+}
 
 
+#if 0
 OutputTime *OutputTime::is_created(const Input::Record &in_rec)
 {
     string name = in_rec.val<string>("name");
@@ -338,6 +391,8 @@ OutputTime *OutputTime::is_created(const Input::Record &in_rec)
 
     return NULL;
 }
+#endif
+
 
 OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
 {
@@ -352,9 +407,6 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
         /* TODO: do something, when support for Parallel VTK is added */
         return;
     }
-
-    
-    OutputTime::output_streams_count++;
 
     std::vector<OutputData> *node_data;
     std::vector<OutputData> *corner_data;
