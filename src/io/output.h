@@ -670,14 +670,22 @@ public:
     		std::vector<_Data> &data);
 
     /**
-     * \brief This is virtual method. Every file format should specify its own
-     * method for writing data to output file.
+     * \brief This is depreciated method. Every file format should specify its own
+     * method for writing data to output file. This method will not be public
+     * in the future.
      *
      * \param[in] time  The output will be done for this time
      *
      * \return This function returns result of method _write_data().
      */
     int write_data(double time);
+
+    /**
+     * \brief This method write all registered data to output streams
+     *
+     * \param[in] time  The output will be done for this time
+     */
+    static void write_all_data(double time);
 
     int              current_step;      ///< Current step
 

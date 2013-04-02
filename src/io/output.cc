@@ -501,7 +501,7 @@ int OutputTime::write_data(double time)
     // It's possible now to do output to the file only in the first process 
     // TODO: do something, when support for Parallel VTK is added 
 
-    if (rank == 0 )
+    if(this->rank == 0 )
     { 
       DBGMSG("write output on process of rank=%d\n", rank);
       if(this->output_format != NULL) {
@@ -513,5 +513,28 @@ int OutputTime::write_data(double time)
     return ret;
 }
 
+void OutputTime::write_all_data(double time)
+{
+    int ierr, rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
+    OutputTime *output_time = NULL;
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank != 0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
+    // Go through all OutputTime objects
+    for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
+            output_iter != OutputTime::output_streams.end();
+            ++output_iter)
+    {
+        (*output_iter)->write_data(time);
+    }
+
+    xprintf(MsgLog, "DONE\n");
+}
 
