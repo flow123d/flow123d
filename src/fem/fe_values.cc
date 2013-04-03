@@ -270,11 +270,16 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     Quadrature<dim> *q = new Quadrature<dim>(_sub_quadrature.size());
     this->allocate(_mapping, *q, _fe, _flags);
 
-    // compute the mapping and finite element data
-    this->mapping_data = this->mapping->initialize(* (this->quadrature), this->data.update_flags);
-    this->fe_data = this->fe->initialize(* (this->quadrature), this->data.update_flags);
-
-
+    for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
+    {
+    	for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
+    	{
+    		// transform the side quadrature points to the cell quadrature points
+    		this->mapping->transform_subquadrature(sid, pid, *sub_quadrature, side_quadrature[sid][pid]);
+    		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
+    		side_fe_data[sid][pid] = this->fe->initialize(side_quadrature[sid][pid], this->data.update_flags);
+    	}
+    }
 }
 
 
@@ -283,56 +288,43 @@ template<unsigned int dim,unsigned int spacedim>
 FESideValues<dim,spacedim>::~FESideValues()
 {
     //DBGMSG(" FESideValues, mapping: %p\n",this->mapping_data);
-    //if (this->mapping_data) delete this->mapping_data;
-    //if (this->fe_data) delete this->fe_data;
+	for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
+	{
+		for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)
+		{
+			delete side_mapping_data[sid][pid];
+			delete side_fe_data[sid][pid];
+		}
+	}
 
     // Since quadrature is an auxiliary internal variable allocated
     // by the constructor, it must be destroyed here.
     delete this->quadrature;
 }
 
-/*
- * TODO:
- *
- * 1) vytvorit tridu pro referencni elementy (ocislovani uzlu, sten, hran, vypocet normal)
- * 2) upravit mapping->transform_subquadrature aby zavisela jen na lokalnim cislu steny
- *    pro lepsi konzistenci radeji vracet vytvorenou kvadraturu jako posledni parametr
- *
- * 3) mit pole pro (quadrature, mapping_data, fe_data), predpocitano pro kazde lokalni cislo steny,
- *    toto naplnit v konstruktoru, tim se zbavime opakovanych alokaci a predpocitavani
- *
- * 4) metody mapping->initialize a fe->initialize upravit tak, aby pouze plnily jiz predalokovane struktury.
- *    Ty by se predali jako posledni parametr - pomoci reference.
- */
 
 template<unsigned int dim,unsigned int spacedim> inline
 void FESideValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell,
-                                        SideIter side)
+		unsigned int sid)
 {
     this->data.present_cell = &cell;
 
-    // transform the side quadrature points to the cell quadrature points
-    this->mapping->transform_subquadrature(cell, *this->quadrature, *side, *sub_quadrature);
-
-    // compute the mapping and finite element data
-    delete this->mapping_data;
-    delete this->fe_data;
-    this->mapping_data = this->mapping->initialize(* (this->quadrature), this->data.update_flags);
-    this->fe_data = this->fe->initialize(* (this->quadrature), this->data.update_flags);
-
+    unsigned int pid = cell->permutation_idx_[sid];
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     this->mapping->fill_fe_side_values(cell,
-                                 *side,
-                                 *this->quadrature,
-                                 *this->mapping_data,
+                                 sid,
+                                 side_quadrature[sid][pid],
+                                 *side_mapping_data[sid][pid],
                                  this->data);
 
     // calculation of finite element data
-    this->fe->fill_fe_values(*this->quadrature,
-                             *this->fe_data,
+    this->fe->fill_fe_values(side_quadrature[sid][pid],
+                             *side_fe_data[sid][pid],
                              this->data);
 }
+
+
 
 
 

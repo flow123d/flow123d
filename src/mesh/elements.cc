@@ -51,6 +51,7 @@ Element::Element()
 //  material(NULL),
   edge_idx_(NULL),
   boundary_idx_(NULL),
+  permutation_idx_(NULL),
 
   n_neighs_vb(0),
   neigh_vb(NULL),
@@ -80,9 +81,11 @@ void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
     node = new Node * [ n_nodes()];
     edge_idx_ = new unsigned int [ n_sides()];
     boundary_idx_ = NULL;
+    permutation_idx_ = new unsigned int[n_sides()];
 
     FOR_ELEMENT_SIDES(this, si) {
         edge_idx_[ si ]=Mesh::undef_idx;
+        permutation_idx_[si] = Mesh::undef_idx;
     }
 }
 

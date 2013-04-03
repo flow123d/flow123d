@@ -41,6 +41,7 @@
 #include "boost/lexical_cast.hpp"
 
 #include "mesh/mesh.h"
+#include "fem/ref_element.hh"
 
 // think about following dependencies
 #include "mesh/boundaries.h"
@@ -103,6 +104,12 @@ void Mesh::reinit(Input::Record in_record)
     n_triangles = 0;
     n_tetrahedras = 0;
 
+
+    // Initialize numbering of nodes on sides.
+    // This is temporary solution, until class Element is templated
+    // by dimension. Then we can replace Mesh::side_nodes by
+    // RefElement<dim>::side_nodes.
+
     // indices of side nodes in element node array
     // Currently this is made ad libitum
     // with some ordering here we can get sides with correct orientation.
@@ -115,35 +122,17 @@ void Mesh::reinit(Input::Record in_record)
             side_nodes[i][j].resize(i+1);
     }
 
-    side_nodes[0][0][0] = 0;
-    side_nodes[0][1][0] = 1;
+    for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
+    	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
+    		side_nodes[0][sid][nid] = RefElement<1>::side_nodes[sid][nid];
 
+    for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
+        		side_nodes[1][sid][nid] = RefElement<2>::side_nodes[sid][nid];
 
-    side_nodes[1][0][0] = 0;
-    side_nodes[1][0][1] = 1;
-
-    side_nodes[1][1][0] = 1;
-    side_nodes[1][1][1] = 2;
-
-    side_nodes[1][2][0] = 2;
-    side_nodes[1][2][1] = 0;
-
-
-    side_nodes[2][0][0] = 1;
-    side_nodes[2][0][1] = 2;
-    side_nodes[2][0][2] = 3;
-
-    side_nodes[2][1][0] = 0;
-    side_nodes[2][1][1] = 2;
-    side_nodes[2][1][2] = 3;
-
-    side_nodes[2][2][0] = 0;
-    side_nodes[2][2][1] = 1;
-    side_nodes[2][2][2] = 3;
-
-    side_nodes[2][3][0] = 0;
-    side_nodes[2][3][1] = 1;
-    side_nodes[2][3][2] = 2;
+    for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
+        		side_nodes[2][sid][nid] = RefElement<3>::side_nodes[sid][nid];
 }
 
 
@@ -226,6 +215,7 @@ void Mesh::setup_topology() {
     count_element_types();
     make_neighbours_and_edges();
     element_to_neigh_vb();
+    make_edge_permutations();
     count_side_types();
 
     region_db_.close();
@@ -485,6 +475,46 @@ void Mesh::make_neighbours_and_edges()
 	}   // for elements
 
 	xprintf( Msg, "Created %d edges and %d neighbours.\n", edges.size(), vb_neighbours_.size() );
+}
+
+
+
+void Mesh::make_edge_permutations()
+{
+	for (EdgeVector::iterator edg=edges.begin(); edg!=edges.end(); edg++)
+	{
+		// side 0 is reference, so its permutation is 0
+		edg->side(0)->element()->permutation_idx_[edg->side(0)->el_idx()] = 0;
+
+		if (edg->n_sides > 1)
+		{
+			map<const Node*,unsigned int> node_numbers;
+			unsigned int permutation[edg->side(0)->n_nodes()];
+			const unsigned int dim = edg->side(0)->dim()+1;
+
+			for (int i=0; i<edg->side(0)->n_nodes(); i++)
+				node_numbers[edg->side(0)->node(i)] = i;
+
+			for (int sid=1; sid<edg->n_sides; sid++)
+			{
+				for (int i=0; i<edg->side(0)->n_nodes(); i++)
+					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
+
+				switch (dim)
+				{
+				case 1:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<1>::permutation_index(permutation);
+					break;
+				case 2:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<2>::permutation_index(permutation);
+					break;
+				case 3:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<3>::permutation_index(permutation);
+					break;
+				}
+			}
+		}
+	}
 }
 
 

@@ -104,13 +104,13 @@ public:
      * @brief Calculates the mapping data on a side of a cell.
      *
      * @param cell The actual cell.
-     * @param side The cell side.
+     * @param sid  Number of the side.
      * @param q The quadrature rule with points on the side.
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
     void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
-                            const Side &side,
+                            unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);

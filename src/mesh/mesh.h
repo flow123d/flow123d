@@ -210,6 +210,11 @@ public:
     int n_triangles; // Number of triangle elements
     int n_tetrahedras; // Number of tetrahedra elements
 
+    // Temporary solution for numbering of nodes on sides.
+    // The data are defined in RefElement<dim>::side_nodes,
+    // Mesh::side_nodes can be removed as soon as Element
+    // is templated by dimension.
+    //
     // for every side dimension D = 0 .. 2
     // for every element side 0 .. D+1
     // for every side node 0 .. D
@@ -236,6 +241,12 @@ protected:
      *
      */
     void make_neighbours_and_edges();
+
+    /**
+     * On edges sharing sides of many elements it may happen that each side has its nodes ordered in a different way.
+     * This method finds the permutation for each side so as to obtain the ordering of side 0.
+     */
+    void make_edge_permutations();
     /**
      * Create element lists for nodes in Mesh::nodes_elements.
      */

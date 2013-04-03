@@ -104,6 +104,7 @@ set(sources_fem_lib
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
+    fem/ref_element.cc
 )
 
 

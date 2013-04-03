@@ -613,8 +613,8 @@ void TransportDG::assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHand
 		{
 			cell = mesh_->element.full_iter(edg->side(sid)->element());
 			dh->get_dof_indices(cell, side_dof_indices[sid]);
-			fe_values_side[sid]->reinit(cell, edg->side(0));
-			fsv_rt.reinit(cell, edg->side(0));
+			fe_values_side[sid]->reinit(cell, edg->side(sid)->el_idx());
+			fsv_rt.reinit(cell, edg->side(sid)->el_idx());
 			calculate_velocity(cell, side_velocity[sid], fsv_rt);
 			Dm[sid].resize(side_q.size());
 			alphaL[sid].resize(side_q.size());
@@ -749,8 +749,8 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
 
         cell = mesh().element.full_iter(edge->side(0)->element());
         dh->get_dof_indices(cell, side_dof_indices);
-        fe_values_side.reinit(cell, edge->side(0));
-        fsv_rt.reinit(cell, edge->side(0));
+        fe_values_side.reinit(cell, edge->side(0)->el_idx());
+        fsv_rt.reinit(cell, edge->side(0)->el_idx());
 
         calculate_velocity(cell, side_velocity, fsv_rt);
         for (int k=0; k<side_q.size(); k++)
@@ -833,7 +833,7 @@ void TransportDG::assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler
 
 		cell = nb->side()->element();
 		dh->get_dof_indices(cell, side_dof_indices[1]);
-		fe_values_side[1]->reinit(cell, nb->side());
+		fe_values_side[1]->reinit(cell, nb->side()->el_idx());
 		fv_sb[1] = fe_values_side[1];
 
 
@@ -954,7 +954,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
                 // || (b->type == 2 /* Neuman*/ && b->flux == 0.0) ) continue;
                 // NEED FIX
 
-        fe_values_side.reinit(cell, b->side());
+        fe_values_side.reinit(cell, b->side()->el_idx());
         dh->get_dof_indices(cell, side_dof_indices);
 
         for (int i=0; i<fe->n_dofs(); i++)
@@ -1283,8 +1283,8 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 		double water_flux = mh_dh->side_flux(*(bcd->side()))/bcd->side()->measure();
 		double mass_flux = 0;
 
-		fe_values.reinit(cell, *(bcd->side()));
-		fsv_rt.reinit(cell, *(bcd->side()));
+		fe_values.reinit(cell, bcd->side()->el_idx());
+		fsv_rt.reinit(cell, bcd->side()->el_idx());
 		dh->get_dof_indices(cell, dof_indices);
 
 		calculate_velocity(cell, side_velocity, fsv_rt);

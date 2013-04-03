@@ -100,6 +100,7 @@ private:
     unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
     //Mesh    *mesh_;
+
 };
 
 

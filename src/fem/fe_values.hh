@@ -35,6 +35,7 @@
 #include <armadillo>
 #include <vector>
 #include "fem/update_flags.hh"
+#include "fem/ref_element.hh"
 
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim> class Quadrature;
@@ -429,13 +430,14 @@ public:
     virtual ~FESideValues();
 
     /**
-     * @brief Update cell-dependent data (gradients, Jacobians etc.)
-     *
-     * @param cell The actual cell.
-     * @param side The side of the cell.
-     */
+	 * @brief Update cell-dependent data (gradients, Jacobians etc.)
+	 *
+	 * @param cell The actual cell.
+	 * @param sid  Number of the side of the cell.
+	 */
     void reinit(typename DOFHandler<dim,spacedim>::CellIterator &cell,
-                SideIter side);
+        		unsigned int sid);
+
 
 
 private:
@@ -444,6 +446,12 @@ private:
      * @brief Quadrature for the integration on the element sides.
      */
     const Quadrature<dim-1> *sub_quadrature;
+
+    Quadrature<dim> side_quadrature[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+
+    MappingInternalData *side_mapping_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+
+    FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
 
 };
 
