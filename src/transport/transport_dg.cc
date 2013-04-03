@@ -124,6 +124,9 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data.set_mesh(&init_mesh);
     data.init_conc.set_n_comp(n_subst);
     data.bc_conc.set_n_comp(n_subst);
+    data.sources_density.set_n_comp(n_subst);
+    data.sources_sigma.set_n_comp(n_subst);
+    data.sources_conc.set_n_comp(n_subst);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     data.set_time(*time_);
 
@@ -502,16 +505,14 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
     typename DOFHandler<dim,3>::CellIterator cell = dh->begin_cell();
     vector<mat33> K;
     vector<vec3> velocity;
-    vector<double> divergence, Dm, alphaL, alphaT, por_m, csection;
+    vector<double> divergence,
+    	Dm(q.size()), alphaL(q.size()), alphaT(q.size()),
+    	por_m(q.size()), csection(q.size()),
+    	sources_conc(q.size()), sources_density(q.size()), sources_sigma(q.size()),
+    	conc(q.size());
     const unsigned int ndofs = fe->n_dofs();
     unsigned int dof_indices[ndofs];
-    PetscScalar local_matrix[ndofs*ndofs];
-
-    Dm.resize(q.size());
-    alphaL.resize(q.size());
-    alphaT.resize(q.size());
-    por_m.resize(q.size());
-    csection.resize(q.size());
+    PetscScalar local_matrix[ndofs*ndofs], local_rhs[ndofs];
 
 	// assemble integral over elements
     for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
@@ -531,6 +532,13 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
         	alphaT[k]   = data.disp_t.value(fe_values.point(k), cell->element_accessor());
         	por_m[k]    = data.por_m.value(fe_values.point(k), cell->element_accessor());
         	csection[k] = data.cross_section->value(fe_values.point(k), cell->element_accessor());
+        	sources_conc[k] = data.sources_conc.value(fe_values.point(k), cell->element_accessor())(0);
+        	sources_density[k] = data.sources_density.value(fe_values.point(k), cell->element_accessor())(0);
+        	sources_sigma[k] = data.sources_sigma.value(fe_values.point(k), cell->element_accessor())(0);
+        	conc[k] = 0;
+        	for (unsigned int i=0; i<ndofs; i++)
+        		if (dof_indices[i] >= distr->begin() && dof_indices[i] <= distr->end())
+        			conc[k] += ls->get_solution_array()[dof_indices[i] - distr->begin()]*fe_values.shape_value(i,k);
         }
         calculate_dispersivity_tensor(K, velocity, Dm, alphaL, alphaT, por_m, csection);
 
@@ -552,9 +560,21 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
                 }
 
             }
+
+            // compute sources
+            local_rhs[i] = 0;
+            if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
+            for (unsigned int k=0; k<q.size(); k++)
+            {
+            	double conc_diff = sources_conc[k] - conc[k];
+            	if ( conc_diff > 0.0)
+            		local_rhs[i] += (sources_density[k] + conc_diff*sources_sigma[k])*fe_values.shape_value(i,k)*fe_values.JxW(k);
+            	else
+            		local_rhs[i] += sources_density[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+            }
         }
 
-        ls->mat_set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_matrix);
+        ls->set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_matrix, local_rhs);
     }
 }
 

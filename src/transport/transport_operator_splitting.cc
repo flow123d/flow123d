@@ -100,6 +100,10 @@ TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", Default("0"));
 	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
 
+	ADD_FIELD(sources_density, "Density of concentration sources.", Default("0"));
+	ADD_FIELD(sources_sigma, "", Default("0"));
+	ADD_FIELD(sources_conc, "Concentration sources threshold.", Default("0"));
+
 }
 
 
@@ -306,10 +310,6 @@ TransportOperatorSplitting::EqData::EqData() : TransportEqData("TransportOperato
 	ADD_FIELD(sorp_coef0, "Coefficient of sorption.", Default("0"));
 	ADD_FIELD(sorp_coef1, "Coefficient of sorption.", Default("0"));
 	ADD_FIELD(phi, "Solid / solid mobile.", Default("0.5"));
-
-	ADD_FIELD(sources_density, "Density of transport sources.", Default("0"));
-	ADD_FIELD(sources_sigma, "", Default("0"));
-	ADD_FIELD(sources_conc, "Concentration sources.", Default("0"));
 
 }
 

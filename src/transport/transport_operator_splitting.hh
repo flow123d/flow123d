@@ -53,6 +53,11 @@ public:
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;
 
+		/// Concentration sources
+		Field<3, FieldValue<3>::Vector> sources_density;
+		Field<3, FieldValue<3>::Vector> sources_sigma;
+		Field<3, FieldValue<3>::Vector> sources_conc;
+
 		int bc_time_level;
 		vector<double> bc_times;
 
@@ -164,11 +169,6 @@ public:
 		Field<3, FieldValue<3>::Vector> sorp_coef1;///< Coefficient of sorption for each substance
 		Field<3, FieldValue<3>::Scalar> phi;       ///< solid / solid mobile
 
-		/// Concentration sources
-		Field<3, FieldValue<3>::Vector> sources_density;
-		Field<3, FieldValue<3>::Vector> sources_sigma;
-		Field<3, FieldValue<3>::Vector> sources_conc;
-    
 	};
 
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
