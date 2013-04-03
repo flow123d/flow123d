@@ -75,6 +75,7 @@ set(sources_mesh_lib
     mesh/nodes.cc
     mesh/sides.cc
     mesh/intersection.cc
+    fem/ref_element.cc
     
     mesh/bounding_box.cc
     mesh/bih_node.cc
@@ -104,7 +105,7 @@ set(sources_fem_lib
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
-    fem/ref_element.cc
+    
 )
 
 
