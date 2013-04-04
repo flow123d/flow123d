@@ -294,9 +294,7 @@ void MappingP1<0,3>::fill_fe_side_values(const DOFHandler<0,3>::CellIterator &ce
                             const Quadrature<0> &q,
                             MappingInternalData &data,
                             FEValuesData<0,3> &fv_data)
-{
-
-}
+{}
 
 
 

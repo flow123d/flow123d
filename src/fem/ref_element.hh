@@ -111,7 +111,6 @@ public:
 	 * Number of permutations of nodes on sides.
 	 * dim   value
 	 * -----------
-	 * 0     1
 	 * 1     1
 	 * 2     2
 	 * 3     6
