@@ -50,8 +50,6 @@ AbstractRecord TransportBase::input_type
 			"Model of sorption.")
 	.declare_key("dual_porosity", Bool(), Default("false"),
 			"Dual porosity model.")
-	.declare_key("sources_file", FileName::input(), Default::optional(),
-			"File with data for the source term in the transport equation.")
 	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
 			"Parameters of output stream.");
 
@@ -78,7 +76,7 @@ Record TransportOperatorSplitting::input_type
 	= Record("TransportOperatorSplitting",
             "Explicit FVM transport (no diffusion)\n"
             "coupled with reaction and sorption model (ODE per element)\n"
-            " via. operator splitting.")
+            " via operator splitting.")
     .derive_from(TransportBase::input_type)
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
                 "Initialization of per element reactions.")
@@ -420,6 +418,9 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 void TransportOperatorSplitting::output_data(){
 
     if (time_->is_current(output_mark_type)) {
+        
+        START_TIMER("TOS-output data");
+        
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         convection->output_vector_gather();
         if(field_output) field_output->write_data(time_->t());
@@ -446,7 +447,7 @@ void TransportOperatorSplitting::update_solution() {
     xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n", 
              time_->t(), convection->time().t(), convection->time().estimate_dt() );
     
-    START_TIMER("TOS-ONE STEP");
+    START_TIMER("TOS-one step");
     int steps=0;
     while ( convection->time().lt(time_->t()) )
     {
@@ -458,7 +459,7 @@ void TransportOperatorSplitting::update_solution() {
 	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
 	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step
 	}
-    END_TIMER("TOS-ONE STEP");
+    END_TIMER("TOS-one step");
     
     xprintf( Msg, "CONVECTION: steps: %d\n",steps);
 }

@@ -622,11 +622,11 @@ public:
     void output(MPI_Comm comm)
     {}
     const char *actual_tag() const
-    {}
+    { return NULL; }
     inline unsigned int actual_count() const
-    {}
+    { return 0; }
     inline double actual_cumulative_time() const
-    {}
+    { return 0.0; }
     static void uninitialize();
 
 private:

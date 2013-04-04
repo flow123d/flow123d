@@ -170,7 +170,6 @@ void Mesh::count_element_types() {
 
 void Mesh::read_gmsh_from_stream(istream &in) {
   
-    //not working with test_units sofar (profiler needs to be improved)
     START_TIMER("READING MESH - from_stream");
     
     GmshMeshReader reader(in);
@@ -182,7 +181,7 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 
 void Mesh::init_from_input() {
     F_ENTRY;
-    //not working with test_units sofar (profiler needs to be improved)
+
     START_TIMER("READING MESH - init_from_input");
     
     Input::Array region_list;
@@ -209,7 +208,7 @@ void Mesh::init_from_input() {
 
 void Mesh::setup_topology() {
     F_ENTRY;
-    //not working with test_units sofar (profiler needs to be improved)
+
     START_TIMER("setup topology");
     
     count_element_types();
