@@ -101,7 +101,7 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(const string &func_name)
 {
 #ifdef HAVE_PYTHON
-    char* func_char;
+    char func_char[func_name.size()+2];
     std::strcpy(func_char, func_name.c_str());
     p_func_ = PyObject_GetAttrString(p_module_, func_char );
     if (! p_func_) {

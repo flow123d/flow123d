@@ -8,6 +8,7 @@
 
 
 #include "fields/field_base_impl.hh"
+#include <limits>
 
 
 /****************************************************************************
@@ -20,8 +21,9 @@ FieldCommonBase::FieldCommonBase(bool bc)
   element_selection_(NULL),
   default_( IT::Default::obligatory()),
   mesh_(NULL),
-  changed_during_set_time(true), // safe value, we do not miss possible update
-  changed_from_last_set_time_(false)
+  changed_during_set_time(false),       // reading this variable is in fact invalid up to the first call of the set_time
+  changed_from_last_set_time_(false),
+  last_set_time_( -numeric_limits<double>::infinity() )
 {}
 
 // setters

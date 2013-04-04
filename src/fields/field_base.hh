@@ -241,7 +241,11 @@ public:
     virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
 
     /**
-     * Abstract method to update field to the new time. Return resulting value of @p changed_during_set_time_.
+     * Abstract method to update field to the new time level.
+     * Implemented by in class template Field<...>.
+     *
+     * Return true if the value of the field was changed on some region.
+     * The returned value is also stored in @p changed_during_set_time data member.
      */
     virtual bool set_time(double time) =0;
 
@@ -295,6 +299,10 @@ protected:
      * Set by other methods (namely set_field() and set_from_input()) that modify the field before the set_time is called.
      */
     bool changed_from_last_set_time_;
+
+    /// Time of the last set time.
+    double last_set_time_;
+
 };
 
 
@@ -418,6 +426,10 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 private:
+    /**
+     *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
+     */
+    void check_initialized_region_fields_();
 
     /**
      * If this pointer is set, turn off check of initialization in the set_time method on the regions
@@ -430,6 +442,11 @@ private:
      * Table with pointers to fields on individual regions.
      */
     std::vector< boost::shared_ptr< FieldBaseType > > region_fields_;
+
+    /**
+     * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.
+     */
+    bool is_fully_initialized_;
 
 };
 
