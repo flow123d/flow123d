@@ -33,7 +33,7 @@
 using namespace arma;
 using namespace std;
 
-template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side] = {};
+template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side] = { {} };
 
 template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side] = { { 0 } };
 
@@ -123,7 +123,7 @@ unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side]
 }
 
 
-template class RefElement<0>;
+//template class RefElement<0>;
 template class RefElement<1>;
 template class RefElement<2>;
 template class RefElement<3>;
