@@ -209,7 +209,7 @@ void Mesh::init_from_input() {
 void Mesh::setup_topology() {
     F_ENTRY;
 
-    START_TIMER("setup topology");
+    START_TIMER("MESH - setup topology");
     
     count_element_types();
     make_neighbours_and_edges();

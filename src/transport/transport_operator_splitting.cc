@@ -414,6 +414,9 @@ void TransportOperatorSplitting::output_data(){
         convection->output_vector_gather();
         if(field_output) field_output->write_data(time_->t());
         mass_balance();
+        
+        //for synchronization when measuring time by Profiler
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 }
 

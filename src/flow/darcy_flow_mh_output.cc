@@ -218,7 +218,11 @@ void DarcyFlowMHOutput::output()
       if(output_writer) output_writer->write_data(time);
       
       output_internal_flow_data();
+      
+      //for synchronization when measuring time by Profiler
+      MPI_Barrier(MPI_COMM_WORLD);
     }
+    
 }
 
 //=============================================================================
