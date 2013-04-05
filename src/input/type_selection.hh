@@ -104,7 +104,7 @@ public:
     virtual bool is_finished() const;
 
     /// Implements \p TypeBase::reset_doc_flags
-    virtual void reset_doc_flags() const;
+    //virtual void reset_doc_flags() const;
 
     /// Implements \p TypeBase::type_name
     virtual string type_name() const;

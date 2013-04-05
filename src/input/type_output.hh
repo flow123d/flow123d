@@ -125,29 +125,16 @@ protected:
      * Structure for flags about output of one TypeBase object in input tree
      */
     struct Key {
-    	unsigned int key_index;
-    	string key_;
-    	mutable bool extensive_doc_;
-    	mutable string reference_;
+    	unsigned int key_index;          	///< Position inside the record.
+    	const void * type_;              	///< Pointer to type.
+    	mutable bool extensive_doc_;     	///< Flag captures if extensive documentation of type was printed.
+    	mutable string reference_;       	///< Reference to type.
     };
 
     /**
      * Public typedef of constant iterator into array of keys.
      */
     typedef std::vector<struct Key>::const_iterator KeyIter;
-
-
-    /**
-     * Type of hash values used in associative array that translates key names to indices in Record and Selection.
-     *
-     * For simplicity, we currently use whole strings as "hash".
-     */
-    typedef string KeyHash;
-
-    /// Hash function.
-    inline static KeyHash key_hash(const string &str) {
-        return (str);
-    }
 
 
     /// Padding of new level of printout, used where we use indentation.
@@ -173,6 +160,11 @@ protected:
     void get_double_bounds(Double dbl, double &lower , double &upper );
     void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
     void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
+    const void * get_record_data(const Record *rec);
+    const void * get_abstract_record_data(const AbstractRecord *a_rec);
+    const void * get_selection_data(const Selection *sel);
+    const void * get_array_data(const Array *array);
+    const void * get_type_base_data(const TypeBase *type);
 
 
     /**
@@ -212,18 +204,18 @@ protected:
     /**
      * Interface to mapping key -> index in doc_flags_. Returns index (in continuous array) for given key.
      */
-    inline unsigned int key_index(const string& key) const;
+    inline unsigned int type_index(const void * type) const;
 
     /**
      * Returns iterator to the key struct for given key string.
      */
-    inline KeyIter key_iterator(const string& key) const;
+    inline KeyIter type_iterator(const void * type) const;
 
     /**
      * Returns iterator to the key struct for given key string.
      *
      */
-    inline bool has_key_iterator(const string& key, KeyIter &it) const;
+    inline bool has_type_iterator(const void * type, KeyIter &it) const;
 
     /**
      * Container-like access to the keys of the OutputData. Returns iterator to the first key.
@@ -238,7 +230,7 @@ protected:
     /**
      * Returns true if the OutputData contains key with given name.
      */
-    inline bool has_key(const string& key) const;
+    inline bool has_type(const void * type) const;
 
     /**
      * Returns number of keys of OutputData.
@@ -248,27 +240,27 @@ protected:
     /**
      * Returns true if the OutputData contains key with given name and key has true flag extensive_doc_.
      */
-    inline bool has_key_extensive(const string& key) const;
+    inline bool has_type_extensive(const void * type) const;
 
     /**
      * Returns reference_ string of key with given name.
      */
-    inline const string get_reference(const string& key) const;
+    inline const string get_reference(const void * type) const;
 
     /**
      * Set reference_ string of key with given name.
      */
-    inline void set_reference(const string& key, const string& ref);
+    inline void set_reference(const void * type, const string& ref);
 
     /**
      * Set value to extensive_doc_ flag of key with given name.
      */
-    inline void set_extensive_flag(const string& key, bool val = true);
+    inline void set_extensive_flag(const void * type, bool val = true);
 
     /**
      * Remove key with given name from OutputData.
      */
-    inline void remove_key(const string& key);
+    inline void remove_type(const void * type);
 
 
     /**
@@ -293,25 +285,33 @@ protected:
     /**
      * Internal data class
      */
-    class OutputData {
+    class ProcessedTypes {
     public:
-    	bool declare_key(string key, bool extensive_doc, string reference);
 
-    	bool declare_key(string key);
+    	/**
+    	 * Declare a processed type and its flags.
+    	 *
+    	 * Pointer to type must be unique in map. If pointer exists type is not added and method returns false.
+    	 */
+    	bool add_type(const void *type, bool extensive_doc, string reference);
 
+    	/// Declare a processed type with default values of flags
+    	bool add_type(const void *type);
+
+    	/// Clear all data of processed types
     	void clear();
 
     	/// Database of valid keys
-        std::map<KeyHash, unsigned int> key_to_index;
-        typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
+        std::map<const void *, unsigned int> key_to_index;
+        typedef std::map<const void *, unsigned int>::const_iterator key_to_index_const_iter;
 
         /// Keys in order as they where declared.
         std::vector<struct Key> keys;
 
     };
 
-    /// map contained pairs key - reference of processed elements to output
-    OutputData doc_flags_;
+    /// Stores flags and references of processed type
+    ProcessedTypes doc_flags_;
 
 };
 

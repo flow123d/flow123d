@@ -35,9 +35,12 @@ OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 
 ostream&  OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
-	type_->reset_doc_flags();
+
+	const void *data_ptr = get_type_base_data(type_);
 	doc_flags_.clear();
-	doc_flags_.declare_key(type_->type_name(), false, "");
+	doc_flags_.add_type(data_ptr, false, "");
+	//doc_flags_.add_type(type_, false, "");
+
 	print(stream, type_, depth_);
 	return stream;
 }
@@ -75,6 +78,45 @@ void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &p
 void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
 	arr_type = array.data_->type_of_values_;
 }
+
+
+const void * OutputBase::get_record_data(const Record *rec) {
+	return & rec->data_;
+}
+
+
+const void * OutputBase::get_abstract_record_data(const AbstractRecord *a_rec) {
+	return & a_rec->child_data_;
+}
+
+
+const void * OutputBase::get_selection_data(const Selection *sel) {
+	return & sel->data_;
+}
+
+
+const void * OutputBase::get_array_data(const Array *array) {
+	return & array->data_;
+}
+
+
+const void * OutputBase::get_type_base_data(const TypeBase *type) {
+	if (typeid(*type) == typeid(Type::Record)) {
+		return & ( static_cast<const Type::Record *>(type) )->data_;
+	} else
+	if (typeid(*type) == typeid(Type::Array)) {
+		return & ( static_cast<const Type::Array *>(type) )->data_;
+	} else
+	if (typeid(*type) == typeid(Type::AbstractRecord)) {
+		return & ( static_cast<const Type::AbstractRecord *>(type) )->child_data_;
+	} else
+	if (typeid(*type) == typeid(Type::Selection)) {
+		return & ( static_cast<const Type::Selection *>(type) )->data_;
+	}
+
+	return NULL;
+}
+
 
 
 void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth) {
@@ -139,9 +181,8 @@ void OutputBase::write_description(std::ostream& stream, const string& str,
 }
 
 
-inline unsigned int OutputBase::key_index(const string& key) const {
-    KeyHash key_h = key_hash(key);
-    OutputData::key_to_index_const_iter it = doc_flags_.key_to_index.find(key_h);
+inline unsigned int OutputBase::type_index(const void * type) const {
+    ProcessedTypes::key_to_index_const_iter it = doc_flags_.key_to_index.find(type);
     if (it != doc_flags_.key_to_index.end()) return it->second;
 
     //THROW( ExcRecordKeyNotFound() << EI_KeyName(key) << EI_Record(*this) );
@@ -150,14 +191,13 @@ inline unsigned int OutputBase::key_index(const string& key) const {
 }
 
 
-inline OutputBase::KeyIter OutputBase::key_iterator(const string& key) const {
-	return begin() + key_index(key);
+inline OutputBase::KeyIter OutputBase::type_iterator(const void * type) const {
+	return begin() + type_index(type);
 }
 
 
-inline bool OutputBase::has_key_iterator(const string& key, KeyIter &it) const {
-    KeyHash key_h = key_hash(key);
-    OutputData::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(key_h);
+inline bool OutputBase::has_type_iterator(const void * type, KeyIter &it) const {
+    ProcessedTypes::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(type);
     if (data_it == doc_flags_.key_to_index.end()) {
         return false;
     } else {
@@ -177,8 +217,8 @@ inline OutputBase::KeyIter OutputBase::end() const {
 }
 
 
-inline bool OutputBase::has_key(const string& key) const {
-	return key_iterator(key) != end();
+inline bool OutputBase::has_type(const void * type) const {
+	return type_iterator(type) != end();
 }
 
 
@@ -187,48 +227,46 @@ inline unsigned int OutputBase::size() const {
 }
 
 
-inline bool OutputBase::has_key_extensive(const string& key) const {
-	if ( has_key(key) ) {
-		return ( *key_iterator(key) ).extensive_doc_;
+inline bool OutputBase::has_type_extensive(const void * type) const {
+	if ( has_type(type) ) {
+		return ( *type_iterator(type) ).extensive_doc_;
 	}
 	return false;
 }
 
 
-inline const string OutputBase::get_reference(const string& key) const {
-	KeyHash key_h = key_hash(key);
-	OutputData::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(key_h);
+inline const string OutputBase::get_reference(const void * type) const {
+	ProcessedTypes::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(type);
 
-	ASSERT(data_it != doc_flags_.key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in get_reference method!\n", key.c_str());
+	ASSERT(data_it != doc_flags_.key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in get_reference method!\n", (static_cast<const Type::TypeBase *>(type))->type_name().c_str());
 
 	KeyIter it = begin()+data_it->second;
 	return (*it).reference_;
 }
 
 
-inline void OutputBase::set_reference(const string& key, const string& ref) {
-	KeyHash key_h = key_hash(key);
-	OutputData::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(key_h);
+inline void OutputBase::set_reference(const void * type, const string& ref) {
+	ProcessedTypes::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(type);
 
-	ASSERT(data_it != doc_flags_.key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in set_reference method!\n", key.c_str());
+	ASSERT(data_it != doc_flags_.key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in set_reference method!\n", (static_cast<const Type::TypeBase *>(type))->type_name().c_str());
 
 	KeyIter it = begin()+data_it->second;
 	(*it).reference_ = ref;
 }
 
 
-inline void OutputBase::set_extensive_flag(const string& key, bool val) {
-	ASSERT(has_key(key), "Invalid key '%s' in OutputBase::OutputData object in set_extensive_flag method!\n", key.c_str());
+inline void OutputBase::set_extensive_flag(const void * type, bool val) {
+	ASSERT(has_type(type), "Invalid key '%s' in OutputBase::OutputData object in set_extensive_flag method!\n", (static_cast<const Type::TypeBase *>(type))->type_name().c_str());
 
-	( *key_iterator(key) ).extensive_doc_ = true;
+	( *type_iterator(type) ).extensive_doc_ = true;
 }
 
 
-inline void OutputBase::remove_key(const string& key) {
-	ASSERT(has_key(key), "Invalid key '%s' in OutputBase::OutputData object during removal the key!\n", key.c_str());
+inline void OutputBase::remove_type(const void * type) {
+	ASSERT(has_type(type), "Invalid key '%s' in OutputBase::OutputData object during removal the key!\n", (static_cast<const Type::TypeBase *>(type))->type_name().c_str());
 
-	doc_flags_.key_to_index.erase(doc_flags_.key_to_index.find(key));
-	doc_flags_.keys.erase(doc_flags_.keys.begin() + key_index(key));
+	doc_flags_.key_to_index.erase(doc_flags_.key_to_index.find(type));
+	doc_flags_.keys.erase(doc_flags_.keys.begin() + type_index(type));
 }
 
 
@@ -239,12 +277,11 @@ inline void OutputBase::remove_key(const string& key) {
  */
 
 
-bool OutputBase::OutputData::declare_key(string key, bool extensive_doc, string reference) {
-	KeyHash key_h = key_hash(key);
-	key_to_index_const_iter it = key_to_index.find(key_h);
+bool OutputBase::ProcessedTypes::add_type(const void *type, bool extensive_doc, string reference) {
+	key_to_index_const_iter it = key_to_index.find(type);
 	if ( it == key_to_index.end() ) {
-	   key_to_index.insert( std::make_pair(key_h, keys.size()) );
-	   Key tmp_key = { (unsigned int)keys.size(), key, extensive_doc, reference};
+	   key_to_index.insert( std::make_pair(type, keys.size()) );
+	   Key tmp_key = { (unsigned int)keys.size(), type, extensive_doc, reference};
 	   keys.push_back(tmp_key);
 	   return true;
 	}
@@ -252,12 +289,12 @@ bool OutputBase::OutputData::declare_key(string key, bool extensive_doc, string 
 }
 
 
-bool OutputBase::OutputData::declare_key(string key) {
-	return declare_key(key, true, "");
+bool OutputBase::ProcessedTypes::add_type(const void *type) {
+	return add_type(type, true, "");
 }
 
 
-void OutputBase::OutputData::clear() {
+void OutputBase::ProcessedTypes::clear() {
 	key_to_index.erase(key_to_index.begin(), key_to_index.end());
 	keys.erase(keys.begin(), keys.end());
 }
@@ -281,8 +318,9 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 		stream << "" << "Record '" << type->type_name() << "' (" << type->size() << " keys).";
 		break;
 	case full_record:
-		if (! type->made_extensive_doc()) {
-			type->set_made_extensive_doc(true);
+		const void * data_ptr = get_record_data(type);
+		if (! has_type_extensive(data_ptr) ) {
+			doc_flags_.add_type(data_ptr);
 
 			// header
 			stream << endl;
@@ -360,10 +398,11 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 		stream << "AbstractRecord '" << type->type_name() << "' with "<< type->child_size() << " descendants.";
 		break;
 	case full_record:
-        if (! type->made_extensive_doc()) {
+		const void * data_ptr = get_abstract_record_data(type);
+		if (! has_type_extensive(data_ptr) ) {
 
             // Extensive description
-            type->set_made_extensive_doc(true);
+            doc_flags_.add_type(data_ptr);
 
             // header
             stream << endl;
@@ -405,8 +444,10 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 		stream << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
 		break;
 	case full_record:
-		if (! type->made_extensive_doc()) {
-			type->set_made_extensive_doc(true);
+		const void * data_ptr = get_selection_data(type);
+
+		if (! has_type_extensive(data_ptr) ) {
+			doc_flags_.add_type(data_ptr);
 
 			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
@@ -487,7 +528,6 @@ void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int 
 
 ostream& OutputJSONTemplate::print(ostream& stream) {
     key_name_ = "";
-    //type_->set_reference( "" );
     return OutputBase::print(stream);
 }
 
@@ -502,14 +542,13 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 			if (key_name_.size()) {
 				stream << key_name_ << " = ";
 			}
-			//if (type->made_extensive_doc()) {
-			if ( has_key_extensive(type->type_name()) ) {
-				//stream << "{REF=\"" << type->reference() << "\"}";
-				stream << "{REF=\"" << get_reference(type->type_name()) << "\"}";
+
+			const void *data_ptr = get_record_data(type); // get pointer to type->data_
+			if ( has_type_extensive(data_ptr) ) {
+				stream << "{REF=\"" << get_reference(data_ptr) << "\"}";
 			} else {
-				type->set_made_extensive_doc(true); //delete
-				set_extensive_flag(type->type_name());
-				string ref = get_reference(type->type_name());
+				set_extensive_flag(data_ptr);
+				string ref = get_reference(data_ptr);
 
 				stream << "{";
 				if (type->description().size()) {
@@ -517,18 +556,13 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 					write_description(stream, type->description(), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					/*if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
-						it->type_.get()->set_reference( type->reference() + "/" + "#" + it->key_ );
-					} else if ( !(typeid(*(it->type_.get())) == typeid(Type::Record))
-							| (it->type_.get()->reference().size() == 0) ) {
-						it->type_.get()->set_reference( type->reference() + "/" + it->key_ );
-					} */
+					const void *it_ptr = get_type_base_data(it->type_.get());
 					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
-						doc_flags_.declare_key( it->type_.get()->type_name(), false, ref + "/" + "#" + it->key_ );
+						doc_flags_.add_type( it_ptr, false, ref + "/" + "#" + it->key_ );
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
 							| (typeid(*(it->type_.get())) == typeid(Type::Array))
 							| (typeid(*(it->type_.get())) == typeid(Type::Selection)) ) {
-						doc_flags_.declare_key( it->type_.get()->type_name(), false, ref + "/" + it->key_ );
+						doc_flags_.add_type( it_ptr, false, ref + "/" + it->key_ );
 					}
 					if (it != type->begin()) {
 						stream << ",";
@@ -578,13 +612,12 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 
 			get_array_type(*type, array_type);
 
-			/*if (array_type.get()->reference().size() == 0) {
-				array_type.get()->set_reference( type->reference() + "/0" );
-			} */
 			if ( (typeid(*(array_type.get())) == typeid(Type::Record))
 					| (typeid(*(array_type.get())) == typeid(Type::AbstractRecord))
 					| (typeid(*(array_type.get())) == typeid(Type::Array))) {
-				doc_flags_.declare_key( array_type.get()->type_name(), false, get_reference(type->type_name()) + "/0");
+				const void * data_ptr = get_array_data(type); // get pointer to type->data_
+				const void * it_ptr = get_type_base_data(array_type.get());
+				doc_flags_.add_type( it_ptr, false, get_reference(data_ptr) + "/0");
 			}
 
 			if (has_opt_prefix) {
@@ -644,8 +677,8 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			string rec_name = key_name_;
 
 			std::vector<string> refs;
-			//string reference(type->reference());
-			string reference(get_reference(type->type_name()));
+			const void *data_ptr = get_abstract_record_data(type); // get pointer to type->child_data_
+			string reference(get_reference(data_ptr));
 			boost::split(refs, reference, boost::is_any_of("#"));
 		    ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
 
@@ -654,10 +687,8 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
 		    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		    	/*if (it->reference().size() == 0) {
-		    		it->set_reference( refs[0] + it->type_name() + "_" + refs[1] );
-		    	} */
-		    	doc_flags_.declare_key( it->type_name(), false, refs[0] + it->type_name() + "_" + refs[1] );
+		    	const void *it_ptr = get_type_base_data(&*it);
+		    	doc_flags_.add_type( it_ptr, false, refs[0] + it->type_name() + "_" + refs[1] );
 
 		    	key_name_ = it->type_name() + "_" + rec_name;
 		    	size_setw_ = depth;
@@ -673,11 +704,9 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 		    	doc_type_ = full_record;
 		    	print(stream, &*it, depth);
 		    }
-		    //type->set_reference( refs[0] + refs[1] );
-		    set_reference(type->type_name(), refs[0] + refs[1]);
-		    remove_key(type->type_name());
+		    set_reference(data_ptr, refs[0] + refs[1]);
+		    remove_type(data_ptr);
 
-		    //stream << endl;
 			break;
 	}
 
@@ -950,8 +979,9 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
         stream << "record: " << internal::hyper_link("IT", type->type_name());
         break;
     case full_record:
-        if (! type->made_extensive_doc()) {
-            type->set_made_extensive_doc(true);
+    	const void * data_ptr = get_record_data(type);
+    	if (! has_type_extensive(data_ptr) ) {
+            doc_flags_.add_type(data_ptr);
 
             // header
             stream << endl <<"\\begin{RecordType}{"
@@ -1046,10 +1076,11 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
         stream << "abstract type: " << internal::hyper_link("IT",type->type_name());
         break;
     case full_record:
-        if (! type->made_extensive_doc()) {
+    	const void * data_ptr = get_abstract_record_data(type);
+    	if (! has_type_extensive(data_ptr) ) {
 
             // Extensive description
-            type->set_made_extensive_doc(true);
+            doc_flags_.add_type(data_ptr);
 
             // header
             stream << endl << "\\begin{AbstractType}{"
@@ -1099,8 +1130,9 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
         }
         break;
     case full_record:
-        if (! type->made_extensive_doc()) {
-            type->set_made_extensive_doc(true);
+    	const void * data_ptr = get_selection_data(type);
+    	if (! has_type_extensive(data_ptr) ) {
+            doc_flags_.add_type(data_ptr);
 
             stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}" <<endl;
             // keys

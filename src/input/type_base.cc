@@ -186,9 +186,9 @@ bool Array::ArrayData::finish()
 
 
 
-void  Array::reset_doc_flags() const {
+/*void  Array::reset_doc_flags() const {
 	data_->type_of_values_->reset_doc_flags();
-}
+}*/
 
 
 
@@ -263,8 +263,8 @@ ARRAY_CONSTRUCT(AbstractRecord);
 /**********************************************************************************
  * implementation of Type::Scalar ... and descendants.
  */
-void  Scalar::reset_doc_flags() const
-{}
+/*void  Scalar::reset_doc_flags() const
+{}*/
 
 /**********************************************************************************
  * implementation of Type::Bool

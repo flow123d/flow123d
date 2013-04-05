@@ -66,7 +66,7 @@ public:
      * In order to output documentation of complex types only once, we mark types that have printed their documentation.
      * This method turns these marks off for the whole type subtree.
      */
-    virtual void  reset_doc_flags() const =0;
+    //virtual void  reset_doc_flags() const =0;
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -284,7 +284,7 @@ public:
         return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     virtual string type_name() const;
@@ -318,7 +318,7 @@ private:
 class Scalar : public TypeBase {
 public:
 
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
 };
 
 

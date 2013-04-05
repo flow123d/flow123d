@@ -255,7 +255,7 @@ public:
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
 
     /// Record type name getter.
     virtual string type_name() const;
@@ -486,6 +486,8 @@ protected:
 
 
 class AbstractRecord : public Record {
+	friend class OutputBase;
+
 protected:
 
     /**
@@ -571,7 +573,7 @@ public:
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
