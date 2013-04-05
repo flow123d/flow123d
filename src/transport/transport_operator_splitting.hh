@@ -58,9 +58,6 @@ public:
 		Field<3, FieldValue<3>::Vector> sources_sigma;
 		Field<3, FieldValue<3>::Vector> sources_conc;
 
-		int bc_time_level;
-		vector<double> bc_times;
-
 	};
 
     TransportBase(Mesh &mesh, const Input::Record in_rec);

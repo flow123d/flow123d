@@ -90,8 +90,7 @@ Record TransportOperatorSplitting::input_type
 
 
 TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
-: EqDataBase(eq_name),
-  bc_time_level(-1)
+: EqDataBase(eq_name)
 {
 
 	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
@@ -279,21 +278,11 @@ RegionSet TransportOperatorSplitting::EqData::read_boundary_list_item(Input::Rec
 	// Base method EqDataBase::read_boundary_list_item must be called first!
 	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
     FilePath bcd_file;
-    if (rec.opt_val("old_boundary_file", bcd_file) ) {
-        // TODO: remove bc_times key
-    	Input::Iterator<Input::Array> bc_it = rec.find<Input::Array>("bc_times");
-    	if (bc_it) bc_it->copy_to(bc_times);
 
-    	if (bc_times.size() == 0) {
-    		bc_time_level = -1;
-    	} else {
-            stringstream name_str;
-            name_str << (string)bcd_file << "_" << setfill('0') << setw(3) << bc_time_level;
-            bcd_file = FilePath(name_str.str(), FilePath::input_file);
-            bc_time_level++;
-        }
+    // read transport boundary conditions using old file format .tbc
+    if (rec.opt_val("old_boundary_file", bcd_file) )
         OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
-    }
+
     return domain;
 }
 

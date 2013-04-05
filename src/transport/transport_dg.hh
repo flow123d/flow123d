@@ -144,10 +144,20 @@ public:
      */
 	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
 
+	/**
+	 * @brief Getter for field data.
+	 */
 	virtual EqData *get_data() { return &data; }
 
+	/**
+	 * @brief Getter for number of substances.
+	 */
 	unsigned int n_substances() { return n_subst; };
 
+	/**
+	 * @brief Getter for substance names.
+	 * @return Vector of substance names.
+	 */
 	vector<string> &substance_names() { return subst_names; };
 
 	/**
@@ -195,6 +205,24 @@ private:
 	*/
 	template<unsigned int dim>
 	void assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+
+	/**
+	 * @brief Assembles the right hand side due to volume sources.
+	 *
+	 * This method just calls set_sources() for each space dimension.
+	 */
+	void set_sources();
+
+	/**
+	 * @brief Assembles the right hand side vector due to volume sources.
+	 *
+	 * The DOF handler and FiniteElement objects of specified dimension
+	 * must be passed as arguments.
+	 * @param dh DOF handler.
+	 * @param fe Finite element.
+	 */
+	template<unsigned int dim>
+	void set_sources(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
 
 	/**
 	 * @brief Assembles the fluxes on the boundary.
@@ -347,20 +375,52 @@ private:
 	 */
 	void set_initial_condition();
 
+	/**
+	 * @brief Calculates flux through boundary of each region.
+	 *
+	 * This actually calls calc_fluxes<dim>() for each space dimension.
+	 * @param bcd_balance       Total fluxes.
+	 * @param bcd_plus_balance  Incoming fluxes.
+	 * @param bcd_minus_balance Outgoing fluxes.
+	 */
 	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
 
+	/**
+	 * @brief Calculates flux through boundary of each region.
+	 * @param bcd_balance       Total fluxes.
+	 * @param bcd_plus_balance  Incoming fluxes.
+	 * @param bcd_minus_balance Outgoing fluxes.
+	 * @param dh                DOF handler.
+	 * @param fe                Finite element.
+	 */
 	template<unsigned int dim>
 	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance,
 			DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
 
+	/**
+	 * @brief Calculates volume sources for each region.
+	 *
+	 * This method actually calls calc_elem_sources<dim>() for each space dimension.
+	 * @param src_balance Vector of sources per region.
+	 */
 	void calc_elem_sources(vector< vector<double> > &src_balance);
 
+	/**
+	 * @brief Calculates volume sources for each region.
+	 * @param src_balance Vector of sources per region.
+	 * @param dh          DOF handler.
+	 * @param fe          Finite element.
+	 */
+	template<unsigned int dim>
+	void calc_elem_sources(vector< vector<double> > &src_balance, DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
 
 
-	EqData data;
 
 	/// @name Physical parameters
 	// @{
+
+	/// Field data for model parameters.
+	EqData data;
 
 	/// Number of transported substances.
 	int n_subst;
@@ -380,6 +440,17 @@ private:
 	// @{
 	/// Penalty parameters.
 	std::vector<double> gamma;
+
+	/**
+	 * @brief Tolerance to detect Dirichlet or Neumann boundary.
+	 *
+	 * This is used in the following test:
+	 *   if (flux_through_side / |flux_through_all_sides| > -tol_switch_dirichlet_neumann)
+	 *      set Neumann;
+	 *   else
+	 *      set Dirichlet;
+	 */
+    const double tol_switch_dirichlet_neumann;
 
 	// @}
 
@@ -457,12 +528,7 @@ private:
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
 
-    const double tol_switch_dirichlet_neumann;
-
     const MH_DofHandler * mh_dh;
-
-	// / Vector of fluxes across element edges - so far not used.
-//	Vec flux_vector;
 
     // @}
 };

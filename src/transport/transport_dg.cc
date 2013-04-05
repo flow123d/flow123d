@@ -77,20 +77,11 @@ RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
 	// Base method EqDataBase::read_boundary_list_item must be called first!
 	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
     FilePath bcd_file;
-    if (rec.opt_val("old_boundary_file", bcd_file) ) {
-    	Input::Iterator<Input::Array> bc_it = rec.find<Input::Array>("bc_times");
-    	if (bc_it) bc_it->copy_to(bc_times);
 
-    	if (bc_times.size() == 0) {
-    		bc_time_level = -1;
-    	} else {
-            stringstream name_str;
-            name_str << (string)bcd_file << "_" << setfill('0') << setw(3) << bc_time_level;
-            bcd_file = FilePath(name_str.str(), FilePath::input_file);
-            bc_time_level++;
-        }
+    // read transport boundary conditions using old file format .tbc
+    if (rec.opt_val("old_boundary_file", bcd_file) )
         OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
-    }
+
     return domain;
 }
 
@@ -207,17 +198,7 @@ void TransportDG::set_eq_data(Field< 3, FieldValue<3>::Scalar > *cross_section)
 
 void TransportDG::update_solution()
 {
-  START_TIMER("DG-ONE STEP");
-	if (mass_matrix == NULL)
-	{
-	    // assemble mass matrix
-	    ls_dt->start_allocation();
-	    assemble_mass_matrix();
-	    ls_dt->start_add_assembly();
-	    assemble_mass_matrix();
-	    ls_dt->finalize();
-	    mass_matrix = ls_dt->get_matrix();
-	}
+	START_TIMER("DG-ONE STEP");
 
     time_->next_time();
     time_->view("TDG");
@@ -226,36 +207,74 @@ void TransportDG::update_solution()
     data.set_time(*time_);
     END_TIMER("data reinit");
     
-    // TODO: assemble system matrix only if velocity flux or boundary conditions changed
-//    if (flux_changed || (bc->get_time_level() != -1 && time_->is_current(bc_mark_type_)))
-//    {
-        flux_changed = false;
+    // check first time assembly - needs preallocation
+    if (ls_dt->is_new())
+    {
+    	// preallocate mass matrix
+    	ls_dt->start_allocation();
+    	assemble_mass_matrix();
+    }
+	if (ls->is_new() ) {
+		// preallocate system matrix
+		ls->start_allocation();
+		assemble_stiffness_matrix();
+		set_boundary_conditions();
+		stiffness_matrix = 0;
+	}
 
-        // check first time assembly - needs preallocation
-        if (ls->is_new() ) {
-            // preallocate system matrix
-            ls->start_allocation();
-            assemble_stiffness_matrix();
-            set_boundary_conditions();
-            stiffness_matrix = 0;
-        }
+	// assemble mass matrix
+	if (mass_matrix == NULL ||
+		data.cross_section->changed() ||
+		data.por_m.changed())
+	{
+		ls_dt->start_add_assembly();
+		assemble_mass_matrix();
+		ls_dt->finalize();
+		mass_matrix = ls_dt->get_matrix();
+	}
 
+	// assemble stiffness matrix
+    if (flux_changed ||
+    	data.disp_l.changed() ||
+    	data.disp_t.changed() ||
+    	data.diff_m.changed() ||
+    	data.sigma_c.changed() ||
+    	data.dg_penalty.changed() ||
+    	data.por_m.changed() ||
+    	data.cross_section->changed())
+    {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
         ls->start_add_assembly();
         MatZeroEntries(ls->get_matrix());
-        VecSet(ls->get_rhs(), 0);
         assemble_stiffness_matrix();
-        set_boundary_conditions();
         ls->finalize();
 
         if (stiffness_matrix == 0)
             MatConvert(ls->get_matrix(), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
         else
             MatCopy(ls->get_matrix(), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
-        VecDuplicate(ls->get_rhs(), &rhs);
-        VecCopy(ls->get_rhs(), rhs);
-//    }
+    }
+
+    // assemble right hand side (due to sources and boundary conditions)
+    if (flux_changed ||
+    	data.bc_conc.changed() ||
+    	data.dg_penalty.changed() ||
+    	data.sources_conc.changed() ||
+    	data.sources_density.changed() ||
+    	data.sources_sigma.changed())
+    {
+    	ls->start_add_assembly();
+    	VecSet(ls->get_rhs(), 0);
+    	set_sources();
+    	set_boundary_conditions();
+    	ls->finalize();
+
+    	VecDuplicate(ls->get_rhs(), &rhs);
+    	VecCopy(ls->get_rhs(), rhs);
+    }
+
+    flux_changed = false;
 
 
     /* Apply backward Euler time integration.
@@ -494,6 +513,7 @@ void TransportDG::assemble_stiffness_matrix()
 
 
 
+
 template<unsigned int dim>
 void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
 {
@@ -507,12 +527,10 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
     vector<vec3> velocity;
     vector<double> divergence,
     	Dm(q.size()), alphaL(q.size()), alphaT(q.size()),
-    	por_m(q.size()), csection(q.size()),
-    	sources_conc(q.size()), sources_density(q.size()), sources_sigma(q.size()),
-    	conc(q.size());
+    	por_m(q.size()), csection(q.size());
     const unsigned int ndofs = fe->n_dofs();
     unsigned int dof_indices[ndofs];
-    PetscScalar local_matrix[ndofs*ndofs], local_rhs[ndofs];
+    PetscScalar local_matrix[ndofs*ndofs];
 
 	// assemble integral over elements
     for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
@@ -532,13 +550,6 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
         	alphaT[k]   = data.disp_t.value(fe_values.point(k), cell->element_accessor());
         	por_m[k]    = data.por_m.value(fe_values.point(k), cell->element_accessor());
         	csection[k] = data.cross_section->value(fe_values.point(k), cell->element_accessor());
-        	sources_conc[k] = data.sources_conc.value(fe_values.point(k), cell->element_accessor())(0);
-        	sources_density[k] = data.sources_density.value(fe_values.point(k), cell->element_accessor())(0);
-        	sources_sigma[k] = data.sources_sigma.value(fe_values.point(k), cell->element_accessor())(0);
-        	conc[k] = 0;
-        	for (unsigned int i=0; i<ndofs; i++)
-        		if (dof_indices[i] >= distr->begin() && dof_indices[i] <= distr->end())
-        			conc[k] += ls->get_solution_array()[dof_indices[i] - distr->begin()]*fe_values.shape_value(i,k);
         }
         calculate_dispersivity_tensor(K, velocity, Dm, alphaL, alphaT, por_m, csection);
 
@@ -560,7 +571,55 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
                 }
 
             }
+        }
 
+        ls->mat_set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_matrix);
+    }
+}
+
+
+void TransportDG::set_sources()
+{
+	set_sources<1>(dof_handler1d, fe1d);
+	set_sources<2>(dof_handler2d, fe2d);
+	set_sources<3>(dof_handler3d, fe3d);
+}
+
+template<unsigned int dim>
+void TransportDG::set_sources(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
+{
+    MappingP1<dim,3> map;
+    QGauss<dim> q(2);
+    FEValues<dim,3> fe_values(map, q, *fe, update_values | update_JxW_values | update_quadrature_points);
+    typename DOFHandler<dim,3>::CellIterator cell = dh->begin_cell();
+    vector<double> sources_conc(q.size()), sources_density(q.size()), sources_sigma(q.size()), conc(q.size());
+    const unsigned int ndofs = fe->n_dofs();
+    unsigned int dof_indices[ndofs];
+    PetscScalar local_rhs[ndofs];
+
+	// assemble integral over elements
+    for (cell = dh->begin_cell(); cell != dh->end_cell(); ++cell)
+    {
+        if (cell->dim() != dim) continue;
+
+        fe_values.reinit(cell);
+
+        for (int k=0; k<q.size(); k++)
+        {
+        	sources_conc[k] = data.sources_conc.value(fe_values.point(k), cell->element_accessor())(0);
+        	sources_density[k] = data.sources_density.value(fe_values.point(k), cell->element_accessor())(0);
+        	sources_sigma[k] = data.sources_sigma.value(fe_values.point(k), cell->element_accessor())(0);
+        	conc[k] = 0;
+        	for (unsigned int i=0; i<ndofs; i++)
+        		if (dof_indices[i] >= distr->begin() && dof_indices[i] <= distr->end())
+        			conc[k] += ls->get_solution_array()[dof_indices[i] - distr->begin()]*fe_values.shape_value(i,k);
+        }
+
+        dh->get_dof_indices(cell, dof_indices);
+
+        // assemble the local stiffness matrix
+        for (int i=0; i<ndofs; i++)
+        {
             // compute sources
             local_rhs[i] = 0;
             if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
@@ -574,7 +633,7 @@ void TransportDG::assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement
             }
         }
 
-        ls->set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_matrix, local_rhs);
+        ls->rhs_set_values(ndofs, (int *)dof_indices, local_rhs);
     }
 }
 
@@ -764,8 +823,6 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
         //    or matrix diagonal (think carefully)
         //
         if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
-                // || (edge->side(0)->cond()->type == 2 /* Neuman*/ && edge->side(0)->cond()->flux == 0.0) )
-                // NEED FIX
 
         cell = mesh().element.full_iter(edge->side(0)->element());
         dh->get_dof_indices(cell, side_dof_indices);
@@ -1345,7 +1402,57 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 
 void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance)
 {
+	calc_elem_sources<1>(src_balance, dof_handler1d, fe1d);
+	calc_elem_sources<2>(src_balance, dof_handler2d, fe2d);
+	calc_elem_sources<3>(src_balance, dof_handler3d, fe3d);
 }
+
+template<unsigned int dim>
+void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance, DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
+{
+	QGauss<dim> q(2);
+	MappingP1<dim,3> map;
+	FEValues<dim,3> fe_values(map, q, *fe, update_values | update_JxW_values | update_quadrature_points);
+//	DOFHandler<1,3>::CellIterator cell = dh->begin_cell();
+	unsigned int ndofs = dh->n_local_dofs();
+	unsigned int dof_indices[ndofs];
+	vector<double> sources_conc(q.size()), sources_density(q.size()), sources_sigma(q.size()), conc(q.size());
+
+	FOR_ELEMENTS(mesh_, elem)
+	{
+		if (elem->dim() != dim) continue;
+
+		fe_values.reinit(elem);
+		dh->get_dof_indices(elem, dof_indices);
+
+		double sources_sum = 0;
+
+		for (unsigned int k=0; k<q.size(); k++)
+		{
+			sources_conc[k]    = data.sources_conc.value(fe_values.point(k), elem->element_accessor())(0);
+			sources_density[k] = data.sources_density.value(fe_values.point(k), elem->element_accessor())(0);
+			sources_sigma[k]   = data.sources_sigma.value(fe_values.point(k), elem->element_accessor())(0);
+
+			conc[k] = 0;
+			for (unsigned int i=0; i<ndofs; i++)
+			{
+				if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
+				conc[k] += fe_values.shape_value(i,k)*ls->get_solution_array()[dof_indices[i]-distr->begin()];
+			}
+
+			double conc_diff = sources_conc[k] - conc[k];
+			if ( conc_diff > 0.0)
+				sources_sum += (sources_density[k] + conc_diff*sources_sigma[k])*fe_values.JxW(k);
+			else
+				sources_sum += sources_density[k]*fe_values.JxW(k);
+		}
+
+		src_balance[0][elem->element_accessor().region().bulk_idx()] += sources_sum;
+	}
+
+}
+
+
 
 
 
