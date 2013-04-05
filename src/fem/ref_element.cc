@@ -28,6 +28,7 @@
  */
 
 #include "system/global_defs.h"
+#include "system/system.hh"
 #include "fem/ref_element.hh"
 
 using namespace arma;
@@ -112,10 +113,14 @@ unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side]
 {
 	unsigned int index;
 	for (index = 0; index < n_side_permutations; index++)
-		if (equal(p, p + sizeof(p)/sizeof(*p), side_permutations[index]))
+		if (equal(p, p + n_nodes_per_side, side_permutations[index]))
 			return index;
 
-	exit(1);
+	xprintf(PrgErr, "Side permutation not found.\n");
+
+	// The following line is present in order to suppress compilers warning
+	// about missing return value.
+	return 0;
 }
 
 
