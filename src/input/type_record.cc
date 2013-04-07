@@ -262,6 +262,14 @@ string Record::type_name() const {
 }
 
 
+string Record::full_type_name() const {
+	if (data_->parent_ptr_) {
+		return data_->type_name_ + ":" + data_->parent_ptr_->type_name();
+	}
+    return data_->type_name_;
+}
+
+
 string Record::description() const  {
     return data_->description_;
 }
@@ -309,7 +317,7 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 :description_(description),
  type_name_(type_name_in),
  p_parent_(0),
- made_extensive_doc(false),
+ //made_extensive_doc(false),
  finished(false),
  closed_(false),
  derived_(false),

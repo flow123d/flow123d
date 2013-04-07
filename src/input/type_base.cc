@@ -196,6 +196,10 @@ string Array::type_name() const {
     return "array_of_" + data_->type_of_values_->type_name();
 }
 
+string Array::full_type_name() const {
+	return "array_of_" + data_->type_of_values_->type_name();
+}
+
 
 
 bool Array::operator==(const TypeBase &other) const    {
@@ -265,6 +269,11 @@ ARRAY_CONSTRUCT(AbstractRecord);
  */
 /*void  Scalar::reset_doc_flags() const
 {}*/
+
+
+string Scalar::full_type_name() const {
+    return type_name();
+}
 
 /**********************************************************************************
  * implementation of Type::Bool

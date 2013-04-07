@@ -446,6 +446,8 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 	case full_record:
 		const void * data_ptr = get_selection_data(type);
 
+		//cout << endl << "Selection: " << type << ", SelectionData: " << data_ptr;
+
 		if (! has_type_extensive(data_ptr) ) {
 			doc_flags_.add_type(data_ptr);
 

@@ -260,6 +260,9 @@ public:
     /// Record type name getter.
     virtual string type_name() const;
 
+    /// Record type full name getter.
+    virtual string full_type_name() const;
+
     /// Record description getter.
     virtual string description() const;
 
@@ -319,12 +322,12 @@ public:
     /**
      * Returns value of made_extensive_doc in the SelectionData
      */
-    inline bool made_extensive_doc() const;
+    //inline bool made_extensive_doc() const;
 
     /**
      * Sets value of made_extensive_doc in the SelectionData
      */
-    inline void set_made_extensive_doc(bool val) const;
+    //inline void set_made_extensive_doc(bool val) const;
 
     /**
      * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
@@ -417,7 +420,7 @@ protected:
          *
          * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
          */
-        mutable bool made_extensive_doc;
+        //mutable bool made_extensive_doc;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
@@ -711,14 +714,14 @@ inline unsigned int Record::size() const {
 }
 
 
-inline bool Record::made_extensive_doc() const {
+/*inline bool Record::made_extensive_doc() const {
 	return data_->made_extensive_doc;
-}
+}*/
 
 
-inline void Record::set_made_extensive_doc(bool val) const {
+/*inline void Record::set_made_extensive_doc(bool val) const {
 	data_->made_extensive_doc = val;
-}
+}*/
 
 
 
