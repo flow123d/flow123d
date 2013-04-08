@@ -11,6 +11,7 @@
 
 #include "input/type_base.hh"
 #include "input/type_record.hh"
+#include <boost/regex.hpp>
 
 
 namespace Input {
@@ -18,82 +19,24 @@ namespace Input {
 namespace Type {
 /***
  * TODO:
- * - v OutputText: Record ktery dedi bude uvadet jmeno predka (AbstractRecordu) - TODO: pridat shared_ptr do Record ukazujici na predka (trvale)
  *
- * - nejak informovat o povoleni automaticke konverze pro Record
- *
- * - OutputJSONTemplate:
- *   - vypis defaultnich hodnot pro skalarni klice, typ klice do komentare na stejnem radku
- *     pokud je obligatory vypsat <OBLIGATORY>, klic nezakomentovat
- *     Optional: prefix klice "OPT_", nezakomentovat (funguje jako komentar.. neznamy klic), jako hodnotu pouzit Integer, Double:0, String, Selection: ""
- *     Read_time: prefix "OPT_" , za rovnitko komentar?? co s default at read time a optional
- *     patrne je uvest ale v komentari, idea je aby soubor byl platny JSON soubor az na OBLIGATORY klice, ktere uzivatel musi vyplnit
- *
- *   - Pro selection uvest mozne hodnoty a jejich popisy do komentare
- *     # Selection of 3 values:
-       # "None" - Mortar space: P0 on elements of lower dimension.
-       # "P0"   - Mortar space: P0 on elements of lower dimension.
-       # "P1"   - Mortar space: P1 on intersections, using non-conforming pressures.
-       # ---------
-       # Method for coupling Darcy flow between dimensions.
-       mortar_method = "None"
- *
- *   - Pro abstract record: uvest TYPE (selection), pak jeho klice (dedi se) a pak
- *     jednotlive potomky pomoci klicu s pripojenym typem recordu,
- *   - pro klice ktere maji typ ktery uz byl popsan se uvede reference na klic kde se popis vyskytuje
- *
- *     # abstract record FieldBase_3_to_1x1_double
- *     # description:
- *     # ...
- *     # ----------------------------------------------- DESCENDANTS FOLLOWS
- *     # record FieldConstant, descendant of FieldBase_3_to_1x1_double
- *     init_pressure={
- *          TYPE="FieldConstant"
- *
- *          # description
- *          value=
- *     },
- *     # record FieldFormula
- *     init_pressure={
- *          TYPE="FieldFormula"
- *          formula=
- *          parameters=
- *     }
- *
- *     # abstract record FieldBase_3_to_1x1_double
- *     # description:
- *     water_source={REF="/.../init_pressure"},
- *
- *     # Array, size limits [2,3]
- *     # key description ...
- *     array_key=[
- *         # Record ...
- *         #
- *         {
- *             ...
- *         },
- *         < 1 more entry >
- *         ]
- *
- *
- *   - ?? jak se vyporadat s default values  pro automaticky konvertovatelne recordy a pole?
- *   - avoid repetitive output of same tyes
- *
- *   - jak je reseno potlaceni opakovaneho vypisovani Recordu, je mozno odstranit reset_doc_flags z TypeBase
- *   - pri dalsich upravach v exceptions zkusit predavat v EI smart_ptr na TypeBase, nicmene na miste vyvolani fce by muselo byt
- *     make_shared, aby se vytvorila kopie spravneho typu. (faktycky je potreba objekt Type kopirovat jinak nevim, ze mi ho nekdo neodalokuje.
- *
- *
- *
- *  value = <OBLIGATORY>
- *          #    is String (generic)
-            # String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-            # For vector values, you can use just one string to enter homogeneous vector.
-            # For square NxN-matrix values, you can use:
-            # * array of strings of size N to enter diagonal matrix
-            # * array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-            # * just one string to enter (spatially variable) multiple of the unit matrix.
-            # Formula can contain variables x,y,z,t and usual operators and functions.
+ * oprava get_xy_data
+
+simplify implementation of has_type a souvisejicich metod, odstranit inline
+metody pro pristup k ProcessedData presunout z OutputBase do ProcessedData
+metody:
+ bool was_written( string full_name)
+ void mark_written( string full_name)
+... pripadne spojit
+aplikuje filter_ na full_name :
+    boost::regex_replace(str_out.begin(), str_in.begin(), str_in.end(), filter_, "$&", ...)
+
+v OutputBase metoda OutputBase & set_filter(const string &reg_exp) -> nastavuje reg_exp v ProcessedTypes
+
+dalsi mapa full_type_name - moznost filtorvat vystupy pomoci regularniho vyrazu
+
+/// implement both DFS and BFS print, add methods push() and pop() to OutputBase
+
  *
  */
 
@@ -301,6 +244,12 @@ protected:
     	/// Clear all data of processed types
     	void clear();
 
+    	/// Initialize filter_; alokace filter_
+    	//void set_filter(string regex_filter);
+
+    	/// Deallocate filter_ if it was allocated.
+    	//~ProcessedTypes();
+
     	/// Database of valid keys
         std::map<const void *, unsigned int> key_to_index;
         typedef std::map<const void *, unsigned int>::const_iterator key_to_index_const_iter;
@@ -308,6 +257,8 @@ protected:
         /// Keys in order as they where declared.
         std::vector<struct Key> keys;
 
+        /// Regex filter for full names.
+        boost::regex    *filter_;
     };
 
     /// Stores flags and references of processed type

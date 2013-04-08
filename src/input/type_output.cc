@@ -8,6 +8,7 @@
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/operations.hpp> // put
 
+
 #include <string>
 #include <limits>
 
@@ -91,7 +92,7 @@ const void * OutputBase::get_abstract_record_data(const AbstractRecord *a_rec) {
 
 
 const void * OutputBase::get_selection_data(const Selection *sel) {
-	return & sel->data_;
+	return sel->data_.get();
 }
 
 
@@ -446,7 +447,7 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 	case full_record:
 		const void * data_ptr = get_selection_data(type);
 
-		//cout << endl << "Selection: " << type << ", SelectionData: " << data_ptr;
+		cout << endl << "Selection: " << type << ", SelectionData: " << data_ptr;
 
 		if (! has_type_extensive(data_ptr) ) {
 			doc_flags_.add_type(data_ptr);
