@@ -3,66 +3,62 @@
     TYPE = "SequentialCoupling", 
     description = "TestXXX-pork",
     mesh = {
-      mesh_file = "input/test_20.msh"
+      mesh_file = "${INPUT}/test_20.msh"
     }, 
     
     primary_equation = {
       TYPE = "Steady_MH",
       
       bulk_data = [
-	{ region = "rectangle", 
-	  conductivity = 0.125
-	}
+        { region = "rectangle", 
+          conductivity = 0.125
+        }
       ],
       
       bc_data = [
-	{
-	  r_set = "BOUNDARY",
-	  bc_type = "dirichlet",
-	  bc_pressure = { TYPE="FieldFormula", value = "x"}
-	}
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "x"}
+        }
       ],
        
       output = {
         output_stream = {
-          REF = "/system/output_streams/0"
+          REF = "/output_streams/0"
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-	velocity_p0 = "flow_output_stream"
+        velocity_p0 = "flow_output_stream"
       }, 
+
       solver = { 
-	TYPE = "Petsc",
-	accuracy = 1e-7 
+        TYPE = "Petsc",
+        a_tol = 1e-7 
       }
     }, 
     
     secondary_equation = {
       TYPE = "TransportOperatorSplitting",
-
-      dual_porosity = false,
-      sorption_enable = false,     
+   
       substances = ["A", "B", "C", "D", "G", "H"],
       
       bulk_data = [
-	{ 
-	  r_set = "ALL",
-	  init_conc = 0,
+        { r_set = "ALL",
+          init_conc = 0,
           por_m = 0.25 
-	}
+        }
       ],
       
       bc_data = [
-	{
-	  r_set = "BOUNDARY",
-	  bc_conc = 1.0
-	}
+        { r_set = "BOUNDARY",
+          bc_conc = 1.0
+        }
       ],
       
       output = {
-        mobile_p0 = "transport_output_stream", 
+        conc_mobile_p0 = "transport_output_stream", 
         output_stream = {
-          REF = "/system/output_streams/1"
+          REF = "/output_streams/1"
         }, 
         save_step = 0.5
       }, 
@@ -72,10 +68,9 @@
     } 
   }, 
   
-  system = {
     output_streams = [
       {
-        file = "output/test_20.pvd", 
+        file = "test_20.pvd", 
         format = {
           TYPE = "vtk", 
           variant = "ascii"
@@ -83,7 +78,7 @@
         name = "flow_output_stream"
       }, 
       {
-        file = "output/transport_test_20.pvd", 
+        file = "transport_test_20.pvd", 
         format = {
           TYPE = "vtk", 
           variant = "ascii"
@@ -91,5 +86,6 @@
         name = "transport_output_stream"
       }
     ]
-  }
+ 
+
 }
