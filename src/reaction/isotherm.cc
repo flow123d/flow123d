@@ -95,10 +95,10 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
     total_mass_step = mass_limit / n_steps;
     double mass = total_mass_step; // we need not to save value for zero mass, it is zero
     for(int i=0; i< n_steps;i++, mass+=total_mass_step) {
-        /*double c_aqua = mass * inv_scale_aqua; // aqueous concentration (original coordinates c_a) corresponding to total mass
+        double c_aqua = mass * inv_scale_aqua; // aqueous concentration (original coordinates c_a) corresponding to total mass
         double c_sorbed = const_cast<Func &>(isotherm)(c_aqua); // mass * inv_scale_sorbed;
         solve_conc(c_aqua, c_sorbed, isotherm);
-        interpolation_table.push_back( c_sorbed * scale_sorbed - c_aqua * scale_aqua);*/
+        interpolation_table.push_back( c_sorbed * scale_sorbed - c_aqua * scale_aqua);
     	double c_sorbed_rot = const_cast<Func &>(isotherm)(mass);
         interpolation_table.push_back(c_sorbed_rot);
     }

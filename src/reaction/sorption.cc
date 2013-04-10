@@ -30,10 +30,7 @@ it::Selection Sorption::EqData::sorption_type_selection = it::Selection("Sorptio
 Sorption::EqData::EqData()
 : EqDataBase("Sorption")
 {
-    //ADD_FIELD(nr_of_points, "Number of crossections allong isotherm", Input::Type::Default("10"));
-    //ADD_FIELD(region_ident, "Rock matrix area identifier.", Input::Type::Default("0"));
     ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
-    //ADD_FIELD(solvent_density, "Solvent density.", Input::Type::Default("1.0"));
 
     ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm.", it::Default("none") );
               sorption_types.set_selection(&sorption_type_selection);
@@ -86,7 +83,7 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     //Input::Array sorptions_array = in_rec.val<Input::Array>("bulk_data");
 
 	nr_of_regions = init_mesh.n_materials;
-	nr_of_substances = in_rec.val<Input::Array>("species").size(); // names.size();
+	nr_of_substances = in_rec.val<Input::Array>("species").size();
 	nr_of_points = in_rec.val<int>("substeps");
 
 	//Simple vectors holding  common informations.
@@ -101,10 +98,10 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
 	{
 		isotherms_mob[i_reg].resize(nr_of_substances);
-		for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
+		/*for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
 		{
 			//isotherms_mob[i_reg][i_spec] = *(new Isotherm);
-		}
+		}*/
 	}
 	if(dual_porosity_on)
 	{
@@ -113,10 +110,10 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 			for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
 			{
 				isotherms_immob[i_reg].resize(nr_of_substances);
-				for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
+				/*for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
 				{
 					//isotherms_immob[i_reg][i_spec] = *(new Isotherm);
-				}
+				}*/
 			}
 	}
 
@@ -152,78 +149,73 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	}
 
 	// list of types of isotherms in particular regions
-	std::vector<SorptionType> iso_type; iso_type.resize(nr_of_substances);
+	FieldValue<3>::EnumVector::return_type iso_type; iso_type.resize(nr_of_substances); //arma::Col<unsigned int> je ten typ ze začátku řádku, std::vector<SorptionType>
+	//std::vector<FieldEnum> iso_type; iso_type.resize(nr_of_substances);
 	// list of sorption parameters
-	std::vector<double> mult_param; mult_param.resize(nr_of_substances);
-	std::vector<double> second_coef; second_coef.resize(nr_of_substances);
+	arma::Col<double> mult_param; //mult_param.resize(nr_of_substances);
+	arma::Col<double> second_coef; //second_coef.resize(nr_of_substances);
+	double rock_density, mobile_porosity, immobile_porosity;
 	//Multidimensional array
 	int i_reg = 0;
-	for(Input::Iterator<Input::Record> reg_iter = sorptions_array.begin<Input::Record>(); reg_iter != sorptions_array.end(); ++reg_iter, i_reg++)
+	//for(Input::Iterator<Input::Record> reg_iter = sorptions_array.begin<Input::Record>(); reg_iter != sorptions_array.end(); ++reg_iter, i_reg++)
+	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("ALL") )
 	{
 		// list of types of isotherms in particular regions, initialization
-		Input::Array sorption_types_array = reg_iter->val<Input::Array>("sorption_types");
-		if (sorption_types_array.size() == iso_type.size() )   sorption_types_array.copy_to( iso_type ); // Must be done CORRECTLY!!!
-		  else  xprintf(UsrErr,"Number of sorption types %d has to match number of sorbing species %d.\n", sorption_types_array.size(), iso_type.size());
+		if(data_.sorption_types.get_const_value(reg_iter, iso_type)) ;
+		  else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
+
 		// multiplication coefficient parameter follows
-		Input::Array mult_coef_array = reg_iter->val<Input::Array>("mult_coef");
-		if (mult_coef_array.size() == mult_param.size() )   mult_coef_array.copy_to( mult_param );
-		  else  xprintf(UsrErr,"Number of sorption multiplication parameters %d has to match number of sorbing species %d.\n", mult_coef_array.size(), mult_param.size());
+		if(data_.mult_coefs.get_const_value(reg_iter, mult_param)) ;
+		  else  xprintf(UsrErr,"All the sorption parameters must be constant all over the %d-th region, but it is not.", reg_iter.id());
+
 		// second sorption parameter for isothermal description
-		Input::Array second_coef_array = reg_iter->val<Input::Array>("2nd_param");
-		if (second_coef_array.size() == second_coef.size() )   second_coef_array.copy_to( second_coef );
-		  else  xprintf(UsrErr,"Number of additional sorption parameters %d has to match number of sorbing species %d.\n", second_coef_array.size(), second_coef.size());
+		if(data_.second_params.get_const_value(reg_iter, second_coef)) ;
+		  else  xprintf(UsrErr,"All the sorption parameters must be constant all over the %d-th region, but it is not.", reg_iter.id());
+
 		// rock material characteristics are read bellow
-		double rock_density = reg_iter->val<double>("rock_density");
-		double mobile_porosity = reg_iter->val<double>("mob_porosity");
-		double immobile_porosity = reg_iter->val<double>("immob_porosity");
+		if(data_.rock_density.get_const_value(reg_iter, rock_density)) ;
+		  else xprintf(UsrErr,"Rock density is suppossed to be constant all over the %d-th region, but it is not.", reg_iter.id());
+		if(data_.mob_porosity.get_const_value(reg_iter, mobile_porosity)) ;
+		  else xprintf(UsrErr,"Mobile porosity is suppossed to be constant all over the %d-th region, but it is not.", reg_iter.id());
+		if(data_.immob_porosity.get_const_value(reg_iter, immobile_porosity)) ;
+		  else xprintf(UsrErr,"Immobile porosity is suppossed to be constant all over the %d-th region, but it is not.", reg_iter.id());
 
 		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 		{
 			// reinit isotherm, what about to define a type of isotherm in reinit
-			isotherms_mob[i_reg][i_subst].reinit(iso_type[i_subst],rock_density,solvent_dens,mobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
+			SorptionType hlp_iso_type = (SorptionType) iso_type[i_subst];
+
+			isotherms_mob[reg_iter.idx()][i_subst].reinit(hlp_iso_type,rock_density,solvent_dens,mobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
 			if(dual_porosity_on)
 			{
-				isotherms_immob[i_reg][i_subst].reinit(iso_type[i_subst],rock_density,solvent_dens,immobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
+				isotherms_immob[reg_iter.idx()][i_subst].reinit(hlp_iso_type,rock_density,solvent_dens,immobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
 			}
-			switch(iso_type[i_subst])
+			switch(hlp_iso_type)
 			{
 			 case none: // 0:
 			 {
-				 xprintf(Msg,"No sorption is considered for %d-th specie in %d-th region.", i_subst, i_reg);
+				 xprintf(Msg,"No sorption is considered for %d-th specie in %d-th region.", i_subst, reg_iter.idx());
 			 }
 			 break;
 			 case linear: // 1:
 			 {
-				// precompute necessary multiplication coefficient
-				double k = mult_param[i_subst]*isotherms_mob[i_reg][i_subst].get_scale_sorbed()/isotherms_mob[i_reg][i_subst].get_scale_aqua();
-				// How to define isotherm as functor?
-				//const
-				Linear obj_isotherm(k);
-				isotherms_mob[i_reg][i_subst].make_table(obj_isotherm, nr_of_points);
+				Linear obj_isotherm(mult_param[i_subst]);
+				isotherms_mob[reg_iter.idx()][i_subst].make_table(obj_isotherm, nr_of_points);
 				if(dual_porosity_on)
 				{
-					// precompute necessary multiplication coefficient
-					k = mult_param[i_subst]*isotherms_immob[i_reg][i_subst].get_scale_sorbed()/isotherms_immob[i_reg][i_subst].get_scale_aqua();
-					// define isotherm
-					const Linear obj_isotherm_immob(k);
-					isotherms_immob[i_reg][i_subst].make_table(obj_isotherm_immob, nr_of_points);
+					const Linear obj_isotherm_immob(mult_param[i_subst]);
+					isotherms_immob[reg_iter.idx()][i_subst].make_table(obj_isotherm_immob, nr_of_points);
 				}
 			 }
 			 break;
 			 case langmuir: // 2:
 			 {
-				//precompute necessary coefficient
-			 	double omega = mult_param[i_subst]*isotherms_mob[i_reg][i_subst].get_scale_sorbed()*(-1.0);// double;
-			 	double alfa = second_coef[i_subst]/(isotherms_mob[i_reg][i_subst].get_scale_aqua()); // mobile_porosity*solvent_dens);
-			 	Langmuir obj_isotherm(omega, alfa);
-				isotherms_mob[i_reg][i_subst].make_table(obj_isotherm, nr_of_points);
+			 	Langmuir obj_isotherm(mult_param[i_subst], second_coef[i_subst]);
+				isotherms_mob[reg_iter.idx()][i_subst].make_table(obj_isotherm, nr_of_points);
 			 	if(dual_porosity_on)
 			 	{
-					//precompute necessary coefficient
-				 	omega = mult_param[i_subst]*isotherms_immob[i_reg][i_subst].get_scale_sorbed()*(-1.0);// double;
-				 	alfa = second_coef[i_subst]/(isotherms_mob[i_reg][i_subst].get_scale_aqua()); // (immobile_porosity*solvent_dens);
-				 	Langmuir obj_isotherm_immob(omega, alfa);
-					isotherms_mob[i_reg][i_subst].make_table(obj_isotherm_immob, nr_of_points);
+				 	Langmuir obj_isotherm_immob(mult_param[i_subst], second_coef[i_subst]);
+					isotherms_mob[reg_iter.idx()][i_subst].make_table(obj_isotherm_immob, nr_of_points);
 			 	}
 			 }
 			 break;
@@ -234,7 +226,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			 break;
 			 default:
 			 {
-				 xprintf(Msg,"Sorption of %d-th specie in %d-th region has type %s.", i_subst, i_reg, iso_type[i_subst]);
+				 xprintf(Msg,"Sorption of %d-th specie in %d-th region has type %s.", i_subst, i_reg, hlp_iso_type);
 			 }
 			 break;
 			}

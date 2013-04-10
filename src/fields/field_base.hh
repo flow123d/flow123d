@@ -375,7 +375,7 @@ public:
     boost::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
-     * If the field on given region @p reg is exists and is of type FieldConstant<...> the method sets
+     * If the field on given region @p reg exists and is of type FieldConstant<...> the method sets
      * parameter @p value to the constant value of the field and returns true. Otherwise it returns false and value of the @p value parameter remains untouched.
      */
     bool get_const_value(Region reg, typename Value::return_type &value);
@@ -401,6 +401,8 @@ public:
     /**
      * If the field returns a FieldEnum and is constant on the given region, the method return true and
      * set @p value to the constant value on the given region. Otherwise (non constant field, other return type) it returns false.
+     *
+     * TODO: replace with more general method get_const_value
      */
     bool get_constant_enum_value(RegionIdx r_idx,  FieldEnum &value) const;
 
