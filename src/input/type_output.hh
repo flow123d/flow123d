@@ -145,66 +145,14 @@ protected:
 
 
     /**
-     * Interface to mapping key -> index in doc_flags_. Returns index (in continuous array) for given key.
+     * Returns true if the ProcessedTypes contains key with given name and key has true flag extensive_doc_.
      */
-    inline unsigned int type_index(const void * type) const;
-
-    /**
-     * Returns iterator to the key struct for given key string.
-     */
-    inline KeyIter type_iterator(const void * type) const;
-
-    /**
-     * Returns iterator to the key struct for given key string.
-     *
-     */
-    inline bool has_type_iterator(const void * type, KeyIter &it) const;
-
-    /**
-     * Container-like access to the keys of the OutputData. Returns iterator to the first key.
-     */
-    inline KeyIter begin() const;
-
-    /**
-     * Container-like access to the keys of the OutputData. Returns iterator to the last key.
-     */
-    inline KeyIter end() const;
-
-    /**
-     * Returns true if the OutputData contains key with given name.
-     */
-    inline bool has_type(const void * type) const;
-
-    /**
-     * Returns number of keys of OutputData.
-     */
-    inline unsigned int size() const;
-
-    /**
-     * Returns true if the OutputData contains key with given name and key has true flag extensive_doc_.
-     */
-    inline bool has_type_extensive(const void * type) const;
+    bool has_type_extensive(const void * type) const;
 
     /**
      * Returns reference_ string of key with given name.
      */
-    inline const string get_reference(const void * type) const;
-
-    /**
-     * Set reference_ string of key with given name.
-     */
-    inline void set_reference(const void * type, const string& ref);
-
-    /**
-     * Set value to extensive_doc_ flag of key with given name.
-     */
-    inline void set_extensive_flag(const void * type, bool val = true);
-
-    /**
-     * Remove key with given name from OutputData.
-     */
-    inline void remove_type(const void * type);
-
+    const string get_reference(const void * type) const;
 
     /**
      * Write value stored in dft.
@@ -243,6 +191,26 @@ protected:
 
     	/// Clear all data of processed types
     	void clear();
+
+        /**
+         * Interface to mapping key -> index. Returns index (in continuous array) for given key.
+         */
+        unsigned int type_index(const void * type) const;
+
+        /**
+         * Remove key with given name.
+         */
+        void remove_type(const void * type);
+
+        /**
+         * Set reference_ string of key with given name.
+         */
+        void set_reference(const void * type, const string& ref);
+
+        /**
+         * Set value to extensive_doc_ flag of key with given name.
+         */
+        void set_extensive_flag(const void * type, bool val = true);
 
     	/// Initialize filter_; alokace filter_
     	//void set_filter(string regex_filter);
