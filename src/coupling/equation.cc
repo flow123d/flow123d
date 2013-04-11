@@ -105,7 +105,7 @@ IT::Record EqDataBase::generic_input_type(bool bc_regions) {
                      .declare_key("rid", IT::Integer(0), "ID of the region where to set fields." )
                      .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
                              "Apply field setting in this record after this time.\n"
-                             "These times has to form an increasing sequence.");
+                             "These times have to form an increasing sequence.");
 
     BOOST_FOREACH(FieldCommonBase * field, field_list)
         if (bc_regions == field->is_bc()) {

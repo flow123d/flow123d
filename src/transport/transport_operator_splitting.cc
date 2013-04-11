@@ -98,7 +98,7 @@ TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
 	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", Default("0"));
-	ADD_FIELD(sources_sigma, "", Default("0"));
+	ADD_FIELD(sources_sigma, "Concentration flux.", Default("0"));
 	ADD_FIELD(sources_conc, "Concentration sources threshold.", Default("0"));
 
 }

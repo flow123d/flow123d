@@ -63,8 +63,7 @@
       dual_porosity = true, 
       sorption_enable = true, 
       substances = [
-        "age", 
-        "U235"
+        "age"
       ], 
 
       output = {

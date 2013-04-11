@@ -74,7 +74,7 @@
           rid=48,
           init_conc={
             TYPE="FieldFormula",
-            value="(1+sin(x)*sin(y))*0.5"
+            value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
           },
           por_m = 0.25
         },
@@ -82,7 +82,7 @@
           rid=184,
           init_conc={
             TYPE="FieldFormula",
-            value="(1+sin(x)*sin(y))*0.5"
+            value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
           },
           por_m = 0.25,
           diff_m = 1e-1

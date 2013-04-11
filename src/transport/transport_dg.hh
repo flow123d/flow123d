@@ -84,11 +84,11 @@ public:
 		EqData();
 		RegionSet read_boundary_list_item(Input::Record rec);
 
-		Field<3, FieldValue<3>::Scalar> disp_l;     ///< Longitudal dispersivity.
-		Field<3, FieldValue<3>::Scalar> disp_t;     ///< Transversal dispersivity.
-		Field<3, FieldValue<3>::Scalar> diff_m;     ///< Molecular diffusivity.
-		Field<3, FieldValue<3>::Scalar> sigma_c;    ///< Transition parameter for diffusive transfer on fractures.
-		Field<3, FieldValue<3>::Scalar> dg_penalty; ///< Penalty enforcing inter-element continuity of solution.
+		Field<3, FieldValue<3>::Vector> disp_l;     ///< Longitudal dispersivity (for each substance).
+		Field<3, FieldValue<3>::Vector> disp_t;     ///< Transversal dispersivity (for each substance).
+		Field<3, FieldValue<3>::Vector> diff_m;     ///< Molecular diffusivity (for each substance).
+		Field<3, FieldValue<3>::Vector> sigma_c;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
+		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
 
 	};
 
@@ -439,7 +439,7 @@ private:
 	/// @name Parameters of the numerical method
 	// @{
 	/// Penalty parameters.
-	std::vector<double> gamma;
+	std::vector<std::vector<double> > gamma;
 
 	/**
 	 * @brief Tolerance to detect Dirichlet or Neumann boundary.
@@ -460,10 +460,10 @@ private:
 	// @{
 
 	/// Vector of right hand side.
-	Vec rhs;
+	Vec *rhs;
 
 	/// The stiffness matrix.
-	Mat stiffness_matrix;
+	Mat *stiffness_matrix;
 
 	/// The mass matrix.
 	Mat mass_matrix;
@@ -472,7 +472,7 @@ private:
 	Distribution *distr;
 
 	/// Linear algebra system for the transport equation.
-	LinSys *ls;
+	LinSys **ls;
 
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 	LinSys *ls_dt;

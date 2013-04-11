@@ -5,9 +5,9 @@
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          -5.66955e-07  19.8271       -19.8271      inf           
+  -3            IMPLICIT BOUNDARY          -1.65282e-09  19.8271       -19.8271      inf           
 # -----------------------------------------------------------------------------------------------
-# total boundary balance                   -5.66955e-07  19.8271       -19.8271      
+# total boundary balance                   -1.65282e-09  19.8271       -19.8271      
 
 
 # Source fluxes over material subdomains:
