@@ -88,9 +88,11 @@ RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
 TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
         : TransportBase(init_mesh, in_rec),
           mass_matrix(0),
-          tol_switch_dirichlet_neumann(1e-5)
+          tol_switch_dirichlet_neumann(1e-5),
           // TODO: this should be dependent on precision of the Flow solution
           // see also remark in BC application
+          flux_changed(true),
+          allocation_done(false)
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
 
@@ -177,6 +179,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     stiffness_matrix = new Mat[n_subst];
     rhs = new Vec[n_subst];
 
+
     // set initial conditions
     set_initial_condition();
 
@@ -224,15 +227,13 @@ void TransportDG::update_solution()
     END_TIMER("data reinit");
     
     // check first time assembly - needs preallocation
-    if (ls_dt->is_new())
+    if (!allocation_done)
     {
     	// preallocate mass matrix
     	ls_dt->start_allocation();
     	assemble_mass_matrix();
     	mass_matrix = NULL;
-    }
 
-	if (ls[0]->is_new() ) {
 		// preallocate system matrix
 		for (unsigned int i=0; i<n_subst; i++)
 		{
@@ -242,7 +243,9 @@ void TransportDG::update_solution()
 		assemble_stiffness_matrix();
 		set_sources();
 		set_boundary_conditions();
-	}
+
+		allocation_done = true;
+    }
 
 	// assemble mass matrix
 	if (mass_matrix == NULL ||
@@ -1395,46 +1398,63 @@ void TransportDG::set_DG_parameters_boundary(const Edge *edge,
 
 void TransportDG::set_initial_condition()
 {
-    unsigned int maxndofs = max(fe1d->n_dofs(), max(fe2d->n_dofs(), fe3d->n_dofs()));
-    unsigned int dof_indices[maxndofs], nid, ndofs;
-    double values[maxndofs];
-    arma::vec init_values;
-
-    FOR_ELEMENTS(mesh_, elem)
-    {
-    	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
-
-		switch (elem->dim())
-		{
-		case 1:
-			dof_handler1d->get_dof_indices(elem, dof_indices);
-			ndofs = fe1d->n_dofs();
-			break;
-		case 2:
-			dof_handler2d->get_dof_indices(elem, dof_indices);
-			ndofs = fe2d->n_dofs();
-			break;
-		case 3:
-			dof_handler3d->get_dof_indices(elem, dof_indices);
-			ndofs = fe3d->n_dofs();
-			break;
-		default:
-			break;
-		}
-		init_values = data.init_conc.value(elem->centre(), ele_acc);
-		for (unsigned int sbi=0; sbi<n_subst; sbi++)
-		{
-			FOR_ELEMENT_NODES(elem, nid)
-				values[nid] = init_values(sbi);
-			VecSetValues(ls[sbi]->get_solution(), ndofs, (int *)dof_indices, values, INSERT_VALUES);
-		}
-    }
+	for (unsigned int sbi=0; sbi<n_subst; sbi++)
+		ls[sbi]->start_allocation();
+	prepare_initial_condition<1>(dof_handler1d, fe1d);
+	prepare_initial_condition<2>(dof_handler2d, fe2d);
+	prepare_initial_condition<3>(dof_handler3d, fe3d);
+	for (unsigned int sbi=0; sbi<n_subst; sbi++)
+		ls[sbi]->start_add_assembly();
+	prepare_initial_condition<1>(dof_handler1d, fe1d);
+	prepare_initial_condition<2>(dof_handler2d, fe2d);
+	prepare_initial_condition<3>(dof_handler3d, fe3d);
 
 	for (unsigned int sbi=0; sbi<n_subst; sbi++)
 	{
-		VecAssemblyBegin(ls[sbi]->get_solution());
-		VecAssemblyEnd(ls[sbi]->get_solution());
+		ls[sbi]->finalize();
+		solve_system(solver, ls[sbi]);
 	}
+}
+
+template<unsigned int dim>
+void TransportDG::prepare_initial_condition(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
+{
+	QGauss<dim> q(2);
+	MappingP1<dim,3> map;
+	FEValues<dim,3> fe_values(map, q, *fe, update_values | update_JxW_values | update_quadrature_points);
+    unsigned int ndofs = fe->n_dofs();
+    unsigned int dof_indices[ndofs], nid;
+    double matrix[ndofs*ndofs], rhs[ndofs];
+    arma::vec init_values[q.size()];
+
+    FOR_ELEMENTS(mesh_, elem)
+    {
+    	if (elem->dim() != dim) continue;
+
+    	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
+    	dh->get_dof_indices(elem, dof_indices);
+    	fe_values.reinit(elem);
+
+    	for (unsigned int k=0; k<q.size(); k++)
+    		init_values[k] = data.init_conc.value(fe_values.point(k), ele_acc);
+
+    	for (unsigned int sbi=0; sbi<n_subst; sbi++)
+    	{
+    		for (unsigned int i=0; i<ndofs; i++)
+    		{
+    			for (unsigned int j=0; j<ndofs; j++)
+    			{
+    				matrix[i*ndofs+j] = 0;
+    				for (unsigned int k=0; k<q.size(); k++)
+    					matrix[i*ndofs+j] += fe_values.shape_value(i,k)*fe_values.shape_value(j,k)*fe_values.JxW(k);
+    			}
+    			rhs[i] = 0;
+    			for (unsigned int k=0; k<q.size(); k++)
+    				rhs[i] += init_values[k](sbi)*fe_values.shape_value(i,k)*fe_values.JxW(k);
+    		}
+    		ls[sbi]->set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, matrix, rhs);
+    	}
+    }
 }
 
 

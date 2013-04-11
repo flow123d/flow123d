@@ -375,6 +375,9 @@ private:
 	 */
 	void set_initial_condition();
 
+	template<unsigned int dim>
+	void prepare_initial_condition(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+
 	/**
 	 * @brief Calculates flux through boundary of each region.
 	 *
@@ -527,6 +530,9 @@ private:
 
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
+
+    /// Indicates whether matrices have been preallocated.
+    bool allocation_done;
 
     const MH_DofHandler * mh_dh;
 
