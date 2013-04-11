@@ -103,14 +103,14 @@ bool InspectElements::calculate_prolongation_point(const ElementFullIter &elemen
 	update_tetrahedron(element_3D);
 	update_abscissa(element_1D, true);
 
-	int stena = -1;
 	std::vector<double> coords_3D;
 	double theta;
+	bool orientace;
 
 	for(unsigned int i = 0; i < 4; i++){
-		if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta)){
+		if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta, orientace)){
 			if(theta > 0 && theta < 1){
-				ProlongationPoint pp(element_1D->index(), element_3D->index(), i, coords_3D, theta);
+				ProlongationPoint pp(element_1D->index(), element_3D->index(), i, coords_3D, theta, orientace);
 				ppoint.push(pp);
 
 				SideIter elm_side = element_3D->side(i);
@@ -121,9 +121,7 @@ bool InspectElements::calculate_prolongation_point(const ElementFullIter &elemen
 					if (other_side != elm_side) {
 						// řešit permutaci hran a jak jsou označené stěny!!! změnit alfu a betu
 						// možná řešit i už spočítané pluckerovy souřadnice
-						stena = i; // doplnit
-						//sit->element(other_side->element())
-						ProlongationPoint pp2(element_1D->index(), other_side->element()->index() , other_side->el_idx() , coords_3D, theta);
+						ProlongationPoint pp2(element_1D->index(), other_side->element()->index() , other_side->el_idx() , coords_3D, theta, !orientace);
 						ppoint.push(pp2);
 					}
 				}
@@ -137,13 +135,13 @@ bool InspectElements::calculate_prolongation_point(const ElementFullIter &elemen
 void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point){
 
 	update_tetrahedron(sit->element(point.idx_elm3D()));
-	// orientace z PPointu
-	update_abscissa(sit->element(point.idx_elm1D()), true);
+	update_abscissa(sit->element(point.idx_elm1D()), point.getOrientation());
 
-	//zjistit číslování stěn, správně permutovat
+
 	int stena;
 	std::vector<double> coords_3D;
 	double theta;
+	bool orientace;
 	/* Cyklus přes všechny stěny
 	 * Pokud je stěna jiná než jaká je z prolongation pointu -> spočte se průsečík
 	 * Pokud byl nalezen, porovná se, zda leží na úsečce
@@ -153,12 +151,15 @@ void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point
 
 	for(unsigned int i = 0; i < 4; i++){
 		if(i != point.idx_side3D()){
-			if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta)){
-				// zajistit, aby úsečka byla ve směru 0 -> 1
+			if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta, orientace)){
 				projeti[point.idx_elm1D()] = true;
 				if(theta < 1){
 					IntersectionLocal il(point.idx_elm1D(), point.idx_elm3D());
 					il.add_local_coord(point.local_coords_3D(),point.local_coords_1D());
+					/* Když původní 1D element je v opačné orientaci, uložim i jinak orientovanou thétu
+					 * abscissa bude vždy ve správně orientaci
+					 * */
+					if(!point.getOrientation()){theta = 1 - theta;}
 					il.add_local_coord(coords_3D, theta);
 					all_intersection.push_back(il);
 
@@ -169,27 +170,32 @@ void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point
 						SideIter other_side=edg->side(j);
 						if (other_side != elm_side) {
 							// řešit permutaci hran a jak jsou označené stěny!!! změnit alfu a betu
-							ProlongationPoint pp(point.idx_elm1D(), other_side->element()->index(),other_side->el_idx(), coords_3D, theta);
+							ProlongationPoint pp(point.idx_elm1D(), other_side->element()->index(),other_side->el_idx(), coords_3D, theta, point.getOrientation());
 							ppoint.push(pp);
 						}
 					}
 				}else{
-					// ověřit zda je orientace 1D elementu ve směru 0 -> 1
-					// Interpolation:
-					std::vector<double> local_3D_coords = local_vector_interpolation(point.local_coords_3D_ref(),coords_3D,point.local_coords_1D(),theta, 1);
+					std::vector<double> local_3D_coords = local_vector_interpolation(point.local_coords_3D_ref(),coords_3D,point.local_coords_1D_if(),theta, 1);
 
 					IntersectionLocal il(point.idx_elm1D(), point.idx_elm3D());
 					il.add_local_coord(point.local_coords_3D(), point.local_coords_1D());
-					il.add_local_coord(local_3D_coords, 1);
+
+					unsigned int side;
+					if(point.getOrientation()){
+						side = 1;
+					}else{
+						side = 0;
+					}
+					il.add_local_coord(local_3D_coords, side);
 					all_intersection.push_back(il);
 
-					SideIter elm_side = sit->element(point.idx_elm1D())->side(1);
+					SideIter elm_side = sit->element(point.idx_elm1D())->side(side);
 					Edge *edg = elm_side->edge();
 					for(unsigned int j = 0; j < edg->n_sides; j++){
 						SideIter other_side = edg->side(j);
 						if(other_side != elm_side){
 							if(!projeti[other_side->element().index()]){
-							calculate_intersection_from_1D(other_side->element().index(), point.idx_elm3D());
+							calculate_intersection_from_1D(other_side->element().index(), point.idx_elm3D(), local_3D_coords);
 							}
 						}
 					}
@@ -200,47 +206,83 @@ void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point
 	}
 }
 
-void InspectElements::calculate_intersection_from_1D(unsigned int idx_1D, unsigned int idx_3D){
+void InspectElements::calculate_intersection_from_1D(unsigned int idx_1D, unsigned int idx_3D, std::vector<double> &interpolated_3D_coords){
 
 	double theta;
 	std::vector<double> coords_3D;
-
+	bool orientace;
+	bool nalezeni = false;
+	unsigned int stena;
 	// orientace! koncový bod úsečky, je počáteční nové
 	update_abscissa(sit->element(idx_1D), true);
 	projeti[idx_1D] = true;
 
-	// Opět ověřit orientaci úsečky ve směru 0->1
 	for(unsigned int i = 0; i < 4; i++){
-		if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta)){
-			// přidat break; zpracování až za for cyklem
+		if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta, orientace)){
+			if((theta < 0 && orientace) || (theta > 0 && !orientace)){
+				nalezeni = true;
+				stena = i;
+				break;
+			}
+		}
+	}
+	if(nalezeni){
 			if(theta < 1 && theta > 0){
 				IntersectionLocal il(idx_1D, idx_3D);
 				//souřadnice z interpolaci, lokální théta = 0;
-
-				// souřadnice z průsečíku
+				unsigned int pocatecni_bod;
+				if(orientace){
+					pocatecni_bod = 1;
+				}
+				else{
+					pocatecni_bod = 0;
+				}
+				il.add_local_coord(interpolated_3D_coords, pocatecni_bod);
 				il.add_local_coord(coords_3D, theta);
 				all_intersection.push_back(il);
 
-				SideIter elm_side = sit->element(idx_3D)->side(i);
+				SideIter elm_side = sit->element(idx_3D)->side(stena);
 				Edge *edg = elm_side->edge();
 					for(unsigned int j = 0; j < edg->n_sides; j++){
 						SideIter other_side = edg->side(j);
 						if(other_side != elm_side){
 							// řešit permutaci hran a jak jsou označené stěny!!! změnit alfu a betu
-							ProlongationPoint pp(idx_1D, other_side->element()->index(),other_side->el_idx(), coords_3D, theta);
+							ProlongationPoint pp(idx_1D, other_side->element()->index(),other_side->el_idx(), coords_3D, theta, !orientace);
 							ppoint.push(pp);
 						}
 					}
-				break;
-			}else if(theta > 1){
-				// úsečka končí ve vnitř -> procházet přes stěny všechny neprojité úsečky a metodu opakovat
 
-				break;
+			}else{
+
+				unsigned int pocatecni_bod;
+				if(orientace){
+					pocatecni_bod = 1;
+				}
+				else{
+					pocatecni_bod = 0;
+				}
+				unsigned int koncovy_bod = (pocatecni_bod+1)%2;
+				std::vector<double> local_3D_coords = local_vector_interpolation(interpolated_3D_coords,coords_3D,pocatecni_bod,theta, koncovy_bod);
+
+				IntersectionLocal il(idx_1D, idx_3D);
+				il.add_local_coord(interpolated_3D_coords, pocatecni_bod);
+				il.add_local_coord(local_3D_coords, koncovy_bod);
+				all_intersection.push_back(il);
+
+									SideIter elm_side = sit->element(idx_1D)->side(koncovy_bod);
+									Edge *edg = elm_side->edge();
+									for(unsigned int j = 0; j < edg->n_sides; j++){
+										SideIter other_side = edg->side(j);
+										if(other_side != elm_side){
+											if(!projeti[other_side->element().index()]){
+											calculate_intersection_from_1D(other_side->element().index(), idx_3D, local_3D_coords);
+											}
+										}
+									}
+
 			}
-
-
-		}
 	}
+
 
 }
 

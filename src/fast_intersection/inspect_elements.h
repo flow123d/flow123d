@@ -38,7 +38,7 @@ public:
 	/* Calculating intersections from PPoint
 	 * */
 	void calculate_from_prolongation_point(ProlongationPoint &point);
-	void calculate_intersection_from_1D(unsigned int idx_1D, unsigned int idx_3D);
+	void calculate_intersection_from_1D(unsigned int idx_1D, unsigned int idx_3D, std::vector<double> &interpolated_3D_coords);
 
 	// pomocné výpočetní metody:
 	double get_local_coords_1D(SPoint<3> a, SPoint<3> b, SPoint<3> x);

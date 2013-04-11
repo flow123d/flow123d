@@ -28,8 +28,11 @@ class ProlongationPoint {
 	// Local coordinate of 1D element
 	double theta;
 
+	// Orientation of 1D element true = right orientation -> theta = theta ---- false = wrong orientation, theta = 1 - theta
+	bool orientation;
+
 public:
-	ProlongationPoint(unsigned int el1D, unsigned int el3D, unsigned int side3D, std::vector<double> &coords_3D, double t);
+	ProlongationPoint(unsigned int el1D, unsigned int el3D, unsigned int side3D, std::vector<double> &coords_3D, double t, bool orientation);
 	~ProlongationPoint();
 
 	inline unsigned int idx_elm1D(){return element_1D_idx;};
@@ -38,6 +41,11 @@ public:
 	inline std::vector<double> local_coords_3D(){return coordinates_3D;};
 	inline std::vector<double> &local_coords_3D_ref(){return coordinates_3D;};
 	inline double local_coords_1D(){return theta;};
+	inline double local_coords_1D_if(){
+		if(!orientation){ return 1 - theta;}
+		return theta;
+	}
+	inline bool getOrientation(){return orientation;};
 };
 
 } // namespace fast_1_3 close
