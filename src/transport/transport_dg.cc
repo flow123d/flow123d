@@ -1445,10 +1445,12 @@ void TransportDG::prepare_initial_condition(DOFHandler<dim,3> *dh, FiniteElement
     			for (unsigned int j=0; j<ndofs; j++)
     			{
     				matrix[i*ndofs+j] = 0;
+    				if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
     				for (unsigned int k=0; k<q.size(); k++)
     					matrix[i*ndofs+j] += fe_values.shape_value(i,k)*fe_values.shape_value(j,k)*fe_values.JxW(k);
     			}
     			rhs[i] = 0;
+    			if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
     			for (unsigned int k=0; k<q.size(); k++)
     				rhs[i] += init_values[k](sbi)*fe_values.shape_value(i,k)*fe_values.JxW(k);
     		}
