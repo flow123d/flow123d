@@ -121,14 +121,15 @@ void TransportBase::mass_balance() {
     F_ENTRY;
 
     // First we compute the quantities, then on process 0 we write the output
+    const int nsubst = n_substances();
+    vector<vector<double> > bcd_balance(nsubst),
+    		bcd_plus_balance(nsubst),
+    		bcd_minus_balance(nsubst),
+    		mass(nsubst),
+    		src_balance(nsubst);
 
-    vector<vector<double> > bcd_balance(n_substances()),
-    		bcd_plus_balance(n_substances()),
-    		bcd_minus_balance(n_substances()),
-    		src_balance(n_substances());
 
-
-    for (int i=0; i<n_substances(); i++)
+    for (int i=0; i<nsubst; i++)
     {
     	bcd_balance[i].resize(mesh_->region_db().boundary_size());
     	bcd_plus_balance[i].resize(mesh_->region_db().boundary_size());
@@ -140,20 +141,23 @@ void TransportBase::mass_balance() {
     		bcd_minus_balance[i][j] = 0;
     	}
 
+    	mass[i].resize(mesh_->region_db().bulk_size());
     	src_balance[i].resize( mesh_->region_db().bulk_size());
 		for (unsigned int j=0; j<src_balance[i].size(); j++)
+		{
+			mass[i][j] = 0;
 			src_balance[i][j] = 0;
+		}
 	}
     //computing mass fluxes over boundaries and elements
     calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
-	calc_elem_sources(src_balance);
+	calc_elem_sources(mass, src_balance);
 
 
 	// gather results from processes and sum them up
-	int nsubst = n_substances();
 	int bcd_size = mesh_->region_db().boundary_size();
 	int blk_size = mesh_->region_db().bulk_size();
-	int buf_size = nsubst*(3*bcd_size + blk_size);
+	int buf_size = nsubst*(3*bcd_size + 2*blk_size);
 	double sendbuffer[buf_size], recvbuffer[buf_size];
 
 	// prepare sendbuffer
@@ -166,7 +170,10 @@ void TransportBase::mass_balance() {
 			sendbuffer[i*3*bcd_size+2*bcd_size+j] = bcd_minus_balance[i][j];
 		}
 		for (int j=0; j<blk_size; j++)
-			sendbuffer[nsubst*3*bcd_size+j] = src_balance[i][j];
+		{
+			sendbuffer[nsubst*3*bcd_size+i*2*blk_size         +j] = mass[i][j];
+			sendbuffer[nsubst*3*bcd_size+i*2*blk_size+blk_size+j] = src_balance[i][j];
+		}
 	}
 	MPI_Reduce(&sendbuffer,recvbuffer,buf_size,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
 
@@ -184,14 +191,18 @@ void TransportBase::mass_balance() {
 			bcd_minus_balance[i][j] = recvbuffer[i*3*bcd_size+2*bcd_size+j];
 		}
 		for (int j=0; j<blk_size; j++)
-			src_balance[i][j] = recvbuffer[nsubst*3*bcd_size+j];
+		{
+			mass[i][j]        = recvbuffer[nsubst*3*bcd_size+i*2*blk_size         +j];
+			src_balance[i][j] = recvbuffer[nsubst*3*bcd_size+i*2*blk_size+blk_size+j];
+		}
 	}
 
 
-	vector<double> bcd_total_balance(n_substances(), 0.), // for computing total balance on boundary
-			bcd_total_inflow(n_substances(), 0.),
-			bcd_total_outflow(n_substances(), 0.),
-			src_total_balance(n_substances(), 0.);
+	vector<double> bcd_total_balance(nsubst, 0.), // for computing total balance on boundary
+			bcd_total_inflow(nsubst, 0.),
+			bcd_total_outflow(nsubst, 0.),
+			mass_total(nsubst, 0.),
+			src_total_balance(nsubst, 0.);
 
     //printing the head of mass balance file
     unsigned int c = 6; //column number without label
@@ -221,7 +232,7 @@ void TransportBase::mass_balance() {
 
     for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
         //DBGMSG("writing reg->idx() and id() and boundary_idx(): %d\t%d\t%d\n", reg->idx(), reg->id(), reg->boundary_idx());
-    	for (int sbi=0; sbi<n_substances(); sbi++) {
+    	for (int sbi=0; sbi<nsubst; sbi++) {
     		bcd_total_balance[sbi] += bcd_balance[sbi][reg->boundary_idx()];
     		bcd_total_outflow[sbi] += bcd_plus_balance[sbi][reg->boundary_idx()];
     		bcd_total_inflow[sbi] += bcd_minus_balance[sbi][reg->boundary_idx()];
@@ -233,20 +244,20 @@ void TransportBase::mass_balance() {
     }
     //total boundary balance
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  // drawing long line
-    for (int sbi=0; sbi<n_substances(); sbi++)
+    for (int sbi=0; sbi<nsubst; sbi++)
     	fprintf(balance_output_file, bc_total_format.c_str(),w+wl,"total boundary balance",
                 w+2,substance_names()[sbi].c_str(),w,bcd_total_balance[sbi], w, bcd_total_outflow[sbi], w, bcd_total_inflow[sbi]);
     fprintf(balance_output_file, "\n\n");
 
 
     //SOURCES
-    string src_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s\n",
-           src_format = "%*s%-*d%-*s%-*s  %-*g%-*s%-*g\n",
-           src_total_format = "# %-*s%-*s%-*g\n";
+    string src_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s%-*s\n",
+           src_format = "%*s%-*d%-*s%-*s  %-*g%-*g%-*s%-*g\n",
+           src_total_format = "# %-*s%-*s%-*g%-*g\n";
     //computing water balance of sources
     fprintf(balance_output_file,"# Source fluxes over material subdomains:\n");   //head
     fprintf(balance_output_file,src_head_format.c_str(),w,"[region_id]",wl,"[label]",
-                            w,"[substance]",w,"[total_balance]",2*w,"",w,"[time]");
+                            w,"[substance]",w,"[total_mass]",w,"[total_sources]",w,"",w,"[time]");
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  //long line
 
     //printing water balance of sources
@@ -254,20 +265,25 @@ void TransportBase::mass_balance() {
     const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
     for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
     {
-    	for (int sbi=0; sbi<n_substances(); sbi++)
+    	for (int sbi=0; sbi<nsubst; sbi++)
     	{
+    		mass_total[sbi] += mass[sbi][reg->bulk_idx()];
 			src_total_balance[sbi] += src_balance[sbi][reg->bulk_idx()];
 			//"%*s%-*d%-*s  %-*g%-*s%-*g\n";
 			fprintf(balance_output_file, src_format.c_str(), 2,"", w, reg->id(), wl,
 					reg->label().c_str(), w, substance_names()[sbi].c_str(),
-					w,src_balance[sbi][reg->bulk_idx()],2*w,"", w,time().t());
+					w,mass[sbi][reg->bulk_idx()],
+					w,src_balance[sbi][reg->bulk_idx()],
+					w,"", w,time().t());
     	}
     }
     //total sources balance
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
-    for (int sbi=0; sbi<n_substances(); sbi++)
+    for (int sbi=0; sbi<nsubst; sbi++)
     	fprintf(balance_output_file, src_total_format.c_str(),w+wl,"total sources balance",
-                w+2,substance_names()[sbi].c_str(),w,src_total_balance[sbi]);
+                w+2,substance_names()[sbi].c_str(),
+                w,mass_total[sbi],
+                w,src_total_balance[sbi]);
     fprintf(balance_output_file, "\n\n");
 }
 
@@ -531,10 +547,11 @@ void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balanc
 
 }
 
-void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &src_balance)
+void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
 {
 	int *el_4_loc, *row_4_el;
 	Distribution *el_ds;
+	double ***solution = convection->get_conc();
 
 	convection->get_par_info(el_4_loc, el_ds);
 	row_4_el = convection->get_row_4_el();
@@ -547,7 +564,10 @@ void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &src_
 		{
 			int index = row_4_el[elem.index()];
 			if (el_ds->is_local(index))
+			{
+				mass[sbi][elem->element_accessor().region().bulk_idx()] += solution[MOBILE][sbi][index-el_ds->begin()]*elem->measure();
 				src_balance[sbi][elem->element_accessor().region().bulk_idx()] += sources[index-el_ds->begin()]*elem->measure();
+			}
 		}
 	}
 }

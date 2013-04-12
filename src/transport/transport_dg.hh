@@ -404,18 +404,20 @@ private:
 	 * @brief Calculates volume sources for each region.
 	 *
 	 * This method actually calls calc_elem_sources<dim>() for each space dimension.
+	 * @param mass        Vector of substance mass per region.
 	 * @param src_balance Vector of sources per region.
 	 */
-	void calc_elem_sources(vector< vector<double> > &src_balance);
+	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
 
 	/**
 	 * @brief Calculates volume sources for each region.
+	 * @param mass        Vector of substance mass per region.
 	 * @param src_balance Vector of sources per region.
 	 * @param dh          DOF handler.
 	 * @param fe          Finite element.
 	 */
 	template<unsigned int dim>
-	void calc_elem_sources(vector< vector<double> > &src_balance, DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance, DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
 
 
 
@@ -444,15 +446,6 @@ private:
 	/// Penalty parameters.
 	std::vector<std::vector<double> > gamma;
 
-	/**
-	 * @brief Tolerance to detect Dirichlet or Neumann boundary.
-	 *
-	 * This is used in the following test:
-	 *   if (flux_through_side / |flux_through_all_sides| > -tol_switch_dirichlet_neumann)
-	 *      set Neumann;
-	 *   else
-	 *      set Dirichlet;
-	 */
     const double tol_switch_dirichlet_neumann;
 
 	// @}

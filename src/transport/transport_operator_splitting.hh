@@ -95,7 +95,7 @@ public:
 protected:
 
     virtual void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) = 0;
-    virtual void calc_elem_sources(vector<vector<double> > &src_balance) = 0;
+    virtual void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) = 0;
 
     FILE *balance_output_file;
 
@@ -138,7 +138,7 @@ public:
 private:
 
     void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) {};
-    void calc_elem_sources(vector<vector<double> > &src_balance) {};
+    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) {};
 };
 
 
@@ -210,7 +210,7 @@ public:
 private:
 
     void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-    void calc_elem_sources(vector<vector<double> > &src_balance);
+    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
     EqData data;
 

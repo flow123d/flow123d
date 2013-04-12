@@ -219,6 +219,10 @@ void TransportDG::update_solution()
 {
 	START_TIMER("DG-ONE STEP");
 
+	// calculate mass balance at initial time
+	if (!allocation_done)
+		mass_balance();
+
     time_->next_time();
     time_->view("TDG");
     
@@ -1472,7 +1476,7 @@ template<unsigned int dim>
 void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance,
 		DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
 {
-	QGauss<dim-1> q(2);
+	QGauss<dim-1> q(20);
 	MappingP1<dim,3> map;
 	FE_RT0<dim,3> fe_rt;
 	FESideValues<dim,3> fe_values(map, q, *fe, update_values | update_gradients | update_side_JxW_values | update_quadrature_points);
@@ -1553,15 +1557,15 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 
 }
 
-void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance)
+void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
 {
-	calc_elem_sources<1>(src_balance, dof_handler1d, fe1d);
-	calc_elem_sources<2>(src_balance, dof_handler2d, fe2d);
-	calc_elem_sources<3>(src_balance, dof_handler3d, fe3d);
+	calc_elem_sources<1>(mass, src_balance, dof_handler1d, fe1d);
+	calc_elem_sources<2>(mass, src_balance, dof_handler2d, fe2d);
+	calc_elem_sources<3>(mass, src_balance, dof_handler3d, fe3d);
 }
 
 template<unsigned int dim>
-void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance, DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
+void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance, DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
 {
 	QGauss<dim> q(2);
 	MappingP1<dim,3> map;
@@ -1569,8 +1573,9 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance, DOFHan
 	unsigned int ndofs = dh->n_local_dofs();
 	unsigned int dof_indices[ndofs];
 	vector<vector<double> > sources_conc(n_subst), sources_density(n_subst), sources_sigma(n_subst);
-	vector<double> conc(q.size());
+	vector<double> por_m(q.size()), csection(q.size());
 	arma::vec sc_vec, sd_vec, ss_vec;
+	double mass_sum, sources_sum, conc, conc_diff;
 
 	for (unsigned int sbi=0; sbi<n_subst; sbi++)
 	{
@@ -1586,10 +1591,10 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance, DOFHan
 		fe_values.reinit(elem);
 		dh->get_dof_indices(elem, dof_indices);
 
-		double sources_sum = 0;
-
 		for (unsigned int k=0; k<q.size(); k++)
 		{
+			por_m[k] = data.por_m.value(fe_values.point(k), elem->element_accessor());
+			csection[k] = data.cross_section->value(fe_values.point(k), elem->element_accessor());
 			sc_vec = data.sources_conc.value(fe_values.point(k), elem->element_accessor());
 			sd_vec = data.sources_density.value(fe_values.point(k), elem->element_accessor());
 			ss_vec = data.sources_sigma.value(fe_values.point(k), elem->element_accessor());
@@ -1603,25 +1608,34 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &src_balance, DOFHan
 
 		for (unsigned int sbi=0; sbi<n_subst; sbi++)
 		{
+			mass_sum = 0;
+			sources_sum = 0;
+
 			for (unsigned int k=0; k<q.size(); k++)
 			{
-				conc[k] = 0;
+				conc = 0;
 				for (unsigned int i=0; i<ndofs; i++)
 				{
 					if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
-					conc[k] += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
+					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
 				}
 
-				double conc_diff = sources_conc[sbi][k] - conc[k];
+				mass_sum += por_m[k]*csection[k]*conc*fe_values.JxW(k);
+
+				conc_diff = sources_conc[sbi][k] - conc;
 				if ( conc_diff > 0.0)
 					sources_sum += (sources_density[sbi][k] + conc_diff*sources_sigma[sbi][k])*fe_values.JxW(k);
 				else
 					sources_sum += sources_density[sbi][k]*fe_values.JxW(k);
 			}
-			src_balance[sbi][elem->element_accessor().region().bulk_idx()] += sources_sum;
+
+			Region r = elem->element_accessor().region();
+			if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d\n", elem.index());
+			unsigned int region_idx = r.bulk_idx();
+			mass[sbi][region_idx] += mass_sum;
+			src_balance[sbi][region_idx] += sources_sum;
 		}
 	}
-
 }
 
 
