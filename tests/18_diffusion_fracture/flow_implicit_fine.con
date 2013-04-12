@@ -52,11 +52,7 @@
       bulk_data = [
         {
           rid = 20,
-          init_conc = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "./input/test18_fine_init.msh",
-            field_name = "concentration"
-          },
+          init_conc = 0,
           por_m = 0.25,
           sigma_c = 1e1
         },
@@ -64,7 +60,7 @@
           rid = 24,
           init_conc = {
             TYPE = "FieldFormula",
-            value = "if(x>=0.45&x<0.55 & y>0.3&y<0.4,1,0)"
+            value = "if(x>=0.45&x<0.55 & y>0.325&y<0.4,1,0)"
           },
           por_m = 0.25
         }
