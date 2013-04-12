@@ -22,6 +22,7 @@ InspectElements::InspectElements(){}
 
 InspectElements::InspectElements(Mesh* sit_):sit(sit_){
 	projeti.assign(sit->n_elements(),false);
+	plucker_product.assign(6, NULL);
 	calculate_intersections();
 }
 
@@ -73,6 +74,7 @@ void InspectElements::calculate_intersections(){
 
 	FOR_ELEMENTS(sit, elm) {
 		if (elm->dim() == 1 && !projeti[elm->index()]) {
+			xprintf(Msg, "Nalezen 1D element \n");
 			projeti[elm->index()] = true;
 			std::vector<unsigned int> searchedElements;
 		    TAbscissa ta;
@@ -85,8 +87,10 @@ void InspectElements::calculate_intersections(){
 		    	int idx = *it;
 		        ElementFullIter ele = sit->element( idx );
 		        if (ele->dim() == 3) {
+		        	xprintf(Msg, "Nalezen 3D element \n");
 		        	if(calculate_prolongation_point(elm, ele)){
 		        		while(!ppoint.empty()){
+		        			xprintf(Msg, "==============\n PROCHÁZENÍ FRONTY \n");
 		        			calculate_from_prolongation_point(ppoint.front());
 		        			ppoint.pop();
 		        	    }
@@ -108,19 +112,19 @@ bool InspectElements::calculate_prolongation_point(const ElementFullIter &elemen
 	bool orientace;
 
 	for(unsigned int i = 0; i < 4; i++){
-		if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta, orientace)){
+		if(intersection_1D_2D(tetrahedron[i], i, coords_3D, theta, orientace)){
 			if(theta > 0 && theta < 1){
 				ProlongationPoint pp(element_1D->index(), element_3D->index(), i, coords_3D, theta, orientace);
 				ppoint.push(pp);
-
+				xprintf(Msg, "SPOČETL SE PPOINT \n");
+				xprintf(Msg, "ID1D: %d ID3D %d STENA %d --- THETA %f \n", element_1D->index(), element_3D->index(), i, theta);
 				SideIter elm_side = element_3D->side(i);
 				Edge *edg = elm_side->edge();
 				ASSERT(edg, "Null edge \n");
 				for(unsigned int j=0; j < edg->n_sides;j++) {
 					SideIter other_side=edg->side(j);
 					if (other_side != elm_side) {
-						// řešit permutaci hran a jak jsou označené stěny!!! změnit alfu a betu
-						// možná řešit i už spočítané pluckerovy souřadnice
+						xprintf(Msg, "SPOČETL SE SOUSEDNÍ PPOINT \n");
 						ProlongationPoint pp2(element_1D->index(), other_side->element()->index() , other_side->el_idx() , coords_3D, theta, !orientace);
 						ppoint.push(pp2);
 					}
@@ -135,8 +139,8 @@ bool InspectElements::calculate_prolongation_point(const ElementFullIter &elemen
 void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point){
 
 	update_tetrahedron(sit->element(point.idx_elm3D()));
+	//update_abscissa(sit->element(point.idx_elm1D()), true);
 	update_abscissa(sit->element(point.idx_elm1D()), point.getOrientation());
-
 
 	int stena;
 	std::vector<double> coords_3D;
@@ -151,8 +155,11 @@ void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point
 
 	for(unsigned int i = 0; i < 4; i++){
 		if(i != point.idx_side3D()){
-			if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta, orientace)){
+			xprintf(Msg,"Prochází ostatních stěn: %d \n", i);
+			if(intersection_1D_2D(tetrahedron[i], i, coords_3D, theta, orientace)){
 				projeti[point.idx_elm1D()] = true;
+				xprintf(Msg, "SPOČETL SE PRŮSEČÍK OD PPOINTU! \n");
+				xprintf(Msg, "STENA %d --- THETA %f \n", i, theta);
 				if(theta < 1){
 					IntersectionLocal il(point.idx_elm1D(), point.idx_elm3D());
 					il.add_local_coord(point.local_coords_3D(),point.local_coords_1D());
@@ -175,6 +182,7 @@ void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point
 						}
 					}
 				}else{
+					xprintf(Msg, "INTERPOLACE \n");
 					std::vector<double> local_3D_coords = local_vector_interpolation(point.local_coords_3D_ref(),coords_3D,point.local_coords_1D_if(),theta, 1);
 
 					IntersectionLocal il(point.idx_elm1D(), point.idx_elm3D());
@@ -213,12 +221,12 @@ void InspectElements::calculate_intersection_from_1D(unsigned int idx_1D, unsign
 	bool orientace;
 	bool nalezeni = false;
 	unsigned int stena;
-	// orientace! koncový bod úsečky, je počáteční nové
+
 	update_abscissa(sit->element(idx_1D), true);
 	projeti[idx_1D] = true;
 
 	for(unsigned int i = 0; i < 4; i++){
-		if(IntersectionsOp_1D_2D(abscissa, tetrahedron[i], i, coords_3D, theta, orientace)){
+		if(intersection_1D_2D(tetrahedron[i], i, coords_3D, theta, orientace)){
 			if((theta < 0 && orientace) || (theta > 0 && !orientace)){
 				nalezeni = true;
 				stena = i;
@@ -292,12 +300,16 @@ vector<IntersectionLocal> InspectElements::getIntersections(){return all_interse
 
 void InspectElements::update_tetrahedron(const ElementFullIter &element_3D){
 
+			for(unsigned int i = 0; i < 6;i++){
+				plucker_product[i] = NULL;
+			}
+
 			SPoint<3> spsim1; spsim1.setCoords(element_3D->node[0]->point());
 			SPoint<3> spsim2; spsim2.setCoords(element_3D->node[1]->point());
 			SPoint<3> spsim3; spsim3.setCoords(element_3D->node[2]->point());
 			SPoint<3> spsim4; spsim4.setCoords(element_3D->node[3]->point());
 		    SPoint<3> pole_bodu[4] = {spsim1,spsim2,spsim3,spsim4};
-			tetrahedron = Simplex<3,3>(pole_bodu);
+		    tetrahedron = Simplex<3,3>(pole_bodu);
 };
 
 void InspectElements::update_abscissa(const ElementFullIter &element_1D, bool orientace){
@@ -312,6 +324,125 @@ void InspectElements::update_abscissa(const ElementFullIter &element_1D, bool or
 		sphp2.setCoords(element_1D->node[0]->point());
 	}
 	abscissa = HyperPlane<1,3>(sphp1, sphp2);
+};
+
+void InspectElements::fill_plucker_product(int index1, int index2, int index3, double &c, double &d, double &e, Simplex<2,3> sm, int &stena){
+	if(plucker_product[index1] == NULL){
+
+		c = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint()), Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint())*(Vector<3>)sm[0][0].getPoint());
+		if(stena == 2){
+			c = -c;
+		}
+		plucker_product[index1] = new double(c);
+
+	}
+	else{
+		c = *plucker_product[index1];
+	}
+
+	if(plucker_product[index2] == NULL){
+		d = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint()), Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint())*(Vector<3>)sm[0][1].getPoint());
+		plucker_product[index2] = new double(d);}
+	else{
+		d = *plucker_product[index2];
+	}
+
+	if(plucker_product[index3] == NULL){
+		e = abscissa.getPlucker()*Plucker(Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint()), Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint())*(Vector<3>)sm[1][1].getPoint());
+
+		if(stena == 3){
+			e = -e;
+		}
+
+		plucker_product[index3] = new double(e);}
+	else{
+		e = *plucker_product[index3];
+	}
+}
+
+
+bool InspectElements::intersection_1D_2D(Simplex<2,3> sm, int stena, std::vector<double> &coords_3D, double &local_abscissa, bool &orientace){
+	double c,d,e;
+	xprintf(Msg, "FUNCE INTERSECTION 1D 2D jede \n");
+
+	if(stena == 0){
+		fill_plucker_product(0,1,2,c,d,e, sm, stena);
+		xprintf(Msg, "C: %f D: %f E: %f \n", c,d,e);
+	}
+	else if(stena == 1){
+		fill_plucker_product(0,3,4,c,d,e, sm, stena);
+
+
+		//plucker_product[0] == NULL ? *plucker_product[0] = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint()), Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint())*(Vector<3>)sm[0][0].getPoint());
+		//plucker_product[3] == NULL ? *plucker_product[3] = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint()), Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint())*(Vector<3>)sm[0][1].getPoint());
+	    //plucker_product[4] == NULL ? *plucker_product[4] = abscissa.getPlucker()*Plucker(Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint()), Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint())*(Vector<3>)sm[1][1].getPoint());
+
+
+
+		//c = *plucker_product[0]*(-1);
+		//d = *plucker_product[3]*(-1);
+		//e = *plucker_product[4]*(-1);
+		c *= -1;
+		d *= -1;
+		e *= -1;
+		xprintf(Msg, "C: %f D: %f E: %f \n", c,d,e);
+
+	}
+	else if(stena == 2){
+		fill_plucker_product(2,5,4,c,d,e, sm, stena);
+		//c = plucker_product[2] == NULL ? *plucker_product[2] = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint()), Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint())*(Vector<3>)sm[0][0].getPoint()) : *plucker_product[2];
+		//d = plucker_product[5] == NULL ? *plucker_product[5] = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint()), Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint())*(Vector<3>)sm[0][1].getPoint()) : *plucker_product[5];
+		//e = plucker_product[4] == NULL ? *plucker_product[4] = abscissa.getPlucker()*Plucker(Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint()), Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint())*(Vector<3>)sm[1][1].getPoint()) : *plucker_product[4];
+
+		c *= -1;
+		xprintf(Msg, "C: %f D: %f E: %f \n", c,d,e);
+	}
+	else{
+		fill_plucker_product(1,5,3,c,d,e, sm, stena);
+		//c = plucker_product[1] == NULL ? *plucker_product[1] = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint()), Vector<3>(sm[0][0].getPoint(),sm[0][1].getPoint())*(Vector<3>)sm[0][0].getPoint()) : *plucker_product[1];
+		//d = plucker_product[5] == NULL ? *plucker_product[5] = abscissa.getPlucker()*Plucker(Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint()), Vector<3>(sm[0][1].getPoint(),sm[1][1].getPoint())*(Vector<3>)sm[0][1].getPoint()) : *plucker_product[5];
+		//e = plucker_product[3] == NULL ? *plucker_product[3] = abscissa.getPlucker()*Plucker(Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint()), Vector<3>(sm[1][1].getPoint(),sm[0][0].getPoint())*(Vector<3>)sm[1][1].getPoint()) : *plucker_product[3];
+		e *= -1;
+		xprintf(Msg, "C: %f D: %f E: %f \n", c,d,e);
+	}
+	xprintf(Msg, "FUNCE INTERSECTION 1D 2D spočteny pluckery \n");
+
+	/* Při výpočtu jsou P. souřadnice zorientovány, aby vycházely kladné hodnoty, pokud úsečka vstupuje do 4 stěnu
+	 * a záporné pokud vystupuje
+	 * */
+
+	if((c > 0 && d > 0 && e > 0) || (c < 0 && d < 0 && e < 0)){
+		// c = w0; d = w1; e = w2
+		// lokální alfa = w2/soucet; lokální beta = w1/soucet; => lokální souřadnice na stěně
+		double alfa = e/(c+d+e);
+		double beta = c/(c+d+e);
+		// lokální souřadnice na přímce T
+		// T = localAbscissa= - A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i) / U(i)
+		// i = max z U(i)
+		Vector<3> vec(abscissa.getPointA(),abscissa.getPointB());
+		int i = 0;
+		double max = vec[0];
+		if(vec[1] > max) max = vec[1]; i = 1;
+		if(vec[2] > max) max = vec[2]; i = 2;
+
+		local_abscissa = (-abscissa.getPointA()[i] + (1 - alfa - beta)*sm[0][0].getPoint()[i] +
+				alfa*sm[0][1].getPoint()[i] + beta*sm[1][1].getPoint()[i])/max;
+
+		coords_3D.push_back(alfa); coords_3D.push_back(beta);
+
+		if(c*d*e > 0){
+			orientace = true; // orientace je v pořádku -> úsečka vchází do 4stěnu
+		}
+		else{
+			orientace = false; // úsečka vychází
+		}
+
+
+		return true;
+	}
+	else{
+		return false;
+    }
 };
 
 

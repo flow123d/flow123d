@@ -51,6 +51,11 @@ public:
 	void update_tetrahedron(const ElementFullIter &element_3D);
 	void update_abscissa(const ElementFullIter &element_1D, bool orientace);
 
+	inline int velikost_projeti(){return projeti.size();};
+
+	void fill_plucker_product(int index1, int index2, int index3, double &c, double &d, double &e, Simplex<2,3> sm, int &stena);
+	bool intersection_1D_2D(Simplex<2,3> sm, int stena, std::vector<double> &coords_3D, double &local_abscissa, bool &orientace);
+
 private:
 	// information of all elements if element was inspected
 	std::vector<bool> projeti;
@@ -64,7 +69,14 @@ private:
 	// auxiliary data members
 	Simplex<3,3> tetrahedron;
 	HyperPlane<1,3> abscissa;
-
+	/* pp[0] = productAB
+	 * pp[1] = productBC
+	 * pp[2] = productCA
+	 * pp[3] = productBD
+	 * pp[4] = productDA
+	 * pp[5] = productCD
+	*/
+	std::vector<double *> plucker_product;
 };
 
 } // namespace fast_1_3 close

@@ -74,13 +74,13 @@ public:
     //void set_elements(TElement *elem1, TElement *elem2); //metoda na naplneni ele1, ele2
     void add_local_coord(const std::vector<double> &coordin1, const double &coordin2); //metoda na pridani souradnic do i_points
     void add_local_point(IntersectionPoint *InPoint);
-    void print(FILE *out_file);
+    //void print(FILE *out_file);
 
     //void AddNewLocalcoord(); //doplnit predavany parametr, pridat novou i_points
 
-    static int getNumInstances() {
+    /*static int getNumInstances() {
 		return IntersectionLocal::numberInstance;
-	}
+	}*/
 
    // inline IntersectionType get_type()
     //    {return type; }
@@ -91,6 +91,13 @@ public:
     }
     inline int getID(){
     	return id;
+    }
+    inline unsigned int idx_1D(){return element_1D_idx;}
+    inline unsigned int idx_3D(){return element_3D_idx;}
+    inline void print(){
+    	xprintf(Msg, "ID 1D: %d ID 3D %d \n", element_1D_idx, element_3D_idx);
+    	xprintf(Msg, "Local Coords: 1D: ", &i_points[0]->el2_coord());
+
     }
     /*inline std::vector<int> getSide(const int number){
     	if (number >= sides.size() ) return NULL;
