@@ -57,6 +57,9 @@ public:
      */
     virtual ostream& print(ostream& stream);
 
+	/// Initialize filter_; alokace filter_
+	void set_filter(string regex_filter);
+
 protected:
     /// Types of documentation output
     enum DocumentationType {
@@ -145,12 +148,12 @@ protected:
 
 
     /**
-     * Returns true if the ProcessedTypes contains key with given name and key has true flag extensive_doc_.
+     * Returns true if the ProcessedTypes contains key of given type and key has true flag extensive_doc_.
      */
     bool has_type_extensive(const void * type) const;
 
     /**
-     * Returns reference_ string of key with given name.
+     * Returns reference_ string of key of given type.
      */
     const string get_reference(const void * type) const;
 
@@ -193,30 +196,39 @@ protected:
     	void clear();
 
         /**
-         * Interface to mapping key -> index. Returns index (in continuous array) for given key.
+         * Interface to mapping key -> index. Returns index (in continuous array) for given type.
          */
         unsigned int type_index(const void * type) const;
 
         /**
-         * Remove key with given name.
+         * Remove key of given type.
          */
         void remove_type(const void * type);
 
         /**
-         * Set reference_ string of key with given name.
+         * Set reference_ string of key of given type.
          */
         void set_reference(const void * type, const string& ref);
 
         /**
-         * Set value to extensive_doc_ flag of key with given name.
+         * Set value to extensive_doc_ flag of key of given type.
          */
         void set_extensive_flag(const void * type, bool val = true);
 
-    	/// Initialize filter_; alokace filter_
-    	//void set_filter(string regex_filter);
-
     	/// Deallocate filter_ if it was allocated.
-    	//~ProcessedTypes();
+    	~ProcessedTypes();
+
+        /**
+         * Returns true if the ProcessedTypes contains type of given full_name
+         * in full_type_names set and regular expression filter is initialized.
+         */
+    	bool was_written(string full_name);
+
+    	/**
+    	 * Marks full_name of type as written.
+    	 * Regular expression filter must be initialized!
+    	 */
+    	void mark_written(string full_name);
 
     	/// Database of valid keys
         std::map<const void *, unsigned int> key_to_index;
@@ -227,6 +239,12 @@ protected:
 
         /// Regex filter for full names.
         boost::regex    *filter_;
+
+        /// Regular expression of filter
+        string reg_exp_;
+
+        /// Set of processed types by regular expression and full names
+        std::set<string> full_type_names;
     };
 
     /// Stores flags and references of processed type

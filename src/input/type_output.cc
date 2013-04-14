@@ -29,6 +29,7 @@ OutputBase::~OutputBase() {}
 OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 : type_(type), depth_(depth)
 {
+	doc_flags_.filter_ = NULL;
     TypeBase::lazy_finish();
 }
 
@@ -43,6 +44,12 @@ ostream&  OutputBase::print(ostream& stream) {
 
 	print(stream, type_, depth_);
 	return stream;
+}
+
+
+void OutputBase::set_filter(string regex_filter) {
+    doc_flags_.reg_exp_ = regex_filter;
+	doc_flags_.filter_ = new boost::regex(regex_filter);
 }
 
 
@@ -203,8 +210,15 @@ const string OutputBase::get_reference(const void * type) const {
 
 
 /*******************************************************************
- * implementation of OutputBase::OutputData
+ * implementation of OutputBase::ProcessedTypes
  */
+
+
+OutputBase::ProcessedTypes::~ProcessedTypes() {
+    if (filter_ != NULL) {
+        delete filter_;
+    }
+}
 
 
 bool OutputBase::ProcessedTypes::add_type(const void *type, bool extensive_doc, string reference) {
@@ -227,6 +241,9 @@ bool OutputBase::ProcessedTypes::add_type(const void *type) {
 void OutputBase::ProcessedTypes::clear() {
 	key_to_index.erase(key_to_index.begin(), key_to_index.end());
 	keys.erase(keys.begin(), keys.end());
+	if (filter_ != NULL) {
+		full_type_names.erase(full_type_names.begin(), full_type_names.end());
+	}
 }
 
 
@@ -269,6 +286,23 @@ void OutputBase::ProcessedTypes::set_extensive_flag(const void * type, bool val)
 }
 
 
+bool OutputBase::ProcessedTypes::was_written(string full_name) {
+	if (filter_ == NULL) return false;
+
+	std::string filtered = boost::regex_replace(full_name, *filter_, "");
+	return full_type_names.find(filtered) != full_type_names.end();
+}
+
+
+void OutputBase::ProcessedTypes::mark_written(string full_name) {
+	std::string filtered = boost::regex_replace(full_name, *filter_, "");
+
+	ASSERT(full_type_names.find(filtered) == full_type_names.end(), "Value '%s' is already exist in full_type_names set!\n", filtered.c_str());
+
+	full_type_names.insert(filtered);
+}
+
+
 
 
 
@@ -288,8 +322,11 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 		break;
 	case full_record:
 		const void * data_ptr = get_record_data(type);
-		if (! has_type_extensive(data_ptr) ) {
+		if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name())) {
 			doc_flags_.add_type(data_ptr);
+			if (doc_flags_.filter_ != NULL) {
+				doc_flags_.mark_written(type->full_type_name());
+			}
 
 			// header
 			stream << endl;
@@ -368,10 +405,13 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 		break;
 	case full_record:
 		const void * data_ptr = get_abstract_record_data(type);
-		if (! has_type_extensive(data_ptr) ) {
+		if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
 
             // Extensive description
             doc_flags_.add_type(data_ptr);
+			if (doc_flags_.filter_ != NULL) {
+				doc_flags_.mark_written(type->full_type_name());
+			}
 
             // header
             stream << endl;
@@ -415,8 +455,11 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 	case full_record:
 		const void * data_ptr = get_selection_data(type);
 
-		if (! has_type_extensive(data_ptr) ) {
+		if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
 			doc_flags_.add_type(data_ptr);
+			if (doc_flags_.filter_ != NULL) {
+				doc_flags_.mark_written(type->full_type_name());
+			}
 
 			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
@@ -949,8 +992,11 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
         break;
     case full_record:
     	const void * data_ptr = get_record_data(type);
-    	if (! has_type_extensive(data_ptr) ) {
+    	if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
             doc_flags_.add_type(data_ptr);
+			if (doc_flags_.filter_ != NULL) {
+				doc_flags_.mark_written(type->full_type_name());
+			}
 
             // header
             stream << endl <<"\\begin{RecordType}{"
@@ -1046,10 +1092,13 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
         break;
     case full_record:
     	const void * data_ptr = get_abstract_record_data(type);
-    	if (! has_type_extensive(data_ptr) ) {
+    	if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
 
             // Extensive description
             doc_flags_.add_type(data_ptr);
+			if (doc_flags_.filter_ != NULL) {
+				doc_flags_.mark_written(type->full_type_name());
+			}
 
             // header
             stream << endl << "\\begin{AbstractType}{"
@@ -1100,8 +1149,11 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
         break;
     case full_record:
     	const void * data_ptr = get_selection_data(type);
-    	if (! has_type_extensive(data_ptr) ) {
+    	if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
             doc_flags_.add_type(data_ptr);
+			if (doc_flags_.filter_ != NULL) {
+				doc_flags_.mark_written(type->full_type_name());
+			}
 
             stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}" <<endl;
             // keys
