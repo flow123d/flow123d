@@ -453,6 +453,28 @@ void DarcyFlowMH_Steady::postprocess()
 }
 
 
+double DarcyFlowMH_Steady::solution_precision() const
+{
+	double precision;
+	double bnorm;
+
+	switch (n_schur_compls) {
+	case 0: /* none */
+		if (schur0 != NULL) VecNorm(schur0->get_rhs(), NORM_2, &bnorm);
+		break;
+	case 1: /* first schur complement of A block */
+		if (schur1 != NULL) VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
+		break;
+	case 2: /* second schur complement of the max. dimension elements in B block */
+		if (schur1 != NULL) VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
+		break;
+	}
+	precision = max(solver->a_tol, solver->r_tol*bnorm);
+
+	return precision;
+}
+
+
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
 {
     // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency

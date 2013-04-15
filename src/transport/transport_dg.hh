@@ -446,8 +446,6 @@ private:
 	/// Penalty parameters.
 	std::vector<std::vector<double> > gamma;
 
-    const double tol_switch_dirichlet_neumann;
-
 	// @}
 
 

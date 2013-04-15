@@ -17,8 +17,8 @@
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
-        TYPE = "Petsc", 
-        accuracy = 1e-07
+        TYPE = "Petsc" 
+        a_tol = 1e-07
       },
       bc_data=[
         {
@@ -58,7 +58,7 @@
       },
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-07
       },
       bc_data=[
         {

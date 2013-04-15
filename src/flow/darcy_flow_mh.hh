@@ -165,7 +165,7 @@ public:
         unsigned int size;
         get_solution_vector(array, size);
 
-        mh_dh.set_solution(array);
+        mh_dh.set_solution(array, solution_precision());
        return mh_dh;
     }
     
@@ -182,7 +182,7 @@ protected:
 
     }
 
-    virtual void postprocess() =0;
+    virtual double solution_precision() const = 0;
 
     //virtual void balance();
     //virtual void integrate_sources();
@@ -266,6 +266,7 @@ protected:
     void make_schur0();
     void make_schur1();
     void make_schur2();
+    double solution_precision() const;
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make

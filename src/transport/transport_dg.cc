@@ -88,9 +88,6 @@ RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
 TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
         : TransportBase(init_mesh, in_rec),
           mass_matrix(0),
-          tol_switch_dirichlet_neumann(1e-5),
-          // TODO: this should be dependent on precision of the Flow solution
-          // see also remark in BC application
           flux_changed(true),
           allocation_done(false)
 {
@@ -885,25 +882,7 @@ void TransportDG::assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim
     {
         if (edge->n_sides != 1 || edge->side(0)->dim() != dim-1) continue;
 
-        double elem_flux = 0;
-        for (int i=0; i<edge->side(0)->element()->n_sides(); i++)
-        	elem_flux += fabs( mh_dh->side_flux( *(edge->side(0)->element()->side(i)) ) );
-
-        // skip Neumann boundaries
-        // Constant 1e-6 stabilizes switching Dirichlet to Neumann boundary condition.
-        // TODO: Define as a constant. Better determination of its magnitude. See also other places with same constant.
-        // ?? set the constant from precision of the flow solver ??
-        // stil there are elements with  elme_flux and BC flux in order 1e-7 ~ tolerance of linear solver
-        // then this condition doesn't work, we either has to set zero water fluxes or make this dependent on tolerance in flow solver
-        // temporary solution: check zero Neuman BC in water
-        //
-        // Solution:
-        // 1) postprocessing of flow solution, set flux DOFs to zero on Neuman boundaries (DO NOT HELP - e.g. in case
-        //    of Dirichlet boundary condition but flow parallel to the boundary
-        // 2) modify following condition to select Neuman BC in transport if flux is smaller then tolerance of lin. solver * some const,
-        //    or matrix diagonal (think carefully)
-        //
-        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
+        if (edge->side(0)->cond() == 0 || mh_dh->side_flux( *(edge->side(0)) ) >= -mh_dh->precision()) continue;
 
         cell = mesh().element.full_iter(edge->side(0)->element());
         dh->get_dof_indices(cell, side_dof_indices);
@@ -1131,11 +1110,7 @@ void TransportDG::set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<d
         if (cell->dim()!= dim) continue;
 
         // skip Neumann boundaries
-        double elem_flux = 0;
-        for (int i=0; i<b->side()->element()->n_sides(); i++)
-        	elem_flux += fabs( mh_dh->side_flux( *(b->side()->element()->side(i)) ) );
-        if (mh_dh->side_flux( *(b->side()) ) >= -tol_switch_dirichlet_neumann*elem_flux) continue;
-                // NEED FIX
+        if (mh_dh->side_flux( *(b->side()) ) >= -mh_dh->precision()) continue;
 
         for (unsigned int k=0; k<side_q.size(); k++)
         {
@@ -1476,7 +1451,7 @@ template<unsigned int dim>
 void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance,
 		DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe)
 {
-	QGauss<dim-1> q(20);
+	QGauss<dim-1> q(2);
 	MappingP1<dim,3> map;
 	FE_RT0<dim,3> fe_rt;
 	FESideValues<dim,3> fe_values(map, q, *fe, update_values | update_gradients | update_side_JxW_values | update_quadrature_points);
