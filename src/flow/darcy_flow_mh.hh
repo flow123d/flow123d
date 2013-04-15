@@ -182,6 +182,8 @@ protected:
 
     }
 
+    virtual void postprocess() =0;
+
     virtual double solution_precision() const = 0;
 
     //virtual void balance();
