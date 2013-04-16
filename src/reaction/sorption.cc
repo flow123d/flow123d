@@ -71,20 +71,18 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: Reaction(init_mesh, in_rec, names)
 {
 	TimeGovernor tg(0.0, 1.0);
+    nr_of_regions = init_mesh.n_materials;
+    nr_of_substances = in_rec.val<Input::Array>("species").size();
+    nr_of_points = in_rec.val<int>("substeps");
 
-    //data.init_conc.set_n_comp(4);        // set number of substances posibly read from elsewhere
-    //data.bc_conc.set_n_comp(4);
 
+    data_.sorption_types.set_n_comp(nr_of_substances);        // set number of substances posibly read from elsewhere
+    data_.mult_coefs.set_n_comp(nr_of_substances);
+    data_.second_params.set_n_comp(nr_of_substances);
     data_.set_mesh(&init_mesh);
-    //Input::Array isotherms =
-    		data_.init_from_input( in_rec.val<Input::Array>("bulk_data"),Input::Array() );
+    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"),Input::Array() );
     data_.set_time(tg);
 
-    //Input::Array sorptions_array = in_rec.val<Input::Array>("bulk_data");
-
-	nr_of_regions = init_mesh.n_materials;
-	nr_of_substances = in_rec.val<Input::Array>("species").size();
-	nr_of_points = in_rec.val<int>("substeps");
 
 	//Simple vectors holding  common informations.
 	region_ids.resize( nr_of_regions ); // ( nr_of_regions );

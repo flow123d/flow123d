@@ -78,8 +78,8 @@ class Enum {
 public:
     Enum() : val_(0) {}
     Enum(int v) :val_(v) {}
-    operator int() {return val_;}
-    operator unsigned int() {return val_;}
+    operator int() const {return val_;}
+    operator unsigned int() const {return val_;}
 private:
     int val_;
 };

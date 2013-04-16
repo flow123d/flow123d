@@ -136,10 +136,10 @@ void EqDataBase::set_time(const TimeGovernor &time) {
      * - read records from arrays until we reach greater time then actual
      * - update fields (delete the previous, use mekae factory for the new one.
      */
-    //DBGMSG("set_time: boundary\n");
-    set_time(time, boundary_input_array_, boundary_it_, true);
-    //DBGMSG("set_time: bulk\n");
-    set_time(time, bulk_input_array_, bulk_it_, false);
+    if (boundary_input_array_.size()!=0)
+        set_time(time, boundary_input_array_, boundary_it_, true);
+    if (bulk_input_array_.size()!=0)
+        set_time(time, bulk_input_array_, bulk_it_, false);
 }
 
 
@@ -154,7 +154,6 @@ void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::I
         else read_bulk_list_item(*it);
         ++it;
     }
-    //DBGMSG("checking validity\n");
     // check validity of fields and set current time
     BOOST_FOREACH(FieldCommonBase * field, field_list) 
     {
@@ -173,7 +172,7 @@ void EqDataBase::set_mesh(Mesh *mesh) {
 
 void EqDataBase::check_times(Input::Array &list) {
     double time,last_time=0.0;
-
+    if (list.size() == 0) return;
     for( Input::Iterator<Input::Record> it = list.begin<Input::Record>(); it != list.end(); ++it) {
         time = it->val<double>("time");
         if (time < last_time) xprintf(UsrErr, "Time %f in bulk data of equation '%s' is smaller then the previous time %f.\n",
@@ -183,15 +182,19 @@ void EqDataBase::check_times(Input::Array &list) {
 }
 
 void EqDataBase::init_from_input(Input::Array bulk_list, Input::Array bc_list) {
+    if (mesh_ == NULL) xprintf(PrgErr, "The mesh pointer wasn't set in the EqData of equation '%s'.\n", equation_name_.c_str());
+
     bulk_input_array_ = bulk_list;
     boundary_input_array_ = bc_list;
 
-    if (mesh_ == NULL) xprintf(PrgErr, "The mesh pointer wasn't set in the EqData of equation '%s'.\n", equation_name_.c_str());
-    check_times(bulk_input_array_);
-    check_times(boundary_input_array_);
-
-    bulk_it_ = bulk_input_array_.begin<Input::Record>();
-    boundary_it_ = boundary_input_array_.begin<Input::Record>();
+    if (bulk_input_array_.size() !=0) {
+        check_times(bulk_input_array_);
+        bulk_it_ = bulk_input_array_.begin<Input::Record>();
+    }
+    if (boundary_input_array_.size() !=0) {
+        check_times(boundary_input_array_);
+        boundary_it_ = boundary_input_array_.begin<Input::Record>();
+    }
 }
 
 

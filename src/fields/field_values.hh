@@ -338,7 +338,8 @@ public:
 
 
     void init_from_input( AccessType rec ) {
-        Input::Iterator<ET> it = rec.begin<ET>();
+        typedef typename AccessTypeDispatch<ET>::type InnerType;
+        Input::Iterator<InnerType> it = rec.begin<InnerType>();
 
         if ( rec.size() == 1 ) {
             for(unsigned int i=0; i< n_rows(); i++)
