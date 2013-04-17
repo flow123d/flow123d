@@ -98,7 +98,8 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
         double c_aqua = mass * inv_scale_aqua; // aqueous concentration (original coordinates c_a) corresponding to total mass
         double c_sorbed = const_cast<Func &>(isotherm)(c_aqua); // mass * inv_scale_sorbed;
         solve_conc(c_aqua, c_sorbed, isotherm);
-        interpolation_table.push_back( c_sorbed * scale_sorbed - c_aqua * scale_aqua);
+        double hlp_conc = (c_sorbed * scale_sorbed - c_aqua * scale_aqua); //is probably not needed to store
+        interpolation_table.push_back(hlp_conc);
     	double c_sorbed_rot = const_cast<Func &>(isotherm)(mass);
         interpolation_table.push_back(c_sorbed_rot);
     }

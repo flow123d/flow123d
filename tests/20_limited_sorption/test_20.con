@@ -64,6 +64,25 @@
       }, 
       time = {
         end_time = 10.0
+      },
+      
+      reactions = {
+        TYPE="Sorptions",
+        solvent_dens = 1.0,
+        species = ["A", "B", "C", "D", "G", "H"],
+        molar_masses = [5.0, 32.0, 23.1, 12.0, 25.0, 17.0],
+        solubility = [0.5, 0.2, 0.3, 0.1, 0.3, 0.7],
+        bulk_data = [
+          {
+            rid = 1,
+            mob_porosity = 0.02,
+            immob_porosity = 0.001,
+            rock_density = 9.25,
+            sorption_types = ["linear", "langmuir", "none", "linear", "none", "none"],
+            mult_coefs = [0.02, 0.02, 0.03, 0.01, 0, 0],
+            second_params = [0, 0.5, 0.25, 0, 0, 0]
+          }
+        ]
       }
     } 
   }, 

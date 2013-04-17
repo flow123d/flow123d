@@ -35,15 +35,15 @@ Sorption::EqData::EqData()
     ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm.", it::Default("none") );
               sorption_types.set_selection(&sorption_type_selection);
 
-    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.");
+    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", Input::Type::Default("1.0"));
     //std::vector<FieldEnum> list; list.push_back(none); //SorptionType
     //mult_coefs.disable_where(&sorption_types, list ); //function disable where requires different parameters
 
-    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).");
+    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", Input::Type::Default("1.0"));
     //list.clear(); list.push_back(none); list.push_back(linear);
     //alphas.disable_where(&sorption_types, list );
 
-    ADD_FIELD(mob_porosity,"Mobile porosity of the rock matrix.");
+    ADD_FIELD(mob_porosity,"Mobile porosity of the rock matrix.", Input::Type::Default("0.0000001"));
     ADD_FIELD(immob_porosity,"Immobile porosity of the rock matrix.", Input::Type::Default("0.0"));
 }
 
@@ -138,11 +138,11 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	  else  xprintf(UsrErr,"Number of given solubility limits %d has to match number of sorbing species %d.\n", solub_limit_array.size(), c_aq_max.size());
 
 	Input::Array species_array = in_rec.val<Input::Array>("species");
-	unsigned int idx, i_spec = 1;
+	unsigned int idx, i_spec = 0;
 	for(Input::Iterator<string> spec_iter = species_array.begin<string>(); spec_iter != species_array.end(); ++spec_iter, i_spec++)
 	{
 		idx = find_subst_name(*spec_iter);
-		if (idx < n_substances())   substance_ids[i_spec] = idx;
+		if ((idx < n_substances()) && (idx > 0))   substance_ids[i_spec] = idx;
 		else	xprintf(Msg,"Wrong name of %d-th sorbing specie.\n", i_spec);
 	}
 
@@ -150,8 +150,12 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	FieldValue<3>::EnumVector::return_type iso_type; iso_type.resize(nr_of_substances); //arma::Col<unsigned int> je ten typ ze začátku řádku, std::vector<SorptionType>
 	//std::vector<FieldEnum> iso_type; iso_type.resize(nr_of_substances);
 	// list of sorption parameters
-	arma::Col<double> mult_param; //mult_param.resize(nr_of_substances);
-	arma::Col<double> second_coef; //second_coef.resize(nr_of_substances);
+	FieldValue<3>::Vector::return_type mult_param;
+	//arma::Col<double> mult_param;
+	mult_param.resize(nr_of_substances);
+	FieldValue<3>::Vector::return_type second_coef;
+	//arma::Col<double> second_coef;
+	second_coef.resize(nr_of_substances);
 	double rock_density, mobile_porosity, immobile_porosity;
 	//Multidimensional array
 	int i_reg = 0;
