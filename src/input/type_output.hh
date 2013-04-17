@@ -17,28 +17,6 @@
 namespace Input {
 
 namespace Type {
-/***
- * TODO:
- *
- * oprava get_xy_data
-
-simplify implementation of has_type a souvisejicich metod, odstranit inline
-metody pro pristup k ProcessedData presunout z OutputBase do ProcessedData
-metody:
- bool was_written( string full_name)
- void mark_written( string full_name)
-... pripadne spojit
-aplikuje filter_ na full_name :
-    boost::regex_replace(str_out.begin(), str_in.begin(), str_in.end(), filter_, "$&", ...)
-
-v OutputBase metoda OutputBase & set_filter(const string &reg_exp) -> nastavuje reg_exp v ProcessedTypes
-
-dalsi mapa full_type_name - moznost filtorvat vystupy pomoci regularniho vyrazu
-
-/// implement both DFS and BFS print, add methods push() and pop() to OutputBase
-
- *
- */
 
 /**
  * Base abstract class for output description of the Input::Type tree.
@@ -61,12 +39,13 @@ public:
 	void set_filter(string regex_filter);
 
 protected:
-    /// Types of documentation output
+    /**
+     * Types of documentation output
+     */
     enum DocumentationType {
         key_record,
         full_record
     };
-
     /**
      * Structure for flags about output of one TypeBase object in input tree
      */
@@ -76,15 +55,12 @@ protected:
     	mutable bool extensive_doc_;     	///< Flag captures if extensive documentation of type was printed.
     	mutable string reference_;       	///< Reference to type.
     };
-
     /**
      * Public typedef of constant iterator into array of keys.
      */
     typedef std::vector<struct Key>::const_iterator KeyIter;
 
 
-    /// Padding of new level of printout, used where we use indentation.
-    static const unsigned int padding_size = 4;
 
 
     /**
@@ -138,41 +114,34 @@ protected:
      *
      * @param stream Output stream
      * @param str Printed description
+     * @param padding Number of spaces added from left
      * @param hash_count Count of '#' chars in description
      */
-    //virtual void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1) = 0;
-    /**
-     * Output indented multi-line string.
-     */
     void write_description(std::ostream& stream, const string& str, unsigned int padding, unsigned int hash_count = 1);
-
-
     /**
      * Returns true if the ProcessedTypes contains key of given type and key has true flag extensive_doc_.
      */
     bool has_type_extensive(const void * type) const;
-
     /**
      * Returns reference_ string of key of given type.
      */
     const string get_reference(const void * type) const;
-
     /**
-     * Write value stored in dft.
+     * Write value stored in @p dft.
      *
      * Enclose value in quotes if it's needed or write info that value is optional or obligatory.
      */
-    void write_value(std::ostream& stream, Default dft);
+    void write_default_value(std::ostream& stream, Default dft);
 
 
-
+    /// Padding of new level of printout, used where we use indentation.
+    static const unsigned int padding_size = 4;
     /// Object for which is created printout
     const TypeBase *type_;
     /// Depth of printout
     unsigned int depth_;
     /// Type of documentation output
     DocumentationType doc_type_;
-
     /// temporary value for printout of description (used in std::setw function)
     unsigned int size_setw_;
 

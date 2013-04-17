@@ -248,8 +248,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputText(&input_type);
-        //input_type.documentation(cout, Input::Type::TypeBase::full_after_record);
+        Input::Type::OutputText type_output(&input_type);
+        type_output.set_filter("Field:.*:");
+        cout << type_output;
         free_and_exit();
     }
 
@@ -261,7 +262,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     if (vm.count("latex_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputLatex(&input_type);
+        Input::Type::OutputLatex type_output(&input_type);
+        type_output.set_filter("");
+        cout << type_output;
         free_and_exit();
     }
 

@@ -166,7 +166,7 @@ void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth
 }
 
 
-void OutputBase::write_value(std::ostream& stream, Default dft) {
+void OutputBase::write_default_value(std::ostream& stream, Default dft) {
 	if (dft.is_obligatory() || dft.is_optional()) {
 		stream << "<" << dft.value() << ">";
 	} else {
@@ -354,7 +354,7 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 		    for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
 		    	size_setw_ = it->key_.size() + 3;
 		        stream << setw(padding_size) << "" << it->key_ << " = ";
-		        write_value(stream, it->default_);
+		        write_default_value(stream, it->default_);
 		        stream << endl;
 		        stream << setw(padding_size + size_setw_) << "" <<"#### is ";
 		        print(stream, it->type_.get(), 0);
@@ -882,7 +882,7 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
 	if (value_.is_optional() | value_.has_value_at_read_time()) {
 		stream << empty_val;
 	} else if (invalid_val | has_quote) {
-		write_value(stream, value_);
+		write_default_value(stream, value_);
 	} else {
 		stream << "" << value_.value() << "";
 	}
