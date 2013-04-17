@@ -134,7 +134,7 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point<spa
                    std::vector<typename Value::return_type>  &value_list)
 {
 
-    ASSERT_SIZES( point_list.size(), value_list.size() );
+    ASSERT_EQUAL( point_list.size(), value_list.size() );
     if (boost::is_floating_point< typename Value::element_type>::value) {
         unsigned int idx = elm.idx();
         if (elm.is_boundary()) idx +=bulk_size_;

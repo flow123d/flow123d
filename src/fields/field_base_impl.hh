@@ -229,7 +229,7 @@ void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_pt
     if (region_fields_.size() == 0)
         region_fields_.resize( this->mesh_->region_db().size() );
 
-    ASSERT_SIZES( field->n_comp() , this->n_comp_);
+    ASSERT_EQUAL( field->n_comp() , this->n_comp_);
     field->set_mesh( this->mesh_ );
     BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
     changed_from_last_set_time_=true;

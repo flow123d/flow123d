@@ -470,7 +470,8 @@ public:
 
 template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
-    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx out of range, field: %s\n", this->name_.c_str());
+    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %d out of range %d, field: %s\n",
+           elm.region_idx().idx(), region_fields_.size(), this->name_.c_str());
     ASSERT( region_fields_[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }

@@ -111,7 +111,7 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-    ASSERT_SIZES( point_list.size(), value_list.size() );
+    ASSERT_EQUAL( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
 

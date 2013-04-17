@@ -237,7 +237,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 template<unsigned int dim,unsigned int spacedim> inline
 void FEValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell)
 {
-    ASSERT_SIZES( dim, cell->dim() );
+    ASSERT_EQUAL( dim, cell->dim() );
     this->data.present_cell = &cell;
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
