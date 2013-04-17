@@ -338,11 +338,16 @@ IF (PETSC_FOUND)
 endif()
 
 # optionaly we use Python interface
-find_package(PythonLibs)
-if (PYTHONLIBS_FOUND)
-    include_directories( ${PYTHON_INCLUDE_DIRS})
-    add_definitions(-DHAVE_PYTHON)
-endif()
+# We disallow python under cygwin since we are not able to extract correct libraries to make it work elsewhere.
+if (CYGWIN)
+else (CYGWIN) 
+    find_package(PythonLibs)
+    if (PYTHONLIBS_FOUND)
+        include_directories( ${PYTHON_INCLUDE_DIRS})
+        add_definitions(-DHAVE_PYTHON)
+    endif()
+endif(CYGWIN)
+
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion)
 
