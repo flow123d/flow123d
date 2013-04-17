@@ -52,7 +52,7 @@ Record OutputMSH::input_type
 
 void OutputMSH::write_msh_header(void)
 {
-    ofstream &file = this->output->get_base_file();
+    ofstream &file = this->output_time->get_base_file();
 
     // Write simple header
     file << "$MeshFormat" << endl;
@@ -62,8 +62,8 @@ void OutputMSH::write_msh_header(void)
 
 void OutputMSH::write_msh_geometry(void)
 {
-    ofstream &file = this->output->get_base_file();
-    Mesh* mesh = this->output->get_mesh();
+    ofstream &file = this->output_time->get_base_file();
+    Mesh* mesh = this->output_time->get_mesh();
 
     // Write information about nodes
     file << "$Nodes" << endl;
@@ -76,8 +76,8 @@ void OutputMSH::write_msh_geometry(void)
 
 void OutputMSH::write_msh_topology(void)
 {
-    ofstream &file = this->output->get_base_file();
-    Mesh* mesh = this->output->get_mesh();
+    ofstream &file = this->output_time->get_base_file();
+    Mesh* mesh = this->output_time->get_mesh();
     int i;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
 
@@ -99,7 +99,7 @@ void OutputMSH::write_msh_topology(void)
 
 void OutputMSH::write_msh_ascii_data(OutputData *out_data)
 {
-    ofstream &file = this->output->get_base_file();
+    ofstream &file = this->output_time->get_base_file();
     long int id = 1;
 
     switch(out_data->type) {
@@ -189,8 +189,8 @@ void OutputMSH::write_msh_ascii_data(OutputData *out_data)
 
 void OutputMSH::write_msh_node_data(double time, int step)
 {
-    ofstream &file = this->output->get_base_file();
-    std::vector<OutputData> *node_data = this->output->get_node_data();
+    ofstream &file = this->output_time->get_base_file();
+    std::vector<OutputData> *node_data = this->output_time->get_node_data();
 
     if(node_data != NULL) {
         for(OutputDataVec::iterator dta = node_data->begin();
@@ -219,8 +219,8 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
 void OutputMSH::write_msh_elem_data(double time, int step)
 {
-    ofstream &file = this->output->get_base_file();
-    std::vector<OutputData> *elem_data = this->output->get_elem_data();
+    ofstream &file = this->output_time->get_base_file();
+    std::vector<OutputData> *elem_data = this->output_time->get_elem_data();
 
     if(elem_data != NULL) {
         for(OutputDataVec::iterator dta = elem_data->begin();
@@ -249,7 +249,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
 int OutputMSH::write_data(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
     
     this->write_msh_header(); 
     
@@ -268,7 +268,7 @@ int OutputMSH::write_data(void)
 
 int OutputMSH::write_head(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
 
     this->write_msh_header();
 
@@ -283,23 +283,20 @@ int OutputMSH::write_head(void)
 
 int OutputMSH::write_data(double time)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
+
+    // Write header with mesh, when it hasn't been written to output file yet
+    if(this->header_written == false) {
+        this->write_head();
+        this->header_written = true;
+    }
         
     this->write_msh_node_data(time, this->output_time->current_step);
+    // TODO: write corner data
     this->write_msh_elem_data(time, this->output_time->current_step);
 
-    // It seems that flush is not enough on some crapy hardware
-#if 1
     // Flush stream to be sure everything is in the file now
-    this->output->get_base_file().flush();
-#else
-    // Flush stream to be sure everything is in the file now
-    this->output->get_base_file().flush();
-    // Close and re-open file in append mode
-    this->output->get_base_file().close();
-    this->output->get_base_file().open(this->output->get_base_filename().c_str(),
-    		fstream::in | fstream::out | fstream::app);
-#endif
+    this->output_time->get_base_file().flush();
 
     xprintf(MsgLog, "O.K.\n");
 
@@ -311,24 +308,16 @@ int OutputMSH::write_tail(void)
     return 1;
 }
 
-OutputMSH::OutputMSH(Output *_output)
-{
-    this->output = _output;
-    this->write_head();
-}
-
 OutputMSH::OutputMSH(OutputTime *_output_time)
 {
-    this->output = _output_time;
     this->output_time = _output_time;
     this->write_head();
 }
 
 OutputMSH::OutputMSH(OutputTime *_output_time, const Input::Record &in_rec)
 {
-    this->output = _output_time;
     this->output_time = _output_time;
-    this->write_head();
+    this->header_written = false;
 }
 
 OutputMSH::~OutputMSH()

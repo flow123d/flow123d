@@ -37,10 +37,6 @@
  */
 class OutputMSH : public OutputFormat {
 public:
-    /**
-     * \brief The constructor of this class
-     */
-    OutputMSH(Output *_output);
 
     /**
      * \brief The constructor of this class
@@ -103,6 +99,11 @@ protected:
 private:
 
     /**
+     * Was header already written to output file?
+     */
+    bool header_written;
+
+    /**
      * \brief The declaration enumeration used for variant of GMSH file format
      */
     typedef enum Variant {
@@ -110,17 +111,11 @@ private:
     	VARIANT_BINARY = 2
     } Variant;
 
-    /**
-     * \brief The pointer at Output
-     */
-    Output *output;
 
     /**
      * \brief The pointer at OutputTime
      */
     OutputTime *output_time;
-
-
 
     /**
      * \brief This function write header of GMSH (.msh) file format

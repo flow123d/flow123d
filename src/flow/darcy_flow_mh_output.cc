@@ -79,7 +79,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     
     // setup output
     // is created for every MPI process
-    output_writer = OutputTime::output_stream(mesh_, Record(in_rec).val<Record>("output_stream"));
+    output_writer = OutputTime::output_stream(Record(in_rec).val<Record>("output_stream"));
 
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());

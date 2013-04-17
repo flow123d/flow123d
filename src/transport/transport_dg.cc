@@ -149,7 +149,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // set up output class
     Input::Record output_rec = in_rec.val<Input::Record>("output");
-    transport_output = OutputTime::output_stream(mesh_, output_rec.val<Input::Record>("output_stream"));
+    transport_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
 
     // allocate output arrays
     // TODO: do this only for process #0 or make parallel output

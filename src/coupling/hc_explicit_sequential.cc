@@ -70,8 +70,7 @@ it::Record HC_ExplicitSequential::input_type
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
-HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
-        Input::Iterator<Input::Array> output_streams)
+HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
     START_TIMER("HC constructor");
     F_ENTRY;
@@ -97,22 +96,6 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
             description,
             //"Description has to be set in main. by different method.",
             mesh->n_elements());
-    }
-
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank == 0) {
-        // Go through all configuration of "root" output streams and create them.
-        // Other output streams can be created on the fly and added to the array
-        // of output streams
-        if(output_streams) {
-            for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
-                    output_stream_rec != (*output_streams).end();
-                    i++, ++output_stream_rec)
-            {
-                OutputTime::output_stream(mesh, *output_stream_rec);
-            }
-        }
     }
 
     // setup primary equation - water flow object
@@ -246,6 +229,7 @@ void HC_ExplicitSequential::run_simulation()
             transport_reaction->output_data();
         }
 
+        // write_all_data()
     }
     xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
 }

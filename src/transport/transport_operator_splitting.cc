@@ -392,7 +392,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Input::Record output_rec = in_rec.val<Input::Record>("output");
 
 	//field_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
-	field_output = OutputTime::output_stream(mesh_, output_rec.val<Input::Record>("output_stream"));
+	field_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.

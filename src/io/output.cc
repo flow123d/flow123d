@@ -41,21 +41,21 @@
 using namespace Input::Type;
 
 Record OutputTime::input_type
-	= Record("OutputStream", "Parameters of output.")
-	// The name
-	.declare_key("name", String(), Default::obligatory(),
-			"The name of this stream. Used to reference the output stream.")
-	// The stream
-	.declare_key("file", FileName::output(), Default::obligatory(),
-			"File path to the connected output file.")
-	// The format
-	.declare_key("format", OutputFormat::input_type, Default::optional(),
-			"Format of output stream and possible parameters.");
+    = Record("OutputStream", "Parameters of output.")
+    // The name
+    .declare_key("name", String(), Default::obligatory(),
+            "The name of this stream. Used to reference the output stream.")
+    // The stream
+    .declare_key("file", FileName::output(), Default::obligatory(),
+            "File path to the connected output file.")
+    // The format
+    .declare_key("format", OutputFormat::input_type, Default::optional(),
+            "Format of output stream and possible parameters.");
 
 
 AbstractRecord OutputFormat::input_type
-	= AbstractRecord("OutputFormat",
-    		"Format of output stream and possible parameters.");
+    = AbstractRecord("OutputFormat",
+            "Format of output stream and possible parameters.");
     // Complete declaration of  abstract record OutputFormat
 
 
@@ -163,139 +163,17 @@ OutputData::OutputData(std::string data_name,
     num = data_data.size();
 }
 
-OutputData::~OutputData()
-{
-}
-
-Output::Output(Mesh *_mesh, string fname)
-{
-    int ierr;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
-    base_file = new ofstream;
-
-    base_file->open(fname.c_str());
-    INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
-
-    // Get number of corners
-    unsigned int li;
-    this->corner_count = 0;
-    FOR_ELEMENTS(mesh, ele) {
-        FOR_ELEMENT_NODES(ele, li) {
-            this->corner_count++;
-        }
-    }
-
-    base_filename = new string(fname);
-
-    mesh = _mesh;
-    node_data = new OutputDataVec;
-    corner_data = new OutputDataVec;
-    elem_data = new OutputDataVec;
-
-    base_filename = new string(fname);
-
-    this->file_format = VTK;
-    this->output_format = new OutputVTK(this);
-}
-
-Output::~Output()
-{   
-    /* It's possible now to do output to the file only in the first process */
-    if(rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
-    if(this->output_format != NULL) {
-        delete this->output_format;
-    }
-
-    // Free all reference on node and element data
-    if(node_data != NULL) {
-        delete node_data;
-    }
-
-    if(corner_data != NULL) {
-        delete corner_data;
-    }
-
-    if(elem_data != NULL) {
-        delete elem_data;
-    }
-
-    if(base_filename != NULL) {
-        delete base_filename;
-    }
-
-    if(base_file != NULL) {
-        base_file->close();
-        delete base_file;
-    }
-
-    xprintf(MsgLog, "O.K.\n");
-}
-
-int Output::write_head(void)
-{
-    /* It's possible now to do output to the file only in the first process */
-    if(rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-    
-    if(this->output_format != NULL) {
-        return this->output_format->write_head();
-    }
-    return 0;
-}
-
-int Output::write_tail(void)
-{
-     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-    
-    if(this->output_format != NULL) {
-        return this->output_format->write_tail();
-    }
-    return 0;
-}
-
-int Output::write_data()
-{
-    /* It's possible now to do output to the file only in the first process */
-    if(rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    if(this->output_format != NULL) {
-        return this->output_format->write_data();
-    }
-    return 0;
-}
 
 /**
  * \brief This method add right suffix to .pvd VTK file
  */
 static inline void fix_VTK_file_name(string *fname)
 {
-	// When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
-	if(fname->compare(fname->size()-4, 4, ".pvd") != 0) {
-		xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n", fname->c_str(), fname->c_str());
-		*fname = *fname + ".pvd";
-	}
+    // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
+    if(fname->compare(fname->size()-4, 4, ".pvd") != 0) {
+        xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n", fname->c_str(), fname->c_str());
+        *fname = *fname + ".pvd";
+    }
 }
 
 /**
@@ -303,11 +181,11 @@ static inline void fix_VTK_file_name(string *fname)
  */
 static inline void fix_GMSH_file_name(string *fname)
 {
-	// When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
-	if(fname->compare(fname->size()-4, 4, ".msh") != 0) {
-		xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n", fname->c_str(), fname->c_str());
-		*fname = *fname + ".msh";
-	}
+    // When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
+    if(fname->compare(fname->size()-4, 4, ".msh") != 0) {
+        xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n", fname->c_str(), fname->c_str());
+        *fname = *fname + ".msh";
+    }
 }
 
 
@@ -329,8 +207,7 @@ void OutputTime::destroy_all(void)
     OutputTime::output_streams.clear();
 }
 
-OutputTime *OutputTime::output_stream(Mesh *mesh,
-        const Input::Record &in_rec)
+OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 {
     // testing rank of process
     int ierr, rank;
@@ -362,7 +239,7 @@ OutputTime *OutputTime::output_stream(Mesh *mesh,
 
     xprintf(MsgLog, "NOT FOUND. Creating new ... ");
 
-    output_time = new OutputTime(mesh, in_rec);
+    output_time = new OutputTime(in_rec);
     OutputTime::output_streams.push_back(output_time);
 
     xprintf(MsgLog, "DONE\n");
@@ -371,30 +248,7 @@ OutputTime *OutputTime::output_stream(Mesh *mesh,
 }
 
 
-#if 0
-OutputTime *OutputTime::is_created(const Input::Record &in_rec)
-{
-    string name = in_rec.val<string>("name");
-
-    xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
-
-    if(OutputTime::output_streams != NULL) {
-        for(int i=0; i<OutputTime::output_streams_count; i++) {
-            if(name == *OutputTime::output_streams[i]->name) {
-                xprintf(MsgLog, "FOUND\n");
-                return OutputTime::output_streams[i];
-            }
-        }
-    }
-
-    xprintf(MsgLog, "NOT FOUND\n");
-
-    return NULL;
-}
-#endif
-
-
-OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
+OutputTime::OutputTime(const Input::Record &in_rec)
 {
     this->output_format=NULL;
     
@@ -412,7 +266,8 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     std::vector<OutputData> *corner_data;
     std::vector<OutputData> *elem_data;
 
-    Mesh *mesh = _mesh;
+    Mesh *mesh = NULL;  // This is set, when first register_* method is called
+
     ofstream *base_file;
     string *base_filename;
 
@@ -420,23 +275,22 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     string stream_name = in_rec.val<string>("name");
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
-    
 
     // Check if file suffix is suffix of specified file format
     if(format) {
-    	if((*format).type() == OutputVTK::input_type) {
-    		// This should be pvd file format
-    		fix_VTK_file_name(&fname);
-    	} else if((*format).type() == OutputMSH::input_type) {
-    		// This should be msh file format
-    		fix_GMSH_file_name(&fname);
-    	} else {
-    		// Unsuported file format
-    		fix_VTK_file_name(&fname);
-    	}
+        if((*format).type() == OutputVTK::input_type) {
+            // This should be pvd file format
+            fix_VTK_file_name(&fname);
+        } else if((*format).type() == OutputMSH::input_type) {
+            // This should be msh file format
+            fix_GMSH_file_name(&fname);
+        } else {
+            // Unsuported file format
+            fix_VTK_file_name(&fname);
+        }
     } else {
-		// Default file format is VTK
-    	fix_VTK_file_name(&fname);
+        // Default file format is VTK
+        fix_VTK_file_name(&fname);
     }
 
     base_file = new ofstream;
@@ -444,15 +298,6 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     base_file->open(fname.c_str());
     INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
     xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
-
-    // Get number of corners
-    unsigned int li, count = 0;
-    FOR_ELEMENTS(mesh, ele) {
-        FOR_ELEMENT_NODES(ele, li) {
-            count++;
-        }
-    }
-    this->set_corner_count(count);
 
     base_filename = new string(fname);
 
@@ -471,27 +316,55 @@ OutputTime::OutputTime(Mesh *_mesh, const Input::Record &in_rec)
     set_elem_data(elem_data);
 
     if(format) {
-		if((*format).type() == OutputVTK::input_type) {
-			this->output_format = new OutputVTK(this, *format);
-		} else if ( (*format).type() == OutputMSH::input_type) {
-			this->output_format = new OutputMSH(this, *format);
-		} else {
-			xprintf(Warn, "Unsupported file format, using default VTK\n");
-			this->output_format = new OutputVTK(this);
-		}
+        if((*format).type() == OutputVTK::input_type) {
+            this->output_format = new OutputVTK(this, *format);
+        } else if ( (*format).type() == OutputMSH::input_type) {
+            this->output_format = new OutputMSH(this, *format);
+        } else {
+            xprintf(Warn, "Unsupported file format, using default VTK\n");
+            this->output_format = new OutputVTK(this);
+        }
     } else {
-    	this->output_format = new OutputVTK(this);
+        this->output_format = new OutputVTK(this);
     }
-    
+
 }
 
 OutputTime::~OutputTime(void)
 {
     /* It's possible now to do output to the file only in the first process */
-    //if(rank!=0) {
-      /* TODO: do something, when support for Parallel VTK is added */
-    //  return;
-    //}
+     if(rank != 0) {
+         /* TODO: do something, when support for Parallel VTK is added */
+         return;
+     }
+
+     if(this->output_format != NULL) {
+         delete this->output_format;
+     }
+
+     // Free all reference on node and element data
+     if(node_data != NULL) {
+         delete node_data;
+     }
+
+     if(corner_data != NULL) {
+         delete corner_data;
+     }
+
+     if(elem_data != NULL) {
+         delete elem_data;
+     }
+
+     if(base_filename != NULL) {
+         delete base_filename;
+     }
+
+     if(base_file != NULL) {
+         base_file->close();
+         delete base_file;
+     }
+
+     xprintf(MsgLog, "O.K.\n");
 }
 
 int OutputTime::write_data(double time)
@@ -503,15 +376,16 @@ int OutputTime::write_data(double time)
 
     if(this->rank == 0 )
     { 
-      DBGMSG("write output on process of rank=%d\n", rank);
-      if(this->output_format != NULL) {
-        ret = this->output_format->write_data(time);
-        this->current_step++;
-      }
+        DBGMSG("write output on process of rank=%d\n", rank);
+        if(this->output_format != NULL) {
+            ret = this->output_format->write_data(time);
+            this->current_step++;
+        }
     }
     
     return ret;
 }
+
 
 void OutputTime::write_all_data(double time)
 {
