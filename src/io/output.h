@@ -60,7 +60,8 @@
  * - move write_data from equations into coupling, write all streams
  *
  * =======================
- * - Is it still necessary to split output into registration and write the data? Could we perform it at once?
+ * - Is it still necessary to split output into registration and write the data?
+ *   Could we perform it at once? ... No, it doesn't make any sense.
  * - Support for output of corner data into GMSH format (ElementNodeData section)
  *
  */
@@ -237,7 +238,6 @@ private:
 
 public:
 
-    // TODO: Move public getters to protected section
     std::vector<OutputData> *get_node_data(void) { return node_data; };
 
     std::vector<OutputData> *get_corner_data(void) { return corner_data; };
@@ -603,8 +603,11 @@ int OutputTime::register_corner_data(Mesh *mesh,
     int found = 0;
     std::vector<OutputData> *corner_data = output_time->get_corner_data();
 
-    /* TODO: It's not possible to check easily correct number of corners, so
-     * skipping for now. */
+    int corner_count = output_time->get_corner_count();
+    ASSERT(corner_count == size,
+            "output_time->get_corner_count(): %d != size: %d",
+            corner_count,
+            size);
 
     for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
             od_iter != corner_data->end();
@@ -738,8 +741,11 @@ int OutputTime::register_corner_data(Mesh *mesh,
     int found = 0;
     std::vector<OutputData> *corner_data = output_time->get_corner_data();
 
-    /* TODO: It's not possible to check easily correct number of corners, so
-     * skipping for now. */
+    int corner_count = output_time->get_corner_count();
+    ASSERT(corner_count == data.size(),
+            "output_time->get_corner_count(): %d != size: %d",
+            corner_count,
+            data.size());
 
     for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
             od_iter != corner_data->end();
