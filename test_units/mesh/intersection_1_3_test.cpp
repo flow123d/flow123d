@@ -23,9 +23,11 @@
 TEST(intersections, 1d_3d){
 	unsigned int elementLimit = 20;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/line_cube3.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
+	FilePath mesh_file("mesh/pokus7.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
 	Mesh mesh_krychle;
 	GmshMeshReader reader(mesh_file);
+
+
 	BoundingBox bb;
 	std::vector<unsigned int> searchedElements;
 
@@ -33,7 +35,7 @@ TEST(intersections, 1d_3d){
 
 	BIHTree bt(&mesh_krychle, elementLimit);
 
-	Profiler::initialize(MPI_COMM_WORLD);
+Profiler::initialize(MPI_COMM_WORLD);
 	{ START_TIMER("Inter");
 
 	    FOR_ELEMENTS(&mesh_krychle, elm) {

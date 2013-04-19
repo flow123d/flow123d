@@ -38,7 +38,7 @@ public:
 	/* Calculating intersections from PPoint
 	 * */
 	void calculate_from_prolongation_point(ProlongationPoint &point);
-	void calculate_intersection_from_1D(unsigned int idx_1D, unsigned int idx_3D, std::vector<double> &interpolated_3D_coords);
+	void calculate_intersection_from_1D(unsigned int idx_1D, unsigned int idx_3D, std::vector<double> &interpolated_3D_coords, unsigned int idx_1D_previous, bool orientace_previous);
 
 	// pomocné výpočetní metody:
 	double get_local_coords_1D(SPoint<3> a, SPoint<3> b, SPoint<3> x);
@@ -53,8 +53,11 @@ public:
 
 	inline int velikost_projeti(){return projeti.size();};
 
-	void fill_plucker_product(int index1, int index2, int index3, double &c, double &d, double &e, Simplex<2,3> sm, int &stena);
-	bool intersection_1D_2D(Simplex<2,3> sm, int stena, std::vector<double> &coords_3D, double &local_abscissa, bool &orientace);
+	void fill_plucker_product(int index1, int index2, int index3, double &c, double &d, double &e, Simplex<2,3> &sm, int &stena);
+	bool intersection_1D_2D(Simplex<2,3> &sm, int stena, std::vector<double> &coords_3D, double &local_abscissa, bool &orientace);
+
+	void print(char *nazev);
+
 
 private:
 	// information of all elements if element was inspected

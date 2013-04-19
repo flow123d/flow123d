@@ -31,25 +31,12 @@ using namespace fast_1_3;
 
 TEST(intersections, 1d_3d_fast){
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/tetra_abs.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
+	FilePath mesh_file("mesh/pokus5.msh", FilePath::input_file);
 	Mesh mesh_krychle;
 
 	ifstream ifs(string(mesh_file).c_str());
 
 	mesh_krychle.read_gmsh_from_stream(ifs);
-
-	//GmshMeshReader reader(mesh_file);
-
-	//reader.read_mesh(&mesh_krychle);
-
-	/*double *neco;
-	double ok;
-
-	*neco = 6.0;
-	ok = *neco;
-
-	xprintf(Msg, "ok:%f neco:%f \n", ok, *neco);*/
-
 
 	InspectElements inspectelements( &mesh_krychle);
 
@@ -57,9 +44,5 @@ TEST(intersections, 1d_3d_fast){
 
 	xprintf(Msg,"PRUNIKU: %d \n", il.size());
 	xprintf(Msg, "FAST INTERSECTION: Test is complete");
-
+	inspectelements.print("aaa.txt");
 }
-
-
-
-
