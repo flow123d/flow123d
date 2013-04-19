@@ -29,7 +29,7 @@
 
 #include "system/global_defs.h"
 #include "system/system.hh"
-#include "fem/ref_element.hh"
+#include "mesh/ref_element.hh"
 
 using namespace arma;
 using namespace std;

@@ -63,8 +63,16 @@ public:
     ///Gets ElementAccessor of this element
     ElementAccessor<3> element_accessor();
     
-    double measure();
-    arma::vec3 centre();
+    double measure() const;
+    arma::vec3 centre() const;
+    /**
+     * Quality of the element based on the smooth and scale-invariant quality measures proposed in:
+     * J. R. Schewchuk: What is a Good Linear Element?
+     *
+     * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
+     * have always quality 1.
+     */
+    double quality_measure_smooth() const   ;
 
     unsigned int n_sides_by_dim(int side_dim);
     inline SideIter side(const unsigned int loc_index);

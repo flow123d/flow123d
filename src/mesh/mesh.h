@@ -200,7 +200,7 @@ public:
      * Vector of compatible neighbourings.
      */
     vector<Neighbour> vb_neighbours_;
-    int n_materials; // # of materials
+    //int n_materials; // # of materials
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides

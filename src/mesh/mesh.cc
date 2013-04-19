@@ -41,7 +41,7 @@
 #include "boost/lexical_cast.hpp"
 
 #include "mesh/mesh.h"
-#include "fem/ref_element.hh"
+#include "mesh/ref_element.hh"
 
 // think about following dependencies
 #include "mesh/boundaries.h"
@@ -93,7 +93,7 @@ Mesh::Mesh(Input::Record in_record)
 void Mesh::reinit(Input::Record in_record)
 {
 
-    n_materials = NDEF;
+    //n_materials = NDEF;
 
     n_insides = NDEF;
     n_exsides = NDEF;

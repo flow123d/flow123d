@@ -35,7 +35,7 @@
 #include <armadillo>
 #include <vector>
 #include "fem/update_flags.hh"
-#include "fem/ref_element.hh"
+#include "mesh/ref_element.hh"
 
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim> class Quadrature;

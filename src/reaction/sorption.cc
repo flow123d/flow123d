@@ -71,7 +71,7 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: Reaction(init_mesh, in_rec, names)
 {
 	TimeGovernor tg(0.0, 1.0);
-    nr_of_regions = init_mesh.n_materials;
+    nr_of_regions = init_mesh.region_db().bulk_size();
     nr_of_substances = in_rec.val<Input::Array>("species").size();
     nr_of_points = in_rec.val<int>("substeps");
 
