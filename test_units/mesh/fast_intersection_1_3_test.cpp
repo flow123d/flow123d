@@ -31,7 +31,7 @@ using namespace fast_1_3;
 
 TEST(intersections, 1d_3d_fast){
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/pokus5.msh", FilePath::input_file);
+	FilePath mesh_file("mesh/pokus7.msh", FilePath::input_file);
 	Mesh mesh_krychle;
 
 	ifstream ifs(string(mesh_file).c_str());

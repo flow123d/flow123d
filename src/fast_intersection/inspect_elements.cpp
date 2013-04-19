@@ -235,8 +235,8 @@ void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point
 						SideIter other_side = edg->side(j);
 						if(other_side != elm_side){
 							//xprintf(Msg, "Stěna %d \n", j);
-							if(true){
-								//if(!projeti[other_side->element().index()]){
+							//if(true){
+							if(!projeti[other_side->element().index()]){
 								xprintf(Msg, "NALEZEN NEPROJITY 1D ELEMENT \n");
 							calculate_intersection_from_1D(other_side->element().index(), point.idx_elm3D(), local_3D_coords, point.idx_elm1D(), point.getOrientation());
 							}
@@ -274,7 +274,7 @@ void InspectElements::calculate_intersection_from_1D(unsigned int idx_1D, unsign
 
 
 	update_abscissa(sit->element(idx_1D), otoceni);
-	projeti[idx_1D] = true;
+
 
 	for(unsigned int i = 0; i < 4; i++){
 
@@ -282,6 +282,7 @@ void InspectElements::calculate_intersection_from_1D(unsigned int idx_1D, unsign
 			if(!orientace && theta >= 0){
 				nalezeni = true;
 				stena = i;
+				projeti[idx_1D] = true;
 				//xprintf(Msg, "Nalezeno v 1D\n");
 				break;
 			}
@@ -352,7 +353,8 @@ void InspectElements::calculate_intersection_from_1D(unsigned int idx_1D, unsign
 										SideIter other_side = edg->side(j);
 										if(other_side != elm_side){
 											//xprintf(Msg, "nalezena jina side\n");
-											if(!projeti[other_side->element().index()]){
+											if(true){
+											//if(!projeti[other_side->element().index()]){
 											calculate_intersection_from_1D(other_side->element().index(), idx_3D, local_3D_coords, idx_1D, otoceni);
 											}
 										}
