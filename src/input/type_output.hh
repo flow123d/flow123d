@@ -46,20 +46,6 @@ protected:
         key_record,
         full_record
     };
-    /**
-     * Structure for flags about output of one TypeBase object in input tree
-     */
-    struct Key {
-    	unsigned int key_index;          	///< Position inside the record.
-    	const void * type_;              	///< Pointer to type.
-    	mutable bool extensive_doc_;     	///< Flag captures if extensive documentation of type was printed.
-    	mutable string reference_;       	///< Reference to type.
-    };
-    /**
-     * Public typedef of constant iterator into array of keys.
-     */
-    typedef std::vector<struct Key>::const_iterator KeyIter;
-
 
 
 
@@ -82,6 +68,7 @@ protected:
     void get_double_bounds(Double dbl, double &lower , double &upper );
     void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
     void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
+    void get_default(Record::KeyIter it, string &type, string &value);
     const void * get_record_data(const Record *rec);
     const void * get_abstract_record_data(const AbstractRecord *a_rec);
     const void * get_selection_data(const Selection *sel);
@@ -119,14 +106,6 @@ protected:
      */
     void write_description(std::ostream& stream, const string& str, unsigned int padding, unsigned int hash_count = 1);
     /**
-     * Returns true if the ProcessedTypes contains key of given type and key has true flag extensive_doc_.
-     */
-    bool has_type_extensive(const void * type) const;
-    /**
-     * Returns reference_ string of key of given type.
-     */
-    const string get_reference(const void * type) const;
-    /**
      * Write value stored in @p dft.
      *
      * Enclose value in quotes if it's needed or write info that value is optional or obligatory.
@@ -146,20 +125,39 @@ protected:
     unsigned int size_setw_;
 
     /**
-     * Internal data class
+     * Internal data class.
+     * Contains flags of written Input::Types objects and regular expression filter of Input::Types full names.
+     *
+     * Flags are stored to struct that contains unique internal data pointer of complex Input::Type,
+     * flag if extensive documentation was printed and reference to Input::Type.
+     *
+     * Regular expression filter is optional and stores printed Input::Type by filtered full_name.
+     * Input::Types with similar full names are printed only once.
      */
     class ProcessedTypes {
     public:
 
-    	/**
+        /**
+         * Structure for flags about output of one TypeBase object in input tree
+         */
+        struct Key {
+        	unsigned int key_index;          	///< Position inside the record.
+        	const void * type_;              	///< Pointer to type.
+        	mutable bool extensive_doc_;     	///< Flag captures if extensive documentation of type was printed.
+        	mutable string reference_;       	///< Reference to type.
+        };
+        /**
+         * Public typedef of constant iterator into array of keys.
+         */
+        typedef std::vector<struct Key>::const_iterator KeyIter;
+
+
+        /**
     	 * Declare a processed type and its flags.
     	 *
     	 * Pointer to type must be unique in map. If pointer exists type is not added and method returns false.
     	 */
-    	bool add_type(const void *type, bool extensive_doc, string reference);
-
-    	/// Declare a processed type with default values of flags
-    	bool add_type(const void *type);
+    	bool add_type(const void *type, bool extensive_doc = true, string reference = "");
 
     	/// Clear all data of processed types
     	void clear();
@@ -188,18 +186,26 @@ protected:
     	~ProcessedTypes();
 
         /**
-         * Returns true if the ProcessedTypes contains type of given full_name
-         * in full_type_names set and regular expression filter is initialized.
+         * Returns true if the type was printed out
+         *
+         * Checks if the ProcessedTypes contains key of given type and key has true flag extensive_doc_
+         * or if the ProcessedTypes contains type of given full_name when regular expression filter_ is initialized.
          */
-    	bool was_written(string full_name);
+    	bool was_written(const void * type, string full_name);
 
     	/**
-    	 * Marks full_name of type as written.
-    	 * Regular expression filter must be initialized!
+    	 * Marks type as written.
+    	 *
+    	 * Inserts type to key_to_index map.
+    	 * If regular expression filter_ is initialized marks filtered full_name of type as written.
     	 */
-    	void mark_written(string full_name);
+    	void mark_written(const void *type, string full_name);
+        /**
+         * Returns reference_ string of key of given type.
+         */
+        const string get_reference(const void * type) const;
 
-    	/// Database of valid keys
+        /// Database of valid keys
         std::map<const void *, unsigned int> key_to_index;
         typedef std::map<const void *, unsigned int>::const_iterator key_to_index_const_iter;
 
@@ -340,11 +346,46 @@ protected:
 
 
 /**
+ * Class for create JSON machine documentation
+ *
+ * Every type is represented by one JSON object, for Selection e.g.:
+ *   "name" : (string),
+ *   "full_name" : (string),
+ *   "type" : "Selection",
+ *   "values" : [ { "value" : (int), "name": (string), "description" : (string) } ]
+ */
+class OutputJSONMachine : public OutputBase {
+public:
+	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+
+protected:
+
+    // Need to implement the resolution function. Just call that in the base class.
+    /*void print(ostream& stream, const TypeBase *type, unsigned int depth) {
+        OutputBase::print( stream, type, depth);
+    }*/
+
+    void print_impl(ostream& stream, const Record *type, unsigned int depth);
+    void print_impl(ostream& stream, const Array *type, unsigned int depth);
+    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const Selection *type, unsigned int depth);
+    void print_impl(ostream& stream, const Integer *type, unsigned int depth);
+    void print_impl(ostream& stream, const Double *type, unsigned int depth);
+    void print_impl(ostream& stream, const Bool *type, unsigned int depth);
+    void print_impl(ostream& stream, const String *type, unsigned int depth);
+    void print_impl(ostream& stream, const FileName *type, unsigned int depth);
+
+
+};
+
+
+/**
  * Overrides output operator for simple output of the input type tree.
  */
 std::ostream& operator<<(std::ostream& stream, OutputText type_output);
 std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);
 std::ostream& operator<<(std::ostream& stream, OutputLatex type_output);
+std::ostream& operator<<(std::ostream& stream, OutputJSONMachine type_output);
 
 
 

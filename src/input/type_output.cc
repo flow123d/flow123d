@@ -87,6 +87,21 @@ void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &
 }
 
 
+void OutputBase::get_default(Record::KeyIter it, string &type, string &value) {
+	value = it->default_.value_;
+	if ( it->default_.is_obligatory() ) {
+		type = "obligatory";
+	} else if ( it->default_.is_optional() ) {
+		type = "optional";
+	} else if ( it->default_.has_value_at_read_time() ) {
+		type = "value at read time";
+	} else {
+		type = "value at declaration";
+	}
+
+}
+
+
 const void * OutputBase::get_record_data(const Record *rec) {
 	return rec->data_.get();
 }
@@ -188,25 +203,6 @@ void OutputBase::write_description(std::ostream& stream, const string& str,
 }
 
 
-bool OutputBase::has_type_extensive(const void * type) const {
-	KeyIter it = doc_flags_.keys.begin() + doc_flags_.type_index(type);
-	if ( it != doc_flags_.keys.end() ) {
-		return (*it).extensive_doc_;
-	}
-	return false;
-}
-
-
-const string OutputBase::get_reference(const void * type) const {
-	ProcessedTypes::key_to_index_const_iter data_it = doc_flags_.key_to_index.find(type);
-
-	ASSERT(data_it != doc_flags_.key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in get_reference method!\n", (static_cast<const Type::TypeBase *>(type))->type_name().c_str());
-
-	KeyIter it = doc_flags_.keys.begin()+data_it->second;
-	return (*it).reference_;
-}
-
-
 
 
 /*******************************************************************
@@ -230,11 +226,6 @@ bool OutputBase::ProcessedTypes::add_type(const void *type, bool extensive_doc, 
 	   return true;
 	}
 	return false;
-}
-
-
-bool OutputBase::ProcessedTypes::add_type(const void *type) {
-	return add_type(type, true, "");
 }
 
 
@@ -286,20 +277,36 @@ void OutputBase::ProcessedTypes::set_extensive_flag(const void * type, bool val)
 }
 
 
-bool OutputBase::ProcessedTypes::was_written(string full_name) {
-	if (filter_ == NULL) return false;
+bool OutputBase::ProcessedTypes::was_written(const void * type, string full_name) {
+	KeyIter it = keys.begin() + type_index(type);
+	bool has_extensive = ( it != keys.end() ) ? (*it).extensive_doc_ : false;
+
+	if (filter_ == NULL) return has_extensive;
 
 	std::string filtered = boost::regex_replace(full_name, *filter_, "");
-	return full_type_names.find(filtered) != full_type_names.end();
+	return (full_type_names.find(filtered) != full_type_names.end()) | has_extensive;
 }
 
 
-void OutputBase::ProcessedTypes::mark_written(string full_name) {
-	std::string filtered = boost::regex_replace(full_name, *filter_, "");
+void OutputBase::ProcessedTypes::mark_written(const void *type, string full_name) {
+	add_type(type);
 
-	ASSERT(full_type_names.find(filtered) == full_type_names.end(), "Value '%s' is already exist in full_type_names set!\n", filtered.c_str());
+	if (filter_ != NULL) {
+		std::string filtered = boost::regex_replace(full_name, *filter_, "");
+		if ( full_type_names.find(filtered) == full_type_names.end() ) {
+			full_type_names.insert(filtered);
+		}
+	}
+}
 
-	full_type_names.insert(filtered);
+
+const string OutputBase::ProcessedTypes::get_reference(const void * type) const {
+	ProcessedTypes::key_to_index_const_iter data_it = key_to_index.find(type);
+
+	ASSERT(data_it != key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in get_reference method!\n", (static_cast<const Type::TypeBase *>(type))->type_name().c_str());
+
+	KeyIter it = keys.begin()+data_it->second;
+	return (*it).reference_;
 }
 
 
@@ -322,11 +329,8 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 		break;
 	case full_record:
 		const void * data_ptr = get_record_data(type);
-		if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name())) {
-			doc_flags_.add_type(data_ptr);
-			if (doc_flags_.filter_ != NULL) {
-				doc_flags_.mark_written(type->full_type_name());
-			}
+		if (! doc_flags_.was_written(data_ptr, type->full_type_name())) {
+			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
 			// header
 			stream << endl;
@@ -405,13 +409,10 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 		break;
 	case full_record:
 		const void * data_ptr = get_abstract_record_data(type);
-		if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
+		if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 
             // Extensive description
-            doc_flags_.add_type(data_ptr);
-			if (doc_flags_.filter_ != NULL) {
-				doc_flags_.mark_written(type->full_type_name());
-			}
+			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
             // header
             stream << endl;
@@ -455,11 +456,8 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 	case full_record:
 		const void * data_ptr = get_selection_data(type);
 
-		if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
-			doc_flags_.add_type(data_ptr);
-			if (doc_flags_.filter_ != NULL) {
-				doc_flags_.mark_written(type->full_type_name());
-			}
+		if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
+			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
 			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
@@ -556,11 +554,11 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 			}
 
 			const void *data_ptr = get_record_data(type); // get pointer to type->data_
-			if ( has_type_extensive(data_ptr) ) {
-				stream << "{REF=\"" << get_reference(data_ptr) << "\"}";
+			if ( doc_flags_.was_written(data_ptr, type->full_type_name())) {
+				stream << "{REF=\"" << doc_flags_.get_reference(data_ptr) << "\"}";
 			} else {
 				doc_flags_.set_extensive_flag(data_ptr);
-				string ref = get_reference(data_ptr);
+				string ref = doc_flags_.get_reference(data_ptr);
 
 				stream << "{";
 				if (type->description().size()) {
@@ -629,7 +627,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 					| (typeid(*(array_type.get())) == typeid(Type::Array))) {
 				const void * data_ptr = get_array_data(type); // get pointer to type->data_
 				const void * it_ptr = get_type_base_data(array_type.get());
-				doc_flags_.add_type( it_ptr, false, get_reference(data_ptr) + "/0");
+				doc_flags_.add_type( it_ptr, false, doc_flags_.get_reference(data_ptr) + "/0");
 			}
 
 			if (has_opt_prefix) {
@@ -690,7 +688,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 
 			std::vector<string> refs;
 			const void *data_ptr = get_abstract_record_data(type); // get pointer to type->child_data_
-			string reference(get_reference(data_ptr));
+			string reference(doc_flags_.get_reference(data_ptr));
 			boost::split(refs, reference, boost::is_any_of("#"));
 		    ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
 
@@ -992,11 +990,8 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
         break;
     case full_record:
     	const void * data_ptr = get_record_data(type);
-    	if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
-            doc_flags_.add_type(data_ptr);
-			if (doc_flags_.filter_ != NULL) {
-				doc_flags_.mark_written(type->full_type_name());
-			}
+    	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
+			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
             // header
             stream << endl <<"\\begin{RecordType}{"
@@ -1092,13 +1087,10 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
         break;
     case full_record:
     	const void * data_ptr = get_abstract_record_data(type);
-    	if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
+    	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 
             // Extensive description
-            doc_flags_.add_type(data_ptr);
-			if (doc_flags_.filter_ != NULL) {
-				doc_flags_.mark_written(type->full_type_name());
-			}
+			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
             // header
             stream << endl << "\\begin{AbstractType}{"
@@ -1149,11 +1141,8 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
         break;
     case full_record:
     	const void * data_ptr = get_selection_data(type);
-    	if (! has_type_extensive(data_ptr) & ! doc_flags_.was_written(type->full_type_name()) ) {
-            doc_flags_.add_type(data_ptr);
-			if (doc_flags_.filter_ != NULL) {
-				doc_flags_.mark_written(type->full_type_name());
-			}
+    	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
+			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
             stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}" <<endl;
             // keys
@@ -1216,6 +1205,170 @@ void OutputLatex::print_impl(ostream& stream, const FileName *type, unsigned int
 
 
 
+/*******************************************************************
+ * implementation of OutputJSONMachine
+ */
+
+void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned int depth) {
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	stream << "\"type\" : \"Record\"," << endl;
+	stream << "\"description\" : \"" << type->description() << "\"," << endl; // ?
+
+	stream << "\"keys\" : [" << endl;
+
+	for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+		string dft_type, dft_value;
+		get_default(it, dft_type, dft_value);
+
+		if (it != type->begin()) {
+			stream << "," << endl;
+		}
+		stream << "{ \"key\" : \"" << it->key_ << "\"," << endl;
+		stream << "\"description\" : \"" << it->description_ << "\"," << endl;
+		stream << "\"default\" : { \"type\" : \"" << dft_type << "\",  \"value\" : \"" << dft_value << "\" }," << endl;
+		stream << "\"type\" : ";
+		print(stream, it->type_.get(), 0);
+		stream << "}";
+	}
+
+	stream << "]" << endl;
+	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+    unsigned int lower_size, upper_size;
+	boost::shared_ptr<const TypeBase> array_type;
+
+    get_array_sizes(*type, lower_size, upper_size);
+	get_array_type(*type, array_type);
+
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	stream << "\"type\" : \"Array\"," << endl;
+	stream << "\"range\" : \"" << lower_size << "," << upper_size << "\"," << endl;
+	stream << "\"subtype\" : ";
+	print(stream, array_type.get(), 0);
+	stream << endl << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	stream << "\"type\" : \"AbstractRecord\"," << endl;
+	stream << "\"description\" : \"" << type->description() << "\"," << endl; // ?
+
+	stream << "\"keys\" : [" << endl;
+
+	for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+		if (it != type->begin_child_data()) {
+			stream << "," << endl;
+		}
+
+		stream << "{ \"key\" : \"" << it->type_name() << "\"," << endl;
+		stream << "\"description\" : \"" << it->description() << "\"," << endl;
+		stream << "\"type\" : ";
+		print(stream, &*it, depth);
+		stream << "}";
+	}
+
+	stream << "]" << endl;
+	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	stream << "\"type\" : \"Selection\"," << endl;
+
+	stream << "\"values\" : [" << endl;
+
+	for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
+		if (it != type->begin()) {
+			stream << "," << endl;
+		}
+		stream << "{ \"value\" : \"" << it->value << "\", \"name\" : \"" << it->key_ << "\", \"description\" : \"" << it->description_ << "\" }";
+	}
+
+	stream << "]" << endl;
+	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
+	int lower, upper;
+	get_integer_bounds(*type, lower, upper);
+
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl; // ?
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl; // ?
+	stream << "\"type\" : \"Integer\"," << endl;
+	stream << "\"range\" : \"" << lower << "," << upper << "\"" << endl;
+	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned int depth) {
+	double lower, upper;
+	get_double_bounds(*type, lower, upper);
+
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl; // ?
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl; // ?
+	stream << "\"type\" : \"Double\"," << endl;
+	stream << "\"range\" : \"" << lower << "," << upper << "\"" << endl;
+	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl; // ?
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl; // ?
+	stream << "\"type\" : \"Bool\"" << endl;
+	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned int depth) {
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl; // ?
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl; // ?
+	stream << "\"type\" : \"String\"" << endl;
+	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl; // ?
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl; // ?
+
+	stream << "\"type\" : \"FileName of ";
+
+	switch (type->get_file_type()) {
+	case ::FilePath::input_file:
+		stream << "input file\"";
+		break;
+	case ::FilePath::output_file:
+		stream << "output file\"";
+		break;
+	default:
+		stream << "file with unknown type\"";
+		break;
+	}
+
+	stream << "}";
+}
+
+
 
 
 std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
@@ -1233,6 +1386,11 @@ std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output) {
 std::ostream& operator<<(std::ostream& stream, OutputLatex type_output) {
     return type_output.print(stream) << endl;
 }
+
+std::ostream& operator<<(std::ostream& stream, OutputJSONMachine type_output) {
+    return type_output.print(stream) << endl;
+}
+
 
 } // closing namespace Type
 } // closing namespace Input

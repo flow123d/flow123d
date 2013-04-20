@@ -37,6 +37,7 @@ namespace Type {
  * @ingroup input_types
  */
 class Default {
+	friend class OutputBase;
 	friend class OutputJSONTemplate;
 
 private:

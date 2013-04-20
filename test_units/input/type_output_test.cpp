@@ -84,7 +84,7 @@ TEST(OutputTypeTypeBase, record_output_test) {
     }
 
     Record main("MainRecord", "The main record of flow.");
-    main.declare_key("array_of_records", Array(output_record), "Array of output streams.");
+    main.declare_key("array_of_records", Array(output_record), Default::obligatory(), "Array of output streams.");
     main.declare_key("record_record", record_record, "no comment on record_record");
     main.declare_key("color", sel, "My favourite color.");
     main.declare_key("color1", sel, "My second favourite color.");
@@ -107,6 +107,9 @@ TEST(OutputTypeTypeBase, record_output_test) {
 
     cout << OutputLatex(&main) << endl;
 
+    cout << "## " << "OutputJSONMachine printout" << endl;
+
+    cout << OutputJSONMachine(&main) << endl;
 }
 
 TEST(OutputTypeAbstractRecord, abstract_record_test) {
@@ -133,12 +136,15 @@ TEST(OutputTypeAbstractRecord, abstract_record_test) {
     c_rec.close();
     b_rec.close();
 
+    cout << "## " << "OutputText printout" << endl;
     OutputText output_text( &b_rec, 0);
     output_text.print(cout);
 
     OutputText output_text2( &c_rec, 0);
     output_text2.print(cout);
 
+    cout << endl << "## " << "OutputJSONMachine printout" << endl;
+    cout << OutputJSONMachine(&a_rec) << endl;
 }
 
 TEST(OutputTypeArray, array_of_array_test) {
