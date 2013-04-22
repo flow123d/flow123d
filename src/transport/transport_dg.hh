@@ -314,9 +314,9 @@ private:
 	 * @param porosity  Porosities.
 	 * @param cross_cut Cross-cuts of higher dimension.
 	 */
-	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity,
-			vector<double> &Dm, vector<double> &alphaL, vector<double> &alphaT, vector<double> &porosity,
-			vector<double> &cross_cut);
+	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
+			double Dm, double alphaL, double alphaT, double porosity,
+			double cross_cut);
 
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.
@@ -335,14 +335,13 @@ private:
 	 * @param transport_flux	Computed flux from side 1 to side 2.
 	 */
 
-	void set_DG_parameters(const Edge *edg,
+	void set_DG_parameters_edge(const Edge &edg,
 	        const int s1,
 	        const int s2,
-	        const unsigned int n_points,
 	        const std::vector< std::vector<arma::mat33> > &K,
 	        const arma::vec3 &normal_vector,
-	        const std::vector<std::vector<double> > &Dm,
-	        const vector<double> &alpha,
+	        const double alpha1,
+	        const double alpha2,
 	        double &gamma,
 	        double *omega,
 	        double &transport_flux);
@@ -351,23 +350,18 @@ private:
 	 * @brief Sets up parameters of the DG method on a given boundary edge.
 	 *
 	 * Assumption is that the edge consists of only 1 side.
-	 * @param edge				The edge.
-	 * @param n_points			Number of quadrature points.
+	 * @param side       		The boundary side.
 	 * @param K					Dispersivity tensor.
 	 * @param normal_vector		Normal vector (assumed constant along the edge).
 	 * @param alpha				Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
 	 * @param gamma				Computed penalty parameters.
-	 * @param omega				Computed weights.
 	 */
-	void set_DG_parameters_boundary(const Edge *edge,
-	            const unsigned int n_points,
+	void set_DG_parameters_boundary(const SideIter side,
 	            const std::vector<arma::mat33> &K,
 	            const arma::vec3 &normal_vector,
 	            const double alpha,
-	            const double Dm,
-	            double &gamma,
-	            double *omega);
+	            double &gamma);
 
 
 	/**
