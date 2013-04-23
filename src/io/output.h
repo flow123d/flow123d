@@ -827,42 +827,5 @@ public:
 	static Input::Type::AbstractRecord input_type;
 };
 
-#if 0
-inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)
-{
-    // object is created for all processes, master process is checked in methods
-
-    // checking if the output stream ahs been already created
-    OutputTime *output_time = OutputTime::is_created(in_rec);
-
-    // testing rank of process
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-    
-    /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        
-        // object is created always created 
-        // but this one with rank !=0 is with limited functions
-        output_time = new OutputTime(mesh, in_rec);
-    }
-    
-    /* When this record doesn't exist, then create new one */
-    if(output_time == NULL) {
-        /* Realloc array of output_streams */
-        OutputTime **new_ptr = (OutputTime**)xrealloc(OutputTime::output_streams,
-                sizeof(void*) * (OutputTime::output_streams_count + 1));
-        OutputTime::output_streams = new_ptr;
-        /* Create new output */
-        output_time = new OutputTime(mesh, in_rec);
-        /* Add this output to the array of output streams */
-        OutputTime::output_streams[OutputTime::output_streams_count-1] = output_time;
-    }
-
-    return output_time;
-}
-#endif
 
 #endif

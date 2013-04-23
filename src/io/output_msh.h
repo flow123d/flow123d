@@ -135,12 +135,18 @@ private:
     void write_msh_topology(void);
 
     /**
-     * \brief This function writes ascii data to GMSH (.msh) output file.
+     * \brief This function writes continuous ascii data to GMSH (.msh) output file.
      *
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
-    void write_msh_ascii_data(OutputData *out_data);
+    void write_msh_ascii_cont_data(OutputData *out_data);
 
+    /**
+     * \brief This function writes discontinuous ascii data to GMSH (.msh) output file.
+     *
+     * \param[in]   *out_data   The pointer at structure storing pointer at own data.
+     */
+    void write_msh_ascii_discont_data(OutputData *out_data);
 
     /**
      * \brief This function write all data on nodes to output file. This function
@@ -150,6 +156,7 @@ private:
      * \param[in]   step        The number of steps from start
      */
     void write_msh_node_data(double time, int step);
+
 
     /**
      * \brief This function write all data on elements to output file. This

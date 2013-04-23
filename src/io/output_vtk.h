@@ -192,14 +192,6 @@ private:
     void write_vtk_ascii_cont_data(OutputData *data);
 
     /**
-     * \brief This function writes ascii continuous data to discontinuous mesh
-     * to VTK (.vtu) output file.
-     *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
-     */
-    void write_vtk_ascii_discont_data(OutputData *data);
-
-    /**
      * \brief This function writes ascii data to VTK (.vtu) output file.
      *
      * \param[in]   *data   The pointer at structure storing pointer at own data.
