@@ -4,6 +4,12 @@
     description = "[u'test18:', u'diffusion', u'through', u'fractures']", 
     mesh = {
       mesh_file = "./input/test18.msh"
+      regions = [
+        { name = "center",
+          id   = 30,
+          element_list = [ 45 ]
+        }
+      ]
     }, 
 
     primary_equation = {
@@ -16,11 +22,11 @@
       ],
       
       bulk_data = [
-        { rid = 48,
+        { rid = 20,
           anisotropy = 10,
-          cross_section = 1
+          cross_section = 1e-1
         },
-        { rid = 184,
+        { rid = 24,
           anisotropy = 1,
           cross_section = 1
         }
@@ -37,39 +43,37 @@
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }
+      } 
     }, 
  
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
-      
+
       bc_data = [
         { region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test18.tbc"
+          bc_conc=0
         }
       ],
       
       bulk_data = [
         {
-          rid = 48,
-          init_conc = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "./input/test18_init.msh",
-            field_name = "concentration"
-          },
+          rid = 20,
+          init_conc = 0,
+          por_m = 0.25,
+          sigma_c = 1e1
+        },
+        {
+          rid = 24,
+          init_conc = 0,
           por_m = 0.25
         },
         {
-          rid = 184,
-          init_conc = {
-            TYPE = "FieldElementwise",
-            gmsh_file = "./input/test18_init.msh",
-            field_name = "concentration"
-          },
+          rid = 30,
+          init_conc = 1,
           por_m = 0.25
         }
       ],
-      
+
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -79,21 +83,17 @@
       }, 
 
       dual_porosity = true, 
-      dg_penalty = 1e2,
-      d_m = 1e-4,
-      sigma = 1e1,
 
       substances = [
         "A"
-      ], 
-
+      ],      
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-7
       }, 
       time = {
-	end_time = 0.01, 
-	init_dt = 0.001
+        end_time = 0.01, 
+        init_dt = 0.001
       }
     }
   }, 
@@ -118,6 +118,6 @@
         }, 
         name = "transport_output_stream"
       }
-    ]
+    ] 
   }
 }
