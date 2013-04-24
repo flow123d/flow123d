@@ -37,6 +37,10 @@ void Vector<3>::vector_product(Vector<3> a, SPoint<3> b){
 	coordinates[2] = (a[0] * b[1]) - (a[1] * b[0]);
 	};
 
+double Vector<3>::scalar_product(Vector<3> a){
+return (coordinates[0]*a[0] + coordinates[1]*a[1] + coordinates[2]*a[2]);
+};
+
 void Vector<3>::toString(){
 		cout <<"(" << coordinates[0] << "," << coordinates[1] << "," << coordinates[2] << ")" << endl;
 	};

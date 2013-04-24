@@ -143,9 +143,9 @@ bool InspectElements::calculate_prolongation_point(const ElementFullIter &elemen
 				for(unsigned int j=0; j < edg->n_sides;j++) {
 					SideIter other_side=edg->side(j);
 					if (other_side != elm_side) {
-						//xprintf(Msg, "SPOČETL SE SOUSEDNÍ PPOINT \n");
+
 						ProlongationPoint pp2(element_1D->index(), other_side->element()->index() , 3-other_side->el_idx(),
-								coords_3D, theta, !orientace); // Záměna stěn
+								coords_3D, theta, !orientace, element_3D->index()); // Záměna stěn
 						//xprintf(Msg, "CPP for soused THETA: %f\n", theta);
 						ppoint.push(pp2);
 					}
@@ -200,16 +200,31 @@ void InspectElements::calculate_from_prolongation_point(ProlongationPoint &point
 					for(unsigned int j=0; j < edg->n_sides;j++) {
 						SideIter other_side=edg->side(j);
 						if (other_side != elm_side) {
+							xprintf(Msg, "simplexu i: %d, elemntu i %d, soused simplex i %d a v elementu %d \n", i, 3-i, 3-other_side->el_idx(),other_side->el_idx());
 							// řešit permutaci hran a jak jsou označené stěny!!! změnit alfu a betu
 							ProlongationPoint pp(point.idx_elm1D(), other_side->element()->index(),
-									3-other_side->el_idx(), coords_3D, theta, point.getOrientation()); // Záměna stěn
+									3-other_side->el_idx(), coords_3D, theta, point.getOrientation(), point.idx_elm3D()); // Záměna stěn
 							//xprintf(Msg, "CFPP for soused THETA: %f\n", theta);
 							ppoint.push(pp);
 						}
 					}
 				}else{
 
-					if(theta < 0){xprintf(Msg, "PROBLEM");
+					if(theta < 0){xprintf(Msg, "PROBLEM:\n");
+
+					xprintf(Msg, "TETRAHEDRON\n");
+					xprintf(Msg, "Idx 3D previous: %d\n", sit->element(point.id_3D_previous).id());
+					xprintf(Msg, "Idx 3D current: %d\n", sit->element(point.idx_elm3D()).id());
+
+
+					xprintf(Msg, "BOD A: %f %f %f\n", tetrahedron[0][0][0].getPoint()[0], tetrahedron[0][0][0].getPoint()[1], tetrahedron[0][0][0].getPoint()[2]);
+					xprintf(Msg, "BOD B: %f %f %f\n", tetrahedron[0][0][1].getPoint()[0], tetrahedron[0][0][1].getPoint()[1], tetrahedron[0][0][1].getPoint()[2]);
+					xprintf(Msg, "BOD C: %f %f %f\n", tetrahedron[0][1][1].getPoint()[0], tetrahedron[0][1][1].getPoint()[1], tetrahedron[0][1][1].getPoint()[2]);
+					xprintf(Msg, "BOD D: %f %f %f\n", tetrahedron[1][1][1].getPoint()[0], tetrahedron[1][1][1].getPoint()[1], tetrahedron[1][1][1].getPoint()[2]);
+					xprintf(Msg, "\nABSCISSA\n");
+					xprintf(Msg, "BOD X: %f %f %f\n", abscissa.getPointA()[0], abscissa.getPointA()[1], abscissa.getPointA()[2]);
+					xprintf(Msg, "BOD Y: %f %f %f\n", abscissa.getPointB()[0], abscissa.getPointB()[1], abscissa.getPointB()[2]);
+
 					point.getOrientation() ? xprintf(Msg, " orientace true\n") : xprintf(Msg, " orientace false\n");
 					}
 					//xprintf(Msg, "CFPP neni mezi 0 a 1 THETA: %f\n", theta);
@@ -318,7 +333,7 @@ void InspectElements::calculate_intersection_from_1D(unsigned int idx_1D, unsign
 							//xprintf(Msg,"%d %d %d %f \n",idx_1D, other_side->element()->index(),other_side->el_idx(),theta);
 							// řešit permutaci hran a jak jsou označené stěny!!! změnit alfu a betu
 							ProlongationPoint pp(idx_1D, other_side->element()->index(),
-									(3-other_side->el_idx()), coords_3D, theta, otoceni); // Záměna stěn
+									(3-other_side->el_idx()), coords_3D, theta, otoceni, idx_3D); // Záměna stěn
 							ppoint.push(pp);
 							//xprintf(Msg, "velikost fronty: %d \n", ppoint.size());
 						}
@@ -376,11 +391,20 @@ void InspectElements::update_tetrahedron(const ElementFullIter &element_3D){
 				plucker_product[i] = NULL;
 			}
 
+
+
 			SPoint<3> spsim1; spsim1.setCoords(element_3D->node[0]->point());
 			SPoint<3> spsim2; spsim2.setCoords(element_3D->node[1]->point());
 			SPoint<3> spsim3; spsim3.setCoords(element_3D->node[2]->point());
 			SPoint<3> spsim4; spsim4.setCoords(element_3D->node[3]->point());
-		    SPoint<3> pole_bodu[4] = {spsim1,spsim2,spsim3,spsim4};
+
+			double kontrola = (Vector<3>(spsim2, spsim1)*Vector<3>(spsim3, spsim1)).scalar_product(Vector<3>(spsim4, spsim1));
+
+
+			if(kontrola < 0){xprintf(Msg, "4stěn je správně! %f\n", kontrola);}
+			else{xprintf(Msg, "4stěn je špatně! %f\n", kontrola);}
+
+			SPoint<3> pole_bodu[4] = {spsim1,spsim2,spsim3,spsim4};
 		    tetrahedron = Simplex<3,3>(pole_bodu);
 };
 
@@ -491,16 +515,32 @@ bool InspectElements::intersection_1D_2D(Simplex<2,3> &sm, int stena, std::vecto
 		double alfa = e/(c+d+e);
 		double beta = c/(c+d+e);
 		// lokální souřadnice na přímce T
-		// T = localAbscissa= - A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i) / U(i)
+		// T = localAbscissa= (- A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i)) / U(i)
 		// i = max z U(i)
 		Vector<3> vec(abscissa.getPointA(),abscissa.getPointB());
 		int i = 0;
 		double max = vec[0];
-		if(vec[1] > max) max = vec[1]; i = 1;
-		if(vec[2] > max) max = vec[2]; i = 2;
+		//if(vec[1] > max){ max = vec[1]; i = 1;}
+		//if(vec[2] > max){ max = vec[2]; i = 2;}
+
+		if(fabs(vec[1]) > fabs(max)){ max = vec[1]; i = 1;}
+		if(fabs(vec[2]) > fabs(max)){ max = vec[2]; i = 2;}
+
 
 		local_abscissa = (-abscissa.getPointA()[i] + (1 - alfa - beta)*sm[0][0].getPoint()[i] +
 				alfa*sm[0][1].getPoint()[i] + beta*sm[1][1].getPoint()[i])/max;
+
+
+		SPoint<3> globalni((1 - alfa - beta)*sm[0][0].getPoint()[0] + alfa*sm[0][1].getPoint()[0] + beta*sm[1][1].getPoint()[0],
+						(1 - alfa - beta)*sm[0][0].getPoint()[1] + alfa*sm[0][1].getPoint()[1] + beta*sm[1][1].getPoint()[1],
+						(1 - alfa - beta)*sm[0][0].getPoint()[2] + alfa*sm[0][1].getPoint()[2] + beta*sm[1][1].getPoint()[2]);
+		/*xprintf(Msg,"Globalni: %f %f %f\n",globalni[0],globalni[1],globalni[2]);
+		xprintf(Msg,"I: %d; max: %f, theta: %f\n",i, max, local_abscissa);
+		xprintf(Msg,"Globalni2: %f %f %f\n",(globalni[0]-abscissa.getPointA()[0])/vec[0],
+											(globalni[1]-abscissa.getPointA()[1])/vec[1],
+											(globalni[2]-abscissa.getPointA()[2])/vec[2]);
+		xprintf(Msg,"vektor: %f %f %f \n", vec[0], vec[1], vec[2]);*/
+
 
 		coords_3D.push_back(alfa); coords_3D.push_back(beta);
 

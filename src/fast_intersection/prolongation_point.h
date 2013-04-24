@@ -30,9 +30,13 @@ class ProlongationPoint {
 
 	// Orientation of 1D element true = right orientation -> theta = theta ---- false = wrong orientation, theta = 1 - theta
 	bool orientation;
-
 public:
+	unsigned int id_3D_previous;
+
+
 	ProlongationPoint(unsigned int el1D, unsigned int el3D, unsigned int side3D, std::vector<double> &coords_3D, double t, bool orientation);
+	ProlongationPoint(unsigned int el1D, unsigned int el3D, unsigned int side3D, std::vector<double> &coords_3D, double t, bool orientation, unsigned int id_3D_previous);
+
 	~ProlongationPoint();
 
 	inline unsigned int idx_elm1D(){return element_1D_idx;};
