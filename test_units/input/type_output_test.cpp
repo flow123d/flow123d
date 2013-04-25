@@ -182,30 +182,26 @@ TEST(OutputTypeRegEx, regex_filter_test) {
 
     using namespace Input::Type;
 
-    AbstractRecord a_rec("Field:R3 -> Real", "Base of equation records.");
-    a_rec.declare_key("a_val", Integer(), Default("10"), "");
-    a_rec.declare_key("value", String(), Default::obligatory(), "");
+    Record a_rec("FieldConstant:Field:R3 -> Real", "");
     a_rec.close();
 
     // test derived type
-    Record b_rec("Field:R3 -> Real[3,3]", "test first derived type");
-    b_rec.derive_from(a_rec);
-    b_rec.declare_key("b_val", Integer(), Default("10"), "");
-
-    Record c_rec("Field:R3 -> Real[3]","test second derived type");
-    c_rec.derive_from(a_rec);
-    c_rec.declare_key("c_val", Integer(), "");
-
-    c_rec.close();
+    Record b_rec("FieldConstant:Field:R3 -> Real[3,3]", "");
     b_rec.close();
 
+    Record c_rec("FieldConstant:Field:R3 -> Enum[3]", "");
+    c_rec.close();
+
+
     Record main("MainRecord", "The main record of flow.");
-    main.declare_key("first_record", b_rec, "first record of flow");
-    main.declare_key("second_record", c_rec, "second record of flow");
+    main.declare_key("a", a_rec, "first record of flow");
+    main.declare_key("b", b_rec, "first record of flow");
+    main.declare_key("c", c_rec, "second record of flow");
     main.close();
 
     OutputText output_text( &main, 0);
     // finds expressions in format '[N,N]' or '[N]' where N is dimension (0-3)
-    output_text.set_filter("(\\[[0-3]\\,?[0-3]?\\])");
+    //output_text.set_filter("(\\[[0-3]\\,?[0-3]?\\])");
+    output_text.set_filter(":Field:.*");
     output_text.print(cout);
 }
