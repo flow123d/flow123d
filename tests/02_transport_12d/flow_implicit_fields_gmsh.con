@@ -17,7 +17,7 @@
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
-        TYPE = "Petsc" 
+        TYPE = "Petsc",
         a_tol = 1e-07
       },
       bc_data=[
@@ -28,10 +28,10 @@
       ],
       bulk_data=[
         { rid = 48,
-          anisotropy = 10
+          conductivity = 10
         },
         { rid = 184,
-          anisotropy = 1
+          conductivity = 1
         }
       ]
     },
@@ -87,7 +87,8 @@
           por_m = 0.25,
           diff_m = 1e-1
         }
-      ]
+      ],
+      dg_variant = "symmetric"
     }
   }, 
 
