@@ -253,48 +253,6 @@ Formula can contain variables x,y,z,t and usual operators and functions.}
 \KeyItem{\hyperB{FieldInterpolatedP0::raw-data}{raw\_data}}{input file name}{\textless\it obligatory\textgreater}{}{File with raw output from flow calculation. Currently we can interpolate only pressure.}
 \end{RecordType}
 
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
 \begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'DarcyFlowMH\_Steady'.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
@@ -363,48 +321,6 @@ Formula can contain variables x,y,z,t and usual operators and functions.}
 \KeyItem{\hyperB{FieldInterpolatedP0::raw-data}{raw\_data}}{input file name}{\textless\it obligatory\textgreater}{}{File with raw output from flow calculation. Currently we can interpolate only pressure.}
 \end{RecordType}
 
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
 \begin{RecordType}{\HTRaised{IT::Unsteady-MH}{Unsteady\_MH}}{\hyperlink{IT::DarcyFlowMH}{DarcyFlowMH}}{}{}{Mixed-Hybrid solver for unsteady saturated Darcy flow.}
 \KeyItem{\hyperB{Unsteady-MH::TYPE}{TYPE}}{selection: DarcyFlowMH\_TYPE\_selection}{Unsteady\_MH}{}{Sub-record selection.}
 \KeyItem{\hyperB{Unsteady-MH::n-schurs}{n\_schurs}}{Integer [0, 2]}{2}{}{Number of Schur complements to perform when solving MH sytem.}
@@ -417,168 +333,6 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \KeyItem{\hyperB{Unsteady-MH::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{\textless\it obligatory\textgreater}{}{}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Steady-BoundaryData}{DarcyFlowMH\_Steady\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'DarcyFlowMH\_Steady'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any DarcyFlowMH\_Steady\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
-These times have to form an increasing sequence.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\textless\it optional\textgreater}{}{Boundary condition type, possible values:}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-pressure}{bc\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Dirichlet BC condition value for pressure.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Flux in Neumman or Robin boundary condition.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Conductivity coefficient in Robin boundary condition.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-piezo-head}{bc\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Boundary condition for piezometric head.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::flow-old-bcd-file}{flow\_old\_bcd\_file}}{input file name}{\textless\it optional\textgreater}{}{}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Enum Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{selection: \hyperlink{IT::EqData-bc-Type}{EqData\_bc\_Type}}{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'DarcyFlowMH\_Steady'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any DarcyFlowMH\_Steady\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
-These times have to form an increasing sequence.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::anisotropy}{anisotropy}}{abstract type: \hyperlink{IT::Field:R3 - Real[3,3]}{Field:R3 $\rightarrow$ Real[3,3]}}{\textless\it optional\textgreater}{}{Anisotropy of the conductivity tensor.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::cross-section}{cross\_section}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Complement dimension parameter (cross section for 1D, thickness for 2D).}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::conductivity}{conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Isotropic conductivity scalar.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::sigma}{sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transition coefficient between dimensions.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::water-source-density}{water\_source\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Water source density.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::init-pressure}{init\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial condition as pressure}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::storativity}{storativity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Storativity.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::init-piezo-head}{init\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial piezometric head.}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
 \begin{RecordType}{\HTRaised{IT::Unsteady-LMH}{Unsteady\_LMH}}{\hyperlink{IT::DarcyFlowMH}{DarcyFlowMH}}{}{}{Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.}
 \KeyItem{\hyperB{Unsteady-LMH::TYPE}{TYPE}}{selection: DarcyFlowMH\_TYPE\_selection}{Unsteady\_LMH}{}{Sub-record selection.}
 \KeyItem{\hyperB{Unsteady-LMH::n-schurs}{n\_schurs}}{Integer [0, 2]}{2}{}{Number of Schur complements to perform when solving MH sytem.}
@@ -589,168 +343,6 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \KeyItem{\hyperB{Unsteady-LMH::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the unsteady Darcy flow model.}
 \KeyItem{\hyperB{Unsteady-LMH::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BoundaryData}{DarcyFlowMH\_Steady\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hyperB{Unsteady-LMH::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{\textless\it obligatory\textgreater}{}{}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Steady-BoundaryData}{DarcyFlowMH\_Steady\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'DarcyFlowMH\_Steady'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any DarcyFlowMH\_Steady\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
-These times have to form an increasing sequence.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\textless\it optional\textgreater}{}{Boundary condition type, possible values:}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-pressure}{bc\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Dirichlet BC condition value for pressure.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Flux in Neumman or Robin boundary condition.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Conductivity coefficient in Robin boundary condition.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-piezo-head}{bc\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Boundary condition for piezometric head.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::flow-old-bcd-file}{flow\_old\_bcd\_file}}{input file name}{\textless\it optional\textgreater}{}{}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Enum Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{selection: \hyperlink{IT::EqData-bc-Type}{EqData\_bc\_Type}}{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'DarcyFlowMH\_Steady'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any DarcyFlowMH\_Steady\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.
-These times have to form an increasing sequence.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::anisotropy}{anisotropy}}{abstract type: \hyperlink{IT::Field:R3 - Real[3,3]}{Field:R3 $\rightarrow$ Real[3,3]}}{\textless\it optional\textgreater}{}{Anisotropy of the conductivity tensor.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::cross-section}{cross\_section}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Complement dimension parameter (cross section for 1D, thickness for 2D).}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::conductivity}{conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Isotropic conductivity scalar.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::sigma}{sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transition coefficient between dimensions.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::water-source-density}{water\_source\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Water source density.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::init-pressure}{init\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial condition as pressure}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::storativity}{storativity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Storativity.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::init-piezo-head}{init\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial piezometric head.}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square NxN-matrix values, you can use:
-* vector of size N to enter diagonal matrix
-* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.
-For vector values, you can use just one string to enter homogeneous vector.
-For square NxN-matrix values, you can use:
-* array of strings of size N to enter diagonal matrix
-* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)
-* just one string to enter (spatially variable) multiple of the unit matrix.
-Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Transport}{Transport}}{}{}{Secondary equation for transport of substances.}
@@ -768,6 +360,8 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::solver}{solver}}{abstract type: \hyperlink{IT::Solver}{Solver}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::dg-variant}{dg\_variant}}{selection: \hyperlink{IT::DG-variant}{DG\_variant}}{non-symmetric}{}{Variant of interior penalty discontinuous Galerkin method.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::dg-order}{dg\_order}}{Integer [0, 2]}{1}{}{Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::TransportOutput}{TransportOutput}}{}{}{}{Output setting for transport equations.}
@@ -863,6 +457,12 @@ These times have to form an increasing sequence.}
 \KeyItem{\hyperB{TransportDG-BulkData::sigma-c}{sigma\_c}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Coefficient of diffusive transfer through fractures (for each substance).}
 \KeyItem{\hyperB{TransportDG-BulkData::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.}
 \end{RecordType}
+
+\begin{SelectionType}{\HTRaised{IT::DG-variant}{DG\_variant}}
+\KeyItem{non-symmetric}{non-symmetric weighted interior penalty DG method}
+\KeyItem{incomplete}{incomplete weighted interior penalty DG method}
+\KeyItem{symmetric}{symmetric weighted interior penalty DG method}
+\end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting}{TransportOperatorSplitting}}{\hyperlink{IT::Transport}{Transport}}{}{}{Explicit FVM transport (no diffusion)
 coupled with reaction and sorption model (ODE per element)
@@ -986,14 +586,6 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \KeyItem{\hyperB{LinearReactions::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{LinearReactions}{}{Sub-record selection.}
 \KeyItem{\hyperB{LinearReactions::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
 \KeyItem{\hyperB{LinearReactions::matrix-exp-on}{matrix\_exp\_on}}{Bool}{false}{}{Enables to use Pade approximant of matrix exponential.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::Substep}{Substep}}{}{}{}{Equation for reading information about radioactive decays.}
-\KeyItem{\hyperB{Substep::parent}{parent}}{String (generic)}{\textless\it obligatory\textgreater}{}{Identifier of an isotope.}
-\KeyItem{\hyperB{Substep::half-life}{half\_life}}{Double }{\textless\it optional\textgreater}{}{Half life of the parent substance.}
-\KeyItem{\hyperB{Substep::kinetic}{kinetic}}{Double }{\textless\it optional\textgreater}{}{Kinetic constants describing first order reactions.}
-\KeyItem{\hyperB{Substep::products}{products}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Identifies isotopes which decays parental atom to.}
-\KeyItem{\hyperB{Substep::branch-ratios}{branch\_ratios}}{Array  of Double }{1.0}{}{Decay chain branching percentage.}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'TransportOperatorSplitting'.

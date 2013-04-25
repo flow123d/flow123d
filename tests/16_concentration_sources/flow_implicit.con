@@ -81,6 +81,8 @@
         }
       ],
       
+      dg_variant = "symmetric",
+      
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {

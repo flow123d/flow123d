@@ -317,15 +317,12 @@ const arma::vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int
 
     for (int j=0; j<dim; j++)
     {
-        grad[j] = 1;
+        grad[j] = powers[i][j];
+        if (powers[i][j] == 0) continue;
+
         for (int k=0; k<dim; k++)
         {
-            if (powers[i][j] == 0)
-            {
-                grad[j] = 0;
-                continue;
-            }
-            grad[j] *= pow(p[k], (int) powers[i][j]-1);
+            grad[j] *= pow(p[k], (int) (k==j?powers[i][k]-1:powers[i][k]));
         }
     }
     return grad;
@@ -475,6 +472,10 @@ DofDistribution<0,1>::DofDistribution();
 template<>
 DofDistribution<1,1>::DofDistribution();
 
+// P2 quadratic element
+template<>
+DofDistribution<2,1>::DofDistribution();
+
 /*** 2D finite elements ***/
 
 // P0 constant element
@@ -485,6 +486,10 @@ DofDistribution<0,2>::DofDistribution();
 // P1 linear element
 template<>
 DofDistribution<1,2>::DofDistribution();
+
+// P2 quadratic element
+template<>
+DofDistribution<2,2>::DofDistribution();
 
 
 
@@ -498,6 +503,11 @@ DofDistribution<0,3>::DofDistribution();
 // P1 linear element
 template<>
 DofDistribution<1,3>::DofDistribution();
+
+
+// P2 quadratic element
+template<>
+DofDistribution<2,3>::DofDistribution();
 
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 

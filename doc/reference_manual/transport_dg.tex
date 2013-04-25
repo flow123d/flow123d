@@ -14,7 +14,7 @@
 % ***************************************** SYMBOLS
 \def\abs#1{\lvert#1\rvert}
 \def\argdot{{\hspace{0.18em}\cdot\hspace{0.18em}}}
-\def\avg#1{\left\{#1\right\}_\omega}
+\def\avg#1{\left\{#1\right\}}
 \def\D{{\tn D}}
 \def\div{\operatorname{div}}
 \def\Eh{\mathcal E_h}       % edges of \Th
@@ -31,6 +31,7 @@
 \def\th{\vartheta}
 \def\tn#1{{\mathbb{#1}}}    % tensor
 \def\Tr{\operatorname{Tr}}
+\def\wavg#1{\avg{#1}_\omega}
 \def\where{\,|\,}
 %***************************************************************************
 
@@ -68,7 +69,7 @@ Here $\sc{f}{g}_{\Omega^d}=\int_{\Omega^d} f g$, $c^{h,k-1}_d$ is the solution f
 a^{h,k}_d(u,v) = \sc{\delta^d\th\D\nabla u}{\nabla v}_{\Omega^d}
 + \sc{(\div\vc q)u}{v}_{\Omega^d}
 + \sc{\vc q\cdot\nabla u}{v}_{\Omega^d}\\
-- \sum_{E\in\Ehint^d}\left(\sc{\avg{\delta^d\th\D\nabla u}\cdot\n}{\jmp{v}}_E + \sc{\avg{\delta^d\th\D\nabla v}\cdot\n}{\jmp{u}}_E\right)\\
+- \sum_{E\in\Ehint^d}\left(\sc{\wavg{\delta^d\th\D\nabla u}\cdot\n}{\jmp{v}}_E + \theta\sc{\wavg{\delta^d\th\D\nabla v}\cdot\n}{\jmp{u}}_E\right)\\
 - \sum_{E\in\Ehint^d}\sc{\vc q\cdot\n\avg{v}}{\jmp{u}}_E
 + \sum_{E\in\Ehint^d}\gamma_E\sc{\jmp{u}}{\jmp{v}}_E
 + \sum_{E\in\Ehdir^d(t_k)}\gamma_E\sc{u}{v}_E,
@@ -78,9 +79,10 @@ a^{h,k}_d(u,v) = \sc{\delta^d\th\D\nabla u}{\nabla v}_{\Omega^d}
 b^{h,k}_d(v) = \sum_{E\in\Ehdir^d(t_k)}\gamma_E\sc{c_D}{v}_E.
 \end{equation*}
 For an interior edge $E$ we denote by $T^-(E)$ and $T^+(E)$ the elements sharing $E$.
-By $\n$ we mean the unit normal vector to $E$ pointing from $T^-(E)$ towards $T^+(E)$, the inter-element jump is defined as $\jmp{f}=f_{|T^-(E)}-f_{|T^+(E)}$, and $\avg{f}=\omega f_{|T^-(E)} + (1-\omega) f_{|T^+(E)}$ denotes a weighted average of the quantity $f$.
+By $\n$ we mean the unit normal vector to $E$ pointing from $T^-(E)$ towards $T^+(E)$, the inter-element jump is defined as $\jmp{f}=f_{|T^-(E)}-f_{|T^+(E)}$, $\avg{f}=\frac12(f_{|T^-(E)} + f_{|T^+(E)})$ and $\wavg{f}=\omega f_{|T^-(E)} + (1-\omega) f_{|T^+(E)}$ denotes the usual and weighted average of the quantity $f$.
 The weight $\omega$ is chosen in a specific way (see \cite{ern_stephansen_zunino} for details) taking into account possible inhomogeneity of $\D$.
 The stabilization parameter $\gamma_E>0$ is user dependent; its value affects the inter-element jumps of the solution.
+The constant $\theta$ can take the value $-1$, $0$ or $1$, which corresponds to the nonsymmetric, incomplete and symmetric variant of the interior penalty DG method.
 
 % \paragraph{Communication between regions of the same dimension.}
 In case that lower dimensional domains ($\Omega^1$, $\Omega^2$) have complex topology, e.g. if there are more triangles sharing one line segment, then we consider ideal mixing, i.e. the concentration entering the edge through every inlet element ($\vc q$ points out of this element) is divided among all outlet elements proportionally to their fluxes.
@@ -133,7 +135,7 @@ Here $f^+=\max\{0,f\}$ and $f^-=-\min\{0,f\}$ is the positive, negative part, re
 
 
 \bibliographystyle{abbrvnat}
-\bibliography{ref}
+\bibliography{flow123d_doc}
 
 
 \end{document}

@@ -38,6 +38,9 @@ class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim, unsigned int spacedim> class Mapping;
+template<unsigned int dim> class Quadrature;
+
 
 
 /**
@@ -92,6 +95,73 @@ public:
 
 	};
 
+	/**
+	 * Auxiliary container class for Finite element and related objects of all dimensions.
+	 * Its purpose is to provide templated access to these objects, applicable in
+	 * the assembling methods.
+	 */
+	class FEObjects {
+	public:
+
+		FEObjects(Mesh *mesh_, unsigned int fe_order);
+		~FEObjects();
+
+		template<unsigned int dim>
+		inline FiniteElement<dim,3> *fe();
+
+		template<unsigned int dim>
+		inline FiniteElement<dim,3> *fe_rt();
+
+		template<unsigned int dim>
+		inline Quadrature<dim> *q();
+
+		template<unsigned int dim>
+		inline Mapping<dim,3> *map();
+
+		template<unsigned int dim>
+		inline DOFHandler<dim,3> *dh();
+
+	private:
+
+		/// Finite elements for the solution of the advection-diffusion equation.
+		FiniteElement<1,3> *fe1_;
+		FiniteElement<2,3> *fe2_;
+		FiniteElement<3,3> *fe3_;
+
+		/// Finite elements for the water velocity field.
+		FiniteElement<1,3> *fe_rt1_;
+		FiniteElement<2,3> *fe_rt2_;
+		FiniteElement<3,3> *fe_rt3_;
+
+		/// Quadratures used in assembling methods.
+		Quadrature<0> *q0_;
+		Quadrature<1> *q1_;
+		Quadrature<2> *q2_;
+		Quadrature<3> *q3_;
+
+		/// Auxiliary mappings of reference elements.
+		Mapping<0,3> *map0_;
+		Mapping<1,3> *map1_;
+		Mapping<2,3> *map2_;
+		Mapping<3,3> *map3_;
+
+		/// Objects for distribution of dofs.
+		DOFHandler<1,3> *dh1_;
+		DOFHandler<2,3> *dh2_;
+		DOFHandler<3,3> *dh3_;
+	};
+
+	enum DGVariant {
+		// Non-symmetric weighted interior penalty DG
+		non_symmetric = -1,
+
+		// Incomplete weighted interior penalty DG
+		incomplete = 0,
+
+		// Symmetric weighted interior penalty DG
+		symmetric = 1
+	};
+
     /**
      * @brief Constructor.
      * @param init_mesh         computational mesh
@@ -103,6 +173,11 @@ public:
      * @brief Declare input record type for the equation TransportDG.
      */
     static Input::Type::Record input_type;
+
+    /**
+     * @brief Input type for the DG variant selection.
+     */
+    static Input::Type::Selection dg_variant_selection_input_type;
 
     /**
      * @brief Computes the solution in one time instant.
@@ -177,14 +252,9 @@ private:
 
 	/**
 	 * @brief Assembles the mass matrix for the given dimension.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-     * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param fe FiniteElement
 	 */
 	template<unsigned int dim>
-	void assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void assemble_mass_matrix();
 
 	/**
 	 * @brief Assembles the stiffness matrix.
@@ -197,14 +267,9 @@ private:
 
 	/**
 	 * @brief Assembles the volume integrals into the stiffness matrix.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param fe FiniteElement.
 	*/
 	template<unsigned int dim>
-	void assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void assemble_volume_integrals();
 
 	/**
 	 * @brief Assembles the right hand side due to volume sources.
@@ -215,53 +280,27 @@ private:
 
 	/**
 	 * @brief Assembles the right hand side vector due to volume sources.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param fe Finite element.
 	 */
 	template<unsigned int dim>
-	void set_sources(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void set_sources();
 
 	/**
 	 * @brief Assembles the fluxes on the boundary.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param dh_sub DOF handler for sides.
-	 * @param fe FiniteElement.
-	 * @param fe_sub FiniteElement for sides.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
+	void assemble_fluxes_boundary();
 
 	/**
 	 * @brief Assembles the fluxes between elements of the same dimension.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param dh_sub DOF handler for sides.
-	 * @param fe FiniteElement.
-	 * @param fe_sub FiniteElement for sides.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
+	void assemble_fluxes_element_element();
 
 	/**
 	 * @brief Assembles the fluxes between elements of different dimensions.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param dh_sub DOF handler for sides.
-	 * @param fe FiniteElement.
-	 * @param fe_sub FiniteElement for sides.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
+	void assemble_fluxes_element_side();
 
 
 	/**
@@ -274,12 +313,9 @@ private:
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
 	 * for a given space dimension.
-	 *
-	 * @param dh DOF handler.
-     * @param fe FiniteElement.
 	 */
 	template<unsigned int dim>
-	void set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void set_boundary_conditions();
 
 	/**
 	 * @brief Calculates the velocity field on a given @p dim dimensional cell.
@@ -321,20 +357,18 @@ private:
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.
 	 *
-	 * @param edg					The edge.
+	 * @param edg				The edge.
 	 * @param s1				Side 1.
 	 * @param s2				Side 2.
-	 * @param n_points			Number of quadrature points.
 	 * @param K					Dispersivity tensor.
 	 * @param normal_vector		Normal vector to side 0 of the neighbour
 	 * 							(assumed constant along the side).
-	 * @param alpha				Penalty parameter that influences the continuity
+	 * @param alpha1, alpha2	Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
 	 * @param gamma				Computed penalty parameters.
 	 * @param omega				Computed weights.
 	 * @param transport_flux	Computed flux from side 1 to side 2.
 	 */
-
 	void set_DG_parameters_edge(const Edge &edg,
 	        const int s1,
 	        const int s2,
@@ -369,8 +403,12 @@ private:
 	 */
 	void set_initial_condition();
 
+	/**
+	 * @brief Assembles the auxiliary linear system to calculate the initial solution
+	 * as L^2-projection of the prescribed initial condition.
+	 */
 	template<unsigned int dim>
-	void prepare_initial_condition(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void prepare_initial_condition();
 
 	/**
 	 * @brief Calculates flux through boundary of each region.
@@ -383,16 +421,13 @@ private:
 	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
 
 	/**
-	 * @brief Calculates flux through boundary of each region.
+	 * @brief Calculates flux through boundary of each region of specific dimension.
 	 * @param bcd_balance       Total fluxes.
 	 * @param bcd_plus_balance  Incoming fluxes.
 	 * @param bcd_minus_balance Outgoing fluxes.
-	 * @param dh                DOF handler.
-	 * @param fe                Finite element.
 	 */
 	template<unsigned int dim>
-	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance,
-			DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
 
 	/**
 	 * @brief Calculates volume sources for each region.
@@ -404,14 +439,12 @@ private:
 	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
 
 	/**
-	 * @brief Calculates volume sources for each region.
+	 * @brief Calculates volume sources for each region of specific dimension.
 	 * @param mass        Vector of substance mass per region.
 	 * @param src_balance Vector of sources per region.
-	 * @param dh          DOF handler.
-	 * @param fe          Finite element.
 	 */
 	template<unsigned int dim>
-	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance, DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
 
 
 
@@ -437,8 +470,18 @@ private:
 
 	/// @name Parameters of the numerical method
 	// @{
+
+	/// Finite element objects
+	FEObjects *feo;
+
 	/// Penalty parameters.
 	std::vector<std::vector<double> > gamma;
+
+	/// DG variant ((non-)symmetric/incomplete
+	int dg_variant;
+
+	/// Polynomial order of finite elements.
+	unsigned int dg_order;
 
 	// @}
 
@@ -486,28 +529,6 @@ private:
 	// @}
 
 
-	/// @name Finite element objects
-	// @{
-
-	/// DOF handler for 1D problem.
-	DOFHandler<1,3> *dof_handler1d;
-
-	/// DOF handler for 2D problem.
-	DOFHandler<2,3> *dof_handler2d;
-
-	/// DOF handler for 3D problem.
-	DOFHandler<3,3> *dof_handler3d;
-
-	/// Finite element for 1D.
-	FiniteElement<1,3> *fe1d;
-
-	/// Finite element for 2D.
-	FiniteElement<2,3> *fe2d;
-
-	/// Finite element for 3D.
-	FiniteElement<3,3> *fe3d;
-
-	// @}
 
 
 	/// @name Other
@@ -523,6 +544,7 @@ private:
 
     // @}
 };
+
 
 
 

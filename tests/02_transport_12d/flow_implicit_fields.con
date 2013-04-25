@@ -87,7 +87,8 @@
           por_m = 0.25,
           diff_m = 1e-1
         }
-      ]
+      ],
+      dg_variant = "symmetric"
     }
   }, 
 
