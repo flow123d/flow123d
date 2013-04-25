@@ -107,7 +107,19 @@ public:
     *	Enables to get private parameter.
     */
     double get_scale_sorbed(void);
+    /**
+    * 	Verifies how big interpolation table is defined
+    */
+    int get_interpolation_table_size(void);
+    /**
+    * 	Creates interpolation table containing just one point
+    */
+    void make_one_point_table(void);
 private:
+    /**
+    * 	Suppresses the use of implicit constructor.
+    */
+    //Isotherm();
     /// coefficient that convert soluted concentration to mass; rho_aqua*porosity = k_W
     double scale_aqua;
     /// coefficient that convert adsorbed molar concentration to mass; molar_weight * rho_rock * (1 - porosity) = k_H

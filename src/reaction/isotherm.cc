@@ -11,7 +11,11 @@ void Linear::reinit(double mult_coef)
 {
 	mult_coef_ = mult_coef;
 	return;
-};
+}
+
+/*Isotherm::Isotherm(void)
+{
+}*/
 
 void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
 {
@@ -21,8 +25,8 @@ void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double r
     scale_sorbed = (1-porosity) * rock_density * molar_mass;
     inv_scale_aqua = scale_aqua/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
     inv_scale_sorbed = scale_sorbed/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
-    c_aqua_limit_=c_aqua_limit;
-};
+    c_aqua_limit_ = c_aqua_limit;
+}
 
 //inline
 bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as glass but the inline command makes troubles, probably
@@ -45,7 +49,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as g
     }
 
     return false;
-};
+}
 
 template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // Probably not used at this time. CrossFunction needs to be redefined.
@@ -72,7 +76,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
     c_sorbed = 1.0;
 
     return;
-};
+}
 
 template void Isotherm::solve_conc<Linear>(double &c_aqua, double &c_sorbed, const Linear &isotherm);
 
@@ -105,7 +109,14 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
     }
 
     return;
-};
+}
+
+void Isotherm::make_one_point_table(void)
+{
+	interpolation_table.resize(1);
+	interpolation_table[0] = 1.0;
+	return;
+}
 
 template void Isotherm::make_table<Linear>(const Linear &isotherm, int n_steps);
 
@@ -117,12 +128,17 @@ template void Isotherm::make_table<Langmuir>(const Langmuir &isotherm, int n_ste
 double Isotherm::get_scale_aqua(void)
 {
 	return scale_aqua;
-};
+}
 
 double Isotherm::get_scale_sorbed(void)
 {
 	return scale_sorbed;
-};
+}
+
+int Isotherm::get_interpolation_table_size(void)
+{
+	return interpolation_table.size();
+}
 
 
 /*template <class Func>

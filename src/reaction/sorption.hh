@@ -10,7 +10,7 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
-//#include "reaction/isotherms.hh"
+#include "reaction/isotherm.hh"
 
 class Mesh;
 class Distribution;
@@ -46,6 +46,7 @@ class Sorption:  public Reaction
 			//RegionSet read_bulk_list_item(Input::Record rec);
 
 			Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
+			//Field<3, FieldValue<3>::Vector > sorption_types; // Discrete need Selection for initialization.
 			Field<3, FieldValue<3>::Scalar > mob_porosity; // Mobile porosity.
 			Field<3, FieldValue<3>::Scalar > immob_porosity; // Immobile porosity.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
@@ -84,6 +85,10 @@ class Sorption:  public Reaction
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
 		void set_time_step(Input::Record in_rec);
+		/**
+		* Inherited init_from_input method extension.
+		*/
+		void init_from_input(Input::Array bulk_list);
 		/**
 		* Meaningless inherited methods.
 		*/

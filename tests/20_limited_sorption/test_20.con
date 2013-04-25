@@ -78,7 +78,7 @@
             mob_porosity = 0.02,
             immob_porosity = 0.001,
             rock_density = 9.25,
-            sorption_types = ["linear", "langmuir", "none", "linear", "none", "none"],
+            sorption_types = ["linear", "langmuir", "none", "langmuir", "none", "none"],
             mult_coefs = [0.02, 0.02, 0.03, 0.01, 0, 0],
             second_params = [0, 0.5, 0.25, 0, 0, 0]
           }
