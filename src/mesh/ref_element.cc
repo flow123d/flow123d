@@ -54,17 +54,50 @@ template<> const unsigned int RefElement<1>::side_nodes[][1] = {
 };
 
 template<> const unsigned int RefElement<2>::side_nodes[][2] = {
-		{ 0, 1 },
-		{ 1, 2 },
-		{ 2, 0 }
+/*		{ 0, 1 },
+		{ 0, 2 },
+		{ 1, 2 }*/
+        { 0, 1},
+        { 1, 2},
+        { 0, 2}
 };
 
 template<> const unsigned int RefElement<3>::side_nodes[][3] = {
-		{ 1, 2, 3 },
-		{ 0, 2, 3 },
+/*		{ 0, 1, 2 },
 		{ 0, 1, 3 },
-		{ 0, 1, 2 }
+		{ 0, 2, 3 },
+		{ 1, 2, 3 }*/
+        {1,2,3},
+        {0,2,3},
+        {0,1,3},
+        {0,1,2}
 };
+
+
+
+template<> const unsigned int RefElement<3>::side_lines[][3] = {
+        {3,4,5},
+        {1,2,5},
+        {0,2,4},
+        {0,1,3}
+};
+
+//template<unsigned int dim>
+//const unsigned int RefElement<dim>::side_lines[][0] = {{}};
+
+
+
+template<> const unsigned int RefElement<3>::line_nodes[][2] = {
+        {0,1},
+        {0,2},
+        {0,3},
+        {1,2},
+        {1,3},
+        {2,3}
+};
+//template<unsigned int dim>
+//const unsigned int RefElement<dim>::line_nodes[][0] = {};
+
 
 
 template<unsigned int dim>
@@ -106,6 +139,19 @@ vec::fixed<dim> RefElement<dim>::normal_vector(unsigned int sid)
 
 	return p;
 }
+
+
+
+template <>
+unsigned int RefElement<3>::line_between_faces(unsigned int f1, unsigned int f2) {
+    unsigned int i,j;
+    i=j=0;
+    while (side_lines[f1][i] != side_lines[f2][j])
+        if (side_lines[f1][i] < side_lines[f2][j]) i++;
+        else j++;
+    return side_lines[f1][i];
+}
+
 
 
 template<unsigned int dim>

@@ -33,6 +33,7 @@
 
 #include "system/system.hh"
 #include "mesh/mesh.h"
+#include "mesh/ref_element.hh"
 #include "elements.h"
 #include "element_impls.hh"
 
@@ -87,6 +88,17 @@ void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
         edge_idx_[ si ]=Mesh::undef_idx;
         permutation_idx_[si] = Mesh::undef_idx;
     }
+}
+
+
+Element::~Element() {
+/*
+    if (node) { delete[] node; node=NULL;}
+    if (edge_idx_) { delete[] edge_idx_; edge_idx_=NULL;}
+    if (permutation_idx_) { delete[] permutation_idx_; permutation_idx_=NULL;}
+    if (boundary_idx_) { delete[] boundary_idx_; boundary_idx_ = NULL; }
+    */
+
 }
 
 
@@ -165,9 +177,23 @@ Region Element::region() const {
 }
 
 
-double Element::quality_measure_smooth() const {
+double Element::quality_measure_smooth() {
     if (dim_==3) {
-        return fabs(1);
+        double sum_faces=0;
+        double face[4];
+        for(unsigned int i=0;i<4;i++) sum_faces+=( face[i]=side(i)->measure());
+
+        double sum_pairs=0;
+        for(unsigned int i=0;i<3;i++)
+            for(unsigned int j=i+1;j<4;j++) {
+                unsigned int i_line = RefElement<3>::line_between_faces(i,j);
+                arma::vec line = *node[RefElement<3>::line_nodes[i_line][1]] - *node[RefElement<3>::line_nodes[i_line][0]];
+                sum_pairs += face[i]*face[j]*arma::dot(line, line);
+            }
+        double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
+        return fabs( measure()
+                * pow( sum_faces/sum_pairs, 3.0/4.0))/ regular;
+
     }
     if (dim_==2) {
         return fabs(
@@ -176,8 +202,8 @@ double Element::quality_measure_smooth() const {
                          arma::norm(*node[1] - *node[0], 2)
                         *arma::norm(*node[2] - *node[1], 2)
                         *arma::norm(*node[0] - *node[2], 2)
-                        , 3.0/4.0)
-               ) / ( sqrt(3.0) / 4.0 );
+                        , 2.0/3.0)
+               ) / ( sqrt(3.0) / 4.0 ); // regular triangle
     }
     return 1.0;
 }

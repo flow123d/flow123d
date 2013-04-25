@@ -74,7 +74,8 @@
  *   distance_to_unit_cell
  *   d_linear_shape_function
  *
- *
+ * - can not change numbering of element sides due to DarcyFlow, which use hardwired side numbering in construction of basis functions
+ * - any change of side numbering requires also change in flow/old_bcd.cc
  *
  *
  */
@@ -138,6 +139,12 @@ public:
 	 */
 	static arma::vec::fixed<dim> normal_vector(unsigned int sid);
 
+	/**
+	 * Return index of 1D line, shared by two faces @p f1 and @p f2 of the reference tetrahedron.
+	 * Implemented only for @p dim == 3.
+	 */
+	static unsigned int line_between_faces(unsigned int f1, unsigned int f2);
+
 
 	/**
 	 * Number of sides.
@@ -154,10 +161,26 @@ public:
 	 */
 	static const unsigned int n_nodes_per_side = dim;
 
+	/// Number of lines on boundary of one side.
+	static const unsigned int n_lines_per_side = ( dim == 3 ? 3 : 0);
+
+	/// Number of lines, i.e. @p object of dimension @p dim-2 on the boundary of the reference element.
+	static const unsigned int n_lines = ( dim == 3 ? 6 : 0);
+
 	/**
 	 * Node numbers for each side.
 	 */
 	static const unsigned int side_nodes[n_sides][n_nodes_per_side];
+
+	/**
+	 * Indices of 1D lines of the 2D sides of an tetrahedron. Nonempty only for @p dim==3.
+	 */
+	static const unsigned int side_lines[n_sides][n_lines_per_side];
+
+	/**
+	 * Nodes of 1D lines of the tetrahedron.
+	 */
+    static const unsigned int line_nodes[n_lines][2];
 
 	/**
 	 * Number of permutations of nodes on sides.

@@ -74,7 +74,7 @@
         solubility = [0.5, 0.2, 0.3, 0.1, 0.3, 0.7],
         bulk_data = [
           {
-            rid = 1,
+            region = "rectangle",
             mob_porosity = 0.02,
             immob_porosity = 0.001,
             rock_density = 9.25,

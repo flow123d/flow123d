@@ -54,6 +54,8 @@ public:
     Element();
     Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
     void init(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
+    ~Element();
+
 
     inline unsigned int dim() const;
     inline unsigned int index() const;
@@ -72,7 +74,7 @@ public:
      * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
      * have always quality 1.
      */
-    double quality_measure_smooth() const   ;
+    double quality_measure_smooth();
 
     unsigned int n_sides_by_dim(int side_dim);
     inline SideIter side(const unsigned int loc_index);
@@ -103,6 +105,7 @@ public:
 
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
+
 
 protected:
     // Data readed from mesh file

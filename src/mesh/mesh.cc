@@ -212,6 +212,11 @@ void Mesh::setup_topology() {
     START_TIMER("MESH - setup topology");
     
     count_element_types();
+
+    // check mesh quality
+    FOR_ELEMENTS(this, ele)
+        if (ele->quality_measure_smooth() < 0.001) xprintf(Warn, "Bad quality (<0.001) of the element %u.\n", ele.id());
+
     make_neighbours_and_edges();
     element_to_neigh_vb();
     make_edge_permutations();
