@@ -343,10 +343,12 @@ public:
 
         if ( rec.size() == 1 ) {
             for(unsigned int i=0; i< n_rows(); i++)
-                value_.at(i)=*it;
+                value_.at(i)=ET(*it);
         } else if ( rec.size() == n_rows() ) {
-            for(unsigned int i=0; i< n_rows(); i++, ++it)
-                value_.at(i)=*it;
+            for(unsigned int i=0; i< n_rows(); i++, ++it) {
+                //cout << "set vec[" << i << "] =" << ET(*it) << endl;
+                value_.at(i)=ET(*it);
+            }
         } else {
             THROW( ExcFV_Input() << EI_InputMsg(
                     boost::str(boost::format("Initializing vector of size %d by vector of size %d.")

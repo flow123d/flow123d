@@ -33,7 +33,7 @@ Sorption::EqData::EqData()
 {
     ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
 
-    ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm.", it::Default("none") );
+    ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm." );
               sorption_types.set_selection(&sorption_type_selection);
     //ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm.", it::Default(0) );
 
@@ -84,7 +84,6 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     data_.set_mesh(&init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
     data_.set_time(tg);
-
 
 	//Simple vectors holding  common informations.
 	region_ids.resize( nr_of_regions ); // ( nr_of_regions );
@@ -164,7 +163,8 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	}
 
 	// list of types of isotherms in particular regions
-	FieldValue<3>::EnumVector::return_type iso_type;
+	//FieldValue<3>::EnumVector::return_type iso_type;
+	arma::Col<unsigned int> iso_type;
 	//FieldValue<3>::Vector::return_type iso_type;
 	cout << "there are " << nr_of_substances <<" substances under concideration." << endl;
 	iso_type.resize(nr_of_substances); //arma::Col<unsigned int> je ten typ ze začátku řádku, std::vector<SorptionType>
@@ -181,7 +181,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	int i_reg = 0;
 	//std::map<SorptionType, std::string>;
 	//for(Input::Iterator<Input::Record> reg_iter = sorptions_array.begin<Input::Record>(); reg_iter != sorptions_array.end(); ++reg_iter, i_reg++)
-	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("ALL") )
+	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
 		// list of types of isotherms in particular regions, initialization
 		if(data_.sorption_types.get_const_value(reg_iter, iso_type))
@@ -214,7 +214,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			// did not function //SorptionType hlp_iso_type =  (SorptionType) iso_type[i_subst];
 			xprintf(Msg,"Sorption type of %d-th substance is %d.\n",i_subst, iso_type[i_subst]);
 
-			int reg_idx=reg_iter.idx();
+			int reg_idx=reg_iter.bulk_idx();
 			isotherms_mob[reg_idx][i_subst].reinit(hlp_iso_type,rock_density,solvent_dens,mobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
 			cout << "This message should indicate fault." << endl;
 			if(dual_porosity_on)

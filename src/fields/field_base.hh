@@ -435,7 +435,7 @@ private:
 
     /**
      * If this pointer is set, turn off check of initialization in the set_time method on the regions
-     * where the method get_constant_enum_value of the constrol field returns value from @p no_check_values_.
+     * where the method get_constant_enum_value of the control field returns value from @p no_check_values_.
      */
     const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
     std::vector<FieldEnum> no_check_values_;

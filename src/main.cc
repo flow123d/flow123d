@@ -264,7 +264,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("full_doc")) {
         Input::Type::TypeBase::lazy_finish();
         Input::Type::OutputText type_output(&input_type);
-        type_output.set_filter("Field:.*:");
+        type_output.set_filter(":Field:.*");
         cout << type_output;
         free_and_exit();
     }

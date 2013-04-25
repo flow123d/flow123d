@@ -205,7 +205,7 @@ template <int spacedim, class Value>
 bool Field<spacedim, Value>::get_const_value(Region reg, typename Value::return_type &value) {
     boost::shared_ptr< FieldBaseType > region_field = operator[](reg);
     if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
-        region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
+        value = region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
         return true;
     } else {
         return false;
@@ -225,6 +225,7 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field) {
     ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
     if (domain.size() == 0) return;
+
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields_.size() == 0)
         region_fields_.resize( this->mesh_->region_db().size() );
