@@ -237,7 +237,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // DG variant
     dg_variant = in_rec.val<DGVariant>("dg_variant");
-    xprintf(MsgDbg, "DG variant: %d\n", dg_variant);
 
     // DG stabilization parameters on boundary edges
     gamma.resize(n_subst);
@@ -676,20 +675,29 @@ void TransportDG::assemble_mass_matrix()
 void TransportDG::assemble_stiffness_matrix()
 {
   START_TIMER("assemble_stiffness");
+   START_TIMER("assemble_volume_integrals");
 	assemble_volume_integrals<1>();
-	assemble_fluxes_boundary<1>();
-	assemble_fluxes_element_element<1>();
-	assemble_fluxes_element_side<1>();
-
 	assemble_volume_integrals<2>();
-	assemble_fluxes_boundary<2>();
-	assemble_fluxes_element_element<2>();
-	assemble_fluxes_element_side<2>();
-
 	assemble_volume_integrals<3>();
-    assemble_fluxes_boundary<3>();
-    assemble_fluxes_element_element<3>();
+   END_TIMER("assemble_volume_integrals");
+
+   START_TIMER("assemble_fluxes_boundary");
+	assemble_fluxes_boundary<1>();
+	assemble_fluxes_boundary<2>();
+	assemble_fluxes_boundary<3>();
+   END_TIMER("assemble_fluxes_boundary");
+
+   START_TIMER("assemble_fluxes_elem_elem");
+	assemble_fluxes_element_element<1>();
+	assemble_fluxes_element_element<2>();
+	assemble_fluxes_element_element<3>();
+   END_TIMER("assemble_fluxes_elem_elem");
+
+   START_TIMER("assemble_fluxes_elem_side");
+	assemble_fluxes_element_side<1>();
+	assemble_fluxes_element_side<2>();
     assemble_fluxes_element_side<3>();
+   END_TIMER("assemble_fluxes_elem_side");
   END_TIMER("assemble_stiffness");
 }
 
@@ -772,9 +780,11 @@ void TransportDG::assemble_volume_integrals()
 
 void TransportDG::set_sources()
 {
+  START_TIMER("assemble_sources");
 	set_sources<1>();
 	set_sources<2>();
 	set_sources<3>();
+  END_TIMER("assemble_sources");
 }
 
 template<unsigned int dim>
@@ -885,8 +895,8 @@ void TransportDG::assemble_fluxes_element_element()
         	side_dof_indices.push_back(new unsigned int[ndofs]);
 
         for (int sid=fe_values.size(); sid<edg->n_sides; sid++)
-        	fe_values.push_back(new FESideValues<dim,3>(*feo->map<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(), update_values | update_gradients
-        			| update_side_JxW_values | update_normal_vectors | update_quadrature_points));
+        	fe_values.push_back(new FESideValues<dim,3>(*feo->map<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+        			update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
 
 		for (int sid=0; sid<edg->n_sides; sid++)
 		{
@@ -940,23 +950,36 @@ void TransportDG::assemble_fluxes_element_element()
 						for (int n=0; n<2; n++)
 						{
 							for (int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
-							{
 								for (int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
+									local_matrix[i*fe_values[sd[m]]->n_dofs()+j] = 0;
+
+							for (int k=0; k<qsize; k++)
+							{
+								double flux_times_JxW = transport_flux*fe_values[0]->JxW(k);
+								double gamma_times_JxW = gamma_l*fe_values[0]->JxW(k);
+
+								for (int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
 								{
-									int index = i*fe_values[sd[m]]->n_dofs()+j;
-									local_matrix[index] = 0;
 									if (side_dof_indices[sd[n]][i] < distr->begin() || side_dof_indices[sd[n]][i] > distr->end()) continue;
-									for (int k=0; k<qsize; k++)
+
+									double flux_JxW_avg_i = flux_times_JxW*AVERAGE(i,k,n);
+									double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
+									double JxW_jump_i = fe_values[0]->JxW(k)*JUMP(i,k,n);
+									double JxW_var_wavg_i = fe_values[0]->JxW(k)*WAVERAGE(i,k,n)*dg_variant;
+
+									for (int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
 									{
+										int index = i*fe_values[sd[m]]->n_dofs()+j;
+
 										// flux due to transport (applied on interior edges) (average times jump)
-										local_matrix[index] -= transport_flux*JUMP(j,k,m)*AVERAGE(i,k,n)*fe_values[0]->JxW(k);
+										local_matrix[index] -= flux_JxW_avg_i*JUMP(j,k,m);
 
 										// penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
-										local_matrix[index] += gamma_l*JUMP(j,k,m)*JUMP(i,k,n)*fe_values[0]->JxW(k);
+										local_matrix[index] += gamma_JxW_jump_i*JUMP(j,k,m);
 
 										// terms due to diffusion
-										local_matrix[index] -= WAVERAGE(j,k,m)*JUMP(i,k,n)*fe_values[0]->JxW(k);
-										local_matrix[index] -= WAVERAGE(i,k,n)*JUMP(j,k,m)*fe_values[0]->JxW(k)*dg_variant;
+										local_matrix[index] -= WAVERAGE(j,k,m)*JxW_jump_i;
+										local_matrix[index] -= JUMP(j,k,m)*JxW_var_wavg_i;
 									}
 								}
 							}
@@ -1145,9 +1168,11 @@ void TransportDG::assemble_fluxes_element_side()
 
 void TransportDG::set_boundary_conditions()
 {
+  START_TIMER("assemble_bc");
 	set_boundary_conditions<1>();
 	set_boundary_conditions<2>();
 	set_boundary_conditions<3>();
+  END_TIMER("assemble_bc");
 }
 
 
@@ -1206,7 +1231,7 @@ void TransportDG::set_boundary_conditions()
 // that the MH_DofHandler uses the node/side ordering defined in
 // the respective RefElement.
 template<unsigned int dim>
-void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
+void TransportDG::calculate_velocity(const typename DOFHandler<dim,3>::CellIterator &cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
     std::map<const Node*, int> node_nums;
     for (int i=0; i<cell->n_nodes(); i++)
@@ -1230,7 +1255,7 @@ void TransportDG::calculate_velocity(typename DOFHandler<dim,3>::CellIterator ce
 
 
 template<unsigned int dim>
-void TransportDG::calculate_velocity_divergence(typename DOFHandler<dim,3>::CellIterator cell, vector<double> &divergence, FEValuesBase<dim,3> &fv)
+void TransportDG::calculate_velocity_divergence(const typename DOFHandler<dim,3>::CellIterator &cell, vector<double> &divergence, FEValuesBase<dim,3> &fv)
 {
     std::map<const Node*, int> node_nums;
     for (int i=0; i<cell->n_nodes(); i++)

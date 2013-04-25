@@ -326,7 +326,7 @@ private:
 	 *                 and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
-	void calculate_velocity(typename DOFHandler<dim,3>::CellIterator cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
+	void calculate_velocity(const typename DOFHandler<dim,3>::CellIterator &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the velocity divergence on a given @p dim dimensional cell.
@@ -337,7 +337,7 @@ private:
 	 *                   and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
-	void calculate_velocity_divergence(typename DOFHandler<dim,3>::CellIterator cell, std::vector<double> &divergence, FEValuesBase<dim,3> &fv);
+	void calculate_velocity_divergence(const typename DOFHandler<dim,3>::CellIterator &cell, std::vector<double> &divergence, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
