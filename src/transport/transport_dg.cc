@@ -717,7 +717,7 @@ void TransportDG::assemble_volume_integrals()
     unsigned int dof_indices[ndofs];
     vector<arma::vec3> velocity(qsize);
     vector<arma::vec> Dm(qsize), alphaL(qsize), alphaT(qsize);
-    vector<double> divergence, por_m(qsize), csection(qsize);
+    vector<double> por_m(qsize), csection(qsize);
 
     PetscScalar local_matrix[ndofs*ndofs];
 
@@ -741,7 +741,6 @@ void TransportDG::assemble_volume_integrals()
         }
 
         calculate_velocity(cell, velocity, fv_rt);
-        calculate_velocity_divergence(cell, divergence, fv_rt);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<n_subst; sbi++)
@@ -760,14 +759,12 @@ void TransportDG::assemble_volume_integrals()
         			if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
 
         			arma::vec3 Kt_grad_i = K.t()*fe_values.shape_grad(i,k);
-        			arma::vec3 velocity_times_value_i_times_JxW = velocity[k]*(fe_values.shape_value(i,k)*fe_values.JxW(k));
-        			double div_times_value_i_times_JxW = divergence[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+        			double velocity_dot_grad_i_times_JxW = arma::dot(velocity[k], fe_values.shape_grad(i,k))*fe_values.JxW(k);
 
         			for (int j=0; j<ndofs; j++)
         			{
 						local_matrix[i*ndofs+j] += arma::dot(Kt_grad_i, fe_values.shape_grad(j,k))*por_times_csection_times_JxW
-												   +dot(fe_values.shape_grad(j,k),velocity_times_value_i_times_JxW)
-												   +div_times_value_i_times_JxW*fe_values.shape_value(j,k);
+												   -fe_values.shape_value(j,k)*velocity_dot_grad_i_times_JxW;
 					}
 
 				}
@@ -962,7 +959,7 @@ void TransportDG::assemble_fluxes_element_element()
 								{
 									if (side_dof_indices[sd[n]][i] < distr->begin() || side_dof_indices[sd[n]][i] > distr->end()) continue;
 
-									double flux_JxW_avg_i = flux_times_JxW*AVERAGE(i,k,n);
+									double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
 									double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
 									double JxW_jump_i = fe_values[0]->JxW(k)*JUMP(i,k,n);
 									double JxW_var_wavg_i = fe_values[0]->JxW(k)*WAVERAGE(i,k,n)*dg_variant;
@@ -972,7 +969,7 @@ void TransportDG::assemble_fluxes_element_element()
 										int index = i*fe_values[sd[m]]->n_dofs()+j;
 
 										// flux due to transport (applied on interior edges) (average times jump)
-										local_matrix[index] -= flux_JxW_avg_i*JUMP(j,k,m);
+										local_matrix[index] += flux_JxW_jump_i*AVERAGE(j,k,m);
 
 										// penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
 										local_matrix[index] += gamma_JxW_jump_i*JUMP(j,k,m);
@@ -1025,8 +1022,6 @@ void TransportDG::assemble_fluxes_boundary()
     {
         if (b->side()->dim() != dim-1) continue;
 
-        if (b->side()->cond() == NULL || mh_dh->side_flux( *(b->side()) ) >= -mh_dh->precision()) continue;
-
         cell = mesh().element.full_iter(b->side()->element());
         ElementAccessor<3> ele_acc = cell->element_accessor();
         feo->dh<dim>()->get_dof_indices(cell, side_dof_indices);
@@ -1053,18 +1048,27 @@ void TransportDG::assemble_fluxes_boundary()
 			if (b->side()->cond() != 0)
 				gamma[sbi][b->side()->cond_idx()] = gamma_l;
 
-			// fluxes and penalty
+			// On Neumann boundaries we have only term from integrating by parts the advective term,
+			// on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
+			double transport_flux = mh_dh->side_flux( *(b->side()) )/b->side()->measure();
+			if (mh_dh->side_flux( *(b->side()) ) < -mh_dh->precision())
+				transport_flux += gamma_l;
+
 			for (int i=0; i<ndofs; i++)
-			{
 				for (int j=0; j<ndofs; j++)
-				{
 					local_matrix[i*ndofs+j] = 0;
+
+			// fluxes and penalty
+			for (int k=0; k<qsize; k++)
+			{
+				double flux_times_JxW = transport_flux*fe_values_side.JxW(k);
+
+				for (int i=0; i<ndofs; i++)
+				{
 					if (side_dof_indices[i] < distr->begin() || side_dof_indices[i] > distr->end()) continue;
-					for (int k=0; k<qsize; k++)
-					{
-						// penalty enforcing continuity across edges (applied on interior and Dirichlet edges)
-						local_matrix[i*ndofs+j] += gamma_l*fe_values_side.shape_value(j,k)*fe_values_side.shape_value(i,k)*fe_values_side.JxW(k);
-					}
+
+					for (int j=0; j<ndofs; j++)
+						local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
 				}
 			}
 			ls[sbi]->mat_set_values(ndofs, (int *)side_dof_indices, ndofs, (int *)side_dof_indices, local_matrix);
@@ -1133,14 +1137,11 @@ void TransportDG::assemble_fluxes_element_side()
 				/* The communication flux has two parts:
 				 * - "diffusive" term containing sigma
 				 * - "advective" term representing usual upwind
-				 *
-				 * The last term comm_flux[1][1] is the total mass flux,
-				 * hence there is an extra contribution "-transport_flux".
 				 */
 				comm_flux[0][0] =  (csection[k]*por_m[0][k]*sigma[k][sbi]-min(0.,transport_flux))*fv_sb[0]->JxW(k);
 				comm_flux[0][1] = -(csection[k]*por_m[0][k]*sigma[k][sbi]-min(0.,transport_flux))*fv_sb[0]->JxW(k);
 				comm_flux[1][0] = -(csection[k]*por_m[1][k]*sigma[k][sbi]+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-				comm_flux[1][1] =  (csection[k]*por_m[1][k]*sigma[k][sbi]+max(0.,transport_flux)-transport_flux)*fv_sb[0]->JxW(k);
+				comm_flux[1][1] =  (csection[k]*por_m[1][k]*sigma[k][sbi]+max(0.,transport_flux))*fv_sb[0]->JxW(k);
 
 				for (int n=0; n<2; n++)
 				{
@@ -1226,7 +1227,7 @@ void TransportDG::set_boundary_conditions()
 
 
 // TODO: The detection of side number from SideIter
-// in TransportDG::calculate_velocity() and TransportDG::calculate_divergence()
+// in TransportDG::calculate_velocity()
 // should be done with help of class RefElement. This however requires
 // that the MH_DofHandler uses the node/side ordering defined in
 // the respective RefElement.
@@ -1253,29 +1254,6 @@ void TransportDG::calculate_velocity(const typename DOFHandler<dim,3>::CellItera
     }
 }
 
-
-template<unsigned int dim>
-void TransportDG::calculate_velocity_divergence(const typename DOFHandler<dim,3>::CellIterator &cell, vector<double> &divergence, FEValuesBase<dim,3> &fv)
-{
-    std::map<const Node*, int> node_nums;
-    for (int i=0; i<cell->n_nodes(); i++)
-        node_nums[cell->node[i]] = i;
-
-    divergence.resize(fv.n_points());
-
-    for (int k=0; k<fv.n_points(); k++)
-    {
-        divergence[k] = 0;
-        for (int sid=0; sid<cell->n_sides(); sid++)
-        {
-            if (cell->side(sid)->dim() != dim-1) continue;
-            int num = dim*(dim+1)/2;
-            for (int i=0; i<cell->side(sid)->n_nodes(); i++)
-                num -= node_nums[cell->side(sid)->node(i)];
-            divergence[k] += arma::trace(fv.shape_grad_vector(num,k)) * mh_dh->side_flux( *(cell->side(sid)) );
-        }
-    }
-}
 
 
 
