@@ -19,12 +19,14 @@ namespace Input {
 namespace Type {
 
 /**
- * Base abstract class for output description of the Input::Type tree.
+ * @brief Base abstract class for output description of the Input::Type tree.
+ *
  * Output into various formats is implemented by derived classes.
  *
  * Usage:
- * cout << OutputText( &my_record, 3) << "konec" << endl;
+ * cout << OutputText( &my_record, 3) << endl;
  *
+ * @ingroup input_types
  */
 class OutputBase {
 public:
@@ -35,16 +37,22 @@ public:
      */
     virtual ostream& print(ostream& stream);
 
-	/// Initialize filter_; alokace filter_
+    /**
+     * Initializes and allocates regular expression filter_.
+     *
+     * If filter_ is initialized for printout is used regular expression filter functionality of internal ProcessedTypes class.
+     */
 	void set_filter(string regex_filter);
 
 protected:
     /**
-     * Types of documentation output
+     * Types of documentation output.
+     *
+     * Used in print_impl methods for basic and full printout of Input::Type
      */
     enum DocumentationType {
-        key_record,
-        full_record
+        key_record,			///< Printout only basic data
+        full_record			///< Printout full documentation
     };
 
 
@@ -58,21 +66,33 @@ protected:
     OutputBase(const TypeBase *type, unsigned int depth = 0);
 
 
-    // destructor
+    /// Destructor
     virtual ~OutputBase();
 
     // data getters
+    /// Gets range of array
     void get_array_sizes(Array array, unsigned int &lower , unsigned int &upper );
+    /// Gets record key for given index
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
+    /// Gets range of integer
     void get_integer_bounds(Integer integer, int &lower , int &upper );
+    /// Gets range of double
     void get_double_bounds(Double dbl, double &lower , double &upper );
+    /// Gets pointer of parent AbstractRecord for given Record
     void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
+    /// Gets pointer of inner type for given Array
     void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
+    /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
+    /// Gets pointer of inner data for given Record
     const void * get_record_data(const Record *rec);
+    /// Gets pointer of inner data for given AbstractRecord
     const void * get_abstract_record_data(const AbstractRecord *a_rec);
+    /// Gets pointer of inner data for given Selection
     const void * get_selection_data(const Selection *sel);
+    /// Gets pointer of inner data for given Array
     const void * get_array_data(const Array *array);
+    /// Gets pointer of inner data for given TypeBase
     const void * get_type_base_data(const TypeBase *type);
 
 
@@ -83,17 +103,40 @@ protected:
 
 
     /**
-     *  following methods realize output in particular format
-     *  using getters from the base class OutputBase
+     * Implements printout of Record @p type
      */
     virtual void print_impl(ostream& stream, const Record *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of Array @p type
+     */
     virtual void print_impl(ostream& stream, const Array *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of AbstractRecord @p type
+     */
     virtual void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of Selection @p type
+     */
     virtual void print_impl(ostream& stream, const Selection *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of Integer @p type
+     */
 	virtual void print_impl(ostream& stream, const Integer *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of Double @p type
+     */
 	virtual void print_impl(ostream& stream, const Double *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of Bool @p type
+     */
 	virtual void print_impl(ostream& stream, const Bool *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of String @p type
+     */
 	virtual void print_impl(ostream& stream, const String *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of FileName @p type
+     */
     virtual void print_impl(ostream& stream, const FileName *type, unsigned int depth) = 0;
 
     /**
@@ -117,7 +160,7 @@ protected:
     static const unsigned int padding_size = 4;
     /// Object for which is created printout
     const TypeBase *type_;
-    /// Depth of printout
+    /// Depth of printout (for value 0 is printed all input tree)
     unsigned int depth_;
     /// Type of documentation output
     DocumentationType doc_type_;
@@ -125,8 +168,8 @@ protected:
     unsigned int size_setw_;
 
     /**
-     * Internal data class.
-     * Contains flags of written Input::Types objects and regular expression filter of Input::Types full names.
+     * @brief Internal data class.
+     * Contains flags of written Input::Types objects and functionality of regular expression filter of Input::Types full names.
      *
      * Flags are stored to struct that contains unique internal data pointer of complex Input::Type,
      * flag if extensive documentation was printed and reference to Input::Type.
@@ -139,11 +182,12 @@ protected:
 
         /**
          * Structure for flags about output of one TypeBase object in input tree
+         * Stores types what was printed
          */
         struct Key {
         	unsigned int key_index;          	///< Position inside the record.
-        	const void * type_;              	///< Pointer to type.
-        	mutable bool extensive_doc_;     	///< Flag captures if extensive documentation of type was printed.
+        	const void * type_data_;            ///< Pointer to internal data of type.
+        	//mutable bool extensive_doc_;     	///< Flag captures if extensive documentation of type was printed.
         	mutable string reference_;       	///< Reference to type.
         };
         /**
@@ -152,37 +196,18 @@ protected:
         typedef std::vector<struct Key>::const_iterator KeyIter;
 
 
-        /**
-    	 * Declare a processed type and its flags.
-    	 *
-    	 * Pointer to type must be unique in map. If pointer exists type is not added and method returns false.
-    	 */
-    	bool add_type(const void *type, bool extensive_doc = true, string reference = "");
-
     	/// Clear all data of processed types
     	void clear();
 
         /**
          * Interface to mapping key -> index. Returns index (in continuous array) for given type.
          */
-        unsigned int type_index(const void * type) const;
+        unsigned int type_index(const void * type_data) const;
 
-        /**
-         * Remove key of given type.
-         */
-        void remove_type(const void * type);
+        //Set reference_ string of key of given type.
+        //void set_reference(const void * type_data, const string& ref);
 
-        /**
-         * Set reference_ string of key of given type.
-         */
-        void set_reference(const void * type, const string& ref);
-
-        /**
-         * Set value to extensive_doc_ flag of key of given type.
-         */
-        void set_extensive_flag(const void * type, bool val = true);
-
-    	/// Deallocate filter_ if it was allocated.
+    	/// Destructor, deallocates filter_ if it was allocated.
     	~ProcessedTypes();
 
         /**
@@ -191,7 +216,7 @@ protected:
          * Checks if the ProcessedTypes contains key of given type and key has true flag extensive_doc_
          * or if the ProcessedTypes contains type of given full_name when regular expression filter_ is initialized.
          */
-    	bool was_written(const void * type, string full_name);
+    	bool was_written(const void * type_data, string full_name);
 
     	/**
     	 * Marks type as written.
@@ -199,11 +224,11 @@ protected:
     	 * Inserts type to key_to_index map.
     	 * If regular expression filter_ is initialized marks filtered full_name of type as written.
     	 */
-    	void mark_written(const void *type, string full_name);
+    	void mark_written(const void *type_data, string full_name, string reference = "");
         /**
          * Returns reference_ string of key of given type.
          */
-        const string get_reference(const void * type) const;
+        const string get_reference(const void * type_data) const;
 
         /// Database of valid keys
         std::map<const void *, unsigned int> key_to_index;
@@ -231,7 +256,14 @@ protected:
 /**********************************************************************************************************************/
 
 /**
- * Class for create text documentation
+ * @brief Class for create text documentation
+ *
+ * Record, AbstractRecord and Selection are represented by block of text that contains type name, name, description
+ * and count and list of keys (for Record), descendants (for AbstractRecord) or values (for Selection).
+ *
+ * In list are displayed information about subtypes, e.g. type name, description, value, range of numeric values etc.
+ *
+ * @ingroup input_types
  */
 class OutputText : public OutputBase {
 public:
@@ -259,7 +291,14 @@ protected:
 
 
 /**
- * Class for create and JSON template documentation
+ * @brief Class for create and JSON template documentation
+ *
+ * Every type is represented by JSON object.
+ * Type name, description and other data are displayed as comments.
+ * Among other data belongs range of numeric values, size limits of arrays, possible values of selections etc.
+ *
+ *
+ * @ingroup input_types
  */
 class OutputJSONTemplate : public OutputBase {
 public:
@@ -308,6 +347,8 @@ private:
 
     /// temporary value of actually record type
     string key_name_;
+    /// temporary value of actually reference
+    string reference_;
     /// temporary value of actually record value
     Default value_;
 };
@@ -316,7 +357,9 @@ private:
 
 
 /**
- * Class for create and Latex documentation
+ * @brief Class for create documentation in Latex format using particular macros.
+ *
+ * @ingroup input_types
  */
 class OutputLatex : public OutputBase {
 public:
@@ -346,13 +389,15 @@ protected:
 
 
 /**
- * Class for create JSON machine documentation
+ * @brief Class for create JSON machine readable documentation
  *
  * Every type is represented by one JSON object, for Selection e.g.:
  *   "name" : (string),
  *   "full_name" : (string),
  *   "type" : "Selection",
  *   "values" : [ { "value" : (int), "name": (string), "description" : (string) } ]
+ *
+ *   @ingroup input_types
  */
 class OutputJSONMachine : public OutputBase {
 public:

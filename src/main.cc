@@ -231,7 +231,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Prints full structure of the main input file.")
         ("JSON_template", "Prints description of the main input file as a valid CON file.")
-        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.");
+        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
+    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.");
     ;
 
     // parse the command line
@@ -280,6 +281,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         Input::Type::OutputLatex type_output(&input_type);
         type_output.set_filter("");
         cout << type_output;
+        free_and_exit();
+    }
+
+    if (vm.count("JSON_machine")) {
+        Input::Type::TypeBase::lazy_finish();
+        cout << Input::Type::OutputJSONMachine(&input_type);
         free_and_exit();
     }
 
