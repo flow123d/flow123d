@@ -330,7 +330,7 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
                     id = lexical_cast<unsigned int>(*tok_); ++tok_;
                     while (id_iter != el_ids.end() && *id_iter != id) ++id_iter; // skip initialization of some rows in data if ID is missing
                     if (id_iter == el_ids.end()) {
-                        xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is out of order. Skipping rest of data.\n",
+                        xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
                                 tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, id);
                         break;
                     }

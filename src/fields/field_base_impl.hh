@@ -248,8 +248,9 @@ bool Field<spacedim, Value>::set_time(double time) {
     BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
         if (reg.is_boundary() == this->bc_ && region_fields_[reg.idx()] ) {      // for regions that match type of the field domain
                                                                                  // NULL pointers are only on "no_check" regions
-            this->changed_from_last_set_time_ = this->changed_from_last_set_time_ ||
-                    region_fields_[reg.idx()]->set_time(time);
+            bool changed = region_fields_[reg.idx()]->set_time(time);
+            this->changed_from_last_set_time_ = this->changed_from_last_set_time_ || changed;
+
         }
 
     this->changed_during_set_time = this->changed_from_last_set_time_;

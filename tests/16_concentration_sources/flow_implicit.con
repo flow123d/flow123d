@@ -72,7 +72,7 @@
             TYPE = "FieldElementwise",
             gmsh_file = "input/test16_sources.msh",
             field_name = "sigma"
-          }
+          },
           sources_conc = {
             TYPE = "FieldElementwise",
             gmsh_file = "input/test16_sources.msh",

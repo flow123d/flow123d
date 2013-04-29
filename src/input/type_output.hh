@@ -21,10 +21,16 @@ namespace Type {
 /**
  * @brief Base abstract class for output description of the Input::Type tree.
  *
- * Output into various formats is implemented by derived classes.
+ * Output into various formats is implemented by derived classes:
+ * - OutputText - for human readable description
+ * - OutputJSONTemplate - for creating a template of the input file
+ * - OutputLatex - for printed documentation (with support of particular Latex macros)
+ * - OutputJSONMachine - for full machine readable description in standard JSON format
  *
- * Usage:
+ * Usage example:
+ * @code
  * cout << OutputText( &my_record, 3) << endl;
+ * @endcode
  *
  * @ingroup input_types
  */
@@ -32,15 +38,17 @@ class OutputBase {
 public:
 
     /**
-     * Performs output of the documentation into given @p stream.
+     * @brief Performs output of the documentation into given @p stream. The same effect has the reloaded operator '<<'.
      * Returns reference to the same stream.
      */
     virtual ostream& print(ostream& stream);
 
     /**
-     * Initializes and allocates regular expression filter_.
+     * @brief Initializes and allocates regular expression filter @p regex_filter.
      *
-     * If filter_ is initialized for printout is used regular expression filter functionality of internal ProcessedTypes class.
+     * Full names of Input::Type::Record objects are passed through the filter, deleting the first match of the regular expression given by @p regex_filter.
+     * Full Record description is performed only for the first occurrence of the filtered name, further Records with same filtered name are ignored
+     * (reported only in short descriptions of individual keys or array subtype, etc.) See @p ProcessedTypes for details.
      */
 	void set_filter(string regex_filter);
 
