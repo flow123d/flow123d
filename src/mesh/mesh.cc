@@ -494,7 +494,6 @@ void Mesh::make_edge_permutations()
 		{
 			map<const Node*,unsigned int> node_numbers;
 			unsigned int permutation[edg->side(0)->n_nodes()];
-			const unsigned int dim = edg->side(0)->dim()+1;
 
 			for (int i=0; i<edg->side(0)->n_nodes(); i++)
 				node_numbers[edg->side(0)->node(i)] = i;
@@ -504,19 +503,46 @@ void Mesh::make_edge_permutations()
 				for (int i=0; i<edg->side(0)->n_nodes(); i++)
 					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
 
-				switch (dim)
+				switch (edg->side(0)->dim())
 				{
-				case 1:
+				case 0:
 					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<1>::permutation_index(permutation);
 					break;
-				case 2:
+				case 1:
 					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<2>::permutation_index(permutation);
 					break;
-				case 3:
+				case 2:
 					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<3>::permutation_index(permutation);
 					break;
 				}
 			}
+		}
+	}
+
+	for (vector<Neighbour>::iterator nb=vb_neighbours_.begin(); nb!=vb_neighbours_.end(); nb++)
+	{
+		map<const Node*,unsigned int> node_numbers;
+		unsigned int permutation[nb->element()->n_nodes()];
+
+		// element of lower dimension is reference, so
+		// we calculate permutation for the adjacent side
+		for (int i=0; i<nb->element()->n_nodes(); i++)
+			node_numbers[nb->element()->node[i]] = i;
+
+		for (int i=0; i<nb->side()->n_nodes(); i++)
+			permutation[node_numbers[nb->side()->node(i)]] = i;
+
+		switch (nb->side()->dim())
+		{
+		case 0:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<1>::permutation_index(permutation);
+			break;
+		case 1:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<2>::permutation_index(permutation);
+			break;
+		case 2:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<3>::permutation_index(permutation);
+			break;
 		}
 	}
 }
