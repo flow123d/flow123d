@@ -51,8 +51,8 @@ For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cit
 
 \item $F_S^i$ \units{1}{-d}{-1} represents the density of concentration sources.
 Its form is:
-$$ F_S^i = \begin{cases} \varrho^i_S + (c_S^i-c^i)\sigma_S & \mbox{ if }c^i < c_S^i,\\ \varrho^i_S & \mbox{ else.}\end{cases} $$
-Here $\varrho_S^i$ \units{1}{-d}{-1} is the \hyperA{TransportDG-BulkData::sources-density}{density of concentration sources}, $c_S^i$ is a \hyperA{TransportDG-BulkData::sources-conc}{concentration threshold} and $\sigma_S^i$ is the \hyperA{TransportDG-BulkData::sources-sigma}{concentration flux}.
+$$ F_S^i = \varrho^i_S + (c_S^i-c^i)\sigma_S. $$
+Here $\varrho_S^i$ \units{1}{-d}{-1} is the \hyperA{TransportDG-BulkData::sources-density}{density of concentration sources}, $c_S^i$ is an \hyperA{TransportDG-BulkData::sources-conc}{equilibrium concentration} and $\sigma_S^i$ is the \hyperA{TransportDG-BulkData::sources-sigma}{concentration flux}.
 
 \item $F_C(c^i)$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.
 

@@ -716,7 +716,7 @@ void TransportDG::assemble_volume_integrals()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     unsigned int dof_indices[ndofs];
     vector<arma::vec3> velocity(qsize);
-    vector<arma::vec> Dm(qsize), alphaL(qsize), alphaT(qsize);
+    vector<arma::vec> Dm(qsize), alphaL(qsize), alphaT(qsize), sources_sigma(qsize);
     vector<double> por_m(qsize), csection(qsize);
 
     PetscScalar local_matrix[ndofs*ndofs];
@@ -738,6 +738,7 @@ void TransportDG::assemble_volume_integrals()
         	alphaT[k]   = data.disp_t.value(fe_values.point(k), ele_acc);
         	por_m[k]    = data.por_m.value(fe_values.point(k), ele_acc);
         	csection[k] = data.cross_section->value(fe_values.point(k), ele_acc);
+        	sources_sigma[k] = data.sources_sigma.value(fe_values.point(k), ele_acc);
         }
 
         calculate_velocity(cell, velocity, fv_rt);
@@ -764,7 +765,8 @@ void TransportDG::assemble_volume_integrals()
         			for (int j=0; j<ndofs; j++)
         			{
 						local_matrix[i*ndofs+j] += arma::dot(Kt_grad_i, fe_values.shape_grad(j,k))*por_times_csection_times_JxW
-												   -fe_values.shape_value(j,k)*velocity_dot_grad_i_times_JxW;
+												   -fe_values.shape_value(j,k)*velocity_dot_grad_i_times_JxW
+												   +sources_sigma[k][sbi]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
 					}
 
 				}
@@ -794,10 +796,7 @@ void TransportDG::set_sources()
     vector<arma::vec> conc(qsize), sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
     unsigned int dof_indices[ndofs];
     PetscScalar local_rhs[ndofs];
-    double conc_diff, source;
-
-    for (unsigned int k=0; k<qsize; k++)
-    	conc[k].resize(n_subst);
+    double source;
 
 	// assemble integral over elements
     for (cell = feo->dh<dim>()->begin_cell(); cell != feo->dh<dim>()->end_cell(); ++cell)
@@ -812,16 +811,6 @@ void TransportDG::set_sources()
         	sources_conc[k]  = data.sources_conc.value(fe_values.point(k), cell->element_accessor());
         	sources_density[k]  = data.sources_density.value(fe_values.point(k), cell->element_accessor());
         	sources_sigma[k] = data.sources_sigma.value(fe_values.point(k), cell->element_accessor());
-        	for (unsigned int sbi=0; sbi<n_subst; sbi++)
-        	{
-        		conc[k][sbi] = 0;
-        		// TODO: Calculation of concentration has to take into account all values on the element.
-        		// The following code will be wrong in case that dofs on some element are distributed
-        		// to more than one process.
-        		for (unsigned int i=0; i<ndofs; i++)
-        			if (dof_indices[i] >= distr->begin() && dof_indices[i] <= distr->end())
-        				conc[k][sbi] += ls[sbi]->get_solution_array()[dof_indices[i] - distr->begin()]*fe_values.shape_value(i,k);
-        	}
         }
 
         // assemble the local stiffness matrix
@@ -833,11 +822,7 @@ void TransportDG::set_sources()
         	// compute sources
         	for (unsigned int k=0; k<qsize; k++)
         	{
-        		conc_diff = sources_conc[k][sbi] - conc[k][sbi];
-        		if (conc_diff > 0.0)
-        			source = (sources_density[k][sbi] + conc_diff*sources_sigma[k][sbi])*fe_values.JxW(k);
-        		else
-        			source = sources_density[k][sbi]*fe_values.JxW(k);
+        		source = (sources_density[k][sbi] + sources_conc[k][sbi]*sources_sigma[k][sbi])*fe_values.JxW(k);
 
         		for (int i=0; i<ndofs; i++)
         		{
