@@ -72,6 +72,7 @@ using namespace std;
 Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: Reaction(init_mesh, in_rec, names)
 {
+	cout << "Sorption constructor is running." << endl;
 	TimeGovernor tg(0.0, 1.0);
     nr_of_regions = init_mesh.region_db().bulk_size();
     nr_of_substances = in_rec.val<Input::Array>("species").size();
@@ -186,7 +187,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 		// list of types of isotherms in particular regions, initialization
 		if(data_.sorption_types.get_const_value(reg_iter, iso_type))
 		{
-			for(int index_latky = 0; index_latky < nr_of_substances; index_latky++) cout << "Type of isotherm of " << index_latky << " specie is " << iso_type[index_latky] << endl;
+			; //for(int index_latky = 0; index_latky < nr_of_substances; index_latky++) cout << "Type of isotherm of " << index_latky << " specie is " << iso_type[index_latky] << endl;
 			//xprintf(Msg,"Type of isotherm of %d-th specie is %d.\n", index_latky, iso_type[index_latky]);
 		}else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
 
@@ -212,11 +213,11 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
 			//int hlp_iso_type =  int(iso_type[i_subst]);
 			// did not function //SorptionType hlp_iso_type =  (SorptionType) iso_type[i_subst];
-			xprintf(Msg,"Sorption type of %d-th substance is %d.\n",i_subst, iso_type[i_subst]);
+			//xprintf(Msg,"Sorption type of %d-th substance is %d.\n",i_subst, iso_type[i_subst]);
 
 			int reg_idx=reg_iter.bulk_idx();
 			isotherms_mob[reg_idx][i_subst].reinit(hlp_iso_type,rock_density,solvent_dens,mobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
-			cout << "This message should indicate fault." << endl;
+			//cout << "This message should indicate fault." << endl;
 			if(dual_porosity_on)
 			{
 				isotherms_immob[reg_idx][i_subst].reinit(hlp_iso_type,rock_density,solvent_dens,immobile_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
@@ -225,7 +226,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			{
 			 case none: // 0: //
 			 {
-				 xprintf(Msg,"No sorption is considered for %d-th specie in %d-th region.\n", i_subst, reg_idx);
+				 //xprintf(Msg,"No sorption is considered for %d-th specie in %d-th region.\n", i_subst, reg_idx);
 				 int one_point = 1;
 				 isotherms_mob[reg_idx][i_subst].make_one_point_table();
 				 if(dual_porosity_on)
@@ -312,7 +313,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     double rock_density; // = data_.rock_density.value(elem->centre(),elem->element_accessor());
     double k_rep;
     Region region = elem->region();
-    int reg_id_nr = region.idx(); //->region_->reg_id;
+    int reg_id_nr = region.bulk_idx(); //->region_->reg_id;
 
     //	Identify loc_el region.
     //  If intersections of isotherm with mass balance lines are known, then interpolate.
@@ -425,7 +426,7 @@ void Sorption::get_solution_vector(double* &vector, unsigned int &size)
 
 void Sorption::set_time_step(double new_timestep)
 {
-	cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
+	//cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
 	return;
 }
 
