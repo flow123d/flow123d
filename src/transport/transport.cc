@@ -471,8 +471,7 @@ void ConvectionTransport::compute_one_step() {
     END_TIMER("data reinit");
 
     // possibly read boundary conditions
-    //if (data->bc_conc.changed_during_set_time)
-    set_boundary_conditions();
+    if (data->bc_conc.changed_during_set_time) set_boundary_conditions();
 
 
     // proceed to actually computed time

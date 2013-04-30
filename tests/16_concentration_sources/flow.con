@@ -104,15 +104,15 @@
   system = {
     output_streams = [
       {
-        file = "./flow_test16.msh", 
+        file = "./flow_test16", 
         format = {
-          TYPE = "gmsh", 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         name = "flow_output_stream"
       }, 
       {
-        file = "./transport_test16.msh", 
+        file = "./transport_test16", 
         format = {
           TYPE = {
             REF = "/system/output_streams/0/format/TYPE"
