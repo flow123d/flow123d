@@ -53,6 +53,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
 
     vector< unsigned int *> old_to_new_side_numbering;
 
+    // in the file the sides are numbered according to opposite nodes as they appear in the MSH file
     unsigned int sides_0 [1] = {0};
     old_to_new_side_numbering.push_back( sides_0 );
     unsigned int sides_1 [2] = {0,1};
@@ -203,6 +204,8 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
     } // flow bcd reader
 }
 
+
+
 void OldBcdInput::read_transport(const FilePath &transport_bcd,
             Field<3,FieldValue<3>::Vector > &trans_conc)
 {
@@ -244,10 +247,4 @@ void OldBcdInput::read_transport(const FilePath &transport_bcd,
     } catch (bad_lexical_cast &) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
     } // flow bcd reader
-
-
-
-        // make bc filename
-
-
 }

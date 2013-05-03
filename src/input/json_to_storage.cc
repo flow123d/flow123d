@@ -389,7 +389,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
             // try auto conversion
             stringstream ss;
             ss << p;
-            xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
+            //xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
 
             StorageArray *storage_array = new StorageArray(record->size());
             for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
@@ -449,7 +449,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
     // perform automatic conversion
     stringstream ss;
     ss << p;
-    xprintf(Warn, "Automatic conversion to abstract record at address: %s\n", ss.str().c_str() );
+    // xprintf(Warn, "Automatic conversion to abstract record at address: %s\n", ss.str().c_str() );
 
     return make_storage(p, abstr_rec->get_default_descendant() );
 }

@@ -270,6 +270,11 @@ protected:
      */
     vector<string> json_type_names;
 
+    /**
+     * List of paths specifications of the keys that wasn't read by the JSON reader.
+     */
+    //vector<string> ignored_keys;
+
 };
 
 

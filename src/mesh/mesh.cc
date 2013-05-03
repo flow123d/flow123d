@@ -349,7 +349,7 @@ void Mesh::make_neighbours_and_edges()
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
-                xprintf(Warn, "Lonely boundary element, id: %d, dimension %d.\n", bc_ele.id(), bc_ele->dim());
+                xprintf(Warn, "Lonely boundary element, id: %d, region: %d, dimension %d.\n", bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();
