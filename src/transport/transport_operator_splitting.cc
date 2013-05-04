@@ -134,7 +134,7 @@ void TransportBase::mass_balance() {
     	bcd_balance[i].resize(mesh_->region_db().boundary_size());
     	bcd_plus_balance[i].resize(mesh_->region_db().boundary_size());
     	bcd_minus_balance[i].resize(mesh_->region_db().boundary_size());
-    	for (int j=0; j<mesh_->region_db().boundary_size(); j++)
+    	for (unsigned int j=0; j<mesh_->region_db().boundary_size(); j++)
     	{
     		bcd_balance[i][j] = 0;
     		bcd_plus_balance[i][j] = 0;
@@ -529,14 +529,14 @@ void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balanc
     	if (!el_ds->is_local(index)) continue;
 
 		double water_flux = mh_dh->side_flux(*(bcd->side()));
-		for (int sbi=0; sbi<n_substances(); sbi++)
+		for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 			mass_flux[sbi] = water_flux*solution[MOBILE][sbi][index-el_ds->begin()];
 
         Region r = bcd->region();
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
         unsigned int bc_region_idx = r.boundary_idx();
 
-        for (int sbi=0; sbi<n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         {
         	bcd_balance[sbi][bc_region_idx] += mass_flux[sbi];
 
@@ -556,7 +556,7 @@ void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &mass
 	convection->get_par_info(el_4_loc, el_ds);
 	row_4_el = convection->get_row_4_el();
 
-	for (int sbi=0; sbi<n_substances(); sbi++)
+	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		double *sources = convection->get_sources(sbi);
 

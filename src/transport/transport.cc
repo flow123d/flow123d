@@ -134,7 +134,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
     F_ENTRY;
 
-    int rank, np, i, j, k, row_MH, a;
+    //int rank, np, i, j, k, row_MH, a;
     //struct DarcyFlowMH *water=transport->problem->water;
 
     SparseGraph *ele_graph = new SparseGraphMETIS(mesh_->n_elements()); // graph for partitioning
@@ -149,7 +149,7 @@ void ConvectionTransport::make_transport_partitioning() {
     delete ele_graph;
 
     int *id_4_old = (int *) xmalloc(mesh_->n_elements() * sizeof(int));
-    i = 0;
+    int i = 0;
     FOR_ELEMENTS(mesh_, ele)
         id_4_old[i] = i, i++;
     id_maps(mesh_->n_elements(), id_4_old, init_ele_ds, (int *) loc_part, el_ds, el_4_loc, row_4_el);
@@ -238,7 +238,7 @@ void ConvectionTransport::set_initial_condition()
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 		arma::vec value = data->init_conc.value(elem->centre(), ele_acc);
 
-		for (unsigned int sbi=0; sbi<n_substances; sbi++)
+		for (int sbi=0; sbi<n_substances; sbi++)
 		{
 			conc[MOBILE][sbi][index] = value(sbi);
 			pconc[MOBILE][sbi][index] = value(sbi);
@@ -252,8 +252,8 @@ void ConvectionTransport::set_initial_condition()
 //=============================================================================
 void ConvectionTransport::alloc_transport_vectors() {
 
-    int i, j, sbi, n_subst, ph;
-    ElementIter elm;
+    int i, sbi, n_subst, ph; //, j;
+    //ElementIter elm;
     n_subst = n_substances;
 
 
@@ -336,8 +336,8 @@ void ConvectionTransport::alloc_density_vectors() {
 //=============================================================================
 void ConvectionTransport::alloc_transport_structs_mpi() {
 
-    int i, j, sbi, n_subst, ph, ierr, rank, np;
-    ElementIter elm;
+    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    //ElementIter elm;
     n_subst = n_substances;
 
     MPI_Barrier(PETSC_COMM_WORLD);
@@ -392,7 +392,7 @@ void ConvectionTransport::set_boundary_conditions()
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
 
     // Assembly bcvcorr vector
-    for(unsigned int sbi=0; sbi<n_substances; sbi++) VecZeroEntries(bcvcorr[sbi]);
+    for(int sbi=0; sbi<n_substances; sbi++) VecZeroEntries(bcvcorr[sbi]);
 
 
     for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -410,7 +410,7 @@ void ConvectionTransport::set_boundary_conditions()
                         double aij = -(flux / (elm->measure() * csection * por_m) );
 
                         arma::vec value = data->bc_conc.value( b->element()->centre(), b->element_accessor() );
-                        for (unsigned int sbi=0; sbi<n_substances; sbi++)
+                        for (int sbi=0; sbi<n_substances; sbi++)
                             VecSetValue(bcvcorr[sbi], new_i, value[sbi] * aij, ADD_VALUES);
                     }
                 }
@@ -419,13 +419,13 @@ void ConvectionTransport::set_boundary_conditions()
         }
     }
 
-    for (unsigned int sbi=0; sbi<n_substances; sbi++)
+    for (int sbi=0; sbi<n_substances; sbi++)
     	VecAssemblyBegin(bcvcorr[sbi]);
 
-    for (unsigned int sbi=0; sbi<n_substances; sbi++)
+    for (int sbi=0; sbi<n_substances; sbi++)
     	VecAssemblyEnd(bcvcorr[sbi]);
 
-    for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+    for (int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
 
     //VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
     //exit(0);
@@ -571,10 +571,10 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
     struct Edge *edg;
-    struct Neighbour *ngh;
+    //struct Neighbour *ngh;
     //struct Transport *transport;
-    int n, s, i, j, np, rank, new_j, new_i;
-    double max_sum, aij, aii, *solution;
+    int n, s, j, np, rank, new_j, new_i; //, i;
+    double max_sum, aij, aii; //, *solution;
     /*
     DarcyFlow *water;
 
@@ -830,7 +830,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi) {
 
     double conc_avg = 0.0;
-    int id;
+    //int id;
     //double ***conc = transport->conc;
     //double ***pconc = transport->pconc;
     double cm, pcm, ci, pci, por_m, por_imm, alpha;
@@ -895,7 +895,7 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
     double conc_avg = 0.0;
     double conc_avg_imm = 0.0;
     double n, Nm, Nimm;
-    int id;
+    //int id;
     double phi = data->phi.value(elem->centre(), elem->element_accessor());
     double por_m = data->por_m.value(elem->centre(), elem->element_accessor());
     double por_imm = data->por_imm.value(elem->centre(), elem->element_accessor());
@@ -1093,7 +1093,7 @@ void ConvectionTransport::output_vector_gather() {
 
     int sbi/*, rank, np*/;
     IS is;
-    PetscViewer inviewer;
+    //PetscViewer inviewer;
 
     //	MPI_Barrier(PETSC_COMM_WORLD);
 /*    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -1134,6 +1134,7 @@ int ConvectionTransport::compare_dens_iter() {
         return 0;
     else
         return 1;*/
+	return 0;
 }
 //=============================================================================
 //      RESTART ITERATION CONCENTRATION

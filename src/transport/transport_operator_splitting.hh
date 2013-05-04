@@ -132,7 +132,7 @@ public:
 
     unsigned int n_substances() { return 0; };
 
-    vector<string> &substance_names() {};
+    vector<string> &substance_names() {}; //TODO no return statement in function
 
 
 private:
