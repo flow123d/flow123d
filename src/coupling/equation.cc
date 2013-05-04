@@ -66,8 +66,8 @@ namespace IT=Input::Type;
 
 
 EqDataBase::EqDataBase(const std::string& eq_name)
-: equation_name_(eq_name),
-  mesh_(NULL)
+: mesh_(NULL),
+  equation_name_(eq_name)
 {
     if (equation_name_ == "") xprintf(PrgErr, "You have to provide non-empty equation name when constructing EqDataBase.\n");
 }

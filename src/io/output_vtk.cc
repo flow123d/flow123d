@@ -120,7 +120,8 @@ void OutputVTK::write_vtk_topology(void)
 
     Node* node;
     ElementIter ele;
-    int li, tmp;
+    unsigned int li;
+    int tmp;
 
     /* Write Cells begin*/
     file << "<Cells>" << endl;
@@ -186,14 +187,12 @@ void OutputVTK::write_vtk_discont_geometry(void)
     ofstream &file = this->output_time->get_data_file();
 
     NodeIter node;
-    int tmp, li;
+    unsigned int li;
 
     /* Write Points begin*/
     file << "<Points>" << endl;
     /* Write DataArray begin */
     file << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
-    /* Write own coordinates */
-    tmp = 0;
     /* Set floating point precision */
     this->output_time->get_data_file().precision(std::numeric_limits<double>::digits10);
     FOR_ELEMENTS(mesh, ele) {
@@ -216,9 +215,9 @@ void OutputVTK::write_vtk_discont_topology(void)
     Mesh *mesh = this->output_time->get_mesh();
     ofstream &file = this->output_time->get_data_file();
 
-    Node* node;
+    //Node* node;
     ElementIter ele;
-    int li, tmp;
+    unsigned int li, tmp;
 
     /* Write Cells begin*/
     file << "<Cells>" << endl;
@@ -418,7 +417,6 @@ void OutputVTK::write_vtk_data_ascii(std::vector<OutputData> *data)
 void OutputVTK::write_vtk_scalar_data_names(vector<OutputData> *data)
 {
     ofstream &file = this->output_time->get_data_file();
-    int tmp = 0;
 
     /* Write names of scalars */
     for(OutputDataVec::iterator dta = data->begin();
@@ -433,7 +431,6 @@ void OutputVTK::write_vtk_scalar_data_names(vector<OutputData> *data)
 void OutputVTK::write_vtk_vector_data_names(vector<OutputData> *data)
 {
     ofstream &file = this->output_time->get_data_file();
-    int tmp = 0;
 
     /* Write names of vectors */
     for(OutputDataVec::iterator dta = data->begin();
@@ -596,7 +593,7 @@ int OutputVTK::write_data(void)
 
 int OutputVTK::write_data(double time)
 {
-    Mesh *mesh = this->output_time->get_mesh();
+    //Mesh *mesh = this->output_time->get_mesh();
     char base_dir_name[PATH_MAX];
     char new_dir_name[PATH_MAX];
     char base_file_name[PATH_MAX];

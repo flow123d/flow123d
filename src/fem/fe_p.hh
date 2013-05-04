@@ -301,7 +301,7 @@ const double PolynomialSpace<degree,dim>::basis_value(unsigned int i, const arma
 
     double v = 1;
 
-    for (int j=0; j<dim; j++)
+    for (unsigned int j=0; j<dim; j++)
         v *= pow(p[j], (int) powers[i][j]);
 
     return v;
@@ -315,12 +315,12 @@ const arma::vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int
 
     arma::vec::fixed<dim> grad;
 
-    for (int j=0; j<dim; j++)
+    for (unsigned int j=0; j<dim; j++)
     {
         grad[j] = powers[i][j];
         if (powers[i][j] == 0) continue;
 
-        for (int k=0; k<dim; k++)
+        for (unsigned int k=0; k<dim; k++)
         {
             grad[j] *= pow(p[k], (int) (k==j?powers[i][k]-1:powers[i][k]));
         }
@@ -413,7 +413,7 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
 
     number_of_single_dofs[dim] = number_of_dofs;
 
-    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
+    for (unsigned int i=0; i<dof_distribution.unit_support_points.size(); i++)
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
     order = degree;

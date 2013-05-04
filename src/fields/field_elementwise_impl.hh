@@ -44,7 +44,7 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp), data_(NULL), mesh_(NULL), reader_(NULL)
+: FieldBase<spacedim, Value>(n_comp), data_(NULL), reader_(NULL), mesh_(NULL)
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
 }

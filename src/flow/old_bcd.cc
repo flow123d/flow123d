@@ -161,7 +161,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                             if (n_exterior > 0) {
                                 xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
                                 //BoundaryFullIter new_bcd = mesh->boundary.add_item();
-                                //*new_bcd = *bcd;
+                                // *new_bcd = *bcd;
                                 //bcd=new_bcd;
                             }
                             bcd->type = type;

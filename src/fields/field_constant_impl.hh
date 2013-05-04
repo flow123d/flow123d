@@ -55,6 +55,8 @@ template <int spacedim, class Value>
 FieldConstant<spacedim, Value> &FieldConstant<spacedim, Value>::set_value(const typename Value::return_type &val)
 {
     this->r_value_ = val;
+
+    //TODO add return statement
 }
 
 

@@ -146,7 +146,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 
     sp.fill(1./max(1.,(double)dim));
     generalized_support_points.push_back(sp);
-    for (int i=0; i<dim; i++)
+    for (unsigned int i=0; i<dim; i++)
     {
         sp.fill(1./max(1.,(double)dim));
         sp[i] = 0;
@@ -218,7 +218,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
      *
      */
 
-    for (int i=0; i<n_raw_functions; i++)
+    for (unsigned int i=0; i<n_raw_functions; i++)
     {
         /*
          * For the 0-th side we have:
@@ -257,7 +257,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
         }
         else
         {
-            for (int j=1; j<dim+1; j++)
+            for (unsigned int j=1; j<dim+1; j++)
             {
                 r = basis_vector(i,generalized_support_points[j]);
                 F(i,j) = -r(j-1)/(1.*dim-1);
@@ -282,14 +282,14 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
 
         data->basis_vectors.resize(q.size());
         values.resize(dim+1);
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
         {
-            for (int j=0; j<n_raw_functions; j++)
+            for (unsigned int j=0; j<n_raw_functions; j++)
                 raw_values.row(j) = trans(basis_vector(j, q.point(i)));
 
             shape_values = node_matrix * raw_values;
 
-            for (int j=0; j<dim+1; j++)
+            for (unsigned int j=0; j<dim+1; j++)
                 values[j] = trans(shape_values.row(j));
 
             data->basis_vectors[i] = values;
@@ -304,12 +304,12 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
 
         data->basis_grad_vectors.resize(q.size());
         grads.resize(dim+1);
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
         {
-            for (int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<dim+1; k++)
             {
                 grad.zeros();
-                for (int l=0; l<n_raw_functions; l++)
+                for (unsigned int l=0; l<n_raw_functions; l++)
                     grad += basis_grad_vector(l, q.point(i)) * node_matrix(k,l);
                 grads[k] = grad;
             }
@@ -346,9 +346,9 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
     {
         vector<arma::vec::fixed<spacedim> > vectors;
         vectors.resize(dim+1);
-        for (int i = 0; i < q.size(); i++)
+        for (unsigned int i = 0; i < q.size(); i++)
         {
-            for (int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<dim+1; k++)
                 vectors[k] = fv_data.jacobians[i]*data.basis_vectors[i][k]/fv_data.determinants[i];
 
             fv_data.shape_vectors[i] = vectors;
@@ -360,9 +360,9 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
     {
         vector<arma::mat::fixed<spacedim,spacedim> > grads;
         grads.resize(dim+1);
-        for (int i = 0; i < q.size(); i++)
+        for (unsigned int i = 0; i < q.size(); i++)
         {
-            for (int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<dim+1; k++)
                 grads[k] = fv_data.jacobians[i]*data.basis_grad_vectors[i][k]*fv_data.inverse_jacobians[i]/fv_data.determinants[i];
 
             fv_data.shape_grad_vectors[i] = grads;

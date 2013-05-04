@@ -37,8 +37,6 @@ OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 
 ostream&  OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
-
-	const void *data_ptr = get_type_base_data(type_);
 	doc_flags_.clear();
 
 	print(stream, type_, depth_);
@@ -538,7 +536,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 					write_description(stream, type->description(), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					const void *it_ptr = get_type_base_data(it->type_.get());
 					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
 						reference_ = doc_flags_.get_reference(data_ptr) + "/" + "#" + it->key_;
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
@@ -599,7 +596,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			if ( (typeid(*(array_type.get())) == typeid(Type::Record))
 					| (typeid(*(array_type.get())) == typeid(Type::AbstractRecord))
 					| (typeid(*(array_type.get())) == typeid(Type::Array))) {
-				const void * it_ptr = get_type_base_data(array_type.get());
 				reference_ = doc_flags_.get_reference(data_ptr) + "/0";
 			}
 
@@ -629,11 +625,11 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			print(stream, array_type.get(), depth+1);
 
 			doc_type_ = full_record;
-			if ( ! (typeid( *(array_type.get()) ) == typeid(Type::Integer)
-					| typeid( *(array_type.get()) ) == typeid(Type::Double)
-					| typeid( *(array_type.get()) ) == typeid(Type::Bool)
-					| typeid( *(array_type.get()) ) == typeid(Type::String)
-					| typeid( *(array_type.get()) ) == typeid(Type::FileName)) ) {
+			if ( ! ( (typeid( *(array_type.get()) ) == typeid(Type::Integer))
+					| (typeid( *(array_type.get()) ) == typeid(Type::Double))
+					| (typeid( *(array_type.get()) ) == typeid(Type::Bool))
+					| (typeid( *(array_type.get()) ) == typeid(Type::String))
+					| (typeid( *(array_type.get()) ) == typeid(Type::FileName)) ) ) {
 				print(stream, array_type.get(), depth+1);
 			}
 			//if (lower_size > 1) {
@@ -660,7 +656,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			string rec_name = key_name_;
 
 			std::vector<string> refs;
-			const void *data_ptr = get_abstract_record_data(type); // get pointer to type->child_data_
 			boost::split(refs, reference_, boost::is_any_of("#"));
 		    ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
 
@@ -669,7 +664,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
 		    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		    	const void *it_ptr = get_type_base_data(&*it);
 		    	reference_ = refs[0] + it->type_name() + "_" + refs[1];
 
 		    	key_name_ = it->type_name() + "_" + rec_name;

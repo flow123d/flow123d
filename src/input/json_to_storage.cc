@@ -201,7 +201,7 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
  */
 
 JSONToStorage::JSONToStorage()
-:storage_(&Array::empty_storage_), root_type_(NULL), envelope(NULL)
+: envelope(NULL), storage_(&Array::empty_storage_), root_type_(NULL)
 {
     /* from json_spirit_value.hh:
      * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
@@ -398,7 +398,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
                     storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
                 } else {
                     ASSERT( it->default_.has_value_at_declaration() ,
-                            "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().");
+                            "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
                     // other key from default values
                     storage_array->new_item(it->key_index,
                             make_storage_from_default( it->default_.value(), it->type_.get() ) );
@@ -618,7 +618,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
                         storage_array->new_item(it->key_index, make_storage_from_default(dflt_str, it->type_.get()) );
                     } else {
                         ASSERT( it->default_.has_value_at_declaration() ,
-                                "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().");
+                                "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
                         // other key from theirs default values
                         storage_array->new_item(it->key_index,
                                 make_storage_from_default( it->default_.value(), it->type_.get() ) );
@@ -668,6 +668,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
         throw;
     }
 
+    return NULL;
 }
 
 

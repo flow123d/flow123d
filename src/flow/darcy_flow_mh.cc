@@ -1287,8 +1287,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds, int *loc_part
     int new_counts[old_ds.np()];
     AO new_old_ao;
     int *old_4_new;
-    unsigned int i_loc;
-    int i_new;
+    int i_loc;
     F_ENTRY;
     // make distribution and numbering
     //DBGPRINT_INT("Local partitioning",old_ds->lsize,loc_part);
@@ -1321,7 +1320,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds, int *loc_part
     //DBGPRINT_INT("id_4_old",old_ds.lsize(),id_4_old);
     //DBGPRINT_INT("old_4_new",new_ds->lsize(),old_4_new)
 
-    for (i_new = new_ds->begin(); i_new < new_ds->end(); i_new++) {
+    for (int i_new = new_ds->begin(); i_new < new_ds->end(); i_new++) {
         //printf("i_new: %d old: %d id: %d i_loc: %d \n",i_new,old_4_new[i_new],i_loc);
         id_4_loc[i_loc++] = id_4_old[old_4_new[i_new]];
     }
@@ -1329,7 +1328,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds, int *loc_part
     //DBGMSG("Creating id -> stiffness mtx. row mapping ...\n");
     for (i_loc = 0; i_loc <= n_ids; i_loc++)
         new_4_id[i_loc] = -1; // ensure that all ids are initialized
-    for (i_new = 0; i_new < size; i_new++)
+    for (unsigned int i_new = 0; i_new < size; i_new++)
         new_4_id[id_4_old[old_4_new[i_new]]] = i_new;
     xfree(old_4_new);
 }

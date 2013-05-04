@@ -393,7 +393,7 @@ void OutputTime::write_all_data(double time)
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
-    OutputTime *output_time = NULL;
+    //OutputTime *output_time = NULL;
 
     /* It's possible now to do output to the file only in the first process */
     if(rank != 0) {

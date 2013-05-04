@@ -561,8 +561,8 @@ public:
 
 
 protected:
-    unsigned int index_;
     Address address_;
+    unsigned int index_;
 };
 
 

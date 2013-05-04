@@ -180,6 +180,8 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
             throw;
         }
     }
+
+    return false;
 }
 
 

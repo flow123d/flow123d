@@ -16,12 +16,12 @@
  */
 
 FieldCommonBase::FieldCommonBase(bool bc)
-: n_comp_(0),
+: changed_during_set_time(false),       // reading this variable is in fact invalid up to the first call of the set_time
   bc_(bc),
+  n_comp_(0),
   element_selection_(NULL),
   default_( IT::Default::obligatory()),
   mesh_(NULL),
-  changed_during_set_time(false),       // reading this variable is in fact invalid up to the first call of the set_time
   changed_from_last_set_time_(false),
   last_set_time_( -numeric_limits<double>::infinity() )
 {}

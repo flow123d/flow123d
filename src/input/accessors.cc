@@ -62,7 +62,7 @@ std::string Address::make_full_address() {
     const StorageBase * storage = data_->root_storage_;
     const Type::TypeBase * input_type = data_->root_type_;
 
-    for (int i = 0; i < actual_node_; i++) {
+    for (unsigned int i = 0; i < actual_node_; i++) {
     	storage = storage->get_item(data_->path_[i]);
 
     	// dispatch types
