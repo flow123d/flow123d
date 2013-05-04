@@ -158,7 +158,7 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
                         if (n_exterior > 0) {
                             xprintf(UsrErr, "Implicitly setting BC %d on more then one exterior sides of the element %d.\n", bcd_id, eid);
                             //BoundaryFullIter new_bcd = mesh->boundary.add_item();
-                            //*new_bcd = *bcd;
+                            // *new_bcd = *bcd;
                             //bcd=new_bcd;
                         }
                         bcd->type = type;
@@ -179,7 +179,6 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 
 
         //TODO: if group is necessary set it for all bcd in case where == SIDE_E
-        /*
         n_tags  = atoi( xstrtok( NULL) );
         if( n_tags > 0 ) {
             int group_id = atoi( xstrtok( NULL) );

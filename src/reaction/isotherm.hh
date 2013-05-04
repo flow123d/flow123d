@@ -27,7 +27,7 @@ public:
 	/**
 	* 	Original constructor, Langmuir( double mult_coef, double alpha) : alpha(alpha), mult_coef_(mult_coef) {}
 	*/
-    Langmuir( double mult_coef, double alpha) : alpha(alpha), mult_coef_(mult_coef) {}
+    Langmuir( double mult_coef, double alpha) : mult_coef_(mult_coef), alpha(alpha) {}
     /**
     * 	Destructor.
     */
@@ -189,7 +189,7 @@ class CrossFunction
 {
 public:
     CrossFunction(const Func &func_,  double total_mass, double scale_aqua, double scale_sorbed)
-    : func(func_), total_mass_(total_mass), scale_aqua(scale_aqua), scale_sorbed(scale_sorbed) {}
+    : func(func_), total_mass_(total_mass), scale_sorbed(scale_sorbed), scale_aqua(scale_aqua) {}
 
     double operator()( double conc_aqua)
     {

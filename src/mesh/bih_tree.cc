@@ -30,8 +30,6 @@
 #include "system/global_defs.h"
 #include <ctime>
 
-#define DEBUG
-
 const double BIHTree::max_elements_in_child = 0.8;
 const double BIHTree::max_elements_in_children = 1.5;
 
@@ -83,8 +81,8 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 		set_median();
 
 		//calculate bounding boxes of subareas and create them
-		for (int i=0; i<BIHNode::child_count; i++) {
-			for (int j=0; j<dimension; j++) {
+		for (unsigned int i=0; i<BIHNode::child_count; i++) {
+			for (unsigned int j=0; j<dimension; j++) {
 				childCoors[i](j) = (j==actual_node.axes() && i==1) ? actual_node.median_
 																   : queue_coors_.front()(j);
 				childCoors[i](j + dimension) = (j==actual_node.axes() && i==0) ? actual_node.median_
@@ -110,7 +108,7 @@ void BIHTree::create_tree(unsigned int areaElementLimit) {
 
 		// put nodes into vectors
 		test_new_level();
-		for (int i=0; i<BIHNode::child_count; i++) {
+		for (unsigned int i=0; i<BIHNode::child_count; i++) {
 		    nodes_[queue_.front()].child_[i] = nodes_.size(); // can not use actual_node, since it can be invalid due to reallocation of nodes_
 			queue_.push_back(nodes_.size());
 			queue_coors_.push_back(childCoors[i]);
@@ -139,18 +137,18 @@ void BIHTree::create_root_node() {
 
 	// put indexes of all elements to vector (for first level of tree)
 	list_element_index_.resize(mesh_->n_elements());
-	for (int i=0; i<mesh_->n_elements(); i++) {
+	for (unsigned int i=0; i<mesh_->n_elements(); i++) {
 		list_element_index_[i] = i;
 	}
 
 	// find minimal and maximal coordination of whole mesh
 	Node* node = mesh_->node_vector.begin();
-	for (int i=0; i<dimension; i++) {
+	for (unsigned int i=0; i<dimension; i++) {
 		area_coors(i) = node->point()(i);
 		area_coors(i + dimension) = node->point()(i);
 	}
 	FOR_NODES(mesh_, node ) {
-		for (int i=0; i<dimension; i++) {
+		for (unsigned int i=0; i<dimension; i++) {
 			area_coors(i) = std::min( area_coors(i), node->point()(i) );
 			area_coors(i + dimension) = std::max( area_coors(i + dimension), node->point()(i) );
 		}
@@ -166,7 +164,7 @@ void BIHTree::create_root_node() {
 void BIHTree::set_axes() {
 	double maxDiff = queue_coors_.front()(dimension) - queue_coors_.front()(0);
 	nodes_[queue_.front()].axes_ = 0;
-	for (int i=1; i<dimension; i++) {
+	for (unsigned int i=1; i<dimension; i++) {
 		if (queue_coors_.front()(i + dimension) - queue_coors_.front()(i) > maxDiff) {
 			maxDiff = queue_coors_.front()(i + dimension) - queue_coors_.front()(i);
 			nodes_[queue_.front()].axes_ = i;
@@ -247,7 +245,7 @@ void BIHTree::put_leaf_elements() {
 	unsigned int lower_bound = in_leaves_.size();
 	BIHNode & actual_node = nodes_[queue_.front()];
 
-	for (int i=actual_node.child_[0]; i<actual_node.child_[1]; i++) {
+	for (unsigned int i=actual_node.child_[0]; i<actual_node.child_[1]; i++) {
 		in_leaves_.push_back(list_element_index_[i]);
 	}
 
@@ -293,7 +291,7 @@ void BIHTree::find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned i
 		while (queue_.size()) {
 			if (nodes_[queue_.front()].is_leaf()) {
 			    //START_TIMER("leaf");
-				for (int i=nodes_[queue_.front()].child_[0]; i<nodes_[queue_.front()].child_[1]; i++) {
+				for (unsigned int i=nodes_[queue_.front()].child_[0]; i<nodes_[queue_.front()].child_[1]; i++) {
 					if (elements_[ in_leaves_[i] ].intersection(boundingBox)) {
 						searchedElements.push_back(in_leaves_[i]);
 					}
@@ -331,7 +329,7 @@ void BIHTree::find_point(Point<3> &point, std::vector<unsigned int> &searchedEle
 		}
 	}
 
-	for (int i=nodes_[node_index].child_[0]; i<nodes_[node_index].child_[1]; i++) {
+	for (unsigned int i=nodes_[node_index].child_[0]; i<nodes_[node_index].child_[1]; i++) {
 		if (elements_[ in_leaves_[i] ].contains_point(point)) {
 			searchedElements.push_back(in_leaves_[i]);
 		}
@@ -344,10 +342,9 @@ void BIHTree::element_boxes() {
 	FOR_ELEMENTS(mesh_, element) {
 		arma::vec3 minCoor = element->node[0]->point();
 		arma::vec3 maxCoor = element->node[0]->point();
-		int id = element.id();
-		for (int i=1; i<element->n_nodes(); i++) {
+		for (unsigned int i=1; i<element->n_nodes(); i++) {
 			Node* node = element->node[i];
-			for (int j=0; j<dimension; j++) {
+			for (unsigned int j=0; j<dimension; j++) {
 				minCoor(j) = std::min(minCoor(j), node->point()(j));
 				maxCoor(j) = std::max(maxCoor(j), node->point()(j));
 			}

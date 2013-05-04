@@ -95,8 +95,6 @@ it::Record Solver::input_type_bddc = it::Record("Bddc", "Solver setting.")
  *  @param[in] in_rec input record
  */
 void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
-    double solver_accurancy;
-
     F_ENTRY;
 	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
 
@@ -127,7 +125,7 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     }
 
     //! generic solver parameters
-    solver_accurancy=   OptGetDbl("Solver","Solver_accurancy","1.0e-7");
+    double solver_accurancy=   OptGetDbl("Solver","Solver_accurancy","1.0e-7");
     solver->max_it=     OptGetInt("Solver", "max_it", "200" );
     solver->r_tol=      OptGetDbl("Solver", "r_tol", "-1" );
     if (solver->r_tol < 0) solver->r_tol=solver_accurancy;
@@ -615,7 +613,7 @@ void read_sol_matlab( struct Solver *solver )
 	LinSys *sys=solver->LinSys;
 	FILE *in;
 	double value;
-	int mi;
+	unsigned int mi;
 
 	in = xfopen( "solution.dat", "rt" );
 	int loc_row=0;

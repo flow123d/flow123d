@@ -49,10 +49,10 @@ extern "C" {
 
 SparseGraph::SparseGraph(const Distribution &distr)
     : vtx_distr(distr),
-      adj_of_proc( vtx_distr.np() ),
-      adj(NULL),
       rows(NULL),
-      adj_weights(NULL)
+      adj(NULL),
+      adj_weights(NULL),
+      adj_of_proc( vtx_distr.np() )
 {
     F_ENTRY;
 
@@ -66,10 +66,10 @@ SparseGraph::SparseGraph(const Distribution &distr)
 
 SparseGraph::SparseGraph(int loc_size)
     : vtx_distr(loc_size),
-      adj_of_proc( vtx_distr.np() ),
-      adj(NULL),
       rows(NULL),
-      adj_weights(NULL)
+      adj(NULL),
+      adj_weights(NULL),
+      adj_of_proc( vtx_distr.np() )
 {
     F_ENTRY;
 

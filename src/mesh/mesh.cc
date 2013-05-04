@@ -495,12 +495,12 @@ void Mesh::make_edge_permutations()
 			map<const Node*,unsigned int> node_numbers;
 			unsigned int permutation[edg->side(0)->n_nodes()];
 
-			for (int i=0; i<edg->side(0)->n_nodes(); i++)
+			for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
 				node_numbers[edg->side(0)->node(i)] = i;
 
 			for (int sid=1; sid<edg->n_sides; sid++)
 			{
-				for (int i=0; i<edg->side(0)->n_nodes(); i++)
+				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
 					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
 
 				switch (edg->side(0)->dim())

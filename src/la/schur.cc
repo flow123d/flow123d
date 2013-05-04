@@ -65,8 +65,7 @@
  */
 
 SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
-: Orig(orig), IA(inv_a), IsA(ia),
-  state(created)
+: IA(inv_a), IsA(ia), state(created), Orig(orig)
 
 {
     PetscScalar *rhs_array, *sol_array;
@@ -82,7 +81,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
     VecScatter ScatterToA;
     VecScatter ScatterToB;
 
-    int SizeA, locSizeB_vec;
+    int locSizeB_vec;
     int vec_orig_low,vec_orig_high;
 
     // initialize variables
@@ -271,7 +270,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
        ISGetIndices(IsB_sub, &IsBLocalIndices);
 
-       for (unsigned int i = 0; i < locSizeB; i++)
+       for (int i = 0; i < locSizeB; i++)
        { 
 
            subInd = IsBLocalIndices[i];
@@ -376,14 +375,9 @@ void SchurComplement::set_spd()
 void SchurComplement::form_schur()
 {
     // MATIS vars
-    PetscScalar *rhs_array_old, *rhs_array_new, *rhs2_array_new;
     PetscErrorCode ierr = 0;
     Mat orig_mat_sub;
     Mat local_compl_aux;
-    Vec rhs1_vec;
-    Vec rhs_new_vec;
-    PetscInt m,n;
-    PetscViewer myViewer;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
 
     mat_reuse=MAT_REUSE_MATRIX;
@@ -491,18 +485,13 @@ void SchurComplement::form_schur()
 
 void SchurComplement::form_rhs()
 {
-    PetscScalar *rhs_interior, *rhs_boundary, *rhs_update_array, *subdomain_rhs_array;
+    PetscScalar *rhs_interior, *subdomain_rhs_array;
     PetscErrorCode ierr;
-    PetscInt *ind_interior;
     const PetscInt *IsALocalIndices;
-    PetscInt *interface_subdomain_indices;
-    PetscInt size, loc_size;
-    Vec rhs1_vec, rhs1_multiplied_vec;
+    Vec rhs1_vec;
     Vec RHS2_update;
     Vec subdomain_rhs;
-    ISLocalToGlobalMapping B_map;
     int i;
-    int ind, ind_global;
     int orig_lsize, locSizeB_vec;
     int locIndex;
 

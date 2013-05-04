@@ -632,9 +632,6 @@ bool skip_to( FILE *const in, const char *section )
  */
 bool skip_to( istream &in, const string &pattern )
 {
-    char line[ LINE_SIZE ];
-    char string[ LINE_SIZE ];
-
     F_ENTRY;
     if (! in.good()) xprintf(PrgErr, "Input stream is not ready for i/o operations. Perhaps missing check about correct open.\n");
 

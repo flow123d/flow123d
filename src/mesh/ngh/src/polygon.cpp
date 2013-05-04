@@ -101,7 +101,6 @@ TPoint TPolygon::GetCenter() {
 int TPolygon::InsertPosition(const TVertex& Vx) {
     TVertex *V1, *V2;
     TVector U1, U2, N;
-    double d;
     int pos = 0;
 
     // if size < 2 new vertex is insert at the end
@@ -119,7 +118,7 @@ int TPolygon::InsertPosition(const TVertex& Vx) {
     	return verteces.size();
     }
 
-    for (int i=0; i<verteces.size(); ++i) {
+    for (unsigned int i=0; i<verteces.size(); ++i) {
     	V1 = (*(verteces.begin() + i));
     	if (i == verteces.size() - 1)
     	    V2 = (*(verteces.begin()));

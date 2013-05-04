@@ -98,7 +98,7 @@ void GmshMeshReader::read_nodes(Tokenizer &tok, Mesh* mesh) {
         ++tok; // end of line
 
         mesh->node_vector.reserve(n_nodes);
-        for (int i = 0; i < n_nodes; ++i) {
+        for (unsigned int i = 0; i < n_nodes; ++i) {
             tok.next_line();
 
             unsigned int id = lexical_cast<unsigned int> (*tok); ++tok;

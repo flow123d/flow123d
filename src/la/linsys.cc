@@ -378,8 +378,6 @@ LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_
 {
     PetscErrorCode err;
 
-    int i;
-
     //xprintf(Msg,"sub size %d \n",subdomain_size);
 
     // vytvorit mapping v PETSc z global_row_4_sub_row
@@ -447,7 +445,6 @@ void LinSys_MATIS::preallocate_matrix()
 void LinSys_MATIS::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 {
      int i,row, n_loc_rows;
-     int irow, indrow, indrow_loc;
      PetscErrorCode err;
 
      if (loc_rows_size < nrow) {
@@ -485,10 +482,10 @@ void LinSys_MATIS::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 void LinSys_MATIS::view_local_matrix()
 {
      PetscErrorCode err;
-     PetscViewer lab;
-     char numstring[6] = "00000";
-     int myid;
-     int ierr;
+//     PetscViewer lab;
+//     char numstring[6] = "00000";
+//     int myid;
+//     int ierr;
 
 //     err = PetscViewerSetFormat(PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_ASCII_DENSE);
 //     ASSERT(err == 0,"Error in PetscViewerSetFormat.");

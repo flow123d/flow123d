@@ -78,7 +78,7 @@ Pade_approximant::~Pade_approximant()
 
 double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix initialization
 {
-	int rows, cols;
+	unsigned int rows, cols;
 
 	cout << "We are going to allocate reaction matrix" << endl;
 	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
@@ -100,19 +100,19 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	Mat Nominator;
 	//Mat Reaction_matrix;
 	Mat Pade_approximant;
-	MatFactorInfo matfact;
+	//MatFactorInfo matfact;
 	PC Precond;
-	IS rperm, cperm;
+	//IS rperm, cperm;
 	Vec tmp1; //contains the information about concentrations of all the species in one particular element
 	Vec tmp2; //the same as tmp1
-	PetscInt n, m = 2;
+	//PetscInt n, m = 2;
 	PetscScalar nominator_coef[nom_pol_deg];
 	PetscScalar denominator_coef[den_pol_deg];
 	PetscScalar Hlp_mat[1];
 	PetscScalar *Array_hlp;
-	const PetscScalar *Reaction_matrix_row;
-	char dec_name[30];
-	int rows, cols, dec_nr, dec_name_nr = 1, index, prev_index, i, j;
+	//const PetscScalar *Reaction_matrix_row;
+	//char dec_name[30];
+	int rows, cols, i, j; //int dec_nr, dec_name_nr = 1, index, prev_index;
 
 	//create the matrix Reaction_matrix
 	MatCreate(PETSC_COMM_SELF, &Reaction_matrix);
@@ -137,13 +137,13 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	int index_child;
 	PetscScalar rel_step;
 	PetscScalar extent;
-    for (int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
+    for (unsigned int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
         index_par = substance_ids[i_decay][0];
         rel_step = time_step/ half_lives[i_decay];
         extent = -log(2)*rel_step; //pow(0.5, rel_step);
         cout<<"parental index" << index_par << ", extent "<< extent << endl;
         MatSetValue(Reaction_matrix, index_par, index_par, extent,INSERT_VALUES);
-        for (int i_product = 1; i_product < substance_ids[i_decay].size(); ++i_product){
+        for (unsigned int i_product = 1; i_product < substance_ids[i_decay].size(); ++i_product){
             //reaction_matrix[index_par][ substance_ids[i_decay][i_product] ]
             extent = log(2)*rel_step* bifurcation[i_decay][i_product-1];
             index_child = substance_ids[i_decay][i_product];
@@ -269,7 +269,7 @@ void Pade_approximant::set_time_step(double new_timestep)
 
 double **Pade_approximant::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-    int cols, rows;
+    unsigned int cols, rows;
 
     if (reaction_matrix == NULL) return concentrations;
 
