@@ -26,14 +26,27 @@ void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double r
     inv_scale_aqua = scale_aqua/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
     inv_scale_sorbed = scale_sorbed/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
     c_aqua_limit_ = c_aqua_limit;
+    /*cout << "sorp_type " << sorption_type << endl;
+    cout << "scale_aqua " << scale_aqua << endl;
+    cout << "scale_sorbed " << scale_sorbed << endl;
+    cout << "inv_scale_aqua " << inv_scale_aqua << endl;
+    cout << "inv_scale_sorbed " << inv_scale_sorbed << endl;
+    cout << "c_aqua_limit " << c_aqua_limit_ << endl;*/
 }
 
 //inline
 bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as glass but the inline command makes troubles, probably
 {
     double total_mass = scale_aqua* c_aqua + scale_sorbed * c_sorbed;
-    unsigned int i_total_mass = total_mass / total_mass_step;
+    //unsigned
+    if(total_mass < 0.0) total_mass = 0.0;
+    int i_total_mass = total_mass / total_mass_step; // this must be solved somehow else, negative total mass is strange
+    /*if((total_mass < 0.0) || (i_total_mass < 0))
+    {
+    	cout << "i_total_mass is " << i_total_mass << " and total mass is " << total_mass << " and total_mass_step has the value " << total_mass_step << endl;
+    }*/
     if (i_total_mass < 0) return false;
+    //cout << "interpolation_table size is " << interpolation_table.size() << endl;
     if (i_total_mass < interpolation_table.size()) {
     	int iso_ind_floor, iso_ind_ceil;
     	iso_ind_floor = (int)(total_mass/(total_mass_step)); iso_ind_ceil = iso_ind_floor + 1;
@@ -48,7 +61,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as g
         } else return false;
     }
 
-    return false;
+    return true; //false;
 }
 
 template<class Func>
@@ -89,10 +102,15 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
     double mass_limit; // c_aqua, c_sorbed;
     //Func &iso_hlp = const_cast<Func &>(isotherm);
     //double f_max = isotherm(c_aqua_limit_);
-    interpolation_table.resize(n_steps);
+    //interpolation_table.resize(n_steps); // obsolete
     double f_max = const_cast<Func &>(isotherm)(c_aqua_limit_);
+    SorptionType sorpt_type = get_sorption_type();
     if (c_aqua_limit_ >0) {
         mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*f_max; //isotherm(c_aqua_limit_);
+        if(mass_limit < 0.0)
+        {
+        	cout << "isotherm type " << sorpt_type << ", mass_limit has negative value " << mass_limit << ", scale_aqua "  << scale_aqua << ", c_aq_limit " << c_aqua_limit_ << ", scale_sorbed " << scale_sorbed << ", f_max " << f_max << endl;
+        }
     } else {
         mass_limit = scale_aqua + scale_sorbed;// set mass_limit from max conc = 1, needs to be computed somehow else
     }
@@ -102,8 +120,8 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
         double c_aqua = mass * inv_scale_aqua; // aqueous concentration (original coordinates c_a) corresponding to total mass
         double c_sorbed = const_cast<Func &>(isotherm)(c_aqua); // mass * inv_scale_sorbed;
         solve_conc(c_aqua, c_sorbed, isotherm);
-        double hlp_conc = (c_sorbed * scale_sorbed - c_aqua * scale_aqua); //is probably not needed to store
-        interpolation_table.push_back(hlp_conc);
+        //double hlp_conc = (c_sorbed * scale_sorbed - c_aqua * scale_aqua); //is probably not needed to store
+        //interpolation_table.push_back(hlp_conc);
     	double c_sorbed_rot = const_cast<Func &>(isotherm)(mass);
         interpolation_table.push_back(c_sorbed_rot);
     }
@@ -117,6 +135,12 @@ void Isotherm::make_one_point_table(void)
 	interpolation_table[0] = 1.0;
 	return;
 }
+
+SorptionType Isotherm::get_sorption_type(void)
+{
+	return sorption_type;
+}
+
 
 template void Isotherm::make_table<Linear>(const Linear &isotherm, int n_steps);
 

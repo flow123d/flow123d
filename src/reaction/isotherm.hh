@@ -35,7 +35,7 @@ public:
     /**
     * 	Mysterious operator.
     */
-    double operator()( double x) { return mult_coef_*(alpha * x)/(alpha*x - 1); }
+    double operator()( double x) { return mult_coef_*(alpha * x)/(alpha*x + 1); }
 
 private:
     double mult_coef_;
@@ -99,6 +99,7 @@ public:
      */
     //inline
     bool compute_projection(double &c_aqua, double &c_sorbed);
+    //bool compute_projection(double &c_aqua);
     /**
     *	Enables to get private parameter.
     */
@@ -115,6 +116,10 @@ public:
     * 	Creates interpolation table containing just one point
     */
     void make_one_point_table(void);
+    /**
+    *  Returns sorption type
+    */
+    SorptionType get_sorption_type(void);
 private:
     /**
     * 	Suppresses the use of implicit constructor.

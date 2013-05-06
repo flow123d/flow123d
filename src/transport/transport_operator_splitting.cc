@@ -364,6 +364,18 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	        sorptions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
+	        double** sorb_conc_array;
+	        sorb_conc_array = (double**) xmalloc(convection->get_n_substances() * sizeof(double*));
+	        for (int sbi = 0; sbi < convection->get_n_substances(); sbi++)
+	        {
+	          sorb_conc_array[sbi] = (double*) xmalloc(el_distribution->lsize() * sizeof(double));
+	          for (int i = 0; i < el_distribution->lsize(); i++)
+	          {
+	            sorb_conc_array[sbi][i] = 0.0;
+	          }
+	        }
+	        sorptions->set_sorb_conc_array(sorb_conc_array);
+
 	        decayRad = NULL;
 	        Semchem_reactions = NULL;
 	    } else{

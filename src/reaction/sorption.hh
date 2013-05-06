@@ -90,6 +90,10 @@ class Sorption:  public Reaction
 		*/
 		void init_from_input(Input::Array bulk_list);
 		/**
+		*
+		*/
+		void set_sorb_conc_array(double** sorb_cocnc_array);
+		/**
 		* Meaningless inherited methods.
 		*/
 		virtual void update_solution(void);
@@ -168,6 +172,10 @@ class Sorption:  public Reaction
 		* 	Temporary step_length in rotated system of coordinates. Should be |nr_of_region x nr_of_substances| matrix later.
 		*/
 		//double step_length;
+		/**
+		* Array for storage infos about sorbed species concentrations.
+		*/
+		double** sorbed_conc_array;
 };
 
 #endif
