@@ -50,10 +50,38 @@ void OutputBase::set_filter(string regex_filter) {
 }
 
 
+
+void OutputBase::get_integer_bounds(Integer integer, int &lower , int &upper ) {
+    lower = integer.lower_bound_;
+    upper = integer.upper_bound_;
+}
+
+
+
+void OutputBase::get_double_bounds(Double dbl, double &lower , double &upper ) {
+    lower = dbl.lower_bound_;
+    upper = dbl.upper_bound_;
+}
+
+
+
 void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int &upper ) {
 	lower = array.data_->lower_bound_;
 	upper = array.data_->upper_bound_;
 }
+
+
+
+void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
+    arr_type = array.data_->type_of_values_;
+}
+
+
+
+const string & OutputBase::get_record_description(const Record *rec) {
+    return rec->data_->description_;
+}
+
 
 
 void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &key) {
@@ -62,26 +90,11 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 }
 
 
-void OutputBase::get_integer_bounds(Integer integer, int &lower , int &upper ) {
-	lower = integer.lower_bound_;
-	upper = integer.upper_bound_;
-}
-
-
-void OutputBase::get_double_bounds(Double dbl, double &lower , double &upper ) {
-	lower = dbl.lower_bound_;
-	upper = dbl.upper_bound_;
-}
-
 
 void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
 	parent_ptr = rec.data_->parent_ptr_;
 }
 
-
-void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
-	arr_type = array.data_->type_of_values_;
-}
 
 
 void OutputBase::get_default(Record::KeyIter it, string &type, string &value) {
@@ -99,15 +112,20 @@ void OutputBase::get_default(Record::KeyIter it, string &type, string &value) {
 }
 
 
+const string & OutputBase::get_selection_description(const Selection *sel) {
+    return sel->data_->description_;
+}
+
+
+
+
 const void * OutputBase::get_record_data(const Record *rec) {
 	return rec->data_.get();
 }
 
-
 const void * OutputBase::get_abstract_record_data(const AbstractRecord *a_rec) {
 	return a_rec->child_data_.get();
 }
-
 
 const void * OutputBase::get_selection_data(const Selection *sel) {
 	return sel->data_.get();
@@ -322,7 +340,7 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 
 			stream << "" << " (" << type->size() << " keys).";
 		    stream << endl;
-		    stream << "" << "# " << type->description() << endl;
+		    stream << "" << "# " << OutputBase::get_record_description(type) << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
 		    // keys
 		    doc_type_ = key_record;
@@ -389,7 +407,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             stream << endl;
             stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
             stream << endl;
-            stream << "" << "# " << type->description() << endl;
+            stream << "" << "# " << OutputBase::get_record_description(type) << endl;
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // descendants
             doc_type_ = key_record;
@@ -397,7 +415,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             	size_setw_ = 0;
                 stream << setw(padding_size) << "";
                 stream << "" << "Record '" << (*it).type_name() << "'";
-                write_description(stream, it->description(), padding_size+size_setw_);
+                write_description(stream, OutputBase::get_record_description( &(*it) ), padding_size+size_setw_);
                 stream << endl;
             }
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
@@ -531,9 +549,9 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 				doc_flags_.mark_written( data_ptr, type->full_type_name(), reference_ );
 
 				stream << "{";
-				if (type->description().size()) {
+				if (OutputBase::get_record_description(type).size()) {
 					size_setw_ = depth+1;
-					write_description(stream, type->description(), padding_size*size_setw_, 2);
+					write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
 					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
@@ -676,7 +694,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 		    	stream << endl;
 		    	stream << setw((depth) * padding_size) << "";
 		    	print(stream, &*it, depth);
-		    	write_description(stream, it->description(), padding_size*size_setw_);
+		    	write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_);
 		    	doc_type_ = full_record;
 		    	print(stream, &*it, depth);
 		    }
@@ -978,7 +996,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                 stream << "{}";
             }
             // add info and description
-            stream << "{\\AddDoc{" << type->type_name() +"}}{"  << type->description() << "}";
+            stream << "{\\AddDoc{" << type->type_name() +"}}{"  << OutputBase::get_record_description(type) << "}";
             stream << endl;
 
             // keys
@@ -1066,7 +1084,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
                 stream << "{}";
             }
             // add info and description
-            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << type->description() << "}" << endl;
+            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_record_description(type) << "}" << endl;
 
             // descendants
             doc_type_ = key_record;
@@ -1178,7 +1196,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"type\" : \"Record\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace(type->description(), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+	stream << "\"description\" : \"" << boost::regex_replace(OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
 	// parent record
 	boost::shared_ptr<AbstractRecord> parent_ptr;
@@ -1242,7 +1260,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"type\" : \"AbstractRecord\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace(type->description(), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
 	// default descendant
 	const Record * desc = type->get_default_descendant();
@@ -1260,7 +1278,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
 		}
 
 		stream << "{ \"key\" : \"" << it->type_name() << "\"," << endl;
-		stream << "\"description\" : \"" << boost::regex_replace(it->description(), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+		stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description( &(*it) ), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 		stream << "\"type\" : ";
 		print(stream, &*it, depth);
 		stream << "}";

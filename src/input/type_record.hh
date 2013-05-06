@@ -265,7 +265,7 @@ public:
     virtual string full_type_name() const;
 
     /// Record description getter.
-    virtual string description() const;
+    // virtual string description() const;
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
@@ -709,8 +709,7 @@ inline bool Record::has_key(const string& key) const
 
 inline unsigned int Record::size() const {
     finished_check();
-    ASSERT( data_->keys.size() == data_->key_to_index.size(),
-            "Sizes of Type:Record doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index.size(), data_->keys.size());
+    ASSERT_EQUAL( data_->keys.size(), data_->key_to_index.size());
     return data_->keys.size();
 }
 

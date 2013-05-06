@@ -101,16 +101,17 @@ public:
  * @endcode
  */
 #define DECLARE_EXCEPTION( ExcName, Format)                                 \
-struct ExcName : public virtual ::ExceptionBase {                                  \
-     virtual void print_info(std::ostringstream &out) const {                     \
+struct ExcName : public virtual ::ExceptionBase {                           \
+     virtual void print_info(std::ostringstream &out) const {               \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                         \
-         ExcName const &_exc=*this;                                               \
          estream Format ;                                                   \
          out << std::endl;                                                  \
      }                                                                      \
      virtual ~ExcName() throw () {}                                         \
 }
+
+/* ExcName const &_exc=*this; */
 
 
 /**
@@ -122,7 +123,6 @@ struct ExcName : public virtual ::InputException {                              
      virtual void print_info(std::ostringstream &out) const {                     \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                                     \
-         ExcName const &_exc=*this;                                               \
          estream Format ;                                                   \
          out << std::endl;                                                  \
      }                                                                      \

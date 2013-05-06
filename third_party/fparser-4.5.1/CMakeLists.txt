@@ -15,39 +15,28 @@
 # You should have received a copy of the GNU General Public License along with this program; if not,
 # write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 #
-# $Id$
-# $Revision$
-# $LastChangedBy$
-# $LastChangedDate$
+# $Id: CMakeLists.txt 1306 2011-08-30 13:53:56Z jiri.jenicek $
+# $Revision: 1306 $
+# $LastChangedBy: jiri.jenicek $
+# $LastChangedDate: 2011-08-30 15:53:56 +0200 (Tue, 30 Aug 2011) $
 #
 
-#include ../makefile.in
+message(STATUS "CMakeLists.txt - FParser")
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-#all: armadillo fparser
+# select source files that compose whole flow123d library
+# todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
+# every library then can be testetd independently
+set(sources_lib_fparser
+  fpoptimizer.cc
+  fparser.cc
+)
+
+# add tager for libfparser
+add_library(fparser ${sources_lib_fparser})
+set_target_properties(fparser PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+)
 
 
-#metis:
-#	make -C metis-4.0
 
-# use CMAKE_PREFIX_PETH to use our copy of boost
-#
-# unfortunately I didn't succeed with blas and lapack form PETSC ...
-# how to setup armadillo's cmake to use them
-#armadillo:
-#	cd armadillo-1.1.92; \
-#	export PETSC_DIR=${PETSC_DIR}; \
-#	export PETSC_ARCH=${PETSC_ARCH}; \
-#	export CMAKE_BLAS_LAPACK_DIR="${PETSC_DIR}/${PETSC_ARCH}/lib"; \
-#	cmake . -DCMAKE_PREFIX_PATH="../boost-1.42";\
-#	make
-
-#fparser:
-#	make -C fparser-4.4.3
-
-clean:
-	rm -f all
-	make -C metis-4.0 realclean
-	#make -C armadillo-1.1.92 clean
-	make -C fparser-4.4.3 clean
-	make -C fparser-4.5.1 clean
-	

@@ -47,12 +47,9 @@
 #include "fields/field_values.hh"
 
 
-struct BTC;
 class OutputTime;
 class Mesh;
 class Distribution;
-class MaterialDatabase;
-class TransportSources;
 class ConvectionTransport;
 
 //=============================================================================
@@ -68,14 +65,15 @@ class ConvectionTransport;
 /**
  * TODO:
  * - doxy documentation
- * - remove boundary matrix, make method for assembly of boundary source vector directly (when bc or velocity has changed) or
- *   use rescaling for change of time step
  * - make separate method for changing time step (rescaling only)
  */
 
 
 
-
+/**
+ * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
+ *
+ */
 class ConvectionTransport : public EquationBase {
 public:
     /**
@@ -92,10 +90,10 @@ public:
 	 */
 	void compute_one_step();
 
-	//void transport_until_time(double time_interval);
 	/**
 	 * Use new flow field vector for construction of convection matrix.
 	 * Updates CFL time step constrain.
+	 * TODO: Just set the new velocity, postpone update till compute_one_step
 	 */
 	void set_flow_field_vector(const MH_DofHandler &dh);
   
@@ -114,6 +112,7 @@ public:
 	 * create_transport_matrix_mpi()
 	 */
 	//double get_cfl_time_constrain();
+
 	double ***get_concentration_matrix();
 	double ***get_prev_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
@@ -131,7 +130,6 @@ public:
 	double ***get_conc();
     vector<string> &get_substance_names();
     double *get_sources(int sbi);
-//    TransportSources *transportsources;
     const MH_DofHandler *mh_dh;
 
 
@@ -148,13 +146,10 @@ private:
      * add time term, i. e. unit matrix (see. transport_matrix_step_mpi)
      *
      * Updates CFL time step constrain.
-     *
-     * TODO: Remove assembling of boundary matrix and assembly directly boundary source vector.
-     * TODO: Do not use velocty values stored in mesh. Use separate velocity vector.
      */
     void create_transport_matrix_mpi();
-	void make_transport_partitioning(); //
-//	void alloc_transport(struct Problem *problem);
+
+    void make_transport_partitioning(); //
 	void set_initial_condition();
 	void read_concentration_sources();
 	void set_boundary_conditions();
@@ -169,35 +164,16 @@ private:
 	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
 	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, int sorp_type,
 			double *concx, double *concx_sorb, double Nv, double N); //
-	//void compute_concentration_sources(int sbi);
 
-//	void get_reaction(int i,oReaction *reaction); //
-	//void transport_output(struct Transport *transport, double time, int frame);
-//	void transport_output_init(struct Transport *transport);
-//  void transport_output_finish(struct Transport *transport);
-	//DENSITY
-	int compare_dens_iter(); //
-	void restart_iteration_C(); //
-	void save_restart_iteration_H(); //
-	void save_time_step_C(); //
-	void alloc_transport_vectors(); //
-	void alloc_density_vectors(); //
-	void alloc_transport_structs_mpi(); //
-	void subst_names(char *line); //
-	void subst_scales(char *line); //
 
-	//void get_names(string* array);
+    void alloc_transport_vectors();
+    void alloc_transport_structs_mpi();
+
 
 	bool is_convection_matrix_scaled, is_bc_vector_scaled;
 
-    // TODO: Make simplified TimeGovernor and move following into it.
-    //double time_step;                     ///< Time step for computation.
-    //double max_step;		              ///< Time step constrain given by CFL condition.
-    //unsigned int time_level;              ///< Number of computed time steps.
 
 	TransportOperatorSplitting::EqData *data;
-
-    //Field<3, FieldValue<3>::Scalar > *cross_section;
 
     double *sources_corr;
     Vec v_sources_corr;
@@ -242,8 +218,8 @@ private:
     							// 2-transport+sorption
     							// 3-transport+dual porosity+sorption
     //PEPA
-            int 	pepa; // It enables Pepa Chudoba's  crazy functions
-            int 	type; // Type of crazy function
+//            int 	pepa; // It enables Pepa Chudoba's  crazy functions
+//            int 	type; // Type of crazy function
 
 
     // NEW TRANSPORT

@@ -80,6 +80,8 @@ protected:
     // data getters
     /// Gets range of array
     void get_array_sizes(Array array, unsigned int &lower , unsigned int &upper );
+    /// Gets description of the given record type.
+    const string & get_record_description(const Record *rec);
     /// Gets record key for given index
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     /// Gets range of integer
@@ -92,6 +94,10 @@ protected:
     void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
     /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
+    /// Gets description of the given selection type.
+    const string & get_selection_description(const Selection *sel);
+
+
     /// Gets pointer of inner data for given Record
     const void * get_record_data(const Record *rec);
     /// Gets pointer of inner data for given AbstractRecord

@@ -66,17 +66,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
 {
     F_ENTRY;
 
-    // [Density]
-    /*
-    max_dens_it = OptGetInt("Density", "Density_max_iter", "20");
-    dens_implicit = OptGetBool("Density", "Density_implicit", "no");
-    dens_eps = OptGetDbl("Density", "Eps_iter", "1.0e-5");
-    write_iterations = OptGetBool("Density", "Write_iterations", "no");
-    dens_step = OptGetInt("Density", "Density_steps", "1");
-    */
-
-    //double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
-
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), target_mark_type);
@@ -104,10 +93,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     // reaction_on = in_rec.val<bool>("transport_reactions");
 
 
-    pepa=false; reaction_on = false;
-    // pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
-    // type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
-
     sub_problem = 0;
     if (dual_porosity == true)
         sub_problem += 1;
@@ -118,11 +103,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
     set_initial_condition();
-    //set_boundary_conditions();
-
 
     is_convection_matrix_scaled = false;
-
     output_vector_gather();
 }
 
@@ -215,18 +197,6 @@ double *ConvectionTransport::get_sources(int sbi) {
 
 
 
-//=============================================================================
-//
-//=============================================================================
-void ConvectionTransport::subst_scales(char *line) {
-    int sbi;
-
-    ASSERT(!( (n_substances < 1) || (line == NULL) ),"Bad parameter of the function subst_scales()\n");
-    substance_density_scale= (double*) xmalloc( n_substances* sizeof(double));
-    for (sbi = 0; sbi < n_substances; sbi++)
-    	substance_density_scale[sbi] = atof(strtok(sbi == 0 ? line : NULL, " \t,;"));
-}
-
 
 void ConvectionTransport::set_initial_condition()
 {
@@ -305,32 +275,7 @@ void ConvectionTransport::alloc_transport_vectors() {
         }
     }
 }
-//=============================================================================
-//	ALLOCATE OF TRANSPORT (DENSITY VECTORS)
-//=============================================================================
-void ConvectionTransport::alloc_density_vectors() {
 
-    int ph, sbi, i, sub;
-    int n_subst = n_substances;
-    int n_elements = mesh_->n_elements();
-
-    sub = sub_problem;
-
-    scalar_it = (double*) xmalloc(n_elements * sizeof(double)); // Zatim nevyuzito
-    prev_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**)); //transport->prev_conc = (double***) xmalloc(n_subst * sizeof(double**));
-
-    for (ph = 0; ph < MAX_PHASES; ph++) {
-     if ((sub & ph) == ph) {        
-      prev_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //transport->prev_conc[sbi] = (double**) xmalloc(MAX_PHASES * sizeof(double*));
-
-        for (sbi = 0; sbi < n_elements; sbi++)
-                prev_conc[ph][sbi] = (double*) xmalloc(n_elements * sizeof(double));
-
-                for (i = 0; i < n_elements; i++)
-                    prev_conc[ph][sbi][i] = 0.0;
-    } else  prev_conc[ph] = NULL;
-    }
-}
 //=============================================================================
 //	ALLOCATION OF TRANSPORT VECTORS (MPI)
 //=============================================================================
@@ -502,7 +447,7 @@ void ConvectionTransport::compute_one_step() {
 
         VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
 
-        if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
+        if ((dual_porosity == true) || (sorption == true) )
             // cycle over local elements only in any order
             for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
 
@@ -510,10 +455,6 @@ void ConvectionTransport::compute_one_step() {
                     transport_dual_porosity(loc_el, mesh_->element(el_4_loc[loc_el]), sbi);
                 if (sorption == true)
                     transport_sorption(loc_el, mesh_->element(el_4_loc[loc_el]), sbi);
-
-                // if (reaction_on == true)
-                //    transport_reaction(trans, loc_el, material, sbi);
-
 
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
@@ -1113,81 +1054,6 @@ void ConvectionTransport::output_vector_gather() {
     ISDestroy(&(is));
 }
 
-//=============================================================================
-//      COMPARE DENSITY ITERATION
-//=============================================================================
-int ConvectionTransport::compare_dens_iter() {
-/*
-    ElementIter elm;
-    double max_err;
-    max_err = 0;
-    //	FOR_ELEMENTS( elm )
-    //		xprintf(Msg,"%f %f %f\n",elm->scalar , elm->scalar_it,elm->scalar - elm->scalar_it);
-    FOR_ELEMENTS(mesh_,  elm ) {
-        if (fabs(elm->scalar - elm->scalar_it) > max_err) {
-            max_err = fabs(elm->scalar - elm->scalar_it);
-            //xprintf(Msg,"%f %f %f\n",elm->scalar , elm->scalar_it, elm->scalar - elm->scalar_it);
-        }
-    }
-    xprintf(Msg,"Maximum pressure difference in iteration: %f10.8\n",max_err);
-    if (max_err > dens_eps)
-        return 0;
-    else
-        return 1;*/
-	return 0;
-}
-//=============================================================================
-//      RESTART ITERATION CONCENTRATION
-//=============================================================================
-void ConvectionTransport::restart_iteration_C() {
-    int sbi, n_subst, sub, ph;
-
-
-   // struct Transport *transport = problem->transport;
-   // double ***conc, ***prev_conc;
-
-    n_subst = n_substances;
-    sub = sub_problem;
-    //conc = transport->conc;
-    //prev_conc = transport->prev_conc;
-
-    for (sbi = 0; sbi < n_subst; sbi++)
-        for (ph = 0; ph < 4; ph++)
-            if (conc[sbi][ph] != NULL)
-                memcpy(conc[sbi][ph], prev_conc[sbi][ph], mesh_->n_elements() * sizeof(double));
-
-}
-//=============================================================================
-//      SAVE & RESTART ITERATION OF PRESSURE
-//=============================================================================
-void ConvectionTransport::save_restart_iteration_H() {
-/*
-    ElementIter elm;
-    FOR_ELEMENTS(mesh_,  elm ) {
-        elm->scalar_it = elm->scalar;
-    }
-    */
-}
-//=============================================================================
-//      SAVE TIME STEP CONCENTRATION
-//=============================================================================
-void ConvectionTransport::save_time_step_C() {
-
-    int sbi, n_subst, sub, ph;
-   // struct Transport *transport = problem->transport;
-    double ***conc, ***prev_conc;
-
-    n_subst = n_substances;
-    sub = sub_problem;
-    //conc = transport->conc;
-    //prev_conc = transport->prev_conc;
-
-    for (ph = 0; ph < 4; ph++)
-        for (sbi = 0; sbi < n_subst; sbi++)
-            if (conc[ph][sbi] != NULL)
-                memcpy(prev_conc[ph][sbi], conc[ph][sbi], mesh_->n_elements() * sizeof(double));
-
-}
 
 void ConvectionTransport::get_parallel_solution_vector(Vec &vc){
 	return;

@@ -359,7 +359,7 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
-    ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
+    ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
     ${Boost_INCLUDE_DIR}
@@ -374,7 +374,8 @@ include_directories(
 
 
 # add fparser sources
-add_subdirectory(third_party/fparser-4.4.3)
+message(STATUS "ad subdir FParser")
+add_subdirectory(third_party/fparser-4.5.1)
 
 # add various our sources
 add_subdirectory(src)

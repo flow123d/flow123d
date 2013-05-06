@@ -87,7 +87,7 @@ public:
     /**
      * Creates a handle pointing to the new SelectionData.
      */
-    Selection(const string &name);
+    Selection(const string &name, const std::string &description = "");
 
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
@@ -210,13 +210,8 @@ private:
         /// Vector of values of the Selection
         std::vector<Key> keys_;
 
-        /**
-         * This flag is set to true when documentation of the Record was called with extensive==true
-         * and full description of the Record was produced.
-         *
-         * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
-         */
-        //mutable bool made_extensive_doc;
+        /// Text description of the whole Selection object.
+        std::string description_;
 
         /// Indicator of finished Selection.
         mutable bool finished;

@@ -272,11 +272,6 @@ string Record::full_type_name() const {
 }
 
 
-string Record::description() const  {
-    return data_->description_;
-}
-
-
 
 bool Record::valid_default(const string &str) const
 {
@@ -288,14 +283,6 @@ bool Record::valid_default(const string &str) const
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
     }
 }
-
-
-/*void  Record::reset_doc_flags() const {
-	data_->made_extensive_doc=false;
-    for(KeyIter it = begin(); it!=end(); ++it) {
-        it->type_->reset_doc_flags();
-    }
-}*/
 
 
 
