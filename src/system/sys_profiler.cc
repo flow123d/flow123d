@@ -264,8 +264,8 @@ int Profiler::find_child(const CodePoint &cp) {
 
         ASSERT_LESS( child_idx, timers_.size());
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
-        idx = ( idx==Timer::max_n_childs ? 0 : idx+1 );
-    } while (idx != cp.hash_idx_); // passed through whole array
+        idx = ( (unsigned int)idx==Timer::max_n_childs ? 0 : idx+1 );
+    } while ( (unsigned int)idx != cp.hash_idx_ ); // passed through whole array
     return -1;
 }
 
@@ -286,7 +286,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
             DBGMSG("cmp close '%s' idx '%s'\n", cp.tag_, timers_[node].tag());
             if ( cp.hash_ == timers_[node].full_hash_) {
                 // found above - close all nodes between
-                for(; actual_node != node; actual_node=timers_[actual_node].parent_timer) {
+                for(; (unsigned int)actual_node != node; actual_node=timers_[actual_node].parent_timer) {
                     xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag());
                     timers_[actual_node].stop(true);
                 }
@@ -315,9 +315,9 @@ void Profiler::stop_timer(int timer_index) {
     if ( timer_index != actual_node ) {
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer)
-            if ( timer_index == node) {
+            if ( (unsigned int)timer_index == node) {
                 // found above - close all nodes between
-                for(; actual_node != node; actual_node=timers_[actual_node].parent_timer) {
+                for(; (unsigned int)actual_node != node; actual_node=timers_[actual_node].parent_timer) {
                     xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag(), timers_[actual_node].tag());
                     timers_[actual_node].stop(true);
                 }
@@ -396,7 +396,7 @@ void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_inf
 
     timers_info.push_back(info);
 
-    for (int i = 0; i < Timer::max_n_childs; i++)
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] > 0)
             add_timer_info(comm, timers_info, timer.child_timers[i], indent + 1, cumul_time_sum);
 }
@@ -441,11 +441,11 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
         // compute with of columns
         vector<unsigned int> width(timers_info[0].size(),0);
-        for (int i = 0; i < timers_info.size(); i++)
-            for (int j = 0; j < timers_info[i].size(); j++) width[j] = max( width[j] , (unsigned int)timers_info[i][j].size() );
+        for (unsigned int i = 0; i < timers_info.size(); i++)
+            for (unsigned int j = 0; j < timers_info[i].size(); j++) width[j] = max( width[j] , (unsigned int)timers_info[i][j].size() );
         // detect common path of code points
         unsigned int common_length=timers_info[1].back().size();
-        for (int i = 2; i < timers_info.size(); i++) {
+        for (unsigned int i = 2; i < timers_info.size(); i++) {
             common_length = min( common_length, (unsigned int) timers_info[i].back().size() );
             for (unsigned int j = 0; j < common_length; j++ ) {
                 if (timers_info[1].back().at(j) != timers_info[i].back().at(j)) {
@@ -455,7 +455,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
             }
         }
         // remove common path
-        for (int i = 1; i < timers_info.size(); i++) timers_info[i].back().erase(0, common_length);
+        for (unsigned int i = 1; i < timers_info.size(); i++) timers_info[i].back().erase(0, common_length);
 
 
         int mpi_size;
@@ -491,15 +491,15 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         os.fill(' ');
 
         // print header
-        for(int j=0; j< timers_info[0].size(); j++)
+        for(unsigned int j=0; j< timers_info[0].size(); j++)
             os << left << setw(width[j]) << timers_info[0][j] << setw(column_space) << "";
         os << endl;
 
         os << setfill ('-') << setw (80) << "" << endl;
         os.fill(' ');
 
-        for (int i = 1; i < timers_info.size(); i++) {
-            for(int j=0; j< timers_info[i].size(); j++) {
+        for (unsigned int i = 1; i < timers_info.size(); i++) {
+            for(unsigned int j=0; j< timers_info[i].size(); j++) {
                 // first and last item are left aligned
                 if (j==0 || j==timers_info[i].size()-1 ) os << left; else os<<right;
                 os << setw(width[j]) << timers_info[i][j] << setw(column_space) << "";

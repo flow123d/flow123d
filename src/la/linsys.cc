@@ -44,7 +44,7 @@
  */
 
 LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
-:vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE),type(MAT_MPIAIJ)
+:type(MAT_MPIAIJ),vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE)
 {
     // create PETSC vectors
     v_rhs=(double *) xmalloc(sizeof(double) * (this->vec_lsize() + 1) );

@@ -144,8 +144,8 @@ void ctiich_obecne( void )
 void ctiich_latkyvefazi( void )
 {
    char  buffer[1024];
-   int   i,j;
-   char  nazev[30], nazev1[30], *pom_buf;
+   int   j;
+   char  nazev[30], *pom_buf; //, nazev1[30]
    const char *separators = " ,\t";
    char *pString;
 
@@ -180,7 +180,7 @@ void ctiich_latkyvefazi( void )
          exit(133);
       }
       P_lat[j].dGf = atof(pom_buf);
-        printf(/*Msg,*/ "\n P_lat[%d].dGf %Lf\n",j,P_lat[j].dGf);
+        printf(/*Msg,*/ "\n P_lat[%d].dGf %f\n",j,P_lat[j].dGf);
       pom_buf = strtok( NULL, separators );
    }
    if ( pom_buf != NULL )

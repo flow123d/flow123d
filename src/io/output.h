@@ -603,7 +603,7 @@ int OutputTime::register_corner_data(Mesh *mesh,
     int found = 0;
     std::vector<OutputData> *corner_data = output_time->get_corner_data();
 
-    int corner_count = output_time->get_corner_count();
+    unsigned int corner_count = output_time->get_corner_count();
     ASSERT(corner_count == size,
             "output_time->get_corner_count(): %d != size: %d",
             corner_count,

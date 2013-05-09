@@ -332,7 +332,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     // prepare Scatter form parallel to sequantial in original numbering
     {
             IS is_loc;
-            int i, si, *loc_idx;
+            int i, /*si,*/ *loc_idx;
 
             // create local solution vector
             solution = (double *) xmalloc(size * sizeof(double));
@@ -1181,7 +1181,7 @@ void DarcyFlowMH_Steady::make_schur2() {
 void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
 
     Distribution edistr = graph->get_distr();
-    Edge *edg;
+    //Edge *edg;
     Element *ele;
     int li, eid, i_neigh, i_edg;
     unsigned int si;
@@ -1399,9 +1399,9 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     int *loc_part; // optimal (edge,el) partitioning (local chunk)
     int *id_4_old; // map from old idx to ids (edge,el)
     // auxiliary
-    Edge *edg;
+    //Edge *edg;
     Element *el;
-    Side *side;
+    //Side *side;
     int i, loc_i;
 
     int i_neigh;

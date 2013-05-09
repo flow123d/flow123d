@@ -56,7 +56,7 @@ FieldConstant<spacedim, Value> &FieldConstant<spacedim, Value>::set_value(const 
 {
     this->r_value_ = val;
 
-    //TODO add return statement
+    return *this; //TODO add return statement
 }
 
 

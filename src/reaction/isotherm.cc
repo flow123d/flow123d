@@ -47,7 +47,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as g
     }*/
     if (i_total_mass < 0) return false;
     //cout << "interpolation_table size is " << interpolation_table.size() << endl;
-    if (i_total_mass < interpolation_table.size()) {
+    if ( (unsigned int)i_total_mass < interpolation_table.size() ) {
     	int iso_ind_floor, iso_ind_ceil;
     	iso_ind_floor = (int)(total_mass/(total_mass_step)); iso_ind_ceil = iso_ind_floor + 1;
     	double rot_sorbed = interpolation_table[iso_ind_floor] + (total_mass - iso_ind_floor*total_mass_step)*(interpolation_table[iso_ind_ceil] - interpolation_table[iso_ind_floor])/total_mass_step;

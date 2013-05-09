@@ -177,7 +177,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	FieldValue<3>::Vector::return_type second_coef;
 	//arma::Col<double> second_coef;
 	second_coef.resize(nr_of_substances);
-	double rock_density, mobile_porosity, immobile_porosity;
+	double rock_density, mobile_porosity; //, immobile_porosity;
 	//Multidimensional array
 	int i_reg = 0;
 	//std::map<SorptionType, std::string>;
@@ -227,7 +227,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			 case 0: // none: //
 			 {
 				 //xprintf(Msg,"No sorption is considered for %d-th specie in %d-th region.\n", i_subst, reg_idx);
-				 int one_point = 1;
+				 //int one_point = 1;
 				 isotherms_mob[reg_idx][i_subst].make_one_point_table();
 				 //cout << "The interpolation table size is " << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
 				 /*if(dual_porosity_on)
@@ -313,9 +313,9 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorptions are realized just for one element.
 {
     ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
-    double mob_porosity, immob_porosity; // = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+    double mob_porosity; //, immob_porosity; // = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
     double rock_density; // = data_.rock_density.value(elem->centre(),elem->element_accessor());
-    double k_rep;
+    //double k_rep;
     Region region = elem->region();
     int reg_id_nr = region.bulk_idx(); //->region_->reg_id;
 

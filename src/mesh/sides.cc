@@ -71,6 +71,8 @@ arma::vec3 Side::normal() const {
         case 2:
             return normal_triangle();
     }
+
+    return arma::vec3();
 }
 //=============================================================================
 //
