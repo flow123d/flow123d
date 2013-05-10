@@ -659,7 +659,7 @@ void TransportDG::assemble_mass_matrix()
             for (unsigned int j=0; j<ndofs; j++)
             {
                 local_mass_matrix[i*ndofs+j] = 0;
-                if ((int)dof_indices[i] < distr->begin() || (int)dof_indices[i] > distr->end()) continue;
+                if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
                 for (unsigned int k=0; k<qsize; k++)
                     local_mass_matrix[i*ndofs+j] += elem_csec[k]*por_m[k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
             }
@@ -757,7 +757,7 @@ void TransportDG::assemble_volume_integrals()
 
         		for (unsigned int i=0; i<ndofs; i++)
         		{
-        			if ((int)dof_indices[i] < distr->begin() || (int)dof_indices[i] > distr->end()) continue;
+        			if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
 
         			arma::vec3 Kt_grad_i = K.t()*fe_values.shape_grad(i,k);
         			double velocity_dot_grad_i_times_JxW = arma::dot(velocity[k], fe_values.shape_grad(i,k))*fe_values.JxW(k);
@@ -826,7 +826,7 @@ void TransportDG::set_sources()
 
         		for (unsigned int i=0; i<ndofs; i++)
         		{
-        			if ( (int)(dof_indices[i]) < distr->begin() || (int)(dof_indices[i]) > distr->end() ) continue;
+        			if ( (dof_indices[i]) < distr->begin() || (dof_indices[i]) > distr->end() ) continue;
 
         			local_rhs[i] += source*fe_values.shape_value(i,k);
             	}
@@ -942,7 +942,7 @@ void TransportDG::assemble_fluxes_element_element()
 
 								for (unsigned int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
 								{
-									if ( (int)(side_dof_indices[sd[n]][i]) < distr->begin() || (int)(side_dof_indices[sd[n]][i]) > distr->end() ) continue;
+									if (side_dof_indices[sd[n]][i] < distr->begin() || side_dof_indices[sd[n]][i] > distr->end()) continue;
 
 									double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
 									double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
@@ -1050,7 +1050,7 @@ void TransportDG::assemble_fluxes_boundary()
 
 				for (unsigned int i=0; i<ndofs; i++)
 				{
-					if ((int)side_dof_indices[i] < distr->begin() || (int)side_dof_indices[i] > distr->end()) continue;
+					if (side_dof_indices[i] < distr->begin() || side_dof_indices[i] > distr->end()) continue;
 
 					for (unsigned int j=0; j<ndofs; j++)
 						local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
@@ -1132,7 +1132,7 @@ void TransportDG::assemble_fluxes_element_side()
 				{
 					for (unsigned int i=0; i<n_dofs[n]; i++)
 					{
-						if ( (int)(side_dof_indices[i+n*n_dofs[0]]) < distr->begin() || (int)(side_dof_indices[i+n*n_dofs[0]]) > distr->end() ) continue;
+						if (side_dof_indices[i+n*n_dofs[0]] < distr->begin() || side_dof_indices[i+n*n_dofs[0]] > distr->end()) continue;
 						for (int m=0; m<2; m++)
 						{
 							for (unsigned int j=0; j<n_dofs[m]; j++)
@@ -1463,7 +1463,7 @@ void TransportDG::prepare_initial_condition()
 
     			for (unsigned int i=0; i<ndofs; i++)
     			{
-    				if ( (int)(dof_indices[i]) < distr->begin() || (int)(dof_indices[i]) > distr->end() ) continue;
+    				if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
 
     				for (unsigned int j=0; j<ndofs; j++)
     					matrix[i*ndofs+j] += fe_values.shape_value(i,k)*fe_values.shape_value(j,k)*fe_values.JxW(k);
@@ -1535,7 +1535,7 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 				c_grad.zeros();
 				for (unsigned int i=0; i<ndofs; i++)
 				{
-					if ( (int)(dof_indices[i]) < distr->begin() || (int)(dof_indices[i]) > distr->end() ) continue;
+					if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
 					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
 					c_grad += fe_values.shape_grad(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
 				}
@@ -1601,7 +1601,7 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 				for (unsigned int i=0; i<ndofs; i++)
 				{
 					// TODO: Correct calculation of actual concentration (see note in TransportDG::set_sources()).
-					if ( (int)(dof_indices[i]) < distr->begin() || (int)(dof_indices[i]) > distr->end() ) continue;
+					if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
 					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
 				}
 
