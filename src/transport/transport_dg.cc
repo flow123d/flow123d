@@ -826,7 +826,7 @@ void TransportDG::set_sources()
 
         		for (unsigned int i=0; i<ndofs; i++)
         		{
-        			if ( (dof_indices[i]) < distr->begin() || (dof_indices[i]) > distr->end() ) continue;
+        			if (dof_indices[i] < distr->begin() || dof_indices[i] > distr->end()) continue;
 
         			local_rhs[i] += source*fe_values.shape_value(i,k);
             	}

@@ -189,14 +189,14 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	VecSetFromOptions(tmp1);
 	VecDuplicate(tmp1, &tmp2);
 
-	for(rows = 0; rows < (int)( n_substances() ); rows++){
+	for(rows = 0; rows < n_substances(); rows++){
 		MatGetColumnVector(Nominator, tmp1, rows);
 		//VecView(tmp1, PETSC_VIEWER_STDOUT_SELF);
 		PCApply(Precond, tmp1, tmp2);
 		PCView(Precond, PETSC_VIEWER_STDOUT_WORLD);
 		//VecView(tmp2, PETSC_VIEWER_STDOUT_SELF);
 		VecGetArray(tmp2, &Array_hlp);
-		for(cols = 0; cols < (int)( n_substances() ); cols++)
+		for(cols = 0; cols < n_substances(); cols++)
 		{
 			MatSetValue(Pade_approximant, rows, cols, Array_hlp[cols], ADD_VALUES);
 		}
@@ -205,16 +205,16 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
 	//pade assembled to reaction_matrix
-	for(rows = 0; rows < (int)( n_substances() ); rows++)
+	for(rows = 0; rows < n_substances(); rows++)
 		{
-			for(cols = 0; cols < (int)( n_substances() ); cols++)
+			for(cols = 0; cols < n_substances(); cols++)
 			{
 				reaction_matrix[rows][cols] = 0.0;
 			}
 		}
-	for(rows = 0; rows < (int)( n_substances() ); rows++)
+	for(rows = 0; rows < n_substances(); rows++)
 	{
-		for(cols = 0; cols < (int)( n_substances() ); cols++)
+		for(cols = 0; cols < n_substances(); cols++)
 		{
 			MatGetValues(Pade_approximant, 1, &rows, 1, &cols, Hlp_mat); //&Hlp_mat[n_substances()*rows + cols]);
 			reaction_matrix[rows][cols] = (double) (Hlp_mat[0]);

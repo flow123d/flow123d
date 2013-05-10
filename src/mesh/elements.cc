@@ -137,7 +137,7 @@ double Element::measure() const {
  */
 
 arma::vec3 Element::centre() const {
-    unsigned int li;
+    int li;
 
     arma::vec3 centre;
     centre.zeros();
@@ -154,7 +154,7 @@ arma::vec3 Element::centre() const {
  * Count element sides of the space dimension @p side_dim.
  */
 
-unsigned int Element::n_sides_by_dim(unsigned int side_dim)
+unsigned int Element::n_sides_by_dim(int side_dim)
 {
     if (side_dim == dim()) return 1;
 

@@ -474,7 +474,7 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            ASSERT( is_neighbour || (unsigned int) edg->n_sides == intersection_list.size(), "Some connected sides were not found.\n");
+            ASSERT( is_neighbour || edg->n_sides == intersection_list.size(), "Some connected sides were not found.\n");
 		} // for element sides
 	}   // for elements
 
