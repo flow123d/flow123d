@@ -229,7 +229,7 @@ void Mesh::setup_topology() {
 //
 void Mesh::count_side_types()
 {
-    //struct Side *sde;
+    struct Side *sde;
 
     n_insides = 0;
     n_exsides = 0;
