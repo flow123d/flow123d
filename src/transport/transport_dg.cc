@@ -507,7 +507,7 @@ void TransportDG::output_data()
 {
     double *solution;
     unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
-    //int n_nodes = mesh_->node_vector.size();
+    int n_nodes = mesh_->node_vector.size();
     //int count[n_nodes];
 
     if (!time_->is_current(output_mark_type)) return;
@@ -1201,7 +1201,7 @@ void TransportDG::set_boundary_conditions()
         	for (unsigned int k=0; k<qsize; k++)
         	{
         		double bc_term = gamma[sbi][b->side()->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
-        		for (unsigned int i=0; i<ndofs; i++)
+        		for (int i=0; i<ndofs; i++)
 					local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 			}
 			ls[sbi]->rhs_set_values(ndofs, (int *)side_dof_indices, local_rhs);

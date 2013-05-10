@@ -296,7 +296,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
         // Try to find absolute or relative path in fname
-        unsigned int delim_pos=input_filename.find_last_of(DIR_DELIMITER);
+        int delim_pos=input_filename.find_last_of(DIR_DELIMITER);
         if (delim_pos < input_filename.npos) {
             // It seems, that there is some path in fname ... separate it
             main_input_dir_ =input_filename.substr(0,delim_pos);
