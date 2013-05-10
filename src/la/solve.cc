@@ -176,6 +176,7 @@ void solver_set_type( Solver *solver )
 
 void solve_system( struct Solver *solver, struct LinSys *system )
 {
+START_TIMER("solve_system");
 /// set command line for external solvers
 #define SET_GENERIC_CALL sprintf( cmdline, "%s %s",solver->executable,solver->params.c_str())
 #define SET_MATLAB_CALL sprintf( cmdline, "matlab -r solve" )
@@ -358,7 +359,7 @@ void solver_petsc(Solver *solver)
            if (sys->ds().np() > 1) {
 	       // parallel setting
               if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite -sub_pc_factor_fill 6.0";
+                  petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
                   //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
                   // -ksp_type preonly -pc_type lu 
               else
@@ -367,8 +368,8 @@ void solver_petsc(Solver *solver)
 	   } else {
 	       // serial setting
               if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix  -pc_factor_fill 6.0";
-                  //petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
+                  //petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix  -pc_factor_fill 6.0";
+                  petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
               else
                   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
 	   }
@@ -450,7 +451,7 @@ void solver_petsc(Solver *solver)
 	KSPSetTolerances(System, solver->r_tol, solver->a_tol, PETSC_DEFAULT,PETSC_DEFAULT);
 	KSPSetFromOptions(System);
 
-	START_TIMER("iteration");
+	START_TIMER("iteration-PETSC solver");
 	KSPSolve(System, sys->get_rhs(), sys->get_solution());
 	KSPGetConvergedReason(System,&Reason);
 	KSPGetIterationNumber(System,&nits);

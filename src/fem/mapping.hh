@@ -37,6 +37,7 @@
 #include "fem/dofhandler.hh"
 #include "mesh/side_impl.hh"
 #include "fem/update_flags.hh"
+#include "mesh/ref_element.hh"
 
 
 
@@ -165,13 +166,13 @@ public:
      * jacobian determinants and the normal vectors.
      *
      * @param cell The actual cell.
-     * @param side The cell side.
+     * @param side Number of the side.
      * @param q Quadrature rule.
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
     virtual void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
-                            const Side &side,
+                            unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data) = 0;
@@ -180,14 +181,15 @@ public:
      * @brief Creates a cell dim-dimensional quadrature from side (dim-1)-dimensional quadrature.
      *
      * @param cell The actual cell.
-     * @param q Quadrature rule.
-     * @param side The cell side.
-     * @param subq The computed @p dim-1 dimensional sub-quadrature.
+     * @param sid  The side id.
+     * @param pid  Permutations index.
+     * @param subq @p dim-1 dimensional quadrature for integration on the side.
+     * @param q    The computed @p dim dimensional quadrature.
      */
-    void transform_subquadrature(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
-                        Quadrature<dim> &q,
-                        const Side &side,
-                        const Quadrature<dim-1> &subq);
+    void transform_subquadrature(unsigned int sid,
+    		unsigned int pid,
+    		const Quadrature<dim-1> &subq,
+    		Quadrature<dim> &q);
 
     /// Destructor.
     virtual ~Mapping() {};
@@ -196,15 +198,13 @@ public:
 
 
 template<unsigned int dim, unsigned int spacedim> inline
-void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<dim,spacedim>::CellIterator & cell,
-        Quadrature<dim> &q,
-        const Side &side,
-        const Quadrature<dim - 1> & subq)
+void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
+		unsigned int pid,
+        const Quadrature<dim - 1> & subq,
+        Quadrature<dim> &q)
 {
-    ASSERT(side.dim()==dim-1, "Side dimension mismatch.");
-    ASSERT(q.size()==subq.size(), "Quadrature size mismatch.");
-
-    map<const Node*,int> elem_nodes;
+//    ASSERT(side.dim()==dim-1, "Side dimension mismatch.");
+    q.resize(subq.size());
 
     double lambda;
 
@@ -212,16 +212,13 @@ void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<di
     arma::vec::fixed<dim+1> el_bar_coords;
     arma::vec::fixed<dim> side_bar_coords;
 
-    // number the element nodes
-    for (int i=0; i<cell->n_nodes(); i++)
-        elem_nodes[cell->node[i]] = i;
-
     for (int k=0; k<q.size(); k++)
     {
         // Calculate barycentric coordinates on the side of the k-th
         // quadrature point.
         el_bar_coords.zeros();
         lambda = 0;
+        // Apply somewhere permutation of indices!
         for (int j=0; j<dim-1; j++)
         {
             side_bar_coords(j) = (subq.point(k))[j];
@@ -231,7 +228,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(const typename DOFHandler<di
 
         // transform to element coordinates
         for (int i=0; i<dim; i++)
-            el_bar_coords((elem_nodes[side.node(i)]+dim)%(dim+1)) = side_bar_coords((i+dim-1)%dim);
+            el_bar_coords((RefElement<dim>::side_nodes[sid][RefElement<dim>::side_permutations[pid][i]]+dim)%(dim+1)) = side_bar_coords((i+dim-1)%dim);
         q.set_point(k, el_bar_coords.subvec(0,dim-1));
         q.set_weight(k, subq.weight(k));
     }

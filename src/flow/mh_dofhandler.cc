@@ -15,7 +15,7 @@ void MH_DofHandler::reinit(Mesh *mesh) {
 
     unsigned int i_side_global=0;
     FOR_ELEMENTS(mesh, ele) {
-        for(int i_lside=0; i_lside < ele->n_sides(); i_lside++)
+        for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
             elem_side_to_global[ele.index()][i_lside] = i_side_global++;
     }
 }
@@ -26,9 +26,10 @@ unsigned int MH_DofHandler::side_dof(const SideIter side) const {
 }
 
 
-void MH_DofHandler::set_solution( double * solution) {
+void MH_DofHandler::set_solution( double * solution, double precision) {
     ASSERT( solution != NULL, "Empty solution.\n");
     mh_solution = solution;
+    solution_precision = precision;
 }
 
 /// temporary replacement for DofHandler accessor, flux through given side

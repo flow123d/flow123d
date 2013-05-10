@@ -144,7 +144,7 @@ unsigned int FieldBase<spacedim, Value>::n_comp() const {
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: FieldCommonBase(false), no_check_control_field_(NULL)
+: FieldCommonBase(false), no_check_control_field_(NULL), is_fully_initialized_(false)
 {
     this->enum_valued_ = boost::is_same<typename Value::element_type, FieldEnum>::value;
 }
@@ -157,13 +157,14 @@ it::AbstractRecord &  Field<spacedim,Value>::get_input_type() {
 
 
 
-/// Helper function template for make_input_tree method
+/// ---------- Helper function template for make_input_tree method
 template <class FieldBaseType>
 IT::AbstractRecord get_input_type_resolution(Input::Type::Selection *sel,  const boost::true_type&)
 {
     ASSERT( sel, "NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
     return FieldBaseType::get_input_type(sel);
 }
+
 
 template <class FieldBaseType>
 IT::AbstractRecord get_input_type_resolution(Input::Type::Selection *sel,  const boost::false_type&)
@@ -204,7 +205,7 @@ template <int spacedim, class Value>
 bool Field<spacedim, Value>::get_const_value(Region reg, typename Value::return_type &value) {
     boost::shared_ptr< FieldBaseType > region_field = operator[](reg);
     if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
-        region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
+        value = region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
         return true;
     } else {
         return false;
@@ -216,17 +217,6 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
     boost::shared_ptr<FieldBaseType> field = FieldBaseType::function_factory(rec, this->n_comp_);
     set_field(domain, field);
-    /*
-    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
-    if (domain.size() == 0) return;
-    // initialize table if it is empty, we assume that the RegionDB is closed at this moment
-    if (region_fields_.size() == 0)
-        region_fields_.resize( this->mesh_->region_db().size() );
-
-    // following dosn't lead to a memory leak since we use shared_ptr,
-    // if the previous pointer was the last one the pointed field is correctly freed
-    BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
-    changed_from_last_set_time_=true;*/
 }
 
 
@@ -235,11 +225,12 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field) {
     ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
     if (domain.size() == 0) return;
+
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
     if (region_fields_.size() == 0)
         region_fields_.resize( this->mesh_->region_db().size() );
 
-    ASSERT_SIZES( field->n_comp() , this->n_comp_);
+    ASSERT_EQUAL( field->n_comp() , this->n_comp_);
     field->set_mesh( this->mesh_ );
     BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
     changed_from_last_set_time_=true;
@@ -248,51 +239,22 @@ void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_pt
 
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(double time) {
-    if (region_fields_.size() == 0)
-        region_fields_.resize( this->mesh_->region_db().size() );
+    // We perform set_time only once for every time.
+    if (time == last_set_time_) return false;
+    last_set_time_=time;
 
-    // check there are no empty field pointers, collect regions to be initialized from default value
-    RegionSet regions_to_init; // empty vector
-
-    BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
-        if (reg.is_boundary() == this->bc_) {      // for regions that match type of the field domain
-            if (! region_fields_[reg.idx()] ) {    // null field ptr
-                if (no_check_control_field_) {      // is the check turned off?
-                    FieldEnum value;
-                    if (no_check_control_field_->get_constant_enum_value(reg, value)
-                        && ( std::find(no_check_values_.begin(), no_check_values_.end(), value)
-                             != no_check_values_.end() )
-                       ) continue;                  // the field is not needed on this region
-                }
-
-                if (this->default_.has_value_at_declaration()) {    // try to use default
-                    regions_to_init.push_back( reg );
-                } else {
-                    xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n", name_.c_str(), reg.id(), reg.label().c_str() );
-                }
-            }
-        }
-
-    // possibly set from default value
-    if ( regions_to_init.size() ) {
-        Input::JSONToStorage reader;
-        Input::Type::AbstractRecord a_rec_type = make_input_tree();
-        reader.read_from_default(this->default_.value(), a_rec_type );
-        set_from_input( regions_to_init, reader.get_root_interface<Input::AbstractRecord>() );
-    }
-
-    // set mesh and time
+    check_initialized_region_fields_();
+    // set time on all regions
     BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
         if (reg.is_boundary() == this->bc_ && region_fields_[reg.idx()] ) {      // for regions that match type of the field domain
                                                                                  // NULL pointers are only on "no_check" regions
-            //region_fields_[reg.idx()]->set_mesh(this->mesh_);
             this->changed_from_last_set_time_ = this->changed_from_last_set_time_ ||
                     region_fields_[reg.idx()]->set_time(time);
         }
 
-    this->changed_during_set_time_ = this->changed_from_last_set_time_;
+    this->changed_during_set_time = this->changed_from_last_set_time_;
     this->changed_from_last_set_time_ = false;
-    return this->changed_during_set_time_;
+    return this->changed_during_set_time;
 }
 
 
@@ -330,6 +292,45 @@ FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm)
 }
 
 
+template<int spacedim, class Value>
+void Field<spacedim,Value>::check_initialized_region_fields_() {
+
+    if (is_fully_initialized_) return;
+
+    if (region_fields_.size() == 0)
+        region_fields_.resize( this->mesh_->region_db().size() );
+
+    // check there are no empty field pointers, collect regions to be initialized from default value
+    RegionSet regions_to_init; // empty vector
+
+    BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
+        if (reg.is_boundary() == this->bc_) {      // for regions that match type of the field domain
+            if (! region_fields_[reg.idx()] ) {    // null field ptr
+                if (no_check_control_field_) {      // is the check turned off?
+                    FieldEnum value;
+                    if (no_check_control_field_->get_constant_enum_value(reg, value)
+                        && ( std::find(no_check_values_.begin(), no_check_values_.end(), value)
+                             != no_check_values_.end() )
+                       ) continue;                  // the field is not needed on this region
+                }
+
+                if (this->default_.has_value_at_declaration()) {    // try to use default
+                    regions_to_init.push_back( reg );
+                } else {
+                    xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n", name_.c_str(), reg.id(), reg.label().c_str() );
+                }
+            }
+        }
+
+    // possibly set from default value
+    if ( regions_to_init.size() ) {
+        Input::JSONToStorage reader;
+        Input::Type::AbstractRecord a_rec_type = make_input_tree();
+        reader.read_from_default(this->default_.value(), a_rec_type );
+        set_from_input( regions_to_init, reader.get_root_interface<Input::AbstractRecord>() );
+    }
+    is_fully_initialized_=true;
+}
 
 
 

@@ -24,6 +24,8 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
+#include "system/sys_profiler.hh"
+
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
@@ -110,7 +112,7 @@ protected:
         static IT::Selection bc_type_selection;
 
         EqData(const string & name="") : EqDataBase(name) {
-            ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", IT::Default("1.0"));
+            ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", IT::Default("1.0"));
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", IT::Default("none") );
                       bc_type.set_selection(&bc_type_selection);
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
@@ -138,7 +140,7 @@ protected:
             return domain;
         }
 
-        Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
+        Field<3, FieldValue<3>::TensorFixed > anisotropy;
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; // ?? jak pridat moznost zadat piezo_head, coz by melo initializovat pressure
                                                      // na AddGradient(..)
@@ -201,6 +203,7 @@ protected:
     EqData data;
 
     virtual void SetUp() {
+        Profiler::initialize();
         data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -288,7 +291,7 @@ TEST_F(SomeEquation, values) {
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
 
-    FieldValue<3>::TensorFixed::return_type value = data.cond_anisothropy.value(p, el_1d);
+    FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
     EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,1) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,2) );

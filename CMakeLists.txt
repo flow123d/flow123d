@@ -188,8 +188,8 @@ set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
-set(REQUIRED_Boost_COMPONENTS program_options serialization)
-
+set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
+ 
 #set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
@@ -338,11 +338,16 @@ IF (PETSC_FOUND)
 endif()
 
 # optionaly we use Python interface
-find_package(PythonLibs)
-if (PYTHONLIBS_FOUND)
-    include_directories( ${PYTHON_INCLUDE_DIRS})
-    add_definitions(-DHAVE_PYTHON)
-endif()
+# We disallow python under cygwin since we are not able to extract correct libraries to make it work elsewhere.
+if (CYGWIN)
+else (CYGWIN) 
+    find_package(PythonLibs)
+    if (PYTHONLIBS_FOUND)
+        include_directories( ${PYTHON_INCLUDE_DIRS})
+        add_definitions(-DHAVE_PYTHON)
+    endif()
+endif(CYGWIN)
+
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion)
 
@@ -416,7 +421,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  flow123d_lib semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS} semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number

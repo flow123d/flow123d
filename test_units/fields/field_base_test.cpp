@@ -16,6 +16,8 @@
 #include "input/json_to_storage.hh"
 #include "fields/field_constant.hh"
 
+#include "system/sys_profiler.hh"
+
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
@@ -48,6 +50,8 @@ TEST(Field, init_from_default) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
+    Profiler::initialize();
+    
     Mesh mesh;
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
     mesh.read_gmsh_from_stream(in);

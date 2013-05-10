@@ -1,4 +1,4 @@
-INI_FILES="./flow_implicit.con ./flow_implicit_fine.con"
+INI_FILES="./flow_implicit.con"
 NPROC="1 2"
 FLOW_PARAMS="-o output"
 

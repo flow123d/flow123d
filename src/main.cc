@@ -67,7 +67,6 @@
 static void main_convert_to_output();
 
 
-
 namespace it = Input::Type;
 
 // this should be part of a system class containing all support information
@@ -93,7 +92,6 @@ Application::Application( int argc,  char ** argv)
   passed_argv_(0),
   use_profiler(false)
 {
-
     // parse our own command line arguments, leave others for PETSc
     parse_cmd_line(argc, argv);
 
@@ -105,9 +103,8 @@ Application::Application( int argc,  char ** argv)
     system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
     use_profiler=true;
-    Profiler::initialize(PETSC_COMM_WORLD);
-
-
+    Profiler::initialize();
+    
     // Say Hello
     // make strings from macros in order to check type
     string version(_PROGRAM_VERSION_);
@@ -120,7 +117,6 @@ Application::Application( int argc,  char ** argv)
     xprintf(Msg, "This is Flow123d, version %s rev: %s\n", version.c_str(),revision.c_str());
     xprintf(Msg, "Build: %s MPI size: %d\n", build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
-
 
     // read main input file
     Input::JSONToStorage json_reader;
@@ -155,23 +151,31 @@ Application::Application( int argc,  char ** argv)
             // try to find "output_streams" record
             Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
 
-            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem, output_streams);
+            int rank=0;
+            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+            if (rank == 0) {
+                // Go through all configuration of "root" output streams and create them.
+                // Other output streams can be created on the fly and added to the array
+                // of output streams
+                if(output_streams) {
+                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
+                            output_stream_rec != (*output_streams).end();
+                            i++, ++output_stream_rec)
+                    {
+                        OutputTime::output_stream(*output_stream_rec);
+                    }
+                }
+            }
+
+            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 
             // run simulation
             problem->run_simulation();
 
-            int rank=0;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
             if (rank == 0) {
                 // free all output streams
-                if(OutputTime::output_streams != NULL) {
-                    for(int i=0; i<OutputTime::output_streams_count; i++) {
-                        delete OutputTime::output_streams[i];
-                    }
-                    xfree(OutputTime::output_streams);
-                    OutputTime::output_streams = NULL;
-                    OutputTime::output_streams_count = 0;
-                }
+                OutputTime::destroy_all();
             }
 
             delete problem;
@@ -225,8 +229,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("log,l", po::value< string >(), "Set base name for log files.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
-        ("full_doc", "Produce full structure of the main input file.")
-        ("JSON_template", "Creates file 'flow_input_template.con' with description of the input structure in valid CON file format.");
+        ("full_doc", "Prints full structure of the main input file.")
+        ("JSON_template", "Prints description of the main input file as a valid CON file.")
+        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
+    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.");
     ;
 
     // parse the command line
@@ -258,14 +264,29 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputText(&input_type);
-        //input_type.documentation(cout, Input::Type::TypeBase::full_after_record);
+        Input::Type::OutputText type_output(&input_type);
+        type_output.set_filter(":Field:.*");
+        cout << type_output;
         free_and_exit();
     }
 
     if (vm.count("JSON_template")) {
         Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputJSONTemplate(&input_type);
+        free_and_exit();
+    }
+
+    if (vm.count("latex_doc")) {
+        Input::Type::TypeBase::lazy_finish();
+        Input::Type::OutputLatex type_output(&input_type);
+        type_output.set_filter("");
+        cout << type_output;
+        free_and_exit();
+    }
+
+    if (vm.count("JSON_machine")) {
+        Input::Type::TypeBase::lazy_finish();
+        cout << Input::Type::OutputJSONMachine(&input_type);
         free_and_exit();
     }
 
@@ -326,7 +347,7 @@ void Application::free_and_exit() {
     //close the Profiler
     DBGMSG("prof: %d\n", use_profiler);
     if (use_profiler) {
-        Profiler::instance()->output();
+        Profiler::instance()->output(PETSC_COMM_WORLD);
         Profiler::uninitialize();
     }
 

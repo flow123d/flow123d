@@ -73,7 +73,7 @@ Selection OutputVTK::input_type_compression
 
 void OutputVTK::write_vtk_vtu_head(void)
 {
-    ofstream &file = this->output->get_data_file();
+    ofstream &file = this->output_time->get_data_file();
 
     file << "<?xml version=\"1.0\"?>" << endl;
     // TODO: test endianess of platform (this would be important, when raw
@@ -84,8 +84,8 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 void OutputVTK::write_vtk_geometry(void)
 {
-    Mesh *mesh = this->output->get_mesh();
-    ofstream &file = this->output->get_data_file();
+    Mesh *mesh = this->output_time->get_mesh();
+    ofstream &file = this->output_time->get_data_file();
 
     NodeIter node;
     int tmp;
@@ -97,8 +97,8 @@ void OutputVTK::write_vtk_geometry(void)
     /* Write own coordinates */
     tmp = 0;
     /* Set floating point precision */
-    this->output->get_data_file().precision(std::numeric_limits<double>::digits10);
-    FOR_NODES(mesh, node ) {
+    this->output_time->get_data_file().precision(std::numeric_limits<double>::digits10);
+    FOR_NODES(mesh, node) {
         node->aux = tmp;   /* store index in the auxiliary variable */
 
         file << scientific << node->getX() << " ";
@@ -115,9 +115,8 @@ void OutputVTK::write_vtk_geometry(void)
 
 void OutputVTK::write_vtk_topology(void)
 {
-    //Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-    Mesh *mesh = this->output->get_mesh();
-    ofstream &file = this->output->get_data_file();
+    Mesh *mesh = this->output_time->get_mesh();
+    ofstream &file = this->output_time->get_data_file();
 
     Node* node;
     ElementIter ele;
@@ -183,8 +182,8 @@ void OutputVTK::write_vtk_topology(void)
 
 void OutputVTK::write_vtk_discont_geometry(void)
 {
-    Mesh *mesh = this->output->get_mesh();
-    ofstream &file = this->output->get_data_file();
+    Mesh *mesh = this->output_time->get_mesh();
+    ofstream &file = this->output_time->get_data_file();
 
     NodeIter node;
     int tmp, li;
@@ -196,7 +195,7 @@ void OutputVTK::write_vtk_discont_geometry(void)
     /* Write own coordinates */
     tmp = 0;
     /* Set floating point precision */
-    this->output->get_data_file().precision(std::numeric_limits<double>::digits10);
+    this->output_time->get_data_file().precision(std::numeric_limits<double>::digits10);
     FOR_ELEMENTS(mesh, ele) {
         FOR_ELEMENT_NODES(ele, li) {
             node = ele->node[li];
@@ -214,9 +213,8 @@ void OutputVTK::write_vtk_discont_geometry(void)
 
 void OutputVTK::write_vtk_discont_topology(void)
 {
-    //Mesh* mesh = (Mesh*) ConstantDB::getInstance()->getObject(MESH::MAIN_INSTANCE);
-    Mesh *mesh = this->output->get_mesh();
-    ofstream &file = this->output->get_data_file();
+    Mesh *mesh = this->output_time->get_mesh();
+    ofstream &file = this->output_time->get_data_file();
 
     Node* node;
     ElementIter ele;
@@ -283,7 +281,7 @@ void OutputVTK::write_vtk_discont_topology(void)
 
 void OutputVTK::write_vtk_ascii_cont_data(OutputData *data)
 {
-    ofstream &file = this->output->get_data_file();
+    ofstream &file = this->output_time->get_data_file();
 
     switch(data->type) {
     case OutputData::OUT_VECTOR_INT_SCA:
@@ -370,139 +368,14 @@ void OutputVTK::write_vtk_ascii_cont_data(OutputData *data)
     }
 }
 
-void OutputVTK::write_vtk_ascii_discont_data(OutputData *data)
-{
-    ofstream &file = this->output->get_data_file();
-    Mesh *mesh = this->output->get_mesh();
-    Node* node;
-    int li, tmp = 0;
-
-    FOR_NODES(mesh, node) {
-        node->aux = tmp;   /* store index in the auxiliary variable */
-        tmp++;
-    }
-
-    switch(data->type) {
-    case OutputData::OUT_VECTOR_INT_SCA:
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((std::vector<int>*)data->data)->at(node->aux) << " ";
-            }
-        }
-        break;
-    case OutputData::OUT_VECTOR_INT_VEC:
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                std::vector<int> &vec = ((std::vector< vector<int> >*)data->data)->at(node->aux);
-                for (std::vector<int>::iterator item = vec.begin();
-                        item != vec.end();
-                        ++item) {
-                    file << scientific << *item << " ";
-                }
-                file << "  ";
-            }
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_SCA:
-        file.precision(std::numeric_limits<float>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((std::vector<float>*)data->data)->at(node->aux) << " ";
-            }
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_VEC:
-        file.precision(std::numeric_limits<float>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                std::vector<float> &vec = ((std::vector< vector<float> >*)data->data)->at(node->aux);
-                for (std::vector<float>::iterator item = vec.begin();
-                        item != vec.end();
-                        ++item) {
-                    file << scientific << *item << " ";
-                }
-                file << "  ";
-            }
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_SCA:
-        file.precision(std::numeric_limits<double>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((std::vector<double>*)data->data)->at(node->aux) << " ";
-            }
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_VEC:
-        file.precision(std::numeric_limits<double>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                std::vector<double> &vec = ((std::vector< vector<double> >*)data->data)->at(node->aux);
-                for (std::vector<double>::iterator item = vec.begin();
-                        item != vec.end();
-                        ++item) {
-                    file << scientific << *item << " ";
-                }
-                file << "  ";
-            }
-        }
-        break;
-    case OutputData::OUT_ARRAY_INT_SCA:
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << ((int*)data->data)[node->aux] << " ";
-            }
-        }
-        break;
-    case OutputData::OUT_ARRAY_FLOAT_SCA:
-        file.precision(std::numeric_limits<float>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((float*)data->data)[node->aux] << " ";
-            }
-        }
-        break;
-    case OutputData::OUT_ARRAY_DOUBLE_SCA:
-        file.precision(std::numeric_limits<double>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((double*)data->data)[node->aux] << " ";
-            }
-        }
-        break;
-    default:
-        xprintf(Err, "This type of data: %d is not supported by VTK file format\n", data->type);
-        break;
-    }
-}
-
 void OutputVTK::write_vtk_ascii_data(OutputData *data)
 {
-    /* Use write_vtk_ascii_discont_data only in situation, when there
-     * are some discontinuous data and it is necessary to write continuous
-     * data too */
-    if(this->output->get_corner_data() != NULL &&
-            this->output->get_corner_data()->empty()==false &&
-            data->ref_type == OutputData::NODE_DATA)
-    {
-        this->write_vtk_ascii_discont_data(data);
-    } else {
-        this->write_vtk_ascii_cont_data(data);
-    }
+    this->write_vtk_ascii_cont_data(data);
 }
 
 void OutputVTK::write_vtk_scalar_ascii(OutputData *data)
 {
-    ofstream &file = this->output->get_data_file();
+    ofstream &file = this->output_time->get_data_file();
 
     /* Write DataArray begin */
     file << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_[" << *data->getUnits() <<"]\" format=\"ascii\">" << endl;//, name);
@@ -515,7 +388,7 @@ void OutputVTK::write_vtk_scalar_ascii(OutputData *data)
 
 void OutputVTK::write_vtk_vector_ascii(OutputData *data)
 {
-    ofstream &file = this->output->get_data_file();
+    ofstream &file = this->output_time->get_data_file();
 
     /* Write DataArray begin */
     file << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_[" << *data->getUnits() << "]\" NumberOfComponents=\"" << data->getCompNum() << "\" format=\"ascii\">" << endl;
@@ -544,7 +417,7 @@ void OutputVTK::write_vtk_data_ascii(std::vector<OutputData> *data)
 
 void OutputVTK::write_vtk_scalar_data_names(vector<OutputData> *data)
 {
-    ofstream &file = this->output->get_data_file();
+    ofstream &file = this->output_time->get_data_file();
     int tmp = 0;
 
     /* Write names of scalars */
@@ -559,7 +432,7 @@ void OutputVTK::write_vtk_scalar_data_names(vector<OutputData> *data)
 
 void OutputVTK::write_vtk_vector_data_names(vector<OutputData> *data)
 {
-    ofstream &file = this->output->get_data_file();
+    ofstream &file = this->output_time->get_data_file();
     int tmp = 0;
 
     /* Write names of vectors */
@@ -574,9 +447,9 @@ void OutputVTK::write_vtk_vector_data_names(vector<OutputData> *data)
 
 void OutputVTK::write_vtk_node_data(void)
 {
-    ofstream &file = this->output->get_data_file();
-    std::vector<OutputData> *node_data = this->output->get_node_data();
-    std::vector<OutputData> *corner_data = this->output->get_corner_data();
+    ofstream &file = this->output_time->get_data_file();
+    std::vector<OutputData> *node_data = this->output_time->get_node_data();
+    std::vector<OutputData> *corner_data = this->output_time->get_corner_data();
 
     if((node_data != NULL && node_data->empty()==false) ||
             (corner_data != NULL && corner_data->empty()==false)) {
@@ -622,8 +495,8 @@ void OutputVTK::write_vtk_node_data(void)
 
 void OutputVTK::write_vtk_element_data(void)
 {
-    ofstream &file = this->output->get_data_file();
-    std::vector<OutputData> *elem_data = this->output->get_elem_data();
+    ofstream &file = this->output_time->get_data_file();
+    std::vector<OutputData> *elem_data = this->output_time->get_elem_data();
 
     if(elem_data != NULL && elem_data->empty()==false) {
         /* Write PointData begin */
@@ -648,7 +521,7 @@ void OutputVTK::write_vtk_element_data(void)
 
 void OutputVTK::write_vtk_vtu_tail(void)
 {
-    ofstream &file = this->output->get_data_file();
+    ofstream &file = this->output_time->get_data_file();
 
     file << "</UnstructuredGrid>" << endl;
     file << "</VTKFile>" << endl;
@@ -656,15 +529,15 @@ void OutputVTK::write_vtk_vtu_tail(void)
 
 void OutputVTK::write_vtk_vtu(void)
 {
-    ofstream &file = this->output->get_data_file();
-    Mesh *mesh = this->output->get_mesh();
+    ofstream &file = this->output_time->get_data_file();
+    Mesh *mesh = this->output_time->get_mesh();
 
     /* Write header */
     this->write_vtk_vtu_head();
 
     /* When there is no discontinuous data, then write classical vtu */
-    if(this->output->get_corner_data() != NULL &&
-            this->output->get_corner_data()->empty()==true)
+    if(this->output_time->get_corner_data() != NULL &&
+            this->output_time->get_corner_data()->empty()==true)
     {
         /* Write Piece begin */
         file << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
@@ -686,7 +559,7 @@ void OutputVTK::write_vtk_vtu(void)
 
     } else {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << this->output->get_corner_count() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+        file << "<Piece NumberOfPoints=\"" << this->output_time->get_corner_count() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         this->write_vtk_discont_geometry();
@@ -714,7 +587,7 @@ void OutputVTK::write_vtk_vtu(void)
 int OutputVTK::write_data(void)
 {
     /* Serial VTK file format uses only one file */
-    this->output->set_data_file( &this->output->get_base_file() );
+    this->output_time->set_data_file( &this->output_time->get_base_file() );
 
     write_vtk_vtu();
 
@@ -723,7 +596,7 @@ int OutputVTK::write_data(void)
 
 int OutputVTK::write_data(double time)
 {
-    Mesh *mesh = this->output->get_mesh();
+    Mesh *mesh = this->output_time->get_mesh();
     char base_dir_name[PATH_MAX];
     char new_dir_name[PATH_MAX];
     char base_file_name[PATH_MAX];
@@ -739,6 +612,12 @@ int OutputVTK::write_data(double time)
     if(rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
+    }
+
+    // Write header with mesh, when it hasn't been written to output file yet
+    if(this->header_written == false) {
+        this->write_head();
+        this->header_written = true;
     }
 
     strncpy(base_dir_name, this->output_time->get_base_filename().c_str(), PATH_MAX);
@@ -816,7 +695,7 @@ int OutputVTK::write_data(double time)
         /* Close stream for file of current frame */
         data_file->close();
         delete data_file;
-        this->output->set_data_file(NULL);
+        this->output_time->set_data_file(NULL);
 
         xprintf(MsgLog, "O.K.\n");
     }
@@ -836,11 +715,11 @@ int OutputVTK::write_head(void)
     }
 
     xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__,
-            this->output->get_base_filename().c_str() );
+            this->output_time->get_base_filename().c_str() );
 
-    this->output->get_base_file() << "<?xml version=\"1.0\"?>" << endl;
-    this->output->get_base_file() << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
-    this->output->get_base_file() << "<Collection>" << endl;
+    this->output_time->get_base_file() << "<?xml version=\"1.0\"?>" << endl;
+    this->output_time->get_base_file() << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
+    this->output_time->get_base_file() << "<Collection>" << endl;
 
     xprintf(MsgLog, "O.K.\n");
 
@@ -859,39 +738,28 @@ int OutputVTK::write_tail(void)
     }
 
     xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__,
-            this->output->get_base_filename().c_str() );
+            this->output_time->get_base_filename().c_str() );
 
-    this->output->get_base_file() << "</Collection>" << endl;
-    this->output->get_base_file() << "</VTKFile>" << endl;
+    this->output_time->get_base_file() << "</Collection>" << endl;
+    this->output_time->get_base_file() << "</VTKFile>" << endl;
 
     xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }
 
-OutputVTK::OutputVTK(Output *_output)
-{
-    this->output = _output;
-    Mesh *mesh = this->output->get_mesh();
-    unsigned int li;
-
-    this->write_head();
-}
-
 OutputVTK::OutputVTK(OutputTime *_output_time, const Input::Record &in_rec)
 {
-    this->output = _output_time;
     this->output_time = _output_time;
 
-    this->write_head();
+    this->header_written = false;
 }
 
 OutputVTK::OutputVTK(OutputTime *_output_time)
 {
-    this->output = _output_time;
     this->output_time = _output_time;
 
-    this->write_head();
+    this->header_written = false;
 }
 
 OutputVTK::~OutputVTK()

@@ -389,7 +389,8 @@ public:
     /**
      * Initializes the Profiler with specific MPI communicator object
      */
-    static void initialize(MPI_Comm communicator = MPI_COMM_WORLD);
+    //static void initialize(MPI_Comm communicator = MPI_COMM_WORLD);
+    static void initialize();
     /**
      * Returns unique Profiler object.
      */
@@ -482,14 +483,14 @@ public:
      *  Print cumulative times average, balance (max/min), count (denote differences)
      *
      */
-    void output(ostream &os);
+    void output(MPI_Comm comm, ostream &os);
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro DEBUG_PROFILER is not defined.
      *
      * TODO: move this outside to minimize dependencies
      */
-    void output();
+    void output(MPI_Comm comm);
     /**
      * Stop all timers and destroys the Profiler object.
      * If you want some output call @p output method just before.
@@ -524,9 +525,9 @@ private:
     int actual_node;
 
     /// MPI communicator used for final reduce of the timer node tree.
-    MPI_Comm communicator_;
-    // MPI_rank
-    int mpi_rank_;
+    //MPI_Comm communicator_;
+    /// MPI_rank
+    //int mpi_rank_;
 
     // header informations
 
@@ -555,9 +556,10 @@ private:
      * For every timer the information strings are stored in the struct TimerInfo in order to pad fields correctly
      * to have alligned columns on the output. The alligning is performed in the output() method.
      */
-    void add_timer_info(vector<vector<string> > &timersInfo, int timer_idx, int indent, double parent_time);
+    void add_timer_info(MPI_Comm comm, vector<vector<string> > &timersInfo, int timer_idx, int indent, double parent_time);
 
-    Profiler(MPI_Comm comm); // private constructor
+    //Profiler(MPI_Comm comm); // private constructor
+    Profiler(); // private constructor
     Profiler(Profiler const&); // copy constructor is private
     Profiler & operator=(Profiler const&); // assignment operator is private
 };
@@ -601,7 +603,7 @@ public:
 // dummy declaration of Profiler class
 class Profiler {
 public:
-    static void initialize(MPI_Comm communicator = MPI_COMM_WORLD);
+    static void initialize();
     inline static Profiler* instance() {
         ASSERT( _instance , "Can not get Profiler instance. Profiler not initialized yet.\n");
         return _instance;
@@ -615,16 +617,16 @@ public:
     {}
     void notify_free(const size_t size )
     {}
-    void output(ostream &os)
+    void output(MPI_Comm comm, ostream &os)
     {}
-    void output()
+    void output(MPI_Comm comm)
     {}
     const char *actual_tag() const
-    {}
+    { return NULL; }
     inline unsigned int actual_count() const
-    {}
+    { return 0; }
     inline double actual_cumulative_time() const
-    {}
+    { return 0.0; }
     static void uninitialize();
 
 private:

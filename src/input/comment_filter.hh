@@ -29,20 +29,22 @@ namespace io = boost::iostreams;
  * provided by methods derived from \p io::finite_state_machine. Then the FSM is  used to implement filter. 
  */
 struct uncommenting_fsm : public io::finite_state_machine<uncommenting_fsm> {
-    BOOST_IOSTREAMS_FSM(uncommenting_fsm) // Define skip and push.
+    BOOST_IOSTREAMS_FSM(uncommenting_fsm) // Define skip and push event handlers
+    inline void slash_and_push(char ch)   // Event handler for a slash that do not open an comment.
+        { push('/'); push(ch); }
     typedef uncommenting_fsm self;
 
     /**
      * Declaration of all states of FSM.
      */
     static const int no_comment         = initial_state;
-    static const int no_comment_bsl     = initial_state + 1;
-    static const int in_quote           = initial_state + 2;
-    static const int in_quote_bsl       = initial_state + 3;
-    static const int in_comment         = initial_state + 4;
-    static const int in_comment_bsl     = initial_state + 5;
-    static const int in_comment_bsl_eol_n     = initial_state + 6;
-    static const int in_comment_bsl_eol_r     = initial_state + 7;
+    static const int one_slash          = initial_state + 1;
+    static const int one_line_comment   = initial_state + 2;
+    static const int multi_line_comment = initial_state + 3;
+    static const int star_in_comment    = initial_state + 4;
+    static const int no_comment_bsl     = initial_state + 5;
+    static const int in_quote           = initial_state + 6;
+    static const int in_quote_bsl       = initial_state + 7;
 
     /**
      * Declaration of rules of the FSM.
@@ -51,40 +53,34 @@ struct uncommenting_fsm : public io::finite_state_machine<uncommenting_fsm> {
     // format of the table:
     //            actual state, input character set, next state, output i.e. pass or skip input character
     
-                row<no_comment,   is<'\\'>,     no_comment_bsl, &self::push>,   // push backslash and any following character
-                row<no_comment,   is<'#'>,      in_comment,     &self::skip>,
+                row<no_comment,   is<'/'>,      one_slash,     &self::skip>,
                 row<no_comment,   is<'"'>,      in_quote,       &self::push>,
+                row<no_comment,   is<'\\'>,     no_comment_bsl, &self::push>,   // push backslash and any following character
                 row<no_comment,   is_any,       no_comment,     &self::push>,
 
-                row<no_comment,   is_any,       no_comment,     &self::push>,   // push backslash and nay following character
+                row<one_slash,    is<'/'>,      one_line_comment, &self::skip>,
+                row<one_slash,    is<'*'>,      multi_line_comment, &self::skip>,
+                row<one_slash,    is_any,       no_comment,     &self::slash_and_push>,
 
-                row<in_comment,   is<'\n'>,     no_comment,     &self::push>,   // comment up to the end line, but do not remove end line
-                row<in_comment,   is<'\r'>,     no_comment,     &self::push>,
-                row<in_comment,   is<'\\'>,     in_comment_bsl, &self::skip>,   // skip, but possibly skip also whitespace and newlines
-                row<in_comment,   is_any  ,     in_comment,     &self::skip>,   // skip everything else in comment
+                row<one_line_comment,   is<'\n'>,     no_comment,     &self::push>,   // comment up to the end line, but do not remove EOL
+                row<one_line_comment,   is<'\r'>,     no_comment,     &self::push>,
+                row<one_line_comment,   is_any  ,     one_line_comment,     &self::skip>,   // skip everything else in comment
 
-                row<in_comment_bsl, is<'\n'>,   in_comment_bsl_eol_n, &self::skip>,
-                row<in_comment_bsl, is<'\r'>,   in_comment_bsl_eol_r, &self::skip>,
-                row<in_comment_bsl, is_space,   in_comment_bsl, &self::skip>,
-                row<in_comment_bsl, is_any,     in_comment, &self::skip>,
+                row<multi_line_comment, is<'*'>,      star_in_comment,  &self::skip>,
+                row<multi_line_comment, is<'\n'>,     multi_line_comment,  &self::push>,    // preserve line numbers
+                row<multi_line_comment, is<'\r'>,     multi_line_comment,  &self::push>,
+                row<multi_line_comment, is_any,       multi_line_comment,  &self::skip>,
 
-                //same as in_comment, but \r do not exit comment
-                row<in_comment_bsl_eol_n,   is<'\n'>,     no_comment,     &self::push>,
-                row<in_comment_bsl_eol_n,   is<'\r'>,     in_comment,     &self::push>,
-                row<in_comment_bsl_eol_n,   is<'\\'>,     in_comment_bsl, &self::skip>,
-                row<in_comment_bsl_eol_n,   is_any,       in_comment,     &self::skip>,
-
-                //same as in_comment, but \n do not exit comment
-                row<in_comment_bsl_eol_r,   is<'\n'>,     in_comment,     &self::push>,
-                row<in_comment_bsl_eol_r,   is<'\r'>,     no_comment,     &self::push>,
-                row<in_comment_bsl_eol_r,   is<'\\'>,     in_comment_bsl, &self::skip>,
-                row<in_comment_bsl_eol_r,   is_any  ,     in_comment,     &self::skip>,
+                row<star_in_comment, is<'/'>,         no_comment, &self::skip>,
+                row<star_in_comment, is_any,          multi_line_comment, &self::skip>,
 
                 row<in_quote,     is<'"'>,      no_comment,     &self::push>,
                 row<in_quote,     is<'\\'>,     in_quote_bsl,   &self::push>,
                 row<in_quote,     is_any,       in_quote,       &self::push>,
 
-                row<in_quote_bsl, is_any,       in_quote,       &self::push>
+                row<in_quote_bsl, is_any,       in_quote,       &self::push>,
+
+                row<no_comment_bsl, is_any,       no_comment,       &self::push>
             > transition_table;
 };
 

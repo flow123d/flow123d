@@ -1,0 +1,136 @@
+This is Flow123d, version 1.7.0_dev rev: 2286
+Build: Apr  9 2013, 15:10:09 flags: (unknown compiler flags) MPI size: 1
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 452):
+Automatic conversion to abstract record at address: /problem/primary_equation/bc_data/0/bc_type
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 392):
+Automatic conversion to record at address: /problem/primary_equation/bc_data/0/bc_type
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 452):
+Automatic conversion to abstract record at address: /problem/primary_equation/bulk_data/0/conductivity
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 392):
+Automatic conversion to record at address: /problem/primary_equation/bulk_data/0/conductivity
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 452):
+Automatic conversion to abstract record at address: /problem/secondary_equation/bc_data/0/bc_conc
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 392):
+Automatic conversion to record at address: /problem/secondary_equation/bc_data/0/bc_conc
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 452):
+Automatic conversion to abstract record at address: /problem/secondary_equation/bulk_data/0/init_conc
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 392):
+Automatic conversion to record at address: /problem/secondary_equation/bulk_data/0/init_conc
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 452):
+Automatic conversion to abstract record at address: /problem/secondary_equation/bulk_data/0/por_m
+Warning (/home/lukas/Documents/workspace/trunk_1.7.0/trunk/src/input/json_to_storage.cc, make_storage(), 392):
+Automatic conversion to record at address: /problem/secondary_equation/bulk_data/0/por_m
+- Reading nodes... 714 nodes read. 
+- Reading elements... 1306 bulk elements, 120 boundary elements. 
+Created 2019 edges and 0 neighbours.
+Trying to find output_stream: flow_output_stream ... NOT FOUND. Creating new ... Writing flow output file: ./output/test_20.pvd ... 
+write_head: Writing output file (head) ./output/test_20.pvd ... O.K.
+DONE
+Trying to find output_stream: transport_output_stream ... NOT FOUND. Creating new ... Writing flow output file: ./output/transport_test_20.pvd ... 
+write_head: Writing output file (head) ./output/transport_test_20.pvd ... O.K.
+DONE
+Compute optimal partitioning of edges.
+Trying to find output_stream: flow_output_stream ... FOUND
+Trying to find output_stream: flow_output_stream ... FOUND
+Trying to find output_stream: flow_output_stream ... FOUND
+Trying to find output_stream: flow_output_stream ... FOUND
+Opening file: './output/water_balance.txt'
+Opening file: './output/mass_balance.txt'
+Trying to find output_stream: transport_output_stream ... FOUND
+Trying to find output_stream: transport_output_stream ... FOUND
+Trying to find output_stream: transport_output_stream ... FOUND
+Trying to find output_stream: transport_output_stream ... FOUND
+Trying to find output_stream: transport_output_stream ... FOUND
+Trying to find output_stream: transport_output_stream ... FOUND
+Trying to find output_stream: transport_output_stream ... FOUND
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 0) file ./output/transport_test_20/transport_test_20-000000.vtu ... O.K.
+DARCY:  t: inf  dt: 0.000000
+convergence reason 2, number of iterations is 21
+write_data: Writing output file ./output/test_20.pvd ... O.K.
+write_data: Writing output (frame 0) file ./output/test_20/test_20-000000.vtu ... O.K.
+TOS: time: 0.500000        CONVECTION: time: 0.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 1) file ./output/transport_test_20/transport_test_20-000001.vtu ... O.K.
+TOS: time: 1.000000        CONVECTION: time: 0.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 2) file ./output/transport_test_20/transport_test_20-000002.vtu ... O.K.
+TOS: time: 1.500000        CONVECTION: time: 1.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 3) file ./output/transport_test_20/transport_test_20-000003.vtu ... O.K.
+TOS: time: 2.000000        CONVECTION: time: 1.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 4) file ./output/transport_test_20/transport_test_20-000004.vtu ... O.K.
+TOS: time: 2.500000        CONVECTION: time: 2.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 5) file ./output/transport_test_20/transport_test_20-000005.vtu ... O.K.
+TOS: time: 3.000000        CONVECTION: time: 2.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 6) file ./output/transport_test_20/transport_test_20-000006.vtu ... O.K.
+TOS: time: 3.500000        CONVECTION: time: 3.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 7) file ./output/transport_test_20/transport_test_20-000007.vtu ... O.K.
+TOS: time: 4.000000        CONVECTION: time: 3.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 8) file ./output/transport_test_20/transport_test_20-000008.vtu ... O.K.
+TOS: time: 4.500000        CONVECTION: time: 4.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 9) file ./output/transport_test_20/transport_test_20-000009.vtu ... O.K.
+TOS: time: 5.000000        CONVECTION: time: 4.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 10) file ./output/transport_test_20/transport_test_20-000010.vtu ... O.K.
+TOS: time: 5.500000        CONVECTION: time: 5.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 11) file ./output/transport_test_20/transport_test_20-000011.vtu ... O.K.
+TOS: time: 6.000000        CONVECTION: time: 5.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 12) file ./output/transport_test_20/transport_test_20-000012.vtu ... O.K.
+TOS: time: 6.500000        CONVECTION: time: 6.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 13) file ./output/transport_test_20/transport_test_20-000013.vtu ... O.K.
+TOS: time: 7.000000        CONVECTION: time: 6.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 14) file ./output/transport_test_20/transport_test_20-000014.vtu ... O.K.
+TOS: time: 7.500000        CONVECTION: time: 7.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 15) file ./output/transport_test_20/transport_test_20-000015.vtu ... O.K.
+TOS: time: 8.000000        CONVECTION: time: 7.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 16) file ./output/transport_test_20/transport_test_20-000016.vtu ... O.K.
+TOS: time: 8.500000        CONVECTION: time: 8.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 17) file ./output/transport_test_20/transport_test_20-000017.vtu ... O.K.
+TOS: time: 9.000000        CONVECTION: time: 8.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 18) file ./output/transport_test_20/transport_test_20-000018.vtu ... O.K.
+TOS: time: 9.500000        CONVECTION: time: 9.000000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 19) file ./output/transport_test_20/transport_test_20-000019.vtu ... O.K.
+TOS: time: 10.000000        CONVECTION: time: 9.500000      dt_estimate: 0.045455
+CONVECTION: steps: 11
+write_data: Writing output file ./output/transport_test_20.pvd ... O.K.
+write_data: Writing output (frame 20) file ./output/transport_test_20/transport_test_20-000020.vtu ... O.K.
+End of simulation at time: 10.000000
+write_tail: Writing output file (tail) ./output/test_20.pvd ... O.K.
+O.K.
+write_tail: Writing output file (tail) ./output/transport_test_20.pvd ... O.K.
+O.K.

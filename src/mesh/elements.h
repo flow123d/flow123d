@@ -54,6 +54,8 @@ public:
     Element();
     Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
     void init(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
+    ~Element();
+
 
     inline unsigned int dim() const;
     inline unsigned int index() const;
@@ -63,8 +65,16 @@ public:
     ///Gets ElementAccessor of this element
     ElementAccessor<3> element_accessor();
     
-    double measure();
-    arma::vec3 centre();
+    double measure() const;
+    arma::vec3 centre() const;
+    /**
+     * Quality of the element based on the smooth and scale-invariant quality measures proposed in:
+     * J. R. Schewchuk: What is a Good Linear Element?
+     *
+     * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
+     * have always quality 1.
+     */
+    double quality_measure_smooth();
 
     unsigned int n_sides_by_dim(int side_dim);
     inline SideIter side(const unsigned int loc_index); // D
@@ -81,6 +91,12 @@ public:
     unsigned int *edge_idx_; // Edges on sides
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
+    /**
+     * Permutations of nodes on sides.
+     * It determines, in which order to take the nodes of the side so as to obtain
+     * the same order as on the reference side (side 0 on the particular edge).
+     */
+    unsigned int *permutation_idx_;
 
 
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
@@ -89,6 +105,7 @@ public:
 
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
+
 
 protected:
     // Data readed from mesh file

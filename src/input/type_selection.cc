@@ -65,13 +65,18 @@ bool Selection::is_finished() const {
 
 
 
-void Selection::reset_doc_flags() const {
+/*void Selection::reset_doc_flags() const {
    data_->made_extensive_doc = false;
-}
+}*/
 
 
 
 string Selection::type_name() const {
+   return data_->type_name_;
+}
+
+
+string Selection::full_type_name() const {
    return data_->type_name_;
 }
 

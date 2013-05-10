@@ -1,58 +1,53 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Test3 - Transport 1D-2D, (convection, dual porosity, sorption)", 
+    description = "Transport 1D-2D, (convection, dual porosity, sorption)", 
     mesh = {
-      mesh_file = "./input/test3.msh"
+      mesh_file = "./input/mesh_with_boundary.msh",
+      sets = [
+          { name="1d_domain", 
+            region_labels = [ "1d_upper", "1d_lower", "1d_left_branch"]
+          }
+        ]
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
 
       bulk_data = [
-        { rid = 17,
-          cond_anisothropy = 10
-        },
-        { rid = 18,
-          cond_anisothropy = 1
-        }
+        { r_set = "1d_domain", conductivity = 10 },
+        { region = "2d",       conductivity = 1  }
       ],
       
       bc_data = [
-        { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test3.fbc"
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "x+y" }
         }
       ],
 
       output = {
-        output_stream = {
-          REF = "/system/output_streams/0"
-        }, 
+        output_stream = { REF = "/system/output_streams/0" }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
         velocity_p0 = "flow_output_stream"
       }, 
+      
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
       }
-    },
+    }, // primary equation
 
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
+
+      dual_porosity = true, 
+      sorption_enable = true, 
+      substances = [ "age", "U235" ],
       
       bulk_data = [
-        { rid = 17,
-          init_conc = 0,
-          por_m = 0.25,
-          por_imm = 0.25,
-          alpha = [0.01, 0.01],
-          phi = 0.5,
-          sorp_type = [1, 2],
-          sorp_coef0 = [0.02, 0.02],
-          sorp_coef1 = [0, 0.5]
-        },
-        { rid = 18,
+        { r_set = "ALL",
           init_conc = 0,
           por_m = 0.25,
           por_imm = 0.25,
@@ -65,50 +60,34 @@
       ],
       
       bc_data = [
-        { region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test3.tbc"
+        { r_set = "BOUNDARY",
+          bc_conc = 1.0
         }
       ],
 
-      dual_porosity = true, 
-      sorption_enable = true, 
-      substances = [
-        "age", 
-        "U235"
-      ], 
-
       output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = 0.01
+        output_stream = { REF = "/system/output_streams/1" },
+        save_step = 0.01,
+        mobile_p0 = "transport_output_stream"
       }, 
 
       time = {
         end_time = 1.0
       }
-    }
-  },
+    } // secondary_equation
+    
+  }, // problem
  
   system = {
     output_streams = [
       {
         file = "test3.pvd", 
-        format = {
-          TYPE = "vtk", 
-          variant = "ascii"
-        }, 
+        format = { TYPE = "vtk", variant = "ascii" },
         name = "flow_output_stream"
       }, 
       {
         file = "test3-transport.pvd", 
-        format = {
-          TYPE = {
-            REF = "/system/output_streams/0/format/TYPE"
-          }, 
-          variant = "ascii"
-        }, 
+        format = { TYPE = "vtk", variant = "ascii" },
         name = "transport_output_stream"
       }
     ]

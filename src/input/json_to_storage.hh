@@ -55,13 +55,14 @@ public:
 
     TYPEDEF_ERR_INFO(EI_ErrorAddress, JSONPath);
     TYPEDEF_ERR_INFO(EI_RefAddress, JSONPath);
+    TYPEDEF_ERR_INFO(EI_JsonFile, const string);
     TYPEDEF_ERR_INFO(EI_RefStr, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     DECLARE_INPUT_EXCEPTION(ExcRefOfWrongType,
             << "Reference at address "
             << EI_ErrorAddress::qval << " has wrong type, should by string.");
     DECLARE_INPUT_EXCEPTION(ExcReferenceNotFound,
-            << "Reference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
+            << "Error in input file: " << EI_JsonFile::qval << "\nReference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
             << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
 
 
@@ -121,6 +122,11 @@ public:
      */
     string str();
 
+    /**
+     * Put actual address to previous_references_ set
+     */
+    void put_address();
+
 private:
     /**
      * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
@@ -129,6 +135,7 @@ private:
      */
     vector< pair<int, string> > path_;
     vector<const Node *> nodes_;
+    std::set<string> previous_references_;
 
 
 };
@@ -278,6 +285,8 @@ protected:
 template <class T>
 T JSONToStorage::get_root_interface() const
 {
+	ASSERT(envelope, "NULL pointer to storage object envelope!!! \n");
+
 	Address a(envelope, root_type_);
     return *(Iterator<T>( *root_type_, a, 0));
 }

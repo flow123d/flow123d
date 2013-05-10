@@ -21,6 +21,7 @@ class Mesh;
 class Reaction;
 class Linear_reaction;
 //class Pade_approximant;
+class Sorption;
 class Semchem_interface;
 class ConvectionTransport;
 
@@ -31,7 +32,7 @@ class ConvectionTransport;
  * Here one has to specify methods for setting or getting data particular to
  * transport equations.
  */
-class TransportBase : public EquationBase{
+class TransportBase : public EquationBase {
 public:
 
 	class TransportEqData : public EqDataBase {
@@ -52,15 +53,15 @@ public:
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;
 
-		int bc_time_level;
-		vector<double> bc_times;
+		/// Concentration sources
+		Field<3, FieldValue<3>::Vector> sources_density;
+		Field<3, FieldValue<3>::Vector> sources_sigma;
+		Field<3, FieldValue<3>::Vector> sources_conc;
 
 	};
 
-    TransportBase(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec ),
-      mh_dh(NULL)
-    {}
+    TransportBase(Mesh &mesh, const Input::Record in_rec);
+    virtual ~TransportBase();
 
 
     virtual TransportEqData *get_data() = 0;
@@ -77,10 +78,27 @@ public:
     }
     virtual void output_data() =0;
 
+    /**
+     * Calculate mass balance: flux through boundary and volume sources
+     */
+    void mass_balance();
+
+    virtual unsigned int n_substances() = 0;
+
+    virtual vector<string> &substance_names() = 0;
+
     static Input::Type::AbstractRecord input_type;
     static Input::Type::Record input_type_output_record;
 
     const MH_DofHandler *mh_dh;
+
+protected:
+
+    virtual void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) = 0;
+    virtual void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) = 0;
+
+    FILE *balance_output_file;
+
 };
 
 
@@ -111,6 +129,16 @@ public:
     virtual void output_data() {};
 
     virtual TransportEqData *get_data() { return 0; };
+
+    unsigned int n_substances() { return 0; };
+
+    vector<string> &substance_names() {};
+
+
+private:
+
+    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) {};
+    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) {};
 };
 
 
@@ -138,11 +166,6 @@ public:
 		Field<3, FieldValue<3>::Vector> sorp_coef1;///< Coefficient of sorption for each substance
 		Field<3, FieldValue<3>::Scalar> phi;       ///< solid / solid mobile
 
-		/// Concentration sources
-		Field<3, FieldValue<3>::Vector> sources_density;
-		Field<3, FieldValue<3>::Vector> sources_sigma;
-		Field<3, FieldValue<3>::Vector> sources_conc;
-    
 	};
 
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
@@ -167,6 +190,11 @@ public:
     virtual void get_parallel_solution_vector(Vec &vc);
     virtual void get_solution_vector(double* &vector, unsigned int &size);
     void compute_until_save_time();
+
+    unsigned int n_substances();
+    vector<string> &substance_names();
+
+
    
     /**
      * @brief Sets pointer to data of other equations.
@@ -177,19 +205,24 @@ public:
 
     virtual EqData *get_data() { return &data; };
 
-protected:
+
 
 private:
+
+    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
     EqData data;
 
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
+    Sorption *sorptions;
     Semchem_interface *Semchem_reactions;
     //int steps;
     OutputTime *field_output;
 
     TimeMark::Type output_mark_type;
+
 };
 
 

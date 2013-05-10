@@ -105,7 +105,7 @@ IT::Record EqDataBase::generic_input_type(bool bc_regions) {
                      .declare_key("rid", IT::Integer(0), "ID of the region where to set fields." )
                      .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
                              "Apply field setting in this record after this time.\n"
-                             "These times has to form an increasing sequence.");
+                             "These times have to form an increasing sequence.");
 
     BOOST_FOREACH(FieldCommonBase * field, field_list)
         if (bc_regions == field->is_bc()) {
@@ -136,9 +136,7 @@ void EqDataBase::set_time(const TimeGovernor &time) {
      * - read records from arrays until we reach greater time then actual
      * - update fields (delete the previous, use mekae factory for the new one.
      */
-    //DBGMSG("set_time: boundary\n");
     set_time(time, boundary_input_array_, boundary_it_, true);
-    //DBGMSG("set_time: bulk\n");
     set_time(time, bulk_input_array_, bulk_it_, false);
 }
 
@@ -146,15 +144,16 @@ void EqDataBase::set_time(const TimeGovernor &time) {
 
 void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions) {
     // read input up to given time
-    while( it != list.end() && time.ge( it->val<double>("time") ) ) {
-        if (bc_regions) 
-        {
-          read_boundary_list_item(*it);
+    if (list.size() != 0) {
+        while( it != list.end() && time.ge( it->val<double>("time") ) ) {
+            if (bc_regions)
+            {
+                read_boundary_list_item(*it);
+            }
+            else read_bulk_list_item(*it);
+            ++it;
         }
-        else read_bulk_list_item(*it);
-        ++it;
     }
-    //DBGMSG("checking validity\n");
     // check validity of fields and set current time
     BOOST_FOREACH(FieldCommonBase * field, field_list) 
     {
@@ -173,7 +172,7 @@ void EqDataBase::set_mesh(Mesh *mesh) {
 
 void EqDataBase::check_times(Input::Array &list) {
     double time,last_time=0.0;
-
+    if (list.size() == 0) return;
     for( Input::Iterator<Input::Record> it = list.begin<Input::Record>(); it != list.end(); ++it) {
         time = it->val<double>("time");
         if (time < last_time) xprintf(UsrErr, "Time %f in bulk data of equation '%s' is smaller then the previous time %f.\n",
@@ -183,15 +182,19 @@ void EqDataBase::check_times(Input::Array &list) {
 }
 
 void EqDataBase::init_from_input(Input::Array bulk_list, Input::Array bc_list) {
+    if (mesh_ == NULL) xprintf(PrgErr, "The mesh pointer wasn't set in the EqData of equation '%s'.\n", equation_name_.c_str());
+
     bulk_input_array_ = bulk_list;
     boundary_input_array_ = bc_list;
 
-    if (mesh_ == NULL) xprintf(PrgErr, "The mesh pointer wasn't set in the EqData of equation '%s'.\n", equation_name_.c_str());
-    check_times(bulk_input_array_);
-    check_times(boundary_input_array_);
-
-    bulk_it_ = bulk_input_array_.begin<Input::Record>();
-    boundary_it_ = boundary_input_array_.begin<Input::Record>();
+    if (bulk_input_array_.size() !=0) {
+        check_times(bulk_input_array_);
+        bulk_it_ = bulk_input_array_.begin<Input::Record>();
+    }
+    if (boundary_input_array_.size() !=0) {
+        check_times(boundary_input_array_);
+        boundary_it_ = boundary_input_array_.begin<Input::Record>();
+    }
 }
 
 

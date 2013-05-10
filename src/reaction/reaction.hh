@@ -15,7 +15,7 @@
 //class Mesh;
 class Distribution;
 
-enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Sorption};
+enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Lim_Sorp};
 
 class Reaction: public EquationBase
 {
@@ -71,11 +71,11 @@ class Reaction: public EquationBase
 		*/
 		virtual void set_time_step(Input::Record in_rec);
 		//
-		void update_solution(void);
-		void choose_next_time(void);
-		void set_time_step_constrain(double dt);
-		void get_parallel_solution_vector(Vec &vc);
-		void get_solution_vector(double* &vector, unsigned int &size);
+		virtual void update_solution(void);
+		virtual void choose_next_time(void);
+		virtual void set_time_step_constrain(double dt);
+		virtual void get_parallel_solution_vector(Vec &vc);
+		virtual void get_solution_vector(double* &vector, unsigned int &size);
 		/**
 		* Function for setting dual porosity.
 		*/

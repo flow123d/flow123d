@@ -17,11 +17,11 @@
 
 string input = R"INPUT(
 {   
-   init_conc={ # formula on 2d 
+   init_conc={ // formula on 2d 
        TYPE="FieldFormula",
        value=["x", "x*y", "y+t"]
    },
-   conductivity_3d={ #3x3 tensor
+   conductivity_3d={ // 3x3 tensor
        TYPE="FieldFormula",
        value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
    }

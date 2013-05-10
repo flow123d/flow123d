@@ -43,12 +43,11 @@ Default::Default(const std::string & value)
     boost::algorithm::trim(value_);
 }
 
+
+
 Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
-{
-    if (type_ == no_default_obligatory_type) value_="OBLIGATORY";
-    if (type_ == no_default_optional_type) value_="OPTIONAL";
-}
+{}
 
 
 /**********************************************************************************
@@ -263,6 +262,14 @@ string Record::type_name() const {
 }
 
 
+string Record::full_type_name() const {
+	if (data_->parent_ptr_) {
+		return data_->type_name_ + ":" + data_->parent_ptr_->type_name();
+	}
+    return data_->type_name_;
+}
+
+
 string Record::description() const  {
     return data_->description_;
 }
@@ -281,12 +288,12 @@ bool Record::valid_default(const string &str) const
 }
 
 
-void  Record::reset_doc_flags() const {
+/*void  Record::reset_doc_flags() const {
 	data_->made_extensive_doc=false;
     for(KeyIter it = begin(); it!=end(); ++it) {
         it->type_->reset_doc_flags();
     }
-}
+}*/
 
 
 
@@ -310,7 +317,7 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 :description_(description),
  type_name_(type_name_in),
  p_parent_(0),
- made_extensive_doc(false),
+ //made_extensive_doc(false),
  finished(false),
  closed_(false),
  derived_(false),
@@ -499,12 +506,12 @@ void AbstractRecord::no_more_descendants()
 }
 
 
-void  AbstractRecord::reset_doc_flags() const {
+/*void  AbstractRecord::reset_doc_flags() const {
 		Record::reset_doc_flags();
         for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
                     it!= child_data_->list_of_childs.end(); ++it)
             it->reset_doc_flags();
-}
+}*/
 
 
 bool AbstractRecord::valid_default(const string &str) const

@@ -12,13 +12,13 @@
 
       bulk_data = [
         {   rid = 17,
-            cond_anisothropy = 1.0
+            anisotropy = 1.0
         },
         {   rid = 18,
-            cond_anisothropy = 0.1
+            anisotropy = 0.1
         },
         {   rid = 19,
-            cond_anisothropy = 1.0
+            anisotropy = 1.0
         }
       ],
 

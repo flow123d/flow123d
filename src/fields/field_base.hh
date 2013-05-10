@@ -241,7 +241,11 @@ public:
     virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
 
     /**
-     * Abstract method to update field to the new time. Return resulting value of @p changed_during_set_time_.
+     * Abstract method to update field to the new time level.
+     * Implemented by in class template Field<...>.
+     *
+     * Return true if the value of the field was changed on some region.
+     * The returned value is also stored in @p changed_during_set_time data member.
      */
     virtual bool set_time(double time) =0;
 
@@ -249,6 +253,11 @@ public:
      * Virtual destructor.
      */
     virtual ~FieldCommonBase();
+
+    /**
+     * Is true if the values of the field has changed during last set_time() call.
+     */
+    bool changed_during_set_time;
 
 protected:
     /**
@@ -285,14 +294,15 @@ protected:
      * Pointer to the mesh on which the field lives.
      */
     Mesh *mesh_;
-    /**
-     * Is true if the values of the field has changed during last set_time() call.
-     */
-    bool changed_during_set_time_;
+
     /**
      * Set by other methods (namely set_field() and set_from_input()) that modify the field before the set_time is called.
      */
     bool changed_from_last_set_time_;
+
+    /// Time of the last set time.
+    double last_set_time_;
+
 };
 
 
@@ -365,7 +375,7 @@ public:
     boost::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
-     * If the field on given region @p reg is exists and is of type FieldConstant<...> the method sets
+     * If the field on given region @p reg exists and is of type FieldConstant<...> the method sets
      * parameter @p value to the constant value of the field and returns true. Otherwise it returns false and value of the @p value parameter remains untouched.
      */
     bool get_const_value(Region reg, typename Value::return_type &value);
@@ -391,6 +401,8 @@ public:
     /**
      * If the field returns a FieldEnum and is constant on the given region, the method return true and
      * set @p value to the constant value on the given region. Otherwise (non constant field, other return type) it returns false.
+     *
+     * TODO: replace with more general method get_const_value
      */
     bool get_constant_enum_value(RegionIdx r_idx,  FieldEnum &value) const;
 
@@ -416,10 +428,14 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 private:
+    /**
+     *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
+     */
+    void check_initialized_region_fields_();
 
     /**
      * If this pointer is set, turn off check of initialization in the set_time method on the regions
-     * where the method get_constant_enum_value of the constrol field returns value from @p no_check_values_.
+     * where the method get_constant_enum_value of the control field returns value from @p no_check_values_.
      */
     const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
     std::vector<FieldEnum> no_check_values_;
@@ -428,6 +444,11 @@ private:
      * Table with pointers to fields on individual regions.
      */
     std::vector< boost::shared_ptr< FieldBaseType > > region_fields_;
+
+    /**
+     * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.
+     */
+    bool is_fully_initialized_;
 
 };
 
@@ -449,7 +470,8 @@ public:
 
 template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
-    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx out of range, field: %s\n", this->name_.c_str());
+    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
+           elm.region_idx().idx(), region_fields_.size(), this->name_.c_str());
     ASSERT( region_fields_[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }

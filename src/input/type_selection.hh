@@ -104,10 +104,13 @@ public:
     virtual bool is_finished() const;
 
     /// Implements \p TypeBase::reset_doc_flags
-    virtual void reset_doc_flags() const;
+    //virtual void reset_doc_flags() const;
 
     /// Implements \p TypeBase::type_name
     virtual string type_name() const;
+
+    /// Implements \p TypeBase::full_type_name
+    virtual string full_type_name() const;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     virtual bool operator==(const TypeBase &other) const;
@@ -158,12 +161,12 @@ public:
     /**
      * Returns value of made_extensive_doc in the SelectionData
      */
-    inline bool made_extensive_doc() const;
+    //inline bool made_extensive_doc() const;
 
     /**
      * Sets value of made_extensive_doc in the SelectionData
      */
-    inline void set_made_extensive_doc(bool val) const;
+    //inline void set_made_extensive_doc(bool val) const;
 
 
     bool finish() const
@@ -187,7 +190,7 @@ private:
     public:
 
         SelectionData(const string &name)
-        : type_name_(name), made_extensive_doc(false), finished(false)
+        : type_name_(name), /*made_extensive_doc(false),*/ finished(false)
         {}
 
         void add_value(const int value, const std::string &key, const std::string &description);
@@ -213,7 +216,7 @@ private:
          *
          * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
          */
-        mutable bool made_extensive_doc;
+        //mutable bool made_extensive_doc;
 
         /// Indicator of finished Selection.
         mutable bool finished;
@@ -285,7 +288,7 @@ inline Selection::keys_const_iterator Selection::key_iterator(const string& key)
 }
 
 
-inline bool Selection::made_extensive_doc() const
+/*inline bool Selection::made_extensive_doc() const
 {
 	return data_->made_extensive_doc;
 }
@@ -294,7 +297,7 @@ inline bool Selection::made_extensive_doc() const
 inline void Selection::set_made_extensive_doc(bool val) const
 {
 	data_->made_extensive_doc = val;
-}
+}*/
 
 
 } // closing namespace Type

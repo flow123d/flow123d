@@ -61,14 +61,12 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  *  @ingroup input_types
  */
 class TypeBase {
-	friend class OutputJSONTemplate;
-
 public:
     /**
      * In order to output documentation of complex types only once, we mark types that have printed their documentation.
      * This method turns these marks off for the whole type subtree.
      */
-    virtual void  reset_doc_flags() const =0;
+    //virtual void  reset_doc_flags() const =0;
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -81,6 +79,9 @@ public:
 
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  { return "TypeBase"; }
+
+    /// Returns an identification of the type in format "type_name():parent->type_name()".
+    virtual string full_type_name() const  { return "TypeBase"; }
 
     /**
      * Returns string with Type extensive documentation. We need this to pass Type description at
@@ -144,11 +145,11 @@ public:
      */
     virtual bool valid_default(const string &str) const =0;
 
-    string reference() const
+    /*string reference() const
     { return reference_; };
 
     void set_reference(string ref) const
-    { reference_ = ref; };
+    { reference_ = ref; };*/
 
 protected:
 
@@ -210,7 +211,7 @@ protected:
     static bool was_constructed(const TypeBase * ptr);
 
     /// Reference to first output in tree (used in repeated output)
-    mutable string reference_;
+    //mutable string reference_;
 
     friend class Array;
     friend class Record;
@@ -243,8 +244,6 @@ class Selection;
  */
 class Array : public TypeBase {
 	friend class OutputBase;
-	friend class OutputText;
-	friend class OutputJSONTemplate;
 
 protected:
 
@@ -288,10 +287,13 @@ public:
         return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::reset_doc_flags.
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     virtual string type_name() const;
+
+    /// @brief Implements @p Type::TypeBase::full_type_name.
+    virtual string full_type_name() const;
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     virtual bool operator==(const TypeBase &other) const;
@@ -322,7 +324,10 @@ private:
 class Scalar : public TypeBase {
 public:
 
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
+
+	virtual string full_type_name() const;
+
 };
 
 

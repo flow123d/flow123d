@@ -77,7 +77,6 @@ class ConvectionTransport;
 
 
 class ConvectionTransport : public EquationBase {
-	friend class TransportSources;
 public:
     /**
      * Constructor.
@@ -100,12 +99,6 @@ public:
 	 */
 	void set_flow_field_vector(const MH_DofHandler &dh);
   
-  /** 
-   * @brief Sets pointer to data of other equations. 
-   * @param cross_section is pointer to cross_section data of Darcy flow equation
-   */
-  void set_cross_section(Field<3, FieldValue<3>::Scalar > *cross_section);
-
     /**
      * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
      */
@@ -127,6 +120,7 @@ public:
 	bool get_dual_porosity();
 	int get_n_substances();
 	int *get_el_4_loc();
+	int *get_row_4_el();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
 	/**
@@ -134,7 +128,9 @@ public:
 	 * TODO: Maybe this should be made by get_solution_vector, but here we have matrix of arrays.
 	 */
 	double ***get_out_conc();
+	double ***get_conc();
     vector<string> &get_substance_names();
+    double *get_sources(int sbi);
 //    TransportSources *transportsources;
     const MH_DofHandler *mh_dh;
 
@@ -192,7 +188,7 @@ private:
 
 	//void get_names(string* array);
 
-	bool is_convection_matrix_scaled;
+	bool is_convection_matrix_scaled, is_bc_vector_scaled;
 
     // TODO: Make simplified TimeGovernor and move following into it.
     //double time_step;                     ///< Time step for computation.
@@ -201,7 +197,7 @@ private:
 
 	TransportOperatorSplitting::EqData *data;
 
-    Field<3, FieldValue<3>::Scalar > *cross_section;
+    //Field<3, FieldValue<3>::Scalar > *cross_section;
 
     double *sources_corr;
     Vec v_sources_corr;
@@ -254,8 +250,8 @@ private:
 
             VecScatter vconc_out_scatter;
             Mat tm; // PETSc transport matrix
-            Mat bcm; // PETSc boundary condition matrix
-            Vec *bcv; // boundary condition vector
+            //Mat bcm; // PETSc boundary condition matrix
+            //Vec *bcv; // boundary condition vector
             Vec *bcvcorr; // boundary condition correction vector
 
             Vec *vconc; // concentration vector

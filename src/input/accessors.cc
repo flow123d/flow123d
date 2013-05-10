@@ -18,22 +18,27 @@ namespace Input {
  */
 
 Address::Address()
-: data_(boost::make_shared<AddressData>()),
-  actual_node_( 0 ),
-  actual_storage_( NULL)
+: data_(boost::make_shared<AddressData>())
 {
    data_->root_type_ = NULL;
-   data_->root_storage_ = NULL;
+   data_->root_storage_ = &Array::empty_storage_;
+   actual_storage_ = &Array::empty_storage_;
+   actual_node_ = 0;
 }
 
 
 Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
 : data_( boost::make_shared<AddressData>() )
 {
-   data_->root_type_ = type_root;
-   data_->root_storage_ =storage_root;
-   actual_storage_ = storage_root;
-   actual_node_=0;
+    if (storage_root == NULL)
+        THROW( ExcAddressNullPointer() << EI_AccessorName("storage_root") );
+    if (!type_root || type_root == NULL)
+        THROW( ExcAddressNullPointer() << EI_AccessorName("type_root") );
+
+    data_->root_type_ = type_root;
+    data_->root_storage_ = storage_root;
+    actual_storage_ = storage_root;
+    actual_node_ = 0;
 }
 
 
@@ -109,6 +114,11 @@ Record::Record(const Address &address, const Type::Record type)
 }
 
 
+Input::Address & Record::get_address()
+{
+	return address_;
+}
+
 
 
 /*****************************************************************************
@@ -148,6 +158,11 @@ Input::Type::Record AbstractRecord::type() const
 }
 
 
+Input::Address & AbstractRecord::get_address()
+{
+	return address_;
+}
+
 
 /*****************************************************************************
  * Implementation of the class Input::Array
@@ -172,6 +187,13 @@ Array::Array(const Address &address, const Type::Array type)
 }
 
 
+Input::Address & Array::get_address()
+{
+	return address_;
+}
+
+
+StorageArray Array::empty_storage_ = StorageArray(0);
 
 
 /*****************************************************************************

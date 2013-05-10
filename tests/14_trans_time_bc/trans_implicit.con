@@ -11,7 +11,7 @@
 
       bulk_data = [
         { rid = 100,
-          cond_anisothropy = 0.1
+          conductivity = 0.1
         }
       ],
     
@@ -80,7 +80,6 @@
       substances = [
         "A"
       ], 
-      dg_penalty=1e4,
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07

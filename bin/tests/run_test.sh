@@ -160,12 +160,11 @@ function copy_outputs {
 # Updates all files and subdirs in $1 with corresponding files in $2.
 # Raise an error if the source file in $2 does not exist.
 function update_ref_results {
-    
-      target_dir=$1
-      source_dir=$2
-      find  $target_dir -name * -exec echo '{}'
-
-}  
+	target_dir=$1
+	source_dir=$2
+	#TODO: Add code that do something useful :-)
+	find $target_dir -name * -exec echo '{}'
+}
 
 
 # Following function is used for checking one output file
@@ -255,11 +254,12 @@ function check_outputs {
 
 	# For every file in reference directory try to find generated file
 	# and do ndiff
-	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}"/`
+	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}/"`
 	do
-		# Does needed output file exist?
+		# Required output file exists?
 		if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 		then
+			# Is test file directory?
 			if [ -d "${TEST_RESULTS}/${INI_FILE}.${NP}/${file}" ]
 			then
 				# If $file is directory, then check all files in this directory
@@ -268,15 +268,16 @@ function check_outputs {
 				do
 					if [ -e "${TEST_RESULTS}/${INI_FILE}.${NP}/${subdir}/${subfile}" ]
 					then
+						# Compare file with reference
 						check_file "${INI_FILE}" "${NP}" "${subdir}/${subfile}"
 						if [ $? -ne 0 ]
 						then
-                                                        if [ "${UPDATE_REFERENCE_RESULTS}" == "update" ]
-                                                        then
-                                                            NEED_UPDATE=1
-                                                        else    
-                                                            return 1
-                                                        fi  
+							if [ "${UPDATE_REFERENCE_RESULTS}" = "update" ]
+							then
+								NEED_UPDATE=1
+							else
+								return 1
+							fi
 						fi
 					else
 						echo " [Failed]"
@@ -285,15 +286,16 @@ function check_outputs {
 					fi
 				done
 			else
+				# Compare file with reference
 				check_file ${INI_FILE} ${NP} ${file}
 				if [ $? -ne 0 ]
 				then
-                                      if [ "${UPDATE_REFERENCE_RESULTS}" == "update" ]
-                                      then
-                                          NEED_UPDATE=1
-                                      else    
-                                          return 1
-                                      fi  
+					if [ "${UPDATE_REFERENCE_RESULTS}" = "update" ]
+					then
+						NEED_UPDATE=1
+					else
+						return 1
+					fi
 				fi
 			fi
 		else
@@ -305,12 +307,12 @@ function check_outputs {
 	
 	if [ -n "${NEED_UPDATE}" ]
 	then
-            echo "Do you want to update reference results? (y/n) [no]"
-            read UPDATE
-            if [ "UPDATE" == "y" ] 
-            then
-                update_ref_results ${REF_OUTPUT_DIR}/${INI_FILE} ${TEST_RESULTS}/${INI_FILE}.${NP}
-            fi
+		echo "Do you want to update reference results? (y/n) [no]"
+		read UPDATE
+		if [ "UPDATE" = "y" ] 
+		then
+			update_ref_results ${REF_OUTPUT_DIR}/${INI_FILE} ${TEST_RESULTS}/${INI_FILE}.${NP}
+		fi
 	fi
 }
 

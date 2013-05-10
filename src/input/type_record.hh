@@ -37,6 +37,7 @@ namespace Type {
  * @ingroup input_types
  */
 class Default {
+	friend class OutputBase;
 	friend class OutputJSONTemplate;
 
 private:
@@ -83,8 +84,8 @@ public:
      *      some_record.declare_key("some_key",Integer(),Default::obligatory(),"description");
      * @endcode
      */
-    static Default obligatory()
-    { return Default(no_default_obligatory_type); }
+    inline static Default obligatory()
+    { return Default(no_default_obligatory_type, "OBLIGATORY"); }
 
     /**
      * Factory function to make an empty default value which is optional.
@@ -96,8 +97,8 @@ public:
      *      some_record.declare_key("some_key",Integer(),Default::optional(),"description");
      * @endcode
      */
-    static Default optional()
-    { return Default(no_default_optional_type); }
+    inline static Default optional()
+    { return Default(no_default_optional_type, "OPTIONAL"); }
 
     /**
      * Returns true if the default value is or will be available when someone tries to read the value.
@@ -142,7 +143,7 @@ private:
     /**
      * Constructor for other types then 'declaration'.
      */
-    Default(enum DefaultType type, const std::string &value = "");
+    Default(enum DefaultType type, const std::string &value);
 };
 
 
@@ -159,7 +160,6 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
-	friend class OutputText;
 
 public:
 
@@ -256,10 +256,13 @@ public:
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
 
     /// Record type name getter.
     virtual string type_name() const;
+
+    /// Record type full name getter.
+    virtual string full_type_name() const;
 
     /// Record description getter.
     virtual string description() const;
@@ -320,12 +323,12 @@ public:
     /**
      * Returns value of made_extensive_doc in the SelectionData
      */
-    inline bool made_extensive_doc() const;
+    //inline bool made_extensive_doc() const;
 
     /**
      * Sets value of made_extensive_doc in the SelectionData
      */
-    inline void set_made_extensive_doc(bool val) const;
+    //inline void set_made_extensive_doc(bool val) const;
 
     /**
      * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
@@ -418,7 +421,7 @@ protected:
          *
          * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
          */
-        mutable bool made_extensive_doc;
+        //mutable bool made_extensive_doc;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
@@ -487,6 +490,8 @@ protected:
 
 
 class AbstractRecord : public Record {
+	friend class OutputBase;
+
 protected:
 
     /**
@@ -572,7 +577,7 @@ public:
     /**
      * Set made_extensive_doc = false for this Record and all its descendants.
      */
-    virtual void  reset_doc_flags() const;
+    //virtual void  reset_doc_flags() const;
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
@@ -710,14 +715,14 @@ inline unsigned int Record::size() const {
 }
 
 
-inline bool Record::made_extensive_doc() const {
+/*inline bool Record::made_extensive_doc() const {
 	return data_->made_extensive_doc;
-}
+}*/
 
 
-inline void Record::set_made_extensive_doc(bool val) const {
+/*inline void Record::set_made_extensive_doc(bool val) const {
 	data_->made_extensive_doc = val;
-}
+}*/
 
 
 

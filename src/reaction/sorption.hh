@@ -8,21 +8,21 @@
 
 #include <vector>
 #include <input/input_type.hh>
-#include <reaction/isotherms.hh>
 
 #include "fields/field_base.hh"
+#include "reaction/isotherm.hh"
 
 class Mesh;
 class Distribution;
 class Reaction;
 class Isotherm;
 
-enum SorptionType {
+/*enum SorptionType {
 	none = 0,
-	Linear = 1,
-	Langmuir = 2,
-	Freundlich = 3
-};
+	linear = 1,
+	langmuir = 2,
+	freundlich = 3
+};*/
 
 class Sorption:  public Reaction
 {
@@ -37,7 +37,7 @@ class Sorption:  public Reaction
 			static Input::Type::Selection sorption_type_selection;
 
 			/// Collect all fields
-			EqData(const std::string &name=0);
+			EqData();
 
 			/**
 			 * Overrides EqDataBase::read_bulk_list_item, implements reading of
@@ -46,28 +46,18 @@ class Sorption:  public Reaction
 			//RegionSet read_bulk_list_item(Input::Record rec);
 
 			Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
-			//Field<3, FieldValue<3>::Scalar > nr_of_points; // Number of required mass-balance crossection. away, obsolete
-			//Field<3, FieldValue<3>::Scalar > region_ident; // Rock matrix identifier. away, obsolete
+			//Field<3, FieldValue<3>::Vector > sorption_types; // Discrete need Selection for initialization.
 			Field<3, FieldValue<3>::Scalar > mob_porosity; // Mobile porosity.
 			Field<3, FieldValue<3>::Scalar > immob_porosity; // Immobile porosity.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
-			//Field<3, FieldValue<3>::Vector > specie; // Specie names.
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
-			Field<3, FieldValue<3>::Vector > alphas; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
+			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 		};
 
 		/*
 	 	* Static variable for new input data types input
 		*/
 		static Input::Type::Record input_type;
-		/**
-		* Static variable for new input data types input, probably obsolete
-		*/
-		//static Input::Type::Record input_type_isotherm;
-		/*
-	 	* Static variable gets information about particular sorption parameters in selected region
-		*/
-		//static Input::Type::Record input_type_isotherm;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
@@ -86,56 +76,40 @@ class Sorption:  public Reaction
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		//virtual
-		virtual void compute_one_step(void);
+		void compute_one_step(void);
+		/**
+		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
+		*/
+		void set_time_step(double new_timestep);
+		/**
+		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
+		*/
+		void set_time_step(Input::Record in_rec);
+		/**
+		* Inherited init_from_input method extension.
+		*/
+		void init_from_input(Input::Array bulk_list);
+		/**
+		* Meaningless inherited methods.
+		*/
+		virtual void update_solution(void);
+		virtual void choose_next_time(void);
+		virtual void set_time_step_constrain(double dt);
+		virtual void get_parallel_solution_vector(Vec &vc);
+		virtual void get_solution_vector(double* &vector, unsigned int &size);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
 		*/
 		Sorption();
 		/**
-		 *
-		 */
-		void precompute_isotherm_tables();
-		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
 		void prepare_inputs(Input::Record in_rec);
 		/**
-		* 	Computes coeficients for the matrix mutiplication based rotation of the coordinate system from region affected inputs.
-		*/
-		void compute_rot_coefs(double porosity, double rock_density, int spec_id);
-		/**
-		* 	It is used to switch rotation matrix entries for the counterclockwise rotation of the system of coordinates.
-		*/
-		void switch_rot_coefs(void);
-		/**
-		* 	Method reads inputs and computes ekvidistant distributed points on all the selected isotherm.
-		*/
-		void compute_isotherms(Input::Record in_rec);
-		/**
 		*	For printing parameters of isotherms under consideration, not necessary to store
 		*/
 		void print_sorption_parameters(void);
-		/**
-		*	Function determines intersections between an isotherm and conservation of mass describing lines.
-		*/
-		void determine_crossections(void);
-		/**
-		* 	Rotates either intersections or all the [c_a,c_s] points around origin. May be, angle is obsolete
-		*/
-		std::vector<double> rotate_point(std::vector<double> points);
-		/**
-		* 	Makes projection of rotated datapoints on rotated isotherm. Uses interpolation.
-		*/
-		double interpolate_datapoint(std::vector<double> rot_point, int region, int specie);
-		/**
-		* 	Sets step length  for particular isotherms in rotated coordination system.
-		*/
-		double set_step_length(void);
-		/**
-		* 	Sets the entries of rotation matrix. Rotates datapoints. Projects them on isotherm. Rotates them back and scales the result.
-		*/
-		void handle_datapoints(double rock_density, double porosity, std::vector<double> &prev_conc, std::vector<double> isotherm, int reg_id_nr, int i_subst);
 		/**
 		* 	Number of regions.
 		*/
@@ -173,46 +147,19 @@ class Sorption:  public Reaction
 		*/
 		std::vector<double> c_aq_max;
 		/**
-		*	Linear isotherm tangential direction, slope. //Up to |nr_of_species x nr_of_regions| parameters. Depends on region.
-		*/
-		//std::vector<std::vector<double> >directs;
-		//double slope;
-		/**
-		* 	Langmuirs' multiplication coefficient. Depends on region.
-		*/
-		//double omega;
-		/**
-		* 	Langmuirs' isotherm alpha parameters. Depends on region.
-		*/
-		//double alpha;
-		/**
-		*	Five dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in various rock matrix enviroments.
-		*	 Up to |2 (mobile|immobile) x nr_of_region x nr_of_substances x 2 (coordinates) x n_points| doubles.
-		*/
-		//std::vector<std::vector<std::vector<std::vector<std::vector<double> > > > > isotherm;
-		/**
 		*	Three dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
 		*	 Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step lenght in cocidered system of coordinates, just function values are stored.
 		*/
-		std::vector<std::vector<std::vector<double> > > isotherm;
+		std::vector<std::vector<Isotherm> > isotherms_mob;
 		/**
 		*	Three dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in immobile pores of various rock matrix enviroments.
 		*	 Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step lenght in cocidered system of coordinates, just function values are stored.
-		*	 It is probably obsolete to specify different isotherms for mobile and immobile pores.
 		*/
-		//std::vector<std::vector<std::vector<double> > > isotherm_immob;
+		std::vector<std::vector<Isotherm> > isotherms_immob;
 		/**
-		* 	Specifies sorption type. Depends on region.
+		* 	Number of points as the base for interpolation.
 		*/
-		//std::vector<std::vector<Sorption_type> > type;
-		/**
-		* 	Coeficients contained in coordination system rotating matrix.
-		*/
-		std::vector<double> rot_coefs;
-		/**
-		* 	Number of points as the base for interpolation. Depends on region.
-		*/
-		//std::vector<std::vector<int> > n_points;
+		std::vector<std::vector<int> > n_points;
 		/**
 		* 	Region characteristic inputs.
 		*/
@@ -220,7 +167,7 @@ class Sorption:  public Reaction
 		/**
 		* 	Temporary step_length in rotated system of coordinates. Should be |nr_of_region x nr_of_substances| matrix later.
 		*/
-		double step_length;
+		//double step_length;
 };
 
 #endif

@@ -75,6 +75,7 @@ set(sources_mesh_lib
     mesh/nodes.cc
     mesh/sides.cc
     mesh/intersection.cc
+    mesh/ref_element.cc
     
     mesh/bounding_box.cc
     mesh/bih_node.cc
@@ -118,6 +119,7 @@ set(sources_fem_lib
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
+    
 )
 
 
@@ -164,6 +166,7 @@ set(sources_lib_non_system
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
     reaction/sorption.cc
+    reaction/isotherm.cc
     semchem/semchem_interface.cc
 
     transport/transport.cc

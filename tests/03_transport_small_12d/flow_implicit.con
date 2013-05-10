@@ -11,11 +11,11 @@
 
       bulk_data = [
         { rid = 17,
-          cond_anisothropy = 10,
+          anisotropy = 10,
           cross_section = 1
         },
         { rid = 18,
-          cond_anisothropy = 1,
+          anisotropy = 1,
           cross_section = 1
         }
       ],
@@ -63,8 +63,7 @@
       dual_porosity = true, 
       sorption_enable = true, 
       substances = [
-        "age", 
-        "U235"
+        "age"
       ], 
 
       output = {

@@ -20,7 +20,7 @@
       bulk_data = [
         { rid = 7,
           cross_section = 1,
-          cond_anisothropy = 1
+          anisotropy = 1
         }
       ],
       

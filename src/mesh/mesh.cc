@@ -35,11 +35,13 @@
 #include "system/system.hh"
 #include "system/xio.h"
 #include "input/input_type.hh"
+#include "system/sys_profiler.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
 
 #include "mesh/mesh.h"
+#include "mesh/ref_element.hh"
 
 // think about following dependencies
 #include "mesh/boundaries.h"
@@ -91,7 +93,7 @@ Mesh::Mesh(Input::Record in_record)
 void Mesh::reinit(Input::Record in_record)
 {
 
-    n_materials = NDEF;
+    //n_materials = NDEF;
 
     n_insides = NDEF;
     n_exsides = NDEF;
@@ -101,6 +103,12 @@ void Mesh::reinit(Input::Record in_record)
     n_lines = 0;
     n_triangles = 0;
     n_tetrahedras = 0;
+
+
+    // Initialize numbering of nodes on sides.
+    // This is temporary solution, until class Element is templated
+    // by dimension. Then we can replace Mesh::side_nodes by
+    // RefElement<dim>::side_nodes.
 
     // indices of side nodes in element node array
     // Currently this is made ad libitum
@@ -114,35 +122,17 @@ void Mesh::reinit(Input::Record in_record)
             side_nodes[i][j].resize(i+1);
     }
 
-    side_nodes[0][0][0] = 0;
-    side_nodes[0][1][0] = 1;
+    for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
+    	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
+    		side_nodes[0][sid][nid] = RefElement<1>::side_nodes[sid][nid];
 
+    for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
+        		side_nodes[1][sid][nid] = RefElement<2>::side_nodes[sid][nid];
 
-    side_nodes[1][0][0] = 0;
-    side_nodes[1][0][1] = 1;
-
-    side_nodes[1][1][0] = 1;
-    side_nodes[1][1][1] = 2;
-
-    side_nodes[1][2][0] = 2;
-    side_nodes[1][2][1] = 0;
-
-
-    side_nodes[2][0][0] = 1;
-    side_nodes[2][0][1] = 2;
-    side_nodes[2][0][2] = 3;
-
-    side_nodes[2][1][0] = 0;
-    side_nodes[2][1][1] = 2;
-    side_nodes[2][1][2] = 3;
-
-    side_nodes[2][2][0] = 0;
-    side_nodes[2][2][1] = 1;
-    side_nodes[2][2][2] = 3;
-
-    side_nodes[2][3][0] = 0;
-    side_nodes[2][3][1] = 1;
-    side_nodes[2][3][2] = 2;
+    for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
+        		side_nodes[2][sid][nid] = RefElement<3>::side_nodes[sid][nid];
 }
 
 
@@ -179,7 +169,9 @@ void Mesh::count_element_types() {
 
 
 void Mesh::read_gmsh_from_stream(istream &in) {
-
+  
+    START_TIMER("READING MESH - from_stream");
+    
     GmshMeshReader reader(in);
     reader.read_mesh(this);
     setup_topology();
@@ -190,6 +182,8 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     F_ENTRY;
 
+    START_TIMER("READING MESH - init_from_input");
+    
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;
 
@@ -215,9 +209,17 @@ void Mesh::init_from_input() {
 void Mesh::setup_topology() {
     F_ENTRY;
 
+    START_TIMER("MESH - setup topology");
+    
     count_element_types();
+
+    // check mesh quality
+    FOR_ELEMENTS(this, ele)
+        if (ele->quality_measure_smooth() < 0.001) xprintf(Warn, "Bad quality (<0.001) of the element %u.\n", ele.id());
+
     make_neighbours_and_edges();
     element_to_neigh_vb();
+    make_edge_permutations();
     count_side_types();
 
     region_db_.close();
@@ -305,7 +307,7 @@ bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int>
 
 bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
     // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
-    int ni=0;
+    unsigned int ni=0;
     while ( ni < si->n_nodes()
         && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
     return ( ni == si->n_nodes() );
@@ -342,8 +344,14 @@ void Mesh::make_neighbours_and_edges()
         intersect_element_lists(side_nodes, intersection_list);
         bool is_neighbour = find_lower_dim_element(element, intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
-            xprintf(UsrErr, "Boundary element match a regular element of lower dimension.\n");
+            xprintf(UsrErr, "Boundary element (id: %d) match a regular element (id: %d) of lower dimension.\n",
+                    bc_ele.id(), element(ngh_element_idx).id());
         } else {
+            if (intersection_list.size() == 0) {
+                // no matching dim+1 element found
+                xprintf(Warn, "Lonely boundary element, id: %d, dimension %d.\n", bc_ele.id(), bc_ele->dim());
+                continue; // skip the boundary element
+            }
             last_edge_idx=edges.size();
             edges.resize(last_edge_idx+1);
             edg = &( edges.back() );
@@ -471,6 +479,72 @@ void Mesh::make_neighbours_and_edges()
 	}   // for elements
 
 	xprintf( Msg, "Created %d edges and %d neighbours.\n", edges.size(), vb_neighbours_.size() );
+}
+
+
+
+void Mesh::make_edge_permutations()
+{
+	for (EdgeVector::iterator edg=edges.begin(); edg!=edges.end(); edg++)
+	{
+		// side 0 is reference, so its permutation is 0
+		edg->side(0)->element()->permutation_idx_[edg->side(0)->el_idx()] = 0;
+
+		if (edg->n_sides > 1)
+		{
+			map<const Node*,unsigned int> node_numbers;
+			unsigned int permutation[edg->side(0)->n_nodes()];
+
+			for (int i=0; i<edg->side(0)->n_nodes(); i++)
+				node_numbers[edg->side(0)->node(i)] = i;
+
+			for (int sid=1; sid<edg->n_sides; sid++)
+			{
+				for (int i=0; i<edg->side(0)->n_nodes(); i++)
+					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
+
+				switch (edg->side(0)->dim())
+				{
+				case 0:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<1>::permutation_index(permutation);
+					break;
+				case 1:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<2>::permutation_index(permutation);
+					break;
+				case 2:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<3>::permutation_index(permutation);
+					break;
+				}
+			}
+		}
+	}
+
+	for (vector<Neighbour>::iterator nb=vb_neighbours_.begin(); nb!=vb_neighbours_.end(); nb++)
+	{
+		map<const Node*,unsigned int> node_numbers;
+		unsigned int permutation[nb->element()->n_nodes()];
+
+		// element of lower dimension is reference, so
+		// we calculate permutation for the adjacent side
+		for (int i=0; i<nb->element()->n_nodes(); i++)
+			node_numbers[nb->element()->node[i]] = i;
+
+		for (int i=0; i<nb->side()->n_nodes(); i++)
+			permutation[node_numbers[nb->side()->node(i)]] = i;
+
+		switch (nb->side()->dim())
+		{
+		case 0:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<1>::permutation_index(permutation);
+			break;
+		case 1:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<2>::permutation_index(permutation);
+			break;
+		case 2:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<3>::permutation_index(permutation);
+			break;
+		}
+	}
 }
 
 
@@ -670,7 +744,7 @@ void Mesh::make_intersec_elements() {
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
      sizes[i->master_iter().index()]++;
      master_elements.resize(n_elements());
-     for(int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
+     for(unsigned int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
 
      // fill intersec_elements
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )

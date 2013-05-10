@@ -2,15 +2,36 @@
   problem = {
     TYPE = "SequentialCoupling", 
     description = "[u'test18:', u'diffusion', u'through', u'fractures']", 
-    material = "./input/test18.mtr", 
     mesh = {
-      mesh_file = "./input/test18.msh", 
-      neighbouring = "./input/test18.ngh"
+      mesh_file = "./input/test18.msh"
+      regions = [
+        { name = "center",
+          id   = 30,
+          element_list = [ 45 ]
+        }
+      ]
     }, 
 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "./input/test18.fbc", 
+      
+      bc_data = [
+        { region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test18.fbc"
+        }
+      ],
+      
+      bulk_data = [
+        { rid = 20,
+          anisotropy = 10,
+          cross_section = 1e-1
+        },
+        { rid = 24,
+          anisotropy = 1,
+          cross_section = 1
+        }
+      ],
+      
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -22,13 +43,37 @@
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }
+      } 
     }, 
  
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
-      boundary_file = "./input/test18.tbc", 
-      initial_file = "./input/test18.tic", 
+
+      bc_data = [
+        { region = "IMPLICIT BOUNDARY",
+          bc_conc=0
+        }
+      ],
+      
+      bulk_data = [
+        {
+          rid = 20,
+          init_conc = 0,
+          por_m = 0.25,
+          sigma_c = 1e1
+        },
+        {
+          rid = 24,
+          init_conc = 0,
+          por_m = 0.25
+        },
+        {
+          rid = 30,
+          init_conc = 1,
+          por_m = 0.25
+        }
+      ],
+
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -38,22 +83,17 @@
       }, 
 
       dual_porosity = true, 
-      sorption_enable = true, 
-      dg_penalty = 1e2,
-      d_m = 1e-4,
-      sigma = 1e1,
 
       substances = [
         "A"
-      ], 
-
+      ],      
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-7
       }, 
       time = {
-	end_time = 0.01, 
-	init_dt = 0.001
+        end_time = 0.01, 
+        init_dt = 0.001
       }
     }
   }, 
@@ -78,6 +118,6 @@
         }, 
         name = "transport_output_stream"
       }
-    ]
+    ] 
   }
 }

@@ -162,7 +162,9 @@ show :
   petsc_get_variable (MPIEXEC                  petsc_mpiexec)
   # We are done with the temporary Makefile, calling PETSC_GET_VARIABLE after this point is invalid!
   file (REMOVE ${petsc_config_makefile})
-
+  # add libraries specified by user (fixing wrong sequence provided by PETSC
+  set(petsc_libs_external "${petsc_libs_external} ${PETSC_ADDITIONAL_LIBS}")
+  
   include (ResolveCompilerPaths)
   # Extract include paths and libraries from compile command line
   resolve_includes (petsc_includes_all "${petsc_cpp_line}")
@@ -190,6 +192,7 @@ show :
     petsc_find_library (TS   petscts)
     macro (PETSC_JOIN libs deps)
       list (APPEND PETSC_LIBRARIES_${libs} ${PETSC_LIBRARIES_${deps}})
+      message(STATUS "PETSC_LIBRARIES_${libs}: " ${PETSC_LIBRARIES_${libs}})       
     endmacro (PETSC_JOIN libs deps)
     petsc_join (VEC  SYS)
     petsc_join (MAT  VEC)
@@ -198,6 +201,7 @@ show :
     petsc_join (SNES KSP)
     petsc_join (TS   SNES)
     petsc_join (ALL  TS)
+    
   else ()
     set (PETSC_LIBRARY_VEC "NOTFOUND" CACHE INTERNAL "Cleared" FORCE) # There is no libpetscvec
     petsc_find_library (SINGLE petsc)
@@ -212,12 +216,14 @@ show :
   endif ()
 
   include (CheckCSourceRuns)
+  include (CheckCSourceCompiles)
   
   #########################################################################
   # Test that PETSc works
   ############################################################
   macro (PETSC_TEST_RUNS includes libraries runs)
-    multipass_c_source_runs ("${includes}" "${libraries}" "
+
+    set(test_c_source "
 static const char help[] = \"PETSc test program.\";
 #include \"petscts.h\"
 int main(int argc,char *argv[]) {
@@ -231,11 +237,20 @@ int main(int argc,char *argv[]) {
   ierr = PetscFinalize();CHKERRQ(ierr);
   return 0;
 }
-" ${runs})
-    if (${${runs}})
-      set (PETSC_EXECUTABLE_RUNS "YES" CACHE BOOL
-	"Can the system successfully run a PETSc executable?  This variable can be manually set to \"YES\" to force CMake to accept a given PETSc configuration, but this will almost always result in a broken build.  If you change PETSC_DIR, PETSC_ARCH, or PETSC_CURRENT you would have to reset this variable." FORCE)
-    endif (${${runs}})
+")
+
+    # check if we can at least compile the source
+    multipass_c_source_compiles("${includes}" "${libraries}" "${test_c_source}" ${runs})
+
+    if (${${runs}}) 
+      # check if we can run the executable 
+      multipass_c_source_runs ("${includes}" "${libraries}" "${test_c_source}" ${runs}_runs)
+
+      if (${${runs}_runs}) 
+        set (PETSC_EXECUTABLE_RUNS "YES" CACHE BOOL
+          "Can the system successfully compile and link a PETSc executable?  This variable can be manually set to \"YES\" to force CMake to accept a given PETSc configuration.  If you change PETSC_DIR, PETSC_ARCH, or PETSC_CURRENT you would have to reset this variable." FORCE)         
+      endif(${${runs}_runs})    
+    endif (${${runs}}) 
   endmacro (PETSC_TEST_RUNS)
 
   find_path (PETSC_INCLUDE_DIR petscts.h HINTS "${PETSC_DIR}" PATH_SUFFIXES include NO_DEFAULT_PATH)
@@ -274,17 +289,31 @@ int main(int argc,char *argv[]) {
       
         # Multipass_test_4 ####################      
 	# It looks like we really need everything, should have listened to Matt
-	set (petsc_includes_needed ${petsc_includes_all})
 	petsc_test_runs ("${petsc_includes_all}" "${PETSC_LIBRARIES_TS}" petsc_works_all)
 	if (petsc_works_all) # We fail anyways
 	  message (STATUS "PETSc requires extra include paths and explicit linking to all dependencies.  This probably means you have static libraries and something unexpected in PETSc headers.")
+	  set (petsc_includes_needed ${petsc_includes_all})
 	else (petsc_works_all) # We fail anyways
-	  message (STATUS "PETSc could not be used, maybe the install is broken. \n See BUILD_DIR/CMakeFiles/CMakeError.log.\n Set PETSC_EXECUTABLE_RUNS to 'yes' to skip tests. ")
+	  message (STATUS "
+	  Can not compile and link PETSc executable, probably some missing librairies.
+	  See BUILD_DIR/CMakeFiles/CMakeError.log for reasons, check library resolution after 'MULTIPASS_TEST_*_petsc_works_allincludes'.
+	  Try to add missing libraries through PETSC_ADDITIONAL_LIBS variable.")
 	endif (petsc_works_all)
       endif (petsc_works_alllibraries)
     endif (petsc_works_allincludes)
   endif (petsc_works_minimal)
 
+  
+  if (petsc_includes_needed)            # this indicates PETSC_FOUND
+    if (${PETSC_EXECUTABLE_RUNS})       # this is optional
+    else()
+        message(STATUS "
+        Can compile but can not run PETSC executable. Probably problem with mpiexec or with shared libraries.
+        See See BUILD_DIR/CMakeFiles/CMakeError.log for reasons.")
+    endif(${PETSC_EXECUTABLE_RUNS})    
+  endif(petsc_includes_needed)  
+
+  
   # We do an out-of-source build so __FILE__ will be an absolute path, hence __INSDIR__ is superfluous
   MESSAGE(STATUS "petsc ver: ${PETSC_VERSION}")
   if ("${PETSC_VERSION}" VERSION_LESS 3.1)
@@ -306,4 +335,4 @@ endif ()
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (PETSc
   "PETSc could not be found.  Be sure to set PETSC_DIR and PETSC_ARCH."
-  PETSC_INCLUDES PETSC_LIBRARIES PETSC_EXECUTABLE_RUNS)
+  PETSC_INCLUDES PETSC_LIBRARIES)

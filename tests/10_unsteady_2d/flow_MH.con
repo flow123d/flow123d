@@ -12,9 +12,9 @@
       bulk_data = [
         {
             region = "plane",
-            cond_anisothropy = 0.02,
-            init_pressure = 0,          #default
-            storativity = 1             #default
+            anisotropy = 0.02,
+            init_pressure = 0,          // default
+            storativity = 1             // default
         }
       ],
 
@@ -43,8 +43,7 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07, 
-        parameters = ""
+        a_tol = 1e-07
       }, 
       time = {
         REF = "../../time"

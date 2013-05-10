@@ -1,890 +1,283 @@
 
 
-\chapter{New input files}
-The input consists of the root input file given as the parameter on the command line and possibly several other 
-files with large input data. In this section we shall describe format of the input files. At first, we specify syntax of
-an extension to the JSON file format. Then we set rules for input of more specific data constructs. We continue by description of general scheme for input of
-boundary conditions and material time-space variable data. And finally, we describe setting of particular equations and their solvers.
+\section{Main input file (CON file format)}
+\label{sec:CONformat}
 
-The aim of this draft is twofold. First, we want to outline the way how to translate current input file format (in version 1.6.5) into the new one without extending 
-the existing functionality. Second, we want to propose a new way how to input general boundary and material data. Desired features are:
+\begin{figure}
+ \begin{center}
+ \includegraphics[scale=0.4]{./input_subsystem.pdf}
+ % input_subsystem.pdf: 0x0 pixel, -2147483648dpi, 0.00x0.00 cm, bb=
+ \caption{Sturucture of the input subsystem. Grey boxes are not implemented yet.}
+ \label{fig:input_subsystem}
+ \end{center}
+\end{figure}
+
+In this section, we shall describe structure of the main input file that is given through the parameter \verb'-s' on the command line.
+The file formats of other files that are referenced from the main input file and used for input of the mesh or large field data
+(e.g. the GMSH file format) are described in following sections. The input subsystem was designed with the aim to provide uniform initialization of 
+C++ classes and data structures. Its structure is depicted on Figure \ref{fig:input_subsystem}.
+The structure of the input is described by the Input Types Tree (ITT) of (usually static) objects which follows the structure of the classes.
+The data from an input file are read by apropriate reader, their structure is checked against ITT and they are pushed into the Internal Storage Buffer (ISB).
+An accessor object to the root data record is the result of the file reading. The data can be retrieved through accessors which combine 
+raw data stored in in IBS with their meaning described in ITT. ITT can be printed out in various formats providing description of the input structure both for 
+humans and other software.
+
+Currently, the JSON input file format is only implemented and in fact it is slight extension of the JSON file format. On the other hand
+the data for initialization of the C++ data structures are coded in particular way. Combination of this extension and restriction of the JSON file format produce 
+what we call CON (C++ object notation) file format.
+
+
+\subsection{JSON for humans}
+
+Basic syntax of the CON file is very close to the JSON file format with only few extensions, namely:
 \begin{itemize}
- \item input simple data in simple way
- \item possibility to express very complex input data 
- \item possibility to generate data automatically, and input very large input sets
- \item input interface that provides uniform access to the data in program independent of the input format
-\end{itemize}
-[ ... something else?]
-
-As this is a draft version there are lot of remarks, suggestions and questions in square brackets. Some keys are marked OBSOLETE, which means that 
-we want to replace them by something else.
-
-\section{Root file format}
-The root input file is in the Humanized JSON file format. That is the JSON file format with few syntax extensions and several semantic rules particular to
-Flow123d. The syntax extensions are
-\begin{enumerate}
-\item You can use one line comments using hash \verb'#'.
-\item The quoting of the keys is optional if they do not contain spaces (holds for all Flow keys).
+\item You can use C++ (or JavaScript) comments. One line comments \verb'//' and multi-line comments \verb'/* */'.
+\item The quoting of the keys is optional if they do not contain spaces (holds for all CON keys).
 \item You can use equality sign \verb'=' instead of colon \verb':' for separation of keys and values in JSON objects.
 \item You can use any whitespace to separate tokens in JSON object or JSON array.
-\end{enumerate}
+\end{itemize}
 The aim of these extensions is to simplify writing input files manually. However these extensions can be easily filtered out and converted to 
-the generic JSON format. (This way it can be also implemented in Flow123d.)
+the generic JSON format. For the description of the JSON format we refer to \url{http://www.json.org/}. 
 
-For those who are not familiar with the JSON file format, we give the brief description right here. The full description can be found at
-\url{http://www.json.org/}. However, we use term {\it record} in the place of the {\it JSON object} in order to distinguish {\it JSON object}, 
-which is merely a data structure written in the text, and the {\it C++ object}, i.e. instance of some class. 
+\subsection{CON constructs}
+The CON file format constructs are designed for initialization of C++ strongly typed variables. The primitive data types can be initialized from 
+the primitive CON constructs: 
+\begin{itemize}
+ \item {\it Bool} --- initialized from the JSON keywords \verb'true' and \verb'false'.
+ \item {\it Double}, {\it Integer} --- initialized from JSON numeric data. 
+ \item {\it String}, {\it FileName}, {\it Selections} --- initialized from JSON strings
+\end{itemize}
+Selections are typed like the C++ enum types that are initialized from them.
+Various kind of containers can be initialized by the {\it Array} construct, that is an JSON array with elements of the same CON type. 
+The C++ structures and classes can be initialize from the {\it Record} construct, which is represented by a JSON object. However, in constrast to JSON,
+these Records have different types in similar way as the strong typed C++ structures. The types are described by ITT of the particular program
+which can be printed out in several formats, in particular description of ITT for Flow123d forms content of Chapter \ref{chapter:input-tree-reference}.
+In order to allow certain kind of polymorphism, we introduce also the {\it AbstractRecord} construct, where the type of the record is not given by ITT but 
+can be chosen as part of the input. 
 
-\subsection{Humanized JSON}
-The JSON format consists of four kind of basic entities: 
-{\it null} token, {\it true} and {\it false} tokens, {\it number}, {\it string}. {\it Number} is either integer or float point number 
-possibly in the exponential form and {\it string} is any sequence of characters quoted in \verb'""' (backslash \verb"\" is used as escape character and 
-Unicode is supported, see full specification for details). 
-
-In the following, we mean by white space characters:
-space, tab, and new line. In particular the newline character (outside of comment or quoting) is just the white space character without any special meaning.
-
-The basic entities can be combined in composed entities, in a {\it record} or in an {\it array}. The {\it record} is set of assignments enclosed in the curly brackets
-\begin{verbatim}
-{
-        #basic syntax
-        "some_number":124, 
-        "some_string":"Hallo",
-        "some_subrecord":{},
-        "some_array":[],
-        
-        #extended syntax
-        non_quoted_key_extension=123,
-        separation_by_whitespace="a" sbw_1="b"
-        sbw_2="c"
-}
-\end{verbatim}
-One assignment is a pair of the {\it key} and the {\it value}. {\it Key} is {\it string} or token matching regexp\\
-\verb'[a-zA-Z_][a-zA-Z_0-9]*'.
-{\it Value} is basic or composed entity.
-The key and the value are separated by the colon (generic syntax) or equality sign (extended syntax). Pairs are separated by a comma (generic syntax) or 
-sequence of white space characters (extended syntax). The values stored in the record are accessed through the keys like in an associative array. Records are usually used for initialization of corresponding classes.
-
-The second composed entity is the {\it array} which is sequence of (basic or composed) entities separated by comma (generic syntax) or whitespace sequence 
-(extended syntax) and enclosed in the square brackets. 
-The values stored in the array are accessed through the order. The Flow reader offers either initialization of a container from JSON array or
-a sequential access. The latter one is the only possible access for the included arrays, which we discuss later.
-
-On any place out of the quoted string you can use hash mark \verb'#' 
-to start a one line comment. Everything up to the new line will be ignored and replaced by single white space.
-
-[What about multiple line strings? (Should be allowed)]
-
-\subsection{Special keys}
-Apart from small extensions of JSON syntax, we impose further general rules on the interpretation of the input files by Flow123d reader.
-First, the capital only keywords  
-have a special meaning for Flow JSON reader. On the other hand, we use only small caps for keys interpreted through the reader.
-The special keywords are:
+\subsection{CON special keys}
+All keys in Records should be in lower case, possibly using digits and underscore. The keys all in upper case are reserved for special function in the 
+CON file. These are:
 \begin{description}
 
-\item[TYPE]:\\ 
+\item[TYPE key]:
 \begin{verbatim}
-TYPE= <enum>
+TYPE=<Selection of AbstractRecord>
 \end{verbatim}
-The \verb'<enum>' is particular semantic construct described later on. 
-When appears in the record, it specifies which particular class to instantiate. This only has meaning if the record initializes
-an abstract class. In consistency with the source code, we shall call such records {\it polymorphic}. 
+Is used to specify particular type of an AbstractRecord. This way you can choose which particular implementation of an abstract C++ class should be instantiated.
+The value of the key is a string from the Selection that consists of names of Records that was declared as descendants of the AbstractRecord.
 
 
-In fact we consider
-that every record is of some {\it type} at least implicitly. The {\it type} of the record is specification of the keys that are
-interpreted by the program Flow123d. At some places the program assumes a record of specific {\it type} so you need not to specify 
-\verb'TYPE' key in those records.
+%\item[INCLUDE\_RECORD]:\\
+%This is a simple inclusion of another file as a content of a record:
+%\begin{verbatim}
+%{
+%        INCLUDE_RECORD = "<file name>"
+%}
+%\end{verbatim}
+%
+%\item[INCLUDE\_ARRAY]:\\
+%\begin{verbatim}
+%array=
+%{
+%        INCLUDE_ARRAY = "<file name>"
+%        FORMAT = "<format string>"
+%}       
+%\end{verbatim}
+%The reader will substitute the include record by a sequentially accessible array. The file has fixed number of 
+%space separated data fields on every line. Every line becomes one element in the array of type record. Every line forms a 
+%record with key names given by the \verb'<format string>' 
+%and corresponding data taken form the line.
 
-\item[INCLUDE\_RECORD]:\\
-This is a simple inclusion of another file as a content of a record:
+%The key difference compared to regular JSON arrays is that included arrays can be accessed only sequentially 
+%within the program and thus we minimize reader memory overhead for large input data. The idea is to translate raw data into structured
+%format and use uniform access to the data.
+
+%Basic syntax for format string could be an array of strings --- formats of individual columns.
+%Every format string is an address of key that is given the column. Onother possibility is to give an arbitrary 
+%JSON file, where all values are numbers of columns where to take the value.
+
+%[\dots better specify format string]
+
+
+%Possible extensions:
+% have sections in the file for setting time dependent data
+% have number of lines at the beginning
+% have variable format
+% allow vectors in the 'line records']
+
+\item[REF key]:
 \begin{verbatim}
-{
-        INCLUDE_RECORD = "<file name>"
-}
+{ REF=<address> }
 \end{verbatim}
-
-\item[INCLUDE\_ARRAY]:\\
+The record in input file that contains only the key \verb'REF' is replaced by the JSON entity that is referenced by the \verb'<address>'. 
+The address is a string with format similar to UNIX path, i.e. with grammar
 \begin{verbatim}
-array=
-{
-        INCLUDE_ARRAY = "<file name>"
-        FORMAT = "<format string>"
-}       
+    <address> = <address> / <item>
+              = <item>  
+              = <null>
+    <item> = <index>
+           = <key>
+           = ..
 \end{verbatim}
-The reader will substitute the include record by a sequentially accessible array. The file has fixed number of 
-space separated data fields on every line. Every line becomes one element in the array of type record. Every line forms a 
-record with key names given by the \verb'<format string>' 
-and corresponding data taken form the line.
-
-The key difference compared to regular JSON arrays is that included arrays can be accessed only sequentially 
-within the program and thus we minimize reader memory overhead for large input data. The idea is to translate raw data into structured
-format and use uniform access to the data.
-
-Basic syntax for format string could be an array of strings --- formats of individual columns.
-Every format string is an address of key that is given the column. Onother possibility is to give an arbitrary 
-JSON file, where all values are numbers of columns where to take the value.
-
-[\dots better specify format string]
-
-
-[Possible extensions:
-- have sections in the file for setting time dependent data
-- have number of lines at the beginning
-- have variable format
-- allow vectors in the 'line records']
-
-\item[REFERENCE]:\\
-\begin{verbatim}
-time_governor={
-  REF=<address>
-}
-\end{verbatim}
-This will set key \verb'time_governor' to the same value as the entity specified by the address.
-The address is an array of strings for keys and integers for indices.
+where \verb'index' is non-negative integer and key is valid CON record key (lowercase, digits, underscores).
 The address can be absolute or relative identification of an entity. The relative address is relative to the entity in which the reference record is contained.
-One can use string \verb'".."' to move to parent entity and string \verb'"//"' to move to the root record of current file.
-Indices in address starts from 0.
+One can use two dots \verb'".."' to move to parent entity.
 
-For example assume the file
+Example:
 \begin{verbatim}
 mesh={
         file_name="xyz"
 }
 array=[
-        {x=1, y=0}       
-        {x=2, y=0}
-        {x=3, y=0}
+        {x=1 y=0}       
+        {x=2 y=0}
+        {x=3 y=0}
 ]               
 outer_record={
         output_file="x_out"
         inner_record={
-                output_file={REF=["..","output_file"]}  # value "x_out"
+                output_file={REF="../output_file"} // value "x_out"
         }
-        x={REF="/array/2/x"}                                    # value "3"
-        f_name={REF=["//","mesh","file_name"]}                  # value "xyz"
+        x={REF="/array/2/x"}                       // value "3"
+        f_name={REF="/mesh/file_name"}             // value "xyz"
 }       
 \end{verbatim}
-
-Concept of addres should be better explained and used consistently in reader interface.
 \end{description}
 
-\subsection{Semantic rules}
+\subsection{Record types}
+A Record type is given by the set of key specifications, which in turn consist from: key name, type of value and default value specification.
+Default value specification can be:
+\begin{description} 
+ \item[obligatory] --- means no default value, which has to be specified at input. 
+ \item[optional] --- means no default value, but value is needs not to be specified. Unspecified value usually means that you turn off some functionality.
+ \item[default at declaration] --- the default value is explicitly given in declaration and is automatically provided by the input subsystem if needed
+ \item[default at read time] --- the default value is provided at read time, usually from some other variable. In the documentation, 
+ there is only textual description where the default value comes from.
+\end{description}
 
 \subsubsection{Implicit creation of composed entities}
-Consider that there is a {\it type} of record in which all keys have default values (possibly except one). Then the specification
-of the record {\it type} can contain a {\it default key}. Then user can use the value of the {\it default key} instead of the whole record.
-All other keys apart from the {\it default key} will be initialized by default values. 
+Consider a Record type in which all keys have default values (possibly except one). Then the specification
+of the Record can contain a {\it key for default construction}. User can specify only the value of this particular key instead of the whole record, all other keys are initialized from its default values.
+Moreover, an AbstractRecord type may have a default value for the \verb'TYPE' key.
 This allows to express simple tasks by simple inputs but still make complex inputs possible. 
-In order to make this working, developers should provide default values everywhere it is possible.
- 
 Similar functionality holds for arrays. If the user sets a non-array value where an array is expected the reader provides an array with a unique element holding the given value.
-See examples in the next section for application of these two rules.
 
 
+\section{Important Record types of Flow123d input}
 
-\subsubsection{Enum construct}
-Enum values can be integers or strings from particular set. Strings should be preferred for manual creating of input files, while 
-the integer constants are suitable for automatic data preparation. 
 
-The input reader provides a way how to define names of members of an enum class and then 
-initialize this enum class from input file.  [Need better description]
+\subsection{Mesh record}
+\label{sec:Mesh}
+The \hyperlink{IT::Mesh}{mesh record} provides initialization for the computational mesh consisting of points, lines, triangles and tetrahedrons in 3D space.
+Currently, we support only GMSH mesh file format \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}{MSH ASCII}. 
+The input file is provided by the key \hyperA{Mesh::mesh-file}{{\tt mesh\_file}}. The file format allows to group elements into {\it regions} identified either by ID number or by string label. 
+The regions with labels starting with the dot character are treated as {\it boundary regions}. Their elements are removed from the computational domain, however they can be used to specify boundary
+conditions. Other regions are called {\it bulk regions}. User can create new labeled regions through the key 
+\hyperA{Mesh::regions}{{\tt regions}}, the new region can be specified either by its ID
+or by list of IDs of its elements. The latter possibility overrides original region assigned to the elements, which can be useful for specification of small areas ``ad hoc''.
+The key \hyperA{Mesh::sets}{{\tt sets}} allows specification of sets of regions in terms of list of region IDs or labels and basic set operations. The difference between regions and sets is that
+regions form disjoint covering of elements, the sets, however, may overlap. There are three predefined region sets: ``ALL'', ``BOUNDARY'', ``BULK''.
 
-\subsubsection{String types}
-For purpose of this documentation we distinguish several string types with particular purpose and treatment. Those are:
+
+\subsection{Field records}
+\label{}
+A general time and space dependent, scalar, vector, or  tensor valued function can be specified through the family of abstract records 
+Field $R^m -> \mathcal{S}$, where $m$ is currently always $m=3$ and $\mathcal{S}$ is a specification of the target space, which can be:
+\begin{itemize}
+ \item {\bf $\mathcal{T}$} --- scalar valued field, with scalars of type $\mathcal{T}$
+ \item {\bf $\mathcal{T}[d]$} --- vector valued field, with vector of fixed size $d$ and elements of type $\mathcal{T}$
+ \item {\bf $\mathcal{T}[\tt n]$} --- vector valued field, with vector of variable size (given by some input) and elements of type $\mathcal{T}$
+ \item {\bf $\mathcal{T}[d, d]$} --- tensor valued field, with square tensor of fixed size and elements of type $\mathcal{T}$
+\end{itemize}
+the scalar types can be
+\begin{itemize}
+ \item {\bf Real} --- scalar real valued field
+ \item {\bf Int}  --- scalar integer valued field
+ \item {\bf Enum} --- scalar non negative integer valued field, should be convertible to appropriate C++ enum type
+\end{itemize}
+
+Each of these abstract record has the same set of descendants which implement various algorithms to specify and compute values of the field. These are
 \begin{description}
-\item[input filename] This has to be valid absolute or relative path to an existing file. 
-The string can contain variable \verb'${INPUT}' %$
-which will be replaced by path given at command line through parameter \verb'-i'.
-
-[In order to allow input of  time dependent data in individual files, we should 
- have also variable \verb'${TIME\_LEVEL}' %$
- From user point of view this is not property of general input filename string, however
- in implementation this should be done in the same way as \verb'${INPUT}'.
-]
- 
-[? Shall we allow both Windows and UNIX slashes?]
-
-[Developers should provide default names to all files. ]
-
-\item[output filename] This has to be relative path. The path will be prefixed by
-the path given at command line through the parameter \verb'-o'.
-In some cases the path will be also postfixed by extension of particular file format.
-
-\item[formula] Expression that will be parsed and evaluated runtime. Documentation of particular key should provide 
-variables which can appear in the expression, however in general it can be function of the space coordinates $x$, $y$, $z$ and possibly also 
-function of time $t$. For full specification of expression syntax see documentation of FParser library:
-\url{http://warp.povusers.org/FunctionParser/fparser.html\#literals}
-
-\item[text string] Just text without particular meaning.
+ \item[FieldConstant] --- field that is constant in space
+ \item[FieldFormula] --- field that is given by runtime parsed formula using $x,y,z,t$ coordinates. The \href{http://warp.povusers.org/FunctionParser/}{Function Parser} library is used
+ with syntax rules described \href{http://warp.povusers.org/FunctionParser/fparser.html#literals}{here}.
+ \item[FieldPython] --- field can be implemented by Python script either specified by string (key \hyperA{FieldPython::script-string}{{\tt script\_string}}) 
+ or in external file (key \hyperA{FieldPython::script-file}{{\tt script\_file}}. 
+ \item[FieldElementwise] --- discrete field, currently only piecewise constant field on elements is supported, the field can given by 
+ the \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}{MSH ASCII} file specified in key \hyperA{FieldElementwise::gmsh-file}{{\tt gmsh\_file}} and field name in the file given 
+ by key \hyperA{FieldElementwise::field-name}{{\tt field\_name}}. The file must contain same mesh as is used for computation.
+ \item[FieldInterpolated] --- allows interpolation between different meshes. Not yet fully supported.
 \end{description}
 
-\subsubsection{Record types}
-A record type like particular definition of a class (e.g. in C++). One record type serves usually for initialization of 
-one particular class. From this point of view one record type is set of keys that corresponding class can read.
-
-For purpose of this manual the record type is given by specification of record's keys, their types, default values and meanings.
-In the next two sections, we describe all record types that forms input capabilities of Flow123d. Description of a record type 
-has form of table. Table heading consists of the name of the record type. Then for every key we present name, type of the value,
-default value and text description of key meaning. Type of the value can be record type, array of record types, double, integer, enum or 
-string type. Default value specification can be:
-\begin{description} 
- \item[none] No default value given, but input is mandatory. You get an error if you don't set this key.
- \item[null] \verb'null' value. No particular default value, but you need not to set the key. Usually means feature turned off.
- \item[explicit value] For keys of type: string, double, integer, or enum, the default value is explicit value of this type.
- \item[type defaults] For keys of some record type we let that record to set its default values.
-\end{description}
-
-[? polymorphic record types]
-
-
-\section{Record types for input of data fields}
-
-
-\newenvironment{recordtype}[2]
-{\par
- \vskip 2ex
- \noindent%
- record type: {\bf #1}#2
- \par%
- \vskip 0.5ex
- \hrule%
- \vskip 0.3ex
- \hrule
- \begingroup%records of steady field type which we describe right now 
-  \addtolength{\leftskip}{3em}%
-  %
-  \gdef\keyitem##1##2##3{%
-    \par
-    \vskip 0.3ex
-    %\hrule%
-    \noindent%
-    \hspace{-3em}{\bf\tt ##1} = {\it \textless ##2\textgreater} \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
-    \par
-  }%
-}{%
-  \vskip 0.7ex  
-  \hrule%
-  \vskip 0.5ex
-  \endgroup%
-}
-
-\def\enumhead#1{
-{\bf #1} enum cases:
-}
-\def\enumitem#1#2{
-  \par{\tt #1=#2 \hspace{2em}}
-}
-
-In this section we describe record types used to describe general time-space scalar, vector, or tensor fields
-and records for prescription of boundary conditions. Since one possibility how to prescribe input data fields is by 
-discrete function spaces on computational mesh, we begin with mesh setting.
-
-\subsection{Mesh type}
-The mesh record and should provide a mesh consisting of points, lines, triangles and tetrahedrons in 3D space and further
-definition of boundary segments and element connectivity.
-
-\begin{recordtype}{Mesh}{}
-
-\keyitem{file}{input filename}{mesh.msh}
-The file with computational mesh in the ASCII GMSH format.\\
-\url{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}
-
-\keyitem{boundary\_segments}{array of boundary segments}{null optional}
-The set of 0,1, or 2 dimensional boundary faces of the mesh should be partitioned into boundary segments in order to prescribe unique boundary condition 
-on every boundary face. 
-The segments numbers are assigned to boundary faces by iterating through the array. Initially every boundary face has segment number $0$. 
-Every record in the array use ``auxiliary'' physical domains, elements or direct face specification to specify some set of boundary faces. The new segment number
-is assigned to each face in the set, possibly overwriting previous value.
-
-Physical domains or its parts that appears in the boundary segment definitions are removed form the computational mesh, however, the element
-numbers of removed elements are stored in the corresponding boundary face and can be used to define face-wise approximations of functions with 
-support on the boundary.
-
-\keyitem{neighbouring}{input file name}{neigbours.flw}
-This should be removed as soon as we integrate ngh functionality into flow.
-\end{recordtype}
-
-\begin{recordtype}{Boundary segment}{}
- \keyitem{index}{integer}{index in outer array}
- The index of boundary segment can be used later to prescribe particular type of boundary condition on it.
- Indices must be greater or equal to $1$ and should form more or less continuous sequence. The zero boundary segment is reserved for remaining part
- of the boundary. By default we assign indices to boundary segments according to the order in their array in mesh, i.e. index (counted form $0$) plus $1$.
- \keyitem{physical\_domains}{array of integers}{null optional}
- Numbers of physical domains which form the boundary segment. All elements of these physical domains will be removed from actual computational mesh.
- \keyitem{elements}{array of integers}{null optional}
- The array contains element numbers which should be removed from computational mesh and added to boundary segment.
- \keyitem{sides}{array of integer pairs}{null optional}
- The array contains numbers of elements which outer faces will be added to the boundary segment or pairs $[element, side\_on\   _element]$ 
- identifying individual faces that will be added to the boundary segment.
-\end{recordtype}
-
-\subsection{Time-space field type}
-A general time and space dependent, scalar, vector, or  tensor valued function is given by array
-of {\it steady field data}, i.e. time slices. The time slice contains array of {\it space functions}
-for individual materials. Then, the {\it space function} can by either analytical (given by formula)
-or numerical, given by type of discrete space and array of {\it elemental functions}. {\it Elemental function} is
-just array of values for every degree of freedom on one element.
-
-The function described by this type is tensor values in general and dimensions of this tensor should be 
-specified outside of the function data. For example in description of Transport record type you should specify that function
-for initial condition is vector valued with vector size equal to number of substances. It is like template for Time-space field
-type parametrized by shape of the value tensor given by number of lines $N$ and columnes $N$.
-
-
-\begin{recordtype}{Steady field data}{}
-\keyitem{time}{double}{-Inf}
-  Start time for the spatial filed data. 
-\keyitem{time\_interpolation}{enum}{constant}
-  \enumhead{time interpolation}
-  \enumitem{constant}{0} Keeps constant data until next time cut.
-  \enumitem{linear}{1} Linear interpolation between current time cut and the next one.
-\keyitem{materials}{array of Steady spatial functions}{null optional}
-\end{recordtype}
-
-\begin{recordtype}{Space function}{}
-\keyitem{material}{integer}{0}
-Material filter. The function has nonzero value only on elements with given material number. 
-Function with filter $0$ takes place for all materials where no function is set.
-
-\keyitem{analytic}{multi-array of function formulas}{null optional}
-The shape of the multi-array is given by 
-rank of the value of the function. Since formula parser can deal only with scalar functions, we
-have to specify individual members of resulting tensor. Formulas can contain variables $x$, $y$, $z$, and $t$. 
-The formula is used until the next time slice and is evaluated for every solved time step (can depend on equation).
-
-Instead of constant formulas one can use double values.
-Usage of formulas or doubles need not to be uniform over the tensor.
-
-
-\keyitem{numeric\_type}{enum}{None}
-  \enumhead{FE space}
-  \enumitem{None}{0} Use analytic function.
-  \enumitem{P0}{1} Zero order polynomial on element.
-
-Currently we support only P0 base functions for data.
-
-\keyitem{numeric}{array of element functions}{empty array}
-Usually, this element-wise array should by included from an external file through \verb'INCLUDE_ARRAY' construct.
-
-\end{recordtype}
-
-\begin{recordtype}{Element function}{}
-\keyitem{element\_id}{integer}{null optional}
-Element ID in the mesh. By default the element is 
-identified by the index in the array of element function.
-
-\keyitem{values}{multi-array of doubles}{null mandatory}
-Values for degrees of freedom of the base functions on the element. Currently we support 
-only P0 functions which are given by value in the barycenter of the element. 
-In general the value can be tensor, i.e. array of arrays of doubles.
-However, in accordance to simplification rules, you can use only array of doubles for 
-vector functions or mere double for scalar functions.
-\end{recordtype}
-
-[ tensor/vector valued element function should be given also as simple array of DOF values. But
-  we have to provide ordering of tensor products of FE spaces]
-
-[ As follows from next examples, there is no way how to simply set simply tensors.  We can introduce automatic conversion form scalar to  vector (constant vector) and vector to tensor 
-(diagonal tensor). ]
-
-[ we should also allow 'in place' array includes to simplify material tables etc.]
-
-[How to allow parallel input of field data?]
-
-[Should be there explicit mesh reference in the field specification?]
-
+Several automatic conversions are implemented. Scalar values can be used to set constant vectors or tensors. Vector value of size $d$ can be used to set diagonal tensor $d\times d$.
+Vector value of size $d(d-1)/2$, e.g. $6$ for $d=3$, can be used to set symmetric tensor. These rules apply only for FieldConstant and FieldFormula.
+Moreover, all Field abstract types have default value \verb'TYPE=FieldConstant'. Thus you can just use the constant value instead of the whole record.
 
 Examples:
 \begin{verbatim}
 constant_scalar_function = 1.0
-# is same as
+// is same as
 constant_scalar_function = {
-  time = -Inf,
-  time_interpolation= constant,
-  materials = [
-    {
-      rank=0
-      numeric_type=None
-      analytic=1.0       # the only key withou default value
+  TYPE=FieldConstant,
+  value=1.0
+}
+
+conductivity_tensor = [1 ,2, 3]
+// is same as
+conductivity_tensor = {
+    TYPE=FieldConstant,
+    value=[[1,0,0],[0,2,0],[0,0,3]]
+}
+
+concentration = {
+    TYPE=FieldFormula,
+    value="x+y+z"
+}
+//is same as (provided the vector has 2 elements)
+concentration = {
+    TYPE=FieldFormula,
+    value=["x+y+z", "x+y+z"]
+}       
+\end{verbatim}
+
+\subsection{Field data for equations}
+Every equation record has keys \verb'bulk\_data' and \verb'bc_data'. Both have the same structure, however, the first one is intended to set the bulk fields (on bulk regions)
+while the second serves for initialization of the boundary fields (on boundary regions). These keys contains an array of region-time initialization records
+like the \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{BulkData} record of the DarcyFlow equation. Every such record specify fields on particular region 
+(keys \hyperA{DarcyFlowMH-Steady-BulkData::region}{{\tt region}} and \hyperA{DarcyFlowMH-Steady-BulkData::rid}{{\tt rid}} ) or on a region set 
+(key \hyperA{DarcyFlowMH-Steady-BulkData::r-set}{{\tt r\_set}}) starting from the time specified by the key \hyperA{DarcyFlowMH-Steady-BulkData::time}{{\tt time}}.
+The array is processed sequentially and latter values overwrites the previous ones. Times should form a non-decreasing sequence.
+
+Example:
+\begin{verbatim}
+bulk_data = [   
+    { // time=0.0  - default value
+        r_set="BULK"
+        conductivity=1   // setting the conductivity field on all regions
     }
-  ]
-}
-
-conductivity_tensor = 
-  [{ material = 1,
-     rank = 2,
-     analytic = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-   },
-   { material = 2,
-     rank = 2,
-     analytic = [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]]
-   }
-  ]
- 
+    {
+        region="2d_part"
+        conductivity=2  // overwriting the previous value
+    }
+    {   time=1.0
+        region="2d_part"
+        conductivity={
+            // from time=1.0 we switch to the linear function in time
+            TYPE=FieldFormula
+            value="2+t"      
+        }    
+    }
+    {   time=2.0
+        region="2d_part"
+        conductivity={
+            // from time=2.0 we switch to elementwise field, but only
+            // on the region "2d_part"
+            TYPE=FieldElementwise
+            gmsh_file="./input/data.msh"
+            field_name="conductivity"
+        }
+    }    
+]               
 \end{verbatim}
 
-\subsection{Boundary conditions}
-Input of boundary conditions is similar to the Time-space fields. For description of one time slice we have 
-type {\it steady boundary data}. This contains array of {\it boundary conditions} for individual boundary segments. 
-{\it Boundary condition} is given by type and parameters that are analytic or numeric functions. However, numeric functions
-are considered only on boundary elements.
-
-\begin{recordtype}{steady boundary data}{}
-\keyitem{time}{double}{0.0}
-Time when the BC should be applied.
-\keyitem{bc}{array of boundary conditions}{empty} 
-\end{recordtype}
-
-\begin{recordtype}{boundary condition}{}
- \keyitem{boundary\_segment}{integer}{0}
-  Boundary segment where the boundary condition will be applied.
- \keyitem{bc\_type}{enum}{dirichlet}
-  Currently there are just three types of boundary condition common to all equations, 
-  but some equations can implement some specific boundary conditions. Common boundary condition  types are
-  \enumhead{BC types}
-  \enumitem{dirichlet}{0}
-  \enumitem{neumann}{1}
-  \enumitem{newton}{2} (also known as Robin boundary condition)
-
-
-\keyitem{value}{space function}{type defaults}
-Prescribed value for Dirichlet boundary condition and Newton boundary condition, the normal flux for the Neumann boundary condition.
-Key \verb'material' of {\it space function} is irrelevant.
-
-\keyitem{mean\_value}{scalar or vector constant}{0}
-Prescribes flux for Neumann boundary condition by total flux over the boundary segment. If both {\it value} and {\it mean\_value} keys
-are set, we use only {\it value} key. 
-[How this interact with fracture opening?]
-
-
-\keyitem{newton\_coef}{scalar space function}{type defaults}
-Coefficient that appears in the Newton boundary condition. Key \verb'material' of {\it space function} is irrelevant.
-\end{recordtype}
-
-E.g. denoting $u$ the unknown scalar or vector field and $\prtl_n u$ density of the normal flux of this field,
-the meaning of keys \verb'value' and \verb'newton_coef' is following:
-$\vc{v}$ $\grad v$
-\begin{align*}
- u &:= value &&\text{for Dirichlet boundary} \\
- A\grad u \cdot \vc{n} &:= value && \text{for Neumann  boundary} \\
-A\grad u \cdot \vc{n} &:= newton_coef ( u - value ) && \text{for Newton boundary}
-\end{align*}
-
-Specific interpretation of the boundary conditions should be described in particular equations.
-
-[How to allow both analytic  and numerical functions here?]
-
-[ In order to allow changing BC type in time, the structure has to be: time array of BC segments array of BC type with data
-alternatively we can have just one array of BC patches, where one patch has: time, BC segment, BC type, BC data
-patches with non monotone time will be scratched]
-
-[need vector valued Dirichlet (and Neuman, and Newton) for Transport boundary conditions]
-
-[More examples...]
-
-
-\section{Other record types recognized by Flow123d}
-
-\subsection{Record types not related to equations}
-
-\begin{recordtype}{Root record}{}
-  \keyitem{system}{system type}{type defaults}
-  Record with application setting.
-  \keyitem{problem}{problem type}{null mandatory}
-  Record with numerical problem to solve. 
-  \keyitem{material}{input filename}{material.flw}
-    Old material file still used for initialization of data fields in equations. 
-    This should be replaced by material database type. Then certain input data fields in equations can be 
-    constructed from material informations. Main obstacle are various adsorption algorithms depending on material number.
-\end{recordtype}
-
-Only these  keys are recognized directly at main level, however you can put here your own keys and then reference
-to them. For example \verb'mesh' is part of problem type record, but you can put it on the main level and use reference 
-inside \verb'problem'. 
-
-[Should we put problem record to the main level?]
-
-[Should we provide ``material database''? Possibility to specify properties of individual materials and use them to construct
- field data for equations.]
-
-\begin{recordtype}{System}{}
-\keyitem{pause\_after\_run}{bool}{no}
-Wait for press of Enter after run. Good for Windows users, but dangerous for batch computations. 
-Should be rather an command-line option.
-\keyitem{verbosity}{bool}{no}
-Turns on/off more verbose mode. 
-\keyitem{output\_streams}{output stream}{null optional}
-One or more output data streams.
-There are two predefined output streams:
-
-
-vtk ascii stream:
-\begin{verbatim}
-{
-  name="dafault_vtk_ascii"
-  file="flow_output"
-  type="vtk_ascii"
-}
-\end{verbatim}
-
-GMSH ascii stream:
-\begin{verbatim}
-{
-  name="dafault_gmsh_ascii"
-  file="flow_output"
-  type="gmsh_ascii"
-}
-\end{verbatim}
-
-\end{recordtype}
-
-Possibly here could be variables for check-pointing, debugging, timers etc.
-
-\begin{recordtype}{Output stream}{}
- \keyitem{name}{string}{null mandatory}
-  Name of the output stream. This is used to set output stream for 
-  individual output data. 
- \keyitem{file}{output filename string}{stream name}
-  File name of the output file for the stream. The file name should be without extension, the correct extension
-  will be appended according to the format type.
- \keyitem{format}{enum}{vtk\_ascii}
-   \enumhead{output format}
-   \enumitem{vtk\_ascii}{0} 
-   \enumitem{gmsh\_ascii}{1}
- \keyitem{precision}{integer}{8}
- Number of valid decadic digits to output floating point data into the ascii file formats.
- \keyitem{copy\_file}{output filename string}{null optional}
- Optionally one can set copy file to output data into to different file formats.
- \keyitem{copy\_format}{enum}{null optional}
- \keyitem{copy\_precision}{integer}{8}
-\end{recordtype}
-
-
-\subsection{Equation related record types}
-Up to now there is only one problem type: \verb'TYPE=sequential\_coupling', 
-but in near future we should introduce full coupling e.g. for density driven flow.
-
-The {\emph sequential coupling problem} has following keys:
-\begin{recordtype}{Sequential coupling}{ implements {\it Problem type} }
-\keyitem{description}{string}{null optional}
-Short text description of solved problem. Now it is only reported on the screen, but could be 
-written into output files or used somewhere else.
-%
-\keyitem{mesh}{mesh type}{type defaults}
-The computational mesh common for both coupled equations.
-%
-\keyitem{time\_governor}{time governor type}{type defaults}
-Common time governor  setting.
-[ Future: allow different setting for each equation]
-%
-\keyitem{primary\_equation}{darcy flow type}{type defaults}
-Independent equation.
-%
-\keyitem{secondary\_equation}{transport type}{null optional}
-Equation with some data dependent on the primary equation.
-\end{recordtype}
-
-\begin{recordtype}{Time governor}{}
-\keyitem{init\_time}{double}{0.0}
-Time when an equation starts its simulation.
-\keyitem{time\_step}{double}{1.0}
-Initial time step.
-\keyitem{end\_time}{double}{1.0}
-End time for an equation. 
-\end{recordtype}
-
-This record type should initialize \verb'TimeGovernor' class, but there are still questions about steady TimeGovernor and 
-if we allow user setting for other parameters.
-
-There are three subtypes {\it steady saturated MH}, {\it unsteady saturated MH}, {\it unsteady saturated LMH}
-The common keys are:
-
-\begin{recordtype}{Darcy flow}{(abstract type)}
-\keyitem{TYPE}{enum}{}
-  There are three implementations of Darcy flow. Most keys are common but unsteady solvers accept some extra keys.
-  \enumhead{darcy flow type}
-  \enumitem{steady\_MH}{0}
-  \enumitem{unsteady\_LMH}{1}
-  \enumitem{unsteady\_MH}{2}
-\keyitem{sources}{time-space field}{0} Density of water sources. Scalar valued field (1x1 tensor).
-\keyitem{sources\_file}{input file name}{null optional}
-File with sources in old format. (OBSOLETE)
-\keyitem{source\_formula}{space function}{0} Space function that prescribes water source.
-%
-\keyitem{coef\_tensor}{tensor steady field}{1.0}
-Conductivity 3x3 tensor. [Should be always 3x3 and then restricted on 2d and 1d fractures.]
-\keyitem{boundary\_condition}{array of steady boundary data}{null mandatory} 
-New scheme for setting boundary conditions.
-\keyitem{boundary\_file}{input file name}{null mandatory}
-File with boundary conditions in old format. (OBSOLETE)
-%
-\keyitem{solver}{solver type}{type defaults}
-\keyitem{n\_schurs}{integer}{2}
-Number of Schur complements to make. Valid values are 0,1,2.
-%
-\keyitem{output}{darcy flow output type}{typ defaults}
-This is just sub record to separate output setting. 
-%
-\keyitem{initial}{steady data type}{null mandatory}
-Initial condition. Scalar valued field (1x1 tensor). (for unsteady only)
-\keyitem{initial\_file}{input file name}{null mandatory}
-File with initial condition in old format. (OBSOLETE)
-%
-\keyitem{storativity}{steady data type}{null mandatory}   
-Storativity coefficient. Scalar valued field (1x1 tensor). (for unsteady only)
-\end{recordtype}
-
-\begin{recordtype}{Darcy flow output}{}
-\keyitem{save\_step}{double}{null optional}
-Time step between outputs.
-\keyitem{output\_times}{array of doubles}{null optional}
-Force output in prescribed times. Can be combined with regular otuptu given by \verb'save_step'.
-\keyitem{velocity\_p0}{output stream name}{default\_vtk\_ascii}
-\keyitem{pressure\_p0}{output stream name}{default\_vtk\_ascii}
-\keyitem{pressure\_p1}{output stream name}{default\_vtk\_ascii} 
-\end{recordtype}
- 
-
-
-\subsection{Solver type}
-\begin{recordtype}{Solver type}{ (abstract)}
- \keyitem{TYPE}{enum}{petsc}
- \enumhead{solver types}
- \enumitem{petsc}{0} Use any PETSc solver for MPIAIJ matrices.
- \enumitem{bddc}{1} Use BDDC solver (need not to work with every equation).
- %
- \keyitem{accuracy}{double}{solvers defaults}
- Absolute residual tolerance. 
- \keyitem{max\_it}{integer}{1000}
- Maximum number of outer iterations.
- \keyitem{parameters}{string}{null optional}
- String with options for PETSc solvers.
- \keyitem{export\_to\_matlab}{bool}{no}
- Save every solved system in matlab format. Useful for debugging and numerical experiments.
- %
-\end{recordtype}
-
-
-\subsection{Transport type}
-\begin{recordtype}{Transport type}{}
- \keyitem{TYPE}{enum}{}
-    Two types are sofar possible. The second type is for advection-diffusion equation which needs implicit solver.
-    \enumhead{transport type}
-    \enumitem{TransportOperatorSplitting}{0}
-    \enumitem{AdvectionDiffusion\_DG}{1}
- %
- \keyitem{sorption}{bool}{no}
- \keyitem{dual\_porosity}{bool}{no}
- \keyitem{transport\_reactions}{bool}{no}
- What kind of reactions is this? Age of water?
- %
- \keyitem{sigma}{double}{0} Coefficient of diffusive transfer through fractures.
- \keyitem{alpha\_l}{double}{0} Longitudal dispersivity.
- \keyitem{alpha\_t}{double}{0} Transversal dispersivity.
- \keyitem{d\_m}{double}{1e-6} Molecular diffusivity.
- \keyitem{dg\_penalty}{double}{0} Penalty parameter influencing the discontinuity of the solution.
- %
- \keyitem{reactions}{reaction type}{null optional}
- Currently only Semchem is supported. [Interface to Phreaq ...]
- \keyitem{decays}{array of decays}{null optional}
- \keyitem{substances}{array of strings}{null mandatory}
- Names for transported substances. Number of substances is given implicitly by size of the array.
- %
- \keyitem{initial}{steady data type}{null mandatory}
- Vector valued initial condition for mobile phase of all species. 
- \keyitem{initial\_others}{steady data type}{null optional}
- Tensor valued initial condition for immobile, mobile-sorbed, immobile-sorbed phases and all species. (3 x n\_substances).
- [alternatively have separate key for each phase]
- \keyitem{initial\_file}{input file name}{null mandatory}
- File with initial condition in old format. (OBSOLETE)
- %
- \keyitem{boundary\_condition}{array of steady boundary data}{null mandatory} 
- New scheme for setting boundary conditions.
- \keyitem{boundary\_file}{input file name}{null mandatory}
- File with boundary condition in old format. (OBSOLETE)
- For time dependent boundary conditions, the filename is postfixed with 
- number of time level.
- \keyitem{bc\_times}{array of doubles}{null optional}
-  Times for changing boundary conditions. If you set this variable, you have to prepare a separate file with boundary conditions for every 
-  time in the list. Filenames for individual time level are formed from BC filename by appending underscore and three digits of time level number, e.g. 
-  {\tt transport\_bcd\_000, transport\_bcd\_001, etc.} (OBSOLETE)
- \keyitem{output}{transport output}{type defaults}  
-
-\end{recordtype}
-
-\begin{recordtype}{Transport output}{}
-\keyitem{save\_step}{double}{null optional}
-Time step between outputs.
-\keyitem{output\_times}{array of doubles}{null optional}
-Force output in prescribed times. Can be combined with regular otuptu given by \verb'save_step'.
-\keyitem{mobile\_p0}{output stream name}{default\_vtk\_ascii}
-\keyitem{immobile\_p0}{output stream name}{default\_vtk\_ascii}
-\keyitem{mobile\_sorbed\_p0}{output stream name}{default\_vtk\_ascii} 
-\keyitem{immobile\_sorbed\_p0}{output stream name}{default\_vtk\_ascii} 
-\keyitem{mobile\_p1}{output stream name}{default\_vtk\_ascii}
-\keyitem{immobile\_p1}{output stream name}{default\_vtk\_ascii}
-\keyitem{mobile\_sorbed\_p1}{output stream name}{default\_vtk\_ascii} 
-\keyitem{immobile\_sorbed\_p1}{output stream name}{default\_vtk\_ascii} 
-\end{recordtype}
-
-\newpage
-% \begin{recordtype}{Reaction}{}
-% \key{Output\_precission} & \type{int} & 1 &
-%Number of decimal places written to output file created by Semchem\_module.
-%\\
-%\hline
-%\key{Number\_of\_further\_species} & \type{int} & 0 &
-%Concentrations of these species are not computed, because they are ment to be unexghaustible.
-%\\
-%\hline
-%\key{Temperature} & \type{double} & 0.0 &
-%Temperature, one of state variables of the system.
-%\\
-%\hline
-%\key{Temperature\_Gf} & \type{double} & 0.0 &
-%Temperature at which Free Gibbs Energy is specified.
-%\\
-%\hline
-%\key{Param\_Afi} & \type{double} & 0.0 &
-%Parameter of the Debuy-H\"{u}ckel equation for activity coeficients computation.
-%\\
-%\hline
-%\key{Param\_b} & \type{double} & 0.0 &
-%Parameter of the Debuy-H\"{u}ckel equation for activity coeficients computation.
-%\\
-%\hline
-%\key{Epsilon} & \type{double} & 0.0 &
-%Epsilon specifies relative norm of residuum estimate to stop numerical algorithms used by Semchem\_module.
-%\\
-%\hline
-%\key{Time\_steps} & \type{int} & 1 &
-%Number of transport step subdivisions for Semchem\_module.
-%\\
-%\hline
-%\key{Slow\_kinetics\_substeps} & \type{int} & 0 &
-%Number of substeps performed by Runge-Kutta method used for slow kinetics simulation.
-%\\
-%\hline\\
-%\key{Error\_norm\_type} & \type{string} & "Absolute" &
-%Through wich kind of norm the error is measured.
-%\\
-%\hline\\
-%\key{Scalling} & \type{boolean} & "No" &
-%Type of the problem preconditioning for better convergence of numerical method.
-%\\
-%\hline\\
-%\end{initable}
-%\newpage
-%\begin{initable}{Aqueous\_species}
-%\key{El\_charge} & \type{int} & 0 &
-%Electric charge of an Aqueous\_specie particleunder consideration.
-%\\
-%\hline
-%\key{dGf} & \type{double} & 0.0 &
-%Free Gibbs Energy valid for TemperatureGf.
-%\\
-%\hline
-%\key{dHf} & \type{double} & 0.0 &
-%Enthalpy
-%\\
-%\hline
-%\key{Molar\_mass} & \type{double} & 0.0 &
-%Molar mass of Aqueous\_species.
-%\\
-%\hline
-%\end{initable}
-%
-%\begin{initable}{Further\_species}
-%\key{Specie\_name} & \type{string} & "" &
-%Name belonging to Further\_specie under consideration.
-%\\
-%\hline
-%\key{dGf} & \type{double} & 0.0 &
-%Free Gibbs Energy valid for TemperatureGf.
-%\\
-%\hline
-%\key{dHf} & \type{double} & 0.0 &
-%Enthalpy
-%\\
-%\hline
-%\key{Molar\_mass} & \type{double} & 0.0 &
-%Molar mass of Further\_species.
-%\\
-%\hline
-%\key{Activity} & \type{double} & 0.0 &
-%Activity of Further\_species.
-%\\
-%\hline
-%\end{initable}
-%
-%\begin{initable}{Reaction\_i}
-%\key{Reaction\_type} & \type{string} & "unknown" &
-%Type of considered reaction (Equilibrium, Kinetics, Slow\_kinetics).
-%\\
-%\hline
-%\key{Stoichiometry} & \type{int} & 0 &
-%Stoichiometric coeficients of species taking part in $i$-th reaction.
-%\\
-%\hline
-%\key{Kinetic\_constant} & \type{double} & 0.0 &
-%Kinetic constant for determination of reaction rate.
-%\\
-%\hline
-%\key{Order\_of\_reaction} & \type{int} & 0 &
-%Order of kinetic reaction for participating species.
-%\\
-%\hline
-%\key{Equilibrium\_constant} & \type{double} & 0.0 &
-%Equilibrium constant defining i-th reaction.
-%
-% \end{recordtype}
-
-\begin{recordtype}{Decay chain}{}
-\keyitem{substance\_ids}{array of integers}{empty}
-Sequence of $N$ ids of transported substances defining isotopes contained in the decay chain under consideration.
-\keyitem{nr\_of\_children}{array of integers}{either empty or filled up with ones}
-Number of children of each vertex (belonging to one of isotopes) in a simple graph describing considered decay chain. (NOT USED, YET.)
-\keyitem{indices\_of\_children}{array of integers}{either emmpty or filled up with substance\_ids except the first one}
-Containes identifiers of children of vertex. Children are assigned to vertices throuh the use of numbers listed in nr\_of\_children. (NOT USED, YET.)
-\keyitem{half\_lives}{array of doubles}{empty}
-This array containes $N-1$ half-lives belonging to isotopes contained in the array substance\_ids.
-If there are no bifurcation key specified, the decay chain is linear $1\to 2 \to 3$.
-If there is the bifurcation key, the decay chain is branched $1\to 2, 1\to 3$. (Temporary solution.)
-\keyitem{bifurcation}{array of double}{null optional}
-It should have as many items as the array indices\_of\_children ($N-1$). It defines relative part of parental contribution in the case of division of decay chain into more branches. (NOT USED, YET.)\newline
-Contains $N-1$ probabilities for individual branches of the bifurcation decay. (Temporary solution.)
-They should sum to one.
-\end{recordtype}
-
-\begin{recordtype}{First order reactions}{}
-\keyitem{substance\_ids}{array\_of\_integers}{empty}
-Sequence of $K$ ids describing a set of consequtive kinetic reactions of the first order. It is meant to enable simulation of $A\rightarrow B\rightarrow C\rightarrow ...\rightarrow Z$ set of reactions easily. (NOT USED, YET.)
-\keyitem{kinetic\_constants}{array or doubles}{filled up with 0.0s}
-Sequence of $K-1$ doubles defining kinetic constants of partial reactions from the set defined in substance\_ids. (NOT USED, YET.)
-\keyitem{nr\_of\_children}{array of integer}{filled up with 1.0s}
-Number of children of each vertex (belonging to one of species) in a simple graph describing considered first order reactions. (NOT USED, YET.)
-\keyitem{indices\_of\_children}{array of integers}{either emmpty or filled up with substance\_ids except the first one}
-Containes identifiers of children of vertex. Children are assigned to vertices throuh the use of numbers listed in nr\_of\_children. (NOT USED, YET.)
-\keyitem{bifurcation}{array of double}{null optional}
-It should have as many items as the array indices\_of\_children ($K-1$). It defines relative part of parental contribution in the case of division of first order reactions describing graph into more branches. (NOT USED, YET.)
-\keyitem{kinetic\_konstant}{double}{0.0}
-Defines kinetic konstant which describes a simple reaction of the type $A\rightarrow B$.
-\keyitem{substance\_ids}{array of integers}{empty}
-Contains $2$ identifiers of subsatnces (species) which are taking part in considered reaction.
-\end{recordtype}
-
-\begin{recordtype}{Simple reactions}{}
-\keyitem{decay\_chains}{array of Decay chains}{empty}
-Sequence of records describing decay chains under consideration. (NOT USED, YET.)
-\keyitem{first\_order\_reactions}{array of first order reactions}{empty}
-Sequence of records describing first order reactions under consideration. (NOT USED, YET.)
-%\keyitem{use\_pade\_approx}{bool}{no}
-%Decide about the use of Pade approximant for an evaluation of the decay describing matrix exponential values.
-%\keyitem{polynomial\_degrees}{array of int}{[2, 2]}
-%This array containes two numbers defining degrees of matrix polynomials used in Pade approximant.
-\keyitem{pade\_nominator\_degree}{integer}{2}
-This number defines the degree of matrix polynomial appearing in nominator of Pade approximant of a matrix exponential.
-\keyitem{pade\_denominator\_degree}{integer}{2}
-This number defines the degree of matrix polynomial appearing in denominator of Pade approximant of a matrix exponential.
-\end{recordtype}
