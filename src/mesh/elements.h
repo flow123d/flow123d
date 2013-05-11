@@ -76,7 +76,7 @@ public:
      */
     double quality_measure_smooth();
 
-    unsigned int n_sides_by_dim(int side_dim);
+    unsigned int n_sides_by_dim(unsigned int side_dim);
     inline SideIter side(const unsigned int loc_index);
     Region region() const;
     inline RegionIdx region_idx() const
