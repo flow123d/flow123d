@@ -180,7 +180,7 @@ void ctiich_latkyvefazi( void )
          exit(133);
       }
       P_lat[j].dGf = atof(pom_buf);
-        printf(/*Msg,*/ "\n P_lat[%d].dGf %Lf\n",j,P_lat[j].dGf);
+        printf(/*Msg,*/ "\n P_lat[%d].dGf %f\n",j,P_lat[j].dGf);
       pom_buf = strtok( NULL, separators );
    }
    if ( pom_buf != NULL )
