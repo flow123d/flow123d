@@ -73,7 +73,7 @@ TEST(OutputTypeTypeBase, record_output_test) {
         record_record.close();
     }
 
-    Selection sel("Colors");
+    Selection sel("Colors", "Selection of colors");
     {
         sel.add_value(blue, "blue");
         sel.add_value(white,"white","White color");
