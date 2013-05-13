@@ -398,7 +398,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	// register output vectors from convection
 	double ***out_conc = convection->get_out_conc();
-	vector<string> substance_name = convection->get_substance_names();
+	vector<string> subst_names_ = convection->get_substance_names();
 
 	// TODO: Add corresponding record to the in_rec
 	Input::Record output_rec = in_rec.val<Input::Record>("output");
@@ -408,7 +408,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
-         std::string subst_name = substance_name[subst_id] + "_mobile";
+         std::string subst_name = subst_names_[subst_id] + "_mobile";
          double *data = out_conc[MOBILE][subst_id];
          OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
                  output_rec.val<Input::Record>("output_stream"), data , mesh_->n_elements());

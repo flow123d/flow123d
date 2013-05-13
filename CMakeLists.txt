@@ -87,7 +87,7 @@ else(FLOW_CC_FLAGS)
   
   
     # Compiler-specific C++11 activation.
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
         execute_process(
             COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
         if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
@@ -99,10 +99,14 @@ else(FLOW_CC_FLAGS)
             add_definitions("-DHAVE_CXX11")
             set(CMAKE_HAVE_CXX11 "true")    
         endif ()
+        add_definitions("-DHAVE_SINCOS")
     elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
         add_definitions("-Wno-uninitialized -DHAVE_CXX11")
         set(CMAKE_HAVE_CXX11 "true")
+        # 
+        # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+        #
     else ()
         message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
     endif()

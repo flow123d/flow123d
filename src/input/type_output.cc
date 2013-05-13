@@ -1135,7 +1135,8 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
     	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
-            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}" <<endl;
+            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}";
+            stream << "{" << OutputBase::get_selection_description(type) << "}" <<endl;
             // keys
             for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
                 stream << "\\KeyItem{" <<  ( it->key_ ) << "}{" << it->description_ << "}" << endl;

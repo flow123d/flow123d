@@ -70,19 +70,19 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), target_mark_type);
     
-    in_rec.val<Input::Array>("substances").copy_to(substance_name);
-    n_substances = substance_name.size();
-    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
+    in_rec.val<Input::Array>("substances").copy_to(subst_names_);
+    n_subst_ = subst_names_.size();
+    INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
-    data->init_conc.set_n_comp(n_substances);
-    data->bc_conc.set_n_comp(n_substances);
-    data->alpha.set_n_comp(n_substances);
-    data->sorp_type.set_n_comp(n_substances);
-    data->sorp_coef0.set_n_comp(n_substances);
-    data->sorp_coef1.set_n_comp(n_substances);
-    data->sources_density.set_n_comp(n_substances);
-    data->sources_sigma.set_n_comp(n_substances);
-    data->sources_conc.set_n_comp(n_substances);
+    data->init_conc.set_n_comp(n_subst_);
+    data->bc_conc.set_n_comp(n_subst_);
+    data->alpha.set_n_comp(n_subst_);
+    data->sorp_type.set_n_comp(n_subst_);
+    data->sorp_coef0.set_n_comp(n_subst_);
+    data->sorp_coef1.set_n_comp(n_subst_);
+    data->sources_density.set_n_comp(n_subst_);
+    data->sources_sigma.set_n_comp(n_subst_);
+    data->sources_conc.set_n_comp(n_subst_);
     data->set_mesh(&init_mesh);
     data->init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     data->set_time(*time_);
@@ -187,7 +187,7 @@ double ***ConvectionTransport::get_conc(){
 }
 
 vector<string> &ConvectionTransport::get_substance_names(){
-	return substance_name;
+	return subst_names_;
 }
 
 double *ConvectionTransport::get_sources(int sbi) {
@@ -208,7 +208,7 @@ void ConvectionTransport::set_initial_condition()
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 		arma::vec value = data->init_conc.value(elem->centre(), ele_acc);
 
-		for (int sbi=0; sbi<n_substances; sbi++)
+		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			conc[MOBILE][sbi][index] = value(sbi);
 			pconc[MOBILE][sbi][index] = value(sbi);
@@ -224,7 +224,7 @@ void ConvectionTransport::alloc_transport_vectors() {
 
     int i, sbi, n_subst, ph; //, j;
     //ElementIter elm;
-    n_subst = n_substances;
+    n_subst = n_subst_;
 
 
    // printf("%d\t\n",n_substances);
@@ -283,7 +283,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
     int sbi, n_subst, ierr, rank, np; //, i, j, ph;
     //ElementIter elm;
-    n_subst = n_substances;
+    n_subst = n_subst_;
 
     MPI_Barrier(PETSC_COMM_WORLD);
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -337,7 +337,7 @@ void ConvectionTransport::set_boundary_conditions()
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
 
     // Assembly bcvcorr vector
-    for(int sbi=0; sbi<n_substances; sbi++) VecZeroEntries(bcvcorr[sbi]);
+    for(int sbi=0; sbi<n_subst_; sbi++) VecZeroEntries(bcvcorr[sbi]);
 
 
     for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -355,7 +355,7 @@ void ConvectionTransport::set_boundary_conditions()
                         double aij = -(flux / (elm->measure() * csection * por_m) );
 
                         arma::vec value = data->bc_conc.value( b->element()->centre(), b->element_accessor() );
-                        for (int sbi=0; sbi<n_substances; sbi++)
+                        for (int sbi=0; sbi<n_subst_; sbi++)
                             VecSetValue(bcvcorr[sbi], new_i, value[sbi] * aij, ADD_VALUES);
                     }
                 }
@@ -364,13 +364,13 @@ void ConvectionTransport::set_boundary_conditions()
         }
     }
 
-    for (int sbi=0; sbi<n_substances; sbi++)
+    for (int sbi=0; sbi<n_subst_; sbi++)
     	VecAssemblyBegin(bcvcorr[sbi]);
 
-    for (int sbi=0; sbi<n_substances; sbi++)
+    for (int sbi=0; sbi<n_subst_; sbi++)
     	VecAssemblyEnd(bcvcorr[sbi]);
 
-    for (int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+    for (int sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
 
     //VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
     //exit(0);
@@ -425,7 +425,7 @@ void ConvectionTransport::compute_one_step() {
 
 
 
-    for (sbi = 0; sbi < n_substances; sbi++) {
+    for (sbi = 0; sbi < n_subst_; sbi++) {
         // one step in MOBILE phase
 //        if (transportsources != NULL) {
             //DBGMSG("component: %d\n", sbi);
@@ -1014,8 +1014,8 @@ void ConvectionTransport::transport_until_time(double time_interval) {
                     output_vector_gather();
 
                     // Register concentrations data on elements
-                    for(int subst_id=0; subst_id<n_substances; subst_id++) {
-                        output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh_->n_elements());
+                    for(int subst_id=0; subst_id<n_subst_; subst_id++) {
+                        output_time->register_elem_data(subst_names_[subst_id], "", out_conc[MOBILE][subst_id], mesh_->n_elements());
                     }
                     output_time->write_data(time);
                 //  if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
@@ -1044,7 +1044,7 @@ void ConvectionTransport::output_vector_gather() {
     //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
     VecScatterCreate(vconc[0], is, vconc_out[0], PETSC_NULL, &vconc_out_scatter);
-    for (sbi = 0; sbi < n_substances; sbi++) {
+    for (sbi = 0; sbi < n_subst_; sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc[sbi], vconc_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc[sbi], vconc_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
@@ -1091,5 +1091,5 @@ int *ConvectionTransport::get_row_4_el(){
 }
 
 int ConvectionTransport::get_n_substances() {
-	return n_substances;
+	return n_subst_;
 }

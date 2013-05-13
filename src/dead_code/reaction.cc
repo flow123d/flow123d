@@ -100,7 +100,7 @@ oReaction *parse_reaction_line( int i, char *line)
         xprintf(UsrErr,"Unsupported reaction type #%d.\n", rct->type);
 
     rct->sbi       = atoi( xstrtok( NULL) );
-    INPUT_CHECK(!(rct->sbi > transport->n_substances - 1),"Unknown substance ID#%d.\n", rct->sbi);
+    INPUT_CHECK(!(rct->sbi > transport->n_subst_ - 1),"Unknown substance ID#%d.\n", rct->sbi);
 
     rct->coef = (double*)xmalloc(pc * sizeof(double));
     for(ci = 0 ; ci < pc ; ci++)

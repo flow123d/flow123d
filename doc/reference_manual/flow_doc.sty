@@ -152,12 +152,12 @@
 % SelectionType environment
 %
 % usage:
-% \begin{SelectionType}{<selection name>}    
+% \begin{SelectionType}{<selection name>}{< selection description>}    
 %       \KeyItem{<value name>}{<value>}
 %       Key value description.
 % \end{SelectionType}
 
-\newenvironment{SelectionType}[1]
+\newenvironment{SelectionType}[2]
 {\par
  \vskip 2ex
  \hrule%
@@ -170,6 +170,8 @@
  \hrule%
  \vskip 0.3ex
  \hrule
+ {#2}
+ 
  Possible values:
  \par
  \begingroup%records of steady field type which we describe right now 

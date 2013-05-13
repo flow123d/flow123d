@@ -296,7 +296,7 @@ void Semchem_interface::set_el_4_loc(int *el_for_loc)
 
 void Semchem_interface::set_mesh_(Mesh *mesh)
 {
-	Mesh* mesh_ = mesh; //TODO correct code??
+	mesh_ = mesh;
 	return;
 }
 

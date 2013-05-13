@@ -48,7 +48,7 @@
 using namespace Input::Type;
 
 Selection TransportDG::dg_variant_selection_input_type
-	= Selection("DG_variant")
+	= Selection("DG_variant", "Type of penalty term.")
 	.add_value(non_symmetric, "non-symmetric", "non-symmetric weighted interior penalty DG method")
 	.add_value(incomplete,    "incomplete",    "incomplete weighted interior penalty DG method")
 	.add_value(symmetric,     "symmetric",     "symmetric weighted interior penalty DG method");
@@ -213,21 +213,21 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     solver_init(solver, in_rec.val<Input::AbstractRecord>("solver"));
 
     // Read names of transported substances.
-    in_rec.val<Input::Array>("substances").copy_to(subst_names);
-    n_subst = subst_names.size();
+    in_rec.val<Input::Array>("substances").copy_to(subst_names_);
+    n_subst_ = subst_names_.size();
 
     // Set up physical parameters.
     data.set_mesh(&init_mesh);
-    data.init_conc.set_n_comp(n_subst);
-    data.bc_conc.set_n_comp(n_subst);
-    data.diff_m.set_n_comp(n_subst);
-    data.disp_l.set_n_comp(n_subst);
-    data.disp_t.set_n_comp(n_subst);
-    data.sigma_c.set_n_comp(n_subst);
-    data.dg_penalty.set_n_comp(n_subst);
-    data.sources_density.set_n_comp(n_subst);
-    data.sources_sigma.set_n_comp(n_subst);
-    data.sources_conc.set_n_comp(n_subst);
+    data.init_conc.set_n_comp(n_subst_);
+    data.bc_conc.set_n_comp(n_subst_);
+    data.diff_m.set_n_comp(n_subst_);
+    data.disp_l.set_n_comp(n_subst_);
+    data.disp_t.set_n_comp(n_subst_);
+    data.sigma_c.set_n_comp(n_subst_);
+    data.dg_penalty.set_n_comp(n_subst_);
+    data.sources_density.set_n_comp(n_subst_);
+    data.sources_sigma.set_n_comp(n_subst_);
+    data.sources_conc.set_n_comp(n_subst_);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
     data.set_time(*time_);
 
@@ -239,8 +239,8 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     dg_variant = in_rec.val<DGVariant>("dg_variant");
 
     // DG stabilization parameters on boundary edges
-    gamma.resize(n_subst);
-    for (int sbi=0; sbi<n_subst; sbi++)
+    gamma.resize(n_subst_);
+    for (int sbi=0; sbi<n_subst_; sbi++)
     	gamma[sbi].resize(mesh_->boundary_.size());
 
 
@@ -262,13 +262,13 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     	int n_corners = 0;
     	FOR_ELEMENTS(mesh_, elem)
     		n_corners += elem->dim()+1;
-    	output_solution.resize(n_subst);
-    	for (int i=0; i<n_subst; i++)
+    	output_solution.resize(n_subst_);
+    	for (int i=0; i<n_subst_; i++)
     	{
 			output_solution[i] = new double[n_corners];
 			for(int j=0; j<n_corners; j++)
 				output_solution[i][j] = 0.0;
-			OutputTime::register_corner_data<double>(mesh_, subst_names[i], "M/L^3",
+			OutputTime::register_corner_data<double>(mesh_, subst_names_[i], "M/L^3",
 					output_rec.val<Input::Record>("output_stream"), output_solution[i], n_corners);
 		}
     }
@@ -278,12 +278,12 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
     
     // allocate matrix and vector structures
-    ls    = new LinSys*[n_subst];
+    ls    = new LinSys*[n_subst_];
     ls_dt = new LinSys_MPIAIJ(distr->lsize());
-    for (int sbi = 0; sbi < n_subst; sbi++)
+    for (int sbi = 0; sbi < n_subst_; sbi++)
     	ls[sbi] = new LinSys_MPIAIJ(distr->lsize());
-    stiffness_matrix = new Mat[n_subst];
-    rhs = new Vec[n_subst];
+    stiffness_matrix = new Mat[n_subst_];
+    rhs = new Vec[n_subst_];
 
 
     // set initial conditions
@@ -303,18 +303,18 @@ TransportDG::~TransportDG()
 
     if (distr->myp() == 0)
     {
-		for (int i=0; i<n_subst; i++)
+		for (int i=0; i<n_subst_; i++)
 			delete[] output_solution[i];
     }
 
-    for (int i=0; i<n_subst; i++) delete ls[i];
+    for (int i=0; i<n_subst_; i++) delete ls[i];
     delete[] ls;
     delete[] stiffness_matrix;
     delete[] rhs;
     delete feo;
 
     gamma.clear();
-    subst_names.clear();
+    subst_names_.clear();
 }
 
 
@@ -351,7 +351,7 @@ void TransportDG::update_solution()
     	mass_matrix = NULL;
 
 		// preallocate system matrix
-		for (int i=0; i<n_subst; i++)
+		for (int i=0; i<n_subst_; i++)
 		{
 			ls[i]->start_allocation();
 			stiffness_matrix[i] = NULL;
@@ -388,13 +388,13 @@ void TransportDG::update_solution()
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
-    	for (int i=0; i<n_subst; i++)
+    	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
     		MatZeroEntries(ls[i]->get_matrix());
     	}
         assemble_stiffness_matrix();
-        for (int i=0; i<n_subst; i++)
+        for (int i=0; i<n_subst_; i++)
         {
         	ls[i]->finalize();
 
@@ -414,14 +414,14 @@ void TransportDG::update_solution()
 //    	data.sources_density.changed() ||
 //    	data.sources_sigma.changed())
 //    {
-    	for (int i=0; i<n_subst; i++)
+    	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
     		VecSet(ls[i]->get_rhs(), 0);
     	}
     	set_sources();
     	set_boundary_conditions();
-    	for (int i=0; i<n_subst; i++)
+    	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->finalize();
 
@@ -450,7 +450,7 @@ void TransportDG::update_solution()
      *
      */
 
-    for (int i=0; i<n_subst; i++)
+    for (int i=0; i<n_subst_; i++)
     {
 		MatCopy(stiffness_matrix[i], ls[i]->get_matrix(), DIFFERENT_NONZERO_PATTERN);
 		// ls->get_matrix() = 1/dt*mass_matrix + ls->get_matrix()
@@ -523,7 +523,7 @@ void TransportDG::output_data()
 	for (int i=0; i<distr->size(); i++)
 		row_ids[i] = i;
 
-	for (int sbi=0; sbi<n_subst; sbi++)
+	for (int sbi=0; sbi<n_subst_; sbi++)
 	{
 		VecCreateSeq(PETSC_COMM_SELF, ls[sbi]->size(), &solution_vec);
 
@@ -744,7 +744,7 @@ void TransportDG::assemble_volume_integrals()
         calculate_velocity(cell, velocity, fv_rt);
 
         // assemble the local stiffness matrix
-        for (int sbi=0; sbi<n_subst; sbi++)
+        for (int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int i=0; i<ndofs; i++)
         		for (unsigned int j=0; j<ndofs; j++)
@@ -814,7 +814,7 @@ void TransportDG::set_sources()
         }
 
         // assemble the local stiffness matrix
-        for (int sbi=0; sbi<n_subst; sbi++)
+        for (int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int i=0; i<ndofs; i++)
         		local_rhs[i] = 0;
@@ -902,7 +902,7 @@ void TransportDG::assemble_fluxes_element_element()
 
 
         // fluxes and penalty
-		for (int sbi=0; sbi<n_subst; sbi++)
+		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			for (unsigned int k=0; k<qsize; k++)
 				for (int sid=0; sid<edg->n_sides; sid++)
@@ -1023,7 +1023,7 @@ void TransportDG::assemble_fluxes_boundary()
         	csection[k] = data.cross_section->value(fe_values_side.point(k), ele_acc);
         }
         dg_penalty = data.dg_penalty.value(cell->centre(), ele_acc);
-        for (int sbi=0; sbi<n_subst; sbi++)
+        for (int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int k=0; k<qsize; k++)
         		calculate_dispersivity_tensor(side_K[k], side_velocity[k], Dm[k][sbi], alphaL[k][sbi], alphaT[k][sbi], por_m[k], csection[k]);
@@ -1110,7 +1110,7 @@ void TransportDG::assemble_fluxes_element_side()
 			sigma[k]    = data.sigma_c.value(fe_values_vb.point(k), nb->element()->element_accessor());
 		}
 
-		for (int sbi=0; sbi<n_subst; sbi++)
+		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
 				for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
@@ -1194,7 +1194,7 @@ void TransportDG::set_boundary_conditions()
         for (unsigned int k=0; k<qsize; k++)
         	bc_values[k] = data.bc_conc.value(fe_values_side.point(k), ele_acc);
 
-        for (int sbi=0; sbi<n_subst; sbi++)
+        for (int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int i=0; i<ndofs; i++) local_rhs[i] = 0;
 
@@ -1408,19 +1408,19 @@ void TransportDG::set_DG_parameters_boundary(const SideIter side,
 
 void TransportDG::set_initial_condition()
 {
-	for (int sbi=0; sbi<n_subst; sbi++)
+	for (int sbi=0; sbi<n_subst_; sbi++)
 		ls[sbi]->start_allocation();
 	prepare_initial_condition<1>();
 	prepare_initial_condition<2>();
 	prepare_initial_condition<3>();
 
-	for (int sbi=0; sbi<n_subst; sbi++)
+	for (int sbi=0; sbi<n_subst_; sbi++)
 		ls[sbi]->start_add_assembly();
 	prepare_initial_condition<1>();
 	prepare_initial_condition<2>();
 	prepare_initial_condition<3>();
 
-	for (int sbi=0; sbi<n_subst; sbi++)
+	for (int sbi=0; sbi<n_subst_; sbi++)
 	{
 		ls[sbi]->finalize();
 		solve_system(solver, ls[sbi]);
@@ -1448,7 +1448,7 @@ void TransportDG::prepare_initial_condition()
     	for (unsigned int k=0; k<qsize; k++)
     		init_values[k] = data.init_conc.value(fe_values.point(k), ele_acc);
 
-    	for (int sbi=0; sbi<n_subst; sbi++)
+    	for (int sbi=0; sbi<n_subst_; sbi++)
     	{
     		for (unsigned int i=0; i<ndofs; i++)
     		{
@@ -1524,7 +1524,7 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 			alphaL[k] = data.disp_l.value(fe_values.point(k), ele_acc);
 			alphaT[k] = data.disp_t.value(fe_values.point(k), ele_acc);
 		}
-		for (int sbi=0; sbi<n_subst; sbi++)
+		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			mass_flux = 0;
 
@@ -1590,7 +1590,7 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 			sources_sigma[k]   = data.sources_sigma.value(fe_values.point(k), ele_acc);
 		}
 
-		for (int sbi=0; sbi<n_subst; sbi++)
+		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			mass_sum = 0;
 			sources_sum = 0;
