@@ -229,7 +229,6 @@ void Mesh::setup_topology() {
 //
 void Mesh::count_side_types()
 {
-    struct Side *sde;
 
     n_insides = 0;
     n_exsides = 0;
@@ -474,7 +473,7 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            ASSERT( is_neighbour || edg->n_sides == intersection_list.size(), "Some connected sides were not found.\n");
+            ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
 		} // for element sides
 	}   // for elements
 
@@ -526,10 +525,10 @@ void Mesh::make_edge_permutations()
 
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
-		for (int i=0; i<nb->element()->n_nodes(); i++)
+		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
 			node_numbers[nb->element()->node[i]] = i;
 
-		for (int i=0; i<nb->side()->n_nodes(); i++)
+		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
 			permutation[node_numbers[nb->side()->node(i)]] = i;
 
 		switch (nb->side()->dim())
@@ -765,7 +764,7 @@ vector<int> const & Mesh::all_elements_id() {
 
         all_elements_id_.resize(n_all_input_elements_);
         std::vector<int>::iterator all_it = all_elements_id_.begin();
-        unsigned int last_id = element.begin().id();
+        int last_id = element.begin().id();
 
         for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++all_it) {
             if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());

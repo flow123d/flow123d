@@ -925,60 +925,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
     }
 }
 
-//=============================================================================
-// COUMPUTE NONZEROES IN THE WATER MH MATRIX
-//=============================================================================
-/*
- * void compute_nonzeros( TWaterLinSys *w_ls) {
 
- ElementIter ele;
- struct Edge *edg;
- int row,side,i;
- Mesh* mesh = w_ls->water_eq;
-
- xprintf( Msg, "Computing nonzero values ...\n");
- w_ls->nonzeros=(int *)xmalloc(sizeof(int)*w_ls->size);
- row=0;
- FOR_ELEMENTS( ele ) { // count A, B', C'
- // n_sides in A, 1 in B', 1 in C'
- for(side=0;side<ele->n_sides;side++)
- w_ls->nonzeros[row++]=ele->n_sides+2;
- }
- FOR_ELEMENTS( ele ) { // count B, D, E'
- // n_sides in B, # D, # E
- w_ls->nonzeros[row++]=ele->n_sides+ele->d_row_count+ele->e_row_count;
- }
- FOR_EDGES ( edg ) { // count C, E', F
- // C - n_sides(1 on BC, 2 inside), E' - possible ngh. F-diagonal
- w_ls->nonzeros[row++]=(edg->n_sides)+((edg->neigh_vb!=NULL)?1:0)+1;
- }
-
- // count additional space for the valueas of schur complement
- if (w_ls->n_schur_compls > 0) {
- row=w_ls->sizeA;
- // -B'*A-*B block is diagonal and already counted
- // -B'*A-*C block conect element with its edges
- FOR_ELEMENTS( ele ) {
- w_ls->nonzeros[row++]+=ele->n_sides;
- }
-
- if (w_ls->n_schur_compls > 0) {
- // !!! koncepce Neighbouringu je tak prohnila, ze neni vubec jasne, jestli
- // pro jeden element sousedi max s jednou edge a naopak takze musim spolehat jen na to co je
- // v e_col
- FOR_ELEMENTS( ele ) {
- for(i=0;i<ele->n_sides;i++) w_ls->nonzeros[ele->side(i)->edge->c_row]+=ele->e_row_count;
- for(i=0;i<ele->e_row_count;i++) w_ls->nonzeros[ele->e_col[i]]+=ele->n_sides+ele->e_row_count-1;
- }
- }
- // -C'*A-*B block conect edge with its elements = n_sides nz
- // -C'*A-*C block conect all edges of every element = n_sides*(dim of sides +1)nz (not counting diagonal)
- FOR_EDGES ( edg ) {
- w_ls->nonzeros[row++] += edg->n_sides*(edg->side(0)->dim+1+1);
- }
- }
- }
- */
 
 /*******************************************************************************
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT

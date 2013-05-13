@@ -150,14 +150,6 @@ public:
     void init_from_input();
 
 
-
-    /**
-     * This set pointers from elements to materials. Mesh should store only material IDs of indices.
-     * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
-     */
-    //void setup_materials( MaterialDatabase &base);
-    //void make_element_geometry();
-
     /**
      * Returns vector of ID numbers of elements from both element and bc_elements vectors.
      */
@@ -274,6 +266,7 @@ protected:
      * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
      */
     void setup_topology();
+
 
     void element_to_neigh_vb();
     void create_external_boundary();
