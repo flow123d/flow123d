@@ -12,7 +12,7 @@
 
 #include "input/accessors.hh"
 #include "coupling/equation.hh"
-//class Mesh;
+class Mesh;
 class Distribution;
 
 enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Lim_Sorp};
@@ -52,8 +52,10 @@ class Reaction: public EquationBase
 		 */
         inline unsigned int n_substances()
         { return names_.size(); }
-
-
+        /**
+        *
+        */
+        //void set_mesh_(Mesh *mesh_in);
 		/**
 		* 	It returns current time step used for first order reactions.
 		*/
@@ -110,7 +112,7 @@ class Reaction: public EquationBase
 		*/
 		double ***concentration_matrix;
 		/**
-		* No idea what it does.
+		* Distribution of elements between processors?
 		*/
 		int *el_4_loc;
 		/**

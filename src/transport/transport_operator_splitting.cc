@@ -25,7 +25,7 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "reaction/isotherm.hh"
+//#include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 
 #include "semchem/semchem_interface.hh"
@@ -360,10 +360,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    if (reactions_it->type() == Sorption::input_type ){
 	    	sorptions = new Sorption(init_mesh, *reactions_it, convection->get_substance_names());
 	        convection->get_par_info(el_4_loc, el_distribution);
-	        sorptions->set_dual_porosity(convection->get_dual_porosity());
-
+	        // sorptions->set_dual_porosity(convection->get_dual_porosity());
 	        sorptions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
 
+	        //cout << "Nr of elements for sorption is " << el_distribution->lsize() << endl; // correct
 	        double** sorb_conc_array;
 	        sorb_conc_array = (double**) xmalloc(convection->get_n_substances() * sizeof(double*));
 	        for (int sbi = 0; sbi < convection->get_n_substances(); sbi++)

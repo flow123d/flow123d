@@ -77,7 +77,11 @@ void Reaction::set_time_step(Input::Record in_rec)
 	return;
 }
 
-//void Reaction::set_mesh_(Mesh *mesh_in){mesh = mesh_in; return;}
+/*void Reaction::set_mesh_(Mesh *mesh_in)
+{
+	mesh_ = mesh_in;
+	return;
+}*/
 
 void Reaction::set_dual_porosity(bool dual_porosity_on)//obsolete function
 {

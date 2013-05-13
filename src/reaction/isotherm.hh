@@ -93,7 +93,7 @@ public:
      * @p isotherm (functor object).
      */
     template<class Func>
-    void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm); // const Func &isotherm
+    void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm, double elem_volume); // const Func &isotherm
     /**
      * Update concentrations.
      */
@@ -120,6 +120,26 @@ public:
     *  Returns sorption type
     */
     SorptionType get_sorption_type(void);
+    /**
+    *  Sets sorption type
+    */
+    void set_sorption_type(SorptionType sorp_type);
+    /**
+    *
+    */
+    void set_mult_coef_(double mult_coef);
+    /**
+    *
+    */
+    double get_mult_coef_(void);
+    /**
+    *
+    */
+    void set_second_coef_(double second_coef);
+    /**
+    *
+    */
+    double get_second_coef_(void);
 private:
     /**
     * 	Suppresses the use of implicit constructor.
@@ -135,6 +155,14 @@ private:
     double c_aqua_limit_;
     /// Type of isotherm
     SorptionType sorption_type;
+    /**
+    * 	Multiplication parameter of the isotherm
+    */
+    double mult_coef_;
+    /**
+    * 	Second potential parameter of the isotherm
+    */
+    double second_coef_;
     /**
      * Interpolation table of isotherm in the rotated coordinates.
      * The X axes of rotated system is total mass, the Y axes is perpendicular.

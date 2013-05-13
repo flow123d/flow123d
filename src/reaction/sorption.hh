@@ -27,13 +27,17 @@ class Isotherm;
 class Sorption:  public Reaction
 {
 	public:
+		/*
+		 * Static variable for new input data types input
+		 */
+		static Input::Type::Record input_type;
+
 		class EqData : public EqDataBase // should be written in class Sorption
 		{
 		public:
 			/**
 			 * 	Sorption type specifies a kind of isothermal description of adsorption.
 			 */
-
 			static Input::Type::Selection sorption_type_selection;
 
 			/// Collect all fields
@@ -53,11 +57,6 @@ class Sorption:  public Reaction
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 		};
-
-		/*
-	 	* Static variable for new input data types input
-		*/
-		static Input::Type::Record input_type;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
@@ -67,6 +66,10 @@ class Sorption:  public Reaction
 		*	Destructor.
 		*/
 		~Sorption(void);
+        /**
+        *
+        */
+        //void set_mesh_(Mesh *mesh_in);
 		/**
 		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
@@ -92,7 +95,7 @@ class Sorption:  public Reaction
 		/**
 		*
 		*/
-		void set_sorb_conc_array(double** sorb_cocnc_array);
+		void set_sorb_conc_array(double** sorb_conc_array);
 		/**
 		* Meaningless inherited methods.
 		*/
@@ -114,6 +117,10 @@ class Sorption:  public Reaction
 		*	For printing parameters of isotherms under consideration, not necessary to store
 		*/
 		void print_sorption_parameters(void);
+		/**
+		*
+		*/
+		//Mesh *mesh_;
 		/**
 		* 	Number of regions.
 		*/
