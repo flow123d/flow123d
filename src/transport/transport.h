@@ -192,8 +192,8 @@ private:
             double 			update_dens_time;
 
             double ***out_conc;
-            int              n_substances;    // # substances transported by water
-            vector<string> substance_name;   // Names of substances
+            int              n_subst_;    // # substances transported by water
+            vector<string> subst_names_;   // Names of substances
             string bc_fname; // name of input file with boundary conditions
 
         	//Density
