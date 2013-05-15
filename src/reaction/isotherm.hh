@@ -140,6 +140,10 @@ public:
     *
     */
     double get_second_coef_(void);
+    /**
+    *
+    */
+    void precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed, double elem_volume);
 private:
     /**
     * 	Suppresses the use of implicit constructor.
