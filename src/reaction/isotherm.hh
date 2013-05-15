@@ -146,15 +146,15 @@ private:
     */
     //Isotherm();
     /// coefficient that convert soluted concentration to mass; rho_aqua*porosity = k_W
-    double scale_aqua;
+    double scale_aqua_;
     /// coefficient that convert adsorbed molar concentration to mass; molar_weight * rho_rock * (1 - porosity) = k_H
-    double scale_sorbed;
-    /// reciprocal values divided by 2
-    double inv_scale_aqua, inv_scale_sorbed;
+    double scale_sorbed_;
+    /// reciprocal values
+    double inv_scale_aqua_, inv_scale_sorbed_;
     /// Limit concentration in solution, we model coagulation as adsorption
     double c_aqua_limit_;
     /// Type of isotherm
-    SorptionType sorption_type;
+    SorptionType sorption_type_;
     /**
     * 	Multiplication parameter of the isotherm
     */
@@ -222,15 +222,15 @@ class CrossFunction
 {
 public:
     CrossFunction(const Func &func_,  double total_mass, double scale_aqua, double scale_sorbed)
-    : func(func_), total_mass_(total_mass), scale_sorbed(scale_sorbed), scale_aqua(scale_aqua) {}
+    : func(func_), total_mass_(total_mass), scale_sorbed_(scale_sorbed), scale_aqua_(scale_aqua) {}
 
     double operator()( double conc_aqua)
     {
-        return scale_sorbed * func( conc_aqua ) - total_mass_ + scale_aqua * conc_aqua; // that is the  selected isotherm
+        return scale_sorbed_ * func( conc_aqua ) - total_mass_ + scale_aqua_ * conc_aqua; // that is the  selected isotherm
     }
 private:
     Func func;
-    double total_mass_, scale_sorbed, scale_aqua;
+    double total_mass_, scale_sorbed_, scale_aqua_;
 };
 
 

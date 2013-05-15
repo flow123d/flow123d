@@ -21,11 +21,11 @@ void Linear::reinit(double mult_coef)
 void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
 {
     // set class variables
-	sorption_type = sorp_type;
-    scale_aqua = porosity * rho_aqua;
-    scale_sorbed = (1-porosity) * rock_density * molar_mass;
-    inv_scale_aqua = 1/(scale_aqua*(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed)); // scale_aqua/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
-    inv_scale_sorbed = 1/(scale_aqua*(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed)); // scale_sorbed/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
+	sorption_type_ = sorp_type;
+    scale_aqua_ = porosity * rho_aqua;
+    scale_sorbed_ = (1-porosity) * rock_density * molar_mass;
+    inv_scale_aqua_ = 1/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)); // scale_aqua/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
+    inv_scale_sorbed_ = 1/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)); // scale_sorbed/(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed);
     c_aqua_limit_ = c_aqua_limit;
     /*cout << "sorp_type " << sorption_type << endl;
     cout << "scale_aqua " << scale_aqua << endl;
@@ -38,7 +38,7 @@ void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double r
 //inline
 bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as glass but the inline command makes troubles, probably
 {
-    double total_mass = scale_aqua* c_aqua + scale_sorbed * c_sorbed;
+    double total_mass = scale_aqua_* c_aqua + scale_sorbed_ * c_sorbed;
     //unsigned
     //if(total_mass < 0.0) total_mass = 0.0; // this must be solved somehow else, negative total mass is strange
     int i_total_mass = total_mass / total_mass_step;
@@ -54,13 +54,13 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as g
     	int iso_ind_floor, iso_ind_ceil;
     	iso_ind_floor = (int)(total_mass/(total_mass_step)); iso_ind_ceil = iso_ind_floor + 1;
     	double rot_sorbed = interpolation_table[iso_ind_floor] + (total_mass - iso_ind_floor*total_mass_step)*(interpolation_table[iso_ind_ceil] - interpolation_table[iso_ind_floor])/total_mass_step;
-        c_aqua = (total_mass * inv_scale_aqua - rot_sorbed*inv_scale_sorbed);
-        c_sorbed = (total_mass * inv_scale_sorbed + rot_sorbed * inv_scale_aqua);
+        c_aqua = (total_mass * inv_scale_aqua_ - rot_sorbed*inv_scale_sorbed_);
+        c_sorbed = (total_mass * inv_scale_sorbed_ + rot_sorbed * inv_scale_aqua_);
         return true;
     } else {
     	//cout << "c_aqua_limit_ has the value " << c_aqua_limit_ << endl;
         if (c_aqua_limit_ > 0.0) {
-            c_sorbed = (total_mass - scale_aqua* c_aqua_limit_)*inv_scale_sorbed;
+            c_sorbed = (total_mass - scale_aqua_* c_aqua_limit_)*inv_scale_sorbed_;
             c_aqua = c_aqua_limit_;
         } else
         {
@@ -85,7 +85,10 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
     } else {
         cout << "Solubility limit has to positive " << c_aqua_limit_ << endl;
     }*/
-	double total_mass = (scale_aqua*c_aqua + scale_sorbed * c_sorbed)/elem_volume;
+    // Following 3 lines are modificated temporarily by multiplication ba eleme_volume.
+	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed)*elem_volume;
+	double scale_aqua = scale_aqua_ * elem_volume;
+	double scale_sorbed = scale_sorbed_ * elem_volume;
     CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua, scale_sorbed); // equation describing one point on the isotherm
     pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0.0, 10.0, toler, max_iter);
     //SOLUTION IS AN INTERVAL CONTAINING SOLUTION, because of that following two lines are commented
@@ -114,10 +117,10 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
     SorptionType sorpt_type = this->get_sorption_type();
     //cout << "Sorption type is " << sorpt_type << endl; // correct
     if (c_aqua_limit_ > 0.0) {
-        mass_limit = scale_aqua*c_aqua_limit_ + scale_sorbed*f_max; //isotherm(c_aqua_limit_);
+        mass_limit = scale_aqua_*c_aqua_limit_ + scale_sorbed_*f_max; //isotherm(c_aqua_limit_);
         if(mass_limit < 0.0)
         {
-        	cout << "isotherm type " << sorpt_type << ", mass_limit has negative value " << mass_limit << ", scale_aqua "  << scale_aqua << ", c_aq_limit " << c_aqua_limit_ << ", scale_sorbed " << scale_sorbed << ", f_max " << f_max << endl;
+        	cout << "isotherm type " << sorpt_type << ", mass_limit has negative value " << mass_limit << ", scale_aqua "  << scale_aqua_ << ", c_aq_limit " << c_aqua_limit_ << ", scale_sorbed " << scale_sorbed_ << ", f_max " << f_max << endl;
         }
     } else {
         cout << "Solubility limit has to be higher than 0.0" << endl;
@@ -127,10 +130,10 @@ void Isotherm::make_table(const Func &isotherm, int n_steps) { //const Func &iso
     total_mass_step = mass_limit / n_steps;
     double mass = 0.0; // total_mass_step;
     for(int i=0; i<= n_steps;i++, mass+=total_mass_step) {
-        double c_aqua = mass * inv_scale_aqua; // aqueous concentration (original coordinates c_a) corresponding to total mass
+        double c_aqua = mass * inv_scale_aqua_; // aqueous concentration (original coordinates c_a) corresponding to total mass
         double c_sorbed = const_cast<Func &>(isotherm)(c_aqua); // functional value appropriate to f(c_a)
         //solve_conc(c_aqua, c_sorbed, isotherm); // this line seems to be obsolete
-    	double c_sorbed_rot = (c_sorbed * scale_aqua - c_aqua * scale_sorbed); // const_cast<Func &>(isotherm)(mass);
+    	double c_sorbed_rot = (c_sorbed * scale_aqua_ - c_aqua * scale_sorbed_); // const_cast<Func &>(isotherm)(mass);
         interpolation_table.push_back(c_sorbed_rot);
     }
 
@@ -146,13 +149,13 @@ void Isotherm::make_one_point_table(void)
 
 void Isotherm::set_sorption_type(SorptionType sorp_type)
 {
-	sorption_type = sorp_type;
+	sorption_type_ = sorp_type;
 	return;
 }
 
 SorptionType Isotherm::get_sorption_type(void)
 {
-	return sorption_type;
+	return sorption_type_;
 }
 
 void Isotherm::set_mult_coef_(double mult_coef)
@@ -186,12 +189,12 @@ template void Isotherm::make_table<Langmuir>(const Langmuir &isotherm, int n_ste
 
 double Isotherm::get_scale_aqua(void)
 {
-	return scale_aqua;
+	return scale_aqua_;
 }
 
 double Isotherm::get_scale_sorbed(void)
 {
-	return scale_sorbed;
+	return scale_sorbed_;
 }
 
 int Isotherm::get_interpolation_table_size(void)
