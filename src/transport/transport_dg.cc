@@ -1077,7 +1077,9 @@ void TransportDG::assemble_fluxes_element_side()
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
     PetscScalar local_matrix[4*ndofs*ndofs];
     double transport_flux, comm_flux[2][2], por_m[2][qsize], csection[qsize];
-    arma::vec sigma[qsize];
+    //arma::vec sigma[qsize];
+    std::vector<arma::vec> sigma;
+    sigma.resize(qsize);
 
     // index 0 = element with lower dimension,
     // index 1 = side of element with higher dimension
@@ -1435,7 +1437,9 @@ void TransportDG::prepare_initial_condition()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     unsigned int dof_indices[ndofs]; //, nid;
     double matrix[ndofs*ndofs], rhs[ndofs];
-    arma::vec init_values[qsize];
+    //arma::vec init_values[qsize];
+    std::vector<arma::vec> init_values;
+    init_values.resize(qsize);
 
     FOR_ELEMENTS(mesh_, elem)
     {
@@ -1499,8 +1503,13 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 	vector<arma::vec3> side_velocity(qsize);
 	double conc, mass_flux, water_flux;
 	arma::vec3 c_grad;
-	arma::vec Dm[qsize], alphaL[qsize], alphaT[qsize];
+	//arma::vec Dm[qsize], alphaL[qsize], alphaT[qsize];
+    std::vector<arma::vec> Dm, alphaL, alphaT;
 	arma::mat33 D;
+
+	Dm.resize(qsize);
+	alphaL.resize(qsize);
+	alphaT.resize(qsize);
 
     FOR_BOUNDARIES(mesh_, bcd) {
 
