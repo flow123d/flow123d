@@ -94,7 +94,26 @@ public:
 
 protected:
 
+    /**
+     * Calculates the total flux through boundaries of all regions, and additionally positive and negative fluxes.
+     * The actual calculation depends on the numerical scheme, so each descendant of TransportBase implements this method.
+     * @param bcd_balance       bcd_balance[i][j] is the calculated total flux
+     *                          of @p ith substance through boundary of @p jth region.
+     * @param bcd_plus_balance  bcd_plus_balance[i][j] is the total positive flux
+     *                          of @p ith substance through boundary of @p jth region.
+     * @param bcd_minus_balance bcd_minus_balance[i][j] is the total negative flux
+     *                          of @p ith substance through boundary of @p jth region.
+     */
     virtual void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) = 0;
+
+    /**
+     * Calculates the substance mass and sources on all regions.
+     * The actual calculation depends on the numerical scheme, so each descendant of TransportBase implements this method.
+     * @param mass        mass[i][j] is the calculated mass of @p ith
+     *                    substance on @p jth region.
+     * @param src_balance src_balance[i][j] is the source mass
+     *                    of @p ith substance on @p jth region.
+     */
     virtual void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) = 0;
 
     FILE *balance_output_file;
