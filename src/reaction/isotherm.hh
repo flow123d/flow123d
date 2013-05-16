@@ -52,6 +52,10 @@ public:
 	* 	Original constructor, Linear(double mult_coef) : mult_coef_(mult_coef) {}
 	*/
     Linear(double mult_coef) : mult_coef_(mult_coef) {}
+    /**
+    * Destructor.
+    */
+    ~Linear(void) {}
 	/**
 	* 	Just the test to define multiplication coefficient other way.
 	*/
@@ -63,6 +67,25 @@ public:
 
 private:
     double mult_coef_;
+};
+
+class Freundlich {
+public:
+	/**
+	* 	Constructor.
+	*/
+	Freundlich(double mult_coef, double exponent) : mult_coef_(mult_coef), exponent_(exponent){}
+	/**
+	* 	Destructor.
+	*/
+	~Freundlich(void){}
+	/**
+	* 	Operator.
+	*/
+	double operator()(double x){ return mult_coef_*pow(x, exponent_); }
+private:
+	double mult_coef_;
+	double exponent_;
 };
 
 /*void Linear::reinit(double mult_coef)

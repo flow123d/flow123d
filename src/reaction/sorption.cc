@@ -276,7 +276,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			 break;
 			 case 3: // freundlich: //
 			 {
-				 xprintf(Msg,"Freundlich isotherm is not implemented yet.");
+				 cout << "Freundlich's interpolation table would be created" << endl;
 				 //cout << "The interpolation table size is" << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
 			 }
 			 break;
@@ -348,7 +348,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		{
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
-			    if(this->isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() >= 2)
+			    //if(this->isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() >= 2) // interpolation_table seems to be unusable
 			    {
 			    	//cout << "Interpolation table size is " << isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() << endl;
 					int subst_id =substance_ids[i_subst];
@@ -361,6 +361,11 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 						//cout << "The boost-function tomsolve748() will be used." << endl;
 						switch(isotherms_mob[reg_id_nr][subst_id].get_sorption_type())
 						{
+						 case 0:
+						 {
+							 ; //cout << "No sorption is considered." << endl;
+						 }
+						 break;
 						 case 1: //  linear: //
 						 {
 							Linear obj_isotherm(isotherms_mob[reg_id_nr][subst_id].get_mult_coef_());
@@ -373,6 +378,12 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm, elem_volume);
 						 }
 						 break;
+						 case 3: // freundlich
+						 {
+							Freundlich obj_isotherm(isotherms_mob[reg_id_nr][subst_id].get_mult_coef_(), isotherms_mob[reg_id_nr][subst_id].get_second_coef_());
+							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm, elem_volume);
+						 }
+						 break;
 						 default:
 						 {
 							 xprintf(Msg,"Sorption of %d-th specie in %d-th region has type %s.", i_subst, reg_id_nr, isotherms_mob[reg_id_nr][subst_id].get_sorption_type());
@@ -381,7 +392,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 						}
 						//isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm, elem_volume);
 					}
-			    }else{
+			    //}else{
 			    	;//cout << "The isotherm is either not specified or it is defined as 'none'" << endl;
 			    }
 			}

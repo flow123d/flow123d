@@ -117,7 +117,7 @@ template void Isotherm::solve_conc<Linear>(double &c_aqua, double &c_sorbed, con
 
 template void Isotherm::solve_conc<Langmuir>(double &c_aqua, double &c_sorbed, const Langmuir &isotherm, double elem_volume);
 
-//template void Isotherm::solve_conc<Freundlich>(double &c_aqua, double &c_sorbed, const Freundlich &isotherm);
+template void Isotherm::solve_conc<Freundlich>(double &c_aqua, double &c_sorbed, const Freundlich &isotherm, double elem_volume);
 
 void Isotherm::precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed, double elem_volume)
 {
@@ -208,7 +208,7 @@ template void Isotherm::make_table<Linear>(const Linear &isotherm, int n_steps);
 
 template void Isotherm::make_table<Langmuir>(const Langmuir &isotherm, int n_steps);
 
-//template void Isotherm::make_table<Freundlich>(const Freundlich &isotherm, int n_steps);
+template void Isotherm::make_table<Freundlich>(const Freundlich &isotherm, int n_steps);
 
 
 double Isotherm::get_scale_aqua(void)
