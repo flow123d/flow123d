@@ -406,14 +406,14 @@ void TransportDG::update_solution()
     }
 
     // assemble right hand side (due to sources and boundary conditions)
-//    if (rhs[0] == NULL ||
-//    	flux_changed ||
-//    	data.bc_conc.changed() ||
-//    	data.dg_penalty.changed() ||
-//    	data.sources_conc.changed() ||
-//    	data.sources_density.changed() ||
-//    	data.sources_sigma.changed())
-//    {
+    if (rhs[0] == NULL ||
+    	flux_changed ||
+    	data.bc_conc.changed() ||
+    	data.dg_penalty.changed() ||
+    	data.sources_conc.changed() ||
+    	data.sources_density.changed() ||
+    	data.sources_sigma.changed())
+    {
     	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
@@ -428,7 +428,7 @@ void TransportDG::update_solution()
     		VecDuplicate(ls[i]->get_rhs(), &rhs[i]);
     		VecCopy(ls[i]->get_rhs(), rhs[i]);
     	}
-//    }
+    }
 
     flux_changed = false;
 
@@ -793,7 +793,7 @@ void TransportDG::set_sources()
     		update_values | update_JxW_values | update_quadrature_points);
     typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    vector<arma::vec> conc(qsize), sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
+    vector<arma::vec> sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
     unsigned int dof_indices[ndofs];
     PetscScalar local_rhs[ndofs];
     double source;
