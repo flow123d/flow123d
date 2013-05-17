@@ -48,7 +48,7 @@
           por_imm = 0.25,
           alpha = [0.01, 0.01],
           phi = 0.5,
-          sorp_type = [1, 2],
+          sorp_type = [ "linear", "freundlich" ],
           sorp_coef0 = [0.02, 0.02],
           sorp_coef1 = [0, 0.5]
         },
@@ -58,7 +58,7 @@
           por_imm = 0.25,
           alpha = [0.01, 0.01],
           phi = 0.5,
-          sorp_type = [1, 2],
+          sorp_type = [ "linear", "freundlich" ],
           sorp_coef0 = [0.02, 0.02],
           sorp_coef1 = [0, 0.5]
         }

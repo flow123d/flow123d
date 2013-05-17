@@ -105,4 +105,34 @@ Equation \eqref{e:inter_dim_flux} is incorporated as the total flux boundary con
 F_C^d &= q^c.
 \end{align}
 
+\paragraph{Dual porosity}
+Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into to zones the mobile zone and the immbile zone. 
+Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the dead-end pores, where the liquid is traped and can not pass through.
+The rest of the pore volume is ocuppied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
+We consider simple nonequilibrium linear model:
+\begin{align}
+    \theta_m \partial_t c_m &= \alpha ( c_i - c_m), \\
+    \theta_i \partial_t c_i &= \alpha ( c_m - c_i) 
+\end{align}
+where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone, $\alpha$ is a diffusion parameter, $\theta_m$ and $\theta_i$ are porosities of the mobile zone and the immobile zone respectively, while 
+\[
+  \theta_m +\theta_i =\theta.
+\]
+
+The solution of this system is:
+\begin{align}
+     c_m(t) &= (c_m(0) - c_a(0)) \exp( \alpha(\frac{1}{\theta_m} + \frac{1}{\theta_i}) t) + c_a(0), \\
+     c_i(t) &= (c_i(0) - c_a(0)) \exp( \alpha(\frac{1}{\theta_m} + \frac{1}{\theta_i}) t) + c_a(0)
+\end{align}
+where $c_a$ is weighted average:
+\[
+  c_a = \frac{\theta_m c_m + \theta_i c_i}{\theta_m + \theta_i}.
+\]
+
+
+
+
+
+
+
 

@@ -225,17 +225,6 @@ public:
 	virtual EqData *get_data() { return &data; }
 
 	/**
-	 * @brief Getter for number of substances.
-	 */
-	unsigned int n_substances() { return n_subst_; };
-
-	/**
-	 * @brief Getter for substance names.
-	 * @return Vector of substance names.
-	 */
-	vector<string> &substance_names() { return subst_names_; };
-
-	/**
 	 * @brief Destructor.
 	 */
 	~TransportDG();
@@ -443,11 +432,6 @@ private:
 	/// Field data for model parameters.
 	EqData data;
 
-	/// Number of transported substances.
-	int n_subst_;
-
-	/// Names of transported substances.
-	std::vector<string> subst_names_;
 
 	/// True if sorption is considered.
 	bool sorption;
@@ -513,7 +497,7 @@ private:
 	OutputTime *transport_output;
 
 	/// Time marks for writing the output.
-	TimeMark::Type output_mark_type;
+	//TimeMark::Type output_mark_type;
 
 	// @}
 
@@ -529,7 +513,7 @@ private:
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
 
-    const MH_DofHandler * mh_dh;
+    //const MH_DofHandler * mh_dh;
 
     // @}
 };

@@ -265,7 +265,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
  */
 void SparseGraph::DFS(int vtx)
 {
-    ASSERT( vtx>=0 && vtx<vtx_distr.size(),"Invalid entry vertex %d in DFS.\n",vtx);
+    ASSERT( vtx>=0 && vtx< (int) vtx_distr.size(),"Invalid entry vertex %d in DFS.\n",vtx);
     int neighbour;
     for(int i_neigh=rows[vtx]; i_neigh< rows[vtx+1];i_neigh++) {
         neighbour = adj[i_neigh];
@@ -284,7 +284,7 @@ void SparseGraph::view()
     ASSERT(NONULL(adj),"Can not view non finalized graph.\n");
     int row,col;
     xprintf(Msg,"SparseGraph\n");
-    for(row=0; row < vtx_distr.lsize(); row++) {
+    for(row=0; row < (int) vtx_distr.lsize(); row++) {
         xprintf(Msg,"edges from this vertex: %d\n",rows[row+1]);
         for(col=rows[row]; col<rows[row+1]; col++) {
             xprintf(Msg,"edge (v1, v2): %d %d\n",row+vtx_distr.begin(), adj[col]);
@@ -300,7 +300,7 @@ bool SparseGraph::is_symmetric()
     int loc_row, row, row_pos;
     int col_pos,col,loc_col;
 
-    for(loc_row=0;loc_row<vtx_distr.lsize();loc_row++) {
+    for(loc_row=0;loc_row< (int) vtx_distr.lsize();loc_row++) {
         row=loc_row+vtx_distr.begin();
         for(row_pos=rows[loc_row];row_pos<rows[loc_row+1];row_pos++) {
             col=adj[row_pos];
@@ -403,7 +403,7 @@ void SparseGraphMETIS::partition(int *part)
             "METIS could be used only with localized distribution.\n");
 
     if (vtx_distr.np()==1) {
-        for(int i=0;i<vtx_distr.size();i++) part[i]=0;
+        for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
 
     } else {
 

@@ -428,7 +428,7 @@ private:
     /**
      * When the next time is chosen we need only the lowest fix time. Therefore we use
      * minimum priority queue of doubles based on the vector container.
-     * This is one global set of time marks for the whole problem and is shared umong all equations. 
+     * This is one global set of time marks for the whole problem and is shared among all equations.
      * Therefore this object is static constant pointer.
      */
     static TimeMarks * const time_marks;

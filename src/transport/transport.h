@@ -74,12 +74,32 @@ class ConvectionTransport;
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
-class ConvectionTransport : public EquationBase {
+class ConvectionTransport : public TransportBase {
 public:
+
+    class EqData : public TransportBase::TransportEqData {
+    public:
+        static Input::Type::Selection sorption_type_selection;
+
+        EqData();
+        virtual ~EqData() {};
+
+        /// Override generic method in order to allow specification of the boundary conditions through the old bcd files.
+        RegionSet read_boundary_list_item(Input::Record rec);
+
+        Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
+        Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
+        Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
+        Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
+        Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
+        Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
+
+    };
+
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, TransportOperatorSplitting::EqData &init_data, const Input::Record &in_rec);
+        ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
 	/**
 	 * TODO: destructor
 	 */
@@ -97,6 +117,14 @@ public:
 	 */
 	void set_flow_field_vector(const MH_DofHandler &dh);
   
+	/**
+	 * Set cross section of fractures from the Flow equation.
+	 *
+	 * TODO: Make this and previous part of Transport interface in TransportBase.
+	 */
+	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
+
+
     /**
      * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
      */
@@ -106,18 +134,23 @@ public:
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
 	void output_vector_gather(); //
+
+    /**
+     * @brief Write computed fields.
+     */
+    virtual void output_data();
+
+
 	/**
-	 * Returns time step constrain given by CFL condition for the discretization of the
-	 * convection term. The constrain depends on actual convection matrix assembled by
-	 * create_transport_matrix_mpi()
+	 * Getters.
 	 */
-	//double get_cfl_time_constrain();
+	inline EqData *get_data() { return &data_; }
 
 	double ***get_concentration_matrix();
 	double ***get_prev_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
-	int get_n_substances();
+	//int get_n_substances();
 	int *get_el_4_loc();
 	int *get_row_4_el();
 	virtual void get_parallel_solution_vector(Vec &vc);
@@ -128,9 +161,11 @@ public:
 	 */
 	double ***get_out_conc();
 	double ***get_conc();
-    vector<string> &get_substance_names();
+    //vector<string> &get_substance_names();
     double *get_sources(int sbi);
-    const MH_DofHandler *mh_dh;
+
+
+
 
 
 private:
@@ -162,18 +197,53 @@ private:
 
 	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
 	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
-	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, int sorp_type,
+	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
 			double *concx, double *concx_sorb, double Nv, double N); //
 
 
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
+    /**
+     * Overriding the virtual method that is called by TransportBase::mass_balance() to get boundary balances over individual boundary regions.
+     * TODO: more precise description
+     */
+    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+    /**
+     * Overriding the virtual method that is called by TransportBase::mass_balance() to get source balances over individual boundary regions.
+     * TODO: more precise description
+     */
+    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
+
+
+
+
+    /**
+     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
+     */
+    EqData data_;
+
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    //const MH_DofHandler *mh_dh;
+
+
+
+
+    /**
+     * Class for handling the solution output.
+     */
+    OutputTime *field_output;
+
+    /**
+     * Indicates if we finished the matrix and add vector by scaling with timestep factor.
+     */
 	bool is_convection_matrix_scaled, is_bc_vector_scaled;
 
-
-	TransportOperatorSplitting::EqData *data;
 
     double *sources_corr;
     Vec v_sources_corr;
@@ -192,8 +262,6 @@ private:
             double 			update_dens_time;
 
             double ***out_conc;
-            int              n_subst_;    // # substances transported by water
-            vector<string> subst_names_;   // Names of substances
             string bc_fname; // name of input file with boundary conditions
 
         	//Density
@@ -248,5 +316,6 @@ private:
             int *el_4_loc;
             Distribution *el_ds;
 
+            friend class TransportOperatorSplitting;
 };
 #endif /* TRANSPORT_H_ */

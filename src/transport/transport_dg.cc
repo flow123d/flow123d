@@ -177,7 +177,7 @@ template<> DOFHandler<3,3> *TransportDG::FEObjects::dh<3>() { return dh3_; }
 
 
 
-TransportDG::EqData::EqData() : TransportEqData("TransportDG")
+TransportDG::EqData::EqData() : TransportBase::TransportEqData("TransportDG")
 {
 	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", Default("0"));
 	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", Default("0"));
