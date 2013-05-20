@@ -143,7 +143,11 @@ protected:
     /// Names of transported substances.
     std::vector<string> subst_names_;
 
-    /// Access to the MH velocity field.
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
     const MH_DofHandler *mh_dh;
 
     /**
@@ -220,7 +224,9 @@ public:
      */
     static Input::Type::Record input_type;
 
+    /// Constructor.
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
+    /// Destructor.
     virtual ~TransportOperatorSplitting();
 
 
@@ -228,15 +234,12 @@ public:
     virtual void update_solution();
     //virtual void compute_one_step();
     //virtual void compute_until();
-    void compute_internal_step();
-    void output_data();
     virtual void get_parallel_solution_vector(Vec &vc);
     virtual void get_solution_vector(double* &vector, unsigned int &size);
+
     void compute_until_save_time();
-
-    unsigned int n_substances();
-    vector<string> &substance_names();
-
+    void compute_internal_step();
+    void output_data();
 
    
     /**
@@ -247,7 +250,6 @@ public:
     void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
 
     //virtual EqData *get_data() { return &data; };
-
 
 
 private:
@@ -267,8 +269,6 @@ private:
     Sorption *sorptions;
     Semchem_interface *Semchem_reactions;
     //int steps;
-
-
 
 
 };

@@ -672,30 +672,31 @@ void TransportDG::assemble_mass_matrix()
 
 
 
+
 void TransportDG::assemble_stiffness_matrix()
 {
   START_TIMER("assemble_stiffness");
    START_TIMER("assemble_volume_integrals");
-	assemble_volume_integrals<1>();
-	assemble_volume_integrals<2>();
-	assemble_volume_integrals<3>();
+    assemble_volume_integrals<1>();
+    assemble_volume_integrals<2>();
+    assemble_volume_integrals<3>();
    END_TIMER("assemble_volume_integrals");
 
    START_TIMER("assemble_fluxes_boundary");
-	assemble_fluxes_boundary<1>();
-	assemble_fluxes_boundary<2>();
-	assemble_fluxes_boundary<3>();
+    assemble_fluxes_boundary<1>();
+    assemble_fluxes_boundary<2>();
+    assemble_fluxes_boundary<3>();
    END_TIMER("assemble_fluxes_boundary");
 
    START_TIMER("assemble_fluxes_elem_elem");
-	assemble_fluxes_element_element<1>();
-	assemble_fluxes_element_element<2>();
-	assemble_fluxes_element_element<3>();
+    assemble_fluxes_element_element<1>();
+    assemble_fluxes_element_element<2>();
+    assemble_fluxes_element_element<3>();
    END_TIMER("assemble_fluxes_elem_elem");
 
    START_TIMER("assemble_fluxes_elem_side");
-	assemble_fluxes_element_side<1>();
-	assemble_fluxes_element_side<2>();
+    assemble_fluxes_element_side<1>();
+    assemble_fluxes_element_side<2>();
     assemble_fluxes_element_side<3>();
    END_TIMER("assemble_fluxes_elem_side");
   END_TIMER("assemble_stiffness");
@@ -1065,21 +1066,42 @@ void TransportDG::assemble_fluxes_boundary()
 template<unsigned int dim>
 void TransportDG::assemble_fluxes_element_side()
 {
-	if (dim == 1) return;
 
+	if (dim == 1) return;
     FEValues<dim-1,3> fe_values_vb(*feo->map<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     FESideValues<dim,3> fe_values_side(*feo->map<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
     typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
+    const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
+    const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
+
     PetscScalar local_matrix[4*ndofs*ndofs];
-    double transport_flux, comm_flux[2][2], por_m[2][qsize], csection[qsize];
+
+    double transport_flux;
+    double comm_flux[2][2];
+    double csection[qsize];
+
+    /*
+     * Workaround for Clang compiler 3.0 which
+     * ends with segfault on the original line:
+     * double por_m[2][qsize];
+     *
+     * Same problem with following line:
+     * arma::vec sigma[qsize];
+     */
+    double *por_m[2];
+    double por_m_0[qsize], por_m_1[qsize];
+    por_m[0] = por_m_0;
+    por_m[1] = por_m_1;
+
     //arma::vec sigma[qsize];
     std::vector<arma::vec> sigma;
     sigma.resize(qsize);
+
 
     // index 0 = element with lower dimension,
     // index 1 = side of element with higher dimension
@@ -1125,6 +1147,7 @@ void TransportDG::assemble_fluxes_element_side()
 				 * - "diffusive" term containing sigma
 				 * - "advective" term representing usual upwind
 				 */
+
 				comm_flux[0][0] =  (csection[k]*por_m[0][k]*sigma[k][sbi]-min(0.,transport_flux))*fv_sb[0]->JxW(k);
 				comm_flux[0][1] = -(csection[k]*por_m[0][k]*sigma[k][sbi]-min(0.,transport_flux))*fv_sb[0]->JxW(k);
 				comm_flux[1][0] = -(csection[k]*por_m[1][k]*sigma[k][sbi]+max(0.,transport_flux))*fv_sb[0]->JxW(k);
@@ -1149,7 +1172,11 @@ void TransportDG::assemble_fluxes_element_side()
 			ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], (int *)side_dof_indices, n_dofs[0]+n_dofs[1], (int *)side_dof_indices, local_matrix);
 		}
     }
+
 }
+
+
+
 
 
 
@@ -1162,6 +1189,7 @@ void TransportDG::set_boundary_conditions()
 	set_boundary_conditions<3>();
   END_TIMER("assemble_bc");
 }
+
 
 
 template<unsigned int dim>

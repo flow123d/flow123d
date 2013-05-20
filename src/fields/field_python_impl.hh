@@ -204,20 +204,6 @@ void FieldPython<spacedim, Value>::set_value(const Point<spacedim> &p, const Ele
 
 
 
-/*
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
-                   std::vector<Value>  &value_list, std::vector<FieldResult> &result_list)
-{
-#ifdef HAVE_PYTHON
-    ASSERT_SIZES( point_list.size(), value_list.size() );
-    for(unsigned int i=0; i< point_list.size(); i++)
-        result_list[i] = value(point_list[i], component);
-#endif // HAVE_PYTHON
-}
-*/
-
-
 
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::~FieldPython() {

@@ -289,6 +289,10 @@ void TransportBase::mass_balance() {
 
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec)
 {
@@ -308,7 +312,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
-	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        Semchem_reactions = NULL;
 	        sorptions = NULL;
@@ -318,7 +322,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
-	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        Semchem_reactions = NULL;
 	        sorptions = NULL;
@@ -326,7 +330,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    if (reactions_it->type() == Semchem_interface::input_type ) {
 	        Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	        Semchem_reactions->set_el_4_loc(el_4_loc);
-	        Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        decayRad = NULL;
 	        sorptions = NULL;
@@ -335,8 +339,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    	sorptions = new Sorption(init_mesh, *reactions_it, subst_names_ );
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        // sorptions->set_dual_porosity(convection->get_dual_porosity());
-	        sorptions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        sorptions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
+	        // TODO: move this into Sorption class, just pass dimensions of the array.
 	        double** sorb_conc_array = new double * [n_subst_];
 	        for (unsigned int sbi = 0; sbi < n_subst_; sbi++)
 	        {
@@ -436,13 +441,19 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 };
 
 
+
+
 void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
 	convection->compute_one_step();
 };
 
+
+
 void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
 	convection->compute_one_step();
 };
+
+
 
 void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
 {
@@ -453,6 +464,7 @@ void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* 
         Semchem_reactions->set_sorption_fields(&convection->get_data()->por_m, &convection->get_data()->por_imm, &convection->get_data()->phi);
     }
 }
+
 
 
 void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)

@@ -77,7 +77,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("Transpor
     ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", IT::Default("0"));
     ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
             " Vector, one value for every substance.", IT::Default("0"));
-    ADD_FIELD(sorp_type, "Type of sorption isotherm.", IT::Default("1"));
+    ADD_FIELD(sorp_type, "Type of sorption isotherm.", IT::Default("none"));
     sorp_type.set_selection(&sorption_type_selection);
     ADD_FIELD(sorp_coef0, "First parameter of sorption: Scaling of the isothem for all types. Vector, one value for every substance. ", IT::Default("0"));
     ADD_FIELD(sorp_coef1, "Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). "
@@ -281,7 +281,7 @@ void ConvectionTransport::set_initial_condition()
 		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			conc[MOBILE][sbi][index] = value(sbi);
-			pconc[MOBILE][sbi][index] = value(sbi);
+			//pconc[MOBILE][sbi][index] = value(sbi);
 		}
     }
 
@@ -305,25 +305,25 @@ void ConvectionTransport::alloc_transport_vectors() {
          cumulative_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
 
     conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
-    pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
+    //pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     out_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     //transport->node_conc = (double****) xmalloc(MAX_PHASES * sizeof(double***));
     for (ph = 0; ph < MAX_PHASES; ph++) {
         if ((sub_problem & ph) == ph) {
             conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //(MAX_PHASES * sizeof(double*));
-            pconc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
+            //pconc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
             out_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
             //  transport->node_conc[sbi] = (double***) xmalloc(MAX_PHASES * sizeof(double**));
             //}
             //}
             for (sbi = 0; sbi < n_subst; sbi++) {
                 conc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
-                pconc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+                //pconc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
                 out_conc[ph][sbi] = (double*) xmalloc(el_ds->size() * sizeof(double));
                 // transport->node_conc[sbi][ph] = (double**)xmalloc((mesh__->n_elements() ) * sizeof(double*));
                 for (i = 0; i < el_ds->lsize(); i++) {
                     conc[ph][sbi][i] = 0.0;
-                    pconc[ph][sbi][i] = 0.0;
+                    //pconc[ph][sbi][i] = 0.0;
 
                 }
                 for (i = 0; i < el_ds->size(); i++) {
@@ -339,7 +339,7 @@ void ConvectionTransport::alloc_transport_vectors() {
             }
         } else {
             conc[ph] = NULL;
-            pconc[ph] = NULL;
+            //pconc[ph] = NULL;
             out_conc[ph] = NULL;
             //transport->node_conc[sbi][ph] = NULL;
         }
@@ -379,8 +379,9 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), conc[MOBILE][sbi],
                 &vconc[sbi]);
 
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
-                pconc[MOBILE][sbi], &vpconc[sbi]);
+//        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+//                pconc[MOBILE][sbi], &vpconc[sbi]);
+        ierr = VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
         VecZeroEntries(vconc[sbi]);
         VecZeroEntries(vpconc[sbi]);
 
@@ -497,25 +498,14 @@ void ConvectionTransport::compute_one_step() {
 
     for (sbi = 0; sbi < n_subst_; sbi++) {
         // one step in MOBILE phase
-//        if (transportsources != NULL) {
-            //DBGMSG("component: %d\n", sbi);
 
-            //if (vcumulative_corr[sbi][10] >0) { int i =1;}
-            //if (bcvcorr[sbi][10] >0) { int i =1;}
-            //if (conc[sbi][10] >0) { int i =1;}
     	VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi],
     			compute_concentration_sources(sbi, conc[MOBILE][sbi] )
                     );
-//        } else {
-//            VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
-//        }
 
-        //VecView(vpconc[sbi],PETSC_VIEWER_STDOUT_SELF);
-
+    	VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
         MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
         //VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
-
-        VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
 
         if ((dual_porosity == true) || (sorption == true) )
             // cycle over local elements only in any order
@@ -848,8 +838,8 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
     por_m = data_.por_m.value(elem->centre(), elem->element_accessor());
     por_imm = data_.por_imm.value(elem->centre(), elem->element_accessor());
     alpha = data_.alpha.value(elem->centre(), elem->element_accessor())(sbi);
-    pcm = pconc[MOBILE][sbi][elm_pos];
-    pci = pconc[IMMOBILE][sbi][elm_pos];
+    pcm = conc[MOBILE][sbi][elm_pos];
+    pci = conc[IMMOBILE][sbi][elm_pos];
     // ---compute average concentration------------------------------------------
     conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
 
@@ -864,9 +854,9 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
         //getchar();
 
         conc[MOBILE][sbi][elm_pos] = cm;
-        pconc[MOBILE][sbi][elm_pos] = cm;
+        //pconc[MOBILE][sbi][elm_pos] = cm;
         conc[IMMOBILE][sbi][elm_pos] = ci;
-        pconc[IMMOBILE][sbi][elm_pos] = ci;
+        //pconc[IMMOBILE][sbi][elm_pos] = ci;
     }
 
     /*
@@ -919,29 +909,29 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
     Nm = por_m;
     Nimm = por_imm;
 
-    conc_avg = pconc[MOBILE][sbi][elm_pos] + pconc[MOBILE_SORB][sbi][elm_pos] * n / Nm; // cela hmota do poru
+    conc_avg = conc[MOBILE][sbi][elm_pos] + conc[MOBILE_SORB][sbi][elm_pos] * n / Nm; // cela hmota do poru
 
 
     if (conc_avg != 0) {
         compute_sorption(conc_avg, sorp_coef0[sbi], sorp_coef1[sbi], sorp_type[sbi], &conc[MOBILE][sbi][elm_pos],
                 &conc[MOBILE_SORB][sbi][elm_pos], Nm / n, n * phi / Nm);
 
-        pconc[MOBILE][sbi][elm_pos] = conc[MOBILE][sbi][elm_pos];
-        pconc[MOBILE_SORB][sbi][elm_pos] = conc[MOBILE_SORB][sbi][elm_pos];
+        //pconc[MOBILE][sbi][elm_pos] = conc[MOBILE][sbi][elm_pos];
+        //pconc[MOBILE_SORB][sbi][elm_pos] = conc[MOBILE_SORB][sbi][elm_pos];
     }
     //printf("\n%f\t%f\t",n * phi / Nm,n * phi / Nm);
     //printf("\n%f\t%f\t",n * phi / Nimm,n * (1 - phi) / Nimm);
     // getchar();
 
     if ((dual_porosity == true) && (por_imm != 0)) {
-        conc_avg_imm = pconc[IMMOBILE][sbi][elm_pos] + pconc[IMMOBILE_SORB][sbi][elm_pos] * n / Nimm; // cela hmota do poru
+        conc_avg_imm = conc[IMMOBILE][sbi][elm_pos] + conc[IMMOBILE_SORB][sbi][elm_pos] * n / Nimm; // cela hmota do poru
 
         if (conc_avg_imm != 0) {
             compute_sorption(conc_avg_imm, sorp_coef0[sbi], sorp_coef1[sbi], sorp_type[sbi], &conc[IMMOBILE][sbi][elm_pos],
                     &conc[IMMOBILE_SORB][sbi][elm_pos], Nimm / n, n * (1 - phi) / Nimm);
 
-            pconc[IMMOBILE][sbi][elm_pos] = conc[IMMOBILE][sbi][elm_pos];
-            pconc[IMMOBILE_SORB][sbi][elm_pos] = conc[IMMOBILE_SORB][sbi][elm_pos];
+            //pconc[IMMOBILE][sbi][elm_pos] = conc[IMMOBILE][sbi][elm_pos];
+            //pconc[IMMOBILE_SORB][sbi][elm_pos] = conc[IMMOBILE_SORB][sbi][elm_pos];
         }
     }
 
@@ -1135,10 +1125,6 @@ void ConvectionTransport::get_solution_vector(double* &vector, unsigned int &siz
 
 double ***ConvectionTransport::get_concentration_matrix() {
 	return conc;
-}
-
-double ***ConvectionTransport::get_prev_concentration_matrix(){
-	return pconc;
 }
 
 void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_distribution_out){

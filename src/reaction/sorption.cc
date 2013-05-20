@@ -123,7 +123,7 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 				Isotherm iso_immob;
 				isotherms_immob[i_reg].push_back(iso_immob);
 				isotherms_immob[i_reg].resize(nr_of_substances);
-				/*for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
+				for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
 				{
 					//isotherms_immob[i_reg][i_spec] = *(new Isotherm);
 				}

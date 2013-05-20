@@ -147,7 +147,6 @@ public:
 	inline EqData *get_data() { return &data_; }
 
 	double ***get_concentration_matrix();
-	double ***get_prev_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
 	//int get_n_substances();
@@ -216,33 +215,24 @@ private:
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
 
-
-
-
     /**
      *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
      */
     EqData data_;
-
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    //const MH_DofHandler *mh_dh;
-
-
-
-
     /**
      * Class for handling the solution output.
      */
     OutputTime *field_output;
-
     /**
      * Indicates if we finished the matrix and add vector by scaling with timestep factor.
      */
 	bool is_convection_matrix_scaled, is_bc_vector_scaled;
+
+    bool              sorption;     // Include sorption  YES/NO
+    bool              dual_porosity;   // Include dual porosity YES/NO
+    int sub_problem;    // 0-only transport,1-transport+dual porosity,
+                        // 2-transport+sorption
+                        // 3-transport+dual porosity+sorption
 
 
     double *sources_corr;
@@ -251,66 +241,27 @@ private:
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;
             // only local part
-            double ***conc;
-            double ***pconc;
-            double **cumulative_corr;
-
-            // global
-
-//        	std::string		transport_out_fname;// Name of file of trans. output
-            int       dens_step;            //
-            double 			update_dens_time;
-
-            double ***out_conc;
-            string bc_fname; // name of input file with boundary conditions
-
-        	//Density
-            bool density;			// Density Yes/NO
-            double ***prev_conc;
-            double *scalar_it;
-            double          *substance_density_scale;
-
-        	int		max_dens_it;	// maximum number of iterations in the variable-density iteration cycle
-        	bool		dens_implicit; // use iterations for the variable density (implicit) YES/NO
-        	double	dens_eps;      // stopping criterium for density iterations - pressure
-        	bool		write_iterations; // write results during iterations to transport POS file YES/NO
-
-        	// Transport
-            bool              sorption;     // Include sorption  YES/NO
-            bool              dual_porosity;   // Include dual porosity YES/NO
-            bool              reaction_on;     // Include reaction  YES/NO
-
-            // Other
-           // struct Problem* problem;
-            int sub_problem;	// 0-only transport,1-transport+dual porosity,
-    							// 2-transport+sorption
-    							// 3-transport+dual porosity+sorption
-    //PEPA
-//            int 	pepa; // It enables Pepa Chudoba's  crazy functions
-//            int 	type; // Type of crazy function
 
 
-    // NEW TRANSPORT
 
             VecScatter vconc_out_scatter;
-            Mat tm; // PETSc transport matrix
-            //Mat bcm; // PETSc boundary condition matrix
-            //Vec *bcv; // boundary condition vector
-            Vec *bcvcorr; // boundary condition correction vector
+    Mat tm; // PETSc transport matrix
 
-            Vec *vconc; // concentration vector
-            Vec *vpconc; // previous concentration vector
-            Vec *vcumulative_corr;
+    /// Concentration vectors for mobile phase.
+    Vec *vconc; // concentration vector
+    /// Concentrations for phase, substance, element
+    double ***conc;
 
+    ///
+    Vec *vpconc; // previous concentration vector
+    //double ***pconc;
+    Vec *bcvcorr; // boundary condition correction vector
+    Vec *vcumulative_corr;
+    double **cumulative_corr;
 
-            Vec *vconc_out; // concentration vector output (gathered)
+    Vec *vconc_out; // concentration vector output (gathered)
+    double ***out_conc;
 
-            int **d_row;  // diagonal row entries number in tm
-            int **od_row; // off-diagonal row entries number in tm
-            int **db_row; // diagonal column entries number in bcm
-            int **odb_row; // off-diagonal column entries number in bcm
-            int *l_row; // number of local rows in tm and bcm
-            int *lb_col; // number of local columns in bcm
 
             int *row_4_el;
             int *el_4_loc;

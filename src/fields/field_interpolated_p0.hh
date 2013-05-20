@@ -75,22 +75,6 @@ public:
 	void set_source_of_interpolation(const FilePath & mesh_file,
 									 const FilePath & raw_output);
 
-    /**
-     * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
-     * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
-     */
-    //virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
-
-    /**
-     * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
-     */
-    virtual FieldResult value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value);
-
-    /**
-     * Returns std::vector of scalar values in several points at once.
-     */
-    //virtual void value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
-    //                   std::vector<typename Value::return_type>  &value_list, std::vector<FieldResult> &result_list);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.

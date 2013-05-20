@@ -235,7 +235,7 @@ void FieldInterpolatedP0<spacedim, Value>::createAbscissa(Element *ele, TAbsciss
 			 	 TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)) );
 }
 
-
+/*
 template <int spacedim, class Value>
 FieldResult FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value) {
 
@@ -261,7 +261,7 @@ FieldResult FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p
 	val(0,0)=pressure_;
 	return result_other;
 }
-
+*/
 
 template <int spacedim, class Value>
 typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
