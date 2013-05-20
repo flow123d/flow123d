@@ -263,6 +263,22 @@ FieldResult FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p
 }
 
 
+template <int spacedim, class Value>
+typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
+{
+    //set_value(p,elm, this->value_);
+    return this->r_value_;
+}
+
+
+template <int spacedim, class Value>
+void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+                       std::vector<typename Value::return_type>  &value_list)
+{
+	// not supported yet
+}
+
+
 
 
 
