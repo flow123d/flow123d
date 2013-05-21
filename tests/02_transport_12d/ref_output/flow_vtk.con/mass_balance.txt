@@ -1,0 +1,260 @@
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 0.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -21.2165      2.49241       -23.7089      0.5           
+  -3            IMPLICIT BOUNDARY        B               -21.2715      2.43776       -23.7092      0.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -21.2165      2.49241       -23.7089      
+# total boundary balance                 B               -21.2715      2.43776       -23.7092      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               27.4457       0                           0.5           
+  48            region_48                B               27.3084       0                           0.5           
+  184           region_184               A               17.9699       0                           0.5           
+  184           region_184               B               17.7905       0                           0.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               45.4156       0             
+# total sources balance                  B               45.0989       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 1.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -15.3836      8.33321       -23.7168      1             
+  -3            IMPLICIT BOUNDARY        B               -15.4404      8.27635       -23.7167      1             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -15.3836      8.33321       -23.7168      
+# total boundary balance                 B               -15.4404      8.27635       -23.7167      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               43.9622       0                           1             
+  48            region_48                B               43.861        0                           1             
+  184           region_184               A               35.8556       0                           1             
+  184           region_184               B               35.7055       0                           1             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               79.8178       0             
+# total sources balance                  B               79.5665       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 1.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -11.2469      12.4704       -23.7174      1.5           
+  -3            IMPLICIT BOUNDARY        B               -11.2691      12.4482       -23.7173      1.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -11.2469      12.4704       -23.7174      
+# total boundary balance                 B               -11.2691      12.4482       -23.7173      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               54.9623       0                           1.5           
+  48            region_48                B               54.9224       0                           1.5           
+  184           region_184               A               49.0251       0                           1.5           
+  184           region_184               B               48.9335       0                           1.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               103.987       0             
+# total sources balance                  B               103.856       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 2.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -8.31199      15.4059       -23.7179      2             
+  -3            IMPLICIT BOUNDARY        B               -8.31425      15.4036       -23.7178      2             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -8.31199      15.4059       -23.7179      
+# total boundary balance                 B               -8.31425      15.4036       -23.7178      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               62.5967       0                           2             
+  48            region_48                B               62.6145       0                           2             
+  184           region_184               A               58.3987       0                           2             
+  184           region_184               B               58.3344       0                           2             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               120.995       0             
+# total sources balance                  B               120.949       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 2.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -6.17386      17.5446       -23.7184      2.5           
+  -3            IMPLICIT BOUNDARY        B               -6.16336      17.555        -23.7183      2.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -6.17386      17.5446       -23.7184      
+# total boundary balance                 B               -6.16336      17.555        -23.7183      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               67.3333       0                           2.5           
+  48            region_48                B               67.3561       0                           2.5           
+  184           region_184               A               65.4602       0                           2.5           
+  184           region_184               B               65.428        0                           2.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               132.794       0             
+# total sources balance                  B               132.784       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 3.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -4.75907      18.9599       -23.7189      3             
+  -3            IMPLICIT BOUNDARY        B               -4.74903      18.9698       -23.7188      3             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -4.75907      18.9599       -23.7189      
+# total boundary balance                 B               -4.74903      18.9698       -23.7188      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               70.1727       0                           3             
+  48            region_48                B               70.1849       0                           3             
+  184           region_184               A               70.8004       0                           3             
+  184           region_184               B               70.7902       0                           3             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               140.973       0             
+# total sources balance                  B               140.975       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 3.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -3.85701      19.8624       -23.7195      3.5           
+  -3            IMPLICIT BOUNDARY        B               -3.85158      19.8678       -23.7193      3.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -3.85701      19.8624       -23.7195      
+# total boundary balance                 B               -3.85158      19.8678       -23.7193      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               72.0158       0                           3.5           
+  48            region_48                B               72.0247       0                           3.5           
+  184           region_184               A               74.8113       0                           3.5           
+  184           region_184               B               74.8118       0                           3.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               146.827       0             
+# total sources balance                  B               146.836       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 4.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -3.2471       20.4729       -23.72        4             
+  -3            IMPLICIT BOUNDARY        B               -3.24488      20.475        -23.7198      4             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -3.2471       20.4729       -23.72        
+# total boundary balance                 B               -3.24488      20.475        -23.7198      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               73.3258       0                           4             
+  48            region_48                B               73.3363       0                           4             
+  184           region_184               A               77.8492       0                           4             
+  184           region_184               B               77.8564       0                           4             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               151.175       0             
+# total sources balance                  B               151.193       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 4.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -2.79676      20.9237       -23.7204      4.5           
+  -3            IMPLICIT BOUNDARY        B               -2.79552      20.9248       -23.7203      4.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -2.79676      20.9237       -23.7204      
+# total boundary balance                 B               -2.79552      20.9248       -23.7203      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               74.2791       0                           4.5           
+  48            region_48                B               74.2897       0                           4.5           
+  184           region_184               A               80.193        0                           4.5           
+  184           region_184               B               80.207        0                           4.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               154.472       0             
+# total sources balance                  B               154.497       0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 5.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY        A               -2.44532      21.2756       -23.7209      5             
+  -3            IMPLICIT BOUNDARY        B               -2.44386      21.2769       -23.7208      5             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -2.44532      21.2756       -23.7209      
+# total boundary balance                 B               -2.44386      21.2769       -23.7208      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_sources]              [time]        
+# -------------------------------------------------------------------------------------------------------------
+  48            region_48                A               74.9606       0                           5             
+  48            region_48                B               74.9683       0                           5             
+  184           region_184               A               82.0221       0                           5             
+  184           region_184               B               82.0418       0                           5             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               156.983       0             
+# total sources balance                  B               157.01        0             
+
+
