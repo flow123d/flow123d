@@ -123,7 +123,9 @@ private:
 
     DarcyFlowMH *darcy_flow;
     Mesh *mesh_;
-    OutputTime *output_writer;
+    //OutputTime *output_writer;
+    std::map<void*, OutputTime*> output_streams;
+
     TimeMark::Type output_mark_type;
 
 

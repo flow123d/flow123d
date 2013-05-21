@@ -229,7 +229,8 @@ void HC_ExplicitSequential::run_simulation()
             transport_reaction->output_data();
         }
 
-        // write_all_data()
+        // Write all data
+        OutputTime::write_all_data();
     }
     xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
 }

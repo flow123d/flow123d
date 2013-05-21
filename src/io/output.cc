@@ -207,25 +207,8 @@ void OutputTime::destroy_all(void)
     OutputTime::output_streams.clear();
 }
 
-OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
+OutputTime *OutputTime::output_stream_by_name(string name)
 {
-    // testing rank of process
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-
-    OutputTime *output_time = NULL;
-    string name = in_rec.val<string>("name");
-
-    xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
-
-    /* It's possible now to do output to the file only in the first process */
-    if(rank != 0) {
-        xprintf(MsgLog, "NOT MASTER PROC\n");
-        /* TODO: do something, when support for Parallel VTK is added */
-        return NULL;
-    }
-
     // Try to find existing object
     for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
             output_iter != OutputTime::output_streams.end();
@@ -236,6 +219,31 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
             return *output_iter;
         }
     }
+
+    return NULL;
+}
+
+OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
+{
+    // testing rank of process
+    int ierr, rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
+
+    /* It's possible now to do output to the file only in the first process */
+    if(rank != 0) {
+        xprintf(MsgLog, "NOT MASTER PROC\n");
+        /* TODO: do something, when support for Parallel VTK is added */
+        return NULL;
+    }
+
+    OutputTime *output_time;
+    string name = in_rec.val<string>("name");
+
+    xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
+
+    output_time = OutputTime::output_stream_by_name(name);
+    if(output_time != NULL) return output_time;
 
     xprintf(MsgLog, "NOT FOUND. Creating new ... ");
 
@@ -315,6 +323,9 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     set_corner_data(corner_data);
     set_elem_data(elem_data);
 
+    this->time = -1.0;
+    this->write_time = -1.0;
+
     if(format) {
         if((*format).type() == OutputVTK::input_type) {
             this->output_format = new OutputVTK(this, *format);
@@ -367,6 +378,7 @@ OutputTime::~OutputTime(void)
      xprintf(MsgLog, "O.K.\n");
 }
 
+#if 0
 int OutputTime::write_data(double time)
 {
     int ret = 0;
@@ -385,9 +397,10 @@ int OutputTime::write_data(double time)
     
     return ret;
 }
+#endif
 
 
-void OutputTime::write_all_data(double time)
+void OutputTime::write_all_data(void)
 {
     int ierr, rank;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -406,9 +419,58 @@ void OutputTime::write_all_data(double time)
             output_iter != OutputTime::output_streams.end();
             ++output_iter)
     {
-        (*output_iter)->write_data(time);
+        // Write data to output stream, when data registered to this output
+        // streams were changed
+        if((*output_iter)->write_time < (*output_iter)->time) {
+            DBGMSG("Write output to output stream: %s on process of rank=%d\n", (*output_iter)->name, rank);
+            if((*output_iter)->output_format != NULL) {
+                (*output_iter)->output_format->write_data();
+                (*output_iter)->current_step++;
+            }
+        } else {
+            DBGMSG("Skipping output stream: %s in time: %d\n", (*output_iter)->name, (*output_iter)->time);
+        }
     }
-
-    xprintf(MsgLog, "DONE\n");
 }
 
+void OutputTime::set_data_time(void *data, double time)
+{
+    std::vector<OutputData> *vec_data = this->get_node_data();
+
+    for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
+            od_iter != vec_data->end();
+            od_iter++)
+    {
+        if((*od_iter).data == data) {
+            this->time = time;
+            (*od_iter).time = time;
+            return;
+        }
+    }
+
+    vec_data = this->get_corner_data();
+
+    for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
+            od_iter != vec_data->end();
+            od_iter++)
+    {
+        if((*od_iter).data == data) {
+            this->time = time;
+            (*od_iter).time = time;
+            return;
+        }
+    }
+
+    vec_data = this->get_elem_data();
+
+    for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
+            od_iter != vec_data->end();
+            od_iter++)
+    {
+        if((*od_iter).data == data) {
+            this->time = time;
+            (*od_iter).time = time;
+            return;
+        }
+    }
+}

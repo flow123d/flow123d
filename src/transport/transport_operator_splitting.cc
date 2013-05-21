@@ -56,8 +56,8 @@ AbstractRecord TransportBase::input_type
 
 Record TransportBase::input_type_output_record
 	= Record("TransportOutput", "Output setting for transport equations.")
-	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-			"Parameters of output stream.")
+//	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+//			"Parameters of output stream.")
 	.declare_key("save_step", Double(0.0), Default::obligatory(),
 			"Interval between outputs.")
 	.declare_key("output_times", Array(Double(0.0)),
@@ -404,18 +404,18 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Input::Record output_rec = in_rec.val<Input::Record>("output");
 
 	//field_output = new OutputTime(mesh_, output_rec.val<Input::Record>("output_stream"));
-	field_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+	//field_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
 
     for(int subst_id=0; subst_id < convection->get_n_substances(); subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
          std::string subst_name = substance_name[subst_id] + "_mobile";
          double *data = out_conc[MOBILE][subst_id];
-         OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
-                 output_rec.val<Input::Record>("output_stream"), data , mesh_->n_elements());
+         this->output_streams[data] = OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
+                 output_rec, data , mesh_->n_elements(), time_->t());
     }
     // write initial condition
     convection->output_vector_gather();
-    if(field_output) field_output->write_data(time_->t());
+    //if(field_output) field_output->write_data(time_->t());
 
 }
 
@@ -440,7 +440,13 @@ void TransportOperatorSplitting::output_data(){
         
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         convection->output_vector_gather();
-        if(field_output) field_output->write_data(time_->t());
+        //if(field_output) field_output->write_data(time_->t());
+        for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
+                it != this->output_streams.end();
+                ++it)
+        {
+            ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
+        }
         mass_balance();
         
         //for synchronization when measuring time by Profiler

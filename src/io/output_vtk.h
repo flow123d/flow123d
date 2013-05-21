@@ -74,17 +74,10 @@ public:
     static Input::Type::Selection input_type_compression;
 
     /**
-     * \brief This function output data to serial VTK file format (single .vtu)
+     * \brief This function write data to VTK (.pvd) file format
+     * for curent time
      */
     int write_data(void);
-
-    /**
-     * \brief This function write data to VTK (.pvd and .vtu) file format
-     * for specific time
-     *
-     * \param[in]   time        The time from start
-     */
-    int write_data(double time);
 
     /**
      * \brief This function writes header of VTK (.pvd) file format

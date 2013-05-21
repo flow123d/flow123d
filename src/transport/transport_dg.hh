@@ -35,6 +35,8 @@
 #include "flow/mh_dofhandler.hh"
 
 class Distribution;
+class OutputTime;
+
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
@@ -241,6 +243,11 @@ public:
 	~TransportDG();
 
 private:
+
+	/**
+	 * @brief Map of output streams
+	 */
+	std::map<void*, OutputTime*> output_streams;
 
 	/**
 	 * @brief Assembles the mass matrix.
@@ -508,9 +515,6 @@ private:
 
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
-
-	/// Class for handling the solution output.
-	OutputTime *transport_output;
 
 	/// Time marks for writing the output.
 	TimeMark::Type output_mark_type;

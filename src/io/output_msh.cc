@@ -407,25 +407,6 @@ void OutputMSH::write_msh_elem_data(double time, int step)
     }
 }
 
-int OutputMSH::write_data(void)
-{
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
-    
-    this->write_msh_header(); 
-    
-    this->write_msh_geometry();
-
-    this->write_msh_topology();
-    
-    this->write_msh_node_data(0.0, 0);
-    
-    this->write_msh_elem_data(0.0, 0);
-
-    xprintf(MsgLog, "O.K.\n");
-
-    return 1;
-}
-
 int OutputMSH::write_head(void)
 {
     xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
@@ -441,7 +422,7 @@ int OutputMSH::write_head(void)
     return 1;
 }
 
-int OutputMSH::write_data(double time)
+int OutputMSH::write_data(void)
 {
     xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
 
@@ -451,8 +432,8 @@ int OutputMSH::write_data(double time)
         this->header_written = true;
     }
         
-    this->write_msh_node_data(time, this->output_time->current_step);
-    this->write_msh_elem_data(time, this->output_time->current_step);
+    this->write_msh_node_data(this->output_time->time, this->output_time->current_step);
+    this->write_msh_elem_data(this->output_time->time, this->output_time->current_step);
 
     // Flush stream to be sure everything is in the file now
     this->output_time->get_base_file().flush();

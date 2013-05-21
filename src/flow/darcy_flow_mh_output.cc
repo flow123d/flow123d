@@ -44,22 +44,21 @@
 #include <string>
 
 
-
 namespace it = Input::Type;
 
 it::Record DarcyFlowMHOutput::input_type
 	= it::Record("DarcyMHOutput", "Parameters of MH output.")
 	.declare_key("save_step", it::Double(0.0), it::Default("1.0"),
                     "Regular step between MH outputs.")
-    .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
-                    "Parameters of output stream.")
-    .declare_key("velocity_p0", it::String(),
+//    .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
+//                    "Parameters of output stream.")
+    .declare_key("velocity_p0", it::String(), it::Default::optional(),
                     "Output stream for P0 approximation of the velocity field.")
-    .declare_key("pressure_p0", it::String(),
+    .declare_key("pressure_p0", it::String(), it::Default::optional(),
                     "Output stream for P0 approximation of the pressure field.")
-    .declare_key("pressure_p1", it::String(),
+    .declare_key("pressure_p1", it::String(), it::Default::optional(),
                     "Output stream for P1 approximation of the pressure field.")
-    .declare_key("piezo_head_p0", it::String(),
+    .declare_key("piezo_head_p0", it::String(), it::Default::optional(),
                     "Output stream for P0 approximation of the piezometric head field.")
     .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
                     "Output file for water balance table.")
@@ -75,22 +74,17 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 {
     F_ENTRY;
     using namespace Input;
-    unsigned int result = 0;
     
-    // setup output
-    // is created for every MPI process
-    output_writer = OutputTime::output_stream(Record(in_rec).val<Record>("output_stream"));
-
     // allocate output containers
     ele_pressure.resize(mesh_->n_elements());
     node_pressure.resize(mesh_->node_vector.size());
 
     //local iterator it
     Iterator<string> it = in_rec.find<string>("piezo_head_p0");
-    output_piezo_head=bool(it);
+    output_piezo_head = bool(it);
     DBGMSG("piezo set: %d \n", output_piezo_head);
       
-    if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
+    if(output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
@@ -110,45 +104,46 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     
-    //TODO: multi_process output
-    if( rank == 0)
+    // Output only for the first process
+    if(rank == 0)
     {
+        OutputTime *output_time = NULL;
 
-        result = OutputTime::register_node_data
-                (mesh_, "pressure_nodes", "L", in_rec.val<Input::Record>("output_stream"), node_pressure);
+        output_time = OutputTime::register_node_data
+            (mesh_, "pressure_p0", "L", in_rec, node_pressure, -1.0);
+        if(output_time) this->output_streams[&node_pressure] = output_time;
 
-        result = OutputTime::register_elem_data
-                (mesh_, "pressure_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_pressure);
+        output_time = OutputTime::register_elem_data
+            (mesh_, "pressure_p1", "L", in_rec, ele_pressure, -1.0);
+        if(output_time) this->output_streams[&ele_pressure] = output_time;
 
         if (output_piezo_head) {
-            result = OutputTime::register_elem_data
-                    (mesh_, "piezo_head_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_piezo_head);
+            output_time = OutputTime::register_elem_data
+                (mesh_, "piezo_head_p0", "L", in_rec, ele_piezo_head, -1.0);
+            if(output_time) this->output_streams[&ele_piezo_head] = output_time;
         }
 
-        result = OutputTime::register_elem_data
-                (mesh_, "velocity_elements", "L/T", in_rec.val<Input::Record>("output_stream"), ele_flux);
+        output_time = OutputTime::register_elem_data
+            (mesh_, "velocity_p0", "L/T", in_rec, ele_flux, -1.0);
+        if(output_time) this->output_streams[&ele_flux] = output_time;
 
         // temporary solution for balance output
         balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
-        { // local iterator it
-            // optionally open raw output file
-            Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
+        // optionally open raw output file
+        Iterator<FilePath> it = in_rec.find<FilePath>("raw_flow_output");
 
-            if (it) {
-                xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
-                raw_output_file = xfopen(*it, "wt");
-            }
+        if (it) {
+            xprintf(Msg, "Opening raw output: %s\n", string(*it).c_str());
+            raw_output_file = xfopen(*it, "wt");
         }
 
-    } //end of rank == 0
+    }
 }
 
 
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
-    //if (output_writer != NULL) delete output_writer;
-
     if (balance_output_file != NULL) xfclose(balance_output_file);
     if (raw_output_file != NULL) xfclose(raw_output_file);
 };
@@ -188,39 +183,42 @@ void DarcyFlowMHOutput::output()
     std::string eleVectorName = "velocity_elements";
     std::string eleVectorUnit = "L/T";
 
-    //cout << "DMHO_output: rank: " << rank << "\t output_writer: " << output_writer << endl;
-    
     // skip initial output for steady solver
     if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
 
     if (darcy_flow->time().is_current(output_mark_type)) {
 
-      make_element_vector();
-      //make_sides_scalar();
+        make_element_vector();
+        //make_sides_scalar();
 
-      make_node_scalar_param(node_pressure);
+        make_node_scalar_param(node_pressure);
 
-      //make_neighbour_flux();
+        //make_neighbour_flux();
 
-      DBGMSG("water_balance()\n");
-      water_balance();
+        DBGMSG("water_balance()\n");
+        water_balance();
 
-      //compute_l2_difference();
+        //compute_l2_difference();
 
-      //double time  = min(darcy_flow->solved_time(), 1.0E200);
-      double time  = darcy_flow->solved_time();
+        //double time  = min(darcy_flow->solved_time(), 1.0E200);
+        double time  = darcy_flow->solved_time();
 
-      // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
-      // consider begining of the interval of actual result as the output time. Or use
-      // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
-      if (time == TimeGovernor::inf_time) time = 0.0;
-       
-      if(output_writer) output_writer->write_data(time);
-      
-      output_internal_flow_data();
-      
-      //for synchronization when measuring time by Profiler
-      MPI_Barrier(MPI_COMM_WORLD);
+        // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
+        // consider begining of the interval of actual result as the output time. Or use
+        // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
+        if (time == TimeGovernor::inf_time) time = 0.0;
+
+        for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
+                it != this->output_streams.end();
+                ++it)
+        {
+            ((OutputTime*)it->second)->set_data_time(it->first, time);
+        }
+
+        output_internal_flow_data();
+
+        //for synchronization when measuring time by Profiler
+        MPI_Barrier(MPI_COMM_WORLD);
     }
     
 }

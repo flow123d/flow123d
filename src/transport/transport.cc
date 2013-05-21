@@ -106,6 +106,13 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
 
     is_convection_matrix_scaled = false;
     output_vector_gather();
+
+    for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
+            it != this->output_streams.end();
+            ++it)
+    {
+        ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
+    }
 }
 
 

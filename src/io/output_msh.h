@@ -59,14 +59,6 @@ public:
     static Input::Type::Record input_type;
 
     /**
-     * \brief This method writes data to the GMSH (.msh) file format. This method
-     * is used for static data
-     *
-     * \return      This function returns 1
-     */
-    int write_data(void);
-
-    /**
      * \brief This method writes head of GMSH (.msh) file format
      *
      * \return      This function returns 1
@@ -74,13 +66,11 @@ public:
     int write_head(void);
 
     /**
-     * \brief This method writes data to GMSH (.msh) file format for current step
-     *
-     * \param[in]   time        The time from start
+     * \brief This method writes data to GMSH (.msh) file format for current time
      *
      * \return      This function returns 1
      */
-    int write_data(double time);
+    int write_data(void);
 
     /**
      * \brief This method should write tail of GMSH (.msh) file format

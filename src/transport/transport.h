@@ -169,6 +169,7 @@ private:
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
+    std::map<void*, OutputTime*> output_streams;
 
 	bool is_convection_matrix_scaled, is_bc_vector_scaled;
 

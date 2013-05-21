@@ -583,16 +583,6 @@ void OutputVTK::write_vtk_vtu(void)
 
 int OutputVTK::write_data(void)
 {
-    /* Serial VTK file format uses only one file */
-    this->output_time->set_data_file( &this->output_time->get_base_file() );
-
-    write_vtk_vtu();
-
-    return 1;
-}
-
-int OutputVTK::write_data(double time)
-{
     //Mesh *mesh = this->output_time->get_mesh();
     char base_dir_name[PATH_MAX];
     char new_dir_name[PATH_MAX];
@@ -680,7 +670,7 @@ int OutputVTK::write_data(double time)
         this->output_time->get_base_file().precision(std::numeric_limits<double>::digits10);
 
         /* Strip out relative path and add "base/" string */
-        this->output_time->get_base_file() << scientific << "<DataSet timestep=\"" << time << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
+        this->output_time->get_base_file() << scientific << "<DataSet timestep=\"" << this->output_time->time << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
 
         xprintf(MsgLog, "O.K.\n");
 

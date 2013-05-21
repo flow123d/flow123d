@@ -254,7 +254,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // set up output class
     Input::Record output_rec = in_rec.val<Input::Record>("output");
-    transport_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
 
     // allocate output arrays
     if (distr->myp() == 0)
@@ -268,8 +267,8 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 			output_solution[i] = new double[n_corners];
 			for(int j=0; j<n_corners; j++)
 				output_solution[i][j] = 0.0;
-			OutputTime::register_corner_data<double>(mesh_, subst_names[i], "M/L^3",
-					output_rec.val<Input::Record>("output_stream"), output_solution[i], n_corners);
+			this->output_streams[output_solution[i]] = OutputTime::register_corner_data<double>(mesh_, subst_names[i], "M/L^3",
+					output_rec, output_solution[i], n_corners, 0.0);
 		}
     }
 
@@ -607,10 +606,14 @@ void TransportDG::output_data()
 
 	if (distr->myp() == 0)
 	{
-		if(transport_output) {
-			xprintf(MsgLog, "transport DG: write_data()\n");
-			transport_output->write_data(time_->t());
-		}
+	    xprintf(MsgLog, "transport DG: set data time\n");
+        // Set data time
+        for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
+                it != this->output_streams.end();
+                ++it)
+        {
+            ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
+        }
 	}
 
     END_TIMER("DG-OUTPUT");
