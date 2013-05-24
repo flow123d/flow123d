@@ -463,6 +463,10 @@ void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* 
         Semchem_reactions->set_cross_section(cross_section);
         Semchem_reactions->set_sorption_fields(&convection->get_data()->por_m, &convection->get_data()->por_imm, &convection->get_data()->phi);
     }
+  if (sorptions != NULL)
+  {
+	  sorptions->set_sorption_fields(&convection->get_data()->por_m);
+  }
 }
 
 

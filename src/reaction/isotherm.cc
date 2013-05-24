@@ -61,7 +61,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as g
     } else {
     	//cout << "c_aqua_limit_ has the value " << c_aqua_limit_ << endl;
         if (c_aqua_limit_ > 0.0) {
-    		precipitate(c_aqua, c_sorbed, scale_aqua_, scale_sorbed_, elem_volume); // last two parameters are probably not correct, they are given for the function to make it compilable
+    		precipitate(c_aqua, c_sorbed, scale_aqua_, scale_sorbed_); // , elem_volume); // last two parameters are probably not correct, they are given for the function to make it compilable
             /*c_sorbed = (total_mass - scale_aqua_* c_aqua_limit_) * inv_scale_sorbed_;
             c_aqua = c_aqua_limit_;*/
         } else
@@ -75,7 +75,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed) //clear as g
 }
 
 template<class Func>
-void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm, double elem_volume) // Probably not used at this time. CrossFunction needs to be redefined.
+void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // , double elem_volume) // Probably not used at this time. CrossFunction needs to be redefined.
 {
     //double mass_limit;
     boost::uintmax_t max_iter=100;
@@ -87,12 +87,12 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
     } else {
         cout << "Solubility limit has to positive " << c_aqua_limit_ << endl;
     }*/
-    // Following 5 lines are modificated temporarily by multiplication ba eleme_volume.
-	double scale_aqua = scale_aqua_ * elem_volume;
-	double scale_sorbed = scale_sorbed_ * elem_volume;
+    // Following 5 lines are modificated temporarily by multiplication by elem_volume.
+	double scale_aqua = scale_aqua_; // * elem_volume;
+	double scale_sorbed = scale_sorbed_; // * elem_volume;
 	double total_mass = (scale_aqua*c_aqua + scale_sorbed * c_sorbed);
-	double inv_scale_aqua = inv_scale_aqua_/(elem_volume * elem_volume);
-	double inv_scale_sorbed = inv_scale_sorbed_/(elem_volume * elem_volume);
+	double inv_scale_aqua = inv_scale_aqua_; // /(elem_volume * elem_volume);
+	double inv_scale_sorbed = inv_scale_sorbed_; // /(elem_volume * elem_volume);
 	double critic_total_mass = c_aqua_limit_*scale_aqua + const_cast<Func &>(isotherm)(c_aqua_limit_)*scale_sorbed;
 
 	const double upper_solution_bound = critic_total_mass * inv_scale_aqua + 1.0;
@@ -107,22 +107,22 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 		//cout << "aqueous concentration is " << c_aqua << endl;
 		c_sorbed = const_cast<Func &>(isotherm)(c_aqua); // = f(midpoint)
 	}else{
-		precipitate(c_aqua, c_sorbed, scale_aqua, scale_sorbed, elem_volume);
+		precipitate(c_aqua, c_sorbed, scale_aqua, scale_sorbed); // , elem_volume);
 	}
 
     return;
 }
 
-template void Isotherm::solve_conc<Linear>(double &c_aqua, double &c_sorbed, const Linear &isotherm, double elem_volume);
+template void Isotherm::solve_conc<Linear>(double &c_aqua, double &c_sorbed, const Linear &isotherm); // , double elem_volume);
 
-template void Isotherm::solve_conc<Langmuir>(double &c_aqua, double &c_sorbed, const Langmuir &isotherm, double elem_volume);
+template void Isotherm::solve_conc<Langmuir>(double &c_aqua, double &c_sorbed, const Langmuir &isotherm); // , double elem_volume);
 
-template void Isotherm::solve_conc<Freundlich>(double &c_aqua, double &c_sorbed, const Freundlich &isotherm, double elem_volume);
+template void Isotherm::solve_conc<Freundlich>(double &c_aqua, double &c_sorbed, const Freundlich &isotherm); //, double elem_volume);
 
-void Isotherm::precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed, double elem_volume)
+void Isotherm::precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed) //, double elem_volume)
 {
 	double total_mass = (scale_aqua*c_aqua + scale_sorbed * c_sorbed);
-	double inv_scale_sorbed = 1/((scale_aqua_*scale_aqua + scale_sorbed*scale_sorbed_)*(elem_volume * elem_volume));
+	double inv_scale_sorbed = 1/((scale_aqua_*scale_aqua + scale_sorbed*scale_sorbed_)); // *(elem_volume * elem_volume));
 
 	c_aqua = c_aqua_limit_;
 	c_sorbed = (total_mass - scale_aqua * c_aqua_limit_)*inv_scale_sorbed;

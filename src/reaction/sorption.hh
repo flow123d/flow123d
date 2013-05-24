@@ -52,7 +52,7 @@ class Sorption:  public Reaction
 			Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
 			//Field<3, FieldValue<3>::Vector > sorption_types; // Discrete need Selection for initialization.
 			Field<3, FieldValue<3>::Scalar > mob_porosity; // Mobile porosity.
-			Field<3, FieldValue<3>::Scalar > immob_porosity; // Immobile porosity.
+			//Field<3, FieldValue<3>::Scalar > immob_porosity; // Immobile porosity.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
@@ -96,6 +96,10 @@ class Sorption:  public Reaction
 		*
 		*/
 		void set_sorb_conc_array(double** sorb_conc_array);
+		/**
+		* This is the way to get bulk parameters from Transport EqData to those in Sorption class, similar to set_sorption_fields in Semchem_interface
+		*/
+		void set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por_m);
 		/**
 		* Meaningless inherited methods.
 		*/
@@ -183,6 +187,10 @@ class Sorption:  public Reaction
 		* Array for storage infos about sorbed species concentrations.
 		*/
 		double** sorbed_conc_array;
+	    /**
+	     * pointers to sorption fields from transport
+	     */
+	    Field<3, FieldValue<3>::Scalar > *mob_porosity_;
 };
 
 #endif

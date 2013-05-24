@@ -64,8 +64,8 @@ Sorption::EqData::EqData()
     //list.clear(); list.push_back(none); list.push_back(linear);
     //alphas.disable_where(&sorption_types, list );
 
-    ADD_FIELD(mob_porosity,"Mobile porosity of the rock matrix.", Input::Type::Default("0.0000001"));
-    ADD_FIELD(immob_porosity,"Immobile porosity of the rock matrix.", Input::Type::Default("0.0"));
+    ADD_FIELD(mob_porosity,"Mobile porosity of the rock matrix.", Input::Type::Default::obligatory());
+    //ADD_FIELD(immob_porosity,"Immobile porosity of the rock matrix.", Input::Type::Default("0.0"));
 }
 
 using namespace std;
@@ -193,6 +193,8 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	//for(Input::Iterator<Input::Record> reg_iter = sorptions_array.begin<Input::Record>(); reg_iter != sorptions_array.end(); ++reg_iter, i_reg++)
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
+		int reg_idx=reg_iter.bulk_idx();
+
 		// list of types of isotherms in particular regions, initialization
 		if(data_.sorption_types.get_const_value(reg_iter, iso_type))
 		{
@@ -211,7 +213,8 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 		// rock material characteristics are read bellow
 		if(data_.rock_density.get_const_value(reg_iter, rock_density)) ;
 		  else xprintf(UsrErr,"Rock density is suppossed to be constant all over the %d-th region, but it is not.", reg_iter.id());
-		if(data_.mob_porosity.get_const_value(reg_iter, mobile_porosity)) ;
+		//if(mob_porosity_ != NULL) mobile_porosity = (double) mob_porosity_[reg_idx];
+		if(data_.mob_porosity.get_const_value(reg_iter, mobile_porosity)) ; //
 		  else xprintf(UsrErr,"Mobile porosity is suppossed to be constant all over the %d-th region, but it is not.", reg_iter.id());
 		/*if(data_.immob_porosity.get_const_value(reg_iter, immobile_porosity)) ;
 		  else xprintf(UsrErr,"Immobile porosity is suppossed to be constant all over the %d-th region, but it is not.", reg_iter.id());*/
@@ -260,7 +263,17 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 				}*/
 			 }
 			 break;
-			 case 2: // langmuir: //
+			 case 2: // freundlich: //
+			 {
+				//cout << "Freundlich's interpolation table would be created" << endl;
+				Freundlich obj_isotherm(mult_param[i_subst], second_coef[i_subst]);
+				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
+				isotherms_mob[reg_idx][i_subst].set_mult_coef_(mult_param[i_subst]);
+				isotherms_mob[reg_idx][i_subst].set_second_coef_(second_coef[i_subst]);
+				 //cout << "The interpolation table size is" << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
+			 }
+			 break;
+			 case 3: // langmuir: //
 			 {
 			 	Langmuir obj_isotherm(mult_param[i_subst], second_coef[i_subst]);
 				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
@@ -272,12 +285,6 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 				 	Langmuir obj_isotherm_immob(mult_param[i_subst], second_coef[i_subst]);
 					isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm_immob, nr_of_points);
 			 	}*/
-			 }
-			 break;
-			 case 3: // freundlich: //
-			 {
-				 cout << "Freundlich's interpolation table would be created" << endl;
-				 //cout << "The interpolation table size is" << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
 			 }
 			 break;
 			 default:
@@ -331,7 +338,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     //double k_rep;
     Region region = elem->region();
     int reg_id_nr = region.bulk_idx(); //->region_->reg_id;
-    double elem_volume = elem->measure();
+    //double elem_volume = elem->measure();
 
     if(reg_id_nr != 0)cout << "region id is " << reg_id_nr << endl;
 
@@ -368,20 +375,23 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 						 break;
 						 case 1: //  linear: //
 						 {
+							//cout << "Multiplication coefficient for linear isotherm is " << isotherms_mob[reg_id_nr][subst_id].get_mult_coef_() << " and the second coefficient is " << isotherms_mob[reg_id_nr][subst_id].get_second_coef_() << endl;
 							Linear obj_isotherm(isotherms_mob[reg_id_nr][subst_id].get_mult_coef_());
-							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm, elem_volume);
+							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm); // , elem_volume);
 						 }
 						 break;
-						 case 2: // langmuir: //
+						 case 2: // freundlich
 						 {
-						 	Langmuir obj_isotherm(isotherms_mob[reg_id_nr][subst_id].get_mult_coef_(), isotherms_mob[reg_id_nr][subst_id].get_second_coef_());
-							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm, elem_volume);
-						 }
-						 break;
-						 case 3: // freundlich
-						 {
+							//cout << "Multiplication coefficient for freundlichs isotherm is " << isotherms_mob[reg_id_nr][subst_id].get_mult_coef_() << " and the second coefficient is " << isotherms_mob[reg_id_nr][subst_id].get_second_coef_() << endl;
 							Freundlich obj_isotherm(isotherms_mob[reg_id_nr][subst_id].get_mult_coef_(), isotherms_mob[reg_id_nr][subst_id].get_second_coef_());
-							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm, elem_volume);
+							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm); // , elem_volume);
+						 }
+						 break;
+						 case 3:  // langmuir: //
+						 {
+							//cout << "Multiplication coefficient for langmuirs isotherm is " << isotherms_mob[reg_id_nr][subst_id].get_mult_coef_() << " and the second coefficient is " << isotherms_mob[reg_id_nr][subst_id].get_second_coef_() << endl;
+							Langmuir obj_isotherm(isotherms_mob[reg_id_nr][subst_id].get_mult_coef_(), isotherms_mob[reg_id_nr][subst_id].get_second_coef_());
+							isotherms_mob[reg_id_nr][subst_id].solve_conc(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el], obj_isotherm); // , elem_volume);
 						 }
 						 break;
 						 default:
@@ -458,6 +468,10 @@ void Sorption::set_sorb_conc_array(double** sorb_conc_array)
 	return;
 }
 
+void Sorption::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por_m)
+{
+	mob_porosity_ = por_m;
+}
 /**
 * Meaningless inherited methods.
 */

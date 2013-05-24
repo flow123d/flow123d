@@ -15,8 +15,8 @@
 enum SorptionType {
 	none = 0,
 	linear = 1,
-	langmuir = 2,
-	freundlich = 3
+	freundlich = 2,
+	langmuir = 3
 };
 
 /**
@@ -116,7 +116,7 @@ public:
      * @p isotherm (functor object).
      */
     template<class Func>
-    void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm, double elem_volume); // const Func &isotherm
+    void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm); // , double elem_volume); // const Func &isotherm
     /**
      * Update concentrations.
      */
@@ -166,7 +166,7 @@ public:
     /**
     *
     */
-    void precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed, double elem_volume);
+    void precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed); // , double elem_volume);
 private:
     /**
     * 	Suppresses the use of implicit constructor.
