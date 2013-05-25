@@ -55,7 +55,7 @@ public:
 	 */
 	static Input::Type::Record input_type;
 
-	static Input::Type::Record get_input_type(Input::Type::AbstractRecord a_type, typename Value::ElementInputType *eit);
+	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
 
 	/**
 	 * Initialization from the input interface.
@@ -63,7 +63,13 @@ public:
 	virtual void init_from_input(const Input::Record &rec);
 
 
-	/**
+    /**
+     * Update time and possibly update data from GMSH file.
+     */
+    virtual bool set_time(double time);
+
+
+    /**
 	 * Set sources files of interpolation
 	 *
 	 * @param mesh_file file contained data of mesh
@@ -72,8 +78,8 @@ public:
 	 * TODO: use streams instead of filenames (better testing)
 	 * TODO: use just one GMSH file for both mesh and data (consistency)
 	 */
-	void set_source_of_interpolation(const FilePath & mesh_file,
-									 const FilePath & raw_output);
+	//void set_source_of_interpolation(const FilePath & mesh_file,
+	//								 const FilePath & raw_output);
 
 
     /**
@@ -91,24 +97,36 @@ protected:
 	/// mesh
 	Mesh* mesh_;
 
-	/// value of pressure in element_
+	/// mesh reader
+	GmshMeshReader *reader_;
+
+	/// value of pressure in computed element
 	double pressure_;
 
-	/// vector of pressures in nodes
-	std::vector<double> pressures_;
+    /// Raw buffer of n_entities rows each containing Value::size() doubles.
+    double *data_;
+
+    /// vector of pressures in nodes
+	//std::vector<double> pressures_;
 
 	/// vector stored suspect elements in calculating the intersection
-	std::vector<unsigned int> searchedElements_;
+	std::vector<unsigned int> searched_elements_;
+
+	/// field name read from input
+	std::string field_name_;
 
 	/// tree of mesh elements
-	BIHTree* bihTree_;
+	BIHTree* bih_tree_;
+
+	/// stored reference to last computed element
+	const ElementAccessor<spacedim> *computed_elm_;
 
 	/**
 	 * Read pressures from file and put them to vector pressures_
 	 *
 	 * @param raw_output file contained output
 	 */
-	void read_pressures(FILE* raw_output);
+	//void read_pressures(FILE* raw_output);
 
 	/**
 	 * Read scalar element data with name @p field_name using tokenizer @p tok initialized
@@ -122,7 +140,7 @@ protected:
 	 * - selective reading on submesh (parallelism - subdomains, or boundary data)
 	 *
 	 */
-	void read_element_data_from_gmsh(Tokenizer &tok, const  string &field_name);
+	//void read_element_data_from_gmsh(Tokenizer &tok, const  string &field_name);
 
 
 	/**

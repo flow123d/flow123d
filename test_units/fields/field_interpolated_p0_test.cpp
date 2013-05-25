@@ -28,18 +28,44 @@
 #include <gtest/gtest.h>
 
 #include "system/system.hh"
+#include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/region.hh"
+#include "input/type_output.hh"
 
+#include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
+
+#include "fields/field_interpolated_p0.hh"
 #include "fields/field_interpolated_p0_impl.hh"
+
+
 
 // tests are started from 'build/test_units'
 string input = R"CODE(
 {   
-   mesh="${INPUT}/functions/large_domain.msh",
-   raw_data="${INPUT}/functions/large_domain_raw_data.txt"
+   scalar={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_data.msh",
+       field_name="scalar"
+   },
+   vector_fixed={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_data.msh",
+       field_name="vector_fixed"
+   },
+   vector={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_data.msh",
+       field_name="vector_fixed"
+   },
+   tensor_fixed={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_data.msh",
+       field_name="tensor_fixed"
+   }
 }
 )CODE";
 
@@ -75,17 +101,76 @@ $EndElements
 )CODE";
 
 
+class FieldInterpolatedP0Test : public testing::Test {
+public:
+    typedef FieldInterpolatedP0<3, FieldValue<3>::Scalar > ScalarField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::Enum > EnumField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::VectorFixed > VecFixField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::Vector > VecField;
+    typedef FieldInterpolatedP0<3, FieldValue<2>::TensorFixed > TensorField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::EnumVector > EnumVector;
 
-TEST(FieldInterpolatedP0, 2d_elements) {
+    virtual void SetUp() {
+        // setup FilePath directories
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+        Profiler::initialize();
+
+        FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
+        mesh= new Mesh;
+        ifstream in(string( mesh_file ).c_str());
+        mesh->read_gmsh_from_stream(in);
+
+        Input::Type::Record  rec_type("Test","");
+        rec_type.declare_key("scalar", ScalarField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.declare_key("vector_fixed", VecFixField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.declare_key("vector", VecField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.declare_key("tensor_fixed", TensorField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.finish();
+
+        std::stringstream ss(input);
+        Input::JSONToStorage reader;
+        reader.read_stream( ss, rec_type );
+        rec=reader.get_root_interface<Input::Record>();
+
+    }
+    virtual void TearDown() {
+
+    }
+
+    Mesh *mesh;
+    Input::Record rec;
+    Point<3> point;
+
+};
+
+
+TEST_F(FieldInterpolatedP0Test, 2d_elements) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar"));
+    field.set_mesh(mesh);
+    field.set_time(0.0);
+
+    const Point<3> p;
+    const ElementAccessor<3> ele(mesh, 2, 0);
+    /*Element ele( 2, mesh, RegionIdx() );
+    ele.node[0]= new Node(0.01, 0.01, 0.00);
+    ele.node[1]= new Node(0.16, 0.16, 0.00);
+    ele.node[2]= new Node(0.02, 0.02, 0.05); // */
+
+    field.value(p, ele);
+    field.value(p, ele);
+
+    /*
     // setup FilePath directories
     FilePath::set_io_dirs(".","/",UNIT_TESTS_SRC_DIR,".");
     Profiler::initialize();
 
     // initialize Input:Types
-    FieldBase< 3, FieldValue<3>::Scalar >::get_input_type();
+    //FieldBase< 3, FieldValue<3>::Scalar >::get_input_type();
 
     // read input string
-    std::stringstream ss(input);
+    std::stringstream ss(input.c_str());
     Input::JSONToStorage reader;
     reader.read_stream( ss, FieldInterpolatedP0< 3, FieldValue<3>::Scalar >::input_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
@@ -103,7 +188,7 @@ TEST(FieldInterpolatedP0, 2d_elements) {
     ele.node[1]= new Node(0.16, 0.16, 0.00);
     ele.node[2]= new Node(0.02, 0.02, 0.05);
     //func.set_element(&ele);
-    //EXPECT_EQ(3.5 , func.value(p));
+    //EXPECT_EQ(3.5 , func.value(p));*/
 }
 
 /*
