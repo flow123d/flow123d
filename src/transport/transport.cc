@@ -682,7 +682,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         // volume drain - in-flow to higher dimension
                         aij = (-flux) / (el2->measure() *
                                         data_.cross_section->value(el2->centre(), el2->element_accessor()) *
-                                        data_.por_m.value(el2->centre(), el2->element_accessor())));
+                                        data_.por_m.value(el2->centre(), el2->element_accessor()));
                         new_j = row_4_el[el2.index()];
                         MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
 
