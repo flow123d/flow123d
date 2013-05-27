@@ -292,6 +292,11 @@ public:
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
+
+    /**
+     * Returns reference to the return_type (i.e. double, or arma::vec or arma::mat); with data provided by the parameter @p raw_data.
+     * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
+     */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }

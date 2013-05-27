@@ -36,9 +36,9 @@
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
-#include "boost/lexical_cast.hpp"
-#include "system/tokenizer.hh"
-#include "system/xio.h"
+//#include "boost/lexical_cast.hpp"
+//#include "system/tokenizer.hh"
+//#include "system/xio.h"
 
 
 namespace it = Input::Type;
@@ -214,6 +214,23 @@ void FieldInterpolatedP0<spacedim, Value>::calculate_abscissa_pressure(TAbscissa
 	END_TIMER("find_elements_1D");
 
         total_measure = 0.0;
+
+    /**
+     * TODO:
+     * nahradit  pressure_ -> value_
+     *
+     * for(unsigned int i=0; i < value_.n_rows(); i ++)
+     *      for( ... n_cols() )
+     *          value_.at(i,j) = 0.0;
+     *
+     * Value tmp_value;
+     * Value::from_raw(tmp_value, (typename Value::element_type *)(data_+idx));
+     * for(unsigned int i=0; i < value_.n_rows(); i ++)
+     *      for( ... n_cols() )
+     *          value_.at(i,j) += measure * tmp_value.at(i,j);
+     *
+     * ?? spojit caluculate_abscissa a calculate_triangle
+     */
 	pressure_ = 0.0;
 	START_TIMER("compute_pressure_1D");
 	ADD_CALLS(searched_elements_.size());

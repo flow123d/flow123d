@@ -339,4 +339,20 @@ template<int spacedim, class Value>
 BCField<spacedim, Value>::BCField() { this->bc_=true; }
 
 
+
+
+
+/******************************************************************************************
+ * Implementation of MultiField<...>
+ */
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::init( const vector<string> &names) {
+    sub_fields_.resize( names.size() );
+    sub_names_ = names;
+    for(unsigned int i_comp=0; i_comp < n_subfields(); i_comp++)
+        sub_fields_[i_comp].set_name( this->name_ + "_" + sub_names_[i_comp] );
+}
+
+
 #endif //FUNCTION_BASE_IMPL_HH_

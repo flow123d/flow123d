@@ -671,7 +671,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 //if (elm.id() != el2.id()) {
                     flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
                     if (flux > 0.0) {
-                        // volume source - out flow from higher dimension
+                        // volume source - out-flow from higher dimension
                         aij = flux / (elm->measure() * csection * por_m);
                         j = el2.index();
                         new_j = row_4_el[j];
@@ -679,16 +679,15 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         // out flow from higher dim. already accounted
                     }
                     if (flux < 0.0) {
-                        // volume drain - in flow to higher dimension
-                        // in flow to higher dim.
-                        aij = -(flux / (el2->measure() *
+                        // volume drain - in-flow to higher dimension
+                        aij = (-flux) / (el2->measure() *
                                         data_.cross_section->value(el2->centre(), el2->element_accessor()) *
                                         data_.por_m.value(el2->centre(), el2->element_accessor())));
                         new_j = row_4_el[el2.index()];
                         MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
 
                         // diagonal drain
-                        aii += flux / (elm->measure() * csection * por_m);
+                        aii -= (-flux) / (elm->measure() * csection * por_m);
                     }
 
                 //} // end comp model
