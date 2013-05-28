@@ -198,7 +198,7 @@ private:
     /**
      * Step on the rotated X axes (total mass).
      */
-    double total_mass_step;
+    double total_mass_step_;
 };
 
 /*void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)

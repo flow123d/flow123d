@@ -36,7 +36,7 @@ Record Sorption::input_type
 	.derive_from( Reaction::input_type )
 	.declare_key("solvent_dens", Double(), Default("1.0"),
 				"Density of the solvent.")
-	.declare_key("substeps", Integer(), Default("10"),
+	.declare_key("substeps", Integer(), Default("100"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
 	.declare_key("species", Array(String()), Default::obligatory(),
 							"Names of all the sorbing species")
@@ -253,9 +253,9 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			 case 1: //  linear: //
 			 {
 				Linear obj_isotherm(mult_param[i_subst]);
-				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
 				isotherms_mob[reg_idx][i_subst].set_mult_coef_(mult_param[i_subst]);
-				//cout << "The interpolation table size is " << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
+				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
+				cout << "The interpolation table size is " << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
 				/*if(dual_porosity_on)
 				{
 					const Linear obj_isotherm_immob(mult_param[i_subst]);
@@ -267,18 +267,18 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			 {
 				//cout << "Freundlich's interpolation table would be created" << endl;
 				Freundlich obj_isotherm(mult_param[i_subst], second_coef[i_subst]);
-				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
 				isotherms_mob[reg_idx][i_subst].set_mult_coef_(mult_param[i_subst]);
 				isotherms_mob[reg_idx][i_subst].set_second_coef_(second_coef[i_subst]);
+				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
 				 //cout << "The interpolation table size is" << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
 			 }
 			 break;
 			 case 3: // langmuir: //
 			 {
 			 	Langmuir obj_isotherm(mult_param[i_subst], second_coef[i_subst]);
-				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
 				isotherms_mob[reg_idx][i_subst].set_mult_coef_(mult_param[i_subst]);
 				isotherms_mob[reg_idx][i_subst].set_second_coef_(second_coef[i_subst]);
+				isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
 				//cout << "The interpolation table size is" << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
 			 	/*if(dual_porosity_on)
 			 	{
@@ -358,12 +358,10 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 			    if( this->isotherms_mob[reg_id_nr][i_subst].get_sorption_type() > 0) // (this->isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() >= 2) // interpolation_table seems to be unusable
 			    {
 			    	//cout << "Interpolation table size is " << isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() << endl;
-					int subst_id =substance_ids[i_subst];
+					int subst_id = substance_ids[i_subst];
 					//cout << "Substance id is " << subst_id << " and i_subst is " << i_subst << endl;
-					if( 1 == 0 ) //(isotherms_mob[reg_id_nr][subst_id].compute_projection(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]) ) == true)
+					if((isotherms_mob[reg_id_nr][subst_id].compute_projection(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]) ) == false)
 					{
-						//cout << "Projections in MOBILE pores in region " << reg_id_nr << " have been computed for " << i_subst << "-th substance." << endl;
-					}else{
 						//cout << "There is a problem with projections in MOBILE pores in region " << reg_id_nr << "have been computed for " << i_subst << "-th substance." << endl;
 						//cout << "The boost-function tomsolve748() will be used." << endl;
 						switch(isotherms_mob[reg_id_nr][subst_id].get_sorption_type())
