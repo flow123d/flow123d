@@ -534,7 +534,7 @@ public:
     /**
      * Virtual destructor.
      */
-    virtual ~FieldCommonBase();
+    virtual ~MultiField();
 
     /// Number of subfields that compose the multi-field.
     inline unsigned int n_subfields() const
