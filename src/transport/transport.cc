@@ -506,7 +506,20 @@ void ConvectionTransport::compute_one_step() {
     	VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
         MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
         //VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
+    /*}
 
+
+    if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    {
+    	for(int i_subst = 0; i_subst < n_subst_; i_subst++)
+    	{
+    		//following conditional print is here for comparison of old and new type of sorption input concentrations
+    		if(i_subst < (n_subst_ - 1)) cout << conc[MOBILE][i_subst][loc_el] << ", ";
+    			else cout << conc[MOBILE][i_subst][loc_el] << endl;
+    	}
+	}
+
+    for (sbi = 0; sbi < n_subst_; sbi++) {*/
         if ((dual_porosity == true) || (sorption == true) )
             // cycle over local elements only in any order
             for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -910,7 +923,7 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
 
     conc_avg = conc[MOBILE][sbi][elm_pos] + conc[MOBILE_SORB][sbi][elm_pos] * n / Nm; // cela hmota do poru
 
-
+    //cout << "input concentration for old sorption is " << conc[MOBILE][sbi][elm_pos] << endl;
     if (conc_avg != 0) {
         compute_sorption(conc_avg, sorp_coef0[sbi], sorp_coef1[sbi], sorp_type[sbi], &conc[MOBILE][sbi][elm_pos],
                 &conc[MOBILE_SORB][sbi][elm_pos], Nm / n, n * phi / Nm);

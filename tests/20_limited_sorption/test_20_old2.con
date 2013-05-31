@@ -69,7 +69,7 @@
       sorption_enable = true, 
       substances = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
       time = {
-        end_time = 10.0
+        end_time = 15.0
       }
     } 
   }, 

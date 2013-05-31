@@ -355,11 +355,16 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		{
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
+				//following conditional print is here for comparison of old and new type of sorption input concentrations
+				/*if(i_subst < (nr_of_substances - 1)) cout << concentration_matrix[MOBILE][i_subst][loc_el] << ", ";
+					else cout << concentration_matrix[MOBILE][i_subst][loc_el] << endl;*/
+
 			    if( this->isotherms_mob[reg_id_nr][i_subst].get_sorption_type() > 0) // (this->isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() >= 2) // interpolation_table seems to be unusable
 			    {
 			    	//cout << "Interpolation table size is " << isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() << endl;
-					int subst_id = substance_ids[i_subst];
 					//cout << "Substance id is " << subst_id << " and i_subst is " << i_subst << endl;
+					int subst_id = substance_ids[i_subst];
+					//isotherms_mob[reg_id_nr][subst_id].compute_projection(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
 					if((isotherms_mob[reg_id_nr][subst_id].compute_projection(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]) ) == false)
 					{
 						//cout << "There is a problem with projections in MOBILE pores in region " << reg_id_nr << "have been computed for " << i_subst << "-th substance." << endl;

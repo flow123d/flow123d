@@ -35,7 +35,7 @@ public:
     /**
     * 	Mysterious operator.
     */
-    double operator()( double x) { return mult_coef_*(alpha * x)/(alpha*x + 1); }
+    double operator()( double x) { return (mult_coef_*(alpha * x)/(alpha*x + 1)); }
 
 private:
     double mult_coef_;
@@ -82,7 +82,7 @@ public:
 	/**
 	* 	Operator.
 	*/
-	double operator()(double x){ return mult_coef_*pow(x, exponent_); }
+	double operator()(double x){ return (mult_coef_*pow(x, exponent_)); }
 private:
 	double mult_coef_;
 	double exponent_;
@@ -253,7 +253,7 @@ public:
 
     double operator()( double conc_aqua)
     {
-        return scale_sorbed_ * func( conc_aqua ) - total_mass_ + scale_aqua_ * conc_aqua; // that is the  selected isotherm
+        return scale_sorbed_*func( conc_aqua ) + (scale_aqua_) * conc_aqua - total_mass_; // that is the  selected isotherm // scale_sorbed_ * func( conc_aqua ) + scale_aqua_ * conc_aqua - total_mass_
     }
 private:
     Func func;
