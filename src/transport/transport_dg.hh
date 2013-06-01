@@ -116,7 +116,7 @@ public:
 		inline Quadrature<dim> *q();
 
 		template<unsigned int dim>
-		inline Mapping<dim,3> *map();
+		inline Mapping<dim,3> *mapping();
 
 		template<unsigned int dim>
 		inline DOFHandler<dim,3> *dh();
