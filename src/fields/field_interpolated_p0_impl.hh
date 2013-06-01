@@ -300,7 +300,8 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.n_entities = mesh_->element.size() + mesh_->bc_elements.size();
     search_header.time = time;
 
-    reader_->read_element_data(search_header, data_, mesh_->all_elements_id() );
+    bool boundary_domain_=false;
+    reader_->read_element_data(search_header, data_, mesh_->elements_id_maps(boundary_domain_)  );
 
     return search_header.actual;
 }

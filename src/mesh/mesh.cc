@@ -759,23 +759,38 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::all_elements_id() {
-    if (all_elements_id_.size() ==0) {
+vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
+    if (bulk_elements_id_.size() ==0) {
+        std::vector<int>::iterator map_it;
+        int last_id;
 
-        all_elements_id_.resize(n_all_input_elements_);
-        std::vector<int>::iterator all_it = all_elements_id_.begin();
-        int last_id = element.begin().id();
-
-        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+        bulk_elements_id_.resize(n_elements());
+        map_it = bulk_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++map_it) {
+            if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+            last_id=*map_it = it.id();
+//            DBGMSG("bulk map: %d\n", *map_it);
         }
-        for(ElementFullIter it=bc_elements.begin(); all_it!=all_elements_id_.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+
+        boundary_elements_id_.resize(bc_elements.size());
+        map_it = boundary_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=bc_elements.begin(); it!=bc_elements.end(); ++it, ++map_it) {
+            // We set ID for boundary elements created by the mesh itself to "-1"
+            // this force gmsh reader to skip all remaining entries in boundary_elements_id_
+            // and thus report error for any remaining data lines
+            if (it.id() < 0) last_id=*map_it=-1;
+            else {
+                if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+                last_id=*map_it = it.id();
+            }
+//            DBGMSG("bc map: %d\n", *map_it);
         }
     }
-    return all_elements_id_;
+
+    if (boundary_domain) return boundary_elements_id_;
+    return bulk_elements_id_;
 }
 
 

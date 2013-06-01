@@ -94,12 +94,22 @@ public:
 TEST_F(FieldElementwiseTest, scalar) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar"));
-    field.set_mesh(mesh);
+    field.set_mesh(mesh,false);
     field.set_time(0.0);
 
     for(unsigned int i=0; i < mesh->element.size(); i++) {
         EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
     }
+}
+
+
+
+TEST_F(FieldElementwiseTest, bc_scalar) {
+    ScalarField field;
+    field.set_mesh(mesh,true);
+    field.init_from_input(rec.val<Input::Record>("scalar"));
+    field.set_time(0.0);
+
     for(unsigned int i=0; i < 4; i++) {
         EXPECT_DOUBLE_EQ( 1.0+(i+1)*0.1 , field.value(point,mesh->element_accessor(i, true)) );
     }
@@ -110,68 +120,108 @@ TEST_F(FieldElementwiseTest, scalar) {
 TEST_F(FieldElementwiseTest, vector_fixed) {
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("vector_fixed"));
-    field.set_mesh(mesh);
+    field.set_mesh(mesh,false);
     field.set_time(0.0);
 
     for(unsigned int i=0; i < mesh->element.size(); i++) {
         EXPECT_TRUE( arma::min(arma::vec3("1 2 3") == field.value(point,mesh->element_accessor(i))) );
     }
+}
+
+
+
+TEST_F(FieldElementwiseTest, bc_vector_fixed) {
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("vector_fixed"));
+    field.set_mesh(mesh,true);
+    field.set_time(0.0);
+
     for(unsigned int i=0; i < 4; i++) {
         EXPECT_TRUE( arma::min(arma::vec3("4 5 6") == field.value(point,mesh->element_accessor(i,true))) );
     }
     EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(5,true))) );
-
 }
 
 
 TEST_F(FieldElementwiseTest, vector) {
     VecField field(3);
     field.init_from_input(rec.val<Input::Record>("vector"));
-    field.set_mesh(mesh);
+    field.set_mesh(mesh,false);
     field.set_time(0.0);
 
     for(unsigned int i=0; i < mesh->element.size(); i++) {
         EXPECT_TRUE( arma::min(arma::vec("1 2 3") == field.value(point,mesh->element_accessor(i))) );
     }
+}
+
+
+
+TEST_F(FieldElementwiseTest, bc_vector) {
+    VecField field(3);
+    field.init_from_input(rec.val<Input::Record>("vector"));
+    field.set_mesh(mesh,true);
+    field.set_time(0.0);
+
     for(unsigned int i=0; i < 4; i++) {
         EXPECT_TRUE( arma::min(arma::vec("4 5 6") == field.value(point,mesh->element_accessor(i,true))) );
     }
     EXPECT_TRUE( arma::min(arma::vec("0 0 0") == field.value(point,mesh->element_accessor(5,true))) );
-
 }
-
 
 TEST_F(FieldElementwiseTest, tensor_fixed) {
     TensorField field;
     field.init_from_input(rec.val<Input::Record>("tensor_fixed"));
-    field.set_mesh(mesh);
+    field.set_mesh(mesh,false);
     field.set_time(0.0);
 
     for(unsigned int i=0; i < mesh->element.size(); i++) {
         arma::umat match = ( arma::mat22("1 3; 2 4") == field.value(point,mesh->element_accessor(i)) );
         EXPECT_TRUE( match.min() );
     }
+}
+
+
+
+
+TEST_F(FieldElementwiseTest, bc_tensor_fixed) {
+    TensorField field;
+    field.init_from_input(rec.val<Input::Record>("tensor_fixed"));
+    field.set_mesh(mesh, true);
+    field.set_time(0.0);
+
+
     for(unsigned int i=0; i < 4; i++) {
         arma::umat match = ( arma::mat22("4 6; 5 7") == field.value(point,mesh->element_accessor(i,true)) );
         EXPECT_TRUE( match.min() );
     }
     arma::umat match = ( arma::mat22("0 0; 0 0") == field.value(point,mesh->element_accessor(5,true)) );
     EXPECT_TRUE( match.min() );
-
 }
+
+
 
 TEST_F(FieldElementwiseTest, scalar_enum) {
     EnumField field;
-    field.set_mesh(mesh);
+    field.set_mesh(mesh,false);
+    field.set_time(0.0);
+
+
+    for(unsigned int i=0; i < mesh->element.size(); i++) {
+        EXPECT_EQ( (unsigned int)0, field.value(point,mesh->element_accessor(i)) );
+    }
+}
+
+
+
+
+TEST_F(FieldElementwiseTest, bc_scalar_enum) {
+    EnumField field;
+    field.set_mesh(mesh, true);
     field.set_time(0.0);
 
     for(unsigned int i=0; i<6; i++) {
         unsigned int val = i + ( i<4 ? 1 : 10 );
         field.set_data_row(i, val );
-    }
-
-    for(unsigned int i=0; i < mesh->element.size(); i++) {
-        EXPECT_EQ( 0, field.value(point,mesh->element_accessor(i)) );
     }
     for(unsigned int i=0; i < 4; i++) {
         EXPECT_EQ( i+1, field.value(point,mesh->element_accessor(i,true)) );
@@ -181,9 +231,27 @@ TEST_F(FieldElementwiseTest, scalar_enum) {
 }
 
 
+
+
 TEST_F(FieldElementwiseTest, vector_enum) {
     EnumVector field(2);
-    field.set_mesh(mesh);
+    field.set_mesh(mesh,false);
+    field.set_time(0.0);
+
+
+    for(unsigned int i=0; i < mesh->element.size(); i++) {
+        arma::uvec val = field.value(point,mesh->element_accessor(i));
+        EXPECT_EQ( (unsigned int)0,  val[0]);
+        EXPECT_EQ( (unsigned int)0,  val[1]);
+    }
+}
+
+
+
+
+TEST_F(FieldElementwiseTest, bc_vector_enum) {
+    EnumVector field(2);
+    field.set_mesh(mesh,true);
     field.set_time(0.0);
 
     for(unsigned int i=0; i<6; i++) {
@@ -193,11 +261,6 @@ TEST_F(FieldElementwiseTest, vector_enum) {
         field.set_data_row(i, val );
     }
 
-    for(unsigned int i=0; i < mesh->element.size(); i++) {
-        arma::uvec val = field.value(point,mesh->element_accessor(i));
-        EXPECT_EQ( 0,  val[0]);
-        EXPECT_EQ( 0,  val[1]);
-    }
     for(unsigned int i=0; i < 4; i++) {
         arma::uvec val = field.value(point,mesh->element_accessor(i,true));
         EXPECT_EQ( i+1,  val[0]);
@@ -210,3 +273,4 @@ TEST_F(FieldElementwiseTest, vector_enum) {
     EXPECT_EQ( 15,  val[0]);
     EXPECT_EQ( 115,  val[1]);
 }
+

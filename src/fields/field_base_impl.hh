@@ -123,7 +123,7 @@ bool FieldBase<spacedim, Value>::set_time(double time) {
 
 
 template <int spacedim, class Value>
-void FieldBase<spacedim, Value>::set_mesh(Mesh *mesh) {
+void FieldBase<spacedim, Value>::set_mesh(Mesh *mesh,  bool boundary_domain) {
 }
 
 
@@ -223,7 +223,7 @@ void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field) {
-    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_from_input().\n");
+    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
     // initialize table if it is empty, we assume that the RegionDB is closed at this moment
@@ -231,7 +231,7 @@ void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_pt
         region_fields_.resize( this->mesh_->region_db().size() );
 
     ASSERT_EQUAL( field->n_comp() , this->n_comp_);
-    field->set_mesh( this->mesh_ );
+    field->set_mesh( this->mesh_ , is_bc() );
     BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
     changed_from_last_set_time_=true;
 }
@@ -347,11 +347,52 @@ BCField<spacedim, Value>::BCField() { this->bc_=true; }
  */
 
 template<int spacedim, class Value>
+MultiField<spacedim, Value>::MultiField()
+: FieldCommonBase(false)
+{}
+
+
+
+template<int spacedim, class Value>
 void MultiField<spacedim, Value>::init( const vector<string> &names) {
     sub_fields_.resize( names.size() );
     sub_names_ = names;
-    for(unsigned int i_comp=0; i_comp < n_subfields(); i_comp++)
+    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
         sub_fields_[i_comp].set_name( this->name_ + "_" + sub_names_[i_comp] );
+}
+
+
+
+template<int spacedim, class Value>
+it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
+}
+
+
+
+template<int spacedim, class Value>
+it::AbstractRecord MultiField<spacedim,Value>::make_input_tree() {
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
+}
+
+
+
+template<int spacedim, class Value>
+bool MultiField<spacedim, Value>::set_time(double time) {
+    return true;
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_mesh(Mesh *mesh) {
+    this->mesh_ = mesh;
+    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
+        sub_fields_[i_comp].set_mesh(mesh);
 }
 
 

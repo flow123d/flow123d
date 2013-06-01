@@ -151,9 +151,9 @@ public:
 
 
     /**
-     * Returns vector of ID numbers of elements from both element and bc_elements vectors.
+     * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    vector<int> const &all_elements_id();
+    vector<int> const & elements_id_maps( bool boundary_domain);
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -280,7 +280,7 @@ protected:
     /// in input mesh file and has ID assigned.
     ///
     /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
-    vector<int> all_elements_id_;
+    vector<int> bulk_elements_id_, boundary_elements_id_;
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
 
