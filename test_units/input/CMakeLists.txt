@@ -30,8 +30,7 @@ set(super_test "input_test")
 set(super_test_libs input_lib)
 
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "-std=gnu++0x")        ## Use C++11 for auto and multiline raw strings
+if(CMAKE_HAVE_CXX11)
     ### define_test(enum_macro)
     
     define_test(type_base)

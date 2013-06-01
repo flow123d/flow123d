@@ -86,6 +86,9 @@ else(FLOW_CC_FLAGS)
   endif()
   
   
+  
+endif(FLOW_CC_FLAGS)
+
     # Compiler-specific C++11 activation.
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
         execute_process(
@@ -101,8 +104,14 @@ else(FLOW_CC_FLAGS)
         endif ()
         add_definitions("-DHAVE_SINCOS")
     elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-        add_definitions("-Wno-uninitialized -DHAVE_CXX11")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+        
+        # BOOST must be compiled with clang in order to use C++11 standard. 
+        set(Boost_FORCE_REBUILD "true")
+        set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+        set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+        
+        #add_definitions("-DHAVE_CXX11")
         set(CMAKE_HAVE_CXX11 "true")
         # 
         # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
@@ -110,9 +119,6 @@ else(FLOW_CC_FLAGS)
     else ()
         message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
     endif()
-  
-endif(FLOW_CC_FLAGS)
-
 
 #########################################################################
 # Check that glibc has working execinfo.h
@@ -212,7 +218,9 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
 #    the parameters of the find_library are exactly same as in the previous case.
 #
 #set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
-find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+if (NOT Boost_FORCE_REBUILD)
+    find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+endif()    
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
