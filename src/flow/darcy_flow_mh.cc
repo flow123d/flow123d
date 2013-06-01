@@ -95,9 +95,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
                 "Parameters of output form MH module.")
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
-                "Method for coupling Darcy flow between dimensions." )
-        .declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
-                "Conductivity between dimensions." );
+                "Method for coupling Darcy flow between dimensions." );
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -520,8 +518,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     MHFEValues fe_values;
 
-    struct Boundary *bcd;
-    struct Neighbour *ngh;
+    class Boundary *bcd;
+    class Neighbour *ngh;
 
     bool fill_matrix = schur0->is_preallocated();
     DBGMSG("fill_matrix: %d\n", fill_matrix);

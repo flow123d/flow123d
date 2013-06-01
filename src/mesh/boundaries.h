@@ -96,12 +96,13 @@ public:
     Mesh *mesh_;
 
 };
+/*
 #define DIRICHLET   1
 #define NEUMANN     2
 #define NEWTON      3
+*/
 
-
-void read_boundary(Mesh*, const string &boundary_filename);
+//void read_boundary(Mesh*, const string &boundary_filename);
 
 #endif
 //-----------------------------------------------------------------------------

@@ -62,9 +62,9 @@ ElementAccessor<3> Boundary::element_accessor()
 //=============================================================================
 // READ DATA OF BOUNDARY CONDITIONS
 //=============================================================================
+/*
 void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 {
-/*
 	FILE	*in;		  // input file
 	char     line[ LINE_SIZE ]; // line of data file
 //	int where;
@@ -198,8 +198,8 @@ void read_boundary( struct Mesh *mesh , const string &boundary_filename)
 	xprintf( MsgVerb, " %d conditions readed. ", mesh->n_boundaries() );
 	xprintf( Msg, "O.K.\n");
 
-	*/
 }
+    */
 
 
 

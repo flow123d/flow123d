@@ -138,8 +138,8 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
     }
 
     unsigned int size = PyTuple_Size( p_value_);
-    int row,col;
-    int value_size=this->value_.n_rows() * this->value_.n_cols();
+
+    unsigned int value_size=this->value_.n_rows() * this->value_.n_cols();
     if ( size !=  value_size) {
         xprintf(UsrErr, "Field '%s' from the python module: %s returns %d components but should return %d components.\n"
                 ,func_name.c_str(), PyModule_GetName(p_module_), size, value_size);

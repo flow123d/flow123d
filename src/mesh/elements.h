@@ -33,15 +33,13 @@
 #include "mesh/nodes.hh"
 #include "mesh/region.hh"
 
-//#include <materials.hh>
-
 template <int spacedim>
 class ElementAccessor;
 
 class Mesh;
 class Side;
 class SideIter;
-struct MaterialDatabase;
+class Neighbour;
 
 
 
@@ -103,7 +101,7 @@ public:
 
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
-    struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
+    Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor

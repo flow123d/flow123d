@@ -117,8 +117,7 @@ void Record::make_derive_from(AbstractRecord &parent) const {
             
             //does not work with intel c++ compiler
             //tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
-            
-            tmp_key.key_index = tmp_key.key_index;
+
             tmp_key.key_ = k->key_;
             tmp_key.description_ = k->description_;
             tmp_key.type_ = k->type_;
@@ -278,10 +277,10 @@ bool Record::valid_default(const string &str) const
     if (data_->auto_conversion_key_idx >=0) {
         unsigned int idx=key_index(data_->auto_conversion_key);
         if ( data_->keys[idx].type_ ) return data_->keys[idx].type_->valid_default(str);
-        else return false;
     } else {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
     }
+    return false;
 }
 
 
