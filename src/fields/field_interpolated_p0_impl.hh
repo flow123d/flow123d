@@ -35,6 +35,7 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
+#include "mesh/ngh/include/problem.h"
 #include "system/sys_profiler.hh"
 //#include "boost/lexical_cast.hpp"
 //#include "system/tokenizer.hh"
@@ -90,15 +91,15 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 
 	// read mesh, create tree
     {
-       mesh_ = new Mesh();
+       source_mesh_ = new Mesh();
        reader_ = new GmshMeshReader( rec.val<FilePath>("gmsh_file") );
-       reader_->read_mesh( mesh_);
+       reader_->read_mesh( source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
-	bih_tree_ = new BIHTree(mesh_);
+	bih_tree_ = new BIHTree( source_mesh_ );
 
     // allocate data_
-	unsigned int data_size = (mesh_->element.size() + mesh_->bc_elements.size()) * (this->value_.n_rows() * this->value_.n_cols());
+	unsigned int data_size = (source_mesh_->element.size() + source_mesh_->bc_elements.size()) * (this->value_.n_rows() * this->value_.n_cols());
     data_ = new double[data_size];
     std::fill(data_, data_ + data_size, 0.0);
 
@@ -132,40 +133,9 @@ void FieldInterpolatedP0<spacedim, Value>::set_source_of_interpolation(const Fil
 }*/
 
 
-/*template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::read_pressures(FILE* raw_output) {
-	xprintf(Msg, " - FieldInterpolatedP0->read_pressures(FILE* raw_output)\n");
-
-	int numElements;
-	char line[ LINE_SIZE ];
-
-	skip_to(raw_output, "$FlowField");
-	xfgets(line, LINE_SIZE - 2, raw_output); //time
-	xfgets(line, LINE_SIZE - 2, raw_output); //count of elements
-	numElements = atoi(xstrtok(line));
-	pressures_.reserve(numElements);
-	for (int  i = 0; i < numElements; ++i) pressures_.push_back(0.0);
-	xprintf(Msg, " - Reading pressures...");
-
-	for (int i = 0; i < numElements; ++i) {
-		int id;
-		double pressure;
-
-		xfgets(line, LINE_SIZE - 2, raw_output);
-
-		//get element ID, presure
-		id = atoi(xstrtok(line));
-		pressure = atof(xstrtok(NULL));
-		ElementFullIter ele = mesh_->element.find_id(id);
-		pressures_[ ele.index() ] = pressure;
-	}
-
-	xprintf(Msg, " %d values of pressure read. O.K.\n", pressures_.size());
-}*/
-
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::calculate_triangle_pressure(TTriangle &element) {
+void FieldInterpolatedP0<spacedim, Value>::calculate_triangle_value(TTriangle &element, unsigned int idx) {
 	double total_measure, measure;
 	BoundingBox elementBoundingBox = element.get_bounding_box();
 	
@@ -176,35 +146,50 @@ void FieldInterpolatedP0<spacedim, Value>::calculate_triangle_pressure(TTriangle
 	((BIHTree *)bih_tree_)->find_bounding_box(elementBoundingBox, searched_elements_);
 	END_TIMER("find_elements_2D");
 
-	total_measure = 0.0;
-	pressure_ = 0.0;
-
-    START_TIMER("compute_pressure_2D");
-    ADD_CALLS( searched_elements_.size());
-	for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
-	{
-		int idx = *it;
-		ElementFullIter ele = mesh_->element( idx );
-		if (ele->dim() == 3) {
-				createTetrahedron(ele, tetrahedron);
-				GetIntersection(element, tetrahedron, iType, measure);
-				if (iType == area) {
-						pressure_ += data_[ idx ] * measure;
-						total_measure += measure;
-				}
-		} else {
-				xprintf(Err, "Dimension of source element must be 3!\n");
+	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+			this->value_(i,j) = 0.0;
 		}
-    }
-    pressure_ /= total_measure;
-    END_TIMER("compute_pressure_2D");
+	}
+
+	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+		    total_measure = 0.0;
+
+		    START_TIMER("compute_pressure_2D");
+			ADD_CALLS(searched_elements_.size());
+			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
+			{
+				int idx = *it;
+				ElementFullIter ele = source_mesh_->element( idx );
+				if (ele->dim() == 3) {
+					createTetrahedron(ele, tetrahedron);
+					GetIntersection(element, tetrahedron, iType, measure);
+					if (iType == area) {
+						this->value_(i,j) += data_[ idx ] * measure;
+						total_measure += measure;
+					}
+				} else {
+					xprintf(Err, "Dimension of element in source mesh must be 3!\n");
+				}
+			}
+
+			if (total_measure > epsilon) {
+				this->value_(i,j) /= total_measure;
+			} else {
+				xprintf(Warn, "Processed element with idx %d is out of source mesh!\n", idx);
+			}
+			END_TIMER("compute_pressure_2D");
+		}
+	}
+
 }
 
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::calculate_abscissa_pressure(TAbscissa &element) {
-        double total_measure, measure;
+void FieldInterpolatedP0<spacedim, Value>::calculate_abscissa_value(TAbscissa &element, unsigned int idx) {
+    double total_measure, measure;
 	BoundingBox elementBoundingBox = element.get_bounding_box();
 	TIntersectionType iType;
 	TTetrahedron tetrahedron;
@@ -212,8 +197,6 @@ void FieldInterpolatedP0<spacedim, Value>::calculate_abscissa_pressure(TAbscissa
 	START_TIMER("find_elements_1D");
 	((BIHTree *)bih_tree_)->find_bounding_box(elementBoundingBox, searched_elements_);
 	END_TIMER("find_elements_1D");
-
-        total_measure = 0.0;
 
     /**
      * TODO:
@@ -231,26 +214,42 @@ void FieldInterpolatedP0<spacedim, Value>::calculate_abscissa_pressure(TAbscissa
      *
      * ?? spojit caluculate_abscissa a calculate_triangle
      */
-	pressure_ = 0.0;
-	START_TIMER("compute_pressure_1D");
-	ADD_CALLS(searched_elements_.size());
-	for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
-	{
-		int idx = *it;
-		ElementFullIter ele = mesh_->element( idx );
-		if (ele->dim() == 3) {
-			createTetrahedron(ele, tetrahedron);
-			GetIntersection(element, tetrahedron, iType, measure);
-			if (iType == line) {
-				pressure_ += data_[ idx ] * measure;
-				total_measure += measure;
-			}
-		} else {
-			//xprintf(Err, "Dimension of element must be 3!\n");
+	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+			this->value_(i,j) = 0.0;
 		}
 	}
-    pressure_ /= total_measure;
-	END_TIMER("compute_pressure_1D");
+
+	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+		    total_measure = 0.0;
+
+		    START_TIMER("compute_pressure_1D");
+			ADD_CALLS(searched_elements_.size());
+			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
+			{
+				int idx = *it;
+				ElementFullIter ele = source_mesh_->element( idx );
+				if (ele->dim() == 3) {
+					createTetrahedron(ele, tetrahedron);
+					GetIntersection(element, tetrahedron, iType, measure);
+					if (iType == line) {
+						this->value_(i,j) += data_[ idx ] * measure;
+						total_measure += measure;
+					}
+				} else {
+					xprintf(Err, "Dimension of element in source mesh must be 3!\n");
+				}
+			}
+			if (total_measure > epsilon) {
+				this->value_(i,j) /= total_measure;
+			} else {
+				xprintf(Warn, "Processed element with idx %d is out of source mesh!\n", idx);
+			}
+			END_TIMER("compute_pressure_1D");
+		}
+	}
+
 }
 
 
@@ -287,9 +286,10 @@ void FieldInterpolatedP0<spacedim, Value>::createAbscissa(Element *ele, TAbsciss
 }
 
 
+
 template <int spacedim, class Value>
 bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
-    ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
+    ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
     ASSERT(data_, "Null data pointer.\n");
     if (reader_ == NULL) return false;
 
@@ -297,62 +297,34 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.actual = false;
     search_header.field_name = field_name_;
     search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-    search_header.n_entities = mesh_->element.size() + mesh_->bc_elements.size();
+    search_header.n_entities = source_mesh_->element.size() + source_mesh_->bc_elements.size();
     search_header.time = time;
 
     bool boundary_domain_=false;
-    reader_->read_element_data(search_header, data_, mesh_->elements_id_maps(boundary_domain_)  );
+    reader_->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
 
     return search_header.actual;
 }
 
-/*
-template <int spacedim, class Value>
-FieldResult FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value) {
-
-    switch (elm.dim()) {
-        case 1: {
-            TAbscissa abscissa;
-            createAbscissa(elm.element(), abscissa);
-            calculate_abscissa_pressure(abscissa);
-            break;
-        }
-        case 2: {
-            TTriangle triangle;
-            createTriangle(elm.element(), triangle);
-            calculate_triangle_pressure(triangle);
-            break;
-        }
-        default:
-            xprintf(Err, "Dimension of element must be 1 or 2!\n");
-            break;
-    }
-
-	Value val(value);
-	val(0,0)=pressure_;
-	return result_other;
-}
-*/
 
 
 template <int spacedim, class Value>
 typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
 	if (&elm != computed_elm_) {
-		//cout << "first computing" << endl;
 		computed_elm_ = &elm;
 
 		switch (elm.dim()) {
 	        case 1: {
 	            TAbscissa abscissa;
 	            createAbscissa(elm.element(), abscissa);
-	            calculate_abscissa_pressure(abscissa);
+	            calculate_abscissa_value(abscissa, elm.idx());
 	            break;
 	        }
 	        case 2: {
 	            TTriangle triangle;
 	            createTriangle(elm.element(), triangle);
-	            calculate_triangle_pressure(triangle);
+	            calculate_triangle_value(triangle, elm.idx());
 	            break;
 	        }
 	        default:
@@ -360,13 +332,10 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 	            break;
 	    }
 	}
-	//else {
-	//	cout << "second computing" << endl;
-	//}
 
-	this->value_(0,0) = pressure_;
     return this->r_value_;
 }
+
 
 
 template <int spacedim, class Value>

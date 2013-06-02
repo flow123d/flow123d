@@ -25,7 +25,15 @@
       solver = {
         TYPE = "Petsc", 
         accuracy = 1e-07
-      }
+      },
+      bc_data=[
+        {
+          region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/large_cube.fbc"
+        }
+      ],
+      bulk_data=[
+      ]
     }, 
     save_step = 0.1, 
     secondary_equation = null

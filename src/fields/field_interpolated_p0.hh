@@ -94,20 +94,14 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 protected:
-	/// mesh
-	Mesh* mesh_;
+	/// mesh, which is interpolated
+	Mesh* source_mesh_;
 
 	/// mesh reader
 	GmshMeshReader *reader_;
 
-	/// value of pressure in computed element
-	double pressure_;
-
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
     double *data_;
-
-    /// vector of pressures in nodes
-	//std::vector<double> pressures_;
 
 	/// vector stored suspect elements in calculating the intersection
 	std::vector<unsigned int> searched_elements_;
@@ -120,13 +114,6 @@ protected:
 
 	/// stored reference to last computed element
 	const ElementAccessor<spacedim> *computed_elm_;
-
-	/**
-	 * Read pressures from file and put them to vector pressures_
-	 *
-	 * @param raw_output file contained output
-	 */
-	//void read_pressures(FILE* raw_output);
 
 	/**
 	 * Read scalar element data with name @p field_name using tokenizer @p tok initialized
@@ -146,11 +133,12 @@ protected:
 	/**
 	 * Calculate pressures in triangle element
 	 */
-	void calculate_triangle_pressure(TTriangle &element);
+	void calculate_triangle_value(TTriangle &element, unsigned int idx);
 	/**
 	 * Calculate pressures in abscissa element
 	 */
-	void calculate_abscissa_pressure(TAbscissa &element);
+	void calculate_abscissa_value(TAbscissa &element, unsigned int idx);
+
 public:
 	/**
 	 * Create tetrahedron from element
