@@ -35,7 +35,19 @@
       },
       bc_data=[
         {
-          region = "IMPLICIT BOUNDARY"
+          region = "IMPLICIT BOUNDARY",
+          pressure = {
+            TYPE="FieldInterpolatedP0",
+            gmsh_file="input/large_cube.msh",
+            field_name="pressure_elements_[L]"
+          }
+/*
+          piezo_head = {
+            TYPE="FieldInterpolatedP0",
+            gmsh_file="input/large_cube.msh",
+            field_name="piezo_head_elements_[L]"
+          }
+          */
         }
       ],
       bulk_data=[

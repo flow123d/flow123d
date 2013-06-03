@@ -1,16 +1,12 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Interpolated boundary condition", 
-    material = "input/large_cube.mtr", 
+    description = "Interpolated boundary condition",     
     mesh = {
-      mesh_file = "input/large_mesh.msh", 
-      neighbouring = "input/large_mesh.ngh"
+      mesh_file = "input/large_mesh.msh"
     }, 
     primary_equation = {
       TYPE = "Steady_MH", 
-      boundary_file = "input/large_cube.fbc", 
-      n_schurs = 2, 
       output = {
         balance_output = "water_balance.out", 
         output_stream = {
@@ -29,10 +25,18 @@
       bc_data=[
         {
           region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/large_cube.fbc"
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
         }
       ],
       bulk_data=[
+        {
+          r_set = "BULK",
+          anisotropy = 1
+        }
       ]
     }, 
     save_step = 0.1, 
@@ -41,9 +45,9 @@
   system = {
     output_streams = [
       {
-        file = "./large_cube.pvd", 
+        file = "./large_cube.msh", 
         format = {
-          TYPE = "vtk", 
+          TYPE = "gmsh", 
           variant = "ascii"
         }, 
         name = "flow_output_stream"

@@ -189,7 +189,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
                 ele = mesh->bc_elements.add_item(id);
             } else {
                 if(dim == 0 )
-                    xprintf(Warn, "Bulk elements of zero size(dim=0) are not supported as elements.");
+                    xprintf(Warn, "Bulk elements of zero size(dim=0) are not supported. Mesh file: %s, Element ID: %d.\n", tok.f_name().c_str() ,id);
                 else
                     ele = mesh->element.add_item(id);
             }

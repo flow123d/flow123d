@@ -85,40 +85,49 @@ else(FLOW_CC_FLAGS)
   else()
   endif()
   
-  
-  
 endif(FLOW_CC_FLAGS)
 
-    # Compiler-specific C++11 activation.
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-        if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-            add_definitions("-DHAVE_CXX11")    
-            set(CMAKE_HAVE_CXX11 "true")
-        elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-            add_definitions("-DHAVE_CXX11")
-            set(CMAKE_HAVE_CXX11 "true")    
-        endif ()
-        add_definitions("-DHAVE_SINCOS")
-    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
-        
-        # BOOST must be compiled with clang in order to use C++11 standard. 
-        set(Boost_FORCE_REBUILD "true")
-        set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
-        set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
-        
-        #add_definitions("-DHAVE_CXX11")
+
+# Compiler-specific C++11 activation.
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+        add_definitions("-DHAVE_CXX11")    
         set(CMAKE_HAVE_CXX11 "true")
-        # 
-        # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
-        #
+    elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+        add_definitions("-DHAVE_CXX11")
+        set(CMAKE_HAVE_CXX11 "true")   
+    elseif (GCC_VERSION VERSION_GRATER 4.4)
+    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    	set(CMAKE_HAVE_CXX11 "true")   
+    	message(WARNING "Warnning: GCC version under 4.6, not recomended!." ) 
     else ()
-        message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
-    endif()
+    	message(SEND_ERROR "Error: GCC version under 4.4, not supported!." )	
+    endif ()
+    
+    # Necessary for FParser - TODO: move to better place
+    # ?? what about Clang
+    add_definitions("-DHAVE_SINCOS")
+    
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    
+    # BOOST must be compiled with clang in order to use C++11 standard. 
+    set(Boost_FORCE_REBUILD "true")
+    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    
+    #add_definitions("-DHAVE_CXX11")
+    set(CMAKE_HAVE_CXX11 "true")
+    # 
+    # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+    #
+else ()
+    message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
+endif()
 
 #########################################################################
 # Check that glibc has working execinfo.h

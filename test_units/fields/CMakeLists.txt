@@ -32,13 +32,13 @@ set(super_test_libs field_lib mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armad
 
 if(CMAKE_HAVE_CXX11)
     
-    #define_test(field_python)
-    #define_test(field_interpolated_p0)
-    #define_test(field_value)
-    #define_test(field_const)
-    #define_test(field_formula)
+    define_test(field_python)
+    define_test(field_interpolated_p0)
+    define_test(field_value)
+    define_test(field_const)
+    define_test(field_formula)
     define_test(field_elementwise)
-    #define_test(field_base)
+    define_test(field_base)
 endif()
 
 

@@ -99,6 +99,7 @@ $Elements
 4 1 2 37 20 8 4
 5 2 2 38 34 6 4 8
 6 2 2 38 36 4 1 8
+# ------ interpolation to following 3D elements not implemented
 7 4 2 39 40 3 7 1 2
 8 4 2 39 40 3 7 2 8
 9 4 2 39 40 3 7 8 6
@@ -168,11 +169,11 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
 
 }
 
-/*TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_large) {
+TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_large) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar_large"));
     field.set_time(0.0);
 
     //EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0)) );
-}*/
+}
 

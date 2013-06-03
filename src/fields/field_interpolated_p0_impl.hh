@@ -99,7 +99,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	bih_tree_ = new BIHTree( source_mesh_ );
 
     // allocate data_
-	unsigned int data_size = (source_mesh_->element.size() + source_mesh_->bc_elements.size()) * (this->value_.n_rows() * this->value_.n_cols());
+	unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
     data_ = new double[data_size];
     std::fill(data_, data_ + data_size, 0.0);
 
@@ -297,7 +297,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.actual = false;
     search_header.field_name = field_name_;
     search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-    search_header.n_entities = source_mesh_->element.size() + source_mesh_->bc_elements.size();
+    search_header.n_entities = source_mesh_->element.size();
     search_header.time = time;
 
     bool boundary_domain_=false;
