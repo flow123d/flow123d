@@ -574,7 +574,7 @@ void ConvectionTransport::set_target_time(double target_time)
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
 
-    START_TIMER("matrix_assembly_mpi");
+    START_TIMER("convection_matrix_assembly");
 
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
@@ -749,7 +749,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
      getchar();
      */
     is_convection_matrix_scaled = false;
-
+    END_TIMER("convection_matrix_assembly");
 }
 
 
@@ -1171,8 +1171,6 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
 void ConvectionTransport::output_data() {
 
     if (time_->is_current(output_mark_type)) {
-
-        START_TIMER("TOS-output data");
 
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();

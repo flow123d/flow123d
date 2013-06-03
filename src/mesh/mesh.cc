@@ -170,7 +170,7 @@ void Mesh::count_element_types() {
 
 void Mesh::read_gmsh_from_stream(istream &in) {
   
-    START_TIMER("READING MESH - from_stream");
+    START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
     reader.read_mesh(this);
@@ -182,7 +182,7 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     F_ENTRY;
 
-    START_TIMER("READING MESH - init_from_input");
+    START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;

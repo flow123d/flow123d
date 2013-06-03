@@ -372,7 +372,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
 //=============================================================================
 void DarcyFlowMH_Steady::update_solution() {
-    START_TIMER("SOLVING MH SYSTEM");
+    START_TIMER("Solving MH system");
     F_ENTRY;
 
     if (time_->is_end()) return;
@@ -931,7 +931,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
 
 void DarcyFlowMH_Steady::make_schur0() {
   
-    START_TIMER("PREALLOCATION");
+    START_TIMER("preallocation");
 
     if (schur0 == NULL) { // create Linear System for MH matrix
 
@@ -947,13 +947,15 @@ void DarcyFlowMH_Steady::make_schur0() {
 
     }
 
-    END_TIMER("PREALLOCATION");
-    START_TIMER("ASSEMBLY");
+    END_TIMER("preallocation");
+    
+    START_TIMER("assembly");
 
     schur0->start_add_assembly(); // finish allocation and create matrix
     assembly_steady_mh_matrix(); // fill matrix
     schur0->finalize();
 
+    END_TIMER("assembly");
     //schur0->view_local_matrix();
     //PetscViewer myViewer;
     //PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matis.m",&myViewer);
