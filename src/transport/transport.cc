@@ -949,7 +949,8 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
         //Kx = sorp_coef0/N;
         for (i = 0; i < 5; i++) //Newton Raphson iteration cycle
         {
-            NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
+            //NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
+            NR -= (NR + (N * NR * parameter * sorp_coef0)/( 1 + NR * sorp_coef0 ) - conc_avg)/(1 + N * sorp_coef0 * parameter/pow((1 + NR * sorp_coef0), 2));
             if (fabs(NR - pNR) < tolerence *NR)
                 break;
             pNR = NR;
