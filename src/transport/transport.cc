@@ -86,7 +86,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("Transpor
     ADD_FIELD(sorp_coef1, "Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). "
             "Vector, one value for every substance.", IT::Default("0"));
     ADD_FIELD(phi, "Fraction of the total sorption surface exposed to the mobile zone, in interval (0,1). "
-            "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("0.5"));
+            "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("1.0"));
 }
 
 
@@ -946,6 +946,7 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
     case langmuir: // langmuir
         parameter = sorp_coef1;
         NR = 0;
+        //Kx = sorp_coef0/N;
         for (i = 0; i < 5; i++) //Newton Raphson iteration cycle
         {
             NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
