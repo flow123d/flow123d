@@ -342,14 +342,14 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
 				int subst_id = substance_ids[i_subst];
-			    if( this->isotherms_mob[reg_id_nr][i_subst].get_sorption_type() >= 0) // (this->isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() >= 2) // interpolation_table seems to be unusable
+			    if( (this->isotherms_mob[reg_id_nr][i_subst].get_sorption_type() > 0) ) // && (this->isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() >= 2)) // interpolation_table seems to be unusable
 			    {
 					if((isotherms_mob[reg_id_nr][subst_id].compute_projection(concentration_matrix[MOBILE][subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]) ) == false)
 					{
 						cout << "Sorption computed using interpolation failed." << endl;
 					}
 			    }else{
-					 xprintf(UsrErr,"3) Sorption of %d-th specie in %d-th region has a type %d.", i_subst, reg_id_nr, isotherms_mob[reg_id_nr][subst_id].get_sorption_type());
+					 ; //xprintf(Msg,"3) Sorption of %d-th specie in %d-th region has a type %d.", i_subst, reg_id_nr, isotherms_mob[reg_id_nr][subst_id].get_sorption_type());
 			    }
 			}
 		}
