@@ -74,6 +74,7 @@ TEST(Profiler, CodePoint) {
 
 // wait smallest amount of time and return it in ms
 double wait() {
+    cout << "wait function\n" <<endl;
     clock_t t1,t2;
 
     t2=t1=clock();
