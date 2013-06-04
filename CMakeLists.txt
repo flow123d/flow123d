@@ -257,13 +257,18 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-find_package(PETSc 3.2.0)
+find_package(PETSc 3.4.0)
 find_package(PARMETIS)
 
 if (PETSC_FOUND)
     add_definitions(-DHAVE_PETSC -DHAVE_MPI)
     set(MPI_CXX_LIBRARIES ${PETSC_LIBRARIES})
     set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
+    
+    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
+    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
+    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
+    
 else(PETSC_FOUND)
     # If we haven't PETSC, we try to find MPI
         
@@ -337,7 +342,7 @@ IF (PETSC_FOUND)
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
     # this may be fragile because of _NOCONFIG
     set_target_properties(armadillo PROPERTIES 
-      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_LIBRARIES}"
+      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}"
       ) 
 endif()
 
@@ -426,7 +431,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS} semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number

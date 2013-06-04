@@ -233,14 +233,14 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        // TODO: introduce LS as true object, clarify its internal states
        // create RHS sub vecs RHS1, RHS2
        VecGetArray(Orig->get_rhs(),&rhs_array);
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeA,PETSC_DETERMINE,rhs_array,&(RHS1));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeA,PETSC_DETERMINE,rhs_array,&(RHS1));
 
        // create Solution sub vecs Sol1, Compl->solution
        VecGetArray(Orig->get_solution(),&sol_array);
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeA,PETSC_DETERMINE,sol_array,&(Sol1));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeA,PETSC_DETERMINE,sol_array,&(Sol1));
 
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeB,PETSC_DETERMINE,rhs_array+locSizeA,&(RHS2));
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeB,PETSC_DETERMINE,sol_array+locSizeA,&(Sol2));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+locSizeA,&(RHS2));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+locSizeA,&(Sol2));
 
        VecRestoreArray(Orig->get_rhs(),&rhs_array);
        VecRestoreArray(Orig->get_solution(),&sol_array);
@@ -519,7 +519,7 @@ void SchurComplement::form_rhs()
        ISRestoreIndices( IsA_sub, &IsALocalIndices );
 
 
-       VecCreateSeqWithArray(PETSC_COMM_SELF,locSizeA,rhs_interior,&rhs1_vec);
+       VecCreateSeqWithArray(PETSC_COMM_SELF,1, locSizeA,rhs_interior,&rhs1_vec);
 
        VecCreateSeq(PETSC_COMM_SELF,locSizeB,&sub_vec_block2);
        MatMultTranspose(IAB_sub,rhs1_vec,sub_vec_block2);
@@ -527,7 +527,7 @@ void SchurComplement::form_rhs()
        // create RHS sub vecs RHS1, RHS2
        orig_lsize   = Orig->vec_lsize();
        locSizeB_vec = orig_lsize - locSizeA;
-       VecCreateMPI(PETSC_COMM_WORLD,locSizeB_vec,PETSC_DETERMINE,&(RHS2_update));
+       VecCreateMPI(PETSC_COMM_WORLD, locSizeB_vec,PETSC_DETERMINE,&(RHS2_update));
 
        LinSys_MATIS *ls_IS_Compl = dynamic_cast<LinSys_MATIS*>(Compl);
        ierr = VecScatterBegin( ls_IS_Compl->get_scatter(), sub_vec_block2, RHS2_update,  ADD_VALUES, SCATTER_REVERSE);
@@ -582,7 +582,7 @@ void SchurComplement::resolve()
        ierr = VecScatterEnd(ls_IS->get_scatter(),Compl->get_solution(),  sub_vec_block2, INSERT_VALUES,SCATTER_FORWARD);
 
        VecGetArray(Sol1,&sol1_array_loc);
-       VecCreateSeqWithArray(PETSC_COMM_SELF,locSizeA,sol1_array_loc,&sol1_vec_loc);
+       VecCreateSeqWithArray(PETSC_COMM_SELF,1, locSizeA,sol1_array_loc,&sol1_vec_loc);
 
        MatMult(IAB_sub,sub_vec_block2,sol1_vec_loc);
        VecRestoreArray(Sol1,&sol1_array_loc);

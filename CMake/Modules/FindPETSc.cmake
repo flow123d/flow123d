@@ -8,6 +8,8 @@
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
+#  PETSC_EXTERNAL_LIB   - CMake list of resolved (hopefully) external libraries linked by PETSC, 
+#                         in the case of static PETSC libraries this list is already included in PETSC_LIBRARIES
 #
 #  Hack: PETSC_VERSION currently decides on the version based on the
 #  layout.  Otherwise we need to run C code to determine the version.
@@ -258,6 +260,11 @@ int main(int argc,char *argv[]) {
   mark_as_advanced (PETSC_INCLUDE_DIR PETSC_INCLUDE_CONF)
   set (petsc_includes_minimal ${PETSC_INCLUDE_CONF} ${PETSC_INCLUDE_DIR})
 
+  # Macro resolve_libraries comes from ResolveCompilerPaths, it tries resolve all libraries form given compiler line
+  message(STATUS "[FindPETSc] Try to resolve libraries from: '${petsc_libs_external}'")
+  resolve_libraries (petsc_libraries_external "${petsc_libs_external}")
+  message(STATUS "[FindPETSc] Resolved path: '${petsc_libraries_external}'")
+  
   # Multipass_test_1 ####################
   petsc_test_runs ("${petsc_includes_minimal}" "${PETSC_LIBRARIES_TS}" petsc_works_minimal)
   if (petsc_works_minimal)
@@ -274,10 +281,6 @@ int main(int argc,char *argv[]) {
       
       # Multipass_test_3 ####################
       
-      # Macro resolve_libraries comes from ResolveCompilerPaths, it tries resolve all libraries form given compiler line
-      message(STATUS "[FindPETSc] Try to resolve libraries from: '${petsc_libs_external}'")
-      resolve_libraries (petsc_libraries_external "${petsc_libs_external}")
-      message(STATUS "[FindPETSc] Resolved path: '${petsc_libraries_external}'")
       foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
 	list (APPEND PETSC_LIBRARIES_${pkg}  ${petsc_libraries_external})
       endforeach (pkg)
@@ -304,6 +307,7 @@ int main(int argc,char *argv[]) {
   endif (petsc_works_minimal)
 
   
+  
   if (petsc_includes_needed)            # this indicates PETSC_FOUND
     if (${PETSC_EXECUTABLE_RUNS})       # this is optional
     else()
@@ -326,6 +330,7 @@ int main(int argc,char *argv[]) {
   set (PETSC_INCLUDES ${petsc_includes_needed} CACHE STRING "PETSc include path" FORCE)
   set (PETSC_LIBRARIES ${PETSC_LIBRARIES_ALL} CACHE STRING "PETSc libraries" FORCE)
   set (PETSC_COMPILER ${petsc_cc} CACHE FILEPATH "PETSc compiler" FORCE)
+  set (PETSC_EXTERNAL_LIB ${petsc_libraries_external} )
   # Note that we have forced values for all these choices.  If you
   # change these, you are telling the system to trust you that they
   # work.  It is likely that you will end up with a broken build.
