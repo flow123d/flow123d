@@ -299,7 +299,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         bc_function=NULL;
     }*/
     
-    START_TIMER("paralel init");
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
     ierr += MPI_Comm_size(PETSC_COMM_WORLD, &(np));
@@ -307,6 +306,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         xprintf(Err, "Some error in MPI.\n");
 
 
+    
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
         mesh_->read_intersections();
@@ -319,14 +319,13 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     prepare_parallel();
 
-    END_TIMER("paralel init");
     //side_ds->view();
     //el_ds->view();
     //edge_ds->view();
     
     make_schur0();
 
-    START_TIMER("prepare paralel");
+    START_TIMER("prepare scatter");
     // prepare Scatter form parallel to sequantial in original numbering
     {
             IS is_loc;
@@ -362,7 +361,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         }
     solution_changed_for_scatter=true;
     
-    END_TIMER("prepare paralel");
+    END_TIMER("prepare scatter");
 }
 
 
@@ -1342,7 +1341,9 @@ void DarcyFlowMH_Steady::make_row_numberings() {
 // - make arrays: *_id_4_loc and *_row_4_id to allow parallel assembly of the MH matrix
 // ====================================================================================
 void DarcyFlowMH_Steady::prepare_parallel() {
-
+    
+    START_TIMER("prepare parallel");
+    
     int *loc_part; // optimal (edge,el) partitioning (local chunk)
     int *id_4_old; // map from old idx to ids (edge,el)
     // auxiliary
@@ -1355,11 +1356,13 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     int e_idx;
     int i_loc, el_row, side_row, edge_row, nsides;
 
+    
     PetscErrorCode ierr;
     F_ENTRY;
-    ierr = MPI_Barrier(PETSC_COMM_WORLD);
-    ASSERT(ierr == 0, "Error in MPI_Barrier.");
-
+    //ierr = MPI_Barrier(PETSC_COMM_WORLD);
+    //ASSERT(ierr == 0, "Error in MPI_Barrier.");
+    
+    
     if (solver->type == PETSC_MATIS_SOLVER) {
         xprintf(Msg,"Compute optimal partitioning of elements.\n");
 
