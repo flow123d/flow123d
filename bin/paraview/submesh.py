@@ -1,6 +1,21 @@
+#
+# This script extract from given dataset all elements of specified type (lines, triangles, tetrahedra).
+# The element type is set by the variable "select_type" below.
+#
+
 import math
 
-select_type=3
+# select_type
+#
+# Choose VTK elements of given type. According to VTK file format documentation
+# (http://www.vtk.org/VTK/img/file-formats.pdf), the following values are possible:
+# 
+# 1 VTK_VERTEX
+# 3 VTK_LINE
+# 5 VTK_TRIANGLE
+# 10 VTK_TETRA
+
+select_type=5
 
 pdi = self.GetPolyDataInput()
 pdo = self.GetOutput()
