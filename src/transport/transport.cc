@@ -59,6 +59,7 @@
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
+#include "fields/field_elementwise.hh" 
 #include "reaction/isotherm.hh" // SorptionType enum
 
 namespace IT = Input::Type;
@@ -83,7 +84,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("Transpor
     ADD_FIELD(sorp_coef1, "Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). "
             "Vector, one value for every substance.", IT::Default("0"));
     ADD_FIELD(phi, "Fraction of the total sorption surface exposed to the mobile zone, in interval (0,1). "
-            "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("0.5"));
+            "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("1.0"));
 }
 
 
@@ -155,10 +156,22 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     Input::Record output_rec = in_rec.val<Input::Record>("output");
+    data_.conc_mobile.init(subst_names_);
+    data_.conc_mobile.set_mesh(mesh_);
+    data_.conc_mobile.set_name("conc_mobile");
+    data_.conc_mobile.set_units("M/L^3");
 
     field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
     for(unsigned int subst_id=0; subst_id < n_subst_; subst_id++) {
          // TODO: What about output also other "phases", IMMOBILE and so on.
+
+         // create FieldElementwise for every substance, set it to data->conc_mobile
+         data_.conc_mobile[subst_id].set_field(
+                 mesh_->region_db().get_region_set("ALL"),
+                 boost::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() )
+                 );
+
+
          std::string subst_name = subst_names_[subst_id] + "_mobile";
          double *data = out_conc[MOBILE][subst_id];
          OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
@@ -239,6 +252,7 @@ ConvectionTransport::~ConvectionTransport()
       xfree(cumulative_corr[sbi]);
     }
     
+    
     xfree(sources_corr);
     
     xfree(sources_density);
@@ -246,8 +260,7 @@ ConvectionTransport::~ConvectionTransport()
     xfree(sources_sigma);
     xfree(cumulative_corr);
     
-    
-    
+    /*
     for (ph = 0; ph < MAX_PHASES; ph++) {
       if ((sub_problem & ph) == ph) {
         for (sbi = 0; sbi < n_subst_; sbi++) {
@@ -259,8 +272,11 @@ ConvectionTransport::~ConvectionTransport()
       }
     }
     
+    DBGMSG("inner conc vecs freed\n");
+    
     xfree(conc);
     xfree(out_conc);
+    //*/
 }
 
 /*
@@ -285,30 +301,6 @@ void ConvectionTransport::set_cross_section_field(Field< 3, FieldValue<3>::Scala
     data_.cross_section = cross_section;
 }
 
-
-
-double ***ConvectionTransport::get_out_conc(){
-	return out_conc;
-}
-
-double ***ConvectionTransport::get_conc(){
-	return conc;
-}
-
-/* 
-//UNUSED
-vector<string> &ConvectionTransport::get_substance_names(){
-	return subst_names_;
-}
-*/
-
-/* 
-//UNUSED
-double *ConvectionTransport::get_sources(int sbi) {
-	compute_concentration_sources(sbi, conc[MOBILE][sbi] );
-	return sources_corr;
-}
-*/
 
 
 
@@ -585,8 +577,24 @@ void ConvectionTransport::compute_one_step() {
       MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
       //VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
       END_TIMER("mat mult");
-      
-      START_TIMER("dual porosity/sorption");
+
+     //}
+
+     START_TIMER("dual porosity/sorption");
+     /*
+     
+    if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    {
+      for(int i_subst = 0; i_subst < n_subst_; i_subst++)
+      {
+        //following conditional print is here for comparison of old and new type of sorption input concentrations
+        if(i_subst < (n_subst_ - 1)) cout << conc[MOBILE][i_subst][loc_el] << ", ";
+          else cout << conc[MOBILE][i_subst][loc_el] << endl;
+      }
+    }
+
+    for (sbi = 0; sbi < n_subst_; sbi++) {*/
+           
         if ((dual_porosity == true) || (sorption == true) )
             // cycle over local elements only in any order
             for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -935,38 +943,9 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
         //getchar();
 
         conc[MOBILE][sbi][elm_pos] = cm;
-        //pconc[MOBILE][sbi][elm_pos] = cm;
         conc[IMMOBILE][sbi][elm_pos] = ci;
-        //pconc[IMMOBILE][sbi][elm_pos] = ci;
     }
 
-    /*
-     // ---compute average concentration------------------------------------------
-     conc_avg = (( material->por_m * elm->pconc[sbi] )
-     + (material->por_imm * elm->pconc_immobile[sbi] ))
-     / ( material->por_m + material->por_imm );
-
-     if((conc_avg != 0) && (material->por_imm != 0))
-     {
-     // ---compute concentration in mobile area-----------------------------------
-     elm->conc[sbi] = ( elm->pconc[sbi] - conc_avg )
-     * exp( - material->alpha[sbi] * ((material->por_m + material->por_imm)
-     / (material->por_m * material->por_imm)) * transport->time_step )
-     + conc_avg;
-
-     // ---compute concentration in immobile area---------------------------------
-     elm->conc_immobile[sbi] = ( elm->pconc_immobile[sbi] - conc_avg )
-     * exp( - material->alpha[sbi] * ((material->por_m + material->por_imm)
-     / (material->por_m * material->por_imm)) * transport->time_step )
-     + conc_avg;
-     // --------------------------------------------------------------------------
-     //printf("\n%f\t%f\t%f",conc_avg,elm->conc[sbi],elm->conc_immobile[sbi]);
-     //getchar();
-
-     elm->pconc[sbi] = elm->conc[sbi];
-     elm->pconc_immobile[sbi] = elm->conc_immobile[sbi];
-     }
-     */
 }
 //=============================================================================
 //      TRANSPORT SORPTION
@@ -984,21 +963,17 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
     arma::vec sorp_coef0 = data_.sorp_coef0.value(elem->centre(), elem->element_accessor());
     arma::vec sorp_coef1 = data_.sorp_coef1.value(elem->centre(), elem->element_accessor());
 
-    if (/*(mtr->sorp_coef[sbi].size() == 0) ||*/ (por_m == 1)) return;
-
     n = 1 - (por_m + por_imm);
     Nm = por_m;
     Nimm = por_imm;
 
     conc_avg = conc[MOBILE][sbi][elm_pos] + conc[MOBILE_SORB][sbi][elm_pos] * n / Nm; // cela hmota do poru
 
-
+    //cout << "input concentration for old sorption is " << conc[MOBILE][sbi][elm_pos] << endl;
     if (conc_avg != 0) {
         compute_sorption(conc_avg, sorp_coef0[sbi], sorp_coef1[sbi], sorp_type[sbi], &conc[MOBILE][sbi][elm_pos],
                 &conc[MOBILE_SORB][sbi][elm_pos], Nm / n, n * phi / Nm);
 
-        //pconc[MOBILE][sbi][elm_pos] = conc[MOBILE][sbi][elm_pos];
-        //pconc[MOBILE_SORB][sbi][elm_pos] = conc[MOBILE_SORB][sbi][elm_pos];
     }
     //printf("\n%f\t%f\t",n * phi / Nm,n * phi / Nm);
     //printf("\n%f\t%f\t",n * phi / Nimm,n * (1 - phi) / Nimm);
@@ -1010,9 +985,6 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
         if (conc_avg_imm != 0) {
             compute_sorption(conc_avg_imm, sorp_coef0[sbi], sorp_coef1[sbi], sorp_type[sbi], &conc[IMMOBILE][sbi][elm_pos],
                     &conc[IMMOBILE_SORB][sbi][elm_pos], Nimm / n, n * (1 - phi) / Nimm);
-
-            //pconc[IMMOBILE][sbi][elm_pos] = conc[IMMOBILE][sbi][elm_pos];
-            //pconc[IMMOBILE_SORB][sbi][elm_pos] = conc[IMMOBILE_SORB][sbi][elm_pos];
         }
     }
 
@@ -1023,9 +995,9 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
 void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type, double *concx, double *concx_sorb, double Nv,
         double N) {
     double Kx = sorp_coef0 * N;
-    double parameter;// = sorp_coef[1];
+    double parameter;
     double NR, pNR, cz, tcz;
-    //double lZero = 0.0000001;
+
     double ad = 1e4;
     double tolerence = 1e-8;
     int i;
@@ -1057,9 +1029,11 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
     case langmuir: // langmuir
         parameter = sorp_coef1;
         NR = 0;
+        //Kx = sorp_coef0/N;
         for (i = 0; i < 5; i++) //Newton Raphson iteration cycle
         {
-            NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
+            //NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
+            NR -= (NR + (N * NR * parameter * sorp_coef0)/( 1 + NR * sorp_coef0 ) - conc_avg)/(1 + N * sorp_coef0 * parameter/pow((1 + NR * sorp_coef0), 2));
             if (fabs(NR - pNR) < tolerence *NR)
                 break;
             pNR = NR;
@@ -1068,27 +1042,8 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
         //   *concx_sorb = (conc_avg - *concx) * Nv;
         break;
     }
-    /*   else{
-     *concx_sorb = 0.0;
-     *concx = 0.0;
-     return;
-     }
 
-     if((fabs(conc_avg - *concx) > 1e-20))   */
     *concx_sorb = (conc_avg - *concx) * Nv;
-    /*   else{
-     *concx_sorb = 0.0;
-     if(fabs(*concx) < 1e-20 )
-     *concx = 0.0;
-     else
-     *concx = conc_avg;
-     }                               */
-
-    /*
-     if(DBL_EQ(conc_avg, *concx + *concx_sorb / Nv) != 1){
-     printf("\n%f\t%f\t%f\t%f",conc_avg,*concx + *concx_sorb / Nv,*concx,*concx_sorb / Nv);
-     getchar();
-     } */
 }
 //=============================================================================
 //      TIME STEP (RECOMPUTE)
