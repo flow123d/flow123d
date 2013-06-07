@@ -50,4 +50,9 @@ for i in range(pdi.GetCellData().GetNumberOfArrays()) :
         
     pdo.GetCellData().AddArray(newArray)
 
-# can not simply copy Point Data, that needs modification of points numbering    
+# make point data arrays
+for i in range(pdi.GetPointData().GetNumberOfArrays()) :
+    oldArray=pdi.GetPointData().GetArray(i)
+    pdo.GetPointData().AddArray(newArray)
+
+
