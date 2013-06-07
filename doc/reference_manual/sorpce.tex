@@ -22,12 +22,12 @@
 %***************************************************************************
 
 \section{Equilibrial Adsorption}\label{sec:sorp_math}
-The simulation of equilibrial adsorption is based on solution of the couple of equations representing mass balance law and empirical description of adsorption represented by comon types of isotherm. Considered types of isotherm folows:
+The simulation of monolayer, equilibrial adsorption is based on solution of the couple of equations representing mass balance law and empirical description of adsorption represented by comon types of isotherm. Considered types of isotherm folows:
 \begin{itemize}
  \item Without adsorption, \hyperA{Sorption-BulkData::sorption-types}{$sorption\_type$} is $"none"$.
  \item Linear isotherm $c_s = f(c_a) = k_l\cdot c_a$, $sorption\_type$ is $"linear"$.
  \item Freundlichs' isotherm $c_s = f(c_a) = k_F\cdot c_a^{\alpha}$, $sorption\_type$ is $"freundlich"$.
- \item Langmuirs' isotherm $c_s = f(c_a) = k_L\cdot \frac{\alpha\cdot c_a}{1 + \alpha\cdot c_a}$, $sorption\_type$ is $"langmuir"$.
+ \item Langmuirs' isotherm $c_s = f(c_a) = k_L\cdot \frac{\alpha\cdot c_a}{1 + \alpha\cdot c_a}$, $sorption\_type$ is $"langmuir"$. Langmuirs isotherm has been derived form thermodynamic laws. $k_L$ denotes the maximal amount of sorbing specie which can be capt per unit volume of a bulk matrix. Coefficient $\alpha$ is a fraction of adsorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$
 \end{itemize}
 Notification:
 \begin{itemize}
