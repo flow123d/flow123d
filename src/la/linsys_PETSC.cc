@@ -253,7 +253,7 @@ void LinSys_PETSC::apply_constrains( double scalar )
 }
 
 
-int LinSys_PETSC::solve( )
+int LinSys_PETSC::solve( std::string params )
 {
     PetscErrorCode     ierr;
 
@@ -261,7 +261,7 @@ int LinSys_PETSC::solve( )
     KSPConvergedReason reason;
 
     const char *petsc_dflt_opt;
-    char *petsc_str;
+    //const char *petsc_str;
     int nits;
     
     // -mat_no_inode ... inodes are usefull only for
@@ -284,10 +284,10 @@ int LinSys_PETSC::solve( )
            petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
     }
 
-    petsc_str=OptGetStr("Solver","Solver_params",petsc_dflt_opt);
-    xprintf(MsgVerb,"inserting petsc options: %s\n",petsc_str);
-    PetscOptionsInsertString(petsc_str); // overwrites previous options values
-    xfree(petsc_str);
+    //petsc_str = params.c_str();
+    xprintf(MsgVerb,"inserting petsc options: %s\n",params.c_str());
+    PetscOptionsInsertString(params.c_str()); // overwrites previous options values
+    //xfree(petsc_str);
     
     ierr = MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE ); 
     

@@ -361,7 +361,7 @@ public:
     }
 
     inline bool is_preallocated() {
-        return (status == INSERT || status == ADD);
+        return ( status_ == INSERT || status_ == ADD);
     }
 
     /**

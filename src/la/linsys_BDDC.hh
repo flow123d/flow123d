@@ -79,7 +79,7 @@ public:
 
     void apply_constrains( double scalar = 1. );
 
-    int solve( );
+    int solve( std::string params );
 
     void get_whole_solution( std::vector<double> & globalSolution );
 

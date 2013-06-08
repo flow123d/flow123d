@@ -71,7 +71,7 @@ flow123d:  build_flow123d  install
 # 4 		31s	27s
 # 8 		30s
 build_flow123d: cmake
-	make -j $(N_JOBS) -C build flow123d
+	make -j $(N_JOBS) -C build 
 
 	
 interpolation: build_interpolation install

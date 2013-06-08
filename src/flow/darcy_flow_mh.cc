@@ -393,8 +393,7 @@ void DarcyFlowMH_Steady::update_solution() {
     //time_->view("DARCY"); //time governor information output
     
     modify_system(); // hack for unsteady model
-
-    int convergedReason = schur0 -> solve( );
+    int convergedReason = schur0 -> solve( solver->params );
     DBGMSG( "Solved linear problem with converged reason %d \n", convergedReason );
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
 

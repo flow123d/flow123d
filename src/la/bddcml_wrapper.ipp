@@ -465,7 +465,6 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int use_defaults_int          = 0;
     int parallel_division_int     = 0;
     int use_arithmetic_int        = 1;
-    int use_user_constraints_int  = 0;
     int use_adaptive_int;
     if ( use_adaptive ) {
         use_adaptive_int = 1;
@@ -473,10 +472,13 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     else {
         use_adaptive_int = 0;
     }
+    int use_user_constraints_int  = 0;
+    int weights_type              = 3;
 
     // setup multilevel BDDC preconditioner
     bddcml_setup_preconditioner( & matrixTypeInt, & use_defaults_int, 
-                                 & parallel_division_int, & use_arithmetic_int, & use_adaptive_int, & use_user_constraints_int );
+                                 & parallel_division_int, & use_arithmetic_int, & use_adaptive_int, & use_user_constraints_int,
+                                 & weights_type );
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     double normSquaredLoc = 0.;
@@ -496,8 +498,13 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     else
         method = 1; // BICGSTAB - set for any other matrix
 
+    int recycling_int = 0;
+    int max_number_of_stored_vectors = 100;
+
     // call iterative solver
-    bddcml_solve( & commInt, & method, & tol, & maxIt, & ndecrMax, &numIter_, &convergedReason_, &condNumber_);
+    bddcml_solve( & commInt, & method, & tol, & maxIt, & ndecrMax, 
+                  & recycling_int, & max_number_of_stored_vectors,
+                  & numIter_, & convergedReason_, & condNumber_);
 
 
     //============= downloading solution from BDDCML solver

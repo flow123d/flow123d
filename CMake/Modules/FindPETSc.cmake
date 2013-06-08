@@ -289,6 +289,7 @@ int main(int argc,char *argv[]) {
       
         # Multipass_test_4 ####################      
 	# It looks like we really need everything, should have listened to Matt
+	set (petsc_includes_needed ${petsc_includes_all})
 	petsc_test_runs ("${petsc_includes_all}" "${PETSC_LIBRARIES_TS}" petsc_works_all)
 	if (petsc_works_all) # We fail anyways
 	  message (STATUS "PETSc requires extra include paths and explicit linking to all dependencies.  This probably means you have static libraries and something unexpected in PETSc headers.")

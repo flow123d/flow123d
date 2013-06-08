@@ -35,7 +35,7 @@
 // derived from base linsys
 #include "la/linsys.hh"
 
-#include "system/par_distribution.hh"
+#include "la/distribution.hh"
 
 class LinSys_PETSC : public LinSys
 {
@@ -85,7 +85,7 @@ public:
 
     void apply_constrains( double scalar = 1. );
 
-    int solve( );
+    int solve( std::string params );
 
     void get_whole_solution( std::vector<double> & globalSolution );
 

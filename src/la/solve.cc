@@ -329,9 +329,12 @@ void solver_petsc(Solver *solver)
 	F_ENTRY;
 
 	//LSView(sys);
+        
+        int np;
+        MPI_Comm_size(MPI_COMM_WORLD, &np);
 
 	if (solver->type == PETSC_MATIS_SOLVER) {
-           if (sys->ds().np() > 1) {
+           if (np > 1) {
 
 	       // parallel setting
               if (sys->is_positive_definite())
@@ -357,7 +360,7 @@ void solver_petsc(Solver *solver)
 	{
 	   // -mat_no_inode ... inodes are usefull only for
            //  vector problems e.g. MH without Schur complement reduction	
-           if (sys->ds().np() > 1) {
+           if (np > 1) {
 	       // parallel setting
               if (sys->is_positive_definite())
                   petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite -sub_pc_factor_fill 6.0";

@@ -197,7 +197,7 @@ void LinSys_BDDC::apply_constrains( double scalar )
     bddcml_ -> applyConstraints( constraints_, 1., scalar );
 }
 
-int LinSys_BDDC::solve( )
+int LinSys_BDDC::solve( std::string params )    // ! params are not currently used
 {
     double              tol            = 1.e-7; //!< tolerance on relative residual ||res||/||rhs||
     int                 numLevels      = 2;     //!< number of levels
