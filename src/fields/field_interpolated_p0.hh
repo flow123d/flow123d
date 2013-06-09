@@ -36,6 +36,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/tetrahedron.h"
 
@@ -115,6 +116,18 @@ protected:
 	/// stored reference to last computed element
 	const ElementAccessor<spacedim> *computed_elm_;
 
+	/// 3D (tetrahedron) element, used for computing intersection
+	TTetrahedron tetrahedron_;
+
+	/// 2D (triangle) element, used for computing intersection
+	TTriangle triangle_;
+
+	/// 1D (abscissa) element, used for computing intersection
+	TAbscissa abscissa_;
+
+	/// 0D (point) element, used for computing intersection
+	TPoint point_;
+
 	/**
 	 * Read scalar element data with name @p field_name using tokenizer @p tok initialized
 	 * over a GMSH file or stream.
@@ -131,29 +144,38 @@ protected:
 
 
 	/**
-	 * Calculate pressures in triangle element
+	 * Calculate values in triangle element
 	 */
-	void calculate_triangle_value(TTriangle &element, unsigned int idx);
+	//void calculate_triangle_value(TTriangle &element, unsigned int idx);
 	/**
-	 * Calculate pressures in abscissa element
+	 * Calculate values in abscissa element
 	 */
-	void calculate_abscissa_value(TAbscissa &element, unsigned int idx);
+	//void calculate_abscissa_value(TAbscissa &element, unsigned int idx);
+	/**
+	 * Calculate values in point element
+	 */
+	//void calculate_point_value(TPoint &point, unsigned int idx);
 
 public:
 	/**
 	 * Create tetrahedron from element
 	 */
-	static void createTetrahedron(Element *ele, TTetrahedron &te);
+	static void create_tetrahedron(Element *ele, TTetrahedron &te);
 
 	/**
 	 * Create triangle from element
 	 */
-	static void createTriangle(Element *ele, TTriangle &tr);
+	static void create_triangle(Element *ele, TTriangle &tr);
 
 	/**
 	 * Create abscissa from element
 	 */
-	static void createAbscissa(Element *ele, TAbscissa &ab);
+	static void create_abscissa(Element *ele, TAbscissa &ab);
+
+	/**
+	 * Create point from element
+	 */
+	static void create_point(Element *ele, TPoint &p);
 };
 
 

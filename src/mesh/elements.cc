@@ -208,5 +208,18 @@ double Element::quality_measure_smooth() {
     return 1.0;
 }
 
+
+void Element::get_bounding_box(BoundingBox &bounding_box) {
+	arma::vec3 minCoor = this->node[0]->point();
+	arma::vec3 maxCoor = this->node[0]->point();
+	for (unsigned int i=1; i<n_nodes(); i++) {
+		for (unsigned int j=0; j<3; j++) {
+			minCoor(j) = std::min(minCoor(j), this->node[i]->point()(j));
+			maxCoor(j) = std::max(maxCoor(j), this->node[i]->point()(j));
+		}
+	}
+	bounding_box.set_bounds(minCoor, maxCoor);
+}
+
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -54,7 +54,7 @@ string input = R"CODE(
    scalar_large={
        TYPE="FieldInterpolatedP0",
        gmsh_file="fields/bigger_3d_cube_0.5.msh",
-       field_name="scalar_large"
+       field_name="scalar"
    },
    vector_fixed={
        TYPE="FieldInterpolatedP0",

@@ -42,7 +42,7 @@ TEST(intersections, 1d_3d){
 	    FOR_ELEMENTS(&mesh_krychle, elm) {
 	         if (elm->dim() == 1) {
 	        	TAbscissa ta;
-	        	FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createAbscissa(elm, ta);
+	        	FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_abscissa(elm, ta);
 	        	BoundingBox elementBoundingBox = ta.get_bounding_box();
 	        	bt.find_bounding_box(elementBoundingBox, searchedElements);
 	        	TTetrahedron tt;
@@ -54,7 +54,7 @@ TEST(intersections, 1d_3d){
 	        			int idx = *it;
 	        			ElementFullIter ele = mesh_krychle.element( idx );
 	        			if (ele->dim() == 3) {
-	        				FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createTetrahedron(ele, tt);
+	        				FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_tetrahedron(ele, tt);
 	        				GetIntersection(ta, tt, iType, measure);
 	        				/*if (iType == line) {
 	        					xprintf(Msg, "%d %d \n",elm.id(),ele.id());

@@ -32,6 +32,7 @@
 
 #include "mesh/nodes.hh"
 #include "mesh/region.hh"
+#include "mesh/bounding_box.hh"
 
 template <int spacedim>
 class ElementAccessor;
@@ -97,6 +98,11 @@ public:
      * Permutations are defined in RefElement::side_permutations.
      */
     unsigned int *permutation_idx_;
+
+    /**
+     * Computes bounding box of element
+     */
+    void get_bounding_box(BoundingBox &bounding_box);
 
 
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
