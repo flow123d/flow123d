@@ -342,7 +342,9 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 
 		unsigned int index = this->value_.n_rows() * this->value_.n_cols() * elm.idx();
 		//Value tmp_value;
-		typename Value::return_type const &tmp_value = Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+index));
+                typename Value::element_type * ele_data_ptr = (typename Value::element_type *)(data_+index);
+                typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  ele_data_ptr) );
+		Value tmp_value = Value( ret_type_value );
 
 		double total_measure=0.0, measure;
 		TIntersectionType iType;
@@ -362,7 +364,8 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 								for (unsigned int j=0; j < this->value_.n_cols(); j++) {
 									//double v = tmp_value;
 									//this->value_(i,j) += tmp_value;
-									this->value_(i,j) += data_[ *it ];
+									//this->value_(i,j) += data_[ *it ];
+									this->value_(i,j) += tmp_value(i,j);
 								}
 							}
 							total_measure += 1.0;

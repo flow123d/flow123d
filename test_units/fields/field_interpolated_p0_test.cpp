@@ -80,6 +80,10 @@ string gmsh_mesh = R"CODE(
 $MeshFormat
 2.2 0 8
 $EndMeshFormat
+$PhysicalNames
+1
+0       101     ".point_boundary"
+$EndPhysicalNames
 $Nodes
 8
 1 1 1 1
@@ -99,8 +103,8 @@ $Elements
 4 1 2 37 20 8 4
 5 2 2 38 34 6 4 8
 6 2 2 38 36 4 1 8
+7 15 2 101 101 3
 # ------ interpolation to following 3D elements not implemented
-7 4 2 39 40 3 7 1 2
 8 4 2 39 40 3 7 2 8
 9 4 2 39 40 3 7 8 6
 10 4 2 39 42 3 7 6 5
