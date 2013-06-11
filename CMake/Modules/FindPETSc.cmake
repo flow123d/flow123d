@@ -10,6 +10,11 @@
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
 #  PETSC_EXTERNAL_LIB   - CMake list of resolved (hopefully) external libraries linked by PETSC, 
 #                         in the case of static PETSC libraries this list is already included in PETSC_LIBRARIES
+#  PETSC_VAR_XXX      - exported several variables from PETSC (to be used by other libraries)
+#                     XXX is one of:
+#  MPIFC_SHOW, MPICXX_SHOW,MPICC_SHOW, PCC,  CC_FLAGS, PCC_FLAGS, FC_FLAGS, CPP_FLAGS
+#  METIS_INCLUDE, BLASLAPACK_INCLUDE, PARMETIS_INCLUDE, MUMPS_INCLUDE
+#  MPI_LIB, MUMPS_LIB,  METIS_LIB, PARMETIS_LIB, BLASLAPACK_LIB, SCALAPACK_LIB 
 #
 #  Hack: PETSC_VERSION currently decides on the version based on the
 #  layout.  Otherwise we need to run C code to determine the version.
@@ -154,7 +159,15 @@ show :
       OUTPUT_VARIABLE ${var}
       RESULT_VARIABLE petsc_return)
   endmacro (PETSC_GET_VARIABLE)
-  
+
+  macro(PETSC_EXPORT_VARIABLES var_list)
+      message(STATUS ${var_list})   
+      
+      foreach( var ${var_list} )
+          petsc_get_variable(${var} PETSC_VAR_${var})
+          message(STATUS "EXPORTING PETSC VARIABLE: " ${var} " as PETSC_VAR_${var} = " ${PETSC_VAR_${var}})
+      endforeach(var)
+  endmacro(PETSC_EXPORT_VARIABLES)  
   
   petsc_get_variable (PETSC_LIB_DIR            petsc_lib_dir)
   petsc_get_variable (PETSC_EXTERNAL_LIB_BASIC petsc_libs_external)
@@ -162,10 +175,19 @@ show :
   petsc_get_variable (PETSC_INCLUDE            petsc_include)
   petsc_get_variable (PCC                      petsc_cc)
   petsc_get_variable (MPIEXEC                  petsc_mpiexec)
+
+  set(export_variable_list MPIFC_SHOW MPICXX_SHOW MPICC_SHOW CC FC CC_FLAGS PCC_FLAGS FC_FLAGS CPP_FLAGS
+  METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
+  MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB)
+  
+  petsc_export_variables("${export_variable_list}") 
+  
+
   # We are done with the temporary Makefile, calling PETSC_GET_VARIABLE after this point is invalid!
   file (REMOVE ${petsc_config_makefile})
   # add libraries specified by user (fixing wrong sequence provided by PETSC
   set(petsc_libs_external "${petsc_libs_external} ${PETSC_ADDITIONAL_LIBS}")
+  
   
   include (ResolveCompilerPaths)
   # Extract include paths and libraries from compile command line

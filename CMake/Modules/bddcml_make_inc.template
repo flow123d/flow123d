@@ -1,0 +1,71 @@
+#*********************************
+# the whole link sequence for BDDC
+#*********************************
+BDDCML_LINK_SEQUENCE = $(LIBBDDCML) $(BDDCML_LIBMUMPS) $(BDDCML_LIBPARMETIS) $(BDDCML_LIBMETIS) $(BDDCML_LIBSCALAPACK) $(BDDCML_LIBBLACS) \
+                       $(BDDCML_LIBPORD) $(BDDCML_LIBLAPACK) $(BDDCML_LIBBLAS) $(BDDCML_BLOPEXLINK) $(BDDCML_LIBOTHERS) 
+BDDCML_INC           = -I$(BDDCML_ROOT)/src
+
+PETSC=$(HOME)/local/petsc-3.4.0/gcc_O3_AMD64
+#*********** Compilers
+BDDCML_MPFC = @MPI_Fortran_COMPILER@
+BDDCML_MPFFLAGS = @MPI_Fortran_COMPILE_FLAGS@
+BDDCML_FC = @BDDCML_Fortran_COMPILER@
+BDDCML_FFLAGS = @BDDCML_Fortran_FLAGS@
+
+BDDCML_MPCC = @MPI_C_COMPILER@
+BDDCML_MPCFLAGS = @MPI_C_COMPILE_FLAGS@
+BDDCML_CC = @CMAKE_C_COMPILER@
+BDDCML_CFLAGS = @CMAKE_C_FLAGS@
+
+#*********** Library tools
+BDDCML_AR = ar vr
+BDDCML_RANLIB = ranlib
+
+#**********Preprocessor defs for calling Fortran from C (-DAdd_ or -DAdd__ or -DUPPER)
+# We rather use CMake module FortranCInterface to make proper mangling
+# BDDCML_CDEFS   = -DAdd_
+
+#*********** Includes
+# ParMetis
+BDDCML_INCPARMETIS = @Parmetis_INCLUDES@
+# Metis
+BDDCML_INCMETIS = @Metis_INCLUDES@
+# MUMPS
+BDDCML_INCMUMPS    = @Mumps_INCLUDES@
+
+#*********** Libraries
+# library being created
+BDDCML_ROOT         = @BDDCML_ROOT@
+BDDCML_LIB_DIR      = $(BDDCML_ROOT)/lib
+LIBBDDCML           = $(BDDCML_LIB_DIR)/libbddcml.a
+# MUMPS
+BDDCML_LIBMUMPS     = @Mumps_LIBRARIES@  #-L$(PETSC)/lib -ldmumps -lmumps_common -lpord
+# ScaLAPACK
+BDDCML_LIBSCALAPACK = @ScaLAPACK_LIBRARIES@   #-L$(PETSC)/lib -lscalapack
+# BLACS
+#BDDCML_LIBBLACS     = -L/usr/lib -lblacs-openmpi -lblacsCinit-openmpi -lblacsF77init-openmpi -lblacs-openmpi
+# BLAS
+BDDCML_LIBBLAS      = @BLAS_LAPACK_LIBRARIES@ #-L$(PETSC)/lib -lfblas
+# LAPACK
+BDDCML_LIBLAPACK    = 
+# ParMetis
+BDDCML_LIBPARMETIS  = @Parmetis_LIBRARIES@ #-L$(PETSC)/lib -lparmetis
+# Metis
+BDDCML_LIBMETIS     = @Metis_LIBRARIES@ # -L$(PETSC)/lib -lmetis
+# other needed libs ( e.g. -lmpi, -lpthread )
+BDDCML_LIBOTHERS    = 
+
+# BLOPEX objects
+BDDCML_BLOPEXDIR = @BLOPEX_DIR@
+BDDCML_INCBLOPEX = \
+   -I$(BDDCML_BLOPEXDIR)/blopex_serial_double/multivector \
+   -I$(BDDCML_BLOPEXDIR)/blopex_serial_double/pcg_multi \
+   -I$(BDDCML_BLOPEXDIR)/blopex_serial_double/matmultivec \
+   -I$(BDDCML_BLOPEXDIR)/blopex_abstract/include
+BDDCML_OBJBLOPEX = \
+   $(BDDCML_BLOPEXDIR)/blopex_serial_double/multivector/multi_vector.o \
+   $(BDDCML_BLOPEXDIR)/blopex_serial_double/pcg_multi/pcg_multi.o \
+   $(BDDCML_BLOPEXDIR)/blopex_serial_double/matmultivec/matmultivec.o
+BDDCML_LIBBLOPEX = -L$(BDDCML_BLOPEXDIR)/blopex_abstract/lib -lBLOPEX
+BDDCML_BLOPEXLINK = $(BDDCML_OBJBLOPEX) $(BDDCML_LIBBLOPEX)
+

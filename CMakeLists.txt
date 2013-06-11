@@ -308,7 +308,12 @@ else(PETSC_FOUND)
 
 endif(PETSC_FOUND)
 
-
+#################################################################################
+#  BDDCML_FOUND - set to true if the library is found
+set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
+include(InstallBLOPEX)
+set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
+include(InstallBDDCML)
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
