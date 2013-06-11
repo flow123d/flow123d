@@ -580,10 +580,9 @@ void ConvectionTransport::compute_one_step() {
 
      //}
 
-     START_TIMER("dual porosity/sorption");
-     /*
+     START_TIMER("dual porosity/old-sorption");
      
-    if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    /*if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
     {
       for(int i_subst = 0; i_subst < n_subst_; i_subst++)
       {
@@ -591,8 +590,8 @@ void ConvectionTransport::compute_one_step() {
         if(i_subst < (n_subst_ - 1)) cout << conc[MOBILE][i_subst][loc_el] << ", ";
           else cout << conc[MOBILE][i_subst][loc_el] << endl;
       }
-    }
-
+	}
+    START_TIMER("old_sorp_step");
     for (sbi = 0; sbi < n_subst_; sbi++) {*/
            
         if ((dual_porosity == true) || (sorption == true) )
@@ -606,8 +605,9 @@ void ConvectionTransport::compute_one_step() {
 
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
-      END_TIMER("dual porosity/sorption");
+      END_TIMER("dual porosity/old-sorption");
     }
+    //END_TIMER("old_sorp_step");
     END_TIMER("convection-one step");
 }
 

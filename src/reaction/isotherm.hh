@@ -124,13 +124,33 @@ public:
     bool compute_projection(double &c_aqua, double &c_sorbed);
     //bool compute_projection(double &c_aqua);
     /**
+    *	Enables to set private parameter.
+    */
+    void set_inv_scale_aqua(double inv_scale_aqua);
+    /**
+    *	Enables to set private parameter.
+    */
+    void set_inv_scale_sorbed(double inv_scale_sorbed);
+    /**
+    *	Enables to set private parameter.
+    */
+    void set_scale_aqua(double scale_aqua);
+    /**
     *	Enables to get private parameter.
     */
     double get_scale_aqua(void);
     /**
+    *	Enables to set private parameter.
+    */
+    void set_scale_sorbed(double scale_sorbed);
+    /**
     *	Enables to get private parameter.
     */
     double get_scale_sorbed(void);
+    /**
+    *	Enables to set private parameter.
+    */
+    void set_caq_limmit(double caq_limmit);
     /**
     * 	Verifies how big interpolation table is defined
     */

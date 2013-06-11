@@ -305,7 +305,8 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			 	 break;
 				}
 			}else{
-				isotherms_mob[reg_idx][i_subst].make_one_point_table();
+				//isotherms_mob[reg_idx][i_subst].make_one_point_table();
+				isotherms_mob[reg_idx][i_subst].set_scale_aqua(-1.0);
 			}
 			isotherms_mob[reg_idx][i_subst].set_sorption_type(hlp_iso_type);
 		}
@@ -337,6 +338,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 
 	if( (data_.rock_density.get_const_value(region, rock_density)) && (data_.mob_porosity.get_const_value(region, mob_porosity)) ) // constant value of rock density over the whole region
 	{
+		START_TIMER("new-sorption interpolation");
 		//if(data_.mob_porosity.get_const_value(region, mob_porosity)) // constant values of porosity over the whole region
 		{
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
@@ -368,27 +370,32 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		}else{
 			cout << "It is not possible in this time to compute sorption in immobile pores if the dual porosity  is not constant over the whole region " << reg_id_nr << endl;
 		}*/
+		END_TIMER("new-sorption interpolation");
 	}else{
-		rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
+		START_TIMER("new-sorption toms748_solve values-readed");
+		if( !(data_.rock_density.get_const_value(region, rock_density)) ) rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
 		//cout << "rock_density is not constant" << endl;
-		mob_porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
+		if( !(data_.mob_porosity.get_const_value(region, mob_porosity)) ) mob_porosity = data_.mob_porosity.value(elem->centre(),elem->element_accessor());
 		variabl_int = 1;
 		//cout << "mob_porosity is not constant" << endl;
 		//cout << "It is not possible in this time to compute sorption in if the rock density is not constant over the whole region " << reg_id_nr << endl;
+		END_TIMER("new-sorption toms748_solve values-readed");
 	}
 
 	if(variabl_int == 1)
 	{
+		START_TIMER("new-sorption toms748_solve");
 		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 		{
 		    if(this->isotherms_mob[reg_id_nr][i_subst].get_sorption_type() > 0) // (this->isotherms_mob[reg_id_nr][i_subst].get_interpolation_table_size() >= 2) // interpolation_table seems to be unusable
 		    {
 		    	SorptionType elem_sorp_type = this->isotherms_mob[reg_id_nr][i_subst].get_sorption_type();
-		    	double c_aqua_limit = c_aq_max[i_subst];
-		    	double molar_mass = molar_masses[i_subst];
-		    	double rho_aqua = solvent_dens;
 
-		    	this->isotherms_mob[reg_id_nr][i_subst].reinit(elem_sorp_type, rock_density, rho_aqua, mob_porosity, molar_mass, c_aqua_limit);
+		    	//if(this->isotherms_mob[reg_id_nr][i_subst].get_scale_aqua() <= 0.0)
+		    	{
+		    		this->isotherms_mob[reg_id_nr][i_subst].reinit(elem_sorp_type, rock_density, solvent_dens, mob_porosity, molar_masses[i_subst], c_aq_max[i_subst]);
+		    		//cout << "Multiplication coeficient has the value: " << this->isotherms_mob[reg_id_nr][i_subst].get_scale_aqua() << endl;
+		    	}
 				int subst_id = substance_ids[i_subst];
 				switch(elem_sorp_type)
 				{
@@ -423,6 +430,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 				}
 		    }
 		}
+		END_TIMER("new-sorption toms748_solve");
 	}
 
 	return concentrations;
@@ -430,12 +438,12 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 
 void Sorption::compute_one_step(void) // Computes sorption simulation over all the elements.
 {
-    START_TIMER("sorption_step");
+    START_TIMER("new_sorp_step");
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix[0], loc_el); //MOBILE and IMMOBILE 	computed
 	 }
-    END_TIMER("sorption_step");
+    END_TIMER("new_sorp_step");
 	 return;
 }
 
