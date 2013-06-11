@@ -70,12 +70,11 @@ it::Record HC_ExplicitSequential::input_type
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM FOR UNSTEADY SATURATED FLOW
  */
-HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
-        Input::Iterator<Input::Array> output_streams)
+HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
     START_TIMER("HC constructor");
     F_ENTRY;
-    int i=0;
+    //int i=0;
     using namespace Input;
 
     // Initialize Time Marks
@@ -86,31 +85,17 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record,
 
     // Read mesh
     {
-        START_TIMER("MESH READING");
         mesh = new Mesh( in_record.val<Record>("mesh") );
         mesh->init_from_input();
-        END_TIMER("MESH READING");
         
-        //mesh->setup_materials(*material_database);
+        //getting description for the Profiler
+        string description;
+        in_record.opt_val<string>("description", description);
+         
         Profiler::instance()->set_task_info(
-            "Description has to be set in main. by different method.",
+            description,
+            //"Description has to be set in main. by different method.",
             mesh->n_elements());
-    }
-
-    int rank=0;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank == 0) {
-        // Go through all configuration of "root" output streams and create them.
-        // Other output streams can be created on the fly and added to the array
-        // of output streams
-        if(output_streams) {
-            for (Input::Iterator<Input::Record> output_stream = (*output_streams).begin<Input::Record>();
-                    output_stream != (*output_streams).end();
-                    i++, ++output_stream)
-            {
-                OutputTime::output_streams[i] = OutputStream(mesh, *output_stream);
-            }
-        }
     }
 
     // setup primary equation - water flow object
@@ -176,7 +161,7 @@ void HC_ExplicitSequential::run_simulation()
 
     double velocity_interpolation_time;
     bool velocity_changed;
-    Vec velocity_field;
+    //Vec velocity_field;
 
 
     // following cycle is designed to support independent time stepping of
@@ -244,6 +229,7 @@ void HC_ExplicitSequential::run_simulation()
             transport_reaction->output_data();
         }
 
+        // write_all_data()
     }
     xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
 }

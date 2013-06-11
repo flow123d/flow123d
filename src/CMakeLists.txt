@@ -64,6 +64,18 @@ set(sources_lib_input
     input/accessors.cc
 )
 
+
+set(sources_lib_la
+	la/distribution.cc
+	la/local_to_global_map.cc
+    la/schur.cc
+    la/solve.cc
+    la/linsys.cc
+    la/linsys_BDDC.cc
+    la/linsys_PETSC.cc
+    la/sparse_graph.cc
+)
+
 set(sources_mesh_lib
     mesh/region.cc
     mesh/msh_gmshreader.cc
@@ -75,6 +87,8 @@ set(sources_mesh_lib
     mesh/nodes.cc
     mesh/sides.cc
     mesh/intersection.cc
+    mesh/ref_element.cc
+    mesh/partitioning.cc
     
     mesh/bounding_box.cc
     mesh/bih_node.cc
@@ -104,18 +118,11 @@ set(sources_fem_lib
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
+    
 )
 
 
-set(sources_lib_la
-	la/distribution.cc
-	la/local_to_global_map.cc
-    #la/schur.cc
-    la/solve.cc
-    la/linsys_BDDC.cc
-    la/linsys_PETSC.cc
-    la/sparse_graph.cc
-)
+
 
 
 set(sources_lib_field
@@ -151,6 +158,7 @@ set(sources_lib_non_system
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
     reaction/sorption.cc
+    reaction/isotherm.cc
     semchem/semchem_interface.cc
 
     transport/transport.cc
@@ -204,7 +212,7 @@ target_link_libraries(la_lib
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})
 target_link_libraries(mesh_lib
-    input_lib system_lib armadillo ${Boost_LIBRARIES})
+    input_lib system_lib la_lib armadillo ${Boost_LIBRARIES})
     
 # fem_lib    
 add_library(fem_lib ${sources_fem_lib})

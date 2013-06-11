@@ -54,6 +54,10 @@ class FE_RT0 : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::node_matrix;
 
 public:
+
+    /// Number of raw basis functions.
+    static const unsigned int n_raw_functions = dim+1;
+
     /**
      * @brief Constructor.
      */
@@ -142,7 +146,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 
     sp.fill(1./max(1.,(double)dim));
     generalized_support_points.push_back(sp);
-    for (int i=0; i<dim; i++)
+    for (unsigned int i=0; i<dim; i++)
     {
         sp.fill(1./max(1.,(double)dim));
         sp[i] = 0;
@@ -160,6 +164,8 @@ template<unsigned int dim, unsigned int spacedim>
 double FE_RT0<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_value() may not be called for vectorial finite element.");
+
+    return 0.0;
 }
 
 template<unsigned int dim, unsigned int spacedim>
@@ -171,22 +177,12 @@ arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i, con
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-    ASSERT(i<(dim+1)*dim, "Index of basis function is out of range.");
+    ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
 
-    arma::vec::fixed<dim> v;
-    unsigned int comp = i/(dim+1);
-    unsigned int offset = i%(dim+1);
+    arma::vec::fixed<dim> v(p);
     
-    v.zeros();
-
-    if (offset < dim)
-    {
-        v[comp] = p[offset];
-    }
-    else
-    {
-        v[comp] = 1;
-    }
+    if (i > 0)
+    	v[i-1] -= 1;
 
     return v;
 }
@@ -194,26 +190,15 @@ arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, c
 template<unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<dim,dim> FE_RT0<dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
-    ASSERT(i<(dim+1)*dim, "Index of basis function is out of range.");
+    ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
 
-    arma::mat::fixed<dim,dim> m;
-    unsigned int comp = i/(dim+1);
-    unsigned int offset = i%(dim+1);
-
-    m.zeros();
-
-    if (offset < dim)
-    {
-        m(comp,offset) = 1;
-    }
-
-    return m;
+    return arma::eye(dim,dim);
 }
 
 template<unsigned int dim, unsigned int spacedim>
 void FE_RT0<dim,spacedim>::compute_node_matrix()
 {
-	arma::mat::fixed<dim*(dim+1),dim+1> F;
+	arma::mat::fixed<n_raw_functions,dim+1> F;
 	arma::vec::fixed<dim> r;
 
     /*
@@ -235,7 +220,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
      *
      */
 
-    for (int i=0; i<dim*(dim+1); i++)
+    for (unsigned int i=0; i<n_raw_functions; i++)
     {
         /*
          * For the 0-th side we have:
@@ -274,7 +259,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
         }
         else
         {
-            for (int j=1; j<dim+1; j++)
+            for (unsigned int j=1; j<dim+1; j++)
             {
                 r = basis_vector(i,generalized_support_points[j]);
                 F(i,j) = -r(j-1)/(1.*dim-1);
@@ -282,7 +267,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
         }
     }
 
-    if (dim>0) node_matrix = pinv(F);
+    if (dim>0) node_matrix = inv(F);
 
 }
 
@@ -293,20 +278,20 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
 
     if (flags & update_values)
     {
-    	arma::mat::fixed<dim*(dim+1),dim> raw_values;
+    	arma::mat::fixed<n_raw_functions,dim> raw_values;
     	arma::mat::fixed<dim+1,dim> shape_values;
         vector<arma::vec> values;
 
         data->basis_vectors.resize(q.size());
         values.resize(dim+1);
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
         {
-            for (int j=0; j<dim*(dim+1); j++)
+            for (unsigned int j=0; j<n_raw_functions; j++)
                 raw_values.row(j) = trans(basis_vector(j, q.point(i)));
 
             shape_values = node_matrix * raw_values;
 
-            for (int j=0; j<dim+1; j++)
+            for (unsigned int j=0; j<dim+1; j++)
                 values[j] = trans(shape_values.row(j));
 
             data->basis_vectors[i] = values;
@@ -321,12 +306,12 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
 
         data->basis_grad_vectors.resize(q.size());
         grads.resize(dim+1);
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
         {
-            for (int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<dim+1; k++)
             {
                 grad.zeros();
-                for (int l=0; l<dim*(dim+1); l++)
+                for (unsigned int l=0; l<n_raw_functions; l++)
                     grad += basis_grad_vector(l, q.point(i)) * node_matrix(k,l);
                 grads[k] = grad;
             }
@@ -363,9 +348,9 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
     {
         vector<arma::vec::fixed<spacedim> > vectors;
         vectors.resize(dim+1);
-        for (int i = 0; i < q.size(); i++)
+        for (unsigned int i = 0; i < q.size(); i++)
         {
-            for (int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<dim+1; k++)
                 vectors[k] = fv_data.jacobians[i]*data.basis_vectors[i][k]/fv_data.determinants[i];
 
             fv_data.shape_vectors[i] = vectors;
@@ -377,9 +362,9 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
     {
         vector<arma::mat::fixed<spacedim,spacedim> > grads;
         grads.resize(dim+1);
-        for (int i = 0; i < q.size(); i++)
+        for (unsigned int i = 0; i < q.size(); i++)
         {
-            for (int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<dim+1; k++)
                 grads[k] = fv_data.jacobians[i]*data.basis_grad_vectors[i][k]*fv_data.inverse_jacobians[i]/fv_data.determinants[i];
 
             fv_data.shape_grad_vectors[i] = grads;

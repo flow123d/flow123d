@@ -36,13 +36,17 @@
 #include "la/linsys.hh"
 
 #include "la/distribution.hh"
+#include "input/input_type.hh"
+#include "input/accessors.hh"
 
 class LinSys_PETSC : public LinSys
 {
 
 public:
+    static Input::Type::Record input_type;
 
-    LinSys_PETSC( const unsigned lsize,
+    LinSys_PETSC( const Input::Record in_rec,
+                  const unsigned lsize,
                   Distribution * rows_ds,
                   double *sol_array = NULL,
                   const MPI_Comm comm = PETSC_COMM_WORLD ); 
@@ -85,7 +89,7 @@ public:
 
     void apply_constrains( double scalar = 1. );
 
-    int solve( std::string params );
+    int solve();
 
     void get_whole_solution( std::vector<double> & globalSolution );
 
@@ -123,6 +127,7 @@ private:
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
 
+    std::string params_;
 };
 
 #endif /* LA_LINSYS_PETSC_HH_ */

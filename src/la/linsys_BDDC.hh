@@ -35,13 +35,15 @@
 // derived from base linsys
 #include "mesh/mesh.h"
 #include "la/linsys.hh"
+#include "input/input_type.hh"
+#include "input/accessors.hh"
 
 #include <vector>
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/vector.hpp>
+//#include <boost/numeric/ublas/matrix.hpp>
+//#include <boost/numeric/ublas/vector.hpp>
 
-namespace la{
+namespace la {
     class BddcmlWrapper; 
 };
 
@@ -49,8 +51,10 @@ class LinSys_BDDC : public LinSys
 {
 
 public:
+    static Input::Type::Record input_type;
 
-    LinSys_BDDC( const unsigned lsize,
+    LinSys_BDDC( const Input::Record in_rec,
+                 const unsigned lsize,
                  const unsigned numDofsSub,
                  Distribution * rows_ds,
                  double *sol_array = NULL,
@@ -79,7 +83,7 @@ public:
 
     void apply_constrains( double scalar = 1. );
 
-    int solve( std::string params );
+    int solve();
 
     void get_whole_solution( std::vector<double> & globalSolution );
 

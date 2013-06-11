@@ -41,6 +41,7 @@
 #include "boost/lexical_cast.hpp"
 
 #include "mesh/mesh.h"
+#include "mesh/ref_element.hh"
 
 // think about following dependencies
 #include "mesh/boundaries.h"
@@ -92,7 +93,7 @@ Mesh::Mesh(Input::Record in_record)
 void Mesh::reinit(Input::Record in_record)
 {
 
-    n_materials = NDEF;
+    //n_materials = NDEF;
 
     n_insides = NDEF;
     n_exsides = NDEF;
@@ -102,6 +103,12 @@ void Mesh::reinit(Input::Record in_record)
     n_lines = 0;
     n_triangles = 0;
     n_tetrahedras = 0;
+
+
+    // Initialize numbering of nodes on sides.
+    // This is temporary solution, until class Element is templated
+    // by dimension. Then we can replace Mesh::side_nodes by
+    // RefElement<dim>::side_nodes.
 
     // indices of side nodes in element node array
     // Currently this is made ad libitum
@@ -115,35 +122,17 @@ void Mesh::reinit(Input::Record in_record)
             side_nodes[i][j].resize(i+1);
     }
 
-    side_nodes[0][0][0] = 0;
-    side_nodes[0][1][0] = 1;
+    for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
+    	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
+    		side_nodes[0][sid][nid] = RefElement<1>::side_nodes[sid][nid];
 
+    for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
+        		side_nodes[1][sid][nid] = RefElement<2>::side_nodes[sid][nid];
 
-    side_nodes[1][0][0] = 0;
-    side_nodes[1][0][1] = 1;
-
-    side_nodes[1][1][0] = 1;
-    side_nodes[1][1][1] = 2;
-
-    side_nodes[1][2][0] = 2;
-    side_nodes[1][2][1] = 0;
-
-
-    side_nodes[2][0][0] = 1;
-    side_nodes[2][0][1] = 2;
-    side_nodes[2][0][2] = 3;
-
-    side_nodes[2][1][0] = 0;
-    side_nodes[2][1][1] = 2;
-    side_nodes[2][1][2] = 3;
-
-    side_nodes[2][2][0] = 0;
-    side_nodes[2][2][1] = 1;
-    side_nodes[2][2][2] = 3;
-
-    side_nodes[2][3][0] = 0;
-    side_nodes[2][3][1] = 1;
-    side_nodes[2][3][2] = 2;
+    for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
+        		side_nodes[2][sid][nid] = RefElement<3>::side_nodes[sid][nid];
 }
 
 
@@ -181,8 +170,7 @@ void Mesh::count_element_types() {
 
 void Mesh::read_gmsh_from_stream(istream &in) {
   
-    //not working with test_units sofar (profiler needs to be improved)
-    //START_TIMER("READING MESH - from_stream");
+    START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
     reader.read_mesh(this);
@@ -193,8 +181,8 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 
 void Mesh::init_from_input() {
     F_ENTRY;
-    //not working with test_units sofar (profiler needs to be improved)
-    //START_TIMER("READING MESH - init_from_input");
+
+    START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;
@@ -220,12 +208,18 @@ void Mesh::init_from_input() {
 
 void Mesh::setup_topology() {
     F_ENTRY;
-    //not working with test_units sofar (profiler needs to be improved)
-    //START_TIMER("setup topology");
+
+    START_TIMER("MESH - setup topology");
     
     count_element_types();
+
+    // check mesh quality
+    FOR_ELEMENTS(this, ele)
+        if (ele->quality_measure_smooth() < 0.001) xprintf(Warn, "Bad quality (<0.001) of the element %u.\n", ele.id());
+
     make_neighbours_and_edges();
     element_to_neigh_vb();
+    make_edge_permutations();
     count_side_types();
 
     region_db_.close();
@@ -235,7 +229,6 @@ void Mesh::setup_topology() {
 //
 void Mesh::count_side_types()
 {
-    struct Side *sde;
 
     n_insides = 0;
     n_exsides = 0;
@@ -313,7 +306,7 @@ bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int>
 
 bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
     // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
-    int ni=0;
+    unsigned int ni=0;
     while ( ni < si->n_nodes()
         && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
     return ( ni == si->n_nodes() );
@@ -355,7 +348,7 @@ void Mesh::make_neighbours_and_edges()
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
-                xprintf(Warn, "Lonely boundary element, id: %d, dimension %d.\n", bc_ele.id(), bc_ele->dim());
+                xprintf(Warn, "Lonely boundary element, id: %d, region: %d, dimension %d.\n", bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();
@@ -480,11 +473,77 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            ASSERT( is_neighbour || edg->n_sides == intersection_list.size(), "Some connected sides were not found.\n");
+            ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
 		} // for element sides
 	}   // for elements
 
 	xprintf( Msg, "Created %d edges and %d neighbours.\n", edges.size(), vb_neighbours_.size() );
+}
+
+
+
+void Mesh::make_edge_permutations()
+{
+	for (EdgeVector::iterator edg=edges.begin(); edg!=edges.end(); edg++)
+	{
+		// side 0 is reference, so its permutation is 0
+		edg->side(0)->element()->permutation_idx_[edg->side(0)->el_idx()] = 0;
+
+		if (edg->n_sides > 1)
+		{
+			map<const Node*,unsigned int> node_numbers;
+			unsigned int permutation[edg->side(0)->n_nodes()];
+
+			for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
+				node_numbers[edg->side(0)->node(i)] = i;
+
+			for (int sid=1; sid<edg->n_sides; sid++)
+			{
+				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
+					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
+
+				switch (edg->side(0)->dim())
+				{
+				case 0:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<1>::permutation_index(permutation);
+					break;
+				case 1:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<2>::permutation_index(permutation);
+					break;
+				case 2:
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<3>::permutation_index(permutation);
+					break;
+				}
+			}
+		}
+	}
+
+	for (vector<Neighbour>::iterator nb=vb_neighbours_.begin(); nb!=vb_neighbours_.end(); nb++)
+	{
+		map<const Node*,unsigned int> node_numbers;
+		unsigned int permutation[nb->element()->n_nodes()];
+
+		// element of lower dimension is reference, so
+		// we calculate permutation for the adjacent side
+		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
+			node_numbers[nb->element()->node[i]] = i;
+
+		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
+			permutation[node_numbers[nb->side()->node(i)]] = i;
+
+		switch (nb->side()->dim())
+		{
+		case 0:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<1>::permutation_index(permutation);
+			break;
+		case 1:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<2>::permutation_index(permutation);
+			break;
+		case 2:
+			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<3>::permutation_index(permutation);
+			break;
+		}
+	}
 }
 
 
@@ -684,7 +743,7 @@ void Mesh::make_intersec_elements() {
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
      sizes[i->master_iter().index()]++;
      master_elements.resize(n_elements());
-     for(int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
+     for(unsigned int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
 
      // fill intersec_elements
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
@@ -700,23 +759,38 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::all_elements_id() {
-    if (all_elements_id_.size() ==0) {
+vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
+    if (bulk_elements_id_.size() ==0) {
+        std::vector<int>::iterator map_it;
+        int last_id;
 
-        all_elements_id_.resize(n_all_input_elements_);
-        std::vector<int>::iterator all_it = all_elements_id_.begin();
-        unsigned int last_id = element.begin().id();
-
-        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+        bulk_elements_id_.resize(n_elements());
+        map_it = bulk_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++map_it) {
+            if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+            last_id=*map_it = it.id();
+//            DBGMSG("bulk map: %d\n", *map_it);
         }
-        for(ElementFullIter it=bc_elements.begin(); all_it!=all_elements_id_.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+
+        boundary_elements_id_.resize(bc_elements.size());
+        map_it = boundary_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=bc_elements.begin(); it!=bc_elements.end(); ++it, ++map_it) {
+            // We set ID for boundary elements created by the mesh itself to "-1"
+            // this force gmsh reader to skip all remaining entries in boundary_elements_id_
+            // and thus report error for any remaining data lines
+            if (it.id() < 0) last_id=*map_it=-1;
+            else {
+                if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+                last_id=*map_it = it.id();
+            }
+//            DBGMSG("bc map: %d\n", *map_it);
         }
     }
-    return all_elements_id_;
+
+    if (boundary_domain) return boundary_elements_id_;
+    return bulk_elements_id_;
 }
 
 

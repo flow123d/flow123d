@@ -17,11 +17,11 @@
 
 string input = R"INPUT(
 {   
-   init_conc={ # formula on 2d 
+   init_conc={ // formula on 2d 
        TYPE="FieldFormula",
        value=["x", "x*y", "y+t"]
    },
-   conductivity_3d={ #3x3 tensor
+   conductivity_3d={ // 3x3 tensor
        TYPE="FieldFormula",
        value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
    }
@@ -47,7 +47,7 @@ TEST(FieldFormula, read_from_input) {
     reader.read_stream( ss, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-    Point<2> point_1, point_2;
+    Space<2>::Point point_1, point_2;
     point_1(0)=1.0; point_1(1)=  2.0;
     point_2(0)= 2.0; point_2(1)= 4.0;
     ElementAccessor<2> elm;

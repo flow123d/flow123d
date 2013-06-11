@@ -27,20 +27,6 @@ public:
 };
 
 /**
- * Child class of Input::Record
- * Contains public method for get Address object
- */
-class IRecordTest : public Input::Record {
-public:
-	IRecordTest(const Input::Record &rec) : Input::Record(rec)
-	{}
-
-	Input::Address &get_address() {
-		return address_;
-	}
-};
-
-/**
  * Child class of Input::Address
  * Contains public method for get root storage object
  */
@@ -138,8 +124,7 @@ TEST(InputAddress, address_output_test) {
 	json_reader.read_stream( ss,  root_record);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
-	IRecordTest rec_test(i_rec);
-	AddressTest addr_test(rec_test.get_address());
+	AddressTest addr_test(i_rec.get_address());
 	Input::Address a_root(addr_test.get_storage(), &root_record);
 	Input::Address a_problem(a_root);
 	a_problem.down(0);

@@ -18,8 +18,8 @@ Intersection::Intersection(unsigned int dimension, ElementFullIter ele_master,
 		ElementFullIter ele_slave, boost::tokenizer<boost::char_separator<char> >::iterator &tok) :
 	dim(dimension),
 	master(ele_master), slave(ele_slave),
-	master_shift(master->dim()), slave_shift(slave->dim()),
-	master_map(master->dim(), dim), slave_map(slave->dim(), dim)
+	master_map(master->dim(), dim), slave_map(slave->dim(), dim),
+	master_shift(master->dim()), slave_shift(slave->dim())
 {
 	///otestuje se jestli dimenze masteru je mensi nez dimenze slave - chybova hlaska (vyjimka - throw)
 	///pocet pointu=dim+1
@@ -60,7 +60,7 @@ void Intersection::read_intersection_point(arma::vec &vec1, arma::vec &vec2,
 using boost::lexical_cast;
 
 	// pocet lokalnich souradnic 1. elementu
-	int n_insec_points_el1 = lexical_cast<int> (*tok);
+	unsigned int n_insec_points_el1 = lexical_cast<unsigned int> (*tok);
 	++tok;
 	INPUT_CHECK(n_insec_points_el1 == vec1.n_elem, "Exception: n_insec_points_el1 != vec1.n_elem");
 
@@ -70,7 +70,7 @@ using boost::lexical_cast;
 	}
 
 	// pocet lokalnich souradnic 2. elementu
-	int n_insec_points_el2 = lexical_cast<int> (*tok);
+	unsigned int n_insec_points_el2 = lexical_cast<unsigned int> (*tok);
 	++tok;
 	INPUT_CHECK(n_insec_points_el2 == vec2.n_elem, "Exception: n_insec_points_el2 != vec2.n_elem");
 

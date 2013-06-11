@@ -24,7 +24,7 @@ class MH_DofHandler {
 public:
     void reinit(Mesh *mesh);
 
-    void set_solution( double * solution);
+    void set_solution( double * solution, double precision);
 
 
     unsigned int side_dof(const SideIter side) const;
@@ -38,9 +38,13 @@ public:
     /// temporary replacement for DofHandler accessor, scalar (pressure) on element
     double element_scalar( ElementFullIter &ele ) const;
 
+    inline double precision() const { return solution_precision; };
+
+
 protected:
     vector< vector<unsigned int> > elem_side_to_global;
     double * mh_solution;
+    double solution_precision;
 };
 
 #endif /* MH_DOFHANDLER_HH_ */

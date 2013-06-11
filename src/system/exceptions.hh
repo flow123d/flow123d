@@ -24,8 +24,7 @@
  * @endcode
  * EI_SomeValue is a error_info object for transfer of values form throw point to catch point. See EI<Tag,Type> class template.
  */
-#define THROW(whole_exception_expr) \
-    BOOST_THROW_EXCEPTION( whole_exception_expr)
+#define THROW(whole_exception_expr) BOOST_THROW_EXCEPTION( whole_exception_expr)
 
 
 namespace internal {
@@ -102,16 +101,17 @@ public:
  * @endcode
  */
 #define DECLARE_EXCEPTION( ExcName, Format)                                 \
-struct ExcName : public virtual ::ExceptionBase {                                  \
-     virtual void print_info(std::ostringstream &out) const {                     \
+struct ExcName : public virtual ::ExceptionBase {                           \
+     virtual void print_info(std::ostringstream &out) const {               \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                         \
-         ExcName const &_exc=*this;                                               \
          estream Format ;                                                   \
          out << std::endl;                                                  \
      }                                                                      \
      virtual ~ExcName() throw () {}                                         \
 }
+
+/* ExcName const &_exc=*this; */
 
 
 /**
@@ -123,7 +123,6 @@ struct ExcName : public virtual ::InputException {                              
      virtual void print_info(std::ostringstream &out) const {                     \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                                     \
-         ExcName const &_exc=*this;                                               \
          estream Format ;                                                   \
          out << std::endl;                                                  \
      }                                                                      \

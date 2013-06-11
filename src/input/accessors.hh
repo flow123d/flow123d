@@ -78,8 +78,8 @@ class Enum {
 public:
     Enum() : val_(0) {}
     Enum(int v) :val_(v) {}
-    operator int() {return val_;}
-    operator unsigned int() {return val_;}
+    operator int() const {return val_;}
+    operator unsigned int() const {return val_;}
 private:
     int val_;
 };
@@ -155,8 +155,11 @@ public:
     /**
      * Getter. Returns actual storage node.
      */
-    inline const StorageBase * storage_head() const
-        { return actual_storage_; }
+    inline const StorageBase * storage_head() const {
+    	ASSERT(actual_storage_, "NULL pointer to storage in address object!!! \n");
+
+    	return actual_storage_;
+    }
 
     /**
      * Produce a full address, i.e. sequence of keys and indices separated by '/',
@@ -290,6 +293,11 @@ public:
     inline bool is_empty() const
     { return (address_.storage_head() == NULL); }
 
+    /**
+     * Returns address
+     */
+    Address &get_address();
+
 
 protected:
     /// Corresponding Type::Record object.
@@ -350,6 +358,11 @@ public:
      * @endcode
      */
     Input::Type::Record type() const;
+
+    /**
+     * Returns address
+     */
+    Address &get_address();
 
 
 private:
@@ -437,6 +450,14 @@ public:
     */
    template <class Container>
    void copy_to(Container &out) const;
+
+   /**
+    * Returns address
+    */
+   Address &get_address();
+
+   /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
+   static StorageArray empty_storage_;
 
 private:
     /// Corresponding Type::Array.
@@ -532,9 +553,16 @@ public:
      */
     inline unsigned int idx() const;
 
+    /**
+     * Returns address
+     */
+    Address &get_address()
+    { return address_; }
+
+
 protected:
-    unsigned int index_;
     Address address_;
+    unsigned int index_;
 };
 
 

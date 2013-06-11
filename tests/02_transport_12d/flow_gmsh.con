@@ -11,11 +11,11 @@
 
       bulk_data = [
         { rid = 48,
-          cond_anisothropy = 10,
+          anisotropy = 10,
           cross_section = 1
         },
         { rid = 184,
-          cond_anisothropy = 1,
+          anisotropy = 1,
           cross_section = 1
         }
       ],
@@ -71,7 +71,7 @@
           por_imm = 0.25,
           alpha = [0.01, 0.01],
           phi = 0.5,
-          sorp_type = [1, 2],
+          sorp_type = [ "linear", "freundlich" ],
           sorp_coef0 = [0.02, 0.02],
           sorp_coef1 = [0, 0.5]
         },
@@ -82,7 +82,7 @@
           por_imm = 0.25,
           alpha = [0.01, 0.01],
           phi = 0.5,
-          sorp_type = [1, 2],
+          sorp_type = [ "linear", "freundlich" ],
           sorp_coef0 = [0.02, 0.02],
           sorp_coef1 = [0, 0.5]
         }

@@ -35,7 +35,7 @@
 
 
 class Element;
-struct Edge;
+class Edge;
 class SideIter;
 /**
  * Navrh algoritmu pro hledani pruniku elementu dvou siti (libovlnych dimenzi)

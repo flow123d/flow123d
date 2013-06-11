@@ -35,6 +35,19 @@
 #include "system/system.hh"
 #include "la/linsys.hh"
 
+
+namespace it = Input::Type;
+
+it::AbstractRecord LinSys::input_type = it::AbstractRecord("LinSys", "Linear solver setting.")
+    .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"),
+                "Absolute residual tolerance.")
+    .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
+                "Relative residual tolerance (to initial error).")
+    .declare_key("max_it", it::Integer(0), it::Default("10000"),
+                "Maximum number of outer iterations of the linear solver.");
+
+#if 0
+
 /**
  *  @brief Constructs a parallel system with given local size.
  *
@@ -42,9 +55,8 @@
  *  For MPIAIJ matrix this is also distribution of its rows, but for IS matrix this is only size of
  *  principial local part without interface.
  */
-
 LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
-:vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE),type(MAT_MPIAIJ)
+:type(MAT_MPIAIJ),vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE)
 {
     // create PETSC vectors
     v_rhs=(double *) xmalloc(sizeof(double) * (this->vec_lsize() + 1) );
@@ -124,7 +136,6 @@ LinSys:: ~LinSys()
     if (own_solution) xfree(v_solution);
 }
 
-#if 0
 
 // ======================================================================================
 // LSView - output assembled system in side,el,edge ordering
@@ -229,7 +240,7 @@ double *array;
         xfclose(f);
     }
 }
-
+*/
 
 //=========================================================================================
 /*! @brief convert linear system to pure CSR format
@@ -280,7 +291,6 @@ void LSFreeCSR( LinSystem *mtx )
     xfree(mtx->a);
 }
 
-#endif
 
 //**********************************************************************************************
 
@@ -319,7 +329,7 @@ void LinSys_MPIAIJ::preallocate_matrix()
      VecGetArray(off_vec,&off_array);
 
      for(i=0; i<vec_ds.lsize(); i++) {
-         on_nz[i]=min((int)(on_array[i]+0.1),vec_ds.lsize());        // small fraction to ensure correct rounding
+         on_nz[i]=min((unsigned int)(on_array[i]+0.1),vec_ds.lsize());        // small fraction to ensure correct rounding
          off_nz[i]=(int)(off_array[i]+0.1);
      }
 
@@ -377,8 +387,6 @@ LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_
 : LinSys(global_row_4_sub_row->get_distr()->lsize(), sol_array), lg_map(global_row_4_sub_row)
 {
     PetscErrorCode err;
-
-    int i;
 
     //xprintf(Msg,"sub size %d \n",subdomain_size);
 
@@ -447,7 +455,6 @@ void LinSys_MATIS::preallocate_matrix()
 void LinSys_MATIS::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 {
      int i,row, n_loc_rows;
-     int irow, indrow, indrow_loc;
      PetscErrorCode err;
 
      if (loc_rows_size < nrow) {
@@ -485,10 +492,10 @@ void LinSys_MATIS::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 void LinSys_MATIS::view_local_matrix()
 {
      PetscErrorCode err;
-     PetscViewer lab;
-     char numstring[6] = "00000";
-     int myid;
-     int ierr;
+//     PetscViewer lab;
+//     char numstring[6] = "00000";
+//     int myid;
+//     int ierr;
 
 //     err = PetscViewerSetFormat(PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_ASCII_DENSE);
 //     ASSERT(err == 0,"Error in PetscViewerSetFormat.");
@@ -533,6 +540,9 @@ LinSys_MATIS:: ~LinSys_MATIS()
      }
 
 }
+
+#endif
+
 
 #ifdef HAVE_ATLAS_ONLY_LAPACK
 /*

@@ -150,18 +150,10 @@ public:
     void init_from_input();
 
 
-
     /**
-     * This set pointers from elements to materials. Mesh should store only material IDs of indices.
-     * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
+     * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    //void setup_materials( MaterialDatabase &base);
-    //void make_element_geometry();
-
-    /**
-     * Returns vector of ID numbers of elements from both element and bc_elements vectors.
-     */
-    vector<int> const &all_elements_id();
+    vector<int> const & elements_id_maps( bool boundary_domain);
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -200,7 +192,7 @@ public:
      * Vector of compatible neighbourings.
      */
     vector<Neighbour> vb_neighbours_;
-    int n_materials; // # of materials
+    //int n_materials; // # of materials
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
@@ -210,6 +202,11 @@ public:
     int n_triangles; // Number of triangle elements
     int n_tetrahedras; // Number of tetrahedra elements
 
+    // Temporary solution for numbering of nodes on sides.
+    // The data are defined in RefElement<dim>::side_nodes,
+    // Mesh::side_nodes can be removed as soon as Element
+    // is templated by dimension.
+    //
     // for every side dimension D = 0 .. 2
     // for every element side 0 .. D+1
     // for every side node 0 .. D
@@ -236,6 +233,12 @@ protected:
      *
      */
     void make_neighbours_and_edges();
+
+    /**
+     * On edges sharing sides of many elements it may happen that each side has its nodes ordered in a different way.
+     * This method finds the permutation for each side so as to obtain the ordering of side 0.
+     */
+    void make_edge_permutations();
     /**
      * Create element lists for nodes in Mesh::nodes_elements.
      */
@@ -264,6 +267,7 @@ protected:
      */
     void setup_topology();
 
+
     void element_to_neigh_vb();
     void create_external_boundary();
 
@@ -276,7 +280,7 @@ protected:
     /// in input mesh file and has ID assigned.
     ///
     /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
-    vector<int> all_elements_id_;
+    vector<int> bulk_elements_id_, boundary_elements_id_;
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
 

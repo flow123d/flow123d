@@ -11,7 +11,7 @@
 
       bulk_data = [
         { region = "plane",
-          cond_anisothropy = 1,
+          anisotropy = 1,
           water_source_density = {
             TYPE = "FieldFormula",
             value = "2*(1-x^2)+2*(1-y^2)"

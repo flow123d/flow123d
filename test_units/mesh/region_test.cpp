@@ -27,6 +27,10 @@ TEST(Region, all) {
     EXPECT_EQ(2, r.dim());
 
     EXPECT_EQ(2, region_db.add_region(1001,"top", 2,true).idx() );
+
+    // try to convert Region to RegionIdx
+    RegionIdx r_idx = r;
+    EXPECT_EQ(2, r_idx.idx());
     }
 
     {

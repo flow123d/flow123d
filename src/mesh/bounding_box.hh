@@ -66,7 +66,7 @@ public:
      * @param point Testing point
      * @return True if box element contains point
      */
-    bool contains_point(Point<3> &point) const;
+    bool contains_point(typename Space<3>::Point &point) const;
 
     bool intersection(BoundingBox &b2) const;
 

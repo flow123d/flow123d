@@ -89,7 +89,7 @@ StorageArray::StorageArray(unsigned int size)
  StorageBase * StorageArray::deep_copy() {
     StorageArray *copy = new StorageArray(this->get_array_size());
 
-    for(int i=0; i< array_.size(); i++)
+    for(unsigned int i=0; i< array_.size(); i++)
         if (array_[i] != NULL) copy->new_item(i, array_[i]->deep_copy() );
 
     return copy;

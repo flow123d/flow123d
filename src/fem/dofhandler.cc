@@ -43,9 +43,9 @@
 
 template<unsigned int dim, unsigned int spacedim> inline
 DOFHandler<dim,spacedim>::DOFHandler(Mesh & _mesh)
-: mesh(&_mesh),
+: global_dof_offset(0),
   n_dofs(0),
-  global_dof_offset(0),
+  mesh(&_mesh),
   finite_element(0)
 {
 }
@@ -63,7 +63,7 @@ void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe,
     finite_element = &fe;
     global_dof_offset = offset;
 
-    for (int dm=0; dm <= dim; dm++)
+    for (unsigned int dm=0; dm <= dim; dm++)
     {
         n_obj_dofs[dm] = 0;
         for (unsigned int m=0; m<dof_multiplicities.size(); m++)
@@ -80,7 +80,7 @@ void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe,
         //       In the future we want to distribute dofs on vertices, lines,
         //       and triangles as well.
         object_dofs[dim][cell] = new int[n_obj_dofs[dim]];
-        for (int i=0; i<n_obj_dofs[dim]; i++)
+        for (unsigned int i=0; i<n_obj_dofs[dim]; i++)
            object_dofs[dim][cell][i] = next_free_dof++;
     }
 
@@ -137,10 +137,10 @@ const unsigned int DOFHandler<dim,spacedim>::offset()
 template<unsigned int dim, unsigned int spacedim>
 void DOFHandler<dim,spacedim>::get_dof_indices(const CellIterator &cell, unsigned int indices[])
 {
-    void *side;
-    unsigned int offset, pid;
+//    void *side;
+//    unsigned int offset, pid;
 
-    for (int k=0; k<finite_element->n_object_dofs(dim,DOF_SINGLE); k++)
+    for (unsigned int k=0; k<finite_element->n_object_dofs(dim,DOF_SINGLE); k++)
             indices[k] = object_dofs[dim][cell][k];
 
 //    indices.clear();
@@ -197,9 +197,9 @@ const unsigned int DOFHandler<dim,spacedim>::global_dof_id(const CellIterator &c
     
     ASSERT(local_dof_id<n_dofs, "Number of local dof is out of range.");
     unsigned int count_dofs = 0;
-    for (int dm=0; dm<=dim; dm++)
+    for (unsigned int dm=0; dm<=dim; dm++)
     {
-        for (int i=0; i<cell->n_sides_by_dim(dm); i++)
+        for (unsigned int i=0; i<cell->n_sides_by_dim(dm); i++)
         {
             int side_dof = count_dofs + cell->n_sides_by_dim(dm) - local_dof_id;
             if (side_dof > 0)
@@ -215,6 +215,8 @@ const unsigned int DOFHandler<dim,spacedim>::global_dof_id(const CellIterator &c
             }
         }
     }
+
+    return 0;
 }
 
 
@@ -237,7 +239,7 @@ typename DOFHandler<dim,spacedim>::CellIterator DOFHandler<dim,spacedim>::end_ce
 template<unsigned int dim, unsigned int spacedim> inline
 DOFHandler<dim,spacedim>::~DOFHandler()
 {
-    for (int dm=0; dm<=dim; dm++) object_dofs[dm].clear();
+    for (unsigned int dm=0; dm<=dim; dm++) object_dofs[dm].clear();
 }
 
 

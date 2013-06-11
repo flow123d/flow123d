@@ -74,8 +74,8 @@ TimeGovernor::TimeGovernor(const Input::Record &input, const TimeMark::Type fixe
   time_step(time_step_lower_bound),
   last_time_step(time_step_lower_bound),
   fixed_dt(0.0),
-  dt_changed(true),
   dt_fixed_now(false),
+  dt_changed(true),
   upper_constraint_(inf_time),
   lower_constraint_(time_step_lower_bound),
   max_time_step(inf_time),
@@ -125,8 +125,8 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
   time_step(dt),
   last_time_step(time_step_lower_bound),
   fixed_dt(dt),
-  dt_changed(true),
   dt_fixed_now(true),
+  dt_changed(true),
   upper_constraint_(inf_time),
   lower_constraint_(time_step_lower_bound),
   max_time_step(dt),
@@ -229,6 +229,8 @@ int TimeGovernor::set_upper_constraint (double upper)
         //do not change upper_constraint_
         return 1;
     }
+
+    return 0;
 }
 
 int TimeGovernor::set_lower_constraint (double lower)
@@ -251,6 +253,8 @@ int TimeGovernor::set_lower_constraint (double lower)
         //do not change lower_constraint_
         return 1;
     }
+
+    return 0;
 }
 
 

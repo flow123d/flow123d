@@ -111,7 +111,7 @@ void * xrealloc( void * ptr, size_t size );
               } \
     } while (0) /// test & free memory
 #endif
-//        F_STACK_SHOW( stdout ); \
+/*        F_STACK_SHOW( stdout ); \ */
 
 /**
  * @brief Replacement of new/delete operator in the spirit of xmalloc.

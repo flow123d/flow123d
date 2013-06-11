@@ -14,12 +14,13 @@
 % You should have received a copy of the GNU General Public License along with this program; if not,
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
+\section{Output files}
 \label{section_output}
 
-Flow123d support output of scalar and vaector data fields into two formats. First one can use native fromat of program GMSH (usualy with extension \verb'msh')
-which contains computational mesh and then various datafields for squence of time levels. For second we support output into XML version of VTK files. These files can be 
-viewed and postprocessed by several vizualization softwares. However, our primal goal is to support data transfer into Paraview vizualization software.
-See key \hyperlink{KeyOutFormat}{Pos\_format}. 
+Flow123d support output of scalar and vector data fields into two formats. The first is the native format of the GMSH software (usually with extension \verb'msh')
+which contains computational mesh followed by data fields for sequence of time levels. The second is the XML version of VTK files. These files can be 
+viewed and post-processed by several visualization softwares. However, our primal goal is to support data transfer into the Paraview visualization software.
+See key \hyperA{OutputStream::format}{{\tt format}}. 
 
 \subsection{Output data fields of water flow module}
 Water flow module provides output of four data fields. 
@@ -28,12 +29,12 @@ Water flow module provides output of four data fields.
  \item[pressure in nodes] Same pressure head field, but interpolated into $P1$ continuous scalar field. Namely you lost dicontinuities on fractures.
  \item[velocity on elements] Vector field of water flux volume unit per time unit $[L^3 / T]$. For every element we evaluate discrete flux field in barycenter.
  \item[piezometric head on elements] Piezometric head in length units $[L]$ piecewise constant on every element. This is just pressure on element  plus z-coordinate of the barycenter. This field is produced only on demand
- (see key \hyperlink{KeyPiezoHead}{output\_piezo\_head}).
+ (see key \hyperA{DarcyMHOutput::piezo-head-p0}{\tt piezo\_head\_p0}).
 \end{description}
 
 \subsection{Output data fields of transport}
 Transport module provides output only for concentrations (in mobile phase) as a field piecewise constant over elements. There is one field for every substance and names of those fields contain 
-names of substances given by key \hyperlink{KeySubstanceNames}{Substances}. The physical unit is mass unit over volume unit $[M / L^3]$.
+names of substances given by key \hyperA{TransportOperatorSplitting::substances}{{\tt substances}}. The physical unit is mass unit over volume unit $[M / L^3]$.
 
 
 
@@ -44,7 +45,7 @@ names of substances given by key \hyperlink{KeySubstanceNames}{Substances}. The 
 \subsection{Auxiliary output files}
 
 \subsubsection{Profiling information}
-On every run we collect some bacis profilling informations. After all computations these data are written into the file
+On every run we collect some basic profiling informations. After all computations these data are written into the file
 \verb'profiler%y%m%d_%H.%M.%S.out' where \verb'%y', \verb'%m', \verb'%d', \verb'%H', \verb'%M', \verb'%S' are 
 two digit numbers representing year, month, day, hour, minute, and second of the program start time.
 

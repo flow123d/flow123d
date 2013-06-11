@@ -60,30 +60,60 @@ public:
     arma::vec3 centre() const; // Centre of side
     arma::vec3 normal() const; // Vector of (generalized) normal
 
+    /**
+     * Returns number of nodes of the side.
+     */
     inline unsigned int n_nodes() const;
 
+    /**
+     * Returns dimension of the side, that is dimension of the element minus one.
+     */
     inline unsigned int dim() const;
 
     // returns true for all sides either on boundary or connected to vb neigboring
     inline bool is_external() const;
 
+    /**
+     * Returns node for given local index @p i on the side.
+     */
     inline const Node * node(unsigned int i) const;
 
+    /**
+     * Returns full iterator to the element of the side.
+     */
     inline ElementFullIter element() const;
 
+    /**
+     * Returns pointer to the mesh.
+     */
     inline Mesh * mesh() const;
 
+    /**
+     * Returns global index of the edge connected to the side.
+     */
     inline unsigned int edge_idx() const;
 
+    /**
+     * Returns pointer to the edge connected to the side.
+     */
     inline Edge * edge() const;
 
     inline Boundary * cond() const;
     inline unsigned int cond_idx() const;
 
+    /**
+     * Returns local index of the side on the element.
+     */
     inline unsigned int el_idx() const;
 
+    /**
+     * Returns true if the side has assigned element.
+     */
     inline bool valid() const;
 
+    /**
+     * Iterate over local sides of the element.
+     */
     inline void inc();
 
     /// This is necessary by current DofHandler, should change this
@@ -99,7 +129,6 @@ private:
     Element * element_; // Pointer to element to which belonged
     unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
-    //Mesh    *mesh_;
 };
 
 

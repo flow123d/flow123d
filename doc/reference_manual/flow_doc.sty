@@ -1,0 +1,191 @@
+% Various macros and environments for Flow123d manual
+
+\RequirePackage{etoolbox}
+\RequirePackage{hyperref}   % hypertext capabilities, should by last package
+\hypersetup{backref,colorlinks=true, raiselinks=true}  %setup hyperef package
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+% define a target command to check that target is defined 
+\def\RegisterTarget#1{%
+    \expandafter\gdef\csname #1\endcsname{}%
+}
+% replacement for \hypertarget that scroll to correct line
+\def\HTRaised#1{%
+    \RegisterTarget{#1}%
+    \raisebox{\ht\strutbox}{%
+        \hypertarget{#1}{}%
+    }%
+}
+% macros for bidirect links A<->B
+\def\hyperA#1#2{%
+    \HTRaised{#1::A}{}%
+    \hyperlink{#1::B}{#2}%
+}
+\def\hyperB#1#2{%
+    \HTRaised{#1::B}{}%
+    \ifcsdef{#1::A}{%
+        \hyperlink{#1::A}{#2}%
+    }% 
+    {#2}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% macro for units 
+\def\UNIT#1#2{\ifstrempty{#2}{}{%
+\ifstrequal{#2}{1}{\mathrm{#1}}{\mathrm{#1}^{#2}}%
+}}
+\def\units#1#2#3{$[ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} ]$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RecordType environment
+%
+% usage:
+% \begin{RecordType}
+%       {<record name>}                 % name of the record, used for header and for hypertarget in form IT::<record name>
+%       {<parent abstract record>}      % possible parent abstract record
+%       {<default conversion key>}      % possible auto conversion key
+%       {<link>}                        % possible hyperlink into hand written text
+%       {< record description>}         % description of the record
+%
+%       \KeyItem{<name>}                % name of the key
+%               {<type>}                % type of the key 
+%               {<default value>}       % type of default value and possibly the value itself
+%               {<link>}                %  possible hyperlink to hand written text
+%               {<key description>}     % description of the key
+%       ...
+% \end{RecordType}
+
+\def\AddDoc#1{}
+
+\newenvironment{RecordType}[5]
+{
+ \ifstrequal{#4}{\relax}{%
+    % turn off
+    \begingroup
+    \gdef\KeyItem##1##2##3##4##5{}
+ }{
+    \par
+    \vskip 2ex
+    \hrule%
+    \vskip 0.3ex
+    \hrule
+    \noindent%
+    record: {\bf #1}%
+    \ifstrempty{#2}{}{ implements abstract type: #2}%
+    \ifstrempty{#3}{}{ constructible from key: #3}%
+    \par%
+    \vskip 0.5ex
+    \hrule%
+    \vskip 0.3ex
+    \hrule
+    {#5#4}
+    \begingroup%records of steady field type which we describe right now 
+    \addtolength{\leftskip}{3em}%
+    %
+    \gdef\KeyItem##1##2##3##4##5{%
+        \par
+        \vskip 0.3ex
+        %\hrule%
+        \noindent%
+        \hspace{-3em}{\bf\tt ##1} = {\it \textless ##2\textgreater}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
+        \par
+        Default: {##3}
+        \par
+        {##5##4}
+    }%
+  }
+}{%
+  \vskip 2ex  
+  \endgroup%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% AbstractType environment
+%
+% usage:
+% \begin{AbstractType}
+%       {<record name>}
+%       {<default descendant>}
+%       {<link>}
+%       {<description>}         % Description paragraph of the abstract type.
+%       \Descendant{<type name>}
+% \end{AbstractType}
+
+\newenvironment{AbstractType}[3]
+{\par
+ \vskip 2ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ \noindent%
+ abstract type: {\bf #1}%
+ \ifstrempty{#2}{}{ default descendant: #2}%
+ \par%
+ \vskip 0.5ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ #3
+ \par\noindent
+ Descendants:
+ \par
+ \begingroup%records of steady field type which we describe right now 
+  \addtolength{\leftskip}{3em}%
+  %
+  \gdef\Descendant##1{%
+    \par
+    \vskip 0.3ex
+    %\hrule%
+    \noindent%
+    \hspace{-3em}{\bf\tt ##1}%
+    \par
+  }%
+}{%
+  \vskip 0.7ex  
+  \endgroup%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SelectionType environment
+%
+% usage:
+% \begin{SelectionType}{<selection name>}{< selection description>}    
+%       \KeyItem{<value name>}{<value>}
+%       Key value description.
+% \end{SelectionType}
+
+\newenvironment{SelectionType}[2]
+{\par
+ \vskip 2ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ \noindent%
+ selection type: {\bf #1}%
+ \par%
+ \vskip 0.5ex
+ \hrule%
+ \vskip 0.3ex
+ \hrule
+ {#2}
+ 
+ Possible values:
+ \par
+ \begingroup%records of steady field type which we describe right now 
+  \addtolength{\leftskip}{3em}%
+  %
+  \gdef\KeyItem##1##2{%
+    \par
+    \vskip 0.3ex
+    %\hrule%
+    \noindent%
+    \hspace{-3em}{\bf\tt ##1} : { ##2 }%%
+    \par
+  }%
+}{%
+  \vskip 0.7ex  
+  \endgroup%
+}

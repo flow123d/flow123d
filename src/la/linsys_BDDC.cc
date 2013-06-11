@@ -33,11 +33,17 @@
 
 // need BDDCML wrapper
 #include "la/bddcml_wrapper.hpp"
-
+#include "la/linsys.hh"
 #include "la/linsys_BDDC.hh"
 
+namespace it = Input::Type;
 
-LinSys_BDDC::LinSys_BDDC( const unsigned lsize,
+it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
+    .derive_from(LinSys::input_type);
+
+
+LinSys_BDDC::LinSys_BDDC(const Input::Record in_rec,
+                          const unsigned lsize,
                           const unsigned numDofsSub,
                           Distribution * rows_ds,
                           double *sol_array,
@@ -197,7 +203,7 @@ void LinSys_BDDC::apply_constrains( double scalar )
     bddcml_ -> applyConstraints( constraints_, 1., scalar );
 }
 
-int LinSys_BDDC::solve( std::string params )    // ! params are not currently used
+int LinSys_BDDC::solve()    // ! params are not currently used
 {
     double              tol            = 1.e-7; //!< tolerance on relative residual ||res||/||rhs||
     int                 numLevels      = 2;     //!< number of levels

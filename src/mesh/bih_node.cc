@@ -1,5 +1,4 @@
-/*
- /**!
+/**!
  *
  * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
  *

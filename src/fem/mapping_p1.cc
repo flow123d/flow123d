@@ -62,7 +62,7 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature<dim> &
             (flags & update_inverse_jacobians))
     {
         grad.zeros();
-        for (int i=0; i<dim; i++)
+        for (unsigned int i=0; i<dim; i++)
         {
             grad(0,i) = -1;
             grad(i+1,i) = 1;
@@ -74,10 +74,10 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature<dim> &
     {
         vec::fixed<dim+1> basis;
         data->bar_coords.resize(q.size());
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
         {
             basis[0] = 1;
-            for (int j=0; j<dim; j++)
+            for (unsigned int j=0; j<dim; j++)
             {
                 basis[0] -= q.point(i)[j];
                 basis[j+1] = q.point(i)[j];
@@ -124,8 +124,8 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandler<dim,space
         (fv_data.update_flags & update_quadrature_points))
     {
         coords.zeros();
-        for (int n=0; n<dim+1; n++)
-            for (int c=0; c<spacedim; c++)
+        for (unsigned int n=0; n<dim+1; n++)
+            for (unsigned int c=0; c<spacedim; c++)
                 coords(c,n) = cell->node[n]->point()[c];
     }
 
@@ -139,7 +139,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandler<dim,space
 
         // update Jacobians
         if (fv_data.update_flags & update_jacobians)
-            for (int i=0; i<q.size(); i++)
+            for (unsigned int i=0; i<q.size(); i++)
                 fv_data.jacobians[i] = jac;
 
         // calculation of determinant dependent data
@@ -149,12 +149,12 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandler<dim,space
 
             // update determinants
             if (fv_data.update_flags & update_volume_elements)
-                for (int i=0; i<q.size(); i++)
+                for (unsigned int i=0; i<q.size(); i++)
                     fv_data.determinants[i] = det;
 
             // update JxW values
             if (fv_data.update_flags & update_JxW_values)
-                for (int i=0; i<q.size(); i++)
+                for (unsigned int i=0; i<q.size(); i++)
                     fv_data.JxW_values[i] = det*q.weight(i);
         }
 
@@ -170,7 +170,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandler<dim,space
             {
                 ijac = pinv(jac);
             }
-            for (int i=0; i<q.size(); i++)
+            for (unsigned int i=0; i<q.size(); i++)
                 fv_data.inverse_jacobians[i] = ijac;
         }
     }
@@ -179,14 +179,14 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandler<dim,space
     if (fv_data.update_flags & update_quadrature_points)
     {
         vec::fixed<dim+1> basis;
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
             fv_data.points[i] = coords*data.bar_coords[i];
     }
 }
 
 template<unsigned int dim, unsigned int spacedim>
 void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
-                            const Side &side,
+                            unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
@@ -200,8 +200,8 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
         (fv_data.update_flags & update_quadrature_points))
     {
         coords.zeros();
-        for (int n=0; n<dim+1; n++)
-            for (int c=0; c<spacedim; c++)
+        for (unsigned int n=0; n<dim+1; n++)
+            for (unsigned int c=0; c<spacedim; c++)
                 coords(c,n) = cell->node[n]->point()[c];
     }
 
@@ -215,14 +215,14 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
 
         // update cell Jacobians
         if (fv_data.update_flags & update_jacobians)
-            for (int i=0; i<q.size(); i++)
+            for (unsigned int i=0; i<q.size(); i++)
                 fv_data.jacobians[i] = jac;
 
         // update determinants of Jacobians
         if (fv_data.update_flags & update_volume_elements)
         {
             double det = fabs(determinant(jac));
-            for (int i=0; i<q.size(); i++)
+            for (unsigned int i=0; i<q.size(); i++)
                 fv_data.determinants[i] = det;
         }
 
@@ -238,33 +238,16 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
             {
                 ijac = pinv(jac);
             }
-            for (int i=0; i<q.size(); i++)
+            for (unsigned int i=0; i<q.size(); i++)
                 fv_data.inverse_jacobians[i] = ijac;
 
             // calculation of normal vectors to the side
             if ((fv_data.update_flags & update_normal_vectors))
             {
-                map<const Node*, int> node_nums;
-                vec::fixed<dim> n_ref;
                 vec::fixed<spacedim> n_cell;
-                for (int i=0; i<cell->n_nodes(); i++)
-                    node_nums[cell->node[i]] = i;
-                for (int i=0; i<side.n_nodes(); i++)
-                    node_nums.erase(side.node(i));
-                n_ref.zeros();
-                int index = node_nums.begin()->second;
-                switch (index)
-                {
-                case 0:
-                    n_ref.fill(1./sqrt(dim));
-                    break;
-                default:
-                    n_ref[(index+dim-1)%(dim==0?1:dim)] = -1;
-                    break;
-                }
-                n_cell = trans(ijac)*n_ref;
+                n_cell = trans(ijac)*RefElement<dim>::normal_vector(sid);
                 n_cell = n_cell/norm(n_cell,2);
-                for (int i=0; i<q.size(); i++)
+                for (unsigned int i=0; i<q.size(); i++)
                     fv_data.normal_vectors[i] = n_cell;
             }
         }
@@ -274,7 +257,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
     // The points location can vary from side to side.
     if (fv_data.update_flags & update_quadrature_points)
     {
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
             fv_data.points[i] = coords*data.bar_coords[i];
     }
 
@@ -292,18 +275,26 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
 
             // calculation of side Jacobian
             side_coords.zeros();
-            for (int n=0; n<dim; n++)
-                for (int c=0; c<spacedim; c++)
-                    side_coords(c,n) = side.node(n)->point()[c];
+            for (unsigned int n=0; n<dim; n++)
+                for (unsigned int c=0; c<spacedim; c++)
+                    side_coords(c,n) = cell->side(sid)->node(n)->point()[c];
             side_jac = side_coords * grad.submat(0,0,dim-1,dim-2);
 
             // calculation of JxW
             side_det = fabs(determinant(side_jac));
         }
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
             fv_data.JxW_values[i] = side_det*q.weight(i);
     }
 }
+
+template<>
+void MappingP1<0,3>::fill_fe_side_values(const DOFHandler<0,3>::CellIterator &cell,
+                            unsigned int sid,
+                            const Quadrature<0> &q,
+                            MappingInternalData &data,
+                            FEValuesData<0,3> &fv_data)
+{}
 
 
 

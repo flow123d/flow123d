@@ -1,6 +1,6 @@
 % Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
 %
-% Please make a following refer to Flow123d on your project site if you use the program for any purpose,
+% Please make a following reference to Flow123d on your project site if you use the program for any purpose,
 % especially for academic research:
 % Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
 %
@@ -14,31 +14,27 @@
 % You should have received a copy of the GNU General Public License along with this program; if not,
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 %
-%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % use PDFLatex to compile this
 %
 
 \documentclass[12pt,a4paper]{report}
 
-%%% remove comment delimiter ('%') and specify encoding parameter if required,
-%%% see TeX documentation for additional info (cp1252-Western,cp1251-Cyrillic)
-%\usepackage[cp1252]{inputenc}
-
-%%% remove comment delimiter ('%') and select language if required
-%\usepackage[english,spanish]{babel}
-%\usepackage{czech}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{array}
 \usepackage{longtable}
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
+\usepackage{caption}
+\usepackage{subcaption}
 
-\usepackage{fancyvrb}	% extended verbatim environments (for examples of IO files)
-\usepackage{hyperref}   % hypertext capabilities, should by last package
+\usepackage{fancyvrb}   % extended verbatim environments (for examples of IO files)
 
-\hypersetup{backref,colorlinks=true}  %setup hyperef package
+\usepackage{multicol}
+
+\usepackage{flow_doc}
 
 \newcommand{\vari}[1]{{\it #1}}
 \newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
@@ -83,11 +79,11 @@
 \def\div{{\rm div}}
 \def\Lapl{\Delta}
 \def\grad{\nabla}
+\def\Real{{\mathbf R}}
+
 
 %% ini_table members
 
-%%% remove comment delimiter ('%') and specify parameters if required
-%\usepackage[dvips]{graphics}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DOCUMENT
 %% set specific page layout
@@ -115,7 +111,7 @@
 \vspace{160pt}
 
 \textbf{\Huge{
-FLOW123D - draft, scheme of new inputs
+Flow123d
 }}
 
 \vspace{1cm}
@@ -130,19 +126,33 @@ Documentation of file formats \\
 and brief user manual.
 }}
 
+\vspace{9cm}
 
-\vspace{7cm}
 
-\noindent \textbf{\Large{Liberec, 2011}}
+
+
+\noindent \textbf{\Large{Liberec, 2012}}
 
 \vspace{1cm}
-
-{\bf Acknowledgement.} This work was realized under the state  subsidy of the Czech Republic within the research and development 
-project ``Advanced Remediation Technologies and Processes Center'' 1M0554 
--- Program of Research Centers PP2-D01 supported by Ministry of Education.
+\pagebreak
 \end{center}
-\noindent 
 
+\noindent
+{\bf Authors} (of version 1.7.0)
+
+\vspace{3ex}    
+\noindent
+Jan B\v rezina, Jan Stebel, Ji\v r\' i Hn\' idek, David Flanderka, Pavel Exner, Luk\' a\v s Zedek
+
+\vspace{3cm}
+\noindent
+{\bf Acknowledgement}
+
+\vspace{3ex}
+\noindent This work was supported by the Technology Agency of the Czech Republic under
+the project no. TA01021331.
+
+\pagebreak
 \noindent
 
 \tableofcontents
@@ -152,26 +162,26 @@ project ``Advanced Remediation Technologies and Processes Center'' 1M0554
 \parindent=0pt
 \parskip=1ex
 
-\chapter{Overview}
+\chapter{Quick start}
 
 Flow123D is a software for simulation of water flow and reactionary solute transport in a heterogeneous 
 porous and fractured medium. In particular it is suited for simulation of underground processes in a granite rock massive.
-The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D chanels and exchange between 
-domains of different dimension. The computational mesh is therefore collection of 3D tetrahedrons, 2D triangles and 1D line segments.
+The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D channels and exchange between 
+domains of different dimensions. The computational mesh is therefore collection of 3D tetrahedrons, 2D triangles and 1D line segments.
 
 The water flow model assumes a saturated medium described by Darcy law. For discretization, we use lumped mixed-hybrid finite element method.
 We support both steady and unsteady water flow.
 
 The solute transport model can deal with several dissolved substances. It contains non-equilibrium dual porosity model, 
 i.e. exchange between mobile and immobile 
-pores. There is also model for several types of adsorption in both the mobile and immobile zone. The implemented adsorption models are
+pores. There are also models for several types of adsorption in both the mobile and immobile zone. The implemented adsorption models are
 linear adsorption, Freundlich isotherm and Langmuir isotherm. The solute transport model uses finite volume discretization 
 with up-winding in space and explicit Euler discretization in time. The dual porosity and the adsorption are introduced into transport by operator splitting.
-The dual porosity model use analytic solution and the non-linear adsorption is solved numerically by the Newton method.
+The dual porosity model use analytic solution and the non-linear adsorption can be either solved numerically by the $toms748\_solve(...)$ command (which is a part of boost package) or it can be approximated through interpolation which uses precomputed functional values lying on selected type of isotherm.
 
 Reaction between transported substances can be modeled either by a SEMCHEM module, which is slow, but can describe all sorts of reactions. On the other hand,
 for reactions of the first order, i.e. linear reactions or decays, we provide our own solver which is much faster. Reactions are coupled with transport 
-by the operator splitting method,
+by the operator splitting method.
 
 The program provides output of the pressure, the velocity and the concentration fields in two file formats. You can use file format of GMSH mesh generator and post-processor 
 or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of VTK data.
@@ -180,38 +190,64 @@ The program is implemented in C/C++ using essentially PETSC library for linear a
 in parallel using MPI environment. 
 
 The program is distributed under GNU GPL v. 3 license and is available on the project web page:
-http://dev.nti.tul.cz/trac/flow123d
+\url{http://dev.nti.tul.cz/trac/flow123d}
 
 \section{Basic usage}
 
 \subsection{How to run the simulation.}
 On the Linux system the program can be started either directly or through a script \verb'flow123d.sh'. When started directly, e.g. by the command
 \begin{verbatim}
-  > flow123d -s example.ini
+  > flow123d -s example.con
 \end{verbatim}
 the program requires one argument after switch \verb'-s' which is the name of the principal input file. Full list of possible command line arguments is as follows.
 
+%  --help                  produce help message
+%  -s [ --solve ] arg      Main input file to solve.
+%  -i [ --input_dir ] arg  Directory for the ${INPUT} placeholder in the main 
+%                          input file.
+%  -o [ --output_dir ] arg Directory for all produced output files.
+%  -l [ --log ] arg        Set base name for log files.
+%  --no_log                Turn off logging.
+%  --no_profiler           Turn off profiler output.
+%  --full_doc              Prints full structure of the main input file.
+%  --JSON_template         Prints description of the main input file as a valid 
+%                          CON file.
+%  --latex_doc             Prints description of the main input file in Latex 
+%                          format using particular macros.
+
+
 \begin{description}
- \item[-s {\bf\it file}] \hfill\\
- 	 Set principal INI input file. All relative paths in the INI file are relative against current directory.
- \item[-S {\bf\it file}] \hfill\\
- 	Set principal INI input file. All relative paths in the INI file are relative against directory of the INI file. This is equivalent
-to change directory to the directory of the INI file at the start of the program.
- \item[-i {\bf\it path}] \hfill\\
- 	When there is string \verb"${INPUT}" %$
-  	in the any path in the INI file, it will be replaced by given {\it path}.
- \item[-o {\bf\it path}] \hfill\\
- 	Every relative path for any output file will be relative to this {\it path}. 
- \item[-l {\bf\it [file\_name]}] \hfill\\
- 	Set base name of log files or turn logging off if no file name is given.
-
+ \item[{\tt --help}] \hfill\\
+        Parameters interpreted by Flow123d. Remaining parameters are passed to PETSC.
+ \item[{\tt -s, --solve} {\it file}] \hfill\\
+ 	 Set principal CON input file. All relative paths in the CON file are relative against current directory.
+ %\item[-S {\bf\it file}] \hfill\\
+ %	Set principal INI input file. All relative paths in the INI file are relative against directory of the INI file. This is equivalent
+ %to change directory to the directory of the INI file at the start of the program.
+ \item[{\tt -i, --input\_dir} {\it directory}] \hfill\\
+ 	The place holder \verb"${INPUT}" %$
+  	used in the path of an input file will be replaced by given {\it directory}.
+ \item[{\tt -o, --output\_dir} {\it directory}] \hfill\\
+ 	All paths for output files will be relative to this {\it directory}. 
+ \item[{\tt -l, --log} {\it file\_name}] \hfill\\
+ 	Set base name of log files.
+ \item[{\tt --no\_log}] \hfill\\
+        Turn off logging.
+ \item[{\tt --no\_profiler}] \hfill\\
+        Turn off profiler output.
+ \item[{\tt --full\_doc}] \hfill\\
+        Prints full structure of the main input file.
+ \item[{\tt --JSON\_template}] \hfill\\
+        Prints a description of the main input file as a valid CON file template.
+ \item[{\tt --latex\_doc}] \hfill\\ 
+        Prints a description of the main input file in LaTeX format using particular macros.
 \end{description}
-
 All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solver. In order to get list of supported options 
-use parameter \verb'-help'.
+use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
 
 
-Alternatively, you can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. This script accepts the same parameters as the program itself
+Alternatively, you can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. 
+This script accepts the same parameters as the program itself
 and further following additional parameters:
 
 \begin{description}
@@ -230,81 +266,358 @@ and further following additional parameters:
   	Stdout and stderr will be redirected to {\it out file}.
 \end{description}
 
-On the Windows system we use Cygwin libraries in other to emulate Linux API. Therefore you have to keep the Cygwin libraries within the same direcotry as the program executable.
-The Windows package that can be downloaded from project web page contains both the Cygwin libraries and the mpiexec command for starting parallel jobs on the Windows workstations.
+On the Windows system we use Cygwin libraries in other to emulate Linux API.
+Therefore you have to keep the Cygwin libraries within the same direcotry as the program executable.
+The Windows package that can be downloaded from project web page contains both the Cygwin libraries
+and the mpiexec command for starting parallel jobs on the Windows workstations.
 
 Then you can start the sequential run by the command:
 \begin{verbatim}
-  > flow123d.exe -s example.ini
+  > flow123d.exe -s example.con
 \end{verbatim}
 or the parallel run by the command:
 \begin{verbatim}
-  > mpiexec.exe -np 2 flow123d.exe -s example.ini
+  > mpiexec.exe -np 2 flow123d.exe -s example.con
 \end{verbatim}
 The program accepts the same parameters as the Linux version, but there is no script similar to \verb'flow123d.sh' for the Windows system.
 
 
-\subsection{Structure of input}
+\subsection{Tutorial problem}
+\subsubsection{CON file format}
+The main input file uses a slightly extended JSON file format which together with some particular constructs forms a CON (C++ object notation) file format. 
+Main extensions of the JSON are unquoted key names (as long as they do not contain whitespaces), possibility to use \verb'=' instead of \verb':' 
+and C++ comments, i.e. \verb'//' for a one line and \verb'/* */' for a multi-line comment. In CON file format, we prefer to call JSON objects ``records'' and we introduce also ``abstract records''
+that mimic C++ abstract classes, arrays of a CON file have only elements of the same type (possibly using abstract record types for polymorphism). 
+The usual keys are in lower case and without spaces (using underscores instead),
+there are few special upper case keys that are interpreted by the reader: \verb'REF' key for references, \verb'TYPE' key for specifing actual type of an abstract record.
+For detailed description see Section \ref{sec:CONformat}.
 
-The principal input file of the program is an INI file which contains names of other necessary input files.
-Those are the file with calculation mesh (\verb'*.msh'), the file with specification of adjacency between dimensions (\verb'*.ngh'),
-the file with material description (\verb'*.mtr') and the file with boundary conditions for the water flow problem (\verb'*.bcd').
-For unsteady water flow you have to specify file with initial condition for the pressure (key \verb'Input/Initial') and optionally one can introduce 
-file with water sources (key \verb'Input/Sources').
+\subsubsection{Geometry}
+In the following, we shall provide a commented input for the tutorial problem:
+\begin{verbatim}
+tests/03_transport_small_12d/flow_vtk.con
+\end{verbatim}
 
-In the case of transport simulation one have to specify also the file with transport boundary conditions (\verb'*.tbc') 
-and the file with transport initial condition
-for individual substances (\verb'*.tic').
+We consider a~simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). To prepare a~mesh file we use the \href{http://geuz.org/gmsh/}{GMSH software}.
+First, we construct a~geometry file. In our case the geometry consists of: 
+\begin{itemize}
+ \item one physical 2D domain corresponding to the whole square
+ \item three 1D physical domains of the fracture
+ \item four 1D boundary physical domains of the 2D domain
+ \item three 0D boundary physical domains of the 1D domain
+\end{itemize}
+In this simple example, we can in fact combine physical domains in every group, however we use this more complex setting for
+demonstration purposes. Using GMSH graphical interface we can prepare the GEO file where physical domains are referenced by numbers, then we use 
+any text editor and replace numbers with string labels in such a way that the labels of boundary physical domains start with the dot character. 
+These are the domains where we will not do any calculations but we will use them for setting boundary conditions.
+Finally, we get the GEO file like this:
 
- \begin{figure}[h]
-    \begin{center}
-      \includegraphics[scale=0.7]{schema.pdf} % 
-      \caption{Preparation of input files.}
-      \label{obr3}
-    \end{center}
-  \end{figure}
+\begin{multicols}{2}
+{\small
+\begin{Verbatim}[numbers=left]
+cl1 = 0.16;
+Point(1) = {0, 1, 0, cl1};
+Point(2) = {1, 1, 0, cl1};
+Point(3) = {1, 0, 0, cl1};
+Point(4) = {0, 0, 0, cl1};
+Point(6) = {0.25, -0, 0, cl1};
+Point(7) = {0, 0.25, 0, cl1};
+Point(8) = {0.5, 0.5, -0, cl1};
+Point(9) = {0.75, 1, 0, cl1};
+Line(19) = {9, 8};
+Line(20) = {7, 8};
+Line(21) = {8, 6};
+Line(22) = {2, 3};
+Line(23) = {2, 9};
+Line(24) = {9, 1};
+Line(25) = {1, 7};
+Line(26) = {7, 4};
+Line(27) = {4, 6};
+Line(28) = {6, 3};
+\end{Verbatim}
+\columnbreak
+\begin{Verbatim}[numbers=left, firstnumber=last]
+Line Loop(30) = {20, -19, 24, 25};
+Plane Surface(30) = {30};
+Line Loop(32) = {23, 19, 21, 28, -22};
+Plane Surface(32) = {32};
+Line Loop(34) = {26, 27, -21, -20};
+Plane Surface(34) = {34};
+Physical Point(".1d_top") = {9};
+Physical Point(".1d_left") = {7};
+Physical Point(".1d_bottom") = {6};
+Physical Line("1d_upper") = {19};
+Physical Line("1d_lower") = {21};
+Physical Line("1d_left_branch") = {20};
+Physical Line(".2d_top") = {23, 24};
+Physical Line(".2d_right") = {22};
+Physical Line(".2d_bottom") = {27, 28};
+Physical Line(".2d_left") = {25, 26};
+Physical Surface("2d") = {30, 32, 34};
+\end{Verbatim}
+}
+\end{multicols}
+
+Notice the labeled physical domains on lines 26 -- 36. Then we just set the discretization step \verb'cl1' and use GMSH to create the mesh file.
+The mesh file contains both the 'bulk' elements where we perform calculations and the 'boundary' elements (on the boundary physical domains) where we only set the boundary conditions.
+
+\pagebreak
+Having the computational mesh, we can create the main input file with the description of our problem. 
+\begin{Verbatim}[numbers=left]
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Transport 1D-2D, (convection, dual porosity, sorption)", 
+    mesh = {
+      mesh_file = "./input/mesh_with_boundary.msh",
+      sets = [
+          { name="1d_domain", 
+            region_labels = [ "1d_upper", "1d_lower", "1d_left_branch" ]
+          }
+        ]
+    },  
+\end{Verbatim}
+The file starts with a particular problem type selection, currently only the type \verb'SequentialCoupling' is supported, and a textual problem description.
+Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one {\it region set} 
+composed of all 1D regions i.e. representing the whole fracture. Other keys of the mesh record allow labeling regions given only by numbers, 
+defining new regions in terms of element numbers (e.g to have leakage on single element), 
+defining boundary regions, and set operations with region sets, see Section \ref{sec:Mesh} for details.
+
+\subsubsection{Flow setting}
+Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
+setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
+The conductivity will be $1$ on the 2D domain and $10$ on the 1D domain.
+The fracture width will be $\delta_1=1$ (quite unnatural) as well as the transition parameter 
+$\sigma_2 = 1$ which describes a ``conductivity'' between dimensions. 
+These are currently the default values.
+
+\begin{Verbatim}[numbers=left, firstnumber=last]
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      bulk_data = [
+        { r_set = "1d_domain", conductivity = 10 },
+        { region = "2d",       conductivity = 1  }
+      ],
+      
+      bc_data = [
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "x+y" }
+        }
+      ],
+
+      output = {
+        output_stream = { REF = "/system/output_streams/0" }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+      
+      solver = { TYPE = "Petsc", accuracy = 1e-07 }
+    }, // primary equation
+\end{Verbatim}
+On line 11, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
+solver for unsteady problems. On lines 16 -- 19, we set mathematical fields that live on the computational domain 
+(i.e. the bulk domain), we set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{bulk fields} have appropriate default values.
+On lines 21 -- 26, we set fields for boundary conditions (\hyperlink{IT::DarcyFlowMH-Steady-BulkData}{{\tt bc\_data}}). 
+We use implicitely defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
+pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE=FieldFormula}.
+See Section \ref{sec:Fields} for other field types. 
+On lines 28 -- 33, we specify which output fields should be written into which output stream (that means particular output file, with given format).
+Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
+Notice the reference used on line 29 pointing to the definition of the output streams at the end of the file. Finally, we specify type of the linear solver and its tolerance.
 
 
-For the preparation of input files we use several utilities (see Figure \ref{obr3}). 
-We usually begin with a \verb'*.geo' file as a description of the domain geometry. This come as an input for the GMSH mesh generator, which produce 
-the mesh file. Then we run program \verb'ngh' to produce adjacency file. Finally we can use program \verb'bcd' for the preparation of files with
-boundary and initial conditions. The file with material properties has to be created manually, preferably by modifying some of the example problems.
-The programs \verb'ngh' and \verb'bcd' are distributed together with flow123d with their own limited documentation.
+
+\subsubsection{Transport setting}
+We also consider subsequent transport problem with the porosity $\theta = 0.25$ and zero initial concentration. The boundary condition is equal to $1$ and is automatically applied only on the 
+inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case. Adsorption and simple reactions model inputs are particularly described in subsections \ref{subsubsec:sorptions}.%, but we do not discuss this topic here for the sake of simplicity.
+%see Section \ref{} for the description. 
+
+\begin{Verbatim}[numbers=left, firstnumber=last]
+     secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+
+      dual_porosity = true, 
+      substances = [ "age", "U235", "U235s-lin", "U235s-lang", "U235s-freund"],
+      
+      bulk_data = [
+        { r_set = "ALL",
+          init_conc = 0,
+          por_m = 0.25,
+          por_imm = 0.25
+        }
+      ],
+      
+      bc_data = [
+        { r_set = "BOUNDARY",
+          bc_conc = 1.0
+        }
+      ],
+
+      output = {
+        output_stream = { REF = "/system/output_streams/1" },
+        save_step = 0.01,
+        mobile_p0 = "transport_output_stream"
+      }, 
+
+      time = { end_time = 1.0 }      
+
+      reactions = {
+        TYPE="Sorptions",
+        solvent_dens = 1.0,
+        species = [ "age", "U235", "U235s-lin", "U235s-lang", "U235s-freund"],
+        molar_masses = [1.0, 1.0, 1.0, 1.0, 1.0],
+        solubility = [1.0, 1.0, 1.0, 1.0, 1.0],
+        substeps = 50,
+        bulk_data = [
+          {
+            region = "2d",
+            rock_density = {TYPE="FieldFormula", value = "1.0*x/x"},
+            sorption_types = [ "none",  "none", "linear", "langmuir", "freundlich"],
+            mult_coefs = [0, 0, 0.6, 0.4, 0.6],
+	    second_params = [0, 0, 0, 0.6, 0.4]
+          }
+        ]
+      }
+    } // secondary_equation
+  }, // problem
+\end{Verbatim}
+For the transport problem we use implementation called ``TransportOperatorSplitting'' which is explicit finite volume solver of the convection equation (without diffusion), 
+the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation. Dual porosity is switched on as we can see on lines 40. On the next line, 
+we set names of transported substances, here it is the age of the water and the uranium 235. On lines 44 -- 55, we set the bulk fields in particular the porosity 'por\_m' and the initial concentrations 
+( one for every substance ). However, on line 46, we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
+On line 53, we can see vector that set different adsorption coefficients for the two substances. Then, on lines 57 -- 61, we set the boundary fields namely the concentration on the inflow part of the boundary.
+We need not to specify type of the condition since currently this is the only one available. In the output record we have to specify the save step (line 65) for the output fields. And finally,
+we have to set the time setting, here only the end time of the simulation since the step size is determined from the CFL condition, however you can set smaller time step if you want.
+
+\subsubsection{Sorption settings}\label{subsubsec:sorptions}
+The input information for equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reactions}{$reactions =\{\ldots\}$}. The type of simulated, chemical interactions is determinated by the label $TYPE="Sorptions",$. It is possible to set the value of the solvent (obviously water) density \hyperA{Sorptions::solvent-dens}{$solvent\_dens = 1.0,$}. The solvent density is supposed to be constant all over the simulated area. The vector \hyperA{Sorptions::species}{$species$} containes the list of soluted substances whose concentrations is concidered to be affected by sorptions. Material characteristics of all the sorbing species can be defined by vectors \hyperA{Sorptions::molar-masses}{$molar\_masses$} and \hyperA{Sorptions::solubility}{$solubility$}. Elements of the vector $sollubility$ defines the upper bound of an aqueous concentrations which can appear, because some substances have limmited solubility and if the solubility exceeds this limit they start to precipitate. $solubility$ is a crucial parameter for solving further described set of nonlinear equations. The parameter \hyperA{Sorptions::substeps}{$substeps$} is important when interpolation is used to search approximative solution of the adsorption problem. It is the number of precomputed points lying on the isotherm. Default value is set to be $100$.
+
+The record \hyperA{Sorptions::bulk-data}{$bulk\_data$} colects information about regions specific, several isotherms desribed adsorption. Particular region (bulk Physical Entity), where one kind of adsorption takes place, can be specified by its label from gmsh-file. All implemented types of adsorption can take the rock density in region into account. The value of \hyperA{Sorption-BulkData::rock-density}{$rock\_density$} can be either constant or specified by $FieldFormula$. The implemented \hyperA{Sorption-BulkData::sorption-types}{$sorption\_types$} can have one of four possible values $\{ "none", "linear", "freundlich", "langmuir"\}$ and except of first one are those types empiricaly described by appropriate type of isotherm. Linear isotherm described adsorption needs just one parameter to be given whereas Freundlichs' and Langmuirs' isotherm have two parameters. For further details about mathematical description see the section \ref{sec:sorp_math}. Isothermaly described sorption simulation can be used in the case of low concenttrated solutions without competition between multiple disoved species.
+
+\subsubsection{Output streams and results}
+\begin{Verbatim}[numbers=left, firstnumber=last]
+  system = {
+    output_streams = [
+      {
+        file = "test3.pvd", 
+        format = { TYPE = "vtk", variant = "ascii" },
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "test3-transport.pvd", 
+        format = { TYPE = "vtk", variant = "ascii" },
+        name = "transport_output_stream"
+      }
+    ]
+  }
+} 
+\end{Verbatim}
+The end of the input file contains declaration of two output streams, one for the flow problem and one for the transport problem. Currently, we support output into VTK format and GMSH data format.
+On Figure \ref{fig:tutorial} you can see the results, the pressure and the velocity field on the left and the concentration of U235 at time $t=0.9$ on the right. Even if the pressure gradient is
+the same on the 2D domain as on the fracture, the velocity field is ten times faster on the fracture. Since porosity is same, the substance is transported faster by the fracture and
+then appears in the bottom left 2D domain before the main wave propagating solely through the 2D domain.
+
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[scale=0.4]{./03_flow.pdf}
+        % 03_flow.pdf: 508x402 pixel, 72dpi, 17.92x14.18 cm, bb=0 0 508 402
+        \caption{Elementwise pressure head\\and velocity field (triangles).}
+        \label{fig:tut-flow}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[scale=0.4]{./03_trans.pdf}
+        % 03_trans.pdf: 509x402 pixel, 72dpi, 17.96x14.18 cm, bb=0 0 509 402
+        \caption{Propagation of U235 from the inflow part of the boundary.}
+        \label{fig:tut-trans}
+    \end{subfigure}
+    \caption{Results of the tutorial problem.}
+    \label{fig:tutorial}
+\end{figure}
+
+
 
 The output files can be either \verb'*.msh' files accepted by the GMSH or one can use VTK format that can be post-processed by Paraview.
 
 In the following chapter, we briefly describe structure of individual input files in particular the main INI file. In the last chapter, we describe
 mathematical models and numerical methods used in the Flow123d.
 
-\input{JSON_input}
+
+\chapter{Mathematical models \\of physical/chemical reality}
+
+Flow123d provides models for Dary flow in porous media as well as for the transport and reactions of soluted substances. In this section, we describe 
+mathematical formulations of these models together with physical meaning and units of all involved quantities. Common and unique feature of all models is support of
+domains with mixed dimension. Let $\Omega_{3} \subset \Real^3$ be an open set representing continuum approximation of porous and fractured medium.
+Similarly, we consider open set $\Omega_2\subset \Real^2$ representing 2D fractures and open set $\Omega_1\subset \Real^3$ of 1D channels or preferential paths 
+(see Fig \ref{fig:multi-dim}).
+We assume that $\Omega_2$ and $\Omega_1$ are polygonal. For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
+that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elements are simplexes that is tetrahedrons, triangles and lines.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=10cm]{ground_fractures}
+\caption{
+    \label{fig:multi-dim}
+    Scheme of a problem with domains of multiple dimensions.
+}
+\end{figure}
+
+Present numerical methods requires meshes satisfying the compatibility conditions
+\begin{equation}
+        T_{d-1}^i \cap T_d \subset \mathcal{F}_d,   \qquad \text{where } \mathcal{F}_d = \bigcup_{k} \partial T_{d}^{k}
+\end{equation}
+and
+\begin{equation}
+        T_{d-1}^i \cap \mathcal{F}_d    \text{ is either $T_{d-1}^i$ or $\emptyset$}    
+\end{equation}
+for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. That is the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
+match their sides or they poke out of $\Omega_d$. 
+
+\input{darcy_flow}
+
+\input{transport_model}
+
+\input{sorpce}
+%\input{convection}
+%\chapter{Numerical methods}
+
+
+%\input{decay}
+%\input{semchem}
+
 
 \chapter{File formats}
-\section{Flow123D ini file format}
+%\section{Input format}
+\input{JSON_input}
 
-\input{flow_ini}
-
-\section{Other input files}
 \input{input_files.tex}
 
-
-\section{Output files}
 \input{output}
 %\input{tso_10} 
 %\input{pos_12}   
 
 
-\chapter{Mathematical models}
+%\chapter{Test and tutorial problems}
+%\input{tests}
 
-\input{convection}
-
-\input{decay}
-\input{semchem}
-
-\input{tests}
+\chapter{Main input file reference}
+\label{chapter:input-tree-reference}
+% support macros
 
 
+% generated file
+\input{input_reference}
 
 
+\bibliographystyle{plain}
+\bibliography{flow123d_doc.bib}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

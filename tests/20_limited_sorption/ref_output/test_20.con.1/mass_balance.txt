@@ -1,0 +1,1160 @@
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 0.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               9.13418e-08   9.13418e-08   0             0.5           
+  1             .2d_left                 B               9.13418e-08   9.13418e-08   0             0.5           
+  1             .2d_left                 C               9.13418e-08   9.13418e-08   0             0.5           
+  1             .2d_left                 D               9.13418e-08   9.13418e-08   0             0.5           
+  1             .2d_left                 G               9.13418e-08   9.13418e-08   0             0.5           
+  1             .2d_left                 H               9.13418e-08   9.13418e-08   0             0.5           
+  2             .2d_right                A               -0.124916     0             -0.124916     0.5           
+  2             .2d_right                B               -0.124916     0             -0.124916     0.5           
+  2             .2d_right                C               -0.124916     0             -0.124916     0.5           
+  2             .2d_right                D               -0.124916     0             -0.124916     0.5           
+  2             .2d_right                G               -0.124916     0             -0.124916     0.5           
+  2             .2d_right                H               -0.124916     0             -0.124916     0.5           
+  3             .2d_top                  A               1.02335e-08   1.02355e-08   -1.94716e-12  0.5           
+  3             .2d_top                  B               1.02335e-08   1.02355e-08   -1.94716e-12  0.5           
+  3             .2d_top                  C               1.02335e-08   1.02355e-08   -1.94716e-12  0.5           
+  3             .2d_top                  D               1.02335e-08   1.02355e-08   -1.94716e-12  0.5           
+  3             .2d_top                  G               1.02335e-08   1.02355e-08   -1.94716e-12  0.5           
+  3             .2d_top                  H               1.02335e-08   1.02355e-08   -1.94716e-12  0.5           
+  4             .2d_bottom               A               2.47785e-09   5.96033e-09   -3.48248e-09  0.5           
+  4             .2d_bottom               B               2.47785e-09   5.96033e-09   -3.48248e-09  0.5           
+  4             .2d_bottom               C               2.47785e-09   5.96033e-09   -3.48248e-09  0.5           
+  4             .2d_bottom               D               2.47785e-09   5.96033e-09   -3.48248e-09  0.5           
+  4             .2d_bottom               G               2.47785e-09   5.96033e-09   -3.48248e-09  0.5           
+  4             .2d_bottom               H               2.47785e-09   5.96033e-09   -3.48248e-09  0.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124916     1.07538e-07   -0.124916     
+# total boundary balance                 B               -0.124916     1.07538e-07   -0.124916     
+# total boundary balance                 C               -0.124916     1.07538e-07   -0.124916     
+# total boundary balance                 D               -0.124916     1.07538e-07   -0.124916     
+# total boundary balance                 G               -0.124916     1.07538e-07   -0.124916     
+# total boundary balance                 H               -0.124916     1.07538e-07   -0.124916     
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         0.5           
+  5             rectangle                B               0                                         0.5           
+  5             rectangle                C               0                                         0.5           
+  5             rectangle                D               0                                         0.5           
+  5             rectangle                G               0                                         0.5           
+  5             rectangle                H               0                                         0.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 1.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               2.59599e-07   2.59599e-07   0             1             
+  1             .2d_left                 B               2.59599e-07   2.59599e-07   0             1             
+  1             .2d_left                 C               2.59599e-07   2.59599e-07   0             1             
+  1             .2d_left                 D               2.59599e-07   2.59599e-07   0             1             
+  1             .2d_left                 G               2.59599e-07   2.59599e-07   0             1             
+  1             .2d_left                 H               2.59599e-07   2.59599e-07   0             1             
+  2             .2d_right                A               -0.125        0             -0.125        1             
+  2             .2d_right                B               -0.125        0             -0.125        1             
+  2             .2d_right                C               -0.125        0             -0.125        1             
+  2             .2d_right                D               -0.125        0             -0.125        1             
+  2             .2d_right                G               -0.125        0             -0.125        1             
+  2             .2d_right                H               -0.125        0             -0.125        1             
+  3             .2d_top                  A               1.74211e-08   1.74237e-08   -2.59711e-12  1             
+  3             .2d_top                  B               1.74211e-08   1.74237e-08   -2.59711e-12  1             
+  3             .2d_top                  C               1.74211e-08   1.74237e-08   -2.59711e-12  1             
+  3             .2d_top                  D               1.74211e-08   1.74237e-08   -2.59711e-12  1             
+  3             .2d_top                  G               1.74211e-08   1.74237e-08   -2.59711e-12  1             
+  3             .2d_top                  H               1.74211e-08   1.74237e-08   -2.59711e-12  1             
+  4             .2d_bottom               A               -4.16532e-08  6.3288e-09    -4.79821e-08  1             
+  4             .2d_bottom               B               -4.16532e-08  6.3288e-09    -4.79821e-08  1             
+  4             .2d_bottom               C               -4.16532e-08  6.3288e-09    -4.79821e-08  1             
+  4             .2d_bottom               D               -4.16532e-08  6.3288e-09    -4.79821e-08  1             
+  4             .2d_bottom               G               -4.16532e-08  6.3288e-09    -4.79821e-08  1             
+  4             .2d_bottom               H               -4.16532e-08  6.3288e-09    -4.79821e-08  1             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.125        2.83352e-07   -0.125        
+# total boundary balance                 B               -0.125        2.83352e-07   -0.125        
+# total boundary balance                 C               -0.125        2.83352e-07   -0.125        
+# total boundary balance                 D               -0.125        2.83352e-07   -0.125        
+# total boundary balance                 G               -0.125        2.83352e-07   -0.125        
+# total boundary balance                 H               -0.125        2.83352e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         1             
+  5             rectangle                B               0                                         1             
+  5             rectangle                C               0                                         1             
+  5             rectangle                D               0                                         1             
+  5             rectangle                G               0                                         1             
+  5             rectangle                H               0                                         1             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 1.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.02212e-07   4.02212e-07   0             1.5           
+  1             .2d_left                 B               4.02212e-07   4.02212e-07   0             1.5           
+  1             .2d_left                 C               4.02212e-07   4.02212e-07   0             1.5           
+  1             .2d_left                 D               4.02212e-07   4.02212e-07   0             1.5           
+  1             .2d_left                 G               4.02212e-07   4.02212e-07   0             1.5           
+  1             .2d_left                 H               4.02212e-07   4.02212e-07   0             1.5           
+  2             .2d_right                A               -0.125        0             -0.125        1.5           
+  2             .2d_right                B               -0.125        0             -0.125        1.5           
+  2             .2d_right                C               -0.125        0             -0.125        1.5           
+  2             .2d_right                D               -0.125        0             -0.125        1.5           
+  2             .2d_right                G               -0.125        0             -0.125        1.5           
+  2             .2d_right                H               -0.125        0             -0.125        1.5           
+  3             .2d_top                  A               3.18508e-08   3.18536e-08   -2.76716e-12  1.5           
+  3             .2d_top                  B               3.18508e-08   3.18536e-08   -2.76716e-12  1.5           
+  3             .2d_top                  C               3.18508e-08   3.18536e-08   -2.76716e-12  1.5           
+  3             .2d_top                  D               3.18508e-08   3.18536e-08   -2.76716e-12  1.5           
+  3             .2d_top                  G               3.18508e-08   3.18536e-08   -2.76716e-12  1.5           
+  3             .2d_top                  H               3.18508e-08   3.18536e-08   -2.76716e-12  1.5           
+  4             .2d_bottom               A               -6.68234e-08  6.73037e-09   -7.35538e-08  1.5           
+  4             .2d_bottom               B               -6.68234e-08  6.73037e-09   -7.35538e-08  1.5           
+  4             .2d_bottom               C               -6.68234e-08  6.73037e-09   -7.35538e-08  1.5           
+  4             .2d_bottom               D               -6.68234e-08  6.73037e-09   -7.35538e-08  1.5           
+  4             .2d_bottom               G               -6.68234e-08  6.73037e-09   -7.35538e-08  1.5           
+  4             .2d_bottom               H               -6.68234e-08  6.73037e-09   -7.35538e-08  1.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.125        4.40796e-07   -0.125        
+# total boundary balance                 B               -0.125        4.40796e-07   -0.125        
+# total boundary balance                 C               -0.125        4.40796e-07   -0.125        
+# total boundary balance                 D               -0.125        4.40796e-07   -0.125        
+# total boundary balance                 G               -0.125        4.40796e-07   -0.125        
+# total boundary balance                 H               -0.125        4.40796e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         1.5           
+  5             rectangle                B               0                                         1.5           
+  5             rectangle                C               0                                         1.5           
+  5             rectangle                D               0                                         1.5           
+  5             rectangle                G               0                                         1.5           
+  5             rectangle                H               0                                         1.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 2.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.43909e-07   4.43909e-07   0             2             
+  1             .2d_left                 B               4.43909e-07   4.43909e-07   0             2             
+  1             .2d_left                 C               4.43909e-07   4.43909e-07   0             2             
+  1             .2d_left                 D               4.43909e-07   4.43909e-07   0             2             
+  1             .2d_left                 G               4.43909e-07   4.43909e-07   0             2             
+  1             .2d_left                 H               4.43909e-07   4.43909e-07   0             2             
+  2             .2d_right                A               -0.125        0             -0.125        2             
+  2             .2d_right                B               -0.125        0             -0.125        2             
+  2             .2d_right                C               -0.125        0             -0.125        2             
+  2             .2d_right                D               -0.125        0             -0.125        2             
+  2             .2d_right                G               -0.125        0             -0.125        2             
+  2             .2d_right                H               -0.125        0             -0.125        2             
+  3             .2d_top                  A               6.71517e-08   6.71614e-08   -9.75304e-12  2             
+  3             .2d_top                  B               6.71517e-08   6.71614e-08   -9.75304e-12  2             
+  3             .2d_top                  C               6.71517e-08   6.71614e-08   -9.75304e-12  2             
+  3             .2d_top                  D               6.71517e-08   6.71614e-08   -9.75304e-12  2             
+  3             .2d_top                  G               6.71517e-08   6.71614e-08   -9.75304e-12  2             
+  3             .2d_top                  H               6.71517e-08   6.71614e-08   -9.75304e-12  2             
+  4             .2d_bottom               A               -6.18905e-08  1.51267e-08   -7.70172e-08  2             
+  4             .2d_bottom               B               -6.18905e-08  1.51267e-08   -7.70172e-08  2             
+  4             .2d_bottom               C               -6.18905e-08  1.51267e-08   -7.70172e-08  2             
+  4             .2d_bottom               D               -6.18905e-08  1.51267e-08   -7.70172e-08  2             
+  4             .2d_bottom               G               -6.18905e-08  1.51267e-08   -7.70172e-08  2             
+  4             .2d_bottom               H               -6.18905e-08  1.51267e-08   -7.70172e-08  2             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.125        5.26197e-07   -0.125        
+# total boundary balance                 B               -0.125        5.26197e-07   -0.125        
+# total boundary balance                 C               -0.125        5.26197e-07   -0.125        
+# total boundary balance                 D               -0.125        5.26197e-07   -0.125        
+# total boundary balance                 G               -0.125        5.26197e-07   -0.125        
+# total boundary balance                 H               -0.125        5.26197e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         2             
+  5             rectangle                B               0                                         2             
+  5             rectangle                C               0                                         2             
+  5             rectangle                D               0                                         2             
+  5             rectangle                G               0                                         2             
+  5             rectangle                H               0                                         2             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 2.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.47672e-07   4.47672e-07   0             2.5           
+  1             .2d_left                 B               4.47672e-07   4.47672e-07   0             2.5           
+  1             .2d_left                 C               4.47672e-07   4.47672e-07   0             2.5           
+  1             .2d_left                 D               4.47672e-07   4.47672e-07   0             2.5           
+  1             .2d_left                 G               4.47672e-07   4.47672e-07   0             2.5           
+  1             .2d_left                 H               4.47672e-07   4.47672e-07   0             2.5           
+  2             .2d_right                A               -0.125        0             -0.125        2.5           
+  2             .2d_right                B               -0.125        0             -0.125        2.5           
+  2             .2d_right                C               -0.125        0             -0.125        2.5           
+  2             .2d_right                D               -0.125        0             -0.125        2.5           
+  2             .2d_right                G               -0.125        0             -0.125        2.5           
+  2             .2d_right                H               -0.125        0             -0.125        2.5           
+  3             .2d_top                  A               9.73695e-08   9.75554e-08   -1.85924e-10  2.5           
+  3             .2d_top                  B               9.73695e-08   9.75554e-08   -1.85924e-10  2.5           
+  3             .2d_top                  C               9.73695e-08   9.75554e-08   -1.85924e-10  2.5           
+  3             .2d_top                  D               9.73695e-08   9.75554e-08   -1.85924e-10  2.5           
+  3             .2d_top                  G               9.73695e-08   9.75554e-08   -1.85924e-10  2.5           
+  3             .2d_top                  H               9.73695e-08   9.75554e-08   -1.85924e-10  2.5           
+  4             .2d_bottom               A               -3.75453e-08  3.96825e-08   -7.72279e-08  2.5           
+  4             .2d_bottom               B               -3.75453e-08  3.96825e-08   -7.72279e-08  2.5           
+  4             .2d_bottom               C               -3.75453e-08  3.96825e-08   -7.72279e-08  2.5           
+  4             .2d_bottom               D               -3.75453e-08  3.96825e-08   -7.72279e-08  2.5           
+  4             .2d_bottom               G               -3.75453e-08  3.96825e-08   -7.72279e-08  2.5           
+  4             .2d_bottom               H               -3.75453e-08  3.96825e-08   -7.72279e-08  2.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     5.8491e-07    -0.125        
+# total boundary balance                 B               -0.124999     5.8491e-07    -0.125        
+# total boundary balance                 C               -0.124999     5.8491e-07    -0.125        
+# total boundary balance                 D               -0.124999     5.8491e-07    -0.125        
+# total boundary balance                 G               -0.124999     5.8491e-07    -0.125        
+# total boundary balance                 H               -0.124999     5.8491e-07    -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         2.5           
+  5             rectangle                B               0                                         2.5           
+  5             rectangle                C               0                                         2.5           
+  5             rectangle                D               0                                         2.5           
+  5             rectangle                G               0                                         2.5           
+  5             rectangle                H               0                                         2.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 3.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.49983e-07   4.49983e-07   0             3             
+  1             .2d_left                 B               4.49983e-07   4.49983e-07   0             3             
+  1             .2d_left                 C               4.49983e-07   4.49983e-07   0             3             
+  1             .2d_left                 D               4.49983e-07   4.49983e-07   0             3             
+  1             .2d_left                 G               4.49983e-07   4.49983e-07   0             3             
+  1             .2d_left                 H               4.49983e-07   4.49983e-07   0             3             
+  2             .2d_right                A               -0.125        0             -0.125        3             
+  2             .2d_right                B               -0.125        0             -0.125        3             
+  2             .2d_right                C               -0.125        0             -0.125        3             
+  2             .2d_right                D               -0.125        0             -0.125        3             
+  2             .2d_right                G               -0.125        0             -0.125        3             
+  2             .2d_right                H               -0.125        0             -0.125        3             
+  3             .2d_top                  A               1.10629e-07   1.11154e-07   -5.24485e-10  3             
+  3             .2d_top                  B               1.10629e-07   1.11154e-07   -5.24485e-10  3             
+  3             .2d_top                  C               1.10629e-07   1.11154e-07   -5.24485e-10  3             
+  3             .2d_top                  D               1.10629e-07   1.11154e-07   -5.24485e-10  3             
+  3             .2d_top                  G               1.10629e-07   1.11154e-07   -5.24485e-10  3             
+  3             .2d_top                  H               1.10629e-07   1.11154e-07   -5.24485e-10  3             
+  4             .2d_bottom               A               -1.82609e-08  5.9725e-08    -7.79859e-08  3             
+  4             .2d_bottom               B               -1.82609e-08  5.9725e-08    -7.79859e-08  3             
+  4             .2d_bottom               C               -1.82609e-08  5.9725e-08    -7.79859e-08  3             
+  4             .2d_bottom               D               -1.82609e-08  5.9725e-08    -7.79859e-08  3             
+  4             .2d_bottom               G               -1.82609e-08  5.9725e-08    -7.79859e-08  3             
+  4             .2d_bottom               H               -1.82609e-08  5.9725e-08    -7.79859e-08  3             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     6.20862e-07   -0.125        
+# total boundary balance                 B               -0.124999     6.20862e-07   -0.125        
+# total boundary balance                 C               -0.124999     6.20862e-07   -0.125        
+# total boundary balance                 D               -0.124999     6.20862e-07   -0.125        
+# total boundary balance                 G               -0.124999     6.20862e-07   -0.125        
+# total boundary balance                 H               -0.124999     6.20862e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         3             
+  5             rectangle                B               0                                         3             
+  5             rectangle                C               0                                         3             
+  5             rectangle                D               0                                         3             
+  5             rectangle                G               0                                         3             
+  5             rectangle                H               0                                         3             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 3.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.59907e-07   4.59907e-07   0             3.5           
+  1             .2d_left                 B               4.59907e-07   4.59907e-07   0             3.5           
+  1             .2d_left                 C               4.59907e-07   4.59907e-07   0             3.5           
+  1             .2d_left                 D               4.59907e-07   4.59907e-07   0             3.5           
+  1             .2d_left                 G               4.59907e-07   4.59907e-07   0             3.5           
+  1             .2d_left                 H               4.59907e-07   4.59907e-07   0             3.5           
+  2             .2d_right                A               -0.125        0             -0.125        3.5           
+  2             .2d_right                B               -0.125        0             -0.125        3.5           
+  2             .2d_right                C               -0.125        0             -0.125        3.5           
+  2             .2d_right                D               -0.125        0             -0.125        3.5           
+  2             .2d_right                G               -0.125        0             -0.125        3.5           
+  2             .2d_right                H               -0.125        0             -0.125        3.5           
+  3             .2d_top                  A               1.18939e-07   1.19695e-07   -7.5668e-10   3.5           
+  3             .2d_top                  B               1.18939e-07   1.19695e-07   -7.5668e-10   3.5           
+  3             .2d_top                  C               1.18939e-07   1.19695e-07   -7.5668e-10   3.5           
+  3             .2d_top                  D               1.18939e-07   1.19695e-07   -7.5668e-10   3.5           
+  3             .2d_top                  G               1.18939e-07   1.19695e-07   -7.5668e-10   3.5           
+  3             .2d_top                  H               1.18939e-07   1.19695e-07   -7.5668e-10   3.5           
+  4             .2d_bottom               A               -1.13045e-08  6.99605e-08   -8.1265e-08   3.5           
+  4             .2d_bottom               B               -1.13045e-08  6.99605e-08   -8.1265e-08   3.5           
+  4             .2d_bottom               C               -1.13045e-08  6.99605e-08   -8.1265e-08   3.5           
+  4             .2d_bottom               D               -1.13045e-08  6.99605e-08   -8.1265e-08   3.5           
+  4             .2d_bottom               G               -1.13045e-08  6.99605e-08   -8.1265e-08   3.5           
+  4             .2d_bottom               H               -1.13045e-08  6.99605e-08   -8.1265e-08   3.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     6.49562e-07   -0.125        
+# total boundary balance                 B               -0.124999     6.49562e-07   -0.125        
+# total boundary balance                 C               -0.124999     6.49562e-07   -0.125        
+# total boundary balance                 D               -0.124999     6.49562e-07   -0.125        
+# total boundary balance                 G               -0.124999     6.49562e-07   -0.125        
+# total boundary balance                 H               -0.124999     6.49562e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         3.5           
+  5             rectangle                B               0                                         3.5           
+  5             rectangle                C               0                                         3.5           
+  5             rectangle                D               0                                         3.5           
+  5             rectangle                G               0                                         3.5           
+  5             rectangle                H               0                                         3.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 4.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.70465e-07   4.70465e-07   0             4             
+  1             .2d_left                 B               4.70465e-07   4.70465e-07   0             4             
+  1             .2d_left                 C               4.70465e-07   4.70465e-07   0             4             
+  1             .2d_left                 D               4.70465e-07   4.70465e-07   0             4             
+  1             .2d_left                 G               4.70465e-07   4.70465e-07   0             4             
+  1             .2d_left                 H               4.70465e-07   4.70465e-07   0             4             
+  2             .2d_right                A               -0.125        0             -0.125        4             
+  2             .2d_right                B               -0.125        0             -0.125        4             
+  2             .2d_right                C               -0.125        0             -0.125        4             
+  2             .2d_right                D               -0.125        0             -0.125        4             
+  2             .2d_right                G               -0.125        0             -0.125        4             
+  2             .2d_right                H               -0.125        0             -0.125        4             
+  3             .2d_top                  A               1.21552e-07   1.24487e-07   -2.93541e-09  4             
+  3             .2d_top                  B               1.21552e-07   1.24487e-07   -2.93541e-09  4             
+  3             .2d_top                  C               1.21552e-07   1.24487e-07   -2.93541e-09  4             
+  3             .2d_top                  D               1.21552e-07   1.24487e-07   -2.93541e-09  4             
+  3             .2d_top                  G               1.21552e-07   1.24487e-07   -2.93541e-09  4             
+  3             .2d_top                  H               1.21552e-07   1.24487e-07   -2.93541e-09  4             
+  4             .2d_bottom               A               3.36253e-09   8.7635e-08    -8.42724e-08  4             
+  4             .2d_bottom               B               3.36253e-09   8.7635e-08    -8.42724e-08  4             
+  4             .2d_bottom               C               3.36253e-09   8.7635e-08    -8.42724e-08  4             
+  4             .2d_bottom               D               3.36253e-09   8.7635e-08    -8.42724e-08  4             
+  4             .2d_bottom               G               3.36253e-09   8.7635e-08    -8.42724e-08  4             
+  4             .2d_bottom               H               3.36253e-09   8.7635e-08    -8.42724e-08  4             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     6.82587e-07   -0.125        
+# total boundary balance                 B               -0.124999     6.82587e-07   -0.125        
+# total boundary balance                 C               -0.124999     6.82587e-07   -0.125        
+# total boundary balance                 D               -0.124999     6.82587e-07   -0.125        
+# total boundary balance                 G               -0.124999     6.82587e-07   -0.125        
+# total boundary balance                 H               -0.124999     6.82587e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         4             
+  5             rectangle                B               0                                         4             
+  5             rectangle                C               0                                         4             
+  5             rectangle                D               0                                         4             
+  5             rectangle                G               0                                         4             
+  5             rectangle                H               0                                         4             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 4.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.8058e-07    4.8058e-07    0             4.5           
+  1             .2d_left                 B               4.8058e-07    4.8058e-07    0             4.5           
+  1             .2d_left                 C               4.8058e-07    4.8058e-07    0             4.5           
+  1             .2d_left                 D               4.8058e-07    4.8058e-07    0             4.5           
+  1             .2d_left                 G               4.8058e-07    4.8058e-07    0             4.5           
+  1             .2d_left                 H               4.8058e-07    4.8058e-07    0             4.5           
+  2             .2d_right                A               -0.125        0             -0.125        4.5           
+  2             .2d_right                B               -0.125        0             -0.125        4.5           
+  2             .2d_right                C               -0.125        0             -0.125        4.5           
+  2             .2d_right                D               -0.125        0             -0.125        4.5           
+  2             .2d_right                G               -0.125        0             -0.125        4.5           
+  2             .2d_right                H               -0.125        0             -0.125        4.5           
+  3             .2d_top                  A               1.11944e-07   1.25898e-07   -1.39541e-08  4.5           
+  3             .2d_top                  B               1.11944e-07   1.25898e-07   -1.39541e-08  4.5           
+  3             .2d_top                  C               1.11944e-07   1.25898e-07   -1.39541e-08  4.5           
+  3             .2d_top                  D               1.11944e-07   1.25898e-07   -1.39541e-08  4.5           
+  3             .2d_top                  G               1.11944e-07   1.25898e-07   -1.39541e-08  4.5           
+  3             .2d_top                  H               1.11944e-07   1.25898e-07   -1.39541e-08  4.5           
+  4             .2d_bottom               A               2.63476e-08   1.11759e-07   -8.54116e-08  4.5           
+  4             .2d_bottom               B               2.63476e-08   1.11759e-07   -8.54116e-08  4.5           
+  4             .2d_bottom               C               2.63476e-08   1.11759e-07   -8.54116e-08  4.5           
+  4             .2d_bottom               D               2.63476e-08   1.11759e-07   -8.54116e-08  4.5           
+  4             .2d_bottom               G               2.63476e-08   1.11759e-07   -8.54116e-08  4.5           
+  4             .2d_bottom               H               2.63476e-08   1.11759e-07   -8.54116e-08  4.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     7.18237e-07   -0.125        
+# total boundary balance                 B               -0.124999     7.18237e-07   -0.125        
+# total boundary balance                 C               -0.124999     7.18237e-07   -0.125        
+# total boundary balance                 D               -0.124999     7.18237e-07   -0.125        
+# total boundary balance                 G               -0.124999     7.18237e-07   -0.125        
+# total boundary balance                 H               -0.124999     7.18237e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         4.5           
+  5             rectangle                B               0                                         4.5           
+  5             rectangle                C               0                                         4.5           
+  5             rectangle                D               0                                         4.5           
+  5             rectangle                G               0                                         4.5           
+  5             rectangle                H               0                                         4.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 5.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               4.99615e-07   4.99615e-07   0             5             
+  1             .2d_left                 B               4.99615e-07   4.99615e-07   0             5             
+  1             .2d_left                 C               4.99615e-07   4.99615e-07   0             5             
+  1             .2d_left                 D               4.99615e-07   4.99615e-07   0             5             
+  1             .2d_left                 G               4.99615e-07   4.99615e-07   0             5             
+  1             .2d_left                 H               4.99615e-07   4.99615e-07   0             5             
+  2             .2d_right                A               -0.125        0             -0.125        5             
+  2             .2d_right                B               -0.125        0             -0.125        5             
+  2             .2d_right                C               -0.125        0             -0.125        5             
+  2             .2d_right                D               -0.125        0             -0.125        5             
+  2             .2d_right                G               -0.125        0             -0.125        5             
+  2             .2d_right                H               -0.125        0             -0.125        5             
+  3             .2d_top                  A               9.17957e-08   1.26159e-07   -3.43629e-08  5             
+  3             .2d_top                  B               9.17957e-08   1.26159e-07   -3.43629e-08  5             
+  3             .2d_top                  C               9.17957e-08   1.26159e-07   -3.43629e-08  5             
+  3             .2d_top                  D               9.17957e-08   1.26159e-07   -3.43629e-08  5             
+  3             .2d_top                  G               9.17957e-08   1.26159e-07   -3.43629e-08  5             
+  3             .2d_top                  H               9.17957e-08   1.26159e-07   -3.43629e-08  5             
+  4             .2d_bottom               A               4.06421e-08   1.26952e-07   -8.63102e-08  5             
+  4             .2d_bottom               B               4.06421e-08   1.26952e-07   -8.63102e-08  5             
+  4             .2d_bottom               C               4.06421e-08   1.26952e-07   -8.63102e-08  5             
+  4             .2d_bottom               D               4.06421e-08   1.26952e-07   -8.63102e-08  5             
+  4             .2d_bottom               G               4.06421e-08   1.26952e-07   -8.63102e-08  5             
+  4             .2d_bottom               H               4.06421e-08   1.26952e-07   -8.63102e-08  5             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     7.52726e-07   -0.125        
+# total boundary balance                 B               -0.124999     7.52726e-07   -0.125        
+# total boundary balance                 C               -0.124999     7.52726e-07   -0.125        
+# total boundary balance                 D               -0.124999     7.52726e-07   -0.125        
+# total boundary balance                 G               -0.124999     7.52726e-07   -0.125        
+# total boundary balance                 H               -0.124999     7.52726e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         5             
+  5             rectangle                B               0                                         5             
+  5             rectangle                C               0                                         5             
+  5             rectangle                D               0                                         5             
+  5             rectangle                G               0                                         5             
+  5             rectangle                H               0                                         5             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 5.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               5.2018e-07    5.2018e-07    0             5.5           
+  1             .2d_left                 B               5.2018e-07    5.2018e-07    0             5.5           
+  1             .2d_left                 C               5.2018e-07    5.2018e-07    0             5.5           
+  1             .2d_left                 D               5.2018e-07    5.2018e-07    0             5.5           
+  1             .2d_left                 G               5.2018e-07    5.2018e-07    0             5.5           
+  1             .2d_left                 H               5.2018e-07    5.2018e-07    0             5.5           
+  2             .2d_right                A               -0.125        0             -0.125        5.5           
+  2             .2d_right                B               -0.125        0             -0.125        5.5           
+  2             .2d_right                C               -0.125        0             -0.125        5.5           
+  2             .2d_right                D               -0.125        0             -0.125        5.5           
+  2             .2d_right                G               -0.125        0             -0.125        5.5           
+  2             .2d_right                H               -0.125        0             -0.125        5.5           
+  3             .2d_top                  A               7.46276e-08   1.26483e-07   -5.18558e-08  5.5           
+  3             .2d_top                  B               7.46276e-08   1.26483e-07   -5.18558e-08  5.5           
+  3             .2d_top                  C               7.46276e-08   1.26483e-07   -5.18558e-08  5.5           
+  3             .2d_top                  D               7.46276e-08   1.26483e-07   -5.18558e-08  5.5           
+  3             .2d_top                  G               7.46276e-08   1.26483e-07   -5.18558e-08  5.5           
+  3             .2d_top                  H               7.46276e-08   1.26483e-07   -5.18558e-08  5.5           
+  4             .2d_bottom               A               4.82246e-08   1.35405e-07   -8.71805e-08  5.5           
+  4             .2d_bottom               B               4.82246e-08   1.35405e-07   -8.71805e-08  5.5           
+  4             .2d_bottom               C               4.82246e-08   1.35405e-07   -8.71805e-08  5.5           
+  4             .2d_bottom               D               4.82246e-08   1.35405e-07   -8.71805e-08  5.5           
+  4             .2d_bottom               G               4.82246e-08   1.35405e-07   -8.71805e-08  5.5           
+  4             .2d_bottom               H               4.82246e-08   1.35405e-07   -8.71805e-08  5.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     7.82069e-07   -0.125        
+# total boundary balance                 B               -0.124999     7.82069e-07   -0.125        
+# total boundary balance                 C               -0.124999     7.82069e-07   -0.125        
+# total boundary balance                 D               -0.124999     7.82069e-07   -0.125        
+# total boundary balance                 G               -0.124999     7.82069e-07   -0.125        
+# total boundary balance                 H               -0.124999     7.82069e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         5.5           
+  5             rectangle                B               0                                         5.5           
+  5             rectangle                C               0                                         5.5           
+  5             rectangle                D               0                                         5.5           
+  5             rectangle                G               0                                         5.5           
+  5             rectangle                H               0                                         5.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 6.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               5.32374e-07   5.32374e-07   0             6             
+  1             .2d_left                 B               5.32374e-07   5.32374e-07   0             6             
+  1             .2d_left                 C               5.32374e-07   5.32374e-07   0             6             
+  1             .2d_left                 D               5.32374e-07   5.32374e-07   0             6             
+  1             .2d_left                 G               5.32374e-07   5.32374e-07   0             6             
+  1             .2d_left                 H               5.32374e-07   5.32374e-07   0             6             
+  2             .2d_right                A               -0.125        0             -0.125        6             
+  2             .2d_right                B               -0.125        0             -0.125        6             
+  2             .2d_right                C               -0.125        0             -0.125        6             
+  2             .2d_right                D               -0.125        0             -0.125        6             
+  2             .2d_right                G               -0.125        0             -0.125        6             
+  2             .2d_right                H               -0.125        0             -0.125        6             
+  3             .2d_top                  A               6.49748e-08   1.27516e-07   -6.25409e-08  6             
+  3             .2d_top                  B               6.49748e-08   1.27516e-07   -6.25409e-08  6             
+  3             .2d_top                  C               6.49748e-08   1.27516e-07   -6.25409e-08  6             
+  3             .2d_top                  D               6.49748e-08   1.27516e-07   -6.25409e-08  6             
+  3             .2d_top                  G               6.49748e-08   1.27516e-07   -6.25409e-08  6             
+  3             .2d_top                  H               6.49748e-08   1.27516e-07   -6.25409e-08  6             
+  4             .2d_bottom               A               5.45948e-08   1.42605e-07   -8.80098e-08  6             
+  4             .2d_bottom               B               5.45948e-08   1.42605e-07   -8.80098e-08  6             
+  4             .2d_bottom               C               5.45948e-08   1.42605e-07   -8.80098e-08  6             
+  4             .2d_bottom               D               5.45948e-08   1.42605e-07   -8.80098e-08  6             
+  4             .2d_bottom               G               5.45948e-08   1.42605e-07   -8.80098e-08  6             
+  4             .2d_bottom               H               5.45948e-08   1.42605e-07   -8.80098e-08  6             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     8.02494e-07   -0.125        
+# total boundary balance                 B               -0.124999     8.02494e-07   -0.125        
+# total boundary balance                 C               -0.124999     8.02494e-07   -0.125        
+# total boundary balance                 D               -0.124999     8.02494e-07   -0.125        
+# total boundary balance                 G               -0.124999     8.02494e-07   -0.125        
+# total boundary balance                 H               -0.124999     8.02494e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         6             
+  5             rectangle                B               0                                         6             
+  5             rectangle                C               0                                         6             
+  5             rectangle                D               0                                         6             
+  5             rectangle                G               0                                         6             
+  5             rectangle                H               0                                         6             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 6.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               5.38307e-07   5.38307e-07   0             6.5           
+  1             .2d_left                 B               5.38307e-07   5.38307e-07   0             6.5           
+  1             .2d_left                 C               5.38307e-07   5.38307e-07   0             6.5           
+  1             .2d_left                 D               5.38307e-07   5.38307e-07   0             6.5           
+  1             .2d_left                 G               5.38307e-07   5.38307e-07   0             6.5           
+  1             .2d_left                 H               5.38307e-07   5.38307e-07   0             6.5           
+  2             .2d_right                A               -0.125        0             -0.125        6.5           
+  2             .2d_right                B               -0.125        0             -0.125        6.5           
+  2             .2d_right                C               -0.125        0             -0.125        6.5           
+  2             .2d_right                D               -0.125        0             -0.125        6.5           
+  2             .2d_right                G               -0.125        0             -0.125        6.5           
+  2             .2d_right                H               -0.125        0             -0.125        6.5           
+  3             .2d_top                  A               6.06247e-08   1.32016e-07   -7.1391e-08   6.5           
+  3             .2d_top                  B               6.06247e-08   1.32016e-07   -7.1391e-08   6.5           
+  3             .2d_top                  C               6.06247e-08   1.32016e-07   -7.1391e-08   6.5           
+  3             .2d_top                  D               6.06247e-08   1.32016e-07   -7.1391e-08   6.5           
+  3             .2d_top                  G               6.06247e-08   1.32016e-07   -7.1391e-08   6.5           
+  3             .2d_top                  H               6.06247e-08   1.32016e-07   -7.1391e-08   6.5           
+  4             .2d_bottom               A               6.10584e-08   1.50312e-07   -8.92533e-08  6.5           
+  4             .2d_bottom               B               6.10584e-08   1.50312e-07   -8.92533e-08  6.5           
+  4             .2d_bottom               C               6.10584e-08   1.50312e-07   -8.92533e-08  6.5           
+  4             .2d_bottom               D               6.10584e-08   1.50312e-07   -8.92533e-08  6.5           
+  4             .2d_bottom               G               6.10584e-08   1.50312e-07   -8.92533e-08  6.5           
+  4             .2d_bottom               H               6.10584e-08   1.50312e-07   -8.92533e-08  6.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     8.20635e-07   -0.125        
+# total boundary balance                 B               -0.124999     8.20635e-07   -0.125        
+# total boundary balance                 C               -0.124999     8.20635e-07   -0.125        
+# total boundary balance                 D               -0.124999     8.20635e-07   -0.125        
+# total boundary balance                 G               -0.124999     8.20635e-07   -0.125        
+# total boundary balance                 H               -0.124999     8.20635e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         6.5           
+  5             rectangle                B               0                                         6.5           
+  5             rectangle                C               0                                         6.5           
+  5             rectangle                D               0                                         6.5           
+  5             rectangle                G               0                                         6.5           
+  5             rectangle                H               0                                         6.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 7.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               5.45208e-07   5.45208e-07   0             7             
+  1             .2d_left                 B               5.45208e-07   5.45208e-07   0             7             
+  1             .2d_left                 C               5.45208e-07   5.45208e-07   0             7             
+  1             .2d_left                 D               5.45208e-07   5.45208e-07   0             7             
+  1             .2d_left                 G               5.45208e-07   5.45208e-07   0             7             
+  1             .2d_left                 H               5.45208e-07   5.45208e-07   0             7             
+  2             .2d_right                A               -0.125        0             -0.125        7             
+  2             .2d_right                B               -0.125        0             -0.125        7             
+  2             .2d_right                C               -0.125        0             -0.125        7             
+  2             .2d_right                D               -0.125        0             -0.125        7             
+  2             .2d_right                G               -0.125        0             -0.125        7             
+  2             .2d_right                H               -0.125        0             -0.125        7             
+  3             .2d_top                  A               6.91078e-08   1.47251e-07   -7.81429e-08  7             
+  3             .2d_top                  B               6.91078e-08   1.47251e-07   -7.81429e-08  7             
+  3             .2d_top                  C               6.91078e-08   1.47251e-07   -7.81429e-08  7             
+  3             .2d_top                  D               6.91078e-08   1.47251e-07   -7.81429e-08  7             
+  3             .2d_top                  G               6.91078e-08   1.47251e-07   -7.81429e-08  7             
+  3             .2d_top                  H               6.91078e-08   1.47251e-07   -7.81429e-08  7             
+  4             .2d_bottom               A               7.2975e-08    1.6362e-07    -9.06451e-08  7             
+  4             .2d_bottom               B               7.2975e-08    1.6362e-07    -9.06451e-08  7             
+  4             .2d_bottom               C               7.2975e-08    1.6362e-07    -9.06451e-08  7             
+  4             .2d_bottom               D               7.2975e-08    1.6362e-07    -9.06451e-08  7             
+  4             .2d_bottom               G               7.2975e-08    1.6362e-07    -9.06451e-08  7             
+  4             .2d_bottom               H               7.2975e-08    1.6362e-07    -9.06451e-08  7             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124999     8.56079e-07   -0.125        
+# total boundary balance                 B               -0.124999     8.56079e-07   -0.125        
+# total boundary balance                 C               -0.124999     8.56079e-07   -0.125        
+# total boundary balance                 D               -0.124999     8.56079e-07   -0.125        
+# total boundary balance                 G               -0.124999     8.56079e-07   -0.125        
+# total boundary balance                 H               -0.124999     8.56079e-07   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         7             
+  5             rectangle                B               0                                         7             
+  5             rectangle                C               0                                         7             
+  5             rectangle                D               0                                         7             
+  5             rectangle                G               0                                         7             
+  5             rectangle                H               0                                         7             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 7.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               1.4815e-06    1.4815e-06    0             7.5           
+  1             .2d_left                 B               1.4815e-06    1.4815e-06    0             7.5           
+  1             .2d_left                 C               1.4815e-06    1.4815e-06    0             7.5           
+  1             .2d_left                 D               1.4815e-06    1.4815e-06    0             7.5           
+  1             .2d_left                 G               1.4815e-06    1.4815e-06    0             7.5           
+  1             .2d_left                 H               1.4815e-06    1.4815e-06    0             7.5           
+  2             .2d_right                A               -0.125        0             -0.125        7.5           
+  2             .2d_right                B               -0.125        0             -0.125        7.5           
+  2             .2d_right                C               -0.125        0             -0.125        7.5           
+  2             .2d_right                D               -0.125        0             -0.125        7.5           
+  2             .2d_right                G               -0.125        0             -0.125        7.5           
+  2             .2d_right                H               -0.125        0             -0.125        7.5           
+  3             .2d_top                  A               9.21492e-08   1.75258e-07   -8.31085e-08  7.5           
+  3             .2d_top                  B               9.21492e-08   1.75258e-07   -8.31085e-08  7.5           
+  3             .2d_top                  C               9.21492e-08   1.75258e-07   -8.31085e-08  7.5           
+  3             .2d_top                  D               9.21492e-08   1.75258e-07   -8.31085e-08  7.5           
+  3             .2d_top                  G               9.21492e-08   1.75258e-07   -8.31085e-08  7.5           
+  3             .2d_top                  H               9.21492e-08   1.75258e-07   -8.31085e-08  7.5           
+  4             .2d_bottom               A               8.97716e-08   1.83379e-07   -9.36074e-08  7.5           
+  4             .2d_bottom               B               8.97716e-08   1.83379e-07   -9.36074e-08  7.5           
+  4             .2d_bottom               C               8.97716e-08   1.83379e-07   -9.36074e-08  7.5           
+  4             .2d_bottom               D               8.97716e-08   1.83379e-07   -9.36074e-08  7.5           
+  4             .2d_bottom               G               8.97716e-08   1.83379e-07   -9.36074e-08  7.5           
+  4             .2d_bottom               H               8.97716e-08   1.83379e-07   -9.36074e-08  7.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124998     1.84014e-06   -0.125        
+# total boundary balance                 B               -0.124998     1.84014e-06   -0.125        
+# total boundary balance                 C               -0.124998     1.84014e-06   -0.125        
+# total boundary balance                 D               -0.124998     1.84014e-06   -0.125        
+# total boundary balance                 G               -0.124998     1.84014e-06   -0.125        
+# total boundary balance                 H               -0.124998     1.84014e-06   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         7.5           
+  5             rectangle                B               0                                         7.5           
+  5             rectangle                C               0                                         7.5           
+  5             rectangle                D               0                                         7.5           
+  5             rectangle                G               0                                         7.5           
+  5             rectangle                H               0                                         7.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 8.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               5.61028e-05   5.61028e-05   0             8             
+  1             .2d_left                 B               5.61028e-05   5.61028e-05   0             8             
+  1             .2d_left                 C               5.61028e-05   5.61028e-05   0             8             
+  1             .2d_left                 D               5.61028e-05   5.61028e-05   0             8             
+  1             .2d_left                 G               5.61028e-05   5.61028e-05   0             8             
+  1             .2d_left                 H               5.61028e-05   5.61028e-05   0             8             
+  2             .2d_right                A               -0.125        0             -0.125        8             
+  2             .2d_right                B               -0.125        0             -0.125        8             
+  2             .2d_right                C               -0.125        0             -0.125        8             
+  2             .2d_right                D               -0.125        0             -0.125        8             
+  2             .2d_right                G               -0.125        0             -0.125        8             
+  2             .2d_right                H               -0.125        0             -0.125        8             
+  3             .2d_top                  A               1.08968e-07   2.04404e-07   -9.54359e-08  8             
+  3             .2d_top                  B               1.08968e-07   2.04404e-07   -9.54359e-08  8             
+  3             .2d_top                  C               1.08968e-07   2.04404e-07   -9.54359e-08  8             
+  3             .2d_top                  D               1.08968e-07   2.04404e-07   -9.54359e-08  8             
+  3             .2d_top                  G               1.08968e-07   2.04404e-07   -9.54359e-08  8             
+  3             .2d_top                  H               1.08968e-07   2.04404e-07   -9.54359e-08  8             
+  4             .2d_bottom               A               9.56436e-08   2.01376e-07   -1.05733e-07  8             
+  4             .2d_bottom               B               9.56436e-08   2.01376e-07   -1.05733e-07  8             
+  4             .2d_bottom               C               9.56436e-08   2.01376e-07   -1.05733e-07  8             
+  4             .2d_bottom               D               9.56436e-08   2.01376e-07   -1.05733e-07  8             
+  4             .2d_bottom               G               9.56436e-08   2.01376e-07   -1.05733e-07  8             
+  4             .2d_bottom               H               9.56436e-08   2.01376e-07   -1.05733e-07  8             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.124944     5.65086e-05   -0.125        
+# total boundary balance                 B               -0.124944     5.65086e-05   -0.125        
+# total boundary balance                 C               -0.124944     5.65086e-05   -0.125        
+# total boundary balance                 D               -0.124944     5.65086e-05   -0.125        
+# total boundary balance                 G               -0.124944     5.65086e-05   -0.125        
+# total boundary balance                 H               -0.124944     5.65086e-05   -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         8             
+  5             rectangle                B               0                                         8             
+  5             rectangle                C               0                                         8             
+  5             rectangle                D               0                                         8             
+  5             rectangle                G               0                                         8             
+  5             rectangle                H               0                                         8             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 8.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               0.0010498     0.0010498     0             8.5           
+  1             .2d_left                 B               0.0010498     0.0010498     0             8.5           
+  1             .2d_left                 C               0.0010498     0.0010498     0             8.5           
+  1             .2d_left                 D               0.0010498     0.0010498     0             8.5           
+  1             .2d_left                 G               0.0010498     0.0010498     0             8.5           
+  1             .2d_left                 H               0.0010498     0.0010498     0             8.5           
+  2             .2d_right                A               -0.125        0             -0.125        8.5           
+  2             .2d_right                B               -0.125        0             -0.125        8.5           
+  2             .2d_right                C               -0.125        0             -0.125        8.5           
+  2             .2d_right                D               -0.125        0             -0.125        8.5           
+  2             .2d_right                G               -0.125        0             -0.125        8.5           
+  2             .2d_right                H               -0.125        0             -0.125        8.5           
+  3             .2d_top                  A               9.34922e-08   2.22682e-07   -1.2919e-07   8.5           
+  3             .2d_top                  B               9.34922e-08   2.22682e-07   -1.2919e-07   8.5           
+  3             .2d_top                  C               9.34922e-08   2.22682e-07   -1.2919e-07   8.5           
+  3             .2d_top                  D               9.34922e-08   2.22682e-07   -1.2919e-07   8.5           
+  3             .2d_top                  G               9.34922e-08   2.22682e-07   -1.2919e-07   8.5           
+  3             .2d_top                  H               9.34922e-08   2.22682e-07   -1.2919e-07   8.5           
+  4             .2d_bottom               A               7.40544e-08   2.1139e-07    -1.37336e-07  8.5           
+  4             .2d_bottom               B               7.40544e-08   2.1139e-07    -1.37336e-07  8.5           
+  4             .2d_bottom               C               7.40544e-08   2.1139e-07    -1.37336e-07  8.5           
+  4             .2d_bottom               D               7.40544e-08   2.1139e-07    -1.37336e-07  8.5           
+  4             .2d_bottom               G               7.40544e-08   2.1139e-07    -1.37336e-07  8.5           
+  4             .2d_bottom               H               7.40544e-08   2.1139e-07    -1.37336e-07  8.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.12395      0.00105023    -0.125        
+# total boundary balance                 B               -0.12395      0.00105023    -0.125        
+# total boundary balance                 C               -0.12395      0.00105023    -0.125        
+# total boundary balance                 D               -0.12395      0.00105023    -0.125        
+# total boundary balance                 G               -0.12395      0.00105023    -0.125        
+# total boundary balance                 H               -0.12395      0.00105023    -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         8.5           
+  5             rectangle                B               0                                         8.5           
+  5             rectangle                C               0                                         8.5           
+  5             rectangle                D               0                                         8.5           
+  5             rectangle                G               0                                         8.5           
+  5             rectangle                H               0                                         8.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 9.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               0.00802343    0.00802343    0             9             
+  1             .2d_left                 B               0.00802343    0.00802343    0             9             
+  1             .2d_left                 C               0.00802343    0.00802343    0             9             
+  1             .2d_left                 D               0.00802343    0.00802343    0             9             
+  1             .2d_left                 G               0.00802343    0.00802343    0             9             
+  1             .2d_left                 H               0.00802343    0.00802343    0             9             
+  2             .2d_right                A               -0.125        0             -0.125        9             
+  2             .2d_right                B               -0.125        0             -0.125        9             
+  2             .2d_right                C               -0.125        0             -0.125        9             
+  2             .2d_right                D               -0.125        0             -0.125        9             
+  2             .2d_right                G               -0.125        0             -0.125        9             
+  2             .2d_right                H               -0.125        0             -0.125        9             
+  3             .2d_top                  A               4.40784e-08   2.29926e-07   -1.85848e-07  9             
+  3             .2d_top                  B               4.40784e-08   2.29926e-07   -1.85848e-07  9             
+  3             .2d_top                  C               4.40784e-08   2.29926e-07   -1.85848e-07  9             
+  3             .2d_top                  D               4.40784e-08   2.29926e-07   -1.85848e-07  9             
+  3             .2d_top                  G               4.40784e-08   2.29926e-07   -1.85848e-07  9             
+  3             .2d_top                  H               4.40784e-08   2.29926e-07   -1.85848e-07  9             
+  4             .2d_bottom               A               2.77309e-08   2.14942e-07   -1.87212e-07  9             
+  4             .2d_bottom               B               2.77309e-08   2.14942e-07   -1.87212e-07  9             
+  4             .2d_bottom               C               2.77309e-08   2.14942e-07   -1.87212e-07  9             
+  4             .2d_bottom               D               2.77309e-08   2.14942e-07   -1.87212e-07  9             
+  4             .2d_bottom               G               2.77309e-08   2.14942e-07   -1.87212e-07  9             
+  4             .2d_bottom               H               2.77309e-08   2.14942e-07   -1.87212e-07  9             
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.116976     0.00802387    -0.125        
+# total boundary balance                 B               -0.116976     0.00802387    -0.125        
+# total boundary balance                 C               -0.116976     0.00802387    -0.125        
+# total boundary balance                 D               -0.116976     0.00802387    -0.125        
+# total boundary balance                 G               -0.116976     0.00802387    -0.125        
+# total boundary balance                 H               -0.116976     0.00802387    -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         9             
+  5             rectangle                B               0                                         9             
+  5             rectangle                C               0                                         9             
+  5             rectangle                D               0                                         9             
+  5             rectangle                G               0                                         9             
+  5             rectangle                H               0                                         9             
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 9.500000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               0.030147      0.030147      0             9.5           
+  1             .2d_left                 B               0.030147      0.030147      0             9.5           
+  1             .2d_left                 C               0.030147      0.030147      0             9.5           
+  1             .2d_left                 D               0.030147      0.030147      0             9.5           
+  1             .2d_left                 G               0.030147      0.030147      0             9.5           
+  1             .2d_left                 H               0.030147      0.030147      0             9.5           
+  2             .2d_right                A               -0.125        0             -0.125        9.5           
+  2             .2d_right                B               -0.125        0             -0.125        9.5           
+  2             .2d_right                C               -0.125        0             -0.125        9.5           
+  2             .2d_right                D               -0.125        0             -0.125        9.5           
+  2             .2d_right                G               -0.125        0             -0.125        9.5           
+  2             .2d_right                H               -0.125        0             -0.125        9.5           
+  3             .2d_top                  A               -1.45089e-08  2.31819e-07   -2.46328e-07  9.5           
+  3             .2d_top                  B               -1.45089e-08  2.31819e-07   -2.46328e-07  9.5           
+  3             .2d_top                  C               -1.45089e-08  2.31819e-07   -2.46328e-07  9.5           
+  3             .2d_top                  D               -1.45089e-08  2.31819e-07   -2.46328e-07  9.5           
+  3             .2d_top                  G               -1.45089e-08  2.31819e-07   -2.46328e-07  9.5           
+  3             .2d_top                  H               -1.45089e-08  2.31819e-07   -2.46328e-07  9.5           
+  4             .2d_bottom               A               -2.27643e-08  2.15783e-07   -2.38547e-07  9.5           
+  4             .2d_bottom               B               -2.27643e-08  2.15783e-07   -2.38547e-07  9.5           
+  4             .2d_bottom               C               -2.27643e-08  2.15783e-07   -2.38547e-07  9.5           
+  4             .2d_bottom               D               -2.27643e-08  2.15783e-07   -2.38547e-07  9.5           
+  4             .2d_bottom               G               -2.27643e-08  2.15783e-07   -2.38547e-07  9.5           
+  4             .2d_bottom               H               -2.27643e-08  2.15783e-07   -2.38547e-07  9.5           
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.094853     0.0301475     -0.125        
+# total boundary balance                 B               -0.094853     0.0301475     -0.125        
+# total boundary balance                 C               -0.094853     0.0301475     -0.125        
+# total boundary balance                 D               -0.094853     0.0301475     -0.125        
+# total boundary balance                 G               -0.094853     0.0301475     -0.125        
+# total boundary balance                 H               -0.094853     0.0301475     -0.125        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         9.5           
+  5             rectangle                B               0                                         9.5           
+  5             rectangle                C               0                                         9.5           
+  5             rectangle                D               0                                         9.5           
+  5             rectangle                G               0                                         9.5           
+  5             rectangle                H               0                                         9.5           
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time of computed mass balance: 10.000000
+
+
+# Boundary mass balance:
+# [boundary_id] [label]                  [substance]   [total_balance][total_outflow][total_inflow][time]        
+# -------------------------------------------------------------------------------------------------------------
+  1             .2d_left                 A               0.0659746     0.0659746     0             10            
+  1             .2d_left                 B               0.0659746     0.0659746     0             10            
+  1             .2d_left                 C               0.0659746     0.0659746     0             10            
+  1             .2d_left                 D               0.0659746     0.0659746     0             10            
+  1             .2d_left                 G               0.0659746     0.0659746     0             10            
+  1             .2d_left                 H               0.0659746     0.0659746     0             10            
+  2             .2d_right                A               -0.125        0             -0.125        10            
+  2             .2d_right                B               -0.125        0             -0.125        10            
+  2             .2d_right                C               -0.125        0             -0.125        10            
+  2             .2d_right                D               -0.125        0             -0.125        10            
+  2             .2d_right                G               -0.125        0             -0.125        10            
+  2             .2d_right                H               -0.125        0             -0.125        10            
+  3             .2d_top                  A               -5.74933e-08  2.32159e-07   -2.89652e-07  10            
+  3             .2d_top                  B               -5.74933e-08  2.32159e-07   -2.89652e-07  10            
+  3             .2d_top                  C               -5.74933e-08  2.32159e-07   -2.89652e-07  10            
+  3             .2d_top                  D               -5.74933e-08  2.32159e-07   -2.89652e-07  10            
+  3             .2d_top                  G               -5.74933e-08  2.32159e-07   -2.89652e-07  10            
+  3             .2d_top                  H               -5.74933e-08  2.32159e-07   -2.89652e-07  10            
+  4             .2d_bottom               A               -5.85725e-08  2.15921e-07   -2.74493e-07  10            
+  4             .2d_bottom               B               -5.85725e-08  2.15921e-07   -2.74493e-07  10            
+  4             .2d_bottom               C               -5.85725e-08  2.15921e-07   -2.74493e-07  10            
+  4             .2d_bottom               D               -5.85725e-08  2.15921e-07   -2.74493e-07  10            
+  4             .2d_bottom               G               -5.85725e-08  2.15921e-07   -2.74493e-07  10            
+  4             .2d_bottom               H               -5.85725e-08  2.15921e-07   -2.74493e-07  10            
+# -------------------------------------------------------------------------------------------------------------
+# total boundary balance                 A               -0.0590255    0.0659751     -0.125001     
+# total boundary balance                 B               -0.0590255    0.0659751     -0.125001     
+# total boundary balance                 C               -0.0590255    0.0659751     -0.125001     
+# total boundary balance                 D               -0.0590255    0.0659751     -0.125001     
+# total boundary balance                 G               -0.0590255    0.0659751     -0.125001     
+# total boundary balance                 H               -0.0590255    0.0659751     -0.125001     
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [substance]   [total_balance]                            [time]        
+# -------------------------------------------------------------------------------------------------------------
+  5             rectangle                A               0                                         10            
+  5             rectangle                B               0                                         10            
+  5             rectangle                C               0                                         10            
+  5             rectangle                D               0                                         10            
+  5             rectangle                G               0                                         10            
+  5             rectangle                H               0                                         10            
+# -------------------------------------------------------------------------------------------------------------
+# total sources balance                  A               0             
+# total sources balance                  B               0             
+# total sources balance                  C               0             
+# total sources balance                  D               0             
+# total sources balance                  G               0             
+# total sources balance                  H               0             
+
+

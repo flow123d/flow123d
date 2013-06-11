@@ -37,12 +37,13 @@
         { rid = 1,
           init_conc =
             [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.060000000, 0.07000000, 0.080000000]
-# this currently does not work
-#          {
-#            TYPE = "FieldElementwise",
-#            gmsh_file = "./input/sit_decay_long.msh",
-#            field_name = "concentration"
-#          }
+// this currently does not work
+/*          {
+            TYPE = "FieldElementwise",
+            gmsh_file = "./input/sit_decay_long.msh",
+            field_name = "concentration"
+          }
+*/
         }
       ],
       

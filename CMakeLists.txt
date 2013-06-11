@@ -85,30 +85,49 @@ else(FLOW_CC_FLAGS)
   else()
   endif()
   
-  
-    # Compiler-specific C++11 activation.
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-        if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-            add_definitions("-DHAVE_CXX11")    
-            set(CMAKE_HAVE_CXX11 "true")
-        elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-            add_definitions("-DHAVE_CXX11")
-            set(CMAKE_HAVE_CXX11 "true")    
-        endif ()
-    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-        add_definitions("-Wno-uninitialized -DHAVE_CXX11")
-        set(CMAKE_HAVE_CXX11 "true")
-    else ()
-        message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
-    endif()
-  
 endif(FLOW_CC_FLAGS)
 
+
+# Compiler-specific C++11 activation.
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+        add_definitions("-DHAVE_CXX11")    
+        set(CMAKE_HAVE_CXX11 "true")
+    elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+        add_definitions("-DHAVE_CXX11")
+        set(CMAKE_HAVE_CXX11 "true")   
+    elseif (GCC_VERSION VERSION_GREATER 4.4)
+    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    	set(CMAKE_HAVE_CXX11 "true")   
+    	message(WARNING "Warnning: GCC version under 4.6, not recomended!." ) 
+    else ()
+    	message(SEND_ERROR "Error: GCC version under 4.4, not supported!." )	
+    endif ()
+    
+    # Necessary for FParser - TODO: move to better place
+    # ?? what about Clang
+    add_definitions("-DHAVE_SINCOS")
+    
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    
+    # BOOST must be compiled with clang in order to use C++11 standard. 
+    set(Boost_FORCE_REBUILD "true")
+    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    
+    #add_definitions("-DHAVE_CXX11")
+    set(CMAKE_HAVE_CXX11 "true")
+    # 
+    # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+    #
+else ()
+    message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
+endif()
 
 #########################################################################
 # Check that glibc has working execinfo.h
@@ -188,8 +207,8 @@ set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
-set(REQUIRED_Boost_COMPONENTS program_options serialization)
-
+set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
+ 
 #set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
@@ -208,7 +227,9 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization)
 #    the parameters of the find_library are exactly same as in the previous case.
 #
 #set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
-find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+if (NOT Boost_FORCE_REBUILD)
+    find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+endif()    
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
@@ -344,11 +365,16 @@ IF (PETSC_FOUND)
 endif()
 
 # optionaly we use Python interface
-find_package(PythonLibs)
-if (PYTHONLIBS_FOUND)
-    include_directories( ${PYTHON_INCLUDE_DIRS})
-    add_definitions(-DHAVE_PYTHON)
-endif()
+# We disallow python under cygwin since we are not able to extract correct libraries to make it work elsewhere.
+if (CYGWIN)
+else (CYGWIN) 
+    find_package(PythonLibs)
+    if (PYTHONLIBS_FOUND)
+        include_directories( ${PYTHON_INCLUDE_DIRS})
+        add_definitions(-DHAVE_PYTHON)
+    endif()
+endif(CYGWIN)
+
 # check for subversion and prepare generating of file with revision info.
 find_package(Subversion)
 
@@ -360,7 +386,7 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
-    ${CMAKE_SOURCE_DIR}/third_party/fparser-4.4.3
+    ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
     ${BDDCML_INCLUDES}
@@ -376,7 +402,8 @@ include_directories(
 
 
 # add fparser sources
-add_subdirectory(third_party/fparser-4.4.3)
+message(STATUS "ad subdir FParser")
+add_subdirectory(third_party/fparser-4.5.1)
 
 # add various our sources
 add_subdirectory(src)

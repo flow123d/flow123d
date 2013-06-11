@@ -75,7 +75,6 @@ void make_ini_item_list(const char *fname)
 	char *value;
 	char *tmp;
 	struct Ini_item *prev = NULL;
-	int i;
 
 	read_ini=(struct Read_ini*)xmalloc(sizeof(struct Read_ini));
 

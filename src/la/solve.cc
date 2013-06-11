@@ -39,6 +39,8 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
+#include "input/input_type.hh"
+#include "input/accessors.hh"
 
 
 #include "la/distribution.hh"
@@ -95,8 +97,6 @@ it::Record Solver::input_type_bddc = it::Record("Bddc", "Solver setting.")
  *  @param[in] in_rec input record
  */
 void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
-    double solver_accuracy;
-
     F_ENTRY;
 	if ( solver == NULL ) xprintf(PrgErr,"Structure solver not allocated.\n");
 
@@ -127,7 +127,7 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     }
 
     //! generic solver parameters
-    solver_accuracy=   OptGetDbl("Solver","Solver_accuracy","1.0e-7");
+    double solver_accuracy=   OptGetDbl("Solver","Solver_accuracy","1.0e-7");
     solver->max_it=     OptGetInt("Solver", "max_it", "200" );
     solver->r_tol=      OptGetDbl("Solver", "r_tol", "-1" );
     if (solver->r_tol < 0) solver->r_tol=solver_accuracy;
@@ -363,7 +363,7 @@ void solver_petsc(Solver *solver)
            if (np > 1) {
 	       // parallel setting
               if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite -sub_pc_factor_fill 6.0";
+                  petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
                   //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
                   // -ksp_type preonly -pc_type lu 
               else
@@ -372,8 +372,8 @@ void solver_petsc(Solver *solver)
 	   } else {
 	       // serial setting
               if (sys->is_positive_definite())
-                  petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix  -pc_factor_fill 6.0";
-                  //petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
+                  //petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix  -pc_factor_fill 6.0";
+                  petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
               else
                   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
 	   }
@@ -619,7 +619,7 @@ void read_sol_matlab( struct Solver *solver )
 	LinSys *sys=solver->LinSys;
 	FILE *in;
 	double value;
-	int mi;
+	unsigned int mi;
 
 	in = xfopen( "solution.dat", "rt" );
 	int loc_row=0;

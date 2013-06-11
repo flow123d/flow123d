@@ -75,7 +75,7 @@ QGauss<dim>::QGauss(const unsigned int order)
               };
     static const double unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
     const pQUAD *q;
-    int nquads;
+    unsigned int nquads;
     vec::fixed<dim> p;
 
     switch (dim)
@@ -102,7 +102,7 @@ QGauss<dim>::QGauss(const unsigned int order)
 
     for (int i=0; i<q[order]->npoints; i++)
     {
-        for (int j=0; j<dim; j++)
+        for (unsigned int j=0; j<dim; j++)
             p(j) = q[order]->points[i*(dim+1)+j];
 
         this->quadrature_points.push_back(p);

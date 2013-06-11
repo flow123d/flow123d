@@ -38,6 +38,9 @@ class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim, unsigned int spacedim> class Mapping;
+template<unsigned int dim> class Quadrature;
+
 
 
 /**
@@ -84,6 +87,79 @@ public:
 		EqData();
 		RegionSet read_boundary_list_item(Input::Record rec);
 
+		Field<3, FieldValue<3>::Vector> disp_l;     ///< Longitudal dispersivity (for each substance).
+		Field<3, FieldValue<3>::Vector> disp_t;     ///< Transversal dispersivity (for each substance).
+		Field<3, FieldValue<3>::Vector> diff_m;     ///< Molecular diffusivity (for each substance).
+		Field<3, FieldValue<3>::Vector> sigma_c;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
+		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
+
+	};
+
+	/**
+	 * Auxiliary container class for Finite element and related objects of all dimensions.
+	 * Its purpose is to provide templated access to these objects, applicable in
+	 * the assembling methods.
+	 */
+	class FEObjects {
+	public:
+
+		FEObjects(Mesh *mesh_, unsigned int fe_order);
+		~FEObjects();
+
+		template<unsigned int dim>
+		inline FiniteElement<dim,3> *fe();
+
+		template<unsigned int dim>
+		inline FiniteElement<dim,3> *fe_rt();
+
+		template<unsigned int dim>
+		inline Quadrature<dim> *q();
+
+		template<unsigned int dim>
+		inline Mapping<dim,3> *mapping();
+
+		template<unsigned int dim>
+		inline DOFHandler<dim,3> *dh();
+
+	private:
+
+		/// Finite elements for the solution of the advection-diffusion equation.
+		FiniteElement<1,3> *fe1_;
+		FiniteElement<2,3> *fe2_;
+		FiniteElement<3,3> *fe3_;
+
+		/// Finite elements for the water velocity field.
+		FiniteElement<1,3> *fe_rt1_;
+		FiniteElement<2,3> *fe_rt2_;
+		FiniteElement<3,3> *fe_rt3_;
+
+		/// Quadratures used in assembling methods.
+		Quadrature<0> *q0_;
+		Quadrature<1> *q1_;
+		Quadrature<2> *q2_;
+		Quadrature<3> *q3_;
+
+		/// Auxiliary mappings of reference elements.
+		Mapping<0,3> *map0_;
+		Mapping<1,3> *map1_;
+		Mapping<2,3> *map2_;
+		Mapping<3,3> *map3_;
+
+		/// Objects for distribution of dofs.
+		DOFHandler<1,3> *dh1_;
+		DOFHandler<2,3> *dh2_;
+		DOFHandler<3,3> *dh3_;
+	};
+
+	enum DGVariant {
+		// Non-symmetric weighted interior penalty DG
+		non_symmetric = -1,
+
+		// Incomplete weighted interior penalty DG
+		incomplete = 0,
+
+		// Symmetric weighted interior penalty DG
+		symmetric = 1
 	};
 
     /**
@@ -97,6 +173,11 @@ public:
      * @brief Declare input record type for the equation TransportDG.
      */
     static Input::Type::Record input_type;
+
+    /**
+     * @brief Input type for the DG variant selection.
+     */
+    static Input::Type::Selection dg_variant_selection_input_type;
 
     /**
      * @brief Computes the solution in one time instant.
@@ -138,6 +219,9 @@ public:
      */
 	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
 
+	/**
+	 * @brief Getter for field data.
+	 */
 	virtual EqData *get_data() { return &data; }
 
 	/**
@@ -157,14 +241,9 @@ private:
 
 	/**
 	 * @brief Assembles the mass matrix for the given dimension.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-     * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param fe FiniteElement
 	 */
 	template<unsigned int dim>
-	void assemble_mass_matrix(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void assemble_mass_matrix();
 
 	/**
 	 * @brief Assembles the stiffness matrix.
@@ -177,53 +256,40 @@ private:
 
 	/**
 	 * @brief Assembles the volume integrals into the stiffness matrix.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param fe FiniteElement.
 	*/
 	template<unsigned int dim>
-	void assemble_volume_integrals(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void assemble_volume_integrals();
+
+	/**
+	 * @brief Assembles the right hand side due to volume sources.
+	 *
+	 * This method just calls set_sources() for each space dimension.
+	 */
+	void set_sources();
+
+	/**
+	 * @brief Assembles the right hand side vector due to volume sources.
+	 */
+	template<unsigned int dim>
+	void set_sources();
 
 	/**
 	 * @brief Assembles the fluxes on the boundary.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param dh_sub DOF handler for sides.
-	 * @param fe FiniteElement.
-	 * @param fe_sub FiniteElement for sides.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_boundary(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
+	void assemble_fluxes_boundary();
 
 	/**
 	 * @brief Assembles the fluxes between elements of the same dimension.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param dh_sub DOF handler for sides.
-	 * @param fe FiniteElement.
-	 * @param fe_sub FiniteElement for sides.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_element_element(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
+	void assemble_fluxes_element_element();
 
 	/**
 	 * @brief Assembles the fluxes between elements of different dimensions.
-	 *
-	 * The DOF handler and FiniteElement objects of specified dimension
-	 * must be passed as arguments.
-	 * @param dh DOF handler.
-	 * @param dh_sub DOF handler for sides.
-	 * @param fe FiniteElement.
-	 * @param fe_sub FiniteElement for sides.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_element_side(DOFHandler<dim,3> *dh, DOFHandler<dim-1,3> *dh_sub, FiniteElement<dim,3> *fe, FiniteElement<dim-1,3> *fe_sub);
+	void assemble_fluxes_element_side();
 
 
 	/**
@@ -236,12 +302,9 @@ private:
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
 	 * for a given space dimension.
-	 *
-	 * @param dh DOF handler.
-     * @param fe FiniteElement.
 	 */
 	template<unsigned int dim>
-	void set_boundary_conditions(DOFHandler<dim,3> *dh, FiniteElement<dim,3> *fe);
+	void set_boundary_conditions();
 
 	/**
 	 * @brief Calculates the velocity field on a given @p dim dimensional cell.
@@ -252,53 +315,45 @@ private:
 	 *                 and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
-	void calculate_velocity(typename DOFHandler<dim,3>::CellIterator cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
-
-	/**
-	 * @brief Calculates the velocity divergence on a given @p dim dimensional cell.
-	 *
-	 * @param cell       The cell.
-	 * @param divergence The computed divergence (at quadrature points).
-	 * @param fv         The FEValues class providing the quadrature points
-	 *                   and the shape functions for velocity.
-	 */
-	template<unsigned int dim>
-	void calculate_velocity_divergence(typename DOFHandler<dim,3>::CellIterator cell, std::vector<double> &divergence, FEValuesBase<dim,3> &fv);
+	void calculate_velocity(const typename DOFHandler<dim,3>::CellIterator &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
 	 *
 	 * @param K        The computed dispersivity tensor.
 	 * @param velocity The velocity field (at quadrature points).
+	 * @param Dm       Molecular diffusivities.
+	 * @param alphaL   Longitudal dispersivities.
+	 * @param alphaT   Transversal dispersivities.
+	 * @param porosity  Porosities.
+	 * @param cross_cut Cross-cuts of higher dimension.
 	 */
-	void calculate_dispersivity_tensor(std::vector<arma::mat33> &K, std::vector<arma::vec3> &velocity);
+	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
+			double Dm, double alphaL, double alphaT, double porosity,
+			double cross_cut);
 
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.
 	 *
-	 * @param edg					The edge.
+	 * @param edg				The edge.
 	 * @param s1				Side 1.
 	 * @param s2				Side 2.
-	 * @param n_points			Number of quadrature points.
 	 * @param K					Dispersivity tensor.
 	 * @param normal_vector		Normal vector to side 0 of the neighbour
 	 * 							(assumed constant along the side).
-	 * @param alpha				Penalty parameter that influences the continuity
+	 * @param alpha1, alpha2	Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
-	 * @param advection			Coefficient of advection/transport (0=no advection).
 	 * @param gamma				Computed penalty parameters.
 	 * @param omega				Computed weights.
 	 * @param transport_flux	Computed flux from side 1 to side 2.
 	 */
-
-	void set_DG_parameters(const Edge *edg,
+	void set_DG_parameters_edge(const Edge &edg,
 	        const int s1,
 	        const int s2,
-	        const unsigned int n_points,
 	        const std::vector< std::vector<arma::mat33> > &K,
 	        const arma::vec3 &normal_vector,
-	        const double alpha,
-	        const double advection,
+	        const double alpha1,
+	        const double alpha2,
 	        double &gamma,
 	        double *omega,
 	        double &transport_flux);
@@ -307,24 +362,18 @@ private:
 	 * @brief Sets up parameters of the DG method on a given boundary edge.
 	 *
 	 * Assumption is that the edge consists of only 1 side.
-	 * @param edge				The edge.
-	 * @param n_points			Number of quadrature points.
+	 * @param side       		The boundary side.
 	 * @param K					Dispersivity tensor.
 	 * @param normal_vector		Normal vector (assumed constant along the edge).
 	 * @param alpha				Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
-	 * @param advection			Coefficient of advection/transport (0=no advection).
 	 * @param gamma				Computed penalty parameters.
-	 * @param omega				Computed weights.
 	 */
-	void set_DG_parameters_edge(const Edge *edge,
-	            const unsigned int n_points,
-	            const std::vector< vector<arma::mat33> > &K,
+	void set_DG_parameters_boundary(const SideIter side,
+	            const std::vector<arma::mat33> &K,
 	            const arma::vec3 &normal_vector,
 	            const double alpha,
-	            const double advection,
-	            double &gamma,
-	            double *omega);
+	            double &gamma);
 
 
 	/**
@@ -332,30 +381,57 @@ private:
 	 */
 	void set_initial_condition();
 
+	/**
+	 * @brief Assembles the auxiliary linear system to calculate the initial solution
+	 * as L^2-projection of the prescribed initial condition.
+	 */
+	template<unsigned int dim>
+	void prepare_initial_condition();
+
+	/**
+	 * @brief Calculates flux through boundary of each region.
+	 *
+	 * This actually calls calc_fluxes<dim>() for each space dimension.
+	 * @param bcd_balance       Total fluxes.
+	 * @param bcd_plus_balance  Incoming fluxes.
+	 * @param bcd_minus_balance Outgoing fluxes.
+	 */
+	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+
+	/**
+	 * @brief Calculates flux through boundary of each region of specific dimension.
+	 * @param bcd_balance       Total fluxes.
+	 * @param bcd_plus_balance  Incoming fluxes.
+	 * @param bcd_minus_balance Outgoing fluxes.
+	 */
+	template<unsigned int dim>
+	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+
+	/**
+	 * @brief Calculates volume sources for each region.
+	 *
+	 * This method actually calls calc_elem_sources<dim>() for each space dimension.
+	 * @param mass        Vector of substance mass per region.
+	 * @param src_balance Vector of sources per region.
+	 */
+	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
+
+	/**
+	 * @brief Calculates volume sources for each region of specific dimension.
+	 * @param mass        Vector of substance mass per region.
+	 * @param src_balance Vector of sources per region.
+	 */
+	template<unsigned int dim>
+	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
 
 
-	EqData data;
 
 	/// @name Physical parameters
 	// @{
 
-	/// Longitudal dispersivity.
-	double alphaL;
+	/// Field data for model parameters.
+	EqData data;
 
-	/// Transversal dispersivity.
-	double alphaT;
-
-	/// Molecular diffusivity.
-	double Dm;
-
-	/// Coefficient of diffusive transfer.
-	double sigma;
-
-	/// Number of transported substances.
-	int n_substances;
-
-	/// Names of transported substances.
-	std::vector<string> substance_names;
 
 	/// True if sorption is considered.
 	bool sorption;
@@ -367,14 +443,19 @@ private:
 
 	/// @name Parameters of the numerical method
 	// @{
+
+	/// Finite element objects
+	FEObjects *feo;
+
 	/// Penalty parameters.
-	std::vector<double> gamma;
+	std::vector<std::vector<double> > gamma;
 
-	/// coefficient affecting inter-element continuity due to dispersion
-	double alpha;
+	/// DG variant ((non-)symmetric/incomplete
+	int dg_variant;
 
-	/// coefficient of advection/transport (0=no advection)
-	const double advection;
+	/// Polynomial order of finite elements.
+	unsigned int dg_order;
+
 	// @}
 
 
@@ -383,10 +464,10 @@ private:
 	// @{
 
 	/// Vector of right hand side.
-	Vec rhs;
+	Vec *rhs;
 
 	/// The stiffness matrix.
-	Mat stiffness_matrix;
+	Mat *stiffness_matrix;
 
 	/// The mass matrix.
 	Mat mass_matrix;
@@ -395,7 +476,7 @@ private:
 	Distribution *distr;
 
 	/// Linear algebra system for the transport equation.
-	LinSys *ls;
+	LinSys **ls;
 
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 	LinSys *ls_dt;
@@ -416,33 +497,11 @@ private:
 	OutputTime *transport_output;
 
 	/// Time marks for writing the output.
-	TimeMark::Type output_mark_type;
+	//TimeMark::Type output_mark_type;
 
 	// @}
 
 
-	/// @name Finite element objects
-	// @{
-
-	/// DOF handler for 1D problem.
-	DOFHandler<1,3> *dof_handler1d;
-
-	/// DOF handler for 2D problem.
-	DOFHandler<2,3> *dof_handler2d;
-
-	/// DOF handler for 3D problem.
-	DOFHandler<3,3> *dof_handler3d;
-
-	/// Finite element for 1D.
-	FiniteElement<1,3> *fe1d;
-
-	/// Finite element for 2D.
-	FiniteElement<2,3> *fe2d;
-
-	/// Finite element for 3D.
-	FiniteElement<3,3> *fe3d;
-
-	// @}
 
 
 	/// @name Other
@@ -451,15 +510,14 @@ private:
     /// Indicates whether the fluxes have changed in the last time step.
     bool flux_changed;
 
-    const double tol_switch_dirichlet_neumann;
+    /// Indicates whether matrices have been preallocated.
+    bool allocation_done;
 
-    const MH_DofHandler * mh_dh;
-
-	// / Vector of fluxes across element edges - so far not used.
-//	Vec flux_vector;
+    //const MH_DofHandler * mh_dh;
 
     // @}
 };
+
 
 
 

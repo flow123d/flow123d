@@ -34,7 +34,15 @@
 
 #include <boost/bind.hpp>
 
-LinSys_PETSC::LinSys_PETSC( const unsigned lsize,
+namespace it = Input::Type;
+
+it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
+    .derive_from(LinSys::input_type)
+    .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
+
+
+LinSys_PETSC::LinSys_PETSC( const Input::Record in_rec,
+                            const unsigned lsize,
                             Distribution * rows_ds,
                             double *sol_array,
                             const MPI_Comm comm ) 
@@ -49,6 +57,8 @@ LinSys_PETSC::LinSys_PETSC( const unsigned lsize,
     v_rhs_= new double[ rows_ds_->lsize() + 1 ];
     ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     //ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
+
+    params_ = in_rec.val<string>("options");
 }
 
 void LinSys_PETSC::start_allocation( )
@@ -253,7 +263,7 @@ void LinSys_PETSC::apply_constrains( double scalar )
 }
 
 
-int LinSys_PETSC::solve( std::string params )
+int LinSys_PETSC::solve()
 {
     PetscErrorCode     ierr;
 
@@ -285,8 +295,8 @@ int LinSys_PETSC::solve( std::string params )
     }
 
     //petsc_str = params.c_str();
-    xprintf(MsgVerb,"inserting petsc options: %s\n",params.c_str());
-    PetscOptionsInsertString(params.c_str()); // overwrites previous options values
+    xprintf(MsgVerb,"inserting petsc options: %s\n",params_.c_str());
+    PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
     //xfree(petsc_str);
     
     ierr = MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE ); 

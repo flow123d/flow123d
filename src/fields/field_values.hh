@@ -292,6 +292,11 @@ public:
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
+
+    /**
+     * Returns reference to the return_type (i.e. double, or arma::vec or arma::mat); with data provided by the parameter @p raw_data.
+     * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
+     */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }
@@ -338,14 +343,17 @@ public:
 
 
     void init_from_input( AccessType rec ) {
-        Input::Iterator<ET> it = rec.begin<ET>();
+        typedef typename AccessTypeDispatch<ET>::type InnerType;
+        Input::Iterator<InnerType> it = rec.begin<InnerType>();
 
         if ( rec.size() == 1 ) {
             for(unsigned int i=0; i< n_rows(); i++)
-                value_.at(i)=*it;
+                value_.at(i)=ET(*it);
         } else if ( rec.size() == n_rows() ) {
-            for(unsigned int i=0; i< n_rows(); i++, ++it)
-                value_.at(i)=*it;
+            for(unsigned int i=0; i< n_rows(); i++, ++it) {
+                //cout << "set vec[" << i << "] =" << ET(*it) << endl;
+                value_.at(i)=ET(*it);
+            }
         } else {
             THROW( ExcFV_Input() << EI_InputMsg(
                     boost::str(boost::format("Initializing vector of size %d by vector of size %d.")

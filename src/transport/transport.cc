@@ -53,60 +53,93 @@
 #include "flow/darcy_flow_mh.hh"
 #include "flow/old_bcd.hh"
 #include "input/accessors.hh"
+#include "input/input_type.hh"
 
 #include "coupling/time_governor.hh"
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
+#include "fields/field_elementwise.hh" 
+#include "reaction/isotherm.hh" // SorptionType enum
+
+namespace IT = Input::Type;
+
+IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selection("TransportSorptionType")
+    .add_value(none,"none","No sorption considered")
+    .add_value(linear,"linear","Linear isotherm described sorption considered.")
+    .add_value(freundlich,"freundlich","Freundlich isotherm described sorption considered")
+    .add_value(langmuir,"langmuir","Langmuir isotherm described sorption considered")
+    .close();
 
 
-ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplitting::EqData &init_data, const Input::Record &in_rec)
-: EquationBase(init_mesh, in_rec),
-  data(&init_data)
+
+ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("TransportOperatorSplitting")
+{
+    ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", IT::Default("0"));
+    ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
+            " Vector, one value for every substance.", IT::Default("0"));
+    ADD_FIELD(sorp_type, "Type of sorption isotherm.", IT::Default("none"));
+    sorp_type.set_selection(&sorption_type_selection);
+    ADD_FIELD(sorp_coef0, "First parameter of sorption: Scaling of the isothem for all types. Vector, one value for every substance. ", IT::Default("0"));
+    ADD_FIELD(sorp_coef1, "Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). "
+            "Vector, one value for every substance.", IT::Default("0"));
+    ADD_FIELD(phi, "Fraction of the total sorption surface exposed to the mobile zone, in interval (0,1). "
+            "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("1.0"));
+}
+
+
+
+RegionSet ConvectionTransport::EqData::read_boundary_list_item(Input::Record rec) {
+    // Base method EqDataBase::read_boundary_list_item must be called first!
+    RegionSet domain = EqDataBase::read_boundary_list_item(rec);
+    FilePath bcd_file;
+
+    // read transport boundary conditions using old file format .tbc
+    if (rec.opt_val("old_boundary_file", bcd_file) )
+        OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
+
+    return domain;
+}
+
+
+
+ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
+: TransportBase(init_mesh, in_rec)
 {
     F_ENTRY;
 
-    // [Density]
-    /*
-    max_dens_it = OptGetInt("Density", "Density_max_iter", "20");
-    dens_implicit = OptGetBool("Density", "Density_implicit", "no");
-    dens_eps = OptGetDbl("Density", "Eps_iter", "1.0e-5");
-    write_iterations = OptGetBool("Density", "Write_iterations", "no");
-    dens_step = OptGetInt("Density", "Density_steps", "1");
-    */
-
-    //double problem_stop_time = OptGetDbl("Global", "Stop_time", "1.0");
-
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
+    output_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time() | time_->marks().type_output();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), target_mark_type);
-    
-    in_rec.val<Input::Array>("substances").copy_to(substance_name);
-    n_substances = substance_name.size();
-    INPUT_CHECK(n_substances >= 1 ,"Number of substances must be positive.\n");
+    time_->marks().add_time_marks(0.0,
+        in_rec.val<Input::Record>("output").val<double>("save_step"),
+        time_->end_time(), output_mark_type );
+    // TODO: this has to be set after construction of transport matrix ??!!
 
-    data->init_conc.set_n_comp(n_substances);
-    data->bc_conc.set_n_comp(n_substances);
-    data->alpha.set_n_comp(n_substances);
-    data->sorp_type.set_n_comp(n_substances);
-    data->sorp_coef0.set_n_comp(n_substances);
-    data->sorp_coef1.set_n_comp(n_substances);
-    data->sources_density.set_n_comp(n_substances);
-    data->sources_sigma.set_n_comp(n_substances);
-    data->sources_conc.set_n_comp(n_substances);
-    data->set_mesh(&init_mesh);
-    data->init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    data->set_time(*time_);
+
+    in_rec.val<Input::Array>("substances").copy_to(subst_names_);
+    n_subst_ = subst_names_.size();
+    INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
+
+    data_.init_conc.set_n_comp(n_subst_);
+    data_.bc_conc.set_n_comp(n_subst_);
+    data_.alpha.set_n_comp(n_subst_);
+    data_.sorp_type.set_n_comp(n_subst_);
+    data_.sorp_coef0.set_n_comp(n_subst_);
+    data_.sorp_coef1.set_n_comp(n_subst_);
+    data_.sources_density.set_n_comp(n_subst_);
+    data_.sources_sigma.set_n_comp(n_subst_);
+    data_.sources_conc.set_n_comp(n_subst_);
+    data_.set_mesh(&init_mesh);
+    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    data_.set_time(*time_);
 
 
     sorption = in_rec.val<bool>("sorption_enable");
     dual_porosity = in_rec.val<bool>("dual_porosity");
     // reaction_on = in_rec.val<bool>("transport_reactions");
 
-
-    pepa=false; reaction_on = false;
-    // pepa = OptGetBool("Transport", "Decay", "no"); //PEPA
-    // type = OptGetInt("Transport", "Decay_type", "-1"); //PEPA
 
     sub_problem = 0;
     if (dual_porosity == true)
@@ -118,44 +151,36 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, TransportOperatorSplit
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
     set_initial_condition();
-    set_boundary_conditions();
-
 
     is_convection_matrix_scaled = false;
 
-    /*
-    if (ConstantDB::getInstance()->getInt("Problem_type") == PROBLEM_DENSITY) {
-        sscales = OptGetStr("Transport", "Substances_density_scales", "1.0");
-        subst_scales(sscales);
-    }*/
+    // register output vectors
+    Input::Record output_rec = in_rec.val<Input::Record>("output");
+    data_.conc_mobile.init(subst_names_);
+    data_.conc_mobile.set_mesh(mesh_);
+    data_.conc_mobile.set_name("conc_mobile");
+    data_.conc_mobile.set_units("M/L^3");
 
-   // n_elements = mesh_->n_elements();
+    field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+    for(unsigned int subst_id=0; subst_id < n_subst_; subst_id++) {
+         // TODO: What about output also other "phases", IMMOBILE and so on.
 
-/*
-    reaction = NULL;
-    n_reaction = 0;
-*/
-
-//    Input::Iterator<FilePath> sources_it = in_rec.find<FilePath>("sources_file");
-//
-//    if (sources_it) {
-//        transportsources = new TransportSources( n_substances, *el_ds );
-//        transportsources->read_concentration_sources( string(* sources_it), row_4_el, mesh_);
-//    } else {
-//        transportsources = NULL;
-//    }
+         // create FieldElementwise for every substance, set it to data->conc_mobile
+         data_.conc_mobile[subst_id].set_field(
+                 mesh_->region_db().get_region_set("ALL"),
+                 boost::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() )
+                 );
 
 
+         std::string subst_name = subst_names_[subst_id] + "_mobile";
+         double *data = out_conc[MOBILE][subst_id];
+         OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
+                 output_rec.val<Input::Record>("output_stream"), data , mesh_->n_elements());
+    }
 
+    // write initial condition
     output_vector_gather();
-
-
-}
-
-
-void ConvectionTransport::set_cross_section(Field< 3 , FieldValue< 3  >::Scalar >* cross_section)
-{
-  this->cross_section = cross_section;
+    if(field_output) field_output->write_data(time_->t());
 }
 
 
@@ -166,7 +191,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
     F_ENTRY;
 
-    int rank, np, i, j, k, row_MH, a;
+    //int rank, np, i, j, k, row_MH, a;
     //struct DarcyFlowMH *water=transport->problem->water;
 
     SparseGraph *ele_graph = new SparseGraphMETIS(mesh_->n_elements()); // graph for partitioning
@@ -181,7 +206,7 @@ void ConvectionTransport::make_transport_partitioning() {
     delete ele_graph;
 
     int *id_4_old = (int *) xmalloc(mesh_->n_elements() * sizeof(int));
-    i = 0;
+    int i = 0;
     FOR_ELEMENTS(mesh_, ele)
         id_4_old[i] = i, i++;
     id_maps(mesh_->n_elements(), id_4_old, init_ele_ds, (int *) loc_part, el_ds, el_4_loc, row_4_el);
@@ -207,7 +232,51 @@ void ConvectionTransport::make_transport_partitioning() {
 
 ConvectionTransport::~ConvectionTransport()
 {
-// TODO
+    unsigned int sbi, ph;
+
+    //Destroy mpi vectors at first
+    VecDestroy(&v_sources_corr);
+    MatDestroy(&tm);
+    
+    VecDestroy(vconc);
+    VecDestroy(bcvcorr);
+    VecDestroy(vpconc);
+    VecDestroy(vcumulative_corr);
+    VecDestroy(vconc_out);
+    
+    for (sbi = 0; sbi < n_subst_; sbi++) {
+      //no mpi vectors
+      xfree(sources_density[sbi]);
+      xfree(sources_conc[sbi]);
+      xfree(sources_sigma[sbi]);
+      xfree(cumulative_corr[sbi]);
+    }
+    
+    
+    xfree(sources_corr);
+    
+    xfree(sources_density);
+    xfree(sources_conc);
+    xfree(sources_sigma);
+    xfree(cumulative_corr);
+    
+    /*
+    for (ph = 0; ph < MAX_PHASES; ph++) {
+      if ((sub_problem & ph) == ph) {
+        for (sbi = 0; sbi < n_subst_; sbi++) {
+          xfree(conc[ph][sbi]);
+          xfree(out_conc[ph][sbi]);   
+        }
+        xfree(conc[ph]);
+        xfree(out_conc[ph]);
+      }
+    }
+    
+    DBGMSG("inner conc vecs freed\n");
+    
+    xfree(conc);
+    xfree(out_conc);
+    //*/
 }
 
 /*
@@ -228,27 +297,11 @@ void ConvectionTransport::set_flow_field_vector(const MH_DofHandler &dh){
 	create_transport_matrix_mpi();
 };
 
-double ***ConvectionTransport::get_out_conc(){
-	return out_conc;
-}
-
-vector<string> &ConvectionTransport::get_substance_names(){
-	return substance_name;
+void ConvectionTransport::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {
+    data_.cross_section = cross_section;
 }
 
 
-
-//=============================================================================
-//
-//=============================================================================
-void ConvectionTransport::subst_scales(char *line) {
-    int sbi;
-
-    ASSERT(!( (n_substances < 1) || (line == NULL) ),"Bad parameter of the function subst_scales()\n");
-    substance_density_scale= (double*) xmalloc( n_substances* sizeof(double));
-    for (sbi = 0; sbi < n_substances; sbi++)
-    	substance_density_scale[sbi] = atof(strtok(sbi == 0 ? line : NULL, " \t,;"));
-}
 
 
 void ConvectionTransport::set_initial_condition()
@@ -259,12 +312,12 @@ void ConvectionTransport::set_initial_condition()
 
     	unsigned int index = row_4_el[elem.index()] - el_ds->begin();
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
-		arma::vec value = data->init_conc.value(elem->centre(), ele_acc);
+		arma::vec value = data_.init_conc.value(elem->centre(), ele_acc);
 
-		for (unsigned int sbi=0; sbi<n_substances; sbi++)
+		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			conc[MOBILE][sbi][index] = value(sbi);
-			pconc[MOBILE][sbi][index] = value(sbi);
+			//pconc[MOBILE][sbi][index] = value(sbi);
 		}
     }
 
@@ -275,42 +328,47 @@ void ConvectionTransport::set_initial_condition()
 //=============================================================================
 void ConvectionTransport::alloc_transport_vectors() {
 
-    int i, j, sbi, n_subst, ph;
-    ElementIter elm;
-    n_subst = n_substances;
+    int i, sbi, n_subst, ph; //, j;
+    //ElementIter elm;
+    n_subst = n_subst_;
 
 
    // printf("%d\t\n",n_substances);
    // getchar();
 
-     cumulative_corr = (double**) xmalloc(n_subst * sizeof(double*));
-     for (sbi = 0; sbi < n_subst; sbi++)
-         cumulative_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
- /*
-     for (sbi = 0; sbi < n_subst; sbi++)
-         for (i = 0; i < el_ds->size(); i++)
-             cumulative_corr[sbi][i] = 0.0;
-   */
+    sources_corr = new double[el_ds->lsize()];
+    sources_density = (double**) xmalloc(n_subst * sizeof(double*));
+    sources_conc = (double**) xmalloc(n_subst * sizeof(double*));
+    sources_sigma = (double**) xmalloc(n_subst * sizeof(double*));
+    
+    cumulative_corr = (double**) xmalloc(n_subst * sizeof(double*));
+    for (sbi = 0; sbi < n_subst; sbi++) {
+      sources_density[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+      sources_conc[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+      sources_sigma[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+      cumulative_corr[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+    }
+
     conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
-    pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
+    //pconc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     out_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**));
     //transport->node_conc = (double****) xmalloc(MAX_PHASES * sizeof(double***));
     for (ph = 0; ph < MAX_PHASES; ph++) {
         if ((sub_problem & ph) == ph) {
             conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //(MAX_PHASES * sizeof(double*));
-            pconc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
+            //pconc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
             out_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*));
             //  transport->node_conc[sbi] = (double***) xmalloc(MAX_PHASES * sizeof(double**));
             //}
             //}
             for (sbi = 0; sbi < n_subst; sbi++) {
                 conc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
-                pconc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
+                //pconc[ph][sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
                 out_conc[ph][sbi] = (double*) xmalloc(el_ds->size() * sizeof(double));
                 // transport->node_conc[sbi][ph] = (double**)xmalloc((mesh__->n_elements() ) * sizeof(double*));
                 for (i = 0; i < el_ds->lsize(); i++) {
                     conc[ph][sbi][i] = 0.0;
-                    pconc[ph][sbi][i] = 0.0;
+                    //pconc[ph][sbi][i] = 0.0;
 
                 }
                 for (i = 0; i < el_ds->size(); i++) {
@@ -326,127 +384,52 @@ void ConvectionTransport::alloc_transport_vectors() {
             }
         } else {
             conc[ph] = NULL;
-            pconc[ph] = NULL;
+            //pconc[ph] = NULL;
             out_conc[ph] = NULL;
             //transport->node_conc[sbi][ph] = NULL;
         }
     }
 }
-//=============================================================================
-//	ALLOCATE OF TRANSPORT (DENSITY VECTORS)
-//=============================================================================
-void ConvectionTransport::alloc_density_vectors() {
 
-    int ph, sbi, i, sub;
-    int n_subst = n_substances;
-    int n_elements = mesh_->n_elements();
-
-    sub = sub_problem;
-
-    scalar_it = (double*) xmalloc(n_elements * sizeof(double)); // Zatim nevyuzito
-    prev_conc = (double***) xmalloc(MAX_PHASES * sizeof(double**)); //transport->prev_conc = (double***) xmalloc(n_subst * sizeof(double**));
-
-    for (ph = 0; ph < MAX_PHASES; ph++) {
-     if ((sub & ph) == ph) {        
-      prev_conc[ph] = (double**) xmalloc(n_subst * sizeof(double*)); //transport->prev_conc[sbi] = (double**) xmalloc(MAX_PHASES * sizeof(double*));
-
-        for (sbi = 0; sbi < n_elements; sbi++)
-                prev_conc[ph][sbi] = (double*) xmalloc(n_elements * sizeof(double));
-
-                for (i = 0; i < n_elements; i++)
-                    prev_conc[ph][sbi][i] = 0.0;
-    } else  prev_conc[ph] = NULL;
-    }
-}
 //=============================================================================
 //	ALLOCATION OF TRANSPORT VECTORS (MPI)
 //=============================================================================
 void ConvectionTransport::alloc_transport_structs_mpi() {
 
-    int i, j, sbi, n_subst, ph, ierr, rank, np;
-    ElementIter elm;
-    n_subst = n_substances;
+    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    //ElementIter elm;
+    n_subst = n_subst_;
 
     MPI_Barrier(PETSC_COMM_WORLD);
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
-    bcv = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     bcvcorr = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vconc = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vpconc = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
-/*
-    vsources_density = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
-    vsources_sigma = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
-    vsources_conc = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
-  //  vsources_corr = (Vec*) xmalloc((n_subst+1) * (sizeof(Vec)));
-    vsources_corr = (Vec*) xmalloc(n_subst * (sizeof(Vec))); */
     vcumulative_corr = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
 
 
     // if( rank == 0)
     vconc_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
-
-    sources_corr = new double[el_ds->lsize()];
+    
 
     ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), PETSC_DECIDE,
             sources_corr, &v_sources_corr);
 
-    // TODO: should be replaced by Distribution(Block) or better remove whole boundary matrix with these vectors
-
-    lb_col = (int*) xmalloc(np * sizeof(int)); // local rows in BM
-    lb_col[0] = 0;
-    for (i = 0; i < (np -1); i++) {
-        lb_col[i] = (int)floor(mesh_->n_boundaries() / np);
-    }
-    lb_col[np - 1] = mesh_->n_boundaries() - (np - 1) * lb_col[0];
-
-    /*
-     if((transport->sub_problem & 1) == 1)
-     transport->vconc_im=(Vec*)xmalloc(n_subst * (sizeof (Vec)));
-     else
-     transport->vconc_im = NULL;
-
-     if((transport->sub_problem & 2) == 2)
-     transport->vconc_so=(Vec*)xmalloc(n_subst * (sizeof (Vec)));
-     else
-     transport->vconc_so = NULL;
-
-     if((transport->sub_problem & 3) == 3)
-     transport->vconc_im_so=(Vec*)xmalloc(n_subst * (sizeof (Vec)));
-     else
-     transport->vconc_im_so = NULL;
-
-     */
-
-
     for (sbi = 0; sbi < n_subst; sbi++) {
-        //ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->lb_col[rank],mesh__->n_boundaries(),&transport->bcv[sbi]);
-        //ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh__->n_elements(),&transport->bcvcorr[sbi]);
-        //ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh__->n_elements(),&transport->vconc[sbi]);
-        //ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh__->n_elements(),&transport->vpconc[sbi]);
-        ierr = VecCreateMPI(PETSC_COMM_WORLD, lb_col[rank], mesh_->n_boundaries(), &bcv[sbi]);
         ierr = VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &bcvcorr[sbi]);
-        VecZeroEntries(bcv[sbi]);
         VecZeroEntries(bcvcorr[sbi]);
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), conc[MOBILE][sbi],
                 &vconc[sbi]);
 
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
-                pconc[MOBILE][sbi], &vpconc[sbi]);
+//        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+//                pconc[MOBILE][sbi], &vpconc[sbi]);
+        ierr = VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
         VecZeroEntries(vconc[sbi]);
         VecZeroEntries(vpconc[sbi]);
 
         // SOURCES
-        /*
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
-        		sources_density[sbi],&vsources_density[sbi]);
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
-        		sources_sigma[sbi],&vsources_sigma[sbi]);
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
-        		sources_conc[sbi],&vsources_conc[sbi]);
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
-        		sources_corr[sbi],&vsources_corr[sbi]); */
         ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
         		cumulative_corr[sbi],&vcumulative_corr[sbi]);
 
@@ -455,164 +438,175 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
         VecZeroEntries(vcumulative_corr[sbi]);
         VecZeroEntries(vconc_out[sbi]);
-        //ierr = VecCreateMPI(PETSC_COMM_SELF ,transport->mesh_->n_elements(),transport->mesh_->n_elements(),&transport->vconc_out[sbi]); /*xx*/
-        /*
-         if(transport->vconc_im != NULL)
-         ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh_->n_elements(),&transport->vconc_im[sbi]);
-         if(transport->vconc_so != NULL)
-         ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh_->n_elements(),&transport->vconc_so[sbi]);
-         if(transport->vconc_im_so != NULL)
-         ierr = VecCreateMPI(PETSC_COMM_WORLD,transport->l_row[rank],mesh_->n_elements(),&transport->vconc_im_so[sbi]);
-         */
     }
 
 
-  //  ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),	/**/
-  //          		sources_corr[n_substances],&vsources_corr[n_substances]);				/**/
-
-
-    //
-    //ierr=MatCreateMPIAIJ(PETSC_COMM_WORLD,transport->l_row[rank],transport->l_row[rank],mesh_->n_elements(),mesh_->n_elements(),
-    //		PETSC_NULL,transport->d_row[rank],PETSC_NULL,transport->od_row[rank],&transport->tm);
-
-    //ierr=MatCreateMPIAIJ(PETSC_COMM_WORLD,transport->l_row[rank],transport->lb_col[rank],mesh_->n_elements(),mesh_->n_boundaries(),
-    //				PETSC_NULL,transport->db_row[rank],PETSC_NULL,transport->odb_row[rank],&transport->bcm);
-
     ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
             mesh_->n_elements(), 8, PETSC_NULL, 1, PETSC_NULL, &tm);
-
-    ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, el_ds->lsize(), lb_col[rank], mesh_->n_elements(),
-            mesh_->n_boundaries(), 2, PETSC_NULL, 0, PETSC_NULL, &bcm);
-
-    /*
-     MatCreateMPIAIJ(comm,m,n,M,N,0,PETSC_NULL,0,PETSC_NULL,&transport->tm);
-     MatCreateMPIAIJ(comm,m,n,M,N,0,PETSC_NULL,0,PETSC_NULL,&transport->bcm);
-
-     ierr=MatCreateMPIAIJ(PETSC_COMM_WORLD,PETSC_DECIDE,transport->l_row[rank],mesh_->n_elements(),mesh_->n_elements(),
-     PETSC_NULL,transport->d_row[rank],PETSC_NULL,transport->od_row[rank],&transport->tm);
-
-     ierr=MatCreateMPIAIJ(PETSC_COMM_WORLD,transport->l_row[rank],transport->lb_col[rank],mesh_->n_elements(),mesh_->n_boundaries(),
-     PETSC_NULL,transport->db_row[rank],PETSC_NULL,transport->odb_row[rank],&transport->bcm);
-     */
-
 
 }
 
 
 void ConvectionTransport::set_boundary_conditions()
 {
-    for (unsigned ibcd=0; ibcd<mesh_->boundary_.size(); ibcd++)
-    {
-    	Boundary *b = &(mesh_->boundary_[ibcd]);
+    ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
 
-    	arma::vec3 p = b->element()->centre();
-    	ElementAccessor<3> ele_acc = b->element_accessor();
+    unsigned int sbi, loc_el;
+    
+    // Assembly bcvcorr vector
+    for(sbi=0; sbi < n_subst_; sbi++) VecZeroEntries(bcvcorr[sbi]);
 
-		arma::vec value = data->bc_conc.value(p, ele_acc);
-		for (unsigned int sbi=0; sbi<n_substances; sbi++)
-		{
-			VecSetValue(bcv[sbi], mesh_->bc_elements.index(b->element()), value(sbi), INSERT_VALUES);
-		}
-//		xprintf(MsgDbg, "BC subst %d elem %d value %f\n", 0, mesh_->bc_elements.index(b->element()), value(0));
+
+    for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+        elm = mesh_->element(el_4_loc[loc_el]);
+        if (elm->boundary_idx_ != NULL) {
+            unsigned int new_i = row_4_el[elm.index()];
+            double csection = data_.cross_section->value(elm->centre(), elm->element_accessor());
+            double por_m = data_.por_m.value(elm->centre(), elm->element_accessor());
+
+            FOR_ELEMENT_SIDES(elm,si) {
+                Boundary *b = elm->side(si)->cond();
+                if (b != NULL) {
+                    double flux = mh_dh->side_flux( *(elm->side(si)) );
+                    if (flux < 0.0) {
+                        double aij = -(flux / (elm->measure() * csection * por_m) );
+
+                        arma::vec value = data_.bc_conc.value( b->element()->centre(), b->element_accessor() );
+                        for (sbi=0; sbi<n_subst_; sbi++)
+                            VecSetValue(bcvcorr[sbi], new_i, value[sbi] * aij, ADD_VALUES);
+                    }
+                }
+            }
+
+        }
     }
 
-    for (unsigned int sbi=0; sbi<n_substances; sbi++)
-    	VecAssemblyBegin(bcv[sbi]);
+    for (sbi=0; sbi<n_subst_; sbi++)
+    	VecAssemblyBegin(bcvcorr[sbi]);
 
-    for (unsigned int sbi=0; sbi<n_substances; sbi++)
-    	VecAssemblyEnd(bcv[sbi]);
+    for (sbi=0; sbi<n_subst_; sbi++)
+    	VecAssemblyEnd(bcvcorr[sbi]);
 
-    // update source vectors
-    // TODO: rather use Lazy dependency
-    if (data->bc_time_level != -1)
-        for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
-            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
-        }
+    for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+
+    //VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
+    //exit(0);
 }
 
 
 //=============================================================================
 // COMPUTE SOURCES
 //=============================================================================
-Vec ConvectionTransport::compute_concentration_sources(unsigned int subst_i, double *conc) {
+void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
 
-    double conc_diff;
-    for (int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-
-    	ElementAccessor<3> ele_acc = mesh_->element_accessor(el_4_loc[i_loc]);
-    	arma::vec3 p = ele_acc.centre();
-
-        conc_diff = data->sources_conc.value(p, ele_acc)(subst_i) - conc[i_loc];
-        if ( conc_diff > 0.0)
-            sources_corr[i_loc] = data->sources_density.value(p, ele_acc)(subst_i)
-                                 +conc_diff * data->sources_sigma.value(p, ele_acc)(subst_i);
-        else
-            sources_corr[i_loc] = data->sources_density.value(p, ele_acc)(subst_i);
-
-       // cout << i_loc << " c:" << conc[i_loc] << " sc:" << sources_conc[subst_i][i_loc] << " sd:"
-       //      << sources_density[subst_i][i_loc] << " ss:" << sources_sigma[subst_i][i_loc] << " cr:"
-       //      << sources_corr[i_loc] << endl;
-    }
-
-    return v_sources_corr;
-
+  //temporary variables
+  unsigned int loc_el;
+  double conc_diff;
+  ElementAccessor<3> ele_acc;
+  arma::vec3 p;
+    
+  //TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
+  
+  //checking if the data were changed
+    if( (data_.sources_density.changed_during_set_time) 
+          || (data_.sources_conc.changed_during_set_time) 
+          || (data_.sources_sigma.changed_during_set_time) )
+      {
+        START_TIMER("sources_reinit");
+        for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
+        {
+          ele_acc = mesh_->element_accessor(el_4_loc[loc_el]);
+          p = ele_acc.centre();
+          
+          //if(data_.sources_density.changed_during_set_time) 
+          sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi);
+      
+          //if(data_.sources_conc.changed_during_set_time)
+          sources_conc[sbi][loc_el] = data_.sources_conc.value(p, ele_acc)(sbi);
+        
+          //if(data_.sources_sigma.changed_during_set_time)
+          sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi);
+        }
+      }
+    
+    //now computing source concentrations: density - sigma (source_conc - actual_conc)
+    for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
+        {
+          conc_diff = sources_conc[sbi][loc_el] - conc[MOBILE][sbi][loc_el];
+          if ( conc_diff > 0.0)
+            sources_corr[loc_el] = ( sources_density[sbi][loc_el]
+                                     + conc_diff * sources_sigma[sbi][loc_el] )
+                                   * time_->dt();
+          else
+            sources_corr[loc_el] = sources_density[sbi][loc_el] * time_->dt();
+        }
 }
 
 
 void ConvectionTransport::compute_one_step() {
 
     START_TIMER("convection-one step");
-    //MaterialDatabase::Iter material;
-    int sbi;
+    
+    unsigned int loc_el,sbi;
+    
+    START_TIMER("data reinit");
+    data_.set_time(*time_);
+
+    // possibly read boundary conditions
+    if (data_.bc_conc.changed_during_set_time) set_boundary_conditions();
+    END_TIMER("data reinit");
 
     // proceed to actually computed time
     //time_->view("CONVECTION");
-    time_->next_time();
-    
-    START_TIMER("data reinit");
-    data->set_time(*time_);
-    END_TIMER("data reinit");
-    
-    // possibly read boundary conditions
-    set_boundary_conditions();
+    time_->next_time(); // explicit scheme use values from previous time and then set then new time
 
-    for (sbi = 0; sbi < n_substances; sbi++) {
-        // one step in MOBILE phase
-//        if (transportsources != NULL) {
-            //DBGMSG("component: %d\n", sbi);
 
-            //if (vcumulative_corr[sbi][10] >0) { int i =1;}
-            //if (bcvcorr[sbi][10] >0) { int i =1;}
-            //if (conc[sbi][10] >0) { int i =1;}
-    	VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, time_->dt(), 0.0, bcvcorr[sbi],
-    			compute_concentration_sources(sbi, conc[MOBILE][sbi] )
-                    );
-//        } else {
-//            VecCopy(bcvcorr[sbi], vcumulative_corr[sbi]);
-//        }
+    for (sbi = 0; sbi < n_subst_; sbi++) {
+      // one step in MOBILE phase
+      
+      START_TIMER("compute_concentration_sources");
+      //sources update  
+      compute_concentration_sources(sbi);  
+     
+      //vcumulative_corr[sbi] = 1.0 * bcvcorr[sbi] + v_sources_corr;
+      VecWAXPY(vcumulative_corr[sbi],1.0,bcvcorr[sbi],v_sources_corr);
+      END_TIMER("compute_concentration_sources");
 
-        //VecView(vpconc[sbi],PETSC_VIEWER_STDOUT_SELF);
+      START_TIMER("mat mult");
+      VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
+      MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
+      //VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
+      END_TIMER("mat mult");
 
-        MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
-        //VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
+     //}
 
-        VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
+     START_TIMER("dual porosity/sorption");
+     /*
+     
+    if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    {
+      for(int i_subst = 0; i_subst < n_subst_; i_subst++)
+      {
+        //following conditional print is here for comparison of old and new type of sorption input concentrations
+        if(i_subst < (n_subst_ - 1)) cout << conc[MOBILE][i_subst][loc_el] << ", ";
+          else cout << conc[MOBILE][i_subst][loc_el] << endl;
+      }
+    }
 
-        if ((dual_porosity == true) || (sorption == true) || (pepa == true) || (reaction_on == true))
+    for (sbi = 0; sbi < n_subst_; sbi++) {*/
+           
+        if ((dual_porosity == true) || (sorption == true) )
             // cycle over local elements only in any order
-            for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+            for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
 
                 if (dual_porosity == true)
                     transport_dual_porosity(loc_el, mesh_->element(el_4_loc[loc_el]), sbi);
                 if (sorption == true)
                     transport_sorption(loc_el, mesh_->element(el_4_loc[loc_el]), sbi);
 
-                // if (reaction_on == true)
-                //    transport_reaction(trans, loc_el, material, sbi);
-
-
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
+      END_TIMER("dual porosity/sorption");
     }
     END_TIMER("convection-one step");
 }
@@ -633,25 +627,25 @@ void ConvectionTransport::set_target_time(double target_time)
 
     if ( is_convection_matrix_scaled ) {
         // rescale matrix
-        MatScale(bcm, time_->dt()/time_->estimate_dt());
+        //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt()/time_->estimate_dt());
         MatShift(tm, -1.0);
         MatScale(tm, time_->dt()/time_->estimate_dt() );
         MatShift(tm, 1.0);
     } else {
         // scale fresh convection term matrix
-        MatScale(bcm, time_->estimate_dt());
+        //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
         MatScale(tm, time_->estimate_dt());
         MatShift(tm, 1.0);
     }
 
     // update source vectors
-    for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
-            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
+//    for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
+//            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
 //            VecView(bcv[sbi],PETSC_VIEWER_STDOUT_SELF);
 //            getchar();
 //            VecView(bcvcorr[sbi],PETSC_VIEWER_STDOUT_SELF);
 //           getchar();
-    }
+//    }
 
     is_convection_matrix_scaled = true;
 }
@@ -662,15 +656,15 @@ void ConvectionTransport::set_target_time(double target_time)
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
 
-    START_TIMER("transport_matrix_assembly");
+    START_TIMER("convection_matrix_assembly");
 
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
     struct Edge *edg;
-    struct Neighbour *ngh;
+    //struct Neighbour *ngh;
     //struct Transport *transport;
-    int n, s, i, j, np, rank, new_j, new_i;
-    double max_sum, aij, aii, *solution;
+    int n, s, j, np, rank, new_j, new_i; //, i;
+    double max_sum, aij, aii; //, *solution;
     /*
     DarcyFlow *water;
 
@@ -691,7 +685,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         
     MatZeroEntries(tm);
-    MatZeroEntries(bcm);
+//    MatZeroEntries(bcm);
 
 
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -711,14 +705,13 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     max_sum = 0.0;
     aii = 0.0;
-    START_TIMER("matrix_assembly_mpi");
 
-    for (int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element(el_4_loc[loc_el]);
         new_i = row_4_el[elm.index()];
 
-        double csection = cross_section->value(elm->centre(), elm->element_accessor());
-        double por_m = data->por_m.value(elm->centre(), elm->element_accessor());
+        double csection = data_.cross_section->value(elm->centre(), elm->element_accessor());
+        double por_m = data_.por_m.value(elm->centre(), elm->element_accessor());
 
         FOR_ELEMENT_SIDES(elm,si) {
             // same dim
@@ -744,16 +737,16 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 if (flux > 0.0)
                     aii -= (flux / (elm->measure() * csection * por_m) );
             } else {
-                if (flux < 0.0) {
-                    aij = -(flux / (elm->measure() * csection * por_m) );
-                    j = elm->side(si)->cond_idx() ;
+//                if (flux < 0.0) {
+//                    aij = -(flux / (elm->measure() * csection * por_m) );
+//                    j = elm->side(si)->cond_idx() ;
                     // DBGMSG("BCM, i: %d j:%d\n", new_i , j);
-                    MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
+//                    MatSetValue(bcm, new_i, j, aij, INSERT_VALUES);
                     // vyresit BC matrix !!!!
                     //   printf("side in elm:%d value:%f\n ",elm->id,svector->val[j-1]);
                     //   printf("%d\t%d\n",elm->id,id2pos(problem,elm->side(si)->id,problem->spos_id,BC));
 
-                }
+//                }
                 if (flux > 0.0)
                     aii -= (flux / (elm->measure() * csection * por_m) );
             }
@@ -767,7 +760,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 //if (elm.id() != el2.id()) {
                     flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
                     if (flux > 0.0) {
-                        // volume source - out flow from higher dimension
+                        // volume source - out-flow from higher dimension
                         aij = flux / (elm->measure() * csection * por_m);
                         j = el2.index();
                         new_j = row_4_el[j];
@@ -775,16 +768,15 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         // out flow from higher dim. already accounted
                     }
                     if (flux < 0.0) {
-                        // volume drain - in flow to higher dimension
-                        // in flow to higher dim.
-                        aij = -(flux / (el2->measure() *
-                                        cross_section->value(el2->centre(), el2->element_accessor()) *
-                                        data->por_m.value(el2->centre(), el2->element_accessor())));
+                        // volume drain - in-flow to higher dimension
+                        aij = (-flux) / (el2->measure() *
+                                        data_.cross_section->value(el2->centre(), el2->element_accessor()) *
+                                        data_.por_m.value(el2->centre(), el2->element_accessor()));
                         new_j = row_4_el[el2.index()];
                         MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
 
                         // diagonal drain
-                        aii += flux / (elm->measure() * csection * por_m);
+                        aii -= (-flux) / (elm->measure() * csection * por_m);
                     }
 
                 //} // end comp model
@@ -820,16 +812,17 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     double glob_max_sum;
 
     MPI_Allreduce(&max_sum,&glob_max_sum,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD);
+    xprintf(Msg,"CFL: glob_max_sum=%f\n",glob_max_sum);
     cfl_max_step = 1 / glob_max_sum;
     //time_step = 0.9 / glob_max_sum;
     
     DBGMSG("start assembly\n");
     MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
-    MatAssemblyBegin(bcm, MAT_FINAL_ASSEMBLY);
+//    MatAssemblyBegin(bcm, MAT_FINAL_ASSEMBLY);
     
 
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(bcm, MAT_FINAL_ASSEMBLY);
+//    MatAssemblyEnd(bcm, MAT_FINAL_ASSEMBLY);
     DBGMSG("end assembly\n");
 
 
@@ -839,7 +832,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
      getchar();
      */
     is_convection_matrix_scaled = false;
-    END_TIMER("transport_matrix_assembly");
+    END_TIMER("convection_matrix_assembly");
 }
 
 
@@ -926,16 +919,16 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi) {
 
     double conc_avg = 0.0;
-    int id;
+    //int id;
     //double ***conc = transport->conc;
     //double ***pconc = transport->pconc;
     double cm, pcm, ci, pci, por_m, por_imm, alpha;
 
-    por_m = data->por_m.value(elem->centre(), elem->element_accessor());
-    por_imm = data->por_imm.value(elem->centre(), elem->element_accessor());
-    alpha = data->alpha.value(elem->centre(), elem->element_accessor())(sbi);
-    pcm = pconc[MOBILE][sbi][elm_pos];
-    pci = pconc[IMMOBILE][sbi][elm_pos];
+    por_m = data_.por_m.value(elem->centre(), elem->element_accessor());
+    por_imm = data_.por_imm.value(elem->centre(), elem->element_accessor());
+    alpha = data_.alpha.value(elem->centre(), elem->element_accessor())(sbi);
+    pcm = conc[MOBILE][sbi][elm_pos];
+    pci = conc[IMMOBILE][sbi][elm_pos];
     // ---compute average concentration------------------------------------------
     conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
 
@@ -950,38 +943,9 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
         //getchar();
 
         conc[MOBILE][sbi][elm_pos] = cm;
-        pconc[MOBILE][sbi][elm_pos] = cm;
         conc[IMMOBILE][sbi][elm_pos] = ci;
-        pconc[IMMOBILE][sbi][elm_pos] = ci;
     }
 
-    /*
-     // ---compute average concentration------------------------------------------
-     conc_avg = (( material->por_m * elm->pconc[sbi] )
-     + (material->por_imm * elm->pconc_immobile[sbi] ))
-     / ( material->por_m + material->por_imm );
-
-     if((conc_avg != 0) && (material->por_imm != 0))
-     {
-     // ---compute concentration in mobile area-----------------------------------
-     elm->conc[sbi] = ( elm->pconc[sbi] - conc_avg )
-     * exp( - material->alpha[sbi] * ((material->por_m + material->por_imm)
-     / (material->por_m * material->por_imm)) * transport->time_step )
-     + conc_avg;
-
-     // ---compute concentration in immobile area---------------------------------
-     elm->conc_immobile[sbi] = ( elm->pconc_immobile[sbi] - conc_avg )
-     * exp( - material->alpha[sbi] * ((material->por_m + material->por_imm)
-     / (material->por_m * material->por_imm)) * transport->time_step )
-     + conc_avg;
-     // --------------------------------------------------------------------------
-     //printf("\n%f\t%f\t%f",conc_avg,elm->conc[sbi],elm->conc_immobile[sbi]);
-     //getchar();
-
-     elm->pconc[sbi] = elm->conc[sbi];
-     elm->pconc_immobile[sbi] = elm->conc_immobile[sbi];
-     }
-     */
 }
 //=============================================================================
 //      TRANSPORT SORPTION
@@ -991,43 +955,36 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
     double conc_avg = 0.0;
     double conc_avg_imm = 0.0;
     double n, Nm, Nimm;
-    int id;
-    double phi = data->phi.value(elem->centre(), elem->element_accessor());
-    double por_m = data->por_m.value(elem->centre(), elem->element_accessor());
-    double por_imm = data->por_imm.value(elem->centre(), elem->element_accessor());
-    arma::vec sorp_type = data->sorp_type.value(elem->centre(), elem->element_accessor());
-    arma::vec sorp_coef0 = data->sorp_coef0.value(elem->centre(), elem->element_accessor());
-    arma::vec sorp_coef1 = data->sorp_coef1.value(elem->centre(), elem->element_accessor());
-
-    if (/*(mtr->sorp_coef[sbi].size() == 0) ||*/ (por_m == 1)) return;
+    //int id;
+    double phi = data_.phi.value(elem->centre(), elem->element_accessor());
+    double por_m = data_.por_m.value(elem->centre(), elem->element_accessor());
+    double por_imm = data_.por_imm.value(elem->centre(), elem->element_accessor());
+    arma::Col<unsigned int> sorp_type = data_.sorp_type.value(elem->centre(), elem->element_accessor());
+    arma::vec sorp_coef0 = data_.sorp_coef0.value(elem->centre(), elem->element_accessor());
+    arma::vec sorp_coef1 = data_.sorp_coef1.value(elem->centre(), elem->element_accessor());
 
     n = 1 - (por_m + por_imm);
     Nm = por_m;
     Nimm = por_imm;
 
-    conc_avg = pconc[MOBILE][sbi][elm_pos] + pconc[MOBILE_SORB][sbi][elm_pos] * n / Nm; // cela hmota do poru
+    conc_avg = conc[MOBILE][sbi][elm_pos] + conc[MOBILE_SORB][sbi][elm_pos] * n / Nm; // cela hmota do poru
 
-
+    //cout << "input concentration for old sorption is " << conc[MOBILE][sbi][elm_pos] << endl;
     if (conc_avg != 0) {
         compute_sorption(conc_avg, sorp_coef0[sbi], sorp_coef1[sbi], sorp_type[sbi], &conc[MOBILE][sbi][elm_pos],
                 &conc[MOBILE_SORB][sbi][elm_pos], Nm / n, n * phi / Nm);
 
-        pconc[MOBILE][sbi][elm_pos] = conc[MOBILE][sbi][elm_pos];
-        pconc[MOBILE_SORB][sbi][elm_pos] = conc[MOBILE_SORB][sbi][elm_pos];
     }
     //printf("\n%f\t%f\t",n * phi / Nm,n * phi / Nm);
     //printf("\n%f\t%f\t",n * phi / Nimm,n * (1 - phi) / Nimm);
     // getchar();
 
     if ((dual_porosity == true) && (por_imm != 0)) {
-        conc_avg_imm = pconc[IMMOBILE][sbi][elm_pos] + pconc[IMMOBILE_SORB][sbi][elm_pos] * n / Nimm; // cela hmota do poru
+        conc_avg_imm = conc[IMMOBILE][sbi][elm_pos] + conc[IMMOBILE_SORB][sbi][elm_pos] * n / Nimm; // cela hmota do poru
 
         if (conc_avg_imm != 0) {
             compute_sorption(conc_avg_imm, sorp_coef0[sbi], sorp_coef1[sbi], sorp_type[sbi], &conc[IMMOBILE][sbi][elm_pos],
                     &conc[IMMOBILE_SORB][sbi][elm_pos], Nimm / n, n * (1 - phi) / Nimm);
-
-            pconc[IMMOBILE][sbi][elm_pos] = conc[IMMOBILE][sbi][elm_pos];
-            pconc[IMMOBILE_SORB][sbi][elm_pos] = conc[IMMOBILE_SORB][sbi][elm_pos];
         }
     }
 
@@ -1035,12 +992,12 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
 //=============================================================================
 //      COMPUTE SORPTION
 //=============================================================================
-void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, int sorp_type, double *concx, double *concx_sorb, double Nv,
+void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type, double *concx, double *concx_sorb, double Nv,
         double N) {
     double Kx = sorp_coef0 * N;
-    double parameter;// = sorp_coef[1];
+    double parameter;
     double NR, pNR, cz, tcz;
-    //double lZero = 0.0000001;
+
     double ad = 1e4;
     double tolerence = 1e-8;
     int i;
@@ -1049,11 +1006,11 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
 
     //if(conc_avg > 1e-20)
     switch (sorp_type) {
-    case 1: //linear
+    case linear: //linear
         *concx = conc_avg / (1 + Kx);
         //    *concx_sorb = (conc_avg - *concx) * Nv;   // s = Kd *c  [kg/m^3]
         break;
-    case 2: //freundlich
+    case freundlich: //freundlich
         parameter = sorp_coef1;
         cz = pow(ad / (Kx * parameter), 1 / (parameter - 1));
         tcz = ad / parameter;
@@ -1069,12 +1026,14 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
         }
         *concx = NR;
         break;
-    case 3: // langmuir
+    case langmuir: // langmuir
         parameter = sorp_coef1;
         NR = 0;
+        //Kx = sorp_coef0/N;
         for (i = 0; i < 5; i++) //Newton Raphson iteration cycle
         {
-            NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
+            //NR -= (NR + (NR * Kx * parameter) / (1 + NR * Kx) - conc_avg) / (1 + Kx * parameter / pow(1 + NR * Kx, 2));
+            NR -= (NR + (N * NR * parameter * sorp_coef0)/( 1 + NR * sorp_coef0 ) - conc_avg)/(1 + N * sorp_coef0 * parameter/pow((1 + NR * sorp_coef0), 2));
             if (fabs(NR - pNR) < tolerence *NR)
                 break;
             pNR = NR;
@@ -1083,27 +1042,8 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
         //   *concx_sorb = (conc_avg - *concx) * Nv;
         break;
     }
-    /*   else{
-     *concx_sorb = 0.0;
-     *concx = 0.0;
-     return;
-     }
 
-     if((fabs(conc_avg - *concx) > 1e-20))   */
     *concx_sorb = (conc_avg - *concx) * Nv;
-    /*   else{
-     *concx_sorb = 0.0;
-     if(fabs(*concx) < 1e-20 )
-     *concx = 0.0;
-     else
-     *concx = conc_avg;
-     }                               */
-
-    /*
-     if(DBL_EQ(conc_avg, *concx + *concx_sorb / Nv) != 1){
-     printf("\n%f\t%f\t%f\t%f",conc_avg,*concx + *concx_sorb / Nv,*concx,*concx_sorb / Nv);
-     getchar();
-     } */
 }
 //=============================================================================
 //      TIME STEP (RECOMPUTE)
@@ -1169,8 +1109,8 @@ void ConvectionTransport::transport_until_time(double time_interval) {
                     output_vector_gather();
 
                     // Register concentrations data on elements
-                    for(int subst_id=0; subst_id<n_substances; subst_id++) {
-                        output_time->register_elem_data(substance_name[subst_id], "", out_conc[MOBILE][subst_id], mesh_->n_elements());
+                    for(int subst_id=0; subst_id<n_subst_; subst_id++) {
+                        output_time->register_elem_data(subst_names_[subst_id], "", out_conc[MOBILE][subst_id], mesh_->n_elements());
                     }
                     output_time->write_data(time);
                 //  if (ConstantDB::getInstance()->getInt("Problem_type") != STEADY_SATURATED)
@@ -1187,9 +1127,9 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 //=============================================================================
 void ConvectionTransport::output_vector_gather() {
 
-    int sbi/*, rank, np*/;
+    unsigned int sbi/*, rank, np*/;
     IS is;
-    PetscViewer inviewer;
+    //PetscViewer inviewer;
 
     //	MPI_Barrier(PETSC_COMM_WORLD);
 /*    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -1199,7 +1139,7 @@ void ConvectionTransport::output_vector_gather() {
     //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
     VecScatterCreate(vconc[0], is, vconc_out[0], PETSC_NULL, &vconc_out_scatter);
-    for (sbi = 0; sbi < n_substances; sbi++) {
+    for (sbi = 0; sbi < n_subst_; sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc[sbi], vconc_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc[sbi], vconc_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
@@ -1209,80 +1149,6 @@ void ConvectionTransport::output_vector_gather() {
     ISDestroy(&(is));
 }
 
-//=============================================================================
-//      COMPARE DENSITY ITERATION
-//=============================================================================
-int ConvectionTransport::compare_dens_iter() {
-/*
-    ElementIter elm;
-    double max_err;
-    max_err = 0;
-    //	FOR_ELEMENTS( elm )
-    //		xprintf(Msg,"%f %f %f\n",elm->scalar , elm->scalar_it,elm->scalar - elm->scalar_it);
-    FOR_ELEMENTS(mesh_,  elm ) {
-        if (fabs(elm->scalar - elm->scalar_it) > max_err) {
-            max_err = fabs(elm->scalar - elm->scalar_it);
-            //xprintf(Msg,"%f %f %f\n",elm->scalar , elm->scalar_it, elm->scalar - elm->scalar_it);
-        }
-    }
-    xprintf(Msg,"Maximum pressure difference in iteration: %f10.8\n",max_err);
-    if (max_err > dens_eps)
-        return 0;
-    else
-        return 1;*/
-}
-//=============================================================================
-//      RESTART ITERATION CONCENTRATION
-//=============================================================================
-void ConvectionTransport::restart_iteration_C() {
-    int sbi, n_subst, sub, ph;
-
-
-   // struct Transport *transport = problem->transport;
-   // double ***conc, ***prev_conc;
-
-    n_subst = n_substances;
-    sub = sub_problem;
-    //conc = transport->conc;
-    //prev_conc = transport->prev_conc;
-
-    for (sbi = 0; sbi < n_subst; sbi++)
-        for (ph = 0; ph < 4; ph++)
-            if (conc[sbi][ph] != NULL)
-                memcpy(conc[sbi][ph], prev_conc[sbi][ph], mesh_->n_elements() * sizeof(double));
-
-}
-//=============================================================================
-//      SAVE & RESTART ITERATION OF PRESSURE
-//=============================================================================
-void ConvectionTransport::save_restart_iteration_H() {
-/*
-    ElementIter elm;
-    FOR_ELEMENTS(mesh_,  elm ) {
-        elm->scalar_it = elm->scalar;
-    }
-    */
-}
-//=============================================================================
-//      SAVE TIME STEP CONCENTRATION
-//=============================================================================
-void ConvectionTransport::save_time_step_C() {
-
-    int sbi, n_subst, sub, ph;
-   // struct Transport *transport = problem->transport;
-    double ***conc, ***prev_conc;
-
-    n_subst = n_substances;
-    sub = sub_problem;
-    //conc = transport->conc;
-    //prev_conc = transport->prev_conc;
-
-    for (ph = 0; ph < 4; ph++)
-        for (sbi = 0; sbi < n_subst; sbi++)
-            if (conc[ph][sbi] != NULL)
-                memcpy(prev_conc[ph][sbi], conc[ph][sbi], mesh_->n_elements() * sizeof(double));
-
-}
 
 void ConvectionTransport::get_parallel_solution_vector(Vec &vc){
 	return;
@@ -1295,10 +1161,6 @@ void ConvectionTransport::get_solution_vector(double* &vector, unsigned int &siz
 
 double ***ConvectionTransport::get_concentration_matrix() {
 	return conc;
-}
-
-double ***ConvectionTransport::get_prev_concentration_matrix(){
-	return pconc;
 }
 
 void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_distribution_out){
@@ -1315,6 +1177,92 @@ int *ConvectionTransport::get_el_4_loc(){
 	return el_4_loc;
 }
 
+int *ConvectionTransport::get_row_4_el(){
+	return row_4_el;
+}
+
+/*
 int ConvectionTransport::get_n_substances() {
-	return n_substances;
+	return n_subst_;
+}
+*/
+
+
+void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
+{
+    double ***solution = conc;
+    // int *el_4_loc, *row_4_el;
+    // Distribution *el_ds;
+    double mass_flux[n_substances()];
+
+    //convection->get_par_info(el_4_loc, el_ds);
+    //row_4_el = convection->get_row_4_el();
+
+    FOR_BOUNDARIES(mesh_, bcd) {
+
+        // !! there can be more sides per one boundary
+        int index = row_4_el[bcd->side()->element().index()];
+        if (!el_ds->is_local(index)) continue;
+
+        double water_flux = mh_dh->side_flux(*(bcd->side()));
+        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+            mass_flux[sbi] = water_flux*solution[MOBILE][sbi][index-el_ds->begin()];
+
+        Region r = bcd->region();
+        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
+        unsigned int bc_region_idx = r.boundary_idx();
+
+        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+        {
+            bcd_balance[sbi][bc_region_idx] += mass_flux[sbi];
+
+            if (mass_flux[sbi] > 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux[sbi];
+            else bcd_minus_balance[sbi][bc_region_idx] += mass_flux[sbi];
+        }
+    }
+
+}
+
+void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
+{
+  //the sources concentration is divided by dt cause it is multiplied by it before
+  
+    //int *el_4_loc, *row_4_el;
+    //Distribution *el_ds;
+    double ***solution = conc;
+
+    //convection->get_par_info(el_4_loc, el_ds);
+    //row_4_el = convection->get_row_4_el();
+
+    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+    {
+        compute_concentration_sources(sbi);
+        double *sources = sources_corr;
+
+        FOR_ELEMENTS(mesh_,elem)
+        {
+            int index = row_4_el[elem.index()];
+            if (el_ds->is_local(index))
+            {
+                mass[sbi][elem->element_accessor().region().bulk_idx()] += solution[MOBILE][sbi][index-el_ds->begin()]*elem->measure();
+                src_balance[sbi][elem->element_accessor().region().bulk_idx()] += sources[index-el_ds->begin()]*elem->measure()/time_->dt();
+            }
+        }
+    }
+}
+
+
+
+void ConvectionTransport::output_data() {
+
+    if (time_->is_current(output_mark_type)) {
+
+        DBGMSG("\nTOS: output time: %f\n", time_->t());
+        output_vector_gather();
+        if (field_output) field_output->write_data(time_->t());
+        mass_balance();
+
+        //for synchronization when measuring time by Profiler
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
 }

@@ -30,11 +30,10 @@ set(super_test "field_test")
 set(super_test_libs field_lib mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 
 
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_HAVE_CXX11)
     
-    set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=gnu++0x")        ## Use C++11 for multiline raw strings
     define_test(field_python)
-    #define_test(field_interpolated_p0)
+    define_test(field_interpolated_p0)
     define_test(field_value)
     define_test(field_const)
     define_test(field_formula)

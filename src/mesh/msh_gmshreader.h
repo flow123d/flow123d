@@ -42,7 +42,6 @@
 #include "mesh/region.hh"
 
 class Mesh;
-class GMSH_DataHeader;
 class FilePath;
 
 

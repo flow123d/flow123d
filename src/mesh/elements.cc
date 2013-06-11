@@ -33,6 +33,7 @@
 
 #include "system/system.hh"
 #include "mesh/mesh.h"
+#include "mesh/ref_element.hh"
 #include "elements.h"
 #include "element_impls.hh"
 
@@ -51,6 +52,7 @@ Element::Element()
 //  material(NULL),
   edge_idx_(NULL),
   boundary_idx_(NULL),
+  permutation_idx_(NULL),
 
   n_neighs_vb(0),
   neigh_vb(NULL),
@@ -80,17 +82,30 @@ void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
     node = new Node * [ n_nodes()];
     edge_idx_ = new unsigned int [ n_sides()];
     boundary_idx_ = NULL;
+    permutation_idx_ = new unsigned int[n_sides()];
 
     FOR_ELEMENT_SIDES(this, si) {
         edge_idx_[ si ]=Mesh::undef_idx;
+        permutation_idx_[si] = Mesh::undef_idx;
     }
+}
+
+
+Element::~Element() {
+/*
+    if (node) { delete[] node; node=NULL;}
+    if (edge_idx_) { delete[] edge_idx_; edge_idx_=NULL;}
+    if (permutation_idx_) { delete[] permutation_idx_; permutation_idx_=NULL;}
+    if (boundary_idx_) { delete[] boundary_idx_; boundary_idx_ = NULL; }
+    */
+
 }
 
 
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
-double Element::measure() {
+double Element::measure() const {
     switch (dim()) {
         case 0:
             return 1.0;
@@ -121,8 +136,8 @@ double Element::measure() {
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
  */
 
-arma::vec3 Element::centre() {
-    int li;
+arma::vec3 Element::centre() const {
+    unsigned int li;
 
     arma::vec3 centre;
     centre.zeros();
@@ -139,7 +154,7 @@ arma::vec3 Element::centre() {
  * Count element sides of the space dimension @p side_dim.
  */
 
-unsigned int Element::n_sides_by_dim(int side_dim)
+unsigned int Element::n_sides_by_dim(unsigned int side_dim)
 {
     if (side_dim == dim()) return 1;
 
@@ -162,150 +177,36 @@ Region Element::region() const {
 }
 
 
-#if 0
+double Element::quality_measure_smooth() {
+    if (dim_==3) {
+        double sum_faces=0;
+        double face[4];
+        for(unsigned int i=0;i<4;i++) sum_faces+=( face[i]=side(i)->measure());
 
-/**
- * make_block_d(ElementFullIter ele)
- */
-void make_block_d(Mesh *mesh, ElementFullIter ele) {
-    F_ENTRY;
+        double sum_pairs=0;
+        for(unsigned int i=0;i<3;i++)
+            for(unsigned int j=i+1;j<4;j++) {
+                unsigned int i_line = RefElement<3>::line_between_faces(i,j);
+                arma::vec line = *node[RefElement<3>::line_nodes[i_line][1]] - *node[RefElement<3>::line_nodes[i_line][0]];
+                sum_pairs += face[i]*face[j]*arma::dot(line, line);
+            }
+        double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
+        return fabs( measure()
+                * pow( sum_faces/sum_pairs, 3.0/4.0))/ regular;
 
-    int ngi, iCol;
-    struct Neighbour *ngh;
-    ElementFullIter ele2 = ELEMENT_FULL_ITER_NULL(mesh);
-
-    ele->d_row_count = 1 ;//+ ele->n_neighs_vv; // diagonal allways + noncompatible neighbours
-    ele->d_col = (int*) xmalloc(ele->d_row_count * sizeof ( int));
-    ele->d_el = (int*) xmalloc(ele->d_row_count * sizeof ( int));
-    ele->d_val = (double*) xmalloc(ele->d_row_count * sizeof ( double));
-
-    // set diagonal	on zero positon (D_DIAG == 0)
-    ele->d_col[D_DIAG] = ele->b_row;
-    ele->d_el[D_DIAG] = ele.index();
-    ele->d_val[D_DIAG] = 0.0;
-
-    // "Compatible" neighbours of higher dimensions
-
-    FOR_ELM_NEIGHS_VB(ele, ngi) {
-        ngh = ele->neigh_vb[ ngi ];
-        ele->d_val[ D_DIAG ] -= ngh->sigma * ngh->side[1]->metric();
     }
-    iCol = 1;
-
-    // "Noncompatible" neighbours
-/*
-    FOR_ELM_NEIGHS_VV(ele, ngi) {
-        ngh = ele->neigh_vv[ ngi ];
-        // get neigbour element, and set appropriate column
-        DBGMSG(" el1: %p el0: %p",ngh->element[1], ngh->element[0]);
-        ele2 = ELEMENT_FULL_ITER(mesh,  (ngh->element[ 0 ] == ele) ? ngh->element[ 1 ] : ngh->element[ 0 ] );
-        ele->d_el[ iCol ] = ele2.index();
-        ele->d_col[ iCol ] = ele2->b_row;
-
-        // add both sides of comunication
-        double measure;
-        if (ele->dim < ele2->dim) {
-            measure = ele->measure;
-        } else {
-            measure = ele2->measure;
-        }
-        //DBGMSG("meas: %g\n",measure );
-        ele->d_val[ D_DIAG ] -= ngh->sigma * ngh->geom_factor*measure;
-        ele->d_val[ iCol ] += ngh->sigma * ngh->geom_factor*measure;
-
-        iCol++;
-    }*/
+    if (dim_==2) {
+        return fabs(
+                measure()/
+                pow(
+                         arma::norm(*node[1] - *node[0], 2)
+                        *arma::norm(*node[2] - *node[1], 2)
+                        *arma::norm(*node[0] - *node[2], 2)
+                        , 2.0/3.0)
+               ) / ( sqrt(3.0) / 4.0 ); // regular triangle
+    }
+    return 1.0;
 }
-
-/**
- * make_block_e(ElementFullIter ele)
- */
-/*
-void make_block_e(ElementFullIter ele, Mesh *mesh) {
-    int ngi, ci;
-    struct Neighbour *ngh;
-
-    ele->e_row_count = ele->n_neighs_vb;
-    if (ele->e_row_count == 0) return;
-    // alloc
-    ele->e_col = (int*) xmalloc(ele->e_row_count * sizeof ( int));
-    ele->e_edge_idx = (int*) xmalloc(ele->e_row_count * sizeof ( int));
-    ele->e_val = (double*) xmalloc(ele->e_row_count * sizeof ( double));
-
-    ci = 0;
-
-    FOR_ELM_NEIGHS_VB(ele, ngi) {
-        ngh = ele->neigh_vb[ ngi ];
-        ele->e_col[ ci ] = ngh->edge->c_row;
-        ele->e_val[ ci ] = ngh->sigma * ngh->side[1]->metric(); //DOPLNENO   * ngh->side[1]->metrics
-        ele->e_edge_idx[ci] = mesh->edge.index(ngh->edge);
-        ci++;
-    }
-}*/
-
-/**
- * gets max,min, abs max, abs min of all local matrices
- * NEVER USED - may not work
- */
-void block_A_stats(Mesh* mesh) {
-
-    int i;
-    double *loc;
-    double a_min, a_max;
-    double a_abs_min, a_abs_max;
-
-    a_min = 1e32;
-    a_max = -1e32;
-    a_abs_min = 1e32;
-    a_abs_max = -1e32;
-
-    FOR_ELEMENTS(mesh, ele) {
-        for (loc = ele->loc, i = 0; i < ele->n_sides * ele->n_sides; i++) {
-            if (loc[i] < a_min) a_min = loc[i];
-            if (loc[i] > a_max) a_max = loc[i];
-            if (fabs(loc[i]) < a_abs_min) a_abs_min = fabs(loc[i]);
-            if (fabs(loc[i]) > a_abs_max) a_abs_max = fabs(loc[i]);
-            if (fabs(loc[i]) > 1e3)
-                xprintf(Msg, "Big number: eid:%d area %g\n", ele.id(), ele->measure());
-        }
-    }
-
-    xprintf(MsgVerb, "Statistics of the block A:\n")/*orig verb 6*/;
-    xprintf(MsgVerb, "Minimal value: %g\tMaximal value: %g\n", a_min, a_max)/*orig verb 6*/;
-    xprintf(MsgVerb, "Minimal absolute value: %g\tMaximal absolute value: %g\n", a_abs_min, a_abs_max)/*orig verb 6*/;
-}
-
-/**
- * gets max,min, abs max, abs min of all diagonals of local matrices
- * NEVER USED - may not work
- */
-void diag_A_stats(Mesh* mesh) {
-
-    int i;
-    double *loc;
-    double a_min, a_max;
-    double a_abs_min, a_abs_max;
-
-    a_min = 1e32;
-    a_max = -1e32;
-    a_abs_min = 1e32;
-    a_abs_max = -1e32;
-
-    FOR_ELEMENTS(mesh, ele) {
-        for (loc = ele->loc, i = 0; i < ele->n_sides * ele->n_sides; i += ele->n_sides + 1) {
-            // go through diagonal of ele->loc
-            if (loc[i] < a_min) a_min = loc[i];
-            if (loc[i] > a_max) a_max = loc[i];
-            if (fabs(loc[i]) < a_abs_min) a_abs_min = fabs(loc[i]);
-            if (fabs(loc[i]) > a_abs_max) a_abs_max = fabs(loc[i]);
-        }
-    }
-
-    xprintf(MsgVerb, "Statistics of the diagonal of the block A:\n")/*orig verb 6*/;
-    xprintf(MsgVerb, "Minimal value: %g\tMaximal value: %g\n", a_min, a_max)/*orig verb 6*/;
-    xprintf(MsgVerb, "Minimal absolute value: %g\tMaximal absolute value: %g\n", a_abs_min, a_abs_max)/*orig verb 6*/;
-}
-#endif
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

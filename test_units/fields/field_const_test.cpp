@@ -49,7 +49,7 @@ TEST(FieldConst, read_from_input) {
     reader.read_stream( ss, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-    Point<2> point_1, point_2;
+    Space<2>::Point point_1, point_2;
     point_1(0)=1.0; point_1(1)=  2.0;
     point_2(0)= 2.0; point_2(1)= 4.0;
     ElementAccessor<2> elm;

@@ -28,17 +28,49 @@
 #include <gtest/gtest.h>
 
 #include "system/system.hh"
+#include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "mesh/region.hh"
+#include "input/type_output.hh"
 
-#include "functions/function_interpolated_p0_impl.hh"
+#include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
+
+#include "fields/field_interpolated_p0.hh"
+#include "fields/field_interpolated_p0_impl.hh"
+
+
 
 // tests are started from 'build/test_units'
 string input = R"CODE(
 {   
-   mesh="${INPUT}/functions/large_domain.msh",
-   raw_data="${INPUT}/functions/large_domain_raw_data.txt"
+   scalar={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_3d.msh",
+       field_name="scalar"
+   },
+   scalar_large={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/bigger_3d_cube_0.5.msh",
+       field_name="scalar_large"
+   },
+   vector_fixed={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_3d.msh",
+       field_name="vector_fixed"
+   },
+   vector={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_3d.msh",
+       field_name="vector_fixed"
+   },
+   tensor_fixed={
+       TYPE="FieldInterpolatedP0",
+       gmsh_file="fields/simplest_cube_3d.msh",
+       field_name="tensor_fixed"
+   }
 }
 )CODE";
 
@@ -60,77 +92,88 @@ $Nodes
 8 -1 1 -1
 $EndNodes
 $Elements
-9
+12
 1 1 2 37 20 7 3
 2 2 2 38 34 6 3 7
 3 2 2 38 36 3 1 7
-4 4 2 39 40 3 7 1 2
-5 4 2 39 40 3 7 2 8
-6 4 2 39 40 3 7 8 6
-7 4 2 39 42 3 7 6 5
-8 4 2 39 42 3 7 5 4
-9 4 2 39 42 3 7 4 1
+4 1 2 37 20 8 4
+5 2 2 38 34 6 4 8
+6 2 2 38 36 4 1 8
+# ------ interpolation to following 3D elements not implemented
+7 4 2 39 40 3 7 1 2
+8 4 2 39 40 3 7 2 8
+9 4 2 39 40 3 7 8 6
+10 4 2 39 42 3 7 6 5
+11 4 2 39 42 3 7 5 4
+12 4 2 39 42 3 7 4 1
 $EndElements
 )CODE";
 
 
+class FieldInterpolatedP0Test : public testing::Test {
+public:
+    typedef FieldInterpolatedP0<3, FieldValue<3>::Scalar > ScalarField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::Enum > EnumField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::VectorFixed > VecFixField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::Vector > VecField;
+    typedef FieldInterpolatedP0<3, FieldValue<2>::TensorFixed > TensorField;
+    typedef FieldInterpolatedP0<3, FieldValue<3>::EnumVector > EnumVector;
 
-TEST(FunctionInterpolatedP0, 2d_elements) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".","/",UNIT_TESTS_SRC_DIR,".");
-    Profiler::initialize();
+    virtual void SetUp() {
+        // setup FilePath directories
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    // initialize Input:Types
-    FunctionBase<3>::get_input_type();
+        Profiler::initialize();
 
-    // read input string
-    std::stringstream ss(input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, FunctionInterpolatedP0<3>::get_input_type() );
-    Input::Record in_rec=reader.get_root_interface<Input::Record>();
+        //FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
+        mesh = new Mesh;
+        stringstream in(gmsh_mesh.c_str());
+        mesh->read_gmsh_from_stream(in);
 
-    FunctionInterpolatedP0<3> func;
-    func.init_from_input(in_rec);
-    Point<3> p;
-    Element ele(2);
-    ele.node[0]= new Node(0.01, 0.01, 0.00);
-    ele.node[1]= new Node(0.16, 0.16, 0.00);
-    ele.node[2]= new Node(0.02, 0.02, 0.05);
-    func.set_element(&ele);
-    EXPECT_EQ(3.5 , func.value(p));
+        Input::Type::Record  rec_type("Test","");
+        rec_type.declare_key("scalar", ScalarField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.declare_key("scalar_large", ScalarField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.declare_key("vector_fixed", VecFixField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.declare_key("vector", VecField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.declare_key("tensor_fixed", TensorField::input_type, Input::Type::Default::obligatory(),"" );
+        rec_type.finish();
+
+        std::stringstream ss(input);
+        Input::JSONToStorage reader;
+        reader.read_stream( ss, rec_type );
+        rec=reader.get_root_interface<Input::Record>();
+
+    }
+    virtual void TearDown() {
+
+    }
+
+    Mesh *mesh;
+    Input::Record rec;
+    Space<3>::Point point;
+
+};
+
+
+TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar"));
+    field.set_time(0.0);
+
+    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0)) );
+    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(1)) );
+    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(2)) );
+    EXPECT_DOUBLE_EQ( 0.700, field.value(point, mesh->element_accessor(3)) );
+    EXPECT_DOUBLE_EQ( 0.675, field.value(point, mesh->element_accessor(4)) );
+    EXPECT_DOUBLE_EQ( 0.675, field.value(point, mesh->element_accessor(5)) );
+
 }
 
-/*
-int main(int argc, char **argv) {
+TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_large) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_large"));
+    field.set_time(0.0);
 
-    TPoint pointA(-0.10, -0.10, 0.00);
-    TPoint pointB(1.60, 1.60, 0.00);
-    TPoint pointC(0.10, 0.10, 0.50);
-    TTriangle triangle(pointA, pointB, pointC);
-
-    /*TPoint* point0 = new TPoint(0.00, 0.00, 0.00);
-    TPoint* point1 = new TPoint(3.00, 0.00, 0.00);
-    TPoint* point2 = new TPoint(0.00, 3.00, 0.00);
-    TPoint* point3 = new TPoint(0.00, 0.00, 3.00);
-    TTetrahedron tetrahedron(point0, point1, point2, point3);*/
-
-    /*TPoint* point1 = new TPoint( 1.0, 1.0, 1.0);
-    TPoint* point2 = new TPoint( 2.0, 6.0, 3.0);
-    TPoint* point3 = new TPoint( 2.0, 2.0, 1.0);
-    TPoint* point4 = new TPoint(-1.0, 3.0, 3.0);
-    TPoint* point5 = new TPoint(-1.0, 5.0, 4.0);
-    TPoint* point6 = new TPoint( 3.0, 4.0, 1.5);
-    TPoint* point7 = new TPoint( 0.0, 7.0, 4.5);
-    TPolygon* pol = new TPolygon();
-    pol->Add(point1);
-    pol->Add(point2);
-    pol->Add(point3);
-    pol->Add(point4);
-    pol->Add(point5);
-    pol->Add(point6);
-    pol->Add(point7);
-    pol->Write();
-    xprintf(Msg, "Polygon: %f\n", pol->GetArea());*/
-
-
+    //EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0)) );
+}
 

@@ -12,9 +12,9 @@
       bulk_data = [
         {
             region = "plane",
-            cond_anisothropy = 0.02,
-            init_pressure = 0,          #default
-            storativity = 1             #default
+            anisotropy = 0.02,
+            init_pressure = 0,          // default
+            storativity = 1             // default
         }
       ],
 

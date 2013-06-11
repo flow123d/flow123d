@@ -140,17 +140,13 @@
 
 #ifdef DEBUG_ASSERTS
 
-#define ASSERT_SIZES( a, b) do { if (a != b) { \
-    std::cerr << "Violated assert in file " << __FILE__ << " func: " << __func__ << " line: " << __LINE__ << std::endl \
-    << #a << " == " << #b << std::endl \
-    << a << " == " << b << std::endl; \
-    std::cerr.flush(); \
-    abort();} \
+#define ASSERT_EQUAL( a, b)  do {\
+    stringstream ss; ss << (a) << " != " << (b); \
+    ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
     } while (0)
-
 #else
 
-#define ASSERT_SIZES( a, b)
+#define ASSERT_EQUAL( a, b)
 
 #endif
 
@@ -158,12 +154,9 @@
 
 #ifdef DEBUG_ASSERTS
 
-#define ASSERT_LESS( a, b) do { if (a >= b) { \
-    std::cerr << "Violated assert in file " << __FILE__ << " func: " << __func__ << " line: " << __LINE__ << std::endl \
-    << #a << " < " << #b << std::endl \
-    << a << " < " << b << std::endl; \
-    std::cerr.flush(); \
-    abort();} \
+#define ASSERT_LESS( a, b) do {\
+    stringstream ss; ss << (a) << " >= " << (b); \
+    ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
 #else

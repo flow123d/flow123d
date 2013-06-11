@@ -165,7 +165,7 @@ public:
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
      */
-    const unsigned int n_dofs();
+    const unsigned int n_dofs() const;
 
     /**
      * @brief Returns the number of single dofs/dof pairs/triples/sextuples

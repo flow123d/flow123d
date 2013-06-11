@@ -140,6 +140,7 @@ string input = R"INPUT(
 {   
 double_scalar=1.3,
 int_scalar=23,
+enum_scalar="one",
 
 double_fix_vector_full=[1.2, 3.4, 5.6],
 int_fix_vector_full=[1,2,3],
@@ -148,6 +149,7 @@ int_fix_vector_const=23,
 
 double_vector_full=[1.2,3.4],
 int_vector_full=[1,2,3,4],
+enum_vector_full=["zero", "one", "one"],
 double_vector_const=1.2,
 int_vector_const=23,
 
@@ -182,10 +184,14 @@ double_fix_tensor_cdiag="x*y*z"
 TEST(FieldValue_, init_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Input::Type::Selection aux_sel("AuxSel");
+    aux_sel.add_value(0,"zero","");
+    aux_sel.add_value(1,"one","");
 
     Input::Type::Record  rec_type("FieldValueTest","");
     rec_type.declare_key("double_scalar",FieldValue_<1,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
     rec_type.declare_key("int_scalar",FieldValue_<1,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("enum_scalar",aux_sel, Input::Type::Default::obligatory(),"" );
 
     rec_type.declare_key("double_fix_vector_full",FieldValue_<3,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
     rec_type.declare_key("int_fix_vector_full",FieldValue_<3,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
@@ -194,6 +200,7 @@ TEST(FieldValue_, init_from_input) {
 
     rec_type.declare_key("double_vector_full",FieldValue_<0,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
     rec_type.declare_key("int_vector_full",FieldValue_<0,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("enum_vector_full",FieldValue_<0,1,FieldEnum>::get_input_type(&aux_sel), Input::Type::Default::obligatory(),"" );
     rec_type.declare_key("double_vector_const",FieldValue_<0,1,double>::get_input_type(), Input::Type::Default::obligatory(),"" );
     rec_type.declare_key("int_vector_const",FieldValue_<0,1,int>::get_input_type(), Input::Type::Default::obligatory(),"" );
 
@@ -220,6 +227,11 @@ TEST(FieldValue_, init_from_input) {
         typedef FieldValue_<1,1,int> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<int>("int_scalar"));
         EXPECT_EQ(T::return_type(val), 23);
+    }
+    {
+        typedef FieldValue_<1,1,FieldEnum> T; T::return_type x_val; T val(x_val);
+        val.init_from_input(in_rec.val<Input::Enum>("enum_scalar"));
+        EXPECT_EQ(T::return_type(val), 1);
     }
 
 
@@ -260,6 +272,11 @@ TEST(FieldValue_, init_from_input) {
         typedef FieldValue_<0,1,double> T; T::return_type x_val(3); T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_vector_const"));
         EXPECT_TRUE( arma::min(T::return_type("1.2 1.2 1.2") == T::return_type(val)) );
+    }
+    {
+        typedef FieldValue_<0,1,FieldEnum> T; T::return_type x_val(3); T val(x_val);
+        val.init_from_input(in_rec.val<Input::Array>("enum_vector_full"));
+        EXPECT_TRUE( arma::min(T::return_type("0 1 1") == T::return_type(val)) );
     }
     {
         typedef FieldValue_<0,1,int> T; T::return_type x_val(3); T val(x_val);

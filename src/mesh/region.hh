@@ -150,10 +150,14 @@ public:
     /// Returns dimension of the region.
     unsigned int dim() const;
 
+    /* NOTE: seems that this conversion is provided automatically by C++, we taest this in region_test.cpp
+     * moreover the default version provided by compiler overrides our implementation
     /// Conversion to RegionIdx class
-    inline operator RegionIdx() const {
-        return RegionIdx(this->idx_);
-    }
+    /// NOTE:
+    //inline explicit operator RegionIdx() const {
+    //    return RegionIdx(this->idx_);
+    //
+     */
 
     /**
      * Returns static region database. Meant to be used for getting range of

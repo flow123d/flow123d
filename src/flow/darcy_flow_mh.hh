@@ -112,7 +112,7 @@ public:
         static Input::Type::Selection bc_type_selection;
 
         /// Collect all fields
-        EqData(const std::string &name=0);
+        EqData(const std::string &name="");
 
         /**
          * Overrides EqDataBase::read_boundary_list_item, implements reading of
@@ -127,10 +127,11 @@ public:
          */
         RegionSet read_bulk_list_item(Input::Record rec);
        
-        Field<3, FieldValue<3>::TensorFixed > cond_anisothropy;
+        Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
+        Field<3, FieldValue<3>::Scalar > sigma;
 
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
@@ -164,7 +165,7 @@ public:
         unsigned int size;
         get_solution_vector(array, size);
 
-        mh_dh.set_solution(array);
+        mh_dh.set_solution(array, solution_precision());
        return mh_dh;
     }
     
@@ -186,6 +187,8 @@ protected:
     }
 
     virtual void postprocess() =0;
+
+    virtual double solution_precision() const = 0;
 
     //virtual void balance();
     //virtual void integrate_sources();
@@ -267,9 +270,10 @@ protected:
     void coupling_P0_mortar_assembly();
     void mh_abstract_assembly_intersection();
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schur0();
+    void make_schur0( const Input::AbstractRecord in_rec);
 //    void make_schur1();
 //    void make_schur2();
+    double solution_precision() const;
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
@@ -304,7 +308,7 @@ protected:
 	// MATIS related arrays
         std::vector<double>   solution_;                 //< sequantial scattered solution vector
         std::vector<unsigned> solver_indices_;           //< renumbering of unknowns in the global vector
-        std::vector<int>      global_row_4_sub_row;      //< global dof index for subdomain index
+        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array

@@ -6,6 +6,7 @@
  */
 #include <gtest/gtest.h>
 #include "system/system.hh"
+#include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
@@ -21,6 +22,7 @@
 
 // Test rychlosti algoritmu, pro vyhledávání průsečíků sítě line_cube.msh
 TEST(intersections, 1d_3d){
+        Profiler::initialize();
 	unsigned int elementLimit = 20;
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
 	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
@@ -33,7 +35,7 @@ TEST(intersections, 1d_3d){
 
 	BIHTree bt(&mesh_krychle, elementLimit);
 
-	Profiler::initialize(MPI_COMM_WORLD);
+	Profiler::initialize();
 	{
 	    START_TIMER("Inter");
 
@@ -65,7 +67,7 @@ TEST(intersections, 1d_3d){
 	     }
 	}
         
-	Profiler::instance()->output(cout);
+	Profiler::instance()->output(MPI_COMM_WORLD, cout);
         
 	Profiler::uninitialize();
 

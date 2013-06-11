@@ -11,6 +11,8 @@
 #include <gtest/gtest.h>
 #include <cmath>
 
+#include "system/sys_profiler.hh"
+
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
@@ -43,6 +45,7 @@ unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &b
  *  - tests intersection with three bounding boxes in mesh
  */
 void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
+        Profiler::initialize();
 	unsigned int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
 	double avgDepth;
 	Mesh mesh;

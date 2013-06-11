@@ -88,7 +88,7 @@ public:
      * @param global_size Total number of indices to distribute.
      */
     //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const SpecialDistribution type,unsigned int global_size);
+    Distribution(const SpecialDistribution type, unsigned int global_size);
 
     /**
      * Copy Constructor.
@@ -96,27 +96,27 @@ public:
     Distribution(const Distribution &distr);
 
     /// get num of processors
-    inline int np() const {return num_of_procs;}
+    inline unsigned int np() const {return num_of_procs;}
     /// get my processor
-    inline int myp() const {return my_proc;}
+    inline unsigned int myp() const {return my_proc;}
     /// get starting local index
-    inline int begin(int proc) const {return (starts[proc]);}
-    inline int begin() const {return ( begin(myp()) );}
+    inline unsigned int begin(int proc) const {return (starts[proc]);}
+    inline unsigned int begin() const {return ( begin(myp()) );}
     /// get last local index +1
-    inline int end(int proc) const {return (starts[proc+1]);}
-    inline int end()  const {return ( end(myp()) );}
+    inline unsigned int end(int proc) const {return (starts[proc+1]);}
+    inline unsigned int end()  const {return ( end(myp()) );}
     /// get local size
-    inline int lsize(int proc) const {return (end(proc)-begin(proc));}
-    inline int lsize() const {return ( lsize(myp()) );}
+    inline unsigned int lsize(int proc) const {return (end(proc)-begin(proc));}
+    inline unsigned int lsize() const {return ( lsize(myp()) );}
     /// get global size
-    inline int size() const {return (starts[np()]);}
+    inline unsigned int size() const {return (starts[np()]);}
     /// identify local index
-    inline bool is_local(int idx) const {return ( begin()<=(idx) && (idx)<end() );}
-    inline bool is_on_proc(int idx,int proc) const {return ( begin(proc)<=(idx) && (idx)<end(proc) );}
+    inline bool is_local(unsigned int idx) const {return ( begin()<=(idx) && (idx)<end() );}
+    inline bool is_on_proc(unsigned int idx, unsigned int proc) const {return ( begin(proc)<=(idx) && (idx)<end(proc) );}
     /// get processor of the given index
-    int get_proc(int idx) const;
+    unsigned int get_proc(unsigned int idx) const;
     /// get local sizes array
-    const int * get_lsizes_array();
+    const unsigned int * get_lsizes_array();
     inline MPI_Comm get_comm() {return communicator;}
     /// distribution view
     void view();
@@ -129,9 +129,9 @@ private:
     /// my proc number
     int my_proc;
     /// starts[i] index of the first index on the proc i; starts[n_procs]=size of whole array
-    int *starts;
+    unsigned int *starts;
     /// local sizes
-    int *lsizes;
+    unsigned int *lsizes;
 };
 typedef class Distribution Distribution;
 

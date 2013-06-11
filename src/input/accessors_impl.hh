@@ -137,16 +137,12 @@ inline Iterator<ValueType> Array::begin() const {
 
 
 inline IteratorBase Array::end() const {
-	ASSERT(address_.storage_head(), "NULL pointer in storage!!! \n");
-
 	return IteratorBase(address_, address_.storage_head()->get_array_size());
 }
 
 
 
 inline unsigned int Array::size() const {
-	ASSERT(address_.storage_head(), "NULL pointer in storage!!! \n");
-
     return address_.storage_head()->get_array_size();
 }
 
@@ -178,8 +174,6 @@ inline bool IteratorBase::operator != (const IteratorBase &that) const
 
 
 inline IteratorBase::operator bool() const {
-	ASSERT(address_.storage_head(), "NULL pointer in storage!!! \n");
-
 	const StorageBase *s = address_.storage_head()->get_item(index_);
     return ( s && ! s->is_null() );
 }
@@ -208,7 +202,7 @@ inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 	Address a( address_ );
     a.down(index_);
 
-    ASSERT(a.storage_head(), "NULL pointer in storage!!! \n");
+    ASSERT(a.storage_head(), "NULL pointer to storage in address object!!! \n");
 
     return internal::TypeDispatch < DispatchType > ::value(a, type_);
 }

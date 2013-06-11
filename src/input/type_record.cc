@@ -43,12 +43,11 @@ Default::Default(const std::string & value)
     boost::algorithm::trim(value_);
 }
 
+
+
 Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
-{
-    if (type_ == no_default_obligatory_type) value_="OBLIGATORY";
-    if (type_ == no_default_optional_type) value_="OPTIONAL";
-}
+{}
 
 
 /**********************************************************************************
@@ -118,8 +117,7 @@ void Record::make_derive_from(AbstractRecord &parent) const {
             
             //does not work with intel c++ compiler
             //tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
-            
-            tmp_key.key_index = tmp_key.key_index;
+
             tmp_key.key_ = k->key_;
             tmp_key.description_ = k->description_;
             tmp_key.type_ = k->type_;
@@ -181,6 +179,8 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
             throw;
         }
     }
+
+    return false;
 }
 
 
@@ -263,8 +263,11 @@ string Record::type_name() const {
 }
 
 
-string Record::description() const  {
-    return data_->description_;
+string Record::full_type_name() const {
+	if (data_->parent_ptr_) {
+		return data_->type_name_ + ":" + data_->parent_ptr_->type_name();
+	}
+    return data_->type_name_;
 }
 
 
@@ -274,18 +277,10 @@ bool Record::valid_default(const string &str) const
     if (data_->auto_conversion_key_idx >=0) {
         unsigned int idx=key_index(data_->auto_conversion_key);
         if ( data_->keys[idx].type_ ) return data_->keys[idx].type_->valid_default(str);
-        else return false;
     } else {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
     }
-}
-
-
-void  Record::reset_doc_flags() const {
-	data_->made_extensive_doc=false;
-    for(KeyIter it = begin(); it!=end(); ++it) {
-        it->type_->reset_doc_flags();
-    }
+    return false;
 }
 
 
@@ -310,7 +305,7 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 :description_(description),
  type_name_(type_name_in),
  p_parent_(0),
- made_extensive_doc(false),
+ //made_extensive_doc(false),
  finished(false),
  closed_(false),
  derived_(false),
@@ -499,12 +494,12 @@ void AbstractRecord::no_more_descendants()
 }
 
 
-void  AbstractRecord::reset_doc_flags() const {
+/*void  AbstractRecord::reset_doc_flags() const {
 		Record::reset_doc_flags();
         for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
                     it!= child_data_->list_of_childs.end(); ++it)
             it->reset_doc_flags();
-}
+}*/
 
 
 bool AbstractRecord::valid_default(const string &str) const

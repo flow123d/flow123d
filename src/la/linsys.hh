@@ -58,11 +58,19 @@
  *
  *  Method operates on the system as single object. But some methods for matrix only manipulation
  *  can be provided until we have matrix as separate class.
+ *
+ *  TODO:
+ *  - simplify constructors
+ *  - introduce set_solution_vector() and set_rhs() in order to solve multiple systems with same matrix
+ *  - simplify constructor, make common interface, rather introduce particular seters for particular solvers
+ *  - which parameters expose through Input::Record
+ *  - why we need lsize in constructors if we have Distribution
  */
 
 #include "system/global_defs.h"
 #include "system/xio.h"
 #include "la/distribution.hh"
+#include "input/input_type.hh"
 
 
 #include <mpi.h>
@@ -78,6 +86,9 @@
 class LinSys
 {
 public:
+    // Abstract Input Record for LinSys initialization
+    static Input::Type::AbstractRecord input_type;
+
     typedef enum {
         INSERT=INSERT_VALUES,
         ADD=ADD_VALUES,
@@ -395,7 +406,7 @@ public:
        PetscErrorCode ierr;
        ierr = VecDestroy(&solution_); CHKERRV( ierr );
        if ( own_solution_ ) delete[] v_solution_;
-    };
+    }
 
 protected:
     MPI_Comm         comm_;

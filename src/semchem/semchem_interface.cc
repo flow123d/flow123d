@@ -74,7 +74,7 @@ it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_m
 
 
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
-	:semchem_on(false), dual_porosity_on(false), mesh_(NULL), fw_chem(NULL), cross_section(cross_section)
+	:semchem_on(false), dual_porosity_on(false), fw_chem(NULL), mesh_(NULL), cross_section(cross_section)
 {
 
   //temporary semchem output file name
@@ -141,8 +141,8 @@ void Semchem_interface::compute_one_step(void)
 //void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
 void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double ***conc)
 {
-  FILE *fw, *stream, *fr;
-   int i, j; //, poradi;
+   //FILE *fw, *stream, *fr;
+   int i; //, j, poradi;
    int krok;
    int poc_krok;
    double celkova_molalita;
@@ -296,7 +296,7 @@ void Semchem_interface::set_el_4_loc(int *el_for_loc)
 
 void Semchem_interface::set_mesh_(Mesh *mesh)
 {
-	Mesh* mesh_ = mesh;
+	mesh_ = mesh;
 	return;
 }
 

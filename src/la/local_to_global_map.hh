@@ -100,7 +100,7 @@ public:
     */
    inline unsigned int operator[] (const unsigned int local_idx) const
        {
-           ASSERT( local_idx < global_indices_.size(), "Try to map local index %d out of range %d.", local_idx, global_indices_.size());
+           ASSERT_LESS( local_idx, global_indices_.size() );
            return global_indices_[local_idx];
        }
 

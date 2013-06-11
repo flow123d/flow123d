@@ -40,11 +40,6 @@
 class OutputVTK : public OutputFormat {
 
 public:
-    /**
-     * \brief The constructor of this class. The head of file is written, when
-     * constructor is called
-     */
-    OutputVTK(Output *_output);
 
     /**
      * \brief The constructor of this class. The head of file is written, when
@@ -102,6 +97,12 @@ public:
     int write_tail(void);
 
 private:
+
+    /**
+     * Was header already written to output file?
+     */
+    bool header_written;
+
     /**
      * \brief The declaration enumeration used for variant of file VTK format
      */
@@ -118,11 +119,6 @@ private:
     	COMPRESSION_NONE = 1,
     	COMPRESSION_GZIP = 2
     } Compression;
-
-    /**
-     * \brief The pointer at Output
-     */
-    Output *output;
 
     /**
      * \brief The pointer at OutputTime
@@ -194,14 +190,6 @@ private:
      * \param[in]   *data   The pointer at structure storing pointer at own data.
      */
     void write_vtk_ascii_cont_data(OutputData *data);
-
-    /**
-     * \brief This function writes ascii continuous data to discontinuous mesh
-     * to VTK (.vtu) output file.
-     *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
-     */
-    void write_vtk_ascii_discont_data(OutputData *data);
 
     /**
      * \brief This function writes ascii data to VTK (.vtu) output file.

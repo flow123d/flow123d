@@ -82,7 +82,7 @@ it::Selection DarcyFlowMH::mh_mortar_selection
 
 it::Selection DarcyFlowMH::EqData::bc_type_selection =
               it::Selection("EqData_bc_Type")
-               .add_value(none, "none")
+               .add_value(none, "none", "Homogeneous Neoumann BC.")
                .add_value(dirichlet, "dirichlet")
                .add_value(neumann, "neumann")
                .add_value(robin, "robin")
@@ -98,9 +98,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
                 "Parameters of output form MH module.")
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
-                "Method for coupling Darcy flow between dimensions." )
-        .declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
-                "Conductivity between dimensions." );
+                "Method for coupling Darcy flow between dimensions." );
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -160,9 +158,10 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
 {
     gravity_ = arma::vec4("0 0 -1 0"); // gravity vector + constant shift of values
 
-    ADD_FIELD(cond_anisothropy, "Anisothropic conductivity tensor.", Input::Type::Default("1.0"));
-    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0"));
-    ADD_FIELD(conductivity, "Isothropic conductivity scalar.", Input::Type::Default("1.0"));
+    ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", Input::Type::Default("1.0"));
+    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0") );
+    ADD_FIELD(conductivity, "Isotropic conductivity scalar.", Input::Type::Default("1.0") );
+    ADD_FIELD(sigma, "Transition coefficient between dimensions.", Input::Type::Default("1.0"));
     ADD_FIELD(water_source_density, "Water source density.", Input::Type::Default("0.0"));
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", it::Default("none") );
@@ -303,7 +302,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         bc_function=NULL;
     }*/
     
-    START_TIMER("paralel init");
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
     ierr += MPI_Comm_size(PETSC_COMM_WORLD, &(np));
@@ -311,6 +309,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         xprintf(Err, "Some error in MPI.\n");
 
 
+    
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
         mesh_->read_intersections();
@@ -323,19 +322,17 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     prepare_parallel();
 
-    END_TIMER("paralel init");
     //side_ds->view();
     //el_ds->view();
     //edge_ds->view();
+    
+    make_schur0(in_rec.val<AbstractRecord>("solver"));
 
-    make_schur0();
-
-    START_TIMER("prepare paralel");
+    START_TIMER("prepare scatter");
     // prepare Scatter form parallel to sequantial in original numbering
     {
-            IS is_par, is_loc;
-            int i, si, *loc_idx;
-            Edge *edg;
+            IS is_loc;
+            int i, *loc_idx; //, si;
 
             // create local solution vector
             solution = (double *) xmalloc(size * sizeof(double));
@@ -367,7 +364,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         }
     solution_changed_for_scatter=true;
     
-    END_TIMER("prepare paralel");
+    END_TIMER("prepare scatter");
 }
 
 
@@ -377,7 +374,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
 //=============================================================================
 void DarcyFlowMH_Steady::update_solution() {
-    START_TIMER("SOLVING MH SYSTEM");
+    START_TIMER("Solving MH system");
     F_ENTRY;
 
     if (time_->is_end()) return;
@@ -393,7 +390,7 @@ void DarcyFlowMH_Steady::update_solution() {
     //time_->view("DARCY"); //time governor information output
     
     modify_system(); // hack for unsteady model
-    int convergedReason = schur0 -> solve( solver->params );
+    int convergedReason = schur0 -> solve();
     DBGMSG( "Solved linear problem with converged reason %d \n", convergedReason );
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
 
@@ -432,15 +429,12 @@ void DarcyFlowMH_Steady::update_solution() {
     //    PetscViewerDestroy(solViewer);
     //}
     solution_changed_for_scatter=true;
+    DBGMSG("solution updated\n");
 }
 
 void DarcyFlowMH_Steady::postprocess() 
 {
     START_TIMER("postprocess");
-
-    //if (sources == NULL)
-    //    return;
-
     int i_loc, side_rows[4];
     double values[4];
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
@@ -461,6 +455,28 @@ void DarcyFlowMH_Steady::postprocess()
     }
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
+}
+
+
+double DarcyFlowMH_Steady::solution_precision() const
+{
+	double precision;
+	double bnorm;
+
+	switch (n_schur_compls) {
+	case 0: /* none */
+		if (schur0 != NULL) VecNorm(schur0->get_rhs(), NORM_2, &bnorm);
+		break;
+	case 1: /* first schur complement of A block */
+		if (schur1 != NULL) VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
+		break;
+	case 2: /* second schur complement of the max. dimension elements in B block */
+		if (schur1 != NULL) VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
+		break;
+	}
+	precision = max(solver->a_tol, solver->r_tol*bnorm);
+
+	return precision;
 }
 
 
@@ -526,16 +542,15 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     MHFEValues fe_values;
 
-    struct Boundary *bcd;
-    struct Neighbour *ngh;
+    class Boundary *bcd;
+    class Neighbour *ngh;
 
     bool fill_matrix = schur0->is_preallocated();
     DBGMSG("fill_matrix: %d\n", fill_matrix);
     int el_row, side_row, edge_row;
     int tmp_rows[100];
-    int i, i_loc, nsides, li, si;
+    int i, i_loc, nsides;
     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
-    double f_val;
     double local_vb[4]; // 2x2 matrix
     double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
@@ -554,7 +569,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         nsides = ele->n_sides();
-        if (fill_matrix) fe_values.update(ele, data.cond_anisothropy, data.cross_section);
+        if (fill_matrix) fe_values.update(ele, data.anisotropy, data.cross_section, data.conductivity);
         double cross_section = data.cross_section.value(ele->centre(), ele->element_accessor());
 
         for (i = 0; i < nsides; i++) {
@@ -636,7 +651,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
 
-            double value = ngh->sigma * ngh->side()->measure() * 
+            double value = data.sigma.value( ngh->element()->centre(), ngh->element()->element_accessor()) * ngh->side()->measure() *
                            data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );
 
             local_vb[0] = -value;   local_vb[1] = value;
@@ -743,20 +758,20 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             arma::mat slave_map(1,3);
             slave_map.fill(-1.0 / 3);
 
-            int i_dof = 0;
             vector<int> global_idx;
 
             ElementFullIter master_iter(mesh_->intersections[it_master_list->front()].master_iter());
             double delta_0 = master_iter->measure();
             double delta_i, delta_j;
             arma::mat left_map, right_map,product;
-            int left_idx[3], right_idx[3], l_size, r_size, i,j;
+            int left_idx[3], right_idx[3], l_size, r_size; 
+            unsigned int i,j;
             vector<int> l_dirich(3,0);
             vector<int> r_dirich(3,0);
 
 
             // rows
-            for(int i = 0; i <= it_master_list->size(); ++i) {
+            for(i = 0; i <= it_master_list->size(); ++i) {
 
                 if (i == it_master_list->size()) { // master element
                     delta_i = delta_0;
@@ -895,7 +910,6 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
 
         arma::vec difference_in_Y(5);
         arma::vec difference_in_X(5);
-        int base_index = 0;
 
         // slave sides 0,1,2
         difference_in_Y.subvec(0, 2) = -base_2D * point_2D_Y;
@@ -960,66 +974,15 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
     }
 }
 
-//=============================================================================
-// COUMPUTE NONZEROES IN THE WATER MH MATRIX
-//=============================================================================
-/*
- * void compute_nonzeros( TWaterLinSys *w_ls) {
 
- ElementIter ele;
- struct Edge *edg;
- int row,side,i;
- Mesh* mesh = w_ls->water_eq;
-
- xprintf( Msg, "Computing nonzero values ...\n");
- w_ls->nonzeros=(int *)xmalloc(sizeof(int)*w_ls->size);
- row=0;
- FOR_ELEMENTS( ele ) { // count A, B', C'
- // n_sides in A, 1 in B', 1 in C'
- for(side=0;side<ele->n_sides;side++)
- w_ls->nonzeros[row++]=ele->n_sides+2;
- }
- FOR_ELEMENTS( ele ) { // count B, D, E'
- // n_sides in B, # D, # E
- w_ls->nonzeros[row++]=ele->n_sides+ele->d_row_count+ele->e_row_count;
- }
- FOR_EDGES ( edg ) { // count C, E', F
- // C - n_sides(1 on BC, 2 inside), E' - possible ngh. F-diagonal
- w_ls->nonzeros[row++]=(edg->n_sides)+((edg->neigh_vb!=NULL)?1:0)+1;
- }
-
- // count additional space for the valueas of schur complement
- if (w_ls->n_schur_compls > 0) {
- row=w_ls->sizeA;
- // -B'*A-*B block is diagonal and already counted
- // -B'*A-*C block conect element with its edges
- FOR_ELEMENTS( ele ) {
- w_ls->nonzeros[row++]+=ele->n_sides;
- }
-
- if (w_ls->n_schur_compls > 0) {
- // !!! koncepce Neighbouringu je tak prohnila, ze neni vubec jasne, jestli
- // pro jeden element sousedi max s jednou edge a naopak takze musim spolehat jen na to co je
- // v e_col
- FOR_ELEMENTS( ele ) {
- for(i=0;i<ele->n_sides;i++) w_ls->nonzeros[ele->side(i)->edge->c_row]+=ele->e_row_count;
- for(i=0;i<ele->e_row_count;i++) w_ls->nonzeros[ele->e_col[i]]+=ele->n_sides+ele->e_row_count-1;
- }
- }
- // -C'*A-*B block conect edge with its elements = n_sides nz
- // -C'*A-*C block conect all edges of every element = n_sides*(dim of sides +1)nz (not counting diagonal)
- FOR_EDGES ( edg ) {
- w_ls->nonzeros[row++] += edg->n_sides*(edg->side(0)->dim+1+1);
- }
- }
- }
- */
 
 /*******************************************************************************
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyFlowMH_Steady::make_schur0() {
+void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
+  
+    START_TIMER("preallocation");
     int i_loc, el_row;
     Element *ele;
     Vec aux;
@@ -1034,11 +997,18 @@ void DarcyFlowMH_Steady::make_schur0() {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
 
-        if (solver->type == BDDCML_SOLVER) {
-            schur0 = new LinSys_BDDC( lsize, global_row_4_sub_row.size(), rows_ds, NULL, MPI_COMM_WORLD, 3, 1 );
+        if (in_rec.type() == LinSys_BDDC::input_type) {
+            LinSys_BDDC *ls = new LinSys_BDDC(in_rec, lsize, global_row_4_sub_row->size(), &(*rows_ds), NULL, MPI_COMM_WORLD, 3, 1 );
+            // possible initialization particular to BDDC
+            schur0=ls;
         }
-        else if (solver->type == PETSC_SOLVER) {
-            schur0 = new LinSys_PETSC( lsize, rows_ds, NULL, PETSC_COMM_WORLD );
+        else if (in_rec.type() == LinSys_PETSC::input_type) {
+            LinSys_PETSC *ls = new LinSys_PETSC(in_rec, lsize, &(*rows_ds), NULL, PETSC_COMM_WORLD );
+            // possible initialization particular to BDDC
+            schur0=ls;
+
+        } else {
+            xprintf(Err, "Unknown solver type. Internal error.\n");
         }
 
         if (solver->type == BDDCML_SOLVER) {
@@ -1087,7 +1057,7 @@ void DarcyFlowMH_Steady::make_schur0() {
                    Edge *edg=el->side(si)->edge();
 
                    // insert local edge dof
-                   int edge_row = row_4_edge[ mesh_->edge.index(el->side(si)->edge()) ];
+                   int edge_row = row_4_edge[ el->side(si)->edge_idx() ];
                    arma::vec3 coord = el->side(si)->centre();
 
                    localDofMap.insert( std::make_pair( edge_row, coord ) );
@@ -1097,7 +1067,7 @@ void DarcyFlowMH_Steady::make_schur0() {
 
                // insert dofs related to compatible connections
                for ( int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
-                   int edge_row = row_4_edge[ mesh_->edge.index(el->neigh_vb[i_neigh]->edge() ) ];
+                   int edge_row = row_4_edge[ el->neigh_vb[i_neigh]->edge_idx()  ];
                    arma::vec3 coord = el->neigh_vb[i_neigh]->edge()->side(0)->centre();
 
                    localDofMap.insert( std::make_pair( edge_row, coord ) );
@@ -1107,15 +1077,19 @@ void DarcyFlowMH_Steady::make_schur0() {
 
                nnet.push_back( nne );
 
+               // version for rho scaling
+               // trace computation
+               arma::vec3 centre = el->centre();
+               double conduct = data.conductivity.value( centre , el->element_accessor() );
+               double cs = data.cross_section.value( centre, ele->element_accessor() );
+               arma::mat33 aniso = data.anisotropy.value( centre, ele->element_accessor() );
+
                // compute mean on the diagonal
                double coef = 0.;
-               // version for rho scaling
-               int dim =  el->material->dimension;
-               // trace computation
-               for ( int i = 0; i < dim; i++) {
-                   coef = coef + el->material->hydrodynamic_resistence[i*dim + i];
+               for ( int i = 0; i < 3; i++) {
+                   coef = coef + aniso.at(i,i);
                }
-               coef = coef / static_cast<double>(dim);
+               coef = conduct*coef / 3;
 
                ASSERT( coef > 0.,
                        "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
@@ -1205,11 +1179,14 @@ void DarcyFlowMH_Steady::make_schur0() {
     }
 
 
-    START_TIMER("ASSEMBLY");
+    END_TIMER("preallocation");
+    
+    START_TIMER("assembly");
 
     assembly_steady_mh_matrix(); // fill matrix
     schur0->finish_assembly();
 
+    END_TIMER("assembly");
     //schur0->view_local_matrix();
     //PetscViewer myViewer;
     //PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matis.m",&myViewer);
@@ -1249,15 +1226,17 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 
 #if 0
 void DarcyFlowMH_Steady::make_schur1() {
+    
+    START_TIMER("Schur 1");
+  
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     MHFEValues fe_values;
 
-    int i_loc, nsides, i, side_rows[4], ierr, el_row;
-    double det;
+    int i_loc, nsides, i, side_rows[4];
     PetscErrorCode err;
 
     F_ENTRY;
-    START_TIMER("Schur 1");
+    START_TIMER("schur1 - create,inverse");
 
     // check type of LinSys
     if (schur0->type == LinSys::MAT_IS) {
@@ -1275,10 +1254,10 @@ void DarcyFlowMH_Steady::make_schur1() {
 
         for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
            ele = mesh_->element(el_4_loc[i_loc]);
-            el_row = row_4_el[el_4_loc[i_loc]];
+        
            nsides = ele->n_sides();
 
-           fe_values.update( ele, data.cond_anisothropy, data.cross_section );
+           fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = mh_dh.side_dof( ele->side(i) ); // side ID
@@ -1290,8 +1269,9 @@ void DarcyFlowMH_Steady::make_schur1() {
     } else if (schur0->type == LinSys::MAT_MPIAIJ) {
        if (schur1 == NULL) {
         // create Inverse of the A block
-        ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
+        err = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
                PETSC_NULL, 0, PETSC_NULL, &(IA1));
+         ASSERT(err == 0,"Error in MatCreateMPIAIJ.");
 
        MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE);
        schur1 = new SchurComplement(schur0, IA1);
@@ -1299,10 +1279,10 @@ void DarcyFlowMH_Steady::make_schur1() {
 
         for (i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
            ele = mesh_->element(el_4_loc[i_loc]);
-            el_row = row_4_el[el_4_loc[i_loc]];
+
            nsides = ele->n_sides();
 
-           fe_values.update( ele, data.cond_anisothropy, data.cross_section );
+           fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
 
             for (i = 0; i < nsides; i++)
                side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix
@@ -1315,9 +1295,16 @@ void DarcyFlowMH_Steady::make_schur1() {
 
     MatAssemblyBegin(IA1, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(IA1, MAT_FINAL_ASSEMBLY);
-
+    
+    END_TIMER("schur1 - create,inverse");
+    
+    
+    START_TIMER("schur1 - form");
+    
     schur1->form_schur();
     schur1->set_spd();
+    
+    END_TIMER("schur1 - form");
 }
 
 /*******************************************************************************
@@ -1325,7 +1312,8 @@ void DarcyFlowMH_Steady::make_schur1() {
  ******************************************************************************/
 void DarcyFlowMH_Steady::make_schur2() {
     PetscScalar *vDiag;
-    int ierr, loc_el_size;
+    int loc_el_size;
+    PetscErrorCode ierr;
     F_ENTRY;
     START_TIMER("Schur 2");
     // create Inverse of the B block ( of the first complement )
@@ -1339,6 +1327,8 @@ void DarcyFlowMH_Steady::make_schur2() {
       ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
               PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL, 0, PETSC_NULL,
               &(IA2)); // construct matrix
+        ASSERT(ierr == 0, "Error in MatCreateMPIAIJ.");
+      
       VecGetArray(diag_schur1,&vDiag);
       // define sub vector of B-block diagonal
       VecCreateMPIWithArray(PETSC_COMM_WORLD, loc_el_size, PETSC_DETERMINE,
@@ -1371,9 +1361,10 @@ void DarcyFlowMH_Steady::make_schur2() {
 void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
 
     Distribution edistr = graph->get_distr();
-    Edge *edg;
+    //Edge *edg;
     Element *ele;
-    int li, si, eid, i_neigh, i_edg;
+    int li, eid, i_neigh, i_edg;
+    unsigned int si;
     int e_weight;
 
     int edge_dim_weights[3] = { 100, 10, 1 };
@@ -1421,7 +1412,7 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph, bool neigh_
     Distribution edistr = graph->get_distr();
 
     Edge *edg;
-    int li, si, e_idx, i_neigh;
+    int li, e_idx, i_neigh;
     int i_s, n_s;
     F_ENTRY;
 
@@ -1486,7 +1477,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds, int *loc_part
     int new_counts[old_ds.np()];
     AO new_old_ao;
     int *old_4_new;
-    int i, i_loc, i_new, i_old;
+    int i_loc;
     F_ENTRY;
     // make distribution and numbering
     //DBGPRINT_INT("Local partitioning",old_ds->lsize,loc_part);
@@ -1508,7 +1499,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds, int *loc_part
     // create whole new->old mapping on each proc
     //DBGMSG("Creating global new->old mapping ...\n");
     AOCreateBasicIS(new_numbering, PETSC_NULL, &new_old_ao); // app ordering= new; petsc ordering = old
-    for (i = 0; i < size; i++)
+    for (unsigned int i = 0; i < size; i++)
         old_4_new[i] = i;
     AOApplicationToPetsc(new_old_ao, size, old_4_new);
     AODestroy(&(new_old_ao));
@@ -1519,7 +1510,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds, int *loc_part
     //DBGPRINT_INT("id_4_old",old_ds.lsize(),id_4_old);
     //DBGPRINT_INT("old_4_new",new_ds->lsize(),old_4_new)
 
-    for (i_new = new_ds->begin(); i_new < new_ds->end(); i_new++) {
+    for (int i_new = new_ds->begin(); i_new < new_ds->end(); i_new++) {
         //printf("i_new: %d old: %d id: %d i_loc: %d \n",i_new,old_4_new[i_new],i_loc);
         id_4_loc[i_loc++] = id_4_old[old_4_new[i_new]];
     }
@@ -1527,7 +1518,7 @@ void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds, int *loc_part
     //DBGMSG("Creating id -> stiffness mtx. row mapping ...\n");
     for (i_loc = 0; i_loc <= n_ids; i_loc++)
         new_4_id[i_loc] = -1; // ensure that all ids are initialized
-    for (i_new = 0; i_new < size; i_new++)
+    for (unsigned int i_new = 0; i_new < size; i_new++)
         new_4_id[id_4_old[old_4_new[i_new]]] = i_new;
     xfree(old_4_new);
 }
@@ -1594,23 +1585,28 @@ void DarcyFlowMH_Steady::make_row_numberings() {
 // - make arrays: *_id_4_loc and *_row_4_id to allow parallel assembly of the MH matrix
 // ====================================================================================
 void DarcyFlowMH_Steady::prepare_parallel() {
-
+    
+    START_TIMER("prepare parallel");
+    
     int *loc_part; // optimal (edge,el) partitioning (local chunk)
     int *id_4_old; // map from old idx to ids (edge,el)
     // auxiliary
-    Edge *edg;
+    //Edge *edg;
     Element *el;
-    Side *side;
+    //Side *side;
     int i, loc_i;
 
     int i_neigh;
     int e_idx;
     int i_loc, el_row, side_row, edge_row, nsides;
 
-    PetscErrorCode err;
+    
+    PetscErrorCode ierr;
     F_ENTRY;
-    MPI_Barrier(PETSC_COMM_WORLD);
-
+    //ierr = MPI_Barrier(PETSC_COMM_WORLD);
+    //ASSERT(ierr == 0, "Error in MPI_Barrier.");
+    
+    
     if (solver->type == BDDCML_SOLVER) {
         xprintf(Msg,"Compute optimal partitioning of elements.\n");
 
@@ -1768,7 +1764,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     loc_part = new int[init_side_ds.lsize()];
     id_4_old = new int[mesh_->n_sides()];
     {
-        int is = 0, iel;
+        int is = 0;
         loc_i = 0;
         FOR_SIDES(mesh_, side ) {
             // partition
@@ -1872,8 +1868,10 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     FOR_ELEMENTS(mesh_, ele) {
         solver_indices_.push_back( row_4_el[ele.index()] );
     }
+
+    unsigned int i_edg=0;
     FOR_EDGES(mesh_, edg) {
-        solver_indices_.push_back( row_4_edge[edg.index()] );
+        solver_indices_.push_back( row_4_edge[i_edg++] );
     }
     ASSERT( solver_indices_.size() == size, "Size of array does not match number of fills.\n" );
     //std::cout << "Solve rindices:" << std::endl;
@@ -2029,13 +2027,12 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 
      // apply initial condition and modify matrix diagonal
      // cycle over local element rows
-     int i_loc_row, i_loc_el, edge_row;
+     int i_loc_el, edge_row;
      ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
      double init_value;
 
      for (i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
          ele = mesh_->element(el_4_loc[i_loc_el]);
-         i_loc_row=i_loc_el+side_ds->lsize();
 
          init_value = data.init_pressure.value(ele->centre(), ele->element_accessor());
 
@@ -2106,7 +2103,7 @@ void DarcyFlowLMH_Unsteady::postprocess() {
     // for every local edge take time term on digonal and add it to the corresponding flux
     for (i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
 
-      Edge * edg = &( mesh_->edges[ edge_4_loc[i_loc] ] );
+        edg = &( mesh_->edges[ edge_4_loc[i_loc] ] );
         loc_edge_row = side_ds->lsize() + el_ds->lsize() + i_loc;
 
         new_pressure = (schur0->get_solution_array())[loc_edge_row];

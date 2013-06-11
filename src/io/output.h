@@ -25,6 +25,45 @@
  * @file    output.h
  * @brief   Header: The functions for all outputs.
  *
+ *
+ * TODO:
+ * - remove Output, keep OutputTime only (done)
+ * - remove parameter mesh from static method OutputTime::output_stream (done)
+ * - move initialization of streams from hc_expolicit_sequantial to
+ *     Aplication::Aplication() constructor (done)
+ * - OutputTime::register_XXX_data - should accept iterator to output record of particular equation, ask for presence of the key
+ *   that has same name as the name of the quantity to output, extract the string with stream name from this key, find the stream
+ *   and perform output.
+ *
+ *   on input:
+ *
+ *   { // darcy flow
+ *      output = {
+ *          pressure_nodes="nodal_data",
+ *          pressure_elements="el_data"
+ *      }
+ *   }
+ *
+ *   output_streams=[
+ *      {name="nodal_data", ... },
+ *      {name="el_data", ... }
+ *   ]
+ *
+ *   in code:
+ *
+ *   Input::Record out_rec = in_rec.val<Input::Record>("output");
+ *   OutputTime::register_node_data(mesh_, "pressure_nodes", "L", out_rec, node_pressure);
+ *   OutputTime::register_elem_data(mesh_, "pressure_elements", "L", out_rec, ele_pressure);
+ *   ...
+ *
+ * - use exceptions instead of returning result, see declaration of exceptions through DECLARE_EXCEPTION macro
+ * - move write_data from equations into coupling, write all streams
+ *
+ * =======================
+ * - Is it still necessary to split output into registration and write the data?
+ *   Could we perform it at once? ... No, it doesn't make any sense.
+ * - Support for output of corner data into GMSH format (ElementNodeData section)
+ *
  */
 
 #ifndef OUTPUT_H
@@ -81,7 +120,10 @@ public:
     int             num;        ///< Number of values in vector/array
 
 
-    OutputData() {};            ///< Un-named constructor can't be called directly
+    /**
+     * Un-named constructor can't be called directly
+     */
+    OutputData() {};
 
     string* getName(void) { return name; };
     string* getUnits(void) { return units; };
@@ -145,7 +187,7 @@ public:
     /**
      * \brief Destructor for OutputData
      */
-    ~OutputData();
+    ~OutputData() {};
 };
 
 /**
@@ -154,17 +196,90 @@ public:
 typedef std::vector<OutputData> OutputDataVec;
 
 /**
- * Class of output. This class is used for output data to the output files.
+ * \brief The class for outputing data during time.
  *
- * This class is used for writing static data to the output files. This class
- * itself doesn't include any method for writing data to the output file.
- * The methods for writing data to the output files are in places. Look at
- * output_vtk.cc and output_msh.cc that implement output for specific file
- * formats.
+ * This class is descendant of Output class. This class is used for outputing
+ * data varying in time. Own output to specific file formats is done at other
+ * places to. See output_vtk.cc and output_msh.cc.
  */
-class Output {
+class OutputTime {
+protected:
+
+    int             rank;               ///< MPI rank of process (is tested in methods)
+
+    // Protected setters for descendant
+    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
+
+    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
+
+    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
+
+    void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
+
+    void set_corner_data(std::vector<OutputData> *_corner_data) { corner_data = _corner_data; };
+
+    void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
+
+    OutputTime() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
+
+private:
+    struct OutScalar *node_scalar;      // Temporary solution
+    struct OutScalar *element_scalar;   // Temporary solution
+    struct OutVector *element_vector;   // Temporary solution
+
+    ofstream        *base_file;         ///< Base output stream
+    string          *base_filename;     ///< Name of base output file
+    string          *data_filename;     ///< Name of data output file
+    ofstream        *data_file;         ///< Data output stream (could be same as base_file)
+    Mesh            *mesh;
+    OutputDataVec   *node_data;         ///< The list of data on nodes
+    OutputDataVec   *corner_data;       ///< The list of data on corners
+    OutputDataVec   *elem_data;         ///< The list of data on elements
+
 public:
-    /*
+
+    std::vector<OutputData> *get_node_data(void) { return node_data; };
+
+    std::vector<OutputData> *get_corner_data(void) { return corner_data; };
+
+    std::vector<OutputData> *get_elem_data(void) { return elem_data; };
+
+    ofstream& get_base_file(void) { return *base_file; };
+
+    string& get_base_filename(void) { return *base_filename; };
+
+    ofstream& get_data_file(void) { return *data_file; };
+
+    string& get_data_filename(void) { return *data_filename; };
+
+    Mesh *get_mesh(void) { return mesh; };
+
+    unsigned int get_corner_count(void) {
+        unsigned int li, count = 0;
+        FOR_ELEMENTS(this->mesh, ele) {
+            FOR_ELEMENT_NODES(ele, li) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    void set_data_file(ofstream *_data_file) { data_file = _data_file; };
+
+    /**
+     * Enumeration of file formats supported by Flow123d
+     */
+    typedef enum {
+        NONE = 0,
+        GMSH = 1,
+        VTK = 2,
+    } OutFileFormat;
+
+    OutFileFormat   file_format;
+    OutputFormat    *output_format;
+    string          *name;              ///< Name of output stream
+
+    /**
      * \brief Temporary definition for storing data (C++ vector of double scalars)
      */
     typedef std::vector<double> ScalarFloatVector;
@@ -203,303 +318,34 @@ public:
     typedef std::vector<OutVector> OutVectorsVector;
 
     /**
-     * \brief Constructor of the Output object
-     *
-     * \param[in] mesh    The pointer at Mesh
-     * \param[in] filename    The name of the output file
+     * \brief Vector of pointers at OutputTime
      */
-    Output(Mesh *mesh, string filename);
+    static std::vector<OutputTime*> output_streams;
 
     /**
-     * \brief Destructor of the Output object.
+     * \brief Does OutputStream with same name and filename exist?
+     *
+     * When this record is already created, then it returns pointer at
+     * coresponding OutputTime. When this record doesn't exixt, then
+     * it create new OutputTime object and it puts this object to the
+     * array of OutputTime pointers
+     *
+     * \param[in] in_rec  The reference at the input record
      */
-    virtual ~Output();
+    static OutputTime *output_stream(const Input::Record &in_rec);
 
     /**
-     * \brief Register array of data on nodes.
-     *
-     * This function will add reference on the array of data to the Output object.
-     * Own data will be written to the file, when write_data() method will be called.
-     *
-     * \param[in]   name    The name of data
-     * \param[in]   unit    The name of units
-     * \param[in]   data    The pointer on array of data
-     * \param[in]   size    The number of values in array
-     *
-     * \return This function return 1, when the length of data vector is the same as
-     * number of nodes in mesh. When the the number is different, then this
-     * function returns 0.
+     * \brief This method delete all object instances of class OutputTime stored
+     * in output_streams vector
      */
-    template <typename _Data>
-    int register_node_data(std::string name, std::string unit, _Data *data, uint size);
-
-    /**
-     * \brief Register array of data on elements.
-     *
-     * This function will add reference on this array of data to the Output object.
-     * Own data will be written to the file, when write_data() method will be called.
-     *
-     * \param[in]   name    The name of data
-     * \param[in]   unit    The name of units
-     * \param[in]   data    The pointer on array of data
-     * \param[in]   size    The number of values in array
-     *
-     * \return This function return 1, when the length of data vector is the same as
-     * number of elements in mesh. When the the number is different, then this
-     * function returns 0.
-     */
-    template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, _Data *data, unsigned int size);
-
-    /**
-     * \brief Register data on nodes.
-     *
-     * This function will add reference on this data to the Output object. Own data
-     * will be written to the file, when write_data() method will be called.
-     *
-     * \param[in]   name    The name of data
-     * \param[in]   unit    The name of units
-     * \param[in]   data    The reference on vector of data
-     *
-     * \return This function return 1, when the length of data vector is the same as
-     * number of nodes in mesh. When the the number is different, then this function
-     * returns 0.
-     */
-    template <typename _Data>
-    int register_node_data(std::string name, std::string unit, std::vector<_Data> &data);
-
-    /**
-     * \brief Register data on elements.
-     *
-     * This function will add reference on the data to the Output object. Own data
-     * will be written to the file, when write_data() method will be called.
-     *
-     * \param[in]   name    The name of data
-     * \param[in]   unit    The name of units
-     * \param[in]   data    The reference on vector of data
-     *
-     * \return This function return 1, when the length of data vector is the same as
-     * number of elements in mesh. When the the number is different, then this
-     * function returns 0.
-     */
-    template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, std::vector<_Data> &data);
-
-    int write_head(void);
-
-    int write_tail(void);
-
-    /**
-     * \brief This method is virtual method. Each file format should include
-     * own method for writing data to output file.
-     *
-     * \return This function return result of pointer at output function.
-     */
-    int write_data(void);
-
-    // TODO: Move public setters and getters to protected section
-    std::vector<OutputData> *get_node_data(void) { return node_data; };
-    std::vector<OutputData> *get_corner_data(void) { return corner_data; };
-    std::vector<OutputData> *get_elem_data(void) { return elem_data; };
-    ofstream& get_base_file(void) { return *base_file; };
-    string& get_base_filename(void) { return *base_filename; };
-    ofstream& get_data_file(void) { return *data_file; };
-    string& get_data_filename(void) { return *data_filename; };
-    Mesh *get_mesh(void) { return mesh; };
-    unsigned int get_corner_count(void) { return this->corner_count; }
-    void set_corner_count(unsigned int count) { this->corner_count = count; }
-
-    void set_data_file(ofstream *_data_file) { data_file = _data_file; };
-
-    typedef enum {
-        NONE = 0,
-        GMSH = 1,
-        VTK = 2,
-    } OutFileFormat;
-
-    OutFileFormat file_format;
-
-    OutputFormat *output_format;
-
-    string          *name;              ///< Name of output stream
-
-protected:
-    // Protected setters for descendant
-    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
-    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
-    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
-    void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
-    void set_corner_data(std::vector<OutputData> *_corner_data) { corner_data = _corner_data; };
-    void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
-
-    Output() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
-
-private:
-
-    struct OutScalar *node_scalar;      // Temporary solution
-    struct OutScalar *element_scalar;   // Temporary solution
-    struct OutVector *element_vector;   // Temporary solution
-
-    ofstream        *base_file;         ///< Base output stream
-    string          *base_filename;     ///< Name of base output file
-    string          *data_filename;     ///< Name of data output file
-    ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    Mesh            *mesh;
-    OutputDataVec   *node_data;         ///< The list of data on nodes
-    OutputDataVec   *corner_data;       ///< The list of data on corners
-    OutputDataVec   *elem_data;         ///< The list of data on elements
-
-    /**
-     * \brief The total number of corners of all elements
-     */
-    unsigned int corner_count;
-};
-
-template <typename _Data>
-int Output::register_node_data(std::string name,
-        std::string unit,
-        _Data *data,
-        uint size)
-{
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
-    if(mesh->node_vector.size() == size) {
-        int found = 0;
-
-        OutputData *out_data = new OutputData(name, unit, data, size);
-        out_data->ref_type = OutputData::NODE_DATA;
-        node_data->push_back(*out_data);
-
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", size, mesh->node_vector.size());
-        return 0;
-    }
-}
-
-template <typename _Data>
-int Output::register_elem_data(std::string name,
-        std::string unit,
-        _Data *data,
-        uint size)
-{
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
-    if(mesh->element.size() == size) {
-        int found = 0;
-
-        OutputData *out_data = new OutputData(name, unit, data, size);
-        out_data->ref_type = OutputData::ELEM_DATA;
-        elem_data->push_back(*out_data);
-
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", size, mesh->element.size());
-        return 0;
-    }
-}
-
-template <typename _Data>
-int Output::register_node_data(std::string name,
-        std::string unit,
-        std::vector<_Data> &data)
-{
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
-    if(mesh->node_vector.size() == data.size()) {
-        OutputData *out_data = new OutputData(name, unit, data);
-        out_data->ref_type = OutputData::NODE_DATA;
-        node_data->push_back(*out_data);
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of nodes: %d\n", data.size(), mesh->node_vector.size());
-        return 0;
-    }
-}
-
-template <typename _Data>
-int Output::register_elem_data(std::string name,
-        std::string unit,
-        std::vector<_Data> &data)
-{
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
-    if(mesh->element.size() == data.size()) {
-        OutputData *out_data = new OutputData(name, unit, data);
-        out_data->ref_type = OutputData::ELEM_DATA;
-        elem_data->push_back(*out_data);
-        return 1;
-    } else {
-        xprintf(Err, "Number of values: %d is not equal to number of elements: %d\n", data.size(), mesh->element.size());
-        return 0;
-    }
-}
-
-/**
- * \brief The class for outputing data during time.
- *
- * This class is descendant of Output class. This class is used for outputing
- * data varying in time. Own output to specific file formats is done at other
- * places to. See output_vtk.cc and output_msh.cc.
- */
-class OutputTime : public Output {
-protected:
-    OutputTime() {};
-private:
-public:
-    /**
-     * \brief Array of pointer at OutputTime
-     */
-    static OutputTime **output_streams;
-
-    /**
-     * \brief The count of instances
-     */
-    static int output_streams_count;
-
-    /**
-     * \brief Does OutputStream with same name and filename exist? When this
-     * record is already created, then it returns pointer at this record. When
-     * this record doesn' exixt, then it returns NULL pointer.
-     *
-     */
-    static OutputTime *is_created(const Input::Record &in_rec);
+    static void destroy_all(void);
 
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
-     * \param[in]   mesh  The pointer at mesh object.
-     * \param[in]   in_rec The reference on the input record
+     * \param[in] in_rec The reference on the input record
      */
-    OutputTime(Mesh *mesh, const Input::Record &in_rec);
+    OutputTime(const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
@@ -524,17 +370,23 @@ public:
      * data are not at the same address, but name of the data has to be same.
      * Own data will be written to the file, when write_data() method will be called.
      *
-     * \param[in] name  The name of data
-     * \param[in] unit  The units of data
-     * \param[in] *data The pointer at data (array of int, float or double)
-     * \param[in] size  The size of array (number of values)
+     * \param[in] name      The name of data
+     * \param[in] unit      The units of data
+     * \param[in] in_rec    The reference on the input record
+     * \param[in] *data     The pointer at data (array of int, float or double)
+     * \param[in] size      The size of array (number of values)
      *
      * \return This function returns 1, when data were registered. This function
      * returns 0, when it wasn't able to register data (number of values isn't
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_node_data(std::string name, std::string unit, _Data *data, unsigned int size);
+    static int register_node_data(Mesh *mesh,
+            std::string name,
+    		std::string unit,
+    		const Input::Record &in_rec,
+    		_Data *data,
+    		unsigned int size);
 
     /**
      * \brief This function register data on corners of triangles.
@@ -547,6 +399,7 @@ public:
      *
      * \param[in] name  The name of data
      * \param[in] unit  The units of data
+     * \param[in] in_rec    The reference on the input record
      * \param[in] *data The pointer at data (array of int, float or double)
      * \param[in] size  The size of array (number of values)
      *
@@ -555,7 +408,12 @@ public:
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_corner_data(std::string name, std::string unit, _Data *data, unsigned int size);
+    static int register_corner_data(Mesh *mesh,
+            std::string name,
+            std::string unit,
+            const Input::Record &in_rec,
+            _Data *data,
+            unsigned int size);
 
     /**
      * \brief This function register data on elements.
@@ -576,7 +434,12 @@ public:
      * same as number of elements).
      */
     template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, _Data *data, unsigned int size);
+    static int register_elem_data(Mesh *mesh,
+            std::string name,
+            std::string unit,
+            const Input::Record &in_rec,
+            _Data *data,
+            unsigned int size);
 
     /**
      * \brief This function register data on nodes.
@@ -596,7 +459,11 @@ public:
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_node_data(std::string name, std::string unit, std::vector<_Data> &data);
+    static int register_node_data(Mesh *mesh,
+            std::string name,
+            std::string unit,
+            const Input::Record &in_rec,
+            std::vector<_Data> &data);
 
     /**
      * \brief This function register data on corners of triangles.
@@ -616,7 +483,11 @@ public:
      * same as number of nodes).
      */
     template <typename _Data>
-    int register_corner_data(std::string name, std::string unit, std::vector<_Data> &data);
+    static int register_corner_data(Mesh *mesh,
+            std::string name,
+            std::string unit,
+            const Input::Record &in_rec,
+            std::vector<_Data> &data);
 
     /**
      * \brief Register vector of data on elements.
@@ -635,11 +506,16 @@ public:
      * not the same.
      */
     template <typename _Data>
-    int register_elem_data(std::string name, std::string unit, std::vector<_Data> &data);
+    static int register_elem_data(Mesh *mesh,
+            std::string name,
+            std::string unit,
+            const Input::Record &in_rec,
+            std::vector<_Data> &data);
 
     /**
-     * \brief This is virtual method. Every file format should specify its own
-     * method for writing data to output file.
+     * \brief This is depreciated method. Every file format should specify its own
+     * method for writing data to output file. This method will not be public
+     * in the future.
      *
      * \param[in] time  The output will be done for this time
      *
@@ -647,28 +523,38 @@ public:
      */
     int write_data(double time);
 
+    /**
+     * \brief This method write all registered data to output streams
+     *
+     * \param[in] time  The output will be done for this time
+     */
+    static void write_all_data(double time);
+
     int              current_step;      ///< Current step
 
 };
 
+
 template <typename _Data>
-int OutputTime::register_node_data(std::string name,
+int OutputTime::register_node_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         _Data *data,
         uint size)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	int found = 0;
+    OutputTime *output_time = OutputTime::output_stream(in_rec);
 
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
 
-    std::vector<OutputData> *node_data = get_node_data();
-    Mesh *mesh = get_mesh();
+    output_time->set_mesh(mesh);
+
+    int found = 0;
+    std::vector<OutputData> *node_data = output_time->get_node_data();
 
     ASSERT(mesh->node_vector.size() == size,
             "mesh->node_vector.size(): %d != size: %d",
@@ -697,26 +583,31 @@ int OutputTime::register_node_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_corner_data(std::string name,
+int OutputTime::register_corner_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         _Data *data,
         uint size)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int found = 0;
+    OutputTime *output_time = OutputTime::output_stream(in_rec);
 
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(output_time == NULL || output_time->rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
-    /* TODO: It's not possible to check easily correct number of corners, so
-     * skipping for now. */
+    output_time->set_mesh(mesh);
 
-    std::vector<OutputData> *corner_data = get_corner_data();
-    Mesh *mesh = get_mesh();
+    int found = 0;
+    std::vector<OutputData> *corner_data = output_time->get_corner_data();
+
+    unsigned int corner_count = output_time->get_corner_count();
+    ASSERT(corner_count == size,
+            "output_time->get_corner_count(): %d != size: %d",
+            corner_count,
+            size);
 
     for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
             od_iter != corner_data->end();
@@ -740,23 +631,25 @@ int OutputTime::register_corner_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_elem_data(std::string name,
+int OutputTime::register_elem_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         _Data *data,
         unsigned int size)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    OutputTime *output_time = OutputTime::output_stream(in_rec);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
+    output_time->set_mesh(mesh);
+
     int found = 0;
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
-    std::vector<OutputData> *elem_data = get_elem_data();
-    Mesh *mesh = get_mesh();
+    std::vector<OutputData> *elem_data = output_time->get_elem_data();
 
     ASSERT(mesh->element.size() == size,
             "mesh->element.size(): %d != size: %d",
@@ -784,22 +677,24 @@ int OutputTime::register_elem_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_node_data(std::string name,
+int OutputTime::register_node_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         std::vector<_Data> &data)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    OutputTime *output_time = OutputTime::output_stream(in_rec);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
+    output_time->set_mesh(mesh);
+
     int found = 0;
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
-    std::vector<OutputData> *node_data = get_node_data();
-    Mesh *mesh = get_mesh();
+    std::vector<OutputData> *node_data = output_time->get_node_data();
 
     ASSERT(mesh->node_vector.size() == data.size(),
             "mesh->node_vector.size(): %d != size: %d",
@@ -827,25 +722,30 @@ int OutputTime::register_node_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_corner_data(std::string name,
+int OutputTime::register_corner_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         std::vector<_Data> &data)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int found = 0;
+    OutputTime *output_time = OutputTime::output_stream(in_rec);
 
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(output_time == NULL || output_time->rank!=0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
+    
+    output_time->set_mesh(mesh);
 
-    /* TODO: It's not possible to check easily correct number of corners, so
-     * skipping for now. */
+    int found = 0;
+    std::vector<OutputData> *corner_data = output_time->get_corner_data();
 
-    std::vector<OutputData> *corner_data = get_corner_data();
-    Mesh *mesh = get_mesh();
+    int corner_count = output_time->get_corner_count();
+    ASSERT(corner_count == data.size(),
+            "output_time->get_corner_count(): %d != size: %d",
+            corner_count,
+            data.size());
 
     for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
             od_iter != corner_data->end();
@@ -868,22 +768,24 @@ int OutputTime::register_corner_data(std::string name,
 }
 
 template <typename _Data>
-int OutputTime::register_elem_data(std::string name,
+int OutputTime::register_elem_data(Mesh *mesh,
+        std::string name,
         std::string unit,
+        const Input::Record &in_rec,
         std::vector<_Data> &data)
 {
-	int rank=0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    OutputTime *output_time = OutputTime::output_stream(in_rec);
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
+    output_time->set_mesh(mesh);
+
     int found = 0;
-
-	/* It's possible now to do output to the file only in the first process */
-	if(rank!=0) {
-		/* TODO: do something, when support for Parallel VTK is added */
-		return 0;
-	}
-
-    std::vector<OutputData> *elem_data = get_elem_data();
-    Mesh *mesh = get_mesh();
+    std::vector<OutputData> *elem_data = output_time->get_elem_data();
 
     ASSERT(mesh->element.size() == data.size(),
             "mesh->element.size(): %d != size: %d",
@@ -911,7 +813,7 @@ int OutputTime::register_elem_data(std::string name,
 }
 
 /**
- * \brief The class used as parent of class of file formats
+ * \brief The class used as parent class of file format classes
  */
 class OutputFormat {
 public:
@@ -925,29 +827,5 @@ public:
 	static Input::Type::AbstractRecord input_type;
 };
 
-inline OutputTime *OutputStream(Mesh *mesh, const Input::Record &in_rec)
-{
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank != 0) {
-        return NULL;
-    }
-
-    OutputTime *output_time = OutputTime::is_created(in_rec);
-
-    /* When this record doesn't exist, then create new one */
-    if(output_time == NULL) {
-        /* Realloc array of output_streams */
-        OutputTime **new_ptr = (OutputTime**)xrealloc(OutputTime::output_streams,
-                sizeof(void*) * (OutputTime::output_streams_count + 1));
-        OutputTime::output_streams = new_ptr;
-        /* Create new output */
-        output_time = new OutputTime(mesh, in_rec);
-        /* Add this output to the array of output streams */
-        OutputTime::output_streams[OutputTime::output_streams_count-1] = output_time;
-    }
-
-    return output_time;
-}
 
 #endif

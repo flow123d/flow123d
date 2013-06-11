@@ -139,7 +139,7 @@ public:
 };
 
 TYPEDEF_ERR_INFO( EI_BlackBox, BlackBox );
-DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "stored is value of type " << EI_BlackBox::ref(_exc).eval() );
+DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "stored is value of type " << EI_BlackBox::ref(*this).eval() );
 //----------------------------------------------------------------------------
 
 // Test calling a method to get error message from ErrorInfo object. Using EI_ref(_exc).

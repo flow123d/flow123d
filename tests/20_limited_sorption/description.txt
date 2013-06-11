@@ -1,0 +1,5 @@
+Test problem 20
+---------------
+- this test describes sorption and limmited solubility affected 2D transport,
+-- 6 substances (A, As, .., C, Cs), transport of substances Xs is affected by sorption and limited solubility
+-- Initial and boundary conditions are even the same for X and Xs

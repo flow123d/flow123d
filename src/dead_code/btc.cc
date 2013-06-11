@@ -172,7 +172,7 @@ void output_transport_init_BTC(struct Transport *transport)
         	if(out[i] == NULL)
         		continue;
         	else{
-        		for(sbi=0;sbi<transport->n_substances;sbi++)
+        		for(sbi=0;sbi<transport->n_subst_;sbi++)
         		for(iel=0;iel<transport->btc->n_BTC_elms;iel++)
         			xfprintf(out[i],"\t%d",transport->btc->BTC_elm[iel]);
         		xfprintf(out[i],"\n");

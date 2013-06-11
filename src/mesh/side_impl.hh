@@ -85,6 +85,6 @@ inline Side::Side(ElementIter ele, unsigned int set_lnum)
 
 
     inline void *Side::make_ptr() const {
-        return (void *)((long int) element_ << 2 + el_idx_);
+        return (void *)((long int) element_ << (2 + el_idx_) );
     }
 #endif /* SIDE_IMPL_HH_ */

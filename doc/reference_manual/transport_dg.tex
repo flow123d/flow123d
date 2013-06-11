@@ -1,0 +1,144 @@
+% conventions:
+% crossrefs - typechap:name (type: [s]ection,[e]quation,[d]efinition,[t]heorem(lemma,..))
+%                           (chap: [p]hysical background, [m]ath tools, [f]luid, [b]odies, [s]teady)
+\documentclass[a4paper]{article}
+% ***************************************** PACKAGES
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage[numbers]{natbib}
+
+% ***************************************** SYMBOLS
+\def\abs#1{\lvert#1\rvert}
+\def\argdot{{\hspace{0.18em}\cdot\hspace{0.18em}}}
+\def\avg#1{\left\{#1\right\}}
+\def\D{{\tn D}}
+\def\div{\operatorname{div}}
+\def\Eh{\mathcal E_h}       % edges of \Th
+\def\Ehb{\mathcal E_{h,B}}  % edges of \Th on boundary
+\def\Ehcom{\mathcal E_{h,C}}         % edges of \Th on interface with lower dimension
+\def\Ehdir{\mathcal E_{h,D}}         % Dirichlet edges of \Th
+\def\Ehint{\mathcal E_{h,I}}       % interior edges of \Th
+\def\grad{\nabla}
+\def\jmp#1{[#1]}
+\def\n{\vc n}
+\def\vc#1{\mathbf{\boldsymbol{#1}}}     % vector
+\def\R{\mathbb R}
+\def\sc#1#2{\left(#1,#2\right)}
+\def\Th{\mathcal T_h}       % triangulation
+\def\th{\vartheta}
+\def\tn#1{{\mathbb{#1}}}    % tensor
+\def\Tr{\operatorname{Tr}}
+\def\wavg#1{\avg{#1}_\omega}
+\def\where{\,|\,}
+%***************************************************************************
+
+
+
+\begin{document}
+
+
+\section{Numerical solution}
+
+For the numerical approximation of the advection-dispersion equation \eqref{e:ADE} we distinguish whether the dispersion $\D$ is present or not.
+Since the true solution has qualitatively different properties, we also choose different numerical methods for each case.
+
+\subsection{Pure advection}
+
+\subsection{Advection with dispersion}
+
+For the general case we use the discontinuous Galerkin space approximation described in \citet{ern_stephansen_zunino} and implicit Euler time discretization.
+Let $\tau$, $h$ be the time step and the space discretization parameter, respectively.
+We assume that $\Th^d$ is a regular partition of the domain $\Omega^d$ into simplices, $d=1,2,3$.
+We define the set $\Eh^d$ of all edges of elements in $\Th$ (triangles for $d=3$, line segments for $d=2$ and points for $d=1$).
+Further, $\Ehint^d$, $\Ehb^d$ will stand for interior and boundary edges, respectively, $\Ehdir^d(t)$ for edges that coincide with $\Gamma_D^d(t)$ and $\Ehcom^d$ for edges on interface with $\Omega^{d-1}$.
+
+Let us fix one substance and the space dimension $d$.
+At each time instant $t_k=k\tau$ we search for the concentration field $c_d^{h,k}\in V_d^h$, where
+$$ V_d^h = \{v:\overline{\Omega^d}\to\R\where v_{|T}\in P_1(T)~\forall T\in\Th^d\} $$
+is the space of functions piecewise affine on the elements of $\Th^d$, possibly discontinuous across the element interfaces.
+The initial concentration $c^{h,0}_d$ is set to the projection of the initial data $c_0$ onto $V_d^h$.
+For $k=1,2,\ldots$, the discrete problem reads:
+\begin{equation*}
+\sc{\delta^d\th\frac{c_d^{h,k}-c^{h,k-1}_d}\tau}{v}_{\Omega^d} + a^{h,k}_d(c^{h,k}_d,v) = b^{h,k}_d(v) \quad \forall v\in V^h_d.
+\end{equation*}
+Here $\sc{f}{g}_{\Omega^d}=\int_{\Omega^d} f g$, $c^{h,k-1}_d$ is the solution from the previous time step and the forms $a^{h,k}_d$, $b^{h,k}_d$ are defined as follows:
+\begin{multline*}
+a^{h,k}_d(u,v) = \sc{\delta^d\th\D\nabla u}{\nabla v}_{\Omega^d}
+- \sc{\vc q u}{\nabla v}_{\Omega^d}\\
+- \sum_{E\in\Ehint^d}\left(\sc{\wavg{\delta^d\th\D\nabla u}\cdot\n}{\jmp{v}}_E + \theta\sc{\wavg{\delta^d\th\D\nabla v}\cdot\n}{\jmp{u}}_E\right)\\
++ \sum_{E\in\Ehint^d}\sc{\vc q\cdot\n\avg{u}}{\jmp{v}}_E
++ \sum_{E\in\Ehb^d}\sc{\vc q\cdot\n u}{v}_E \\
++ \sum_{E\in\Ehint^d}\gamma_E\sc{\jmp{u}}{\jmp{v}}_E
++ \sum_{E\in\Ehdir^d(t_k)}\gamma_E\sc{u}{v}_E,
+\end{multline*}
+% 
+\begin{equation*}
+b^{h,k}_d(v) = \sum_{E\in\Ehdir^d(t_k)}\gamma_E\sc{c_D}{v}_E.
+\end{equation*}
+For an interior edge $E$ we denote by $T^-(E)$ and $T^+(E)$ the elements sharing $E$.
+By $\n$ we mean the unit normal vector to $E$ pointing from $T^-(E)$ towards $T^+(E)$, the inter-element jump is defined as $\jmp{f}=f_{|T^-(E)}-f_{|T^+(E)}$, $\avg{f}=\frac12(f_{|T^-(E)} + f_{|T^+(E)})$ and $\wavg{f}=\omega f_{|T^-(E)} + (1-\omega) f_{|T^+(E)}$ denotes the usual and weighted average of the quantity $f$.
+The weight $\omega$ is chosen in a specific way (see \cite{ern_stephansen_zunino} for details) taking into account possible inhomogeneity of $\D$.
+The stabilization parameter $\gamma_E>0$ is user dependent; its value affects the inter-element jumps of the solution.
+The constant $\theta$ can take the value $-1$, $0$ or $1$, which corresponds to the nonsymmetric, incomplete and symmetric variant of the interior penalty DG method.
+
+% \paragraph{Communication between regions of the same dimension.}
+In case that lower dimensional domains ($\Omega^1$, $\Omega^2$) have complex topology, e.g. if there are more triangles sharing one line segment, then we consider ideal mixing, i.e. the concentration entering the edge through every inlet element ($\vc q$ points out of this element) is divided among all outlet elements proportionally to their fluxes.
+
+If there are interfaces between adjacent dimensions, then the following terms are added to the bilinear forms:
+\begin{multline*}
+a^{h,k}_{d+1,C}((u_{d+1},u_d),v_{d+1})\\
+= \sum_{E\in\Ehcom^{d+1}} \sc{\delta_{d+1}\sigma^c(\th_{d+1}u_{d+1}-\th_d u_d)+(\vc q\cdot\n)^+u_{d+1} - (\vc q\cdot\n)^-u_d}{v_{d+1}}_E,
+\end{multline*}
+\begin{multline*}
+a^{h,k}_{d,C}((u_{d+1},u_d),v_d)\\
+= -\sum_{E\in\Ehcom^{d+1}} \sc{\delta_{d+1}\sigma^c(\th_{d+1}u_{d+1}-\th_d u_d)+(\vc q\cdot\n)^+u_{d+1} - (\vc q\cdot\n)^-u_d}{v_d}_E.
+\end{multline*}
+Here $f^+=\max\{0,f\}$ and $f^-=-\min\{0,f\}$ is the positive, negative part, respectively and $\Ehcom^4=\Ehcom^1=\emptyset$.
+
+A priori error estimates for the equation in a single domain are done in \cite{ern_stephansen_zunino}, for a posteriori estimates see \cite{ern2010guaranteed}.
+
+% TODO:
+% \begin{itemize}
+%   \item Write equations for sorption and integrate them into \eqref{e:ADE}. 
+% $R_i(\argdot)$ is a ``retardation function'' its a function which includes various types of equilibrium sorption.
+% It is in general dependent as on the substance $i$ as on the material in particular location in space. 
+% 
+% \end{itemize}
+% 
+% 
+% 
+% 
+% \begin{enumerate}
+%  \item Explicit solution - technicaly this is only slight modification of the already implemented transport model. One has to add appropriate 
+%        diffusive flux approximation. Something was done by Sembera nad Jiranek, however there are more possible approximations (further search). Weakness:
+%        \begin{itemize}
+%         \item too restrictive condition on timestep size for big diffusion on small elements
+% 	      \[
+% 	         dt \le \min \frac{dx^2}{2D},\qquad dt\le \min \frac{dx}{v}
+% 	      \]
+% 	\dots so the former condition is more restrictive if $\min dx / D \le 2\min 1/v$ \dots Peclet number can not be used since it 
+%         measure only local balnace between diffusion and convection
+% 
+%         \item persisting problems with CFL condition
+%         \item problems with approximation of the diffusive flux with anisothropy raising from the dispersion
+%        \end{itemize}
+%   \item Implicit solution
+%   \begin{enumerate}
+%        \item Finite volumes/ Discontinuous Galerkin - search for suitable approximation of the diffusive flux (as above)
+%        \item Lumped MH  for diffusion, upwind for convection. Problem with zero or nearly zero $\tn D$. There has to be also implementation without
+%              diffusion (no whole MH stuff). Problem that with lumping this leads to edge centered finite volumes.
+%   \end{enumerate}   
+%   
+% \end{enumerate}
+
+
+
+\bibliographystyle{abbrvnat}
+\bibliography{flow123d_doc}
+
+
+\end{document}

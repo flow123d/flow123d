@@ -1,0 +1,138 @@
+% ***************************************** SYMBOLS
+\def\abs#1{\lvert#1\rvert}
+\def\argdot{{\hspace{0.18em}\cdot\hspace{0.18em}}}
+\def\avg#1{\left\{#1\right\}_\omega}
+\def\D{{\tn D}}
+\def\div{\operatorname{div}}
+\def\Eh{\mathcal E_h}       % edges of \Th
+\def\Ehcom{\mathcal E_{h,C}}         % edges of \Th on interface with lower dimension
+\def\Ehdir{\mathcal E_{h,D}}         % Dirichlet edges of \Th
+\def\Ehint{\mathcal E_{h,I}}       % interior edges of \Th
+\def\grad{\nabla}
+\def\jmp#1{[#1]}
+\def\n{\vc n}
+\def\vc#1{\mathbf{\boldsymbol{#1}}}     % vector
+\def\R{\mathbb R}
+\def\sc#1#2{\left(#1,#2\right)}
+\def\Th{\mathcal T_h}       % triangulation
+\def\th{\vartheta}
+\def\tn#1{{\mathbb{#1}}}    % tensor
+\def\Tr{\operatorname{Tr}}
+\def\where{\,|\,}
+%***************************************************************************
+
+
+\section{Transport of substances}
+
+Flow123d can simulate transport of substances dissolved in water.
+The transport mechanism is governed by the \emph{advection}, and the \emph{hydrodynamic dispersion}.
+Moreover the substances can move between ground and fractures.
+
+
+In the domain $\Omega_d$ of dimension $d\in\{1,2,3\}$, we consider a system of mass balance equations in the following form:
+\begin{equation}
+    \label{e:ADE}
+   \delta_d\partial_t ( \th c^i) + \div ( \vc q_d c^i ) - \div (\th \delta_d \D^i \grad c^i ) = F_S^i + F_C(c^i) + F_R(c^1,\dots, c^s).
+\end{equation}
+The principal unknown is the concentration $c^i$ \units{1}{-3}{} of a substance $i\in\{1,\dots, s\}$, which means weight of the substance in unit volume of the water.
+Other quantities are:
+\begin{itemize}
+
+\item $\th$ \units{}{}{} is the \hyperA{TransportDG-BulkData::por-m}{porosity}, i.e. fraction of space occupied by water and the total volume.
+\item The hydrodynamic dispersivity tensor $\D^i$ \units{}{2}{-1} has the form
+\[
+  \D^i =D_m^i \tau \tn I + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \times \vc v}{\abs{\vc v}^2}\right),
+\]
+which represents (isotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
+Here $D_m^i$ \units{}{2}{-1} is the \hyperA{TransportDG-BulkData::diff-m}{molecular diffusion coefficient} of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{TransportDG-BulkData::disp-l}{longitudal dispersivity} and the \hyperA{TransportDG-BulkData::disp-t}{transversal dispersivity}, respectively.
+Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, related to the Darcy flux $\vc q_d$ by the relation $\vc q_d = \th\delta_d\vc v$.
+The value of $D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
+For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cite{marsily,domenico_schwartz}.
+
+\item $F_S^i$ \units{1}{-d}{-1} represents the density of concentration sources.
+Its form is:
+$$ F_S^i = \varrho^i_S + (c_S^i-c^i)\sigma_S. $$
+Here $\varrho_S^i$ \units{1}{-d}{-1} is the \hyperA{TransportDG-BulkData::sources-density}{density of concentration sources}, $c_S^i$ is an \hyperA{TransportDG-BulkData::sources-conc}{equilibrium concentration} and $\sigma_S^i$ is the \hyperA{TransportDG-BulkData::sources-sigma}{concentration flux}.
+
+\item $F_C(c^i)$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.
+
+\item The reaction term $F_R(\dots)$ \units{1}{-d}{-1} is currently neglected.
+\end{itemize}
+
+
+
+\paragraph{Initial and boundary conditions.}
+At time $t=0$ the concentration is determined by the \hyperA{TransportDG-BulkData::init-conc}{initial condition}
+$$ c^i(0,\vc x) = c^i_0(\vc x). $$
+The physical boundary $\partial\Omega_d$ is decomposed into two parts:
+\begin{align*}
+\Gamma_D(t) &= \{\vc x\in \partial\Omega_d\where \vc q(t,\vc x)\cdot\vc n(\vc x)<0\},\\
+\Gamma_N(t) &= \{\vc x\in \partial\Omega_d\where \vc q(t,\vc x)\cdot\vc n(\vc x)\ge 0\},
+\end{align*}
+where $\vc n$ stands for the unit outward normal vector to $\partial\Omega_d$.
+On the inflow part $\Gamma_D$, the user must provide \hyperA{TransportDG-BoundaryData::bc-conc}{Dirichlet boundary condition} for concentrations:
+$$ c^i(t,\vc x) = c^i_D(t,\vc x) \mbox{ on }\Gamma_D(t), $$
+while on $\Gamma_N$ we impose homogeneous Neumann boundary condition:
+$$ -\th\delta_d\D^i(t,\vc x)\nabla c^i(t,\vc x)\cdot\vc n(\vc x) = 0 \mbox{ on }\Gamma_N(t). $$
+
+
+
+
+
+
+\paragraph{Communication between dimensions.}
+Transport of substances is considered also on interfaces of physical domains with adjacent dimensions (i.e. 3D-2D and 2D-1D, but not 3D-1D).
+Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega_{d+1}$ and $\Omega_d$, respectively, the comunication on the interface between $\Omega_{d+1}$ and $\Omega_d$ is described by:
+\begin{equation}
+  \label{e:inter_dim_flux}
+  q^c = \delta_{d+1}\sigma^c (\th_{d+1} c_{d+1} - \th_d c_d) + \begin{cases}q^w c_{d+1} & \mbox{ if }q^w\ge 0,\\q^w c_d & \mbox{ if }q^w<0,\end{cases}
+\end{equation}
+where
+\begin{itemize}
+\item $q^c$ \units{1}{-d}{-1} is the density of concentration flux from $\Omega_{d+1}$ to $\Omega_d$,
+\item $\sigma^c$ \units{}{1}{-1} is a \hyperA{TransportDG-BulkData::sigma-c}{transition parameter}.
+Its nonzero value causes mass exchange between dimensions whenever the concentrations differ.
+It is recommended to set either $\sigma^c=0$ (exchange due to water flux only) or, similarly as in \eqref{e:sigma_law},
+\[
+  \sigma^c \approx\frac{\delta_{d+1}}{\delta_d}\D:\n\otimes\n.
+\]
+\item $q^w$ \units{}{3-d}{-1} is the water flux from $\Omega_{d+1}$ to $\Omega_d$, i.e. $q^w = \vc q_{d+1}\cdot\n_{d+1}$.
+\end{itemize}
+Equation \eqref{e:inter_dim_flux} is incorporated as the total flux boundary condition for the problem on $\Omega_{d+1}$ and a source term in $\Omega_d$:
+\begin{align}
+-\th\delta_{d+1}\D\nabla c_{d+1}\cdot\vc n + q^w c_{d+1} &= q^c,\\
+\label{e:FC}
+F_C^d &= q^c.
+\end{align}
+
+\paragraph{Dual porosity}
+Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into to zones the mobile zone and the immbile zone. 
+Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the dead-end pores, where the liquid is traped and can not pass through.
+The rest of the pore volume is ocuppied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
+We consider simple nonequilibrium linear model:
+\begin{align}
+    \theta_m \partial_t c_m &= \alpha ( c_i - c_m), \\
+    \theta_i \partial_t c_i &= \alpha ( c_m - c_i) 
+\end{align}
+where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone, $\alpha$ is a diffusion parameter, $\theta_m$ and $\theta_i$ are porosities of the mobile zone and the immobile zone respectively, while 
+\[
+  \theta_m +\theta_i =\theta.
+\]
+
+The solution of this system is:
+\begin{align}
+     c_m(t) &= (c_m(0) - c_a(0)) \exp( \alpha(\frac{1}{\theta_m} + \frac{1}{\theta_i}) t) + c_a(0), \\
+     c_i(t) &= (c_i(0) - c_a(0)) \exp( \alpha(\frac{1}{\theta_m} + \frac{1}{\theta_i}) t) + c_a(0)
+\end{align}
+where $c_a$ is weighted average:
+\[
+  c_a = \frac{\theta_m c_m + \theta_i c_i}{\theta_m + \theta_i}.
+\]
+
+
+
+
+
+
+
+
