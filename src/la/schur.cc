@@ -331,6 +331,92 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
         MPI_Barrier(PETSC_COMM_WORLD);*/
 }
 
+SchurComplement :: SchurComplement(Mat & a)
+{
+	PetscInt m, n, ncols;
+	PetscErrorCode ierr;
+	Mat sub_mat;
+	unsigned int pos_proc; //position of processed row
+	unsigned int pos_submat; //position of written row of sub matrix
+	std::vector<bool> processed_rows;
+	std::vector<unsigned int> submat_rows;
+	std::deque<unsigned int> queue;
+	const PetscInt *cols;
+	const PetscScalar *vals;
+
+	ierr = MatGetSize(a, &m, &n);
+	ASSERT(m == m, "Assumed square matrix.\n" );
+	processed_rows.resize(m);
+	for (unsigned int i=0; i<m; i++) processed_rows[i] = false;
+	pos_proc = 0;
+
+	MatCreate(MPI_COMM_SELF, &sub_mat);
+	MatSetSizes(sub_mat, m, m, m, m);
+
+	while (pos_proc < processed_rows.size()) {
+		processed_rows[pos_proc] = true;
+		pos_submat = 0;
+		submat_rows.clear();
+		submat_rows.push_back(pos_proc);
+		//clear sub_mat
+		ierr = MatGetRow(a, pos_proc, &ncols, &cols, &vals);
+
+		for (PetscInt i=0; i<ncols; i++) {
+			if (!processed_rows[i]) {
+				queue.push_back( cols[i] );
+				processed_rows[ cols[i] ] = true;
+				submat_rows.push_back( cols[i] );
+				for (PetscInt j=0; j<submat_rows.size(); j++) {
+					if (submat_rows[j] == cols[i]) {
+						MatSetValue(sub_mat, pos_submat, j, vals[i], INSERT_VALUES);
+						break;
+					}
+				}
+			} else if (i!=pos_proc) {
+				//ERROR
+			}
+		}
+
+		while (queue.size()) {
+			pos_submat++;
+			ierr = MatGetRow(a, queue.front(), &ncols, &cols, &vals);
+			for (PetscInt i=0; i<ncols; i++) {
+				if (!processed_rows[i]) {
+					queue.push_back( cols[i] );
+					processed_rows[ cols[i] ] = true;
+					submat_rows.push_back( cols[i] );
+				}
+				for (PetscInt j=0; j<submat_rows.size(); j++) {
+					if (submat_rows[j] == cols[i]) {
+						MatSetValue(sub_mat, pos_submat, j, vals[i], INSERT_VALUES);
+						break;
+					}
+				}
+			}
+			queue.pop_front();
+		}
+
+		do {
+			pos_proc++;
+			if (pos_proc == processed_rows.size()) break;
+		} while(processed_rows[pos_proc]);
+	}
+
+
+
+    // initialize variables
+    IA_sub  = NULL;
+    B       = NULL;
+    Bt      = NULL;
+    B_sub   = NULL;
+    Bt_sub  = NULL;
+    xA      = NULL;
+    xA_sub  = NULL;
+    IAB     = NULL;
+    IAB_sub = NULL;
+    sub_vec_block2 = NULL;
+}
+
 /**
  * @brief Form Schur complement. Call solve. Resolve original solution.
  * TODO: should be better when LinSys is full object.
