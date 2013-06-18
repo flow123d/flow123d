@@ -43,8 +43,6 @@
 #include <sstream>
 #include <string>
 
-
-
 namespace it = Input::Type;
 
 it::Record DarcyFlowMHOutput::input_type
@@ -207,17 +205,16 @@ void DarcyFlowMHOutput::output()
       water_balance();
 
       //compute_l2_difference();
-
         /*
-        int *partitioning;
-        unsigned    lpartitioning;
-        darcy_flow->get_partitioning_vector( partitioning, lpartitioning );
-        int    lpartitioning_int = static_cast<int>( lpartitioning );
-        if (lpartitioning_int > 0 ) {
+      //int *partitioning;
+      //unsigned    lpartitioning;
+      //darcy_flow->get_partitioning_vector( partitioning, lpartitioning );
+      //int    lpartitioning_int = static_cast<int>( lpartitioning );
+      //if (lpartitioning_int > 0 ) {
 
-           output_writer->register_elem_data
-               (mesh_, "substructure", "", in_rec_.val<Input::Record>("output_stream"), partitioning, lpartitioning_int);
-        }
+      //   output_writer->register_elem_data
+      //       (mesh_, "substructure", "", in_rec_.val<Input::Record>("output_stream"), partitioning, lpartitioning_int);
+      //}
 */
       //double time  = min(darcy_flow->solved_time(), 1.0E200);
       double time  = darcy_flow->solved_time();
@@ -673,8 +670,8 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
 
 void DarcyFlowMHOutput::water_balance() {
     F_ENTRY;
-    if (balance_output_file == NULL) return;
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+    if (balance_output_file == NULL) return;
 
     //BOUNDARY
     //struct Boundary *bcd;
@@ -735,7 +732,6 @@ void DarcyFlowMHOutput::water_balance() {
     fprintf(balance_output_file, bc_total_format.c_str(),w+wl+2,"total boundary balance",
                 w,total_balance, w, total_outflow, w, total_inflow);
 
-    
     //SOURCES
     string src_head_format = "# %-*s%-*s%-*s%-*s%-*s\n",
            src_format = "%*s%-*d%-*s  %-*g%-*s%-*g\n",
