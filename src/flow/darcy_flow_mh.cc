@@ -276,10 +276,10 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         n_schur_compls = 2;
     }
 
-    START_TIMER("solver init");
-    solver = new (Solver);
-    solver_init(solver, in_rec.val<AbstractRecord>("solver"));
-    END_TIMER("solver init");
+    //START_TIMER("solver init");
+    //solver = new (Solver);
+    //solver_init(solver, in_rec.val<AbstractRecord>("solver"));
+    //END_TIMER("solver init");
     
     solution = NULL;
     schur0   = NULL;
@@ -320,7 +320,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     mh_dh.reinit(mesh_);
 
-    prepare_parallel();
+    prepare_parallel(in_rec.val<AbstractRecord>("solver"));
 
     //side_ds->view();
     //el_ds->view();
@@ -461,7 +461,7 @@ void DarcyFlowMH_Steady::postprocess()
 double DarcyFlowMH_Steady::solution_precision() const
 {
 	double precision;
-	double bnorm;
+	double bnorm=0.0;
 
 	switch (n_schur_compls) {
 	case 0: /* none */
@@ -474,7 +474,7 @@ double DarcyFlowMH_Steady::solution_precision() const
 		if (schur1 != NULL) VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
 		break;
 	}
-	precision = max(solver->a_tol, solver->r_tol*bnorm);
+	precision = max(schur0->a_tol, schur0->r_tol*bnorm);
 
 	return precision;
 }
@@ -508,9 +508,10 @@ void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_s
 
 void  DarcyFlowMH_Steady::get_partitioning_vector(int * &elem_part, unsigned &lelem_part)
 {
-    elem_part=&(element_part[0]);
-    lelem_part = element_part.size();
-    ASSERT(elem_part != NULL, "Requested vector is not allocated!\n");
+  
+//    elem_part=&(element_part[0]);
+//    lelem_part = element_part.size();
+//    ASSERT(elem_part != NULL, "Requested vector is not allocated!\n");
 }
 
 void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
@@ -998,183 +999,31 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
     if (schur0 == NULL) { // create Linear System for MH matrix
 
         if (in_rec.type() == LinSys_BDDC::input_type) {
-            LinSys_BDDC *ls = new LinSys_BDDC(in_rec, lsize, global_row_4_sub_row->size(), &(*rows_ds), NULL, MPI_COMM_WORLD, 3, 1 );
+            LinSys_BDDC *ls = new LinSys_BDDC(in_rec, lsize, global_row_4_sub_row->size(), &(*rows_ds), NULL, MPI_COMM_WORLD,
+                    3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
+                    1 ); // 1 == number of subdomains per process
             // possible initialization particular to BDDC
+            START_TIMER("BDDC set mesh data");
+            set_mesh_data_for_bddc(ls);
             schur0=ls;
+            END_TIMER("BDDC set mesh data");
+            
         }
         else if (in_rec.type() == LinSys_PETSC::input_type) {
             LinSys_PETSC *ls = new LinSys_PETSC(in_rec, lsize, &(*rows_ds), NULL, PETSC_COMM_WORLD );
             // possible initialization particular to BDDC
-            schur0=ls;
-
-        } else {
-            xprintf(Err, "Unknown solver type. Internal error.\n");
-        }
-
-        if (solver->type == BDDCML_SOLVER) {
-           // prepare mesh for BDDCML
-           // initialize arrays
-           std::map<int,arma::vec3> localDofMap;
-           std::vector<int> inet;
-           std::vector<int> nnet;
-           std::vector<int> isegn;
-
-           std::vector<double> element_permeability;
-
-           // maximal and minimal dimension of elements
-           int elDimMax = 1;
-           int elDimMin = 3;
-           for ( int i_loc = 0; i_loc < el_ds->lsize(); i_loc++ ) {
-               // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
-               ElementFullIter el = mesh_->element(el_4_loc[i_loc]);
-               int e_idx = el.index();
-
-               int elDim = el->dim();
-               elDimMax = std::max( elDimMax, elDim );
-               elDimMin = std::min( elDimMin, elDim );
-
-               isegn.push_back( e_idx );
-               int nne = 0;
-
-               FOR_ELEMENT_SIDES(el,si) {
-                   // insert local side dof
-                   int side_row = side_row_4_id[ mh_dh.side_dof( el->side(si) ) ];
-                   arma::vec3 coord = el->side(si)->centre();
-
-                   localDofMap.insert( std::make_pair( side_row, coord ) );
-                   inet.push_back( side_row );
-                   nne++;
-               }
-
-               // insert local pressure dof
-               int el_row  = row_4_el[ el_4_loc[i_loc] ];
-               arma::vec3 coord = el->centre();
-               localDofMap.insert( std::make_pair( el_row, coord ) );
-               inet.push_back( el_row );
-               nne++;
-
-               FOR_ELEMENT_SIDES(el,si) {
-                   Edge *edg=el->side(si)->edge();
-
-                   // insert local edge dof
-                   int edge_row = row_4_edge[ el->side(si)->edge_idx() ];
-                   arma::vec3 coord = el->side(si)->centre();
-
-                   localDofMap.insert( std::make_pair( edge_row, coord ) );
-                   inet.push_back( edge_row );
-                   nne++;
-               }
-
-               // insert dofs related to compatible connections
-               for ( int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
-                   int edge_row = row_4_edge[ el->neigh_vb[i_neigh]->edge_idx()  ];
-                   arma::vec3 coord = el->neigh_vb[i_neigh]->edge()->side(0)->centre();
-
-                   localDofMap.insert( std::make_pair( edge_row, coord ) );
-                   inet.push_back( edge_row );
-                   nne++;
-               }
-
-               nnet.push_back( nne );
-
-               // version for rho scaling
-               // trace computation
-               arma::vec3 centre = el->centre();
-               double conduct = data.conductivity.value( centre , el->element_accessor() );
-               double cs = data.cross_section.value( centre, ele->element_accessor() );
-               arma::mat33 aniso = data.anisotropy.value( centre, ele->element_accessor() );
-
-               // compute mean on the diagonal
-               double coef = 0.;
-               for ( int i = 0; i < 3; i++) {
-                   coef = coef + aniso.at(i,i);
-               }
-               coef = conduct*coef / 3;
-
-               ASSERT( coef > 0.,
-                       "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
-               element_permeability.push_back( 1. / coef );
-           }
-           //convert set of dofs to vectors
-           int numNodeSub = localDofMap.size();
-           std::vector<int> isngn( numNodeSub );
-           std::vector<double> xyz( numNodeSub * 3 ) ;
-           int ind = 0;
-           std::map<int,arma::vec3>::iterator itB = localDofMap.begin();
-           for ( ; itB != localDofMap.end(); ++itB ) {
-               isngn[ind] = itB -> first;
-
-               arma::vec3 coord = itB -> second;
-               for ( int j = 0; j < 3; j++ ) {
-                   xyz[ j*numNodeSub + ind ] = coord[j];
-               }
-
-               ind++;
-           }
-           localDofMap.clear();
-
-           // nndf is trivially one
-           std::vector<int> nndf( numNodeSub, 1 );
-
-           // prepare auxiliary map for renumbering nodes 
-           typedef std::map<int,int> Global2LocalMap_; //! type for storage of global to local map
-           Global2LocalMap_ global2LocalNodeMap;
-           for ( unsigned ind = 0; ind < isngn.size(); ++ind ) {
-               global2LocalNodeMap.insert( std::make_pair( static_cast<unsigned>( isngn[ind] ), ind ) );
-           }
-
-           //std::cout << "INET: \n";
-           //std::copy( inet.begin(), inet.end(), std::ostream_iterator<int>( std::cout, " " ) );
-           //std::cout << std::endl;
-           //std::cout << "ISNGN: \n";
-           //std::copy( isngn.begin(), isngn.end(), std::ostream_iterator<int>( std::cout, " " ) );
-           //std::cout << std::endl << std::flush;
-           //std::cout << "ISEGN: \n";
-           //std::copy( isegn.begin(), isegn.end(), std::ostream_iterator<int>( std::cout, " " ) );
-           //std::cout << std::endl << std::flush;
-           //MPI_Barrier( PETSC_COMM_WORLD );
-
-           // renumber nodes in the inet array to locals
-           int indInet = 0;
-           for ( int iEle = 0; iEle < isegn.size(); iEle++ ) {
-               int nne = nnet[ iEle ];
-               for ( unsigned ien = 0; ien < nne; ien++ ) {
-
-                   int indGlob = inet[indInet];
-                   // map it to local node
-                   Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-                   ASSERT( pos != global2LocalNodeMap.end(),
-                           "Cannot remap node index %d to local indices. \n ", indGlob );
-                   int indLoc = static_cast<int> ( pos -> second );
-
-                   // store the node
-                   inet[ indInet++ ] = indLoc;
-               }
-           }
-
-           int numNodes    = size;
-           int numDofsInt  = size;
-           int spaceDim    = 3;    // TODO: what is the proper value here?
-           int meshDim     = elDimMax; 
-           //std::cout << "I have identified following dimensions: max " << elDimMax << ", min " << elDimMin << std::endl;
-
-           schur0 -> load_mesh( spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, element_permeability, meshDim );
-           //schur0 -> load_mesh( mesh_, edge_ds, el_ds, side_ds, rows_ds, el_4_loc, row_4_el, side_id_4_loc, 
-           //                     side_row_4_id, edge_4_loc, row_4_edge );
-        }
-        else if (solver->type == PETSC_SOLVER) {
-
-            START_TIMER("PREALLOCATION");
+            START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
             schur0->start_allocation();
             assembly_steady_mh_matrix(); // preallocation
             VecZeroEntries(schur0->get_solution());
             schur0->start_add_assembly(); // finish allocation and create matrix
-            END_TIMER("PREALLOCATION");
+            END_TIMER("PETSC PREALLOCATION");
 
-        }
-        else {
-            ASSERT( false, "Unsupported solver type! %s ", solver->type );
+            schur0=ls;
+            VecZeroEntries(schur0->get_solution());
+        } else {
+            xprintf(Err, "Unknown solver type. Internal error.\n");
         }
     }
 
@@ -1203,6 +1052,162 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
 }
 
+
+
+void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
+    // prepare mesh for BDDCML
+    // initialize arrays
+    std::map<int,arma::vec3> localDofMap;
+    std::vector<int> inet;
+    std::vector<int> nnet;
+    std::vector<int> isegn;
+
+    std::vector<double> element_permeability;
+
+    // maximal and minimal dimension of elements
+    int elDimMax = 1;
+    int elDimMin = 3;
+    for ( int i_loc = 0; i_loc < el_ds->lsize(); i_loc++ ) {
+        // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
+        ElementFullIter el = mesh_->element(el_4_loc[i_loc]);
+        int e_idx = el.index();
+
+        int elDim = el->dim();
+        elDimMax = std::max( elDimMax, elDim );
+        elDimMin = std::min( elDimMin, elDim );
+
+        isegn.push_back( e_idx );
+        int nne = 0;
+
+        FOR_ELEMENT_SIDES(el,si) {
+            // insert local side dof
+            int side_row = side_row_4_id[ mh_dh.side_dof( el->side(si) ) ];
+            arma::vec3 coord = el->side(si)->centre();
+
+            localDofMap.insert( std::make_pair( side_row, coord ) );
+            inet.push_back( side_row );
+            nne++;
+        }
+
+        // insert local pressure dof
+        int el_row  = row_4_el[ el_4_loc[i_loc] ];
+        arma::vec3 coord = el->centre();
+        localDofMap.insert( std::make_pair( el_row, coord ) );
+        inet.push_back( el_row );
+        nne++;
+
+        FOR_ELEMENT_SIDES(el,si) {
+            Edge *edg=el->side(si)->edge();
+
+            // insert local edge dof
+            int edge_row = row_4_edge[ el->side(si)->edge_idx() ];
+            arma::vec3 coord = el->side(si)->centre();
+
+            localDofMap.insert( std::make_pair( edge_row, coord ) );
+            inet.push_back( edge_row );
+            nne++;
+        }
+
+        // insert dofs related to compatible connections
+        for ( int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
+            int edge_row = row_4_edge[ el->neigh_vb[i_neigh]->edge_idx()  ];
+            arma::vec3 coord = el->neigh_vb[i_neigh]->edge()->side(0)->centre();
+
+            localDofMap.insert( std::make_pair( edge_row, coord ) );
+            inet.push_back( edge_row );
+            nne++;
+        }
+
+        nnet.push_back( nne );
+
+        // version for rho scaling
+        // trace computation
+        arma::vec3 centre = el->centre();
+        double conduct = data.conductivity.value( centre , el->element_accessor() );
+        double cs = data.cross_section.value( centre, el->element_accessor() );
+        arma::mat33 aniso = data.anisotropy.value( centre, el->element_accessor() );
+
+        // compute mean on the diagonal
+        double coef = 0.;
+        for ( int i = 0; i < 3; i++) {
+            coef = coef + aniso.at(i,i);
+        }
+        // Maybe divide by cs
+        coef = conduct*coef / 3;
+
+        ASSERT( coef > 0.,
+                "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
+        element_permeability.push_back( 1. / coef );
+    }
+    //convert set of dofs to vectors
+    int numNodeSub = localDofMap.size();
+    std::vector<int> isngn( numNodeSub );
+    std::vector<double> xyz( numNodeSub * 3 ) ;
+    int ind = 0;
+    std::map<int,arma::vec3>::iterator itB = localDofMap.begin();
+    for ( ; itB != localDofMap.end(); ++itB ) {
+        isngn[ind] = itB -> first;
+
+        arma::vec3 coord = itB -> second;
+        for ( int j = 0; j < 3; j++ ) {
+            xyz[ j*numNodeSub + ind ] = coord[j];
+        }
+
+        ind++;
+    }
+    localDofMap.clear();
+
+    // nndf is trivially one
+    std::vector<int> nndf( numNodeSub, 1 );
+
+    // prepare auxiliary map for renumbering nodes
+    typedef std::map<int,int> Global2LocalMap_; //! type for storage of global to local map
+    Global2LocalMap_ global2LocalNodeMap;
+    for ( unsigned ind = 0; ind < isngn.size(); ++ind ) {
+        global2LocalNodeMap.insert( std::make_pair( static_cast<unsigned>( isngn[ind] ), ind ) );
+    }
+
+    //std::cout << "INET: \n";
+    //std::copy( inet.begin(), inet.end(), std::ostream_iterator<int>( std::cout, " " ) );
+    //std::cout << std::endl;
+    //std::cout << "ISNGN: \n";
+    //std::copy( isngn.begin(), isngn.end(), std::ostream_iterator<int>( std::cout, " " ) );
+    //std::cout << std::endl << std::flush;
+    //std::cout << "ISEGN: \n";
+    //std::copy( isegn.begin(), isegn.end(), std::ostream_iterator<int>( std::cout, " " ) );
+    //std::cout << std::endl << std::flush;
+    //MPI_Barrier( PETSC_COMM_WORLD );
+
+    // renumber nodes in the inet array to locals
+    int indInet = 0;
+    for ( int iEle = 0; iEle < isegn.size(); iEle++ ) {
+        int nne = nnet[ iEle ];
+        for ( unsigned ien = 0; ien < nne; ien++ ) {
+
+            int indGlob = inet[indInet];
+            // map it to local node
+            Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
+            ASSERT( pos != global2LocalNodeMap.end(),
+                    "Cannot remap node index %d to local indices. \n ", indGlob );
+            int indLoc = static_cast<int> ( pos -> second );
+
+            // store the node
+            inet[ indInet++ ] = indLoc;
+        }
+    }
+
+    int numNodes    = size;
+    int numDofsInt  = size;
+    int spaceDim    = 3;    // TODO: what is the proper value here?
+    int meshDim     = elDimMax;
+    //std::cout << "I have identified following dimensions: max " << elDimMax << ", min " << elDimMin << std::endl;
+
+    bddc_ls -> load_mesh( spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, element_permeability, meshDim );
+}
+
+
+
+
 //=============================================================================
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
@@ -1214,7 +1219,6 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
     if ( IA2 != NULL ) MatDestroy( &(IA2) );
 
     delete schur0;
-    delete solver;
 }
 
 /*******************************************************************************
@@ -1584,7 +1588,7 @@ void DarcyFlowMH_Steady::make_row_numberings() {
 // - compute appropriate partitioning of elements and sides
 // - make arrays: *_id_4_loc and *_row_4_id to allow parallel assembly of the MH matrix
 // ====================================================================================
-void DarcyFlowMH_Steady::prepare_parallel() {
+void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     
     START_TIMER("prepare parallel");
     
@@ -1607,7 +1611,8 @@ void DarcyFlowMH_Steady::prepare_parallel() {
     //ASSERT(ierr == 0, "Error in MPI_Barrier.");
     
     
-    if (solver->type == BDDCML_SOLVER) {
+    if (in_rec.type() ==  LinSys_BDDC::input_type) {
+
         xprintf(Msg,"Compute optimal partitioning of elements.\n");
 
         // prepare dual graph
@@ -1818,7 +1823,7 @@ void DarcyFlowMH_Steady::prepare_parallel() {
      */
 
     // prepare global_row_4_sub_row
-    if (solver->type == BDDCML_SOLVER) {
+    if (in_rec.type() ==  LinSys_BDDC::input_type) {
         //xprintf(Msg,"Compute mapping of local subdomain rows to global rows.\n");
 
         global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);

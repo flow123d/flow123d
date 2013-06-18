@@ -55,6 +55,7 @@
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
+#include "la/linsys_BDDC.hh"
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
@@ -263,7 +264,7 @@ public:
 protected:
     virtual void modify_system() {};
     void set_R() {};
-    void prepare_parallel();
+    void prepare_parallel( const Input::AbstractRecord in_rec);
     void make_row_numberings();
     void preallocate_mh_matrix();
     void assembly_steady_mh_matrix();
@@ -271,6 +272,7 @@ protected:
     void mh_abstract_assembly_intersection();
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
     void make_schur0( const Input::AbstractRecord in_rec);
+    void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
 //    void make_schur1();
 //    void make_schur2();
     double solution_precision() const;
@@ -279,7 +281,7 @@ protected:
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	struct Solver *solver;
+	//struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
 	SchurComplement *schur1;  	//< first schur compl.

@@ -56,7 +56,7 @@ LinSys_PETSC::LinSys_PETSC( const Input::Record in_rec,
     // rhs
     v_rhs_= new double[ rows_ds_->lsize() + 1 ];
     ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
-    //ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
+    ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
     params_ = in_rec.val<string>("options");
 }
@@ -279,7 +279,7 @@ int LinSys_PETSC::solve()
     if (rows_ds_->np() > 1) {
         // parallel setting
        if (this->is_positive_definite())
-           petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_shift_positive_definite -sub_pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
            //petsc_dflt_opt="-ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps -mat_mumps_sym 1";
            // -ksp_type preonly -pc_type lu 
        else

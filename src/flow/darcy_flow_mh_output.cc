@@ -208,7 +208,7 @@ void DarcyFlowMHOutput::output()
 
       //compute_l2_difference();
 
-        
+        /*
         int *partitioning;
         unsigned    lpartitioning;
         darcy_flow->get_partitioning_vector( partitioning, lpartitioning );
@@ -218,7 +218,7 @@ void DarcyFlowMHOutput::output()
            output_writer->register_elem_data
                (mesh_, "substructure", "", in_rec_.val<Input::Record>("output_stream"), partitioning, lpartitioning_int);
         }
-
+*/
       //double time  = min(darcy_flow->solved_time(), 1.0E200);
       double time  = darcy_flow->solved_time();
 

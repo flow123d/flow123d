@@ -402,6 +402,7 @@ void SparseGraphMETIS::partition(int *part)
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size(),
             "METIS could be used only with localized distribution.\n");
 
+    DBGMSG("in SGMETIS:partition");
     if (vtx_distr.np()==1) {
         for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
 
@@ -427,7 +428,7 @@ void SparseGraphMETIS::partition(int *part)
 
             DBGMSG("Graph edge cut: %d\n",edgecut);
         }
-        MPI_Bcast( part, n_vtx, MPI_INT, 0, vtx_distr.get_comm() );
+        //MPI_Bcast( part, n_vtx, MPI_INT, 0, vtx_distr.get_comm() );
     }
 }
 

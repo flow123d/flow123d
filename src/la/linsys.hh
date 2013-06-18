@@ -408,6 +408,11 @@ public:
        if ( own_solution_ ) delete[] v_solution_;
     }
 
+
+    // TODO: read these from input, use in solve()
+    // make access methods
+    double          a_tol,r_tol;
+
 protected:
     MPI_Comm         comm_;
     SetValuesMode    status_;         //!< Set value status of the linear system.
