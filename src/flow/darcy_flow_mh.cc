@@ -626,6 +626,15 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
 
         // set block A: side-side on one element - block diagonal matrix
+
+        //std::cout << "subMat in flow" << std::endl;
+        //for ( unsigned i = 0; i < nsides; i++) {
+        //    for ( unsigned j = 0; j < nsides; j++) {
+        //        std::cout << fe_values.local_matrix()[i*nsides+j]  << " ";
+        //    }
+        //    std::cout << std::endl;
+        //}
+
         ls->mat_set_values(nsides, side_rows, nsides, side_rows, fe_values.local_matrix() );
         // set block B, B': element-side, side-element
         ls->mat_set_values(1, &el_row, nsides, side_rows, minus_ones);
@@ -1011,6 +1020,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
         }
         else if (in_rec.type() == LinSys_PETSC::input_type) {
             LinSys_PETSC *ls = new LinSys_PETSC(in_rec, lsize, &(*rows_ds), NULL, PETSC_COMM_WORLD );
+            schur0=ls;
             // possible initialization particular to BDDC
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
@@ -1020,7 +1030,6 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             schur0->start_add_assembly(); // finish allocation and create matrix
             END_TIMER("PETSC PREALLOCATION");
 
-            schur0=ls;
             VecZeroEntries(schur0->get_solution());
         } else {
             xprintf(Err, "Unknown solver type. Internal error.\n");

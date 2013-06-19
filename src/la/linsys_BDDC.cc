@@ -55,6 +55,9 @@ LinSys_BDDC::LinSys_BDDC(const Input::Record in_rec,
     // set type
     type = LinSys::BDDC;
 
+    // from the point of view of assembly, BDDC linsys is in the ADD state
+    status_ = LinSys::ADD;
+
     la::BddcmlWrapper::MatrixType matrixType;
     switch ( matrixTypeInt ) {
         case 0:
