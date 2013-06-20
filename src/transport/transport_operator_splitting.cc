@@ -433,13 +433,11 @@ void TransportOperatorSplitting::update_solution() {
 
 
 
-
 void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 {
     mh_dh = &dh;
-	convection->set_flow_field_vector( dh );
+	convection->set_velocity_field( dh );
 };
-
 
 
 

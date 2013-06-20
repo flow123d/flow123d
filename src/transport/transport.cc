@@ -115,6 +115,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     time_->marks().add_time_marks(0.0,
         in_rec.val<Input::Record>("output").val<double>("save_step"),
         time_->end_time(), output_mark_type );
+    cfl_max_step = time_->end_time();
     // TODO: this has to be set after construction of transport matrix ??!!
 
 
@@ -150,9 +151,11 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     make_transport_partitioning();
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
+    transport_matrix_time = -1.0; // or -infty
     set_initial_condition();
 
     is_convection_matrix_scaled = false;
+    need_time_rescaling=true;
 
     // register output vectors
     Input::Record output_rec = in_rec.val<Input::Record>("output");
@@ -291,11 +294,13 @@ void ConvectionTransport::get_reaction(int i,oReaction *reaction) {
 // RECOMPUTE MATRICES
 //=============================================================================
 
+/*
 void ConvectionTransport::set_flow_field_vector(const MH_DofHandler &dh){
     // DBGMSG("set_flow_fieldvec\n");
     mh_dh = &dh;
 	create_transport_matrix_mpi();
 };
+*/
 
 void ConvectionTransport::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {
     data_.cross_section = cross_section;
@@ -481,13 +486,9 @@ void ConvectionTransport::set_boundary_conditions()
         }
     }
 
-    for (sbi=0; sbi<n_subst_; sbi++)
-    	VecAssemblyBegin(bcvcorr[sbi]);
+    for (sbi=0; sbi<n_subst_; sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
+    for (sbi=0; sbi<n_subst_; sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
 
-    for (sbi=0; sbi<n_subst_; sbi++)
-    	VecAssemblyEnd(bcvcorr[sbi]);
-
-    for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
 
     //VecView(bcvcorr[0],PETSC_VIEWER_STDOUT_SELF);
     //exit(0);
@@ -550,11 +551,68 @@ void ConvectionTransport::compute_one_step() {
     unsigned int loc_el,sbi;
     
     START_TIMER("data reinit");
-    data_.set_time(*time_);
+    data_.set_time(*time_); // set to the last computed time
 
-    // possibly read boundary conditions
-    if (data_.bc_conc.changed_during_set_time) set_boundary_conditions();
+    ASSERT(mh_dh, "Null MH object.\n" );
+    // update matrix and sources if neccessary
+
+    if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed_during_set_time) {
+        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed_during_set_time);
+        create_transport_matrix_mpi();
+
+        // need new fixation of the time step
+
+        time_->set_upper_constraint(cfl_max_step);
+        time_->fix_dt_until_mark();
+
+        set_boundary_conditions();
+        // scale boundary sources
+        for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+
+        need_time_rescaling = true;
+    } else {
+        // possibly read boundary conditions
+        if (data_.bc_conc.changed_during_set_time) {
+            set_boundary_conditions();
+            // scale boundary sources
+            for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+        }
+    }
+
+    if (need_time_rescaling) {
+        if ( is_convection_matrix_scaled ) {
+            // rescale matrix
+            //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt()/time_->estimate_dt());
+            MatShift(tm, -1.0);
+            MatScale(tm, time_->estimate_dt()/time_->dt() );
+            MatShift(tm, 1.0);
+            DBGMSG("rescaling matrix\n");
+
+            for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt()/time_->dt());
+
+        } else {
+            // scale fresh convection term matrix
+            //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+            MatScale(tm, time_->estimate_dt());
+            MatShift(tm, 1.0);
+            is_convection_matrix_scaled = true;
+
+        }
+        need_time_rescaling = false;
+    }
+
+    // update source vectors
+//    for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
+//            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
+//            VecView(bcv[sbi],PETSC_VIEWER_STDOUT_SELF);
+//            getchar();
+//            VecView(bcvcorr[sbi],PETSC_VIEWER_STDOUT_SELF);
+//           getchar();
+//    }
+
+
     END_TIMER("data reinit");
+
 
     // proceed to actually computed time
     //time_->view("CONVECTION");
@@ -614,40 +672,19 @@ void ConvectionTransport::compute_one_step() {
 
 void ConvectionTransport::set_target_time(double target_time)
 {
+
     //sets target_mark_type (it is fixed) to be met in next_time()
     time_->marks().add(TimeMark(target_time, target_mark_type));
-    
-    //returns integer, one can check here whether the constraint has been set or not
+
+    // make new time step fixation, invalidate scaling
+    // same is done when matrix has changed in compute_one_step
     time_->set_upper_constraint(cfl_max_step);
     
-    //fixing convection time governor till next target_mark_type (got from TOS or other)
+    // fixing convection time governor till next target_mark_type (got from TOS or other)
+    // may have marks for data changes
     time_->fix_dt_until_mark();
-    
-    //time_->view("CONVECTION");    //show convection time governor
+    need_time_rescaling = true;
 
-    if ( is_convection_matrix_scaled ) {
-        // rescale matrix
-        //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->dt()/time_->estimate_dt());
-        MatShift(tm, -1.0);
-        MatScale(tm, time_->dt()/time_->estimate_dt() );
-        MatShift(tm, 1.0);
-    } else {
-        // scale fresh convection term matrix
-        //for (unsigned int sbi=0; sbi<n_substances; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
-        MatScale(tm, time_->estimate_dt());
-        MatShift(tm, 1.0);
-    }
-
-    // update source vectors
-//    for (unsigned int sbi = 0; sbi < n_substances; sbi++) {
-//            MatMult(bcm, bcv[sbi], bcvcorr[sbi]);
-//            VecView(bcv[sbi],PETSC_VIEWER_STDOUT_SELF);
-//            getchar();
-//            VecView(bcvcorr[sbi],PETSC_VIEWER_STDOUT_SELF);
-//           getchar();
-//    }
-
-    is_convection_matrix_scaled = true;
 }
 
 
@@ -833,6 +870,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
      */
     is_convection_matrix_scaled = false;
     END_TIMER("convection_matrix_assembly");
+
+    transport_matrix_time = time_->t();
 }
 
 

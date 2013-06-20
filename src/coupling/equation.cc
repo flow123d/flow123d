@@ -134,7 +134,7 @@ IT::Record EqDataBase::bulk_input_type() {
 void EqDataBase::set_time(const TimeGovernor &time) {
     /*
      * - read records from arrays until we reach greater time then actual
-     * - update fields (delete the previous, use mekae factory for the new one.
+     * - update fields (delete the previous, use make factory for the new one.
      */
     set_time(time, boundary_input_array_, boundary_it_, true);
     set_time(time, bulk_input_array_, bulk_it_, false);

@@ -165,7 +165,7 @@ public:
         unsigned int size;
         get_solution_vector(array, size);
 
-        mh_dh.set_solution(array, solution_precision());
+        mh_dh.set_solution(time_->last_t(), array, solution_precision());
        return mh_dh;
     }
     

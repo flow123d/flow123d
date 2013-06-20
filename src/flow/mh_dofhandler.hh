@@ -24,8 +24,10 @@ class MH_DofHandler {
 public:
     void reinit(Mesh *mesh);
 
-    void set_solution( double * solution, double precision);
+    void set_solution( double time, double * solution, double precision);
 
+    inline double time_changed() const
+        { return time_; }
 
     unsigned int side_dof(const SideIter side) const;
 
@@ -45,6 +47,7 @@ protected:
     vector< vector<unsigned int> > elem_side_to_global;
     double * mh_solution;
     double solution_precision;
+    double time_;
 };
 
 #endif /* MH_DOFHANDLER_HH_ */
