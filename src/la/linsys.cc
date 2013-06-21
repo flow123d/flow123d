@@ -60,12 +60,12 @@ LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
 {
     // create PETSC vectors
     v_rhs=(double *) xmalloc(sizeof(double) * (this->vec_lsize() + 1) );
-    VecCreateMPIWithArray(PETSC_COMM_WORLD, this->vec_lsize(), PETSC_DECIDE, v_rhs, &rhs);
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, this->vec_lsize(), PETSC_DECIDE, v_rhs, &rhs);
     VecZeroEntries(rhs);
 
     if (sol_array == NULL) v_solution=(double *)xmalloc(sizeof(double) * (this->vec_lsize() + 1));
     else v_solution=sol_array;
-    VecCreateMPIWithArray(PETSC_COMM_WORLD, this->vec_lsize(), PETSC_DECIDE, v_solution, &solution);
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, this->vec_lsize(), PETSC_DECIDE, v_solution, &solution);
     own_solution=false;
     //VecZeroEntries(solution);
 }
@@ -339,8 +339,8 @@ void LinSys_MPIAIJ::preallocate_matrix()
      VecDestroy(&off_vec);
 
      // create PETSC matrix with preallocation
-     MatCreateMPIAIJ(PETSC_COMM_WORLD, vec_ds.lsize(), vec_ds.lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
-              PETSC_NULL, on_nz, PETSC_NULL, off_nz, &matrix);
+     MatCreateAIJ(PETSC_COMM_WORLD, vec_ds.lsize(), vec_ds.lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+              0, on_nz, 0, off_nz, &matrix);
 
      if (symmetric) MatSetOption(matrix, MAT_SYMMETRIC, PETSC_TRUE);
      MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
@@ -410,13 +410,15 @@ LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_
 
 void LinSys_MATIS::start_allocation()
 {
+  ASSERT(0, "Not implemented");
+  /*
      PetscErrorCode err;
 
      if (status != NONE) {
          // reinit linear system
 
      }
-     err = MatCreateIS(PETSC_COMM_WORLD,  vec_ds.lsize(), vec_ds.lsize(), vec_ds.size(), vec_ds.size(),
+     err = MatCreateIS(PETSC_COMM_WORLD, 1, vec_ds.lsize(), vec_ds.lsize(), vec_ds.size(), vec_ds.size(),
              map_local_to_global, &matrix);
      ASSERT(err == 0,"Error in MatCreateIS.");
 
@@ -433,6 +435,7 @@ void LinSys_MATIS::start_allocation()
      status=ALLOCATE;
 
      DBGMSG("allocation started\n");
+     */
 }
 
 void LinSys_MATIS::preallocate_matrix()
@@ -444,7 +447,7 @@ void LinSys_MATIS::preallocate_matrix()
       
 
      // preallocation of local subdomain matrix
-     MatSeqAIJSetPreallocation(local_matrix, PETSC_NULL, subdomain_nz);
+     MatSeqAIJSetPreallocation(local_matrix, 0, subdomain_nz);
 
      if (symmetric) MatSetOption(matrix, MAT_SYMMETRIC, PETSC_TRUE);
      MatSetOption(matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);

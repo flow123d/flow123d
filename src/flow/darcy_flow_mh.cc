@@ -336,7 +336,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
             // create local solution vector
             solution = (double *) xmalloc(size * sizeof(double));
-            VecCreateSeqWithArray(PETSC_COMM_SELF, size, solution,
+            VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
                     &(sol_vec));
 
             // create seq. IS to scatter par solutin to seq. vec. in original order
@@ -1260,7 +1260,7 @@ void DarcyFlowMH_Steady::make_schur1() {
                side_id_4_loc, PETSC_COPY_VALUES, &map_side_local_to_global);
         ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
 
-       err = MatCreateIS(PETSC_COMM_WORLD,  side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA1);
+       err = MatCreateIS(PETSC_COMM_WORLD, 1, side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA1);
         ASSERT(err == 0,"Error in MatCreateIS.");
 
        MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE);
@@ -1282,7 +1282,7 @@ void DarcyFlowMH_Steady::make_schur1() {
     } else if (schur0->type == LinSys::MAT_MPIAIJ) {
        if (schur1 == NULL) {
         // create Inverse of the A block
-        err = MatCreateMPIAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
+        err = MatCreateAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
                PETSC_NULL, 0, PETSC_NULL, &(IA1));
          ASSERT(err == 0,"Error in MatCreateMPIAIJ.");
 
@@ -1337,14 +1337,14 @@ void DarcyFlowMH_Steady::make_schur2() {
       // get subdiagonal of local size == loc num of elements
       VecCreateMPI(PETSC_COMM_WORLD, schur1->get_system()->vec_lsize(),
               PETSC_DETERMINE, &diag_schur1);
-      ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
+      ierr = MatCreateAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
               PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL, 0, PETSC_NULL,
               &(IA2)); // construct matrix
         ASSERT(ierr == 0, "Error in MatCreateMPIAIJ.");
       
       VecGetArray(diag_schur1,&vDiag);
       // define sub vector of B-block diagonal
-      VecCreateMPIWithArray(PETSC_COMM_WORLD, loc_el_size, PETSC_DETERMINE,
+      VecCreateMPIWithArray(PETSC_COMM_WORLD,1,  loc_el_size, PETSC_DETERMINE,
               vDiag, &diag_schur1_b);
       VecRestoreArray(diag_schur1,&vDiag);
       schur2 = new SchurComplement(schur1->get_system(), IA2);

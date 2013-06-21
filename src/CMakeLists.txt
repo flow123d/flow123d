@@ -207,7 +207,7 @@ target_link_libraries(input_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES} ${BDDCML_LIBRARIES})
+    armadillo ${PETSC_LIBRARIES}  ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB}  ${Boost_LIBRARIES})
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})
@@ -222,7 +222,7 @@ target_link_libraries(fem_lib
 # field_lib  
 add_library(field_lib ${sources_lib_field})
 target_link_libraries(field_lib
-    system_lib input_lib fparser mesh_lib armadillo  ${Boost_LIBRARIES})
+    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
  
 # coupling_lib  
 add_library(coupling_lib ${sources_lib_coupling})
@@ -233,7 +233,7 @@ target_link_libraries(coupling_lib
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
     fem_lib mesh_lib la_lib semchem  input_lib system_lib
-    coupling_lib fparser  armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    coupling_lib fparser  armadillo ${PETSC_LIBRARIES} ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

@@ -55,7 +55,7 @@ LinSys_PETSC::LinSys_PETSC( const Input::Record in_rec,
     PetscErrorCode ierr;
     // rhs
     v_rhs_= new double[ rows_ds_->lsize() + 1 ];
-    ierr = VecCreateMPIWithArray( comm_, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
+    ierr = VecCreateMPIWithArray( comm_, 1, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
     params_ = in_rec.val<string>("options");
@@ -188,8 +188,8 @@ void LinSys_PETSC::preallocate_matrix()
     VecDestroy(&off_vec_);
 
     // create PETSC matrix with preallocation
-    ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
-                           PETSC_NULL, on_nz, PETSC_NULL, off_nz, &matrix_); CHKERRV( ierr );
+    ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+                           0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);

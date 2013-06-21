@@ -402,31 +402,98 @@ void SparseGraphMETIS::partition(int *part)
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size(),
             "METIS could be used only with localized distribution.\n");
 
-    DBGMSG("in SGMETIS:partition");
     if (vtx_distr.np()==1) {
         for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
-
+        return;
     } else {
-
-
-        int n_vtx=vtx_distr.size();
-        int n_proc=vtx_distr.np();
-        int wght_flag=3;    // which wghts are given (0-none,1-edges,2-vtxs,3-both)
-        int num_flag=0;     // indexing style (0-C, 1-Fortran)
-        int options[8];
-        int edgecut;
-
-
         if (vtx_distr.myp()==0) {
-            options[0]=0;
-            options[4]=255;  //dbg_lvl
+                  int n_vtx=vtx_distr.size();
+                  int n_proc=vtx_distr.np();
+                  int num_flag=0;     // indexing style (0-C, 1-Fortran)
+                  int edgecut;
 
-            DBGMSG("METIS call\n");
-            METIS_PartGraphKway(&n_vtx,rows,adj, //vtx distr, local vtx begins, edges of local vtxs
-                vtx_weights,adj_weights,&wght_flag,&num_flag, // vertex, edge weights, ...
-                &n_proc,options,&edgecut,part);
+/***********************************************************************************
+ *  SETTING OPTIONS
+ */        
+#if (METIS_VER_MAJOR >= 5)
+                  if ( sizeof(idx_t) != sizeof(int) ) {
+                    printf("ERROR in GRAPH_DIVIDE_C: Wrong type of integers for METIS.\n");
+                    abort();
+                  }
+                  /*printf(" METIS >=5.0 recognized.\n");*/
+                  int ncon = 1;
+                  real_t ubvec[1];
+                  ubvec[0] = 1.001;
+                  /*int *options = NULL;*/
+                  int options[METIS_NOPTIONS];
 
-            DBGMSG("Graph edge cut: %d\n",edgecut);
+                  for (unsigned int i = 0;i < METIS_NOPTIONS;i++) options[i] = -1;
+                  
+                  options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
+                  options[METIS_OPTION_CTYPE]     = METIS_CTYPE_RM;
+                  options[METIS_OPTION_IPTYPE]    = METIS_IPTYPE_GROW;
+                  options[METIS_OPTION_RTYPE]     = METIS_RTYPE_GREEDY;
+                  options[METIS_OPTION_NCUTS]     = 1;
+                  options[METIS_OPTION_NSEPS]     = 1;
+                  options[METIS_OPTION_NUMBERING] = num_flag;
+                  options[METIS_OPTION_NITER]     = 10;
+                  options[METIS_OPTION_SEED]      = 12345;
+                  options[METIS_OPTION_MINCONN]   = 1;
+                  options[METIS_OPTION_CONTIG]    = 0;
+                  options[METIS_OPTION_COMPRESS]  = 0;
+                  options[METIS_OPTION_CCORDER]   = 0;
+                  options[METIS_OPTION_UFACTOR]   = 0;
+                  /*options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO;*/
+                  options[METIS_OPTION_DBGLVL]    = 0;
+#else
+                  /*printf(" METIS < 5.0 recognized.\n");*/
+                  /* weights */
+                  int wgtflag=3;
+                  int options[5];
+                  for (unsigned int  i = 0; i < 5; i++ )  options[i] = 0;
+              
+              //                options[0]=0;
+              //            options[4]=255;  //dbg_lvl
+
+
+#endif
+                  
+
+                  /* Initialize parts */
+                  for (unsigned int  i = 0; i < vtx_distr.lsize(); i++ )   part[i] = num_flag;
+
+/***********************************************************************************
+ *  CALL METIS using optimal algorithm depending on the number of partitions
+ */        
+
+                  if (n_proc  <= 8) {
+
+#if (METIS_VER_MAJOR >= 5)
+                      options[METIS_OPTION_PTYPE]     = METIS_PTYPE_RB;
+                      options[METIS_OPTION_UFACTOR]   = 1;
+                      METIS_PartGraphRecursive(&n_vtx, &ncon, rows, adj,
+                                                vtx_weights, NULL, adj_weights, &n_proc, NULL,
+                                                ubvec, options, &edgecut,part);
+#else
+                      // has to be checked
+                      METIS_PartGraphRecursive(&n_vtx, rows, adj, 
+                                                vtx_weights, adj_weights, &wgtflag, &num_flag, 
+                                                &n_proc, options, &edgecut, part);
+#endif
+                  } else {
+    
+#if (METIS_VER_MAJOR >= 5)
+                      options[METIS_OPTION_PTYPE]     = METIS_PTYPE_KWAY;
+                      options[METIS_OPTION_UFACTOR]   = 30;
+                      METIS_PartGraphKway(&n_vtx, &ncon, rows, adj,
+                                          vtx_weights, NULL, adj_weights, &n_proc, NULL,
+                                          ubvec, options, &edgecut, part);
+#else
+                      METIS_PartGraphKway(&n_vtx,rows,adj, //vtx distr, local vtx begins, edges of local vtxs
+                                  vtx_weights,adj_weights,&wght_flag,&num_flag, // vertex, edge weights, ...
+                                  &n_proc,options,&edgecut,part);
+#endif
+                  }     
         }
     }
 }

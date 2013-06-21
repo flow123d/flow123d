@@ -71,6 +71,7 @@
       }, 
       solver = {
         TYPE = "Bddc", 
+        //TYPE = "Petsc", 
         accuracy = 1e-07
       } 
     }
