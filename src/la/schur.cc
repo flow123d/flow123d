@@ -333,32 +333,31 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
 SchurComplement :: SchurComplement(Mat & a)
 {
-	PetscInt m, n, ncols;
+	//xprintf(Msg, "Constructor SchurComplement\n");
+
+	PetscInt m, n, ncols, *indices;
 	PetscErrorCode ierr;
 	Mat sub_mat;
+	IS is;
 	unsigned int pos_proc; //position of processed row
-	unsigned int pos_submat; //position of written row of sub matrix
 	std::vector<bool> processed_rows;
 	std::vector<unsigned int> submat_rows;
 	std::deque<unsigned int> queue;
 	const PetscInt *cols;
 	const PetscScalar *vals;
+	PetscScalar mat_val[1];
 
 	ierr = MatGetSize(a, &m, &n);
 	ASSERT(m == m, "Assumed square matrix.\n" );
 	processed_rows.resize(m);
 	for (unsigned int i=0; i<m; i++) processed_rows[i] = false;
 	pos_proc = 0;
-
-	MatCreate(MPI_COMM_SELF, &sub_mat);
-	MatSetSizes(sub_mat, m, m, m, m);
+	//xprintf(Msg, "size: %d\n",m);
 
 	while (pos_proc < processed_rows.size()) {
 		processed_rows[pos_proc] = true;
-		pos_submat = 0;
 		submat_rows.clear();
 		submat_rows.push_back(pos_proc);
-		//clear sub_mat
 		ierr = MatGetRow(a, pos_proc, &ncols, &cols, &vals);
 
 		for (PetscInt i=0; i<ncols; i++) {
@@ -366,19 +365,12 @@ SchurComplement :: SchurComplement(Mat & a)
 				queue.push_back( cols[i] );
 				processed_rows[ cols[i] ] = true;
 				submat_rows.push_back( cols[i] );
-				for (PetscInt j=0; j<submat_rows.size(); j++) {
-					if (submat_rows[j] == cols[i]) {
-						MatSetValue(sub_mat, pos_submat, j, vals[i], INSERT_VALUES);
-						break;
-					}
-				}
 			} else if (i!=pos_proc) {
 				//ERROR
 			}
 		}
 
 		while (queue.size()) {
-			pos_submat++;
 			ierr = MatGetRow(a, queue.front(), &ncols, &cols, &vals);
 			for (PetscInt i=0; i<ncols; i++) {
 				if (!processed_rows[i]) {
@@ -386,14 +378,41 @@ SchurComplement :: SchurComplement(Mat & a)
 					processed_rows[ cols[i] ] = true;
 					submat_rows.push_back( cols[i] );
 				}
-				for (PetscInt j=0; j<submat_rows.size(); j++) {
-					if (submat_rows[j] == cols[i]) {
-						MatSetValue(sub_mat, pos_submat, j, vals[i], INSERT_VALUES);
-						break;
-					}
-				}
 			}
 			queue.pop_front();
+		}
+
+		// get sub_mat block
+		std::sort( processed_rows.begin(), processed_rows.end() );
+		PetscMalloc(processed_rows.size() * sizeof(PetscInt), &indices);
+		for (PetscInt i=0; i<processed_rows.size(); i++) {
+			indices[i] = processed_rows[i];
+		}
+		ISCreateGeneral(PETSC_COMM_SELF, processed_rows.size(), indices, PETSC_COPY_VALUES, &is);
+		MatGetSubMatrix(a, is, is, MAT_INITIAL_MATRIX, &sub_mat);
+		PetscFree(indices);
+		ISDestroy(&is);
+
+		/* // test output
+		for (PetscInt i=0; i<processed_rows.size(); i++) {
+			for (PetscInt j=0; j<processed_rows.size(); j++) {
+				MatGetValues(sub_mat, 1, &i, 1, &i, mat_val);
+				cout << (double) (mat_val[0]) << " ";
+			}
+			cout << endl;
+		} // */
+
+		// create Inverse of the sub_mat block
+		ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, processed_rows.size(), processed_rows.size(), PETSC_DETERMINE,
+				PETSC_DETERMINE, 4, PETSC_NULL, 0, PETSC_NULL, &(sub_mat));
+		ASSERT(ierr == 0,"Error in MatCreateMPIAIJ.");
+
+		// stored values to inversion IA matrix
+		for (PetscInt i=0; i<processed_rows.size(); i++) {
+			for (PetscInt j=0; j<processed_rows.size(); j++) {
+				MatGetValues(sub_mat, 1, &i, 1, &i, mat_val);
+				MatSetValue(IA, processed_rows[i], processed_rows[j], (double) (mat_val[0]), INSERT_VALUES);
+			}
 		}
 
 		do {
