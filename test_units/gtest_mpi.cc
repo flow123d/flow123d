@@ -88,6 +88,20 @@ static void PrintTestPartResult(const TestPartResult& test_part_result) {
 
 namespace internal {
 
+
+MPI_PrettyUnitTestResultPrinter::MPI_PrettyUnitTestResultPrinter() {
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &np);
+
+}
+
+
+static void MPI_PrettyUnitTestResultPrinter::PrintTestName(const char * test_case, const char * test) {
+  printf("%s.%s", test_case, test);
+}
+
+
+
 // Fired before each iteration of tests starts.
 // (not yet MPI friendly)
 
