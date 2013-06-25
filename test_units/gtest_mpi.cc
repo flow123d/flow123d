@@ -96,7 +96,7 @@ MPI_PrettyUnitTestResultPrinter::MPI_PrettyUnitTestResultPrinter() {
 }
 
 
-static void MPI_PrettyUnitTestResultPrinter::PrintTestName(const char * test_case, const char * test) {
+void MPI_PrettyUnitTestResultPrinter::PrintTestName(const char * test_case, const char * test) {
   printf("%s.%s", test_case, test);
 }
 
