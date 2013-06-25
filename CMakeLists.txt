@@ -94,11 +94,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
     if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-        add_definitions("-DHAVE_CXX11")    
+        add_definitions("-DHAVE_CXX11_FULL")    
         set(CMAKE_HAVE_CXX11 "true")
     elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-        add_definitions("-DHAVE_CXX11")
+        add_definitions("-DHAVE_CXX11_DRAFT")
         set(CMAKE_HAVE_CXX11 "true")   
     elseif (GCC_VERSION VERSION_GREATER 4.4)
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
@@ -340,11 +340,13 @@ if (NOT Armadillo_FOUND)
   unset(Armadillo_FOUND CACHE) 
   unset(Armadillo_INCLUDE_DIR CACHE)        # overwrite cache    
   unset(Armadillo_LIBRARY_DIRS CACHE)
+  unset(Armadillo_CONFIGURE_FILE CACHE)
 
   set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
   find_package(ArmadilloFlow 3.2.4 REQUIRED)
 
 endif()
+
 
 message(STATUS "Armadillo_LIBRARIES: ${Armadillo_LIBRARIES}")
 message(STATUS "Armadillo_INCLUDE_DIRS: ${Armadillo_INCLUDE_DIRS}")
