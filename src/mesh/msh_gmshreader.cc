@@ -189,7 +189,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
                 ele = mesh->bc_elements.add_item(id);
             } else {
                 if(dim == 0 )
-                    xprintf(Warn, "Bulk elements of zero size(dim=0) are not supported as elements.");
+                    xprintf(Warn, "Bulk elements of zero size(dim=0) are not supported. Mesh file: %s, Element ID: %d.\n", tok.f_name().c_str() ,id);
                 else
                     ele = mesh->element.add_item(id);
             }
@@ -328,18 +328,25 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
                     tok_.next_line();
 //                    DBGMSG("data line: %d %d '%s'\n", i_row, last_header.n_entities, tok_.line().c_str());
                     id = lexical_cast<unsigned int>(*tok_); ++tok_;
-                    while (id_iter != el_ids.end() && *id_iter != id) ++id_iter; // skip initialization of some rows in data if ID is missing
+                    while (id_iter != el_ids.end() && *id_iter < (int)id) {
+//                        DBGMSG("get id: %u %d\n", id, *id_iter);
+                        ++id_iter; // skip initialization of some rows in data if ID is missing
+                    }
                     if (id_iter == el_ids.end()) {
                         xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
                                 tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, id);
                         break;
                     }
-                    idx = id_iter - el_ids.begin();
-                    data_ptr = data + idx * search_header.n_components;
-                    for (unsigned int i_col =0; i_col < search_header.n_components; ++i_col, ++data_ptr) {
-                         *(data_ptr) = lexical_cast<double>(*tok_); ++tok_;
+                    // save data from the line if ID was found
+                    if (*id_iter == (int)id) {
+                        idx = id_iter - el_ids.begin();
+                        data_ptr = data + idx * search_header.n_components;
+                        for (unsigned int i_col =0; i_col < search_header.n_components; ++i_col, ++data_ptr) {
+                            *(data_ptr) = lexical_cast<double>(*tok_); ++tok_;
+                        }
+                        n_read++;
                     }
-                    n_read++;
+                    // skip the line if ID on the line  < actual ID in the map el_ids
                 } catch (bad_lexical_cast &) {
                     xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
                 }

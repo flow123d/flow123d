@@ -109,9 +109,12 @@ public:
        virtual bool set_time(double time);
 
        /**
-        * Is used only by some Field imlementations, but can be used to check validity of incomming ElementAccessor in value methods.
+        * Is used only by some Field implementations, but can be used to check validity of incoming ElementAccessor in value methods.
+        *
+        * Optional parameter @p boundary_domain can be used to specify, that the field will be evaluated only on the boundary part of the mesh.
+        * TODO: make separate mesh for the boundary, then we can drop this parameter.
         */
-       virtual void set_mesh(Mesh *mesh);
+       virtual void set_mesh(Mesh *mesh, bool boundary_domain);
 
        /**
         * Returns number of rows, i.e. number of components for variable size vectors. For values of fixed size returns zero.
@@ -197,22 +200,48 @@ public:
      * Constructor, we denote if this is bulk or bc field.
      */
     FieldCommonBase(bool bc);
-
     /**
-     * Setters. We need to store these information into the Field itself during construction of an EqData class in order to
-     * allow creation of Input::Type tree and initialization of all fields in the EqData class by generic functions.
+     *  Set name of the field, used for naming the field's key in EqData record.
+     *  It can also be used to name a corresponding output data set, e.g. when outut the field into a VTK file.
      */
-    /// Set name of the field, used for naming particular key in EqData record.
-    void set_name(const string & name);
-    /// Set description of the field, used for description of corresponding key.
-    void set_desc(const string & desc);
-    void set_default(const IT::Default &dflt);
-
-    /// Set number of components for run-time sized vectors.
-    void set_n_comp( unsigned int n_comp);
-    /// For Fields returning "Enum", we have to pass in corresponding Selection object.
-    void set_selection( Input::Type::Selection *element_selection);
-    void set_mesh(Mesh *mesh);
+    inline void set_name(const string & name)   { name_ = name;}
+    /**
+     * Set description of the field, used for description of corresponding key in documentation.
+     */
+    inline void set_desc(const string & desc)   { desc_ = desc; }
+    /**
+     * Set default value for the field's key from which the default constant valued field will be constructed.
+     * During the first call of the @p set_time method, the table that assign particular fields to the regions
+     * is checked for NULL pointers that corresponds to the regions without explicit field specification from the input.
+     * On these regions we use the default constant field.
+     */
+    inline void set_default(const IT::Default &dflt)    { default_ = dflt; }
+    /**
+     * @brief Set basic units of the field.
+     *
+     * Currently, we use it only during output and we represents units just by a string.
+     *
+     * TODO:
+     * Particular class for representing and conversion of various units would be more appropriate.
+     * This can allow specification of the units on the inptu, automatic conversion and the same on the output.
+     * Possibly this allow using Boost::Units library, however, it seems to introduce lot of boilerplate code.
+     * But can increase correctness of the calculations.
+     */
+    inline void set_units(const string & units)         { units_ = units; }
+    /**
+     * Set number of components for run-time sized vectors. This is used latter when we construct
+     * objects derived from FieldBase<...>.
+     */
+    inline void set_n_comp( unsigned int n_comp)        { n_comp_ = n_comp; }
+    /**
+     * For the fields returning "Enum", we have to pass the Input::Type::Selection object to
+     * the field implementations.
+     */
+    inline void set_selection( Input::Type::Selection *element_selection)   { element_selection_=element_selection;}
+    /**
+     * Set internal mesh pointer.
+     */
+    virtual inline void set_mesh(Mesh *mesh)                    { mesh_=mesh; }
 
     /**
      * Getters.
@@ -220,6 +249,8 @@ public:
     const std::string &name() const;
     const std::string &desc() const;
     const IT::Default &get_default() const;
+    const std::string &units() const;
+    double time() const;
     bool is_bc() const;
     bool is_enum_valued() const;
     unsigned int n_comp() const;
@@ -227,12 +258,17 @@ public:
     bool changed() const;
 
     /**
-     * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
-     * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
-     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
+     * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
+     * class (i.e. with the same template parameters). This is used by EqDataBase::generic_input_type to construct the Input::Type::Record for
+     * the bc_data_list or bulk_data_list.
      */
     virtual IT::AbstractRecord &get_input_type() =0;
-
+    /**
+     * Returns whole input type tree for FieldBase class returning "Enum".  We have to create whole unique Input::Type hierarchy for
+     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
+     * The Input::Type::Selection object has to be set by the  @p set_selection method since @p make_input_tree is called by
+     * @p EqDataBase::generic_input_type, where the information about  the Selection is not available.
+     */
     virtual IT::AbstractRecord make_input_tree() =0;
 
     /**
@@ -268,6 +304,10 @@ protected:
      * Description of corresponding key in the Field list Record.
      */
     std::string desc_;
+    /**
+     * Units of the field values. Currently just a string description.
+     */
+    std::string units_;
     /**
      * True for boundary fields.
      */
@@ -326,12 +366,7 @@ protected:
  * key methods @p value, and @p value_list are not virtual in this class by contrast these methods are inlined to minimize overhead for
  * simplest fields like FieldConstant.
  *
- * TODO: simplify initialization of the class, currently it needs:
- * - default constructor .. OK
- * - set_mesh, possibly other FieldCommonBase setters
- * - optional set_from_input or set_field
- * - set_time
- *
+ * TODO:
  * there should be clearly three distinguish states: after default construction, having mesh (with closed regiondb - allocate table), checked_table
  * in first set_time
  *
@@ -464,6 +499,106 @@ public:
 };
 
 
+
+
+/**
+ * @brief Class for representation of a vector of fields of the same physical quantity.
+ *
+ * When solving a system of same equations with the number of components given at runtime
+ * (as in the case of transport equation for runtime given number of substances) we need means how to work with the whole
+ * vector of fields at once. This is the aim of this class. It provides the interface given by the parent class @p FieldCommonBase,
+ * but principally it is just a vector of Field<Value,dim> objects. The sub-fields or components of a @p MultiField are independent
+ * objects, how ever the setters propagates the values from the MultiFields to the individual fields. The only exception is the
+ * @p set_name method which in conjunction with @p MultiField::set_subfield_names can set unique name to each component.
+ *
+ * Template parameters are used for every subfield.
+ *
+ *  TODO:
+ *  - general mechanism how to convert a Field< dim, Vector> to MultiField< dim, Value>
+ *  - implement set_from_input
+ *  - implement set_Time
+ *  - implement set_complemented_vector_field
+ *
+ *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of AbstractRecords
+ *    simplest solution - test that in EqDataBase and have more methods in FieldCommonBase, or somehow detach input handling from
+ *    Fields
+ *
+ */
+template<int spacedim, class Value>
+class MultiField : public FieldCommonBase {
+public:
+    //typedef FieldBase<spacedim, Value> SubFieldBaseType;
+    typedef Field<spacedim, Value> SubFieldType;
+    typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
+
+    /**
+     * Default constructor.
+     */
+    MultiField();
+
+    /**
+     * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
+     * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
+     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
+     */
+    virtual IT::AbstractRecord &get_input_type();
+
+    virtual IT::AbstractRecord make_input_tree();
+
+    /**
+     * Abstract method for initialization of the field on one region.
+     */
+    virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec);
+
+    /**
+     * Abstract method to update field to the new time level.
+     * Implemented by in class template Field<...>.
+     *
+     * Return true if the value of the field was changed on some region.
+     * The returned value is also stored in @p changed_during_set_time data member.
+     */
+    virtual bool set_time(double time);
+
+    /**
+     * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
+     */
+    virtual inline void set_mesh(Mesh *mesh);
+
+    /**
+     * Virtual destructor.
+     */
+    inline virtual ~MultiField() {}
+
+    /// Number of subfields that compose the multi-field.
+    inline unsigned int size() const
+    { return sub_fields_.size(); }
+
+    /**
+     * Initialize MultiField to the number of components given by the size of @p names
+     * and use this vector  to name individual components. Should be called after the setters derived from
+     * FieldCommonBase.
+     */
+    void init( const vector<string> &names);
+
+    /**
+     * Allows set Field<dim, Vector> that can be used for alternative initialization in "transposed" form.
+     */
+    void set_complemented_vector_field( TransposedField &complemented);
+
+    /**
+     * Returns reference to the sub-field (component) of given index @p idx.
+     */
+    inline SubFieldType &operator[](unsigned int idx)
+    { return sub_fields_[idx]; }
+
+private:
+    std::vector< SubFieldType > sub_fields_;
+    std::vector< std::string > sub_names_;
+};
+
+
+
+
 /****************************************************************************************
  * Inlined methods of Field< ... >
  */
@@ -471,7 +606,7 @@ public:
 template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
-           elm.region_idx().idx(), region_fields_.size(), this->name_.c_str());
+           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), this->name_.c_str());
     ASSERT( region_fields_[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }

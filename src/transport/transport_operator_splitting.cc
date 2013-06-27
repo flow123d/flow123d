@@ -25,7 +25,7 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "reaction/isotherm.hh"
+//#include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 
 #include "semchem/semchem_interface.hh"
@@ -80,12 +80,12 @@ Record TransportOperatorSplitting::input_type
     .derive_from(TransportBase::input_type)
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
                 "Initialization of per element reactions.")
-    .declare_key("bc_data", Array(TransportOperatorSplitting::EqData().boundary_input_type()
+    .declare_key("bc_data", Array(ConvectionTransport::EqData().boundary_input_type()
     		.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
     		.declare_key("bc_times", Array(Double()), Default::optional(),
     				"Times for changing the boundary conditions (obsolete).")
     		), IT::Default::obligatory(), "")
-    .declare_key("bulk_data", Array(TransportOperatorSplitting::EqData().bulk_input_type()),
+    .declare_key("bulk_data", Array(ConvectionTransport::EqData().bulk_input_type()),
     		IT::Default::obligatory(), "");
 
 
@@ -289,32 +289,8 @@ void TransportBase::mass_balance() {
 
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RegionSet TransportOperatorSplitting::EqData::read_boundary_list_item(Input::Record rec) {
-	// Base method EqDataBase::read_boundary_list_item must be called first!
-	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
-    FilePath bcd_file;
-
-    // read transport boundary conditions using old file format .tbc
-    if (rec.opt_val("old_boundary_file", bcd_file) )
-        OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
-
-    return domain;
-}
-
-
-
-
-TransportOperatorSplitting::EqData::EqData() : TransportEqData("TransportOperatorSplitting")
-{
-	ADD_FIELD(por_imm, "Immobile porosity", Default("0"));
-	ADD_FIELD(alpha, "Coefficients of non-equilibrium exchange.", Default("0"));
-	ADD_FIELD(sorp_type, "Type of sorption.", Default("1"));
-	ADD_FIELD(sorp_coef0, "Coefficient of sorption.", Default("0"));
-	ADD_FIELD(sorp_coef1, "Coefficient of sorption.", Default("0"));
-	ADD_FIELD(phi, "Solid / solid mobile.", Default("0.5"));
-
-}
 
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
@@ -325,51 +301,52 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
     // double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
 
-	convection = new ConvectionTransport(*mesh_, data, in_rec);
+    in_rec.val<Input::Array>("substances").copy_to(subst_names_);
+    n_subst_ = subst_names_.size();
+	convection = new ConvectionTransport(*mesh_, in_rec);
 
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
 		if (reactions_it->type() == Linear_reaction::input_type ) {
-	        decayRad =  new Linear_reaction(init_mesh, *reactions_it, convection->get_substance_names());
+	        decayRad =  new Linear_reaction(init_mesh, *reactions_it, subst_names_);
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
-	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        Semchem_reactions = NULL;
 	        sorptions = NULL;
 		} else
 	    if (reactions_it->type() == Pade_approximant::input_type ) {
-                decayRad = new Pade_approximant(init_mesh, *reactions_it, convection->get_substance_names());
+                decayRad = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
-	        decayRad->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        Semchem_reactions = NULL;
 	        sorptions = NULL;
 	    } else
 	    if (reactions_it->type() == Semchem_interface::input_type ) {
-	        Semchem_reactions = new Semchem_interface(0.0, mesh_, convection->get_n_substances(), convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
+	        Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	        Semchem_reactions->set_el_4_loc(el_4_loc);
-	        Semchem_reactions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
+	        Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        decayRad = NULL;
 	        sorptions = NULL;
 	    } else
 	    if (reactions_it->type() == Sorption::input_type ){
-	    	sorptions = new Sorption(init_mesh, *reactions_it, convection->get_substance_names());
+	    	sorptions = new Sorption(init_mesh, *reactions_it, subst_names_ );
 	        convection->get_par_info(el_4_loc, el_distribution);
-	        sorptions->set_dual_porosity(convection->get_dual_porosity());
+	        // sorptions->set_dual_porosity(convection->get_dual_porosity());
+	        sorptions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
-	        sorptions->set_concentration_matrix(convection->get_prev_concentration_matrix(), el_distribution, el_4_loc);
-
-	        double** sorb_conc_array;
-	        sorb_conc_array = (double**) xmalloc(convection->get_n_substances() * sizeof(double*));
-	        for (int sbi = 0; sbi < convection->get_n_substances(); sbi++)
+	        // TODO: move this into Sorption class, just pass dimensions of the array.
+	        double** sorb_conc_array = new double * [n_subst_];
+	        for (unsigned int sbi = 0; sbi < n_subst_; sbi++)
 	        {
-	          sorb_conc_array[sbi] = (double*) xmalloc(el_distribution->lsize() * sizeof(double));
-	          for (int i = 0; i < el_distribution->lsize(); i++)
+	          sorb_conc_array[sbi] = new double[ el_distribution->lsize() ];
+	          for (unsigned int i = 0; i < el_distribution->lsize(); i++)
 	          {
 	            sorb_conc_array[sbi][i] = 0.0;
 	          }
@@ -387,6 +364,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    sorptions = NULL;
 	}
 	
+#if 0
         time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), this->mark_type());
         output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
 
@@ -416,6 +394,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     // write initial condition
     convection->output_vector_gather();
     //if(field_output) field_output->write_data(time_->t());
+#endif
+
+	output_mark_type = convection->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), output_mark_type );
 
 }
 
@@ -437,8 +419,8 @@ void TransportOperatorSplitting::output_data(){
     if (time_->is_current(output_mark_type)) {
         
         START_TIMER("TOS-output data");
-        
         DBGMSG("\nTOS: output time: %f\n", time_->t());
+
         convection->output_vector_gather();
         //if(field_output) field_output->write_data(time_->t());
         for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
@@ -448,9 +430,9 @@ void TransportOperatorSplitting::output_data(){
             ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
         }
         mass_balance();
+
         
-        //for synchronization when measuring time by Profiler
-        MPI_Barrier(MPI_COMM_WORLD);
+        convection->output_data();
     }
 }
 
@@ -460,7 +442,7 @@ void TransportOperatorSplitting::update_solution() {
 
 
     time_->next_time();
-    //time_->view("TOS");    //show time governor
+    time_->view("TOS");    //show time governor
     
     convection->set_target_time(time_->t());
 
@@ -494,99 +476,55 @@ void TransportOperatorSplitting::update_solution() {
 
 
 
-
 void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 {
     mh_dh = &dh;
-	convection->set_flow_field_vector( dh );
+	convection->set_velocity_field( dh );
 };
+
 
 
 void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
 	convection->compute_one_step();
 };
 
+
+
 void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
 	convection->compute_one_step();
 };
 
+
+
 void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
 {
-  data.cross_section = cross_section;
-  if (Semchem_reactions != NULL) {
-	  Semchem_reactions->set_cross_section(cross_section);
-	  Semchem_reactions->set_sorption_fields(&data.por_m, &data.por_imm, &data.phi);
+    convection->set_cross_section_field(cross_section);
+
+    if (Semchem_reactions != NULL) {
+        Semchem_reactions->set_cross_section(cross_section);
+        Semchem_reactions->set_sorption_fields(&convection->get_data()->por_m, &convection->get_data()->por_imm, &convection->get_data()->phi);
+    }
+  if (sorptions != NULL)
+  {
+	  sorptions->set_sorption_fields(&convection->get_data()->por_m);
   }
 }
 
-unsigned int TransportOperatorSplitting::n_substances()
-{
-	return convection->get_n_substances();
-}
-
-vector<string> &TransportOperatorSplitting::substance_names()
-{
-	return convection->get_substance_names();
-}
 
 
 void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
 {
-	double ***solution = convection->get_conc();
-	int *el_4_loc, *row_4_el;
-	Distribution *el_ds;
-	double mass_flux[n_substances()];
-
-	convection->get_par_info(el_4_loc, el_ds);
-	row_4_el = convection->get_row_4_el();
-
-    FOR_BOUNDARIES(mesh_, bcd) {
-
-        // !! there can be more sides per one boundary
-    	int index = row_4_el[bcd->side()->element().index()];
-    	if (!el_ds->is_local(index)) continue;
-
-		double water_flux = mh_dh->side_flux(*(bcd->side()));
-		for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-			mass_flux[sbi] = water_flux*solution[MOBILE][sbi][index-el_ds->begin()];
-
-        Region r = bcd->region();
-        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
-        unsigned int bc_region_idx = r.boundary_idx();
-
-        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        {
-        	bcd_balance[sbi][bc_region_idx] += mass_flux[sbi];
-
-        	if (mass_flux[sbi] > 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux[sbi];
-        	else bcd_minus_balance[sbi][bc_region_idx] += mass_flux[sbi];
-        }
-    }
-
+    convection->calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
 }
+
+
 
 void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
 {
-	int *el_4_loc, *row_4_el;
-	Distribution *el_ds;
-	double ***solution = convection->get_conc();
-
-	convection->get_par_info(el_4_loc, el_ds);
-	row_4_el = convection->get_row_4_el();
-
-	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-	{
-		double *sources = convection->get_sources(sbi);
-
-		FOR_ELEMENTS(mesh_,elem)
-		{
-			int index = row_4_el[elem.index()];
-			if (el_ds->is_local(index))
-			{
-				mass[sbi][elem->element_accessor().region().bulk_idx()] += solution[MOBILE][sbi][index-el_ds->begin()]*elem->measure();
-				src_balance[sbi][elem->element_accessor().region().bulk_idx()] += sources[index-el_ds->begin()]*elem->measure();
-			}
-		}
-	}
+    convection->calc_elem_sources(mass, src_balance);
 }
+
+
+
+
 

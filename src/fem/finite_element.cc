@@ -62,7 +62,7 @@ void FiniteElement<dim,spacedim>::init()
 }
 
 template<unsigned int dim, unsigned int spacedim> inline
-const unsigned int FiniteElement<dim,spacedim>::n_dofs()
+const unsigned int FiniteElement<dim,spacedim>::n_dofs() const
 {
     return number_of_dofs;
 }

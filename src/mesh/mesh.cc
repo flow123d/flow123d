@@ -170,7 +170,7 @@ void Mesh::count_element_types() {
 
 void Mesh::read_gmsh_from_stream(istream &in) {
   
-    START_TIMER("READING MESH - from_stream");
+    START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
     reader.read_mesh(this);
@@ -182,7 +182,7 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     F_ENTRY;
 
-    START_TIMER("READING MESH - init_from_input");
+    START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;
@@ -229,7 +229,6 @@ void Mesh::setup_topology() {
 //
 void Mesh::count_side_types()
 {
-    struct Side *sde;
 
     n_insides = 0;
     n_exsides = 0;
@@ -474,7 +473,7 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            ASSERT( is_neighbour || edg->n_sides == intersection_list.size(), "Some connected sides were not found.\n");
+            ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
 		} // for element sides
 	}   // for elements
 
@@ -526,10 +525,10 @@ void Mesh::make_edge_permutations()
 
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
-		for (int i=0; i<nb->element()->n_nodes(); i++)
+		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
 			node_numbers[nb->element()->node[i]] = i;
 
-		for (int i=0; i<nb->side()->n_nodes(); i++)
+		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
 			permutation[node_numbers[nb->side()->node(i)]] = i;
 
 		switch (nb->side()->dim())
@@ -760,23 +759,38 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::all_elements_id() {
-    if (all_elements_id_.size() ==0) {
+vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
+    if (bulk_elements_id_.size() ==0) {
+        std::vector<int>::iterator map_it;
+        int last_id;
 
-        all_elements_id_.resize(n_all_input_elements_);
-        std::vector<int>::iterator all_it = all_elements_id_.begin();
-        unsigned int last_id = element.begin().id();
-
-        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+        bulk_elements_id_.resize(n_elements());
+        map_it = bulk_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++map_it) {
+            if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+            last_id=*map_it = it.id();
+//            DBGMSG("bulk map: %d\n", *map_it);
         }
-        for(ElementFullIter it=bc_elements.begin(); all_it!=all_elements_id_.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+
+        boundary_elements_id_.resize(bc_elements.size());
+        map_it = boundary_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=bc_elements.begin(); it!=bc_elements.end(); ++it, ++map_it) {
+            // We set ID for boundary elements created by the mesh itself to "-1"
+            // this force gmsh reader to skip all remaining entries in boundary_elements_id_
+            // and thus report error for any remaining data lines
+            if (it.id() < 0) last_id=*map_it=-1;
+            else {
+                if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+                last_id=*map_it = it.id();
+            }
+//            DBGMSG("bc map: %d\n", *map_it);
         }
     }
-    return all_elements_id_;
+
+    if (boundary_domain) return boundary_elements_id_;
+    return bulk_elements_id_;
 }
 
 

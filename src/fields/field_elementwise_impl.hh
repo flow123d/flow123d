@@ -44,7 +44,19 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp), data_(NULL), reader_(NULL), mesh_(NULL)
+: FieldBase<spacedim, Value>(n_comp),
+  allow_init_from_input(true), data_(NULL), reader_(NULL), mesh_(NULL)
+
+{
+    n_components_ = this->value_.n_rows() * this->value_.n_cols();
+}
+
+
+
+template <int spacedim, class Value>
+FieldElementwise<spacedim, Value>::FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size )
+: FieldBase<spacedim, Value>(n_components),
+  allow_init_from_input(false), data_size_(size), data_(data_ptr), reader_(NULL), mesh_(NULL)
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
 }
@@ -53,6 +65,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec) {
+    ASSERT( allow_init_from_input, "Trying to initialize internal FieldElementwise from input.");
     FilePath input_file = rec.val<FilePath>("gmsh_file");
     ASSERT( reader_ == NULL, "Multiple call of init_from_input.\n");
     reader_ = new GmshMeshReader(input_file);
@@ -66,7 +79,9 @@ template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, typename Value::return_type &value) {
     Value ref(value);
     ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
-    typename Value::element_type *ptr=(typename Value::element_type *) ( data_+(bulk_size_+boundary_idx)*n_components_);
+    ASSERT( mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
+    ASSERT( boundary_domain_ , "Method set_data_row can be used only for boundary fields.");
+    typename Value::element_type *ptr=(typename Value::element_type *) ( data_+(boundary_idx)*n_components_);
     for(unsigned int row=0; row < ref.n_rows(); row++)
         for(unsigned int col=0; col < ref.n_cols(); col++, ptr++)
             *ptr = ref(row,col);
@@ -86,25 +101,32 @@ bool FieldElementwise<spacedim, Value>::set_time(double time) {
     search_header.n_entities=n_entities_;
     search_header.time=time;
 
-    reader_->read_element_data(search_header, data_, mesh_->all_elements_id() );
+
+    reader_->read_element_data(search_header, data_, mesh_->elements_id_maps(boundary_domain_) );
     return search_header.actual;
 }
 
 
 
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh) {
+void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh, bool boundary_domain) {
     // set mesh only once
-    if (mesh_ != NULL) return;
+    ASSERT(mesh_ == NULL, "Trying to change mesh of the FieldElementwise.");
+    boundary_domain_ = boundary_domain;
 
     mesh_=mesh;
-    bulk_size_=mesh_->element.size();
-    n_entities_=mesh_->element.size() + mesh_->bc_elements.size();
+    if (boundary_domain_) {
+        n_entities_=mesh_->bc_elements.size();
+    } else {
+        n_entities_=mesh_->n_elements();
+    }
 
     // allocate
-    data_size_ = n_entities_ * n_components_;
-    data_ = new double[data_size_];
-    std::fill(data_, data_ + data_size_, 0.0);
+    if (data_ == NULL) {
+        data_size_ = n_entities_ * n_components_;
+        data_ = new double[data_size_];
+        std::fill(data_, data_ + data_size_, 0.0);
+    }
 
 }
 
@@ -116,10 +138,8 @@ void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh) {
 template <int spacedim, class Value>
 typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
-
-        unsigned int idx = elm.idx();
-        if (elm.is_boundary()) idx +=bulk_size_;
-        idx*=n_components_;
+        ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
+        unsigned int idx = n_components_*elm.idx();
 
         return Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
 }
@@ -133,12 +153,10 @@ template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-
+    ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
     ASSERT_EQUAL( point_list.size(), value_list.size() );
     if (boost::is_floating_point< typename Value::element_type>::value) {
-        unsigned int idx = elm.idx();
-        if (elm.is_boundary()) idx +=bulk_size_;
-        idx*=n_components_;
+        unsigned int idx = n_components_*elm.idx();
 
         typename Value::return_type const &ref = Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
         for(unsigned int i=0; i< value_list.size(); i++) value_list[i] = ref;

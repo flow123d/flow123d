@@ -32,8 +32,7 @@
 
 #include "mesh/nodes.hh"
 #include "mesh/region.hh"
-
-//#include <materials.hh>
+#include "mesh/bounding_box.hh"
 
 template <int spacedim>
 class ElementAccessor;
@@ -41,7 +40,7 @@ class ElementAccessor;
 class Mesh;
 class Side;
 class SideIter;
-struct MaterialDatabase;
+class Neighbour;
 
 
 
@@ -76,7 +75,7 @@ public:
      */
     double quality_measure_smooth();
 
-    unsigned int n_sides_by_dim(int side_dim);
+    unsigned int n_sides_by_dim(unsigned int side_dim);
     inline SideIter side(const unsigned int loc_index);
     Region region() const;
     inline RegionIdx region_idx() const
@@ -92,16 +91,23 @@ public:
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
     /**
-     * Permutations of nodes on sides.
+     * Indices of permutations of nodes on sides.
      * It determines, in which order to take the nodes of the side so as to obtain
      * the same order as on the reference side (side 0 on the particular edge).
+     *
+     * Permutations are defined in RefElement::side_permutations.
      */
     unsigned int *permutation_idx_;
+
+    /**
+     * Computes bounding box of element
+     */
+    void get_bounding_box(BoundingBox &bounding_box);
 
 
     int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
-    struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
+    Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor

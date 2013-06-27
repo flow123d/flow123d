@@ -178,7 +178,7 @@ void DarcyFlowMHOutput::postprocess() {
 
 void DarcyFlowMHOutput::output()
 {
-    START_TIMER("DARCY OUTPUT");
+    START_TIMER("Darcy output");
 
     std::string eleVectorName = "velocity_elements";
     std::string eleVectorUnit = "L/T";
@@ -417,7 +417,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(std::vector<double> &scalars) {
 
     /** Iterators */
     const Node * node;
-    ElementIter ele;
+    //ElementIter ele;
     //struct Side* side;
 
     int n_nodes = mesh_->node_vector.size(); //!< number of nodes in the mesh */
@@ -663,7 +663,7 @@ void DarcyFlowMHOutput::water_balance() {
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     //BOUNDARY
-    struct Boundary *bcd;
+    //struct Boundary *bcd;
     std::vector<double> bcd_balance( mesh_->region_db().boundary_size(), 0.0 );
     std::vector<double> bcd_plus_balance( mesh_->region_db().boundary_size(), 0.0 );
     std::vector<double> bcd_minus_balance( mesh_->region_db().boundary_size(), 0.0 );

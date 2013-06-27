@@ -118,7 +118,7 @@ public:
 		inline Quadrature<dim> *q();
 
 		template<unsigned int dim>
-		inline Mapping<dim,3> *map();
+		inline Mapping<dim,3> *mapping();
 
 		template<unsigned int dim>
 		inline DOFHandler<dim,3> *dh();
@@ -225,17 +225,6 @@ public:
 	 * @brief Getter for field data.
 	 */
 	virtual EqData *get_data() { return &data; }
-
-	/**
-	 * @brief Getter for number of substances.
-	 */
-	unsigned int n_substances() { return n_subst; };
-
-	/**
-	 * @brief Getter for substance names.
-	 * @return Vector of substance names.
-	 */
-	vector<string> &substance_names() { return subst_names; };
 
 	/**
 	 * @brief Destructor.
@@ -450,11 +439,6 @@ private:
 	/// Field data for model parameters.
 	EqData data;
 
-	/// Number of transported substances.
-	int n_subst;
-
-	/// Names of transported substances.
-	std::vector<string> subst_names;
 
 	/// True if sorption is considered.
 	bool sorption;
@@ -517,7 +501,7 @@ private:
 	vector<double*> output_solution;
 
 	/// Time marks for writing the output.
-	TimeMark::Type output_mark_type;
+	//TimeMark::Type output_mark_type;
 
 	// @}
 
@@ -533,7 +517,7 @@ private:
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
 
-    const MH_DofHandler * mh_dh;
+    //const MH_DofHandler * mh_dh;
 
     // @}
 };

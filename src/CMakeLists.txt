@@ -64,6 +64,16 @@ set(sources_lib_input
     input/accessors.cc
 )
 
+
+set(sources_lib_la
+	la/distribution.cc
+	la/local_to_global_map.cc
+    la/schur.cc
+    la/solve.cc
+    la/linsys.cc
+    la/sparse_graph.cc
+)
+
 set(sources_mesh_lib
     mesh/region.cc
     mesh/msh_gmshreader.cc
@@ -76,6 +86,7 @@ set(sources_mesh_lib
     mesh/sides.cc
     mesh/intersection.cc
     mesh/ref_element.cc
+    mesh/partitioning.cc
     
     mesh/bounding_box.cc
     mesh/bih_node.cc
@@ -109,14 +120,7 @@ set(sources_fem_lib
 )
 
 
-set(sources_lib_la
-	la/distribution.cc
-	la/local_to_global_map.cc
-    la/schur.cc
-    la/solve.cc
-    la/linsys.cc
-    la/sparse_graph.cc
-)
+
 
 
 set(sources_lib_field
@@ -206,7 +210,7 @@ target_link_libraries(la_lib
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})
 target_link_libraries(mesh_lib
-    input_lib system_lib armadillo ${Boost_LIBRARIES})
+    input_lib system_lib la_lib armadillo ${Boost_LIBRARIES})
     
 # fem_lib    
 add_library(fem_lib ${sources_fem_lib})

@@ -352,6 +352,7 @@ void TimeGovernor::next_time()
         dt_changed= (last_time_step != time_step);
     }
     
+    last_time_ = time;
     time+=time_step;
     time_level++;
     // refreshing the upper_constraint_

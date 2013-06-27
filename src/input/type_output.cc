@@ -339,8 +339,8 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 			}
 
 			stream << "" << " (" << type->size() << " keys).";
+		    write_description(stream, OutputBase::get_record_description(type), 0);
 		    stream << endl;
-		    stream << "" << "# " << OutputBase::get_record_description(type) << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
 		    // keys
 		    doc_type_ = key_record;
@@ -406,8 +406,8 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             // header
             stream << endl;
             stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
+            write_description(stream, OutputBase::get_record_description( type ), 0);
             stream << endl;
-            stream << "" << "# " << OutputBase::get_record_description(type) << endl;
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // descendants
             doc_type_ = key_record;
@@ -448,7 +448,9 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 		if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
-			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
+			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
+			write_description(stream, OutputBase::get_selection_description( type ), 0);
+			stream << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
 		    // keys
 		    for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
@@ -694,7 +696,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 		    	stream << endl;
 		    	stream << setw((depth) * padding_size) << "";
 		    	print(stream, &*it, depth);
-		    	write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_);
+		    	write_description(stream, OutputBase::get_record_description( &(*it) ), padding_size*size_setw_);
 		    	doc_type_ = full_record;
 		    	print(stream, &*it, depth);
 		    }
@@ -710,7 +712,14 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Selection *type, unsi
 		case key_record: {
 			unsigned int max_size = 0; // maximal size for setw of description
 
-			stream << "# Selection of " << type->size() << " values:";
+			stream << "# Selection of " << type->size() << " values";
+
+			if (OutputBase::get_selection_description(type).size()) {
+				//size_setw_ = depth+1;
+				write_description(stream, OutputBase::get_selection_description(type), padding_size*depth, 2);
+			}
+
+			stream << endl << setw(depth * padding_size) << "" << "# Possible values:";
 
 			for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
 				max_size = std::max(max_size, (unsigned int)(it->key_.size()) );
@@ -1126,7 +1135,8 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
     	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
-            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}" <<endl;
+            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}";
+            stream << "{" << OutputBase::get_selection_description(type) << "}" <<endl;
             // keys
             for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
                 stream << "\\KeyItem{" <<  ( it->key_ ) << "}{" << it->description_ << "}" << endl;
@@ -1294,6 +1304,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"type\" : \"Selection\"," << endl;
+	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_selection_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
 	stream << "\"values\" : [" << endl;
 

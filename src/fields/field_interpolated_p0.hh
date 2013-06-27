@@ -36,6 +36,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/tetrahedron.h"
 
@@ -55,7 +56,7 @@ public:
 	 */
 	static Input::Type::Record input_type;
 
-	static Input::Type::Record get_input_type(Input::Type::AbstractRecord a_type, typename Value::ElementInputType *eit);
+	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
 
 	/**
 	 * Initialization from the input interface.
@@ -63,7 +64,13 @@ public:
 	virtual void init_from_input(const Input::Record &rec);
 
 
-	/**
+    /**
+     * Update time and possibly update data from GMSH file.
+     */
+    virtual bool set_time(double time);
+
+
+    /**
 	 * Set sources files of interpolation
 	 *
 	 * @param mesh_file file contained data of mesh
@@ -72,48 +79,54 @@ public:
 	 * TODO: use streams instead of filenames (better testing)
 	 * TODO: use just one GMSH file for both mesh and data (consistency)
 	 */
-	void set_source_of_interpolation(const FilePath & mesh_file,
-									 const FilePath & raw_output);
+	//void set_source_of_interpolation(const FilePath & mesh_file,
+	//								 const FilePath & raw_output);
 
-    /**
-     * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
-     * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
-     */
-    //virtual typename Value::return_type &value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual FieldResult value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value);
+    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    //virtual void value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
-    //                   std::vector<typename Value::return_type>  &value_list, std::vector<FieldResult> &result_list);
+    virtual void value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+                       std::vector<typename Value::return_type>  &value_list);
 
 protected:
-	/// mesh
-	Mesh* mesh_;
+	/// mesh, which is interpolated
+	Mesh* source_mesh_;
 
-	/// value of pressure in element_
-	double pressure_;
+	/// mesh reader
+	GmshMeshReader *reader_;
 
-	/// vector of pressures in nodes
-	std::vector<double> pressures_;
+    /// Raw buffer of n_entities rows each containing Value::size() doubles.
+    double *data_;
 
 	/// vector stored suspect elements in calculating the intersection
-	std::vector<unsigned int> searchedElements_;
+	std::vector<unsigned int> searched_elements_;
+
+	/// field name read from input
+	std::string field_name_;
 
 	/// tree of mesh elements
-	BIHTree* bihTree_;
+	BIHTree* bih_tree_;
 
-	/**
-	 * Read pressures from file and put them to vector pressures_
-	 *
-	 * @param raw_output file contained output
-	 */
-	void read_pressures(FILE* raw_output);
+	/// stored reference to last computed element
+	const ElementAccessor<spacedim> *computed_elm_;
+
+	/// 3D (tetrahedron) element, used for computing intersection
+	TTetrahedron tetrahedron_;
+
+	/// 2D (triangle) element, used for computing intersection
+	TTriangle triangle_;
+
+	/// 1D (abscissa) element, used for computing intersection
+	TAbscissa abscissa_;
+
+	/// 0D (point) element, used for computing intersection
+	TPoint point_;
 
 	/**
 	 * Read scalar element data with name @p field_name using tokenizer @p tok initialized
@@ -127,32 +140,42 @@ protected:
 	 * - selective reading on submesh (parallelism - subdomains, or boundary data)
 	 *
 	 */
-	void read_element_data_from_gmsh(Tokenizer &tok, const  string &field_name);
+	//void read_element_data_from_gmsh(Tokenizer &tok, const  string &field_name);
 
 
 	/**
-	 * Calculate pressures in triangle element
+	 * Calculate values in triangle element
 	 */
-	void calculate_triangle_pressure(TTriangle &element);
+	//void calculate_triangle_value(TTriangle &element, unsigned int idx);
 	/**
-	 * Calculate pressures in abscissa element
+	 * Calculate values in abscissa element
 	 */
-	void calculate_abscissa_pressure(TAbscissa &element);
+	//void calculate_abscissa_value(TAbscissa &element, unsigned int idx);
+	/**
+	 * Calculate values in point element
+	 */
+	//void calculate_point_value(TPoint &point, unsigned int idx);
+
 public:
 	/**
 	 * Create tetrahedron from element
 	 */
-	static void createTetrahedron(Element *ele, TTetrahedron &te);
+	static void create_tetrahedron(Element *ele, TTetrahedron &te);
 
 	/**
 	 * Create triangle from element
 	 */
-	static void createTriangle(Element *ele, TTriangle &tr);
+	static void create_triangle(Element *ele, TTriangle &tr);
 
 	/**
 	 * Create abscissa from element
 	 */
-	static void createAbscissa(Element *ele, TAbscissa &ab);
+	static void create_abscissa(Element *ele, TAbscissa &ab);
+
+	/**
+	 * Create point from element
+	 */
+	static void create_point(Element *ele, TPoint &p);
 };
 
 

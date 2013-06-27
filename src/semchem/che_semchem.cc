@@ -1651,7 +1651,7 @@ void che_maticovy_vypocet (char *soubor)
    skala = NULL;
 }
 
-void che_spocitej_rychlosti(FILE *fw, double *rychlosti, double *poloha, double dt)
+void che_spocitej_rychlosti(double *rychlosti, double *poloha, double dt)
 {
 	int i = 0;
 	int j = 0;
@@ -1700,7 +1700,7 @@ void che_prepocitej_polohu (double *poloha2, double *poloha, double *posunuti)
    }
 }
 
-void che_zkrat_latku_o(FILE *fw, int kterou, double o_kolik, double *rychlosti)
+void che_zkrat_latku_o(int kterou, double o_kolik, double *rychlosti)
 {
 // mozna bych mel vsechny reakce spotrebovavajici latku zkratit rovnym dilem.
    int i = 0;
@@ -1740,7 +1740,7 @@ void che_zkrat_latku_o(FILE *fw, int kterou, double o_kolik, double *rychlosti)
 
 void che_pomala_kinetika (char *soubor, int poc_kroku)
 {
-   FILE *fw;
+   //FILE *fw;
    int i,j, krok;
    double *poloha = NULL;
    double *poloha2 = NULL;
@@ -1855,21 +1855,21 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
             return;
          }
       }
-      che_spocitej_rychlosti(fw, k1, poloha, dt);
+      che_spocitej_rychlosti(k1, poloha, dt);
       che_nasob_ld (0.5, k1, rychlosti, G_prm.pocet_pom_kin);
       che_spocitej_posunuti(posunuti, rychlosti);
       che_prepocitej_polohu(poloha2, poloha, posunuti);
 
-      che_spocitej_rychlosti(fw, k2, poloha2, dt);
+      che_spocitej_rychlosti(k2, poloha2, dt);
       che_nasob_ld (0.5, k2, rychlosti, G_prm.pocet_pom_kin);
       che_spocitej_posunuti(posunuti, rychlosti);
       che_prepocitej_polohu(poloha2, poloha, posunuti);
 
-      che_spocitej_rychlosti(fw, k3, poloha2, dt);
+      che_spocitej_rychlosti(k3, poloha2, dt);
       che_spocitej_posunuti(posunuti, k3);
       che_prepocitej_polohu(poloha2, poloha, posunuti);
 
-      che_spocitej_rychlosti(fw, k4, poloha2, dt);
+      che_spocitej_rychlosti(k4, poloha2, dt);
 
       che_kombinuj4_ld(1.0/6.0, k1, 1.0/3.0, k2, 1.0/3.0, k3, 1.0/6.0, k4, rychlosti, G_prm.pocet_pom_kin);
       che_spocitej_posunuti(posunuti, rychlosti);
@@ -1880,7 +1880,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
          if (poloha2[j]<0.0)
          {
             printf(/*Msg,*/ "\nchemie: pri pomalych kinetickych reakcich dosla %d. latka (%f)\t", j+1, poloha2[j]);
-            che_zkrat_latku_o(fw,j,-poloha2[j],rychlosti);
+            che_zkrat_latku_o(j,-poloha2[j],rychlosti);
             che_spocitej_posunuti(posunuti, rychlosti);
             che_prepocitej_polohu(poloha2, poloha, posunuti);
          }

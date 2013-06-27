@@ -138,8 +138,8 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
     }
 
     unsigned int size = PyTuple_Size( p_value_);
-    int row,col;
-    int value_size=this->value_.n_rows() * this->value_.n_cols();
+
+    unsigned int value_size=this->value_.n_rows() * this->value_.n_cols();
     if ( size !=  value_size) {
         xprintf(UsrErr, "Field '%s' from the python module: %s returns %d components but should return %d components.\n"
                 ,func_name.c_str(), PyModule_GetName(p_module_), size, value_size);
@@ -202,20 +202,6 @@ void FieldPython<spacedim, Value>::set_value(const Point<spacedim> &p, const Ele
 #endif // HAVE_PYTHON
 }
 
-
-
-/*
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, ElementAccessor<spacedim> &elm,
-                   std::vector<Value>  &value_list, std::vector<FieldResult> &result_list)
-{
-#ifdef HAVE_PYTHON
-    ASSERT_SIZES( point_list.size(), value_list.size() );
-    for(unsigned int i=0; i< point_list.size(); i++)
-        result_list[i] = value(point_list[i], component);
-#endif // HAVE_PYTHON
-}
-*/
 
 
 

@@ -65,7 +65,11 @@ class ConvectionTransport;
 /**
  * TODO:
  * - doxy documentation
- * - make separate method for changing time step (rescaling only)
+ * - make separate method for changing time step (rescaling only), reassembly matrix only when data are changed
+ *
+ * - needs support from EqData to determine next change of the data for 1) transport matrix 2) source vector
+ *   this allows us precisely choose interval where to fix timestep
+ *   : field->next_change_time() - returns time jump or actual time in case of time dep. field
  */
 
 
@@ -74,12 +78,33 @@ class ConvectionTransport;
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
-class ConvectionTransport : public EquationBase {
+class ConvectionTransport : public TransportBase {
 public:
+
+    class EqData : public TransportBase::TransportEqData {
+    public:
+        static Input::Type::Selection sorption_type_selection;
+
+        EqData();
+        virtual ~EqData() {};
+
+        /// Override generic method in order to allow specification of the boundary conditions through the old bcd files.
+        RegionSet read_boundary_list_item(Input::Record rec);
+
+        Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
+        Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
+        Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
+        Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
+        Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
+        Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
+
+        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+    };
+
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, TransportOperatorSplitting::EqData &init_data, const Input::Record &in_rec);
+        ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
 	/**
 	 * TODO: destructor
 	 */
@@ -95,10 +120,31 @@ public:
 	 * Updates CFL time step constrain.
 	 * TODO: Just set the new velocity, postpone update till compute_one_step
 	 */
-	void set_flow_field_vector(const MH_DofHandler &dh);
+	//void set_flow_field_vector(const MH_DofHandler &dh);
   
+	/**
+	 * Set cross section of fractures from the Flow equation.
+	 *
+	 * TODO: Make this and previous part of Transport interface in TransportBase.
+	 */
+	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
+
+
     /**
-     * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
+     * Set time interval which is considered as one time step by TransportOperatorSplitting.
+     * In particular the velocity field dosn't change over this interval.
+     *
+     * Dependencies:
+     *
+     * velocity, porosity -> matrix, source_vector
+     * matrix -> time_step
+     *
+     * data_read_times -> time_step (not necessary if we won't stick to jump times)
+     * data -> source_vector
+     * time_step -> scaling
+     *
+     *
+     *
      */
     void set_target_time(double target_time);
 
@@ -106,32 +152,25 @@ public:
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
 	void output_vector_gather(); //
+
+    /**
+     * @brief Write computed fields.
+     */
+    virtual void output_data();
+
+
 	/**
-	 * Returns time step constrain given by CFL condition for the discretization of the
-	 * convection term. The constrain depends on actual convection matrix assembled by
-	 * create_transport_matrix_mpi()
+	 * Getters.
 	 */
-	//double get_cfl_time_constrain();
+	inline EqData *get_data() { return &data_; }
 
 	double ***get_concentration_matrix();
-	double ***get_prev_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
-	int get_n_substances();
 	int *get_el_4_loc();
 	int *get_row_4_el();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
-	/**
-	 * Return pointer to sequential arrays for output.
-	 * TODO: Maybe this should be made by get_solution_vector, but here we have matrix of arrays.
-	 */
-	double ***get_out_conc();
-	double ***get_conc();
-    vector<string> &get_substance_names();
-    double *get_sources(int sbi);
-    const MH_DofHandler *mh_dh;
-
 
 private:
 
@@ -153,7 +192,9 @@ private:
 	void set_initial_condition();
 	void read_concentration_sources();
 	void set_boundary_conditions();
-	Vec compute_concentration_sources(unsigned int subst_i, double *conc);
+  
+  //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+	void compute_concentration_sources(unsigned int sbi);
 
 	/**
 	 * Finish explicit transport matrix (time step scaling)
@@ -162,7 +203,7 @@ private:
 
 	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
 	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
-	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, int sorp_type,
+	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
 			double *concx, double *concx_sorb, double Nv, double N); //
 
 
@@ -171,83 +212,78 @@ private:
 
     std::map<void*, OutputTime*> output_streams;
 
-	bool is_convection_matrix_scaled, is_bc_vector_scaled;
+    /**
+     * Overriding the virtual method that is called by TransportBase::mass_balance() to get boundary balances over individual boundary regions.
+     * TODO: more precise description
+     */
+    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+    /**
+     * Overriding the virtual method that is called by TransportBase::mass_balance() to get source balances over individual boundary regions.
+     * TODO: more precise description
+     */
+    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
 
-	TransportOperatorSplitting::EqData *data;
+    /**
+     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
+     */
+    EqData data_;
+
+    /**
+     * Indicates if we finished the matrix and add vector by scaling with timestep factor.
+     */
+	bool is_convection_matrix_scaled, need_time_rescaling;
+
+    bool              sorption;     // Include sorption  YES/NO
+    bool              dual_porosity;   // Include dual porosity YES/NO
+    int sub_problem;    // 0-only transport,1-transport+dual porosity,
+                        // 2-transport+sorption
+                        // 3-transport+dual porosity+sorption
+
 
     double *sources_corr;
     Vec v_sources_corr;
+    
+    ///temporary arrays to store constant values of fields over time interval
+    //(avoiding calling "field.value()" to often)
+    double **sources_density, 
+           **sources_conc,
+           **sources_sigma;
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;
             // only local part
-            double ***conc;
-            double ***pconc;
-            double **cumulative_corr;
-
-            // global
-
-//        	std::string		transport_out_fname;// Name of file of trans. output
-            int       dens_step;            //
-            double 			update_dens_time;
-
-            double ***out_conc;
-            int              n_substances;    // # substances transported by water
-            vector<string> substance_name;   // Names of substances
-            string bc_fname; // name of input file with boundary conditions
-
-        	//Density
-            bool density;			// Density Yes/NO
-            double ***prev_conc;
-            double *scalar_it;
-            double          *substance_density_scale;
-
-        	int		max_dens_it;	// maximum number of iterations in the variable-density iteration cycle
-        	bool		dens_implicit; // use iterations for the variable density (implicit) YES/NO
-        	double	dens_eps;      // stopping criterium for density iterations - pressure
-        	bool		write_iterations; // write results during iterations to transport POS file YES/NO
-
-        	// Transport
-            bool              sorption;     // Include sorption  YES/NO
-            bool              dual_porosity;   // Include dual porosity YES/NO
-            bool              reaction_on;     // Include reaction  YES/NO
-
-            // Other
-           // struct Problem* problem;
-            int sub_problem;	// 0-only transport,1-transport+dual porosity,
-    							// 2-transport+sorption
-    							// 3-transport+dual porosity+sorption
-    //PEPA
-//            int 	pepa; // It enables Pepa Chudoba's  crazy functions
-//            int 	type; // Type of crazy function
 
 
-    // NEW TRANSPORT
 
             VecScatter vconc_out_scatter;
-            Mat tm; // PETSc transport matrix
-            //Mat bcm; // PETSc boundary condition matrix
-            //Vec *bcv; // boundary condition vector
-            Vec *bcvcorr; // boundary condition correction vector
+    Mat tm; // PETSc transport matrix
 
-            Vec *vconc; // concentration vector
-            Vec *vpconc; // previous concentration vector
-            Vec *vcumulative_corr;
+    /// Time when the transport matrix was created.
+    /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
+    /// necessity for matrix update
+    double transport_matrix_time;
 
+    /// Concentration vectors for mobile phase.
+    Vec *vconc; // concentration vector
+    /// Concentrations for phase, substance, element
+    double ***conc;
 
-            Vec *vconc_out; // concentration vector output (gathered)
+    ///
+    Vec *vpconc; // previous concentration vector
+    //double ***pconc;
+    Vec *bcvcorr; // boundary condition correction vector
+    Vec *vcumulative_corr;
+    double **cumulative_corr;
 
-            int **d_row;  // diagonal row entries number in tm
-            int **od_row; // off-diagonal row entries number in tm
-            int **db_row; // diagonal column entries number in bcm
-            int **odb_row; // off-diagonal column entries number in bcm
-            int *l_row; // number of local rows in tm and bcm
-            int *lb_col; // number of local columns in bcm
+    Vec *vconc_out; // concentration vector output (gathered)
+    double ***out_conc;
+
 
             int *row_4_el;
             int *el_4_loc;
             Distribution *el_ds;
 
+            friend class TransportOperatorSplitting;
 };
 #endif /* TRANSPORT_H_ */

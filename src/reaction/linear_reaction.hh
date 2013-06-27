@@ -53,7 +53,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/
-		void set_time_step(double new_timestep, Input::Record in_rec);
+		//void set_time_step(double new_timestep, Input::Record in_rec);
 		/**
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/

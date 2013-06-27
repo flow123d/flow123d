@@ -77,6 +77,7 @@
 #include "system/xio.h"
 #include "mesh/mesh.h"
 
+#include "fields/field_base.hh"
 #include "input/accessors.hh"
 
 class OutputFormat;
@@ -403,6 +404,7 @@ public:
     		unsigned int size,
     		double time);
 
+
     /**
      * \brief This function register data on corners of triangles.
      *
@@ -537,6 +539,34 @@ public:
             std::vector<_Data> &data,
             double time);
 
+
+    template <typename _Data>
+    static OutputTime* register_node_data(FieldCommonBase *field,
+            std::vector<_Data> &data);
+
+    template <typename _Data>
+    static OutputTime* register_corner_data(FieldCommonBase *field,
+            std::vector<_Data> &data);
+
+    template <typename _Data>
+    static OutputTime* register_elem_data(FieldCommonBase *field,
+            std::vector<_Data> &data);
+
+
+
+    template <typename _Data>
+    static OutputTime* register_node_data(FieldCommonBase *field,
+            _Data *data);
+
+    template <typename _Data>
+    static OutputTime* register_corner_data(FieldCommonBase *field,
+            _Data *data);
+
+    template <typename _Data>
+    static OutputTime* register_elem_data(FieldCommonBase *field,
+            _Data *data);
+
+
     /**
      * \brief This is depreciated method. Every file format should specify its own
      * method for writing data to output file. This method will not be public
@@ -647,7 +677,7 @@ OutputTime* OutputTime::register_corner_data(Mesh *mesh,
     int found = 0;
     std::vector<OutputData> *corner_data = output_time->get_corner_data();
 
-    int corner_count = output_time->get_corner_count();
+    unsigned int corner_count = output_time->get_corner_count();
     ASSERT(corner_count == size,
             "output_time->get_corner_count(): %d != size: %d",
             corner_count,
@@ -730,6 +760,7 @@ OutputTime* OutputTime::register_elem_data(Mesh *mesh,
 
     return output_time;
 }
+
 
 template <typename _Data>
 OutputTime* OutputTime::register_node_data(Mesh *mesh,
@@ -896,9 +927,131 @@ OutputTime* OutputTime::register_elem_data(Mesh *mesh,
         out_data->ref_type = OutputData::ELEM_DATA;
         elem_data->push_back(*out_data);
     }
-    return output_time;
 
+    return output_time;
 }
+
+
+template <typename _Data>
+OutputTime* OutputTime::register_node_data(FieldCommonBase *field,
+        _Data *data)
+{
+    return NULL;
+}
+
+
+template <typename _Data>
+OutputTime* OutputTime::register_corner_data(FieldCommonBase *field,
+        _Data *data)
+{
+    return NULL;
+}
+
+
+template <typename _Data>
+OutputTime* OutputTime::register_elem_data(FieldCommonBase *field,
+        _Data *data)
+{
+    // Try to find existing output stream or create new one
+    OutputTime *output_time = OutputTime::output_stream_by_name(field->name());
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return NULL;
+    }
+
+    output_time->time = field->time();
+    output_time->set_mesh(field->mesh());
+
+    int found = 0;
+    std::vector<OutputData> *elem_data = output_time->get_elem_data();
+
+    for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
+            od_iter != elem_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == field->name()) {
+            od_iter->data = (void*)data;
+            found = 1;
+            break;
+        }
+    }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(field->name(),
+                field->units(),
+                data,
+                field->mesh()->element.size());
+        out_data->ref_type = OutputData::ELEM_DATA;
+        elem_data->push_back(*out_data);
+    }
+
+    return output_time;
+}
+
+
+template <typename _Data>
+OutputTime* register_node_data(FieldCommonBase *field,
+        std::vector<_Data> &data)
+{
+    // Try to find existing output stream or create new one
+    OutputTime *output_time = OutputTime::output_stream_by_name(field->name());
+
+    /* It's possible now to do output to the file only in the first process */
+    if(output_time == NULL || output_time->rank!=0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return NULL;
+    }
+
+    output_time->time = field->time();
+    output_time->set_mesh(field->mesh());
+
+    int found = 0;
+    std::vector<OutputData> *node_data = output_time->get_node_data();
+
+    ASSERT(field->mesh()->node_vector.size() == data.size(),
+            "field->mesh()->node_vector.size(): %d != size: %d",
+            field->mesh()->node_vector.size(),
+            data.size());
+
+    for(std::vector<OutputData>::iterator od_iter = node_data->begin();
+            od_iter != node_data->end();
+            od_iter++)
+    {
+        if(*od_iter->name == field->name()) {
+            od_iter->data = (void*)&data;
+            found = 1;
+            break;
+        }
+    }
+
+    if(found == 0) {
+        OutputData *out_data = new OutputData(field->name(),
+                field->units(), data);
+        out_data->ref_type = OutputData::NODE_DATA;
+        node_data->push_back(*out_data);
+    }
+
+    return output_time;
+}
+
+
+template <typename _Data>
+OutputTime* register_corner_data(FieldCommonBase *field,
+        std::vector<_Data> &data)
+{
+    return NULL;
+}
+
+
+template <typename _Data>
+OutputTime* register_elem_data(FieldCommonBase *field,
+        std::vector<_Data> &data)
+{
+    return NULL;
+}
+
 
 #if 0
 template <typename _Data>

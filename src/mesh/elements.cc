@@ -137,7 +137,7 @@ double Element::measure() const {
  */
 
 arma::vec3 Element::centre() const {
-    int li;
+    unsigned int li;
 
     arma::vec3 centre;
     centre.zeros();
@@ -154,7 +154,7 @@ arma::vec3 Element::centre() const {
  * Count element sides of the space dimension @p side_dim.
  */
 
-unsigned int Element::n_sides_by_dim(int side_dim)
+unsigned int Element::n_sides_by_dim(unsigned int side_dim)
 {
     if (side_dim == dim()) return 1;
 
@@ -206,6 +206,19 @@ double Element::quality_measure_smooth() {
                ) / ( sqrt(3.0) / 4.0 ); // regular triangle
     }
     return 1.0;
+}
+
+
+void Element::get_bounding_box(BoundingBox &bounding_box) {
+	arma::vec3 minCoor = this->node[0]->point();
+	arma::vec3 maxCoor = this->node[0]->point();
+	for (unsigned int i=1; i<n_nodes(); i++) {
+		for (unsigned int j=0; j<3; j++) {
+			minCoor(j) = std::min(minCoor(j), this->node[i]->point()(j));
+			maxCoor(j) = std::max(maxCoor(j), this->node[i]->point()(j));
+		}
+	}
+	bounding_box.set_bounds(minCoor, maxCoor);
 }
 
 //-----------------------------------------------------------------------------

@@ -209,6 +209,8 @@ void OutputTime::destroy_all(void)
 
 OutputTime *OutputTime::output_stream_by_name(string name)
 {
+    std::cout << "Try to find OutputTime with name: " << name << std::endl;
+
     // Try to find existing object
     for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
             output_iter != OutputTime::output_streams.end();

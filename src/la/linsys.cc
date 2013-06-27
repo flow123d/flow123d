@@ -44,7 +44,7 @@
  */
 
 LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
-:vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE),type(MAT_MPIAIJ)
+:type(MAT_MPIAIJ),vec_ds(vec_lsize),symmetric(false),positive_definite(false),status(NONE)
 {
     // create PETSC vectors
     v_rhs=(double *) xmalloc(sizeof(double) * (this->vec_lsize() + 1) );
@@ -319,7 +319,7 @@ void LinSys_MPIAIJ::preallocate_matrix()
      VecGetArray(off_vec,&off_array);
 
      for(i=0; i<vec_ds.lsize(); i++) {
-         on_nz[i]=min((int)(on_array[i]+0.1),vec_ds.lsize());        // small fraction to ensure correct rounding
+         on_nz[i]=min((unsigned int)(on_array[i]+0.1),vec_ds.lsize());        // small fraction to ensure correct rounding
          off_nz[i]=(int)(off_array[i]+0.1);
      }
 

@@ -95,9 +95,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
                 "Parameters of output form MH module.")
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
-                "Method for coupling Darcy flow between dimensions." )
-        .declare_key("mortar_sigma", it::Double(0.0), it::Default("1.0"),
-                "Conductivity between dimensions." );
+                "Method for coupling Darcy flow between dimensions." );
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -301,7 +299,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         bc_function=NULL;
     }*/
     
-    START_TIMER("paralel init");
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
     ierr += MPI_Comm_size(PETSC_COMM_WORLD, &(np));
@@ -309,6 +306,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         xprintf(Err, "Some error in MPI.\n");
 
 
+    
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
         mesh_->read_intersections();
@@ -321,18 +319,17 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     prepare_parallel();
 
-    END_TIMER("paralel init");
     //side_ds->view();
     //el_ds->view();
     //edge_ds->view();
     
     make_schur0();
 
-    START_TIMER("prepare paralel");
+    START_TIMER("prepare scatter");
     // prepare Scatter form parallel to sequantial in original numbering
     {
             IS is_loc;
-            int i, si, *loc_idx;
+            int i, *loc_idx; //, si;
 
             // create local solution vector
             solution = (double *) xmalloc(size * sizeof(double));
@@ -364,7 +361,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         }
     solution_changed_for_scatter=true;
     
-    END_TIMER("prepare paralel");
+    END_TIMER("prepare scatter");
 }
 
 
@@ -374,7 +371,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
 //=============================================================================
 void DarcyFlowMH_Steady::update_solution() {
-    START_TIMER("SOLVING MH SYSTEM");
+    START_TIMER("Solving MH system");
     F_ENTRY;
 
     if (time_->is_end()) return;
@@ -520,8 +517,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     MHFEValues fe_values;
 
-    struct Boundary *bcd;
-    struct Neighbour *ngh;
+    class Boundary *bcd;
+    class Neighbour *ngh;
 
     bool fill_matrix = schur0->is_preallocated();
     DBGMSG("fill_matrix: %d\n", fill_matrix);
@@ -925,60 +922,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
     }
 }
 
-//=============================================================================
-// COUMPUTE NONZEROES IN THE WATER MH MATRIX
-//=============================================================================
-/*
- * void compute_nonzeros( TWaterLinSys *w_ls) {
 
- ElementIter ele;
- struct Edge *edg;
- int row,side,i;
- Mesh* mesh = w_ls->water_eq;
-
- xprintf( Msg, "Computing nonzero values ...\n");
- w_ls->nonzeros=(int *)xmalloc(sizeof(int)*w_ls->size);
- row=0;
- FOR_ELEMENTS( ele ) { // count A, B', C'
- // n_sides in A, 1 in B', 1 in C'
- for(side=0;side<ele->n_sides;side++)
- w_ls->nonzeros[row++]=ele->n_sides+2;
- }
- FOR_ELEMENTS( ele ) { // count B, D, E'
- // n_sides in B, # D, # E
- w_ls->nonzeros[row++]=ele->n_sides+ele->d_row_count+ele->e_row_count;
- }
- FOR_EDGES ( edg ) { // count C, E', F
- // C - n_sides(1 on BC, 2 inside), E' - possible ngh. F-diagonal
- w_ls->nonzeros[row++]=(edg->n_sides)+((edg->neigh_vb!=NULL)?1:0)+1;
- }
-
- // count additional space for the valueas of schur complement
- if (w_ls->n_schur_compls > 0) {
- row=w_ls->sizeA;
- // -B'*A-*B block is diagonal and already counted
- // -B'*A-*C block conect element with its edges
- FOR_ELEMENTS( ele ) {
- w_ls->nonzeros[row++]+=ele->n_sides;
- }
-
- if (w_ls->n_schur_compls > 0) {
- // !!! koncepce Neighbouringu je tak prohnila, ze neni vubec jasne, jestli
- // pro jeden element sousedi max s jednou edge a naopak takze musim spolehat jen na to co je
- // v e_col
- FOR_ELEMENTS( ele ) {
- for(i=0;i<ele->n_sides;i++) w_ls->nonzeros[ele->side(i)->edge->c_row]+=ele->e_row_count;
- for(i=0;i<ele->e_row_count;i++) w_ls->nonzeros[ele->e_col[i]]+=ele->n_sides+ele->e_row_count-1;
- }
- }
- // -C'*A-*B block conect edge with its elements = n_sides nz
- // -C'*A-*C block conect all edges of every element = n_sides*(dim of sides +1)nz (not counting diagonal)
- FOR_EDGES ( edg ) {
- w_ls->nonzeros[row++] += edg->n_sides*(edg->side(0)->dim+1+1);
- }
- }
- }
- */
 
 /*******************************************************************************
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
@@ -986,7 +930,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
 
 void DarcyFlowMH_Steady::make_schur0() {
   
-    START_TIMER("PREALLOCATION");
+    START_TIMER("preallocation");
 
     if (schur0 == NULL) { // create Linear System for MH matrix
 
@@ -1002,13 +946,15 @@ void DarcyFlowMH_Steady::make_schur0() {
 
     }
 
-    END_TIMER("PREALLOCATION");
-    START_TIMER("ASSEMBLY");
+    END_TIMER("preallocation");
+    
+    START_TIMER("assembly");
 
     schur0->start_add_assembly(); // finish allocation and create matrix
     assembly_steady_mh_matrix(); // fill matrix
     schur0->finalize();
 
+    END_TIMER("assembly");
     //schur0->view_local_matrix();
     //PetscViewer myViewer;
     //PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matis.m",&myViewer);
@@ -1181,7 +1127,7 @@ void DarcyFlowMH_Steady::make_schur2() {
 void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
 
     Distribution edistr = graph->get_distr();
-    Edge *edg;
+    //Edge *edg;
     Element *ele;
     int li, eid, i_neigh, i_edg;
     unsigned int si;
@@ -1395,24 +1341,28 @@ void DarcyFlowMH_Steady::make_row_numberings() {
 // - make arrays: *_id_4_loc and *_row_4_id to allow parallel assembly of the MH matrix
 // ====================================================================================
 void DarcyFlowMH_Steady::prepare_parallel() {
-
+    
+    START_TIMER("prepare parallel");
+    
     int *loc_part; // optimal (edge,el) partitioning (local chunk)
     int *id_4_old; // map from old idx to ids (edge,el)
     // auxiliary
-    Edge *edg;
+    //Edge *edg;
     Element *el;
-    Side *side;
+    //Side *side;
     int i, loc_i;
 
     int i_neigh;
     int e_idx;
     int i_loc, el_row, side_row, edge_row, nsides;
 
+    
     PetscErrorCode ierr;
     F_ENTRY;
-    ierr = MPI_Barrier(PETSC_COMM_WORLD);
-    ASSERT(ierr == 0, "Error in MPI_Barrier.");
-
+    //ierr = MPI_Barrier(PETSC_COMM_WORLD);
+    //ASSERT(ierr == 0, "Error in MPI_Barrier.");
+    
+    
     if (solver->type == PETSC_MATIS_SOLVER) {
         xprintf(Msg,"Compute optimal partitioning of elements.\n");
 
