@@ -541,29 +541,41 @@ public:
 
 
     template <typename _Data>
-    static OutputTime* register_node_data(FieldCommonBase *field,
+    static OutputTime* register_node_data(std::string name,
+            const Input::Record &in_rec,
+            FieldCommonBase *field,
             std::vector<_Data> &data);
 
     template <typename _Data>
-    static OutputTime* register_corner_data(FieldCommonBase *field,
+    static OutputTime* register_corner_data(std::string name,
+            const Input::Record &in_rec,
+            FieldCommonBase *field,
             std::vector<_Data> &data);
 
     template <typename _Data>
-    static OutputTime* register_elem_data(FieldCommonBase *field,
+    static OutputTime* register_elem_data(std::string name,
+            const Input::Record &in_rec,
+            FieldCommonBase *field,
             std::vector<_Data> &data);
 
 
 
     template <typename _Data>
-    static OutputTime* register_node_data(FieldCommonBase *field,
+    static OutputTime* register_node_data(std::string name,
+            const Input::Record &in_rec,
+            FieldCommonBase *field,
             _Data *data);
 
     template <typename _Data>
-    static OutputTime* register_corner_data(FieldCommonBase *field,
+    static OutputTime* register_corner_data(std::string name,
+            const Input::Record &in_rec,
+            FieldCommonBase *field,
             _Data *data);
 
     template <typename _Data>
-    static OutputTime* register_elem_data(FieldCommonBase *field,
+    static OutputTime* register_elem_data(std::string name,
+            const Input::Record &in_rec,
+            FieldCommonBase *field,
             _Data *data);
 
 
@@ -933,7 +945,9 @@ OutputTime* OutputTime::register_elem_data(Mesh *mesh,
 
 
 template <typename _Data>
-OutputTime* OutputTime::register_node_data(FieldCommonBase *field,
+OutputTime* OutputTime::register_node_data(std::string name,
+        const Input::Record &in_rec,
+        FieldCommonBase *field,
         _Data *data)
 {
     return NULL;
@@ -941,7 +955,9 @@ OutputTime* OutputTime::register_node_data(FieldCommonBase *field,
 
 
 template <typename _Data>
-OutputTime* OutputTime::register_corner_data(FieldCommonBase *field,
+OutputTime* OutputTime::register_corner_data(std::string name,
+        const Input::Record &in_rec,
+        FieldCommonBase *field,
         _Data *data)
 {
     return NULL;
@@ -949,11 +965,21 @@ OutputTime* OutputTime::register_corner_data(FieldCommonBase *field,
 
 
 template <typename _Data>
-OutputTime* OutputTime::register_elem_data(FieldCommonBase *field,
+OutputTime* OutputTime::register_elem_data(std::string name,
+        const Input::Record &in_rec,
+        FieldCommonBase *field,
         _Data *data)
 {
+    // Try to find record with output stream (the key is name of data)
+    Input::Iterator<string> stream_name_iter = in_rec.find<string>(name);
+
+    // If record was not found, then exit
+    if(!stream_name_iter) {
+        return NULL;
+    }
+
     // Try to find existing output stream or create new one
-    OutputTime *output_time = OutputTime::output_stream_by_name(field->name());
+    OutputTime *output_time = OutputTime::output_stream_by_name(*stream_name_iter);
 
     /* It's possible now to do output to the file only in the first process */
     if(output_time == NULL || output_time->rank!=0) {
@@ -992,11 +1018,21 @@ OutputTime* OutputTime::register_elem_data(FieldCommonBase *field,
 
 
 template <typename _Data>
-OutputTime* register_node_data(FieldCommonBase *field,
+OutputTime* OutputTime::register_node_data(std::string name,
+        const Input::Record &in_rec,
+        FieldCommonBase *field,
         std::vector<_Data> &data)
 {
+    // Try to find record with output stream (the key is name of data)
+    Input::Iterator<string> stream_name_iter = in_rec.find<string>(name);
+
+    // If record was not found, then exit
+    if(!stream_name_iter) {
+        return NULL;
+    }
+
     // Try to find existing output stream or create new one
-    OutputTime *output_time = OutputTime::output_stream_by_name(field->name());
+    OutputTime *output_time = OutputTime::output_stream_by_name(*stream_name_iter);
 
     /* It's possible now to do output to the file only in the first process */
     if(output_time == NULL || output_time->rank!=0) {
@@ -1038,7 +1074,9 @@ OutputTime* register_node_data(FieldCommonBase *field,
 
 
 template <typename _Data>
-OutputTime* register_corner_data(FieldCommonBase *field,
+OutputTime* OutputTime::register_corner_data(std::string name,
+        const Input::Record &in_rec,
+        FieldCommonBase *field,
         std::vector<_Data> &data)
 {
     return NULL;
@@ -1046,7 +1084,9 @@ OutputTime* register_corner_data(FieldCommonBase *field,
 
 
 template <typename _Data>
-OutputTime* register_elem_data(FieldCommonBase *field,
+OutputTime* OutputTime::register_elem_data(std::string name,
+        const Input::Record &in_rec,
+        FieldCommonBase *field,
         std::vector<_Data> &data)
 {
     return NULL;

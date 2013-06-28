@@ -175,7 +175,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
                  );
 
          double *data = out_conc[MOBILE][subst_id];
-         OutputTime *output_time = OutputTime::register_elem_data<double>((FieldCommonBase*)&data_.conc_mobile[subst_id],
+         OutputTime *output_time = OutputTime::register_elem_data<double>("conc_mobile_p0",
+                 output_rec,
+                 (FieldCommonBase*)&data_.conc_mobile[subst_id],
                  data);
          if(output_time) this->output_streams[(void*)data] = output_time;
 
