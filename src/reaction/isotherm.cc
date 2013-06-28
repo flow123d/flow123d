@@ -78,8 +78,8 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
 template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // , double elem_volume) // Probably not used at this time. CrossFunction needs to be redefined.
 {
-    boost::uintmax_t max_iter=100;
-    boost::math::tools::eps_tolerance<double> toler(30); //(60);
+    boost::uintmax_t max_iter = 20;
+    boost::math::tools::eps_tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 	double critic_total_mass = c_aqua_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(c_aqua_limit_)*scale_sorbed_;
 
@@ -95,7 +95,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 		//cout << "solution bounds " << solution.first << ", " << solution.second << endl;
 		c_aqua = (solution.first + solution.second)/2; // = average of the pair solution defined above, midpoint
 		//cout << "aqueous concentration is " << c_aqua << endl;
-		c_sorbed = const_cast<Func &>(isotherm)(c_aqua);
+		c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_; //const_cast<Func &>(isotherm)(c_aqua);
 	}else{
 		precipitate(c_aqua, c_sorbed, scale_aqua_, scale_sorbed_);
 	}
