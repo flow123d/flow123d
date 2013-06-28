@@ -253,7 +253,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        const PetscInt *rangesAblock;
        VecGetOwnershipRanges(RHS1,&rangesAblock);
 
-       Distribution new_ds(locSizeB);
+       Distribution new_ds(locSizeB, PETSC_COMM_WORLD);
        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row_new;
        global_row_4_sub_row_new=boost::make_shared<LocalToGlobalMap>(new_ds);
 

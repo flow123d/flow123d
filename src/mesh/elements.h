@@ -105,7 +105,7 @@ public:
     void get_bounding_box(BoundingBox &bounding_box);
 
 
-    int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
+    unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 

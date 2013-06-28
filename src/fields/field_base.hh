@@ -561,7 +561,7 @@ public:
     /**
      * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
      */
-    virtual inline void set_mesh(Mesh *mesh);
+    virtual void set_mesh(Mesh *mesh);
 
     /**
      * Virtual destructor.

@@ -34,6 +34,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/partitioning.hh"
 #include "transport/transport.h"
 
 #include "io/output.h"
@@ -196,7 +197,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
     //int rank, np, i, j, k, row_MH, a;
     //struct DarcyFlowMH *water=transport->problem->water;
-
+/*
     SparseGraph *ele_graph = new SparseGraphMETIS(mesh_->n_elements()); // graph for partitioning
     Distribution init_ele_ds = ele_graph->get_distr(); // initial distr.
     int *loc_part = new int[init_ele_ds.lsize()]; // partitionig in initial distribution
@@ -207,15 +208,12 @@ void ConvectionTransport::make_transport_partitioning() {
     ele_graph->partition(loc_part);
 
     delete ele_graph;
-
-    int *id_4_old = (int *) xmalloc(mesh_->n_elements() * sizeof(int));
+*/
+    int * id_4_old = new int[mesh_->n_elements()];
     int i = 0;
-    FOR_ELEMENTS(mesh_, ele)
-        id_4_old[i] = i, i++;
-    id_maps(mesh_->n_elements(), id_4_old, init_ele_ds, (int *) loc_part, el_ds, el_4_loc, row_4_el);
-
-    delete[] loc_part;
-    xfree(id_4_old);
+    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
+    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
+    delete[] id_4_old;
 
     // TODO: make output of partitioning is usefull but makes outputs different
     // on different number of processors, which breaks tests.

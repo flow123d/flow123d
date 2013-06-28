@@ -364,7 +364,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    sorptions = NULL;
 	}
 	
-	output_mark_type = convection->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
+	output_mark_type = convection->mark_type() | TimeGovernor::marks().type_fixed_time() | TimeGovernor::marks().type_output();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), output_mark_type );
 
 }

@@ -319,9 +319,9 @@ protected:
 };
 
 
-void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
-void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
-        int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+//void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
+//void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
+//        int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 void mat_count_off_proc_values(Mat m, Vec v);
 
 
