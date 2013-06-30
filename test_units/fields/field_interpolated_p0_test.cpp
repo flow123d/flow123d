@@ -25,7 +25,8 @@
  *
  */
 
-#include <gtest/gtest.h>
+#define TEST_USE_MPI
+#include <gtest_mpi.hh>
 
 #include "system/system.hh"
 #include "input/input_type.hh"

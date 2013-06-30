@@ -25,7 +25,11 @@
  * @file
  * @brief  Support classes for parallel programing.
  *
+ * TODO:
+ *
+ * * need better resolution of constructors
  */
+
 
 #ifndef MESH_PARTITION_HH_
 #define MESH_PARTITION_HH_

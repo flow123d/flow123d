@@ -32,7 +32,7 @@ set(super_test_libs field_lib coupling_lib ${Armadillo_LIBRARIES} ${Armadillo_LI
 
 if(CMAKE_HAVE_CXX11)
     
-    define_test(eq_data)
+    define_mpi_test(eq_data 1)
     define_test(time_governor)
     
 endif()

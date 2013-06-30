@@ -31,6 +31,8 @@
 #define MAKE_MESH_H
 
 #include <vector>
+#include <mpi.h>
+
 #include "mesh/mesh_types.hh"
 
 #include "mesh/nodes.hh"

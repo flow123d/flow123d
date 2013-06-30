@@ -118,6 +118,7 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
     ierr=MPI_Comm_size(communicator, &(num_of_procs));
     ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    ASSERT( num_of_procs > 0, "MPI size is not positive, possibly broken MPI communicator.\n");
 
     if (type.type_ == Block) {
         int reminder, per_proc;
