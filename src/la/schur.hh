@@ -60,7 +60,7 @@ typedef enum SchurState {
 typedef class SchurComplement {
 public:
     SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
-    SchurComplement(Mat & a);
+    SchurComplement(Mat & a, PetscInt max_size_submat, IS ia = NULL);
 
     LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}

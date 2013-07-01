@@ -178,7 +178,7 @@ protected:
         unsigned int size;
 
         get_solution_vector(velocity_array, size);
-        VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_sides(), velocity_array, &velocity_vector);
+        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
 
     }
 

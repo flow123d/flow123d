@@ -1,7 +1,7 @@
 ## Directory containing installation of PETSC
-set(PETSC_DIR "/home/tester.flow123d/petsc-3.2-p4")
+#set(PETSC_DIR "/home/tester.flow123d/petsc-3.2-p4")
 ## Architecture of PETSC
-set(PETSC_ARCH "linux-gnu-c-debug")
+#set(PETSC_ARCH "linux-gnu-c-debug")
 
 
 ## This is directory, where flow123d is be built

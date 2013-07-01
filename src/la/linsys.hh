@@ -45,7 +45,7 @@
 #define LA_LINSYS_HH_
 
 #include "petscmat.h"
-#include "private/matimpl.h"
+//#include "private/matimpl.h"
 
 #include "la/schur.hh"
 #include "la/distribution.hh"

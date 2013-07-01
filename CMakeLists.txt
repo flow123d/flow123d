@@ -26,7 +26,7 @@ endif(CCACHE_CXX_COMPILER)
 
 
 # Project name and language(s)
-project(Flow123d CXX C)
+project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8)
@@ -90,24 +90,24 @@ endif(FLOW_CC_FLAGS)
 
 # Compiler-specific C++11 activation.
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-    execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-        add_definitions("-DHAVE_CXX11_FULL")    
-        set(CMAKE_HAVE_CXX11 "true")
-    elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-        add_definitions("-DHAVE_CXX11_DRAFT")
-        set(CMAKE_HAVE_CXX11 "true")   
-    elseif (GCC_VERSION VERSION_GREATER 4.4)
-    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-    	set(CMAKE_HAVE_CXX11 "true")   
-    	message(WARNING "Warnning: GCC version under 4.6, not recomended!." ) 
-    else ()
-    	message(SEND_ERROR "Error: GCC version under 4.4, not supported!." )	
-    endif ()
-    
+	    execute_process(
+	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	        add_definitions("-DHAVE_CXX11_FULL")    
+	        set(CMAKE_HAVE_CXX11 "true")
+	    elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	        add_definitions("-DHAVE_CXX11_DRAFT")
+	        set(CMAKE_HAVE_CXX11 "true")   
+	    elseif (GCC_VERSION VERSION_GREATER 4.4)
+	    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu99")
+	    	set(CMAKE_HAVE_CXX11 "true")   
+	    	message(WARNING "Warnning: GCC version under 4.6, not recomended!." ) 
+	    else ()
+	    	message(SEND_ERROR "Error: GCC version under 4.4, not supported!." )	
+	    endif ()
+
     # Necessary for FParser - TODO: move to better place
     # ?? what about Clang
     add_definitions("-DHAVE_SINCOS")
@@ -274,14 +274,35 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-find_package(PETSc 3.2.0)
-find_package(PARMETIS)
+include (FindPackageMultipass)
+  
+find_package(PETSc 3.4.0)
+
 
 if (PETSC_FOUND)
     add_definitions(-DHAVE_PETSC -DHAVE_MPI)
     set(MPI_CXX_LIBRARIES ${PETSC_LIBRARIES})
     set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
+    
+    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
+    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
+    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
+    
 else(PETSC_FOUND)
+    if (PETSC_DIR) 
+        message(STATUS "Can not configure with given PETSC_DIR=${PETSC_DIR}")
+    else()    
+        # Install PETSC
+        # also set PETSC_DIR, PETSC_ARCH
+        set(EXTERNAL_PETSC_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        include(InstallPetsc)
+        
+        set(PETSC_petsc_config_current "NO")
+        find_package(PETSc 3.4.0)
+        
+    endif()    
+        
+        
     # If we haven't PETSC, we try to find MPI
         
     # === Variables ===
@@ -301,26 +322,32 @@ else(PETSC_FOUND)
     #   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
     #                              before the executable to run.
     #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
-
-    find_package(MPI)
-  
-    if (MPI_CXX_FOUND)
-        add_definitions(-DHAVE_MPI)
-    else(MPI_CXX_FOUND) 
+#
+#    find_package(MPI)
+#  
+#    if (MPI_CXX_FOUND)
+#        add_definitions(-DHAVE_MPI)
+#    else(MPI_CXX_FOUND) 
         # build single processor replacement taken from PETSc
-        set(mpiuni_sources    system/mpiuni/mpi.c)
-        set(MPIUNI_INCLUDES src/system/mpiuni)
-        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
-    
+#        set(mpiuni_sources    system/mpiuni/mpi.c)
+#        set(MPIUNI_INCLUDES src/system/mpiuni)
+#        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+#    
         # overwrite NOTFOUND status
-        set(MPI_CXX_LIBRARIES mpiuni_lib)
-        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
-    
-    endif(MPI_CXX_FOUND)
+#        set(MPI_CXX_LIBRARIES mpiuni_lib)
+#        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
+#    
+#    endif(MPI_CXX_FOUND)
 
 endif(PETSC_FOUND)
 
-
+find_package(PARMETIS)
+#################################################################################
+#  BDDCML_FOUND - set to true if the library is found
+#set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
+#include(InstallBLOPEX)
+#set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
+#include(InstallBDDCML)
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
@@ -356,7 +383,7 @@ IF (PETSC_FOUND)
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
     # this may be fragile because of _NOCONFIG
     set_target_properties(armadillo PROPERTIES 
-      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_LIBRARIES}"
+      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}"
       ) 
 endif()
 
@@ -381,7 +408,7 @@ find_package(Subversion)
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
+#    ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
@@ -445,7 +472,7 @@ if( PETSC_FOUND )
 
   ### add target for flow123d binary
   add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS} semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
