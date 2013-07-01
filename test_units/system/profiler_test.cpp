@@ -74,6 +74,7 @@ TEST(Profiler, CodePoint) {
 
 // wait smallest amount of time and return it in ms
 double wait() {
+    cout << "wait function\n" <<endl;
     clock_t t1,t2;
 
     t2=t1=clock();
@@ -86,7 +87,7 @@ double wait() {
 
 TEST(Profiler, one_timer) {
 
-    Profiler::initialize(MPI_COMM_WORLD);
+    Profiler::initialize();
 
     { // uninitialize can not be in the same block as the START_TIMER
     START_TIMER("test_tag");
@@ -119,9 +120,12 @@ TEST(Profiler, one_timer) {
 }
 
 
+/* 
+  // This is efficiency test of START_TIMER macro.
+  // It will pass only with optimalized build (not debug).
 
 TEST(Profiler, efficiency) {
-    Profiler::initialize(MPI_COMM_WORLD);
+    Profiler::initialize();
     unsigned int cycles = 500000;
 
     double min_time_period =wait();
@@ -163,11 +167,11 @@ TEST(Profiler, efficiency) {
     Profiler::uninitialize();
 }
 
-
+*/
 
 
 TEST(Profiler, structure) {
-    Profiler::initialize(MPI_COMM_WORLD);
+    Profiler::initialize();
 
     {
         START_TIMER("main");
@@ -195,8 +199,8 @@ TEST(Profiler, structure) {
     }
 
     std::stringstream sout;
-    Profiler::instance()->output(cout);
-    Profiler::instance()->output(sout);
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
+    Profiler::instance()->output(MPI_COMM_WORLD, sout);
 
     EXPECT_TRUE( sout.str().find("Whole Program   0") );
     EXPECT_TRUE( sout.str().find("  sub1          2") );
@@ -209,10 +213,10 @@ TEST(Profiler, structure) {
 
 
 TEST(Profiler, test_calls_only) {
-    Profiler::initialize(MPI_COMM_WORLD);
+    Profiler::initialize();
     START_TIMER("sub1");
     END_TIMER("sub1");
-    Profiler::instance()->output(cout);
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 
 }

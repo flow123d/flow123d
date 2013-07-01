@@ -696,10 +696,7 @@ int OutputTime::register_node_data(Mesh *mesh,
     int found = 0;
     std::vector<OutputData> *node_data = output_time->get_node_data();
 
-    ASSERT(mesh->node_vector.size() == data.size(),
-            "mesh->node_vector.size(): %d != size: %d",
-            mesh->node_vector.size(),
-            data.size());
+    ASSERT_EQUAL(mesh->node_vector.size(), data.size() );
 
     for(std::vector<OutputData>::iterator od_iter = node_data->begin();
             od_iter != node_data->end();

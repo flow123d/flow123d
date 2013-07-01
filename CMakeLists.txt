@@ -85,9 +85,11 @@ else(FLOW_CC_FLAGS)
   else()
   endif()
   
-  
-    # Compiler-specific C++11 activation.
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+endif(FLOW_CC_FLAGS)
+
+
+# Compiler-specific C++11 activation.
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
 	    execute_process(
 	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 	    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
@@ -106,20 +108,26 @@ else(FLOW_CC_FLAGS)
 	    	message(SEND_ERROR "Error: GCC version under 4.4, not supported!." )	
 	    endif ()
 
-        add_definitions("-DHAVE_SINCOS")
-    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-        add_definitions("-Wno-uninitialized -DHAVE_CXX11")
-        set(CMAKE_HAVE_CXX11 "true")
-        # 
-        # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
-        #
-    else ()
-        message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
-    endif()
-  
-endif(FLOW_CC_FLAGS)
-
+    # Necessary for FParser - TODO: move to better place
+    # ?? what about Clang
+    add_definitions("-DHAVE_SINCOS")
+    
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    
+    # BOOST must be compiled with clang in order to use C++11 standard. 
+    set(Boost_FORCE_REBUILD "true")
+    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    
+    #add_definitions("-DHAVE_CXX11")
+    set(CMAKE_HAVE_CXX11 "true")
+    # 
+    # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+    #
+else ()
+    message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
+endif()
 
 #########################################################################
 # Check that glibc has working execinfo.h
@@ -219,7 +227,9 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
 #    the parameters of the find_library are exactly same as in the previous case.
 #
 #set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
-find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+if (NOT Boost_FORCE_REBUILD)
+    find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+endif()    
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
@@ -357,11 +367,13 @@ if (NOT Armadillo_FOUND)
   unset(Armadillo_FOUND CACHE) 
   unset(Armadillo_INCLUDE_DIR CACHE)        # overwrite cache    
   unset(Armadillo_LIBRARY_DIRS CACHE)
+  unset(Armadillo_CONFIGURE_FILE CACHE)
 
   set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
   find_package(ArmadilloFlow 3.2.4 REQUIRED)
 
 endif()
+
 
 message(STATUS "Armadillo_LIBRARIES: ${Armadillo_LIBRARIES}")
 message(STATUS "Armadillo_INCLUDE_DIRS: ${Armadillo_INCLUDE_DIRS}")

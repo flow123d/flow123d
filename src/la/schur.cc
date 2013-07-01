@@ -256,7 +256,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        const PetscInt *rangesAblock;
        VecGetOwnershipRanges(RHS1,&rangesAblock);
 
-       Distribution new_ds(locSizeB);
+       Distribution new_ds(locSizeB, PETSC_COMM_WORLD);
        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row_new;
        global_row_4_sub_row_new=boost::make_shared<LocalToGlobalMap>(new_ds);
 
@@ -332,6 +332,111 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
             DBGPRINT_INT("new old_4_new",Schur->Compl->size,Schur->Compl->old_4_new);
         }
         MPI_Barrier(PETSC_COMM_WORLD);*/
+}
+
+SchurComplement :: SchurComplement(Mat & a)
+{
+	//xprintf(Msg, "Constructor SchurComplement\n");
+
+	PetscInt m, n, ncols, *indices;
+	PetscErrorCode ierr;
+	Mat sub_mat;
+	IS is;
+	unsigned int pos_proc; //position of processed row
+	std::vector<bool> processed_rows;
+	std::vector<unsigned int> submat_rows;
+	std::deque<unsigned int> queue;
+	const PetscInt *cols;
+	const PetscScalar *vals;
+	PetscScalar mat_val[1];
+
+	ierr = MatGetSize(a, &m, &n);
+	ASSERT(m == m, "Assumed square matrix.\n" );
+	processed_rows.resize(m);
+	for (unsigned int i=0; i<m; i++) processed_rows[i] = false;
+	pos_proc = 0;
+	//xprintf(Msg, "size: %d\n",m);
+
+	while (pos_proc < processed_rows.size()) {
+		processed_rows[pos_proc] = true;
+		submat_rows.clear();
+		submat_rows.push_back(pos_proc);
+		ierr = MatGetRow(a, pos_proc, &ncols, &cols, &vals);
+
+		for (PetscInt i=0; i<ncols; i++) {
+			if (!processed_rows[i]) {
+				queue.push_back( cols[i] );
+				processed_rows[ cols[i] ] = true;
+				submat_rows.push_back( cols[i] );
+			} else if (i!=pos_proc) {
+				//ERROR
+			}
+		}
+
+		while (queue.size()) {
+			ierr = MatGetRow(a, queue.front(), &ncols, &cols, &vals);
+			for (PetscInt i=0; i<ncols; i++) {
+				if (!processed_rows[i]) {
+					queue.push_back( cols[i] );
+					processed_rows[ cols[i] ] = true;
+					submat_rows.push_back( cols[i] );
+				}
+			}
+			queue.pop_front();
+		}
+
+		// get sub_mat block
+		std::sort( processed_rows.begin(), processed_rows.end() );
+		PetscMalloc(processed_rows.size() * sizeof(PetscInt), &indices);
+		for (PetscInt i=0; i<processed_rows.size(); i++) {
+			indices[i] = processed_rows[i];
+		}
+		ISCreateGeneral(PETSC_COMM_SELF, processed_rows.size(), indices, PETSC_COPY_VALUES, &is);
+		MatGetSubMatrix(a, is, is, MAT_INITIAL_MATRIX, &sub_mat);
+		PetscFree(indices);
+		ISDestroy(&is);
+
+		/* // test output
+		for (PetscInt i=0; i<processed_rows.size(); i++) {
+			for (PetscInt j=0; j<processed_rows.size(); j++) {
+				MatGetValues(sub_mat, 1, &i, 1, &i, mat_val);
+				cout << (double) (mat_val[0]) << " ";
+			}
+			cout << endl;
+		} // */
+
+		// create Inverse of the sub_mat block
+		ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, processed_rows.size(), processed_rows.size(), PETSC_DETERMINE,
+				PETSC_DETERMINE, 4, PETSC_NULL, 0, PETSC_NULL, &(sub_mat));
+		ASSERT(ierr == 0,"Error in MatCreateMPIAIJ.");
+
+		// stored values to inversion IA matrix
+		for (PetscInt i=0; i<processed_rows.size(); i++) {
+			for (PetscInt j=0; j<processed_rows.size(); j++) {
+				MatGetValues(sub_mat, 1, &i, 1, &i, mat_val);
+				MatSetValue(IA, processed_rows[i], processed_rows[j], (double) (mat_val[0]), INSERT_VALUES);
+			}
+		}
+
+		do {
+			pos_proc++;
+			if (pos_proc == processed_rows.size()) break;
+		} while(processed_rows[pos_proc]);
+	}
+
+
+
+    // initialize variables
+    IA_sub  = NULL;
+    B       = NULL;
+    Bt      = NULL;
+    B_sub   = NULL;
+    Bt_sub  = NULL;
+    xA      = NULL;
+    xA_sub  = NULL;
+    IAB     = NULL;
+    IAB_sub = NULL;
+    sub_vec_block2 = NULL;
 }
 
 

@@ -30,16 +30,16 @@ set(super_test "system_test")
 set(super_test_libs system_lib)
 
 
-    #define_mpi_test(profiler 1)
-    #define_mpi_test(profiler 2)
+    define_mpi_test(profiler 1)
+    define_mpi_test(profiler 2)
     
     define_test(exceptions)
-    #define_test(file_path)
+    define_test(file_path)
     
     if (CMAKE_HAVE_CXX11)
         # reqires raw strings  
-    #    define_test(system_func)
-    #    define_test(tokenizer)
+        define_test(system_func)
+        define_test(tokenizer)
     endif (CMAKE_HAVE_CXX11)  
 
 

@@ -25,15 +25,37 @@
  * @file
  * @brief  Support classes for parallel programing.
  *
+ * TODO:
+ *
+ * * need better resolution of constructors
  */
+
 
 #ifndef MESH_PARTITION_HH_
 #define MESH_PARTITION_HH_
 
+#include <mpi.h>
+#include <ostream>
 #include <petscvec.h>
 
+class DistributionType {
+public:
+explicit DistributionType(int type) : type_(type) {}
+int type_;
+};
 
+class DistributionBlock : public DistributionType {
+public: DistributionBlock() : DistributionType(-1) {}
+};
 
+class DistributionLocalized : public DistributionType {
+public: DistributionLocalized() : DistributionType(-2) {}
+};
+
+/**
+class DistributionCyclic : public DistributionType {
+};
+*/
 
 /**
  * Continuous distribution of an 1D array of indexes.
@@ -59,7 +81,7 @@ public:
      * @param size Local size on calling processor.
      */
     //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const unsigned int size);
+    Distribution(const unsigned int size, MPI_Comm comm);
 
     /**
      * Constructor. It makes distribution from given array of sizes of processors.
@@ -69,7 +91,7 @@ public:
      * @param sizes Int array with sizes.
      */
     //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const unsigned int * const sizes);
+    Distribution(const unsigned int * const sizes, MPI_Comm comm);
 
     /**
      * Constructor. It makes distribution from distribution of a PETSC vector.
@@ -88,7 +110,7 @@ public:
      * @param global_size Total number of indices to distribute.
      */
     //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const SpecialDistribution type, unsigned int global_size);
+    Distribution(const DistributionType &type, unsigned int global_size, MPI_Comm comm);
 
     /**
      * Copy Constructor.
@@ -117,9 +139,12 @@ public:
     unsigned int get_proc(unsigned int idx) const;
     /// get local sizes array
     const unsigned int * get_lsizes_array();
+    /// get local starts array
+    const unsigned int * get_starts_array() const;
+    /// Returns communicator.
     inline MPI_Comm get_comm() {return communicator;}
     /// distribution view
-    void view();
+    void view(std::ostream &stream) const;
     ~Distribution();
 private:
     /// communicator
@@ -133,7 +158,9 @@ private:
     /// local sizes
     unsigned int *lsizes;
 };
-typedef class Distribution Distribution;
+
+inline std::ostream & operator <<(std::ostream &stream, const Distribution &distr)
+    { distr.view(stream); return stream; }
 
 
 

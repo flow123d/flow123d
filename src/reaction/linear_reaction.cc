@@ -289,8 +289,8 @@ void Linear_reaction::compute_one_step(void)
     //DBGMSG("decay step\n");
     if (reaction_matrix == NULL)   return;
 
-    START_TIMER("decay-one step");
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+    START_TIMER("linear reaction step");
+	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
 	    if (dual_porosity_on == true) {
@@ -298,7 +298,7 @@ void Linear_reaction::compute_one_step(void)
 	    }
 
 	 }
-    END_TIMER("decay-one step");
+    END_TIMER("linear reaction step");
 	 return;
 }
 

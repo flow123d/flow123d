@@ -19,7 +19,9 @@
  *   Record (nesmysl)? Tedy v nazvu recordu pouzit nazev tridy
  */
 
-#include <gtest/gtest.h>
+#define TEST_USE_MPI
+#include <gtest_mpi.hh>
+
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>

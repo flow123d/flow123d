@@ -52,6 +52,7 @@ SparseGraph::SparseGraph(const Distribution &distr)
       rows(NULL),
       adj(NULL),
       adj_weights(NULL),
+      part_to_check(NULL),
       adj_of_proc( vtx_distr.np() )
 {
     F_ENTRY;
@@ -64,8 +65,8 @@ SparseGraph::SparseGraph(const Distribution &distr)
 
 
 
-SparseGraph::SparseGraph(int loc_size)
-    : vtx_distr(loc_size),
+SparseGraph::SparseGraph(int loc_size, MPI_Comm comm)
+    : vtx_distr(loc_size, comm),
       rows(NULL),
       adj(NULL),
       adj_weights(NULL),
@@ -241,7 +242,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
     std::vector<bool> checked_proc(vtx_distr.np(), false);
 
     int n_proc=0;
-    for(int vtx=0; n_proc<vtx_distr.np() && vtx<vtx_distr.size(); vtx++) {
+    for(unsigned int vtx=0; n_proc<vtx_distr.np() && vtx<vtx_distr.size(); vtx++) {
         if (checked_vtx[vtx] != 2) {
             proc_to_check=part_to_check[vtx];
             // check if the processor is still unvisited

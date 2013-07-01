@@ -30,7 +30,7 @@ set(super_test "la_test")
 set(super_test_libs la_lib)
 
 
-
+define_mpi_test(local_to_global_map 1)
 define_mpi_test(inversion_matrix 1)
 define_mpi_test(inversion_matrix 2)
 

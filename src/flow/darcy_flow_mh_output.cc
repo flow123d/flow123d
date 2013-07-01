@@ -42,7 +42,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
+#include "mesh/partitioning.hh"
 
 
 namespace it = Input::Type;
@@ -63,6 +63,9 @@ it::Record DarcyFlowMHOutput::input_type
                     "Output stream for P0 approximation of the piezometric head field.")
     .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
                     "Output file for water balance table.")
+    .declare_key("subdomains", it::String(),
+                    "Output stream for subdomain indices (partitioning of mesh elements) used by DarcyFlow module.")
+
     .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                     "Output file with raw data form MH module.");
 
@@ -128,6 +131,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
         result = OutputTime::register_elem_data
                 (mesh_, "velocity_elements", "L/T", in_rec.val<Input::Record>("output_stream"), ele_flux);
 
+        Iterator<string> it = in_rec.find<string>("subdomains");
+        if (bool(it)) {
+            result = OutputTime::register_elem_data
+                    (mesh_, "subdomains", "", in_rec.val<Input::Record>("output_stream"), mesh_->get_part()->seq_output_partition() );
+        }
+
         // temporary solution for balance output
         balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
@@ -183,7 +192,7 @@ void DarcyFlowMHOutput::postprocess() {
 
 void DarcyFlowMHOutput::output()
 {
-    START_TIMER("DARCY OUTPUT");
+    START_TIMER("Darcy output");
 
     std::string eleVectorName = "velocity_elements";
     std::string eleVectorUnit = "L/T";

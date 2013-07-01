@@ -5,7 +5,9 @@
  *      Author: jb
  */
 
-#include <gtest/gtest.h>
+#define TEST_USE_MPI
+#include <gtest_mpi.hh>
+
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include <iostream>
@@ -14,6 +16,8 @@
 #include "input/json_to_storage.hh"
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
+
+
 
 using namespace std;
 

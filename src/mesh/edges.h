@@ -46,7 +46,7 @@ public:
 
     // Topology of the mesh
     int  n_sides;   // # of sides of edge
-    struct SideIter *side_; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
+    SideIter *side_; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
 
 };
 

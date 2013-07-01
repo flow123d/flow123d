@@ -63,7 +63,7 @@
         save_step = 0.5
       }, 
       time = {
-        end_time = 10.0
+        end_time = 15.0
       },
       
       reactions = {
@@ -76,11 +76,10 @@
           {
             region = "rectangle",
             mob_porosity = 0.25,
-            immob_porosity = 0.001,
             rock_density = 1.0,
             sorption_types = [ "none", "linear", "none", "langmuir", "none", "freundlich"],
-            mult_coefs = [0, 0.2, 0, 0.4, 0, 0.31037],
-	    second_params = [0, 0, 0, 0.2, 0, 0.4]
+            mult_coefs = [0, 0.6, 0, 0.4, 0, 0.6],
+	    second_params = [0, 0, 0, 0.6, 0, 0.4]
           }
         ]
       }

@@ -30,10 +30,9 @@ set(super_test "coupling_test")
 set(super_test_libs field_lib coupling_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 
 
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_HAVE_CXX11)
     
-    set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=gnu++0x")        ## Use C++11 for multiline raw strings
-    define_test(eq_data)
+    define_mpi_test(eq_data 1)
     define_test(time_governor)
     
 endif()

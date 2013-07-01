@@ -32,8 +32,7 @@
 
 #include "mesh/nodes.hh"
 #include "mesh/region.hh"
-
-//#include <materials.hh>
+#include "mesh/bounding_box.hh"
 
 template <int spacedim>
 class ElementAccessor;
@@ -41,7 +40,7 @@ class ElementAccessor;
 class Mesh;
 class Side;
 class SideIter;
-struct MaterialDatabase;
+class Neighbour;
 
 
 
@@ -100,10 +99,15 @@ public:
      */
     unsigned int *permutation_idx_;
 
+    /**
+     * Computes bounding box of element
+     */
+    void get_bounding_box(BoundingBox &bounding_box);
 
-    int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
+
+    unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
-    struct Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
+    Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor

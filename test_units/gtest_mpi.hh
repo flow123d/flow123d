@@ -71,15 +71,9 @@ void PrintFullTestCommentIfPresent(const TestInfo& test_info);
 class MPI_PrettyUnitTestResultPrinter : public ::testing::TestEventListener {
 public:
   // Get basic MPI info.
-  MPI_PrettyUnitTestResultPrinter() {
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      MPI_Comm_size(MPI_COMM_WORLD, &np);
+  MPI_PrettyUnitTestResultPrinter();
 
-  }
-
-  static void PrintTestName(const char * test_case, const char * test) {
-    printf("%s.%s", test_case, test);
-  }
+  static void PrintTestName(const char * test_case, const char * test);
 
   // The following methods override what's in the TestEventListener class.
   virtual void OnTestProgramStart(const UnitTest& /*unit_test*/) {}

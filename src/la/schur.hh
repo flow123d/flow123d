@@ -32,6 +32,8 @@
 #ifndef LA_SCHUR_HH_
 #define LA_SCHUR_HH_
 
+#include <petscmat.h>
+
 struct Solver;
 class LinSys;
 

@@ -96,13 +96,14 @@ public:
     { return matrix; }
 
     /// Get subdomain matrix.
+    /*
     inline const Mat &get_matrix_sub()
     { 
        if      (type == MAT_IS)
        {
 	  return local_matrix;
        }
-    }
+    }*/
 
     /// Get RHS.
     inline const Vec &get_rhs()

@@ -36,8 +36,8 @@
  * create a Distribution from local sizes (dim = np )
  * (collective context)
  */
-Distribution::Distribution(const unsigned int size)
-:communicator(PETSC_COMM_WORLD),
+Distribution::Distribution(const unsigned int size, MPI_Comm comm)
+:communicator(comm),
 lsizes(NULL)
 {
     F_ENTRY;
@@ -62,8 +62,8 @@ lsizes(NULL)
  * create a Distribution from local sizes (dim = np )
  * (local context)
  */
-Distribution::Distribution(const unsigned int * const sizes)
-:communicator(PETSC_COMM_WORLD),
+Distribution::Distribution(const unsigned int * const sizes, MPI_Comm comm)
+:communicator(comm),
  lsizes(NULL)
 {
     F_ENTRY;
@@ -107,8 +107,8 @@ Distribution::Distribution(const Vec &petsc_vector)
  * construct from given global size
  * (collective context)
  */
-Distribution::Distribution(const SpecialDistribution type, unsigned int global_size)
-:communicator(PETSC_COMM_WORLD),
+Distribution::Distribution(const DistributionType &type, unsigned int global_size, MPI_Comm comm)
+:communicator(comm),
  lsizes(NULL)
 {
     F_ENTRY;
@@ -118,8 +118,9 @@ Distribution::Distribution(const SpecialDistribution type, unsigned int global_s
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
     ierr=MPI_Comm_size(communicator, &(num_of_procs));
     ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    ASSERT( num_of_procs > 0, "MPI size is not positive, possibly broken MPI communicator.\n");
 
-    if (type == Block) {
+    if (type.type_ == Block) {
         int reminder, per_proc;
 
         reminder=global_size % np(); per_proc=global_size / np();
@@ -129,7 +130,7 @@ Distribution::Distribution(const SpecialDistribution type, unsigned int global_s
         for(unsigned int i=0; i<np(); i++)
             starts[i+1]=starts[i]+per_proc+(i<reminder?1:0);
 
-    } else if (type == Localized) {
+    } else if (type.type_ == Localized) {
 
         starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
         starts[0]=0;
@@ -182,12 +183,19 @@ const unsigned int * Distribution::get_lsizes_array()
     return lsizes;
 }
 
-void Distribution::view()
+
+
+const unsigned int * Distribution::get_starts_array() const {
+    return starts;
+}
+
+
+
+void Distribution::view(std::ostream &stream) const
 {
-    xprintf(Msg,"Distribution:\n");
-    xprintf(Msg,"size: %d lsize: %d n. proc: %d\n", size(), lsize(), np());
+    stream << "[" <<myp() << "]" << "Distribution size: " << size() << " lsize: " << lsize() << " mpi_size: " << np() << endl;
     for(unsigned int i=0; i<np();++i)
-        xprintf(Msg,"proc: %d start: %d: lsize: %d\n",i,begin(i),lsize(i));
+        stream << "[" <<myp() << "]" << "proc: " << i << " offset: " << begin(i) << " lsize: " << lsize() << endl;
 }
 
 /**

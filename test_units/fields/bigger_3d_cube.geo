@@ -33,3 +33,6 @@ Line Loop(23) = {6, 7, 8, 9};
 Plane Surface(24) = {23};
 Surface Loop(25) = {14, 18, 20, 22, 24, 16};
 Volume(26) = {25};
+
+
+Physical Volume("main_volume") = {26};

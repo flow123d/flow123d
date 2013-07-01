@@ -65,7 +65,11 @@ class ConvectionTransport;
 /**
  * TODO:
  * - doxy documentation
- * - make separate method for changing time step (rescaling only)
+ * - make separate method for changing time step (rescaling only), reassembly matrix only when data are changed
+ *
+ * - needs support from EqData to determine next change of the data for 1) transport matrix 2) source vector
+ *   this allows us precisely choose interval where to fix timestep
+ *   : field->next_change_time() - returns time jump or actual time in case of time dep. field
  */
 
 
@@ -94,6 +98,7 @@ public:
         Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
         Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
 
+        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
     };
 
     /**
@@ -115,7 +120,7 @@ public:
 	 * Updates CFL time step constrain.
 	 * TODO: Just set the new velocity, postpone update till compute_one_step
 	 */
-	void set_flow_field_vector(const MH_DofHandler &dh);
+	//void set_flow_field_vector(const MH_DofHandler &dh);
   
 	/**
 	 * Set cross section of fractures from the Flow equation.
@@ -126,7 +131,20 @@ public:
 
 
     /**
-     * Set time interval over which we should use fixed transport matrix. Rescale transport matrix.
+     * Set time interval which is considered as one time step by TransportOperatorSplitting.
+     * In particular the velocity field dosn't change over this interval.
+     *
+     * Dependencies:
+     *
+     * velocity, porosity -> matrix, source_vector
+     * matrix -> time_step
+     *
+     * data_read_times -> time_step (not necessary if we won't stick to jump times)
+     * data -> source_vector
+     * time_step -> scaling
+     *
+     *
+     *
      */
     void set_target_time(double target_time);
 
@@ -149,23 +167,10 @@ public:
 	double ***get_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
-	//int get_n_substances();
 	int *get_el_4_loc();
 	int *get_row_4_el();
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
-	/**
-	 * Return pointer to sequential arrays for output.
-	 * TODO: Maybe this should be made by get_solution_vector, but here we have matrix of arrays.
-	 */
-	double ***get_out_conc();
-	double ***get_conc();
-    //vector<string> &get_substance_names();
-    double *get_sources(int sbi);
-
-
-
-
 
 private:
 
@@ -187,7 +192,9 @@ private:
 	void set_initial_condition();
 	void read_concentration_sources();
 	void set_boundary_conditions();
-	Vec compute_concentration_sources(unsigned int subst_i, double *conc);
+  
+  //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+	void compute_concentration_sources(unsigned int sbi);
 
 	/**
 	 * Finish explicit transport matrix (time step scaling)
@@ -226,7 +233,7 @@ private:
     /**
      * Indicates if we finished the matrix and add vector by scaling with timestep factor.
      */
-	bool is_convection_matrix_scaled, is_bc_vector_scaled;
+	bool is_convection_matrix_scaled, need_time_rescaling;
 
     bool              sorption;     // Include sorption  YES/NO
     bool              dual_porosity;   // Include dual porosity YES/NO
@@ -237,6 +244,12 @@ private:
 
     double *sources_corr;
     Vec v_sources_corr;
+    
+    ///temporary arrays to store constant values of fields over time interval
+    //(avoiding calling "field.value()" to often)
+    double **sources_density, 
+           **sources_conc,
+           **sources_sigma;
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;
@@ -246,6 +259,11 @@ private:
 
             VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
+
+    /// Time when the transport matrix was created.
+    /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
+    /// necessity for matrix update
+    double transport_matrix_time;
 
     /// Concentration vectors for mobile phase.
     Vec *vconc; // concentration vector

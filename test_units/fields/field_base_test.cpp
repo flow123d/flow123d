@@ -5,9 +5,8 @@
  *      Author: jb
  */
 
-
-
-#include <gtest/gtest.h>
+#define TEST_USE_MPI
+#include <gtest_mpi.hh>
 
 
 #include "fields/field_base.hh"
