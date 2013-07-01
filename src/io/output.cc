@@ -209,15 +209,12 @@ void OutputTime::destroy_all(void)
 
 OutputTime *OutputTime::output_stream_by_name(string name)
 {
-    std::cout << "Try to find OutputTime with name: " << name << std::endl;
-
     // Try to find existing object
     for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
             output_iter != OutputTime::output_streams.end();
             ++output_iter)
     {
         if( *(*output_iter)->name == name) {
-            xprintf(MsgLog, "FOUND\n");
             return *output_iter;
         }
     }
@@ -245,7 +242,10 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
     xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
 
     output_time = OutputTime::output_stream_by_name(name);
-    if(output_time != NULL) return output_time;
+    if(output_time != NULL) {
+        xprintf(MsgLog, "FOUND\n");
+        return output_time;
+    }
 
     xprintf(MsgLog, "NOT FOUND. Creating new ... ");
 
@@ -424,21 +424,28 @@ void OutputTime::write_all_data(void)
         // Write data to output stream, when data registered to this output
         // streams were changed
         if((*output_iter)->write_time < (*output_iter)->time) {
-            DBGMSG("Write output to output stream: %s on process of rank=%d\n", (*output_iter)->name, rank);
+            DBGMSG("Write output to output stream: %s for time: %f\n",
+                    (*output_iter)->name->c_str(),
+                    (*output_iter)->time);
             if((*output_iter)->output_format != NULL) {
                 (*output_iter)->output_format->write_data();
+                (*output_iter)->write_time = (*output_iter)->time;
                 (*output_iter)->current_step++;
             }
         } else {
-            DBGMSG("Skipping output stream: %s in time: %d\n", (*output_iter)->name, (*output_iter)->time);
+            DBGMSG("Skipping output stream: %s in time: %f\n",
+                    (*output_iter)->name->c_str(),
+                    (*output_iter)->time);
         }
     }
 }
 
 void OutputTime::set_data_time(void *data, double time)
 {
+    this->time = time;
+
+    /* Node data */
     std::vector<OutputData> *vec_data = this->get_node_data();
-
     for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
             od_iter != vec_data->end();
             od_iter++)
@@ -450,8 +457,8 @@ void OutputTime::set_data_time(void *data, double time)
         }
     }
 
+    /* Corner data */
     vec_data = this->get_corner_data();
-
     for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
             od_iter != vec_data->end();
             od_iter++)
@@ -463,8 +470,8 @@ void OutputTime::set_data_time(void *data, double time)
         }
     }
 
+    /* Elem data */
     vec_data = this->get_elem_data();
-
     for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
             od_iter != vec_data->end();
             od_iter++)

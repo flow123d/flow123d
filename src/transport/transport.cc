@@ -174,17 +174,13 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
                  boost::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() )
                  );
 
+         // Register data for output
          double *data = out_conc[MOBILE][subst_id];
          OutputTime *output_time = OutputTime::register_elem_data<double>("conc_mobile_p0",
                  output_rec,
                  (FieldCommonBase*)&data_.conc_mobile[subst_id],
                  data);
          if(output_time) this->output_streams[(void*)data] = output_time;
-
-//         std::string subst_name = subst_names_[subst_id] + "_mobile";
-//         double *data = out_conc[MOBILE][subst_id];
-//         this->output_streams[(void*)data] = OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
-//                 output_rec, data , mesh_->n_elements(), 0.0);
     }
 
     // write initial condition
