@@ -371,7 +371,7 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 }
 */
 
-void *operator new (std::size_t size) throw(std::bad_alloc) {
+/*void *operator new (std::size_t size) throw(std::bad_alloc) {
     return xmalloc(size);
 }
 
@@ -388,7 +388,7 @@ void operator delete[]( void *p) throw()
 {
     xfree(p);
 }
-
+*/
 
 
 /*!

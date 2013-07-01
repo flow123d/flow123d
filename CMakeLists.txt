@@ -88,17 +88,24 @@ else(FLOW_CC_FLAGS)
   
     # Compiler-specific C++11 activation.
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-        if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-            add_definitions("-DHAVE_CXX11")    
-            set(CMAKE_HAVE_CXX11 "true")
-        elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-            add_definitions("-DHAVE_CXX11")
-            set(CMAKE_HAVE_CXX11 "true")    
-        endif ()
+	    execute_process(
+	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	        add_definitions("-DHAVE_CXX11_FULL")    
+	        set(CMAKE_HAVE_CXX11 "true")
+	    elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	        add_definitions("-DHAVE_CXX11_DRAFT")
+	        set(CMAKE_HAVE_CXX11 "true")   
+	    elseif (GCC_VERSION VERSION_GREATER 4.4)
+	    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu99")
+	    	set(CMAKE_HAVE_CXX11 "true")   
+	    	message(WARNING "Warnning: GCC version under 4.6, not recomended!." ) 
+	    else ()
+	    	message(SEND_ERROR "Error: GCC version under 4.4, not supported!." )	
+	    endif ()
+
         add_definitions("-DHAVE_SINCOS")
     elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -310,10 +317,10 @@ endif(PETSC_FOUND)
 
 #################################################################################
 #  BDDCML_FOUND - set to true if the library is found
-set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
-include(InstallBLOPEX)
-set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
-include(InstallBDDCML)
+#set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
+#include(InstallBLOPEX)
+#set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
+#include(InstallBDDCML)
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
