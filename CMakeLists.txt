@@ -26,7 +26,7 @@ endif(CCACHE_CXX_COMPILER)
 
 
 # Project name and language(s)
-project(Flow123d CXX C)
+project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8)
@@ -264,8 +264,10 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
+include (FindPackageMultipass)
+  
 find_package(PETSc 3.4.0)
-find_package(PARMETIS)
+
 
 if (PETSC_FOUND)
     add_definitions(-DHAVE_PETSC -DHAVE_MPI)
@@ -277,6 +279,20 @@ if (PETSC_FOUND)
     message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
     
 else(PETSC_FOUND)
+    if (PETSC_DIR) 
+        message(STATUS "Can not configure with given PETSC_DIR=${PETSC_DIR}")
+    else()    
+        # Install PETSC
+        # also set PETSC_DIR, PETSC_ARCH
+        set(EXTERNAL_PETSC_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        include(InstallPetsc)
+        
+        set(PETSC_petsc_config_current "NO")
+        find_package(PETSc 3.4.0)
+        
+    endif()    
+        
+        
     # If we haven't PETSC, we try to find MPI
         
     # === Variables ===
@@ -296,25 +312,26 @@ else(PETSC_FOUND)
     #   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
     #                              before the executable to run.
     #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
-
-    find_package(MPI)
-  
-    if (MPI_CXX_FOUND)
-        add_definitions(-DHAVE_MPI)
-    else(MPI_CXX_FOUND) 
+#
+#    find_package(MPI)
+#  
+#    if (MPI_CXX_FOUND)
+#        add_definitions(-DHAVE_MPI)
+#    else(MPI_CXX_FOUND) 
         # build single processor replacement taken from PETSc
-        set(mpiuni_sources    system/mpiuni/mpi.c)
-        set(MPIUNI_INCLUDES src/system/mpiuni)
-        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
-    
+#        set(mpiuni_sources    system/mpiuni/mpi.c)
+#        set(MPIUNI_INCLUDES src/system/mpiuni)
+#        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+#    
         # overwrite NOTFOUND status
-        set(MPI_CXX_LIBRARIES mpiuni_lib)
-        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
-    
-    endif(MPI_CXX_FOUND)
+#        set(MPI_CXX_LIBRARIES mpiuni_lib)
+#        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
+#    
+#    endif(MPI_CXX_FOUND)
 
 endif(PETSC_FOUND)
 
+find_package(PARMETIS)
 #################################################################################
 #  BDDCML_FOUND - set to true if the library is found
 #set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)

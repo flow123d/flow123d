@@ -176,7 +176,7 @@ TEST(la, inversion_matrix) {
 			a[i+j*size] = 0;
 		}
     }
-
+    // communikator: PETSC_COMM_WORLD
 	ierr = MatCreate(MPI_COMM_SELF,&matrix);
 	ierr = MatSetSizes(matrix,size,size,size,size);
 	ierr = MatSetType(matrix,MATAIJ);

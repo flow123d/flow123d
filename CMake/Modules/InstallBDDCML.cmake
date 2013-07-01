@@ -60,8 +60,7 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(BDDCML
     DOWNLOAD_DIR ${EXTERNAL_BDDCML_DIR} 
-    # URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/bddcml-2.1.tar.gz\"
-    URL \"/home/jb/local/bddcml-2.1.tar.gz\"
+    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/bddcml-2.2.tar.gz\"
     SOURCE_DIR ${EXTERNAL_BDDCML_DIR}/src
     BINARY_DIR ${EXTERNAL_BDDCML_DIR}/src
     PATCH_COMMAND patch ${EXTERNAL_BDDCML_DIR}/src/src/bddcml_interface_c.h ${PROJECT_SOURCE_DIR}/third_party/bddcml_interface_c.h.patch

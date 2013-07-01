@@ -19,8 +19,8 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(BLOPEX
     DOWNLOAD_DIR ${EXTERNAL_BLOPEX_DIR} 
-    # URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/bddcml-2.1.tar.gz\"
-    URL \"/home/jb/local/blopex.tar.gz\"
+    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/blopex.tar.gz\"
+    #URL \"/home/jb/local/blopex.tar.gz\"
     SOURCE_DIR ${EXTERNAL_BLOPEX_DIR}/src
   )
 ")

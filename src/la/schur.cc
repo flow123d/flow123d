@@ -341,9 +341,7 @@ SchurComplement :: SchurComplement(Mat & a, PetscInt max_size_submat, IS ia)
 
 	PetscInt m, n, ncols, *indices;
 	PetscErrorCode ierr;
-	unsigned int pos_proc; //position of processed row
-	unsigned int mat_block; //actual processed block of matrix
-	std::vector<unsigned int> processed_rows;
+
 	std::vector<PetscInt> submat_rows;
 	std::deque<unsigned int> queue;
 	const PetscInt *cols;
@@ -351,12 +349,13 @@ SchurComplement :: SchurComplement(Mat & a, PetscInt max_size_submat, IS ia)
 
 	ierr = MatGetSize(a, &m, &n);
 	ASSERT(m == m, "Assumed square matrix.\n" );
-	processed_rows.resize(m);
-	for (unsigned int i=0; i<m; i++) processed_rows[i] = 0;
-	pos_proc = 0;
-	mat_block = 1;
 
-	while (pos_proc < processed_rows.size()) {
+	std::vector<unsigned int> processed_rows(m,0);
+
+    unsigned int mat_block=1;   //actual processed block of matrix
+	for(unsigned int pos_proc=0; pos_proc < processed_rows.size(); pos_proc++) {
+	    if (processed_rows[pos_proc] != 0) continue;
+
 		processed_rows[pos_proc] = mat_block;
 		//xprintf(Msg, "processed_rows %d - mat_block %d \n", pos_proc, mat_block);
 		submat_rows.clear();
@@ -404,12 +403,8 @@ SchurComplement :: SchurComplement(Mat & a, PetscInt max_size_submat, IS ia)
 		arma::mat invmat = submat.i();
 		// stored to inversion IA matrix
 		const PetscInt* rows = &submat_rows[0];
-		MatSetValues(IA, submat_rows.size(), rows, submat_rows.size(), rows, &invmat[0], INSERT_VALUES);
+		MatSetValues(IA, submat_rows.size(), rows, submat_rows.size(), rows, invmat.memptr(), INSERT_VALUES);
 
-		do {
-			pos_proc++;
-			if (pos_proc == processed_rows.size()) break;
-		} while(processed_rows[pos_proc] > 0);
 		mat_block++;
 	}
 
