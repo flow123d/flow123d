@@ -279,16 +279,7 @@ include (FindPackageMultipass)
 find_package(PETSc 3.4.0)
 
 
-if (PETSC_FOUND)
-    add_definitions(-DHAVE_PETSC -DHAVE_MPI)
-    set(MPI_CXX_LIBRARIES ${PETSC_LIBRARIES})
-    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
-    
-    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
-    
-else(PETSC_FOUND)
+if (NOT PETSC_FOUND)
     if (PETSC_DIR) 
         message(STATUS "Can not configure with given PETSC_DIR=${PETSC_DIR}")
     else()    
@@ -339,6 +330,16 @@ else(PETSC_FOUND)
 #    
 #    endif(MPI_CXX_FOUND)
 
+endif(NOT PETSC_FOUND)
+
+if(PETSC_FOUND)
+    add_definitions(-DHAVE_PETSC -DHAVE_MPI)
+    set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
+    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
+    
+    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
+    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
+    #message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
 endif(PETSC_FOUND)
 
 find_package(PARMETIS)
