@@ -445,7 +445,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
 
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
-            mesh_->n_elements(), 8, PETSC_NULL, 1, PETSC_NULL, &tm);
+            mesh_->n_elements(), 16, PETSC_NULL, 4, PETSC_NULL, &tm);
 
 }
 
@@ -685,12 +685,62 @@ void ConvectionTransport::set_target_time(double target_time)
 
 }
 
+/*
+void ConvectionTransport::preallocate_transport_matrix() {
+
+    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+        elm = mesh_->element(el_4_loc[loc_el]);
+        new_i = row_4_el[elm.index()];
+
+        n_on_proc=1; n_off_proc=0;
+        FOR_ELEMENT_SIDES(elm,si) {
+            if (elm->side(si)->cond() == NULL) {
+                    edg = elm->side(si)->edge();
+                    FOR_EDGE_SIDES(edg,s) {
+                           j = ELEMENT_FULL_ITER(mesh_, edg->side(s)->element()).index();
+                           new_j = row_4_el[j];
+                           if (el_ds->is_local(new_j)) n_on_proc++;
+                           else n_off_proc++;
+                    }
+                    n_on_proc--; // do not count diagonal entry more then once
+            }
+        }
+
+        FOR_ELM_NEIGHS_VB(elm,n) // comp model
+            {
+                el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->side()->element() ); // higher dim. el.
+                ASSERT( el2 != elm, "Elm. same\n");
+                    if (flux > 0.0) {
+                        // volume source - out-flow from higher dimension
+                        j = el2.index();
+                        new_j = row_4_el[j];
+                        MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
+                        // out flow from higher dim. already accounted
+                    }
+                    if (flux < 0.0) {
+                        // volume drain - in-flow to higher dimension
+                        aij = (-flux) / (el2->measure() *
+                                        data_.cross_section->value(el2->centre(), el2->element_accessor()) *
+                                        data_.por_m.value(el2->centre(), el2->element_accessor()));
+                        new_j = row_4_el[el2.index()];
+                        MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
+
+                        // diagonal drain
+                        aii -= (-flux) / (elm->measure() * csection * por_m);
+                    }
+
+                //} // end comp model
+            }
+    } // END ELEMENTS
+
+}*/
 
 //=============================================================================
 // CREATE TRANSPORT MATRIX
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
 
+    DBGMSG("TM assembly\n");
     START_TIMER("convection_matrix_assembly");
 
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
@@ -752,23 +802,21 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             // same dim
             flux = mh_dh->side_flux( *(elm->side(si)) );
             if (elm->side(si)->cond() == NULL) {
-                if (flux < 0.0) {
-                    edg = elm->side(si)->edge();
-                    edg_flux = edge_flow[ elm->side(si)->edge_idx() ];
-                    //if ( edg_flux > 1e-12)
-                        FOR_EDGE_SIDES(edg,s)
-                            // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
-                            // These edges on these sides should have just one side
-                            if (edg->side(s) != elm->side(si)) {
-                                flux2 = mh_dh->side_flux( *(edg->side(s)));
-                                if ( flux2 > 0.0 ) {
-                                    aij = -(flux * flux2 / ( edg_flux * elm->measure() * csection * por_m) );
-                                    j = ELEMENT_FULL_ITER(mesh_, edg->side(s)->element()).index();
-                                    new_j = row_4_el[j];
-                                    MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
-                                }
-                            }
-                }
+                 edg = elm->side(si)->edge();
+                 edg_flux = edge_flow[ elm->side(si)->edge_idx() ];
+                 FOR_EDGE_SIDES(edg,s)
+                    // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
+                    // These edges on these sides should have just one side
+                    if (edg->side(s) != elm->side(si)) {
+                        j = ELEMENT_FULL_ITER(mesh_, edg->side(s)->element()).index();
+                        new_j = row_4_el[j];
+
+                        flux2 = mh_dh->side_flux( *(edg->side(s)));
+                        if ( flux2 > 0.0 && flux <0.0)
+                            aij = -(flux * flux2 / ( edg_flux * elm->measure() * csection * por_m) );
+                        else aij =0;
+                        MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
+                    }
                 if (flux > 0.0)
                     aii -= (flux / (elm->measure() * csection * por_m) );
             } else {
@@ -792,50 +840,25 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             {
                 el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->side()->element() ); // higher dim. el.
                 ASSERT( el2 != elm, "Elm. same\n");
-                //if (elm.id() != el2.id()) {
-                    flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
-                    if (flux > 0.0) {
-                        // volume source - out-flow from higher dimension
-                        aij = flux / (elm->measure() * csection * por_m);
-                        j = el2.index();
-                        new_j = row_4_el[j];
-                        MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
-                        // out flow from higher dim. already accounted
-                    }
-                    if (flux < 0.0) {
-                        // volume drain - in-flow to higher dimension
+                new_j = row_4_el[el2.index()];
+                flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
+
+                // volume source - out-flow from higher dimension
+                if (flux > 0.0)  aij = flux / (elm->measure() * csection * por_m);
+                else aij=0;
+                MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
+                // out flow from higher dim. already accounted
+
+                // volume drain - in-flow to higher dimension
+                if (flux < 0.0) {
+                        aii -= (-flux) / (elm->measure() * csection * por_m);                           // diagonal drain
                         aij = (-flux) / (el2->measure() *
                                         data_.cross_section->value(el2->centre(), el2->element_accessor()) *
                                         data_.por_m.value(el2->centre(), el2->element_accessor()));
-                        new_j = row_4_el[el2.index()];
-                        MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
-
-                        // diagonal drain
-                        aii -= (-flux) / (elm->measure() * csection * por_m);
-                    }
-
-                //} // end comp model
+                } else aij=0;
+                MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
             }
-	/*
-        FOR_ELM_NEIGHS_VV(elm,n) { //non-comp model
-            ngh = elm->neigh_vv[n];
-            FOR_NEIGH_ELEMENTS(ngh,s) {
 
-                el2 = ELEMENT_FULL_ITER(mesh_, ngh->element[s]);
-                if (elm.id() != el2.id()) {
-                    flux = ngh->sigma * ngh->geom_factor * (el2->scalar - elm->scalar);
-                    if (flux > 0.0) {
-                        aij = flux / (elm->volume() * elm->material->por_m); // -=
-                        j = el2.index();
-                        new_j = row_4_el[j];
-                        MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
-                    }
-                    if (flux < 0.0)
-                        aii += flux / (elm->volume() * elm->material->por_m);
-                }
-            }
-        } // end non-comp model
-      */
         MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
 
         if (fabs(aii) > max_sum)
@@ -862,10 +885,10 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
 
     // MPI_Barrier(PETSC_COMM_WORLD);
-    /*
-     MatView(transport->tm,PETSC_VIEWER_STDOUT_SELF);
-     getchar();
-     */
+
+     //MatView(tm,PETSC_VIEWER_STDOUT_SELF);
+
+
     is_convection_matrix_scaled = false;
     END_TIMER("convection_matrix_assembly");
 
