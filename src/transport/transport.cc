@@ -870,7 +870,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     double glob_max_sum;
 
     MPI_Allreduce(&max_sum,&glob_max_sum,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD);
-    xprintf(Msg,"CFL: glob_max_sum=%f\n",glob_max_sum);
+    //xprintf(Msg,"CFL: glob_max_sum=%f\n",glob_max_sum);
     cfl_max_step = 1 / glob_max_sum;
     //time_step = 0.9 / glob_max_sum;
     

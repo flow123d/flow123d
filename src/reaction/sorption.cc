@@ -473,6 +473,20 @@ void Sorption::set_sorb_conc_array(double** sorb_conc_array)
 	return;
 }
 
+void Sorption::set_sorb_conc_array(unsigned int nr_of_local_elm)
+{
+	//There is a question if the distribution betwen processors in combination with bellow realized alocations is correct!!!
+	this->sorbed_conc_array = new double * [nr_of_substances];
+    for (unsigned int sbi = 0; sbi < nr_of_substances; sbi++)
+    {
+      sorbed_conc_array[sbi] = new double[ nr_of_local_elm ];
+      for (unsigned int i = 0; i < nr_of_local_elm; i++)
+      {
+        sorbed_conc_array[sbi][i] = 0.0;
+      }
+    }
+}
+
 void Sorption::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por_m)
 {
 	mob_porosity_ = por_m;

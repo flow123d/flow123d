@@ -80,6 +80,8 @@ Record TransportOperatorSplitting::input_type
     .derive_from(TransportBase::input_type)
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
                 "Initialization of per element reactions.")
+    .declare_key("adsorptions", Sorption::input_type, Default::optional(),
+    			"Initialization of per element sorptions.")
     .declare_key("bc_data", Array(ConvectionTransport::EqData().boundary_input_type()
     		.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
     		.declare_key("bc_times", Array(Double()), Default::optional(),
@@ -314,35 +316,45 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
 	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
-	        Semchem_reactions = NULL;
-	        sorptions = NULL;
+	        //Supresses possibility to combine reactions
+	        /*Semchem_reactions = NULL;
+	        sorptions = NULL;*/
 		} else
-	    if (reactions_it->type() == Pade_approximant::input_type ) {
-                decayRad = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
+	    if (reactions_it->type() == Pade_approximant::input_type) {
+            decayRad = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
 	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
-	        Semchem_reactions = NULL;
-	        sorptions = NULL;
+	        //Supresses possibility to combine reactions
+	        /*Semchem_reactions = NULL;
+	        sorptions = NULL;*/
 	    } else
 	    if (reactions_it->type() == Semchem_interface::input_type ) {
 	        Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
 	        Semchem_reactions->set_el_4_loc(el_4_loc);
 	        Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
-	        decayRad = NULL;
-	        sorptions = NULL;
-	    } else
-	    if (reactions_it->type() == Sorption::input_type ){
-	    	sorptions = new Sorption(init_mesh, *reactions_it, subst_names_ );
+	        /*decayRad = NULL;
+	        sorptions = NULL;*/
+	    } else {
+	        xprintf(UsrErr, "Wrong reaction type.\n");
+	    }
+	} else {
+	    decayRad = NULL;
+	    Semchem_reactions = NULL;
+	}
+
+	Input::Iterator<Input::Record> sorptions_it = in_rec.find<Input::Record>("adsorptions");
+	if (sorptions_it){
+	    	sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_ );
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        // sorptions->set_dual_porosity(convection->get_dual_porosity());
 	        sorptions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        // TODO: move this into Sorption class, just pass dimensions of the array.
-	        double** sorb_conc_array = new double * [n_subst_];
+	        /*double** sorb_conc_array = new double * [n_subst_];
 	        for (unsigned int sbi = 0; sbi < n_subst_; sbi++)
 	        {
 	          sorb_conc_array[sbi] = new double[ el_distribution->lsize() ];
@@ -350,17 +362,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	          {
 	            sorb_conc_array[sbi][i] = 0.0;
 	          }
-	        }
-	        sorptions->set_sorb_conc_array(sorb_conc_array);
+	        }*/
+	        sorptions->set_sorb_conc_array(el_distribution->lsize());
 
-	        decayRad = NULL;
-	        Semchem_reactions = NULL;
+	        /*decayRad = NULL;
+	        Semchem_reactions = NULL;*/
 	    } else{
-	        xprintf(UsrErr, "Wrong reaction type.\n");
-	    }
-	} else {
-	    decayRad = NULL;
-	    Semchem_reactions = NULL;
 	    sorptions = NULL;
 	}
 	
@@ -419,7 +426,6 @@ void TransportOperatorSplitting::update_solution() {
         steps++;
 	    // one internal step
 	    convection->compute_one_step();
-	    // Calling linear reactions and Semchem, temporarily commented
 	    if(decayRad) decayRad->compute_one_step();
 	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
 	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step
@@ -473,8 +479,6 @@ void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balanc
 {
     convection->calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
 }
-
-
 
 void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
 {

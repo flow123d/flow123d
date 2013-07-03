@@ -79,7 +79,8 @@ template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // , double elem_volume) // Probably not used at this time. CrossFunction needs to be redefined.
 {
     boost::uintmax_t max_iter = 20;
-    boost::math::tools::eps_tolerance<double> toler(30);
+    //boost::math::tools::eps_tolerance<double> toler(30);
+    dekl_tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 	double critic_total_mass = c_aqua_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(c_aqua_limit_)*scale_sorbed_;
 

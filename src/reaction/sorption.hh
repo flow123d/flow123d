@@ -95,6 +95,10 @@ class Sorption:  public Reaction
 		/**
 		*
 		*/
+		void set_sorb_conc_array(unsigned int nr_of_local_elm);
+		/**
+		*
+		*/
 		void set_sorb_conc_array(double** sorb_conc_array);
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption class, similar to set_sorption_fields in Semchem_interface

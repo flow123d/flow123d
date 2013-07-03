@@ -19,6 +19,25 @@ enum SorptionType {
 	langmuir = 3
 };
 
+template <class T>
+class dekl_tolerance
+{
+public:
+   dekl_tolerance(unsigned bits)
+   {
+      BOOST_MATH_STD_USING
+      //eps = (std::max)(T(ldexp(1.0F, 1-bits)), T(4 * tools::epsilon<T>()));
+      eps = T(ldexp(1.0F, 1-bits)); //, T(4 * tools::epsilon<T>()));
+   }
+   bool operator()(const T& a, const T& b)
+   {
+      BOOST_MATH_STD_USING
+      return fabs(a - b) <= (eps * (std::max)(fabs(a), fabs(b)));
+   }
+private:
+   T eps;
+};
+
 /**
  * Functor for Langmuir isotherm.
  */
