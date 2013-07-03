@@ -619,8 +619,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
 
+
             double value = data.sigma.value( ngh->element()->centre(), ngh->element()->element_accessor()) * ngh->side()->measure() *
-                           data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );
+                    data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );   // crossection of lower dim (wrong)
+//                  data.cross_section.value( ngh->side()->centre(), ngh->side()->element()->element_accessor() ); // cross-section of higher dim. (2d)
+
 
             local_vb[0] = -value;   local_vb[1] = value;
             local_vb[2] = value;    local_vb[3] = -value;

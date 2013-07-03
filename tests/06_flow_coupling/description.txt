@@ -1,0 +1,19 @@
+Test problem 6
+---------------------
+verification of:
+- correct communication between dimensions
+
+flow_23.con:
+  cube coupled with square fracture on the bottom
+  Dirichlet prescribed on the rest of the boundary
+  
+  p3(x,y,z) = xyz     f3=0 
+  
+  sigma * (  p3(x,y,-1) - p2(x,y) ) == -n .dot. k3*grad p3 = k3 xy                 // 3d outflow
+  
+  p2(x,y) = -xy - k3/sigma *xy = - (k3/sigma + 1) * xy;  f2(x,y) = 0   
+
+flow_12.con:
+    2d strip + 1d fracture + 2x 2d strip  - branch like in test 13, but with 1d fracture
+    
+    
