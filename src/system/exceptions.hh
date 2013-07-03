@@ -17,12 +17,19 @@
 
 
 /**
- * Macro for throwing with saving place of the throw.
+ * @brief Wrapper for throw. Saves the throwing point.
+ *
+ * Macro for throwing with saving place of the throw. Just shortcut for BOOST_THROW_EXCEPTION. Creates boost kind of exception, that may
+ * accept further information through redirection.
+ *
  * Usage:
  * @code
  *      THROW( ExcError() << EI_SomeValue(42) );
  * @endcode
- * EI_SomeValue is a error_info object for transfer of values form throw point to catch point. See EI<Tag,Type> class template.
+ *
+ * EI_SomeValue is an @p error_info object for transfer of values form throw point to catch point. See @p EI<Tag,Type> class template.
+ *
+ * @ingroup exceptions
  */
 #define THROW(whole_exception_expr) BOOST_THROW_EXCEPTION( whole_exception_expr)
 
@@ -32,20 +39,23 @@ namespace internal {
 }
 
 /**
- * Basic exception class. We use boost::exception as parent in order to allow passing
+ * @brief Base of exceptions used in Flow123d.
+ *
+ * We use boost::exception as parent in order to allow passing
  * some data through the exception object from the throw point to the catch point.
  * See DECLARE_EXCEPTION macro for usage.
  *
  * When deriving particular exceptions always use virtual inheritance:
  * @code
- *      struct my_exception : virtual flow_excepiton {};
+ *      struct my_exception : virtual ExceptionBase {};
  * @endcode
  *
+ * @ingroup exceptions
  */
 class ExceptionBase : public virtual std::exception, public virtual boost::exception
 {
 public:
-    /// Default constructor, calls fill_stacktrace.
+    /// Default constructor, just calls @p fill_stacktrace().
     ExceptionBase();
     /// Copy constructor, performs deep copy of stacktrace.
     ExceptionBase(const ExceptionBase &other);
@@ -77,8 +87,12 @@ private:
 };
 
 /**
- * Base class for "input exceptions" that are exceptions caused by incorrect input form the user
- * not by some internal error.
+ * @brief Base of exceptions due to user input.
+ *
+ * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
+ * not by an internal error.
+ *
+ * @ingroup exceptions
  */
 class InputException : public virtual ExceptionBase
 {
@@ -91,14 +105,43 @@ public:
 
 
 /**
- * Macro for declaration of exceptions. You can use error info classes (EI<Tag,Type> ) and its modifiers to
- * output relevant data.
+ * @brief Macro for simple definition of exceptions.
+ *
+ * First parameter, @p ExcName, is name of the exception class to define. Macro expands to
+ * the class derived from @p ExceptionBase and implements virtual method @p print_info
+ * with output given by @p Format, the second parameter of the macro. This method is used
+ * by what() method to produce specific part of the error message.
+ *
+ * You can use error info classes (see @p TYPEDEFERR_INFO) and stream modifiers
+ * @p val, @p qval to output relevant data. Modifier @p val outputs plain value,
+ * modifier @p qval outputs value in quotas.
+ *
  * Example:
  * @code
- *      TYPEDEF_ERR_INFO( EI_Dim1Mismatch, int);
- *      TYPEDEF_ERR_INFO( EI_Dim2Mismatch, int);
- *      DECLARE_EXCEPTION( ExcDimensionMismatch, << "Dimensions dim1=" << EI_Dim1Missmatch::val << " and dim2=" << EI_Dim2Mismatch::val << " should be same.");
+ * TYPEDEF_ERR_INFO( EI_Dim1Mismatch, int);
+ * TYPEDEF_ERR_INFO( EI_Dim2Mismatch, int);
+ * DECLARE_EXCEPTION( ExcDimensionMismatch,
+ *     << "Dimensions dim1=" << EI_Dim1Missmatch::val
+ *     << " and dim2=" << EI_Dim2Mismatch::val << " should be same.");
  * @endcode
+ *
+ * One can also pass whole classes through the exception as long as they are default constructable and copy constructable.
+ *
+ * Example:
+ * @code
+ * class Matrix;
+ * TYPEDEF_ERR_INFO( EI_Matrix, Matrix);
+ * DECLARE_EXCEPTION( ExcWrongMatrixState,
+ *     << "Matrix state: " << EI_Matrix::ptr(*this)->state() << endl
+ *     << "Matrix info: " << EI_Matrix::ref(*this).info() );
+ * @endcode
+ *
+ * The example shows two ways how to call methods of the object of class Matrix passed through the exception. One can either get pointer to the object or
+ * reference. The  @p ref method checks that the pointer to the object is not NULL (so that the object was actually passed).
+ * The @p ptr method do not perform the check. However, when using one of these methods you have to guarantee that the @p error_info object is passed to the exception
+ * at every throw point that use that exception. Otherwise you get an error, meaningful in case of the @p ref method, seg. fault for the @p ptr method.
+ *
+ * @ingroup exceptions
  */
 #define DECLARE_EXCEPTION( ExcName, Format)                                 \
 struct ExcName : public virtual ::ExceptionBase {                           \
@@ -115,8 +158,12 @@ struct ExcName : public virtual ::ExceptionBase {                           \
 
 
 /**
- * Same as previous but the exception is derived from InputException.
- * This should be used for all exceptions due to wrong input from user.
+ * @brief Macro for simple definition of input exceptions.
+ *
+ * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
+ * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * @ingroup exceptions
  */
 #define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
 struct ExcName : public virtual ::InputException {                                   \
@@ -134,86 +181,24 @@ struct ExcName : public virtual ::InputException {                              
 /**
  * @brief Macro to simplify declaration of error_info types.
  *
- * These are  used to pass data through boost exceptions from the throw point to the catch point, or possibly collect
- * various data along stack rewinding when an exception is thrown. It decalres type ErrorCode_EI, that can be used to
- * pass data into an exception and onother type ErrorCode, that can be used to refer these date in formats of error messages in declaration of exceptions.
- * example of usage:
+ * Is used to declare types of data that can be passed through exceptions from the throw point to the catch point, or possibly collect
+ * various data along stack rewinding when an exception is thrown.
  *
- * Notes (updates):
- * Tag is only for uniqueness, the only important is typedef name.
- * This macro also provides manipulators Tag_val and Tag_qval for simplifying formationg of error messages.
- * When declaring an exception inside a class (may be practical if you want to pass the instance of the class through the exception),
- * you have to add the class name to the EI_... names, e.g.
+ * Typical usage:
  * @code
- * class Class {
- *      TYPEDEF_ERR_INFO(EI_Class, Class);                      // passing the Class itself
- *      DECLACRE_EXCEPTION(ExcClass, << Class::EI_Class_val);   //
- * }
- * ostream & operator <<(ostream &, const & Class) ...          // of course you have to provide output operator for the Class
- * @endcode
+ *   // declares type EI_ParticularNumber
+ *   TYPEDEF_ERR_INFO( EI_ParticularNumber, int);
+ *   // declares exception that use it
+ *   DECLARE_EXCEPTION(SomeException, << " Particular number: " << EI_ParticularNumber::val );
+ *   // ... some code ...
  *
- * @code
- * TYPEDEF_ERR_INFO( ErrorCode, int) // declares type ErrorCode_EI and ErrorCode
+ *   // here you pass particular number important for
+ *   // determination of cause of the exception
+ *   THROW( SomeException() << EI_ParticularNumber(10) );
  *
- * ...
- *
- * throw SomeException() << ErrorCode_EI(10); // here you pass 'int'
- *
- * ...
- *
- * catch (SomeException & exception) {
- *      int const * = boost::get_error_info<TAG_ErrorCode_EI>(); // here you get pointer to const 'int'
- * }
- *
- * @endcode
- *
- * or you rather declare an exception
- * @code
- * DeclException( SomeFlowException , << "You can provide " << EI_VAL(ErrorCode) << " here.");
  * @endcode
  * 
- * TODO: static modifier is necessary if we define inside a class but this limits declaration of
- * any exception that use the Tag to the same compilation unit !! Better solution ?
- *
- * TODO: have method that accepts an lambda function that can be used to extract particular value from stored object, something like:
- *
- * TYPEDEF_ER_INFO( EI_Value, type_info * )
- * DECLARE_EXCEPTION( Exc, << EI_Value_val(*this, (_1)->name()) );
- *
- * This way we can print "NO_VALUE" if eoor_info is not passed to the exception, but if the value is given
- * we can apply the lambda expression to extract name of an type_info object.
- *
- *
- * I didn't foud a way how simplify output of more complex expressions like
- *
- * DECLARE_EXCEPTION(Exc, << NullOutputEnvelope( EI_Value::ptr(_exc) ? &( (*EI_Value::ptr(_exc))->name() ) : NULL ) );
- *
- * !!! DO NOT WORK SINCE you can not take address (& operator) of a result of some method.
- * We need temporary variable, guessing that this can not be done without helper function, i.e. lambda function.
- *
- * There are several problems:
- * 1) To get the pointer to the value, we need reference to the exception. In the case of EI<>::val manipulators
- *    this information is provided from the ExcStream, but here the pointer appears inside an expression so we have to
- *    provide the exception (_exc is local variable containing reference to current exception )
- *
- * 2) Say, we have a pointer PTR and EXPR(x) is an expression we want to evaluate. We want to
- *    print out "NO_VALUE" if PTR == NULL or print result of EXPR(x) if it is not.
- *    This can only be done by passing a lambda function. The boost::lambda is not sufficient since
- *    it supports only very limited set of overloaded operators, namely there is no way how to get
- *    members of a class. The only way is  C++11 standard which provides true lambda functions, but there
- *    you have to provide type of parameters and thus we need EI_Value twice, like
- *
- *     EI_Value::expr( _exc, []( EI_Value::type &ref){return ref->name()} )
- *
- *    Which is longer previous expression.
- *    I'm not sure if you need not to define also the resulting type, but I've seen some examples without it,
- *    so possibly compiler can deduce it from parameters. The EI_Value::expr should be something like:
- *
- *    template<class Func>
- *    EI_Value::expr( ExceptionBase &e, Func &f) { return NullOutputEnvelope( ptr(e) ? &( f(*ptr(e)) ) : NULL ); }
- *
- *
- *
+ * @ingroup exceptions
  *
  */
 #define TYPEDEF_ERR_INFO(EI_Type, Type)       typedef EI< struct EI_Type##_TAG, Type > EI_Type
