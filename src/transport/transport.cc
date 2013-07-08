@@ -109,6 +109,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 {
     F_ENTRY;
 
+    time_scheme_ = explicit_euler;
+
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
     output_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time() | time_->marks().type_output();
@@ -1263,10 +1265,11 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
         // !! there can be more sides per one boundary
         int index = row_4_el[bcd->side()->element().index()];
         if (!el_ds->is_local(index)) continue;
+        int loc_index = index-el_ds->begin();
 
         double water_flux = mh_dh->side_flux(*(bcd->side()));
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-            mass_flux[sbi] = water_flux*solution[MOBILE][sbi][index-el_ds->begin()];
+            mass_flux[sbi] = water_flux*solution[MOBILE][sbi][loc_index];
 
         Region r = bcd->region();
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
@@ -1301,11 +1304,15 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
 
         FOR_ELEMENTS(mesh_,elem)
         {
+        	ElementAccessor<3> ele_acc = elem->element_accessor();
+        	double por_m = data_.por_m.value(elem->centre(), ele_acc);
+        	double csection = data_.cross_section->value(elem->centre(), ele_acc);
             int index = row_4_el[elem.index()];
             if (el_ds->is_local(index))
             {
-                mass[sbi][elem->element_accessor().region().bulk_idx()] += solution[MOBILE][sbi][index-el_ds->begin()]*elem->measure();
-                src_balance[sbi][elem->element_accessor().region().bulk_idx()] += sources[index-el_ds->begin()]*elem->measure()/time_->dt();
+            	int loc_index = index - el_ds->begin();
+                mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*solution[MOBILE][sbi][loc_index]*elem->measure();
+                src_balance[sbi][ele_acc.region().bulk_idx()] += sources[loc_index]*elem->measure();
             }
         }
     }

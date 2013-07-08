@@ -205,6 +205,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
           flux_changed(true),
           allocation_done(false)
 {
+	time_scheme_ = implicit_euler;
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     time_->fix_dt_until_mark();
     
@@ -845,7 +846,7 @@ void TransportDG::assemble_fluxes_element_element()
 {
     vector<FESideValues<dim,3>*> fe_values;
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-    		update_values | update_normal_vectors | update_side_JxW_values);
+    		update_values);
     typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<unsigned int*> side_dof_indices;
@@ -991,7 +992,7 @@ void TransportDG::assemble_fluxes_boundary()
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-    		update_values | update_normal_vectors | update_side_JxW_values);
+    		update_values);
     typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     unsigned int side_dof_indices[ndofs];
@@ -1521,9 +1522,9 @@ template<unsigned int dim>
 void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
 {
 	FESideValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
-			update_values | update_gradients | update_side_JxW_values | update_quadrature_points);
+			update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
 	FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-			update_values | update_normal_vectors | update_side_JxW_values);
+			update_values);
 	const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
 	unsigned int dof_indices[ndofs];
 	DOFHandler<1,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
@@ -1577,7 +1578,7 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 					c_grad += fe_values.shape_grad(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
 				}
 
-				mass_flux += (-csection[k]*por_m[k]*dot(D*c_grad,fsv_rt.normal_vector(k)) + water_flux*conc)*fe_values.JxW(k);
+				mass_flux += (-csection[k]*por_m[k]*dot(D*c_grad,fe_values.normal_vector(0)) + water_flux*conc)*fe_values.JxW(k);
 			}
 
 			Region r = bcd->region();
@@ -1614,6 +1615,10 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 	{
 		if (elem->dim() != dim) continue;
 
+		Region r = elem->element_accessor().region();
+		if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d\n", elem.index());
+		unsigned int region_idx = r.bulk_idx();
+
 		ElementAccessor<3> ele_acc = elem->element_accessor();
 		fe_values.reinit(elem);
 		feo->dh<dim>()->get_dof_indices(elem, dof_indices);
@@ -1645,15 +1650,9 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 				mass_sum += por_m[k]*csection[k]*conc*fe_values.JxW(k);
 
 				conc_diff = sources_conc[k][sbi] - conc;
-				if ( conc_diff > 0.0)
-					sources_sum += (sources_density[k][sbi] + conc_diff*sources_sigma[k][sbi])*fe_values.JxW(k);
-				else
-					sources_sum += sources_density[k][sbi]*fe_values.JxW(k);
+				sources_sum += (sources_density[k][sbi] + conc_diff*sources_sigma[k][sbi])*fe_values.JxW(k);
 			}
 
-			Region r = elem->element_accessor().region();
-			if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d\n", elem.index());
-			unsigned int region_idx = r.bulk_idx();
 			mass[sbi][region_idx] += mass_sum;
 			src_balance[sbi][region_idx] += sources_sum;
 		}
