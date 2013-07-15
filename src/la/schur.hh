@@ -64,6 +64,8 @@ public:
      * Constructor
      *
      * Gets linear system with original matrix A and creates its inversion (IA matrix)
+     *
+     * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
      */
     SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat = 4);
 
@@ -97,7 +99,7 @@ private:
     Mat xA_sub;                 // Bt*IA*B for MATIS matrix
     Mat IAB;                    // reconstruction matrix IA * B
     Mat IAB_sub;                 // Local block IAB in MATIS matrix
-    int locSizeA, locSizeB;     // loc size of the A and B block
+    int loc_size_A, locSizeB;     // loc size of the A and B block
     IS IsA, IsB;                // parallel index sets of the A and B block
     IS IsA_sub, IsB_sub;        // parallel index sets of the A and B block local to subdomains
     IS fullIsA,fullIsB;         // whole IsA  and IsB on each proc
