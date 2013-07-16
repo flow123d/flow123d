@@ -704,7 +704,9 @@ void DarcyFlowMHOutput::water_balance() {
     FOR_BOUNDARIES(mesh_, bcd) {
         // !! there can be more sides per one boundary
         double flux = dh.side_flux( *(bcd->side()) );
+
         Region r = bcd->region();
+        //DBGMSG("flux: %f side: %d %d reg: %s\n", flux, bcd->side()->element()->index(), bcd->side()->el_idx(), r.label().c_str() );
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
         unsigned int bc_region_idx = r.boundary_idx();
         bcd_balance[bc_region_idx] += flux;

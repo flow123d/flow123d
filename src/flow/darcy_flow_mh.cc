@@ -411,6 +411,8 @@ void DarcyFlowMH_Steady::update_solution() {
         schur1->resolve();
         break;
     }
+    //DBGMSG("SOLUTION\n");
+    //VecView(schur0->get_solution(),   PETSC_VIEWER_STDOUT_WORLD);
     postprocess();
 
     //int rank;
@@ -432,10 +434,11 @@ void DarcyFlowMH_Steady::postprocess()
     int side_rows[4];
     double values[4];
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-    ;
+
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux
+    /*
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         ele = mesh_->element(el_4_loc[i_loc]);
         FOR_ELEMENT_SIDES(ele,i) {
@@ -449,6 +452,7 @@ void DarcyFlowMH_Steady::postprocess()
     }
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
+    */
 }
 
 
@@ -966,6 +970,7 @@ void DarcyFlowMH_Steady::make_schur0() {
     //PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
 
     //MatView( schur0->get_matrix(),PETSC_VIEWER_STDOUT_WORLD  );
+    //DBGMSG("RHS\n");
     //VecView(schur0->get_rhs(),   PETSC_VIEWER_STDOUT_WORLD);
     //VecView(schur0->get_solution(),   PETSC_VIEWER_STDOUT_WORLD);
 
