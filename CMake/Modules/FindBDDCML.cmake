@@ -8,6 +8,14 @@
 # BDDCML_FOUND - True if FFTW found.
 
 
+########################################################## 
+# Use package multipass to alow multiple tries when search for BDDCML
+##########################################################
+include (FindPackageMultipass)
+find_package_multipass (BDDCML bddcml_config_current
+  STATES ROOT
+  DEPENDENTS INCLUDES LIBRARIES FOUND)
+
 if (BDDCML_INCLUDES)
   # Already in cache, be silent
   set (BDDCML_FIND_QUIETLY TRUE)

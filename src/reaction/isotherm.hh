@@ -19,6 +19,25 @@ enum SorptionType {
 	langmuir = 3
 };
 
+template <class T>
+class dekl_tolerance
+{
+public:
+   dekl_tolerance(unsigned bits)
+   {
+      BOOST_MATH_STD_USING
+      //eps = (std::max)(T(ldexp(1.0F, 1-bits)), T(4 * tools::epsilon<T>()));
+      eps = T(ldexp(1.0F, 1-bits)); //, T(4 * tools::epsilon<T>()));
+   }
+   bool operator()(const T& a, const T& b)
+   {
+      BOOST_MATH_STD_USING
+      return fabs(a - b) <= (eps * (std::max)(fabs(a), fabs(b)));
+   }
+private:
+   T eps;
+};
+
 /**
  * Functor for Langmuir isotherm.
  */
@@ -124,13 +143,33 @@ public:
     bool compute_projection(double &c_aqua, double &c_sorbed);
     //bool compute_projection(double &c_aqua);
     /**
+    *	Enables to set private parameter.
+    */
+    void set_inv_scale_aqua(double inv_scale_aqua);
+    /**
+    *	Enables to set private parameter.
+    */
+    void set_inv_scale_sorbed(double inv_scale_sorbed);
+    /**
+    *	Enables to set private parameter.
+    */
+    void set_scale_aqua(double scale_aqua);
+    /**
     *	Enables to get private parameter.
     */
     double get_scale_aqua(void);
     /**
+    *	Enables to set private parameter.
+    */
+    void set_scale_sorbed(double scale_sorbed);
+    /**
     *	Enables to get private parameter.
     */
     double get_scale_sorbed(void);
+    /**
+    *	Enables to set private parameter.
+    */
+    void set_caq_limmit(double caq_limmit);
     /**
     * 	Verifies how big interpolation table is defined
     */

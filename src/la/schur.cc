@@ -41,7 +41,10 @@
  */
 
 #include <petscvec.h>
+#include <algorithm>
+#include <limits>
 #include <petscmat.h>
+#include <armadillo>
 
 #include "la/distribution.hh"
 #include "la/local_to_global_map.hh"
@@ -254,7 +257,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        const PetscInt *rangesAblock;
        VecGetOwnershipRanges(RHS1,&rangesAblock);
 
-       Distribution new_ds(locSizeB);
+       Distribution new_ds(locSizeB, PETSC_COMM_WORLD);
        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row_new;
        global_row_4_sub_row_new=boost::make_shared<LocalToGlobalMap>(new_ds);
 
@@ -331,6 +334,94 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
         }
         MPI_Barrier(PETSC_COMM_WORLD);*/
 }
+
+SchurComplement :: SchurComplement(Mat & a, PetscInt max_size_submat, IS ia)
+{
+        xprintf(Msg, "Constructor SchurComplement\n");
+
+        PetscInt m, n, ncols, *indices;
+        PetscErrorCode ierr;
+
+        std::vector<PetscInt> submat_rows;
+        std::deque<unsigned int> queue;
+        const PetscInt *cols;
+        const PetscScalar *vals;
+
+        ierr = MatGetSize(a, &m, &n);
+        ASSERT(m == m, "Assumed square matrix.\n" );
+
+        std::vector<unsigned int> processed_rows(m,0);
+
+    unsigned int mat_block=1;   //actual processed block of matrix
+        for(unsigned int pos_proc=0; pos_proc < processed_rows.size(); pos_proc++) {
+            if (processed_rows[pos_proc] != 0) continue;
+
+                processed_rows[pos_proc] = mat_block;
+                //xprintf(Msg, "processed_rows %d - mat_block %d \n", pos_proc, mat_block);
+                submat_rows.clear();
+                queue.push_back(pos_proc);
+
+                while (queue.size()) {
+                        ierr = MatGetRow(a, queue.front(), &ncols, &cols, &vals);
+                        for (PetscInt i=0; i<ncols; i++) {
+                                if (processed_rows[ cols[i] ] == 0) {
+                                        queue.push_back( cols[i] );
+                                        processed_rows[ cols[i] ] = mat_block;
+                                        //xprintf(Msg, "processed_rows %d - mat_block %d \n", cols[i], mat_block);
+                                        submat_rows.push_back( cols[i] );
+                                } else if (processed_rows[ cols[i] ] != mat_block) {
+                                        xprintf(Err, "Rows %d and %d cannot be linear dependent!\n", queue.front(), cols[i]);
+                                }
+                        }
+                        queue.pop_front();
+                }
+
+                // get sub_mat block
+                std::sort( submat_rows.begin(), submat_rows.end() );
+                arma::mat submat(submat_rows.size(), submat_rows.size());
+                for (PetscInt i=0; i<submat_rows.size(); i++) {
+                        ierr = MatGetRow(a, submat_rows[i], &ncols, &cols, &vals);
+                        for (PetscInt j=0; j<ncols; j++) {
+                                submat(i, cols[j]) = vals[j];
+                        }
+                }
+
+                // test output
+                /*for (int i=0; i<m; i++) {
+                        for (int j=0; j<m; j++) {
+                                cout << submat[i,j] << " ";
+                        }
+                        cout << endl;
+                }
+                cout << endl;*/
+
+                // test size of submatrix
+                if (processed_rows.size() > max_size_submat) {
+                        xprintf(Warn, "Size of submatrix is greater than size limit. Limit is %d\n", max_size_submat);
+                }
+                // get inversion matrix
+                arma::mat invmat = submat.i();
+                // stored to inversion IA matrix
+                const PetscInt* rows = &submat_rows[0];
+                MatSetValues(IA, submat_rows.size(), rows, submat_rows.size(), rows, invmat.memptr(), INSERT_VALUES);
+
+                mat_block++;
+        }
+
+
+    // initialize variables
+    /*IA_sub  = NULL;
+    B       = NULL;
+    Bt      = NULL;
+    B_sub   = NULL;
+    Bt_sub  = NULL;
+    xA      = NULL;
+    xA_sub  = NULL;
+    IAB     = NULL;
+    IAB_sub = NULL;
+    sub_vec_block2 = NULL;*/
+}
+
 
 /**
  * @brief Form Schur complement. Call solve. Resolve original solution.

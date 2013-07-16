@@ -21,16 +21,19 @@ void Linear::reinit(double mult_coef)
 void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
 {
     // set class variables
-	sorption_type_ = sorp_type;
-	//double scale_aqua = porosity * rho_aqua;
-	//double scale_sorbed = (1-porosity) * rock_density * molar_mass;
+	this->set_sorption_type(sorp_type);
+
+	double scale_aqua = porosity * rho_aqua;
+	double scale_sorbed = (1-porosity) * rock_density * molar_mass;
 	//scale_aqua_ = scale_aqua/(sqrt(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed));
-    scale_aqua_ = porosity * rho_aqua;
+    this->set_scale_aqua(scale_aqua);
+	//scale_aqua_ = porosity * rho_aqua;
     //scale_sorbed_ = scale_sorbed/(sqrt(scale_aqua*scale_aqua + scale_sorbed*scale_sorbed));
-	scale_sorbed_ = (1-porosity) * rock_density * molar_mass;
-    inv_scale_aqua_ = scale_aqua_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_));
-    inv_scale_sorbed_ = scale_sorbed_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_));
-    c_aqua_limit_ = c_aqua_limit;
+	//scale_sorbed_ = (1-porosity) * rock_density * molar_mass;
+    this->set_scale_sorbed(scale_sorbed);
+    this->set_inv_scale_aqua(scale_aqua_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)));
+    this->set_inv_scale_sorbed(scale_sorbed_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)));
+    this->set_caq_limmit(c_aqua_limit);
     /*cout << "sorp_type " << sorption_type << endl;
     cout << "scale_aqua " << scale_aqua << endl;
     cout << "scale_sorbed " << scale_sorbed << endl;
@@ -75,12 +78,13 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
 template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm) // , double elem_volume) // Probably not used at this time. CrossFunction needs to be redefined.
 {
-    boost::uintmax_t max_iter=100;
-    boost::math::tools::eps_tolerance<double> toler(60);
+    boost::uintmax_t max_iter = 20;
+    //boost::math::tools::eps_tolerance<double> toler(30);
+    dekl_tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 	double critic_total_mass = c_aqua_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(c_aqua_limit_)*scale_sorbed_;
 
-	const double upper_solution_bound = critic_total_mass / scale_aqua_ + 1.0; // corresponds to c_a^max, where substance stsarts to precipitate + 1.0
+	const double upper_solution_bound = critic_total_mass / scale_aqua_ + 0.00001; // corresponds to c_a^max, where substance stsarts to precipitate + 1.0
 	//cout << this->get_sorption_type() << ", " << critic_total_mass << ", " << total_mass << ", " << upper_solution_bound << endl;
 
 	if(total_mass < critic_total_mass)
@@ -92,7 +96,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 		//cout << "solution bounds " << solution.first << ", " << solution.second << endl;
 		c_aqua = (solution.first + solution.second)/2; // = average of the pair solution defined above, midpoint
 		//cout << "aqueous concentration is " << c_aqua << endl;
-		c_sorbed = const_cast<Func &>(isotherm)(c_aqua);
+		c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_; //const_cast<Func &>(isotherm)(c_aqua);
 	}else{
 		precipitate(c_aqua, c_sorbed, scale_aqua_, scale_sorbed_);
 	}
@@ -134,6 +138,7 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
     total_mass_step_ = mass_limit / n_steps;
     //cout << "total_mass_step_ is " << total_mass_step_ << endl;
     double mass = 0.0; // total_mass_step;
+    //if(this->get_mult_coef_() > 0.0)
     for(int i=0; i<= n_steps; i++) {
         //mass = mass+total_mass_step_;
         double c_aqua = mass/scale_aqua_; // aqueous concentration (original coordinates c_a) corresponding to i-th total_mass_step_
@@ -196,14 +201,44 @@ double Isotherm::get_second_coef_(void)
 	return second_coef_;
 }
 
+void Isotherm::set_scale_aqua(double scale_aqua)
+{
+	scale_aqua_ = scale_aqua;
+	return;
+}
+
 double Isotherm::get_scale_aqua(void)
 {
 	return scale_aqua_;
 }
 
+void Isotherm::set_inv_scale_aqua(double inv_scale_aqua)
+{
+	inv_scale_aqua_ = inv_scale_aqua;
+	return;
+}
+
+void Isotherm::set_scale_sorbed(double scale_sorbed)
+{
+	scale_sorbed_ = scale_sorbed;
+	return;
+}
+
 double Isotherm::get_scale_sorbed(void)
 {
 	return scale_sorbed_;
+}
+
+void Isotherm::set_inv_scale_sorbed(double inv_scale_sorbed)
+{
+	inv_scale_sorbed_ = inv_scale_sorbed;
+	return;
+}
+
+void Isotherm::set_caq_limmit(double caq_limmit)
+{
+	c_aqua_limit_ = caq_limmit;
+	return;
 }
 
 int Isotherm::get_interpolation_table_size(void)

@@ -1,0 +1,12 @@
+--- /home/jb/local/bddcml-2.1/src/bddcml_interface_c.h	2013-05-01 16:57:59.000000000 +0200
++++ external_projects/bddcml_build/src/src/bddcml_interface_c.h	2013-06-08 13:14:43.144446721 +0200
+@@ -3,6 +3,9 @@
+ #ifndef bddcml_h
+ #define bddcml_h
+ 
++#include "FC_Magle.h"
++#define F_SYMBOL(name, NAME) FC_SYMBOLGLOBAL(name,NAME)
++
+ // macro for calling Fortran routines from C - changing the name as Fortran compiler does it
+ #ifndef F_SYMBOL
+ 

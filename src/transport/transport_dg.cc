@@ -249,7 +249,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     feo = new FEObjects(mesh_, dg_order);
 
     // distribute solution vectors on processors
-    distr = new Distribution(Distribution::Block, feo->dh<1>()->n_global_dofs() + feo->dh<2>()->n_global_dofs() + feo->dh<3>()->n_global_dofs());
+    distr = new Distribution(DistributionBlock(), feo->dh<1>()->n_global_dofs() + feo->dh<2>()->n_global_dofs() + feo->dh<3>()->n_global_dofs(), PETSC_COMM_WORLD);
 
 
     // set up output class

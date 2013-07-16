@@ -103,159 +103,32 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
     data_ = new double[data_size];
     std::fill(data_, data_ + data_size, 0.0);
 
-
 	field_name_ = rec.val<std::string>("field_name");
 }
 
 
 
-
-/*template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::set_source_of_interpolation(const FilePath & mesh_file,
-		const FilePath & raw_output) {
-
-	// read mesh, create tree
-    {
-       mesh_ = new Mesh();
-       reader_ = new GmshMeshReader(mesh_file);
-	   reader_->read_mesh( mesh_);
-	   // no call to mesh->setup_topology, we need only elements, no connectivity
-    }
-    bih_tree_ = new BIHTree(mesh_);
-
-	// read pressures
-	Tokenizer tok(mesh_file);
-
-	FILE* raw_output_file = xfopen( string(raw_output).c_str(), "rt");
-	read_pressures(raw_output_file);
-	xfclose(raw_output_file);
-	//read_element_data_from_gmsh(tok, "xx");
-}*/
+/**
+ * TODO:
+ * nahradit  pressure_ -> value_
+ *
+ * for(unsigned int i=0; i < value_.n_rows(); i ++)
+ *      for( ... n_cols() )
+ *          value_.at(i,j) = 0.0;
+ *
+ * Value tmp_value;
+ * Value::from_raw(tmp_value, (typename Value::element_type *)(data_+idx));
+ * for(unsigned int i=0; i < value_.n_rows(); i ++)
+ *      for( ... n_cols() )
+ *          value_.at(i,j) += measure * tmp_value.at(i,j);
+ *
+ * ?? spojit caluculate_abscissa a calculate_triangle
+ */
 
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::calculate_triangle_value(TTriangle &element, unsigned int idx) {
-	double total_measure, measure;
-	BoundingBox elementBoundingBox = element.get_bounding_box();
-	
-	TIntersectionType iType;
-	TTetrahedron tetrahedron;
-
-	START_TIMER("find_elements_2D");
-	((BIHTree *)bih_tree_)->find_bounding_box(elementBoundingBox, searched_elements_);
-	END_TIMER("find_elements_2D");
-
-	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
-		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
-			this->value_(i,j) = 0.0;
-		}
-	}
-
-	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
-		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
-		    total_measure = 0.0;
-
-		    START_TIMER("compute_pressure_2D");
-			ADD_CALLS(searched_elements_.size());
-			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
-			{
-				int idx = *it;
-				ElementFullIter ele = source_mesh_->element( idx );
-				if (ele->dim() == 3) {
-					createTetrahedron(ele, tetrahedron);
-					GetIntersection(element, tetrahedron, iType, measure);
-					if (iType == area) {
-						this->value_(i,j) += data_[ idx ] * measure;
-						total_measure += measure;
-					}
-				} else {
-					xprintf(Err, "Dimension of element in source mesh must be 3!\n");
-				}
-			}
-
-			if (total_measure > epsilon) {
-				this->value_(i,j) /= total_measure;
-			} else {
-				xprintf(Warn, "Processed element with idx %d is out of source mesh!\n", idx);
-			}
-			END_TIMER("compute_pressure_2D");
-		}
-	}
-
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::calculate_abscissa_value(TAbscissa &element, unsigned int idx) {
-    double total_measure, measure;
-	BoundingBox elementBoundingBox = element.get_bounding_box();
-	TIntersectionType iType;
-	TTetrahedron tetrahedron;
-
-	START_TIMER("find_elements_1D");
-	((BIHTree *)bih_tree_)->find_bounding_box(elementBoundingBox, searched_elements_);
-	END_TIMER("find_elements_1D");
-
-    /**
-     * TODO:
-     * nahradit  pressure_ -> value_
-     *
-     * for(unsigned int i=0; i < value_.n_rows(); i ++)
-     *      for( ... n_cols() )
-     *          value_.at(i,j) = 0.0;
-     *
-     * Value tmp_value;
-     * Value::from_raw(tmp_value, (typename Value::element_type *)(data_+idx));
-     * for(unsigned int i=0; i < value_.n_rows(); i ++)
-     *      for( ... n_cols() )
-     *          value_.at(i,j) += measure * tmp_value.at(i,j);
-     *
-     * ?? spojit caluculate_abscissa a calculate_triangle
-     */
-	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
-		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
-			this->value_(i,j) = 0.0;
-		}
-	}
-
-	for (unsigned int i=0; i < this->value_.n_rows(); i++) {
-		for (unsigned int j=0; j < this->value_.n_cols(); j++) {
-		    total_measure = 0.0;
-
-		    START_TIMER("compute_pressure_1D");
-			ADD_CALLS(searched_elements_.size());
-			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
-			{
-				int idx = *it;
-				ElementFullIter ele = source_mesh_->element( idx );
-				if (ele->dim() == 3) {
-					createTetrahedron(ele, tetrahedron);
-					GetIntersection(element, tetrahedron, iType, measure);
-					if (iType == line) {
-						this->value_(i,j) += data_[ idx ] * measure;
-						total_measure += measure;
-					}
-				} else {
-					xprintf(Err, "Dimension of element in source mesh must be 3!\n");
-				}
-			}
-			if (total_measure > epsilon) {
-				this->value_(i,j) /= total_measure;
-			} else {
-				xprintf(Warn, "Processed element with idx %d is out of source mesh!\n", idx);
-			}
-			END_TIMER("compute_pressure_1D");
-		}
-	}
-
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::createTetrahedron(Element *ele, TTetrahedron &te) {
+void FieldInterpolatedP0<spacedim, Value>::create_tetrahedron(Element *ele, TTetrahedron &te) {
 	ASSERT(( ele->dim() == 3 ), "Dimension of element must be 3!\n");
 
 	te.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
@@ -267,7 +140,7 @@ void FieldInterpolatedP0<spacedim, Value>::createTetrahedron(Element *ele, TTetr
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::createTriangle(Element *ele, TTriangle &tr) {
+void FieldInterpolatedP0<spacedim, Value>::create_triangle(Element *ele, TTriangle &tr) {
 	ASSERT(( ele->dim() == 2 ), "Dimension of element must be 2!\n");
 
 	tr.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
@@ -278,11 +151,20 @@ void FieldInterpolatedP0<spacedim, Value>::createTriangle(Element *ele, TTriangl
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::createAbscissa(Element *ele, TAbscissa &ab) {
+void FieldInterpolatedP0<spacedim, Value>::create_abscissa(Element *ele, TAbscissa &ab) {
 	ASSERT(( ele->dim() == 1 ), "Dimension of element must be 1!\n");
 
 	ab.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
 			 	 TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)) );
+}
+
+
+
+template <int spacedim, class Value>
+void FieldInterpolatedP0<spacedim, Value>::create_point(Element *ele, TPoint &p) {
+	ASSERT(( ele->dim() == 0 ), "Dimension of element must be 0!\n");
+
+	p.SetCoord( ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2) );
 }
 
 
@@ -314,23 +196,107 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 	if (&elm != computed_elm_) {
 		computed_elm_ = &elm;
 
-		switch (elm.dim()) {
-	        case 1: {
-	            TAbscissa abscissa;
-	            createAbscissa(elm.element(), abscissa);
-	            calculate_abscissa_value(abscissa, elm.idx());
-	            break;
-	        }
-	        case 2: {
-	            TTriangle triangle;
-	            createTriangle(elm.element(), triangle);
-	            calculate_triangle_value(triangle, elm.idx());
-	            break;
-	        }
-	        default:
-	            xprintf(Err, "Dimension of element must be 1 or 2!\n");
-	            break;
-	    }
+		if (elm.dim() == 3) {
+			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
+		}
+
+		// gets suspect elements
+		if (elm.dim() == 0) {
+			//Point point;
+			//for (unsigned int i=0; i<3; i++) point(i) = elm.element()->node[0]->point()(i);
+			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
+		} else {
+			BoundingBox bb;
+			elm.element()->get_bounding_box(bb);
+			((BIHTree *)bih_tree_)->find_bounding_box(bb, searched_elements_);
+		}
+
+		// set zero values of value_ object
+		for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+			for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+				this->value_(i,j) = 0.0;
+			}
+		}
+
+		double total_measure=0.0, measure;
+		TIntersectionType iType;
+
+		START_TIMER("compute_pressure");
+		ADD_CALLS(searched_elements_.size());
+		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
+		{
+			ElementFullIter ele = source_mesh_->element( *it );
+			if (ele->dim() == 3) {
+				create_tetrahedron(ele, tetrahedron_);
+				// get intersection (set measure = 0 if intersection doesn't exist)
+				switch (elm.dim()) {
+					case 0: {
+						create_point(elm.element(), point_);
+						if ( tetrahedron_.IsInner(point_) ) {
+							measure = 1.0;
+						} else {
+							measure = 0.0;
+						}
+						break;
+					}
+					case 1: {
+						create_abscissa(elm.element(), abscissa_);
+						GetIntersection(abscissa_, tetrahedron_, iType, measure);
+						if (iType != line) {
+							measure = 0.0;
+						}
+						break;
+					}
+			        case 2: {
+			        	create_triangle(elm.element(), triangle_);
+						GetIntersection(triangle_, tetrahedron_, iType, measure);
+						if (iType != area) {
+							measure = 0.0;
+						}
+			            break;
+			        }
+			    }
+
+				//adds values to value_ object if intersection exists
+				if (measure > epsilon) {
+					unsigned int index = this->value_.n_rows() * this->value_.n_cols() * (*it);
+			        typename Value::element_type * ele_data_ptr = (typename Value::element_type *)(data_+index);
+			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  ele_data_ptr) );
+					Value tmp_value = Value( ret_type_value );
+
+					/*cout << "n_rows, n_cols = " << tmp_value.n_rows() << ", " << tmp_value.n_cols() << endl;
+					for (unsigned int i=0; i < tmp_value.n_rows(); i++) {
+						for (unsigned int j=0; j < tmp_value.n_cols(); j++) {
+							cout << "(" << i << "," << j << ") = " << tmp_value(i,j) << ", ";
+						}
+						cout << endl;
+					}
+					cout << endl;*/
+
+					for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+						for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+							this->value_(i,j) += tmp_value(i,j) * measure;
+						}
+					}
+					total_measure += measure;
+				}
+			} else {
+				xprintf(Err, "Dimension of element in source mesh must be 3!\n");
+			}
+		}
+
+		// computes weighted average
+		if (total_measure > epsilon) {
+			for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+				for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+					this->value_(i,j) /= total_measure;
+				}
+			}
+		} else {
+			xprintf(Warn, "Processed element with idx %d is out of source mesh!\n", elm.idx());
+		}
+		END_TIMER("compute_pressure");
+
 	}
 
     return this->r_value_;

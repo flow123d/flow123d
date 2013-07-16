@@ -34,7 +34,7 @@ macro(define_test class_name)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}_test")
   set(test_valgrind "${class_name}_valgrind")
-  message(STATUS "${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
+  message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
   
   # executable rule
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
@@ -74,6 +74,7 @@ macro(define_mpi_test class_name n_proc)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}_${n_proc}_test")
   set(test_valgrind "${class_name}_${n_proc}_valgrind")
+  message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
   
   # executable rule
   if(TARGET ${test_binary})

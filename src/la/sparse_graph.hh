@@ -75,7 +75,7 @@ public:
      * Construct an empty graph for given number of local vertices of the graph.
      * Make its own distribution object.
      */
-    SparseGraph(int loc_size);
+    SparseGraph(int loc_size, MPI_Comm comm);
 
     /**
      * Store an edge. We just store all inserted edges and count support arrays to
@@ -187,8 +187,8 @@ public:
     /**
      *  Construct empty graph only from number of vertices, use default initial distribution.
      */
-    SparseGraphPETSC(int n_vtxs)
-        : SparseGraph(Distribution(Distribution::Block, n_vtxs)), petsc_adj_mat(0), petsc_part(0), part_IS(0) {}
+    SparseGraphPETSC(int n_vtxs, MPI_Comm comm)
+        : SparseGraph(Distribution(DistributionBlock(), n_vtxs,comm)), petsc_adj_mat(0), petsc_part(0), part_IS(0) {}
 
     /**
      *  Construct empty graph with given distribution of vertices.
@@ -221,8 +221,14 @@ public:
      *  Construct empty graph only from number of vertices,
      *  use localized distribution in order to use sequential METIS library.
      */
-    SparseGraphMETIS(int n_vtxs)
-        : SparseGraph(Distribution(Distribution::Localized, n_vtxs)) {}
+    SparseGraphMETIS(int n_vtxs, MPI_Comm comm)
+        : SparseGraph(Distribution(DistributionLocalized(), n_vtxs,comm)) {}
+
+    /**
+     *  Construct empty graph with given distribution of vertices.
+     */
+    SparseGraphMETIS(const Distribution &distr)
+        : SparseGraph(distr) {}
 
     /**
      * Implementation of partitioning using METIS.

@@ -277,6 +277,13 @@ public:
         {return last_time_step;}
 
     /**
+     * Previous time.
+     */
+    inline double last_t() const
+        { return last_time_; }
+
+
+    /**
      * Length of actual time interval; i.e. the actual time step.
      */
     inline double dt() const
@@ -395,7 +402,7 @@ private:
     /// End of actual time interval; i.e. where the solution is computed.
     double time;
     /// Beginning of the actual time interval; i.e. the time of last computed solution.
-    //double last_time;
+    double last_time_;
     /// End of interval if fixed time step.
     double end_of_fixed_dt_interval;
     /// End time of the simulation.

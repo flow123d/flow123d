@@ -64,15 +64,17 @@ $EndElementData
 \end{verbatim}
 Detailed description of individual sections:
 \begin{description}
- \item[{\tt PhysicalNames}] --- assign labels to region IDs
- \item[{\tt Nodes}] --- {\tt <number of nodes>} is also number of data lines that follows. 
+ \item[{\tt PhysicalNames}] : Assign labels to region IDs. Elements of one region should have common dimension. 
+    Flow123d interprets regions with labels starting with period as the boundary elements that are not used for calculations.
+ \item[{\tt Nodes}] : {\tt <number of nodes>} is also number of data lines that follows. 
     Node IDs are unique but need not to form an aritmetic sequance. Coordinates are float numbers.
- \item[{\tt Elements}] --- Element IDs are unique but need not to form an aritmetic sequence. 
-    {\tt <element shape>} is integer code of the shape, we support only points (15), lines (1), triangles (2), and tetrahedrons (4).
+ \item[{\tt Elements}] : Element IDs are unique but need not to form an aritmetic sequence. 
+    Integer code {\tt <element shape>} represents the shape of element, we support only points (15), lines (1), triangles (2), and tetrahedrons (4).
     Default number of tags is 3. The first is the region ID, the second is ID of the geometrical entity (that was used in original geometry file from which the mesh was generated),
     and the third tag is the partition number. {\tt nodes} is list of node IDs with size according to the element shape.
- \item[{\tt ElementData}] --- the header has 2 string tags, 1 double tag, and 4 integer tags with default meaning. For the purpose of the \verb'FieldElementwise' the tags
-    \verb'<field name>', \verb'<n of components>', and \verb'<n of items>' are obligatory.
+ \item[{\tt ElementData}] : The header has 2 string tags, 1 double tag, and 4 integer tags with default meaning. For the purpose of the \verb'FieldElementwise' the tags
+    \verb'<field name>', \verb'<n of components>', and \verb'<n of items>' are obligatory. This header is folowed by field data on individual elements. 
+    Flow123d assumes that elements are sorted by {\tt element ID}, but doesn't need to form a continuos sequence.
 \end{description}
 
 

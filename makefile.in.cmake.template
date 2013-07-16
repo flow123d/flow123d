@@ -15,8 +15,11 @@ set(PETSC_ARCH "gcc_O3")
 
 
 ### BDDCML library #############################################################
-# tested with version 1.3
-set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-1.3")
+# BDDCML_ROOT - root directory of BDDCML library
+# tested with version 2.2
+# If BDDCML_ROOT is set and BDDCML library is not found it is installed automatically.
+
+set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
 
 
 ### Build setting ####################################################################

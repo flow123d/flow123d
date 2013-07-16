@@ -67,7 +67,8 @@
         piezo_head_p0 = "flow_output_stream", 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        velocity_p0 = "flow_output_stream",
+        subdomains = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Bddc", 

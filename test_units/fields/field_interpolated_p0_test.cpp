@@ -25,7 +25,8 @@
  *
  */
 
-#include <gtest/gtest.h>
+#define TEST_USE_MPI
+#include <gtest_mpi.hh>
 
 #include "system/system.hh"
 #include "input/input_type.hh"
@@ -54,7 +55,7 @@ string input = R"CODE(
    scalar_large={
        TYPE="FieldInterpolatedP0",
        gmsh_file="fields/bigger_3d_cube_0.5.msh",
-       field_name="scalar_large"
+       field_name="scalar"
    },
    vector_fixed={
        TYPE="FieldInterpolatedP0",
@@ -80,6 +81,10 @@ string gmsh_mesh = R"CODE(
 $MeshFormat
 2.2 0 8
 $EndMeshFormat
+$PhysicalNames
+1
+0       101     ".point_boundary"
+$EndPhysicalNames
 $Nodes
 8
 1 1 1 1
@@ -99,8 +104,8 @@ $Elements
 4 1 2 37 20 8 4
 5 2 2 38 34 6 4 8
 6 2 2 38 36 4 1 8
+7 15 2 101 101 3
 # ------ interpolation to following 3D elements not implemented
-7 4 2 39 40 3 7 1 2
 8 4 2 39 40 3 7 2 8
 9 4 2 39 40 3 7 8 6
 10 4 2 39 42 3 7 6 5
@@ -166,6 +171,7 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
     EXPECT_DOUBLE_EQ( 0.700, field.value(point, mesh->element_accessor(3)) );
     EXPECT_DOUBLE_EQ( 0.675, field.value(point, mesh->element_accessor(4)) );
     EXPECT_DOUBLE_EQ( 0.675, field.value(point, mesh->element_accessor(5)) );
+    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0, true)) );
 
 }
 

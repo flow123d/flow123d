@@ -371,11 +371,11 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 }
 */
 
-void *operator new (std::size_t size) throw(std::bad_alloc) {
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
 }
 
-void *operator new[] (std::size_t size) throw(std::bad_alloc) {
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
 }
 
