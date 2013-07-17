@@ -552,13 +552,13 @@ mathematical models and numerical methods used in the Flow123d.
 
 \chapter{Mathematical models \\of physical/chemical reality}
 
-Flow123d provides models for Dary flow in porous media as well as for the transport and reactions of soluted substances. In this section, we describe 
+Flow123d provides models for Darcy flow in porous media as well as for the transport and reactions of soluted substances. In this section, we describe 
 mathematical formulations of these models together with physical meaning and units of all involved quantities. Common and unique feature of all models is support of
-domains with mixed dimension. Let $\Omega_{3} \subset \Real^3$ be an open set representing continuum approximation of porous and fractured medium.
+domains with mixed dimension. Let $\Omega_{3} \subset \Real^3$ be an open set representing continuous approximation of porous and fractured medium.
 Similarly, we consider open set $\Omega_2\subset \Real^2$ representing 2D fractures and open set $\Omega_1\subset \Real^3$ of 1D channels or preferential paths 
 (see Fig \ref{fig:multi-dim}).
 We assume that $\Omega_2$ and $\Omega_1$ are polygonal. For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
-that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elements are simplexes that is tetrahedrons, triangles and lines.
+that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elements are simplexes that are tetrahedrons, triangles and lines.
 
 \begin{figure}[h]
 \centering
@@ -604,13 +604,16 @@ match their sides or they poke out of $\Omega_d$.
 %\input{pos_12}   
 
 
-%\chapter{Test and tutorial problems}
-%\input{tests}
+% \chapter{Test and tutorial problems}
+% \input{tests}
+% 
+% \chapter{Comparision of versions 1.6.7 and 1.7.0}
+% \label{chapter:version_comparision}
+% \input{version_comparision.tex}
 
 \chapter{Main input file reference}
 \label{chapter:input-tree-reference}
 % support macros
-
 
 % generated file
 \input{input_reference}

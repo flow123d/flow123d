@@ -60,7 +60,7 @@ There are only simple Dirichlet boundary conditions. Pressure gradient in direct
 \centering
 \includegraphics[width=13cm]{tests_graphics/01_mesh.pdf}
 \caption{Test 01 -- mesh}
-\label{fig:test13_mesh}
+\label{fig:test1_mesh}
 \end{figure}
 %
 %
@@ -113,7 +113,7 @@ Dirichlet boundary condition for transport is prescribed on both sides as it is 
 \centering
 \includegraphics[width=15cm]{tests_graphics/02_mesh.pdf}
 \caption{Test 02 -- mesh}
-\label{fig:test13_mesh}
+\label{fig:test2_mesh}
 \end{figure}
 %
 %
@@ -204,6 +204,76 @@ We choose $\sigma_R=0.5$ and then we get $u_R=-2x$ on the south side and $u_R=3x
 \subsection*{Verification}
 This test verifies prescribing different types boundary conditions.
 
+
+%=====================================================
+%                   TEST  06
+%=====================================================
+
+\section{Test 06 -- Coupling between dimensions in Darcy flow}
+\label{sec:test06}
+There are two tests -- \verb'flow_32d.con' for compatible coupling between 3D-2D and \verb'flow_21d.con' for compatible coupling between 2D-1D.
+
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+  \end{itemize}
+
+We will discuss both the geometry and parameters at once.
+
+\textbf{3D-2D.}
+There is a cube with vertices [0,0,0] [-1,-1,-1] which couples with a 2D crack in the bottom (i.e. $z=-1$).
+We consider solution of the piezometric head in the cube $p_3(x,y,z) = z$. We will use it to prescribe Dirichlet boundary condition on the non-coupling parts of the cube.
+There are no sources of a flow in the cube. 
+We can write the outflow through the bottom of the cube in following term $q_{32} = \mathbf{q_3} \cdot \mathbf{n} = (- K_3 \nabla p_3(x,y,-1))\cdot \mathbf{n}$,
+where $\mathbf{n}=(0,0,-1)$.
+To obtain Laplace equation with zero right hand side on the 2D crack, we prescribe a new source term (\ref{eqn:test06_f2}) that eliminates the inflow coming from the cube.         
+\begin{eqnarray}
+    F_2 &=& \delta_2  f_2 + q_{32} = 0   \nonumber\\
+    f_2(x,y) &=& -\frac{q_{32}}{\delta_2}   \label{eqn:test06_f2}.
+\end{eqnarray}
+When $\delta_2 = 10$, $K_3 = 2$ are choosed then the source term is equal $f_2 = -0.2$.
+Homogenous Neumann condition is prescribed on the boundary of the fraction (zero outflow and inflow).
+
+From the flow coupling equation we can get the pressure (\ref{eqn:test06_p2}) on the crack which we can verify.
+\begin{eqnarray} 
+     \sigma_{32}  ( p_3(x,y,-1) - p_2(x,y) ) &=& q_{32} \nonumber\\
+     p_2(x,y) &=& -\frac{q_{32}}{\sigma_{32}} + p_3(x,y,-1) \label{eqn:test06_p2}.
+\end{eqnarray}   
+When $\sigma = 1$ is set then the pressure in the crack is constant and equal $p_2(x,y) = -3$.
+
+
+\textbf{2D-1D.}
+The other tests geometry consists of a 2D crack in $xy$ plane with vertices [0,0] [1,1] and a 1D channel coupling with the crack on the left side ($x=0$). 
+Everything is then analogical to the first test.
+We consider solution of the pressure in the crack $p_2(x,y) = x$. We will use it to prescribe Dirichlet boundary condition on the non-coupling parts of the crack.
+There are no sources of a flow in the crack. 
+We can write the outflow through the left side of the crack in following term $q_{21} = \mathbf{q_2} \cdot \mathbf{n} = (- \delta_2 K_2 \nabla p_2(0,y))\cdot \mathbf{n}$,
+where $\mathbf{n}=(-1,0)$.
+To obtain Laplace equation with zero right hand side on the channel, we prescribe a new source term (\ref{eqn:test06_f1}) that eliminates the inflow coming from the crack.         
+\begin{eqnarray}
+    F_1 &=& \delta_1  f_1 + q_{21} = 0   \nonumber\\
+    f_1(x,y) &=& -\frac{q_{21}}{\delta_1}   \label{eqn:test06_f1}.
+\end{eqnarray}
+When $\delta_1 = 20$, $\delta_2 = 10$ and $K_2 = 5$ are choosed then the source term is equal $f_2 = -2.5$.
+Homogenous Neumann condition is prescribed on the boundary of the fraction (zero outflow and inflow).
+
+From the flow coupling equation we can get the pressure (\ref{eqn:test06_p1}) on the plane which we can verify.
+\begin{eqnarray} 
+     \delta_2 \sigma_{21} ( p_2(0,y) - p_2(y) ) &=& q_{21} \nonumber\\
+     p_1(y) &=& -\frac{q_{21}}{\delta_2 \sigma_{21}} + p_2(0,y) \label{eqn:test06_p1}.
+\end{eqnarray}   
+When $\sigma_{21} = 1$ is set then the pressure in the crack is constant and equal $p_1(y) = -2.5$.
+
+% \subsection*{Parameters}
+% Parameters where discussed above.
+
+\subsection*{Verification}
+This test verifies correct communication between dimensions 3D-2D and 2D-1D in compatible coupling.
+We can also observe the results in the \verb'water_balance' file. We should see that all the inflow 
+to the cube should be fully compensated by the negative source. Homogenous Neumann boundary condition 
+is prescribed on the crack so there should be no outflow or inflow through the boundary of the crack.
+The situation in the second test is similar. The inflow to the crack should be fully compensated by 
+the negative source in the channel which should have no other inflow or outflow.
 
 
 %=====================================================
@@ -465,7 +535,7 @@ Initial concentration is zero on the whole plane. Two pulses of nonzero concentr
 \centering
 \includegraphics[width=15cm]{tests_graphics/14_mesh.pdf}
 \caption{Test 14 -- mesh}
-\label{fig:test13_mesh}
+\label{fig:test14_mesh}
 \end{figure}
 %
 %
@@ -510,7 +580,7 @@ The source is prescribed with function $f=-x$ along the strip.
 \centering
 \includegraphics[width=15cm]{tests_graphics/15_mesh.pdf}
 \caption{Test 15 -- mesh}
-\label{fig:test13_mesh}
+\label{fig:test15_mesh}
 \end{figure}
 %
 %
@@ -594,77 +664,82 @@ The coeffients of molecular diffusion and diffusive transfer through fractures a
 
 \subsection*{Verification}
 
-===================  PREPARING  ==================
-\section{Test 20 -- Dirichlet boundary condition}
-\label{sec:test20}
-This test involves steady Darcy flow in 3D determined by Dirichlet boundary condition. The analytic solution is prescribed $u = xyz$. We can see from the formula that there are no sources $-\Lapl{}u = 0$ (zero right hand side) and we can easily define Dirichlet boundary conditions on the sides of the cube just by evaluating the solution there.
-
-\subsection*{Geometry}
-The domain is a cube with its side 1.0~$L$ long.
-Dirichlet boundary conditions are summarized in the following table. Physical domains corresponds with the numbers in \verb0geo0 file, the row \emph{plane} contains equations of the planes (sides of the cube). The row \emph{Dirichlet} contains solution on the planes. The row \emph{boundary} segment contains numbers of segments defined in \verb0con0 file.
-
-\begin{center}
-  \begin{tabular}{|l|c|c|c|c|c|c|}
-      \hline
-      boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
-      physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
-      plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
-      Dirichlet [$u_D$] & $xy$ & $yz$ & $0$ & $0$ & $xz$ & $0$\\
-      \hline
-  \end{tabular}
-\end{center}
-
-\subsection*{Parameters}
-\begin{itemize}
-  \item \textbf{Conductivity:} cube material is set to $\mathbf{K}=\left(\begin{array}{ccc} 1.0 & 0 & 0 \\ 0 & 1.0 & 0 \\ 0 & 0 & 1.0\end{array} \right)$.
-  \item There is no transport so there are not any other parameters.
-\end{itemize}
-
-\subsection*{Verification}
-This test verifies prescribing Dirichlet boundary condition.
 
 
-\section{Test 21 -- Neumann boundary condition}
-\label{sec:test21}
-This test uses the same geometry and parameters as in the test 20 (viz~\ref{sec:test20}) but there are prescribed both Dirichlet and Neumann boundary conditions. 
 
-The table of the boundary conditions is below. The row \emph{Dirichlet} contains contains solution on the planes and the row \emph{Neumann} contains flow through the planes.
 
-\begin{center}
-  \begin{tabular}{|l|c|c|c|c|c|c|}
-      \hline
-      boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
-      physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
-      plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
-      Dirichlet [$u_D$] 
-	  &   -   & $yz$ & $0$ & $0$ &   -   & $0$\\
-      Neumann [$-\nabla{}u\cdot{}\mathbf{n}$] 
-	  & $-xy$ &   -  &  -  &  -  & $-xz$ & - \\
-      \hline
-  \end{tabular}
-\end{center}
 
-\subsection*{Verification}
-This test verifies prescribing Neumann boundary condition.
-
-\section{Test 22 -- Newton boundary condition}
-\label{sec:test21}
-This test uses the same geometry and parameters as in the test 20 (viz~\ref{sec:test20}) but there is prescribed Newton boundary condition $-\nabla{}u\cdot{}\mathbf{n} = \sigma(u-u_T)$.
-
-The table of the boundary conditions where parameters $\sigma$ and $u_T$ are written is below. The values of parameters were chosen to satisfy condition $-\nabla{}u\cdot{}\mathbf{n} = -(yz,xz,xy)\cdot\mathbf{n} = \sigma(u-u_T)$
-
-\begin{center}
-  \begin{tabular}{|l|c|c|c|c|c|c|}
-      \hline
-      boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
-      physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
-      plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
-      $-\nabla{}u\cdot{}\mathbf{n}$ & $-xy$ & $-yz$ & $xy$ & $yz$ & $-xz$ &\\
-      $\sigma$ & $xy$ & $yz$ & $0$ & $0$ & $xz$ & $0$\\
-      $u_T$ & $u_T=xy$ & $u=yz$ & $u=0$ & $u=0$ & $u=xz$ & $u=0$\\
-      \hline
-  \end{tabular}
-\end{center}
-
-\subsection*{Verification}
-This test verifies prescribing Newton boundary condition.
+% ===================  PREPARING  ==================
+% \section{Test 20 -- Dirichlet boundary condition}
+% \label{sec:test20}
+% This test involves steady Darcy flow in 3D determined by Dirichlet boundary condition. The analytic solution is prescribed $u = xyz$. We can see from the formula that there are no sources $-\Lapl{}u = 0$ (zero right hand side) and we can easily define Dirichlet boundary conditions on the sides of the cube just by evaluating the solution there.
+% 
+% \subsection*{Geometry}
+% The domain is a cube with its side 1.0~$L$ long.
+% Dirichlet boundary conditions are summarized in the following table. Physical domains corresponds with the numbers in \verb0geo0 file, the row \emph{plane} contains equations of the planes (sides of the cube). The row \emph{Dirichlet} contains solution on the planes. The row \emph{boundary} segment contains numbers of segments defined in \verb0con0 file.
+% 
+% \begin{center}
+%   \begin{tabular}{|l|c|c|c|c|c|c|}
+%       \hline
+%       boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
+%       physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
+%       plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
+%       Dirichlet [$u_D$] & $xy$ & $yz$ & $0$ & $0$ & $xz$ & $0$\\
+%       \hline
+%   \end{tabular}
+% \end{center}
+% 
+% \subsection*{Parameters}
+% \begin{itemize}
+%   \item \textbf{Conductivity:} cube material is set to $\mathbf{K}=\left(\begin{array}{ccc} 1.0 & 0 & 0 \\ 0 & 1.0 & 0 \\ 0 & 0 & 1.0\end{array} \right)$.
+%   \item There is no transport so there are not any other parameters.
+% \end{itemize}
+% 
+% \subsection*{Verification}
+% This test verifies prescribing Dirichlet boundary condition.
+% 
+% 
+% \section{Test 21 -- Neumann boundary condition}
+% \label{sec:test21}
+% This test uses the same geometry and parameters as in the test 20 (viz~\ref{sec:test20}) but there are prescribed both Dirichlet and Neumann boundary conditions. 
+% 
+% The table of the boundary conditions is below. The row \emph{Dirichlet} contains contains solution on the planes and the row \emph{Neumann} contains flow through the planes.
+% 
+% \begin{center}
+%   \begin{tabular}{|l|c|c|c|c|c|c|}
+%       \hline
+%       boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
+%       physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
+%       plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
+%       Dirichlet [$u_D$] 
+% 	  &   -   & $yz$ & $0$ & $0$ &   -   & $0$\\
+%       Neumann [$-\nabla{}u\cdot{}\mathbf{n}$] 
+% 	  & $-xy$ &   -  &  -  &  -  & $-xz$ & - \\
+%       \hline
+%   \end{tabular}
+% \end{center}
+% 
+% \subsection*{Verification}
+% This test verifies prescribing Neumann boundary condition.
+% 
+% \section{Test 22 -- Newton boundary condition}
+% \label{sec:test21}
+% This test uses the same geometry and parameters as in the test 20 (viz~\ref{sec:test20}) but there is prescribed Newton boundary condition $-\nabla{}u\cdot{}\mathbf{n} = \sigma(u-u_T)$.
+% 
+% The table of the boundary conditions where parameters $\sigma$ and $u_T$ are written is below. The values of parameters were chosen to satisfy condition $-\nabla{}u\cdot{}\mathbf{n} = -(yz,xz,xy)\cdot\mathbf{n} = \sigma(u-u_T)$
+% 
+% \begin{center}
+%   \begin{tabular}{|l|c|c|c|c|c|c|}
+%       \hline
+%       boundary segment & 1 & 2 & 3 & 4 & 5 & 6 \\ 
+%       physical domain & 27 & 28 & 29 & 30 & 31 & 32 \\ 
+%       plane & $z-1=0$  & $x-1=0$ & $z=0$ & $x=0$ & $y-1=0$& $y=0$\\
+%       $-\nabla{}u\cdot{}\mathbf{n}$ & $-xy$ & $-yz$ & $xy$ & $yz$ & $-xz$ &\\
+%       $\sigma$ & $xy$ & $yz$ & $0$ & $0$ & $xz$ & $0$\\
+%       $u_T$ & $u_T=xy$ & $u=yz$ & $u=0$ & $u=0$ & $u=xz$ & $u=0$\\
+%       \hline
+%   \end{tabular}
+% \end{center}
+% 
+% \subsection*{Verification}
+% This test verifies prescribing Newton boundary condition.
