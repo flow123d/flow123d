@@ -1,19 +1,62 @@
 Test problem 6
 ---------------------
 verification of:
-- correct communication between dimensions
+- correct communication between dimensions 3d-2d and 2d-1d
 
-flow_23.con:
-  cube coupled with square fracture on the bottom
-  Dirichlet prescribed on the rest of the boundary
+flow_32d.con:
+  Cube coupled with square fracture on the bottom.
+  Dirichlet BC p3(x,y,z) prescribed on the rest of the boundary.                             p3(x,y,z) := z
+  No sources f3 are present in the cube.                                                     f3 := 0
+  Homogenous Neumann prescribed on the boundary of the fraction (zero outflow and inflow).   q2 .dot. n := 0
+  To obtain Laplace equation with zero rhs on the 2d fraction, 
+  we prescribe a new source term that eliminates the inflow coming from the cube.         
   
-  p3(x,y,z) = xyz     f3=0 
-  
-  sigma * (  p3(x,y,-1) - p2(x,y) ) == -n .dot. k3*grad p3 = k3 xy                 // 3d outflow
-  
-  p2(x,y) = -xy - k3/sigma *xy = - (k3/sigma + 1) * xy;  f2(x,y) = 0   
-
-flow_12.con:
-    2d strip + 1d fracture + 2x 2d strip  - branch like in test 13, but with 1d fracture
+    q32 = q3 .dot. n = -n .dot. k3 * grad(p3)
     
+    F2 = delta2 * f2 + q32 := 0
+    f2 = -q32/delta2
+    
+  which is for             delta2 := 10        k3 := 2     n = (0,0,-1)
+  
+    f2 = -0.2.
+  
+  From the flow coupling equation (flow 3d-2d == 3d outflow)
+ 
+     sigma32 * ( p3(x,y,-1) - p2(x,y) ) == q32   
+   
+  we know the pressure on the plane which we can verify. For  
+  
+    sigma32 := 1      
+  
+  the pressure is p2 = -3.
+  
+  
+  
+
+flow_21d.con:
+    Plane in xy coupled with channel fracture in x=0.
+    Dirichlet BC p2(x,y) prescribed on the rest of the boundary.                               p2(x,y) := x
+    No sources f2 are present in the plane.                                                    f2 := 0
+    Homogenous Neumann prescribed on the boundary of the fraction (zero outflow and inflow).   q1 .dot. n := 0
+    To obtain Laplace equation with zero rhs on the 1d fraction, 
+    we prescribe a new source term that eliminates the inflow coming from the cube.         
+  
+    q21 = q2 .dot. n = -n .dot. (delta2 * k2 * grad(p2))
+    
+    F1 = delta1 * f1 + q21 := 0
+    f1 = -q21/delta1
+    
+  which is for             delta2 := 10     delta1 := 20        k2 := 5     n = (-1,0,0)
+  
+    f1 = -delta2/delta1 * K2 = -2.5.
+  
+  From the flow coupling equation (flow 2d-1d == 2d outflow)
+ 
+     sigma21 * ( p3(0,y) - p2(y) ) == q21
+   
+  we know the pressure on the plane which we can verify. For  
+  
+    sigma21 := 2      
+  
+  the pressure is p1 = -2.5.
     

@@ -578,6 +578,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 } else if ( type == EqData::neumann) {
                     double bc_flux = data.bc_flux.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
+		    //DBGMSG("neumann edge_row, ele_index,el_idx: %d \t %d \t %d\n", edge_row, ele->index(), ele->side(i)->el_idx());
 
                 } else if ( type == EqData::robin) {
                     double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
@@ -625,8 +626,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
 
             double value = data.sigma.value( ngh->element()->centre(), ngh->element()->element_accessor()) * ngh->side()->measure() *
-                    data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );   // crossection of lower dim (wrong)
-//                  data.cross_section.value( ngh->side()->centre(), ngh->side()->element()->element_accessor() ); // cross-section of higher dim. (2d)
+//                data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );      // crossection of lower dim (wrong)
+                  data.cross_section.value( ngh->side()->centre(), ngh->side()->element()->element_accessor() ); // cross-section of higher dim. (2d)
 
 
             local_vb[0] = -value;   local_vb[1] = value;
