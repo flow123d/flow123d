@@ -342,6 +342,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
         PetscInt m, n;
         PetscErrorCode ierr;
         PetscScalar *rhs_array, *sol_array;
+        Mat A; // block A of matrix
         int orig_first;
 
         int n_proc, rank;
@@ -349,16 +350,11 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
         MPI_Comm_size(PETSC_COMM_WORLD, &n_proc);
         DBGMSG(" - n_proc: %d, rank: %d \n", n_proc, rank);
 
-        // check type of LinSys and dimensions of matrix
+        // check type of LinSys, dimensions of matrix, index set
         ierr = MatGetSize(Orig->get_matrix(), &m, &n);
         ASSERT(Orig->type == LinSys::MAT_MPIAIJ, "Assumed MAT_MPIAIJ type of Orig object.\n");
         ASSERT(m == n, "Assumed square matrix.\n" );
-
-        // set dimensions and other parameters of inversion matrix IA
-    	ierr = MatCreate(PETSC_COMM_WORLD,&IA);
-    	ierr = MatSetSizes(IA,m,m,m,m);
-    	ierr = MatSetType(IA,MATAIJ);
-    	ierr = MatSetUp(IA);
+        ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
         // initialize variables
         IA_sub  = NULL;
@@ -378,19 +374,14 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
            // get distribution of original matrix
            MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
            MatGetLocalSize(Orig->get_matrix(),&orig_lsize,PETSC_NULL);
+           MatGetSubMatrix(Orig->get_matrix(), IsA, IsA, MAT_INITIAL_MATRIX, &A);
            DBGMSG(" - orig_first: %d, orig_lsize: %d \n", orig_first, orig_lsize);
 
            // create A block index set
-           if (IsA == NULL) {
-               // assume 'a_inv->local_size' be local part of A block
-               MatGetLocalSize(IA,&loc_size_A,PETSC_NULL);
-               ISCreateStride(PETSC_COMM_WORLD,loc_size_A,orig_first,1,&IsA);
-           } else {
-               ISGetLocalSize(IsA, &loc_size_A);
-           }
+           ISGetLocalSize(IsA, &loc_size_A);
            //ISAllGather(IsA,&fullIsA);
            DBGMSG(" - locSizeA: %d\n", loc_size_A);
-           //ISView(IsA, PETSC_VIEWER_STDOUT_SELF);
+           ISView(IsA, PETSC_VIEWER_STDOUT_SELF);
 
            // create B block index set
            locSizeB = orig_lsize-loc_size_A;
@@ -420,10 +411,19 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
            VecRestoreArray( Sol2, &sol_array );
         }
 
-        PetscInt ncols, pos_start = orig_first;
+        MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+
+    	PetscInt ncols, pos_start = orig_first;
+        DBGMSG(" - pos_start: %d, loc_size_A: %d \n", pos_start, loc_size_A);
+
+        // set dimensions and other parameters of inversion matrix IA
+    	ierr = MatCreate(PETSC_COMM_WORLD,&IA);
+    	ierr = MatSetSizes(IA, loc_size_A + pos_start, loc_size_A + pos_start, loc_size_A + pos_start, loc_size_A + pos_start);
+    	ierr = MatSetType(IA,MATAIJ);
+    	ierr = MatSetUp(IA);
 
         std::vector<PetscInt> submat_rows;
-        std::deque<unsigned int> queue;
         const PetscInt *cols;
         const PetscScalar *vals;
 
@@ -433,52 +433,43 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
         for(unsigned int loc_row=0; loc_row < processed_rows.size(); loc_row++) {
             if (processed_rows[loc_row] != 0) continue;
 
-                processed_rows[loc_row] = mat_block;
                 submat_rows.clear();
-                queue.push_back(loc_row + pos_start );
-                submat_rows.push_back( loc_row + pos_start );
-
-                while (queue.size()) {
-                        ierr = MatGetRow(Orig->get_matrix(), queue.front(), &ncols, &cols, &vals);
-                        for (PetscInt i=0; i<ncols; i++) {
-                                if (processed_rows[ cols[i] - pos_start ] == 0) {
-                                        queue.push_back( cols[i] );
-                                        processed_rows[ cols[i] - pos_start ] = mat_block;
-                                        submat_rows.push_back( cols[i] );
-                                } else if (processed_rows[ cols[i] - pos_start ] != mat_block) {
-                                        xprintf(Err, "Rows %d and %d cannot be linear dependent! Matrix is not symmetric.\n", queue.front(), cols[i]);
-                                }
-                        }
-                        queue.pop_front();
-                        ierr = MatRestoreRow(Orig->get_matrix(), queue.front(), &ncols, &cols, &vals);
-
-                        // test size of submatrix
-                        if (submat_rows.size() > max_size_submat) {
-                            xprintf(Err, "Size of submatrix is greater than size limit. Limit is %d\n", max_size_submat);
-                        }
+                ierr = MatGetRow(A, loc_row, &ncols, &cols, &vals);
+                PetscInt min=cols[0], max=cols[0], size_submat;
+                for (PetscInt i=1; i<ncols; i++) {
+                	if (cols[i]<min) {
+                		min=cols[i];
+                	} else if (cols[i]>max) {
+                		max=cols[i];
+                	}
                 }
-
-                // get sub_mat block
-                std::sort( submat_rows.begin(), submat_rows.end() );
-                arma::mat submat(submat_rows.size() - pos_start, submat_rows.size() - pos_start);
+                xprintf(Msg, "MIN-MAX %d %d, loc_row: %d, ncols: %d \n", min, max, loc_row, ncols);
+                size_submat = max - min + 1;
+                ASSERT(ncols == size_submat, "Submatrix cannot contains empty values.\n");
+                if (size_submat > max_size_submat) {
+                	xprintf(Err, "Size of submatrix is greater than size limit. Limit is %d\n", max_size_submat);
+                }
+                ierr = MatRestoreRow(A, loc_row, &ncols, &cols, &vals);
+                arma::mat submat(size_submat, size_submat);
                 submat.zeros();
-                for (PetscInt i=0; i<submat_rows.size(); i++) {
-                        ierr = MatGetRow(Orig->get_matrix(), submat_rows[i] - pos_start, &ncols, &cols, &vals);
-                        for (PetscInt j=0; j<ncols; j++) {
-                            submat( i, cols[j] - *( submat_rows.begin() ) + pos_start ) = vals[j];
-                        }
-                        ierr = MatRestoreRow(Orig->get_matrix(), submat_rows[i] - pos_start, &ncols, &cols, &vals);
+                for (PetscInt i=0; i<size_submat; i++) {
+                	processed_rows[ min + i ] = mat_block;
+                	submat_rows.push_back( min + i + pos_start );
+                    ierr = MatGetRow(A, min + i, &ncols, &cols, &vals);
+                    for (PetscInt j=0; j<ncols; j++) {
+                        submat( i, cols[j] - min ) = vals[j];
+                    }
+                    ierr = MatRestoreRow(A, min + i, &ncols, &cols, &vals);
                 }
-
                 // test output
-                /* xprintf(Msg, "__ Get submat\n");
-                for (int i=0; i<submat_rows.size(); i++) {
-                        for (int j=0; j<submat_rows.size(); j++) {
-                                xprintf(Msg, "%2.0f ", submat(i,j));
-                        }
-                        xprintf(Msg, "\n");
+                xprintf(Msg, "__ Get submat2\n");
+                for (int i=0; i<size_submat; i++) {
+                    for (int j=0; j<size_submat; j++) {
+                        xprintf(Msg, "%2.0f ", submat(i,j));
+                    }
+                    xprintf(Msg, "\n");
                 }
-                xprintf(Msg, "\n");// */
+                xprintf(Msg, "\n");
 
                 // get inversion matrix
                 arma::mat invmat = submat.i();
