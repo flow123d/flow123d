@@ -94,6 +94,10 @@ bool FieldElementwise<spacedim, Value>::set_time(double time) {
     ASSERT(data_, "Null data pointer.\n");
     if (reader_ == NULL) return false;
 
+    //walkaround for the steady time governor - there is no data to be read in time==infinity
+    //TODO: is it possible to check this before calling set_time?
+    if (time == numeric_limits< double >::infinity()) return false;
+    
     GMSH_DataHeader search_header;
     search_header.actual=false;
     search_header.field_name=field_name_;

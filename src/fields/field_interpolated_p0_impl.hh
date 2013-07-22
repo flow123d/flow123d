@@ -174,17 +174,23 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
     ASSERT(data_, "Null data pointer.\n");
     if (reader_ == NULL) return false;
-
+    
+    //walkaround for the steady time governor - there is no data to be read in time==infinity
+    //TODO: is it possible to check this before calling set_time?
+    if (time == numeric_limits< double >::infinity()) return false;
+    
     GMSH_DataHeader search_header;
     search_header.actual = false;
     search_header.field_name = field_name_;
     search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
     search_header.n_entities = source_mesh_->element.size();
     search_header.time = time;
-
-    bool boundary_domain_=false;
+    
+    bool boundary_domain_ = false;
+    //DBGMSG("reading data for interpolation: name: %s \t time: %f \t n: %d\n", field_name_.c_str(), time, source_mesh_->element.size());
     reader_->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
-
+    //DBGMSG("end of reading data for interpolation: %s\n", field_name_.c_str());
+    
     return search_header.actual;
 }
 
@@ -193,8 +199,8 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
 template <int spacedim, class Value>
 typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
-	if (&elm != computed_elm_) {
-		computed_elm_ = &elm;
+	//if (&elm != computed_elm_) {
+	//	computed_elm_ = &elm;
 
 		if (elm.dim() == 3) {
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
@@ -297,8 +303,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 		END_TIMER("compute_pressure");
 
-	}
-
+	//}
     return this->r_value_;
 }
 

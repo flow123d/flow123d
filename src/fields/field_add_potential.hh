@@ -42,6 +42,12 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 
+    /**
+     * Update time and possibly update data.
+     */
+    virtual bool set_time(double time);
+    
+    
     virtual ~FieldAddPotential();
 
 private:

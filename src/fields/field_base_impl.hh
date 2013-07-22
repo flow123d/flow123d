@@ -71,7 +71,7 @@ Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename 
 #ifdef HAVE_PYTHON
     FieldPython<spacedim,Value>::get_input_type(type, element_input_type);
 #endif
-    //FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
+    FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
     FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type);
 
     return type;
@@ -86,7 +86,8 @@ FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, u
     boost::shared_ptr< FieldBase<spacedim, Value> > func;
 
     if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
-//        func= new FieldInterpolatedP0<spacedim,Value>(n_comp);
+	//xprintf(PrgErr,"TYPE of Field currently not functional.\n");
+	func=boost::make_shared< FieldInterpolatedP0<spacedim,Value> >(n_comp);
 #ifdef HAVE_PYTHON
     } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
         func=boost::make_shared< FieldPython<spacedim, Value> >(n_comp);

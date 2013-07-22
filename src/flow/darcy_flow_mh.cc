@@ -258,7 +258,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     START_TIMER("data init");
     data.set_mesh(&mesh_in);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    
+        
     // steady time governor
     time_ = new TimeGovernor();
     
@@ -274,7 +274,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
         n_schur_compls = 2;
     }
-
+    
     START_TIMER("solver init");
     solver = new (Solver);
     solver_init(solver, in_rec.val<AbstractRecord>("solver"));
@@ -382,6 +382,10 @@ void DarcyFlowMH_Steady::update_solution() {
     
     START_TIMER("data reinit");
     //reinitializing data fields after time step
+    //TODO: workaround for the steady problem
+    //if (time_->t() != TimeGovernor::inf_time) //this test cannot be here due to (mainly implicit) transport - the fields are not neccesary (or cannot) to be read again but the time must be set to infinity
+    //the problem of time==infinity shows up in field_elementwise and field_interpolatedP0 where a gmsh file is read and there is no such data at infinity
+    //temporarily solved directly in field_elementwise and field_interpolatedP0
     data.set_time(*time_);
     END_TIMER("data reinit");
 
@@ -1286,7 +1290,6 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     // make distribution of rows
     for (i = np - 1; i > 0; i--)
         rows_starts[i] -= rows_starts[i - 1];
-
 
     rows_ds = boost::make_shared<Distribution>(&(rows_starts[0]), PETSC_COMM_WORLD);
 }

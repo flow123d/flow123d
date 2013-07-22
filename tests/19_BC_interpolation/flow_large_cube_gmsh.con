@@ -36,12 +36,11 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
-      },
-    }, 
-    save_step = 0.1, 
-    secondary_equation = null
-  }, 
+        a_tol = 1e-07
+      }
+    }
+  },
+  
   system = {
     output_streams = [
       {
