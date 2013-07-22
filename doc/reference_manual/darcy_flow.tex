@@ -82,12 +82,13 @@ the width of the fracture $i$. Sum of the fluxes forms part of $F_1$ \units{}{2}
    F_1 = \delta_1 f_1 + \sum_{i} q_{21}^{i}. 
 \end{equation}
 The transition coefficients 
-\hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_d$} \units{}{3-d}{-1} are independent parameters in our setting however in practice
-they should be related to the conductivity in direction (or plane) perpendicular to the fracture (channel). According to 
+\hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_{32}$} \units{}{}{-1} and
+\hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_{21}$} \units{}{}{-1} are independent parameters in our setting however in practice
+they should be related to the conductivity. According to 
 \cite{martin_modeling_2005} one can use
 \[
 \label{e:sigma_law}
-  \sigma_3 = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_2^{i} = \frac{2\delta_2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
+  \sigma_{31} = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_{21} = \frac{2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
 \]
 where $\vc n_2$ is normal to the fracture (sign doesn't matter) and $\vc n_1^i$ is normal to the channel that is tangential to the fracture $i$.
 

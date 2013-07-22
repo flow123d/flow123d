@@ -88,9 +88,9 @@ TEST(la, inversion_matrix) {
 	lin_sys->finalize();
 	//MatView(lin_sys->get_matrix(),PETSC_VIEWER_STDOUT_SELF);
 
-	ISCreateStride(PETSC_COMM_SELF, size, first_idx, 1, &set); // kazdy proc. lokalni cast indexsetu viz. schur.cc line 386
+	ISCreateStride(PETSC_COMM_WORLD, size, first_idx, 1, &set); // kazdy proc. lokalni cast indexsetu viz. schur.cc line 386
 	//ISView(set, PETSC_VIEWER_STDOUT_SELF);
 
-	SchurComplement schurComplement(lin_sys, set, 5);
+	SchurComplement schurComplement(lin_sys, set, 6);
 
 }

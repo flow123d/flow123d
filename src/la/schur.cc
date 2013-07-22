@@ -381,7 +381,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
            ISGetLocalSize(IsA, &loc_size_A);
            //ISAllGather(IsA,&fullIsA);
            DBGMSG(" - locSizeA: %d\n", loc_size_A);
-           ISView(IsA, PETSC_VIEWER_STDOUT_SELF);
+           ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
 
            // create B block index set
            locSizeB = orig_lsize-loc_size_A;
@@ -411,15 +411,19 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
            VecRestoreArray( Sol2, &sol_array );
         }
 
+        // Why we need this? PETSC do not allow MetGetRow for "unassembled" submatrix ??
         MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
         MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
 
-    	PetscInt ncols, pos_start = orig_first;
+
+    	PetscInt ncols, pos_start;
+    	MatGetOwnershipRange(A,&pos_start,PETSC_NULL);
         DBGMSG(" - pos_start: %d, loc_size_A: %d \n", pos_start, loc_size_A);
 
         // set dimensions and other parameters of inversion matrix IA
     	ierr = MatCreate(PETSC_COMM_WORLD,&IA);
-    	ierr = MatSetSizes(IA, loc_size_A + pos_start, loc_size_A + pos_start, loc_size_A + pos_start, loc_size_A + pos_start);
+    	//ierr = MatSetSizes(IA, loc_size_A + pos_start, loc_size_A + pos_start, loc_size_A + pos_start, loc_size_A + pos_start);
+    	ierr = MatSetSizes(IA, loc_size_A, loc_size_A, PETSC_DETERMINE, PETSC_DETERMINE);
     	ierr = MatSetType(IA,MATAIJ);
     	ierr = MatSetUp(IA);
 
@@ -434,7 +438,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
             if (processed_rows[loc_row] != 0) continue;
 
                 submat_rows.clear();
-                ierr = MatGetRow(A, loc_row, &ncols, &cols, &vals);
+                ierr = MatGetRow(A, loc_row + pos_start, &ncols, &cols, &vals);
                 PetscInt min=cols[0], max=cols[0], size_submat;
                 for (PetscInt i=1; i<ncols; i++) {
                 	if (cols[i]<min) {
@@ -446,20 +450,19 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
                 xprintf(Msg, "MIN-MAX %d %d, loc_row: %d, ncols: %d \n", min, max, loc_row, ncols);
                 size_submat = max - min + 1;
                 ASSERT(ncols == size_submat, "Submatrix cannot contains empty values.\n");
-                if (size_submat > max_size_submat) {
-                	xprintf(Err, "Size of submatrix is greater than size limit. Limit is %d\n", max_size_submat);
-                }
-                ierr = MatRestoreRow(A, loc_row, &ncols, &cols, &vals);
+                ASSERT_LESS(size_submat , max_size_submat);
+
+                ierr = MatRestoreRow(A, loc_row+ pos_start, &ncols, &cols, &vals);
                 arma::mat submat(size_submat, size_submat);
                 submat.zeros();
                 for (PetscInt i=0; i<size_submat; i++) {
                 	processed_rows[ min + i ] = mat_block;
                 	submat_rows.push_back( min + i + pos_start );
-                    ierr = MatGetRow(A, min + i, &ncols, &cols, &vals);
+                    ierr = MatGetRow(A, min + i + pos_start, &ncols, &cols, &vals);
                     for (PetscInt j=0; j<ncols; j++) {
                         submat( i, cols[j] - min ) = vals[j];
                     }
-                    ierr = MatRestoreRow(A, min + i, &ncols, &cols, &vals);
+                    ierr = MatRestoreRow(A, min + i + pos_start, &ncols, &cols, &vals);
                 }
                 // test output
                 xprintf(Msg, "__ Get submat2\n");
