@@ -191,6 +191,8 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     reader_->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
     //DBGMSG("end of reading data for interpolation: %s\n", field_name_.c_str());
     
+    computed_elm_idx_ = 0;
+
     return search_header.actual;
 }
 
@@ -199,8 +201,8 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
 template <int spacedim, class Value>
 typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
-	//if (&elm != computed_elm_) {
-	//	computed_elm_ = &elm;
+	if (elm.idx() != computed_elm_idx_) {
+		computed_elm_idx_ = elm.idx();
 
 		if (elm.dim() == 3) {
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
@@ -303,7 +305,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 		END_TIMER("compute_pressure");
 
-	//}
+	}
     return this->r_value_;
 }
 
