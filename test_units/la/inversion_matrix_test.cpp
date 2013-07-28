@@ -16,7 +16,13 @@ PetscInt rows [] = {5,2,3,3,4,2};
 
 
 void fill_matrix(LinSys * lin_sys, int min_idx, int max_idx) {
-	unsigned int min = 0;
+	unsigned int row_cnt = 0; //row counter
+	unsigned int local_min, local_max;
+	for (unsigned int i = 0; i < min_idx; i++) {
+		row_cnt += rows[i];
+	}
+	local_min = row_cnt;
+
 	// create block A of matrix
 	for (unsigned int i = min_idx; i < max_idx; i++) {
 		std::vector<PetscScalar> a_vals;
@@ -27,31 +33,35 @@ void fill_matrix(LinSys * lin_sys, int min_idx, int max_idx) {
 		std::vector<int> a_rows_idx;
 		a_rows_idx.reserve(rows[i]);
 		for (unsigned int j=0; j<rows[i]; j++) {
-			a_rows_idx.push_back(min + j);
+			a_rows_idx.push_back(row_cnt + min_idx + j);
 		}
 		int * insert_rows = &a_rows_idx[0];
 		PetscScalar * insert_vals = &a_vals[0];
 		lin_sys->mat_set_values(rows[i], insert_rows, rows[i], insert_rows, insert_vals);
-		min += rows[i];
+		row_cnt += rows[i];
 	}
+	local_max = row_cnt;
+	/*for (unsigned int i = max_idx; i < 6; i++) {
+		row_cnt += rows[i];
+	}*/
+
 	// create block B of matrix
-	xprintf(Msg, "YYY - min: %d, size: %d\n", min, (max_idx - min_idx));
-	std::vector<PetscScalar> b_vals(min * (max_idx - min_idx), 1.0);
+	std::vector<PetscScalar> b_vals((local_max - local_min) * (max_idx - min_idx), 1.0);
 	std::vector<int> b_rows_idx;
 	std::vector<int> b_cols_idx;
-	b_rows_idx.reserve(min);
+	b_rows_idx.reserve(local_max - local_min);
 	b_cols_idx.reserve(max_idx - min_idx);
-	for (unsigned int i = 0; i < min; i++) {
-		b_rows_idx.push_back(i);
+	for (unsigned int i = local_min; i < local_max; i++) {
+		b_rows_idx.push_back(i + min_idx);
 	}
-	for (unsigned int i = 0; i < (max_idx - min_idx); i++) {
-		b_cols_idx.push_back(min + i);
+	for (unsigned int i = min_idx; i < max_idx; i++) {
+		b_cols_idx.push_back(local_max + i);
 	}
 	int * b_insert_rows = &b_rows_idx[0];
 	int * b_insert_cols = &b_cols_idx[0];
 	PetscScalar * b_insert_vals = &b_vals[0];
-	lin_sys->mat_set_values(min, b_insert_rows, (max_idx - min_idx), b_insert_cols, b_insert_vals);
-	lin_sys->mat_set_values((max_idx - min_idx), b_insert_cols, min, b_insert_rows, b_insert_vals);
+	lin_sys->mat_set_values((local_max - local_min), b_insert_rows, (max_idx - min_idx), b_insert_cols, b_insert_vals);
+	lin_sys->mat_set_values((max_idx - min_idx), b_insert_cols, (local_max - local_min), b_insert_rows, b_insert_vals); // */
 }
 
 
@@ -76,7 +86,6 @@ TEST(la, inversion_matrix) {
     for (int i = min_idx; i < max_idx; i++) {
     	size += rows[i];
     }
-    xprintf(Msg, "XXX - np: %d, rank: %d, min: %d, max: %d, first_idx: %d, size: %d\n", np, rank, min_idx, max_idx, first_idx, size);
 
     // volat s lokalni velkosti = pocet radku na lokalnim proc.
 	LinSys * lin_sys = new LinSys_MPIAIJ(size + max_idx - min_idx);
@@ -86,10 +95,10 @@ TEST(la, inversion_matrix) {
 	lin_sys->start_add_assembly();
 	fill_matrix( lin_sys, min_idx, max_idx ); // fill matrix
 	lin_sys->finalize();
-	//MatView(lin_sys->get_matrix(),PETSC_VIEWER_STDOUT_SELF);
+	//MatView(lin_sys->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
 
-	ISCreateStride(PETSC_COMM_WORLD, size, first_idx, 1, &set); // kazdy proc. lokalni cast indexsetu viz. schur.cc line 386
-	//ISView(set, PETSC_VIEWER_STDOUT_SELF);
+	ISCreateStride(PETSC_COMM_WORLD, size, first_idx + min_idx, 1, &set); // kazdy proc. lokalni cast indexsetu viz. schur.cc line 386
+	//ISView(set, PETSC_VIEWER_STDOUT_WORLD);
 
 	SchurComplement schurComplement(lin_sys, set, 6);
 
