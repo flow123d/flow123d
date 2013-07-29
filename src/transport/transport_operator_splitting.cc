@@ -123,34 +123,16 @@ void TransportBase::mass_balance() {
     F_ENTRY;
 
     // First we compute the quantities, then on process 0 we write the output
-    const int nsubst = n_substances();
-    vector<vector<double> > bcd_balance(nsubst),
-    		bcd_plus_balance(nsubst),
-    		bcd_minus_balance(nsubst),
-    		mass(nsubst),
-    		src_balance(nsubst);
+    const int nsubst = n_substances(),
+    		nboundary = mesh_->region_db().boundary_size(),
+    		nbulk = mesh_->region_db().bulk_size();
+    vector<vector<double> > bcd_balance(nsubst, vector<double>(nboundary, 0)),
+    		bcd_plus_balance(nsubst, vector<double>(nboundary, 0)),
+    		bcd_minus_balance(nsubst, vector<double>(nboundary, 0)),
+    		mass(nsubst, vector<double>(nbulk, 0)),
+    		src_balance(nsubst, vector<double>(nbulk, 0));
 
 
-    for (int i=0; i<nsubst; i++)
-    {
-    	bcd_balance[i].resize(mesh_->region_db().boundary_size());
-    	bcd_plus_balance[i].resize(mesh_->region_db().boundary_size());
-    	bcd_minus_balance[i].resize(mesh_->region_db().boundary_size());
-    	for (unsigned int j=0; j<mesh_->region_db().boundary_size(); j++)
-    	{
-    		bcd_balance[i][j] = 0;
-    		bcd_plus_balance[i][j] = 0;
-    		bcd_minus_balance[i][j] = 0;
-    	}
-
-    	mass[i].resize(mesh_->region_db().bulk_size());
-    	src_balance[i].resize( mesh_->region_db().bulk_size());
-		for (unsigned int j=0; j<src_balance[i].size(); j++)
-		{
-			mass[i][j] = 0;
-			src_balance[i][j] = 0;
-		}
-	}
     //computing mass fluxes over boundaries and elements
     calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
 	calc_elem_sources(mass, src_balance);
@@ -183,6 +165,8 @@ void TransportBase::mass_balance() {
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	if (rank != 0) return;
 
+
+
 	// update balance vectors
 	for (int i=0; i<nsubst; i++)
 	{
@@ -211,17 +195,17 @@ void TransportBase::mass_balance() {
     unsigned int w = 14;  //column width
     unsigned int wl = 2*(w-5)+7;  //label column width
     stringstream s; //helpful stringstream
-    string bc_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s%-*s\n",
-           bc_format = "%*s%-*d%-*s%-*s  %-*g%-*g%-*g%-*g\n",
+    string bc_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s\n",
+           bc_format = "%*s%-*d%-*s%-*s%-*g%-*g%-*g\n",
            bc_total_format = "# %-*s%-*s%-*g%-*g%-*g\n";
     s << setw((w*c+wl-14)/2) << setfill('-') << "--"; //drawing half line
     fprintf(balance_output_file,"# %s MASS BALANCE %s\n",s.str().c_str(), s.str().c_str());
-    fprintf(balance_output_file,"# Time of computed mass balance: %f\n\n\n",time().t());
+    fprintf(balance_output_file,"# Time: %f\n\n\n",time().t());
 
     //BOUNDARY
-    fprintf(balance_output_file,"# Boundary mass balance:\n");
+    fprintf(balance_output_file,"# Mass flux through boundary:\n");
     fprintf(balance_output_file,bc_head_format.c_str(),w,"[boundary_id]",wl,"[label]",
-                            w,"[substance]",w,"[total_balance]",w,"[total_outflow]",w,"[total_inflow]",w,"[time]");
+                            w,"[substance]",w,"[total flux]",w,"[outward flux]",w,"[inward flux]");
     s.clear();
     s.str(std::string());
     s << setw(w*c+wl) << setfill('-') << "-";
@@ -241,25 +225,25 @@ void TransportBase::mass_balance() {
 			fprintf(balance_output_file, bc_format.c_str(),2,"",w,reg->id(),wl,reg->label().c_str(),
 					w, substance_names()[sbi].c_str(),w, bcd_balance[sbi][reg->boundary_idx()],
 					w, bcd_plus_balance[sbi][reg->boundary_idx()],
-					w, bcd_minus_balance[sbi][reg->boundary_idx()], w, time().t());
+					w, bcd_minus_balance[sbi][reg->boundary_idx()]);
     	}
     }
     //total boundary balance
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  // drawing long line
     for (int sbi=0; sbi<nsubst; sbi++)
-    	fprintf(balance_output_file, bc_total_format.c_str(),w+wl,"total boundary balance",
-                w+2,substance_names()[sbi].c_str(),w,bcd_total_balance[sbi], w, bcd_total_outflow[sbi], w, bcd_total_inflow[sbi]);
+    	fprintf(balance_output_file, bc_total_format.c_str(),w+wl,"Total mass flux of substance",
+                w,substance_names()[sbi].c_str(),w,bcd_total_balance[sbi], w, bcd_total_outflow[sbi], w, bcd_total_inflow[sbi]);
     fprintf(balance_output_file, "\n\n");
 
 
     //SOURCES
-    string src_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s%-*s\n",
-           src_format = "%*s%-*d%-*s%-*s  %-*g%-*g%-*s%-*g\n",
+    string src_head_format = "# %-*s%-*s%-*s%-*s%-*s\n",
+           src_format = "%*s%-*d%-*s%-*s%-*g%-*g\n",
            src_total_format = "# %-*s%-*s%-*g%-*g\n";
     //computing water balance of sources
-    fprintf(balance_output_file,"# Source fluxes over material subdomains:\n");   //head
+    fprintf(balance_output_file,"# Mass and sources on regions:\n");   //head
     fprintf(balance_output_file,src_head_format.c_str(),w,"[region_id]",wl,"[label]",
-                            w,"[substance]",w,"[total_mass]",w,"[total_sources]",w,"",w,"[time]");
+                            w,"[substance]",w,"[total_mass]",w,"[total_source]");
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  //long line
 
     //printing water balance of sources
@@ -275,17 +259,98 @@ void TransportBase::mass_balance() {
 			fprintf(balance_output_file, src_format.c_str(), 2,"", w, reg->id(), wl,
 					reg->label().c_str(), w, substance_names()[sbi].c_str(),
 					w,mass[sbi][reg->bulk_idx()],
-					w,src_balance[sbi][reg->bulk_idx()],
-					w,"", w,time().t());
+					w,src_balance[sbi][reg->bulk_idx()]);
     	}
     }
-    //total sources balance
+    // total sources balance
     fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
     for (int sbi=0; sbi<nsubst; sbi++)
-    	fprintf(balance_output_file, src_total_format.c_str(),w+wl,"total sources balance",
-                w+2,substance_names()[sbi].c_str(),
+    	fprintf(balance_output_file, src_total_format.c_str(),w+wl,"Total mass and sources balance",
+                w,substance_names()[sbi].c_str(),
                 w,mass_total[sbi],
                 w,src_total_balance[sbi]);
+
+
+    // cummulative balance over time
+
+	// quantities need for the balance over time interval
+	static vector<double> initial_mass(nsubst, 0.),
+			last_sources(nsubst, 0.),
+			last_fluxes(nsubst, 0.),
+			integrated_sources(nsubst, 0.),
+			integrated_fluxes(nsubst, 0.);
+	static double initial_time, last_time;
+	static bool initial = true;
+
+	if (initial)
+	{
+		initial_time = time().t();
+		last_time = initial_time;
+		for (int i=0; i<nsubst; i++)
+			initial_mass[i] = mass_total[i];
+		initial = false;
+	}
+
+	fprintf(balance_output_file, "\n\n# Cumulative mass balance on time interval [%-g,%-g]\n"
+			"# %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s\n",
+			initial_time, time().t(),
+			w,"[substance]",
+			w,"[A=init. mass]",
+			w,"[B=source]",
+			w,"[C=flux]",
+			w,"[A+B-C]",
+			w,"[D=curr. mass]",
+			w,"[A+B-C-D=err.]",
+			w,"[rel. error]");
+
+	switch (time_scheme())
+	{
+	case explicit_euler:
+		for (int i=0; i<nsubst; i++)
+		{
+			integrated_sources[i] += last_sources[i]*(time().t()-last_time);
+			integrated_fluxes[i] += last_fluxes[i]*(time().t()-last_time);
+		}
+		break;
+	case implicit_euler:
+		for (int i=0; i<nsubst; i++)
+		{
+			integrated_sources[i] += src_total_balance[i]*(time().t()-last_time);
+			integrated_fluxes[i] += bcd_total_balance[i]*(time().t()-last_time);
+		}
+		break;
+	case crank_nicholson:
+		for (int i=0; i<nsubst; i++)
+		{
+			integrated_sources[i] += (last_sources[i]+src_total_balance[i])*0.5*(time().t()-last_time);
+			integrated_fluxes[i] += (last_fluxes[i]+bcd_total_balance[i])*0.5*(time().t()-last_time);
+		}
+		break;
+	default:
+		break;
+	}
+
+	for (int i=0; i<nsubst; i++)
+	{
+		double denominator = max(fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]),fabs(mass_total[i]));
+		fprintf(balance_output_file, "  %-*s%-*g%-*g%-*g%-*g%-*g%-*g%-*g\n",
+				w,substance_names()[i].c_str(),
+				w,initial_mass[i],
+				w,integrated_sources[i],
+				w,integrated_fluxes[i],
+				w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i],
+				w,mass_total[i],
+				w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i],
+				w,fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i])/(denominator==0?1:denominator));
+	}
+
+	last_time = time().t();
+	for (int i=0; i<nsubst; i++)
+	{
+		last_sources[i] = src_total_balance[i];
+		last_fluxes[i] = bcd_total_balance[i];
+	}
+
     fprintf(balance_output_file, "\n\n");
 }
 
@@ -298,6 +363,7 @@ void TransportBase::mass_balance() {
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec)
 {
+	time_scheme_ = none;
 	Distribution *el_distribution;
 	int *el_4_loc;
 
@@ -404,6 +470,13 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::update_solution() {
 
+	static bool first_time_call = true;
+
+	if (first_time_call)
+	{
+		convection->mass_balance();
+		first_time_call = false;
+	}
 
     time_->next_time();
     time_->view("TOS");    //show time governor

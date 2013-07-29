@@ -261,7 +261,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     START_TIMER("data init");
     data.set_mesh(&mesh_in);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    
+        
     // steady time governor
     time_ = new TimeGovernor();
     
@@ -277,7 +277,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
         n_schur_compls = 2;
     }
-
+    
     //START_TIMER("solver init");
     //solver = new (Solver);
     //solver_init(solver, in_rec.val<AbstractRecord>("solver"));
@@ -385,6 +385,10 @@ void DarcyFlowMH_Steady::update_solution() {
     
     START_TIMER("data reinit");
     //reinitializing data fields after time step
+    //TODO: workaround for the steady problem
+    //if (time_->t() != TimeGovernor::inf_time) //this test cannot be here due to (mainly implicit) transport - the fields are not neccesary (or cannot) to be read again but the time must be set to infinity
+    //the problem of time==infinity shows up in field_elementwise and field_interpolatedP0 where a gmsh file is read and there is no such data at infinity
+    //temporarily solved directly in field_elementwise and field_interpolatedP0
     data.set_time(*time_);
     END_TIMER("data reinit");
 
@@ -440,10 +444,11 @@ void DarcyFlowMH_Steady::postprocess()
     int side_rows[4];
     double values[4];
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-    ;
+
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux
+    /*
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         ele = mesh_->element(el_4_loc[i_loc]);
         FOR_ELEMENT_SIDES(ele,i) {
@@ -457,6 +462,7 @@ void DarcyFlowMH_Steady::postprocess()
     }
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
+    */
 }
 
 
@@ -601,6 +607,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 } else if ( type == EqData::neumann) {
                     double bc_flux = data.bc_flux.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
+		    //DBGMSG("neumann edge_row, ele_index,el_idx: %d \t %d \t %d\n", edge_row, ele->index(), ele->side(i)->el_idx());
 
                 } else if ( type == EqData::robin) {
                     double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
@@ -665,8 +672,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
 
             double value = data.sigma.value( ngh->element()->centre(), ngh->element()->element_accessor()) * ngh->side()->measure() *
-                    data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );   // crossection of lower dim (wrong)
-//                  data.cross_section.value( ngh->side()->centre(), ngh->side()->element()->element_accessor() ); // cross-section of higher dim. (2d)
+//                data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );      // crossection of lower dim (wrong)
+                  data.cross_section.value( ngh->side()->centre(), ngh->side()->element()->element_accessor() ); // cross-section of higher dim. (2d)
 
 
             local_vb[0] = -value;   local_vb[1] = value;
@@ -1056,6 +1063,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
     //PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
 
     //MatView( schur0->get_matrix(),PETSC_VIEWER_STDOUT_WORLD  );
+    //DBGMSG("RHS\n");
     //VecView(schur0->get_rhs(),   PETSC_VIEWER_STDOUT_WORLD);
     //VecView(schur0->get_solution(),   PETSC_VIEWER_STDOUT_WORLD);
 
@@ -1537,7 +1545,6 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     // make distribution of rows
     for (i = np - 1; i > 0; i--)
         rows_starts[i] -= rows_starts[i - 1];
-
 
     rows_ds = boost::make_shared<Distribution>(&(rows_starts[0]), PETSC_COMM_WORLD);
 }

@@ -27,7 +27,7 @@ TEST(la, local_to_global_map) {
 
     if (np > 1)
     {
-    Distribution my_distr(3+rank);
+    Distribution my_distr(3+rank, PETSC_COMM_WORLD);
     LocalToGlobalMap lg_map(my_distr);
 
     lg_map.insert( my_distr.begin() );
@@ -57,7 +57,7 @@ TEST(la, local_to_global_map) {
     EXPECT_EQ((my_distr.end() +1) % my_distr.size(), lg_map.get_map_vector()[my_distr.lsize()]);
 
     // test distribution getter
-    boost::shared_ptr<Distribution> sh_distr=boost::make_shared<Distribution>(3+rank);
+    boost::shared_ptr<Distribution> sh_distr=boost::make_shared<Distribution>(3+rank,PETSC_COMM_WORLD);
     LocalToGlobalMap sh_lg_map(sh_distr);
     EXPECT_TRUE( sh_distr == sh_lg_map.get_distr() );
     EXPECT_EQ( 2, sh_distr.use_count() );

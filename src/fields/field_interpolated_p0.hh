@@ -115,8 +115,8 @@ protected:
 	/// tree of mesh elements
 	BIHTree* bih_tree_;
 
-	/// stored reference to last computed element
-	const ElementAccessor<spacedim> *computed_elm_;
+	/// stored index to last computed element
+	unsigned int computed_elm_idx_;
 
 	/// 3D (tetrahedron) element, used for computing intersection
 	TTetrahedron tetrahedron_;

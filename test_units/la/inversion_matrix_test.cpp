@@ -6,207 +6,100 @@
 #include <gtest_mpi.hh>
 
 #include <la/schur.hh>
+#include <la/linsys.hh>
 
 #include <petscmat.h>
+#include <math.h>
 
-/*TEST(la, matrix) {
-	  Mat            A,A11,A12,A21,A22;
-	  Vec            X,X1,X2,Y,Z,Z1,Z2;
-	  PetscScalar    *a,*b,*x,*y,*z,v,one=1;
-	  PetscReal      nrm;
-	  PetscErrorCode ierr;
-	  PetscInt       size=8,size1=6,size2=2, i,j;
 
-	  //PetscInitialize(&argc,&argv,0,help);
+PetscInt rows [] = {5,2,3,3,4,2};
 
-	  // Create matrix and three vectors: these are all normal
-	  ierr = PetscMalloc(size*size*sizeof(PetscScalar),&a);
-	  ierr = PetscMalloc(size*size*sizeof(PetscScalar),&b);
-	  for (i=0; i<size; i++) {
-	    for (j=0; j<size; j++) {
-	      a[i+j*size] = rand(); b[i+j*size] = a[i+j*size];
-	    }
-	  }
-	  ierr = MatCreate(MPI_COMM_SELF,&A);
-	  ierr = MatSetSizes(A,size,size,size,size);
-	  ierr = MatSetType(A,MATSEQDENSE);
-	  ierr = MatSeqDenseSetPreallocation(A,a);
-	  ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);
 
-	  ierr = PetscMalloc(size*sizeof(PetscScalar),&x);
-	  for (i=0; i<size; i++) {
-	    x[i] = one;
-	  }
-	  ierr = VecCreateSeqWithArray(MPI_COMM_SELF,1,size,x,&X);
-	  ierr = VecAssemblyBegin(X);
-	  ierr = VecAssemblyEnd(X);
+void fill_matrix(LinSys * lin_sys, int min_idx, int max_idx) {
+	unsigned int row_cnt = 0; //row counter
+	unsigned int local_min, local_max;
+	for (unsigned int i = 0; i < min_idx; i++) {
+		row_cnt += rows[i];
+	}
+	local_min = row_cnt;
 
-	  ierr = PetscMalloc(size*sizeof(PetscScalar),&y);
-	  ierr = VecCreateSeqWithArray(MPI_COMM_SELF,1,size,y,&Y);
-	  ierr = VecAssemblyBegin(Y);
-	  ierr = VecAssemblyEnd(Y);
+	// create block A of matrix
+	for (unsigned int i = min_idx; i < max_idx; i++) {
+		std::vector<PetscScalar> a_vals;
+		a_vals.reserve(rows[i] * rows[i]);
+		for (unsigned int j=0; j<rows[i]*rows[i]; j++) {
+			a_vals.push_back( rand()%19 + 1 );
+		}
+		std::vector<int> a_rows_idx;
+		a_rows_idx.reserve(rows[i]);
+		for (unsigned int j=0; j<rows[i]; j++) {
+			a_rows_idx.push_back(row_cnt + min_idx + j);
+		}
+		int * insert_rows = &a_rows_idx[0];
+		PetscScalar * insert_vals = &a_vals[0];
+		lin_sys->mat_set_values(rows[i], insert_rows, rows[i], insert_rows, insert_vals);
+		row_cnt += rows[i];
+	}
+	local_max = row_cnt;
+	/*for (unsigned int i = max_idx; i < 6; i++) {
+		row_cnt += rows[i];
+	}*/
 
-	  ierr = PetscMalloc(size*sizeof(PetscScalar),&z);
-	  ierr = VecCreateSeqWithArray(MPI_COMM_SELF,1,size,z,&Z);
-	  ierr = VecAssemblyBegin(Z);
-	  ierr = VecAssemblyEnd(Z);
+	// create block B of matrix
+	std::vector<PetscScalar> b_vals((local_max - local_min) * (max_idx - min_idx), 1.0);
+	std::vector<int> b_rows_idx;
+	std::vector<int> b_cols_idx;
+	b_rows_idx.reserve(local_max - local_min);
+	b_cols_idx.reserve(max_idx - min_idx);
+	for (unsigned int i = local_min; i < local_max; i++) {
+		b_rows_idx.push_back(i + min_idx);
+	}
+	for (unsigned int i = min_idx; i < max_idx; i++) {
+		b_cols_idx.push_back(local_max + i);
+	}
+	int * b_insert_rows = &b_rows_idx[0];
+	int * b_insert_cols = &b_cols_idx[0];
+	PetscScalar * b_insert_vals = &b_vals[0];
+	lin_sys->mat_set_values((local_max - local_min), b_insert_rows, (max_idx - min_idx), b_insert_cols, b_insert_vals);
+	lin_sys->mat_set_values((max_idx - min_idx), b_insert_cols, (local_max - local_min), b_insert_rows, b_insert_vals); // */
+}
 
-	  // Now create submatrices and subvectors
-	  ierr = MatCreate(MPI_COMM_SELF,&A11);
-	  ierr = MatSetSizes(A11,size1,size1,size1,size1);
-	  ierr = MatSetType(A11,MATSEQDENSE);
-	  ierr = MatSeqDenseSetPreallocation(A11,b);
-	  ierr = MatSeqDenseSetLDA(A11,size);
-	  ierr = MatAssemblyBegin(A11,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A11,MAT_FINAL_ASSEMBLY);
-
-	  ierr = MatCreate(MPI_COMM_SELF,&A12);
-	  ierr = MatSetSizes(A12,size1,size2,size1,size2);
-	  ierr = MatSetType(A12,MATSEQDENSE);
-	  ierr = MatSeqDenseSetPreallocation(A12,b+size1*size);
-	  ierr = MatSeqDenseSetLDA(A12,size);
-	  ierr = MatAssemblyBegin(A12,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A12,MAT_FINAL_ASSEMBLY);
-
-	  ierr = MatCreate(MPI_COMM_SELF,&A21);
-	  ierr = MatSetSizes(A21,size2,size1,size2,size1);
-	  ierr = MatSetType(A21,MATSEQDENSE);
-	  ierr = MatSeqDenseSetPreallocation(A21,b+size1);
-	  ierr = MatSeqDenseSetLDA(A21,size);
-	  ierr = MatAssemblyBegin(A21,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A21,MAT_FINAL_ASSEMBLY);
-
-	  ierr = MatCreate(MPI_COMM_SELF,&A22);
-	  ierr = MatSetSizes(A22,size2,size2,size2,size2);
-	  ierr = MatSetType(A22,MATSEQDENSE);
-	  ierr = MatSeqDenseSetPreallocation(A22,b+size1*size+size1);
-	  ierr = MatSeqDenseSetLDA(A22,size);
-	  ierr = MatAssemblyBegin(A22,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A22,MAT_FINAL_ASSEMBLY);
-
-	  ierr = VecCreateSeqWithArray(MPI_COMM_SELF,1,size1,x,&X1);
-	  ierr = VecCreateSeqWithArray(MPI_COMM_SELF,1,size2,x+size1,&X2);
-	  ierr = VecCreateSeqWithArray(MPI_COMM_SELF,1,size1,z,&Z1);
-	  ierr = VecCreateSeqWithArray(MPI_COMM_SELF,1,size2,z+size1,&Z2);
-
-	  // Now multiple matrix times input in two ways;
-	  // compare the results
-	  ierr = MatMult(A,X,Y);
-	  ierr = MatMult(A11,X1,Z1);
-	  ierr = MatMultAdd(A12,X2,Z1,Z1);
-	  ierr = MatMult(A22,X2,Z2);
-	  ierr = MatMultAdd(A21,X1,Z2,Z2);
-	  ierr = VecAXPY(Z,-1.0,Y);
-	  ierr = VecNorm(Z,NORM_2,&nrm);
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"Test1; error norm=%G\n",nrm);
-
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"MatMult the usual way:\n");
-	  ierr = VecView(Y,0);
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"MatMult by subblock:\n");
-	  ierr = VecView(Z,0);
-
-	  // Next test: change both matrices
-	  v    = rand(); i=1; j=size-2;
-	  ierr = MatSetValues(A,1,&i,1,&j,&v,INSERT_VALUES);
-	  j   -= size1;
-	  ierr = MatSetValues(A12,1,&i,1,&j,&v,INSERT_VALUES);
-	  v    = rand(); i=j=size1+1;
-	  ierr = MatSetValues(A,1,&i,1,&j,&v,INSERT_VALUES);
-	  i    =j=1;
-	  ierr = MatSetValues(A22,1,&i,1,&j,&v,INSERT_VALUES);
-	  ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyBegin(A12,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A12,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyBegin(A22,MAT_FINAL_ASSEMBLY);
-	  ierr = MatAssemblyEnd(A22,MAT_FINAL_ASSEMBLY);
-
-	  ierr = MatMult(A,X,Y);
-	  ierr = MatMult(A11,X1,Z1);
-	  ierr = MatMultAdd(A12,X2,Z1,Z1);
-	  ierr = MatMult(A22,X2,Z2);
-	  ierr = MatMultAdd(A21,X1,Z2,Z2);
-	  ierr = VecAXPY(Z,-1.0,Y);
-	  ierr = VecNorm(Z,NORM_2,&nrm);
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"Test2; error norm=%G\n",nrm);
-
-	  // Transpose product
-	  ierr = MatMultTranspose(A,X,Y);
-	  ierr = MatMultTranspose(A11,X1,Z1);
-	  ierr = MatMultTransposeAdd(A21,X2,Z1,Z1);
-	  ierr = MatMultTranspose(A22,X2,Z2);
-	  ierr = MatMultTransposeAdd(A12,X1,Z2,Z2);
-	  ierr = VecAXPY(Z,-1.0,Y);
-	  ierr = VecNorm(Z,NORM_2,&nrm);
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"Test3; error norm=%G\n",nrm);
-
-	  ierr = PetscFree(a);
-	  ierr = PetscFree(b);
-	  ierr = PetscFree(x);
-	  ierr = PetscFree(y);
-	  ierr = PetscFree(z);
-	  ierr = MatDestroy(&A);
-	  ierr = MatDestroy(&A11);
-	  ierr = MatDestroy(&A12);
-	  ierr = MatDestroy(&A21);
-	  ierr = MatDestroy(&A22);
-
-	  ierr = VecDestroy(&X);
-	  ierr = VecDestroy(&Y);
-	  ierr = VecDestroy(&Z);
-
-	  ierr = VecDestroy(&X1);
-	  ierr = VecDestroy(&X2);
-	  ierr = VecDestroy(&Z1);
-	  ierr = VecDestroy(&Z2);
-
-	  ierr = PetscFinalize();
-} // */
 
 TEST(la, inversion_matrix) {
-	Mat matrix;
-	PetscInt size = 15;
-	PetscErrorCode ierr;
-	PetscScalar *a;
+	srand(time(NULL));
 
-	ierr = PetscMalloc(size*size*sizeof(PetscScalar),&a);
-	for (PetscInt i=0; i<size; i++) {
-		for (PetscInt j=0; j<size; j++) {
-			a[i+j*size] = 0;
-		}
+	int first_idx=0, size=0, submat_blocks=6;
+	IS set;
+	// vytvorit rozdeleni bloku na procesory ve tvaru "part" (tj. indexy prvnich radku na procesorech)
+    int np, rank;
+    double block_size;
+    int min_idx, max_idx;
+
+    MPI_Comm_size(PETSC_COMM_WORLD, &np);
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    block_size = (double)submat_blocks / (double)np;
+    min_idx = (int) ( round(block_size * rank) );
+    max_idx = (int) ( round(block_size * (rank + 1)) );
+    for (int i = 0; i < min_idx; i++) {
+    	first_idx += rows[i];
     }
-    // communikator: PETSC_COMM_WORLD
-	ierr = MatCreate(MPI_COMM_SELF,&matrix);
-	ierr = MatSetSizes(matrix,size,size,size,size);
-	ierr = MatSetType(matrix,MATAIJ);
-	ierr = MatSeqDenseSetPreallocation(matrix, a);
-	ierr = MatSetUp(matrix);
+    for (int i = min_idx; i < max_idx; i++) {
+    	size += rows[i];
+    }
 
-	PetscInt row [] =   {0,0,0, 0,1,1,1,2,2, 2,3,3,3,4,4,5,5,5,6,6,7,8,8,9,9,9,10,10,10,11,11,12,13,13,13,14,14};
-	PetscInt col [] =   {1,2,3,10,0,2,3,1,2,10,0,2,3,4,5,4,8,9,6,7,6,5,8,4,8,9, 0, 1,10,13,14,13,11,12,14,11,12};
-	PetscScalar val[] = {1,2,3, 4,5,6,7,8,9,10,1,2,3,1,2,3,4,5,3,2,1,5,6,7,8,9,11,12,13, 1, 2, 3, 4, 5, 6, 7, 8};
+    // volat s lokalni velkosti = pocet radku na lokalnim proc.
+	LinSys * lin_sys = new LinSys_MPIAIJ(size + max_idx - min_idx);
+	lin_sys->set_symmetric();
+	lin_sys->start_allocation();
+	fill_matrix( lin_sys, min_idx, max_idx ); // preallocate matrix
+	lin_sys->start_add_assembly();
+	fill_matrix( lin_sys, min_idx, max_idx ); // fill matrix
+	lin_sys->finalize();
+	//MatView(lin_sys->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
 
-	for (int i = 0; i < 37; i++) {
-		ierr = MatSetValue(matrix, row[i], col[i], val[i], INSERT_VALUES);
-	}
+	ISCreateStride(PETSC_COMM_WORLD, size, first_idx + min_idx, 1, &set); // kazdy proc. lokalni cast indexsetu viz. schur.cc line 386
+	//ISView(set, PETSC_VIEWER_STDOUT_WORLD);
 
-	// test output
-	/*PetscInt ncols;
-	const PetscInt *cols;
-	const PetscScalar *vals;
-	for (PetscInt i=0; i<size; i++) {
-		ierr = MatGetRow(matrix, i, &ncols, &cols, &vals);
-		printf("line %d: ", i );
-		for (PetscInt j=0; j<size; j++) {
-			printf("%d->%f ", (int) (cols[j]), (double) (vals[j]) );
-		}
-		printf("\n");
-	} // */
-
-	ierr = MatAssemblyBegin(matrix, MAT_FINAL_ASSEMBLY);
-	ierr = MatAssemblyEnd(matrix, MAT_FINAL_ASSEMBLY);
-
-	SchurComplement schurComplement(matrix, 20);
+	SchurComplement schurComplement(lin_sys, set, 6);
 
 }

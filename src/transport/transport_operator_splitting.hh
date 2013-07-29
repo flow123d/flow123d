@@ -112,6 +112,15 @@ public:
     /// Returns reference to the vector of substnace names.
     inline vector<string> &substance_names() { return subst_names_; }
 
+    enum TimeIntegrationScheme {
+    	none,
+    	explicit_euler,
+    	implicit_euler,
+    	crank_nicholson
+    };
+
+    const TimeIntegrationScheme time_scheme() { return time_scheme_; }
+
 
 
 protected:
@@ -161,6 +170,10 @@ protected:
      * E.g. for TransportOperatorSplitting this is same as the output points of its transport sub-model.
      */
     TimeMark::Type output_mark_type;
+
+
+    TimeIntegrationScheme time_scheme_;
+
 };
 
 
@@ -176,6 +189,8 @@ public:
         // make module solved for ever
         time_=new TimeGovernor();
         time_->next_time();
+
+        time_scheme_ = none;
     };
 
     inline virtual ~TransportNothing()
@@ -272,6 +287,8 @@ private:
 
 
 };
+
+
 
 
 

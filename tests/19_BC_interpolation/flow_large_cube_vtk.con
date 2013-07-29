@@ -1,9 +1,9 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Interpolated boundary condition - small cube", 
+    description = "Interpolated boundary condition - big cube",     
     mesh = {
-      mesh_file = "${INPUT}/small_mesh.msh"    
+      mesh_file = "input/large_mesh.msh"
     }, 
     primary_equation = {
       TYPE = "Steady_MH", 
@@ -11,10 +11,9 @@
         {
           region = "IMPLICIT BOUNDARY",
           bc_type = "dirichlet",
-          bc_piezo_head = {
-            TYPE = "FieldInterpolatedP0",
-            gmsh_file = "${INPUT}/large_cube_solution.msh",
-            field_name = "piezo_head_elements_[L]"
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
           }
         }
       ],
@@ -24,7 +23,6 @@
           anisotropy = 1
         }
       ],
-      n_schurs = 2, 
       output = {
         balance_output = "water_balance.out", 
         output_stream = {
@@ -33,7 +31,7 @@
         piezo_head_p0 = "flow_output_stream", 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        //raw_flow_output = "./raw_output_small.txt", 
+        //raw_flow_output = "./raw_output_large.txt", 
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
@@ -41,11 +39,12 @@
         a_tol = 1e-07
       }
     }
-  }, 
+  },
+  
   system = {
     output_streams = [
       {
-        file = "./small_cube.pvd", 
+        file = "./large_cube.pvd", 
         format = {
           TYPE = "vtk", 
           variant = "ascii"

@@ -73,6 +73,7 @@ class SparseGraph;
 class LocalToGlobalMap;
 
 
+
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *
@@ -146,6 +147,17 @@ public:
 
         arma::vec4 gravity_;
     };
+
+
+    /**
+     * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
+     *
+     * TODO:
+     * - how we can reuse values computed during assembly
+     *   we want to make this class see values in
+     *
+     */
+    //class
 
 
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)

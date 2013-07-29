@@ -1,12 +1,12 @@
 
 \section{Darcy flow model}
 We consider simplest model for the velocity of the steady or unsteady flow in porous and fractured medium given by 
-Darcy low:
+Darcy flow:
 \begin{equation}
     \label{eq:darcy}
     \vc w = -\tn K \grad H \quad\text{on }\Omega_d,\ \text{for $d=1,2,3$}.
 \end{equation}
-We drop the dimension index of quantities in equations if it is same as the dimension of the set where the equation holds.
+We drop the dimension index of quantities in equations if it is the same as the dimension of the set where the equation holds.
 In \eqref{eq:darcy}, $\vc w_d$ \units{}{1}{-1} is \href{http://en.wikipedia.org/wiki/Superficial_velocity}{the superficial velocity},
 $\tn K_d$ is the conductivity tensor, and $H_d$ \units{}{1}{} is the piezometric head. The velocity is related to the flux $\vc q_d$ 
 with units \units{}{4-d}{-1} through
@@ -61,7 +61,7 @@ On $\prtl\Omega_3 \cap \Omega_2$ we prescribe boundary condition of Robin type
 where $\vc{q}_3\cdot\vc n^{+/-}$ \units{}{1}{-1} is the outflow from $\Omega_3$, $h_3^{+/-}$ is
 a trace of the pressure head on $\Omega_3$, $h_2$ is the pressure head on $\Omega_2$, and 
 $\sigma_{3}^{+/-}=\sigma_{32}$ \units{}{}{-1} is the transition coefficient that will be discussed later. 
-On the other hand, the sum of the interchange fluxes $\vc{q}_{32}^{+/-}$ forms
+On the other hand, the sum of the interchange fluxes $q_{32}^{+/-}$ forms
 a volume source on $\Omega_2$.  Therefore $F_2$ \units{}{1}{-1} on the right hand side of \eqref{eq:continuity} is
 given by
 \begin{equation}
@@ -82,12 +82,13 @@ the width of the fracture $i$. Sum of the fluxes forms part of $F_1$ \units{}{2}
    F_1 = \delta_1 f_1 + \sum_{i} q_{21}^{i}. 
 \end{equation}
 The transition coefficients 
-\hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_d$} \units{}{3-d}{-1} are independent parameters in our setting however in practice
-they should be related to the conductivity in direction (or plane) perpendicular to the fracture (channel). According to 
+\hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_{32}$} \units{}{}{-1} and
+\hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_{21}$} \units{}{}{-1} are independent parameters in our setting however in practice
+they should be related to the conductivity. According to 
 \cite{martin_modeling_2005} one can use
 \[
 \label{e:sigma_law}
-  \sigma_3 = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_2^{i} = \frac{2\delta_2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
+  \sigma_{31} = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_{21} = \frac{2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
 \]
 where $\vc n_2$ is normal to the fracture (sign doesn't matter) and $\vc n_1^i$ is normal to the channel that is tangential to the fracture $i$.
 
