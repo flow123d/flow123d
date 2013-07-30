@@ -190,8 +190,6 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     //DBGMSG("reading data for interpolation: name: %s \t time: %f \t n: %d\n", field_name_.c_str(), time, source_mesh_->element.size());
     reader_->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
     //DBGMSG("end of reading data for interpolation: %s\n", field_name_.c_str());
-    
-    computed_elm_idx_ = 0;
 
     return search_header.actual;
 }
