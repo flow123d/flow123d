@@ -16,6 +16,8 @@
 
 #MAKE_JOBS=2
 
+set(BDDCML_ROOT "")
+
 set(FLOW_BUILD_TYPE debug)
 
 set(CMAKE_C_COMPILER "/usr/bin/gcc44")
