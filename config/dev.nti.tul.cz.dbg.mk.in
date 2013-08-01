@@ -16,7 +16,7 @@
 
 #MAKE_JOBS=2
 
-set(BDDCML_ROOT "")
+set(BDDCML_ROOT "_install_")
 
 set(FLOW_BUILD_TYPE debug)
 
