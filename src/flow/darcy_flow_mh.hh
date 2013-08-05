@@ -285,8 +285,8 @@ protected:
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
     void make_schur0( const Input::AbstractRecord in_rec);
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
-//    void make_schur1();
-//    void make_schur2();
+    void make_schur1();
+    void make_schur2();
     double solution_precision() const;
 
 	int size;				// global size of MH matrix

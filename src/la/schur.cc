@@ -51,9 +51,9 @@
 #include "solve.h"
 #include "system/system.hh"
 #include "la/linsys.hh"
+#include "la/linsys_PETSC.hh"
 #include "la/schur.hh"
 
-#if 0
 /**
  *  Create Schur complement system.
  *  @param[in] orig  : original system
@@ -102,7 +102,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
     F_ENTRY;
 
-    // check type of LinSys
+    /* // check type of LinSys
     if      (Orig->type == LinSys::MAT_IS)
     {
        // it is assumed that Schur complement may be formed block-wise
@@ -203,8 +203,8 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        ierr = VecScatterDestroy ( &(ScatterToA) );
        ierr = VecScatterDestroy ( &(ScatterToB) );
 
-    }
-    else if (Orig->type == LinSys::MAT_MPIAIJ)
+    } */
+
     {
        // get distribution of original marix
        MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
@@ -250,7 +250,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        VecRestoreArray(Orig->get_solution(),&sol_array);
     }
 
-    // check type of LinSys
+    /* // check type of LinSys
     if      (Orig->type == LinSys::MAT_IS)
     {
 
@@ -308,12 +308,15 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
        VecRestoreArray( Sol2, &sol_array );
 
-    }
-    else if (Orig->type == LinSys::MAT_MPIAIJ)
-    {
-       VecGetArray( Sol2, &sol_array );
-       Compl = new LinSys_MPIAIJ( locSizeB, sol_array );
-       VecRestoreArray( Sol2, &sol_array );
+    }*/
+
+    // check type of LinSys
+    if (Orig->type == LinSys::PETSC){
+//       VecGetArray( Sol2, &sol_array );
+//       Compl = new LinSys_MPIAIJ( locSizeB, sol_array );
+//       //ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
+//       //Compl = new LinSys_PETSC( LinSys_PETSC::input_type, locSizeB, ds_,  NULL, PETSC_COMM_WORLD );
+//       VecRestoreArray( Sol2, &sol_array );
     }
 
     // TODO: have old_4_new as a mapping inicialized by onother one and
@@ -335,6 +338,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
         MPI_Barrier(PETSC_COMM_WORLD);*/
 }
 
+#if 0
 SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat)
 : IsA(ia), Orig(orig)
 {
@@ -607,7 +611,7 @@ void SchurComplement::form_schur()
        // a ve funkci schur1 (a ne v schur2) uzit metodu "scale" z tohoto objektu - kvuli negativni definitnosti
        // usetri se tim jeden MatScale
 
-       ASSERT( ierr == 0, "PETSC Error during claculation of Schur complement.\n");
+       ASSERT( ierr == 0, "PETSC Error during calculation of Schur complement.\n");
     }
 
     /*

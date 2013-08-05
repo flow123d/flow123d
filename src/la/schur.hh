@@ -115,6 +115,8 @@ private:
                                 //                A  B     Sol1      RHS1
     LinSys *Orig;     // Original Linear System:  B' C  *  Sol2  =   RHS2
     LinSys *Compl;    // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
+
+    Distribution *ds_;
 } SchurComplement;
 
 #endif /* LA_SCHUR_HH_ */

@@ -273,7 +273,10 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    if ((unsigned int) n_schur_compls > 2) {
+    if (schur0->type == LinSys::BDDC) {
+        xprintf(Warn,"Invalid number of Schur Complements. For type Bddc using 0.");
+        n_schur_compls = 0;
+    } else if ((unsigned int) n_schur_compls > 2) {
         xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
         n_schur_compls = 2;
     }
@@ -401,27 +404,25 @@ void DarcyFlowMH_Steady::update_solution() {
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
 
 
-//    switch (n_schur_compls) {
-//    case 0: /* none */
-//        solve_system(solver, schur0);
-//        break;
-//    case 1: /* first schur complement of A block */
-//        make_schur1();
-//        //solve_system(solver, schur1->get_system());
-//        //schur1->resolve();
-//        schur1->solve(solver);
-//        break;
-//    case 2: /* second schur complement of the max. dimension elements in B block */
-//        make_schur1();
-//        make_schur2();
+    switch (n_schur_compls) {
+    case 0: /* none */
+        schur0->solve();
+        break;
+    case 1: /* first schur complement of A block */
+        make_schur1();
+        //schur1->resolve();
+        schur1->get_system()->solve();
+        break;
+    case 2: /* second schur complement of the max. dimension elements in B block */
+        make_schur1();
+        make_schur2();
 
-        //mat_count_off_proc_values(schur2->get_system()->get_matrix(),schur2->get_system()->get_solution());
-//        solve_system(solver, schur2->get_system());
-
-//       schur2->resolve();
-//        schur1->resolve();
-//        break;
-//   }
+        //schur2->resolve();
+        //schur1->resolve();
+        schur2->get_system()->solve();
+        schur1->get_system()->solve();
+        break;
+   }
 
     this -> postprocess();
 
@@ -1250,7 +1251,7 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 // lokalni elementy -> lokalni sides -> jejich id -> jejich radky
 // TODO: reuse IA a Schurova doplnku
 
-#if 0
+
 void DarcyFlowMH_Steady::make_schur1() {
     
     START_TIMER("Schur 1");
@@ -1266,7 +1267,7 @@ void DarcyFlowMH_Steady::make_schur1() {
     START_TIMER("schur1 - create,inverse");
 
     // check type of LinSys
-    if (schur0->type == LinSys::MAT_IS) {
+    /* if (schur0->type == LinSys::MAT_IS) {
         // create mapping for PETSc
 
        err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,
@@ -1293,32 +1294,31 @@ void DarcyFlowMH_Steady::make_schur1() {
            MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
                         INSERT_VALUES);
         }
-    } else if (schur0->type == LinSys::MAT_MPIAIJ) {
-       if (schur1 == NULL) {
-        // create Inverse of the A block
-        err = MatCreateAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
-               PETSC_NULL, 0, PETSC_NULL, &(IA1));
-         ASSERT(err == 0,"Error in MatCreateMPIAIJ.");
+    } else if (schur0->type == LinSys::MAT_MPIAIJ) {*/
+	if (schur1 == NULL) {
+		// create Inverse of the A block
+		err = MatCreateAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
+				PETSC_NULL, 0, PETSC_NULL, &(IA1));
+		ASSERT(err == 0,"Error in MatCreateMPIAIJ.");
 
-       MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE);
-       schur1 = new SchurComplement(schur0, IA1);
-       }
+		MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE);
+		schur1 = new SchurComplement(schur0, IA1);
+	}
 
-        for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-           ele = mesh_->element(el_4_loc[i_loc]);
+	for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+		ele = mesh_->element(el_4_loc[i_loc]);
 
-           nsides = ele->n_sides();
+		nsides = ele->n_sides();
 
-           fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
+		fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
 
-            for (i = 0; i < nsides; i++)
-               side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix
-                        - rows_ds->begin() // local side number
-                       + side_ds->begin(); // side row in IA1 matrix
-           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
-                   INSERT_VALUES);
-        }
-    }
+		for (i = 0; i < nsides; i++)
+			side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix
+					- rows_ds->begin() // local side number
+					+ side_ds->begin(); // side row in IA1 matrix
+		MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
+				INSERT_VALUES);
+	}
 
     MatAssemblyBegin(IA1, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(IA1, MAT_FINAL_ASSEMBLY);
@@ -1348,20 +1348,20 @@ void DarcyFlowMH_Steady::make_schur2() {
     loc_el_size = el_ds->lsize();
 
     if (schur2 == NULL) {
-      // get subdiagonal of local size == loc num of elements
-      VecCreateMPI(PETSC_COMM_WORLD, schur1->get_system()->vec_lsize(),
-              PETSC_DETERMINE, &diag_schur1);
-      ierr = MatCreateAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
-              PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL, 0, PETSC_NULL,
-              &(IA2)); // construct matrix
+        // get subdiagonal of local size == loc num of elements
+        VecCreateMPI(PETSC_COMM_WORLD, schur1->get_system()->vec_lsize(),
+                PETSC_DETERMINE, &diag_schur1);
+        ierr = MatCreateAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
+                PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL, 0, PETSC_NULL,
+                &(IA2)); // construct matrix
         ASSERT(ierr == 0, "Error in MatCreateMPIAIJ.");
       
-      VecGetArray(diag_schur1,&vDiag);
-      // define sub vector of B-block diagonal
-      VecCreateMPIWithArray(PETSC_COMM_WORLD,1,  loc_el_size, PETSC_DETERMINE,
-              vDiag, &diag_schur1_b);
-      VecRestoreArray(diag_schur1,&vDiag);
-      schur2 = new SchurComplement(schur1->get_system(), IA2);
+        VecGetArray(diag_schur1,&vDiag);
+        // define sub vector of B-block diagonal
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,  loc_el_size, PETSC_DETERMINE,
+                vDiag, &diag_schur1_b);
+        VecRestoreArray(diag_schur1,&vDiag);
+        schur2 = new SchurComplement(schur1->get_system(), IA2);
 
     }
 
@@ -1374,7 +1374,7 @@ void DarcyFlowMH_Steady::make_schur2() {
     schur2->scale(-1.0);
     schur2->set_spd();
 }
-#endif
+
 // ================================================
 // PARALLLEL PART
 //
