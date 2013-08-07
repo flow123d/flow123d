@@ -25,7 +25,7 @@
 #
 
 # Uncomment following line, when you want to debug bash script
-# set -x 
+ set -x 
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
@@ -46,21 +46,20 @@ AWK="awk"
 
 # Print help to this script
 function print_help {
-	echo "SYNTAX: flow123d.sh [OPTIONS] INI_FILE [\"FLOW_PARAMS\"]"
+	echo "SYNTAX: flow123d.sh [OPTIONS] -- [FLOW_PARAMS]"
 	echo ""
-	echo "INI_FILE            Flow123d will load configuration from INI_FILE"
-	echo "FLOW_PARAMS         Flow123d will use it's specific parameters."
-	echo "                    Such parameters has to be in brackets"
+	echo "FLOW_PARAMS         All parameters after "--" will be passed to flow123d. "
+	echo "                    Unresolved parameters will be passed to qsub command if it is used."
 	echo ""
 	echo "OPTIONS:"
 	echo "    -h              Print this help"
 	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOUT seconds"
 	echo "    -m MEM          Flow123d can use only MEM bytes"
 	echo "    -n NICE         Run Flow123d with changed (lower) priority"
-	echo "    -p N            Run Flow123d using N parallel procces" 
+	echo "    -np N           Run Flow123d using N parallel procces" 
 	echo "    -r OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
-	echo "    -s              Working directory will be current directory (default)"
-	echo "    -S              Working directory will be relative path to ini file"
+	echo "    -s MAIN_INPUT   Set main flow input file. Working directory will be current directory (default)"
+	echo "    -S MAIN_INPUT   Set main flow input file. Working directory will be relative path to the file"
 	echo "    -q QUEUE        Name of queue to use for batch processing (if supported by system)"
 	echo ""
 	echo "RETURN VALUES:"
@@ -78,77 +77,89 @@ function print_help {
 function parse_arguments()
 {
 	# Make sure that INI_FILE is not set
-	unset INI_FILE
+	#unset INI_FILE
 
 	# Default number of processes
 	NP=1
 	
-	# Default behavior is to use -s parameter
-	FLOW_OPT="-s"
+	# print help when called with no parameters
+	if [ -z "$1" ]; then print_help; fi
 	
-	# Parse arguments with bash builtin command getopts
-	while getopts ":ht:m:n:p:q:r:sS" opt
+	# Parse arguments (do not use bash builtin command getopts, it is too restrictive)
+	while [ -n "$1" ]
 	do
-		case ${opt} in
-		h)
+		if [ "$1" == "-h" -o "$1" == "--help" ];
+		then
 			print_help
 			exit 0
-			;;
-		t)
-			TIMEOUT="${OPTARG}"
-			;;
-		m)
-			MEM="${OPTARG}"
-			;;
-		n)
-			NICE="${OPTARG}"
-			;;
-		p)
-			NP="${OPTARG}"
-			;;
-                q)
-                        QUEUE="${OPTARG}"
-                        ;;
-		r)
-			OUT_FILE="${OPTARG}"
-			;;
-		s)
-			FLOW_OPT="-s"
-			;;
-		S)
-			FLOW_OPT="-S"
-			;;
-		\?)
+                elif [ "$1" == "-t" -o "$1" == "--walltime" ];
+                then
+                        shift; TIMEOUT="$1"
+                elif [ "$1" == "-m" -o "$1" == "--mem" ];
+                then
+                        shift; MEM="$1"
+		elif [ "$1" == "-n" -o "$1" == "--nice" ];
+		then
+                        shift; NICE="$1"
+                elif [ "$1" == "-p" -o "$1" == "-np" ];
+                then
+                        shift; NP="$1"
+                elif [ "$1" == "-q" -o "$1" == "--queue" ];
+                then
+                        shift; QUEUE="$1"                     
+		elif [ "$1" == "-r" -o "$1" == "--redirect" ];
+		then
+			shift; OUT_FILE="$1"
 			echo ""
-			echo "Error: Invalid option: -$OPTARG"
-			echo ""
-			print_help
-			exit 10
-			;;
-		esac
-	done
+		elif [ "$1" == "-ppn" ];
+                then
+                        shift; PPN="$1"
+		elif [ "$1" == "--" ];
+		then
+                        shift; break
+		else
+                        UNRESOLVED_PARAMS="${UNRESOLVED_PARAMS} $1"
+                fi
+                shift
+        done        
+        
+        FLOW_PARAMS="$@"
 	
 	# Try to get remaining parameters as flow parameters
-	if [ $# -ge $OPTIND ]
-	then
-		# Shift options
-		shift `expr $OPTIND - 1`
-		# First parameter is .ini file
-		INI_FILE="${1}"
-		# Second parameter is flow parameters
-		FLOW_PARAMS="${2}"
-	fi
+	#if [ $# -ge $OPTIND ]
+	#then
+	#	# Shift options
+	#	shift `expr $OPTIND - 1`
+	#	# First parameter is .ini file
+	#	INI_FILE="${1}"
+	#	# Second parameter is flow parameters
+	#	FLOW_PARAMS="${2}"
+	#fi
 	
 	# Was any ini file set?
-	if [ ! -n "${INI_FILE}" ]
-	then
-		echo ""
-		echo "Error: No ini file"
-		echo ""
-		print_help
-		exit 12
-	fi
+	#if [ ! -n "${INI_FILE}" ]
+	#then
+	#	echo ""
+	#	echo "Error: No ini file"
+	#	echo ""
+	#	print_help
+	#	exit 12
+	#fi
+	
+	        # Was output file set?
+        if [ -n "${OUT_FILE}" ]
+        then
+                FLOW123D_OUTPUT="${OUT_FILE}"
+                # Clear output file.
+                echo -n "" > "${FLOW123D_OUTPUT}"
+        else
+                unset FLOW123D_OUTPUT
+        fi
+        
 }
+
+
+
 
 # Default function that run flow123d
 function run_flow()
@@ -161,11 +172,11 @@ function run_flow()
 	fi
 	
 	# Check if it is possible to read ini file
-	if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
-	then
-		echo "Error: can't read ${INI_FILE}"
-		exit 13
-	fi
+	#if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
+	#then
+	#	echo "Error: can't read ${INI_FILE}"
+	#	exit 13
+	#fi
 	
 	# Was memory limit set?
 	if [ -n "${MEM}" ]
@@ -182,25 +193,16 @@ function run_flow()
 		NICE=0
 	fi
 	
-	# Was output file set?
-	if [ -n "${OUT_FILE}" ]
-	then
-		FLOW123D_OUTPUT="${OUT_FILE}"
-		# Clear output file.
-		echo -n "" > "${FLOW123D_OUTPUT}"
-	else
-		unset FLOW123D_OUTPUT
-	fi
-	
+
 	# Was timeout set?
 	if [ -n "${TIMEOUT}" ]
 	then
 		# Flow123d runs with changed priority (19 is the lowest priority)
 		if [ -n "${FLOW123D_OUTPUT}" ]
 		then
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
 		else
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} &
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} &
 		fi
 		FLOW123D_PID=$!
 		
@@ -245,9 +247,9 @@ function run_flow()
 	else
 		if [ -n "${FLOW123D_OUTPUT}" ]
 		then
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1
-		else
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_OPT} "${INI_FILE}" ${FLOW_PARAMS}
+                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 
+                else
+                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} 			
 		fi
 	fi
 	

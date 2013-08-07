@@ -38,9 +38,12 @@ function run_flow()
 	export OUT_FILE="out.log"
 	
 	QSUB_FILE="/tmp/${USER}-flow123.qsub"
+        rm -f ${QSUB_FILE}
+	
 	if [ -z "${QUEUE}" ]; then QUEUE=normal; fi
-
-	rm -f ${QSUB_FILE}
+	if [ -z "${PPN}" ]; then PPN=2; fi
+        if [ -x "${MEM}" ]; then MEM="$( ${PPN} * 2)"; fi
+        
 			
 # Copy following text to the file /tmp/firstname.surname-hydra_flow.qsub
 # ======================================================================
@@ -50,25 +53,19 @@ cat << xxEOFxx > ${QSUB_FILE}
 # Specific PBS setting
 #
 #PBS -S /bin/bash 
-#PBS -j oe 
 #PBS -N flow123d
-#PBS -m bae
-##################BS -l walltime=24:00:00
-#PBS -l select=1:ncpus=$NP:host=rex
-#PBS -l place=free:shared 
+#################
+#PBS -l nodes=${NP}:ppn=${PPN}:x86_64
+#PBS -l mem=${MEM}gb
+# #PBS -l walltime=24:00:00
+# #PBS -l select=1:ncpus=$NP:host=rex
+# #PBS -l place=free:shared 
 
-# set paths to intel libraries
-source /opt/intel/Compiler/11.1/046/bin/iccvars.sh ia64 
+# load modules
+module load openmpi-1.6-intel
+module load boost-1.49
+module load intelcdk-12
 
-# set same LD paths as in the evironment from which the task is started
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ARCH_LD_LIBRARY_PATH
-
-# load module for SGI MPI library
-. /usr/share/modules/init/bash
-module load mpt
-
-# ???
-export KMP_MONITOR_STACKSIZE=64K   
 
 cd ${WORKDIR}
 
@@ -77,9 +74,10 @@ uname -a
 echo JOB START: `date` 
 pwd
 
-# dplace is used for better process placement
-dplace mpirun -np $NP "$FLOW123D" $FLOW_PARAMS 
-# 2>${ERR_FILE} 1>${OUT_FILE}
+echo mpirun -np $NP "$FLOW123D" $FLOW_PARAMS  
+
+mpirun -np $NP "$FLOW123D" $FLOW_PARAMS  
+  
 	
 # End of flow123d.qsub
 xxEOFxx
@@ -88,8 +86,8 @@ xxEOFxx
 	if [ -f ${QSUB_FILE} ]
 	then    
 		# Add new PBS job to the queue
-		echo "qsub -r n -p 1023 -q ${QUEUE} ${QSUB_FILE}"
-		qsub -r n -p 1023 -q ${QUEUE} ${QSUB_FILE}
+		echo "qsub -l nodes=${NP}:ppn=${PPN}:x86_64 -l mem=${MEM}gb -q ${QUEUE} ${QSUB_FILE}"
+		qsub -q ${QUEUE} ${UNRESOLVED_PARAMS} ${QSUB_FILE}
 		# Remove obsolete script
 		rm ${QSUB_FILE}
 	else

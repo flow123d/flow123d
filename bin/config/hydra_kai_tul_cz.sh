@@ -26,7 +26,8 @@
 # MPIEXEC is relative path to bin/mpiexec
 # FLOW123D is relative path to bin/flow123d (.exe)
 # FLOW_PARAMS is list of parameters of flow123d
-# INI_FILE is name of .ini file
+# MEM - memory limit
+# PPN - processors per node
 
 
 # Function that is used for running flow123d at hydra cluster
@@ -52,7 +53,8 @@ cat << xxEOFxx > /tmp/${USER}-hydra_flow.qsub
 export OMPI_MCA_plm_rsh_disable_qrsh=1
 	
 # Execute Flow123d using mpiexec
-"$MPIEXEC" -np $NP "$FLOW123D" $FLOW_OPT "$INI_FILE" $FLOW_PARAMS 2>${ERR_FILE} 1>${OUT_FILE}
+"$MPIEXEC" -np $NP "$FLOW123D" $FLOW_PARAMS 
+#2>${ERR_FILE} 1>${OUT_FILE}
 	
 # End of hydra_flow.qsub
 xxEOFxx
