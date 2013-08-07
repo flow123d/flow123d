@@ -45,6 +45,7 @@
 
 LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
 :type(MAT_MPIAIJ),
+ matrix(NULL),
  vec_ds(vec_lsize, PETSC_COMM_WORLD),
  symmetric(false),
  positive_definite(false),
@@ -120,7 +121,8 @@ void view(std::ostream output_stream, int * output_mapping = NULL)
 
 LinSys:: ~LinSys()
 {
-    MatDestroy(&matrix);
+
+    if (matrix) MatDestroy(&matrix);
     VecDestroy(&rhs);
     VecDestroy(&solution);
 

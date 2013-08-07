@@ -365,6 +365,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
         IAB     = NULL;
         IAB_sub = NULL;
         sub_vec_block2 = NULL;
+        Compl=NULL;
 
         F_ENTRY;
 
@@ -777,6 +778,7 @@ void SchurComplement::resolve()
 SchurComplement :: ~SchurComplement() {
 
     F_ENTRY;
+    DBGMSG("Destructor\n");
 
     if ( B  != NULL )             MatDestroy(&B);
     if ( Bt != NULL )             MatDestroy(&Bt);
@@ -796,8 +798,11 @@ SchurComplement :: ~SchurComplement() {
     if ( IAB_sub != NULL )        MatDestroy(&IAB_sub);
     if ( sub_vec_block2 != NULL ) VecDestroy(&sub_vec_block2);
 
+    if (Compl) delete Compl;
+
     if      (Orig->type == LinSys::MAT_IS) {
         delete [] IsALocalIndices;
     }
-    delete Compl;
+
+
 }

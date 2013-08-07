@@ -95,10 +95,10 @@ TEST(la, inversion_matrix) {
 	lin_sys->start_add_assembly();
 	fill_matrix( lin_sys, min_idx, max_idx ); // fill matrix
 	lin_sys->finalize();
-	//MatView(lin_sys->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
+	MatView(lin_sys->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
 
 	ISCreateStride(PETSC_COMM_WORLD, size, first_idx + min_idx, 1, &set); // kazdy proc. lokalni cast indexsetu viz. schur.cc line 386
-	//ISView(set, PETSC_VIEWER_STDOUT_WORLD);
+	ISView(set, PETSC_VIEWER_STDOUT_WORLD);
 
 	SchurComplement schurComplement(lin_sys, set, 6);
 

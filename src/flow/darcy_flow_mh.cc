@@ -1802,7 +1802,28 @@ void DarcyFlowLMH_Unsteady::postprocess() {
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
 
-  DarcyFlowMH_Steady::postprocess();
+  //DarcyFlowMH_Steady::postprocess();
+
+    int side_rows[4];
+    double values[4];
+    //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+
+  // modify side fluxes in parallel
+  // for every local edge take time term on digonal and add it to the corresponding flux
+
+  for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+      ele = mesh_->element(el_4_loc[i_loc]);
+      FOR_ELEMENT_SIDES(ele,i) {
+          side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
+          values[i] = -1.0 * ele->measure() *
+            data.cross_section.value(ele->centre(), ele->element_accessor()) *
+            data.water_source_density.value(ele->centre(), ele->element_accessor()) /
+            ele->n_sides();
+      }
+      VecSetValues(schur0->get_solution(), ele->n_sides(), side_rows, values, ADD_VALUES);
+  }
+  VecAssemblyBegin(schur0->get_solution());
+  VecAssemblyEnd(schur0->get_solution());
 }
 
 //-----------------------------------------------------------------------------
