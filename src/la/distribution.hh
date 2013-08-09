@@ -142,7 +142,7 @@ public:
     /// get local starts array
     const unsigned int * get_starts_array() const;
     /// Returns communicator.
-    inline MPI_Comm get_comm() {return communicator;}
+    inline MPI_Comm get_comm() const {return communicator;}
     /// distribution view
     void view(std::ostream &stream) const;
     ~Distribution();

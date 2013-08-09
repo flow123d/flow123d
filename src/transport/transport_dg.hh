@@ -36,6 +36,7 @@
 
 class Distribution;
 template<unsigned int dim, unsigned int spacedim> class DOFHandler;
+class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -118,8 +119,7 @@ public:
 		template<unsigned int dim>
 		inline Mapping<dim,3> *mapping();
 
-		template<unsigned int dim>
-		inline DOFHandler<dim,3> *dh();
+		inline DOFHandlerMultiDim *dh();
 
 	private:
 
@@ -145,10 +145,8 @@ public:
 		Mapping<2,3> *map2_;
 		Mapping<3,3> *map3_;
 
-		/// Objects for distribution of dofs.
-		DOFHandler<1,3> *dh1_;
-		DOFHandler<2,3> *dh2_;
-		DOFHandler<3,3> *dh3_;
+		/// Object for distribution of dofs.
+		DOFHandlerMultiDim *dh_;
 	};
 
 	enum DGVariant {
@@ -230,6 +228,11 @@ public:
 	~TransportDG();
 
 private:
+
+	/**
+	 * @brief Distribute elements and DOFs to processes.
+	 */
+	void make_transport_partitioning();
 
 	/**
 	 * @brief Assembles the mass matrix.
@@ -472,8 +475,12 @@ private:
 	/// The mass matrix.
 	Mat mass_matrix;
 
-	/// Distribution of the solution vectors to the processors.
-	Distribution *distr;
+	/// Element id -> local element index (-1 if not local)
+    int *row_4_el;
+    /// Local element index -> id
+    int *el_4_loc;
+    /// Distribution of elements
+    Distribution *el_ds;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
