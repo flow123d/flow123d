@@ -22,26 +22,23 @@
 # $LastChangedDate: 2011-01-02 16:54:35 +0100 (ne, 02 I 2011) $
 #
 
-# NP is number of procs used to compute
-# MPIEXEC is relative path to bin/mpiexec
-# FLOW123D is relative path to bin/flow123d (.exe)
-# FLOW_PARAMS is list of parameters of flow123d
-# MEM - memory limit
-# PPN - processors per node
 
 
 # Function that is used for running flow123d at hydra cluster
+# see documentation in flow123d.sh
 function run_flow()
 {
 	# Some important files
 	export ERR_FILE="err.log"
 	export OUT_FILE="out.log"
+	
+	QSUB_SCRIPT=${USER}-hydra_flow.qsub
 
-	rm -f /tmp/${USER}-hydra_flow.qsub
+	rm -f /tmp/${QSUB_SCRIPT}
 			
 # Copy following text to the file /tmp/firstname.surname-hydra_flow.qsub
 # ======================================================================
-cat << xxEOFxx > /tmp/${USER}-hydra_flow.qsub
+cat << xxEOFxx > /tmp/${QSUB_SCRIPT}
 #!/bin/bash
 #
 #$ -cwd
@@ -54,22 +51,26 @@ export OMPI_MCA_plm_rsh_disable_qrsh=1
 	
 # Execute Flow123d using mpiexec
 "$MPIEXEC" -np $NP "$FLOW123D" $FLOW_PARAMS 
-#2>${ERR_FILE} 1>${OUT_FILE}
 	
 # End of hydra_flow.qsub
 xxEOFxx
 # ======================================================================
 
-	if [ -f /tmp/${USER}-hydra_flow.qsub ]
+        
+	if [ -f /tmp/${QSUB_SCRIPT} ]
 	then    
 		# Add new PBS job to the queue
-		echo "qsub -pe orte $NP /tmp/${USER}-hydra_flow.qsub"
-		qsub -pe orte $NP /tmp/${USER}-hydra_flow.qsub
+		echo "qsub -pe orte $NP ${QSUB_SCRIPT}"
+		JOB_NAME=`qsub -pe orte $NP /tmp/${QSUB_SCRIPT}`
+		# construct STDOUT_NAME
+		# JOB_NAME = Your job 77931 ("jan.brezina-hydra_flow.qsub") has been submitted
+                # STDOUT_NAME =  jan.brezina-hydra_flow.po77931
+                JOB_NAME=${JOB_NAME#Your job }
+		STDOUT_NAME= ${QSUB_SCRIPT}.po${JOB_NAME% (*}
 		# Remove obsolete script
-		rm /tmp/${USER}-hydra_flow.qsub
+		rm /tmp/${QSUB_SCRIPT}
 	else
 		exit 1
 	fi		
 	
-	exit 0
 }

@@ -23,9 +23,12 @@
 #
 # Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
 #
+# TODO:
+# alow timeout parameter in different units
+# alow mem parameter in different units
 
 # Uncomment following line, when you want to debug bash script
- set -x 
+# set -x 
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
@@ -48,19 +51,20 @@ AWK="awk"
 function print_help {
 	echo "SYNTAX: flow123d.sh [OPTIONS] -- [FLOW_PARAMS]"
 	echo ""
-	echo "FLOW_PARAMS         All parameters after "--" will be passed to flow123d. "
-	echo "                    Unresolved parameters will be passed to qsub command if it is used."
+	echo "Submit a flow123d job to a batch system using particular backend script deduced from HOSTNAME or from the --host parameter."
+	echo "If the backend script is not found for the host, the flow123d is run interactively."
+	echo "All parameters after "--" will be passed to flow123d. "
+	echo "Unresolved parameters will be passed to qsub command if it is used."
 	echo ""
 	echo "OPTIONS:"
-	echo "    -h              Print this help"
-	echo "    -t TIMEOUT      Flow123d can be executed only TIMEOUT seconds"
-	echo "    -m MEM          Flow123d can use only MEM bytes"
-	echo "    -n NICE         Run Flow123d with changed (lower) priority"
-	echo "    -np N           Run Flow123d using N parallel procces" 
-	echo "    -r OUT_FILE     Stdout and Stderr will be redirected to OUT_FILE"
-	echo "    -s MAIN_INPUT   Set main flow input file. Working directory will be current directory (default)"
-	echo "    -S MAIN_INPUT   Set main flow input file. Working directory will be relative path to the file"
-	echo "    -q QUEUE        Name of queue to use for batch processing (if supported by system)"
+	echo "    -h, --help                    Print this help"
+	echo "    --host HOSTNAME               Use given HOSTNAME form backend script resolution."
+	echo "    -t, --walltime TIMEOUT        Flow123d can be executed at most TIMEOUT seconds."
+	echo "    -m, --mem MEM                 Flow123d can use only MEM magabytes per process."
+	echo "    -n NICE, --nice               Run Flow123d with changed (lower) priority."
+	echo "    -np N                         Run Flow123d using N parallel processes." 
+	echo "    -ppn PPN                      Run PPN processes per node. NP should be divisible by PPN other wise it will be truncated."
+	echo "    -q, --queue QUEUE             Name of queue to use for batch processing. For interactive runs this redirect stdout and stderr to the file with name in format QUEUE.DATE."
 	echo ""
 	echo "RETURN VALUES:"
 	echo "    0               Flow123d process exited normaly"
@@ -81,17 +85,26 @@ function parse_arguments()
 
 	# Default number of processes
 	NP=1
-	
+
+        # Defaulf backend hostname
+        BACKEND_HOST=${HOSTNAME}
+        
+        # Default value for nice
+        NICE=0
+
 	# print help when called with no parameters
-	if [ -z "$1" ]; then print_help; fi
+	if [ -z "$1" ]; then print_help; exit 0; fi
 	
 	# Parse arguments (do not use bash builtin command getopts, it is too restrictive)
 	while [ -n "$1" ]
 	do
 		if [ "$1" == "-h" -o "$1" == "--help" ];
 		then
-			print_help
-			exit 0
+			print_help;
+			exit 0;
+                elif [ "$1" == "--host" ];
+                then
+                        shift; BACKEND_HOST="$1"
                 elif [ "$1" == "-t" -o "$1" == "--walltime" ];
                 then
                         shift; TIMEOUT="$1"
@@ -107,10 +120,6 @@ function parse_arguments()
                 elif [ "$1" == "-q" -o "$1" == "--queue" ];
                 then
                         shift; QUEUE="$1"                     
-		elif [ "$1" == "-r" -o "$1" == "--redirect" ];
-		then
-			shift; OUT_FILE="$1"
-			echo ""
 		elif [ "$1" == "-ppn" ];
                 then
                         shift; PPN="$1"
@@ -160,8 +169,22 @@ function parse_arguments()
 
 
 
-
+###########################################################################
 # Default function that run flow123d
+#
+# These functions can use namely variables:
+#
+# NP is number of procs used to compute
+# MPIEXEC is relative path to bin/mpiexec
+# FLOW123D is relative path to bin/flow123d (.exe)
+# FLOW_PARAMS is list of parameters of flow123d
+# MEM - memory limit
+# PPN - processors per node
+#
+# Function has to set variable ${STDOUT_FILE} with name of file 
+# containing redirected stdout and stderr  of the run.
+# This file has to appear after the end of computation.
+# 
 function run_flow()
 {
 	# Check if Flow123d exists and it is executable file
@@ -171,36 +194,31 @@ function run_flow()
 		exit 11
 	fi
 	
-	# Check if it is possible to read ini file
-	#if ! [ -e "${INI_FILE}" -a -r "${INI_FILE}" ]
-	#then
-	#	echo "Error: can't read ${INI_FILE}"
-	#	exit 13
-	#fi
-	
+
 	# Was memory limit set?
 	if [ -n "${MEM}" ]
 	then
 		# Set up memory limits that prevent too allocate too much memory.
-		# The limit of virtual memory is 200MB (memory, that could be allocated)
+		# ulimit is bash commad, it accepts limit specified in kB
 		MEM_LIMIT=`expr ${MEM} \* 1000`
 		ulimit -S -v ${MEM_LIMIT}
 	fi
 	
-	# Was nice set?
-	if [ ! -n "${NICE}" ]
-	then
-		NICE=0
-	fi
-	
+
+	# form name of the redirected stdout and stderr
+        if [ -n "${QUEUE}" ] 
+        then 
+                STDOUT_FILE="${QUEUE}.`date +%y.%m.%d_%T`" 
+                rm -f `pwd`/${STDOUT_FILE}
+        fi
 
 	# Was timeout set?
 	if [ -n "${TIMEOUT}" ]
 	then
 		# Flow123d runs with changed priority (19 is the lowest priority)
-		if [ -n "${FLOW123D_OUTPUT}" ]
+		if [ -n "${QUEUE}" ]
 		then
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 &
+			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "/tmp/${STDOUT_FILE}" 2>&1 &
 		else
 			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} &
 		fi
@@ -237,27 +255,32 @@ function run_flow()
 			FLOW123D_EXIT_STATUS=$?
 
 			# Was Flow123d finished correctly?
-			if [ ${FLOW123D_EXIT_STATUS} -eq 0 ]
+			if [ ! ${FLOW123D_EXIT_STATUS} -eq 0 ]
 			then
-				exit 0
-			else
 				exit 15
 			fi
 		fi
 	else
-		if [ -n "${FLOW123D_OUTPUT}" ]
+		if [ -n "${QUEUE}" ]
 		then
-                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "${FLOW123D_OUTPUT}" 2>&1 
+                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "/tmp/${STDOUT_FILE}" 2>&1 
                 else
                         nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} 			
 		fi
 	fi
 	
-	exit 0
+
+	if [ -n "${QUEUE}" ]
+	then
+                mv "/tmp/${STDOUT_FILE}" "`pwd`/${STDOUT_FILE}"
+                STDOUT_FILE="`pwd`/${STDOUT_FILE}"
+        fi        
+	
 }
 
 # Parse command-line arguments
 parse_arguments "$@"		
+
 
 # If there is hostname specific script for running flow123d, then use run_flow()
 # function from this script, otherwise default run_flow() function will be used
@@ -268,3 +291,8 @@ fi
 
 # Run Flow123d
 run_flow
+
+# print the file with merged stdout, that will appear after the job is finished
+if [ -n ${STDOUT_FILE} ]; then echo "REDIRECTED: ${STDOUT_FILE}"; fi
+
+exit 0

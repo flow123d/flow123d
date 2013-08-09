@@ -42,7 +42,7 @@ function run_flow()
 	
 	if [ -z "${QUEUE}" ]; then QUEUE=normal; fi
 	if [ -z "${PPN}" ]; then PPN=2; fi
-        if [ -x "${MEM}" ]; then MEM="$( ${PPN} * 2)"; fi
+        if [ -z "${MEM}" ]; then MEM="$( ${PPN} * 2)"; fi
         
 			
 # Copy following text to the file /tmp/firstname.surname-hydra_flow.qsub
@@ -54,6 +54,7 @@ cat << xxEOFxx > ${QSUB_FILE}
 #
 #PBS -S /bin/bash 
 #PBS -N flow123d
+#PBS -j oe
 #################
 #PBS -l nodes=${NP}:ppn=${PPN}:x86_64
 #PBS -l mem=${MEM}gb
@@ -87,7 +88,14 @@ xxEOFxx
 	then    
 		# Add new PBS job to the queue
 		echo "qsub -l nodes=${NP}:ppn=${PPN}:x86_64 -l mem=${MEM}gb -q ${QUEUE} ${QSUB_FILE}"
-		qsub -q ${QUEUE} ${UNRESOLVED_PARAMS} ${QSUB_FILE}
+		
+		JOB_NAME=`qsub -q ${QUEUE} ${UNRESOLVED_PARAMS} ${QSUB_FILE}`
+                # construct STDOUT_NAME
+                # JOB_NAME = Your job 77931 ("jan.brezina-hydra_flow.qsub") has been submitted
+                # STDOUT_NAME =  jan.brezina-hydra_flow.po77931
+                JOB_NAME=${JOB_NAME%.*}
+                echo "job number: ${JOB_NAME}"
+                STDOUT_NAME= ${QSUB_SCRIPT}.o${JOB_NAME}
 		# Remove obsolete script
 		rm ${QSUB_FILE}
 	else
