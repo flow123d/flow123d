@@ -857,6 +857,15 @@ void TransportDG::assemble_fluxes_element_element()
     {
         if (edg->n_sides < 2 || edg->side(0)->element()->dim() != dim) continue;
 
+        bool is_edge_local = false;
+        for (int sid=0; sid<edg->n_sides; sid++)
+        	if (el_ds->is_local(row_4_el[edg->side(sid)->element().index()]))
+        	{
+        		is_edge_local = true;
+        		break;
+        	}
+        if (!is_edge_local) continue;
+
         side_velocity.resize(edg->n_sides);
         for (unsigned int k=0; k<qsize; k++)
         {
@@ -909,6 +918,9 @@ void TransportDG::assemble_fluxes_element_element()
 				for (int s2=s1+1; s2<edg->n_sides; s2++)
 				{
 					ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
+					if (!el_ds->is_local(row_4_el[edg->side(s1)->element().index()])
+							&& !el_ds->is_local(row_4_el[edg->side(s2)->element().index()])) continue;
+
 					arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
 					// set up the parameters for DG method
@@ -923,12 +935,12 @@ void TransportDG::assemble_fluxes_element_element()
 #define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values[sd[side_id]]->shape_value(i,k))
 
 					// For selected pair of elements:
-					for (int m=0; m<2; m++)
+					for (int n=0; n<2; n++)
 					{
-						for (int n=0; n<2; n++)
-						{
-							if (!el_ds->is_local(row_4_el[edg->side(sd[n])->element().index()])) continue;
+						if (!el_ds->is_local(row_4_el[edg->side(sd[n])->element().index()])) continue;
 
+						for (int m=0; m<2; m++)
+						{
 							for (unsigned int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
 								for (unsigned int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
 									local_matrix[i*fe_values[sd[m]]->n_dofs()+j] = 0;
@@ -1456,9 +1468,8 @@ void TransportDG::prepare_initial_condition()
 	FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
 			update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    unsigned int dof_indices[ndofs]; //, nid;
+    unsigned int dof_indices[ndofs];
     double matrix[ndofs*ndofs], rhs[ndofs];
-    //arma::vec init_values[qsize];
     std::vector<arma::vec> init_values;
     init_values.resize(qsize);
 
@@ -1522,7 +1533,6 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 	vector<arma::vec3> side_velocity(qsize);
 	double conc, mass_flux, water_flux;
 	arma::vec3 c_grad;
-	//arma::vec Dm[qsize], alphaL[qsize], alphaT[qsize];
     std::vector<arma::vec> Dm, alphaL, alphaT;
 	arma::mat33 D;
 
@@ -1632,10 +1642,7 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 			{
 				conc = 0;
 				for (unsigned int i=0; i<ndofs; i++)
-				{
-					// TODO: Correct calculation of actual concentration (see note in TransportDG::set_sources()).
 					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
-				}
 
 				mass_sum += por_m[k]*csection[k]*conc*fe_values.JxW(k);
 
