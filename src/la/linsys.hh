@@ -117,29 +117,15 @@ public:
      *
      * @param comm - MPI communicator
      */
-    LinSys( unsigned lsize, 
-            Distribution * rows_ds,
-            double *sol_array = NULL,
+    LinSys( Distribution * rows_ds,
             MPI_Comm comm = MPI_COMM_WORLD )
-      : lsize_(lsize), rows_ds_(rows_ds), comm_( comm ), 
+      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( comm ),
         positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ), status_( NONE )
     { 
-        int lsizeInt = static_cast<int>( lsize );
+        int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;
         MPI_Allreduce ( &lsizeInt, &sizeInt, 1, MPI_INT, MPI_SUM, comm_ );
         size_ = static_cast<unsigned>( sizeInt );
-
-        // create PETSc solution
-        if (sol_array == NULL) {
-            v_solution_   = new double[ rows_ds_->lsize() + 1 ];
-            own_solution_ = true;
-        }
-        else {
-            v_solution_ = sol_array;
-            own_solution_ = false;
-        }
-        PetscErrorCode ierr;
-        ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
 
     };
 
@@ -204,6 +190,22 @@ public:
     const Vec &get_solution()
     { 
         return solution_; 
+    }
+
+    /**
+     * Create PETSc solution
+     */
+    void set_solution(double *sol_array) {
+        if (sol_array == NULL) {
+            v_solution_   = new double[ rows_ds_->lsize() + 1 ];
+            own_solution_ = true;
+        }
+        else {
+            v_solution_ = sol_array;
+            own_solution_ = false;
+        }
+        PetscErrorCode ierr;
+        ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
     }
 
     /**

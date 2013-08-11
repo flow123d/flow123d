@@ -41,12 +41,9 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
     .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
 
 
-LinSys_PETSC::LinSys_PETSC( const Input::Record in_rec,
-                            const unsigned lsize,
-                            Distribution * rows_ds,
-                            double *sol_array,
+LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
                             const MPI_Comm comm ) 
-        : LinSys( lsize, rows_ds, sol_array, comm )
+        : LinSys( rows_ds, comm )
 {
     // set type
     type = LinSys::PETSC;
@@ -58,7 +55,7 @@ LinSys_PETSC::LinSys_PETSC( const Input::Record in_rec,
     ierr = VecCreateMPIWithArray( comm_, 1, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
-    params_ = in_rec.val<string>("options");
+    params_ = "";
 }
 
 void LinSys_PETSC::start_allocation( )
@@ -409,5 +406,11 @@ void LinSys_PETSC::gatherSolution_( )
     // destroy PETSc objects
     ierr = VecDestroy( &solutionGathered );     CHKERRV( ierr );
     ierr = VecScatterDestroy( &VSdistToLarge ); CHKERRV( ierr );
+}
+
+
+void LinSys_PETSC::set_from_input(const Input::Record in_rec)
+{
+	params_ = in_rec.val<string>("options");
 }
 

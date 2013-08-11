@@ -1021,9 +1021,10 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
     if (schur0 == NULL) { // create Linear System for MH matrix
 
         if (in_rec.type() == LinSys_BDDC::input_type) {
-            LinSys_BDDC *ls = new LinSys_BDDC(in_rec, lsize, global_row_4_sub_row->size(), &(*rows_ds), NULL, MPI_COMM_WORLD,
+            LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1 ); // 1 == number of subdomains per process
+            ls->set_solution( NULL );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -1032,7 +1033,9 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             
         }
         else if (in_rec.type() == LinSys_PETSC::input_type) {
-            LinSys_PETSC *ls = new LinSys_PETSC(in_rec, lsize, &(*rows_ds), NULL, PETSC_COMM_WORLD );
+            LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
+            ls->set_from_input(in_rec);
+            ls->set_solution( NULL );
             schur0=ls;
             // possible initialization particular to BDDC
             START_TIMER("PETSC PREALLOCATION");

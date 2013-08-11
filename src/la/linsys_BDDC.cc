@@ -42,15 +42,12 @@ it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
     .derive_from(LinSys::input_type);
 
 
-LinSys_BDDC::LinSys_BDDC(const Input::Record in_rec,
-                          const unsigned lsize,
-                          const unsigned numDofsSub,
+LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
                           Distribution * rows_ds,
-                          double *sol_array,
                           const MPI_Comm comm,
                           const int matrixTypeInt,
                           const int  numSubLoc )
-        : LinSys( lsize, rows_ds, sol_array, comm )
+        : LinSys( rows_ds, comm )
 {
     // set type
     type = LinSys::BDDC;

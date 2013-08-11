@@ -280,9 +280,12 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     
     // allocate matrix and vector structures
     ls    = new LinSys*[n_subst_];
-    ls_dt = new LinSys_PETSC(in_rec.val<Input::Record>("solver"), distr->lsize(), distr);
-    for (int sbi = 0; sbi < n_subst_; sbi++)
-    	ls[sbi] = new LinSys_PETSC(in_rec.val<Input::Record>("solver"), distr->lsize(), distr);
+    ls_dt = new LinSys_PETSC(distr);
+    ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
+    for (int sbi = 0; sbi < n_subst_; sbi++) {
+    	ls[sbi] = new LinSys_PETSC(distr);
+    	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
+    }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
 

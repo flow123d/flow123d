@@ -73,20 +73,20 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
 {
     PetscScalar *rhs_array, *sol_array;
-    const PetscInt *IsAIndices;
-    PetscErrorCode ierr;
+    //const PetscInt *IsAIndices;
+    //PetscErrorCode ierr;
 
-    int i;
+    //int i;
 
     int orig_first;
 
     // MATIS vars
-    Mat orig_mat_sub;
-    VecScatter ScatterToA;
-    VecScatter ScatterToB;
+    //Mat orig_mat_sub;
+    //VecScatter ScatterToA;
+    //VecScatter ScatterToB;
 
-    int locSizeB_vec;
-    int vec_orig_low,vec_orig_high;
+    //int locSizeB_vec;
+    //int vec_orig_low,vec_orig_high;
 
     // initialize variables
     IA_sub  = NULL;
@@ -205,7 +205,8 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
     } */
 
-    {
+    // check type of LinSys
+    if (Orig->type == LinSys::PETSC){
        // get distribution of original marix
        MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
        MatGetLocalSize(Orig->get_matrix(),&orig_lsize,PETSC_NULL);
@@ -248,6 +249,15 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
        VecRestoreArray(Orig->get_rhs(),&rhs_array);
        VecRestoreArray(Orig->get_solution(),&sol_array);
+
+       VecGetArray( Sol2, &sol_array );
+       ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
+       Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
+       Compl->set_solution(sol_array);
+       VecRestoreArray( Sol2, &sol_array );
+
+    } else if (Orig->type == LinSys::BDDC){
+    	xprintf(Warn, "Schur complement for LinSys::BDDC type shouldn't be constructed!\n");
     }
 
     /* // check type of LinSys
@@ -310,14 +320,6 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
     }*/
 
-    // check type of LinSys
-    if (Orig->type == LinSys::PETSC){
-//       VecGetArray( Sol2, &sol_array );
-//       Compl = new LinSys_MPIAIJ( locSizeB, sol_array );
-//       //ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
-//       //Compl = new LinSys_PETSC( LinSys_PETSC::input_type, locSizeB, ds_,  NULL, PETSC_COMM_WORLD );
-//       VecRestoreArray( Sol2, &sol_array );
-    }
 
     // TODO: have old_4_new as a mapping inicialized by onother one and
     // parallel shift, use it only if there is not NODEBUG
@@ -355,7 +357,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
 
         // check type of LinSys, dimensions of matrix, index set
         ierr = MatGetSize(Orig->get_matrix(), &m, &n);
-        ASSERT(Orig->type == LinSys::MAT_MPIAIJ, "Assumed MAT_MPIAIJ type of Orig object.\n");
+        ASSERT(Orig->type == LinSys::PETSC, "Assumed PETSC type of Orig object.\n");
         ASSERT(m == n, "Assumed square matrix.\n" );
         ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
@@ -410,7 +412,9 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
            VecRestoreArray(Orig->get_solution(),&sol_array);
 
            VecGetArray( Sol2, &sol_array );
-           Compl = new LinSys_MPIAIJ( locSizeB, sol_array );
+           ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
+           Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
+           Compl->set_solution(sol_array);
            VecRestoreArray( Sol2, &sol_array );
         }
 
@@ -497,6 +501,7 @@ void SchurComplement::solve(Solver *solver)
     state=solved;
 
 }
+#endif
 
 void SchurComplement::set_spd()
 {Compl->set_positive_definite();}
@@ -525,14 +530,14 @@ void SchurComplement::form_schur()
 {
     // MATIS vars
     PetscErrorCode ierr = 0;
-    Mat orig_mat_sub;
-    Mat local_compl_aux;
+    //Mat orig_mat_sub;
+    //Mat local_compl_aux;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
 
     mat_reuse=MAT_REUSE_MATRIX;
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
 
-    // check type of LinSys
+    /*// check type of LinSys
     if      (Orig->type == LinSys::MAT_IS)
     {
        // get local submatrix of original system
@@ -567,7 +572,7 @@ void SchurComplement::form_schur()
        ASSERT( ierr == 0, "PETSC Error during claculation of Schur complement.\n");
 
     }
-    else if      (Orig->type == LinSys::MAT_MPIAIJ)
+    else if      (Orig->type == LinSys::MAT_MPIAIJ)*/
     {
 
        //DBGMSG("Compute Schur complement of\n");
@@ -597,7 +602,7 @@ void SchurComplement::form_schur()
        //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
 
        // get C block, locSizeB removed
-       ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, IsB, mat_reuse, &(Compl->matrix));
+       ierr+=MatGetSubMatrix( Orig->get_matrix(), IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
        // compute complement = (-1)cA+xA = Bt*IA*B - C
        ierr+=MatScale(Compl->get_matrix(),-1.0);
        //DBGMSG("C block:\n");
@@ -634,18 +639,18 @@ void SchurComplement::form_schur()
 
 void SchurComplement::form_rhs()
 {
-    PetscScalar *rhs_interior, *subdomain_rhs_array;
-    PetscErrorCode ierr;
-    const PetscInt *IsALocalIndices;
-    Vec rhs1_vec;
-    Vec RHS2_update;
-    Vec subdomain_rhs;
-    int i;
-    int orig_lsize, locSizeB_vec;
-    int locIndex;
+    //PetscScalar *rhs_interior, *subdomain_rhs_array;
+    //PetscErrorCode ierr;
+    //const PetscInt *IsALocalIndices;
+    //Vec rhs1_vec;
+    //Vec RHS2_update;
+    //Vec subdomain_rhs;
+    //int i;
+    //int orig_lsize, locSizeB_vec;
+    //int locIndex;
 
     // compute the SchurRHS
-    if      (Orig->type == LinSys::MAT_IS)
+    /*if      (Orig->type == LinSys::MAT_IS)
     {
 
        VecCreateSeq(PETSC_COMM_SELF, orig_sub_size, &subdomain_rhs);
@@ -690,12 +695,12 @@ void SchurComplement::form_rhs()
        VecDestroy(&(rhs1_vec));
        delete [ ] rhs_interior;
        VecDestroy(&(RHS2_update));
-    }
-    else if (Orig->type == LinSys::MAT_MPIAIJ)
-    {
-       MatMultTranspose(IAB,RHS1,Compl->get_rhs());
-       VecAXPY(Compl->get_rhs(),-1,RHS2);
-    }
+
+    else if (Orig->type == LinSys::MAT_MPIAIJ)*/
+
+    MatMultTranspose(IAB,RHS1,Compl->get_rhs());
+    VecAXPY(Compl->get_rhs(),-1,RHS2);
+
     state=formed;
 }
 
@@ -710,6 +715,7 @@ void SchurComplement ::scale(double scalar)
     VecScale(Compl->get_rhs(), scalar);
 }
 
+#if 0
 /**
  * COMPUTE ELIMINATED PART OF THE ORIG. SYS. & RESTORE RHS and SOLUTION VECTORS
  *  x_1 = IA * RHS_1 - IAB * x_2

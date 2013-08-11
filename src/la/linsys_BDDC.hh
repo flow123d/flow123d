@@ -53,11 +53,8 @@ class LinSys_BDDC : public LinSys
 public:
     static Input::Type::Record input_type;
 
-    LinSys_BDDC( const Input::Record in_rec,
-                 const unsigned lsize,
-                 const unsigned numDofsSub,
+    LinSys_BDDC( const unsigned numDofsSub,
                  Distribution * rows_ds,
-                 double *sol_array = NULL,
                  const MPI_Comm comm = MPI_COMM_WORLD,
                  const int matrixTypeInt = 0,
                  const int  numSubLoc = 1 );

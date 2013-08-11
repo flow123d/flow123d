@@ -45,10 +45,7 @@ class LinSys_PETSC : public LinSys
 public:
     static Input::Type::Record input_type;
 
-    LinSys_PETSC( const Input::Record in_rec,
-                  const unsigned lsize,
-                  Distribution * rows_ds,
-                  double *sol_array = NULL,
+    LinSys_PETSC( Distribution * rows_ds,
                   const MPI_Comm comm = PETSC_COMM_WORLD ); 
 
     /**
@@ -94,6 +91,9 @@ public:
     void get_whole_solution( std::vector<double> & globalSolution );
 
     void view( );
+
+    void set_from_input(const Input::Record in_rec);
+
 
     ~LinSys_PETSC( );
 
