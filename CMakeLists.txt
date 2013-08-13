@@ -363,6 +363,12 @@ if (BDDCML_ROOT)
         set(BDDCML_bddcml_config_current "NO")
         find_package(BDDCML)
     endif()
+    
+    if (BDDCML_FOUND)
+        add_definitions(-DHAVE_BDDCML)
+    endif()
+else()
+    # set(BDDCML_LIBRARIES "")
 endif()    
 
 
