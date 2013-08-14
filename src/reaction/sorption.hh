@@ -24,6 +24,8 @@ class Isotherm;
 	freundlich = 3
 };*/
 
+typedef Field<3, FieldValue<3>::Scalar > * pScalar;
+
 class Sorption:  public Reaction
 {
 	public:
@@ -49,19 +51,28 @@ class Sorption:  public Reaction
 			 */
 			//RegionSet read_bulk_list_item(Input::Record rec);
 
+			//Field<3, FieldValue<3>::String > region;
 			Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
 			//Field<3, FieldValue<3>::Vector > sorption_types; // Discrete need Selection for initialization.
-			Field<3, FieldValue<3>::Scalar > mob_porosity; // Mobile porosity.
+			//Field<3, FieldValue<3>::Scalar > mob_porosity; // Mobile porosity.
 			//Field<3, FieldValue<3>::Scalar > immob_porosity; // Immobile porosity.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 		};
+	    /**
+	    * 	Pointer to mobile porosity field from transport
+	    */
+	    pScalar mob_porosity_;
+	    /**
+	    *	Pointer to immobile porosity field from transport
+	    */
+	    pScalar immob_porosity_;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+		Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names); //, pScalar mob_porosity, pScalar immob_porosity);
 		/**
 		*	Destructor.
 		*/
@@ -103,7 +114,11 @@ class Sorption:  public Reaction
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption class, similar to set_sorption_fields in Semchem_interface
 		*/
-		void set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por_m);
+		void set_porosity(pScalar por_m, pScalar por_imm);
+		/**
+		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
+		*/
+		void prepare_inputs(Input::Record in_rec);
 		/**
 		* Meaningless inherited methods.
 		*/
@@ -117,10 +132,6 @@ class Sorption:  public Reaction
 		*	This method disables to use constructor without parameters.
 		*/
 		Sorption();
-		/**
-		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
-		*/
-		void prepare_inputs(Input::Record in_rec);
 		/**
 		*	For printing parameters of isotherms under consideration, not necessary to store
 		*/
@@ -191,10 +202,6 @@ class Sorption:  public Reaction
 		* Array for storage infos about sorbed species concentrations.
 		*/
 		double** sorbed_conc_array;
-	    /**
-	     * pointers to sorption fields from transport
-	     */
-	    Field<3, FieldValue<3>::Scalar > *mob_porosity_;
 };
 
 #endif

@@ -51,7 +51,7 @@
       
       bc_data = [
         { r_set = "BOUNDARY",
-          bc_conc = [0.5, 0.5, 0.2, 0.2, 0.1, 0.1]
+          bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
         }
       ],
       
@@ -63,24 +63,21 @@
         save_step = 0.5
       }, 
       time = {
-        end_time = 10.0
+        end_time = 15.0
       },
       
-      reactions = {
-        TYPE="Sorptions",
+      adsorptions = {
         solvent_dens = 1.0,
         species = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
-        molar_masses = [5.0, 5.0, 32.0, 32.0, 12.0, 12.0],
-        solubility = [0.5, 0.47, 0.2, 0.17, 0.1, 0.07],
+        molar_masses = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        solubility = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         bulk_data = [
           {
             region = "rectangle",
-            mob_porosity = 0.02,
-            immob_porosity = 0.001,
-            rock_density = 9.25,
+            rock_density = 1.0,
             sorption_types = [ "none", "linear", "none", "langmuir", "none", "freundlich"],
-            mult_coefs = [0.0002, 0.0002, 0.00003, 0.00003, 0.00005, 0.00005],
-            second_params = [0, 0, 0.5, 0.5, 0.25, 0.25]
+            mult_coefs = [0, 0.6, 0, 0.4, 0, 0.6],
+	    second_params = [0, 0, 0, 0.6, 0, 0.4]
           }
         ]
       }

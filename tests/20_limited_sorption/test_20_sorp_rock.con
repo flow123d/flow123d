@@ -66,8 +66,7 @@
         end_time = 15.0
       },
       
-      reactions = {
-        TYPE="Sorptions",
+      adsorptions = {
         solvent_dens = 1.0,
         species = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
         molar_masses = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
@@ -75,7 +74,6 @@
         bulk_data = [
           {
             region = "rectangle",
-            mob_porosity = {TYPE="FieldFormula", value = "0.25"},
             rock_density = {TYPE="FieldFormula", value = "1.0*x/x"},
             sorption_types = [ "none", "linear", "none", "langmuir", "none", "freundlich"],
             mult_coefs = [0, 0.6, 0, 0.4, 0, 0.6],

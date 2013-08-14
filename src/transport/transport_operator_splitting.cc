@@ -36,7 +36,6 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
-
 using namespace Input::Type;
 
 AbstractRecord TransportBase::input_type
@@ -414,9 +413,11 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	Input::Iterator<Input::Record> sorptions_it = in_rec.find<Input::Record>("adsorptions");
 	if (sorptions_it){
-	    	sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_ );
+	    	sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_); //, &(convection->get_data()->por_m), &(convection->get_data()->por_imm));
 	        convection->get_par_info(el_4_loc, el_distribution);
+	        sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm));
 	        // sorptions->set_dual_porosity(convection->get_dual_porosity());
+	        sorptions->prepare_inputs(*sorptions_it);
 	        sorptions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 
 	        // TODO: move this into Sorption class, just pass dimensions of the array.
@@ -536,14 +537,14 @@ void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* 
 {
     convection->set_cross_section_field(cross_section);
 
-    if (Semchem_reactions != NULL) {
+    /*if (Semchem_reactions != NULL) {
         Semchem_reactions->set_cross_section(cross_section);
         Semchem_reactions->set_sorption_fields(&convection->get_data()->por_m, &convection->get_data()->por_imm, &convection->get_data()->phi);
     }
   if (sorptions != NULL)
   {
-	  sorptions->set_sorption_fields(&convection->get_data()->por_m);
-  }
+	  sorptions->set_porosity(&(convection->get_data()->por_m),&(convection->get_data()->por_imm));
+  }*/
 }
 
 
