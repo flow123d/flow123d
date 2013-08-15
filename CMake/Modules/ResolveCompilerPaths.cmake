@@ -54,11 +54,20 @@ macro (RESOLVE_LIBRARIES LIBS LINK_LINE)
       string (REGEX REPLACE "^-l" "" token ${token})
       set (_root)
       if (token MATCHES "^/")	# We have an absolute path, add root to the search path
-	set (_root "/")
+        # workaround for bug in find_library on cygwin (do not work for libraries given as full path)
+        # doesn;t work with paths containing spaces
+        STRING(REGEX REPLACE "^/[^ ]*/lib([^/ ]*).(a|so|dll)" "\\1" LIB_NAME ${token})
+        STRING(REGEX REPLACE "(^/[^ ]*/)lib[^/ ]*.(a|so|dll)" "\\1" LIB_PATH ${token})
+	set (_root ${LIB_PATH})
+	set (token ${LIB_NAME})
       endif (token MATCHES "^/")
       set (_lib "NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
       find_library (_lib ${token} HINTS ${_directory_list} ${_root})
+      ## debug
+      message(STATUS "token: ${token}\ndlist: ${_directory_list}\nroot: ${_root}")    
       if (_lib)
+        ## debug
+        message(STATUS "RESULT: ${_lib}")
 	string (REPLACE "//" "/" _lib ${_lib})
         list (APPEND _libs_found ${_lib})
       else (_lib)
