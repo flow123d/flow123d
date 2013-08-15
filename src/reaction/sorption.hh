@@ -17,13 +17,6 @@ class Distribution;
 class Reaction;
 class Isotherm;
 
-/*enum SorptionType {
-	none = 0,
-	linear = 1,
-	langmuir = 2,
-	freundlich = 3
-};*/
-
 typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 
 class Sorption:  public Reaction
@@ -38,7 +31,7 @@ class Sorption:  public Reaction
 		{
 		public:
 			/**
-			 * 	Sorption type specifies a kind of isothermal description of adsorption.
+			 * 	Sorption type specifies a kind of equilibrial description of adsorption.
 			 */
 			static Input::Type::Selection sorption_type_selection;
 
@@ -49,13 +42,8 @@ class Sorption:  public Reaction
 			 * Overrides EqDataBase::read_bulk_list_item, implements reading of
 			 * - init_piezo_head key
 			 */
-			//RegionSet read_bulk_list_item(Input::Record rec);
 
-			//Field<3, FieldValue<3>::String > region;
 			Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
-			//Field<3, FieldValue<3>::Vector > sorption_types; // Discrete need Selection for initialization.
-			//Field<3, FieldValue<3>::Scalar > mob_porosity; // Mobile porosity.
-			//Field<3, FieldValue<3>::Scalar > immob_porosity; // Immobile porosity.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
@@ -77,19 +65,13 @@ class Sorption:  public Reaction
 		*	Destructor.
 		*/
 		~Sorption(void);
-        /**
-        *
-        */
-        //void set_mesh_(Mesh *mesh_in);
 		/**
 		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
-		//virtual
 		double **compute_reaction(double **concentrations, int loc_el);
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		//virtual
 		void compute_one_step(void);
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
@@ -137,10 +119,6 @@ class Sorption:  public Reaction
 		*/
 		void print_sorption_parameters(void);
 		/**
-		*
-		*/
-		//Mesh *mesh_;
-		/**
 		* 	Number of regions.
 		*/
 		int nr_of_regions;
@@ -152,14 +130,6 @@ class Sorption:  public Reaction
 		* 	Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
 		*/
 		int nr_of_points;
-		/**
-		* 	Indentifier of the region where sorption take place. region_id
-		*/
-		std::vector<unsigned int> region_ids;
-		/**
-		* 	Density of the rock-matrix. Depends on region.
-		*/
-		//std::vector<double> rock_dens;
 		/**
 		*	Identifier of the substance undergoing sorption.
 		*/
@@ -194,10 +164,6 @@ class Sorption:  public Reaction
 		* 	Region characteristic inputs.
 		*/
 		EqData data_;
-		/**
-		* 	Temporary step_length in rotated system of coordinates. Should be |nr_of_region x nr_of_substances| matrix later.
-		*/
-		//double step_length;
 		/**
 		* Array for storage infos about sorbed species concentrations.
 		*/
