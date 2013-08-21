@@ -273,13 +273,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    if (schur0->type == LinSys::BDDC) {
-        xprintf(Warn,"Invalid number of Schur Complements. For type Bddc using 0.");
-        n_schur_compls = 0;
-    } else if ((unsigned int) n_schur_compls > 2) {
-        xprintf(Warn,"Invalid number of Schur Complements. Using 2.");
-        n_schur_compls = 2;
-    }
+
     
     //START_TIMER("solver init");
     //solver = new (Solver);
@@ -1030,6 +1024,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
             schur0=ls;
+            n_schur_compls = 0;
             END_TIMER("BDDC set mesh data");
             
         }
@@ -1047,6 +1042,12 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             assembly_steady_mh_matrix(); // preallocation
             VecZeroEntries(schur0->get_solution());
             schur0->start_add_assembly(); // finish allocation and create matrix
+
+            if ((unsigned int) n_schur_compls > 2) {
+                xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
+                n_schur_compls = 2;
+            }
+
             END_TIMER("PETSC PREALLOCATION");
 
             VecZeroEntries(schur0->get_solution());

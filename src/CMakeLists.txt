@@ -208,6 +208,7 @@ add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
     armadillo ${PETSC_LIBRARIES}  ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB}  ${Boost_LIBRARIES})
+set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS ${BDDCML_CDEFS} ) 
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})

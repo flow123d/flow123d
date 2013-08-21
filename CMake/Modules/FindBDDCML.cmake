@@ -39,15 +39,26 @@ if (BDDCML_INCLUDES)
 include ${BDDCML_ROOT}/make.inc
 
 show :
-	-@echo -n \$(BDDCML_LINK_SEQUENCE)
+\t-@echo -n \${\${VARIABLE}}
 ")
 
-  set(BDDCML_LINK_SEQ "NOTFOUND" CACHE INTERNAL "Cleared" FORCE)
-  execute_process(COMMAND ${MAKE_EXECUTABLE} --no-print-directory -f ${config_makefile} show 
-      OUTPUT_VARIABLE BDDCML_LINK_SEQ
+
+  ######################################
+  macro (BDDCML_GET_VARIABLE name var)
+    set (${var} "NOTFOUND" CACHE INTERNAL "Cleared" FORCE)
+    execute_process (COMMAND ${MAKE_EXECUTABLE} --no-print-directory -f ${config_makefile} show VARIABLE=${name}
+      OUTPUT_VARIABLE ${var}
       RESULT_VARIABLE make_return)
+    message(STATUS " exporting ${name} into cmake variable ${var} =  " ${${var}} )
+  endmacro (BDDCML_GET_VARIABLE)
+
+  bddcml_get_variable("BDDCML_LINK_SEQUENCE" BDDCML_LINK_SEQ)
+  bddcml_get_variable("BDDCML_CDEFS" BDDCML_CDEFS)
+  
+ 
+  #message(STATUS "BDDCML_LIBS: ${BDDCML_LINK_SEQ}")
+
   #file (REMOVE ${config_makefile})
-  message(STATUS "BDDCML_LIBS: ${BDDCML_LINK_SEQ}")
 endif()  
 
 
@@ -61,7 +72,6 @@ message(STATUS "BOBJ: ${BLOPEX_OBJS}")
 #STRING(REGEX REPLACE <regular_expression>  <replace_expression> <output variable>  <input> [<input>...])
 # ATTENTION: input has to be quoted otherwise it interprets contens of variable, in particular run REGEX on every item in ; separated list
 STRING(REGEX REPLACE "([^;]*BLOPEX\\.a)" "${BLOPEX_OBJS};\\1" BDDCML_LIBRARIES "${BDDCML_LIBS}" )
-
 #STRING(REGEX MATCH "[^;]*BLOPEX\\.a"  BDDCML_BLOPEX_LIB "${BDDCML_LIBS}" )
 #STRING(REGEX MATCH "[^;]"  BDDCML_BEGIN_LIB ${BDDCML_LIBS} )
 message(STATUS "out: ${BDDCML_LIBRARIES}")
