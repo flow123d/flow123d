@@ -32,14 +32,18 @@
 #include <mpi.h>
 
 // need BDDCML wrapper
-#include "la/bddcml_wrapper.hpp"
+#ifdef HAVE_BDDCML
+  #include "la/bddcml_wrapper.hpp"
+#endif // HAVE_BDDCML
 #include "la/linsys.hh"
 #include "la/linsys_BDDC.hh"
 
 namespace it = Input::Type;
 
+#ifdef HAVE_BDDCML
 it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
     .derive_from(LinSys::input_type);
+#endif // HAVE_BDDCML
 
 
 LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
@@ -49,6 +53,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
                           const int  numSubLoc )
         : LinSys( rows_ds, comm )
 {
+#ifdef HAVE_BDDCML
     // set type
     type = LinSys::BDDC;
 
@@ -90,7 +95,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
     PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
     ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
     CHKERRV( ierr );
-
+#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDofs,
@@ -104,6 +109,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
                              const std::vector<double> & element_permeability,
                              const int meshDim ) 
 {
+#ifdef HAVE_BDDCML
     // simply pass the data to BDDCML solver
     isngn_.resize(isngn.size());
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
@@ -147,19 +153,22 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
 
     // scatter local solutions back to global one
     VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
-    VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
-
+    VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE );
+#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::load_diagonal( std::map<int,double> & diag )
 {
+#ifdef HAVE_BDDCML
     // simply pass the data to BDDCML solver
     bddcml_ -> loadDiagonal( diag );
+#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {
-    namespace ublas = boost::numeric::ublas;
+#ifdef HAVE_BDDCML
+	namespace ublas = boost::numeric::ublas;
 
     std::vector< unsigned >  myRows( nrow ); 
     std::vector< unsigned >  myCols( ncol ); 
@@ -175,11 +184,13 @@ void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, doub
     }
 
     bddcml_ -> insertToMatrix( mat, myRows, myCols );
+#endif // HAVE_BDDCML
 } 
 
 void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
 {
-    namespace ublas = boost::numeric::ublas;
+#ifdef HAVE_BDDCML
+	namespace ublas = boost::numeric::ublas;
 
     std::vector< unsigned >  myRows( nrow ); 
     ublas::vector< double >  vec( nrow ); 
@@ -191,20 +202,26 @@ void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
     }
 
     bddcml_ -> insertToRhs( vec, myRows );
+#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::finish_assembly( )
 {
+#ifdef HAVE_BDDCML
     bddcml_ -> finishMatAssembly( );
+#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::apply_constrains( double scalar )
 {
+#ifdef HAVE_BDDCML
     bddcml_ -> applyConstraints( constraints_, 1., scalar );
+#endif // HAVE_BDDCML
 }
 
 int LinSys_BDDC::solve()    // ! params are not currently used
 {
+#ifdef HAVE_BDDCML
     double              tol            = 1.e-7; //!< tolerance on relative residual ||res||/||rhs||
     int                 numLevels      = 2;     //!< number of levels
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
@@ -235,25 +252,33 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 
     // scatter local solutions back to global one
     VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
-    VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
+    VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE );
+#else
+	return 0;
+#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::get_whole_solution( std::vector<double> & globalSolution )
 {
+#ifdef HAVE_BDDCML
     this -> gatherSolution_( );
     globalSolution.resize( globalSolution_.size( ) );
     std::copy( globalSolution_.begin(), globalSolution_.end(), globalSolution.begin() );
+#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::set_whole_solution( std::vector<double> & globalSolution )
 {
+#ifdef HAVE_BDDCML
     globalSolution_.resize( globalSolution.size( ) );
     std::copy( globalSolution.begin(), globalSolution.end(), globalSolution_.begin() );
+#endif // HAVE_BDDCML
 }
 
 LinSys_BDDC::~LinSys_BDDC()
 { 
-    isngn_.clear(); 
+#ifdef HAVE_BDDCML
+    isngn_.clear();
     locSolution_.clear(); 
 
     PetscErrorCode ierr;
@@ -261,12 +286,14 @@ LinSys_BDDC::~LinSys_BDDC()
 
     ierr = VecScatterDestroy( &VSpetscToSubScatter_ ); CHKERRV( ierr );
 
-    delete bddcml_; 
+    delete bddcml_;
+#endif // HAVE_BDDCML
 };
 
 // construct global solution
 void LinSys_BDDC::gatherSolution_( )
 {
+#ifdef HAVE_BDDCML
     int ierr;
 
     // merge solution on root
@@ -313,6 +340,7 @@ void LinSys_BDDC::gatherSolution_( )
     }
     // broadcast global solution from root
     ierr = MPI_Bcast( &(globalSolution_[0]), globalSolution_.size(), MPI_DOUBLE, 0, comm_ );
+#endif // HAVE_BDDCML
 }
 
 

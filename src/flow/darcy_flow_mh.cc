@@ -1020,6 +1020,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
 
+#ifdef HAVE_BDDCML
         if (in_rec.type() == LinSys_BDDC::input_type) {
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
@@ -1032,7 +1033,9 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             END_TIMER("BDDC set mesh data");
             
         }
-        else if (in_rec.type() == LinSys_PETSC::input_type) {
+        else
+#endif // HAVE_BDDCML
+        if (in_rec.type() == LinSys_PETSC::input_type) {
             LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
             ls->set_from_input(in_rec);
             ls->set_solution( NULL );
@@ -1655,6 +1658,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
 
     // prepare global_row_4_sub_row
 
+#ifdef HAVE_BDDCML
     if (in_rec.type() ==  LinSys_BDDC::input_type) {
         // auxiliary
         Element *el;
@@ -1697,6 +1701,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
         }
         global_row_4_sub_row->finalize();
     }
+#endif // HAVE_BDDCML
 
     // common to both solvers - create renumbering of unknowns
     solver_indices_.reserve(size);
