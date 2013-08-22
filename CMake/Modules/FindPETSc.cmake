@@ -418,7 +418,7 @@ return 0;
   set (PETSC_INCLUDES ${petsc_includes_needed} CACHE STRING "PETSc include path" FORCE)
   set (PETSC_LIBRARIES ${PETSC_LIBRARIES_ALL} CACHE STRING "PETSc libraries" FORCE)
   set (PETSC_COMPILER ${petsc_cc} CACHE FILEPATH "PETSc compiler" FORCE)
-  set (PETSC_EXTERNAL_LIB ${petsc_libraries_external} )
+  set (PETSC_EXTERNAL_LIB ${petsc_libraries_external} CACHE STRING "PETSc external libraries" FORCE)
   # Note that we have forced values for all these choices. If you
   # change these, you are telling the system to trust you that they
   # work. It is likely that you will end up with a broken build.
