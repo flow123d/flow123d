@@ -39,8 +39,6 @@
 namespace it = Input::Type;
 
 it::AbstractRecord LinSys::input_type = it::AbstractRecord("LinSys", "Linear solver setting.")
-    .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"),
-                "Absolute residual tolerance.")
     .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
                 "Relative residual tolerance (to initial error).")
     .declare_key("max_it", it::Integer(0), it::Default("10000"),

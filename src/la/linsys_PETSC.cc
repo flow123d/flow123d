@@ -38,6 +38,7 @@ namespace it = Input::Type;
 
 it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
     .derive_from(LinSys::input_type)
+    .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
     .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
 
 
@@ -312,6 +313,9 @@ int LinSys_PETSC::solve()
     ierr = KSPSolve(system, rhs_, solution_ ); 
     ierr = KSPGetConvergedReason(system,&reason); 
     ierr = KSPGetIterationNumber(system,&nits); 
+
+    // substitute by PETSc call for residual
+    ierr = VecNorm(rhs_, NORM_2, &residual_norm_);
     
     xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", reason, nits);
 
@@ -411,6 +415,12 @@ void LinSys_PETSC::gatherSolution_( )
 
 void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 {
-	params_ = in_rec.val<string>("options");
+    // common values
+    r_tol_  = in_rec.val<double>("r_tol");   
+    max_it_ = in_rec.val<int>("max_it");   
+
+    // PETSc specific setting
+    a_tol_  = in_rec.val<double>("a_tol");   
+    params_ = in_rec.val<string>("options");
 }
 

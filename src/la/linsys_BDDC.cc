@@ -42,7 +42,13 @@ namespace it = Input::Type;
 
 #ifdef HAVE_BDDCML
 it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
-    .derive_from(LinSys::input_type);
+    .derive_from(LinSys::input_type)
+    .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
+                 "Maximum number of iterations of the linear solver with non-decreasing residual.")
+    .declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
+                 "Use adaptive selection of constraints in BDDCML.")
+    .declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
+                 "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.");
 #endif // HAVE_BDDCML
 
 
@@ -50,8 +56,10 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
                           Distribution * rows_ds,
                           const MPI_Comm comm,
                           const int matrixTypeInt,
-                          const int  numSubLoc )
-        : LinSys( rows_ds, comm )
+                          const int  numSubLoc,
+                          const bool swap_sign )
+        : LinSys( rows_ds, comm ),
+          swap_sign_(swap_sign)
 {
 #ifdef HAVE_BDDCML
     // set type
@@ -83,9 +91,6 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
                            matrixType,
                            comm, 
                            numSubLoc );
-
-    // set type
-    type = LinSys::BDDC;
 
     // prepare space for local solution
     locSolution_.resize( numDofsSub );
@@ -182,6 +187,9 @@ void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, doub
             mat( i, j ) = vals[i*ncol + j];
         }
     }
+    if (swap_sign_) {
+       mat = -mat;
+    }
 
     bddcml_ -> insertToMatrix( mat, myRows, myCols );
 #endif // HAVE_BDDCML
@@ -199,6 +207,9 @@ void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
 
     for ( unsigned i = 0; i < nrow; i++ ) {
         vec( i ) = vals[i];
+    }
+    if (swap_sign_) {
+       vec = -vec;
     }
 
     bddcml_ -> insertToRhs( vec, myRows );
@@ -222,19 +233,10 @@ void LinSys_BDDC::apply_constrains( double scalar )
 int LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef HAVE_BDDCML
-    double              tol            = 1.e-7; //!< tolerance on relative residual ||res||/||rhs||
     int                 numLevels      = 2;     //!< number of levels
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
-    int                 verboseLevel   = 1;     //!< level of verbosity of BDDCML library 
-                                                //!< ( 0 - only fatal errors reported, 
-                                                //!<   1 - mild output, 
-                                                //!<   2 - detailed output )
-    int                 maxIt          = 5000;  //!< maximum number of iterations
-    int                 ndecrMax       = 100;    //!< maximum number of iterations with non-decreasing residual 
-                                                //!< ( used to stop diverging process )
-    bool                use_adaptive   = false; //!< should adaptive BDDC be used?
 
-    bddcml_ -> solveSystem( tol, numLevels, numSubAtLevels, verboseLevel, maxIt, ndecrMax, use_adaptive );
+    bddcml_ -> solveSystem( r_tol_, numLevels, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
 
     DBGMSG("BDDCML converged reason: %d ( 0 means OK ) \n", bddcml_ -> giveConvergedReason() );
     DBGMSG("BDDCML converged in %d iterations. \n", bddcml_ -> giveNumIterations() );
@@ -242,7 +244,7 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 
     // download local solution
     bddcml_ -> giveSolution( isngn_, locSolution_ ); 
-    return bddcml_ -> giveConvergedReason();
+
 
     double * locSolVecArray;
     PetscErrorCode ierr;
@@ -256,6 +258,12 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 #else
 	return 0;
 #endif // HAVE_BDDCML
+
+    // upper bound on the residual error
+    residual_norm_ = r_tol_ * bddcml_->normRhs( ) ;
+
+    return bddcml_ -> giveConvergedReason();
+
 }
 
 void LinSys_BDDC::get_whole_solution( std::vector<double> & globalSolution )
@@ -273,6 +281,18 @@ void LinSys_BDDC::set_whole_solution( std::vector<double> & globalSolution )
     globalSolution_.resize( globalSolution.size( ) );
     std::copy( globalSolution.begin(), globalSolution.end(), globalSolution_.begin() );
 #endif // HAVE_BDDCML
+}
+
+void LinSys_BDDC::set_from_input(const Input::Record in_rec)
+{
+    // common values
+    r_tol_  = in_rec.val<double>("r_tol");   
+    max_it_ = in_rec.val<int>("max_it");   
+
+    // BDDCML specific parameters
+    max_nondecr_it_         = in_rec.val<int>("max_nondecr_it");   
+    use_adaptive_bddc_      = in_rec.val<bool>("use_adaptive_bddc");
+    bddcml_verbosity_level_ = in_rec.val<int>("bddcml_verbosity_level");
 }
 
 LinSys_BDDC::~LinSys_BDDC()
@@ -342,5 +362,4 @@ void LinSys_BDDC::gatherSolution_( )
     ierr = MPI_Bcast( &(globalSolution_[0]), globalSolution_.size(), MPI_DOUBLE, 0, comm_ );
 #endif // HAVE_BDDCML
 }
-
 

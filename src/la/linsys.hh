@@ -321,27 +321,29 @@ public:
     virtual void apply_constrains( double scalar )=0;
 
     /**
-     * Solve the system.
-     *
-     * parameters should by provided in input file (currently INI file, but will be changed to JSON)
-     *
-     * If we realize that we need to set something, rather add some set_* function.
-     *
-     * double tol = 1.e-7,                        //!< tolerance on relative residual ||res||/||rhs||
-       int  numLevels = 2,                        //!< number of levels
-       std::vector<int> *  numSubAtLevels = NULL, //!< number of subdomains at levels
-       int verboseLevel = 0,                      //!< level of verbosity of BDDCML library
-                                                  //!< ( 0 - only fatal errors reported,
-                                                  //!<   1 - mild output,
-                                                  //!<   2 - detailed output )
-       int  maxIt = 1000,                         //!< maximum number of iterations
-       int  ndecrMax = 30 );                      //!< maximum number of iterations with non-decreasing residual
-                                                  //!< ( used to stop diverging process )
-     *
-     *
-     * Returns convergence reason
+     * Solve the system and return convergence reason.
      */
     virtual int solve()=0;
+
+    /**
+     * Returns norm of the initial right hand side
+     */
+    double get_residual_norm(){
+       return residual_norm_;
+    };
+
+    /**
+     * Returns information on relative solver accuracy
+     */
+    double get_relative_accuracy(){
+       return r_tol_;
+    };
+
+    /**
+     * Returns information on absolute solver accuracy
+     */
+    virtual double get_absolute_accuracy(){
+    };
 
     /**
      * Provides user knowledge about symmetry.
@@ -410,12 +412,10 @@ public:
        if ( own_solution_ ) delete[] v_solution_;
     }
 
-
-    // TODO: read these from input, use in solve()
-    // make access methods
-    double          a_tol,r_tol;
-
 protected:
+    double           r_tol_;  // relative tolerance of linear solver
+    int              max_it_; // maximum number of iterations of linear solver
+
     MPI_Comm         comm_;
     SetValuesMode    status_;         //!< Set value status of the linear system.
 
@@ -432,9 +432,12 @@ protected:
     double  *v_solution_;        //!< local solution array pointing into Vec solution_
     bool     own_solution_;      //!< Indicates if the solution array has been allocated by this class
 
+    double  residual_norm_;      //!< local solution array pointing into Vec solution_
+
     ConstraintVec_   constraints_;
 
     std::vector<double>  globalSolution_; //!< global solution in numbering for linear system
+
 };
 
 #endif /* LA_LINSYS_HH_ */

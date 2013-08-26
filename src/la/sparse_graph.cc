@@ -491,7 +491,7 @@ void SparseGraphMETIS::partition(int *part)
                                           ubvec, options, &edgecut, part);
 #else
                       METIS_PartGraphKway(&n_vtx,rows,adj, //vtx distr, local vtx begins, edges of local vtxs
-                                  vtx_weights,adj_weights,&wght_flag,&num_flag, // vertex, edge weights, ...
+                                  vtx_weights,adj_weights,&wgtflag,&num_flag, // vertex, edge weights, ...
                                   &n_proc,options,&edgecut,part);
 #endif
                   }     

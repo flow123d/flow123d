@@ -57,7 +57,8 @@ public:
                  Distribution * rows_ds,
                  const MPI_Comm comm = MPI_COMM_WORLD,
                  const int matrixTypeInt = 0,
-                 const int  numSubLoc = 1 );
+                 const int  numSubLoc = 1,
+                 const bool swap_sign = false );
 
     void load_mesh( const int nDim, const int numNodes, const int numDofs,
                     const std::vector<int> & inet, 
@@ -86,6 +87,8 @@ public:
 
     void set_whole_solution( std::vector<double> & globalSolution );
 
+    void set_from_input(const Input::Record in_rec);
+
     ~LinSys_BDDC( );
 
 private:
@@ -94,13 +97,23 @@ private:
 
 private:
 
+    //! parameters expected from input file:
+    int  max_nondecr_it_;         //!< maximum number of iterations of linear solver with non-decreasing residual
+    bool use_adaptive_bddc_;      //!< should adaptive BDDC be used?
+    int  bddcml_verbosity_level_; //!< level of verbosity of BDDCML library 
+                                  //!< ( 0 - only fatal errors reported, 
+                                  //!<   1 - mild output, 
+                                  //!<   2 - detailed output )//!< should adaptive BDDC be used?
+                                  
+    const bool                        swap_sign_;      //!< swap sign of matrix and rhs entries, e.g. to make the matrix SPD
+
     std::vector<int>                  isngn_;          //!< indices of subdomain nodes in global numbering
     std::vector<double>               locSolution_;    //!< subdomain solution
     Vec                               locSolVec_;      //!< local solution PETSc vector - sequential
     VecScatter                        VSpetscToSubScatter_; //!< scatter from solution_ to locSolVec_
 
     typedef la::BddcmlWrapper         Bddcml_;
-    Bddcml_ *                         bddcml_;         //!< OpenFTL solver
+    Bddcml_ *                         bddcml_;         //!< BDDCML wrapper
 };
 
 #endif /* LA_LINSYS_BDDC_HH_ */

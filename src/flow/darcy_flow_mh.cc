@@ -95,7 +95,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
         it::AbstractRecord("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.")
         .declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
                 "Number of Schur complements to perform when solving MH sytem.")
-        .declare_key("solver", Solver::input_type, it::Default::obligatory(),
+        .declare_key("solver", LinSys::input_type, it::Default::obligatory(),
                 "Linear solver for MH problem.")
         .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
                 "Parameters of output form MH module.")
@@ -273,7 +273,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-
     
     //START_TIMER("solver init");
     //solver = new (Solver);
@@ -393,19 +392,16 @@ void DarcyFlowMH_Steady::update_solution() {
     //time_->view("DARCY"); //time governor information output
     
     modify_system(); // hack for unsteady model
-    int convergedReason = schur0 -> solve();
-    DBGMSG( "Solved linear problem with converged reason %d \n", convergedReason );
-    ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
-
+    int convergedReason;
 
     switch (n_schur_compls) {
     case 0: /* none */
-        schur0->solve();
+        convergedReason = schur0->solve();
         break;
     case 1: /* first schur complement of A block */
         make_schur1();
         //schur1->resolve();
-        schur1->get_system()->solve();
+        convergedReason = schur1->get_system()->solve();
         break;
     case 2: /* second schur complement of the max. dimension elements in B block */
         make_schur1();
@@ -414,9 +410,12 @@ void DarcyFlowMH_Steady::update_solution() {
         //schur2->resolve();
         //schur1->resolve();
         schur2->get_system()->solve();
-        schur1->get_system()->solve();
+        convergedReason = schur1->get_system()->solve();
         break;
-   }
+    }
+
+    DBGMSG( "Solved linear problem with converged reason %d \n", convergedReason );
+    ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
 
     this -> postprocess();
 
@@ -439,7 +438,6 @@ void DarcyFlowMH_Steady::postprocess()
     int side_rows[4];
     double values[4];
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux
@@ -464,20 +462,27 @@ void DarcyFlowMH_Steady::postprocess()
 double DarcyFlowMH_Steady::solution_precision() const
 {
 	double precision;
+        double r_tol = 0.0, a_tol = 0.0;
 	double bnorm=0.0;
 
 	switch (n_schur_compls) {
 	case 0: /* none */
-		if (schur0 != NULL) VecNorm(schur0->get_rhs(), NORM_2, &bnorm);
+                //if (schur0 != NULL) VecNorm(schur0->get_rhs(), NORM_2, &bnorm);
+		if (schur0 != NULL) precision = schur0->get_residual_norm();
 		break;
 	case 1: /* first schur complement of A block */
 		if (schur1 != NULL) VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
+                r_tol = (schur1->get_system())->get_relative_accuracy();
+                a_tol = (schur1->get_system())->get_absolute_accuracy();
+	        precision = max(a_tol, r_tol*bnorm);
 		break;
 	case 2: /* second schur complement of the max. dimension elements in B block */
 		if (schur1 != NULL) VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
+                r_tol = (schur1->get_system())->get_relative_accuracy();
+                a_tol = (schur1->get_system())->get_absolute_accuracy();
+	        precision = max(a_tol, r_tol*bnorm);
 		break;
 	}
-	precision = max(schur0->a_tol, schur0->r_tol*bnorm);
 
 	return precision;
 }
@@ -698,8 +703,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 tmp_rows[2+i] = tmp_rows[1];
             }
         }
-
-
 
 
         // add virtual values for schur complement allocation
@@ -1004,13 +1007,13 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
     Element *ele;
     Vec aux;
 
-    xprintf(Msg,"****************** problem statistics \n");
-    xprintf(Msg,"edges: %d \n",mesh_->n_edges());
-    xprintf(Msg,"sides: %d \n",mesh_->n_sides());
-    xprintf(Msg,"elements: %d \n",mesh_->n_elements());
-    xprintf(Msg,"************************************* \n");
-    xprintf(Msg,"problem size: %d \n",this->size);
-    xprintf(Msg,"****************** problem statistics \n");
+    //xprintf(Msg,"****************** problem statistics \n");
+    //xprintf(Msg,"edges: %d \n",mesh_->n_edges());
+    //xprintf(Msg,"sides: %d \n",mesh_->n_sides());
+    //xprintf(Msg,"elements: %d \n",mesh_->n_elements());
+    //xprintf(Msg,"************************************* \n");
+    //xprintf(Msg,"problem size: %d \n",this->size);
+    //xprintf(Msg,"****************** problem statistics \n");
 
     if (schur0 == NULL) { // create Linear System for MH matrix
 
@@ -1018,7 +1021,9 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
         if (in_rec.type() == LinSys_BDDC::input_type) {
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
-                    1 ); // 1 == number of subdomains per process
+                    1,  // 1 == number of subdomains per process
+                    true); // swap signs of matrix and rhs to make the matrix SPD
+            ls->set_from_input(in_rec);
             ls->set_solution( NULL );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
@@ -1026,7 +1031,9 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             schur0=ls;
             n_schur_compls = 0;
             END_TIMER("BDDC set mesh data");
-            
+
+            // for BDDC no Schur complements for the moment
+            n_schur_compls = 0;
         }
         else
 #endif // HAVE_BDDCML
@@ -1171,6 +1178,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     }
     //convert set of dofs to vectors
     int numNodeSub = localDofMap.size();
+    ASSERT_EQUAL( numNodeSub, global_row_4_sub_row->size() );
     std::vector<int> isngn( numNodeSub );
     std::vector<double> xyz( numNodeSub * 3 ) ;
     int ind = 0;
@@ -1586,7 +1594,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
         //xprintf(Msg,"Number of elements in subdomain %d \n",el_ds->lsize());
         delete[] id_4_old;
 
-        //el_ds->view();
+        //el_ds->view( std::cout );
         //
         //DBGMSG("Compute appropriate edge partitioning ...\n");
         //optimal element part; loc. els. id-> new el. numbering
@@ -1640,6 +1648,9 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     delete [] loc_part;
     delete [] id_4_old;
 
+    //edge_ds->view( std::cout );
+    //side_ds->view( std::cout );
+
     /*
      DBGPRINT_INT("edge_id_4_loc",edge_ds->lsize,edge_id_4_loc);
      DBGPRINT_INT("el_4_loc",el_ds->lsize,el_4_loc);
@@ -1690,7 +1701,6 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
                 // edge neighbouring overlap
                 //if (edg->neigh_vb != NULL) {
 		//	int neigh_el_row=row_4_el[mesh_->element.index(edg->neigh_vb->element[0])];
-                //      localDofSet.insert( neigh_el_row );
                 //}
             }
 

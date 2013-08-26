@@ -88,6 +88,13 @@ public:
 
     int solve();
 
+    /**
+     * Returns information on absolute solver accuracy
+     */
+    inline double get_absolute_accuracy(){
+       return a_tol_;
+    };
+
     void get_whole_solution( std::vector<double> & globalSolution );
 
     void view( );
@@ -119,6 +126,9 @@ private:
 
 private:
 
+    double      a_tol_;  // absolute tolerance of linear solver
+    std::string params_; // command-line-like options for the PETSc solver
+
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
 
@@ -127,7 +137,6 @@ private:
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
 
-    std::string params_;
 };
 
 #endif /* LA_LINSYS_PETSC_HH_ */
