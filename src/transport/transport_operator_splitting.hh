@@ -283,6 +283,7 @@ private:
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     Sorption *sorptions;
+    Sorption *sorptions_immob;
     Semchem_interface *Semchem_reactions;
     //int steps;
 
