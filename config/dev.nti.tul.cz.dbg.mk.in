@@ -4,6 +4,11 @@
 #set(PETSC_ARCH "linux-gnu-c-debug")
 set(INSTALL_PETSC_BDDCML "yes")
 
+## 
+# We has to use new gfortran compiler for BDDCML. BDDCML instalator use the same Fortran compiler as PETSC.
+#
+set(INSTALL_PETSC_OPTIONS " --with-fc=gfortran44")
+
 ## This is directory, where flow123d is be built
 # BUILD_DIR=bitten_tmp
 
