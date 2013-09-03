@@ -2,7 +2,7 @@
 #set(PETSC_DIR "/home/tester.flow123d/petsc-3.2-p4")
 ## Architecture of PETSC
 #set(PETSC_ARCH "linux-gnu-c-debug")
-
+set(INSTALL_PETSC_BDDCML "yes")
 
 ## This is directory, where flow123d is be built
 # BUILD_DIR=bitten_tmp
@@ -24,4 +24,4 @@ set(CMAKE_C_COMPILER "/usr/bin/gcc44")
 
 set(CMAKE_CXX_COMPILER "/usr/bin/g++44")
 
-set(EXTERNAL_PROJECT_DIR "$ENV{HOME}/external_projects/JB_1.7_inputs") 
+set(EXTERNAL_PROJECT_DIR "$ENV{HOME}/external_projects/trunk_1.8") 

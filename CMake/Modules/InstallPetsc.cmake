@@ -8,8 +8,10 @@
 #     PETSC_MPI_DIR      - pass MPI to PETSC configure 
 #     PETSC_LAPACK_DIR   - pass Lapack to PETSC configure
 #     INSTALL_PETSC_ONLY - install only petsc (possibly MPI and BLAS/LAPACK)
-#     INSTALL_PETSC_FULL - install also: metis, parmetis, hypre, ml, mumps
+#     INSTALL_PETSC_BDDCML - install also: metis, parmetis, hypre, ml, mumps
+#     INSTALL_PETSC_OPTIONS - add content of this variable to the PETSC configure command
 #     (default)          - install also, metis, parmetis
+
 
 
 if (NOT EXTERNAL_PETSC_DIR)
@@ -44,13 +46,14 @@ endif()
 
 if(INSTALL_PETSC_ONLY)
 else()
-    if(INSTALL_PETSC_FULL)
-        set(PETSC_CONF_LINE "${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-umfpack=yes --download-sundials=yes")
+    if(INSTALL_PETSC_BDDCML)
+        set(PETSC_CONF_LINE "${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes")
     else()
         set(PETSC_CONF_LINE "${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes")
     endif()
 endif()    
 
+set(PETSC_CONF_LINE "${PETSC_CONF_LINE} ${INSTALL_PETSC_OPTIONS}")
 
 set (cmakelists_fname "${EXTERNAL_PETSC_DIR}/CMakeLists.txt")
 file (WRITE "${cmakelists_fname}"

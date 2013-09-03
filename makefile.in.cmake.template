@@ -12,14 +12,27 @@ set(PETSC_ARCH "gcc_O3")
 # e.g. Some PETSC installations have missing pthread library. So we use (assuming libpthread.a placed in /usr/lib):
 # set( PETSC_ADDITIONAL_LIBS "-lpthread")
 
-
+# Options for PETSC installer.
+#     PETSC_MPI_DIR      - pass MPI to PETSC configure 
+#     PETSC_LAPACK_DIR   - pass Lapack to PETSC configure
+#     INSTALL_PETSC_ONLY - install only petsc (possibly MPI and BLAS/LAPACK)
+#     INSTALL_PETSC_BDDCML - install also: metis, parmetis, hypre, ml, mumps
+#     INSTALL_PETSC_OPTIONS - add content of this variable to the PETSC configure command
+#
+# set(INSTALL_PETSC_BDDCML "yes")
+# set(INSTALL_PETSC_OPTIONS "--download-hypre=yes")
 
 ### BDDCML library #############################################################
 # BDDCML_ROOT - root directory of BDDCML library
 # tested with version 2.2
 # If BDDCML_ROOT is set and BDDCML library is not found it is installed automatically.
+# If the variable is unset, BDDCML is not used.
+# Note: For automatic installation you need MUMPS and ScaLapack, this can be automatically installed with PETSC 
+# if you set INSTALL_PETSC_BDDCML.
 
 set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
+
+
 
 
 ### Build setting ####################################################################
