@@ -32,6 +32,11 @@ set(PETSC_ARCH "gcc_O3")
 
 set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
 
+### Python setting ###############################################################
+# USE_PYTHON - only use python if this is set to "yes"
+# We add python library only on explicit request since it leads to tons of errors when debugging with valgrind.
+#
+# set(USE_PYTHON "yes")
 
 ### Build setting ####################################################################
 

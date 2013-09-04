@@ -4,11 +4,11 @@
 #     Author: jb
 #
 # accepted variables: 
-#     EXTERNAL_PETSC_DIR - directory used for instalation
+#     EXTERNAL_PETSC_DIR - target directory used for instalation
+#     INSTALL_PETSC_URL - url with petsc tarball
 #     PETSC_MPI_DIR      - pass MPI to PETSC configure 
 #     PETSC_LAPACK_DIR   - pass Lapack to PETSC configure
 #     INSTALL_PETSC_ONLY - install only petsc (possibly MPI and BLAS/LAPACK)
-#     INSTALL_PETSC_BDDCML - install also: metis, parmetis, hypre, ml, mumps
 #     INSTALL_PETSC_OPTIONS - add content of this variable to the PETSC configure command
 #     (default)          - install also, metis, parmetis
 
@@ -46,11 +46,7 @@ endif()
 
 if(INSTALL_PETSC_ONLY)
 else()
-    if(INSTALL_PETSC_BDDCML)
-        set(PETSC_CONF_LINE "${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes")
-    else()
-        set(PETSC_CONF_LINE "${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes")
-    endif()
+    set(PETSC_CONF_LINE "${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes")
 endif()    
 
 set(PETSC_CONF_LINE "${PETSC_CONF_LINE} ${INSTALL_PETSC_OPTIONS}")
@@ -63,7 +59,7 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(PETSC
     DOWNLOAD_DIR ${EXTERNAL_PETSC_DIR} 
-    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/petsc-lite-3.4.1.tar.gz\"
+    URL ${INSTALL_PETSC_URL}
     SOURCE_DIR ${EXTERNAL_PETSC_DIR}/src
     BINARY_DIR ${EXTERNAL_PETSC_DIR}/src
     CONFIGURE_COMMAND ${EXTERNAL_PETSC_DIR}/src/configure ${PETSC_CONF_LINE}

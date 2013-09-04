@@ -286,6 +286,10 @@ if (NOT PETSC_FOUND)
         # Install PETSC
         # also set PETSC_DIR, PETSC_ARCH
         set(EXTERNAL_PETSC_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        set(INSTALL_PETSC_URL http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/petsc-lite-3.4.1.tar.gz)
+        if (INSTALL_PETSC_BDDCML)
+          set(INSTALL_PETSC_OPTIONS "${INSTALL_PETSC_OPTIONS} --download-metis=yes --download-parmetis=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes")
+        endif()
         include(InstallPetsc)
         
         set(PETSC_petsc_config_current "NO")
@@ -411,14 +415,16 @@ IF (PETSC_FOUND)
 endif()
 
 # optionaly we use Python interface
-# We disallow python under cygwin since we are not able to extract correct libraries to make it work elsewhere.
+# We disallow python under cygwin since we are not able to extract correct libraries to make it work ther.
 if (CYGWIN)
 else (CYGWIN) 
+  if (USE_PYTHON)
     find_package(PythonLibs)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
     endif()
+  endif()  
 endif(CYGWIN)
 
 # check for subversion and prepare generating of file with revision info.
@@ -504,5 +510,16 @@ if( PETSC_FOUND )
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
+
+###############################################################################
+# Summary
+
+message(STATUS "=============== Summary ===================")
+message(STATUS "Boost:  ${BOOST_LIBRARYDIR}")
+message(STATUS "Petsc:  ${PETSC_LIBRARIES}")
+message(STATUS "   + :  ${PETSC_ADDITIONAL_LIBS}")
+message(STATUS "BDDCML: ${BDDCML_LIBRARIES}")
+message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
+
 
 

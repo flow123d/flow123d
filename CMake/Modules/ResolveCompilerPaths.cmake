@@ -1,46 +1,47 @@
 # ResolveCompilerPaths - this module defines two macros
 #
 # RESOLVE_LIBRARIES (XXX_LIBRARIES LINK_LINE)
-#  This macro is intended to be used by FindXXX.cmake modules.
-#  It parses a compiler link line and resolves all libraries
-#  (-lfoo) using the library path contexts (-L/path) in scope.
-#  The result in XXX_LIBRARIES is the list of fully resolved libs.
-#  Example:
+# This macro is intended to be used by FindXXX.cmake modules.
+# It parses a compiler link line and resolves all libraries
+# (-lfoo) using the library path contexts (-L/path) in scope.
+# The result in XXX_LIBRARIES is the list of fully resolved libs.
+# Example:
 #
-#    RESOLVE_LIBRARIES (FOO_LIBRARIES "-L/A -la -L/B -lb -lc -ld")
+# RESOLVE_LIBRARIES (FOO_LIBRARIES "-L/A -la -L/B -lb -lc -ld")
 #
-#  will be resolved to
+# will be resolved to
 #
-#    FOO_LIBRARIES:STRING="/A/liba.so;/B/libb.so;/A/libc.so;/usr/lib/libd.so"
+# FOO_LIBRARIES:STRING="/A/liba.so;/B/libb.so;/A/libc.so;/usr/lib/libd.so"
 #
-#  if the filesystem looks like
+# if the filesystem looks like
 #
-#    /A:       liba.so         libc.so
-#    /B:       liba.so libb.so
-#    /usr/lib: liba.so libb.so libc.so libd.so
+# /A: liba.so libc.so
+# /B: liba.so libb.so
+# /usr/lib: liba.so libb.so libc.so libd.so
 #
-#  and /usr/lib is a system directory.
+# and /usr/lib is a system directory.
 #
-#  Note: If RESOLVE_LIBRARIES() resolves a link line differently from
-#  the native linker, there is a bug in this macro (please report it).
+# Note: If RESOLVE_LIBRARIES() resolves a link line differently from
+# the native linker, there is a bug in this macro (please report it).
 #
 # RESOLVE_INCLUDES (XXX_INCLUDES INCLUDE_LINE)
-#  This macro is intended to be used by FindXXX.cmake modules.
-#  It parses a compile line and resolves all includes
-#  (-I/path/to/include) to a list of directories.  Other flags are ignored.
-#  Example:
+# This macro is intended to be used by FindXXX.cmake modules.
+# It parses a compile line and resolves all includes
+# (-I/path/to/include) to a list of directories. Other flags are ignored.
+# Example:
 #
-#    RESOLVE_INCLUDES (FOO_INCLUDES "-I/A -DBAR='\"irrelevant -I/string here\"' -I/B")
+# RESOLVE_INCLUDES (FOO_INCLUDES "-I/A -DBAR='\"irrelevant -I/string here\"' -I/B")
 #
-#  will be resolved to
+# will be resolved to
 #
-#    FOO_INCLUDES:STRING="/A;/B"
+# FOO_INCLUDES:STRING="/A;/B"
 #
-#  assuming both directories exist.
-#  Note: as currently implemented, the -I/string will be picked up mistakenly (cry, cry)
+# assuming both directories exist.
+# Note: as currently implemented, the -I/string will be picked up mistakenly (cry, cry)
+include (CorrectWindowsPaths)
 
 macro (RESOLVE_LIBRARIES LIBS LINK_LINE)
-  string (REGEX MATCHALL "((-L|-l|-Wl)([^\" ]+|\"[^\"]+\")|/[^\" ]+(a|so|dll))" _all_tokens "${LINK_LINE}")
+  string (REGEX MATCHALL "((-L|-l|-Wl)([^\" ]+|\"[^\"]+\")|[^\" ]+\\.(a|so|dll|lib))" _all_tokens "${LINK_LINE}")
   set (_libs_found)
   set (_directory_list)
   foreach (token ${_all_tokens})
@@ -48,27 +49,41 @@ macro (RESOLVE_LIBRARIES LIBS LINK_LINE)
       # If it's a library path, add it to the list
       string (REGEX REPLACE "^-L" "" token ${token})
       string (REGEX REPLACE "//" "/" token ${token})
+      convert_cygwin_path(token)
       list (APPEND _directory_list ${token})
-    elseif (token MATCHES "^(-l([^\" ]+|\"[^\"]+\")|/[^\" ]+(a|so|dll))")
+    elseif (token MATCHES "^(-l([^\" ]+|\"[^\"]+\")|[^\" ]+\\.(a|so|dll|lib))")
       # It's a library, resolve the path by looking in the list and then (by default) in system directories
-      string (REGEX REPLACE "^-l" "" token ${token})
-      set (_root)
-      if (token MATCHES "^/")	# We have an absolute path, add root to the search path
-        # workaround for bug in find_library on cygwin (do not work for libraries given as full path)
-        # doesn;t work with paths containing spaces
-        STRING(REGEX REPLACE "^/[^ ]*/lib([^/ ]*).(a|so|dll)" "\\1" LIB_NAME ${token})
-        STRING(REGEX REPLACE "(^/[^ ]*/)lib[^/ ]*.(a|so|dll)" "\\1" LIB_PATH ${token})
-	set (_root ${LIB_PATH})
-	set (token ${LIB_NAME})
+      if (WIN32 AND NOT CYGWIN) #windows expects "libfoo", linux expects "foo"
+        string (REGEX REPLACE "^-l" "lib" token ${token})
+      else ()
+        string (REGEX REPLACE "^-l" "" token ${token})
+      endif ()
+      
+      if (token MATCHES "^/")   # We have an absolute path
+        #separate into a path and a library name:        
+        if (WIN32 AND NOT CYGWIN) #windows expects "libfoo", linux expects "foo"
+          STRING(REGEX REPLACE "^/[^ ]*/([^/ ]*)[.](a|so|dll|lib)" "\\1" LIB_NAME ${token})
+          STRING(REGEX REPLACE "(^/[^ ]*/)[^/ ]*[.](a|so|dll|lib)" "\\1" LIB_PATH ${token})
+        else ()
+          STRING(REGEX REPLACE "^/[^ ]*/lib([^/ ]*).(a|so|dll)" "\\1" LIB_NAME ${token})
+          STRING(REGEX REPLACE "(^/[^ ]*/)lib[^/ ]*.(a|so|dll)" "\\1" LIB_PATH ${token})
+        endif ()
+        
+        convert_cygwin_path(LIB_PATH)
+        
+        set (_directory_list ${_directory_list} ${LIB_PATH})
+        set (token ${LIB_NAME})
       endif (token MATCHES "^/")
+      
       set (_lib "NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
-      find_library (_lib ${token} HINTS ${_directory_list} ${_root})
+      find_library (_lib NAMES ${token} HINTS ${_directory_list})
       ## debug
-      #message(STATUS "token: ${token}\ndlist: ${_directory_list}\nroot: ${_root}")    
+      message(STATUS "token: ${token}\ndlist: ${_directory_list}\nroot: ${_root}")    
       if (_lib)
         ## debug
         #message(STATUS "RESULT: ${_lib}")
-	string (REPLACE "//" "/" _lib ${_lib})
+
+        string (REPLACE "//" "/" _lib ${_lib})
         list (APPEND _libs_found ${_lib})
       else (_lib)
         message (STATUS "Unable to find library ${token}")
@@ -91,6 +106,7 @@ macro (RESOLVE_INCLUDES INCS COMPILE_LINE)
   foreach (token ${_all_tokens})
     string (REGEX REPLACE "^-I" "" token ${token})
     string (REGEX REPLACE "//" "/" token ${token})
+    convert_cygwin_path(token)
     if (EXISTS ${token})
       list (APPEND _incs_found ${token})
     else (EXISTS ${token})
@@ -100,3 +116,4 @@ macro (RESOLVE_INCLUDES INCS COMPILE_LINE)
   list (REMOVE_DUPLICATES _incs_found)
   set (${INCS} "${_incs_found}")
 endmacro (RESOLVE_INCLUDES)
+
