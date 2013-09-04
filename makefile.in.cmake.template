@@ -33,8 +33,6 @@ set(PETSC_ARCH "gcc_O3")
 set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
 
 
-
-
 ### Build setting ####################################################################
 
 
