@@ -134,16 +134,18 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                          xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", id, sid );
                     our_sid=old_to_new_side_numbering[ele->dim()][sid];
                     bcd = ele->side(our_sid) -> cond();
-                    if (! bcd)
-                        xprintf(UsrErr, "Setting boundary condition %d for non-boundary side %d of element ID: %d\n", id, sid, eid);
-                    bc_ele_idx = mesh_->bc_elements.index( ele->side(our_sid) -> cond()->element() );
-                    id_2_bcd_[id]= bc_ele_idx;
-                    if ( ! some_bc_region_.is_valid() ) some_bc_region_ = ele->side(our_sid) -> cond()->element()->region();
+                    if (bcd) {
+                        bc_ele_idx = mesh_->bc_elements.index( ele->side(our_sid) -> cond()->element() );
+                        id_2_bcd_[id]= bc_ele_idx;
+                        if ( ! some_bc_region_.is_valid() ) some_bc_region_ = ele->side(our_sid) -> cond()->element()->region();
 
-                    set_field(flow_type,     bc_ele_idx, type);
-                    set_field(flow_pressure, bc_ele_idx, scalar);
-                    set_field(flow_flux,     bc_ele_idx, flux);
-                    set_field(flow_sigma,    bc_ele_idx, sigma);
+                        set_field(flow_type,     bc_ele_idx, type);
+                        set_field(flow_pressure, bc_ele_idx, scalar);
+                        set_field(flow_flux,     bc_ele_idx, flux);
+                        set_field(flow_sigma,    bc_ele_idx, sigma);
+                    } else {
+                        xprintf(Warn, "IGNORING boundary condition %d for non-boundary side %d of element ID: %d\n", id, sid, eid);
+                    }
                     break;
                 case 3: // SIDE_E - BC given only by element, apply to all its sides
 

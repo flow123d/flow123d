@@ -78,7 +78,7 @@ macro (RESOLVE_LIBRARIES LIBS LINK_LINE)
       set (_lib "NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
       find_library (_lib NAMES ${token} HINTS ${_directory_list})
       ## debug
-      message(STATUS "token: ${token}\ndlist: ${_directory_list}\nroot: ${_root}")    
+      #message(STATUS "token: ${token}\ndlist: ${_directory_list}\nroot: ${_root}")    
       if (_lib)
         ## debug
         #message(STATUS "RESULT: ${_lib}")
