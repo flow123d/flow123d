@@ -144,7 +144,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
-		double porosity;
+		double porosity, phi;
 
 		int reg_idx=reg_iter.bulk_idx();
 
@@ -192,9 +192,10 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			}
 
 			// Creates interpolation tables in the case of constant rock matrix parameters
-			if((data_.rock_density.get_const_value(reg_iter, rock_density)) && (this->porosity_->get_const_value(reg_iter, porosity)))
+			if((data_.rock_density.get_const_value(reg_iter, rock_density)) && (this->porosity_->get_const_value(reg_iter, porosity)) && (this->phi_->get_const_value(reg_iter, phi)))
 			{
-				isotherms[reg_idx][i_subst].reinit(hlp_iso_type, rock_density, solvent_dens, porosity, molar_masses[i_subst], c_aq_max[i_subst]);
+				bool dual_porosity_on = this->get_dual_porosity();
+				isotherms[reg_idx][i_subst].reinit(hlp_iso_type, rock_density, solvent_dens, porosity, molar_masses[i_subst], c_aq_max[i_subst], dual_porosity_on, phi);
 				switch(hlp_iso_type)
 				{
 				case 0: // none:
@@ -247,6 +248,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     int variabl_int = 0;
 
     if(reg_id_nr != 0) cout << "region id is " << reg_id_nr << endl;
+	double phi = this->phi_->value(elem->centre(),elem->element_accessor());
 
     //  If intersections of isotherm with mass balance lines are known, then interpolate.
     	//  Measurements [c_a,c_s] will be rotated
@@ -293,9 +295,10 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		    if(this->isotherms[reg_id_nr][i_subst].get_sorption_type() > 0)
 		    {
 		    	SorptionType elem_sorp_type = this->isotherms[reg_id_nr][i_subst].get_sorption_type();
+		    	bool dual_porosity_on = this->get_dual_porosity();
 
 		    	{
-		    		this->isotherms[reg_id_nr][i_subst].reinit(elem_sorp_type, rock_density, solvent_dens, porosity, molar_masses[i_subst], c_aq_max[i_subst]);
+		    		this->isotherms[reg_id_nr][i_subst].reinit(elem_sorp_type, rock_density, solvent_dens, porosity, molar_masses[i_subst], c_aq_max[i_subst], dual_porosity_on, phi);
 		    	}
 				int subst_id = substance_ids[i_subst];
 				switch(elem_sorp_type)
@@ -387,6 +390,17 @@ void Sorption::set_porosity(pScalar porosity)
 {
 	this->porosity_ = porosity;
 	return;
+}
+
+void Sorption::set_phi(pScalar phi)
+{
+	this->phi_ = phi;
+	return;
+}
+
+pScalar Sorption::get_phi(void)
+{
+	return phi_;
 }
 
 void Sorption::update_solution(void)

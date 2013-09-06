@@ -117,7 +117,7 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-    void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double porosity, double molar_mass, double c_aqua_limit);
+    void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double porosity, double molar_mass, double c_aqua_limit, bool dual_porosity_on, double phi);
     /**
      *
      */
@@ -141,6 +141,14 @@ public:
     *	Enables to set private parameter.
     */
     void set_inv_scale_sorbed(double inv_scale_sorbed);
+    /**
+    *
+    */
+    void set_rho_aqua(double rho_aqua);
+    /**
+    *
+    */
+    double get_rho_aqua(void);
     /**
     *	Enables to set private parameter.
     */
@@ -196,9 +204,11 @@ public:
     /**
     *
     */
-    void precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed);
+    void precipitate(double &c_aqua, double &c_sorbed); //, double scale_aqua, double scale_sorbed);
 private:
-    /// coefficient that convert soluted concentration to mass; rho_aqua*porosity = k_W
+    /// density of the solvent
+    double rho_aqua_;
+    /// coefficient that convert soluted concentration to mass; porosity = k_W, originally rho_aqua*porosity = k_W
     double scale_aqua_;
     /// coefficient that convert adsorbed molar concentration to mass; molar_weight * rho_rock * (1 - porosity) = k_H
     double scale_sorbed_;

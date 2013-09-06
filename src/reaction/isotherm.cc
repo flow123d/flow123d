@@ -14,12 +14,15 @@ void Linear::reinit(double mult_coef)
 	return;
 }
 
-void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
+void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit, bool dual_porosity_on, double phi)
 {
 	this->set_sorption_type(sorp_type);
 
-	double scale_aqua = porosity * rho_aqua;
-	double scale_sorbed = (1-porosity) * rock_density * molar_mass;
+	double scale_aqua = porosity; //originaly * rho_aqua;
+	double scale_sorbed;
+	  if(dual_porosity_on) scale_sorbed = (1-porosity/(1-phi)) * rock_density * molar_mass;
+	  else scale_sorbed = (1-porosity/phi) * rock_density * molar_mass;
+	this->set_rho_aqua(rho_aqua);
     this->set_scale_aqua(scale_aqua);
     this->set_scale_sorbed(scale_sorbed);
     this->set_inv_scale_aqua(scale_aqua_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)));
@@ -40,7 +43,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
         return true;
     } else {
     	if (c_aqua_limit_ > 0.0) {
-    		precipitate(c_aqua, c_sorbed, scale_aqua_, scale_sorbed_);
+    		precipitate(c_aqua, c_sorbed); //, scale_aqua_, scale_sorbed_);
     	} else
         {
         	cout << "c_aqua_limit_ has the value " << c_aqua_limit_ << endl;
@@ -57,7 +60,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
     boost::uintmax_t max_iter = 20;
     dekl_tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
-	double critic_total_mass = c_aqua_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(c_aqua_limit_)*scale_sorbed_;
+	double critic_total_mass = c_aqua_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(c_aqua_limit_ / this->rho_aqua_)*scale_sorbed_;
 
 	const double upper_solution_bound = critic_total_mass / scale_aqua_ + 0.00001; // corresponds to c_a^max, where substance stsarts to precipitate + 1.0
 
@@ -69,7 +72,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 		c_aqua = (solution.first + solution.second)/2; // = average of the pair solution defined above, midpoint
 		c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_; //const_cast<Func &>(isotherm)(c_aqua);
 	}else{
-		precipitate(c_aqua, c_sorbed, scale_aqua_, scale_sorbed_);
+		precipitate(c_aqua, c_sorbed); //, scale_aqua_, scale_sorbed_);
 	}
 
     return;
@@ -81,9 +84,9 @@ template void Isotherm::solve_conc<Langmuir>(double &c_aqua, double &c_sorbed, c
 
 template void Isotherm::solve_conc<Freundlich>(double &c_aqua, double &c_sorbed, const Freundlich &isotherm);
 
-void Isotherm::precipitate(double &c_aqua, double &c_sorbed, double scale_aqua, double scale_sorbed)
+void Isotherm::precipitate(double &c_aqua, double &c_sorbed) //, double scale_aqua, double scale_sorbed)
 {
-	double total_mass = (scale_aqua*c_aqua + scale_sorbed * c_sorbed);
+	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 
 	c_aqua = c_aqua_limit_;
 	c_sorbed = (total_mass - scale_aqua_ * c_aqua_limit_)/scale_sorbed_;
@@ -96,7 +99,7 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
 {
     double mass_limit;
     if (c_aqua_limit_ > 0.0) {
-        mass_limit = scale_aqua_ * c_aqua_limit_ + scale_sorbed_ * const_cast<Func &>(isotherm)(c_aqua_limit_);
+        mass_limit = scale_aqua_ * c_aqua_limit_ + scale_sorbed_ * const_cast<Func &>(isotherm)(c_aqua_limit_ / this->rho_aqua_);
         if(mass_limit < 0.0)
         {
         	cout << "isotherm mass_limit has negative value " << mass_limit << ", scale_aqua "  << scale_aqua_ << ", c_aq_limit " << c_aqua_limit_ << ", scale_sorbed " << scale_sorbed_ << endl;
@@ -163,6 +166,17 @@ void Isotherm::set_second_coef_(double second_coef)
 double Isotherm::get_second_coef_(void)
 {
 	return second_coef_;
+}
+
+void Isotherm::set_rho_aqua(double rho_aqua)
+{
+	rho_aqua_ = rho_aqua;
+	return;
+}
+
+double Isotherm::get_rho_aqua(void)
+{
+	return rho_aqua_;
 }
 
 void Isotherm::set_scale_aqua(double scale_aqua)

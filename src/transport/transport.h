@@ -201,7 +201,8 @@ private:
 	 */
 	void transport_matrix_step_mpi(double time_step); //
 
-	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
+	//void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
+	void transport_dual_porosity(void); //
 	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
 	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
 			double *concx, double *concx_sorb, double Nv, double N); //

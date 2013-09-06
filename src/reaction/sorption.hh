@@ -49,7 +49,7 @@ class Sorption:  public Reaction
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 		};
 	    /**
-	    * 	Pointer to mobile porosity field from transport
+	    * 	Pointer to porosity field from transport
 	    */
 	    //pScalar mob_porosity_;
 	    pScalar porosity_;
@@ -82,6 +82,14 @@ class Sorption:  public Reaction
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
 		void set_time_step(Input::Record in_rec);
+	    /**
+	    *
+	    */
+	    void set_phi(pScalar phi);
+	    /**
+	    *
+	    */
+	    pScalar get_phi(void);
 		/**
 		* Inherited init_from_input method extension.
 		*/
@@ -127,6 +135,11 @@ class Sorption:  public Reaction
 		*	Pointer to thwodimensional array[species][elements] containing concentrations either in mobile or immobile zone.
 		*/
 		double **concentration_matrix;
+	    /**
+		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
+		* pointer to phi field from transport
+		*/
+	    pScalar phi_;
 		/**
 		* 	Number of regions.
 		*/
