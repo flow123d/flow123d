@@ -320,9 +320,10 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     prepare_parallel(in_rec.val<AbstractRecord>("solver"));
 
-    //side_ds->view();
-    //el_ds->view();
-    //edge_ds->view();
+    //side_ds->view( std::cout );
+    //el_ds->view( std::cout );
+    //edge_ds->view( std::cout );
+    //rows_ds->view( std::cout );
     
     make_schur0(in_rec.val<AbstractRecord>("solver"));
 
@@ -400,15 +401,15 @@ void DarcyFlowMH_Steady::update_solution() {
         break;
     case 1: /* first schur complement of A block */
         make_schur1();
-        //schur1->resolve();
+        schur1->resolve();
         convergedReason = schur1->get_system()->solve();
         break;
     case 2: /* second schur complement of the max. dimension elements in B block */
         make_schur1();
         make_schur2();
 
-        //schur2->resolve();
-        //schur1->resolve();
+        schur2->resolve();
+        schur1->resolve();
         schur2->get_system()->solve();
         convergedReason = schur1->get_system()->solve();
         break;
@@ -623,7 +624,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             ls->mat_set_value(edge_row, side_row, c_val);
 
             // update matrix for weights in BDDCML
-            if ( ls->type == LinSys::BDDC ) {
+            if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                double val_side =  (fe_values.local_matrix())[i*nsides+i];
                double val_edge =  -1./ (fe_values.local_matrix())[i*nsides+i];
                subdomain_diagonal_map.insert( std::make_pair( side_row, val_side ) );
@@ -682,7 +683,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
 
             // update matrix for weights in BDDCML
-            if ( ls->type == LinSys::BDDC ) {
+            if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                int ind = tmp_rows[1];
                double new_val = value;
                std::map<int,double>::iterator it = subdomain_diagonal_map.find( ind );
@@ -723,7 +724,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         }
     }
 
-    if ( ls->type == LinSys::BDDC ) {
+    if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
        ls->load_diagonal( subdomain_diagonal_map );
     }
 
@@ -1312,15 +1313,17 @@ void DarcyFlowMH_Steady::make_schur1() {
     } else if (schur0->type == LinSys::MAT_MPIAIJ) {*/
 	if (schur1 == NULL) {
 		// create Inverse of the A block
-		err = MatCreateAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
+		/*err = MatCreateAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
 				PETSC_NULL, 0, PETSC_NULL, &(IA1));
 		ASSERT(err == 0,"Error in MatCreateMPIAIJ.");
 
-		MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE);
-		schur1 = new SchurComplement(schur0, IA1);
+		MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE); // */
+        ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &IS1);
+		schur1 = new SchurComplement(schur0, IS1, 5);
+		//schur1 = new SchurComplement(schur0, IA1);
 	}
 
-	for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+	/*for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
 		ele = mesh_->element(el_4_loc[i_loc]);
 
 		nsides = ele->n_sides();
@@ -1336,7 +1339,7 @@ void DarcyFlowMH_Steady::make_schur1() {
 	}
 
     MatAssemblyBegin(IA1, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(IA1, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(IA1, MAT_FINAL_ASSEMBLY); // */
     
     END_TIMER("schur1 - create,inverse");
     
@@ -1376,6 +1379,9 @@ void DarcyFlowMH_Steady::make_schur2() {
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1,  loc_el_size, PETSC_DETERMINE,
                 vDiag, &diag_schur1_b);
         VecRestoreArray(diag_schur1,&vDiag);
+        //xprintf(Msg, "DarcyFlowMH_Steady::make_schur2: proc %d, begin %d, end %d, lsize %d, size %d\n", el_ds->myp(), rows_ds->begin(), rows_ds->end(), el_ds->lsize(), el_ds->size());
+        //ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), rows_ds->begin(), 1, &IS2);
+        //schur2 = new SchurComplement(schur1->get_system(), IS2, 5);
         schur2 = new SchurComplement(schur1->get_system(), IA2);
 
     }

@@ -63,7 +63,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
 {
 #ifdef HAVE_BDDCML
     // set type
-    type = LinSys::BDDC;
+    //type = LinSys::BDDC;
 
     // from the point of view of assembly, BDDC linsys is in the ADD state
     status_ = LinSys::ADD;

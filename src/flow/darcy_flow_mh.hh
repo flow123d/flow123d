@@ -330,6 +330,8 @@ protected:
 
         Mat IA1;                                         //< inverse of matrix IA1
         Mat IA2;                                         //< inverse of matrix IA2
+        IS IS1;											 //< index set of matrix IA1
+        IS IS2;											 //< index set of matrix IA2
 
         Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
         

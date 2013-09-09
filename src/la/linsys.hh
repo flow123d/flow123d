@@ -97,13 +97,13 @@ public:
         NONE
     } SetValuesMode;
 
-    typedef enum {
+    /*typedef enum {
         PETSC,
         BDDC
         //PETSC_schur_complement   // possibly we can implement Schur as another kind of lin solver
         //PETSC_MPIAIJ_preallocate_by_assembly,
         //PETSC_MPIAIJ_assembly_by_triples,
-    } LinSysType;
+    } LinSysType;*/
 
 protected:
     typedef std::pair<unsigned,double>       Constraint_;
@@ -130,7 +130,7 @@ public:
     };
 
     // Particular type of the linear system.
-    LinSysType type;  //!< anyone can inquire my type
+    //LinSysType type;  //!< anyone can inquire my type
 
     virtual void load_mesh( const int nDim, const int numNodes, const int numDofs,
                             const std::vector<int> & inet, 
@@ -143,12 +143,12 @@ public:
                             const std::vector<double> & element_permeability,
                             const int meshDim )
     {
-        ASSERT( false, "Function load_mesh is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function load_mesh is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     virtual void load_diagonal( std::map<int,double> & diag )
     {
-        ASSERT( false, "Function load_diagonal is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function load_diagonal is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -173,7 +173,7 @@ public:
      */
     virtual const Mat &get_matrix()
     {
-        ASSERT( false, "Function get_matrix is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function get_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -181,7 +181,7 @@ public:
      */
     virtual const Vec &get_rhs()
     {
-        ASSERT( false, "Function get_rhs is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
     
     /**
@@ -222,7 +222,7 @@ public:
      */
     virtual void get_whole_solution( std::vector<double> & globalSolution )
     {
-        ASSERT( false, "Function get_whole_solution is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function get_whole_solution is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -230,7 +230,7 @@ public:
      */
     virtual void set_whole_solution( std::vector<double> & globalSolution )
     {
-        ASSERT( false, "Function set_whole_solution is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function set_whole_solution is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
     
     /**
@@ -238,7 +238,7 @@ public:
      */
     virtual void start_allocation()
     {
-        ASSERT( false, "Function start_allocation is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function start_allocation is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -246,7 +246,7 @@ public:
      */
     virtual void start_add_assembly()
     {
-        ASSERT( false, "Function start_add_assembly is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function start_add_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -254,7 +254,7 @@ public:
      */
     virtual void start_insert_assembly()
     {
-        ASSERT( false, "Function start_insert_assembly is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function start_insert_assembly is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     /**
@@ -402,7 +402,7 @@ public:
     //virtual void view(std::ostream output_stream, int * output_mapping = NULL)
     virtual void view()
     {
-        ASSERT( false, "Function view is not implemented for linsys type %d \n.", this -> type );
+        ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
     ~LinSys()

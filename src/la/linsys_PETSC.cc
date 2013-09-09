@@ -47,7 +47,7 @@ LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
         : LinSys( rows_ds, comm )
 {
     // set type
-    type = LinSys::PETSC;
+    //type = LinSys::PETSC;
 
     // create PETSC vectors:
     PetscErrorCode ierr;
