@@ -3,6 +3,58 @@
  *
  *  Created on: Mar 7, 2013
  *      Author: jb
+ *
+ *
+ *  TODO:
+ *  - fix identificators to something meaningfull (in english):
+ *    dekl_tolerance,  precipitate,
+ *    isotherm.cc - iso_ind_floor, etc.
+ *  - isotherm.cc, compute_projection:
+ *    - index must be less then size -1, in order to get correct linear interpolation
+ *    - make this function never fail - use solve_conc when outside of the interval
+ *      This is not so easy  since solve_cons is function template. Maybe we can
+ *      store appropriate function pointer together with the table
+ *    - proposed minor optimization
+ *  - setters/getters are useless
+ *  - reinit - do not pass phi and dual_porosity, but aqua_fracture (porosity) and rock_fracture
+ *    better: pass all parameters of one isotherm through reinit, make swith according type there
+ *
+ *
+ *
+ *
+ *
+
+ /// Pair of soluted concentration and adsorbed concentration
+ typedef pair<double, double> ConcPair;
+ class IsothermFactory {
+     void reint(int adsorption_type, ... ) {
+         tmp_isotherm.reinit(...);
+         // save functor parameters
+     }
+     Conc Pair solve_conc( ConcPair conc ) {
+          switch (adsoption_type_) {
+            case Isotherm::linear:
+                Linear functor(...);
+                return tmp_isotherm.solve_conc(conc, functor);
+                break;
+            case ....
+
+          }
+     void make_table(Isotherm &table) {
+          switch (adsoption_type_) {
+            case Isotherm::linear:
+                Linear functor(...);
+                table = tmp_isotherm;
+                table.make_table(functor);
+                table.set_factory(this); // allows compute values outside of the table
+                break;
+            case ....
+     }
+
+     Isotherm tmp_isotherm;
+
+ }
+
  */
 
 #ifndef SORPTION_IMPL_HH_

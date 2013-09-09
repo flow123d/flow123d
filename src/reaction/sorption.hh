@@ -2,6 +2,29 @@
  *
  * Class in this file makes it possible to handle the dataset describing solid phase as either precipitated or sorbed species.
  *
+ *
+ * TODO:
+ * sorption.cc:
+ * - Why tests from line 151- 162
+ * - use just one switch according to isotherm type
+ * - what about time dependent sorption parameters?
+ * - line 260: existence of appropriate table should be tested, faster and simpler
+ *   even better have method is_precomputed() of the Isotherm class.
+ *
+ * - consider make sorbed concentration internaly also kg (of substnance) /kg (of rock) and
+ *   convert it to mol/kg only on output, should be faster and safer
+ *
+ * - move all code that computes only values of one isotherm (of any type) to some other class
+ *   proposed IsothermFactory
+ *
+ * - Idea is to have one Isotherm factory object, all necessary fields availabel in Sorption::EqDAta object
+ *   and have virtual isotherm_reinit method, called during table initialization and/or in iterative solution.
+ *
+ *   Then we can have various derived Sorption classes for various purposes. Changing just the isotherm_reinit method we can
+ *   change the parameters actually used in isotherms.
+ *
+ *   Need prototype of dual-porosity reaction class to design precise placement of various involved fields.
+ *
  */
 #ifndef SORPTION
 #define SORPTION

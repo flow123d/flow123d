@@ -33,11 +33,11 @@ void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double r
 bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
 {
     double total_mass = (scale_aqua_* c_aqua + scale_sorbed_ * c_sorbed);
-    int iso_ind_floor = static_cast <int>(std::floor(total_mass / total_mass_step_));
-    if (iso_ind_floor < 0) return false;
-    if ( (unsigned int)(iso_ind_floor) < interpolation_table.size() ) {
-    	int iso_ind_ceil = iso_ind_floor + 1;
-    	double rot_sorbed = interpolation_table[iso_ind_floor] + (total_mass - iso_ind_floor*total_mass_step_)*(interpolation_table[iso_ind_ceil] - interpolation_table[iso_ind_floor])/total_mass_step_;
+    double total_mass_steps = total_mass / total_mass_step_;
+    int total_mass_idx = static_cast <int>(std::floor(total_mass_steps));
+    if ( total_mass_idx < 0 ) return false;
+    if ( (unsigned int)(total_mass_idx) < interpolation_table.size() ) {
+    	double rot_sorbed = interpolation_table[total_mass_idx] + (total_mass_steps - total_mass_idx)*(interpolation_table[total_mass_idx+1] - interpolation_table[total_mass_idx]);
         c_aqua = (total_mass * inv_scale_aqua_ - rot_sorbed * inv_scale_sorbed_); // (scale_aqua_ * total_mass * inv_scale_aqua_ - scale_sorbed_ * rot_sorbed * inv_scale_sorbed_);
         c_sorbed = (total_mass * inv_scale_sorbed_ + rot_sorbed * inv_scale_aqua_); // (scale_sorbed_ * total_mass * inv_scale_aqua_ + scale_aqua_ * rot_sorbed * inv_scale_sorbed_);
         return true;
