@@ -169,7 +169,7 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-    void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double porosity, double molar_mass, double c_aqua_limit, bool dual_porosity_on, double phi);
+    void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double scale_aqua, double scale_sorbed, double molar_mass, double c_aqua_limit);
     /**
      *
      */
@@ -306,7 +306,7 @@ public:
 
     double operator()( double conc_aqua)
     {
-        return scale_sorbed_*func( conc_aqua ) + (scale_aqua_) * conc_aqua - total_mass_; // that is the  selected isotherm // scale_sorbed_ * func( conc_aqua ) + scale_aqua_ * conc_aqua - total_mass_
+        return scale_sorbed_*func( conc_aqua) + (scale_aqua_) * conc_aqua - total_mass_; // that is the  selected isotherm // scale_sorbed_ * func( conc_aqua ) + scale_aqua_ * conc_aqua - total_mass_
     }
 private:
     Func func;

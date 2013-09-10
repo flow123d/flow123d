@@ -14,14 +14,9 @@ void Linear::reinit(double mult_coef)
 	return;
 }
 
-void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit, bool dual_porosity_on, double phi)
+void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double scale_aqua, double scale_sorbed, double molar_mass, double c_aqua_limit)
 {
 	this->set_sorption_type(sorp_type);
-
-	double scale_aqua = porosity; //originaly * rho_aqua;
-	double scale_sorbed;
-	  if(dual_porosity_on) scale_sorbed = (1-porosity/(1-phi)) * rock_density * molar_mass;
-	  else scale_sorbed = (1-porosity/phi) * rock_density * molar_mass;
 	this->set_rho_aqua(rho_aqua);
     this->set_scale_aqua(scale_aqua);
     this->set_scale_sorbed(scale_sorbed);
@@ -111,7 +106,7 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
     total_mass_step_ = mass_limit / n_steps;
     double mass = 0.0;
     for(int i=0; i<= n_steps; i++) {
-        double c_aqua = mass/scale_aqua_; // aqueous concentration (original coordinates c_a) corresponding to i-th total_mass_step_
+        double c_aqua = mass/(scale_aqua_); // aqueous concentration (original coordinates c_a) corresponding to i-th total_mass_step_
         double c_sorbed = 0.0;
         solve_conc(c_aqua, c_sorbed, isotherm);
     	double c_sorbed_rot = ( c_sorbed * scale_aqua_ - c_aqua * scale_sorbed_);

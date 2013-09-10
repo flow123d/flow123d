@@ -26,7 +26,7 @@
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 //#include "reaction/isotherm.hh"
-#include "reaction/sorption.hh"
+#include "reaction/sorption_dp.hh"
 
 #include "semchem/semchem_interface.hh"
 
@@ -416,21 +416,23 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
         convection->get_par_info(el_4_loc, el_distribution);
         // Part for mobile zone description follows.
 	    sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_);
-	    sorptions->set_porosity(&(convection->get_data()->por_m)); //, &(convection->get_data()->por_imm));
-	    sorptions->set_phi(&(convection->get_data()->phi));
 	    sorptions->set_dual_porosity(convection->get_dual_porosity());
+	    sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
+	    sorptions->set_phi(&(convection->get_data()->phi));
 	    sorptions->prepare_inputs(*sorptions_it);
 	    double ***conc_matrix = convection->get_concentration_matrix();
 	    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 	    sorptions->set_sorb_conc_array(el_distribution->lsize());
 
 	    if(convection->get_dual_porosity()){
-	    	sorptions_immob = new Sorption(init_mesh, *sorptions_it, subst_names_);
-	    	sorptions_immob->set_porosity(&(convection->get_data()->por_imm));
-	    	sorptions_immob->set_phi(&(convection->get_data()->phi));
+	    	sorptions_immob = new Sorption_dp(init_mesh, *sorptions_it, subst_names_);
 		    sorptions_immob->set_dual_porosity(convection->get_dual_porosity());
+	    	sorptions_immob->set_nr_transp(n_subst_);
+	    	sorptions_immob->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm));
+	    	sorptions_immob->set_phi(&(convection->get_data()->phi));
 		    sorptions_immob->prepare_inputs(*sorptions_it);
-		    sorptions_immob->set_concentration_matrix(conc_matrix[IMMOBILE], el_distribution, el_4_loc);
+		    sorptions_immob->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
+		    sorptions_immob->set_immob_concentration_matrix(conc_matrix[IMMOBILE], el_distribution, el_4_loc);
 		    sorptions_immob->set_sorb_conc_array(el_distribution->lsize());
 	    }
 	  } else{
@@ -501,7 +503,7 @@ void TransportOperatorSplitting::update_solution() {
         steps++;
 	    // one internal step
 	    convection->compute_one_step();
-		if (convection->get_dual_porosity()) convection->transport_dual_porosity(); // belongs to completely different place
+		if (sorptions_immob && convection->get_dual_porosity()) sorptions_immob->transport_dual_porosity(); // belongs to completely different place
 	    if(decayRad) decayRad->compute_one_step();
 	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
 	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step

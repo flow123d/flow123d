@@ -70,12 +70,17 @@ class Sorption:  public Reaction
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
+			Field<3, FieldValue<3>::Vector > alpha; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 		};
 	    /**
 	    * 	Pointer to porosity field from transport
 	    */
 	    //pScalar mob_porosity_;
 	    pScalar porosity_;
+	    /**
+	    * 	Pointer to porosity field from transport
+	    */
+	    pScalar immob_porosity_;
 	    /**
 	    *	Pointer to immobile porosity field from transport
 	    */
@@ -130,9 +135,17 @@ class Sorption:  public Reaction
 		*/
 		void set_sorb_conc_array(double** sorb_conc_array);
 		/**
+		*
+		*/
+		void set_scales(double &scale_aqua, double &scale_sorbed, double por_m, double por_imm, double phi, double rock_density, double molar_masses);
+		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption class, similar to set_sorption_fields in Semchem_interface
 		*/
 		void set_porosity(pScalar por); //_m, pScalar por_imm);
+		/**
+		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
+		*/
+		void set_porosity(pScalar por, pScalar por_imm); //_m, pScalar por_imm);
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
@@ -195,17 +208,7 @@ class Sorption:  public Reaction
 		*	Three dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
 		*	 Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step lenght in cocidered system of coordinates, just function values are stored.
 		*/
-		//std::vector<std::vector<Isotherm> > isotherms_mob;
 		std::vector<std::vector<Isotherm> > isotherms;
-		/**
-		*	Three dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in immobile pores of various rock matrix enviroments.
-		*	 Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step lenght in cocidered system of coordinates, just function values are stored.
-		*/
-		//std::vector<std::vector<Isotherm> > isotherms_immob;
-		/**
-		* 	Number of points as the base for interpolation.
-		*/
-		//std::vector<std::vector<int> > n_points;
 		/**
 		* 	Region characteristic inputs.
 		*/
