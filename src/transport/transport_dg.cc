@@ -1010,16 +1010,22 @@ void TransportDG::assemble_fluxes_boundary()
     double gamma_l;
 
     // assemble boundary integral
-    FOR_BOUNDARIES(mesh_, b)
+    FOR_EDGES(mesh_, edg)
     {
-        if (b->side()->dim() != dim-1) continue;
-        if (!el_ds->is_local(row_4_el[b->side()->element().index()])) continue;
+    	if (edg->n_sides > 1) continue;
+    	// check spatial dimension
+    	if (edg->side(0)->dim() != dim-1) continue;
+    	// skip edges lying not on the boundary
+    	if (edg->side(0)->cond() == NULL) continue;
+    	// skip if edge does not belong to local element
+    	if (!el_ds->is_local(row_4_el[edg->side(0)->element().index()])) continue;
 
-        typename DOFHandler<dim,3>::CellIterator cell = mesh().element.full_iter(b->side()->element());
+    	SideIter side = edg->side(0);
+        typename DOFHandler<dim,3>::CellIterator cell = mesh().element.full_iter(side->element());
         ElementAccessor<3> ele_acc = cell->element_accessor();
         feo->dh()->get_dof_indices(cell, side_dof_indices);
-        fe_values_side.reinit(cell, b->side()->el_idx());
-        fsv_rt.reinit(cell, b->side()->el_idx());
+        fe_values_side.reinit(cell, side->el_idx());
+        fsv_rt.reinit(cell, side->el_idx());
 
         calculate_velocity(cell, side_velocity, fsv_rt);
         for (unsigned int k=0; k<qsize; k++)
@@ -1037,14 +1043,14 @@ void TransportDG::assemble_fluxes_boundary()
         		calculate_dispersivity_tensor(side_K[k], side_velocity[k], Dm[k][sbi], alphaL[k][sbi], alphaT[k][sbi], por_m[k], csection[k]);
 
 			// set up the parameters for DG method
-			set_DG_parameters_boundary(b->side(), side_K, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
-			if (b->side()->cond() != 0)
-				gamma[sbi][b->side()->cond_idx()] = gamma_l;
+			set_DG_parameters_boundary(side, side_K, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
+			if (side->cond() != 0)
+				gamma[sbi][side->cond_idx()] = gamma_l;
 
 			// On Neumann boundaries we have only term from integrating by parts the advective term,
 			// on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-			double transport_flux = mh_dh->side_flux( *(b->side()) )/b->side()->measure();
-			if (mh_dh->side_flux( *(b->side()) ) < -mh_dh->precision())
+			double transport_flux = mh_dh->side_flux( *side )/side->measure();
+			if (mh_dh->side_flux( *side ) < -mh_dh->precision())
 				transport_flux += gamma_l;
 
 			for (unsigned int i=0; i<ndofs; i++)
@@ -1213,17 +1219,22 @@ void TransportDG::set_boundary_conditions()
     vector<arma::vec> bc_values(qsize);
     int rank;
 
-    FOR_BOUNDARIES(mesh_, b)
+    FOR_EDGES(mesh_, edg)
     {
-    	typename DOFHandler<dim,3>::CellIterator cell = b->side()->element();
-    	if (cell->dim() != dim) continue;
-    	if (!el_ds->is_local(row_4_el[cell.index()])) continue;
-
+    	if (edg->n_sides > 1) continue;
+    	if (edg->side(0)->dim() != dim-1) continue;
+    	// skip edges lying not on the boundary
+    	if (edg->side(0)->cond() == NULL) continue;
+    	// check if side lies on a local element
+    	if (!el_ds->is_local(row_4_el[edg->side(0)->element().index()])) continue;
     	// skip outflow boundaries
-    	if (mh_dh->side_flux( *(b->side()) ) >= -mh_dh->precision()) continue;
+    	if (mh_dh->side_flux( *edg->side(0) ) >= -mh_dh->precision()) continue;
 
-        ElementAccessor<3> ele_acc = b->element_accessor();
-        fe_values_side.reinit(cell, b->side()->el_idx());
+    	SideIter side = edg->side(0);
+    	typename DOFHandler<dim,3>::CellIterator cell = mesh().element.full_iter(side->element());
+        ElementAccessor<3> ele_acc = side->cond()->element_accessor();
+
+        fe_values_side.reinit(cell, side->el_idx());
         feo->dh()->get_dof_indices(cell, side_dof_indices);
 
         for (unsigned int k=0; k<qsize; k++)
@@ -1235,7 +1246,7 @@ void TransportDG::set_boundary_conditions()
 
         	for (unsigned int k=0; k<qsize; k++)
         	{
-        		double bc_term = gamma[sbi][b->side()->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
+        		double bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
         		for (unsigned int i=0; i<ndofs; i++)
 					local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 			}
@@ -1540,18 +1551,23 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 	alphaL.resize(qsize);
 	alphaT.resize(qsize);
 
-    FOR_BOUNDARIES(mesh_, bcd) {
+    FOR_EDGES(mesh_, edg)
+    {
+    	if (edg->n_sides > 1) continue;
+    	if (edg->side(0)->dim() != dim-1) continue;
+    	// skip edges lying not on the boundary
+    	if (edg->side(0)->cond() == NULL) continue;
+    	// check if side lies on a local element
+    	if (!el_ds->is_local(row_4_el[edg->side(0)->element().index()])) continue;
 
-    	if (bcd->side()->dim() != dim-1) continue;
-    	if (!el_ds->is_local(row_4_el[bcd->side()->element().index()])) continue;
-
-    	DOFHandlerMultiDim::CellIterator cell = bcd->side()->element();
+    	SideIter side = edg->side(0);
+    	DOFHandlerMultiDim::CellIterator cell = side->element();
         ElementAccessor<3> ele_acc = cell->element_accessor();
 
-		water_flux = mh_dh->side_flux(*(bcd->side()))/bcd->side()->measure();
+		water_flux = mh_dh->side_flux(*side)/side->measure();
 
-		fe_values.reinit(cell, bcd->side()->el_idx());
-		fsv_rt.reinit(cell, bcd->side()->el_idx());
+		fe_values.reinit(cell, side->el_idx());
+		fsv_rt.reinit(cell, side->el_idx());
 		feo->dh()->get_dof_indices(cell, dof_indices);
 
 		calculate_velocity(cell, side_velocity, fsv_rt);
@@ -1581,8 +1597,8 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 				mass_flux += (-csection[k]*por_m[k]*dot(D*c_grad,fe_values.normal_vector(0)) + water_flux*conc)*fe_values.JxW(k);
 			}
 
-			Region r = bcd->region();
-			if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
+			Region r = side->cond()->element_accessor().region();
+			if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", side->cond()->bc_ele_idx_, side->cond()->edge_idx_);
 			unsigned int bc_region_idx = r.boundary_idx();
 			bcd_balance[sbi][bc_region_idx] += mass_flux;
 
