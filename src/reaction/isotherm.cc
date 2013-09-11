@@ -62,7 +62,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 	if(total_mass < critic_total_mass)
 	{
 		// equation describing one point on the isotherm
-		CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_);
+		CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
 		pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
 		c_aqua = (solution.first + solution.second)/2; // = average of the pair solution defined above, midpoint
 		c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_; //const_cast<Func &>(isotherm)(c_aqua);

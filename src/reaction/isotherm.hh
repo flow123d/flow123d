@@ -301,16 +301,16 @@ template <class Func>
 class CrossFunction
 {
 public:
-    CrossFunction(const Func &func_,  double total_mass, double scale_aqua, double scale_sorbed)
-    : func(func_), total_mass_(total_mass), scale_sorbed_(scale_sorbed), scale_aqua_(scale_aqua) {}
+    CrossFunction(const Func &func_,  double total_mass, double scale_aqua, double scale_sorbed, double rho_aqua)
+    : func(func_), total_mass_(total_mass), scale_sorbed_(scale_sorbed), scale_aqua_(scale_aqua), rho_aqua_(rho_aqua) {}
 
     double operator()( double conc_aqua)
     {
-        return scale_sorbed_*func( conc_aqua) + (scale_aqua_) * conc_aqua - total_mass_; // that is the  selected isotherm // scale_sorbed_ * func( conc_aqua ) + scale_aqua_ * conc_aqua - total_mass_
+        return scale_sorbed_*func( conc_aqua/rho_aqua_) + (scale_aqua_) * conc_aqua - total_mass_; // that is the  selected isotherm // scale_sorbed_ * func( conc_aqua ) + scale_aqua_ * conc_aqua - total_mass_
     }
 private:
     Func func;
-    double total_mass_, scale_sorbed_, scale_aqua_;
+    double total_mass_, scale_sorbed_, scale_aqua_, rho_aqua_;
 };
 
 #endif /* SORPTION_IMPL_HH_ */

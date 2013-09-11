@@ -28,7 +28,9 @@ class Sorption_dp:  public Sorption
 	    * 	Pointer to porosity field from transport
 	    */
 	    pScalar immob_porosity_;
-         */
+	    /**
+	    *
+        */
 		Sorption_dp(Mesh &init_mesh, Input::Record in_rec, vector<string> &names); //, pScalar mob_porosity, pScalar immob_porosity);
 		/**
 		*	Destructor.
