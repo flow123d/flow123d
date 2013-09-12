@@ -58,7 +58,7 @@ function print_help {
 	echo ""
 	echo "OPTIONS:"
 	echo "    -h, --help                    Print this help"
-	echo "    --host HOSTNAME               Use given HOSTNAME form backend script resolution."
+	echo "    --host HOSTNAME               Use given HOSTNAME for backend script resolution. Script 'config/\${HOSTNAME}.sh' must exist."
 	echo "    -t, --walltime TIMEOUT        Flow123d can be executed at most TIMEOUT seconds."
 	echo "    -m, --mem MEM                 Flow123d can use only MEM magabytes per process."
 	echo "    -n NICE, --nice               Run Flow123d with changed (lower) priority."
@@ -284,9 +284,9 @@ parse_arguments "$@"
 
 # If there is hostname specific script for running flow123d, then use run_flow()
 # function from this script, otherwise default run_flow() function will be used
-if [ -f "${0%/*}/config/${HOSTNAME//./_}.sh" ]
+if [ -f "${0%/*}/config/${HOSTNAME}.sh" ]
 then
-	. "${0%/*}/config/${HOSTNAME//./_}.sh"
+	. "${0%/*}/config/${HOSTNAME}.sh"
 fi 
 
 # Run Flow123d
