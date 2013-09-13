@@ -29,6 +29,8 @@
 
 #include <string>
 #include <petsc.h>
+#include <boost/any.hpp>
+#include <assert.h>
 
 #include "system/xio.h"
 #include "io/output.h"
@@ -59,111 +61,6 @@ AbstractRecord OutputFormat::input_type
     // Complete declaration of  abstract record OutputFormat
 
 
-
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        int *data_data,
-        unsigned int size)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)data_data;
-    type = OUT_ARRAY_INT_SCA;
-    comp_num = 1;
-    num = size;
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        float *data_data,
-        unsigned int size)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)data_data;
-    type = OUT_ARRAY_FLOAT_SCA;
-    comp_num = 1;
-    num = size;
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        double *data_data,
-        unsigned int size)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)data_data;
-    type = OUT_ARRAY_DOUBLE_SCA;
-    comp_num = 1;
-    num = size;
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        std::vector<int> &data_data)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
-    type = OUT_VECTOR_INT_SCA;
-    comp_num = 1;
-    num = data_data.size();
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        std::vector< vector<int> > &data_data)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
-    type = OUT_VECTOR_INT_VEC;
-    comp_num = 3;
-    num = data_data.size();
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        std::vector<float> &data_data)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
-    type = OUT_VECTOR_FLOAT_SCA;
-    comp_num = 1;
-    num = data_data.size();
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        std::vector< vector<float> > &data_data)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
-    type = OUT_VECTOR_FLOAT_VEC;
-    comp_num = 3;
-    num = data_data.size();
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        std::vector<double> &data_data)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
-    type = OUT_VECTOR_DOUBLE_SCA;
-    comp_num = 1;
-    num = data_data.size();
-}
-
-OutputData::OutputData(std::string data_name,
-        std::string data_units,
-        std::vector< vector<double> > &data_data)
-{
-    name = new string(data_name); units = new string(data_units);
-    data = (void*)&data_data;
-    type = OUT_VECTOR_DOUBLE_VEC;
-    comp_num = 3;
-    num = data_data.size();
-}
-
-
 /**
  * \brief This method add right suffix to .pvd VTK file
  */
@@ -189,6 +86,15 @@ static inline void fix_GMSH_file_name(string *fname)
 }
 
 
+OutputData::OutputData(FieldCommonBase *field)
+{
+    this->field = field;
+}
+
+OutputData::~OutputData()
+{
+    this->data.clear();
+}
 
 /* Initialize static member of the class */
 std::vector<OutputTime*> OutputTime::output_streams;
@@ -272,10 +178,6 @@ OutputTime::OutputTime(const Input::Record &in_rec)
         return;
     }
 
-    std::vector<OutputData> *node_data;
-    std::vector<OutputData> *corner_data;
-    std::vector<OutputData> *elem_data;
-
     Mesh *mesh = NULL;  // This is set, when first register_* method is called
 
     ofstream *base_file;
@@ -314,16 +216,9 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     this->name = new string(stream_name);
     this->current_step = 0;
 
-    node_data = new OutputDataVec;
-    corner_data = new OutputDataVec;
-    elem_data = new OutputDataVec;
-
     set_base_file(base_file);
     set_base_filename(base_filename);
     set_mesh(mesh);
-    set_node_data(node_data);
-    set_corner_data(corner_data);
-    set_elem_data(elem_data);
 
     this->time = -1.0;
     this->write_time = -1.0;
@@ -355,19 +250,6 @@ OutputTime::~OutputTime(void)
          delete this->output_format;
      }
 
-     // Free all reference on node and element data
-     if(node_data != NULL) {
-         delete node_data;
-     }
-
-     if(corner_data != NULL) {
-         delete corner_data;
-     }
-
-     if(elem_data != NULL) {
-         delete elem_data;
-     }
-
      if(base_filename != NULL) {
          delete base_filename;
      }
@@ -379,27 +261,6 @@ OutputTime::~OutputTime(void)
 
      xprintf(MsgLog, "O.K.\n");
 }
-
-#if 0
-int OutputTime::write_data(double time)
-{
-    int ret = 0;
-    
-    // It's possible now to do output to the file only in the first process 
-    // TODO: do something, when support for Parallel VTK is added 
-
-    if(this->rank == 0 )
-    { 
-        DBGMSG("write output on process of rank=%d\n", rank);
-        if(this->output_format != NULL) {
-            ret = this->output_format->write_data(time);
-            this->current_step++;
-        }
-    }
-    
-    return ret;
-}
-#endif
 
 
 void OutputTime::write_all_data(void)
@@ -417,69 +278,44 @@ void OutputTime::write_all_data(void)
     }
 
     // Go through all OutputTime objects
-    for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
-            output_iter != OutputTime::output_streams.end();
-            ++output_iter)
+    for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
+            stream_iter != OutputTime::output_streams.end();
+            ++stream_iter)
     {
         // Write data to output stream, when data registered to this output
         // streams were changed
-        if((*output_iter)->write_time < (*output_iter)->time) {
+        if((*stream_iter)->write_time < (*stream_iter)->time) {
             DBGMSG("Write output to output stream: %s for time: %f\n",
-                    (*output_iter)->name->c_str(),
-                    (*output_iter)->time);
-            if((*output_iter)->output_format != NULL) {
-                (*output_iter)->output_format->write_data();
-                (*output_iter)->write_time = (*output_iter)->time;
-                (*output_iter)->current_step++;
+                    (*stream_iter)->name->c_str(),
+                    (*stream_iter)->time);
+            if((*stream_iter)->output_format != NULL) {
+                // Write data
+                (*stream_iter)->output_format->write_data();
+                // Remember the last time of writing to output stream
+                (*stream_iter)->write_time = (*stream_iter)->time;
+                (*stream_iter)->current_step++;
             }
         } else {
             DBGMSG("Skipping output stream: %s in time: %f\n",
-                    (*output_iter)->name->c_str(),
-                    (*output_iter)->time);
+                    (*stream_iter)->name->c_str(),
+                    (*stream_iter)->time);
         }
     }
+
+    /* Free all registered data */
+    OutputTime::clear_data();
 }
 
-void OutputTime::set_data_time(void *data, double time)
+
+void OutputTime::clear_data(void)
 {
-    this->time = time;
-
-    /* Node data */
-    std::vector<OutputData> *vec_data = this->get_node_data();
-    for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
-            od_iter != vec_data->end();
-            od_iter++)
+    // Go through all OutputTime objects
+    for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
+            stream_iter != OutputTime::output_streams.end();
+            ++stream_iter)
     {
-        if((*od_iter).data == data) {
-            this->time = time;
-            (*od_iter).time = time;
-            return;
-        }
-    }
-
-    /* Corner data */
-    vec_data = this->get_corner_data();
-    for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
-            od_iter != vec_data->end();
-            od_iter++)
-    {
-        if((*od_iter).data == data) {
-            this->time = time;
-            (*od_iter).time = time;
-            return;
-        }
-    }
-
-    /* Elem data */
-    vec_data = this->get_elem_data();
-    for(std::vector<OutputData>::iterator od_iter = vec_data->begin();
-            od_iter != vec_data->end();
-            od_iter++)
-    {
-        if((*od_iter).data == data) {
-            this->time = time;
-            (*od_iter).time = time;
-            return;
-        }
+        (*stream_iter)->node_data.clear();
+        (*stream_iter)->corner_data.clear();
+        (*stream_iter)->elem_data.clear();
     }
 }

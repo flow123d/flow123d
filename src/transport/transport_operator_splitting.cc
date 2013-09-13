@@ -422,15 +422,6 @@ void TransportOperatorSplitting::output_data(){
         DBGMSG("\nTOS: output time: %f\n", time_->t());
 
         convection->output_vector_gather();
-        //if(field_output) field_output->write_data(time_->t());
-        for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
-                it != this->output_streams.end();
-                ++it)
-        {
-            ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
-        }
-        mass_balance();
-
         
         convection->output_data();
     }

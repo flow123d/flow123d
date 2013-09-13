@@ -161,36 +161,13 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     Input::Record output_rec = in_rec.val<Input::Record>("output");
     data_.conc_mobile.init(subst_names_);
     data_.conc_mobile.set_mesh(mesh_);
-    data_.conc_mobile.set_name("conc_mobile");
+    data_.conc_mobile.set_name("conc_mobile_p0");
     data_.conc_mobile.set_units("M/L^3");
 
-    //field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
-    for(unsigned int subst_id=0; subst_id < n_subst_; subst_id++) {
-         // TODO: What about output also other "phases", IMMOBILE and so on.
-
-         // create FieldElementwise for every substance, set it to data->conc_mobile
-         data_.conc_mobile[subst_id].set_field(
-                 mesh_->region_db().get_region_set("ALL"),
-                 boost::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() )
-                 );
-
-         // Register data for output
-         double *data = out_conc[MOBILE][subst_id];
-         OutputTime *output_time = OutputTime::register_elem_data<double>("conc_mobile_p0",
-                 output_rec,
-                 (FieldCommonBase*)&data_.conc_mobile[subst_id],
-                 data);
-         if(output_time) this->output_streams[(void*)data] = output_time;
-    }
+    OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
 
     // write initial condition
     output_vector_gather();
-    for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
-            it != this->output_streams.end();
-            ++it)
-    {
-        ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
-    }
 
 }
 
@@ -1306,12 +1283,7 @@ void ConvectionTransport::output_data() {
 
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();
-        for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
-                it != this->output_streams.end();
-                ++it)
-        {
-            ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
-        }
+
         mass_balance();
 
         //for synchronization when measuring time by Profiler

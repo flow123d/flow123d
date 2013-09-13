@@ -31,6 +31,7 @@
 #define OUTPUT_VTK_HH_
 
 #include "input/accessors.hh"
+#include "fields/field_base.hh"
 
 #include "io/output.h"
 
@@ -178,54 +179,38 @@ private:
     void write_vtk_discont_topology(void);
 
     /**
-     * \brief This function writes ascii continuous data to VTK (.vtu) output file.
      *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
      */
-    void write_vtk_ascii_cont_data(OutputData *data);
+    void write_vtk_scalar_ascii(OutputData *output_data);
 
     /**
-     * \brief This function writes ascii data to VTK (.vtu) output file.
      *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
      */
-    void write_vtk_ascii_data(OutputData *data);
+    void write_vtk_vector_ascii(OutputData *output_data);
 
     /**
-     * \brief Write scalar data to the VTK file (.vtu)
      *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
      */
-    void write_vtk_scalar_ascii(OutputData *data);
+    void write_vtk_ascii_data(OutputData *output_data);
 
     /**
-     * \brief Write vector data to VTK file (.vtu)
      *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
      */
-    void write_vtk_vector_ascii(OutputData *data);
-
-    /**
-     * \brief Go through all vectors of scalars and vectors and call functions that
-     * write these data to VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at vector of data
-     */
-    void write_vtk_data_ascii(std::vector<OutputData> *data);
+    void write_vtk_data_ascii(vector<OutputData*> *output_data);
 
     /**
      * \brief Write names of scalar values to the VTK file (.vtu)
      *
      * \param[in]   *data   The pointer at vector of data
      */
-    void write_vtk_scalar_data_names(vector<OutputData> *data);
+    void write_vtk_scalar_data_names(vector<OutputData*> *output_data);
 
     /**
      * \brief Write names of vector values to the VTK file (.vtu)
      *
      * \param[in]   *data   The pointer at vector of data
      */
-    void write_vtk_vector_data_names(vector<OutputData> *data);
+    void write_vtk_vector_data_names(vector<OutputData*> *output_data);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)

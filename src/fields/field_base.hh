@@ -241,7 +241,11 @@ public:
     /**
      * Set internal mesh pointer.
      */
-    virtual inline void set_mesh(Mesh *mesh)                    { mesh_=mesh; }
+    virtual inline void set_mesh(Mesh *mesh)                    { mesh_ = mesh; }
+    /**
+     * Save information about number of dimensions to
+     */
+    inline void set_spacedim(int spacedim)              { spacedim_ = spacedim; }
 
     /**
      * Getters.
@@ -256,6 +260,7 @@ public:
     unsigned int n_comp() const;
     Mesh * mesh() const;
     bool changed() const;
+    int get_spacedim() const;
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
@@ -343,6 +348,10 @@ protected:
     /// Time of the last set time.
     double last_set_time_;
 
+    /**
+     * Space dimension of data in field
+     */
+    int spacedim_;
 };
 
 

@@ -210,8 +210,6 @@ private:
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
-    std::map<void*, OutputTime*> output_streams;
-
     /**
      * Overriding the virtual method that is called by TransportBase::mass_balance() to get boundary balances over individual boundary regions.
      * TODO: more precise description

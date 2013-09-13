@@ -147,6 +147,7 @@ Field<spacedim,Value>::Field()
 : FieldCommonBase(false), no_check_control_field_(NULL), is_fully_initialized_(false)
 {
     this->enum_valued_ = boost::is_same<typename Value::element_type, FieldEnum>::value;
+    this->set_spacedim(spacedim);
 }
 
 

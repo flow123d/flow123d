@@ -234,11 +234,6 @@ public:
 private:
 
 	/**
-	 * @brief Map of output streams
-	 */
-	std::map<void*, OutputTime*> output_streams;
-
-	/**
 	 * @brief Assembles the mass matrix.
 	 *
 	 * The routine just calls templated method assemble_mass_matrix() for each

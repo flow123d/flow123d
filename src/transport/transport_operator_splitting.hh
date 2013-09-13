@@ -269,7 +269,6 @@ private:
     Sorption *sorptions;
     Semchem_interface *Semchem_reactions;
     //int steps;
-    std::map<void*, OutputTime*> output_streams;
 
 };
 

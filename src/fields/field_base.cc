@@ -69,6 +69,9 @@ double FieldCommonBase::time() const
 bool FieldCommonBase::changed() const
 { return changed_during_set_time; }
 
+int FieldCommonBase::get_spacedim() const
+{ return spacedim_; }
+
 
 FieldCommonBase::~FieldCommonBase() {}
 

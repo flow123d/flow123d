@@ -255,6 +255,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // set up output class
     Input::Record output_rec = in_rec.val<Input::Record>("output");
 
+#if 0
     // allocate output arrays
     if (distr->myp() == 0)
     {
@@ -271,6 +272,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 					output_rec, output_solution[i], n_corners, 0.0);
 		}
     }
+#endif
 
     // set time marks for writing the output
     output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
@@ -602,18 +604,6 @@ void TransportDG::output_data()
 		}
 
 		VecDestroy(&solution_vec);
-	}
-
-	if (distr->myp() == 0)
-	{
-	    xprintf(MsgLog, "transport DG: set data time\n");
-        // Set data time
-        for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
-                it != this->output_streams.end();
-                ++it)
-        {
-            ((OutputTime*)it->second)->set_data_time(it->first, time_->t());
-        }
 	}
 
     END_TIMER("DG-OUTPUT");

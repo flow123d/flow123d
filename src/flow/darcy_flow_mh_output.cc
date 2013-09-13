@@ -107,6 +107,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     // Output only for the first process
     if(rank == 0)
     {
+#if 0
         OutputTime *output_time = NULL;
 
         output_time = OutputTime::register_node_data
@@ -126,6 +127,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
         output_time = OutputTime::register_elem_data
             (mesh_, "velocity_p0", "L/T", in_rec, ele_flux, -1.0);
         if(output_time) this->output_streams[&ele_flux] = output_time;
+#endif
 
         // temporary solution for balance output
         balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
@@ -207,13 +209,6 @@ void DarcyFlowMHOutput::output()
         // consider begining of the interval of actual result as the output time. Or use
         // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
         if (time == TimeGovernor::inf_time) time = 0.0;
-
-        for(std::map<void*, OutputTime*>::iterator it = this->output_streams.begin();
-                it != this->output_streams.end();
-                ++it)
-        {
-            ((OutputTime*)it->second)->set_data_time(it->first, time);
-        }
 
         output_internal_flow_data();
 
