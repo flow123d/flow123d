@@ -440,12 +440,15 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
                 submat_rows.clear();
                 ierr = MatGetRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
                 for (PetscInt i=0; i<ncols; i++) {
-                	if (cols[i] >= pos_start+loc_size_A) {
+                	if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
                 		b_vals++;
-                	} else if (cols[i] < min) {
-                		min=cols[i];
-                	} else if (cols[i] > max) {
-                		max=cols[i];
+                	} else {
+                    	if (cols[i] < min) {
+                    		min=cols[i];
+                    	}
+                    	if (cols[i] > max) {
+                    		max=cols[i];
+                    	}
                 	}
                 }
                 size_submat = max - min + 1;
@@ -460,7 +463,9 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
                 	submat_rows.push_back( i + loc_row + pos_start_IA );
                     ierr = MatGetRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
                     for (PetscInt j=0; j<ncols; j++) {
-                    	if (cols[j] < pos_start+loc_size_A) submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
+                    	if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
+                    		submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
+                    	}
                     }
                     ierr = MatRestoreRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
                 }

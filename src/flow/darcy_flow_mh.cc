@@ -1380,7 +1380,7 @@ void DarcyFlowMH_Steady::make_schur2() {
                 vDiag, &diag_schur1_b);
         VecRestoreArray(diag_schur1,&vDiag);
         //xprintf(Msg, "DarcyFlowMH_Steady::make_schur2: proc %d, begin %d, end %d, lsize %d, size %d\n", el_ds->myp(), rows_ds->begin(), rows_ds->end(), el_ds->lsize(), el_ds->size());
-        //ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), rows_ds->begin(), 1, &IS2);
+        //ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize() + edge_ds->begin(), 1, &IS2);
         //schur2 = new SchurComplement(schur1->get_system(), IS2, 5);
         schur2 = new SchurComplement(schur1->get_system(), IA2);
 
