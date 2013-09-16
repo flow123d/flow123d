@@ -72,15 +72,33 @@ TEST(Profiler, CodePoint) {
  * Tests of Profiler.
  */
 
-// wait smallest amount of time and return it in ms
-double wait() {
-    cout << "wait function\n" <<endl;
+// wait given amount of time (in ms) and return it in ms
+double wait( double time) {
+//    cout << "wait function\n" <<endl;
+    clock_t t1,t2;
+    clock_t int_time = time /1000.0 * CLOCKS_PER_SEC;
+    t2=t1=clock();
+    
+    while (t1 + int_time > t2) { t2=clock();}
+    double time_in_ms = 1000.0 * (t2-t1) / CLOCKS_PER_SEC;
+    cout << "time to wait: " << time << " actual: " << time_in_ms  << endl;
+    
+    return time_in_ms;
+}
+
+// retrun smallest amount of time resoluted by clock() function
+double clock_resolution() {
+//    cout << "wait function\n" <<endl;
     clock_t t1,t2;
 
     t2=t1=clock();
     while (t1 == t2) { clock(); t2=clock();}
-    return 1000.0 * (t2-t1) / CLOCKS_PER_SEC;
+    double min_time_step = 1000.0 * (t2-t1) / CLOCKS_PER_SEC;
+    cout << "min wait time: " << min_time_step << endl;
+    return min_time_step;
 }
+
+
 #define AT    string(Profiler::instance()->actual_tag())
 #define ACT    Profiler::instance()->actual_cumulative_time()
 #define AC    Profiler::instance()->actual_count()
@@ -88,22 +106,22 @@ double wait() {
 TEST(Profiler, one_timer) {
 
     Profiler::initialize();
-
+    double wait_time = clock_resolution();
     { // uninitialize can not be in the same block as the START_TIMER
     START_TIMER("test_tag");
     EXPECT_EQ( 1, AC);
-    double time=wait();
+    wait(wait_time);
     END_TIMER("test_tag");
 
     START_TIMER("test_tag");
-    EXPECT_EQ( time, ACT);
+    EXPECT_EQ( wait_time, ACT);
     EXPECT_EQ( 2, AC);
-    wait();
-    wait();
+    wait(wait_time);
+    wait(wait_time);
     END_TIMER("test_tag");
 
     START_TIMER("test_tag");
-    EXPECT_EQ( 3*time, ACT);
+    EXPECT_EQ( 3*wait_time, ACT);
     EXPECT_EQ( 3, AC);
 
     }
@@ -120,15 +138,18 @@ TEST(Profiler, one_timer) {
 }
 
 
+
+
 /* 
   // This is efficiency test of START_TIMER macro.
   // It will pass only with optimalized build (not debug).
 
+  
 TEST(Profiler, efficiency) {
     Profiler::initialize();
     unsigned int cycles = 500000;
 
-    double min_time_period =wait();
+    double min_time_period = clock_resolution();
     cout << "Minimum timer resolution: " << min_time_period << " ms" << endl;
     EXPECT_LT( min_time_period, 20 ); // resolution better then 20ms
 
