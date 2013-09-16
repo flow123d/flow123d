@@ -16,7 +16,7 @@
  *      store appropriate function pointer together with the table
  *    - proposed minor optimization
  *  - setters/getters are useless
- *  - reinit - do not pass phi and dual_porosity, but aqua_fracture (porosity) and rock_fracture
+ *  - reinit - do not pass phi and dual_porosity, but aqua_fracture (porosity) and rock_fracture, aqua_fraction, rock_fraction
  *    better: pass all parameters of one isotherm through reinit, make swith according type there
  *
  *
@@ -44,7 +44,7 @@
           switch (adsoption_type_) {
             case Isotherm::linear:
                 Linear functor(...);
-                table = tmp_isotherm;
+                table = tmp_isotherm; // copy reinit
                 table.make_table(functor);
                 table.set_factory(this); // allows compute values outside of the table
                 break;
@@ -63,6 +63,9 @@
 #include <vector>
 #include <input/input_type.hh>
 #include <boost/math/tools/roots.hpp>
+#include "fields/field_base.hh"
+
+typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 
 enum SorptionType {
 	none = 0,
@@ -97,19 +100,23 @@ public:
 	/**
 	* 	Original constructor, Langmuir( double mult_coef, double alpha) : alpha(alpha), mult_coef_(mult_coef) {}
 	*/
-    Langmuir( double mult_coef, double alpha) : mult_coef_(mult_coef), alpha(alpha) {}
+    Langmuir( double mult_coef, double alpha) : mult_coef_(mult_coef), alpha_(alpha) {}
     /**
     * 	Destructor.
     */
     ~Langmuir(void){}
+	/**
+	* 	Just the test to define coefficients other way.
+	*/
+	void reinit(double mult_coef, double alpha);
     /**
     * 	Operator.
     */
-    double operator()( double x) { return (mult_coef_*(alpha * x)/(alpha*x + 1)); }
+    double operator()( double x) { return (mult_coef_*(alpha_ * x)/(alpha_ *x + 1)); }
 
 private:
     double mult_coef_;
-    double alpha;
+    double alpha_;
 };
 
 
@@ -127,14 +134,13 @@ public:
     */
     ~Linear(void) {}
 	/**
-	* 	Just the test to define multiplication coefficient other way.
+	* 	Just the test to define coefficients other way.
 	*/
 	void reinit(double mult_coef);
     /**
     * 	Operator.
     */
     double operator()(double x) { return (mult_coef_*x); }
-
 private:
     double mult_coef_;
 };
@@ -149,6 +155,10 @@ public:
 	* 	Destructor.
 	*/
 	~Freundlich(void){}
+	/**
+	* 	Just the test to define multiplication coefficient other way.
+	*/
+	void reinit(double mult_coef, double exponent);
 	/**
 	* 	Operator.
 	*/
@@ -169,8 +179,12 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-    void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double scale_aqua, double scale_sorbed, double molar_mass, double c_aqua_limit);
-    /**
+    void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double por_m, double por_imm, double phi, double molar_mass, double c_aqua_limit);
+	/**
+	*
+	*/
+	void set_scales(double por_m, double por_imm, double phi, double rock_density, double molar_masses);
+	/**
      *
      */
     template<class Func>
@@ -206,25 +220,13 @@ public:
     */
     void set_scale_aqua(double scale_aqua);
     /**
-    *	Enables to get private parameter.
-    */
-    double get_scale_aqua(void);
-    /**
     *	Enables to set private parameter.
     */
     void set_scale_sorbed(double scale_sorbed);
     /**
-    *	Enables to get private parameter.
-    */
-    double get_scale_sorbed(void);
-    /**
     *	Enables to set private parameter.
     */
     void set_caq_limmit(double caq_limmit);
-    /**
-    * 	Verifies how big interpolation table is defined
-    */
-    int get_interpolation_table_size(void);
     /**
     * 	Creates interpolation table containing just one point
     */
@@ -256,7 +258,11 @@ public:
     /**
     *
     */
-    void precipitate(double &c_aqua, double &c_sorbed); //, double scale_aqua, double scale_sorbed);
+    void set_kind_of_pores(int kind_of_pores);
+    /**
+    *
+    */
+    void precipitate(double &c_aqua, double &c_sorbed);
 private:
     /// density of the solvent
     double rho_aqua_;
@@ -287,6 +293,10 @@ private:
      * Step on the rotated X axes (total mass).
      */
     double total_mass_step_;
+    /**
+    *
+    */
+    int kind_of_pores_;
 };
 
 /**

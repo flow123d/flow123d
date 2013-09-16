@@ -6,6 +6,7 @@
  */
 #include <utility>
 
+#include "transport/transport.h"
 #include "reaction/isotherm.hh"
 
 void Linear::reinit(double mult_coef)
@@ -14,12 +15,27 @@ void Linear::reinit(double mult_coef)
 	return;
 }
 
-void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double scale_aqua, double scale_sorbed, double molar_mass, double c_aqua_limit)
+void Freundlich::reinit(double mult_coef, double exponent)
+{
+	mult_coef_ = mult_coef;
+	exponent_ = exponent;
+	return;
+}
+
+void Langmuir::reinit(double mult_coef, double alpha)
+{
+	mult_coef_ = mult_coef;
+	alpha_ = alpha;
+	return;
+}
+
+
+
+void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double por_m, double por_imm, double phi, double molar_mass, double c_aqua_limit)
 {
 	this->set_sorption_type(sorp_type);
 	this->set_rho_aqua(rho_aqua);
-    this->set_scale_aqua(scale_aqua);
-    this->set_scale_sorbed(scale_sorbed);
+	this->set_scales(por_m, por_imm, phi, rock_density, molar_mass);
     this->set_inv_scale_aqua(scale_aqua_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)));
     this->set_inv_scale_sorbed(scale_sorbed_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)));
     this->set_caq_limmit(c_aqua_limit);
@@ -169,20 +185,10 @@ void Isotherm::set_rho_aqua(double rho_aqua)
 	return;
 }
 
-double Isotherm::get_rho_aqua(void)
-{
-	return rho_aqua_;
-}
-
 void Isotherm::set_scale_aqua(double scale_aqua)
 {
 	scale_aqua_ = scale_aqua;
 	return;
-}
-
-double Isotherm::get_scale_aqua(void)
-{
-	return scale_aqua_;
 }
 
 void Isotherm::set_inv_scale_aqua(double inv_scale_aqua)
@@ -197,11 +203,6 @@ void Isotherm::set_scale_sorbed(double scale_sorbed)
 	return;
 }
 
-double Isotherm::get_scale_sorbed(void)
-{
-	return scale_sorbed_;
-}
-
 void Isotherm::set_inv_scale_sorbed(double inv_scale_sorbed)
 {
 	inv_scale_sorbed_ = inv_scale_sorbed;
@@ -214,8 +215,26 @@ void Isotherm::set_caq_limmit(double caq_limmit)
 	return;
 }
 
-int Isotherm::get_interpolation_table_size(void)
+void Isotherm::set_scales(double por_m, double por_imm, double phi, double rock_density, double molar_mass)
 {
-	return interpolation_table.size();
+	switch (kind_of_pores_)
+	{
+		case IMMOBILE :
+		 scale_aqua_ = por_imm;
+	 	 scale_sorbed_ = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_mass;
+	 	 break;
+		case MOBILE :
+		 scale_aqua_ = por_m;
+	 	 scale_sorbed_ = phi * (1 - por_m - por_imm) * rock_density * molar_mass;
+	 	break;
+		default :
+			xprintf(UsrErr,"Unknown type of pores inside a rock matrix.\n");
+	}
+	return;
 }
 
+void Isotherm::set_kind_of_pores(int kind_of_pores)
+{
+	kind_of_pores_ = kind_of_pores;
+	return;
+}

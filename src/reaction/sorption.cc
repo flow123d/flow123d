@@ -7,7 +7,6 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-//#include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -16,7 +15,6 @@
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
 #include "mesh/region.hh"
-//#include "transport/transport.h" //because of definition of constants MOBILE, IMMOBILE,
 #include "input/type_selection.hh"
 
 const double pi = 3.1415;
@@ -51,20 +49,20 @@ Sorption::EqData::EqData()
 {
     ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
 
-    ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm."); //, Input::Type::Default("none"));
+    ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm."); //
               sorption_types.set_selection(&sorption_type_selection);
 
     ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", Input::Type::Default("1.0"));
 
     ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", Input::Type::Default("1.0"));
 
-    ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
-            " Vector, one value for every substance.", IT::Default("0"));
+    ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
+            " Vector, one value for every substance.", Input::Type::Default("0"));
 }
 
 using namespace std;
 
-Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//, pScalar mob_porosity, pScalar immob_porosity)
+Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: Reaction(init_mesh, in_rec, names)
 {
 	cout << "Sorption constructor is running." << endl;
@@ -76,6 +74,8 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     data_.sorption_types.set_n_comp(nr_of_substances);
     data_.mult_coefs.set_n_comp(nr_of_substances);
     data_.second_params.set_n_comp(nr_of_substances);
+    int nr_transp_subst = names.size();
+    data_.alphas.set_n_comp(nr_transp_subst);
     data_.set_mesh(&init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
     data_.set_time(tg);
@@ -107,7 +107,7 @@ void Sorption::init_from_input(Input::Array bulk_list)
 	return;
 }
 
-void Sorption::prepare_inputs(Input::Record in_rec)
+void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 {
     Input::Array sorptions_array = in_rec.val<Input::Array>("bulk_data");
 
@@ -116,7 +116,6 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 
 	Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_masses");
 
-	// Molar_masses = in_rec.val<Array(Double())>("molar_masses");
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
 
@@ -143,6 +142,10 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 	mult_param.resize(nr_of_substances);
 	FieldValue<3>::Vector::return_type second_coef;
 	second_coef.resize(nr_of_substances);
+	// Mass transfer coeffs between mobile and immobile pores
+	FieldValue<3>::Vector::return_type mass_transfer_coeffs;
+	mass_transfer_coeffs.resize(nr_of_substances);
+
 	double rock_density;
 
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
@@ -152,9 +155,8 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 		int reg_idx=reg_iter.bulk_idx();
 
 		// List of types of isotherms in particular regions, initialization
-		if(data_.sorption_types.get_const_value(reg_iter, iso_type))
-		{
-		}else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
+		if(data_.sorption_types.get_const_value(reg_iter, iso_type)) ;
+		  else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
 
 		// Multiplication coefficient parameter follows, initialization
 		if(data_.mult_coefs.get_const_value(reg_iter, mult_param)) ;
@@ -164,9 +166,15 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 		if(data_.second_params.get_const_value(reg_iter, second_coef)) ;
 		  else  xprintf(UsrErr,"All the sorption parameters must be constant all over the %d-th region, but it is not.", reg_iter.id());
 
+		// Mass transfer coeffs, mobile immobile pores
+		if(data_.alphas.get_const_value(reg_iter, mass_transfer_coeffs)) ;
+		  else  xprintf(UsrErr,"All the Mass transfer coeffitients must be constant all over the %d-th region, but it is not.", reg_iter.id());
+
 		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 		{
 			SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
+
+			isotherms[reg_idx][i_subst].set_kind_of_pores(porosity_type);
 
 			// Initializes isotherm parameters
 			switch(hlp_iso_type)
@@ -197,12 +205,7 @@ void Sorption::prepare_inputs(Input::Record in_rec)
 			// Creates interpolation tables in the case of constant rock matrix parameters
 			if((data_.rock_density.get_const_value(reg_iter, rock_density)) && (this->porosity_->get_const_value(reg_iter, por_m)) && (this->immob_porosity_->get_const_value(reg_iter, por_imm)) && (this->phi_->get_const_value(reg_iter, phi)))
 			{
-				// here should be some kind of set_scales(..) method instead of following two lines
-				double scale_aqua; // = por_m;
-				double scale_sorbed; //= phi * (1 - por_m - por_imm) * rock_density * molar_mass;
-				this->set_scales(scale_aqua, scale_sorbed, por_m, por_imm, phi, rock_density, molar_masses[i_subst]);
-
-				isotherms[reg_idx][i_subst].reinit(hlp_iso_type, rock_density, solvent_dens, scale_aqua, scale_sorbed, molar_masses[i_subst], c_aq_max[i_subst]);
+				isotherms[reg_idx][i_subst].reinit(hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
 				switch(hlp_iso_type)
 				{
 				case 0: // none:
@@ -306,12 +309,8 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		    {
 		    	SorptionType elem_sorp_type = this->isotherms[reg_id_nr][i_subst].get_sorption_type();
 
-				this->set_scales(scale_aqua, scale_sorbed, por_m, por_imm, phi, rock_density, molar_masses[i_subst]);
-
-		    	{
-		    		this->isotherms[reg_id_nr][i_subst].reinit(elem_sorp_type, rock_density, solvent_dens, scale_aqua, scale_sorbed, molar_masses[i_subst], c_aq_max[i_subst]);
-		    	}
-				int subst_id = substance_ids[i_subst];
+				this->isotherms[reg_id_nr][i_subst].reinit(elem_sorp_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
+		    	int subst_id = substance_ids[i_subst];
 				switch(elem_sorp_type)
 				{
 				 case 0:
@@ -397,13 +396,13 @@ void Sorption::set_sorb_conc_array(unsigned int nr_of_local_elm)
     }
 }
 
-void Sorption::set_porosity(pScalar porosity)
+void Sorption::set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
-	this->porosity_ = porosity;
+	immob_concentration_matrix = ConcentrationMatrix;
+	distribution = conc_distr;
+	el_4_loc = el_4_loc_;
 	return;
 }
-
-
 
 void Sorption::set_porosity(pScalar porosity, pScalar immob_porosity)
 {
@@ -411,25 +410,9 @@ void Sorption::set_porosity(pScalar porosity, pScalar immob_porosity)
 	this->immob_porosity_ = immob_porosity;
 	return;
 }
-
 void Sorption::set_phi(pScalar phi)
 {
-	this->phi_ = phi;
-	return;
-}
-
-pScalar Sorption::get_phi(void)
-{
-	return phi_;
-}
-
-void Sorption::set_scales(double &scale_aqua, double &scale_sorbed, double por_m, double por_imm, double phi, double rock_density, double molar_mass)
-{
-	scale_aqua = por_m;
-
-	if(dual_porosity_on) scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_mass;
-	  else scale_sorbed = (1 - por_m) * rock_density * molar_mass;
-
+	phi_ = phi;
 	return;
 }
 

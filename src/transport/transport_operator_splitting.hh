@@ -22,7 +22,7 @@ class Reaction;
 class Linear_reaction;
 //class Pade_approximant;
 class Sorption;
-class Sorption_dp;
+class Dual_por_exchange;
 class Semchem_interface;
 class ConvectionTransport;
 
@@ -284,7 +284,8 @@ private:
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     Sorption *sorptions;
-    Sorption_dp *sorptions_immob;
+    Sorption *sorptions_immob;
+    Dual_por_exchange *dual_por_exchange;
     Semchem_interface *Semchem_reactions;
     //int steps;
 

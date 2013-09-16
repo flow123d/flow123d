@@ -70,7 +70,7 @@ class Sorption:  public Reaction
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
-			Field<3, FieldValue<3>::Vector > alpha; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
+			Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
 		};
 	    /**
 	    * 	Pointer to porosity field from transport
@@ -81,10 +81,6 @@ class Sorption:  public Reaction
 	    * 	Pointer to porosity field from transport
 	    */
 	    pScalar immob_porosity_;
-	    /**
-	    *	Pointer to immobile porosity field from transport
-	    */
-	    //pScalar immob_porosity_;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
@@ -110,14 +106,6 @@ class Sorption:  public Reaction
 		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
 		*/
 		void set_time_step(Input::Record in_rec);
-	    /**
-	    *
-	    */
-	    void set_phi(pScalar phi);
-	    /**
-	    *
-	    */
-	    pScalar get_phi(void);
 		/**
 		* Inherited init_from_input method extension.
 		*/
@@ -134,22 +122,22 @@ class Sorption:  public Reaction
 		*
 		*/
 		void set_sorb_conc_array(double** sorb_conc_array);
-		/**
-		*
-		*/
-		void set_scales(double &scale_aqua, double &scale_sorbed, double por_m, double por_imm, double phi, double rock_density, double molar_masses);
-		/**
-		* This is the way to get bulk parameters from Transport EqData to those in Sorption class, similar to set_sorption_fields in Semchem_interface
-		*/
-		void set_porosity(pScalar por); //_m, pScalar por_imm);
+	    /**
+	    *
+	    */
+	    void set_phi(pScalar phi);
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
 		*/
-		void set_porosity(pScalar por, pScalar por_imm); //_m, pScalar por_imm);
+		void set_porosity(pScalar por, pScalar por_imm);
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
-		void prepare_inputs(Input::Record in_rec);
+		void prepare_inputs(Input::Record in_rec, int porosity_type);
+		/**
+		*	This method enables to change a data source the program is working with, during simulation.
+		*/
+		void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
 		/**
 		* Meaningless inherited methods.
 		*/
@@ -171,11 +159,14 @@ class Sorption:  public Reaction
 		*	Pointer to thwodimensional array[species][elements] containing concentrations either in mobile or immobile zone.
 		*/
 		double **concentration_matrix;
-	    /**
-		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
-		* pointer to phi field from transport
+		/**
+		*	Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
 		*/
-	    pScalar phi_;
+		double **immob_concentration_matrix;
+	    /**
+	    * Mass transfer coefficients between mobile and immobile pores
+	    */
+	    std::vector<double> alpha_;
 		/**
 		* 	Number of regions.
 		*/
@@ -200,6 +191,11 @@ class Sorption:  public Reaction
 		* 	Density of the solvent. Could be done region dependent, easily.
 		*/
 		double solvent_dens;
+	    /**
+		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
+		* pointer to phi field from transport
+		*/
+	    pScalar phi_;
 		/**
 		* 	Critical concentrations of species dissolved in water.
 		*/
