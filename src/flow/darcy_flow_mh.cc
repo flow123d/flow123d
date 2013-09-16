@@ -401,8 +401,8 @@ void DarcyFlowMH_Steady::update_solution() {
         break;
     case 1: /* first schur complement of A block */
         make_schur1();
-        schur1->resolve();
         convergedReason = schur1->get_system()->solve();
+        schur1->resolve();
         break;
     case 2: /* second schur complement of the max. dimension elements in B block */
         make_schur1();
