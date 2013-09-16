@@ -1,56 +1,72 @@
-% conventions:
-% crossrefs - typechap:name (type: [s]ection,[e]quation,[d]efinition,[t]heorem(lemma,..))
-%                           (chap: [p]hysical background, [m]ath tools, [f]luid, [b]odies, [s]teady)
-\documentclass[a4paper]{article}
-% ***************************************** PACKAGES
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
-\usepackage{amsthm}
-\usepackage{fancyhdr}
-\usepackage{graphicx}
-\usepackage[numbers]{natbib}
-
-% ***************************************** SYMBOLS
-\def\abs#1{\lvert#1\rvert}
-\def\argdot{{\hspace{0.18em}\cdot\hspace{0.18em}}}
-\def\avg#1{\left\{#1\right\}}
-\def\D{{\tn D}}
-\def\div{\operatorname{div}}
-\def\Eh{\mathcal E_h}       % edges of \Th
-\def\Ehb{\mathcal E_{h,B}}  % edges of \Th on boundary
-\def\Ehcom{\mathcal E_{h,C}}         % edges of \Th on interface with lower dimension
-\def\Ehdir{\mathcal E_{h,D}}         % Dirichlet edges of \Th
-\def\Ehint{\mathcal E_{h,I}}       % interior edges of \Th
-\def\grad{\nabla}
-\def\jmp#1{[#1]}
-\def\n{\vc n}
-\def\vc#1{\mathbf{\boldsymbol{#1}}}     % vector
-\def\R{\mathbb R}
-\def\sc#1#2{\left(#1,#2\right)}
-\def\Th{\mathcal T_h}       % triangulation
-\def\th{\vartheta}
-\def\tn#1{{\mathbb{#1}}}    % tensor
-\def\Tr{\operatorname{Tr}}
-\def\wavg#1{\avg{#1}_\omega}
-\def\where{\,|\,}
-%***************************************************************************
-
-
-
-\begin{document}
+% % conventions:
+% % crossrefs - typechap:name (type: [s]ection,[e]quation,[d]efinition,[t]heorem(lemma,..))
+% %                           (chap: [p]hysical background, [m]ath tools, [f]luid, [b]odies, [s]teady)
+% \documentclass[a4paper]{article}
+% % ***************************************** PACKAGES
+% \usepackage{amsmath}
+% \usepackage{amsfonts}
+% \usepackage{amssymb}
+% \usepackage{amsthm}
+% \usepackage{fancyhdr}
+% \usepackage{graphicx}
+% \usepackage[numbers]{natbib}
+% 
+% % ***************************************** SYMBOLS
+ \def\abs#1{\lvert#1\rvert}
+ \def\argdot{{\hspace{0.18em}\cdot\hspace{0.18em}}}
+ \def\avg#1{\left\{#1\right\}}
+ \def\D{{\tn D}}
+ \def\div{\operatorname{div}}
+ \def\Eh{\mathcal E_h}       % edges of \Th
+ \def\Ehb{\mathcal E_{h,B}}  % edges of \Th on boundary
+ \def\Ehcom{\mathcal E_{h,C}}         % edges of \Th on interface with lower dimension
+ \def\Ehdir{\mathcal E_{h,D}}         % Dirichlet edges of \Th
+ \def\Ehint{\mathcal E_{h,I}}       % interior edges of \Th
+ \def\grad{\nabla}
+ \def\jmp#1{[#1]}
+ \def\n{\vc n}
+ \def\vc#1{\mathbf{\boldsymbol{#1}}}     % vector
+ \def\R{\mathbb R}
+ \def\sc#1#2{\left(#1,#2\right)}
+ \def\Th{\mathcal T_h}       % triangulation
+ \def\th{\vartheta}
+ \def\tn#1{{\mathbb{#1}}}    % tensor
+ \def\Tr{\operatorname{Tr}}
+ \def\wavg#1{\avg{#1}_\omega}
+ \def\where{\,|\,}
+% %***************************************************************************
+% 
 
 
-\section{Numerical solution}
+% \begin{document}
 
+
+\chapter{Numerical methods}
+
+In this chapter we briefly describe numerical methods used in Flow123d for solution of physical models
+presented in Chapter \ref{PhysicalModels}. For the steady or unsteady Darcy flow we use mixed-hybrid discretization using Raviart-Thomas finite elements
+described in details in Section \ref{MHmethod}.
 For the numerical approximation of the advection-dispersion equation \eqref{e:ADE} we distinguish whether the dispersion $\D$ is present or not.
-Since the true solution has qualitatively different properties, we also choose different numerical methods for each case.
+Since the true solution has qualitatively different properties, we also choose different numerical methods for each case. For purely advection problems
+(i.e. without dispersion term) one can use finite volume method with up--winding and explicit Euler method fully described in Section \ref{Convection}.
+For problems with dispersion term (even advection dominated) we provides implicit discontinuous Galerkin method covered in Section \ref{DGmethod}.
 
-\subsection{Pure advection}
 
-\subsection{Advection with dispersion}
+\section{Mixed-Hybrid method for Darcy flow (TO BE DONE)}
+\label{MHmethod}
+Based on publications: \cite{arbogast_nonlinear_1996}, \cite{maryska_mixed-hybrid_1995}, \cite{maryska_schur_2000}, \cite{vohralik_mixed-hybrid_2000}, \cite{VogelBrezina2010},
+\cite{GerkeGenuchten1993a}, \cite{brezina_mixed-hybrid_2010}
 
-For the general case we use the discontinuous Galerkin space approximation described in \citet{ern_stephansen_zunino} and implicit Euler time discretization.
+
+
+\section{Pure advection (NEEDS ACTUALIZATION)}
+\label{Convection}
+\input{convection}
+
+\section{Advection with dispersion}
+\label{DGmethod}
+
+For the general case we use the discontinuous Galerkin space approximation described in \cite{ern_stephansen_zunino} and implicit Euler time discretization.
 Let $\tau$, $h$ be the time step and the space discretization parameter, respectively.
 We assume that $\Th^d$ is a regular partition of the domain $\Omega^d$ into simplices, $d=1,2,3$.
 We define the set $\Eh^d$ of all edges of elements in $\Th$ (triangles for $d=3$, line segments for $d=2$ and points for $d=1$).
@@ -137,8 +153,8 @@ A priori error estimates for the equation in a single domain are done in \cite{e
 
 
 
-\bibliographystyle{abbrvnat}
-\bibliography{flow123d_doc}
+%\bibliographystyle{abbrvnat}
+%\bibliography{flow123d_doc}
 
 
-\end{document}
+%\end{document}

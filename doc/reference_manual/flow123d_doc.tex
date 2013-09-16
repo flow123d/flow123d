@@ -116,7 +116,7 @@ Flow123d
 
 \vspace{1cm}
 \textbf{\Large{
-version 1.7.0
+version 1.7.1
 }}
 
 \vspace{1cm}
@@ -131,14 +131,14 @@ and brief user manual.
 
 
 
-\noindent \textbf{\Large{Liberec, 2012}}
+\noindent \textbf{\Large{Liberec, 2013}}
 
 \vspace{1cm}
 \pagebreak
 \end{center}
 
 \noindent
-{\bf Authors} (of version 1.7.0)
+{\bf Authors} (of version 1.7.1)
 
 \vspace{3ex}    
 \noindent
@@ -177,7 +177,8 @@ i.e. exchange between mobile and immobile
 pores. There are also models for several types of adsorption in both the mobile and immobile zone. The implemented adsorption models are
 linear adsorption, Freundlich isotherm and Langmuir isotherm. The solute transport model uses finite volume discretization 
 with up-winding in space and explicit Euler discretization in time. The dual porosity and the adsorption are introduced into transport by operator splitting.
-The dual porosity model use analytic solution and the non-linear adsorption can be either solved numerically by the $toms748\_solve(...)$ command (which is a part of boost package) or it can be approximated through interpolation which uses precomputed functional values lying on selected type of isotherm.
+The dual porosity model use analytic solution and the non-linear adsorption can be either solved numerically by the $toms748\_solve(...)$ 
+command (which is a part of boost package) or it can be approximated through interpolation which uses precomputed functional values lying on selected type of isotherm.
 
 Reaction between transported substances can be modeled either by a SEMCHEM module, which is slow, but can describe all sorts of reactions. On the other hand,
 for reactions of the first order, i.e. linear reactions or decays, we provide our own solver which is much faster. Reactions are coupled with transport 
@@ -493,9 +494,11 @@ We need not to specify type of the condition since currently this is the only on
 we have to set the time setting, here only the end time of the simulation since the step size is determined from the CFL condition, however you can set smaller time step if you want.
 
 \subsubsection{Sorption settings}\label{subsubsec:sorptions}
-The input information for equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reactions}{$reactions =\{\ldots\}$}. The type of simulated, chemical interactions is determinated by the label $TYPE="Sorptions",$. It is possible to set the value of the solvent (obviously water) density \hyperA{Sorptions::solvent-dens}{$solvent\_dens = 1.0,$}. The solvent density is supposed to be constant all over the simulated area. The vector \hyperA{Sorptions::species}{$species$} containes the list of soluted substances whose concentrations is concidered to be affected by sorptions. Material characteristics of all the sorbing species can be defined by vectors \hyperA{Sorptions::molar-masses}{$molar\_masses$} and \hyperA{Sorptions::solubility}{$solubility$}. Elements of the vector $sollubility$ defines the upper bound of an aqueous concentrations which can appear, because some substances have limmited solubility and if the solubility exceeds this limit they start to precipitate. $solubility$ is a crucial parameter for solving further described set of nonlinear equations. The parameter \hyperA{Sorptions::substeps}{$substeps$} is important when interpolation is used to search approximative solution of the adsorption problem. It is the number of precomputed points lying on the isotherm. Default value is set to be $100$.
+The input information for equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reactions}{$reactions =\{\ldots\}$}. The type of simulated, chemical interactions is determinated by the label $TYPE="Sorptions",$. It is possible to set the value of the solvent (obviously water) density \hyperA{Sorptions::solvent-dens}{$solvent\_dens = 1.0,$}. The solvent density is supposed to be constant all over the simulated area. The vector \hyperA{Sorptions::species}{$species$} containes the list of soluted substances whose concentrations is concidered to be affected by sorptions. Material characteristics of all the sorbing species can be defined by vectors \hyperA{Sorptions::molar-masses}{$molar\_masses$} and \hyperA{Sorptions::solubility}{$solubility$}. Elements of the vector $sollubility$ defines the upper bound of an aqueous concentrations which can appear, because some substances have limmited solubility and if the solubility exceeds this limit they start to precipitate. $solubility$ is 
+a crucial parameter for solving further described set of nonlinear equations. The parameter \hyperA{Sorptions::substeps}{$substeps$} is important when interpolation is used to search approximative solution of the adsorption problem. It is the number of precomputed points lying on the isotherm. Default value is set to be $100$.
 
-The record \hyperA{Sorptions::bulk-data}{$bulk\_data$} colects information about regions specific, several isotherms desribed adsorption. Particular region (bulk Physical Entity), where one kind of adsorption takes place, can be specified by its label from gmsh-file. All implemented types of adsorption can take the rock density in region into account. The value of \hyperA{Sorption-BulkData::rock-density}{$rock\_density$} can be either constant or specified by $FieldFormula$. The implemented \hyperA{Sorption-BulkData::sorption-types}{$sorption\_types$} can have one of four possible values $\{ "none", "linear", "freundlich", "langmuir"\}$ and except of first one are those types empiricaly described by appropriate type of isotherm. Linear isotherm described adsorption needs just one parameter to be given whereas Freundlichs' and Langmuirs' isotherm have two parameters. For further details about mathematical description see the section \ref{sec:sorp_math}. Isothermaly described sorption simulation can be used in the case of low concenttrated solutions without competition between multiple disoved species.
+The record \hyperA{Sorptions::bulk-data}{$bulk\_data$} colects information about regions specific, several isotherms desribed adsorption. Particular region (bulk Physical Entity), where one kind of adsorption takes place, can be specified by its label from gmsh-file. All implemented types of adsorption can take the rock density in region into account. The value of \hyperA{Sorption-BulkData::rock-density}{$rock\_density$} can be either constant or specified by $FieldFormula$. The implemented \hyperA{Sorption-BulkData::sorption-types}{$sorption\_types$} can have one of four possible values $\{ "none", "linear", "freundlich", "langmuir"\}$ and except of first one are those types empiricaly described by appropriate type of isotherm. Linear isotherm described adsorption needs just one parameter to be given whereas Freundlichs' and Langmuirs' isotherm have two parameters. For further details about mathematical description see the section \ref{sec:sorp_math}. Isothermaly described sorption simulation can be used in 
+the case of low concenttrated solutions without competition between multiple disoved species.
 
 \subsubsection{Output streams and results}
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -550,7 +553,8 @@ In the following chapter, we briefly describe structure of individual input file
 mathematical models and numerical methods used in the Flow123d.
 
 
-\chapter{Mathematical models \\of physical/chemical reality}
+\chapter{Mathematical models \\of physical reality}
+\label{PhysicalModels}
 
 Flow123d provides models for Darcy flow in porous media as well as for the transport and reactions of soluted substances. In this section, we describe 
 mathematical formulations of these models together with physical meaning and units of all involved quantities. Common and unique feature of all models is support of
@@ -585,8 +589,9 @@ match their sides or they poke out of $\Omega_d$.
 \input{transport_model}
 
 \input{sorpce}
-%\input{convection}
-%\chapter{Numerical methods}
+
+\input{numerical}
+
 
 
 %\input{decay}
@@ -604,12 +609,12 @@ match their sides or they poke out of $\Omega_d$.
 %\input{pos_12}   
 
 
-% \chapter{Test and tutorial problems}
-% \input{tests}
+\chapter{Test and tutorial problems (WORK IN PROGRES)}
+ \input{tests}
 % 
 % \chapter{Comparision of versions 1.6.7 and 1.7.0}
 % \label{chapter:version_comparision}
-% \input{version_comparision.tex}
+% \input{version_comparision}
 
 \chapter{Main input file reference}
 \label{chapter:input-tree-reference}
