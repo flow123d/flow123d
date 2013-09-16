@@ -107,21 +107,22 @@ TEST(Profiler, one_timer) {
 
     Profiler::initialize();
     double wait_time = clock_resolution();
+    double total=0;
     { // uninitialize can not be in the same block as the START_TIMER
     START_TIMER("test_tag");
     EXPECT_EQ( 1, AC);
-    wait(wait_time);
+    total += wait(wait_time);
     END_TIMER("test_tag");
 
     START_TIMER("test_tag");
     EXPECT_EQ( wait_time, ACT);
     EXPECT_EQ( 2, AC);
-    wait(wait_time);
-    wait(wait_time);
+    total += wait(wait_time);
+    total += wait(wait_time);
     END_TIMER("test_tag");
 
     START_TIMER("test_tag");
-    EXPECT_EQ( 3*wait_time, ACT);
+    EXPECT_EQ( total, ACT);
     EXPECT_EQ( 3, AC);
 
     }
