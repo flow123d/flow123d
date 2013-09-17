@@ -171,11 +171,21 @@ function parse_arguments()
 # takes variable TIMEOUT in format HH:MM:SS
 # and expands HH (hours) and MM (minutes)
 function expand_timeout() {
-    SavedIFS="$IFS"
-    IFS=":."
-    Time=($TIMEOUT)
-    TIMEOUT=$((${Time[0]}*3600 + ${Time[1]}*60 + ${Time[2]})).${Time[3]}
-    IFS="$SavedIFS"
+    HH=${TIMEOUT%%:*}
+    REST=${TIMEOUT#*:}
+    if [ -n "${HH}" ]
+    then
+      MM=${REST%%:*}
+      REST=${REST#*:}
+      if [ -n "${MM}" ]
+      then
+        # format HH:MM:SS.MS
+        TIMEOUT=$(( 3600 * ${HH} + 60 * ${MM} + ${REST} ))
+      else
+        # format MM:SS.MS
+        TIMEOUT=$(( 60 * ${HH} + ${REST} ))
+      fi        
+    fi
 }
 
 
