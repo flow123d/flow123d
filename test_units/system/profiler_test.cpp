@@ -115,7 +115,7 @@ TEST(Profiler, one_timer) {
     END_TIMER("test_tag");
 
     START_TIMER("test_tag");
-    EXPECT_EQ( wait_time, ACT);
+    EXPECT_EQ( total, ACT);
     EXPECT_EQ( 2, AC);
     total += wait(wait_time);
     total += wait(wait_time);

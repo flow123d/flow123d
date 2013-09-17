@@ -650,11 +650,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 tmp_rows[2+i] = tmp_rows[1];
             }
         }
-        //DBGMSG(".............errrrr.............\n");
         
         // add virtual values for schur complement allocation
         switch (n_schur_compls) {
         case 2:
+            // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
             ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
             ls->mat_set_values(ele->n_neighs_vb, tmp_rows+2,
                                ele->n_neighs_vb, tmp_rows+2, zeros);
