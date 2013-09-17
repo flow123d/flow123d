@@ -25,7 +25,8 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "reaction/dual_por_exchange.hh"
+#include "reaction/sorption.hh"
+//#include "reaction/dual_por_exchange.hh"
 
 #include "semchem/semchem_interface.hh"
 
@@ -425,7 +426,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	    if(convection->get_dual_porosity()){
 	    	sorptions_immob = new Sorption(init_mesh, *sorptions_it, subst_names_);
-	    	dual_por_exchange = new Dual_por_exchange(init_mesh, *sorptions_it, subst_names_);
+	    	//dual_por_exchange = new Dual_por_exchange(init_mesh, *sorptions_it, subst_names_);
 		    sorptions_immob->set_dual_porosity(convection->get_dual_porosity());
 	    	sorptions_immob->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm));
 	    	sorptions_immob->set_phi(&(convection->get_data()->phi));
@@ -488,7 +489,7 @@ void TransportOperatorSplitting::update_solution() {
 	if (decayRad) decayRad->set_time_step(convection->time().estimate_dt());
 	if (sorptions) sorptions->set_time_step(convection->time().estimate_dt());
 	if (sorptions_immob) sorptions_immob->set_time_step(convection->time().estimate_dt());
-	if (dual_por_exchange) dual_por_exchange->set_time_step(convection->time().estimate_dt());
+	//if (dual_por_exchange) dual_por_exchange->set_time_step(convection->time().estimate_dt());
 	// TODO: update Semchem time step here!!
 	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());
 
@@ -503,12 +504,12 @@ void TransportOperatorSplitting::update_solution() {
         steps++;
 	    // one internal step
 	    convection->compute_one_step();
-		if (dual_por_exchange) dual_por_exchange->compute_one_step();
+		//Just temporarly commented.
+	    //if (dual_por_exchange) dual_por_exchange->compute_one_step();
 	    if(decayRad) decayRad->compute_one_step();
 	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
 	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step
 	    if(sorptions_immob) sorptions_immob->compute_one_step();
-		if (dual_por_exchange) dual_por_exchange->compute_one_step();
 	}
     END_TIMER("TOS-one step");
     

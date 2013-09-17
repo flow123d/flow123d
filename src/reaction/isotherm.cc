@@ -221,7 +221,7 @@ void Isotherm::set_scales(double por_m, double por_imm, double phi, double rock_
 	{
 		case IMMOBILE :
 		 scale_aqua_ = por_imm;
-	 	 scale_sorbed_ = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_mass;
+	 	 scale_sorbed_ = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_mass; // (1 - phi) * (1 - por_m - por_imm)
 	 	 break;
 		case MOBILE :
 		 scale_aqua_ = por_m;
