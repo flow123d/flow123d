@@ -1,5 +1,0 @@
-patched version of METIS 4.0
-
-changes:
-rename.h - __log2 -> __log2_metis
-metis.h  - conditional inclusion of macros.h which define ASSERT in conflist with ours.
