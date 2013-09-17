@@ -59,7 +59,7 @@ function print_help {
 	echo "OPTIONS:"
 	echo "    -h, --help                    Print this help"
 	echo "    --host HOSTNAME               Use given HOSTNAME for backend script resolution. Script 'config/\${HOSTNAME}.sh' must exist."
-	echo "    -t, --walltime TIMEOUT        Flow123d can be executed at most TIMEOUT seconds."
+	echo "    -t, --walltime TIMEOUT        Specifies a maximum time period after which Flow123d will be killed.  Time TIMEOUT is expressed in seconds as an integer,\n or in the form: [[hours:]minutes:]seconds[.milliseconds]."
 	echo "    -m, --mem MEM                 Flow123d can use only MEM magabytes per process."
 	echo "    -n NICE, --nice               Run Flow123d with changed (lower) priority."
 	echo "    -np N                         Run Flow123d using N parallel processes." 
@@ -168,6 +168,16 @@ function parse_arguments()
 }
 
 
+# takes variable TIMEOUT in format HH:MM:SS
+# and expands HH (hours) and MM (minutes)
+function expand_timeout() {
+    SavedIFS="$IFS"
+    IFS=":."
+    Time=($TIMEOUT)
+    TIMEOUT=$((${Time[0]}*3600 + ${Time[1]}*60 + ${Time[2]})).${Time[3]}
+    IFS="$SavedIFS"
+}
+
 
 ###########################################################################
 # Default function that run flow123d
@@ -215,6 +225,8 @@ function run_flow()
 	# Was timeout set?
 	if [ -n "${TIMEOUT}" ]
 	then
+                expand_timeout
+                
 		# Flow123d runs with changed priority (19 is the lowest priority)
 		if [ -n "${QUEUE}" ]
 		then
@@ -293,6 +305,6 @@ fi
 run_flow
 
 # print the file with merged stdout, that will appear after the job is finished
-if [ -n ${STDOUT_FILE} ]; then echo "REDIRECTED: ${STDOUT_FILE}"; fi
+if [ -n "${STDOUT_FILE}" ]; then echo "REDIRECTED: ${STDOUT_FILE}"; fi
 
 exit 0

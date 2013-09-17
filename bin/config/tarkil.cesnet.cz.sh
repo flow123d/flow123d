@@ -29,6 +29,16 @@
 # INI_FILE is name of .ini file
 # WORKDIR is directory from which flow123d.sh was started
 # TIMEOUT is max time to run
+#
+# sets variable STDOUT_FILE to the file name of the joined redirected stdout and stderr
+#
+# TODO: 
+# * the job is started from /storage/.../home/USER/...
+#   It could be worth of trying to copy i/o data to/from scratch disk; it may be faster for seek operations.
+# * this script depends on build with particular combination of modules and on the debian 6.0 system 
+#   one possible enhancement: try to compile on debian 5.0 
+#
+# set -x 
 
 # Function that is used for running flow123d at hydra cluster
 function run_flow()
@@ -42,8 +52,10 @@ function run_flow()
 	
 	if [ -z "${QUEUE}" ]; then QUEUE=normal; fi
 	if [ -z "${PPN}" ]; then PPN=2; fi
-        if [ -z "${MEM}" ]; then MEM="$( ${PPN} * 2)"; fi
-        
+        if [ -z "${MEM}" ]; then MEM="$(( ${PPN} * 2))"; fi
+        # divide and round up
+        NNodes="$(( ( ${NP} + ${PPN} -1 ) / ${PPN} ))"
+        if [ -n "${TIMEOUT}" ]; then SET_WALLTIME="-l walltime=${TIMEOUT}";fi
 			
 # Copy following text to the file /tmp/firstname.surname-hydra_flow.qsub
 # ======================================================================
@@ -56,16 +68,17 @@ cat << xxEOFxx > ${QSUB_FILE}
 #PBS -N flow123d
 #PBS -j oe
 #################
-#PBS -l nodes=${NP}:ppn=${PPN}:x86_64
-#PBS -l mem=${MEM}gb
-# #PBS -l walltime=24:00:00
-# #PBS -l select=1:ncpus=$NP:host=rex
-# #PBS -l place=free:shared 
-
 # load modules
-module load openmpi-1.6-intel
-module load boost-1.49
-module load intelcdk-12
+module add svn-1.7.6
+module add intelcdk-12
+module add boost-1.49
+module add mpich-p4-intel
+module add cmake-2.8
+module add python-2.6.2
+module unload mpiexec-0.84
+module unload mpich-p4-intel
+module add openmpi-1.6-intel
+
 
 
 cd ${WORKDIR}
@@ -77,7 +90,7 @@ pwd
 
 echo mpirun -np $NP "$FLOW123D" $FLOW_PARAMS  
 
-mpirun -np $NP "$FLOW123D" $FLOW_PARAMS  
+mpirun "$FLOW123D" $FLOW_PARAMS  
   
 	
 # End of flow123d.qsub
@@ -86,21 +99,22 @@ xxEOFxx
 
 	if [ -f ${QSUB_FILE} ]
 	then    
+                OPTIONS="-l nodes=${NNodes}:ppn=${PPN}:x86_64:nfs4:debian60 -l mem=${MEM}gb ${SET_WALLTIME} ${UNRESOLVED_PARAMS} -q ${QUEUE}"
 		# Add new PBS job to the queue
-		echo "qsub -l nodes=${NP}:ppn=${PPN}:x86_64 -l mem=${MEM}gb -q ${QUEUE} ${QSUB_FILE}"
+		echo "qsub ${OPTIONS} ${QSUB_FILE}"
 		
-		JOB_NAME=`qsub -q ${QUEUE} ${UNRESOLVED_PARAMS} ${QSUB_FILE}`
-                # construct STDOUT_NAME
-                # JOB_NAME = Your job 77931 ("jan.brezina-hydra_flow.qsub") has been submitted
-                # STDOUT_NAME =  jan.brezina-hydra_flow.po77931
-                JOB_NAME=${JOB_NAME%.*}
+		JOB_NAME=`qsub ${OPTIONS} ${QSUB_FILE}`
+		if [ $? -ne 0 ]; then return 1;fi
+		
+                # construct STDOUT_FILE
+                JOB_NAME=${JOB_NAME%%.*}
                 echo "job number: ${JOB_NAME}"
-                STDOUT_NAME= ${QSUB_SCRIPT}.o${JOB_NAME}
+                STDOUT_FILE="flow123d.o${JOB_NAME}"
 		# Remove obsolete script
-		rm ${QSUB_FILE}
+		# rm ${QSUB_FILE}
 	else
-		exit 1
+		return 1
 	fi		
 	
-	exit 0
+	return 0
 }

@@ -324,13 +324,17 @@ fi
 
 
 function wait_for_flow_script {
-        # Wait for (finished) flow script and get its exit status    
-        wait ${FLOW123D_PID}
-        FLOW_EXIT_STATUS=$?
+        # Wait for (finished) flow script and get its exit status ('wait' returns status of the sub process)   
+        if [ -z "${FLOW_EXIT_STATUS}" ]
+        then
+          wait ${FLOW123D_PID}
+          FLOW_EXIT_STATUS=$?
+        fi  
 
         # set up, that flow123d was finished in time
         STDOUT_FILE=`cat "${FLOW_SCRIPT_STDOUT}" | grep "REDIRECTED: "`
         STDOUT_FILE="${STDOUT_FILE#REDIRECTED: }"  
+        #echo "Waiting for ${STDOUT_FILE}."
 }
 
 
@@ -357,7 +361,7 @@ do
 		TIMER="0"
 
 		# Flow123d runs with changed priority (19 is the lowest priority)
-                "${FLOW123D_SH}" --nice 10 --walltime ${TIMEOUT} -q "short" -- -s "${INI_FILE}" ${FLOW_PARAMS} >"${FLOW_SCRIPT_STDOUT}" &
+                "${FLOW123D_SH}" --nice 10 -np ${NP} -ppn 1 --walltime ${TIMEOUT} -q "short" -- -s "${INI_FILE}" ${FLOW_PARAMS} >"${FLOW_SCRIPT_STDOUT}" &
                 # Get PID 
 		FLOW123D_PID=$!
 
@@ -383,7 +387,7 @@ do
                               fi                              
 			else
                               # wait for flow to finish 
-                              if [ -e ${STDOUT_FILE} ]
+                              if [ -e "${STDOUT_FILE}" ]
                               then
                                       IS_RUNNING="0"
                                       break
