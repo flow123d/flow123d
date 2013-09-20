@@ -288,7 +288,7 @@ if (NOT PETSC_FOUND)
         set(EXTERNAL_PETSC_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
         include(InstallPetsc)
         
-        set(PETSC_petsc_config_current "NO")
+        set(PETSC_CURRENT "NO")
         find_package(PETSc 3.4.0)
         
     endif()    
