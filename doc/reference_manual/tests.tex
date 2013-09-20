@@ -14,27 +14,24 @@
 % You should have received a copy of the GNU General Public License along with this program; if not,
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
-\chapter{Units}
-\begin{table}
-  \label{tab:units}
-  \begin{center}
-    \begin{tabular}{|l|c|}
-      \hline
-      \textbf{Quantity} & \textbf{Unit} \\
-      \hline 
-      lenght & $L$ \\
-      time & $T$ \\
-      conductivity & $ $ \\
-      concentration & $ $ \\
-      diffusivity & $ $ \\
-      \hline
-    \end{tabular}
-  \caption{The table of units used in the document.}
-  \end{center}
-\end{table}
-
-\chapter{Tests}
-\label{sec:tests}
+% \chapter{Units}
+% \begin{table}
+%   \label{tab:units}
+%   \begin{center}
+%     \begin{tabular}{|l|c|}
+%       \hline
+%       \textbf{Quantity} & \textbf{Unit} \\
+%       \hline 
+%       lenght & $L$ \\
+%       time & $T$ \\
+%       conductivity & $ $ \\
+%       concentration & $ $ \\
+%       diffusivity & $ $ \\
+%       \hline
+%     \end{tabular}
+%   \caption{The table of units used in the document.}
+%   \end{center}
+% \end{table}
 
 
 %=====================================================
@@ -43,18 +40,25 @@
 
 \section{Test 01 -- Steady flow}
 \label{sec:test01}
-This test considers steady Darcy flow in a cube domain which is cutted by 2D fractures which are further separated by a~1D channel in their cross section. The multidimensional connections between 1D, 2D and 3D elements are involved in the computation. Dirichlet boundary condition is prescribed for flow.
+This test considers steady Darcy flow in a cube domain which is cutted by 2D fractures which are further 
+separated by a~1D channel in their cross section. The multidimensional connections between 1D, 2D and 3D 
+elements are involved in the computation. A~Dirichlet boundary condition is prescribed for flow.
   \begin{itemize} 
-    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{problem type} -- sequential coupling
     \item \emph{primary equation} -- steady mixed hybrid
   \end{itemize}
 
 \subsection*{Geometry and boundary conditions}
-A cube with its side 1.0~$L$ is cutted by two diagonal 2D fractures which are further separated by a~1D channel in their cross section.
+A~cube with its side 1.0~\unitss{}{1}{} is cutted by two diagonal 2D fractures which are further separated 
+by a~1D channel in their cross section.
 
-Geometry parameters are defined for different physical domains. Thickness of the 2D fractures is set to 1.0~$L$ and the area of the cross section is set to 1.0~$L^2$. These parameters are unrealistic (the side of the cube is 1.0~$L$ long) but it is compensated in the equation in the fraction with conductivity.
+Geometry parameters are defined for different physical domains. Thickness of the 2D fractures is set to 
+1.0~\unitss{}{1}{} and the area of the cross section is set to 1.0~\unitss{}{2}{}. These parameters are 
+unrealistic (the side of the cube is 1.0~\unitss{}{1}{} long) but it is compensated in the equation in 
+the fraction with conductivity.
 
-There are only simple Dirichlet boundary conditions. Pressure gradient in direction from one corner of the cube to the oposite corner is applied on all boundary faces of all dimensions.
+There are only simple Dirichlet boundary conditions. Pressure gradient in direction from one corner of the 
+cube to the opposite corner is applied on all boundary faces of all dimensions.
 %
 \begin{figure}[htb!]
 \centering
@@ -66,25 +70,35 @@ There are only simple Dirichlet boundary conditions. Pressure gradient in direct
 %
 \subsection*{Parameters}
 \begin{itemize}
-  \item \textbf{Cross section area:} 1D channel is set to 1.0~$L^2$.
-  \item \textbf{Thickness:} 2D fractures are set to 1.0~$L$.
+  \item \textbf{Cross section area:} 1D channel is set to 1.0~\unitss{}{2}{}.
+  \item \textbf{Thickness:} 2D fractures are set to 1.0~\unitss{}{1}{}.
   \item \textbf{Conductivity:} The conductivity of materials:
     \begin{itemize}
-      \item 1D channel is set to $K=10$.
-      \item 2D fractures are set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$.
-      \item cube material is set to $\mathbf{K}=\left(\begin{array}{ccc} 0.1 & 0 & 0 \\ 0 & 0.1 & 0 \\ 0 & 0 & 0.1\end{array} \right)$.
+      \item 1D channel is set to $K=10$~\unitss{}{1}{-1}.
+      \item 2D fractures are set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$~\unitss{}{1}{-1}.
+      \item cube material is set to $\mathbf{K}=\left(\begin{array}{ccc} 0.1 & 0 & 0 \\ 0 & 0.1 & 0 \\ 0 & 0 & 0.1\end{array} \right)$~\unitss{}{1}{-1}.
     \end{itemize}
   \item There is no transport so there are not any other parameters.
 \end{itemize}
 
 \subsection*{Verification}
-This test verifies solving steady Darcy flow by mixed hybrid method. There are different dimensional connections which are 2D-3D connection between the cube and the flat fractures and 1D-2D connection between the 1D channel and the two flat fractures in their crossection.
+This test verifies solving steady Darcy flow by the mixed hybrid method. There are different dimensional connections 
+which are 2D-3D connection between the cube and the flat fractures and 1D-2D connection between the 1D channel 
+and the two flat fractures in their crossection. 
 
-%- parallel sover using PCASM - overlaping domain decomposition
+Following will not be commented in other examples and use of the functionalities will be considered apparent. No special test
+programs are needed to test these as these are partially checked in the unit tests.
 
-%I don't so...
-%- input/output of GMSH when intput mesh has nonstandard numbering of nodes (0,1,3,...)
+The input files \verb'flow_gmsh.con' and \verb'flow_vtk.con' give the same result, however the output is written in different 
+formats. Also one can find an example of region set in \verb'flow_gmsh.con'.
 
+Setting a Dirichlet boundary condition using piezohead values is used in the input file \verb'flow_vtk_piezo.con'.
+One can also notice using of the boundary set \verb'BOUNDARY' in this file.
+
+The remaining two files \verb'flow_old_vtk.con' and \verb'flow_vtk_fbc.con' use the obsolete way of defining boundary conditions.
+The first one uses the old mesh without any named regions and the boundary condition file \verb'.fbc'. The second one combines
+new mesh with named regions and the boudanry condition file created the old way. These tests ensure partially the backward 
+compatibility of Flow123d with older input files.
 
 %=====================================================
 %                   TEST  2
@@ -92,9 +106,12 @@ This test verifies solving steady Darcy flow by mixed hybrid method. There are d
 
 \section{Test 02 -- Steady flow in 2D and transport}
 \label{sec:test02}
-This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, transport of two substances with zero initial condition for concentration. There are acutally two different cases computed in this test. Dual porosity and sorption features in explicit transport. Dispersion is defined in implicit transport.
+This test involves steady Darcy flow in 2D, connections of 1D-2D elements, Dirichlet boundary condition for flow and transport, 
+transport of two substances with zero initial condition for concentration. There are actually two different cases computed in this test. 
+Dual porosity and sorption features are present in the explicit transport. Dispersion is defined in the implicit transport.
 
-The coefficient of diffusive transfer through a fracture (means between the fracture and the surrounding material) is set to zero so the substance cannot be diffused through the fracture's boundary.
+The coefficient of diffusive transfer through a fracture (means between the fracture and the surrounding material) is set to 
+zero so the substance cannot be diffused through the fracture's boundary.
 
   \begin{itemize} 
     \item \emph{problem type} -- sequential coupling, 
@@ -105,9 +122,12 @@ The coefficient of diffusive transfer through a fracture (means between the frac
 \subsection*{Geometry and boundary conditions}
 The domain is two-dimensional slice through a part of a relief which involves several one-dimensional fractures.
 
-Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
+Simple Dirichlet flow boundary condition is defined on left and right side where pressure heads are prescribed. 
+There is no flow through the upper and lower boundary of the model. This all causes a flow along the x axis.
 
-Dirichlet boundary condition for transport is prescribed on both sides as it is for flow boundary condition and the value of concentration is 1.0 for both substances. Initial concentration of the substances is zero in the whole area. 
+Dirichlet boundary condition for transport is prescribed on both sides as it is for flow boundary condition and 
+the value of concentration is 1.0~\unitss{1}{-3}{} for both substances. Initial concentration of the substances 
+is zero in the whole area. 
 %
 \begin{figure}[htb!]
 \centering
@@ -118,19 +138,20 @@ Dirichlet boundary condition for transport is prescribed on both sides as it is 
 %
 %
 \subsection*{Parameters}
-The flow is steady and the transport is solved in time interval $(0,5.0)$. The output is written every 0.5. Time parameters for implicitly computed transport are the same only initial time step is set to 0.5.
+The flow is steady and the transport is solved in time interval $(0,5.0)$~\unitss{}{}{1}. The output is written every 0.5~\unitss{}{}{1}. 
+Time parameters for implicitly computed transport are the same only initial time step is set to 0.5~\unitss{}{}{1}.
 \begin{itemize}
-  \item \textbf{Cross section area:} 1D fractures are set to 1.0~$L^2$.
-  \item \textbf{Thickness:} domain is set to 1.0~$L$.
+  \item \textbf{Cross section area:} 1D fractures are set to 1.0~\unitss{}{2}{}.
+  \item \textbf{Thickness:} domain is set to 1.0~\unitss{}{1}{}.
   \item \textbf{Conductivity:} The conductivity of materials:
     \begin{itemize}
-      \item fracture material is set to $K=10$.
-      \item plane material is set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$.
+      \item fracture material is set to $K=10$~\unitss{}{1}{-1}.
+      \item plane material is set to $\mathbf{K}=\left(\begin{array}{cc} 1 & 0 \\ 0 & 1\end{array} \right)$~\unitss{}{1}{-1}.
     \end{itemize}
   \item \textbf{Sorption:} The sorption parameters are for both materials equal:
     \begin{itemize}
-      \item linear sorption isotherm parameter of the first substance is set to $k_d=0.02$.
-      \item Freundlich sorption isotherm parameters of the second substance are set to $k_f=0.02$, $\alpha=0.5$  
+      \item linear sorption isotherm parameter of the first substance is set to $k_l=0.02$.
+      \item Freundlich sorption isotherm parameters of the second substance are set to $k_F=0.02$, $\alpha=0.5$  
     \end{itemize}
   \item \textbf{Dual porosity:} The dual porosity parameters are for both materials equal:
     \begin{itemize}
@@ -140,11 +161,12 @@ The flow is steady and the transport is solved in time interval $(0,5.0)$. The o
     \end{itemize}
   \item \textbf{Sorption fraction:} The sorption fraction parameters are for both materials equal and set to $SF=0.5$.
   \item \textbf{Diffusivity coefficients:} These are not set so default values are applied 
-	$\sigma=0$, $\alpha_l=0$, $\alpha_t=0$, $d_m=1e-6$.
+	$\sigma^c=0$, $\alpha_L=0$, $\alpha_T=0$, $D_m=1e-6$.
 \end{itemize}
 
 \subsection*{Verification}
-This test verifies explicitly computed transport considering only convection with dual porosity and sorption and implicitly computed transport considering both convection and dispersion. Transport through 1D-2D element connections is computed in addition to the first test.
+This test verifies explicitly computed transport considering only convection with dual porosity and sorption and implicitly 
+computed transport considering both convection and dispersion. Transport through 1D-2D element connections is computed in addition to the first test.
 
 
 

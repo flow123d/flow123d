@@ -54,49 +54,6 @@ number of proccessors, with both versions 1.6.7 and 1.7.0. Number of calls of di
 maximum amount of time which is spent on one of the proccessor during the routine \emph{Tmax} have been measured.
 
 
-\begin{sidewaystable}[!htb]
-\scriptsize
-\begin{tabular}{|l|r|r|r|r|r|r|r|r|r|r|r|r|r|r|r|r|}
-\hline
-proccessors                            & \multicolumn{4}{c|}{1} & \multicolumn{4}{c|}{2} & \multicolumn{4}{c|}{4} & \multicolumn{4}{c|}{8} \\
-\hline
-version                                & \multicolumn{2}{c|}{1.6.7} & \multicolumn{2}{c|}{1.7.0} &  \multicolumn{2}{c|}{1.6.7} & \multicolumn{2}{c|}{1.7.0} &   \multicolumn{2}{c|}{1.6.7} & \multicolumn{2}{c|}{1.7.0} & \multicolumn{2}{c|}{1.6.7} & \multicolumn{2}{c|}{1.7.0}  \\
-\hline
-measurement                            & calls &  Tmax  & calls  &  Tmax  & calls  &  Tmax  & calls  &  Tmax  & calls  &  Tmax  & calls  &  Tmax  & calls  &  Tmax  & calls  &  Tmax  \\
-\hline
-Whole Program                          &   1   &   98.23   &   1   &   86.92   &   1   &   31.17   &   1   &   35.48   &   1   &   21.58   &   1   &   26.42   &   1   &   18.39   &   1   &   23.67   \\
- HC run simulation                     &   1   &   92.83   &   1   &   79.05   &   1   &   25.87   &   1   &   29.3    &   1   &   16.36   &   1   &   20.51   &   1   &   13.25   &   1   &   17.84   \\
-  convection matrix assembly           &   1   &   0.16    &   1   &   0.25    &   1   &   1.32    &   1   &   0.1 &   1   &   1.31    &   1   &   0.07    &   1   &   1.3 &   1   &   0.06    \\
-  TOS-output data                      &   5   &   2.3 &   5   &   2.45    &   5   &   2.31    &   5   &   2.59    &   5   &   2.32    &   5   &   2.55    &   5   &   2.32    &   5   &   2.54    \\
-  Solving MH system                    &   1   &   4.29    &   1   &   5.19    &   1   &   1.95    &   1   &   2.97    &   1   &   1.06    &   1   &   1.7 &   1   &   0.73    &   1   &   1.28    \\
-   solve system                      &   1   &   3.05    &   1   &   2.52    &   1   &   1.02    &   1   &   1.02    &   1   &   0.57    &   1   &   0.57    &   1   &   0.38    &   1   &   0.43    \\
-    iteration-PETSC solver         &   12  &   3.05    &   20  &   2.52    &   12  &   1.02    &   13  &   1.01    &   12  &   0.56    &   12  &   0.57    &   12  &   0.38    &   12  &   0.42    \\
-   Schur 1                           &   1   &   0.9 &   1   &   2.14    &   1   &   0.67    &   1   &   1.46    &   1   &   0.36    &   1   &   0.84    &   1   &   0.26    &   1   &   0.63    \\
-    schur1 - create,inverse         &   1   &   0.17    &   1   &   1.46    &   1   &   0.07    &   1   &   0.4 &   1   &   0.05    &   1   &   0.22    &   1   &   0.04    &   1   &   0.15    \\
-    schur1 - form                   &   1   &   0.73    &   1   &   0.69    &   1   &   0.6 &   1   &   1.06    &   1   &   0.31    &   1   &   0.63    &   1   &   0.22    &   1   &   0.48    \\
-   Schur 2                            &   1   &   0.33    &   1   &   0.32    &   1   &   0.25    &   1   &   0.44    &   1   &   0.14    &   1   &   0.26    &   1   &   0.1 &   1   &   0.21    \\
-  TOS-one step                        &   5   &   82.64   &   5   &   64.04   &   5   &   17.66   &   5   &   15.97   &   5   &   9.14    &   5   &   8.56    &   5   &   6.37    &   5   &   6.36    \\
-   convection-one step               &   16050   &   82.59   &   13790   &   64  &   16050   &   17.66   &   13790   &   15.97   &   16050   &   9.13    &   13790   &   8.55    &   16050   &   6.36    &   13790   &   6.36    \\
-    mat mult                        &   16050   &   39.16   &   13790   &   26.02   &   16050   &   10.66   &   13790   &   9.05    &   16050   &   5.75    &   13790   &   4.67    &   16050   &   4.15    &   13790   &   3.29    \\
-    data reinit                     &           &           &   13790   &   1.66    &           &           &   13790   &   1.05    &           &           &   13790   &   1.05    &           &           &   13790   &   1.13    \\
-    compute concentration sources   &   16050   &   43.31   &   13790   &   36.25   &   16050   &   7.31    &   13790   &   6.99    &   16050   &   3.6 &   13790   &   3.03    &   16050   &   2.52    &   13790   &   2.22    \\
-  Darcy output                         &   2   &   3.28    &   2   &   6.99    &   2   &   3.31    &   2   &   7.14    &   2   &   3.32    &   2   &   7.12    &   2   &   3.32    &   2   &   7.12    \\
- HC constructor                         &   1   &   5.35    &   1   &   7.79    &   1   &   5.16    &   1   &   6.32    &   1   &   5.05    &   1   &   6.05    &   1   &   5.04    &   1   &   5.99    \\
-  Darcy constructor                   &   1   &   2   &   1   &   3.28    &   1   &   1.61    &   1   &   1.74    &   1   &   1.5 &   1   &   1.45    &   1   &   1.48    &   1   &   1.41    \\
-   preallocation                     &   1   &   0.45    &   1   &   0.55    &   1   &   0.13    &   1   &   0.15    &   1   &   0.08    &   1   &   0.09    &   1   &   0.06    &   1   &   0.07    \\
-   data init                         &       &           &   1   &   0.32    &       &           &   1   &   0.32    &       &           &   1   &   0.32    &       &           &   1   &   0.32    \\
-   prepare parallel                  &   1   &   0.41    &   1   &   0.35    &   1   &   0.58    &   1   &   0.62    &   1   &   0.6 &   1   &   0.65    &   1   &   0.61    &   1   &   0.71    \\
-   precalculation in mesh            &   1   &   0.5     &       &           &   1   &   0.62    &       &           &   1   &   0.62    &   &           &   1   &   0.62    &       &      \\
-   assembly                          &   1   &   0.57    &   1   &   2.01    &   1   &   0.2 &   1   &   0.56    &   1   &   0.12    &   1   &   0.3 &   1   &   0.09    &   1   &   0.22    \\
-  Reading mesh                        &   1   &   2.27    &   1   &   3.94    &   1   &   2.47    &   1   &   3.94    &   1   &   2.48    &   1   &   3.95    &   1   &   2.5 &   1   &   3.93    \\
-   MESH - setup topology             &   1   &   1.71    &   1   &   0.49    &   1   &   1.9 &   1   &   0.49    &   1   &   1.91    &   1   &   0.49    &   1   &   1.92    &   1   &   0.5 \\
-  GMSHReader - read mesh            &   1   &   0.51    &   1   &   3.46    &   1   &   0.51    &   1   &   3.45    &   1   &   0.51    &   1   &   3.46    &   1   &   0.51    &   1   &   3.43    \\
-\hline
-\end{tabular}
-\caption{Benchmark results on the transport problem in Melechov region.}
-\label{tab:profiler_Mel1}
-\end{sidewaystable}
-
 \begin{itemize}
 \item \textbf{Assembly.} The amount of time needed for \emph{assembly} of the mixed hybrid system (in \emph{Darcy constructor}) 
 was mainly increased by moving some of the precomputations from mesh reading routines directly into the assembly proccess. 
@@ -127,12 +84,62 @@ slowing down is currently being solved. Next step in parallelism will be taken a
 
 \end{itemize}
 
+\pagebreak
+
+\input{tests_graphics/bench_mel_table.tex}
+
 
 
 \section{Transport sources}
 The problem of transport sources can be viewed in different ways. We can prescribe a source term in a region of a mesh 
 or we can cut off that region from the mesh and then prescribe a Dirichlet boundary condition on the created boundary. 
 The second way was used in some models when transport sources had not been implemented in Flow123d yet.
-
 In this section we would like to show the user the comparision of both techniques used on the real problem.
+
+\textbf{Water flow.} One of the problems of prescribing the Dirichlet boundary condition instead of source term that arises
+is not knowing the values of pressure (or velocity) to prescribe. There is a solution for this at the moment as Flow123d provides
+functionality for interpolating values between meshes. 
+
+In the figure \ref{fig:bench_mel1} we are showing the difference between the older solution (with Dirichlet BC prescribed on the source region) and 
+solution computed with source term prescribed. We can see that there is considerable difference in the nearby area of the source.
+
+\begin{figure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{tests_graphics/mel_167s-167_velocity.pdf}
+        \caption{Difference in flow velocities between computation with Dirichlet BC and sources term (both computed in version 1.6.7). 
+                 Red brick is the source region.}
+        \label{fig:bench_mel1}
+\end{figure}
+
+\begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth]{tests_graphics/mel_167s-170_velocity.pdf}
+        \caption{Difference in flow velocities between solutions computed by versions 1.6.7 and 1.7.0 (with sources term).
+                 Red brick is the source region.}
+        \label{fig:bench_mel2}
+\end{figure}
+
+% \begin{figure}
+%     \centering
+%     \begin{subfigure}[b]{0.48\textwidth}
+%         \centering
+%         \includegraphics[width=\textwidth]{tests_graphics/mel_167s-167_velocity.pdf}
+%         \caption{Elementwise pressure head and velocity field (triangles).}
+%         \label{fig:bench_mel1}
+%     \end{subfigure}
+%     \begin{subfigure}[b]{0.48\textwidth}
+%         \centering
+%         \includegraphics[width=\textwidth]{tests_graphics/mel_167s-170_velocity.pdf}
+%         \caption{Elementwise pressure head and velocity field (triangles).}
+%         \label{fig:bench_mel2}
+%     \end{subfigure}
+% \end{figure}
+
+In the figure \ref{fig:bench_mel2} we also demonstrate small difference in water flow computed by versions 1.6.7 and 1.7.0. 
+There are 5 areas where the difference if larger than the solver accuracy (set $10^{-7}$). Source of this difference 
+is not clear at the moment.
+
+\textbf{Transport.}
+
+
 
