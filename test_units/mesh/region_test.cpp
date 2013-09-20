@@ -10,8 +10,12 @@
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 #include "input/json_to_storage.hh"
+#include <map>
+
+#include <boost/lexical_cast.hpp>
 
 TEST(Region, all) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     RegionDB    region_db;
     region_db.add_region(0,"nothing_bc", 0, true);
     region_db.add_region(1,"nothing_bulk", 0, false);
@@ -69,7 +73,10 @@ TEST(Region, all) {
 
     region_db.add_region(1005,"side", 2, true);
     //EXPECT_THROW( region_db.add_region(1005,"new", 3, false) , RegionDB::ExcInconsistentAdd);
-    EXPECT_THROW( region_db.add_region(1001,"bottom", 2, false) , RegionDB::ExcInconsistentAdd);
+    EXPECT_THROW( region_db.add_region(1001,"bottom", 2, true) , RegionDB::ExcNonuniqueID);
+    EXPECT_THROW( region_db.add_region(1101,"top", 2, true) , RegionDB::ExcNonuniqueLabel);
+    EXPECT_THROW( region_db.add_region(1001,"top", 3, true) , RegionDB::ExcInconsistentDimension);
+    EXPECT_THROW( region_db.add_region(1001,"top", 2, false) , RegionDB::ExcInconsistentBoundary);
 
     region_db.close(); // close should be called automatically at first call to any size method.
 
@@ -211,3 +218,95 @@ TEST(Region, read_element_map_from_input) {
 	EXPECT_EQ(1, ( *(map.find(8)) ).second );
 	EXPECT_EQ(0, ( *(map.find(9)) ).second );
 }
+
+
+//**************************************************************************************************
+
+void init_db(RegionDB &db,int bc_size, int bulk_size) {
+    int i;
+    for(i=0; i<bc_size; i++) {
+        db.add_region(i, boost::lexical_cast<std::string>(i),1,true);
+    }
+    for(; i<bc_size+bulk_size; i++) {
+        db.add_region(i, boost::lexical_cast<std::string>(i),1,false);
+    }
+}
+
+struct Item {
+    unsigned int id;
+    std::string l;
+    unsigned int dim;
+};
+
+void init_map(std::map<unsigned int, Item> &map,int size) {
+
+    for(int i=0; i<size; i++) {
+        Item xx={i, "xyz", 1};
+        map[i]=xx;
+    }
+}
+
+/***
+ * Speed measurments
+ *
+ * 1M steps
+ * Debug    10      DB      1040
+ * Debug    10      map     250
+ * Debug    100     DB      991
+ * Debug    100     map     322
+ *
+ * 10M steps
+ * O3       10      DB      331
+ * O3       10      map     132
+ * O3       100     DB      330
+ * O3       100     map     164
+ * 10M steps
+ * O3       10      DBmap      452
+ * O3       100     DBmap      580
+ *
+ * O3       100     add_region   4153
+ * O3       100     add_region_consistancy_check  825
+ * O3       100     add_region_consistancy_check && using iterators  446
+ */
+/*
+#define STEPS (10*1000*1000)
+
+// RegionDB add_item(id, dim) overhead.
+TEST(RegionDB, speed_add_region_id) {
+        RegionDB region_db;
+        init_db(region_db,50,50);
+        int ii=0;
+
+        for(int step=0;step < STEPS; step++) {
+            ii+= region_db.add_region(3, 1).idx();
+            ii+= region_db.add_region(9, 1).idx();
+        }
+   cout << ii << endl;
+}
+
+// boost multi index overhead
+TEST(RegionDB, speed_find_id) {
+        RegionDB region_db;
+        init_db(region_db,50,50);
+        int ii=0;
+
+        for(int step=0;step < STEPS; step++) {
+            ii+= region_db.find_id(3).idx();
+            ii+= region_db.find_id(9).idx();
+        }
+   cout << ii << endl;
+}
+
+// Simplest implementation for ID lookup.
+TEST(RegionDB, speed_map) {
+        std::map<unsigned int, Item> map;
+        init_map(map, 100);
+        int ii=0;
+
+        for(int step=0;step < STEPS; step++) {
+            ii+= map.find(3)->second.id;
+            ii+= map.find(9)->second.id;
+        }
+   cout << ii << endl;
+}
+*/
