@@ -59,7 +59,7 @@ typedef enum SchurState {
 
 typedef class SchurComplement {
 public:
-    SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
+    //SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
     /**
      * Constructor
      *
@@ -71,6 +71,7 @@ public:
 
     LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}
+    Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
     void set_spd();
     //void reuse() {state=created;}
@@ -116,7 +117,7 @@ private:
     LinSys *Orig;     // Original Linear System:  B' C  *  Sol2  =   RHS2
     LinSys *Compl;    // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
 
-    Distribution *ds_;
+    Distribution *ds_;          // Distribution of B block
 } SchurComplement;
 
 #endif /* LA_SCHUR_HH_ */

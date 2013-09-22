@@ -328,14 +328,10 @@ protected:
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
 
-        Mat IA1;                                         //< inverse of matrix IA1
-        Mat IA2;                                         //< inverse of matrix IA2
-        IS IS1;											 //< index set of matrix IA1
-        IS IS2;											 //< index set of matrix IA2
+    IS IS1;									 //< parallel index set of schur1 complement
+    IS IS2;									 //< parallel index set of schur2 complement
 
-        Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
-        
-        double mortar_sigma;
+    double mortar_sigma;
         
   EqData data;
 };

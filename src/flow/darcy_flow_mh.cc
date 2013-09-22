@@ -283,8 +283,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     schur0   = NULL;
     schur1   = NULL;
     schur2   = NULL;
-    IA1      = NULL;
-    IA2      = NULL;
+    IS1      = NULL;
+    IS2      = NULL;
     
     /*
     Iterator<Record> it_bc = in_rec.find<Record>("boundary_conditions");
@@ -408,10 +408,10 @@ void DarcyFlowMH_Steady::update_solution() {
         make_schur1();
         make_schur2();
 
-        schur2->resolve();
-        schur1->resolve();
         schur2->get_system()->solve();
         convergedReason = schur1->get_system()->solve();
+        schur2->resolve();
+        schur1->resolve();
         break;
     }
 
@@ -1254,8 +1254,8 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
     if (schur2 != NULL) delete schur2;
     // if (schur1 != NULL) delete schur1;   // where shur1 should be deleted ??
 
-    if ( IA1 != NULL ) MatDestroy( &(IA1) );
-    if ( IA2 != NULL ) MatDestroy( &(IA2) );
+    //if ( IS1 != NULL ) ISDestroy( &IS1 );
+    //if ( IS2 != NULL ) ISDestroy( &IS2 );
 
     delete schur0;
 }
@@ -1272,74 +1272,17 @@ void DarcyFlowMH_Steady::make_schur1() {
     
     START_TIMER("Schur 1");
   
-    ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-    MHFEValues fe_values;
-
-    unsigned int  nsides, i;
-    int side_rows[4];
     PetscErrorCode err;
 
     F_ENTRY;
     START_TIMER("schur1 - create,inverse");
 
-    // check type of LinSys
-    /* if (schur0->type == LinSys::MAT_IS) {
-        // create mapping for PETSc
-
-       err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,
-               side_ds->lsize(),
-               side_id_4_loc, PETSC_COPY_VALUES, &map_side_local_to_global);
-        ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
-
-       err = MatCreateIS(PETSC_COMM_WORLD, 1, side_ds->lsize(), side_ds->lsize(), side_ds->size(), side_ds->size(), map_side_local_to_global, &IA1);
-        ASSERT(err == 0,"Error in MatCreateIS.");
-
-       MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE);
-
-        for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-           ele = mesh_->element(el_4_loc[i_loc]);
-        
-           nsides = ele->n_sides();
-
-           fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
-
-            for (i = 0; i < nsides; i++)
-               side_rows[i] = mh_dh.side_dof( ele->side(i) ); // side ID
-            // - rows_ds->begin(); // local side number
-                           // + side_ds->begin(); // side row in IA1 matrix
-           MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
-                        INSERT_VALUES);
-        }
-    } else if (schur0->type == LinSys::MAT_MPIAIJ) {*/
+    // create schur1 if does not exists
 	if (schur1 == NULL) {
-		// create Inverse of the A block
-		/*err = MatCreateAIJ(PETSC_COMM_WORLD, side_ds->lsize(), side_ds->lsize(), PETSC_DETERMINE, PETSC_DETERMINE, 4,
-				PETSC_NULL, 0, PETSC_NULL, &(IA1));
-		ASSERT(err == 0,"Error in MatCreateMPIAIJ.");
-
-		MatSetOption(IA1, MAT_SYMMETRIC, PETSC_TRUE); // */
-        ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &IS1);
+		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &IS1);
+		ASSERT(err == 0,"Error in ISCreateStride.");
 		schur1 = new SchurComplement(schur0, IS1, 5);
-		//schur1 = new SchurComplement(schur0, IA1);
 	}
-
-	/*for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-		ele = mesh_->element(el_4_loc[i_loc]);
-
-		nsides = ele->n_sides();
-
-		fe_values.update( ele, data.anisotropy, data.cross_section, data.conductivity );
-
-		for (i = 0; i < nsides; i++)
-			side_rows[i] = side_row_4_id[ mh_dh.side_dof(ele->side(i)) ] // side row in MH matrix
-					- rows_ds->begin() // local side number
-					+ side_ds->begin(); // side row in IA1 matrix
-		MatSetValues(IA1, nsides, side_rows, nsides, side_rows, fe_values.inv_local_matrix(),
-				INSERT_VALUES);
-	}
-
-    MatAssemblyBegin(IA1, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(IA1, MAT_FINAL_ASSEMBLY); // */
     
     END_TIMER("schur1 - create,inverse");
     
@@ -1357,39 +1300,17 @@ void DarcyFlowMH_Steady::make_schur1() {
  ******************************************************************************/
 void DarcyFlowMH_Steady::make_schur2() {
     PetscScalar *vDiag;
-    int loc_el_size;
     PetscErrorCode ierr;
     F_ENTRY;
     START_TIMER("Schur 2");
-    // create Inverse of the B block ( of the first complement )
 
-    loc_el_size = el_ds->lsize();
-
+    // create schur complement of the B block ( of the first complement )
     if (schur2 == NULL) {
-        // get subdiagonal of local size == loc num of elements
-        VecCreateMPI(PETSC_COMM_WORLD, schur1->get_system()->vec_lsize(),
-                PETSC_DETERMINE, &diag_schur1);
-        ierr = MatCreateAIJ(PETSC_COMM_WORLD, loc_el_size, loc_el_size,
-                PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL, 0, PETSC_NULL,
-                &(IA2)); // construct matrix
-        ASSERT(ierr == 0, "Error in MatCreateMPIAIJ.");
-      
-        VecGetArray(diag_schur1,&vDiag);
-        // define sub vector of B-block diagonal
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,  loc_el_size, PETSC_DETERMINE,
-                vDiag, &diag_schur1_b);
-        VecRestoreArray(diag_schur1,&vDiag);
-        //xprintf(Msg, "DarcyFlowMH_Steady::make_schur2: proc %d, begin %d, end %d, lsize %d, size %d\n", el_ds->myp(), rows_ds->begin(), rows_ds->end(), el_ds->lsize(), el_ds->size());
-        //ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize() + edge_ds->begin(), 1, &IS2);
-        //schur2 = new SchurComplement(schur1->get_system(), IS2, 5);
-        schur2 = new SchurComplement(schur1->get_system(), IA2);
+        ierr = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), schur1->get_distribution()->begin(), 1, &IS2);
+        ASSERT(ierr == 0, "Error in ISCreateStride.");
+        schur2 = new SchurComplement(schur1->get_system(), IS2, 5);
 
     }
-
-    MatGetDiagonal(schur1->get_system()->get_matrix(), diag_schur1); // get whole diagonal
-    // compute inverse of B-block
-    VecReciprocal(diag_schur1_b);
-    MatDiagonalSet(IA2, diag_schur1_b, INSERT_VALUES);
 
     schur2->form_schur();
     schur2->scale(-1.0);

@@ -69,6 +69,7 @@
   *
  */
 
+#if 0
 SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 : IA(inv_a), IsA(ia), state(created), Orig(orig)
 
@@ -340,6 +341,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
         }
         MPI_Barrier(PETSC_COMM_WORLD);*/
 }
+#endif
 
 SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat)
 : IsA(ia), state(created), Orig(orig)
@@ -351,14 +353,9 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
         PetscScalar *rhs_array, *sol_array;
         int orig_first;
 
-        int n_proc, rank;
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-        MPI_Comm_size(PETSC_COMM_WORLD, &n_proc);
-
         // check type of LinSys, dimensions of matrix, index set
         ierr = MatGetSize(Orig->get_matrix(), &m, &n);
         ASSERT(typeid(*Orig) == typeid(LinSys_PETSC), "Assumed PETSC type of Orig object.\n");
-        //ASSERT(Orig->type == LinSys::PETSC, "Assumed PETSC type of Orig object.\n");
         ASSERT(m == n, "Assumed square matrix.\n" );
         ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
@@ -376,54 +373,48 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
 
         F_ENTRY;
 
-        {
-           // get distribution of original matrix
-           MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
-           MatGetLocalSize(Orig->get_matrix(),&orig_lsize,PETSC_NULL);
-           MatGetSubMatrix(Orig->get_matrix(), IsA, IsA, MAT_INITIAL_MATRIX, &IA);
-           DBGMSG(" - rank: %d, size: %d, orig_first: %d, orig_lsize: %d \n", rank, m, orig_first, orig_lsize);
-           //MatView(IA,PETSC_VIEWER_STDOUT_WORLD);
+	    // get distribution of original matrix
+	    MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
+	    MatGetLocalSize(Orig->get_matrix(),&orig_lsize,PETSC_NULL);
+	    MatGetSubMatrix(Orig->get_matrix(), IsA, IsA, MAT_INITIAL_MATRIX, &IA);
+	    //MatView(IA,PETSC_VIEWER_STDOUT_WORLD);
 
-           // create A block index set
-           ISGetLocalSize(IsA, &loc_size_A);
-           ISAllGather(IsA,&fullIsA);
-           DBGMSG(" - rank: %d, locSizeA: %d\n", rank, loc_size_A);
-           //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
+	    // create A block index set
+	    ISGetLocalSize(IsA, &loc_size_A);
+	    ISAllGather(IsA,&fullIsA);
+	    //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
 
-           // create B block index set
-           locSizeB = orig_lsize-loc_size_A;
-           ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+loc_size_A,1,&IsB);
-           ISAllGather(IsB,&fullIsB);
-           DBGMSG(" - rank: %d, locSizeB: %d\n", rank, locSizeB);
-           //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
+	    // create B block index set
+	    locSizeB = orig_lsize-loc_size_A;
+	    ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+loc_size_A,1,&IsB);
+	    ISAllGather(IsB,&fullIsB);
+	    //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 
-           // create complement system
-           // TODO: introduce LS as true object, clarify its internal states
-           // create RHS sub vecs RHS1, RHS2
-           VecGetArray(Orig->get_rhs(),&rhs_array);
-           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
+	    // create complement system
+	    // TODO: introduce LS as true object, clarify its internal states
+	    // create RHS sub vecs RHS1, RHS2
+	    VecGetArray(Orig->get_rhs(),&rhs_array);
+	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
 
-           // create Solution sub vecs Sol1, Compl->solution
-           VecGetArray(Orig->get_solution(),&sol_array);
-           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
+	    // create Solution sub vecs Sol1, Compl->solution
+	    VecGetArray(Orig->get_solution(),&sol_array);
+	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
 
-           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
+	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
 
-           VecRestoreArray(Orig->get_rhs(),&rhs_array);
-           VecRestoreArray(Orig->get_solution(),&sol_array);
+	    VecRestoreArray(Orig->get_rhs(),&rhs_array);
+	    VecRestoreArray(Orig->get_solution(),&sol_array);
 
-           VecGetArray( Sol2, &sol_array );
-           ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
-           Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
-           Compl->set_solution(sol_array);
-           VecRestoreArray( Sol2, &sol_array );
-        }
+	    VecGetArray( Sol2, &sol_array );
+	    ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
+	    Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
+	    Compl->set_solution(sol_array);
+	    VecRestoreArray( Sol2, &sol_array );
 
     	PetscInt ncols, pos_start, pos_start_IA;
     	MatGetOwnershipRange(Orig->get_matrix(),&pos_start,PETSC_NULL);
     	MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
-        DBGMSG(" - rank: %d, pos_start_IA: %d, pos_start: %d, loc_size_A: %d \n", rank, pos_start_IA, pos_start, loc_size_A);
 
         std::vector<PetscInt> submat_rows;
         const PetscInt *cols;

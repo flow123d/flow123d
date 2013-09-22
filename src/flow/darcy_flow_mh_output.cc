@@ -113,7 +113,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     
     //TODO: multi_process output
-    if( rank == 0)
+    //if( rank == 0)
     {
 
         result = OutputTime::register_node_data
@@ -232,7 +232,7 @@ void DarcyFlowMHOutput::output()
       // consider begining of the interval of actual result as the output time. Or use
       // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
       if (time == TimeGovernor::inf_time) time = 0.0;
-       
+
       if(output_writer) output_writer->write_data(time);
       
       output_internal_flow_data();
@@ -800,6 +800,8 @@ double calc_water_balance(Mesh* mesh, int c_water) {
 
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+
     if (raw_output_file == NULL) return;
     
     char dbl_fmt[ 16 ]= "%.8g ";
@@ -808,8 +810,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     xfprintf( raw_output_file, "$FlowField\nT=");
     xfprintf( raw_output_file, dbl_fmt, darcy_flow->time().t());
     xfprintf( raw_output_file, "\n%d\n", mesh_->n_elements() );
-
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     unsigned int i;
     int cit = 0;
