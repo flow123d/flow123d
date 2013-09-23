@@ -111,14 +111,16 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
     LabelIter it_label = region_set_.get<Label>().find(label);
 
     if (it_id != region_set_.get<ID>().end() ) {
-        if (it_id->index != it_label->index) THROW(ExcNonuniqueID() << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(it_id->label) );
+        unsigned int index = it_id->index;
+        if (it_id->dim_ != undefined_dim  && index != it_label->index) THROW(ExcNonuniqueID() << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(it_id->label) );
 
-        Region r_id=Region(it_id->index, *this);
+        check_dim_consistency(it_id, dim); // possibly update DB
+
+        Region r_id=Region(index, *this);
         // check boundary
         if ( r_id.is_boundary() != boundary )
             THROW(ExcInconsistentBoundary() << EI_Label(label) << EI_ID(id) );
 
-        check_dim_consistency(it_id, dim);
         return r_id;
     } else
     if (it_label != region_set_.get<Label>().end() ) {
@@ -147,7 +149,6 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
 }
 
 
-
 Region RegionDB::add_region(unsigned int id, const std::string &label, unsigned int dim) {
 	if (label.size() != 0) {
 		bool boundary = label[0] == '.';
@@ -158,7 +159,6 @@ Region RegionDB::add_region(unsigned int id, const std::string &label, unsigned 
     ss << "region_" << id;
 	return add_region(id, ss.str(), dim, false);
 }
-
 
 
 Region RegionDB::add_region(unsigned int id, unsigned int dim) {

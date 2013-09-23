@@ -350,8 +350,8 @@ public:
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
 
     /**
-     * As the previous, but generates automatic if region is boundary or not.
-     * The specification of this region is given in 'additional region definitions' section of the input file.
+     * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
+     * Used in read_regions_from_input ( with undefined dimension) to read regions given in 'regions' key of the 'mesh' input record.
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim);
 
