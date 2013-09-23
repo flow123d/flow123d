@@ -10,6 +10,7 @@
 #define FIELD_BASE_IMPL_HH_
 
 #include <string>
+#include <limits>
 using namespace std;
 
 #include <boost/type_traits.hpp>
@@ -40,7 +41,8 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 FieldBase<spacedim, Value>::FieldBase(unsigned int n_comp)
-: time_(0.0), value_(r_value_)
+: time_( -numeric_limits<double>::infinity() ),
+  value_(r_value_)
 {
     value_.set_n_comp(n_comp);
 }

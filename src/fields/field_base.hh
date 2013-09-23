@@ -176,7 +176,7 @@ public:
 
 
 protected:
-       /// Actual time level
+       /// Actual time level; initial value is -infinity.
        double time_;
        /// Last value, prevents passing large values (vectors) by value.
        Value value_;
