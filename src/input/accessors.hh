@@ -166,7 +166,7 @@ public:
      * that leads from the root storage and root Input::Type::TypeBase to the actual node in the storage
      * that is path_[actual_node_].
      */
-    std::string make_full_address();
+    std::string make_full_address() const;
 
 
 protected:
@@ -296,7 +296,7 @@ public:
     /**
      * Returns address
      */
-    Address &get_address();
+    const Address &get_address() const ;
 
 
 protected:
@@ -362,7 +362,7 @@ public:
     /**
      * Returns address
      */
-    Address &get_address();
+    const Address &get_address() const;
 
 
 private:
@@ -380,7 +380,11 @@ private:
  *
  * There are two possible ways how to retrieve data from Array accessor. First, you can use generic
  * @p copy_to function to copy the data into a given container. Second, you can get an Iterator<Type>
- * and iterate through the Array.
+ * and iterate through the Array. Unfortunately, you have to provide Type to the begin() method so this
+ * implementation is not fully compliant with standard library. The reason is that in order to speed up compilation of many
+ * classes using input accessors we wouldn't have Input::Array a class template that it can be compiled only once.
+ * By this reason one can not use BOOST_FOREACH to iterate over Input::Array.
+ * TODO: Make Input::Array<Type> wrapper which is compliant with standard library.
  *
  * In either case correspondence between resulting type (i.e. type of elements of the container or type of the Iterator)
  * and the type of the data in the Array is checked only once.
@@ -454,7 +458,7 @@ public:
    /**
     * Returns address
     */
-   Address &get_address();
+   const Address &get_address() const;
 
    /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;
@@ -556,7 +560,7 @@ public:
     /**
      * Returns address
      */
-    Address &get_address()
+    const Address &get_address() const
     { return address_; }
 
 

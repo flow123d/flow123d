@@ -56,6 +56,7 @@ TEST(FieldFormula, read_from_input) {
     {
         arma::vec result;
 
+        conc->set_time(0.0);
         result = conc->value( point_1, elm);
         EXPECT_DOUBLE_EQ( point_1(0) ,              result[0]);
         EXPECT_DOUBLE_EQ( point_1(0)*point_1(1),    result[1]);
@@ -65,9 +66,16 @@ TEST(FieldFormula, read_from_input) {
         EXPECT_DOUBLE_EQ( point_2(0) ,              result[0]);
         EXPECT_DOUBLE_EQ( point_2(0)*point_2(1),    result[1]);
         EXPECT_DOUBLE_EQ( point_2(1),               result[2]);
+
+        conc->set_time(1.0);
+        result = conc->value( point_1, elm);
+        EXPECT_DOUBLE_EQ( point_1(0) ,              result[0]);
+        EXPECT_DOUBLE_EQ( point_1(0)*point_1(1),    result[1]);
+        EXPECT_DOUBLE_EQ( point_1(1) +1.0,               result[2]);
     }
 
     auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"));
+    cond->set_time(0.0);
     {
         arma::mat::fixed<3,3> result;
         double x,y,base;
@@ -102,3 +110,61 @@ TEST(FieldFormula, read_from_input) {
 
     }
 }
+
+
+string set_time_input = R"INPUT(
+[ 
+      { TYPE="FieldFormula",  value=["x", "x*y", "y+t"] },
+      { TYPE="FieldFormula",  value=["x", "x*y", "y"] },
+      { TYPE="FieldFormula",  value=["x+t", "x*y+t", "y+t"] },
+      { TYPE="FieldFormula",  value=["x", "x*y", "y"] }
+]
+
+)INPUT";
+
+
+TEST(FieldFormula, set_time) {
+    typedef FieldBase<2, FieldValue<3>::Vector > VectorField;
+
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    Input::Type::Array  input_type(VectorField::input_type);
+
+    // read input string
+    std::stringstream ss(set_time_input);
+    Input::JSONToStorage reader;
+    reader.read_stream( ss, input_type );
+    Input::Array in_array=reader.get_root_interface<Input::Array>();
+
+    auto it = in_array.begin<Input::AbstractRecord>();
+
+    {
+        auto field=VectorField::function_factory(*it, 3);
+        EXPECT_TRUE( field->set_time(1.0) );
+        EXPECT_TRUE( field->set_time(2.0) );
+    }
+    ++it;
+
+    {
+        auto field=VectorField::function_factory(*it, 3);
+        EXPECT_TRUE( field->set_time(3.0) );
+        EXPECT_FALSE( field->set_time(4.0) );
+    }
+    ++it;
+
+    {
+        auto field=VectorField::function_factory(*it, 3);
+        EXPECT_TRUE( field->set_time(1.5) );
+        EXPECT_TRUE( field->set_time(2.5) );
+    }
+    ++it;
+
+    {
+        auto field=VectorField::function_factory(*it, 3);
+        EXPECT_TRUE( field->set_time(0.0) );
+        EXPECT_FALSE( field->set_time(2.0) );
+    }
+
+}
+
