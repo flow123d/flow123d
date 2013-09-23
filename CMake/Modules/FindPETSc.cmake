@@ -131,9 +131,13 @@ endif (PETSC_DIR AND NOT PETSC_ARCH)
 set (petsc_slaves LIBRARIES_SYS LIBRARIES_VEC LIBRARIES_MAT LIBRARIES_DM LIBRARIES_KSP LIBRARIES_SNES LIBRARIES_TS
   INCLUDE_DIR INCLUDE_CONF)
 include (FindPackageMultipass)
-find_package_multipass (PETSc petsc_config_current
+find_package_multipass (PETSC petsc_config_current
   STATES DIR ARCH
-  DEPENDENTS INCLUDES LIBRARIES COMPILER MPIEXEC ${petsc_slaves})
+  DEPENDENTS INCLUDES LIBRARIES COMPILER MPIEXEC EXTERNAL_LIB ${petsc_slaves})
+  
+message(STATUS "petsc_external_lib: ${PETSC_EXTERNAL_LIB}\n")
+message(STATUS "petsc_inclides: ${PETSC_INCLUDES}\n")
+message(STATUS "petsc_config_current: ${petsc_config_current}\n")
 
   
 ########################################################## 

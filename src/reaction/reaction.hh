@@ -81,7 +81,11 @@ class Reaction: public EquationBase
 		/**
 		* Function for setting dual porosity.
 		*/
-		void set_dual_porosity(bool dual_porosity_on);//(Input::Record in_rec);
+		void set_dual_porosity(bool dual_porosity_on);
+		/**
+		* Function for getting dual porosity.
+		*/
+		bool get_dual_porosity(void);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

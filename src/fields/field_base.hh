@@ -103,10 +103,10 @@ public:
         * Set new time value. Some Fields may and some may not implement time dependent values and
         * possibly various types of interpolation. There can not be unified approach to interpolation (at least not on this abstraction level)
         * since some fields (FieldFormula, FieldPython) provides naturally time dependent functions other fields like (FieldConstant, ...), however,
-        * can be equipped by various time interpolation schemes. In future, we obviously need interpolation of variable order so that
+        * can be equipped by various time interpolation schemes. In future, we obviously need time interpolation of higher order so that
         * we can use ODE integrators of higher order.
         *
-        * The method returns true if the value of the field change in the new time step.
+        * The method returns true if the value of the field has changed in the new time step.
         */
        virtual bool set_time(double time);
 

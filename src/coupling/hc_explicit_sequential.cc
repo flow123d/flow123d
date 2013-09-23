@@ -236,11 +236,11 @@ void HC_ExplicitSequential::run_simulation()
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
-    delete mesh;
     //delete material_database;
     delete water;
     delete water_output;
     delete transport_reaction;
+    delete mesh;
 }
 
 

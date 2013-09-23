@@ -493,23 +493,24 @@ void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_s
 {
     // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
     // and use its mechanism to manage dependency between vectors
-    //if (solution_changed_for_scatter) {
+    if (solution_changed_for_scatter) {
     //    // scatter solution to all procs
     //    VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec,
     //            INSERT_VALUES, SCATTER_FORWARD);
     //    VecScatterEnd(par_to_all, schur0->get_solution(), sol_vec,
     //            INSERT_VALUES, SCATTER_FORWARD);
     //    solution_changed_for_scatter=false;
-    //}
 
-    std::vector<double> sol_disordered(this->size);
-    schur0 -> get_whole_solution( sol_disordered );
+        std::vector<double> sol_disordered(this->size);
+        schur0 -> get_whole_solution( sol_disordered );
 
-    // reorder solution to application ordering
-    if ( solution_.empty() ) solution_.resize( this->size, 0. );
-    for ( int i = 0; i < this->size; i++ ) {
-        solution_[i] = sol_disordered[solver_indices_[i]];
+        // reorder solution to application ordering
+        if ( solution_.empty() ) solution_.resize( this->size, 0. );
+        for ( int i = 0; i < this->size; i++ ) {
+            solution_[i] = sol_disordered[solver_indices_[i]];
+        }
     }
+
     vec=&(solution_[0]);
     vec_size = solution_.size();
     ASSERT(vec != NULL, "Requested solution is not allocated!\n");
@@ -709,6 +710,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         // add virtual values for schur complement allocation
         switch (n_schur_compls) {
         case 2:
+            // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
             ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
             ls->mat_set_values(ele->n_neighs_vb, tmp_rows+2,
                                ele->n_neighs_vb, tmp_rows+2, zeros);
@@ -1905,7 +1907,28 @@ void DarcyFlowLMH_Unsteady::postprocess() {
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
 
-  DarcyFlowMH_Steady::postprocess();
+  //DarcyFlowMH_Steady::postprocess();
+
+    int side_rows[4];
+    double values[4];
+    //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+
+  // modify side fluxes in parallel
+  // for every local edge take time term on digonal and add it to the corresponding flux
+
+  for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+      ele = mesh_->element(el_4_loc[i_loc]);
+      FOR_ELEMENT_SIDES(ele,i) {
+          side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
+          values[i] = -1.0 * ele->measure() *
+            data.cross_section.value(ele->centre(), ele->element_accessor()) *
+            data.water_source_density.value(ele->centre(), ele->element_accessor()) /
+            ele->n_sides();
+      }
+      VecSetValues(schur0->get_solution(), ele->n_sides(), side_rows, values, ADD_VALUES);
+  }
+  VecAssemblyBegin(schur0->get_solution());
+  VecAssemblyEnd(schur0->get_solution());
 }
 
 //-----------------------------------------------------------------------------

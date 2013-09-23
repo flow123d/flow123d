@@ -295,7 +295,7 @@ if (NOT PETSC_FOUND)
         endif()
         include(InstallPetsc)
         
-        set(PETSC_petsc_config_current "NO")
+        set(PETSC_CURRENT "NO")
         find_package(PETSc 3.4.0)
         
     endif()    
@@ -426,6 +426,9 @@ else (CYGWIN)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
+    else()
+	set(PYTHON_INCLUDE_DIRS "")
+	set(PYTHON_LIBRARIES "")
     endif()
   endif()  
 endif(CYGWIN)
@@ -440,9 +443,7 @@ find_package(Subversion)
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
-    #${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
-    ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
     ${BDDCML_INCLUDES}
     ${Boost_INCLUDE_DIR}

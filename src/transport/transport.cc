@@ -88,8 +88,6 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("Transpor
             "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("1.0"));
 }
 
-
-
 RegionSet ConvectionTransport::EqData::read_boundary_list_item(Input::Record rec) {
     // Base method EqDataBase::read_boundary_list_item must be called first!
     RegionSet domain = EqDataBase::read_boundary_list_item(rec);
@@ -981,32 +979,33 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi) {
 
     double conc_avg = 0.0;
+    unsigned int loc_el;
     //int id;
     //double ***conc = transport->conc;
     //double ***pconc = transport->pconc;
     double cm, pcm, ci, pci, por_m, por_imm, alpha;
 
-    por_m = data_.por_m.value(elem->centre(), elem->element_accessor());
-    por_imm = data_.por_imm.value(elem->centre(), elem->element_accessor());
-    alpha = data_.alpha.value(elem->centre(), elem->element_accessor())(sbi);
-    pcm = conc[MOBILE][sbi][elm_pos];
-    pci = conc[IMMOBILE][sbi][elm_pos];
-    // ---compute average concentration------------------------------------------
-    conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
+    		por_m = data_.por_m.value(elem->centre(), elem->element_accessor());
+    		por_imm = data_.por_imm.value(elem->centre(), elem->element_accessor());
+    		alpha = data_.alpha.value(elem->centre(), elem->element_accessor())(sbi);
+    		pcm = conc[MOBILE][sbi][elm_pos];
+    		pci = conc[IMMOBILE][sbi][elm_pos];
+    		// ---compute average concentration------------------------------------------
+    		conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
 
-    if ((conc_avg != 0.0) && (por_imm != 0.0)) {
-        // ---compute concentration in mobile area-----------------------------------
-        cm = (pcm - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
+    		if ((conc_avg != 0.0) && (por_imm != 0.0)) {
+        		// ---compute concentration in mobile area-----------------------------------
+        		cm = (pcm - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
 
-        // ---compute concentration in immobile area---------------------------------
-        ci = (pci - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
-        // --------------------------------------------------------------------------
-        //printf("\n%f\t%f\t%f",conc_avg,cm,ci);
-        //getchar();
+        		// ---compute concentration in immobile area---------------------------------
+        		ci = (pci - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
+        		// --------------------------------------------------------------------------
+        		//printf("\n%f\t%f\t%f",conc_avg,cm,ci);
+        		//getchar();
 
-        conc[MOBILE][sbi][elm_pos] = cm;
-        conc[IMMOBILE][sbi][elm_pos] = ci;
-    }
+        		conc[MOBILE][sbi][elm_pos] = cm;
+        		conc[IMMOBILE][sbi][elm_pos] = ci;
+    		}
 
 }
 //=============================================================================

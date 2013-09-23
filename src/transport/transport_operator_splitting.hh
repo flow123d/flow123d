@@ -22,6 +22,7 @@ class Reaction;
 class Linear_reaction;
 //class Pade_approximant;
 class Sorption;
+//class Dual_por_exchange;
 class Semchem_interface;
 class ConvectionTransport;
 
@@ -121,8 +122,6 @@ public:
 
     const TimeIntegrationScheme time_scheme() { return time_scheme_; }
 
-
-
 protected:
     /**
      * Calculates the total flux through boundaries of all regions, and additionally positive and negative fluxes.
@@ -158,7 +157,10 @@ protected:
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
     const MH_DofHandler *mh_dh;
-
+    /**
+    *  Parameters of the equation
+    */
+    //TransportEqData data_;
     /**
      * Handle for output file for output of balance and total fluxes over individual regions and region sets.
      * TODO: make a specialized class for output of these data
@@ -264,7 +266,7 @@ public:
      */
     void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
 
-    //virtual EqData *get_data() { return &data; };
+    //virtual EqData *get_data() { return &data; };/**
 
 
 private:
@@ -282,6 +284,8 @@ private:
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     Sorption *sorptions;
+    Sorption *sorptions_immob;
+    //Dual_por_exchange *dual_por_exchange;
     Semchem_interface *Semchem_reactions;
     //int steps;
 

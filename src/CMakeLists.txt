@@ -158,6 +158,7 @@ set(sources_lib_non_system
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
     reaction/sorption.cc
+    reaction/dual_por_exchange.cc
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 

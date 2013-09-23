@@ -37,21 +37,20 @@
 
 
 #
-# Note: This script assumes that Flow123d can contain any error. It means that
-# there could be never ending loop, flow could try to allocate infinity
-# amount of memory, etc.
+# Note: This script depends on flow123d.sh in forcing the time out limit especially in the case that Flow123d run extremly long due to possible error.
+# TODO: 
+#  * allow differned setting (timeout, queue, memory limit ...) for different machines
+#  * report timer from profiler (if exists)
 #
+#  
+#set -x
 
 
-# Every test has to be finished in 120 seconds. Flow123d will be killed after
-# 60 seconds. It prevents test to run in never ending loop, when development
+# Every test has to be finished in $TIME_OUT seconds. Flow123d will be killed after
+# this timeout seconds. It prevents test to run in never ending loop, when development
 # version of Flow123d contains such error.
-#TIMEOUT=120
 TIMEOUT=120
 
-# Try to use MPI environment variable for timeout too. Some implementation
-# of MPI supports it and some implementations doesn't.
-export MPIEXEC_TIMEOUT=${TIMEOUT}
 
 # Relative path to Flow123d script from the directory,
 # where this script is placed
@@ -59,10 +58,6 @@ FLOW123D_SH="../flow123d.sh"
 # Relative path to Flow123d binary from current/working directory
 FLOW123D_SH="${0%/*}/${FLOW123D_SH}"
 
-# Relative path to mpiexec from the directory, where this script is placed
-MPIEXEC="../mpiexec"
-# Relative path to mpiexec binary from current/working directory
-MPIEXEC="${0%/*}/${MPIEXEC}"
 
 # Relative path to ndiff checking correctness of output files from this directory
 NDIFF="../ndiff/ndiff.pl"
@@ -99,6 +94,8 @@ EXIT_STATUS=0
 
 # Set up memory limits that prevent too allocate too much memory.
 # The limit of virtual memory is 200MB (memory, that could be allocated)
+#
+# Seems that setting limits for virtual memory doesn't work under Cygwin.
 ulimit -S -v 200000
 
 
@@ -325,12 +322,23 @@ then
 	exit 1
 fi
 
-# Check if mpiexec exists and it is executable file
-if ! [ -x "${MPIEXEC}" ]
-then
-	echo "Error: can't execute ${MPIEXEC}"
-	exit 1
-fi
+
+function wait_for_flow_script {
+        # Wait for (finished) flow script and get its exit status ('wait' returns status of the sub process)   
+        if [ -z "${FLOW_EXIT_STATUS}" ]
+        then
+          wait ${FLOW123D_PID}
+          FLOW_EXIT_STATUS=$?
+        fi  
+
+        # set up, that flow123d was finished in time
+        STDOUT_FILE=`cat "${FLOW_SCRIPT_STDOUT}" | grep "REDIRECTED: "`
+        STDOUT_FILE="${STDOUT_FILE#REDIRECTED: }"  
+        #echo "Waiting for ${STDOUT_FILE}."
+}
+
+
+FLOW_SCRIPT_STDOUT="`pwd`/flow_script.stdout"
 
 # For every ini file run one test
 for INI_FILE in $INI_FILES
@@ -345,9 +353,6 @@ do
 
 	for NP in ${N_PROC}
 	do
-		# Clear output file for every new test. Output of passed test isn't
-		# important. It is useful to see the output of last test that failed.
-		echo "" > "${FLOW123D_OUTPUT}"
 
 		# Erase content of ./output directory
 		rm -rf "${OUTPUT_DIR}"/*
@@ -356,9 +361,9 @@ do
 		TIMER="0"
 
 		# Flow123d runs with changed priority (19 is the lowest priority)
-		"${MPIEXEC}" -np ${NP} "${FLOW123D_SH}" -n 10 -t ${TIMEOUT} -r "${FLOW123D_OUTPUT}" -s "${INI_FILE}" "${FLOW_PARAMS}" &
-		# Get PID of mpiexec
-		MPIEXEC_PID=$!
+                "${FLOW123D_SH}" --nice 10 -np ${NP} -ppn 1 --walltime ${TIMEOUT} -q "short" -- -s "${INI_FILE}" ${FLOW_PARAMS} >"${FLOW_SCRIPT_STDOUT}" &
+                # Get PID 
+		FLOW123D_PID=$!
 
 		echo -n "Running flow123d [proc:${NP}] ${INI_FILE} ."
 		IS_RUNNING=1
@@ -371,25 +376,42 @@ do
 			#ps -o "%P %p"
 			sleep 1
 
-			# Is mpiexec and still running?
-			ps | ${AWK} '{ print $1 }' | grep -q "${MPIEXEC_PID}"
-			if [ $? -ne 0 ]
-			then
-				# set up, that flow123d was finished in time
-				IS_RUNNING="0"
-				break 1
+			# Is flow script still running?
+			if [  ${IS_RUNNING} -eq 1 ]
+			then 
+                              ps | ${AWK} '{ print $1 }' | grep -q "${FLOW123D_PID}"
+                              if [ $? -ne 0 ]
+                              then
+                                      IS_RUNNING="2"
+                                      wait_for_flow_script
+                              fi                              
+			else
+                              # wait for flow to finish 
+                              if [ -e "${STDOUT_FILE}" ]
+                              then
+                                      IS_RUNNING="0"
+                                      break
+                              fi
 			fi
 		done
+		
+		# we wait in order to get STDOUT_FILE even in case of error (at least for interactive runs)
+		wait_for_flow_script
+		if [ -e ${STDOUT_FILE} ]
+		then
+                    mv "${STDOUT_FILE}" "${FLOW123D_OUTPUT}"
+                else
+                    FLOW_EXIT_STATUS=100
+                fi
+		               
 
 		# In all cases copy content of ./output to ./test_results directory
 		copy_outputs "${INI_FILE}" "${NP}"
 
-		# Get exit status variable of mpiexec executing mpiexec executing flow123d
-		wait ${MPIEXEC_PID}
-		MPIEXEC_EXIT_STATUS=$?
+		
 
 		# Was Flow123d finished correctly?
-		if [ ${MPIEXEC_EXIT_STATUS} -eq 0 ]
+		if [ ${IS_RUNNING} -eq 0 -a ${FLOW_EXIT_STATUS} -eq 0 ]
 		then
 			echo " [Success:${TIMER}s]"
 			

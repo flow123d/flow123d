@@ -44,6 +44,7 @@
 #include "input/accessors.hh"
 #include "flow/old_bcd.hh"
 #include "la/linsys_PETSC.hh"
+#include "mesh/partitioning.hh"
 
 using namespace Input::Type;
 
@@ -120,13 +121,9 @@ TransportDG::FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	map2_ = new MappingP1<2,3>;
 	map3_ = new MappingP1<3,3>;
 
-	dh1_ = new DOFHandler<1,3>(*mesh_);
-	dh2_ = new DOFHandler<2,3>(*mesh_);
-	dh3_ = new DOFHandler<3,3>(*mesh_);
+	dh_ = new DOFHandlerMultiDim(*mesh_);
 
-	dh1_->distribute_dofs(*fe1_);
-	dh2_->distribute_dofs(*fe2_, dh1_->n_global_dofs());
-	dh3_->distribute_dofs(*fe3_, dh1_->n_global_dofs() + dh2_->n_global_dofs());
+	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
 }
 
 TransportDG::FEObjects::~FEObjects()
@@ -145,9 +142,7 @@ TransportDG::FEObjects::~FEObjects()
 	delete map1_;
 	delete map2_;
 	delete map3_;
-	delete dh1_;
-	delete dh2_;
-	delete dh3_;
+	delete dh_;
 }
 
 template<> FiniteElement<0,3> *TransportDG::FEObjects::fe<0>() { return 0; }
@@ -170,10 +165,7 @@ template<> Mapping<1,3> *TransportDG::FEObjects::mapping<1>() { return map1_; }
 template<> Mapping<2,3> *TransportDG::FEObjects::mapping<2>() { return map2_; }
 template<> Mapping<3,3> *TransportDG::FEObjects::mapping<3>() { return map3_; }
 
-template<> DOFHandler<0,3> *TransportDG::FEObjects::dh<0>() { return 0; }
-template<> DOFHandler<1,3> *TransportDG::FEObjects::dh<1>() { return dh1_; }
-template<> DOFHandler<2,3> *TransportDG::FEObjects::dh<2>() { return dh2_; }
-template<> DOFHandler<3,3> *TransportDG::FEObjects::dh<3>() { return dh3_; }
+DOFHandlerMultiDim *TransportDG::FEObjects::dh() { return dh_; }
 
 
 
@@ -249,16 +241,14 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     dg_order = in_rec.val<unsigned int>("dg_order");
     feo = new FEObjects(mesh_, dg_order);
 
-    // distribute solution vectors on processors
-    distr = new Distribution(DistributionBlock(), feo->dh<1>()->n_global_dofs() + feo->dh<2>()->n_global_dofs() + feo->dh<3>()->n_global_dofs(), PETSC_COMM_WORLD);
-
+    make_transport_partitioning();
 
     // set up output class
     Input::Record output_rec = in_rec.val<Input::Record>("output");
     transport_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
 
     // allocate output arrays
-    if (distr->myp() == 0)
+    if (el_ds->myp() == 0)
     {
     	int n_corners = 0;
     	FOR_ELEMENTS(mesh_, elem)
@@ -279,11 +269,14 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
     
     // allocate matrix and vector structures
+    
     ls    = new LinSys*[n_subst_];
-    ls_dt = new LinSys_PETSC(distr);
+    // TODO: have Distribution object in DoF handler, use it here and on several other places
+    //int lsize = feo->dh()->lsize();
+    //ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
     for (int sbi = 0; sbi < n_subst_; sbi++) {
-    	ls[sbi] = new LinSys_PETSC(distr);
+    	//ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
     }
     stiffness_matrix = new Mat[n_subst_];
@@ -305,7 +298,7 @@ TransportDG::~TransportDG()
     delete solver;
     delete ls_dt;
 
-    if (distr->myp() == 0)
+    if (el_ds->myp() == 0)
     {
 		for (int i=0; i<n_subst_; i++)
 			delete[] output_solution[i];
@@ -325,6 +318,17 @@ TransportDG::~TransportDG()
 void TransportDG::set_eq_data(Field< 3, FieldValue<3>::Scalar > *cross_section)
 {
   data.cross_section = cross_section;
+}
+
+void TransportDG::make_transport_partitioning()
+{
+    F_ENTRY;
+
+    int *id_4_old = new int[mesh_->n_elements()];
+    int i = 0;
+    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
+    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
+    delete[] id_4_old;
 }
 
 
@@ -376,7 +380,7 @@ void TransportDG::update_solution()
 	{
 		ls_dt->start_add_assembly();
 		assemble_mass_matrix();
-		//ls_dt->finalize();
+		ls_dt->finish_assembly();
 		mass_matrix = ls_dt->get_matrix();
 	}
 
@@ -523,10 +527,10 @@ void TransportDG::output_data()
     // gather the solution from all processors
     IS is;
     VecScatter output_scatter;
-    int row_ids[distr->size()];
+    int row_ids[feo->dh()->n_global_dofs()];
 	Vec solution_vec;
 
-	for (int i=0; i<distr->size(); i++)
+	for (int i=0; i<feo->dh()->n_global_dofs(); i++)
 		row_ids[i] = i;
 
 	for (int sbi=0; sbi<n_subst_; sbi++)
@@ -541,7 +545,7 @@ void TransportDG::output_data()
 		ISDestroy(&(is));
 
 		// on the main processor fill the output array and save to file
-		if (distr->myp() == 0)
+		if (el_ds->myp() == 0)
 		{
 			int corner_id = 0; //, node_id;
 
@@ -566,10 +570,10 @@ void TransportDG::output_data()
 			VecGetArray(solution_vec, &solution);
 			FOR_ELEMENTS(mesh_, elem)
 			{
+				feo->dh()->get_dof_indices(elem, dof_indices);
 				switch (elem->dim())
 				{
 				case 1:
-					feo->dh<1>()->get_dof_indices(elem, dof_indices);
 					fv1.reinit(elem);
 					for (unsigned int k=0; k<q1.size(); k++)
 					{
@@ -580,7 +584,6 @@ void TransportDG::output_data()
 					}
 					break;
 				case 2:
-					feo->dh<2>()->get_dof_indices(elem, dof_indices);
 					fv2.reinit(elem);
 					for (unsigned int k=0; k<q2.size(); k++)
 					{
@@ -591,7 +594,6 @@ void TransportDG::output_data()
 					}
 					break;
 				case 3:
-					feo->dh<3>()->get_dof_indices(elem, dof_indices);
 					fv3.reinit(elem);
 					for (unsigned int k=0; k<q3.size(); k++)
 					{
@@ -611,7 +613,7 @@ void TransportDG::output_data()
 		VecDestroy(&solution_vec);
 	}
 
-	if (distr->myp() == 0)
+	if (el_ds->myp() == 0)
 	{
 		if(transport_output) {
 			xprintf(MsgLog, "transport DG: write_data()\n");
@@ -641,15 +643,15 @@ void TransportDG::assemble_mass_matrix()
     unsigned int dof_indices[ndofs];
     PetscScalar local_mass_matrix[ndofs*ndofs], local_rhs[ndofs];
     vector<double> elem_csec(qsize), por_m(qsize);
-    typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
 
     // assemble integral over elements
-    for (cell = feo->dh<dim>()->begin_cell(); cell != feo->dh<dim>()->end_cell(); ++cell)
+    for (typename DOFHandler<dim,3>::CellIterator cell = mesh_->element.begin(); cell != mesh_->element.end(); ++cell)
     {
         if (cell->dim() != dim) continue;
+        if (!el_ds->is_local(row_4_el[cell.index()])) continue;
 
         fe_values.reinit(cell);
-        feo->dh<dim>()->get_dof_indices(cell, dof_indices);
+        feo->dh()->get_dof_indices(cell, dof_indices);
         ElementAccessor<3> ele_acc = cell->element_accessor();
 
         for (unsigned int k=0; k<qsize; k++)
@@ -665,7 +667,6 @@ void TransportDG::assemble_mass_matrix()
             for (unsigned int j=0; j<ndofs; j++)
             {
                 local_mass_matrix[i*ndofs+j] = 0;
-                if ( ((int)dof_indices[i]) < distr->begin() || ((int)dof_indices[i]) > distr->end() ) continue;
                 for (unsigned int k=0; k<qsize; k++)
                     local_mass_matrix[i*ndofs+j] += elem_csec[k]*por_m[k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
             }
@@ -718,7 +719,6 @@ void TransportDG::assemble_volume_integrals()
     		update_values | update_gradients);
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     arma::mat33 K;
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     unsigned int dof_indices[ndofs];
@@ -729,14 +729,15 @@ void TransportDG::assemble_volume_integrals()
     PetscScalar local_matrix[ndofs*ndofs];
 
 	// assemble integral over elements
-    for (cell = feo->dh<dim>()->begin_cell(); cell != feo->dh<dim>()->end_cell(); ++cell)
+    for (typename DOFHandler<dim,3>::CellIterator cell = mesh_->element.begin(); cell != mesh_->element.end(); ++cell)
     {
         if (cell->dim() != dim) continue;
+        if (!el_ds->is_local(row_4_el[cell.index()])) continue;
 
         fe_values.reinit(cell);
         fv_rt.reinit(cell);
         ElementAccessor<3> ele_acc = cell->element_accessor();
-        feo->dh<dim>()->get_dof_indices(cell, dof_indices);
+        feo->dh()->get_dof_indices(cell, dof_indices);
         
         for (unsigned int k=0; k<qsize; k++)
         {
@@ -764,8 +765,6 @@ void TransportDG::assemble_volume_integrals()
 
         		for (unsigned int i=0; i<ndofs; i++)
         		{
-        			if ( ((int)dof_indices[i]) < distr->begin() || ((int)dof_indices[i]) > distr->end() ) continue;
-
         			arma::vec3 Kt_grad_i = K.t()*fe_values.shape_grad(i,k);
         			double velocity_dot_grad_i_times_JxW = arma::dot(velocity[k], fe_values.shape_grad(i,k))*fe_values.JxW(k);
 
@@ -798,7 +797,6 @@ void TransportDG::set_sources()
 {
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_JxW_values | update_quadrature_points);
-    typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec> sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
     unsigned int dof_indices[ndofs];
@@ -806,12 +804,13 @@ void TransportDG::set_sources()
     double source;
 
 	// assemble integral over elements
-    for (cell = feo->dh<dim>()->begin_cell(); cell != feo->dh<dim>()->end_cell(); ++cell)
+    for (typename DOFHandler<dim,3>::CellIterator cell = mesh_->element.begin(); cell != mesh_->element.end(); ++cell)
     {
         if (cell->dim() != dim) continue;
+        if (!el_ds->is_local(row_4_el[cell.index()])) continue;
 
         fe_values.reinit(cell);
-        feo->dh<dim>()->get_dof_indices(cell, dof_indices);
+        feo->dh()->get_dof_indices(cell, dof_indices);
 
         for (unsigned int k=0; k<qsize; k++)
         {
@@ -833,8 +832,6 @@ void TransportDG::set_sources()
 
         		for (unsigned int i=0; i<ndofs; i++)
         		{
-        			if ( ((int)dof_indices[i]) < distr->begin() || ((int)dof_indices[i]) > distr->end() ) continue;
-
         			local_rhs[i] += source*fe_values.shape_value(i,k);
             	}
             }
@@ -852,7 +849,6 @@ void TransportDG::assemble_fluxes_element_element()
     vector<FESideValues<dim,3>*> fe_values;
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
     		update_values);
-    typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<unsigned int*> side_dof_indices;
     PetscScalar local_matrix[ndofs*ndofs]; //, local_rhs[ndofs];
@@ -867,6 +863,15 @@ void TransportDG::assemble_fluxes_element_element()
     FOR_EDGES( mesh_, edg )
     {
         if (edg->n_sides < 2 || edg->side(0)->element()->dim() != dim) continue;
+
+        bool is_edge_local = false;
+        for (int sid=0; sid<edg->n_sides; sid++)
+        	if (el_ds->is_local(row_4_el[edg->side(sid)->element().index()]))
+        	{
+        		is_edge_local = true;
+        		break;
+        	}
+        if (!is_edge_local) continue;
 
         side_velocity.resize(edg->n_sides);
         for (unsigned int k=0; k<qsize; k++)
@@ -889,9 +894,9 @@ void TransportDG::assemble_fluxes_element_element()
 
 		for (int sid=0; sid<edg->n_sides; sid++)
 		{
-			cell = mesh_->element.full_iter(edg->side(sid)->element());
+			typename DOFHandler<dim,3>::CellIterator cell = mesh_->element.full_iter(edg->side(sid)->element());
 			ElementAccessor<3> ele_acc = cell->element_accessor();
-			feo->dh<dim>()->get_dof_indices(cell, side_dof_indices[sid]);
+			feo->dh()->get_dof_indices(cell, side_dof_indices[sid]);
 			fe_values[sid]->reinit(cell, edg->side(sid)->el_idx());
 			fsv_rt.reinit(cell, edg->side(sid)->el_idx());
 			calculate_velocity(cell, side_velocity[sid], fsv_rt);
@@ -920,6 +925,9 @@ void TransportDG::assemble_fluxes_element_element()
 				for (int s2=s1+1; s2<edg->n_sides; s2++)
 				{
 					ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
+					if (!el_ds->is_local(row_4_el[edg->side(s1)->element().index()])
+							&& !el_ds->is_local(row_4_el[edg->side(s2)->element().index()])) continue;
+
 					arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
 					// set up the parameters for DG method
@@ -934,9 +942,11 @@ void TransportDG::assemble_fluxes_element_element()
 #define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values[sd[side_id]]->shape_value(i,k))
 
 					// For selected pair of elements:
-					for (int m=0; m<2; m++)
+					for (int n=0; n<2; n++)
 					{
-						for (int n=0; n<2; n++)
+						if (!el_ds->is_local(row_4_el[edg->side(sd[n])->element().index()])) continue;
+
+						for (int m=0; m<2; m++)
 						{
 							for (unsigned int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
 								for (unsigned int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
@@ -949,8 +959,6 @@ void TransportDG::assemble_fluxes_element_element()
 
 								for (unsigned int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
 								{
-									if ( ((int)side_dof_indices[sd[n]][i]) < distr->begin() || ((int)side_dof_indices[sd[n]][i]) > distr->end() ) continue;
-
 									double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
 									double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
 									double JxW_jump_i = fe_values[0]->JxW(k)*JUMP(i,k,n);
@@ -998,7 +1006,6 @@ void TransportDG::assemble_fluxes_boundary()
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
     		update_values);
-    typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     unsigned int side_dof_indices[ndofs];
     PetscScalar local_matrix[ndofs*ndofs]; //, local_rhs[ndofs];
@@ -1010,15 +1017,22 @@ void TransportDG::assemble_fluxes_boundary()
     double gamma_l;
 
     // assemble boundary integral
-    FOR_BOUNDARIES(mesh_, b)
+    FOR_EDGES(mesh_, edg)
     {
-        if (b->side()->dim() != dim-1) continue;
+    	if (edg->n_sides > 1) continue;
+    	// check spatial dimension
+    	if (edg->side(0)->dim() != dim-1) continue;
+    	// skip edges lying not on the boundary
+    	if (edg->side(0)->cond() == NULL) continue;
+    	// skip if edge does not belong to local element
+    	if (!el_ds->is_local(row_4_el[edg->side(0)->element().index()])) continue;
 
-        cell = mesh().element.full_iter(b->side()->element());
+    	SideIter side = edg->side(0);
+        typename DOFHandler<dim,3>::CellIterator cell = mesh().element.full_iter(side->element());
         ElementAccessor<3> ele_acc = cell->element_accessor();
-        feo->dh<dim>()->get_dof_indices(cell, side_dof_indices);
-        fe_values_side.reinit(cell, b->side()->el_idx());
-        fsv_rt.reinit(cell, b->side()->el_idx());
+        feo->dh()->get_dof_indices(cell, side_dof_indices);
+        fe_values_side.reinit(cell, side->el_idx());
+        fsv_rt.reinit(cell, side->el_idx());
 
         calculate_velocity(cell, side_velocity, fsv_rt);
         for (unsigned int k=0; k<qsize; k++)
@@ -1036,14 +1050,14 @@ void TransportDG::assemble_fluxes_boundary()
         		calculate_dispersivity_tensor(side_K[k], side_velocity[k], Dm[k][sbi], alphaL[k][sbi], alphaT[k][sbi], por_m[k], csection[k]);
 
 			// set up the parameters for DG method
-			set_DG_parameters_boundary(b->side(), side_K, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
-			if (b->side()->cond() != 0)
-				gamma[sbi][b->side()->cond_idx()] = gamma_l;
+			set_DG_parameters_boundary(side, side_K, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
+			if (side->cond() != 0)
+				gamma[sbi][side->cond_idx()] = gamma_l;
 
 			// On Neumann boundaries we have only term from integrating by parts the advective term,
 			// on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-			double transport_flux = mh_dh->side_flux( *(b->side()) )/b->side()->measure();
-			if (mh_dh->side_flux( *(b->side()) ) < -mh_dh->precision())
+			double transport_flux = mh_dh->side_flux( *side )/side->measure();
+			if (mh_dh->side_flux( *side ) < -mh_dh->precision())
 				transport_flux += gamma_l;
 
 			for (unsigned int i=0; i<ndofs; i++)
@@ -1057,8 +1071,6 @@ void TransportDG::assemble_fluxes_boundary()
 
 				for (unsigned int i=0; i<ndofs; i++)
 				{
-					if ( ((int)side_dof_indices[i]) < distr->begin() || ((int)side_dof_indices[i]) > distr->end()) continue;
-
 					for (unsigned int j=0; j<ndofs; j++)
 						local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
 				}
@@ -1080,7 +1092,6 @@ void TransportDG::assemble_fluxes_element_side()
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
 
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
-    typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
@@ -1121,14 +1132,19 @@ void TransportDG::assemble_fluxes_element_side()
         if (nb->element()->dim() != dim-1) continue;
 
 		typename DOFHandler<dim-1,3>::CellIterator cell_sub = mesh_->element.full_iter(nb->element());
-		feo->dh<dim-1>()->get_dof_indices(cell_sub, side_dof_indices);
+		feo->dh()->get_dof_indices(cell_sub, side_dof_indices);
 		fe_values_vb.reinit(cell_sub);
 		n_dofs[0] = fv_sb[0]->n_dofs();
 
-		cell = nb->side()->element();
-		feo->dh<dim>()->get_dof_indices(cell, side_dof_indices+n_dofs[0]);
+		typename DOFHandler<dim,3>::CellIterator cell = nb->side()->element();
+		feo->dh()->get_dof_indices(cell, side_dof_indices+n_dofs[0]);
 		fe_values_side.reinit(cell, nb->side()->el_idx());
 		n_dofs[1] = fv_sb[1]->n_dofs();
+
+		// Element id's for testing if they belong to local partition.
+		int element_id[2];
+		element_id[0] = cell_sub.index();
+		element_id[1] = cell.index();
 
 		// flux from the higher dimension to the lower one
 		transport_flux = mh_dh->side_flux( *(nb->side()) )/nb->side()->measure();
@@ -1161,9 +1177,10 @@ void TransportDG::assemble_fluxes_element_side()
 
 				for (int n=0; n<2; n++)
 				{
+					if (!el_ds->is_local(row_4_el[element_id[n]])) continue;
+
 					for (unsigned int i=0; i<n_dofs[n]; i++)
 					{
-						if ( ((int)side_dof_indices[i+n*n_dofs[0]]) < distr->begin() || ((int)side_dof_indices[i+n*n_dofs[0]]) > distr->end() ) continue;
 						for (int m=0; m<2; m++)
 						{
 							for (unsigned int j=0; j<n_dofs[m]; j++)
@@ -1201,7 +1218,6 @@ void TransportDG::set_boundary_conditions()
 template<unsigned int dim>
 void TransportDG::set_boundary_conditions()
 {
-    typename DOFHandler<dim,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
@@ -1210,22 +1226,23 @@ void TransportDG::set_boundary_conditions()
     vector<arma::vec> bc_values(qsize);
     int rank;
 
-    //TODO: distribution of BC elements
-    // BC are now set only by process 0
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    if (rank != 0) return;
-
-    FOR_BOUNDARIES(mesh_, b)
+    FOR_EDGES(mesh_, edg)
     {
-    	cell = b->side()->element();
-    	if (cell->dim() != dim) continue;
-
+    	if (edg->n_sides > 1) continue;
+    	if (edg->side(0)->dim() != dim-1) continue;
+    	// skip edges lying not on the boundary
+    	if (edg->side(0)->cond() == NULL) continue;
+    	// check if side lies on a local element
+    	if (!el_ds->is_local(row_4_el[edg->side(0)->element().index()])) continue;
     	// skip outflow boundaries
-    	if (mh_dh->side_flux( *(b->side()) ) >= -mh_dh->precision()) continue;
+    	if (mh_dh->side_flux( *edg->side(0) ) >= -mh_dh->precision()) continue;
 
-        ElementAccessor<3> ele_acc = b->element_accessor();
-        fe_values_side.reinit(cell, b->side()->el_idx());
-        feo->dh<dim>()->get_dof_indices(cell, side_dof_indices);
+    	SideIter side = edg->side(0);
+    	typename DOFHandler<dim,3>::CellIterator cell = mesh().element.full_iter(side->element());
+        ElementAccessor<3> ele_acc = side->cond()->element_accessor();
+
+        fe_values_side.reinit(cell, side->el_idx());
+        feo->dh()->get_dof_indices(cell, side_dof_indices);
 
         for (unsigned int k=0; k<qsize; k++)
         	bc_values[k] = data.bc_conc.value(fe_values_side.point(k), ele_acc);
@@ -1236,7 +1253,7 @@ void TransportDG::set_boundary_conditions()
 
         	for (unsigned int k=0; k<qsize; k++)
         	{
-        		double bc_term = gamma[sbi][b->side()->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
+        		double bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
         		for (unsigned int i=0; i<ndofs; i++)
 					local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 			}
@@ -1469,18 +1486,18 @@ void TransportDG::prepare_initial_condition()
 	FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
 			update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    unsigned int dof_indices[ndofs]; //, nid;
+    unsigned int dof_indices[ndofs];
     double matrix[ndofs*ndofs], rhs[ndofs];
-    //arma::vec init_values[qsize];
     std::vector<arma::vec> init_values;
     init_values.resize(qsize);
 
     FOR_ELEMENTS(mesh_, elem)
     {
     	if (elem->dim() != dim) continue;
+    	if (!el_ds->is_local(row_4_el[elem.index()])) continue;
 
     	ElementAccessor<3> ele_acc = elem->element_accessor();
-    	feo->dh<dim>()->get_dof_indices(elem, dof_indices);
+    	feo->dh()->get_dof_indices(elem, dof_indices);
     	fe_values.reinit(elem);
 
     	for (unsigned int k=0; k<qsize; k++)
@@ -1501,8 +1518,6 @@ void TransportDG::prepare_initial_condition()
 
     			for (unsigned int i=0; i<ndofs; i++)
     			{
-    				if ( ((int)dof_indices[i]) < distr->begin() || ((int)dof_indices[i]) > distr->end() ) continue;
-
     				for (unsigned int j=0; j<ndofs; j++)
     					matrix[i*ndofs+j] += fe_values.shape_value(i,k)*fe_values.shape_value(j,k)*fe_values.JxW(k);
 
@@ -1532,12 +1547,10 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 			update_values);
 	const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
 	unsigned int dof_indices[ndofs];
-	DOFHandler<1,3>::CellIterator cell = feo->dh<dim>()->begin_cell();
 	vector<double> por_m(qsize), csection(qsize);
 	vector<arma::vec3> side_velocity(qsize);
 	double conc, mass_flux, water_flux;
 	arma::vec3 c_grad;
-	//arma::vec Dm[qsize], alphaL[qsize], alphaT[qsize];
     std::vector<arma::vec> Dm, alphaL, alphaT;
 	arma::mat33 D;
 
@@ -1545,18 +1558,24 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 	alphaL.resize(qsize);
 	alphaT.resize(qsize);
 
-    FOR_BOUNDARIES(mesh_, bcd) {
+    FOR_EDGES(mesh_, edg)
+    {
+    	if (edg->n_sides > 1) continue;
+    	if (edg->side(0)->dim() != dim-1) continue;
+    	// skip edges lying not on the boundary
+    	if (edg->side(0)->cond() == NULL) continue;
+    	// check if side lies on a local element
+    	if (!el_ds->is_local(row_4_el[edg->side(0)->element().index()])) continue;
 
-    	if (bcd->side()->dim() != dim-1) continue;
-
-        cell = bcd->side()->element();
+    	SideIter side = edg->side(0);
+    	DOFHandlerMultiDim::CellIterator cell = side->element();
         ElementAccessor<3> ele_acc = cell->element_accessor();
 
-		water_flux = mh_dh->side_flux(*(bcd->side()))/bcd->side()->measure();
+		water_flux = mh_dh->side_flux(*side)/side->measure();
 
-		fe_values.reinit(cell, bcd->side()->el_idx());
-		fsv_rt.reinit(cell, bcd->side()->el_idx());
-		feo->dh<dim>()->get_dof_indices(cell, dof_indices);
+		fe_values.reinit(cell, side->el_idx());
+		fsv_rt.reinit(cell, side->el_idx());
+		feo->dh()->get_dof_indices(cell, dof_indices);
 
 		calculate_velocity(cell, side_velocity, fsv_rt);
 		for (unsigned int k=0; k<qsize; k++)
@@ -1578,16 +1597,15 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 				c_grad.zeros();
 				for (unsigned int i=0; i<ndofs; i++)
 				{
-					if ( ((int)dof_indices[i]) < distr->begin() || ((int)dof_indices[i]) > distr->end() ) continue;
-					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
-					c_grad += fe_values.shape_grad(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
+					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
+					c_grad += fe_values.shape_grad(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
 				}
 
 				mass_flux += (-csection[k]*por_m[k]*dot(D*c_grad,fe_values.normal_vector(0)) + water_flux*conc)*fe_values.JxW(k);
 			}
 
-			Region r = bcd->region();
-			if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
+			Region r = side->cond()->element_accessor().region();
+			if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", side->cond()->bc_ele_idx_, side->cond()->edge_idx_);
 			unsigned int bc_region_idx = r.boundary_idx();
 			bcd_balance[sbi][bc_region_idx] += mass_flux;
 
@@ -1619,6 +1637,7 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 	FOR_ELEMENTS(mesh_, elem)
 	{
 		if (elem->dim() != dim) continue;
+		if (!el_ds->is_local(row_4_el[elem.index()])) continue;
 
 		Region r = elem->element_accessor().region();
 		if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d\n", elem.index());
@@ -1626,7 +1645,7 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 
 		ElementAccessor<3> ele_acc = elem->element_accessor();
 		fe_values.reinit(elem);
-		feo->dh<dim>()->get_dof_indices(elem, dof_indices);
+		feo->dh()->get_dof_indices(elem, dof_indices);
 
 		for (unsigned int k=0; k<qsize; k++)
 		{
@@ -1646,11 +1665,7 @@ void TransportDG::calc_elem_sources(vector<vector<double> > &mass, vector<vector
 			{
 				conc = 0;
 				for (unsigned int i=0; i<ndofs; i++)
-				{
-					// TODO: Correct calculation of actual concentration (see note in TransportDG::set_sources()).
-					if ( ((int)dof_indices[i]) < distr->begin() || ((int)dof_indices[i]) > distr->end() ) continue;
-					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-distr->begin()];
-				}
+					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
 
 				mass_sum += por_m[k]*csection[k]*conc*fe_values.JxW(k);
 
