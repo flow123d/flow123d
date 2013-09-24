@@ -62,7 +62,7 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
     // read formulas form input
     formula_matrix_helper_.init_from_input( rec.val<typename StringValue::AccessType>("value") );
-    value_input_address_ = rec.get_address().make_full_address();
+    //value_input_address_ = rec.get_address().make_full_address();
 }
 
 
