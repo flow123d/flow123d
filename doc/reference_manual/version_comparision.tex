@@ -40,7 +40,8 @@ Benchmarks are computed on cluster 'hal' in the Supercomputing Centre of Czech T
 date & June 6, 2013 \\
 mesh size & 56355 elements \\
 compared versions & 1.6.7 (rev. 2392) flow123d/branches/1.6.7 \\
-                  & 1.7.0 (rev. 2416) flow123d/trunk
+                  & 1.7.0 (rev. 2416) flow123d/trunk \\
+data available on Bacula server & pavel.exner/flow123d\_benchmarks
 \end{tabular}
 \caption{Benchmark general information}
 \label{tab:bench1}
@@ -51,7 +52,8 @@ substance from the concentration source in the Melechov region which is consider
 one of the localities suitable for building nuclear waste deposit. The results of profiling can be seen in
 the table \ref{tab:profiler_Mel1}. One can see in the header of the table that the problem was computed several times on different 
 number of proccessors, with both versions 1.6.7 and 1.7.0. Number of calls of different routines and 
-maximum amount of time which is spent on one of the proccessor during the routine \emph{Tmax} have been measured.
+maximum amount of time which is spent on one of the proccessors during the routine (column \emph{Tmax}) have been measured.
+We will now discuss some of the results which are highlighted in \ref{tab:profiler_Mel1}.
 
 
 \begin{itemize}
@@ -71,28 +73,31 @@ of Schur complements needs to be optimized.
 
 \item \textbf{Convection matrix assembly.}
 In the \emph{convection matrix assembly} routine we can see improvement from version 1.6.7 to 1.7.0. This routine scales better in
-newer version and this probably can be still farther optimized.
+newer version and this probably can be still further optimized.
 
 \item \textbf{Transport Operator Splitting -- one step.}
-It seems the newer version 1.7.0 is a little bit faster. The difference is caused by the change of computing the time step of convection. 
-There are fewer convection steps in version 1.7.0 so the routine does not last so long.
+It seems the newer version 1.7.0 is a bit faster. The difference is mainly caused by some small changes in determining the time step of convection. 
+There are fewer convection steps in version 1.7.0 so the routine does not last so long. But still the average time of one convection step 
+is shorter.
 
-\item \textbf{Output.} There two parts of the output -- output of the Darcy flow computation (row \emph{Darcy output}) and 
+\item \textbf{Output.} There are two parts of the output -- output of the Darcy flow computation (row \emph{Darcy output}) and 
 output of the transport operator splitting method (row \emph{TOS-output}). We can see that both have been slowed down 
 (output of water flow almost twice) and that both of them are not scaling at all. The problem of
-slowing down is currently being solved. Next step in parallelism will be taken as soon as we have parallel mesh available.
+slowing down is currently being solved. Next step will be taken in making the code parallel as soon as we have parallel mesh available.
 
 \end{itemize}
 
 \pagebreak
 
+\clearpage
+
 \input{tests_graphics/bench_mel_table.tex}
 
-
+\clearpage
 
 \section{Transport sources}
-The problem of transport sources can be viewed in different ways. We can prescribe a source term in a region of a mesh 
-or we can cut off that region from the mesh and then prescribe a Dirichlet boundary condition on the created boundary. 
+The problem of transport sources can be viewed in different ways. We can prescribe a~source term in a~region of a~mesh 
+or we can cut off that region from the mesh and then prescribe a~Dirichlet boundary condition on the created boundary. 
 The second way was used in some models when transport sources had not been implemented in Flow123d yet.
 In this section we would like to show the user the comparision of both techniques used on the real problem.
 
@@ -100,24 +105,26 @@ In this section we would like to show the user the comparision of both technique
 is not knowing the values of pressure (or velocity) to prescribe. There is a solution for this at the moment as Flow123d provides
 functionality for interpolating values between meshes. 
 
-In the figure \ref{fig:bench_mel1} we are showing the difference between the older solution (with Dirichlet BC prescribed on the source region) and 
-solution computed with source term prescribed. We can see that there is considerable difference in the nearby area of the source.
-
-\begin{figure}
+\begin{figure}[!h]
         \centering
-        \includegraphics[width=0.7\textwidth]{tests_graphics/mel_167s-167_velocity.pdf}
+        \includegraphics[width=0.55\textwidth]{tests_graphics/mel_167s-167_velocity.pdf}
         \caption{Difference in flow velocities between computation with Dirichlet BC and sources term (both computed in version 1.6.7). 
                  Red brick is the source region.}
         \label{fig:bench_mel1}
 \end{figure}
-
-\begin{figure}
+%
+\begin{figure}[!h]
         \centering
-        \includegraphics[width=0.8\textwidth]{tests_graphics/mel_167s-170_velocity.pdf}
+        \includegraphics[width=0.65\textwidth]{tests_graphics/mel_167s-170_velocity.pdf}
         \caption{Difference in flow velocities between solutions computed by versions 1.6.7 and 1.7.0 (with sources term).
                  Red brick is the source region.}
         \label{fig:bench_mel2}
 \end{figure}
+
+In the figure \ref{fig:bench_mel1} we are showing the difference between the older solution (with Dirichlet BC prescribed on the source region) and 
+solution computed with source term prescribed. We can see that there is considerable difference in the nearby area of the source. The solutions in farther 
+regions is considered equal with the precision of the solver $10^{-7}$.
+
 
 % \begin{figure}
 %     \centering
@@ -139,7 +146,50 @@ In the figure \ref{fig:bench_mel2} we also demonstrate small difference in water
 There are 5 areas where the difference if larger than the solver accuracy (set $10^{-7}$). Source of this difference 
 is not clear at the moment.
 
-\textbf{Transport.}
+\begin{figure}[!h]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tests_graphics/transport_end_167o.pdf}
+        \caption{Program version 1.6.7, computed with Dirichlet BC.}
+        \label{fig:bench_mel3a}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tests_graphics/transport_end_167s.pdf}
+        \caption{Program version 1.6.7, computed with source term prescribed.}
+        \label{fig:bench_mel3b}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tests_graphics/transport_end_170.pdf}
+        \caption{Program version 1.7.0, computed with source term prescribed.}
+        \label{fig:bench_mel3c}
+    \end{subfigure}
+    \caption{Concentration of the transported substance after $10^5$ years.}
+    \label{fig:bench_mel3}
+\end{figure}
 
+\textbf{Transport.}
+The transport of the substance was computed over time period of $10^5$ years. In the figure \ref{fig:bench_mel3} we can see 
+where the substance spread in concentration above $10^{-7}$~\unitss{1}{-3}{} which again corresponds to the solver accuracy.
+We can compare the solutions computed by different versions in subfigures \ref{fig:bench_mel3a} to \ref{fig:bench_mel3c}.
+The transport is caused only by convection so the velocities computed before are determining. As we can see in the figure 
+\ref{fig:bench_mel1}, the difference in velocities is positive which means the velocities were smaller when the Dirichlet 
+boundary condition was prescribed on the source region. That is why the convectional transport is also slower in that case 
+as we can observe in the figure \ref{fig:bench_mel3a}. 
+
+The transport computed with sources term prescribed is the same in both versions 1.6.7 and 1.7.0 as ilustrated in the figure
+\ref{fig:bench_mel3b} and \ref{fig:bench_mel3c}. One can open Paraview state file to see that the difference in transport is in
+order $10^{-7}$ corresponding again to the solver accuracy.
+
+
+
+
+\emph{Notice. If user compares the solutions of transport computed in versions 1.6.7 and 1.7.0 in Paraview (or other SW)
+be aware of a little bug in version 1.6.7 -- the transport steps are labeled only by numbers (1,2,3,...) not by the 
+corresponding times. }
 
 
