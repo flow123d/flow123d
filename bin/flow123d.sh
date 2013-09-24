@@ -28,7 +28,7 @@
 # alow mem parameter in different units
 
 # Uncomment following line, when you want to debug bash script
-# set -x 
+#set -x 
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
@@ -171,21 +171,25 @@ function parse_arguments()
 # takes variable TIMEOUT in format HH:MM:SS
 # and expands HH (hours) and MM (minutes)
 function expand_timeout() {
+    # echo "input TIMEOUT: $TIMEOUT"
     HH=${TIMEOUT%%:*}
     REST=${TIMEOUT#*:}
-    if [ -n "${HH}" ]
+    if [ "${HH}" != "${REST}" ]
     then
       MM=${REST%%:*}
       REST=${REST#*:}
-      if [ -n "${MM}" ]
+      if [ "${MM}" != "${REST}" ]
       then
-        # format HH:MM:SS.MS
+        # format HH:MM:SS
         TIMEOUT=$(( 3600 * ${HH} + 60 * ${MM} + ${REST} ))
       else
-        # format MM:SS.MS
+        # format MM:SS
         TIMEOUT=$(( 60 * ${HH} + ${REST} ))
       fi        
     fi
+    # format SS
+    
+    # echo "expanded TIMEOUT: $TIMEOUT"
 }
 
 
@@ -199,19 +203,25 @@ function expand_timeout() {
 # FLOW123D is relative path to bin/flow123d (.exe)
 # FLOW_PARAMS is list of parameters of flow123d
 # MEM - memory limit
-# PPN - processors per node
+# QUEUE - if set, we redirect stdout and stderr to the file ${QUEUE}.<date and time>
 #
 # Function has to set variable ${STDOUT_FILE} with name of file 
 # containing redirected stdout and stderr  of the run.
 # This file has to appear after the end of computation.
+#
+# Function set variable EXIT_STATUS to nonzero value in the case of an error.
+
 # 
 function run_flow()
 {
+        EXIT_STATUS=0
+        
 	# Check if Flow123d exists and it is executable file
 	if ! [ -x "${FLOW123D}" ]
 	then
 		echo "Error: can't execute ${FLOW123D}"
-		exit 11
+		EXIT_STATUS=11
+		return
 	fi
 	
 
@@ -270,7 +280,7 @@ function run_flow()
 		then
 			# Send SIGTERM to flow123d.
 			kill -s SIGTERM ${FLOW123D_PID} #> /dev/null 2>&1
-			exit 14
+			EXIT_STATUS=14
 		else
 			# Get exit status variable of flow123d
 			wait ${FLOW123D_PID}
@@ -279,13 +289,13 @@ function run_flow()
 			# Was Flow123d finished correctly?
 			if [ ! ${FLOW123D_EXIT_STATUS} -eq 0 ]
 			then
-				exit 15
+				EXIT_STATUS=15
 			fi
 		fi
 	else
 		if [ -n "${QUEUE}" ]
 		then
-                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "/tmp/${STDOUT_FILE}" 2>&1 
+                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} >"/tmp/${STDOUT_FILE}" 2>&1 
                 else
                         nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} 			
 		fi
@@ -317,4 +327,4 @@ run_flow
 # print the file with merged stdout, that will appear after the job is finished
 if [ -n "${STDOUT_FILE}" ]; then echo "REDIRECTED: ${STDOUT_FILE}"; fi
 
-exit 0
+exit ${EXIT_STATUS}

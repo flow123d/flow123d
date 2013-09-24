@@ -43,7 +43,7 @@
 #  * report timer from profiler (if exists)
 #
 #  
-#set -x
+# set -x
 
 
 # Every test has to be finished in $TIME_OUT seconds. Flow123d will be killed after
