@@ -34,8 +34,12 @@ const std::string & FieldCommonBase::name() const
 { return name_; }
 
 
-const std::string & FieldCommonBase::desc() const
-{ return desc_; }
+const std::string  FieldCommonBase::desc() const
+{ if(default_.has_value_at_declaration())
+    return "Default Field value: " + default_.value() + " \n " + desc_; 
+  else
+    return desc_;
+}
 
 
 const IT::Default & FieldCommonBase::get_default() const

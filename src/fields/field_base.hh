@@ -247,7 +247,7 @@ public:
      * Getters.
      */
     const std::string &name() const;
-    const std::string &desc() const;
+    const std::string desc() const;
     const IT::Default &get_default() const;
     const std::string &units() const;
     bool is_bc() const;

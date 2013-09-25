@@ -110,9 +110,9 @@ IT::Record EqDataBase::generic_input_type(bool bc_regions) {
     BOOST_FOREACH(FieldCommonBase * field, field_list)
         if (bc_regions == field->is_bc()) {
             if (field->is_enum_valued())
-                rec.declare_key(field->name(), field->make_input_tree(), field->get_default(), field->desc() );
+                rec.declare_key(field->name(), field->make_input_tree(), field->desc() );
             else
-                rec.declare_key(field->name(), field->get_input_type(), field->get_default(), field->desc() );
+                rec.declare_key(field->name(), field->get_input_type(), field->desc() );
         }
 
     return rec;
