@@ -443,7 +443,7 @@ find_package(Subversion)
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/third_party/metis-include
+    #${CMAKE_SOURCE_DIR}/third_party/metis-include
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${PETSC_INCLUDES}
     ${BDDCML_INCLUDES}
