@@ -75,7 +75,7 @@
         r_tol = 1.0e-7,
         max_it = 10000,
         max_nondecr_it = 30,
-        number_of_levels = 3,
+        number_of_levels = 2,
         use_adaptive_bddc = false,
         bddcml_verbosity_level = 0
       } 
