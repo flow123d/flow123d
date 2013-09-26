@@ -326,10 +326,26 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
             numSubLev[0] = numSub;
             numSubLev[1] = 1;
         }
+        else if ( numLevels > 2 ) {
+            double coarsening = pow( numSub, 1. / double(numLevels - 1) );
+            // prescribe number of subdomains on levels so that coarsening is fixed between levels
+            numSubLev[0] = numSub;
+            for (int i = 1; i <= numLevels-2; i++) {
+                int ir = numLevels - i - 1;
+                numSubLev[i] = (int) pow( coarsening, ir );
+                if ( numSubLev[i]%2 != 0 ) {
+                    numSubLev[i] = numSubLev[i] + 1;
+                }
+            }
+            numSubLev[numLevels-1] = 1;
+        }
         else {
             ASSERT( false, "Missing numbers of subdomains at levels. \n" );
         }
     }
+    //std::cout << "numSubLev ";
+    //std::copy( numSubLev.begin(), numSubLev.end(), std::ostream_iterator<int>( std::cout, " " ) );
+    //std::cout << std::endl;
 
     int lnumSubLev   = numSubLev.size();
     int commInt      = MPI_Comm_c2f( comm_ ); // translate C MPI communicator hanlder to Fortran integer

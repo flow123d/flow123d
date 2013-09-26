@@ -45,6 +45,8 @@ it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
     .derive_from(LinSys::input_type)
     .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
                  "Maximum number of iterations of the linear solver with non-decreasing residual.")
+    .declare_key("number_of_levels", it::Integer(0), it::Default("2"),
+                 "Number of levels in the multilevel method (=2 for the standard BDDC).")
     .declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
                  "Use adaptive selection of constraints in BDDCML.")
     .declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
@@ -233,10 +235,9 @@ void LinSys_BDDC::apply_constrains( double scalar )
 int LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef HAVE_BDDCML
-    int                 numLevels      = 2;     //!< number of levels
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
 
-    bddcml_ -> solveSystem( r_tol_, numLevels, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
+    bddcml_ -> solveSystem( r_tol_, number_of_levels_, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
 
     DBGMSG("BDDCML converged reason: %d ( 0 means OK ) \n", bddcml_ -> giveConvergedReason() );
     DBGMSG("BDDCML converged in %d iterations. \n", bddcml_ -> giveNumIterations() );
@@ -291,6 +292,7 @@ void LinSys_BDDC::set_from_input(const Input::Record in_rec)
 
     // BDDCML specific parameters
     max_nondecr_it_         = in_rec.val<int>("max_nondecr_it");   
+    number_of_levels_       = in_rec.val<int>("number_of_levels");   
     use_adaptive_bddc_      = in_rec.val<bool>("use_adaptive_bddc");
     bddcml_verbosity_level_ = in_rec.val<int>("bddcml_verbosity_level");
 }

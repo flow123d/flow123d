@@ -99,6 +99,7 @@ private:
 
     //! parameters expected from input file:
     int  max_nondecr_it_;         //!< maximum number of iterations of linear solver with non-decreasing residual
+    int  number_of_levels_;       //!< number of levels in the multilevel method
     bool use_adaptive_bddc_;      //!< should adaptive BDDC be used?
     int  bddcml_verbosity_level_; //!< level of verbosity of BDDCML library 
                                   //!< ( 0 - only fatal errors reported, 
