@@ -128,8 +128,10 @@ void DOFHandler<dim,spacedim>::distribute_dofs(FiniteElement<dim,spacedim> & fe,
 			   object_dofs[cell.index()][dim][i] = next_free_dof++;
     	}
 
-    	if (proc == myp)
+    	if (proc == myp) {
     		lsize_ = next_free_dof - loffset_;
+    		ds_ = new Distribution(lsize_, PETSC_COMM_WORLD);
+    	}
     }
 
     // Finally we free the unused array loc_part.
@@ -328,8 +330,10 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 			   object_dofs[cell.index()][dim][i] = next_free_dof++;
     	}
 
-    	if (proc == myp)
+    	if (proc == myp) {
     		lsize_ = next_free_dof - loffset_;
+    		ds_ = new Distribution(lsize_, PETSC_COMM_WORLD);
+    	}
     }
 
     // Finally we free the unused array loc_part.

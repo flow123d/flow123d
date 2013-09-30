@@ -34,6 +34,7 @@
 #include <petscmat.h>
 #include "mesh/mesh_types.hh"
 #include "mesh/elements.h"
+#include "la/distribution.hh"
 
 
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
@@ -84,6 +85,8 @@ public:
      * @brief Returns the offset of the local part of dofs.
      */
     const unsigned int loffset() { return loffset_; }
+
+    Distribution *distr() const { return ds_; }
 
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.
@@ -136,6 +139,11 @@ protected:
      * @brief Pointer to the mesh to which the dof handler is associated.
      */
     Mesh *mesh;
+
+    /**
+     * @brief Distribution of dofs associated to local process.
+     */
+    Distribution *ds_;
 
 };
 

@@ -200,7 +200,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	time_scheme_ = implicit_euler;
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     time_->fix_dt_until_mark();
-    
+
     // set up solver
     //solver = new Solver;
     //solver_init(solver, in_rec.val<Input::AbstractRecord>("solver"));
@@ -267,12 +267,12 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // set time marks for writing the output
     output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
     time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
-    
+
     // allocate matrix and vector structures
     
     ls    = new LinSys*[n_subst_];
     // TODO: have Distribution object in DoF handler, use it here and on several other places
-    //int lsize = feo->dh()->lsize();
+	//int lsize = feo->dh()->lsize();
     //ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
     for (int sbi = 0; sbi < n_subst_; sbi++) {
@@ -1477,6 +1477,7 @@ void TransportDG::set_initial_condition()
 	{
 		ls[sbi]->finish_assembly();
 		solve_system(solver, ls[sbi]);
+		//ls[sbi]->solve();
 	}
 }
 
