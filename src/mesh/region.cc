@@ -373,7 +373,7 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 						region_set.push_back(reg); // add region if doesn't exist
 					}
 				} else {
-					xprintf(Err, "Region with id %d doesn't exist.\n", (*it_ids));
+					xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
 				}
 			}
 		}
@@ -388,7 +388,7 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 						region_set.push_back(reg); // add region if doesn't exist
 					}
 				} else {
-					xprintf(Err, "Region with label %s doesn't exist.\n", (*it_labels).c_str());
+					xprintf(Warn, "Region with label %s doesn't exist. Skipping\n", (*it_labels).c_str());
 				}
 			}
 		}
