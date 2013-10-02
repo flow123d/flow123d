@@ -256,14 +256,14 @@ int LinSys_BDDC::solve()    // ! params are not currently used
     // scatter local solutions back to global one
     VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
     VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE );
-#else
-	return 0;
-#endif // HAVE_BDDCML
 
     // upper bound on the residual error
     residual_norm_ = r_tol_ * bddcml_->normRhs( ) ;
 
     return bddcml_ -> giveConvergedReason();
+#else
+	return 0;
+#endif // HAVE_BDDCML
 
 }
 
